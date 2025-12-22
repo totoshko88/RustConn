@@ -31,26 +31,27 @@
   </description>
   <launchable type="desktop-id">org.rustconn.RustConn.desktop</launchable>
   <icon type="stock">org.rustconn.RustConn</icon>
+  <icon type="remote" width="128" height="128">https://raw.githubusercontent.com/totoshko88/rust-cm/main/rustconn/assets/icons/hicolor/scalable/apps/org.rustconn.RustConn.svg</icon>
   <screenshots>
     <screenshot type="default">
       <caption>Main window with connection sidebar</caption>
-      <image type="source" width="1024" height="768">https://raw.githubusercontent.com/totoshko88/rustconn/main/rustconn/assets/screenshots/main.png</image>
+      <image type="source" width="1024" height="768">https://raw.githubusercontent.com/totoshko88/rust-cm/main/rustconn/assets/screenshots/main.png</image>
     </screenshot>
     <screenshot>
       <caption>Split terminal view</caption>
-      <image type="source" width="1024" height="768">https://raw.githubusercontent.com/totoshko88/rustconn/main/rustconn/assets/screenshots/split.png</image>
+      <image type="source" width="1024" height="768">https://raw.githubusercontent.com/totoshko88/rust-cm/main/rustconn/assets/screenshots/split.png</image>
     </screenshot>
     <screenshot>
       <caption>RDP session</caption>
-      <image type="source" width="1024" height="768">https://raw.githubusercontent.com/totoshko88/rustconn/main/rustconn/assets/screenshots/rdp.png</image>
+      <image type="source" width="1024" height="768">https://raw.githubusercontent.com/totoshko88/rust-cm/main/rustconn/assets/screenshots/rdp.png</image>
     </screenshot>
   </screenshots>
-  <url type="homepage">https://github.com/totoshko88/rustconn</url>
-  <url type="bugtracker">https://github.com/totoshko88/rustconn/issues</url>
+  <url type="homepage">https://github.com/totoshko88/rust-cm</url>
+  <url type="bugtracker">https://github.com/totoshko88/rust-cm/issues</url>
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
-    <release version="0.2.0" date="2024-12-22">
+    <release version="0.2.0" date="2025-12-22">
       <description>
         <p>New features and improvements:</p>
         <ul>
@@ -61,7 +62,7 @@
         </ul>
       </description>
     </release>
-    <release version="0.1.0" date="2024-12-01">
+    <release version="0.1.0" date="2025-12-01">
       <description>
         <p>Initial release</p>
       </description>
