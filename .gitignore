@@ -33,6 +33,12 @@ Thumbs.db
 # Debug
 *.pdb
 
+# AppImage build artifacts
+/AppDir/
+*.AppImage
+linuxdeploy-x86_64.AppImage
+linuxdeploy-plugin-gtk.sh
+
 # Coverage
 *.profraw
 *.profdata
