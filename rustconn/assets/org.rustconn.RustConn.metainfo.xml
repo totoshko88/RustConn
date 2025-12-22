@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.rustconn.RustConn</id>
+  <name>RustConn</name>
+  <summary>Modern connection manager for Linux</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <developer id="org.rustconn">
+    <name>Anton Isaiev</name>
+  </developer>
+  <description>
+    <p>
+      RustConn is a modern connection manager for Linux desktops built with GTK4.
+      It provides a unified interface for managing SSH, RDP, VNC, and SPICE
+      remote connections.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>SSH connections with embedded terminal</li>
+      <li>RDP support via FreeRDP</li>
+      <li>VNC support via TigerVNC</li>
+      <li>SPICE support via virt-viewer</li>
+      <li>Connection groups and tags</li>
+      <li>Import/export (Remmina, Asbru-CM, SSH config, Ansible)</li>
+      <li>Secure credential storage</li>
+      <li>Session logging</li>
+      <li>Command snippets</li>
+      <li>Wake-on-LAN</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">org.rustconn.RustConn.desktop</launchable>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Main window with connection sidebar</caption>
+      <image type="source">file:///usr/share/metainfo/screenshots/main-window.png</image>
+      <image>https://raw.githubusercontent.com/totoshko88/rust-cm/main/rustconn/assets/screenshots/main-window.png</image>
+    </screenshot>
+  </screenshots>
+  <url type="homepage">https://github.com/totoshko88/rust-cm</url>
+  <url type="bugtracker">https://github.com/totoshko88/rust-cm/issues</url>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2025-12-22">
+      <description>
+        <p>Initial release</p>
+      </description>
+    </release>
+  </releases>
+  <provides>
+    <binary>rustconn</binary>
+    <binary>rustconn-cli</binary>
+  </provides>
+  <categories>
+    <category>Network</category>
+    <category>RemoteAccess</category>
+    <category>GTK</category>
+  </categories>
+  <keywords>
+    <keyword>ssh</keyword>
+    <keyword>rdp</keyword>
+    <keyword>vnc</keyword>
+    <keyword>spice</keyword>
+    <keyword>remote</keyword>
+    <keyword>connection</keyword>
+    <keyword>terminal</keyword>
+  </keywords>
+</component>

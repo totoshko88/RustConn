@@ -39,3 +39,24 @@ spice-embedded = ["rustconn-core/spice-embedded"]
 
 [lints]
 workspace = true
+
+[package.metadata.deb]
+maintainer = "Anton Isaiev <totoshko88@gmail.com>"
+copyright = "2025, Anton Isaiev"
+license-file = ["../LICENSE", "0"]
+extended-description = """Modern connection manager for Linux desktops.
+Supports SSH, RDP, VNC, and SPICE remote connections with GTK4 GUI.
+Features include connection groups, import/export, credential management,
+session logging, and Wake-on-LAN support."""
+section = "net"
+priority = "optional"
+depends = "$auto, openssh-client"
+recommends = "freerdp2-x11, tigervnc-viewer, virt-viewer"
+assets = [
+    ["target/release/rustconn", "usr/bin/", "755"],
+    ["target/release/rustconn-cli", "usr/bin/", "755"],
+    ["assets/org.rustconn.RustConn.desktop", "usr/share/applications/", "644"],
+    ["assets/org.rustconn.RustConn.metainfo.xml", "usr/share/metainfo/", "644"],
+    ["assets/icons/hicolor/scalable/apps/org.rustconn.RustConn.svg", "usr/share/icons/hicolor/scalable/apps/", "644"],
+    ["assets/screenshots/main-window.png", "usr/share/metainfo/screenshots/", "644"],
+]
