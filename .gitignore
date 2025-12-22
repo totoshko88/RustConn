@@ -39,6 +39,9 @@ Thumbs.db
 linuxdeploy-x86_64.AppImage
 linuxdeploy-plugin-gtk.sh
 
+# OBS (Open Build Service) checkout
+/home:totoshko88:rustconn/
+
 # Coverage
 *.profraw
 *.profdata
