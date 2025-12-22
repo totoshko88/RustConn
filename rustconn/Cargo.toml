@@ -23,12 +23,12 @@ serde_json = { workspace = true }
 secrecy = { workspace = true }
 thiserror = { workspace = true }
 open = "5"
-dirs = "5"
+dirs = { workspace = true }
 # Tray icon support via StatusNotifierItem D-Bus protocol
 # Requires libdbus-1-dev on Ubuntu/Debian or dbus-devel on Fedora
-ksni = { version = "0.2", optional = true }
+ksni = { version = "0.3", features = ["blocking"], optional = true }
 # SVG rendering for tray icon (renders SVG to ARGB32 pixmap)
-resvg = { version = "0.44", optional = true }
+resvg = { version = "0.45", optional = true }
 
 [features]
 default = ["tray", "vnc-embedded", "rdp-embedded"]

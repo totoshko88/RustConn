@@ -74,7 +74,8 @@ impl Default for TrayState {
 #[cfg(feature = "tray")]
 mod tray_impl {
     use super::*;
-    use ksni::{menu::StandardItem, Icon, MenuItem, Tray, TrayService};
+    use ksni::blocking::{Handle, TrayMethods};
+    use ksni::{menu::StandardItem, Icon, MenuItem, Tray};
     use std::sync::mpsc::Sender;
 
     /// Embedded SVG icon data
@@ -269,7 +270,7 @@ mod tray_impl {
     pub struct TrayManager {
         state: Arc<Mutex<TrayState>>,
         receiver: Receiver<TrayMessage>,
-        handle: ksni::Handle<RustConnTray>,
+        handle: Handle<RustConnTray>,
     }
 
     impl TrayManager {
@@ -288,9 +289,8 @@ mod tray_impl {
                 icon_pixmap,
             };
 
-            let service = TrayService::new(tray);
-            let handle = service.handle();
-            service.spawn();
+            // Use blocking spawn from ksni 0.3
+            let handle = tray.spawn().ok()?;
 
             Some(Self {
                 state,
@@ -303,21 +303,21 @@ mod tray_impl {
             if let Ok(mut state) = self.state.lock() {
                 state.active_sessions = count;
             }
-            self.handle.update(|_| {});
+            let _ = self.handle.update(|_| {});
         }
 
         pub fn set_recent_connections(&self, connections: Vec<(Uuid, String)>) {
             if let Ok(mut state) = self.state.lock() {
                 state.recent_connections = connections;
             }
-            self.handle.update(|_| {});
+            let _ = self.handle.update(|_| {});
         }
 
         pub fn set_window_visible(&self, visible: bool) {
             if let Ok(mut state) = self.state.lock() {
                 state.window_visible = visible;
             }
-            self.handle.update(|_| {});
+            let _ = self.handle.update(|_| {});
         }
 
         pub fn try_recv(&self) -> Option<TrayMessage> {

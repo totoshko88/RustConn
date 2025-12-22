@@ -471,8 +471,9 @@ impl RdpLauncher {
             cmd.arg(format!("/w:{width}"));
             cmd.arg(format!("/h:{height}"));
         } else {
-            cmd.arg("/w:1280");
-            cmd.arg("/h:720");
+            // Default resolution when not specified
+            cmd.arg("/w:1920");
+            cmd.arg("/h:1080");
         }
 
         // Security settings - ignore certificate warnings

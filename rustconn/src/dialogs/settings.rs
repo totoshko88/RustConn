@@ -282,7 +282,7 @@ impl SettingsDialog {
                     sidebar_width: existing.ui.sidebar_width,
                     enable_tray_icon: enable_tray_icon_clone.is_active(),
                     minimize_to_tray: minimize_to_tray_clone.is_active(),
-                    collapsed_groups: existing.ui.collapsed_groups.clone(),
+                    expanded_groups: existing.ui.expanded_groups.clone(),
                 };
 
                 let new_settings = AppSettings {

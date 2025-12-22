@@ -497,6 +497,15 @@ impl SpiceClient {
         self.event_rx.as_ref()
     }
 
+    /// Takes ownership of the event receiver for external polling
+    ///
+    /// This allows the caller to move the receiver to another thread.
+    /// After calling this, `event_receiver()` will return `None`.
+    #[must_use]
+    pub fn take_event_receiver(&mut self) -> Option<std::sync::mpsc::Receiver<SpiceClientEvent>> {
+        self.event_rx.take()
+    }
+
     /// Returns the command sender for external use
     ///
     /// This allows the caller to send commands from multiple places.

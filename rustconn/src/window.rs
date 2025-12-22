@@ -1368,14 +1368,21 @@ impl MainWindow {
         }
 
         // Save window state on close and handle minimize to tray
-        let state_clone = state;
+        let state_clone = state.clone();
         let paned_clone = paned;
+        let sidebar_clone = sidebar.clone();
         window.connect_close_request(move |win| {
-            // Save window geometry
+            // Save window geometry and expanded groups state
             let (width, height) = win.default_size();
             let sidebar_width = paned_clone.position();
 
+            // Save expanded groups state
+            let expanded = sidebar_clone.get_expanded_groups();
+
             if let Ok(mut state) = state_clone.try_borrow_mut() {
+                // Update expanded groups
+                let _ = state.update_expanded_groups(expanded);
+
                 let mut settings = state.settings().clone();
                 if settings.ui.remember_window_geometry {
                     settings.ui.window_width = Some(width);
@@ -1400,7 +1407,7 @@ impl MainWindow {
     fn load_connections(&self) {
         let state = self.state.borrow();
         let store = self.sidebar.store();
-        let collapsed_groups = state.collapsed_groups().clone();
+        let expanded_groups = state.expanded_groups().clone();
 
         // Clear existing items
         store.remove_all();
@@ -1426,8 +1433,8 @@ impl MainWindow {
 
         drop(state);
 
-        // Apply collapsed state after populating
-        self.sidebar.apply_collapsed_groups(&collapsed_groups);
+        // Apply expanded state after populating
+        self.sidebar.apply_expanded_groups(&expanded_groups);
     }
 
     /// Recursively adds group children
@@ -1962,20 +1969,27 @@ impl MainWindow {
                 let embedded_widget = EmbeddedRdpWidget::new();
 
                 // Build embedded RDP config with dynamic resolution
-                // Use actual widget size for initial resolution to fill the available space
-                // Fall back to config resolution or default if widget size not available yet
-                let widget_width = split_view.widget().width();
-                let widget_height = split_view.widget().height();
+                // Calculate initial resolution from saved window geometry
+                // Content area = window_width - sidebar_width, window_height - toolbar/tabs
+                let state_ref = state.borrow();
+                let settings = state_ref.settings();
+                let content_width = settings
+                    .ui
+                    .window_width
+                    .unwrap_or(1200)
+                    .saturating_sub(settings.ui.sidebar_width.unwrap_or(250));
+                let content_height = settings.ui.window_height.unwrap_or(800).saturating_sub(100);
+                drop(state_ref);
+
                 #[allow(clippy::cast_sign_loss)]
-                let initial_resolution = if widget_width > 100 && widget_height > 100 {
-                    // Use actual widget size (subtract some margin for toolbar)
-                    (widget_width as u32, (widget_height - 40).max(100) as u32)
+                let initial_resolution = if content_width > 100 && content_height > 100 {
+                    (content_width as u32, content_height as u32)
                 } else {
-                    // Widget not yet sized, use config or default
+                    // Fallback to config resolution or default
                     rdp_config
                         .resolution
                         .as_ref()
-                        .map_or((1280, 720), |r| (r.width, r.height))
+                        .map_or((1920, 1080), |r| (r.width, r.height))
                 };
 
                 let mut embedded_config = EmbeddedRdpConfig::new(&host)
@@ -2810,18 +2824,13 @@ impl MainWindow {
         session_id: Uuid,
     ) {
         let state_clone = state.clone();
-        let notebook_clone = notebook.clone();
 
         notebook.connect_child_exited(session_id, move |exit_status| {
             // Update session status in state manager
+            // This also closes the session logger and finalizes the log file
             if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
-                // Terminate the session in the session manager
                 let _ = state_mut.terminate_session(session_id);
             }
-
-            // TODO: Finalize the log file if logging was enabled
-            // The finalize_log method needs to be implemented
-            let _ = notebook_clone.get_session_info(session_id);
 
             // Log the exit status for debugging
             if exit_status != 0 {
@@ -3319,9 +3328,9 @@ impl MainWindow {
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
                     match state_mut.create_connection(conn) {
                         Ok(_) => {
-                            // Reload sidebar
+                            // Reload sidebar preserving tree state
                             drop(state_mut);
-                            Self::reload_sidebar(&state, &sidebar);
+                            Self::reload_sidebar_preserving_state(&state, &sidebar);
                         }
                         Err(e) => {
                             // Show error in UI dialog with proper transient parent
@@ -3515,7 +3524,7 @@ impl MainWindow {
                     match state_mut.import_connections_with_source(&import_result, &source_name) {
                         Ok(count) => {
                             drop(state_mut);
-                            Self::reload_sidebar(&state, &sidebar);
+                            Self::reload_sidebar_preserving_state(&state, &sidebar);
                             // Show success message with proper transient parent
                             let alert = gtk4::AlertDialog::builder()
                                 .message("Import Successful")
@@ -4664,11 +4673,11 @@ impl MainWindow {
         &self.terminal_notebook
     }
 
-    /// Saves the current collapsed groups state to settings
-    pub fn save_collapsed_groups(&self) {
-        let collapsed = self.sidebar.get_collapsed_groups();
+    /// Saves the current expanded groups state to settings
+    pub fn save_expanded_groups(&self) {
+        let expanded = self.sidebar.get_expanded_groups();
         if let Ok(mut state) = self.state.try_borrow_mut() {
-            let _ = state.update_collapsed_groups(collapsed);
+            let _ = state.update_expanded_groups(expanded);
         }
     }
 
@@ -6592,9 +6601,9 @@ impl MainWindow {
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
                     match state_mut.create_connection(conn) {
                         Ok(_) => {
-                            // Reload sidebar
+                            // Reload sidebar preserving tree state
                             drop(state_mut);
-                            Self::reload_sidebar(&state, &sidebar);
+                            Self::reload_sidebar_preserving_state(&state, &sidebar);
                         }
                         Err(e) => {
                             let alert = gtk4::AlertDialog::builder()

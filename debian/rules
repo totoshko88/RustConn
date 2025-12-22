@@ -9,13 +9,16 @@ override_dh_auto_build:
 	tar --zstd -xf vendor.tar.zst
 	mkdir -p .cargo
 	cp cargo_config .cargo/config.toml
-	cargo build --release --offline -p rustconn -p rustconn-cli
+	cargo build --release --offline -p rustconn -p rustconn-cli --all-features
 
 override_dh_auto_install:
 	install -Dm755 target/release/rustconn debian/rustconn/usr/bin/rustconn
 	install -Dm755 target/release/rustconn-cli debian/rustconn/usr/bin/rustconn-cli
 	install -Dm644 rustconn/assets/org.rustconn.RustConn.desktop \
 		debian/rustconn/usr/share/applications/org.rustconn.RustConn.desktop
+	install -Dm644 rustconn/assets/icons/hicolor/scalable/apps/org.rustconn.RustConn.svg \
+		debian/rustconn/usr/share/icons/hicolor/scalable/apps/org.rustconn.RustConn.svg
+	rm -rf vendor .cargo
 
 override_dh_auto_test:
 	true

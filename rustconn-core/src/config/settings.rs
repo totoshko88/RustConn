@@ -193,9 +193,9 @@ pub struct UiSettings {
     /// Minimize to tray instead of quitting when closing window
     #[serde(default)]
     pub minimize_to_tray: bool,
-    /// IDs of groups that are collapsed in the sidebar
+    /// IDs of groups that are expanded in the sidebar (for state persistence)
     #[serde(default, skip_serializing_if = "std::collections::HashSet::is_empty")]
-    pub collapsed_groups: std::collections::HashSet<uuid::Uuid>,
+    pub expanded_groups: std::collections::HashSet<uuid::Uuid>,
 }
 
 impl Default for UiSettings {
@@ -207,7 +207,7 @@ impl Default for UiSettings {
             sidebar_width: None,
             enable_tray_icon: true,
             minimize_to_tray: false,
-            collapsed_groups: std::collections::HashSet::new(),
+            expanded_groups: std::collections::HashSet::new(),
         }
     }
 }

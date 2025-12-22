@@ -7,9 +7,10 @@
 #![allow(clippy::semicolon_if_nothing_returned)]
 #![allow(clippy::explicit_iter_loop)]
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use rustconn_core::models::{Connection, ConnectionGroup, ProtocolConfig, SshConfig};
 use rustconn_core::search::{SearchEngine, SearchQuery};
+use std::hint::black_box;
 use uuid::Uuid;
 
 /// Creates test connections for benchmarking

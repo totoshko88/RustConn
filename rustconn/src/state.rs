@@ -1081,21 +1081,21 @@ impl AppState {
         &self.config_manager
     }
 
-    /// Updates the collapsed groups in settings and saves
-    pub fn update_collapsed_groups(
+    /// Updates the expanded groups in settings and saves
+    pub fn update_expanded_groups(
         &mut self,
-        collapsed: std::collections::HashSet<uuid::Uuid>,
+        expanded: std::collections::HashSet<uuid::Uuid>,
     ) -> Result<(), String> {
-        self.settings.ui.collapsed_groups = collapsed;
+        self.settings.ui.expanded_groups = expanded;
         self.config_manager
             .save_settings(&self.settings)
             .map_err(|e| format!("Failed to save settings: {e}"))
     }
 
-    /// Gets the collapsed groups from settings
+    /// Gets the expanded groups from settings
     #[must_use]
-    pub fn collapsed_groups(&self) -> &std::collections::HashSet<uuid::Uuid> {
-        &self.settings.ui.collapsed_groups
+    pub fn expanded_groups(&self) -> &std::collections::HashSet<uuid::Uuid> {
+        &self.settings.ui.expanded_groups
     }
 
     /// Gets the connection manager
@@ -1139,9 +1139,39 @@ impl AppState {
         let mut subgroup_map: std::collections::HashMap<String, Uuid> =
             std::collections::HashMap::new();
 
-        // Import groups from result as subgroups
-        for group in &result.groups {
-            let new_group_id = if let Some(parent_id) = parent_group_id {
+        // Import groups from result preserving hierarchy
+        // First pass: identify root groups (no parent or parent not in import)
+        let imported_group_ids: std::collections::HashSet<Uuid> =
+            result.groups.iter().map(|g| g.id).collect();
+
+        // Sort groups by hierarchy level (root groups first, then children)
+        let mut sorted_groups: Vec<&ConnectionGroup> = result.groups.iter().collect();
+        sorted_groups.sort_by(|a, b| {
+            let a_is_root = a.parent_id.is_none()
+                || !imported_group_ids.contains(&a.parent_id.unwrap_or(Uuid::nil()));
+            let b_is_root = b.parent_id.is_none()
+                || !imported_group_ids.contains(&b.parent_id.unwrap_or(Uuid::nil()));
+            b_is_root.cmp(&a_is_root) // Root groups first
+        });
+
+        // Create groups preserving hierarchy
+        for group in sorted_groups {
+            // Determine the actual parent for this group
+            let actual_parent_id = if let Some(orig_parent_id) = group.parent_id {
+                // Check if original parent is in the import
+                if let Some(&new_parent_id) = group_uuid_map.get(&orig_parent_id) {
+                    // Parent was already created, use its new ID
+                    Some(new_parent_id)
+                } else {
+                    // Parent not in import, use import root group
+                    parent_group_id
+                }
+            } else {
+                // Root group in import, make it child of import root
+                parent_group_id
+            };
+
+            let new_group_id = if let Some(parent_id) = actual_parent_id {
                 match self
                     .connection_manager
                     .create_group_with_parent(group.name.clone(), parent_id)

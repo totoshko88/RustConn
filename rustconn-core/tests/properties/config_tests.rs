@@ -424,7 +424,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         sidebar_width,
                         enable_tray_icon: true,
                         minimize_to_tray: false,
-                        collapsed_groups: std::collections::HashSet::new(),
+                        expanded_groups: std::collections::HashSet::new(),
                     },
                     global_variables: Vec::new(),
                 }

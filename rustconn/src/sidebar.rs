@@ -535,7 +535,8 @@ impl ConnectionSidebar {
         let store = gio::ListStore::new::<ConnectionItem>();
 
         // Create tree list model for hierarchical display
-        let tree_model = TreeListModel::new(store.clone(), false, true, |item| {
+        // autoexpand=false so we can control which groups are expanded via saved state
+        let tree_model = TreeListModel::new(store.clone(), false, false, |item| {
             item.downcast_ref::<ConnectionItem>()
                 .and_then(ConnectionItem::children)
         });
@@ -2062,85 +2063,6 @@ impl ConnectionSidebar {
         self.pre_search_state.borrow().is_some()
     }
 
-    /// Gets the IDs of all collapsed groups in the tree
-    /// Returns a HashSet of group UUIDs that are currently collapsed
-    /// Note: This iterates through all visible rows in the TreeListModel
-    #[must_use]
-    pub fn get_collapsed_groups(&self) -> std::collections::HashSet<Uuid> {
-        let mut collapsed = std::collections::HashSet::new();
-        self.collect_collapsed_groups_recursive(&mut collapsed);
-        collapsed
-    }
-
-    /// Recursively collects collapsed group IDs from the tree model
-    fn collect_collapsed_groups_recursive(&self, collapsed: &mut std::collections::HashSet<Uuid>) {
-        let n_items = self.tree_model.n_items();
-
-        for i in 0..n_items {
-            if let Some(row) = self
-                .tree_model
-                .item(i)
-                .and_then(|o| o.downcast::<TreeListRow>().ok())
-            {
-                if let Some(item) = row.item().and_then(|o| o.downcast::<ConnectionItem>().ok()) {
-                    if item.is_group() {
-                        // Check if this row is expandable and NOT expanded
-                        if row.is_expandable() && !row.is_expanded() {
-                            if let Ok(id) = Uuid::parse_str(&item.id()) {
-                                collapsed.insert(id);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /// Applies collapsed state to groups after populating the sidebar
-    /// Groups in the provided set will be collapsed, others will be expanded
-    /// This needs to be called after the tree is populated and uses idle_add
-    /// to ensure the tree model is fully initialized
-    pub fn apply_collapsed_groups(&self, collapsed: &std::collections::HashSet<Uuid>) {
-        if collapsed.is_empty() {
-            return;
-        }
-
-        let tree_model = self.tree_model.clone();
-        let collapsed = collapsed.clone();
-
-        // Use idle_add to ensure tree model is ready
-        glib::idle_add_local_once(move || {
-            Self::apply_collapsed_state(&tree_model, &collapsed);
-        });
-    }
-
-    /// Internal function to apply collapsed state
-    fn apply_collapsed_state(
-        tree_model: &TreeListModel,
-        collapsed: &std::collections::HashSet<Uuid>,
-    ) {
-        let n_items = tree_model.n_items();
-
-        for i in 0..n_items {
-            if let Some(row) = tree_model
-                .item(i)
-                .and_then(|o| o.downcast::<TreeListRow>().ok())
-            {
-                if row.is_expandable() {
-                    if let Some(item) = row.item().and_then(|o| o.downcast::<ConnectionItem>().ok())
-                    {
-                        if item.is_group() {
-                            if let Ok(id) = Uuid::parse_str(&item.id()) {
-                                // Collapse if in collapsed set, expand otherwise
-                                row.set_expanded(!collapsed.contains(&id));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     /// Saves the current tree state for later restoration
     ///
     /// Captures expanded groups, scroll position, and selected item.
@@ -2216,13 +2138,32 @@ impl ConnectionSidebar {
     }
 
     /// Applies expanded state to groups after populating the sidebar
-    /// Groups in the provided set will be expanded, others will be collapsed
+    /// Groups in the provided set will be expanded, others will remain collapsed
+    /// This method handles nested groups by expanding from root to leaves
     pub fn apply_expanded_groups(&self, expanded: &HashSet<Uuid>) {
+        if expanded.is_empty() {
+            return;
+        }
+
         let tree_model = self.tree_model.clone();
         let expanded = expanded.clone();
 
         // Use idle_add to ensure tree model is ready
+        // We need multiple passes because expanding a group reveals its children
         glib::idle_add_local_once(move || {
+            Self::apply_expanded_state_recursive(&tree_model, &expanded);
+        });
+    }
+
+    /// Recursively applies expanded state to the tree
+    /// Makes multiple passes to handle nested groups
+    fn apply_expanded_state_recursive(tree_model: &TreeListModel, expanded: &HashSet<Uuid>) {
+        // We need multiple passes because expanding a parent reveals children
+        // Maximum depth to prevent infinite loops
+        const MAX_PASSES: usize = 10;
+
+        for _ in 0..MAX_PASSES {
+            let mut expanded_any = false;
             let n_items = tree_model.n_items();
 
             for i in 0..n_items {
@@ -2230,21 +2171,28 @@ impl ConnectionSidebar {
                     .item(i)
                     .and_then(|o| o.downcast::<TreeListRow>().ok())
                 {
-                    if row.is_expandable() {
+                    if row.is_expandable() && !row.is_expanded() {
                         if let Some(item) =
                             row.item().and_then(|o| o.downcast::<ConnectionItem>().ok())
                         {
                             if item.is_group() || item.is_document() {
                                 if let Ok(id) = Uuid::parse_str(&item.id()) {
-                                    // Expand if in expanded set
-                                    row.set_expanded(expanded.contains(&id));
+                                    if expanded.contains(&id) {
+                                        row.set_expanded(true);
+                                        expanded_any = true;
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        });
+
+            // If we didn't expand anything in this pass, we're done
+            if !expanded_any {
+                break;
+            }
+        }
     }
 
     /// Selects an item by its UUID

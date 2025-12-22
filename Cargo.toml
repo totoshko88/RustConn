@@ -7,7 +7,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["RustConn Contributors"]
 license = "MIT"
@@ -34,7 +34,7 @@ chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1.0"
 async-trait = "0.1"
 secrecy = { version = "0.10", features = ["serde"] }
-dirs = "5.0"
+dirs = "6.0"
 shellexpand = "3.1"
 regex = "1.10"
 

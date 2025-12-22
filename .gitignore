@@ -4,10 +4,18 @@
 # Vendor directory (use cargo vendor separately)
 /vendor/
 
-# Archives
+# Archives and release artifacts
 *.tar.gz
 *.tar.xz
 *.tar.zst
+
+# Debian build artifacts
+/debian/.debhelper/
+/debian/cargo_home/
+/debian/rustconn/
+/debian/debhelper-build-stamp
+/debian/files
+/debian/*.substvars
 
 # IDE
 .idea/
@@ -29,3 +37,6 @@ Thumbs.db
 *.profraw
 *.profdata
 coverage/
+
+# Logs
+*.log

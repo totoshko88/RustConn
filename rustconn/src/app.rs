@@ -341,16 +341,16 @@ fn setup_app_actions(
     state: SharedAppState,
     _tray_manager: SharedTrayManager,
 ) {
-    // Quit action - save collapsed groups state before quitting
+    // Quit action - save expanded groups state before quitting
     let quit_action = gio::SimpleAction::new("quit", None);
     let app_weak = app.downgrade();
     let state_clone = state.clone();
     let sidebar_rc = window.sidebar_rc();
     quit_action.connect_activate(move |_, _| {
-        // Save collapsed groups state
-        let collapsed = sidebar_rc.get_collapsed_groups();
+        // Save expanded groups state
+        let expanded = sidebar_rc.get_expanded_groups();
         if let Ok(mut state_ref) = state_clone.try_borrow_mut() {
-            let _ = state_ref.update_collapsed_groups(collapsed);
+            let _ = state_ref.update_expanded_groups(expanded);
         }
         if let Some(app) = app_weak.upgrade() {
             app.quit();
