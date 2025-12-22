@@ -104,6 +104,16 @@ session_logs/
 *.AppImage
 *.flatpak
 *.snap
+*.tar.xz
+*.tar.gz
+*.tar.zst
+vendor/
+vendor.tar.zst
+debian.tar.gz
+cargo_config
+
+# OBS local checkout
+home:*/
 
 # -----------------------------------------------------------------------------
 # Benchmarks
