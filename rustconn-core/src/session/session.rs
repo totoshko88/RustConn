@@ -7,11 +7,13 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::process::Child;
+use tracing::{debug, info_span};
 use uuid::Uuid;
 
+use crate::tracing::span_names;
+
 /// Represents the current state of a session
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum SessionState {
     /// Session is starting up
     #[default]
@@ -25,7 +27,6 @@ pub enum SessionState {
     /// Session encountered an error
     Error,
 }
-
 
 /// Type of session based on protocol
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -69,6 +70,19 @@ impl Session {
         protocol: String,
         session_type: SessionType,
     ) -> Self {
+        let _span = info_span!(
+            span_names::SESSION_START,
+            connection_id = %connection_id,
+            protocol = %protocol,
+            session_type = ?session_type
+        )
+        .entered();
+
+        debug!(
+            connection_name = %connection_name,
+            "Creating new session"
+        );
+
         Self {
             id: Uuid::new_v4(),
             connection_id,

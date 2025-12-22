@@ -91,7 +91,6 @@ impl From<SpiceError> for FfiError {
     }
 }
 
-
 /// TLS configuration for SPICE connections
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct SpiceTlsConfig {
@@ -277,7 +276,6 @@ impl SpiceConnectionConfig {
         Ok(())
     }
 }
-
 
 /// Internal state for SPICE display
 #[derive(Debug, Default)]
@@ -589,7 +587,6 @@ impl SpiceDisplay {
         self.state.borrow().clipboard_enabled
     }
 
-
     // ========================================================================
     // Signal Connections
     // ========================================================================
@@ -708,7 +705,6 @@ impl Drop for SpiceDisplay {
         self.close();
     }
 }
-
 
 #[cfg(test)]
 mod tests {

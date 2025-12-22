@@ -14,6 +14,26 @@ use vte4::Terminal;
 
 use crate::terminal::TerminalSession;
 
+/// Creates a scrolled window containing a terminal with proper expansion settings
+fn create_terminal_scrolled_window(terminal: &Terminal) -> gtk4::ScrolledWindow {
+    // Ensure terminal fills available space
+    terminal.set_hexpand(true);
+    terminal.set_vexpand(true);
+
+    let scrolled = gtk4::ScrolledWindow::builder()
+        .hscrollbar_policy(gtk4::PolicyType::Never)
+        .vscrollbar_policy(gtk4::PolicyType::Automatic)
+        .hexpand(true)
+        .vexpand(true)
+        .child(terminal)
+        .build();
+
+    // Queue resize to ensure proper layout after adding
+    scrolled.queue_resize();
+
+    scrolled
+}
+
 /// Represents a split direction for terminal panes
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SplitDirection {
@@ -28,8 +48,8 @@ impl SplitDirection {
     #[must_use]
     pub const fn to_orientation(self) -> Orientation {
         match self {
-            Self::Horizontal => Orientation::Vertical,   // Vertical orientation = horizontal split
-            Self::Vertical => Orientation::Horizontal,   // Horizontal orientation = vertical split
+            Self::Horizontal => Orientation::Vertical, // Vertical orientation = horizontal split
+            Self::Vertical => Orientation::Horizontal, // Horizontal orientation = vertical split
         }
     }
 }
@@ -143,8 +163,7 @@ pub struct SplitTerminalView {
     sessions: SharedSessions,
     /// Shared terminals map (`session_id` -> Terminal widget)
     terminals: SharedTerminals,
-    /// Paned widgets for managing splits (stored for cleanup)
-    #[allow(dead_code)]
+    /// Paned widgets for managing splits (stored for cleanup and preventing premature deallocation)
     paned_widgets: Rc<RefCell<Vec<Paned>>>,
 }
 
@@ -170,11 +189,11 @@ impl SplitTerminalView {
         // Create initial pane
         let initial_pane = TerminalPane::new();
         let initial_pane_id = initial_pane.id();
-        
+
         // Set welcome content for initial pane
         let welcome = Self::create_welcome_content();
         initial_pane.set_content(&welcome);
-        
+
         root.append(initial_pane.container());
 
         let panes = Rc::new(RefCell::new(vec![initial_pane]));
@@ -189,31 +208,11 @@ impl SplitTerminalView {
             paned_widgets: Rc::new(RefCell::new(Vec::new())),
         }
     }
-    
+
     /// Creates welcome content for the initial pane
     fn create_welcome_content() -> GtkBox {
-        let container = GtkBox::new(Orientation::Vertical, 16);
-        container.set_halign(gtk4::Align::Center);
-        container.set_valign(gtk4::Align::Center);
-        container.set_hexpand(true);
-        container.set_vexpand(true);
-        container.set_margin_start(32);
-        container.set_margin_end(32);
-        container.set_margin_top(32);
-        container.set_margin_bottom(32);
-
-        let title = gtk4::Label::new(Some("Welcome to RustConn"));
-        title.add_css_class("title-1");
-        container.append(&title);
-
-        let subtitle = gtk4::Label::new(Some(
-            "Select a connection from the sidebar to get started,\nor create a new connection.",
-        ));
-        subtitle.add_css_class("dim-label");
-        subtitle.set_justify(gtk4::Justification::Center);
-        container.append(&subtitle);
-
-        container
+        // Use the same content as placeholder for consistency
+        Self::create_placeholder()
     }
 
     /// Returns the shared sessions reference for use with `TerminalNotebook`
@@ -293,19 +292,70 @@ impl SplitTerminalView {
 
     /// Clears a session from all panes that display it
     /// Shows a placeholder in panes that were displaying this session
+    /// Auto-collapses split if only one pane has content after clearing
     pub fn clear_session_from_panes(&self, session_id: Uuid) {
-        let mut panes = self.panes.borrow_mut();
-        for pane in panes.iter_mut() {
-            if pane.current_session() == Some(session_id) {
-                // Show placeholder instead
-                let placeholder = Self::create_placeholder();
-                pane.set_content(&placeholder);
-                pane.set_current_session(None);
+        {
+            let mut panes = self.panes.borrow_mut();
+            for pane in panes.iter_mut() {
+                if pane.current_session() == Some(session_id) {
+                    // Show placeholder instead
+                    let placeholder = Self::create_placeholder();
+                    pane.set_content(&placeholder);
+                    pane.set_current_session(None);
+                }
             }
         }
         // Also remove from sessions and terminals
-        drop(panes);
         self.remove_session(session_id);
+
+        // Auto-collapse split if we have multiple panes but only one (or zero) has content
+        self.auto_collapse_empty_panes();
+    }
+
+    /// Auto-collapses split panes when only one pane has content
+    /// This prevents empty panes from taking up screen space
+    fn auto_collapse_empty_panes(&self) {
+        // Only collapse if we have more than one pane
+        if self.panes.borrow().len() <= 1 {
+            return;
+        }
+
+        // Count panes with active sessions
+        let panes_with_sessions: Vec<Uuid> = self
+            .panes
+            .borrow()
+            .iter()
+            .filter(|p| p.current_session().is_some())
+            .map(TerminalPane::id)
+            .collect();
+
+        // If only one pane has content, collapse the empty ones
+        if panes_with_sessions.len() <= 1 {
+            // Find panes without sessions and close them
+            let empty_pane_ids: Vec<Uuid> = self
+                .panes
+                .borrow()
+                .iter()
+                .filter(|p| p.current_session().is_none())
+                .map(TerminalPane::id)
+                .collect();
+
+            for pane_id in empty_pane_ids {
+                // Set focus to this pane so close_pane will close it
+                *self.focused_pane.borrow_mut() = Some(pane_id);
+                // Try to close the pane - this will merge the split
+                if !self.close_pane() {
+                    break; // Stop if we can't close more panes
+                }
+            }
+
+            // Restore focus to the pane with content (if any)
+            if let Some(content_pane_id) = panes_with_sessions.first() {
+                *self.focused_pane.borrow_mut() = Some(*content_pane_id);
+            } else if let Some(first_pane) = self.panes.borrow().first() {
+                *self.focused_pane.borrow_mut() = Some(first_pane.id());
+            }
+        }
     }
 
     /// Shows welcome content in the focused pane
@@ -360,7 +410,7 @@ impl SplitTerminalView {
     /// a new pane for the second child.
     ///
     /// Returns the ID of the new pane, or None if there's no focused pane.
-    #[must_use] 
+    #[must_use]
     pub fn split(&self, direction: SplitDirection) -> Option<Uuid> {
         self.split_internal(direction, None)
     }
@@ -368,7 +418,11 @@ impl SplitTerminalView {
     /// Splits the focused pane with a close callback for the new pane
     ///
     /// The close callback is called when the close button on the placeholder is clicked.
-    pub fn split_with_close_callback<F>(&self, direction: SplitDirection, on_close: F) -> Option<Uuid>
+    pub fn split_with_close_callback<F>(
+        &self,
+        direction: SplitDirection,
+        on_close: F,
+    ) -> Option<Uuid>
     where
         F: Fn() + 'static,
     {
@@ -452,6 +506,13 @@ impl SplitTerminalView {
             let is_start = parent_paned
                 .start_child()
                 .is_some_and(|c| c == focused_container);
+
+            // Clear focus before removing child to avoid GTK warning about focus on removed widget
+            if let Some(root) = parent_paned.root() {
+                if let Some(window) = root.downcast_ref::<gtk4::Window>() {
+                    gtk4::prelude::GtkWindowExt::set_focus(window, None::<&gtk4::Widget>);
+                }
+            }
 
             // Remove from paned
             if is_start {
@@ -550,7 +611,15 @@ impl SplitTerminalView {
         container.set_margin_top(32);
         container.set_margin_bottom(32);
 
-        let label = gtk4::Label::new(Some("Drag a session tab here\nor double-click a connection"));
+        // Welcome message with emoji
+        let title = gtk4::Label::new(Some("📋 Empty Pane"));
+        title.add_css_class("title-3");
+        container.append(&title);
+
+        let label = gtk4::Label::new(Some(
+            "🔗 Drag a session tab here\n\
+             🖱️ Or double-click a connection",
+        ));
         label.add_css_class("dim-label");
         label.set_justify(gtk4::Justification::Center);
         container.append(&label);
@@ -561,22 +630,175 @@ impl SplitTerminalView {
 
     /// Creates a placeholder widget for empty panes (simple version)
     fn create_placeholder() -> GtkBox {
-        let container = GtkBox::new(Orientation::Vertical, 16);
+        let container = GtkBox::new(Orientation::Vertical, 20);
         container.set_halign(gtk4::Align::Center);
         container.set_valign(gtk4::Align::Center);
         container.set_hexpand(true);
         container.set_vexpand(true);
-        container.set_margin_start(32);
-        container.set_margin_end(32);
-        container.set_margin_top(32);
-        container.set_margin_bottom(32);
+        container.set_margin_start(40);
+        container.set_margin_end(40);
+        container.set_margin_top(40);
+        container.set_margin_bottom(40);
 
-        let label = gtk4::Label::new(Some("Drag a session tab here\nor double-click a connection"));
-        label.add_css_class("dim-label");
-        label.set_justify(gtk4::Justification::Center);
-        container.append(&label);
+        // Try to load logo, fallback to text title
+        let title_widget = Self::create_logo_or_title();
+        container.append(&title_widget);
+
+        // Description
+        let desc = gtk4::Label::new(Some(
+            "🔐 Modern Connection Manager for Linux\n\
+             SSH • RDP • VNC • SPICE",
+        ));
+        desc.add_css_class("dim-label");
+        desc.set_justify(gtk4::Justification::Center);
+        container.append(&desc);
+
+        // Features section
+        let features = gtk4::Label::new(Some(
+            "✨ Features:\n\
+             🖥️  Embedded SSH terminals with split view\n\
+             🔒  Secure credential storage (KeePass/Keyring)\n\
+             📁  Import from Remmina, Asbru-CM, SSH config, Ansible inventory\n\
+             🏷️  Organize with groups and tags\n\
+             ⚡ Performance optimizations for large connection databases",
+        ));
+        features.set_justify(gtk4::Justification::Left);
+        features.add_css_class("dim-label");
+        features.set_margin_top(12);
+        container.append(&features);
+
+        // Performance features section
+        let perf_title = gtk4::Label::new(Some("🚀 Performance Features"));
+        perf_title.add_css_class("heading");
+        perf_title.set_margin_top(16);
+        container.append(&perf_title);
+
+        let perf_features = gtk4::Label::new(Some(
+            "🔍  Smart search caching for instant results\n\
+             📂  Lazy loading for large connection trees\n\
+             📜  Virtual scrolling for 1000+ connections\n\
+             🎯  Debounced search for responsive typing\n\
+             🖼️  Native SPICE embedding (optional feature)",
+        ));
+        perf_features.set_justify(gtk4::Justification::Left);
+        perf_features.add_css_class("dim-label");
+        container.append(&perf_features);
+
+        // Keyboard shortcuts section
+        let shortcuts_title = gtk4::Label::new(Some("⌨️ Keyboard Shortcuts"));
+        shortcuts_title.add_css_class("heading");
+        shortcuts_title.set_margin_top(16);
+        container.append(&shortcuts_title);
+
+        // Use monospace font for aligned shortcuts
+        let shortcuts = gtk4::Label::new(Some(
+            "Ctrl+N             New connection\n\
+             Ctrl+Shift+N       New group\n\
+             Ctrl+Shift+T       Local shell\n\
+             Ctrl+Shift+Q       Quick connect\n\
+             Ctrl+F             Search\n\
+             Ctrl+Shift+S       Split vertical\n\
+             Ctrl+Shift+H       Split horizontal\n\
+             Ctrl+W             Close tab\n\
+             Ctrl+Tab           Next tab",
+        ));
+        shortcuts.set_justify(gtk4::Justification::Left);
+        shortcuts.add_css_class("dim-label");
+        shortcuts.add_css_class("monospace");
+        shortcuts.set_use_markup(false);
+        container.append(&shortcuts);
+
+        // Getting started hint
+        let hint = gtk4::Label::new(Some(
+            "👆 Double-click a connection in the sidebar to get started",
+        ));
+        hint.add_css_class("dim-label");
+        hint.set_margin_top(20);
+        container.append(&hint);
 
         container
+    }
+
+    /// Creates logo image or fallback text title
+    fn create_logo_or_title() -> gtk4::Widget {
+        // Try to load embedded SVG icon using GdkPixbuf
+        if let Some(pixbuf) = Self::load_embedded_logo(64) {
+            let texture = gtk4::gdk::Texture::for_pixbuf(&pixbuf);
+            let image = gtk4::Image::from_paintable(Some(&texture));
+            image.set_pixel_size(64);
+            image.set_margin_bottom(8);
+
+            let hbox = GtkBox::new(Orientation::Horizontal, 12);
+            hbox.set_halign(gtk4::Align::Center);
+            hbox.append(&image);
+
+            let title = gtk4::Label::new(Some("RustConn"));
+            title.add_css_class("title-1");
+            hbox.append(&title);
+
+            return hbox.upcast();
+        }
+
+        // Fallback to text-only title with icon
+        let hbox = GtkBox::new(Orientation::Horizontal, 8);
+        hbox.set_halign(gtk4::Align::Center);
+
+        let icon = gtk4::Image::from_icon_name("network-server-symbolic");
+        icon.set_pixel_size(48);
+        hbox.append(&icon);
+
+        let title = gtk4::Label::new(Some("RustConn"));
+        title.add_css_class("title-1");
+        hbox.append(&title);
+
+        hbox.upcast()
+    }
+
+    /// Load embedded SVG logo and render to `GdkPixbuf`
+    fn load_embedded_logo(size: u32) -> Option<gtk4::gdk_pixbuf::Pixbuf> {
+        // Embedded SVG icon data
+        const ICON_SVG: &[u8] =
+            include_bytes!("../assets/icons/hicolor/scalable/apps/org.rustconn.RustConn.svg");
+
+        // Parse SVG using resvg
+        let tree = resvg::usvg::Tree::from_data(ICON_SVG, &resvg::usvg::Options::default()).ok()?;
+
+        // Create pixmap
+        let mut pixmap = resvg::tiny_skia::Pixmap::new(size, size)?;
+
+        // Calculate transform to fit SVG into target size
+        let svg_size = tree.size();
+        let scale = (size as f32 / svg_size.width()).min(size as f32 / svg_size.height());
+        let transform = resvg::tiny_skia::Transform::from_scale(scale, scale);
+
+        // Render SVG to pixmap
+        resvg::render(&tree, transform, &mut pixmap.as_mut());
+
+        // Convert from premultiplied RGBA to straight RGBA for GdkPixbuf
+        let premultiplied = pixmap.data();
+        let mut rgba_data = Vec::with_capacity(premultiplied.len());
+        for chunk in premultiplied.chunks_exact(4) {
+            let a = chunk[3];
+            if a == 0 {
+                rgba_data.extend_from_slice(&[0, 0, 0, 0]);
+            } else {
+                // Un-premultiply: color = premultiplied_color * 255 / alpha
+                let r = (u16::from(chunk[0]) * 255 / u16::from(a)) as u8;
+                let g = (u16::from(chunk[1]) * 255 / u16::from(a)) as u8;
+                let b = (u16::from(chunk[2]) * 255 / u16::from(a)) as u8;
+                rgba_data.extend_from_slice(&[r, g, b, a]);
+            }
+        }
+
+        Some(gtk4::gdk_pixbuf::Pixbuf::from_bytes(
+            &gtk4::glib::Bytes::from(&rgba_data),
+            gtk4::gdk_pixbuf::Colorspace::Rgb,
+            true, // has_alpha
+            8,    // bits_per_sample
+            size as i32,
+            size as i32,
+            (size * 4) as i32, // rowstride
+        ))
     }
 
     /// Closes the focused pane
@@ -586,7 +808,7 @@ impl SplitTerminalView {
     ///
     /// Returns true if a pane was closed, false if there's only one pane
     /// or no focused pane.
-    #[must_use] 
+    #[must_use]
     pub fn close_pane(&self) -> bool {
         // Can't close if only one pane
         if self.panes.borrow().len() <= 1 {
@@ -627,6 +849,13 @@ impl SplitTerminalView {
             // Get the grandparent
             let grandparent = parent_paned.parent();
 
+            // Clear focus before removing children to avoid GTK warning
+            if let Some(root) = parent_paned.root() {
+                if let Some(window) = root.downcast_ref::<gtk4::Window>() {
+                    gtk4::prelude::GtkWindowExt::set_focus(window, None::<&gtk4::Widget>);
+                }
+            }
+
             // Remove both children from the paned
             parent_paned.set_start_child(None::<&gtk4::Widget>);
             parent_paned.set_end_child(None::<&gtk4::Widget>);
@@ -639,9 +868,7 @@ impl SplitTerminalView {
                         gp_box.append(&sib);
                     }
                 } else if let Some(gp_paned) = gp.downcast_ref::<Paned>() {
-                    let is_start_in_gp = gp_paned
-                        .start_child()
-                        .is_some_and(|c| c == *parent_paned);
+                    let is_start_in_gp = gp_paned.start_child().is_some_and(|c| c == *parent_paned);
 
                     if is_start_in_gp {
                         gp_paned.set_start_child(sibling.as_ref());
@@ -673,7 +900,7 @@ impl SplitTerminalView {
     /// Cycles through panes in order and updates the visual focus indicator.
     ///
     /// Returns the ID of the newly focused pane, or None if there are no panes.
-    #[must_use] 
+    #[must_use]
     pub fn focus_next_pane(&self) -> Option<Uuid> {
         let panes = self.panes.borrow();
         if panes.is_empty() {
@@ -713,7 +940,7 @@ impl SplitTerminalView {
     }
 
     /// Sets focus to a specific pane and updates visual indicator
-    #[must_use] 
+    #[must_use]
     pub fn focus_pane(&self, pane_id: Uuid) -> bool {
         let panes = self.panes.borrow();
         if panes.iter().any(|p| p.id() == pane_id) {
@@ -747,28 +974,28 @@ impl SplitTerminalView {
 
         // Find focused pane and update its content
         let mut panes = self.panes.borrow_mut();
-        
+
         // Get the session currently shown in focused pane (if any)
         let focused_current_session = panes
             .iter()
             .find(|p| p.id() == focused_id)
             .and_then(TerminalPane::current_session);
-        
+
         // If focused pane already shows this session, nothing to do
         if focused_current_session == Some(session_id) {
             return true;
         }
-        
+
         // Find which pane (if any) currently shows the session we want to display
         let source_pane_id = panes
             .iter()
             .find(|p| p.current_session() == Some(session_id))
             .map(TerminalPane::id);
-        
+
         // Strategy: swap sessions between panes if possible
         // If focused pane has a session and source pane exists, swap them
         // Otherwise, just move the session and show placeholder in source pane
-        
+
         if let Some(source_id) = source_pane_id {
             if source_id != focused_id {
                 // Session is in another pane - need to handle the swap
@@ -779,7 +1006,7 @@ impl SplitTerminalView {
                     let source_terminal = terminals_ref.get(&session_id).cloned();
                     let swap_terminal = terminals_ref.get(&swap_session).cloned();
                     drop(terminals_ref);
-                    
+
                     // Detach source terminal
                     if let Some(ref term) = source_terminal {
                         if let Some(parent) = term.parent() {
@@ -790,7 +1017,7 @@ impl SplitTerminalView {
                             }
                         }
                     }
-                    
+
                     // Detach swap terminal
                     if let Some(ref term) = swap_terminal {
                         if let Some(parent) = term.parent() {
@@ -801,17 +1028,11 @@ impl SplitTerminalView {
                             }
                         }
                     }
-                    
+
                     // Now place swap_terminal in source pane
                     if let Some(source_pane) = panes.iter_mut().find(|p| p.id() == source_id) {
                         if let Some(term) = swap_terminal {
-                            let scrolled = gtk4::ScrolledWindow::builder()
-                                .hscrollbar_policy(gtk4::PolicyType::Never)
-                                .vscrollbar_policy(gtk4::PolicyType::Automatic)
-                                .hexpand(true)
-                                .vexpand(true)
-                                .child(&term)
-                                .build();
+                            let scrolled = create_terminal_scrolled_window(&term);
                             source_pane.set_content(&scrolled);
                             term.set_visible(true);
                         } else {
@@ -820,23 +1041,18 @@ impl SplitTerminalView {
                             let info = sessions_ref.get(&swap_session);
                             let name = info.map_or("Unknown", |s| &s.name);
                             let protocol = info.map_or("unknown", |s| &s.protocol);
-                            let placeholder = Self::create_external_session_placeholder(name, protocol);
+                            let placeholder =
+                                Self::create_external_session_placeholder(name, protocol);
                             drop(sessions_ref);
                             source_pane.set_content(&placeholder);
                         }
                         source_pane.set_current_session(Some(swap_session));
                     }
-                    
+
                     // Place source_terminal in focused pane
                     if let Some(focused_pane) = panes.iter_mut().find(|p| p.id() == focused_id) {
                         if let Some(term) = source_terminal {
-                            let scrolled = gtk4::ScrolledWindow::builder()
-                                .hscrollbar_policy(gtk4::PolicyType::Never)
-                                .vscrollbar_policy(gtk4::PolicyType::Automatic)
-                                .hexpand(true)
-                                .vexpand(true)
-                                .child(&term)
-                                .build();
+                            let scrolled = create_terminal_scrolled_window(&term);
                             focused_pane.set_content(&scrolled);
                             term.set_visible(true);
                             term.grab_focus();
@@ -846,21 +1062,22 @@ impl SplitTerminalView {
                             let info = sessions_ref.get(&session_id);
                             let name = info.map_or("Unknown", |s| &s.name);
                             let protocol = info.map_or("unknown", |s| &s.protocol);
-                            let placeholder = Self::create_external_session_placeholder(name, protocol);
+                            let placeholder =
+                                Self::create_external_session_placeholder(name, protocol);
                             drop(sessions_ref);
                             focused_pane.set_content(&placeholder);
                         }
                         focused_pane.set_current_session(Some(session_id));
                     }
-                    
+
                     return true;
                 }
-                
+
                 // Focused pane is empty - just move session there, show placeholder in source
                 let terminals_ref = self.terminals.borrow();
                 let terminal = terminals_ref.get(&session_id).cloned();
                 drop(terminals_ref);
-                
+
                 // Detach terminal
                 if let Some(ref term) = terminal {
                     if let Some(parent) = term.parent() {
@@ -871,24 +1088,18 @@ impl SplitTerminalView {
                         }
                     }
                 }
-                
+
                 // Show placeholder in source pane
                 if let Some(source_pane) = panes.iter_mut().find(|p| p.id() == source_id) {
                     let placeholder = Self::create_placeholder();
                     source_pane.set_content(&placeholder);
                     source_pane.set_current_session(None);
                 }
-                
+
                 // Show terminal in focused pane
                 if let Some(focused_pane) = panes.iter_mut().find(|p| p.id() == focused_id) {
                     if let Some(term) = terminal {
-                        let scrolled = gtk4::ScrolledWindow::builder()
-                            .hscrollbar_policy(gtk4::PolicyType::Never)
-                            .vscrollbar_policy(gtk4::PolicyType::Automatic)
-                            .hexpand(true)
-                            .vexpand(true)
-                            .child(&term)
-                            .build();
+                        let scrolled = create_terminal_scrolled_window(&term);
                         focused_pane.set_content(&scrolled);
                         term.set_visible(true);
                         term.grab_focus();
@@ -904,11 +1115,11 @@ impl SplitTerminalView {
                     }
                     focused_pane.set_current_session(Some(session_id));
                 }
-                
+
                 return true;
             }
         }
-        
+
         // Session is not shown in any pane - just show it in focused pane
         let Some(pane) = panes.iter_mut().find(|p| p.id() == focused_id) else {
             return false;
@@ -932,16 +1143,9 @@ impl SplitTerminalView {
             }
 
             // Create a scrolled window for the terminal
-            let scrolled = gtk4::ScrolledWindow::builder()
-                .hscrollbar_policy(gtk4::PolicyType::Never)
-                .vscrollbar_policy(gtk4::PolicyType::Automatic)
-                .hexpand(true)
-                .vexpand(true)
-                .child(&terminal)
-                .build();
-
+            let scrolled = create_terminal_scrolled_window(&terminal);
             pane.set_content(&scrolled);
-            
+
             // Ensure terminal is visible and can receive input
             terminal.set_visible(true);
             terminal.grab_focus();
@@ -1071,13 +1275,7 @@ impl SplitTerminalView {
                         }
                     }
 
-                    let scrolled = gtk4::ScrolledWindow::builder()
-                        .hscrollbar_policy(gtk4::PolicyType::Never)
-                        .vscrollbar_policy(gtk4::PolicyType::Automatic)
-                        .hexpand(true)
-                        .vexpand(true)
-                        .child(terminal)
-                        .build();
+                    let scrolled = create_terminal_scrolled_window(terminal);
                     pane.set_content(&scrolled);
                     pane.set_current_session(Some(session_id));
                 } else if let Some(info) = session_info {
@@ -1166,13 +1364,7 @@ impl SplitTerminalView {
                         }
                     }
 
-                    let scrolled = gtk4::ScrolledWindow::builder()
-                        .hscrollbar_policy(gtk4::PolicyType::Never)
-                        .vscrollbar_policy(gtk4::PolicyType::Automatic)
-                        .hexpand(true)
-                        .vexpand(true)
-                        .child(&terminal)
-                        .build();
+                    let scrolled = create_terminal_scrolled_window(&terminal);
                     pane.set_content(&scrolled);
                     pane.set_current_session(Some(session_id));
                 } else {
@@ -1187,7 +1379,7 @@ impl SplitTerminalView {
     }
 
     /// Shows a session in a specific pane (for drag-and-drop)
-    #[must_use] 
+    #[must_use]
     pub fn show_session_in_pane(&self, pane_id: Uuid, session_id: Uuid) -> bool {
         // Verify session exists
         if !self.sessions.borrow().contains_key(&session_id) {
@@ -1214,13 +1406,7 @@ impl SplitTerminalView {
                 }
             }
 
-            let scrolled = gtk4::ScrolledWindow::builder()
-                .hscrollbar_policy(gtk4::PolicyType::Never)
-                .vscrollbar_policy(gtk4::PolicyType::Automatic)
-                .hexpand(true)
-                .vexpand(true)
-                .child(&terminal)
-                .build();
+            let scrolled = create_terminal_scrolled_window(&terminal);
             pane.set_content(&scrolled);
         } else {
             drop(terminals_ref);

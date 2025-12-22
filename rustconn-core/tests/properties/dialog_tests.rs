@@ -11,7 +11,9 @@ use rustconn_core::dialog_utils::{
     format_args, format_custom_options, parse_args, parse_custom_options, validate_host,
     validate_name, validate_port,
 };
-use rustconn_core::{ConfigManager, Connection, ProtocolConfig, SshAuthMethod, SshConfig};
+use rustconn_core::{
+    ConfigManager, Connection, ProtocolConfig, SshAuthMethod, SshConfig, SshKeySource,
+};
 use std::collections::HashMap;
 
 // ========== Generators ==========
@@ -274,6 +276,9 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
     Just(SshConfig {
         auth_method: SshAuthMethod::Password,
         key_path: None,
+        key_source: SshKeySource::Default,
+        agent_key_fingerprint: None,
+        identities_only: false,
         proxy_jump: None,
         use_control_master: false,
         custom_options: HashMap::new(),

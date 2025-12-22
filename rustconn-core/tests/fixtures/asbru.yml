@@ -1,0 +1,71 @@
+# Asbru-CM Test Fixture
+# Contains sample connections for import/export testing
+
+# Production group
+group-prod-001:
+  _is_group: 1
+  name: "Production"
+  children: {}
+
+# Development group
+group-dev-001:
+  _is_group: 1
+  name: "Development"
+  children: {}
+
+# SSH connection with key file (in Production group)
+conn-ssh-001:
+  _is_group: 0
+  name: "Web Server 1"
+  ip: "192.168.1.10"
+  port: 22
+  user: "deploy"
+  method: "SSH"
+  auth_type: "publickey"
+  public_key: "~/.ssh/id_ed25519"
+  parent: "group-prod-001"
+  description: "Primary web server"
+
+# SSH connection with custom port (in Production group)
+conn-ssh-002:
+  _is_group: 0
+  name: "Database Server"
+  ip: "10.0.0.50"
+  port: 2222
+  user: "postgres"
+  method: "SSH"
+  auth_type: "password"
+  parent: "group-prod-001"
+  description: "PostgreSQL primary"
+
+# RDP connection with domain (in Development group)
+conn-rdp-001:
+  _is_group: 0
+  name: "Windows Dev Box"
+  ip: "192.168.1.100"
+  port: 3389
+  user: "Administrator"
+  method: "RDP"
+  parent: "group-dev-001"
+  description: "Windows development server"
+
+# VNC connection with custom port (in Development group)
+conn-vnc-001:
+  _is_group: 0
+  name: "VNC Desktop"
+  ip: "192.168.1.75"
+  port: 5901
+  method: "VNC"
+  parent: "group-dev-001"
+  description: "Remote desktop via VNC"
+
+# SSH connection without group
+conn-ssh-003:
+  _is_group: 0
+  name: "Standalone Server"
+  ip: "10.10.10.10"
+  port: 22
+  user: "admin"
+  method: "SSH"
+  auth_type: "agent"
+  description: "Standalone SSH server"

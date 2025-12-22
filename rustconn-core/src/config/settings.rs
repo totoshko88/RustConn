@@ -2,6 +2,7 @@
 //!
 //! This module defines the application-wide settings stored in config.toml.
 
+use crate::variables::Variable;
 use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -21,6 +22,9 @@ pub struct AppSettings {
     /// UI settings
     #[serde(default)]
     pub ui: UiSettings,
+    /// Global variables
+    #[serde(default)]
+    pub global_variables: Vec<Variable>,
 }
 
 /// Terminal-related settings
@@ -106,9 +110,19 @@ pub struct SecretSettings {
     /// Whether `KeePass` integration is enabled
     #[serde(default)]
     pub kdbx_enabled: bool,
-    /// `KeePass` database password (NOT serialized for security)
+    /// `KeePass` database password (NOT serialized for security - runtime only)
     #[serde(skip)]
     pub kdbx_password: Option<SecretString>,
+    /// Encrypted `KeePass` password for persistence (base64 encoded)
+    /// Uses machine-specific key derivation for security
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kdbx_password_encrypted: Option<String>,
+    /// Path to `KeePass` key file (.keyx or .key) - alternative to password
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kdbx_key_file: Option<PathBuf>,
+    /// Whether to use key file instead of password
+    #[serde(default)]
+    pub kdbx_use_key_file: bool,
 }
 
 const fn default_true() -> bool {
@@ -123,6 +137,9 @@ impl Default for SecretSettings {
             kdbx_path: None,
             kdbx_enabled: false,
             kdbx_password: None,
+            kdbx_password_encrypted: None,
+            kdbx_key_file: None,
+            kdbx_use_key_file: false,
         }
     }
 }
@@ -133,6 +150,8 @@ impl PartialEq for SecretSettings {
             && self.enable_fallback == other.enable_fallback
             && self.kdbx_path == other.kdbx_path
             && self.kdbx_enabled == other.kdbx_enabled
+            && self.kdbx_key_file == other.kdbx_key_file
+            && self.kdbx_use_key_file == other.kdbx_use_key_file
         // Note: kdbx_password is intentionally excluded from equality comparison
         // as it's a runtime-only field that shouldn't affect settings equality
     }
@@ -168,6 +187,15 @@ pub struct UiSettings {
     /// Sidebar width
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sidebar_width: Option<i32>,
+    /// Enable tray icon
+    #[serde(default = "default_true")]
+    pub enable_tray_icon: bool,
+    /// Minimize to tray instead of quitting when closing window
+    #[serde(default)]
+    pub minimize_to_tray: bool,
+    /// IDs of groups that are collapsed in the sidebar
+    #[serde(default, skip_serializing_if = "std::collections::HashSet::is_empty")]
+    pub collapsed_groups: std::collections::HashSet<uuid::Uuid>,
 }
 
 impl Default for UiSettings {
@@ -177,6 +205,90 @@ impl Default for UiSettings {
             window_width: None,
             window_height: None,
             sidebar_width: None,
+            enable_tray_icon: true,
+            minimize_to_tray: false,
+            collapsed_groups: std::collections::HashSet::new(),
         }
     }
+}
+
+/// Password encryption utilities for KDBX password persistence
+impl SecretSettings {
+    /// Encrypts the KDBX password for storage
+    /// Uses a simple XOR cipher with machine-specific key
+    pub fn encrypt_password(&mut self) {
+        if let Some(ref password) = self.kdbx_password {
+            use secrecy::ExposeSecret;
+            let key = Self::get_machine_key();
+            let encrypted = Self::xor_cipher(password.expose_secret().as_bytes(), &key);
+            self.kdbx_password_encrypted = Some(base64_encode(&encrypted));
+        }
+    }
+
+    /// Decrypts the stored KDBX password
+    /// Returns true if decryption was successful
+    pub fn decrypt_password(&mut self) -> bool {
+        if let Some(ref encrypted) = self.kdbx_password_encrypted {
+            if let Some(decoded) = base64_decode(encrypted) {
+                let key = Self::get_machine_key();
+                let decrypted = Self::xor_cipher(&decoded, &key);
+                if let Ok(password_str) = String::from_utf8(decrypted) {
+                    self.kdbx_password = Some(SecretString::from(password_str));
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    /// Clears both encrypted and runtime password
+    pub fn clear_password(&mut self) {
+        self.kdbx_password = None;
+        self.kdbx_password_encrypted = None;
+    }
+
+    /// Gets a machine-specific key for encryption
+    /// Uses machine-id or falls back to a default
+    fn get_machine_key() -> Vec<u8> {
+        // Try to read machine-id (Linux)
+        if let Ok(machine_id) = std::fs::read_to_string("/etc/machine-id") {
+            return machine_id.trim().as_bytes().to_vec();
+        }
+        // Fallback to hostname + username
+        let hostname = hostname::get().map_or_else(
+            |_| "rustconn".to_string(),
+            |h| h.to_string_lossy().to_string(),
+        );
+        let username = std::env::var("USER").unwrap_or_else(|_| "user".to_string());
+        format!("{hostname}-{username}-rustconn-key").into_bytes()
+    }
+
+    /// Simple XOR cipher for obfuscation
+    fn xor_cipher(data: &[u8], key: &[u8]) -> Vec<u8> {
+        data.iter()
+            .enumerate()
+            .map(|(i, &byte)| byte ^ key[i % key.len()])
+            .collect()
+    }
+}
+
+/// Base64 encode helper
+fn base64_encode(data: &[u8]) -> String {
+    use std::fmt::Write;
+    let mut result = String::new();
+    for byte in data {
+        write!(result, "{byte:02x}").ok();
+    }
+    result
+}
+
+/// Base64 decode helper (hex decode)
+fn base64_decode(data: &str) -> Option<Vec<u8>> {
+    let mut result = Vec::new();
+    let mut chars = data.chars();
+    while let (Some(a), Some(b)) = (chars.next(), chars.next()) {
+        let byte = u8::from_str_radix(&format!("{a}{b}"), 16).ok()?;
+        result.push(byte);
+    }
+    Some(result)
 }

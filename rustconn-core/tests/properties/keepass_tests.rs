@@ -48,9 +48,8 @@ fn arb_non_kdbx_filename() -> impl Strategy<Value = String> {
 /// Strategy for generating valid `KeePassXC` version output strings
 fn arb_valid_version_output() -> impl Strategy<Value = String> {
     // Generate version numbers like "2.7.6", "2.7", "3.0.0"
-    (1u8..10u8, 0u8..20u8, 0u8..20u8).prop_map(|(major, minor, patch)| {
-        format!("{major}.{minor}.{patch}")
-    })
+    (1u8..10u8, 0u8..20u8, 0u8..20u8)
+        .prop_map(|(major, minor, patch)| format!("{major}.{minor}.{patch}"))
 }
 
 /// Strategy for generating version output with prefix
@@ -386,6 +385,17 @@ fn create_test_connection(name: &str, host: &str) -> Connection {
         last_connected: None,
         password_source: PasswordSource::None,
         domain: None,
+        custom_properties: Vec::new(),
+        pre_connect_task: None,
+        post_disconnect_task: None,
+        wol_config: None,
+        local_variables: std::collections::HashMap::new(),
+        log_config: None,
+        key_sequence: None,
+        expect_rules: Vec::new(),
+        window_mode: rustconn_core::models::WindowMode::default(),
+        remember_window_position: false,
+        window_geometry: None,
     }
 }
 
@@ -625,11 +635,8 @@ mod resolution_chain_tests {
     fn resolution_returns_none_when_no_source_and_no_fallback() {
         let rt = tokio::runtime::Runtime::new().unwrap();
 
-        let connection = create_test_connection_with_source(
-            "Test Server",
-            "192.168.1.1",
-            PasswordSource::None,
-        );
+        let connection =
+            create_test_connection_with_source("Test Server", "192.168.1.1", PasswordSource::None);
 
         let secret_manager = Arc::new(SecretManager::empty());
         let mut settings = SecretSettings::default();
@@ -688,5 +695,333 @@ mod resolution_chain_tests {
             resolver.is_keepass_active(),
             "KeePass should be active when enabled with path"
         );
+    }
+}
+
+// ========== KeePass Hierarchy Tests ==========
+
+/// **Feature: rustconn-fixes-v2, Property 1: KeePass Entry Path Matches Connection Hierarchy**
+/// **Validates: Requirements 3.2, 3.3**
+///
+/// For any connection with a group assignment, the KeePass entry path should contain
+/// all ancestor group names in order from root to leaf.
+#[cfg(test)]
+mod hierarchy_tests {
+    use chrono::Utc;
+    use proptest::prelude::*;
+    use rustconn_core::models::{
+        ConnectionGroup, PasswordSource, ProtocolConfig, ProtocolType, SshConfig,
+    };
+    use rustconn_core::{Connection, KeePassHierarchy, KEEPASS_ROOT_GROUP};
+    use std::collections::HashSet;
+    use uuid::Uuid;
+
+    /// Strategy for generating valid group names (non-empty, alphanumeric with spaces/underscores)
+    fn arb_group_name() -> impl Strategy<Value = String> {
+        "[a-zA-Z][a-zA-Z0-9 _-]{0,20}".prop_map(|s| s)
+    }
+
+    /// Strategy for generating valid connection names
+    fn arb_connection_name() -> impl Strategy<Value = String> {
+        "[a-zA-Z][a-zA-Z0-9 _-]{0,25}".prop_map(|s| s)
+    }
+
+    /// Strategy for generating valid hostnames
+    fn arb_hostname() -> impl Strategy<Value = String> {
+        prop_oneof![
+            "[a-z][a-z0-9-]{0,15}".prop_map(|s| s),
+            "[a-z][a-z0-9-]{0,8}\\.[a-z]{2,4}".prop_map(|s| s),
+        ]
+    }
+
+    /// Creates a test connection with the given name and host
+    fn create_test_connection(name: &str, host: &str, group_id: Option<Uuid>) -> Connection {
+        Connection {
+            id: Uuid::new_v4(),
+            name: name.to_string(),
+            host: host.to_string(),
+            port: 22,
+            protocol: ProtocolType::Ssh,
+            username: None,
+            group_id,
+            tags: Vec::new(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            protocol_config: ProtocolConfig::Ssh(SshConfig::default()),
+            sort_order: 0,
+            last_connected: None,
+            password_source: PasswordSource::None,
+            domain: None,
+            custom_properties: Vec::new(),
+            pre_connect_task: None,
+            post_disconnect_task: None,
+            wol_config: None,
+            local_variables: std::collections::HashMap::new(),
+            log_config: None,
+            key_sequence: None,
+            expect_rules: Vec::new(),
+            window_mode: rustconn_core::models::WindowMode::default(),
+            remember_window_position: false,
+            window_geometry: None,
+        }
+    }
+
+    /// Creates a nested group hierarchy from a list of names
+    fn create_nested_groups(names: &[String]) -> Vec<ConnectionGroup> {
+        let mut groups = Vec::new();
+        let mut parent_id: Option<Uuid> = None;
+
+        for name in names {
+            let group = if let Some(pid) = parent_id {
+                ConnectionGroup::with_parent(name.clone(), pid)
+            } else {
+                ConnectionGroup::new(name.clone())
+            };
+            parent_id = Some(group.id);
+            groups.push(group);
+        }
+
+        groups
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(100))]
+
+        /// **Feature: rustconn-fixes-v2, Property 1: KeePass Entry Path Matches Connection Hierarchy**
+        /// **Validates: Requirements 3.2, 3.3**
+        ///
+        /// For any connection with a group assignment, the KeePass entry path should contain
+        /// all ancestor group names in order from root to leaf.
+        #[test]
+        fn prop_keepass_path_matches_hierarchy(
+            group_names in prop::collection::vec(arb_group_name(), 1..5),
+            connection_name in arb_connection_name(),
+            host in arb_hostname(),
+        ) {
+            let groups = create_nested_groups(&group_names);
+            let leaf_group_id = groups.last().map(|g| g.id);
+            let connection = create_test_connection(&connection_name, &host, leaf_group_id);
+
+            let path = KeePassHierarchy::build_entry_path(&connection, &groups);
+
+            // Path should start with "RustConn"
+            prop_assert!(
+                path.starts_with(KEEPASS_ROOT_GROUP),
+                "Path should start with '{}': {:?}",
+                KEEPASS_ROOT_GROUP,
+                path
+            );
+
+            // Split path into segments and verify structure
+            let segments: Vec<&str> = path.split('/').collect();
+
+            // First segment should be RustConn
+            prop_assert_eq!(
+                segments.first().copied(),
+                Some(KEEPASS_ROOT_GROUP),
+                "First segment should be RustConn"
+            );
+
+            // Middle segments should be the group names in order
+            for (i, name) in group_names.iter().enumerate() {
+                let segment_index = i + 1; // +1 to skip RustConn
+                prop_assert!(
+                    segment_index < segments.len(),
+                    "Path should have segment for group '{}' at index {}",
+                    name,
+                    segment_index
+                );
+                prop_assert_eq!(
+                    segments[segment_index],
+                    name.as_str(),
+                    "Segment {} should be group name '{}', got '{}'",
+                    segment_index,
+                    name,
+                    segments[segment_index]
+                );
+            }
+
+            // Last segment should be connection name
+            prop_assert_eq!(
+                segments.last().copied(),
+                Some(connection_name.as_str()),
+                "Last segment should be connection name"
+            );
+        }
+
+        /// **Feature: rustconn-fixes-v2, Property 1: KeePass Entry Path Matches Connection Hierarchy**
+        /// **Validates: Requirements 3.2**
+        ///
+        /// For any connection without a group, the path should be RustConn/connection_name
+        #[test]
+        fn prop_keepass_path_no_group(
+            connection_name in arb_connection_name(),
+            host in arb_hostname(),
+        ) {
+            let connection = create_test_connection(&connection_name, &host, None);
+            let path = KeePassHierarchy::build_entry_path(&connection, &[]);
+
+            let expected = format!("{}/{}", KEEPASS_ROOT_GROUP, connection_name);
+            prop_assert_eq!(
+                path,
+                expected,
+                "Path for connection without group should be RustConn/name"
+            );
+        }
+
+        /// **Feature: rustconn-fixes-v2, Property 2: KeePass Entry Creation Creates All Parent Groups**
+        /// **Validates: Requirements 3.4**
+        ///
+        /// For any KeePass entry path with multiple levels, the ensure_groups_exist function
+        /// should identify all parent groups that need to be created.
+        #[test]
+        fn prop_keepass_creates_all_parent_groups(
+            group_names in prop::collection::vec(arb_group_name(), 1..5),
+            connection_name in arb_connection_name(),
+            host in arb_hostname(),
+        ) {
+            let groups = create_nested_groups(&group_names);
+            let leaf_group_id = groups.last().map(|g| g.id);
+            let connection = create_test_connection(&connection_name, &host, leaf_group_id);
+
+            let path = KeePassHierarchy::build_entry_path(&connection, &groups);
+
+            // With no existing groups, all parent groups should be created
+            let existing: HashSet<String> = HashSet::new();
+            let result = KeePassHierarchy::ensure_groups_exist(&path, &existing);
+
+            // Number of groups to create should equal number of path segments minus the entry name
+            let expected_group_count = group_names.len() + 1; // +1 for RustConn root
+            prop_assert_eq!(
+                result.created_groups.len(),
+                expected_group_count,
+                "Should create {} groups (RustConn + {} group levels), got {:?}",
+                expected_group_count,
+                group_names.len(),
+                result.created_groups
+            );
+
+            // First created group should be RustConn
+            prop_assert_eq!(
+                result.created_groups.first().map(|s| s.as_str()),
+                Some(KEEPASS_ROOT_GROUP),
+                "First created group should be RustConn"
+            );
+
+            // Groups should be created in order (parent before child)
+            for i in 1..result.created_groups.len() {
+                let parent = &result.created_groups[i - 1];
+                let child = &result.created_groups[i];
+                prop_assert!(
+                    child.starts_with(parent),
+                    "Child group '{}' should start with parent '{}' (groups created in order)",
+                    child,
+                    parent
+                );
+            }
+        }
+
+        /// **Feature: rustconn-fixes-v2, Property 2: KeePass Entry Creation Creates All Parent Groups**
+        /// **Validates: Requirements 3.4**
+        ///
+        /// When some groups already exist, only missing groups should be created.
+        #[test]
+        fn prop_keepass_creates_only_missing_groups(
+            group_names in prop::collection::vec(arb_group_name(), 2..5),
+            connection_name in arb_connection_name(),
+            host in arb_hostname(),
+            existing_count in 1usize..3usize,
+        ) {
+            let groups = create_nested_groups(&group_names);
+            let leaf_group_id = groups.last().map(|g| g.id);
+            let connection = create_test_connection(&connection_name, &host, leaf_group_id);
+
+            let path = KeePassHierarchy::build_entry_path(&connection, &groups);
+            let all_group_paths = KeePassHierarchy::extract_group_paths(&path);
+
+            // Mark some groups as existing
+            let existing_count = existing_count.min(all_group_paths.len());
+            let existing: HashSet<String> = all_group_paths[..existing_count]
+                .iter()
+                .cloned()
+                .collect();
+
+            let result = KeePassHierarchy::ensure_groups_exist(&path, &existing);
+
+            // Existing groups should be identified
+            prop_assert_eq!(
+                result.existing_groups.len(),
+                existing_count,
+                "Should identify {} existing groups",
+                existing_count
+            );
+
+            // Created groups should be the remaining ones
+            let expected_created = all_group_paths.len() - existing_count;
+            prop_assert_eq!(
+                result.created_groups.len(),
+                expected_created,
+                "Should create {} groups",
+                expected_created
+            );
+
+            // No overlap between existing and created
+            for created in &result.created_groups {
+                prop_assert!(
+                    !existing.contains(created),
+                    "Created group '{}' should not be in existing set",
+                    created
+                );
+            }
+        }
+
+        /// **Feature: rustconn-fixes-v2, Property 1: KeePass Entry Path Matches Connection Hierarchy**
+        /// **Validates: Requirements 3.3**
+        ///
+        /// When a connection's group changes, the new path should reflect the new hierarchy.
+        #[test]
+        fn prop_keepass_path_changes_with_group(
+            group_names_a in prop::collection::vec(arb_group_name(), 1..3),
+            group_names_b in prop::collection::vec(arb_group_name(), 1..3),
+            connection_name in arb_connection_name(),
+            host in arb_hostname(),
+        ) {
+            let groups_a = create_nested_groups(&group_names_a);
+            let groups_b = create_nested_groups(&group_names_b);
+
+            // Combine all groups
+            let mut all_groups = groups_a.clone();
+            all_groups.extend(groups_b.clone());
+
+            let leaf_a = groups_a.last().map(|g| g.id);
+            let leaf_b = groups_b.last().map(|g| g.id);
+
+            // Create connection in group A
+            let connection_a = create_test_connection(&connection_name, &host, leaf_a);
+            let path_a = KeePassHierarchy::build_entry_path(&connection_a, &all_groups);
+
+            // Move connection to group B
+            let connection_b = create_test_connection(&connection_name, &host, leaf_b);
+            let path_b = KeePassHierarchy::build_entry_path(&connection_b, &all_groups);
+
+            // Both paths should end with the same connection name
+            prop_assert!(
+                path_a.ends_with(&connection_name),
+                "Path A should end with connection name"
+            );
+            prop_assert!(
+                path_b.ends_with(&connection_name),
+                "Path B should end with connection name"
+            );
+
+            // Paths should be different (unless groups happen to have same names)
+            if group_names_a != group_names_b {
+                prop_assert_ne!(
+                    path_a,
+                    path_b,
+                    "Path should change when group changes"
+                );
+            }
+        }
     }
 }

@@ -1,8 +1,0 @@
-# Seeds for failure cases proptest has generated in the past. It is
-# automatically read and these particular cases re-run before any
-# novel cases are generated.
-#
-# It is recommended to check this file in to source control so that
-# everyone who runs the test benefits from these saved cases.
-cc 334fdb350ace963934a5223d3133ef66e166cca1ceb4e56a8e24b38d696b8371 # shrinks to name = "A", empty_host = " ", port = 1, protocol_config = Ssh(SshConfig { auth_method: Password, key_path: None, proxy_jump: None, use_control_master: false, custom_options: {}, startup_command: None })
-cc ba5036253dd6ccb5ea0094dc2b85dd6fc50dd27aa07696440e9c57b9c7a372ff # shrinks to empty_name = " ", host = "0", port = 1, protocol_config = Ssh(SshConfig { auth_method: Password, key_path: None, proxy_jump: None, use_control_master: false, custom_options: {}, startup_command: None })

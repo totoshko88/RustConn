@@ -165,6 +165,14 @@ impl ConnectionSidebar {
         let popover = gtk4::PopoverMenu::from_model(Some(&menu));
         popover.set_parent(widget);
         popover.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
+        popover.set_autohide(true);
+
+        // Connect to closed signal to unparent the popover before destruction
+        // This prevents GTK warning: "Broken accounting of active state"
+        popover.connect_closed(|p| {
+            p.unparent();
+        });
+
         popover.popup();
     }
 

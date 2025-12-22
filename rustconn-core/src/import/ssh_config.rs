@@ -6,8 +6,11 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use tracing::{debug, info_span};
+
 use crate::error::ImportError;
-use crate::models::{Connection, ProtocolConfig, SshAuthMethod, SshConfig};
+use crate::models::{Connection, ProtocolConfig, SshAuthMethod, SshConfig, SshKeySource};
+use crate::tracing::span_names;
 
 use super::traits::{ImportResult, ImportSource, SkippedEntry};
 
@@ -38,7 +41,7 @@ impl SshConfigImporter {
     }
 
     /// Parses SSH config content and returns an import result
-    #[must_use] 
+    #[must_use]
     pub fn parse_config(&self, content: &str, source_path: &str) -> ImportResult {
         let mut result = ImportResult::new();
         let mut current_host: Option<String> = None;
@@ -135,9 +138,7 @@ impl SshConfigImporter {
         }
 
         // Get the actual hostname (HostName option or use the Host pattern)
-        let hostname = options
-            .get("hostname")
-            .map_or(host_pattern, String::as_str);
+        let hostname = options.get("hostname").map_or(host_pattern, String::as_str);
 
         // Skip if hostname is empty or a pattern
         if hostname.is_empty() || hostname.contains('*') {
@@ -156,18 +157,26 @@ impl SshConfigImporter {
             .unwrap_or(22);
 
         // Determine auth method and key path
-        let (auth_method, key_path) = options.get("identityfile").map_or(
-            (SshAuthMethod::Password, None),
-            |identity_file| {
-                let path = PathBuf::from(shellexpand::tilde(identity_file).into_owned());
-                (SshAuthMethod::PublicKey, Some(path))
-            },
-        );
+        let (auth_method, key_path) =
+            options
+                .get("identityfile")
+                .map_or((SshAuthMethod::Password, None), |identity_file| {
+                    let path = PathBuf::from(shellexpand::tilde(identity_file).into_owned());
+                    (SshAuthMethod::PublicKey, Some(path))
+                });
+
+        // Check for IdentitiesOnly option
+        let identities_only = options
+            .get("identitiesonly")
+            .is_some_and(|v| v.to_lowercase() == "yes");
 
         // Build SSH config
         let ssh_config = SshConfig {
             auth_method,
             key_path,
+            key_source: SshKeySource::Default,
+            agent_key_fingerprint: None,
+            identities_only,
             proxy_jump: options.get("proxyjump").cloned(),
             use_control_master: options
                 .get("controlmaster")
@@ -272,11 +281,15 @@ impl ImportSource for SshConfigImporter {
     }
 
     fn import(&self) -> Result<ImportResult, ImportError> {
+        let _span = info_span!(span_names::IMPORT_EXECUTE, format = "ssh_config").entered();
+
         let paths = self.default_paths();
 
         if paths.is_empty() {
             return Err(ImportError::FileNotFound(PathBuf::from("~/.ssh/config")));
         }
+
+        debug!(path_count = paths.len(), "Importing from SSH config files");
 
         let mut combined_result = ImportResult::new();
 
@@ -287,10 +300,23 @@ impl ImportSource for SshConfigImporter {
             }
         }
 
+        debug!(
+            imported = combined_result.connections.len(),
+            skipped = combined_result.skipped.len(),
+            "SSH config import completed"
+        );
+
         Ok(combined_result)
     }
 
     fn import_from_path(&self, path: &Path) -> Result<ImportResult, ImportError> {
+        let _span = info_span!(
+            span_names::IMPORT_EXECUTE,
+            format = "ssh_config",
+            path = %path.display()
+        )
+        .entered();
+
         if !path.exists() {
             return Err(ImportError::FileNotFound(path.to_path_buf()));
         }
@@ -306,12 +332,12 @@ mod tests {
     #[test]
     fn test_parse_simple_host() {
         let importer = SshConfigImporter::new();
-        let config = r#"
+        let config = r"
 Host myserver
     HostName 192.168.1.100
     User admin
     Port 2222
-"#;
+";
 
         let result = importer.parse_config(config, "test");
         assert_eq!(result.connections.len(), 1);
@@ -326,12 +352,12 @@ Host myserver
     #[test]
     fn test_parse_with_identity_file() {
         let importer = SshConfigImporter::new();
-        let config = r#"
+        let config = r"
 Host secure-server
     HostName secure.example.com
     User deploy
     IdentityFile ~/.ssh/id_ed25519
-"#;
+";
 
         let result = importer.parse_config(config, "test");
         assert_eq!(result.connections.len(), 1);
@@ -348,13 +374,13 @@ Host secure-server
     #[test]
     fn test_skip_wildcard_hosts() {
         let importer = SshConfigImporter::new();
-        let config = r#"
+        let config = r"
 Host *
     ServerAliveInterval 60
 
 Host *.example.com
     User admin
-"#;
+";
 
         let result = importer.parse_config(config, "test");
         assert_eq!(result.connections.len(), 0);
@@ -364,11 +390,11 @@ Host *.example.com
     #[test]
     fn test_parse_proxy_jump() {
         let importer = SshConfigImporter::new();
-        let config = r#"
+        let config = r"
 Host internal
     HostName 10.0.0.5
     ProxyJump bastion.example.com
-"#;
+";
 
         let result = importer.parse_config(config, "test");
         assert_eq!(result.connections.len(), 1);
@@ -387,7 +413,7 @@ Host internal
     #[test]
     fn test_parse_multiple_hosts() {
         let importer = SshConfigImporter::new();
-        let config = r#"
+        let config = r"
 Host server1
     HostName 192.168.1.1
     User user1
@@ -396,7 +422,7 @@ Host server2
     HostName 192.168.1.2
     User user2
     Port 22022
-"#;
+";
 
         let result = importer.parse_config(config, "test");
         assert_eq!(result.connections.len(), 2);

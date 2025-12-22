@@ -1,312 +1,269 @@
 # Implementation Plan
 
-## Phase 1: Code Cleanup and Preparation
+- [x] 1. Set up IronRDP client infrastructure
+  - [x] 1.1 Add IronRDP dependency with feature flag to Cargo.toml
+    - Add `ironrdp` crate with conditional compilation via `rdp-embedded` feature
+    - Handle potential dependency conflicts with version pinning
+    - _Requirements: 10.2_
+  - [x] 1.2 Create RdpClient struct following VNC client pattern
+    - Implement `RdpClient` with command/event channels
+    - Add `RdpClientConfig`, `RdpClientCommand`, `RdpClientEvent` types
+    - Follow same architecture as `rustconn-core/src/vnc_client/client.rs`
+    - _Requirements: 10.1, 1.1_
+  - [x] 1.3 Write property test for RDP config round-trip serialization
+    - **Property 21: RDP Config Round-Trip Serialization**
+    - **Validates: Requirements 10.4**
+  - [x] 1.4 Implement RDP event conversion to unified format
+    - Convert IronRDP framebuffer events to `RdpClientEvent::FrameUpdate`
+    - Ensure consistent format with VNC events
+    - _Requirements: 10.3_
+  - [x] 1.5 Write property test for framebuffer event conversion
+    - **Property 1: RDP Framebuffer Event Conversion**
+    - **Validates: Requirements 1.1, 10.3**
 
-- [x] 1. Fix clippy warnings in rustconn crate
-  - [x] 1.1 Fix `too_many_lines` warnings by refactoring large functions
-    - Refactor `ConnectionDialog::new()` (235 lines) into smaller methods
-    - Refactor `create_basic_tab()`, `create_rdp_options()` into components
-    - Refactor `SettingsDialog::create_secrets_tab()` (157 lines)
-    - Refactor `MainWindow::setup_actions()` (334 lines)
-    - Refactor `MainWindow::connect_signals()`, `start_connection()`, `delete_selected_connections()`
-    - Refactor `show_quick_connect_dialog()`, `show_snippets_manager()`, `show_sessions_manager()`
-    - _Requirements: 7.2_
+- [x] 2. Implement IronRDP connection and rendering
+  - [x] 2.1 Implement connect/disconnect lifecycle
+    - Spawn IronRDP in background thread with Tokio runtime
+    - Handle connection establishment and authentication
+    - Implement proper resource cleanup on disconnect
+    - _Requirements: 1.1, 1.6_
+  - [x] 2.2 Write property test for resource cleanup
+    - **Property 4: Resource Cleanup on Disconnect**
+    - **Validates: Requirements 1.6**
+  - [x] 2.3 Implement framebuffer rendering in DrawingArea
+    - Receive framebuffer updates via event channel
+    - Blit pixel data to Cairo surface
+    - Queue DrawingArea redraw on updates
+    - _Requirements: 1.1_
+  - [x] 2.4 Implement fallback to FreeRDP external mode
+    - Detect IronRDP availability at runtime
+    - Fall back gracefully with user notification
+    - _Requirements: 1.5_
 
-  - [x] 1.2 Fix numeric cast warnings with safe conversions
-    - Replace `as u16`, `as u32`, `as i32` with `TryFrom` or checked casts
-    - Add proper error handling for conversion failures
-    - Files: `import.rs` (cast_precision_loss), `progress.rs` (cast_precision_loss), `settings.rs` (cast_possible_truncation, cast_sign_loss)
-    - _Requirements: 7.3_
-
-  - [x] 1.3 Fix `match_same_arms` warnings
-    - Consolidate identical match arms in `rustconn-core/src/models/connection.rs` (VNC/SPICE default ports)
-    - _Requirements: 7.4_
-
-  - [x] 1.4 Fix documentation and style warnings
-    - Fix `assigning_clones` warning in `import.rs` (use `clone_from()`)
-    - Fix `needless_pass_by_value` warnings in `window.rs` (use references for `PathBuf`, `SharedAppState`)
-    - Fix `map_or` suggestion in `window.rs` for session logger
-    - Allow `struct_excessive_bools` for `SpiceConfig` (4 bools is acceptable for config struct)
-    - _Requirements: 7.5_
-
-- [x] 2. Checkpoint - Ensure all clippy warnings are resolved
-  - Ensure all tests pass, ask the user if questions arise.
-
-## Phase 2: Remove Legacy X11/External Process Code
-
-- [x] 3. Remove X11 and external process code
-  - [x] 3.1 Delete `rustconn/src/embedded.rs` file
-    - Remove entire file containing `DisplayServer`, `EmbeddingError`, `SessionControls`, `EmbeddedSessionTab`, `RdpLauncher`, `VncLauncher`
-    - _Requirements: 1.1, 1.3, 1.4_
-
-  - [x] 3.2 Clean up `rustconn/src/terminal.rs`
-    - Remove `create_external_tab()` method
-    - Remove `create_embedded_tab()` method
-    - Remove `create_embedded_tab_with_widget()` method
-    - Remove import of `crate::embedded::EmbeddedSessionTab`
-    - Keep SSH terminal functionality intact
+- [x] 3. Implement input forwarding for RDP
+  - [x] 3.1 Implement mouse coordinate transformation
+    - Transform GTK widget coordinates to RDP server coordinates
+    - Handle scaling and offset for aspect ratio preservation
     - _Requirements: 1.2_
+  - [x] 3.2 Write property test for coordinate transformation
+    - **Property 2: Mouse Coordinate Transformation**
+    - **Validates: Requirements 1.2**
+  - [x] 3.3 Implement keyboard event forwarding
+    - Convert GTK keyval to RDP scancode
+    - Forward key press/release events
+    - _Requirements: 1.3_
+  - [x] 3.4 Write property test for key event forwarding
+    - **Property 3: Key Event Forwarding**
+    - **Validates: Requirements 1.3**
+  - [x] 3.5 Implement Ctrl+Alt+Del button
+    - Add toolbar button for Ctrl+Alt+Del
+    - Send key sequence via `send_ctrl_alt_del()`
+    - _Requirements: 1.4_
+  - [x] 3.6 Implement dynamic resolution change on resize
+    - Detect widget resize events
+    - Request resolution change from RDP server
+    - _Requirements: 1.7_
+  - [x] 3.7 Write property test for resize request generation
+    - **Property 5: Resize Request Generation**
+    - **Validates: Requirements 1.7**
 
-  - [x] 3.3 Update `rustconn-core/src/protocol/rdp.rs`
-    - Remove `find_freerdp_binary()` function
-    - Remove `get_client_binary()` function
-    - Remove `build_command()` implementation
-    - Keep `validate_connection()` logic
-    - _Requirements: 1.2_
+- [x] 4. Checkpoint - Ensure all tests pass
+  - All 660 unit tests pass
+  - All 647 property tests pass
+  - All 16 integration tests pass
+  - GUI crate builds successfully
 
-  - [x] 3.4 Update `rustconn-core/src/protocol/vnc.rs`
-    - Remove `get_client_binary()` function
-    - Remove `is_tigervnc()` function
-    - Remove `build_command()` implementation
-    - Keep `validate_connection()` logic
-    - _Requirements: 1.2_
-
-  - [x] 3.5 Update `rustconn-core/src/models/protocol.rs`
-    - Remove `RdpClient` enum (FreeRdp, Custom variants)
-    - Remove `VncClient` enum (TightVnc, TigerVnc, Custom variants)
-    - Remove `client` field from `RdpConfig` and `VncConfig`
-    - _Requirements: 1.2_
-
-  - [x] 3.6 Update Protocol trait in `rustconn-core/src/protocol/mod.rs`
-    - Remove `uses_embedded_terminal()` method from trait
-    - Remove `build_command()` method from trait
-    - Add placeholder `create_session_widget()` method signature
-    - _Requirements: 1.2_
-
-- [x] 4. Checkpoint - Verify code compiles after removal
-  - Ensure all tests pass, ask the user if questions arise.
-
-## Phase 3: Add SPICE Protocol Support
-
-- [x] 5. Add SPICE protocol configuration model
-  - [x] 5.1 Add `SpiceConfig` struct to `rustconn-core/src/models/protocol.rs`
-    - Add fields: `tls_enabled`, `ca_cert_path`, `skip_cert_verify`, `usb_redirection`, `shared_folders`, `clipboard_enabled`, `image_compression`
-    - Add `SpiceImageCompression` enum
-    - _Requirements: 6.1_
-
-  - [x] 5.2 Extend `ProtocolType` and `ProtocolConfig` enums
-    - Add `Spice` variant to `ProtocolType`
-    - Add `Spice(SpiceConfig)` variant to `ProtocolConfig`
-    - Update `protocol_type()` method
-    - _Requirements: 4.1_
-
-  - [x] 5.3 Write property test for SPICE config serialization round-trip
-    - **Property 4: Protocol configuration round-trip serialization**
-    - **Validates: Requirements 6.2**
-
-  - [x] 5.4 Write property test for SPICE config validation
-    - **Property 5: Protocol configuration validation rejects invalid inputs**
-    - **Validates: Requirements 6.3**
-
-  - [x] 5.5 Write property test for default SPICE config validity
-    - **Property 6: Default configurations are valid**
-    - **Validates: Requirements 6.4**
-
-- [x] 6. Add SPICE protocol handler
-  - [x] 6.1 Create `rustconn-core/src/protocol/spice.rs`
-    - Implement `SpiceProtocol` struct
-    - Implement `Protocol` trait for SPICE
-    - Add validation for SPICE-specific fields
-    - _Requirements: 4.1, 6.3_
-
-  - [x] 6.2 Register SPICE protocol in registry
-    - Update `rustconn-core/src/protocol/registry.rs`
-    - Add SPICE to available protocols
-    - _Requirements: 4.1_
-
-- [x] 7. Checkpoint - Verify SPICE model and protocol work
-  - Ensure all tests pass, ask the user if questions arise.
-
-## Phase 4: FFI Bindings Foundation
-
-- [x] 8. Create FFI bindings infrastructure
-  - [x] 8.1 Create `rustconn-core/src/ffi/mod.rs` module
-    - Set up module structure for FFI bindings
-    - Add common FFI utilities and error types
-    - _Requirements: 8.1_
-
-  - [x] 8.2 Create VNC FFI bindings (`rustconn-core/src/ffi/vnc.rs`)
-    - Create safe wrapper `VncDisplay` struct
-    - Implement `new()`, `open_host()`, `close()`, `is_open()`
-    - Implement `set_credential()`, `set_scaling()`
-    - Implement signal connections for vnc-connected, vnc-disconnected, vnc-auth-credential
-    - Implement `widget()` to return GTK widget
-    - _Requirements: 2.1, 8.1, 8.2_
-
-  - [x] 8.3 Write property test for VNC widget GTK integration
-    - **Property 10: FFI widgets integrate with GTK4 hierarchy**
-    - **Validates: Requirements 8.2**
-
-- [x] 9. Checkpoint - Verify VNC FFI bindings compile
-  - Ensure all tests pass, ask the user if questions arise.
-
-## Phase 5: VNC Native Embedding
-
-- [x] 10. Implement VNC session widget
-  - [x] 10.1 Create `rustconn/src/session/mod.rs` module
-    - Define `SessionWidget` enum (Ssh, Vnc, Rdp, Spice)
-    - Define `SessionState` enum (Disconnected, Connecting, Authenticating, Connected, Error)
+- [x] 5. Enhance credential resolution
+  - [x] 5.1 Add credential verification tracking
+    - Add `CredentialStatus` struct with verified flag and timestamp
+    - Store verification status in config
     - _Requirements: 2.1, 2.5_
-
-  - [x] 10.2 Create `rustconn/src/session/vnc.rs`
-    - Implement `VncSessionWidget` struct with overlay and controls
-    - Implement `connect()`, `disconnect()`, `widget()`, `state()` methods
-    - Handle VNC authentication callbacks
-    - Handle connection state changes
-    - _Requirements: 2.1, 2.2, 2.3, 2.5_
-
-  - [x] 10.3 Write property test for VNC widget creation
-    - **Property 1: Protocol widget creation returns valid GTK widget**
-    - **Validates: Requirements 1.2, 2.1**
-
-  - [x] 10.4 Write property test for session state transitions
-    - **Property 2: Session state transitions are valid**
+  - [x] 5.2 Implement `resolve_verified()` method
+    - Check verification status before returning credentials
+    - Return `VerifiedCredentials` with status info
+    - _Requirements: 2.1_
+  - [x] 5.3 Write property test for verified credentials skip dialog
+    - **Property 6: Verified Credentials Skip Dialog**
+    - **Validates: Requirements 2.1**
+  - [x] 5.4 Write property test for missing credentials require dialog
+    - **Property 7: Missing Credentials Require Dialog**
+    - **Validates: Requirements 2.2**
+  - [x] 5.5 Implement `mark_verified()` and `mark_unverified()` methods
+    - Update verification status after auth success/failure
+    - _Requirements: 2.3, 2.5_
+  - [x] 5.6 Write property test for successful auth marks verified
+    - **Property 9: Successful Auth Marks Verified**
     - **Validates: Requirements 2.5**
 
-- [x] 11. Implement floating controls component
-  - [x] 11.1 Create `rustconn/src/floating_controls.rs`
-    - Implement `FloatingControls` struct
-    - Add disconnect, fullscreen, settings buttons
-    - Implement `show()`, `hide()` with Revealer animation
-    - Implement auto-hide timeout logic
-    - _Requirements: 5.1, 5.2, 5.6_
-
-  - [x] 11.2 Add CSS styling for floating controls
-    - Create semi-transparent background
-    - Add hover effects and transitions
-    - _Requirements: 5.2_
-
-  - [x] 11.3 Write property test for overlay control presence
-    - **Property 8: Session overlay contains required controls**
-    - **Validates: Requirements 5.1**
-
-  - [x] 11.4 Write property test for fullscreen toggle idempotence
-    - **Property 7: Fullscreen state toggle is idempotent pair**
-    - **Validates: Requirements 5.4**
-
-- [x] 12. Integrate VNC into terminal notebook
-  - [x] 12.1 Update `TerminalNotebook` to support VNC sessions
-    - Add method to create VNC session tab
-    - Integrate `VncSessionWidget` with notebook tabs
-    - Handle tab switching for VNC sessions
-    - _Requirements: 2.1, 2.6_
-
-  - [x] 12.2 Update connection flow in `MainWindow`
-    - Modify `start_connection()` to use native VNC widget
-    - Handle VNC authentication prompts
-    - _Requirements: 2.1, 2.3_
-
-  - [x] 12.3 Write property test for session isolation
-    - **Property 3: Multiple sessions maintain isolation**
-    - **Validates: Requirements 2.6**
-
-- [x] 13. Checkpoint - Verify VNC embedding works end-to-end
-  - Ensure all tests pass, ask the user if questions arise.
-
-## Phase 6: RDP Native Embedding
-
-- [x] 14. Create RDP FFI bindings
-  - [x] 14.1 Create RDP FFI bindings (`rustconn-core/src/ffi/rdp.rs`)
-    - Create safe wrapper `RdpDisplay` struct based on gtk-frdp
-    - Implement `new()`, `open()`, `close()`, `state()`
-    - Implement `set_credentials()`, `set_clipboard_enabled()`
-    - Implement signal connections for connection state changes
-    - Implement `widget()` to return GTK widget
-    - _Requirements: 3.1, 8.1, 8.2_
-
-- [x] 15. Implement RDP session widget
-  - [x] 15.1 Create `rustconn/src/session/rdp.rs`
-    - Implement `RdpSessionWidget` struct with overlay and controls
-    - Implement `connect()`, `disconnect()`, `widget()`, `state()` methods
-    - Handle NLA authentication
-    - Handle gateway configuration
-    - _Requirements: 3.1, 3.3, 3.4_
-
-  - [x] 15.2 Write property test for RDP widget creation
-    - **Property 1: Protocol widget creation returns valid GTK widget**
-    - **Validates: Requirements 1.2, 3.1**
-
-- [x] 16. Integrate RDP into terminal notebook
-  - [x] 16.1 Update `TerminalNotebook` to support RDP sessions
-    - Add method to create RDP session tab
-    - Integrate `RdpSessionWidget` with notebook tabs
+- [x] 6. Implement unified credential storage
+  - [x] 6.1 Implement `select_storage_backend()` method
+    - Return KeePass if enabled, otherwise Keyring
     - _Requirements: 3.1_
+  - [x] 6.2 Write property test for backend selection priority
+    - **Property 10: Backend Selection Priority**
+    - **Validates: Requirements 3.1**
+  - [x] 6.3 Implement Keyring fallback when KeePass empty
+    - Check both backends during resolution
+    - Return Keyring credentials if KeePass lookup fails
+    - _Requirements: 3.2_
+  - [x] 6.4 Write property test for Keyring fallback
+    - **Property 11: Keyring Fallback When KeePass Empty**
+    - **Validates: Requirements 3.2**
+  - [x] 6.5 Implement `needs_keepass_migration()` check
+    - Detect credentials in Keyring but not KeePass
+    - _Requirements: 3.3_
+  - [x] 6.6 Write property test for migration button visibility
+    - **Property 12: Migration Button Visibility**
+    - **Validates: Requirements 3.3**
+  - [x] 6.7 Implement `migrate_to_keepass()` method
+    - Copy credentials from Keyring to KeePass
+    - Delete from Keyring after successful copy
+    - _Requirements: 3.4_
+  - [x] 6.8 Implement Keyring availability check
+    - Verify libsecret service is accessible
+    - _Requirements: 3.5, 3.6_
 
-  - [x] 16.2 Update connection flow for RDP
-    - Modify `start_connection()` to use native RDP widget
-    - Handle RDP authentication and gateway
-    - _Requirements: 3.1, 3.3, 3.4_
-
-- [x] 17. Checkpoint - Verify RDP embedding works
-  - Ensure all tests pass, ask the user if questions arise.
-
-## Phase 7: SPICE Native Embedding
-
-- [x] 18. Create SPICE FFI bindings
-  - [x] 18.1 Create SPICE FFI bindings (`rustconn-core/src/ffi/spice.rs`)
-    - Create safe wrapper `SpiceDisplay` struct
-    - Implement `new()`, `open()`, `close()`, `is_connected()`
-    - Implement `set_usb_redirection()`, `add_shared_folder()`
-    - Implement TLS certificate handling
-    - Implement `widget()` to return GTK widget
-    - _Requirements: 4.2, 8.1, 8.2_
-
-  - [x] 18.2 Write property test for SPICE TLS validation
-    - **Property 9: TLS certificate validation respects configuration**
-    - **Validates: Requirements 4.6**
-
-- [x] 19. Implement SPICE session widget
-  - [x] 19.1 Create `rustconn/src/session/spice.rs`
-    - Implement `SpiceSessionWidget` struct with overlay and controls
-    - Implement `connect()`, `disconnect()`, `widget()`, `state()` methods
-    - Handle SPICE agent features (clipboard, resize)
-    - _Requirements: 4.2, 4.5_
-
-  - [x] 19.2 Write property test for SPICE widget creation
-    - **Property 1: Protocol widget creation returns valid GTK widget**
-    - **Validates: Requirements 1.2, 4.2**
-
-- [x] 20. Integrate SPICE into terminal notebook
-  - [x] 20.1 Update `TerminalNotebook` to support SPICE sessions
-    - Add method to create SPICE session tab
-    - Integrate `SpiceSessionWidget` with notebook tabs
-    - _Requirements: 4.2_
-
-  - [x] 20.2 Update connection flow for SPICE
-    - Modify `start_connection()` to use native SPICE widget
-    - Handle SPICE-specific features
-    - _Requirements: 4.2, 4.3, 4.4, 4.5_
-
-- [x] 21. Checkpoint - Verify SPICE embedding works
-  - Ensure all tests pass, ask the user if questions arise.
-
-## Phase 8: UI Updates
-
-- [x] 22. Update connection dialog for new protocols
-  - [x] 22.1 Add SPICE protocol option to connection dialog
-    - Add SPICE to protocol dropdown
-    - Create SPICE-specific options tab
-    - Add TLS, USB redirection, shared folders configuration
-    - _Requirements: 4.1_
-
-  - [x] 22.2 Update VNC options tab
-    - Remove external client selection (TightVNC, TigerVNC, Custom)
-    - Update options for native embedding (scaling, clipboard, view-only)
+- [x] 7. Update password dialog
+  - [x] 7.1 Change checkbox label to "Save Credentials"
+    - Remove "to keyring" from label
+    - _Requirements: 3.1_
+  - [x] 7.2 Add "Save to KeePass" button
+    - Show when migration is needed
+    - Call `migrate_to_keepass()` on click
+    - _Requirements: 3.3, 3.4_
+  - [x] 7.3 Implement dialog pre-fill from connection
+    - Pre-fill username and domain from saved settings
+    - _Requirements: 2.4_
+  - [x] 7.4 Write property test for dialog pre-fill
+    - **Property 8: Dialog Pre-fill from Connection**
+    - **Validates: Requirements 2.4**
+  - [x] 7.5 Skip dialog when credentials verified
+    - Check verification status before showing dialog
+    - Use saved credentials directly if verified
     - _Requirements: 2.1_
 
-  - [x] 22.3 Update RDP options tab
-    - Remove external client selection (FreeRDP, Custom)
-    - Keep resolution, color depth, audio, gateway, shared folders options
-    - _Requirements: 3.1_
+- [x] 8. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
 
-- [x] 23. Update settings dialog
-  - [x] 23.1 Remove external client path settings
-    - Remove VNC client path configuration
-    - Remove RDP client path configuration
-    - Note: No client path configuration existed - Clients tab is informational only (auto-detection)
-    - _Requirements: 1.2_
+- [x] 9. Implement connection naming
+  - [x] 9.1 Implement `generate_unique_name()` method
+    - Check for existing names
+    - Append protocol suffix if duplicate
+    - Append numeric suffix if still duplicate
+    - _Requirements: 4.1, 4.2_
+  - [x] 9.2 Write property test for name deduplication
+    - **Property 13: Connection Name Deduplication**
+    - **Validates: Requirements 4.1, 4.2**
+  - [x] 9.3 Implement `normalize_name()` method
+    - Remove auto-generated suffix if name is now unique
+    - _Requirements: 4.3_
+  - [x] 9.4 Write property test for suffix removal
+    - **Property 14: Name Suffix Removal**
+    - **Validates: Requirements 4.3**
+  - [x] 9.5 Integrate naming into connection creation flow
+    - Call `generate_unique_name()` when creating connections
+    - _Requirements: 4.1_
 
-- [x] 24. Final Checkpoint - Full integration testing
-  - All tests pass: 212 unit tests, 235 property tests, 4 doc tests
-  - Clippy passes with no new warnings
-  - Phase 8 (UI Updates) complete
+- [x] 10. Implement SSH key selection
+  - [x] 10.1 Update SSH command builder for File auth
+    - Add `-i <key_path>` flag
+    - Add `-o IdentitiesOnly=yes` flag
+    - _Requirements: 5.1, 5.2_
+  - [x] 10.2 Write property test for SSH key file flags
+    - **Property 15: SSH Key File Flag Generation**
+    - **Validates: Requirements 5.1, 5.2**
+  - [x] 10.3 Ensure Agent auth doesn't add IdentitiesOnly
+    - Skip IdentitiesOnly flag for Agent method
+    - _Requirements: 5.3_
+  - [x] 10.4 Write property test for Agent no IdentitiesOnly
+    - **Property 16: SSH Agent No IdentitiesOnly**
+    - **Validates: Requirements 5.3**
+
+- [x] 11. Implement external mode improvements
+  - [x] 11.1 Add `/decorations` flag to FreeRDP
+    - Include flag in command arguments
+    - _Requirements: 6.1_
+  - [x] 11.2 Write property test for decorations flag
+    - **Property 17: FreeRDP Decorations Flag**
+    - **Validates: Requirements 6.1**
+  - [x] 11.3 Implement window geometry persistence
+    - Save geometry on session close
+
+    - Load geometry on session start
+    - _Requirements: 6.2, 6.3_
+  - [x] 11.4 Write property test for geometry restoration
+    - **Property 18: Window Geometry Restoration**
+    - **Validates: Requirements 6.3**
+  - [x] 11.5 Respect remember_window_position setting
+    - Skip geometry if setting disabled
+    - _Requirements: 6.4_
+  - [x] 11.6 Write property test for disabled position memory
+    - **Property 19: Disabled Position Memory**
+    - **Validates: Requirements 6.4**
+
+- [x] 12. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 13. Implement Quick Connect
+  - [x] 13.1 Create QuickConnectBar widget
+    - Add hostname entry, protocol dropdown, connect button
+    - _Requirements: 7.1, 7.2_
+  - [x] 13.2 Implement temporary connection creation
+    - Create non-persistent Connection object
+    - Mark as Quick Connect session
+    - _Requirements: 7.1, 7.2_
+  - [x] 13.3 Show password dialog when needed
+    - Trigger dialog for auth-required connections
+    - _Requirements: 7.3_
+  - [x] 13.4 Ensure Quick Connect doesn't persist
+    - Don't save to connection list
+    - Clean up after session ends
+    - _Requirements: 7.4_
+  - [x] 13.5 Write property test for no persistence
+    - **Property 20: Quick Connect No Persistence**
+    - **Validates: Requirements 7.4**
+
+- [x] 14. Implement Wayland subsurface integration
+  - [x] 14.1 Create WaylandSubsurface struct
+    - Manage wl_surface and wl_subsurface
+    - Handle shared memory pool
+    - _Requirements: 8.1_
+  - [x] 14.2 Implement subsurface initialization
+    - Get Wayland display from GTK
+    - Create subsurface attached to parent
+    - _Requirements: 8.1_
+  - [x] 14.3 Implement position updates
+    - Update subsurface position on parent move/resize
+    - _Requirements: 8.2_
+  - [x] 14.4 Implement framebuffer blitting
+    - Copy pixel data to shared memory buffer
+    - Damage and commit surface
+    - _Requirements: 8.3_
+  - [x] 14.5 Implement X11 fallback
+    - Detect X11 vs Wayland at runtime
+    - Use Cairo rendering on X11
+    - _Requirements: 8.4_
+
+- [x] 15. Implement SPICE protocol support
+  - [x] 15.1 Create SpiceClient struct
+    - Follow VNC/RDP client pattern
+    - Implement command/event channels
+    - _Requirements: 9.1_
+  - [x] 15.2 Implement SPICE connection
+    - Connect to SPICE server
+    - Handle authentication
+    - _Requirements: 9.1_
+  - [x] 15.3 Implement display rendering
+    - Receive framebuffer updates
+    - Render in embedded mode
+    - _Requirements: 9.2_
+  - [x] 15.4 Implement input forwarding
+    - Forward keyboard and mouse events
+    - _Requirements: 9.3_
+  - [x] 15.5 Implement virt-viewer fallback
+    - Detect native client availability
+    - Fall back to virt-viewer if unavailable
+    - _Requirements: 9.4_
+
+- [x] 16. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.

@@ -1,0 +1,46 @@
+# SSH Config Test Fixture
+# Contains sample connections for import/export testing
+
+# SSH connection with key file
+Host web-server
+    HostName 192.168.1.10
+    User deploy
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519
+
+# SSH connection with custom port
+Host db-server
+    HostName 10.0.0.50
+    User postgres
+    Port 2222
+    IdentityFile ~/.ssh/db_key
+
+# SSH connection with proxy jump
+Host internal-server
+    HostName 10.10.0.5
+    User admin
+    ProxyJump bastion.example.com
+    IdentityFile ~/.ssh/internal_key
+
+# Simple SSH connection
+Host dev-box
+    HostName dev.example.com
+    User developer
+
+# Connection with control master
+Host persistent-conn
+    HostName 192.168.1.50
+    User sysadmin
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%r@%h-%p
+    ControlPersist 600
+
+# Wildcard pattern (should be skipped during import)
+Host *.example.com
+    User default-user
+    ServerAliveInterval 60
+
+# Global settings (should be skipped during import)
+Host *
+    ServerAliveInterval 30
+    ServerAliveCountMax 3

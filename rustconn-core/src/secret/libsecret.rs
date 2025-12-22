@@ -202,8 +202,8 @@ impl SecretBackend for LibSecretBackend {
 
         Ok(Some(Credentials {
             username,
-            password: password.map(SecretString::new),
-            key_passphrase: key_passphrase.map(SecretString::new),
+            password: password.map(SecretString::from),
+            key_passphrase: key_passphrase.map(SecretString::from),
         }))
     }
 

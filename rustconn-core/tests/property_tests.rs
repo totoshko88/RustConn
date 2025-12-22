@@ -1,6 +1,56 @@
-//! Property-based tests for RustConn core library
+//! Property-based tests for `RustConn` core library
 //!
 //! This module contains property-based tests that validate correctness properties
 //! defined in the design document.
 
+// Allow common test patterns that Clippy warns about
+#![allow(clippy::redundant_clone)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::items_after_statements)]
+#![allow(clippy::too_many_lines)]
+#![allow(clippy::cognitive_complexity)]
+#![allow(clippy::field_reassign_with_default)]
+#![allow(clippy::single_component_path_imports)]
+#![allow(clippy::doc_markdown)]
+#![allow(clippy::use_self)]
+#![allow(clippy::redundant_closure)]
+#![allow(clippy::redundant_closure_for_method_calls)]
+#![allow(clippy::expect_fun_call)]
+#![allow(clippy::unwrap_or_default)]
+#![allow(clippy::map_unwrap_or)]
+#![allow(clippy::single_char_pattern)]
+#![allow(clippy::missing_const_for_fn)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_sign_loss)]
+#![allow(clippy::cast_possible_wrap)]
+#![allow(clippy::needless_pass_by_value)]
+#![allow(clippy::default_trait_access)]
+#![allow(clippy::useless_format)]
+#![allow(clippy::match_same_arms)]
+#![allow(clippy::uninlined_format_args)]
+#![allow(clippy::significant_drop_tightening)]
+#![allow(clippy::collection_is_never_read)]
+#![allow(clippy::used_underscore_binding)]
+#![allow(clippy::stable_sort_primitive)]
+#![allow(clippy::implicit_clone)]
+#![allow(clippy::or_fun_call)]
+#![allow(clippy::len_zero)]
+#![allow(clippy::literal_string_with_formatting_args)]
+#![allow(clippy::collapsible_str_replace)]
+#![allow(clippy::needless_collect)]
+#![allow(clippy::manual_let_else)]
+#![allow(clippy::branches_sharing_code)]
+#![allow(clippy::format_push_string)]
+#![allow(clippy::clone_on_copy)]
+#![allow(clippy::to_string_trait_impl)]
+#![allow(clippy::cast_lossless)]
+#![allow(clippy::unnecessary_to_owned)]
+#![allow(clippy::option_if_let_else)]
+#![allow(clippy::manual_string_new)]
+#![allow(clippy::if_not_else)]
+#![allow(clippy::inefficient_to_string)]
+#![allow(clippy::suboptimal_flops)]
+
+mod fixtures;
 mod properties;

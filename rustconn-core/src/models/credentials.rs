@@ -79,7 +79,7 @@ impl Credentials {
     pub fn with_password(username: impl Into<String>, password: impl Into<String>) -> Self {
         Self {
             username: Some(username.into()),
-            password: Some(SecretString::new(password.into())),
+            password: Some(SecretString::from(password.into())),
             key_passphrase: None,
         }
     }
@@ -105,7 +105,9 @@ impl Credentials {
     /// Exposes the password for use (should be used carefully)
     #[must_use]
     pub fn expose_password(&self) -> Option<&str> {
-        self.password.as_ref().map(|p| p.expose_secret().as_str())
+        self.password
+            .as_ref()
+            .map(secrecy::ExposeSecret::expose_secret)
     }
 
     /// Exposes the key passphrase for use (should be used carefully)
@@ -113,7 +115,7 @@ impl Credentials {
     pub fn expose_key_passphrase(&self) -> Option<&str> {
         self.key_passphrase
             .as_ref()
-            .map(|p| p.expose_secret().as_str())
+            .map(secrecy::ExposeSecret::expose_secret)
     }
 }
 

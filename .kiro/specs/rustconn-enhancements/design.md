@@ -2,326 +2,650 @@
 
 ## Overview
 
-This document describes the design for four major enhancements to RustConn:
-1. Custom SSH config file import
-2. RDP shared folder configuration
-3. Progress indicators for long operations
-4. Split-screen terminal views
+This design document describes the architecture and implementation approach for enhancing RustConn with automation capabilities, session management features, organization tools, and desktop integration. The design maintains RustConn's core principles: Rust-native, GTK4/Wayland-first, and security-conscious architecture.
 
 ## Architecture
 
-### Component Diagram
+The enhancements are organized into several subsystems that integrate with the existing `rustconn-core` and `rustconn` crates:
 
-```mermaid
-graph TB
-    subgraph GUI["rustconn (GUI)"]
-        ImportDialog["ImportDialog"]
-        ConnectionDialog["ConnectionDialog"]
-        ProgressDialog["ProgressDialog"]
-        SplitTerminalView["SplitTerminalView"]
-        TerminalNotebook["TerminalNotebook"]
-    end
-    
-    subgraph Core["rustconn-core"]
-        SshConfigImporter["SshConfigImporter"]
-        RdpConfig["RdpConfig + SharedFolder"]
-        ProgressReporter["ProgressReporter trait"]
-    end
-    
-    ImportDialog --> SshConfigImporter
-    ConnectionDialog --> RdpConfig
-    ImportDialog --> ProgressReporter
-    SplitTerminalView --> TerminalNotebook
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        rustconn (GUI)                           │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
+│  │ Tray Icon   │  │ Dashboard   │  │ Search UI   │             │
+│  └─────────────┘  └─────────────┘  └─────────────┘             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
+│  │ Cluster View│  │ External Win│  │ Variables UI│             │
+│  └─────────────┘  └─────────────┘  └─────────────┘             │
+├─────────────────────────────────────────────────────────────────┤
+│                      rustconn-core                              │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                    Automation Engine                     │   │
+│  │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌─────────┐ │   │
+│  │  │ Variables │ │Key Sequence│ │  Expect   │ │  Tasks  │ │   │
+│  │  └───────────┘ └───────────┘ └───────────┘ └─────────┘ │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   Session Management                     │   │
+│  │  ┌───────────┐ ┌───────────┐ ┌───────────┐             │   │
+│  │  │  Cluster  │ │  Logging  │ │ Dashboard │             │   │
+│  │  └───────────┘ └───────────┘ └───────────┘             │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                    Organization                          │   │
+│  │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌─────────┐ │   │
+│  │  │ Documents │ │ Templates │ │Custom Props│ │ Search  │ │   │
+│  │  └───────────┘ └───────────┘ └───────────┘ └─────────┘ │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                      Utilities                           │   │
+│  │  ┌───────────┐                                          │   │
+│  │  │    WOL    │                                          │   │
+│  │  └───────────┘                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Components and Interfaces
 
-### 1. Custom SSH Config File Import
-
-#### Changes to `SshConfigImporter`
-
-Add a new method to parse from a custom file path:
+### 1. Variables System (`rustconn-core/src/variables/`)
 
 ```rust
-impl SshConfigImporter {
-    /// Import from a custom SSH config file path
-    pub fn import_from_file(&self, path: &Path) -> ImportResult {
-        // Parse the file at the given path
-    }
-}
-```
-
-#### Changes to `ImportDialog`
-
-Add new import source "SSH Config File" that:
-1. Is always available (doesn't check for ~/.ssh/config)
-2. Opens a file chooser dialog when selected
-3. Parses the selected file using `SshConfigImporter::import_from_file()`
-
-### 2. RDP Shared Folder Configuration
-
-#### New Data Model
-
-```rust
-/// A shared folder for RDP connections
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SharedFolder {
-    /// Local directory path to share
-    pub local_path: PathBuf,
-    /// Share name visible in the remote session
-    pub share_name: String,
+/// A variable definition with optional secret flag
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Variable {
+    pub name: String,
+    pub value: String,
+    pub is_secret: bool,
+    pub description: Option<String>,
 }
 
-/// Updated RDP configuration
-pub struct RdpConfig {
-    // ... existing fields ...
-    /// Shared folders for drive redirection
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub shared_folders: Vec<SharedFolder>,
+/// Variable scope for resolution
+pub enum VariableScope {
+    Global,
+    Document(Uuid),
+    Connection(Uuid),
 }
-```
 
-#### Command Builder Changes
-
-Update RDP command builder to include shared folder arguments:
-
-```rust
-// For FreeRDP (xfreerdp)
-// /drive:ShareName,/path/to/local/folder
-for folder in &config.shared_folders {
-    args.push(format!("/drive:{},{}", folder.share_name, folder.local_path.display()));
+/// Variable manager for resolution and substitution
+pub struct VariableManager {
+    global_vars: HashMap<String, Variable>,
+    scoped_vars: HashMap<Uuid, HashMap<String, Variable>>,
 }
-```
 
-### 3. Progress Indicators
-
-#### Progress Reporter Trait
-
-```rust
-/// Trait for reporting progress during long operations
-pub trait ProgressReporter {
-    /// Report progress update
-    fn report(&self, current: usize, total: usize, message: &str);
+impl VariableManager {
+    /// Resolve a variable reference like ${var_name}
+    pub fn resolve(&self, reference: &str, scope: VariableScope) -> Result<String, VariableError>;
     
-    /// Check if operation was cancelled
-    fn is_cancelled(&self) -> bool;
-}
-
-/// Callback-based progress reporter
-pub struct CallbackProgressReporter {
-    callback: Box<dyn Fn(usize, usize, &str)>,
-    cancelled: Arc<AtomicBool>,
+    /// Substitute all variables in a string
+    pub fn substitute(&self, input: &str, scope: VariableScope) -> Result<String, VariableError>;
+    
+    /// Parse and validate variable syntax
+    pub fn parse_references(input: &str) -> Result<Vec<&str>, VariableError>;
+    
+    /// Detect circular references
+    pub fn detect_cycles(&self) -> Result<(), VariableError>;
 }
 ```
 
-#### Progress Dialog Widget
+### 2. Key Sequence System (`rustconn-core/src/automation/key_sequence.rs`)
 
 ```rust
-pub struct ProgressDialog {
-    window: Window,
-    progress_bar: ProgressBar,
-    status_label: Label,
-    cancel_button: Button,
-    cancelled: Rc<Cell<bool>>,
+/// A key sequence element
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum KeyElement {
+    Text(String),
+    SpecialKey(SpecialKey),
+    Wait(u32), // milliseconds
+    Variable(String),
 }
 
-impl ProgressDialog {
-    pub fn new(parent: Option<&Window>, title: &str, cancellable: bool) -> Self;
-    pub fn update(&self, fraction: f64, message: &str);
-    pub fn is_cancelled(&self) -> bool;
-    pub fn close(&self);
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SpecialKey {
+    Enter, Tab, Escape, Backspace, Delete,
+    Up, Down, Left, Right,
+    F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
+    CtrlC, CtrlD, CtrlZ,
 }
-```
 
-### 4. Split-Screen Terminal Views
+/// Parsed key sequence
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KeySequence {
+    pub elements: Vec<KeyElement>,
+}
 
-#### Architecture
-
-```mermaid
-graph TB
-    SplitTerminalView["SplitTerminalView"]
-    TabList["Unified Tab List"]
-    PaneManager["PaneManager"]
-    Pane1["Pane (Terminal)"]
-    Pane2["Pane (Terminal)"]
+impl KeySequence {
+    /// Parse a key sequence string like "user{TAB}pass{ENTER}{WAIT:1000}"
+    pub fn parse(input: &str) -> Result<Self, KeySequenceError>;
     
-    SplitTerminalView --> TabList
-    SplitTerminalView --> PaneManager
-    PaneManager --> Pane1
-    PaneManager --> Pane2
-    TabList -.-> Pane1
-    TabList -.-> Pane2
+    /// Serialize back to string format
+    pub fn to_string(&self) -> String;
+    
+    /// Validate the sequence
+    pub fn validate(&self) -> Result<(), KeySequenceError>;
+}
 ```
 
-#### Data Structures
+### 3. Expect Automation (`rustconn-core/src/automation/expect.rs`)
 
 ```rust
-/// Represents a split direction
-#[derive(Debug, Clone, Copy)]
-pub enum SplitDirection {
-    Horizontal,
-    Vertical,
+/// An expect rule with pattern and response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExpectRule {
+    pub id: Uuid,
+    pub pattern: String,  // Regex pattern
+    pub response: String, // Response to send (supports variables)
+    pub priority: i32,
+    pub timeout_ms: Option<u32>,
+    pub enabled: bool,
 }
 
-/// A pane in the split view
-pub struct TerminalPane {
-    id: Uuid,
-    container: GtkBox,
-    current_session: Option<Uuid>,
+/// Expect engine for pattern matching
+pub struct ExpectEngine {
+    rules: Vec<ExpectRule>,
+    compiled_patterns: Vec<Regex>,
 }
 
-/// Manages split terminal views
-pub struct SplitTerminalView {
-    /// Root container (Paned or single pane)
-    root: GtkBox,
-    /// All panes in the view
-    panes: Rc<RefCell<Vec<TerminalPane>>>,
-    /// Currently focused pane
-    focused_pane: Rc<RefCell<Option<Uuid>>>,
-    /// Shared session list (from TerminalNotebook)
-    sessions: Rc<RefCell<HashMap<Uuid, TerminalSession>>>,
-    /// Shared terminals map
-    terminals: Rc<RefCell<HashMap<Uuid, Terminal>>>,
+impl ExpectEngine {
+    /// Check output against all rules, return matching rule
+    pub fn match_output(&self, output: &str) -> Option<&ExpectRule>;
+    
+    /// Validate all regex patterns
+    pub fn validate_patterns(&self) -> Result<(), ExpectError>;
+}
+```
+
+### 4. Connection Tasks (`rustconn-core/src/automation/tasks.rs`)
+
+```rust
+/// Task execution timing
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TaskTiming {
+    PreConnect,
+    PostDisconnect,
 }
 
-impl SplitTerminalView {
-    /// Split the focused pane
-    pub fn split(&self, direction: SplitDirection);
+/// Task execution condition
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskCondition {
+    pub only_first_in_folder: bool,
+    pub only_last_in_folder: bool,
+}
+
+/// A connection task
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConnectionTask {
+    pub id: Uuid,
+    pub timing: TaskTiming,
+    pub command: String,
+    pub condition: TaskCondition,
+    pub timeout_ms: Option<u32>,
+    pub abort_on_failure: bool,
+}
+
+/// Task executor
+pub struct TaskExecutor {
+    variable_manager: Arc<VariableManager>,
+}
+
+impl TaskExecutor {
+    /// Execute a task with variable substitution
+    pub async fn execute(&self, task: &ConnectionTask, scope: VariableScope) -> Result<i32, TaskError>;
+}
+```
+
+### 5. Cluster Management (`rustconn-core/src/cluster/`)
+
+```rust
+/// A cluster of connections
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Cluster {
+    pub id: Uuid,
+    pub name: String,
+    pub connection_ids: Vec<Uuid>,
+    pub broadcast_enabled: bool,
+}
+
+/// Active cluster session
+pub struct ClusterSession {
+    pub cluster_id: Uuid,
+    pub sessions: HashMap<Uuid, SessionState>,
+    pub broadcast_mode: bool,
+}
+
+impl ClusterSession {
+    /// Send input to all sessions (broadcast mode)
+    pub fn broadcast_input(&self, input: &str);
     
-    /// Close the focused pane
-    pub fn close_pane(&self);
+    /// Get status of all sessions
+    pub fn get_status(&self) -> Vec<(Uuid, SessionStatus)>;
+}
+```
+
+### 6. Session Logging (`rustconn-core/src/session/logger.rs`)
+
+```rust
+/// Log configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LogConfig {
+    pub enabled: bool,
+    pub path_template: String,  // e.g., "~/logs/${connection_name}_${date}.log"
+    pub timestamp_format: String,
+    pub max_size_mb: u32,
+    pub retention_days: u32,
+}
+
+/// Session logger
+pub struct SessionLogger {
+    config: LogConfig,
+    file: Option<BufWriter<File>>,
+    bytes_written: u64,
+}
+
+impl SessionLogger {
+    /// Write output to log with timestamp
+    pub fn write(&mut self, output: &[u8]) -> Result<(), LogError>;
     
-    /// Cycle focus to next pane
-    pub fn focus_next_pane(&self);
+    /// Rotate log if needed
+    pub fn rotate_if_needed(&mut self) -> Result<(), LogError>;
     
-    /// Display a session in the focused pane
-    pub fn show_session(&self, session_id: Uuid);
+    /// Flush and close
+    pub fn close(&mut self) -> Result<(), LogError>;
+}
+```
+
+### 7. Wake On LAN (`rustconn-core/src/wol/`)
+
+```rust
+/// MAC address for WOL
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MacAddress([u8; 6]);
+
+impl MacAddress {
+    /// Parse MAC address from string (supports : and - separators)
+    pub fn parse(input: &str) -> Result<Self, WolError>;
+    
+    /// Format as string
+    pub fn to_string(&self) -> String;
+}
+
+/// WOL configuration for a connection
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WolConfig {
+    pub mac_address: Option<MacAddress>,
+    pub broadcast_address: Option<String>,
+    pub port: u16,  // default 9
+    pub wait_seconds: u32,
+}
+
+/// Send WOL magic packet
+pub fn send_magic_packet(mac: &MacAddress, broadcast: &str, port: u16) -> Result<(), WolError>;
+```
+
+### 8. Documents (`rustconn-core/src/document/`)
+
+```rust
+/// A portable document containing connections
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Document {
+    pub id: Uuid,
+    pub name: String,
+    pub connections: Vec<Connection>,
+    pub groups: Vec<Group>,
+    pub variables: HashMap<String, Variable>,
+    pub templates: Vec<ConnectionTemplate>,
+    pub created_at: DateTime<Utc>,
+    pub modified_at: DateTime<Utc>,
+}
+
+/// Document manager
+pub struct DocumentManager {
+    documents: HashMap<Uuid, Document>,
+    dirty_flags: HashMap<Uuid, bool>,
+}
+
+impl DocumentManager {
+    /// Create new document
+    pub fn create(&mut self, name: String) -> Uuid;
+    
+    /// Load document from file (with optional password)
+    pub fn load(&mut self, path: &Path, password: Option<&str>) -> Result<Uuid, DocumentError>;
+    
+    /// Save document to file (with optional encryption)
+    pub fn save(&self, id: Uuid, path: &Path, password: Option<&str>) -> Result<(), DocumentError>;
+    
+    /// Export document as portable file
+    pub fn export(&self, id: Uuid, path: &Path) -> Result<(), DocumentError>;
+}
+```
+
+### 9. Custom Properties (`rustconn-core/src/models/custom_property.rs`)
+
+```rust
+/// Custom property field type
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum PropertyType {
+    Text,
+    Url,
+    Protected,  // Encrypted storage
+}
+
+/// A custom property
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomProperty {
+    pub name: String,
+    pub value: String,
+    pub property_type: PropertyType,
+}
+
+/// Extension trait for Connection
+impl Connection {
+    pub fn get_custom_property(&self, name: &str) -> Option<&CustomProperty>;
+    pub fn set_custom_property(&mut self, property: CustomProperty);
+}
+```
+
+### 10. Search System (`rustconn-core/src/search/`)
+
+```rust
+/// Search query with operators
+#[derive(Debug, Clone)]
+pub struct SearchQuery {
+    pub text: String,
+    pub filters: Vec<SearchFilter>,
+}
+
+#[derive(Debug, Clone)]
+pub enum SearchFilter {
+    Protocol(ProtocolType),
+    Tag(String),
+    Group(Uuid),
+    InCustomProperty(String),
+}
+
+/// Search result with relevance
+#[derive(Debug, Clone)]
+pub struct SearchResult {
+    pub connection_id: Uuid,
+    pub score: f32,
+    pub matched_fields: Vec<String>,
+    pub highlights: Vec<(usize, usize)>,  // Start, end positions
+}
+
+/// Search engine
+pub struct SearchEngine {
+    index: SearchIndex,
+}
+
+impl SearchEngine {
+    /// Parse search query with operators
+    pub fn parse_query(input: &str) -> Result<SearchQuery, SearchError>;
+    
+    /// Execute search
+    pub fn search(&self, query: &SearchQuery, connections: &[Connection]) -> Vec<SearchResult>;
+    
+    /// Fuzzy match score
+    pub fn fuzzy_score(query: &str, target: &str) -> f32;
 }
 ```
 
 ## Data Models
 
-### SharedFolder
+### Extended Connection Model
 
-| Field | Type | Description |
-|-------|------|-------------|
-| local_path | PathBuf | Local directory path to share |
-| share_name | String | Name visible in remote session |
+```rust
+/// Enhanced connection with new fields
+pub struct Connection {
+    // ... existing fields ...
+    
+    // New fields
+    pub pre_connect_task: Option<ConnectionTask>,
+    pub post_disconnect_task: Option<ConnectionTask>,
+    pub key_sequence: Option<KeySequence>,
+    pub expect_rules: Vec<ExpectRule>,
+    pub wol_config: Option<WolConfig>,
+    pub local_variables: HashMap<String, Variable>,
+    pub custom_properties: Vec<CustomProperty>,
+    pub window_mode: WindowMode,
+    pub log_config: Option<LogConfig>,
+    pub template_id: Option<Uuid>,
+}
 
-### ProgressState
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum WindowMode {
+    Embedded,
+    External,
+    Fullscreen,
+}
+```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| current | usize | Current item number |
-| total | usize | Total items to process |
-| message | String | Current status message |
-| cancelled | bool | Whether operation was cancelled |
+### Session Statistics
+
+```rust
+/// Statistics for dashboard
+#[derive(Debug, Clone)]
+pub struct SessionStats {
+    pub connection_id: Uuid,
+    pub connected_at: DateTime<Utc>,
+    pub bytes_sent: u64,
+    pub bytes_received: u64,
+    pub status: SessionStatus,
+}
+
+#[derive(Debug, Clone)]
+pub enum SessionStatus {
+    Connecting,
+    Connected,
+    Disconnected,
+    Error(String),
+}
+```
 
 ## Correctness Properties
 
 *A property is a characteristic or behavior that should hold true across all valid executions of a system-essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
 
-### Property 1: SSH Config Parsing Round Trip
+### Property 1: Variable Substitution Consistency
+*For any* string containing variable references and any variable scope, substituting variables and then checking for remaining unresolved references should yield either a fully resolved string or a list of undefined variables.
+**Validates: Requirements 6.3, 6.6**
 
-*For any* valid SSH config content with Host entries, parsing the content should extract all Host entries with their associated settings (hostname, port, user, identity file).
+### Property 2: Variable Resolution with Override
+*For any* variable name that exists in both global and local scope, resolution should return the local value when using connection scope.
+**Validates: Requirements 6.2**
 
-**Validates: Requirements 1.2, 1.3**
+### Property 3: Nested Variable Resolution Depth
+*For any* chain of variable references, resolution should terminate within the configured maximum depth and detect cycles.
+**Validates: Requirements 6.4, 6.7**
 
-### Property 2: Invalid SSH Config Error Handling
+### Property 4: Variable Serialization Round-Trip
+*For any* valid variable definition, serializing to JSON and deserializing should produce an equivalent variable.
+**Validates: Requirements 6.8**
 
-*For any* invalid SSH config content (malformed syntax), parsing should return an error result rather than silently failing or panicking.
+### Property 5: Key Sequence Parse Round-Trip
+*For any* valid key sequence string, parsing and then serializing should produce an equivalent string.
+**Validates: Requirements 2.7**
 
-**Validates: Requirements 1.4**
+### Property 6: Key Sequence Validation
+*For any* key sequence string, parsing should either succeed with a valid KeySequence or fail with a descriptive error for malformed input.
+**Validates: Requirements 2.6**
 
-### Property 3: Shared Folder CRUD Operations
-
-*For any* RDP configuration, adding a shared folder should increase the folder count by one, and removing a shared folder should decrease it by one, with the configuration remaining valid.
-
-**Validates: Requirements 2.3, 2.5**
-
-### Property 4: RDP Command Builder Includes Shared Folders
-
-*For any* RDP configuration with shared folders, the generated command arguments should include a `/drive:` argument for each shared folder with correct share name and path.
-
+### Property 7: Key Sequence Variable Substitution
+*For any* key sequence containing variable references, substitution should replace all valid references with their values.
 **Validates: Requirements 2.4**
 
-### Property 5: Progress Reporter Invocation
+### Property 8: Expect Pattern Validation
+*For any* expect rule pattern, validation should either confirm valid regex syntax or report the specific error.
+**Validates: Requirements 4.6**
 
-*For any* import operation with N items, the progress reporter should be called at least N times with monotonically increasing current values from 0 to N.
+### Property 9: Expect Rule Serialization Round-Trip
+*For any* valid expect rule, serializing and deserializing should produce an equivalent rule.
+**Validates: Requirements 4.7**
 
-**Validates: Requirements 3.1, 3.3**
-
-### Property 6: Split View Structure Integrity
-
-*For any* sequence of split operations (horizontal or vertical), the resulting pane structure should contain exactly (initial_panes + split_count) panes, and closing a pane should reduce the count by one.
-
-**Validates: Requirements 4.1, 4.2, 4.6**
-
-### Property 7: Unified Tab List Consistency
-
-*For any* split view with multiple panes, adding a session should make it available in all panes, and the total session count should equal the number of unique sessions regardless of pane count.
-
+### Property 10: Expect Pattern Matching Priority
+*For any* terminal output that matches multiple expect patterns, the rule with highest priority should be selected.
 **Validates: Requirements 4.3**
 
-### Property 8: Focus Cycling Completeness
+### Property 11: Task Variable Substitution
+*For any* task command containing variable references, execution should use substituted values.
+**Validates: Requirements 1.6**
 
-*For any* split view with N panes, calling focus_next_pane() N times should cycle through all panes exactly once and return to the starting pane.
+### Property 12: Task Failure Handling
+*For any* pre-connect task that returns non-zero exit code, the connection attempt should be aborted.
+**Validates: Requirements 1.3**
 
-**Validates: Requirements 4.8**
+### Property 13: Cluster Session Independence
+*For any* cluster with multiple connections, failure of one session should not affect other sessions.
+**Validates: Requirements 3.4**
+
+### Property 14: MAC Address Parse Round-Trip
+*For any* valid MAC address string, parsing and formatting should produce an equivalent string.
+**Validates: Requirements 5.1**
+
+### Property 15: WOL Magic Packet Format
+*For any* MAC address, the generated magic packet should contain 6 bytes of 0xFF followed by 16 repetitions of the MAC address.
+**Validates: Requirements 5.2**
+
+### Property 16: Log Timestamp Formatting
+*For any* log entry, the timestamp should be formatted according to the configured format string.
+**Validates: Requirements 7.2**
+
+### Property 17: Log Path Template Expansion
+*For any* log path template with variables, expansion should produce a valid file path.
+**Validates: Requirements 7.5**
+
+### Property 18: Log Rotation Trigger
+*For any* log file that exceeds the configured size limit, rotation should create a new file.
+**Validates: Requirements 7.3**
+
+### Property 19: Template Field Preservation
+*For any* connection template, all field values should be preserved when serializing and deserializing.
+**Validates: Requirements 8.5**
+
+### Property 20: Template Application
+*For any* template and new connection, applying the template should copy all template fields to the connection.
+**Validates: Requirements 8.2**
+
+### Property 21: Template Independence
+*For any* connection created from a template, modifying the template should not affect the connection.
+**Validates: Requirements 8.3**
+
+### Property 22: Custom Property Type Preservation
+*For any* custom property with a specific type, serialization and deserialization should preserve the type.
+**Validates: Requirements 10.6**
+
+### Property 23: Custom Property Search Inclusion
+*For any* search query, connections with matching custom property values should be included in results.
+**Validates: Requirements 10.5**
+
+### Property 24: Document Serialization Round-Trip
+*For any* valid document, serializing and deserializing should produce an equivalent document.
+**Validates: Requirements 11.6**
+
+### Property 25: Document Encryption Round-Trip
+*For any* document and password, encrypting and decrypting should produce the original document.
+**Validates: Requirements 11.3**
+
+### Property 26: Document Dirty Tracking
+*For any* document modification, the dirty flag should be set to true.
+**Validates: Requirements 11.5**
+
+### Property 27: Search Fuzzy Matching
+*For any* search query and connection name, fuzzy matching should return a score between 0 and 1.
+**Validates: Requirements 14.1**
+
+### Property 28: Search Scope Coverage
+*For any* search query, matching should check name, host, tags, group name, and custom properties.
+**Validates: Requirements 14.2**
+
+### Property 29: Search Operator Parsing
+*For any* search string with operators like "protocol:ssh", parsing should extract the correct filter type and value.
+**Validates: Requirements 14.4**
+
+### Property 30: Search Result Ranking
+*For any* search with multiple results, results should be ordered by descending relevance score.
+**Validates: Requirements 14.3**
+
+### Property 31: Dashboard Session Statistics
+*For any* active session, the dashboard should display accurate duration and byte counts.
+**Validates: Requirements 13.2**
+
+### Property 32: Dashboard Filter Application
+*For any* dashboard filter, only sessions matching the filter criteria should be displayed.
+**Validates: Requirements 13.5**
+
+### Property 33: Window Geometry Persistence
+*For any* external window with "remember position" enabled, closing and reopening should restore the same geometry.
+**Validates: Requirements 9.4**
 
 ## Error Handling
 
-### SSH Config Import Errors
+All new modules follow the existing error handling pattern using `thiserror`:
 
-| Error | Handling |
-|-------|----------|
-| File not found | Display error dialog with file path |
-| Permission denied | Display error dialog with suggestion to check permissions |
-| Invalid format | Display error dialog with line number and description |
-| Empty file | Display warning that no hosts were found |
+```rust
+#[derive(Debug, thiserror::Error)]
+pub enum VariableError {
+    #[error("Undefined variable: {0}")]
+    Undefined(String),
+    #[error("Circular reference detected: {0}")]
+    CircularReference(String),
+    #[error("Invalid syntax: {0}")]
+    InvalidSyntax(String),
+    #[error("Maximum nesting depth exceeded")]
+    MaxDepthExceeded,
+}
 
-### RDP Shared Folder Errors
+#[derive(Debug, thiserror::Error)]
+pub enum KeySequenceError {
+    #[error("Invalid key sequence syntax: {0}")]
+    InvalidSyntax(String),
+    #[error("Unknown special key: {0}")]
+    UnknownKey(String),
+}
 
-| Error | Handling |
-|-------|----------|
-| Directory not found | Warn user before connection, allow proceeding |
-| Permission denied | Warn user, suggest checking permissions |
-| Invalid share name | Validate on input, show inline error |
-
-### Progress Operation Errors
-
-| Error | Handling |
-|-------|----------|
-| Operation cancelled | Close dialog, show "Cancelled" message |
-| Partial failure | Complete operation, show summary with failures |
+// Similar error types for other modules...
+```
 
 ## Testing Strategy
 
-### Unit Testing
+### Dual Testing Approach
 
-- Test SSH config parsing with various valid configurations
-- Test RDP command builder with different shared folder configurations
-- Test progress reporter callback invocation
-- Test split view pane management operations
+The implementation uses both unit tests and property-based tests:
 
-### Property-Based Testing
+1. **Unit Tests**: Verify specific examples, edge cases, and error conditions
+2. **Property-Based Tests**: Verify universal properties using `proptest`
 
-Using `proptest` library as specified in tech stack:
+### Property-Based Testing Framework
 
-1. **SSH Config Parsing**: Generate random valid SSH config content and verify parsing extracts all entries
-2. **Shared Folder Operations**: Generate random add/remove sequences and verify count invariants
-3. **RDP Command Builder**: Generate random shared folder configurations and verify command output
-4. **Split View Operations**: Generate random split/close sequences and verify structure integrity
-5. **Focus Cycling**: Generate random pane counts and verify cycling completeness
+Using `proptest` crate (already in workspace dependencies):
 
-Each property-based test will:
-- Run minimum 100 iterations
-- Be tagged with format: `**Feature: rustconn-enhancements, Property {number}: {property_text}**`
-- Reference the correctness property from this design document
+```rust
+use proptest::prelude::*;
 
-### Integration Testing
+proptest! {
+    #[test]
+    fn test_variable_round_trip(name in "[a-z_][a-z0-9_]*", value in ".*") {
+        let var = Variable { name, value, is_secret: false, description: None };
+        let json = serde_json::to_string(&var).unwrap();
+        let parsed: Variable = serde_json::from_str(&json).unwrap();
+        prop_assert_eq!(var.name, parsed.name);
+        prop_assert_eq!(var.value, parsed.value);
+    }
+}
+```
 
-- Test full import workflow with custom SSH config file
-- Test RDP connection with shared folders
-- Test progress dialog during bulk import
-- Test split view with multiple terminal sessions
+### Test Organization
+
+- Property tests in `rustconn-core/tests/property_tests/`
+- Unit tests co-located with source files
+- Integration tests in `rustconn-core/tests/`
+
+### Clippy Compliance
+
+All code must pass:
+```bash
+cargo clippy -p rustconn-core --all-targets -- -D warnings
+cargo clippy -p rustconn --all-targets -- -D warnings
+```
+

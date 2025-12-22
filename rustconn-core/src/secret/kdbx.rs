@@ -38,6 +38,7 @@ impl KdbxEntry {
             crate::models::ProtocolConfig::Rdp(_) => "RDP",
             crate::models::ProtocolConfig::Vnc(_) => "VNC",
             crate::models::ProtocolConfig::Spice(_) => "SPICE",
+            crate::models::ProtocolConfig::ZeroTrust(_) => "ZeroTrust",
         };
 
         let url = format!(

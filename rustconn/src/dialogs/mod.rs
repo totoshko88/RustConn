@@ -1,22 +1,38 @@
 //! Dialog windows for `RustConn`
 
+mod cluster;
 mod connection;
+mod document;
+mod export;
 mod import;
+mod log_viewer;
 mod password;
 mod progress;
 mod settings;
 mod snippet;
+mod template;
+mod variables;
 
+pub use cluster::{ClusterCallback, ClusterDialog, ClusterListDialog};
 pub use connection::ConnectionDialog;
+pub use document::{
+    CloseDocumentDialog, DocumentCallback, DocumentDialogResult, DocumentProtectionDialog,
+    NewDocumentDialog, OpenDocumentDialog, SaveDocumentDialog,
+};
+pub use export::{ExportCallback, ExportDialog};
 pub use import::ImportDialog;
+pub use log_viewer::LogViewerDialog;
 pub use password::{PasswordDialog, PasswordDialogResult};
 pub use progress::ProgressDialog;
 pub use settings::SettingsDialog;
 pub use snippet::SnippetDialog;
+pub use template::{TemplateCallback, TemplateDialog, TemplateManagerDialog};
+pub use variables::VariablesDialog;
 
+use rustconn_core::config::AppSettings;
 use rustconn_core::import::ImportResult;
 use rustconn_core::models::{Connection, Snippet};
-use rustconn_core::config::AppSettings;
+use rustconn_core::variables::Variable;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -34,3 +50,6 @@ pub type SettingsCallback = Rc<RefCell<Option<Box<dyn Fn(Option<AppSettings>)>>>
 
 /// Type alias for snippet dialog callback
 pub type SnippetCallback = Rc<RefCell<Option<Box<dyn Fn(Option<Snippet>)>>>>;
+
+/// Type alias for variables dialog callback
+pub type VariablesCallback = Rc<RefCell<Option<Box<dyn Fn(Option<Vec<Variable>>)>>>>;

@@ -9,6 +9,7 @@ rust-version.workspace = true
 
 [dependencies]
 tokio = { workspace = true }
+futures = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
@@ -21,10 +22,48 @@ secrecy = { workspace = true }
 dirs = { workspace = true }
 shellexpand = { workspace = true }
 regex = { workspace = true }
+ring = { workspace = true }
+argon2 = { workspace = true }
+hostname = "0.4"
+# Tracing for structured logging and performance profiling
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+# Pure Rust VNC client for embedded VNC sessions
+vnc-rs = { version = "0.5", optional = true }
+# Native SPICE client for embedded SPICE sessions
+spice-client = { version = "0.2.0", optional = true }
+# Pure Rust RDP client for embedded RDP sessions using IronRDP
+# Using git dependencies from master branch which has sspi 0.18 with fixed rand_core
+ironrdp-connector = { git = "https://github.com/Devolutions/IronRDP", optional = true }
+ironrdp-session = { git = "https://github.com/Devolutions/IronRDP", optional = true }
+ironrdp-tokio = { git = "https://github.com/Devolutions/IronRDP", optional = true }
+ironrdp-graphics = { git = "https://github.com/Devolutions/IronRDP", optional = true }
+ironrdp-pdu = { git = "https://github.com/Devolutions/IronRDP", optional = true }
+ironrdp-tls = { git = "https://github.com/Devolutions/IronRDP", optional = true, features = ["rustls"] }
+
+[features]
+default = ["vnc-embedded", "rdp-embedded"]
+vnc-embedded = ["dep:vnc-rs"]
+# rdp-embedded feature enables the RdpClient struct with IronRDP
+rdp-embedded = [
+    "dep:ironrdp-connector",
+    "dep:ironrdp-session",
+    "dep:ironrdp-tokio",
+    "dep:ironrdp-graphics",
+    "dep:ironrdp-pdu",
+    "dep:ironrdp-tls",
+]
+# spice-embedded feature enables the SpiceClient struct with native SPICE protocol
+spice-embedded = ["dep:spice-client"]
 
 [dev-dependencies]
 proptest = { workspace = true }
 tempfile = { workspace = true }
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "search_bench"
+harness = false
 
 [lints]
 workspace = true

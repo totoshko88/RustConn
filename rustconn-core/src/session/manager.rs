@@ -5,14 +5,14 @@
 //! and tracking sessions.
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::Path;
 use uuid::Uuid;
 
 use crate::error::SessionError;
 use crate::models::Connection;
 use crate::protocol::ProtocolRegistry;
 
-use super::logger::SessionLogger;
+use super::logger::{LogConfig, LogContext, SessionLogger};
 use super::session::{Session, SessionState, SessionType};
 
 /// Result type for session operations
@@ -30,9 +30,11 @@ pub struct SessionManager {
     sessions: HashMap<Uuid, Session>,
     /// Protocol registry for validation
     protocol_registry: ProtocolRegistry,
-    /// Session logger for recording terminal output
-    logger: Option<SessionLogger>,
-    /// Whether logging is enabled
+    /// Session loggers indexed by session ID
+    session_loggers: HashMap<Uuid, SessionLogger>,
+    /// Default log configuration for new sessions
+    default_log_config: Option<LogConfig>,
+    /// Whether logging is enabled globally
     logging_enabled: bool,
 }
 
@@ -43,21 +45,45 @@ impl SessionManager {
         Self {
             sessions: HashMap::new(),
             protocol_registry: ProtocolRegistry::new(),
-            logger: None,
+            session_loggers: HashMap::new(),
+            default_log_config: None,
             logging_enabled: false,
         }
     }
 
     /// Creates a new `SessionManager` with logging enabled
     ///
+    /// # Arguments
+    ///
+    /// * `log_dir` - Base directory for log files
+    ///
     /// # Errors
-    /// Returns an error if the logger cannot be initialized
-    pub fn with_logging(log_dir: PathBuf) -> SessionResult<Self> {
-        let logger = SessionLogger::new(log_dir)?;
+    /// Returns an error if the log directory cannot be created
+    pub fn with_logging(log_dir: &Path) -> SessionResult<Self> {
+        // Ensure the log directory exists
+        if !log_dir.exists() {
+            std::fs::create_dir_all(log_dir).map_err(|e| {
+                SessionError::LoggingError(format!(
+                    "Failed to create log directory '{}': {}",
+                    log_dir.display(),
+                    e
+                ))
+            })?;
+        }
+
+        // Create a default log config using the provided directory
+        let path_template = log_dir
+            .join("${connection_name}_${date}.log")
+            .to_string_lossy()
+            .to_string();
+
+        let config = LogConfig::new(path_template).with_enabled(true);
+
         Ok(Self {
             sessions: HashMap::new(),
             protocol_registry: ProtocolRegistry::new(),
-            logger: Some(logger),
+            session_loggers: HashMap::new(),
+            default_log_config: Some(config),
             logging_enabled: true,
         })
     }
@@ -67,9 +93,9 @@ impl SessionManager {
         self.logging_enabled = enabled;
     }
 
-    /// Sets the session logger
-    pub fn set_logger(&mut self, logger: SessionLogger) {
-        self.logger = Some(logger);
+    /// Sets the default log configuration for new sessions
+    pub fn set_default_log_config(&mut self, config: LogConfig) {
+        self.default_log_config = Some(config);
     }
 
     /// Starts a new session for a connection
@@ -107,20 +133,40 @@ impl SessionManager {
             session_type,
         );
 
+        let session_id = session.id;
+
         // Set up logging if enabled
         if self.logging_enabled {
-            if let Some(ref logger) = self.logger {
-                match logger.create_log_file(connection.id, &connection.name) {
-                    Ok(log_path) => session.set_log_file(log_path),
+            if let Some(ref config) = self.default_log_config {
+                let context = LogContext::new(&connection.name, connection.protocol.as_str());
+                match SessionLogger::new(config.clone(), &context, None) {
+                    Ok(logger) => {
+                        let log_path = logger.log_path().to_path_buf();
+                        eprintln!(
+                            "Session logging enabled for '{}': {}",
+                            connection.name,
+                            log_path.display()
+                        );
+                        session.set_log_file(log_path);
+                        self.session_loggers.insert(session_id, logger);
+                    }
                     Err(e) => {
-                        // Log error but don't fail the session
-                        eprintln!("Warning: Failed to create log file: {e}");
+                        // Log detailed error for debugging
+                        eprintln!(
+                            "Warning: Failed to create session logger for '{}': {}",
+                            connection.name, e
+                        );
+                        eprintln!("  Log config path template: {}", config.path_template);
                     }
                 }
+            } else {
+                eprintln!(
+                    "Warning: Logging enabled but no log config set for session '{}'",
+                    connection.name
+                );
             }
         }
 
-        let session_id = session.id;
         self.sessions.insert(session_id, session);
 
         Ok(session_id)
@@ -161,10 +207,10 @@ impl SessionManager {
             SessionError::TerminateFailed(format!("Failed to terminate process: {e}"))
         })?;
 
-        // Finalize the log file
-        if let Some(ref log_path) = session.log_file {
-            if let Err(e) = SessionLogger::finalize_log(log_path) {
-                eprintln!("Warning: Failed to finalize log file: {e}");
+        // Close the session logger (this will finalize the log file)
+        if let Some(mut logger) = self.session_loggers.remove(&session_id) {
+            if let Err(e) = logger.close() {
+                eprintln!("Warning: Failed to close session logger: {e}");
             }
         }
 
@@ -185,10 +231,10 @@ impl SessionManager {
             .kill()
             .map_err(|e| SessionError::TerminateFailed(format!("Failed to kill process: {e}")))?;
 
-        // Finalize the log file
-        if let Some(ref log_path) = session.log_file {
-            if let Err(e) = SessionLogger::finalize_log(log_path) {
-                eprintln!("Warning: Failed to finalize log file: {e}");
+        // Close the session logger (this will finalize the log file)
+        if let Some(mut logger) = self.session_loggers.remove(&session_id) {
+            if let Err(e) = logger.close() {
+                eprintln!("Warning: Failed to close session logger: {e}");
             }
         }
 
@@ -277,10 +323,53 @@ impl SessionManager {
         first_error.map_or(Ok(()), Err)
     }
 
-    /// Returns a reference to the session logger
+    /// Returns a reference to a session's logger
     #[must_use]
-    pub const fn logger(&self) -> Option<&SessionLogger> {
-        self.logger.as_ref()
+    pub fn session_logger(&self, session_id: Uuid) -> Option<&SessionLogger> {
+        self.session_loggers.get(&session_id)
+    }
+
+    /// Returns a mutable reference to a session's logger
+    pub fn session_logger_mut(&mut self, session_id: Uuid) -> Option<&mut SessionLogger> {
+        self.session_loggers.get_mut(&session_id)
+    }
+
+    /// Writes data to a session's log
+    ///
+    /// # Errors
+    /// Returns an error if writing fails
+    pub fn write_to_session_log(&mut self, session_id: Uuid, data: &[u8]) -> SessionResult<()> {
+        if let Some(logger) = self.session_loggers.get_mut(&session_id) {
+            logger
+                .write(data)
+                .map_err(|e| SessionError::LoggingError(format!("Failed to write to log: {e}")))?;
+        }
+        Ok(())
+    }
+
+    /// Flushes a session's log to disk
+    ///
+    /// # Errors
+    /// Returns an error if flushing fails
+    pub fn flush_session_log(&mut self, session_id: Uuid) -> SessionResult<()> {
+        if let Some(logger) = self.session_loggers.get_mut(&session_id) {
+            logger
+                .flush()
+                .map_err(|e| SessionError::LoggingError(format!("Failed to flush log: {e}")))?;
+        }
+        Ok(())
+    }
+
+    /// Checks if logging is enabled for a session
+    #[must_use]
+    pub fn is_logging_enabled_for_session(&self, session_id: Uuid) -> bool {
+        self.session_loggers.contains_key(&session_id)
+    }
+
+    /// Returns whether logging is globally enabled
+    #[must_use]
+    pub const fn is_logging_enabled(&self) -> bool {
+        self.logging_enabled
     }
 }
 

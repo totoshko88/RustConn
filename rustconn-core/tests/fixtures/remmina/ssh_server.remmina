@@ -1,0 +1,8 @@
+[remmina]
+name=SSH Production Server
+protocol=SSH
+server=192.168.1.10:22
+username=deploy
+ssh_auth=2
+ssh_privatekey=~/.ssh/id_ed25519
+group=Production

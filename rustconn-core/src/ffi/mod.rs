@@ -130,14 +130,17 @@ mod tests {
     fn test_connection_state_display() {
         assert_eq!(ConnectionState::Disconnected.to_string(), "Disconnected");
         assert_eq!(ConnectionState::Connecting.to_string(), "Connecting");
-        assert_eq!(ConnectionState::Authenticating.to_string(), "Authenticating");
+        assert_eq!(
+            ConnectionState::Authenticating.to_string(),
+            "Authenticating"
+        );
         assert_eq!(ConnectionState::Connected.to_string(), "Connected");
         assert_eq!(ConnectionState::Error.to_string(), "Error");
     }
 
     #[test]
     fn test_connection_state_default() {
-        let state: ConnectionState = Default::default();
+        let state: ConnectionState = ConnectionState::default();
         assert_eq!(state, ConnectionState::Disconnected);
     }
 

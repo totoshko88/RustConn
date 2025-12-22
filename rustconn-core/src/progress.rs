@@ -166,7 +166,10 @@ where
     /// * `callback` - Function called for each progress update
     /// * `cancelled` - Shared cancellation flag
     #[must_use]
-    pub const fn with_cancel_flag(callback: F, cancelled: std::rc::Rc<std::cell::Cell<bool>>) -> Self {
+    pub const fn with_cancel_flag(
+        callback: F,
+        cancelled: std::rc::Rc<std::cell::Cell<bool>>,
+    ) -> Self {
         Self {
             callback,
             cancelled,

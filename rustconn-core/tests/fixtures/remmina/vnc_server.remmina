@@ -1,0 +1,5 @@
+[remmina]
+name=VNC Desktop
+protocol=VNC
+server=192.168.1.75:5901
+group=Desktops

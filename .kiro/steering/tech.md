@@ -1,71 +1,80 @@
+---
+inclusion: always
+---
+
 # RustConn Tech Stack
 
-## Language & Toolchain
+Rust 2021 edition, MSRV 1.76. Cargo workspace with three crates.
 
-- Rust 2021 edition (MSRV: 1.75)
-- Cargo workspace with two crates
+## Workspace Crates
 
-## Key Dependencies
+| Crate | Type | Key Dependencies |
+|-------|------|------------------|
+| `rustconn` | GUI binary | `gtk4` 0.10 (`v4_14`), `vte4` 0.9, optional `ksni`+`resvg` (tray) |
+| `rustconn-core` | Library | `tokio` 1.48 (full), `serde`/`serde_json`/`serde_yaml`/`toml`, `uuid` (v4), `chrono`, `thiserror`, `secrecy`, `ring`+`argon2`, `regex` |
+| `rustconn-cli` | CLI binary | `clap` 4.5 (derive) |
 
-### GUI (rustconn crate)
-- `gtk4` (0.9) - GTK4 bindings with v4_12 features
-- `vte4` (0.8) - Terminal emulator widget for embedded SSH
+## Mandatory Code Rules
 
-### Core Library (rustconn-core crate)
-- `tokio` - Async runtime (full features)
-- `serde` / `serde_json` / `serde_yaml` / `toml` - Serialization
-- `uuid` - Connection/group identifiers
-- `chrono` - Timestamps
-- `thiserror` - Error definitions
-- `async-trait` - Async trait support
-- `secrecy` - Secure string handling
-- `regex` - Pattern matching for imports
+- `unsafe_code = "forbid"` — never use unsafe
+- Clippy `all`, `pedantic`, `nursery` enabled
+- Max line width: 100 chars, 4-space indent, Unix line endings
 
-### Testing
-- `proptest` - Property-based testing
-- `tempfile` - Temporary file handling in tests
+## Required Patterns
 
-## Linting & Formatting
+When writing Rust code, always follow these patterns:
 
-Strict linting enabled at workspace level:
-- `unsafe_code = "forbid"` - No unsafe code allowed
-- Clippy: `all`, `pedantic`, `nursery` warnings enabled
+```rust
+// Error types: use thiserror
+#[derive(Debug, thiserror::Error)]
+pub enum MyError {
+    #[error("description: {0}")]
+    Variant(String),
+}
 
-Clippy thresholds (`.clippy.toml`):
-- Cognitive complexity: 25
-- Max arguments: 7
-- Type complexity: 250
+// Sensitive data: wrap in SecretString
+use secrecy::SecretString;
+let password: SecretString = SecretString::new(value.into());
 
-Formatting (`rustfmt.toml`):
-- Max width: 100 characters
-- 4-space indentation
-- Unix line endings
-- Imports and modules reordered
+// Identifiers: use Uuid
+use uuid::Uuid;
+let id = Uuid::new_v4();
 
-## Common Commands
+// Timestamps: use chrono UTC
+use chrono::{DateTime, Utc};
+let now: DateTime<Utc> = Utc::now();
+
+// Async traits: use async-trait
+#[async_trait::async_trait]
+impl MyTrait for MyStruct {
+    async fn method(&self) -> Result<(), Error> { ... }
+}
+```
+
+## Do / Don't
+
+| Do | Don't |
+|----|-------|
+| Return `Result<T, Error>` | Use `unwrap()`/`expect()` except for impossible states |
+| Use `thiserror` for error enums | Define errors without `#[derive(thiserror::Error)]` |
+| Wrap secrets in `SecretString` | Store credentials as plain `String` |
+| Use `tokio` for async runtime | Mix async runtimes |
+| Keep `rustconn-core` GUI-free | Import `gtk4`/`vte4` in `rustconn-core` |
+
+## Testing
+
+Property-based tests: `rustconn-core/tests/properties/` using `proptest`
+Temp directories: use `tempfile` crate
+
+## Commands
 
 ```bash
-# Build all crates
-cargo build
-
-# Build release
-cargo build --release
-
-# Run the application
-cargo run -p rustconn
-
-# Run all tests
-cargo test
-
-# Run property tests only
-cargo test -p rustconn-core --test property_tests
-
-# Check lints
-cargo clippy --all-targets
-
-# Format code
-cargo fmt
-
-# Check formatting
-cargo fmt --check
+cargo build                    # Build all crates
+cargo build --release          # Release build
+cargo run -p rustconn          # Run GUI app
+cargo run -p rustconn-cli      # Run CLI
+cargo test                     # Run all tests
+cargo test -p rustconn-core --test property_tests  # Property tests only
+cargo clippy --all-targets     # Check lints
+cargo fmt --check              # Verify formatting
 ```

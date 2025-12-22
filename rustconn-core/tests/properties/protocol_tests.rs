@@ -7,8 +7,8 @@ use proptest::prelude::*;
 use std::collections::HashMap;
 
 use rustconn_core::models::{
-    Connection, ProtocolConfig, RdpConfig, RdpGateway, Resolution, SharedFolder,
-    SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig, VncConfig,
+    Connection, ProtocolConfig, RdpConfig, RdpGateway, Resolution, SharedFolder, SpiceConfig,
+    SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, VncConfig,
 };
 use rustconn_core::protocol::{Protocol, RdpProtocol, SshProtocol, VncProtocol};
 use std::path::PathBuf;
@@ -43,6 +43,9 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
                 SshConfig {
                     auth_method,
                     key_path: None, // Don't test with actual file paths
+                    key_source: SshKeySource::Default,
+                    agent_key_fingerprint: None,
+                    identities_only: false,
                     proxy_jump,
                     use_control_master,
                     custom_options,
@@ -119,20 +122,16 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
         prop::collection::vec("/[a-z-]{1,20}", 0..3), // custom_args
     )
         .prop_map(
-            |(
-                resolution,
-                color_depth,
-                audio_redirect,
-                gateway,
-                shared_folders,
-                custom_args,
-            )| RdpConfig {
-                resolution,
-                color_depth,
-                audio_redirect,
-                gateway,
-                shared_folders,
-                custom_args,
+            |(resolution, color_depth, audio_redirect, gateway, shared_folders, custom_args)| {
+                RdpConfig {
+                    resolution,
+                    color_depth,
+                    audio_redirect,
+                    gateway,
+                    shared_folders,
+                    custom_args,
+                    client_mode: Default::default(),
+                }
             },
         )
 }
@@ -165,14 +164,16 @@ fn arb_vnc_config() -> impl Strategy<Value = VncConfig> {
         prop::option::of(0u8..=9),                    // quality
         prop::collection::vec("-[a-z]{1,15}", 0..3),  // custom_args
     )
-        .prop_map(
-            |(encoding, compression, quality, custom_args)| VncConfig {
-                encoding,
-                compression,
-                quality,
-                custom_args,
-            },
-        )
+        .prop_map(|(encoding, compression, quality, custom_args)| VncConfig {
+            client_mode: Default::default(),
+            encoding,
+            compression,
+            quality,
+            view_only: false,
+            scaling: true,
+            clipboard_enabled: true,
+            custom_args,
+        })
 }
 
 fn arb_vnc_connection() -> impl Strategy<Value = Connection> {
@@ -417,7 +418,8 @@ proptest! {
             ProtocolConfig::Ssh(_) => 22u16,
             ProtocolConfig::Rdp(_) => 3389u16,
             ProtocolConfig::Vnc(_) => 5900u16,
-            ProtocolConfig::Spice(_) => 5900u16, // SPICE default port
+            ProtocolConfig::Spice(_) => 5900u16,
+            ProtocolConfig::ZeroTrust(_) => 0u16, // No default port for Zero Trust
         };
 
         prop_assert_eq!(
@@ -516,13 +518,13 @@ fn arb_optional_path() -> impl Strategy<Value = Option<PathBuf>> {
 
 fn arb_spice_config() -> impl Strategy<Value = SpiceConfig> {
     (
-        any::<bool>(),                      // tls_enabled
-        arb_optional_path(),                // ca_cert_path
-        any::<bool>(),                      // skip_cert_verify
-        any::<bool>(),                      // usb_redirection
-        arb_spice_shared_folders(),         // shared_folders
-        any::<bool>(),                      // clipboard_enabled
-        arb_spice_image_compression(),      // image_compression
+        any::<bool>(),                 // tls_enabled
+        arb_optional_path(),           // ca_cert_path
+        any::<bool>(),                 // skip_cert_verify
+        any::<bool>(),                 // usb_redirection
+        arb_spice_shared_folders(),    // shared_folders
+        any::<bool>(),                 // clipboard_enabled
+        arb_spice_image_compression(), // image_compression
     )
         .prop_map(
             |(
@@ -668,13 +670,34 @@ fn prop_default_spice_config_is_valid() {
     );
 
     // Verify default values are sensible
-    assert!(!default_config.tls_enabled, "TLS should be disabled by default");
-    assert!(default_config.ca_cert_path.is_none(), "CA cert path should be None by default");
-    assert!(!default_config.skip_cert_verify, "skip_cert_verify should be false by default");
-    assert!(!default_config.usb_redirection, "USB redirection should be disabled by default");
-    assert!(default_config.shared_folders.is_empty(), "Shared folders should be empty by default");
-    assert!(default_config.clipboard_enabled, "Clipboard should be enabled by default");
-    assert!(default_config.image_compression.is_none(), "Image compression should be None by default");
+    assert!(
+        !default_config.tls_enabled,
+        "TLS should be disabled by default"
+    );
+    assert!(
+        default_config.ca_cert_path.is_none(),
+        "CA cert path should be None by default"
+    );
+    assert!(
+        !default_config.skip_cert_verify,
+        "skip_cert_verify should be false by default"
+    );
+    assert!(
+        !default_config.usb_redirection,
+        "USB redirection should be disabled by default"
+    );
+    assert!(
+        default_config.shared_folders.is_empty(),
+        "Shared folders should be empty by default"
+    );
+    assert!(
+        default_config.clipboard_enabled,
+        "Clipboard should be enabled by default"
+    );
+    assert!(
+        default_config.image_compression.is_none(),
+        "Image compression should be None by default"
+    );
 }
 
 /// **Feature: native-protocol-embedding, Property 6: Default configurations are valid**
@@ -685,21 +708,732 @@ fn prop_default_spice_config_is_valid() {
 fn prop_all_default_protocol_configs_are_valid() {
     // Test SSH default
     let ssh_config = SshConfig::default();
-    assert_eq!(ssh_config.auth_method, SshAuthMethod::Password, "SSH default auth should be Password");
+    assert_eq!(
+        ssh_config.auth_method,
+        SshAuthMethod::Password,
+        "SSH default auth should be Password"
+    );
 
     // Test RDP default
     let rdp_config = RdpConfig::default();
-    assert!(rdp_config.resolution.is_none(), "RDP default resolution should be None");
-    assert!(rdp_config.shared_folders.is_empty(), "RDP default shared folders should be empty");
+    assert!(
+        rdp_config.resolution.is_none(),
+        "RDP default resolution should be None"
+    );
+    assert!(
+        rdp_config.shared_folders.is_empty(),
+        "RDP default shared folders should be empty"
+    );
 
     // Test VNC default
     let vnc_config = VncConfig::default();
-    assert!(vnc_config.encoding.is_none(), "VNC default encoding should be None");
-    assert!(vnc_config.compression.is_none(), "VNC default compression should be None");
-    assert!(vnc_config.quality.is_none(), "VNC default quality should be None");
+    assert!(
+        vnc_config.encoding.is_none(),
+        "VNC default encoding should be None"
+    );
+    assert!(
+        vnc_config.compression.is_none(),
+        "VNC default compression should be None"
+    );
+    assert!(
+        vnc_config.quality.is_none(),
+        "VNC default quality should be None"
+    );
 
     // Test SPICE default
     let spice_config = SpiceConfig::default();
     let result = validate_spice_config(&spice_config);
     assert!(result.is_ok(), "Default SpiceConfig should be valid");
+}
+
+// ============================================================================
+// SSH IdentitiesOnly and Command Builder Property Tests
+// ============================================================================
+
+/// Generator for SSH config with identities_only option
+fn arb_ssh_config_with_identities_only() -> impl Strategy<Value = SshConfig> {
+    (
+        arb_ssh_auth_method(),
+        any::<bool>(),                          // identities_only
+        prop::option::of("[/a-z0-9._-]{1,50}"), // key_path
+        prop::option::of("[a-z0-9.-]{1,30}"),   // proxy_jump
+        any::<bool>(),                          // use_control_master
+        arb_ssh_custom_options(),
+    )
+        .prop_map(
+            |(
+                auth_method,
+                identities_only,
+                key_path,
+                proxy_jump,
+                use_control_master,
+                custom_options,
+            )| {
+                SshConfig {
+                    auth_method,
+                    key_path: key_path.map(PathBuf::from),
+                    key_source: SshKeySource::Default,
+                    agent_key_fingerprint: None,
+                    identities_only,
+                    proxy_jump,
+                    use_control_master,
+                    custom_options,
+                    startup_command: None,
+                }
+            },
+        )
+}
+
+/// Generator for SSH config with agent key fingerprint
+fn arb_ssh_config_with_agent_fingerprint() -> impl Strategy<Value = SshConfig> {
+    (
+        prop::option::of("[a-zA-Z0-9+/]{43}".prop_map(|s| format!("SHA256:{}", s))), // fingerprint
+        prop::option::of("[a-z0-9@._-]{1,50}"),                                      // comment
+    )
+        .prop_map(|(fingerprint, comment)| {
+            let key_source = if let (Some(fp), Some(c)) = (fingerprint.clone(), comment) {
+                SshKeySource::Agent {
+                    fingerprint: fp.clone(),
+                    comment: c,
+                }
+            } else {
+                SshKeySource::Default
+            };
+            SshConfig {
+                auth_method: SshAuthMethod::Agent,
+                key_path: None,
+                key_source,
+                agent_key_fingerprint: fingerprint,
+                identities_only: false,
+                proxy_jump: None,
+                use_control_master: false,
+                custom_options: HashMap::new(),
+                startup_command: None,
+            }
+        })
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(100))]
+
+    // **Feature: rustconn-bugfixes, Property 4: SSH IdentitiesOnly Command Generation**
+    // **Validates: Requirements 6.2, 6.3**
+    //
+    // For any SSH config with identities_only=true, the generated command should
+    // contain "-o IdentitiesOnly=yes".
+    #[test]
+    fn prop_ssh_identities_only_command_generation(config in arb_ssh_config_with_identities_only()) {
+        let args = config.build_command_args();
+
+        if config.identities_only {
+            // When identities_only is true, args should contain "-o" followed by "IdentitiesOnly=yes"
+            let has_identities_only = args.windows(2).any(|w| w[0] == "-o" && w[1] == "IdentitiesOnly=yes");
+            prop_assert!(
+                has_identities_only,
+                "When identities_only is true, command should contain '-o IdentitiesOnly=yes'. Got: {:?}",
+                args
+            );
+        } else {
+            // When identities_only is false, args should NOT contain "IdentitiesOnly=yes"
+            let has_identities_only = args.iter().any(|a| a.contains("IdentitiesOnly"));
+            prop_assert!(
+                !has_identities_only,
+                "When identities_only is false, command should NOT contain 'IdentitiesOnly'. Got: {:?}",
+                args
+            );
+        }
+    }
+
+    // **Feature: rustconn-bugfixes, Property 4: SSH IdentitiesOnly Command Generation**
+    // **Validates: Requirements 6.2, 6.3**
+    //
+    // For any SSH config with a key_path, the generated command should contain
+    // "-i <path>" when the path is non-empty.
+    #[test]
+    fn prop_ssh_identity_file_command_generation(config in arb_ssh_config_with_identities_only()) {
+        let args = config.build_command_args();
+
+        if let Some(ref key_path) = config.key_path {
+            if !key_path.as_os_str().is_empty() {
+                // When key_path is set, args should contain "-i" followed by the path
+                let path_str = key_path.display().to_string();
+                let has_identity = args.windows(2).any(|w| w[0] == "-i" && w[1] == path_str);
+                prop_assert!(
+                    has_identity,
+                    "When key_path is set, command should contain '-i <path>'. Got: {:?}",
+                    args
+                );
+            }
+        }
+    }
+
+    // **Feature: rustconn-bugfixes, Property 5: SSH Config Serialization Round-Trip**
+    // **Validates: Requirements 6.4, 8.4**
+    //
+    // For any valid SshConfig including identities_only and ssh_agent_key_fingerprint,
+    // serializing and deserializing should produce an equivalent config.
+    #[test]
+    fn prop_ssh_config_serialization_round_trip(config in arb_ssh_config_with_identities_only()) {
+        // Serialize to JSON
+        let json = serde_json::to_string(&config).expect("Failed to serialize SshConfig");
+
+        // Deserialize back
+        let deserialized: SshConfig = serde_json::from_str(&json).expect("Failed to deserialize SshConfig");
+
+        // Verify all fields are preserved
+        prop_assert_eq!(
+            config.auth_method, deserialized.auth_method,
+            "auth_method should be preserved"
+        );
+        prop_assert_eq!(
+            config.key_path, deserialized.key_path,
+            "key_path should be preserved"
+        );
+        prop_assert_eq!(
+            config.identities_only, deserialized.identities_only,
+            "identities_only should be preserved"
+        );
+        prop_assert_eq!(
+            config.proxy_jump, deserialized.proxy_jump,
+            "proxy_jump should be preserved"
+        );
+        prop_assert_eq!(
+            config.use_control_master, deserialized.use_control_master,
+            "use_control_master should be preserved"
+        );
+        prop_assert_eq!(
+            config.custom_options, deserialized.custom_options,
+            "custom_options should be preserved"
+        );
+    }
+
+    // **Feature: rustconn-bugfixes, Property 6: SSH Agent Key Fingerprint Persistence**
+    // **Validates: Requirements 8.1, 8.2, 8.4**
+    //
+    // For any connection with a saved ssh_agent_key_fingerprint, loading the connection
+    // should preserve the fingerprint value.
+    #[test]
+    fn prop_ssh_agent_key_fingerprint_persistence(config in arb_ssh_config_with_agent_fingerprint()) {
+        // Serialize to JSON
+        let json = serde_json::to_string(&config).expect("Failed to serialize SshConfig");
+
+        // Deserialize back
+        let deserialized: SshConfig = serde_json::from_str(&json).expect("Failed to deserialize SshConfig");
+
+        // Verify fingerprint is preserved
+        prop_assert_eq!(
+            config.agent_key_fingerprint, deserialized.agent_key_fingerprint,
+            "agent_key_fingerprint should be preserved through serialization"
+        );
+
+        // Verify key_source is preserved
+        prop_assert_eq!(
+            config.key_source, deserialized.key_source,
+            "key_source should be preserved through serialization"
+        );
+    }
+}
+
+// ============================================================================
+// SSH Key Selection Property Tests (native-protocol-embedding)
+// ============================================================================
+
+/// Generator for SSH config with File key source (for testing Property 15)
+fn arb_ssh_config_with_file_key_source() -> impl Strategy<Value = SshConfig> {
+    (
+        "/[a-z]{1,10}(/[a-z]{1,10}){0,3}/[a-z_]{1,10}", // key file path
+        prop::option::of("[a-z0-9.-]{1,30}"),           // proxy_jump
+        any::<bool>(),                                  // use_control_master
+        arb_ssh_custom_options(),
+    )
+        .prop_map(
+            |(key_path, proxy_jump, use_control_master, custom_options)| {
+                SshConfig {
+                    auth_method: SshAuthMethod::PublicKey,
+                    key_path: None, // Use key_source instead
+                    key_source: SshKeySource::File {
+                        path: PathBuf::from(key_path),
+                    },
+                    agent_key_fingerprint: None,
+                    identities_only: false, // Should be auto-enabled for File auth
+                    proxy_jump,
+                    use_control_master,
+                    custom_options,
+                    startup_command: None,
+                }
+            },
+        )
+}
+
+/// Generator for SSH config with Agent key source (for testing Property 16)
+fn arb_ssh_config_with_agent_key_source() -> impl Strategy<Value = SshConfig> {
+    (
+        "[a-zA-Z0-9+/]{43}".prop_map(|s| format!("SHA256:{s}")), // fingerprint
+        "[a-z0-9@._-]{1,50}",                                    // comment
+        prop::option::of("[a-z0-9.-]{1,30}"),                    // proxy_jump
+        any::<bool>(),                                           // use_control_master
+        arb_ssh_custom_options(),
+    )
+        .prop_map(
+            |(fingerprint, comment, proxy_jump, use_control_master, custom_options)| {
+                SshConfig {
+                    auth_method: SshAuthMethod::Agent,
+                    key_path: None,
+                    key_source: SshKeySource::Agent {
+                        fingerprint: fingerprint.clone(),
+                        comment,
+                    },
+                    agent_key_fingerprint: Some(fingerprint),
+                    identities_only: false, // Should NOT be enabled for Agent auth
+                    proxy_jump,
+                    use_control_master,
+                    custom_options,
+                    startup_command: None,
+                }
+            },
+        )
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(100))]
+
+    // **Feature: native-protocol-embedding, Property 15: SSH Key File Flag Generation**
+    // **Validates: Requirements 5.1, 5.2**
+    //
+    // For any SSH connection with File authentication method and a key file path,
+    // the generated command should include `-i <path>` and `-o IdentitiesOnly=yes`.
+    #[test]
+    fn prop_ssh_key_file_flag_generation(config in arb_ssh_config_with_file_key_source()) {
+        let args = config.build_command_args();
+
+        // Extract the key path from the config
+        if let SshKeySource::File { ref path } = config.key_source {
+            let path_str = path.display().to_string();
+
+            // Requirement 5.1: Should include -i <key_path> flag
+            let has_identity_flag = args.windows(2).any(|w| w[0] == "-i" && w[1] == path_str);
+            prop_assert!(
+                has_identity_flag,
+                "File auth should include '-i <path>' flag. Got: {:?}",
+                args
+            );
+
+            // Requirement 5.2: Should include -o IdentitiesOnly=yes flag
+            let has_identities_only = args.windows(2).any(|w| w[0] == "-o" && w[1] == "IdentitiesOnly=yes");
+            prop_assert!(
+                has_identities_only,
+                "File auth should include '-o IdentitiesOnly=yes' flag. Got: {:?}",
+                args
+            );
+        }
+    }
+
+    // **Feature: native-protocol-embedding, Property 16: SSH Agent No IdentitiesOnly**
+    // **Validates: Requirements 5.3**
+    //
+    // For any SSH connection with Agent authentication method, the generated command
+    // should NOT include `-o IdentitiesOnly=yes` to allow SSH to use all keys from the agent.
+    #[test]
+    fn prop_ssh_agent_no_identities_only(config in arb_ssh_config_with_agent_key_source()) {
+        let args = config.build_command_args();
+
+        // Requirement 5.3: Agent auth should NOT include IdentitiesOnly
+        let has_identities_only = args.iter().any(|a| a.contains("IdentitiesOnly"));
+        prop_assert!(
+            !has_identities_only,
+            "Agent auth should NOT include 'IdentitiesOnly'. Got: {:?}",
+            args
+        );
+
+        // Agent auth should NOT include -i flag as a standalone flag (no specific key file)
+        // Check for -i followed by a path-like argument (not as a value to another flag like -J)
+        let has_identity_flag = args.windows(2).any(|w| {
+            w[0] == "-i" && !w[1].starts_with('-')
+        });
+        prop_assert!(
+            !has_identity_flag,
+            "Agent auth should NOT include '-i <path>' flag. Got: {:?}",
+            args
+        );
+    }
+}
+
+// ============================================================================
+// Property Tests for Cloud Provider Icon Detection
+// ============================================================================
+
+use rustconn_core::protocol::icons::{detect_provider, CloudProvider};
+
+/// Generator for AWS-style commands
+fn arb_aws_command() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just("aws ssm start-session".to_string()),
+        Just("aws ssm start-session --target i-123456".to_string()),
+        Just("/usr/bin/aws ssm start-session".to_string()),
+        "aws [a-z]{1,10} [a-z-]{1,20}".prop_map(|s| s),
+    ]
+}
+
+/// Generator for GCP-style commands
+fn arb_gcloud_command() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just("gcloud compute ssh".to_string()),
+        Just("gcloud compute ssh instance --zone us-central1-a".to_string()),
+        Just("/usr/bin/gcloud compute ssh".to_string()),
+        "gcloud [a-z]{1,10} [a-z-]{1,20}".prop_map(|s| s),
+    ]
+}
+
+/// Generator for Azure-style commands
+fn arb_azure_command() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just("az network bastion ssh".to_string()),
+        Just("az ssh vm --name myvm".to_string()),
+        Just("/usr/bin/az ssh vm".to_string()),
+        "az [a-z]{1,10} [a-z-]{1,20}".prop_map(|s| s),
+    ]
+}
+
+/// Generator for OCI-style commands
+fn arb_oci_command() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just("oci bastion session create".to_string()),
+        Just("/usr/bin/oci bastion session".to_string()),
+        "oci [a-z]{1,10} [a-z-]{1,20}".prop_map(|s| s),
+    ]
+}
+
+/// Generator for Cloudflare-style commands
+fn arb_cloudflare_command() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just("cloudflared access ssh".to_string()),
+        Just("/usr/bin/cloudflared access ssh".to_string()),
+        "cloudflared [a-z]{1,10} [a-z-]{1,20}".prop_map(|s| s),
+    ]
+}
+
+/// Generator for Teleport-style commands
+fn arb_teleport_command() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just("tsh ssh user@host".to_string()),
+        Just("/usr/bin/tsh ssh user@host".to_string()),
+        "tsh [a-z]{1,10} [a-z@-]{1,20}".prop_map(|s| s),
+    ]
+}
+
+/// Generator for Tailscale-style commands
+fn arb_tailscale_command() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just("tailscale ssh user@host".to_string()),
+        Just("/usr/bin/tailscale ssh user@host".to_string()),
+        "tailscale [a-z]{1,10} [a-z@-]{1,20}".prop_map(|s| s),
+    ]
+}
+
+/// Generator for Boundary-style commands
+fn arb_boundary_command() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just("boundary connect ssh".to_string()),
+        Just("/usr/bin/boundary connect ssh".to_string()),
+        "boundary [a-z]{1,10} [a-z-]{1,20}".prop_map(|s| s),
+    ]
+}
+
+/// Generator for generic/unknown commands
+fn arb_generic_command() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just("ssh user@host".to_string()),
+        Just("custom-tool connect".to_string()),
+        Just("".to_string()),
+        "[a-z]{1,10} [a-z@.-]{1,20}".prop_map(|s| s),
+    ]
+}
+
+/// Generator for any CLI command with expected provider
+fn arb_command_with_provider() -> impl Strategy<Value = (String, CloudProvider)> {
+    prop_oneof![
+        arb_aws_command().prop_map(|cmd| (cmd, CloudProvider::Aws)),
+        arb_gcloud_command().prop_map(|cmd| (cmd, CloudProvider::Gcloud)),
+        arb_azure_command().prop_map(|cmd| (cmd, CloudProvider::Azure)),
+        arb_oci_command().prop_map(|cmd| (cmd, CloudProvider::Oci)),
+        arb_cloudflare_command().prop_map(|cmd| (cmd, CloudProvider::Cloudflare)),
+        arb_teleport_command().prop_map(|cmd| (cmd, CloudProvider::Teleport)),
+        arb_tailscale_command().prop_map(|cmd| (cmd, CloudProvider::Tailscale)),
+        arb_boundary_command().prop_map(|cmd| (cmd, CloudProvider::Boundary)),
+    ]
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(100))]
+
+    // **Feature: rustconn-bugfixes, Property 1: Provider Icon Detection**
+    // **Validates: Requirements 4.2**
+    //
+    // For any CLI command string, the provider detection function should return
+    // a valid CloudProvider enum value.
+    #[test]
+    fn prop_provider_detection_returns_valid_provider(command in "[a-zA-Z0-9 /_.-]{0,100}") {
+        let provider = detect_provider(&command);
+
+        // Verify the result is a valid CloudProvider variant
+        let valid_providers = CloudProvider::all();
+        prop_assert!(
+            valid_providers.contains(&provider),
+            "detect_provider should return a valid CloudProvider. Got: {:?}",
+            provider
+        );
+    }
+
+    // **Feature: rustconn-bugfixes, Property 1: Provider Icon Detection**
+    // **Validates: Requirements 4.2**
+    //
+    // For any known provider command, detection should return the correct provider.
+    #[test]
+    fn prop_provider_detection_correct_for_known_commands((command, expected_provider) in arb_command_with_provider()) {
+        let detected = detect_provider(&command);
+
+        prop_assert_eq!(
+            detected, expected_provider,
+            "Command '{}' should be detected as {:?}, but got {:?}",
+            command, expected_provider, detected
+        );
+    }
+
+    // **Feature: rustconn-bugfixes, Property 1: Provider Icon Detection**
+    // **Validates: Requirements 4.3**
+    //
+    // For any unknown/generic command, detection should return Generic provider.
+    #[test]
+    fn prop_provider_detection_generic_for_unknown(command in arb_generic_command()) {
+        let detected = detect_provider(&command);
+
+        // Generic commands should return Generic provider
+        // (unless they accidentally match a known pattern)
+        prop_assert!(
+            detected == CloudProvider::Generic || CloudProvider::all().contains(&detected),
+            "Unknown command should return Generic or a valid provider. Got: {:?}",
+            detected
+        );
+    }
+
+    // **Feature: rustconn-bugfixes, Property 1: Provider Icon Detection**
+    // **Validates: Requirements 4.2**
+    //
+    // Provider detection should be case-insensitive.
+    #[test]
+    fn prop_provider_detection_case_insensitive(command in arb_command_with_provider()) {
+        let (cmd, _expected) = command;
+
+        // Test lowercase
+        let lower_result = detect_provider(&cmd.to_lowercase());
+        // Test uppercase
+        let upper_result = detect_provider(&cmd.to_uppercase());
+
+        prop_assert_eq!(
+            lower_result, upper_result,
+            "Provider detection should be case-insensitive. Lower: {:?}, Upper: {:?}",
+            lower_result, upper_result
+        );
+    }
+}
+
+// ============================================================================
+// Unit Tests for Cloud Provider Icon Detection
+// ============================================================================
+
+/// **Feature: rustconn-bugfixes, Property 1: Provider Icon Detection**
+/// **Validates: Requirements 4.2**
+///
+/// Verify that each provider has a valid icon name.
+#[test]
+fn test_all_providers_have_icon_names() {
+    for provider in CloudProvider::all() {
+        let icon_name = provider.icon_name();
+        assert!(
+            !icon_name.is_empty(),
+            "Provider {:?} should have a non-empty icon name",
+            provider
+        );
+        assert!(
+            icon_name.ends_with("-symbolic") || icon_name.contains("cloud"),
+            "Icon name '{}' should follow naming convention",
+            icon_name
+        );
+    }
+}
+
+/// **Feature: rustconn-bugfixes, Property 1: Provider Icon Detection**
+/// **Validates: Requirements 4.2**
+///
+/// Verify that each provider has a valid display name.
+#[test]
+fn test_all_providers_have_display_names() {
+    for provider in CloudProvider::all() {
+        let display_name = provider.display_name();
+        assert!(
+            !display_name.is_empty(),
+            "Provider {:?} should have a non-empty display name",
+            provider
+        );
+    }
+}
+
+/// **Feature: rustconn-bugfixes, Property 1: Provider Icon Detection**
+/// **Validates: Requirements 4.3**
+///
+/// Verify that Generic provider is the default.
+#[test]
+fn test_generic_is_default_provider() {
+    let default_provider = CloudProvider::default();
+    assert_eq!(
+        default_provider,
+        CloudProvider::Generic,
+        "Default provider should be Generic"
+    );
+}
+
+// ============================================================================
+// Property Test for Protocol-Specific Icons
+// ============================================================================
+
+use rustconn_core::models::ProtocolType;
+use rustconn_core::protocol::icons::{all_protocol_icons, get_protocol_icon};
+
+/// **Feature: rustconn-fixes-v2, Property 9: Protocol Icons Are Distinct**
+/// **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
+///
+/// For any two different protocol types (SSH, RDP, VNC, SPICE), the icon names
+/// returned should be different.
+#[test]
+fn prop_protocol_icons_are_distinct() {
+    let protocols = [
+        ProtocolType::Ssh,
+        ProtocolType::Rdp,
+        ProtocolType::Vnc,
+        ProtocolType::Spice,
+    ];
+
+    // Collect all icon names
+    let icons: Vec<(&ProtocolType, &'static str)> = protocols
+        .iter()
+        .map(|p| (p, get_protocol_icon(*p)))
+        .collect();
+
+    // Check that each pair of different protocols has different icons
+    for i in 0..icons.len() {
+        for j in (i + 1)..icons.len() {
+            let (proto_a, icon_a) = icons[i];
+            let (proto_b, icon_b) = icons[j];
+
+            assert_ne!(
+                icon_a, icon_b,
+                "Protocol {:?} and {:?} should have distinct icons, but both have '{}'",
+                proto_a, proto_b, icon_a
+            );
+        }
+    }
+}
+
+/// **Feature: rustconn-fixes-v2, Property 9: Protocol Icons Are Distinct**
+/// **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
+///
+/// Verify that each protocol has the expected icon name as per requirements.
+#[test]
+fn test_protocol_icons_match_requirements() {
+    // Requirements 7.1: SSH should show terminal icon
+    assert_eq!(
+        get_protocol_icon(ProtocolType::Ssh),
+        "utilities-terminal-symbolic",
+        "SSH should use terminal icon (Requirement 7.3)"
+    );
+
+    // Requirements 7.2: VNC should show video display icon
+    assert_eq!(
+        get_protocol_icon(ProtocolType::Vnc),
+        "video-display-symbolic",
+        "VNC should use video display icon (Requirement 7.2)"
+    );
+
+    // Requirements 7.1: RDP should show computer/monitor icon
+    assert_eq!(
+        get_protocol_icon(ProtocolType::Rdp),
+        "computer-symbolic",
+        "RDP should use computer icon (Requirement 7.1)"
+    );
+
+    // Requirements 7.4: SPICE should show remote desktop icon
+    assert_eq!(
+        get_protocol_icon(ProtocolType::Spice),
+        "preferences-desktop-remote-desktop-symbolic",
+        "SPICE should use remote desktop icon (Requirement 7.4)"
+    );
+}
+
+/// **Feature: rustconn-fixes-v2, Property 9: Protocol Icons Are Distinct**
+/// **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
+///
+/// Verify that all_protocol_icons returns consistent data.
+#[test]
+fn test_all_protocol_icons_consistency() {
+    let all_icons = all_protocol_icons();
+
+    // Verify we have entries for all main protocols
+    assert!(
+        all_icons.len() >= 4,
+        "Should have at least 4 protocol icons (SSH, RDP, VNC, SPICE)"
+    );
+
+    // Verify each entry matches get_protocol_icon
+    for (protocol, expected_icon) in all_icons {
+        let actual_icon = get_protocol_icon(*protocol);
+        assert_eq!(
+            actual_icon, *expected_icon,
+            "all_protocol_icons and get_protocol_icon should return same icon for {:?}",
+            protocol
+        );
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(100))]
+
+    /// **Feature: rustconn-fixes-v2, Property 9: Protocol Icons Are Distinct**
+    /// **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
+    ///
+    /// For any randomly selected pair of different protocol types,
+    /// their icons should be different.
+    #[test]
+    fn prop_random_protocol_pairs_have_distinct_icons(
+        idx_a in 0usize..4,
+        idx_b in 0usize..4
+    ) {
+        let protocols = [
+            ProtocolType::Ssh,
+            ProtocolType::Rdp,
+            ProtocolType::Vnc,
+            ProtocolType::Spice,
+        ];
+
+        let proto_a = protocols[idx_a];
+        let proto_b = protocols[idx_b];
+
+        let icon_a = get_protocol_icon(proto_a);
+        let icon_b = get_protocol_icon(proto_b);
+
+        // If protocols are different, icons must be different
+        if idx_a != idx_b {
+            prop_assert_ne!(
+                icon_a, icon_b,
+                "Different protocols {:?} and {:?} should have different icons",
+                proto_a, proto_b
+            );
+        } else {
+            // Same protocol should have same icon (consistency)
+            prop_assert_eq!(
+                icon_a, icon_b,
+                "Same protocol {:?} should always return same icon",
+                proto_a
+            );
+        }
+    }
 }

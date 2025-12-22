@@ -6,13 +6,49 @@
 use gtk4::prelude::*;
 use gtk4::{
     gio, glib, Application, ApplicationWindow, Button, HeaderBar, Label, MenuButton, Orientation,
-    Paned,
+    Paned, ScrolledWindow,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
 use uuid::Uuid;
 
-use crate::dialogs::{ConnectionDialog, ImportDialog, PasswordDialog, SettingsDialog, SnippetDialog};
+/// Returns the protocol string for a connection, including provider info for `ZeroTrust`
+///
+/// For `ZeroTrust` connections, returns "zerotrust:provider" format to enable
+/// provider-specific icons in the sidebar.
+///
+/// Uses the provider enum to determine the provider type for icon display.
+fn get_protocol_string(config: &rustconn_core::ProtocolConfig) -> String {
+    match config {
+        rustconn_core::ProtocolConfig::Ssh(_) => "ssh".to_string(),
+        rustconn_core::ProtocolConfig::Rdp(_) => "rdp".to_string(),
+        rustconn_core::ProtocolConfig::Vnc(_) => "vnc".to_string(),
+        rustconn_core::ProtocolConfig::Spice(_) => "spice".to_string(),
+        rustconn_core::ProtocolConfig::ZeroTrust(zt) => {
+            // Use provider enum to determine the provider type
+            let provider = match zt.provider {
+                rustconn_core::models::ZeroTrustProvider::AwsSsm => "aws",
+                rustconn_core::models::ZeroTrustProvider::GcpIap => "gcloud",
+                rustconn_core::models::ZeroTrustProvider::AzureBastion => "azure",
+                rustconn_core::models::ZeroTrustProvider::AzureSsh => "azure_ssh",
+                rustconn_core::models::ZeroTrustProvider::OciBastion => "oci",
+                rustconn_core::models::ZeroTrustProvider::CloudflareAccess => "cloudflare",
+                rustconn_core::models::ZeroTrustProvider::Teleport => "teleport",
+                rustconn_core::models::ZeroTrustProvider::TailscaleSsh => "tailscale",
+                rustconn_core::models::ZeroTrustProvider::Boundary => "boundary",
+                rustconn_core::models::ZeroTrustProvider::Generic => "generic",
+            };
+            format!("zerotrust:{provider}")
+        }
+    }
+}
+
+use crate::dialogs::{
+    ClusterDialog, ClusterListDialog, ConnectionDialog, ExportDialog, ImportDialog, PasswordDialog,
+    SettingsDialog, SnippetDialog,
+};
+use crate::embedded::{EmbeddedSessionTab, RdpLauncher};
+use crate::external_window::ExternalWindowManager;
 use crate::sidebar::{ConnectionItem, ConnectionSidebar};
 use crate::split_view::{SplitDirection, SplitTerminalView};
 use crate::state::SharedAppState;
@@ -25,6 +61,9 @@ type SharedNotebook = Rc<TerminalNotebook>;
 /// Shared split view type
 type SharedSplitView = Rc<SplitTerminalView>;
 
+/// Shared external window manager type
+type SharedExternalWindowManager = Rc<ExternalWindowManager>;
+
 /// Main application window wrapper
 ///
 /// Provides access to the main window and its components.
@@ -35,6 +74,7 @@ pub struct MainWindow {
     split_view: SharedSplitView,
     state: SharedAppState,
     paned: Paned,
+    external_window_manager: SharedExternalWindowManager,
 }
 
 impl MainWindow {
@@ -75,11 +115,11 @@ impl MainWindow {
         // Create the main layout with paned container
         let paned = Paned::new(Orientation::Horizontal);
 
-        // Apply saved sidebar width
+        // Apply saved sidebar width (with reasonable limits)
         {
             let state_ref = state.borrow();
             let settings = state_ref.settings();
-            let sidebar_width = settings.ui.sidebar_width.unwrap_or(280);
+            let sidebar_width = settings.ui.sidebar_width.unwrap_or(280).clamp(150, 500);
             paned.set_position(sidebar_width);
         }
 
@@ -98,8 +138,8 @@ impl MainWindow {
 
         // Configure notebook to show tabs
         // Content is displayed in split view panes, not in notebook
-        terminal_notebook.widget().set_show_tabs(true);
-        terminal_notebook.widget().set_show_border(false);
+        terminal_notebook.notebook().set_show_tabs(true);
+        terminal_notebook.notebook().set_show_border(false);
         // Don't let notebook expand - it should only show tabs
         terminal_notebook.widget().set_vexpand(false);
         // Ensure notebook is visible
@@ -122,6 +162,9 @@ impl MainWindow {
 
         window.set_child(Some(&paned));
 
+        // Create external window manager
+        let external_window_manager = Rc::new(ExternalWindowManager::new());
+
         let main_window = Self {
             window,
             sidebar,
@@ -129,6 +172,7 @@ impl MainWindow {
             split_view,
             state,
             paned,
+            external_window_manager,
         };
 
         // Set up window actions
@@ -205,7 +249,7 @@ impl MainWindow {
     fn create_app_menu() -> gio::Menu {
         let menu = gio::Menu::new();
 
-        // Connection section
+        // Connections section
         let conn_section = gio::Menu::new();
         conn_section.append(Some("New Connection"), Some("win.new-connection"));
         conn_section.append(Some("New Group"), Some("win.new-group"));
@@ -213,27 +257,24 @@ impl MainWindow {
         conn_section.append(Some("Local Shell"), Some("win.local-shell"));
         menu.append_section(None, &conn_section);
 
-        // Snippet section
-        let snippet_section = gio::Menu::new();
-        snippet_section.append(Some("New Snippet"), Some("win.new-snippet"));
-        snippet_section.append(Some("Manage Snippets"), Some("win.manage-snippets"));
-        menu.append_section(None, &snippet_section);
+        // Tools section (managers)
+        let tools_section = gio::Menu::new();
+        tools_section.append(Some("Snippets..."), Some("win.manage-snippets"));
+        tools_section.append(Some("Clusters..."), Some("win.manage-clusters"));
+        tools_section.append(Some("Templates..."), Some("win.manage-templates"));
+        tools_section.append(Some("Active Sessions"), Some("win.show-sessions"));
+        menu.append_section(None, &tools_section);
 
-        // Session section
-        let session_section = gio::Menu::new();
-        session_section.append(Some("Active Sessions"), Some("win.show-sessions"));
-        menu.append_section(None, &session_section);
-
-        // Import/Export section
-        let io_section = gio::Menu::new();
-        io_section.append(Some("Import..."), Some("win.import"));
-        io_section.append(Some("Export..."), Some("win.export"));
-        menu.append_section(None, &io_section);
+        // File section (import/export connections)
+        let file_section = gio::Menu::new();
+        file_section.append(Some("Import Connections..."), Some("win.import"));
+        file_section.append(Some("Export Connections..."), Some("win.export"));
+        menu.append_section(None, &file_section);
 
         // Edit section
         let edit_section = gio::Menu::new();
-        edit_section.append(Some("Copy"), Some("win.copy"));
-        edit_section.append(Some("Paste"), Some("win.paste"));
+        edit_section.append(Some("Copy Connection"), Some("win.copy-connection"));
+        edit_section.append(Some("Paste Connection"), Some("win.paste-connection"));
         menu.append_section(None, &edit_section);
 
         // App section
@@ -260,7 +301,10 @@ impl MainWindow {
         self.setup_navigation_actions(window, &terminal_notebook, &sidebar);
         self.setup_group_operations_actions(window, &state, &sidebar);
         self.setup_snippet_actions(window, &state, &terminal_notebook);
+        self.setup_cluster_actions(window, &state, &terminal_notebook);
+        self.setup_template_actions(window, &state, &sidebar);
         self.setup_split_view_actions(window);
+        self.setup_document_actions(window, &state, &sidebar);
         self.setup_misc_actions(window, &state, &sidebar, &terminal_notebook);
     }
 
@@ -317,6 +361,42 @@ impl MainWindow {
             }
         });
         window.add_action(&settings_action);
+
+        // Open KeePass action - opens KeePassXC with configured database
+        let open_keepass_action = gio::SimpleAction::new("open-keepass", None);
+        let state_clone = state.clone();
+        open_keepass_action.connect_activate(move |_, _| {
+            let state_ref = state_clone.borrow();
+            let settings = state_ref.settings();
+
+            if settings.secrets.kdbx_enabled {
+                if let Some(ref kdbx_path) = settings.secrets.kdbx_path {
+                    if kdbx_path.exists() {
+                        // Open KeePassXC with the database file
+                        if let Err(e) = std::process::Command::new("keepassxc")
+                            .arg(kdbx_path)
+                            .spawn()
+                        {
+                            eprintln!("Failed to open KeePassXC: {e}");
+                        }
+                    } else {
+                        eprintln!("KeePass database file not found: {}", kdbx_path.display());
+                    }
+                }
+            }
+        });
+        // Initially disabled, will be enabled when integration is active
+        open_keepass_action.set_enabled(
+            state.borrow().settings().secrets.kdbx_enabled
+                && state
+                    .borrow()
+                    .settings()
+                    .secrets
+                    .kdbx_path
+                    .as_ref()
+                    .is_some_and(|p| p.exists()),
+        );
+        window.add_action(&open_keepass_action);
 
         // Export action
         let export_action = gio::SimpleAction::new("export", None);
@@ -391,6 +471,36 @@ impl MainWindow {
             }
         });
         window.add_action(&move_to_group_action);
+
+        // View details action
+        let view_details_action = gio::SimpleAction::new("view-details", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        view_details_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                Self::show_connection_details(&win, &state_clone, &sidebar_clone);
+            }
+        });
+        window.add_action(&view_details_action);
+
+        // Copy connection action
+        let copy_connection_action = gio::SimpleAction::new("copy-connection", None);
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        copy_connection_action.connect_activate(move |_, _| {
+            Self::copy_selected_connection(&state_clone, &sidebar_clone);
+        });
+        window.add_action(&copy_connection_action);
+
+        // Paste connection action
+        let paste_connection_action = gio::SimpleAction::new("paste-connection", None);
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        paste_connection_action.connect_activate(move |_, _| {
+            Self::paste_connection(&state_clone, &sidebar_clone);
+        });
+        window.add_action(&paste_connection_action);
     }
 
     /// Sets up terminal-related actions (copy, paste, close tab)
@@ -478,12 +588,12 @@ impl MainWindow {
         let next_tab_action = gio::SimpleAction::new("next-tab", None);
         let notebook_clone = terminal_notebook.clone();
         next_tab_action.connect_activate(move |_, _| {
-            let widget = notebook_clone.widget();
-            let current = widget.current_page().unwrap_or(0);
+            let notebook = notebook_clone.notebook();
+            let current = notebook.current_page().unwrap_or(0);
             let total = notebook_clone.tab_count();
             if total > 0 {
                 let next = (current + 1) % total;
-                widget.set_current_page(Some(next));
+                notebook.set_current_page(Some(next));
             }
         });
         window.add_action(&next_tab_action);
@@ -492,12 +602,12 @@ impl MainWindow {
         let prev_tab_action = gio::SimpleAction::new("prev-tab", None);
         let notebook_clone = terminal_notebook.clone();
         prev_tab_action.connect_activate(move |_, _| {
-            let widget = notebook_clone.widget();
-            let current = widget.current_page().unwrap_or(0);
+            let notebook = notebook_clone.notebook();
+            let current = notebook.current_page().unwrap_or(0);
             let total = notebook_clone.tab_count();
             if total > 0 {
                 let prev = if current == 0 { total - 1 } else { current - 1 };
-                widget.set_current_page(Some(prev));
+                notebook.set_current_page(Some(prev));
             }
         });
         window.add_action(&prev_tab_action);
@@ -640,6 +750,58 @@ impl MainWindow {
         window.add_action(&show_sessions_action);
     }
 
+    /// Sets up cluster-related actions
+    fn setup_cluster_actions(
+        &self,
+        window: &ApplicationWindow,
+        state: &SharedAppState,
+        terminal_notebook: &SharedNotebook,
+    ) {
+        // New cluster action
+        let new_cluster_action = gio::SimpleAction::new("new-cluster", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let notebook_clone = terminal_notebook.clone();
+        new_cluster_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                Self::show_new_cluster_dialog(&win, state_clone.clone(), notebook_clone.clone());
+            }
+        });
+        window.add_action(&new_cluster_action);
+
+        // Manage clusters action
+        let manage_clusters_action = gio::SimpleAction::new("manage-clusters", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let notebook_clone = terminal_notebook.clone();
+        manage_clusters_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                Self::show_clusters_manager(&win, state_clone.clone(), notebook_clone.clone());
+            }
+        });
+        window.add_action(&manage_clusters_action);
+    }
+
+    /// Sets up template-related actions
+    fn setup_template_actions(
+        &self,
+        window: &ApplicationWindow,
+        state: &SharedAppState,
+        sidebar: &SharedSidebar,
+    ) {
+        // Manage templates action
+        let manage_templates_action = gio::SimpleAction::new("manage-templates", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        manage_templates_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                Self::show_templates_manager(&win, state_clone.clone(), sidebar_clone.clone());
+            }
+        });
+        window.add_action(&manage_templates_action);
+    }
+
     /// Sets up split view actions
     fn setup_split_view_actions(&self, window: &ApplicationWindow) {
         // Split horizontal action
@@ -649,18 +811,20 @@ impl MainWindow {
         let notebook_for_split_h = self.terminal_notebook.clone();
         split_horizontal_action.connect_activate(move |_, _| {
             let sv = split_view_for_close.clone();
-            if let Some(new_pane_id) = split_view_clone.split_with_close_callback(
-                SplitDirection::Horizontal,
-                move || {
+            if let Some(new_pane_id) =
+                split_view_clone.split_with_close_callback(SplitDirection::Horizontal, move || {
                     let _ = sv.close_pane();
-                },
-            ) {
+                })
+            {
                 let notebook = notebook_for_split_h.clone();
-                split_view_clone.setup_pane_drop_target_with_callback(new_pane_id, move |session_id| {
-                    let info = notebook.get_session_info(session_id)?;
-                    let terminal = notebook.get_terminal(session_id);
-                    Some((info, terminal))
-                });
+                split_view_clone.setup_pane_drop_target_with_callback(
+                    new_pane_id,
+                    move |session_id| {
+                        let info = notebook.get_session_info(session_id)?;
+                        let terminal = notebook.get_terminal(session_id);
+                        Some((info, terminal))
+                    },
+                );
             }
         });
         window.add_action(&split_horizontal_action);
@@ -672,18 +836,20 @@ impl MainWindow {
         let notebook_for_split_v = self.terminal_notebook.clone();
         split_vertical_action.connect_activate(move |_, _| {
             let sv = split_view_for_close.clone();
-            if let Some(new_pane_id) = split_view_clone.split_with_close_callback(
-                SplitDirection::Vertical,
-                move || {
+            if let Some(new_pane_id) =
+                split_view_clone.split_with_close_callback(SplitDirection::Vertical, move || {
                     let _ = sv.close_pane();
-                },
-            ) {
+                })
+            {
                 let notebook = notebook_for_split_v.clone();
-                split_view_clone.setup_pane_drop_target_with_callback(new_pane_id, move |session_id| {
-                    let info = notebook.get_session_info(session_id)?;
-                    let terminal = notebook.get_terminal(session_id);
-                    Some((info, terminal))
-                });
+                split_view_clone.setup_pane_drop_target_with_callback(
+                    new_pane_id,
+                    move |session_id| {
+                        let info = notebook.get_session_info(session_id)?;
+                        let terminal = notebook.get_terminal(session_id);
+                        Some((info, terminal))
+                    },
+                );
             }
         });
         window.add_action(&split_vertical_action);
@@ -705,6 +871,300 @@ impl MainWindow {
         window.add_action(&focus_next_pane_action);
     }
 
+    /// Sets up document management actions
+    fn setup_document_actions(
+        &self,
+        window: &ApplicationWindow,
+        state: &SharedAppState,
+        sidebar: &SharedSidebar,
+    ) {
+        use crate::dialogs::{
+            CloseDocumentDialog, DocumentDialogResult, NewDocumentDialog, OpenDocumentDialog,
+            SaveDocumentDialog,
+        };
+
+        // New document action
+        let new_doc_action = gio::SimpleAction::new("new-document", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        new_doc_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                let dialog = NewDocumentDialog::new(Some(&win.upcast()));
+                let state_for_cb = state_clone.clone();
+                let _sidebar_for_cb = sidebar_clone.clone();
+                dialog.set_callback(move |result| {
+                    if let Some(DocumentDialogResult::Create { name, password: _ }) = result {
+                        let mut state_ref = state_for_cb.borrow_mut();
+                        let _doc_id = state_ref.create_document(name);
+                        drop(state_ref);
+                        // Refresh sidebar - would need to call load_connections or similar
+                    }
+                });
+                dialog.present();
+            }
+        });
+        window.add_action(&new_doc_action);
+
+        // Open document action
+        let open_doc_action = gio::SimpleAction::new("open-document", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        open_doc_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                let dialog = OpenDocumentDialog::new();
+                let state_for_cb = state_clone.clone();
+                let _sidebar_for_cb = sidebar_clone.clone();
+                let win_for_cb = win.clone();
+                dialog.set_callback(move |result| {
+                    if let Some(DocumentDialogResult::Open { path, password }) = result {
+                        let mut state_ref = state_for_cb.borrow_mut();
+                        match state_ref.open_document(&path, password.as_deref()) {
+                            Ok(_doc_id) => {
+                                drop(state_ref);
+                                // Refresh sidebar
+                            }
+                            Err(e) => {
+                                drop(state_ref);
+                                Self::show_error_toast(
+                                    &win_for_cb,
+                                    &format!("Failed to open document: {e}"),
+                                );
+                            }
+                        }
+                    }
+                });
+                dialog.present(Some(&win.upcast()));
+            }
+        });
+        window.add_action(&open_doc_action);
+
+        // Save document action
+        let save_doc_action = gio::SimpleAction::new("save-document", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        save_doc_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                let state_ref = state_clone.borrow();
+                if let Some(doc_id) = state_ref.active_document_id() {
+                    if let Some(doc) = state_ref.get_document(doc_id) {
+                        let doc_name = doc.name.clone();
+                        let existing_path = state_ref
+                            .get_document_path(doc_id)
+                            .map(std::path::Path::to_path_buf);
+                        drop(state_ref);
+
+                        if let Some(path) = existing_path {
+                            // Save to existing path
+                            let mut state_ref = state_clone.borrow_mut();
+                            if let Err(e) = state_ref.save_document(doc_id, &path, None) {
+                                drop(state_ref);
+                                Self::show_error_toast(
+                                    &win,
+                                    &format!("Failed to save document: {e}"),
+                                );
+                            }
+                        } else {
+                            // Show save dialog
+                            let dialog = SaveDocumentDialog::new();
+                            let state_for_cb = state_clone.clone();
+                            let win_for_cb = win.clone();
+                            dialog.set_callback(move |result| {
+                                if let Some(DocumentDialogResult::Save { id, path, password }) =
+                                    result
+                                {
+                                    let mut state_ref = state_for_cb.borrow_mut();
+                                    if let Err(e) =
+                                        state_ref.save_document(id, &path, password.as_deref())
+                                    {
+                                        drop(state_ref);
+                                        Self::show_error_toast(
+                                            &win_for_cb,
+                                            &format!("Failed to save document: {e}"),
+                                        );
+                                    }
+                                }
+                            });
+                            dialog.present(Some(&win.upcast()), doc_id, &doc_name);
+                        }
+                    }
+                }
+            }
+        });
+        window.add_action(&save_doc_action);
+
+        // Close document action
+        let close_doc_action = gio::SimpleAction::new("close-document", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        close_doc_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                let state_ref = state_clone.borrow();
+                if let Some(doc_id) = state_ref.active_document_id() {
+                    let is_dirty = state_ref.is_document_dirty(doc_id);
+                    let doc_name = state_ref
+                        .get_document(doc_id)
+                        .map_or_else(|| "Untitled".to_string(), |d| d.name.clone());
+                    drop(state_ref);
+
+                    if is_dirty {
+                        // Show save prompt
+                        let dialog = CloseDocumentDialog::new();
+                        let state_for_cb = state_clone.clone();
+                        let _sidebar_for_cb = sidebar_clone.clone();
+                        let _win_for_cb = win.clone();
+                        dialog.set_callback(move |result| {
+                            match result {
+                                Some(DocumentDialogResult::Close { id, save: true }) => {
+                                    // Save then close
+                                    let state_ref = state_for_cb.borrow();
+                                    let existing_path = state_ref
+                                        .get_document_path(id)
+                                        .map(std::path::Path::to_path_buf);
+                                    drop(state_ref);
+
+                                    if let Some(path) = existing_path {
+                                        let mut state_ref = state_for_cb.borrow_mut();
+                                        let _ = state_ref.save_document(id, &path, None);
+                                        let _ = state_ref.close_document(id);
+                                    }
+                                    // Refresh sidebar
+                                }
+                                Some(DocumentDialogResult::Close { id, save: false }) => {
+                                    // Close without saving
+                                    let mut state_ref = state_for_cb.borrow_mut();
+                                    let _ = state_ref.close_document(id);
+                                    // Refresh sidebar
+                                }
+                                _ => {}
+                            }
+                        });
+                        dialog.present(Some(&win.upcast()), doc_id, &doc_name);
+                    } else {
+                        // Close directly
+                        let mut state_ref = state_clone.borrow_mut();
+                        let _ = state_ref.close_document(doc_id);
+                        // Refresh sidebar
+                    }
+                }
+            }
+        });
+        window.add_action(&close_doc_action);
+
+        // Export document action
+        let export_doc_action = gio::SimpleAction::new("export-document", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        export_doc_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                let state_ref = state_clone.borrow();
+                if let Some(doc_id) = state_ref.active_document_id() {
+                    if let Some(doc) = state_ref.get_document(doc_id) {
+                        let doc_name = doc.name.clone();
+                        drop(state_ref);
+
+                        // Show file save dialog for export
+                        let filter = gtk4::FileFilter::new();
+                        filter.add_pattern("*.json");
+                        filter.add_pattern("*.yaml");
+                        filter.set_name(Some("Document Files"));
+
+                        let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
+                        filters.append(&filter);
+
+                        let dialog = gtk4::FileDialog::builder()
+                            .title("Export Document")
+                            .filters(&filters)
+                            .initial_name(format!("{doc_name}.json"))
+                            .modal(true)
+                            .build();
+
+                        let state_for_cb = state_clone.clone();
+                        let win_for_cb = win.clone();
+
+                        dialog.save(
+                            Some(&win.upcast::<gtk4::Window>()),
+                            gtk4::gio::Cancellable::NONE,
+                            move |result| {
+                                if let Ok(file) = result {
+                                    if let Some(path) = file.path() {
+                                        let state_ref = state_for_cb.borrow();
+                                        if let Err(e) = state_ref.export_document(doc_id, &path) {
+                                            drop(state_ref);
+                                            Self::show_error_toast(
+                                                &win_for_cb,
+                                                &format!("Failed to export document: {e}"),
+                                            );
+                                        }
+                                    }
+                                }
+                            },
+                        );
+                    }
+                }
+            }
+        });
+        window.add_action(&export_doc_action);
+
+        // Import document action
+        let import_doc_action = gio::SimpleAction::new("import-document", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        import_doc_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                // Show file open dialog for import
+                let filter = gtk4::FileFilter::new();
+                filter.add_pattern("*.json");
+                filter.add_pattern("*.yaml");
+                filter.add_pattern("*.yml");
+                filter.add_pattern("*.rcdb");
+                filter.set_name(Some("Document Files"));
+
+                let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
+                filters.append(&filter);
+
+                let dialog = gtk4::FileDialog::builder()
+                    .title("Import Document")
+                    .filters(&filters)
+                    .modal(true)
+                    .build();
+
+                let state_for_cb = state_clone.clone();
+                let _sidebar_for_cb = sidebar_clone.clone();
+                let win_for_cb = win.clone();
+
+                dialog.open(
+                    Some(&win.upcast::<gtk4::Window>()),
+                    gtk4::gio::Cancellable::NONE,
+                    move |result| {
+                        if let Ok(file) = result {
+                            if let Some(path) = file.path() {
+                                let mut state_ref = state_for_cb.borrow_mut();
+                                match state_ref.import_document(&path) {
+                                    Ok(_doc_id) => {
+                                        drop(state_ref);
+                                        // Refresh sidebar
+                                    }
+                                    Err(e) => {
+                                        drop(state_ref);
+                                        Self::show_error_toast(
+                                            &win_for_cb,
+                                            &format!("Failed to import document: {e}"),
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    },
+                );
+            }
+        });
+        window.add_action(&import_doc_action);
+    }
+
     /// Sets up miscellaneous actions (drag-drop)
     fn setup_misc_actions(
         &self,
@@ -724,6 +1184,14 @@ impl MainWindow {
             }
         });
         window.add_action(&drag_drop_action);
+
+        // Hide drop indicator action - called when drag ends or drop completes
+        let hide_drop_indicator_action = gio::SimpleAction::new("hide-drop-indicator", None);
+        let sidebar_clone = sidebar.clone();
+        hide_drop_indicator_action.connect_activate(move |_, _| {
+            sidebar_clone.hide_drop_indicator();
+        });
+        window.add_action(&hide_drop_indicator_action);
     }
 
     /// Connects UI signals
@@ -754,6 +1222,28 @@ impl MainWindow {
             Self::filter_connections(&state_clone, &sidebar_clone, &query);
         });
 
+        // Add to search history when user presses Enter or stops searching
+        let sidebar_for_history = sidebar.clone();
+        sidebar.search_entry().connect_activate(move |entry| {
+            let query = entry.text().to_string();
+            if !query.is_empty() {
+                sidebar_for_history.add_to_search_history(&query);
+            }
+        });
+
+        // Also add to history when search entry loses focus with non-empty query
+        let sidebar_for_focus = sidebar.clone();
+        sidebar
+            .search_entry()
+            .connect_has_focus_notify(move |entry| {
+                if !entry.has_focus() {
+                    let query = entry.text().to_string();
+                    if !query.is_empty() {
+                        sidebar_for_focus.add_to_search_history(&query);
+                    }
+                }
+            });
+
         // Connect sidebar double-click to connect
         let state_clone = state.clone();
         let sidebar_clone = sidebar.clone();
@@ -772,11 +1262,39 @@ impl MainWindow {
         // Connect notebook tab switch to show session in split view
         let split_view_clone = split_view.clone();
         let notebook_clone = terminal_notebook.clone();
+        let notebook_container = terminal_notebook.widget().clone();
+        let notebook_widget = terminal_notebook.notebook().clone();
         terminal_notebook
-            .widget()
-            .connect_switch_page(move |_, _, page_num| {
+            .notebook()
+            .connect_switch_page(move |_notebook_widget, _, page_num| {
                 // Get session ID for this page number
                 if let Some(session_id) = notebook_clone.get_session_id_for_page(page_num) {
+                    // Check if this is a VNC, RDP, or SPICE session - they display in notebook
+                    if let Some(info) = notebook_clone.get_session_info(session_id) {
+                        if info.protocol == "vnc"
+                            || info.protocol == "rdp"
+                            || info.protocol == "spice"
+                        {
+                            // For VNC/RDP/SPICE: hide split view, expand notebook to show content
+                            split_view_clone.widget().set_visible(false);
+                            split_view_clone.widget().set_vexpand(false);
+                            notebook_container.set_vexpand(true);
+                            notebook_widget.set_vexpand(true);
+                            // Show notebook page content
+                            notebook_clone.show_page_content(page_num);
+                            return;
+                        }
+                    }
+
+                    // For SSH sessions: show split view, collapse notebook tabs area
+                    split_view_clone.widget().set_visible(true);
+                    split_view_clone.widget().set_vexpand(true);
+                    // Collapse notebook - only show tabs, not content
+                    notebook_container.set_vexpand(false);
+                    notebook_widget.set_vexpand(false);
+                    // Hide all notebook page content for SSH sessions
+                    notebook_clone.hide_all_page_content_except(None);
+
                     // Check if this session is already shown in any pane
                     let pane_ids = split_view_clone.pane_ids();
                     let mut found_pane = None;
@@ -800,7 +1318,7 @@ impl MainWindow {
                         // Session not shown in any pane - find best pane to show it
                         // Prefer: 1) empty pane, 2) focused pane, 3) first pane
                         let mut target_pane = None;
-                        
+
                         // First, look for an empty pane (no session)
                         for pane_id in &pane_ids {
                             if split_view_clone.get_pane_session(*pane_id).is_none() {
@@ -808,22 +1326,23 @@ impl MainWindow {
                                 break;
                             }
                         }
-                        
+
                         // If no empty pane, use focused pane or first pane
                         if target_pane.is_none() {
-                            target_pane = split_view_clone.focused_pane_id()
+                            target_pane = split_view_clone
+                                .focused_pane_id()
                                 .or_else(|| pane_ids.first().copied());
                         }
-                        
+
                         if let Some(pane_id) = target_pane {
                             let _ = split_view_clone.focus_pane(pane_id);
-                            
+
                             // Always ensure session and terminal are in split_view
                             if let Some(info) = notebook_clone.get_session_info(session_id) {
                                 let terminal = notebook_clone.get_terminal(session_id);
                                 split_view_clone.add_session(info, terminal);
                             }
-                            
+
                             let _ = split_view_clone.show_session(session_id);
                         }
                     }
@@ -849,7 +1368,7 @@ impl MainWindow {
             }
         }
 
-        // Save window state on close
+        // Save window state on close and handle minimize to tray
         let state_clone = state;
         let paned_clone = paned;
         window.connect_close_request(move |win| {
@@ -863,7 +1382,14 @@ impl MainWindow {
                     settings.ui.window_width = Some(width);
                     settings.ui.window_height = Some(height);
                     settings.ui.sidebar_width = Some(sidebar_width);
-                    let _ = state.update_settings(settings);
+                    let _ = state.update_settings(settings.clone());
+                }
+
+                // Check if we should minimize to tray instead of closing
+                if settings.ui.minimize_to_tray && settings.ui.enable_tray_icon {
+                    // Hide the window instead of closing
+                    win.set_visible(false);
+                    return glib::Propagation::Stop;
                 }
             }
 
@@ -875,6 +1401,7 @@ impl MainWindow {
     fn load_connections(&self) {
         let state = self.state.borrow();
         let store = self.sidebar.store();
+        let collapsed_groups = state.collapsed_groups().clone();
 
         // Clear existing items
         store.remove_all();
@@ -888,23 +1415,24 @@ impl MainWindow {
 
         // Add ungrouped connections
         for conn in state.get_ungrouped_connections() {
-            let protocol = match &conn.protocol_config {
-                rustconn_core::ProtocolConfig::Ssh(_) => "ssh",
-                rustconn_core::ProtocolConfig::Rdp(_) => "rdp",
-                rustconn_core::ProtocolConfig::Vnc(_) => "vnc",
-                rustconn_core::ProtocolConfig::Spice(_) => "spice",
-            };
+            let protocol = get_protocol_string(&conn.protocol_config);
             let item = ConnectionItem::new_connection(
                 &conn.id.to_string(),
                 &conn.name,
-                protocol,
+                &protocol,
                 &conn.host,
             );
             store.append(&item);
         }
+
+        drop(state);
+
+        // Apply collapsed state after populating
+        self.sidebar.apply_collapsed_groups(&collapsed_groups);
     }
 
     /// Recursively adds group children
+    #[allow(clippy::self_only_used_in_recursion)]
     fn add_group_children(
         &self,
         state: &std::cell::Ref<crate::state::AppState>,
@@ -921,16 +1449,11 @@ impl MainWindow {
 
         // Add connections in this group
         for conn in state.get_connections_by_group(group_id) {
-            let protocol = match &conn.protocol_config {
-                rustconn_core::ProtocolConfig::Ssh(_) => "ssh",
-                rustconn_core::ProtocolConfig::Rdp(_) => "rdp",
-                rustconn_core::ProtocolConfig::Vnc(_) => "vnc",
-                rustconn_core::ProtocolConfig::Spice(_) => "spice",
-            };
+            let protocol = get_protocol_string(&conn.protocol_config);
             let item = ConnectionItem::new_connection(
                 &conn.id.to_string(),
                 &conn.name,
-                protocol,
+                &protocol,
                 &conn.host,
             );
             parent_item.add_child(&item);
@@ -939,45 +1462,66 @@ impl MainWindow {
 
     /// Filters connections based on search query
     fn filter_connections(state: &SharedAppState, sidebar: &SharedSidebar, query: &str) {
+        use rustconn_core::search::SearchEngine;
+
+        if query.is_empty() {
+            // Restore full hierarchy when search is cleared
+            Self::reload_sidebar(state, sidebar);
+            // Restore the tree state that was saved before search started
+            sidebar.restore_pre_search_state();
+            return;
+        }
+
+        // Save tree state before first search keystroke
+        sidebar.save_pre_search_state();
+
         let store = sidebar.store();
         store.remove_all();
 
         let state_ref = state.borrow();
 
-        if query.is_empty() {
-            // Show all connections in hierarchy
-            drop(state_ref);
-            // Re-load full hierarchy - need to call load_connections differently
-            // For now, just show all connections flat
-            let state_ref = state.borrow();
-            for conn in state_ref.list_connections() {
-                let protocol = match &conn.protocol_config {
-                    rustconn_core::ProtocolConfig::Ssh(_) => "ssh",
-                    rustconn_core::ProtocolConfig::Rdp(_) => "rdp",
-                    rustconn_core::ProtocolConfig::Vnc(_) => "vnc",
-                rustconn_core::ProtocolConfig::Spice(_) => "spice",
-                };
-                let item = ConnectionItem::new_connection(
-                    &conn.id.to_string(),
-                    &conn.name,
-                    protocol,
-                    &conn.host,
-                );
-                store.append(&item);
+        // Parse query and use SearchEngine for advanced search
+        let search_engine = SearchEngine::new();
+        let parsed_query = match SearchEngine::parse_query(query) {
+            Ok(q) => q,
+            Err(_) => {
+                // Fall back to simple text search on parse error
+                rustconn_core::search::SearchQuery::with_text(query)
             }
-        } else {
-            // Show filtered results
-            for conn in state_ref.search_connections(query) {
-                let protocol = match &conn.protocol_config {
-                    rustconn_core::ProtocolConfig::Ssh(_) => "ssh",
-                    rustconn_core::ProtocolConfig::Rdp(_) => "rdp",
-                    rustconn_core::ProtocolConfig::Vnc(_) => "vnc",
-                rustconn_core::ProtocolConfig::Spice(_) => "spice",
+        };
+
+        // Get connections and groups for search
+        let connections: Vec<_> = state_ref
+            .list_connections()
+            .iter()
+            .copied()
+            .cloned()
+            .collect();
+        let groups: Vec<_> = state_ref.list_groups().iter().copied().cloned().collect();
+
+        // Perform search with ranking
+        let results = search_engine.search(&parsed_query, &connections, &groups);
+
+        // Display results sorted by relevance
+        for result in results {
+            if let Some(conn) = connections.iter().find(|c| c.id == result.connection_id) {
+                let protocol = get_protocol_string(&conn.protocol_config);
+
+                // Create display name with relevance indicator
+                let display_name = if result.score >= 0.9 {
+                    format!("★★★ {}", conn.name) // High relevance
+                } else if result.score >= 0.7 {
+                    format!("★★ {}", conn.name) // Medium relevance
+                } else if result.score >= 0.5 {
+                    format!("★ {}", conn.name) // Low relevance
+                } else {
+                    conn.name.clone() // Very low relevance
                 };
+
                 let item = ConnectionItem::new_connection(
                     &conn.id.to_string(),
-                    &conn.name,
-                    protocol,
+                    &display_name,
+                    &protocol,
                     &conn.host,
                 );
                 store.append(&item);
@@ -1086,7 +1630,7 @@ impl MainWindow {
                 use secrecy::ExposeSecret;
                 (
                     c.username.clone(),
-                    c.password.expose_secret().clone(),
+                    c.password.expose_secret().to_string(),
                     c.domain.clone(),
                 )
             })
@@ -1099,7 +1643,8 @@ impl MainWindow {
         if is_rdp {
             // Use resolved credentials if available
             if let Some(ref creds) = resolved_credentials {
-                if let (Some(username), Some(password)) = (&creds.username, creds.expose_password()) {
+                if let (Some(username), Some(password)) = (&creds.username, creds.expose_password())
+                {
                     Self::start_rdp_session_with_credentials(
                         &state,
                         &notebook,
@@ -1127,6 +1672,35 @@ impl MainWindow {
                 return;
             }
 
+            // Check if we can skip password dialog (verified credentials from KeePass)
+            let can_skip = {
+                let state_ref = state.borrow();
+                state_ref.can_skip_password_dialog(connection_id)
+            };
+
+            if can_skip {
+                // Try to resolve credentials one more time (they should be available)
+                let state_ref = state.borrow();
+                if let Ok(Some(creds)) = state_ref.resolve_credentials_for_connection(connection_id)
+                {
+                    if let (Some(username), Some(password)) =
+                        (&creds.username, creds.expose_password())
+                    {
+                        drop(state_ref);
+                        Self::start_rdp_session_with_credentials(
+                            &state,
+                            &notebook,
+                            &split_view,
+                            connection_id,
+                            username,
+                            password,
+                            "",
+                        );
+                        return;
+                    }
+                }
+            }
+
             // Need to prompt for credentials
             if let Some(window) = notebook.widget().ancestor(ApplicationWindow::static_type()) {
                 if let Some(app_window) = window.downcast_ref::<ApplicationWindow>() {
@@ -1142,23 +1716,96 @@ impl MainWindow {
             }
         }
 
-        // For SSH/VNC connections
+        // Check if this is a VNC connection
+        let is_vnc = {
+            let state_ref = state.borrow();
+            state_ref
+                .get_connection(connection_id)
+                .is_some_and(|c| matches!(c.protocol_config, rustconn_core::ProtocolConfig::Vnc(_)))
+        };
+
+        // For VNC connections - check if we have password
+        if is_vnc {
+            // Use resolved credentials if available (VNC only needs password)
+            if let Some(ref creds) = resolved_credentials {
+                if creds.expose_password().is_some() {
+                    // Cache the password for use in start_connection
+                    if let Some(password) = creds.expose_password() {
+                        if let Ok(mut state_mut) = state.try_borrow_mut() {
+                            state_mut.cache_credentials(connection_id, "", password, "");
+                        }
+                    }
+                    Self::start_connection_with_split(
+                        &state,
+                        &notebook,
+                        &split_view,
+                        connection_id,
+                    );
+                    return;
+                }
+            }
+
+            // Use cached credentials if available
+            if cached_credentials.is_some() {
+                Self::start_connection_with_split(&state, &notebook, &split_view, connection_id);
+                return;
+            }
+
+            // Check if we can skip password dialog (verified credentials from KeePass)
+            let can_skip = {
+                let state_ref = state.borrow();
+                state_ref.can_skip_password_dialog(connection_id)
+            };
+
+            if can_skip {
+                // Try to resolve credentials one more time (they should be available)
+                let state_ref = state.borrow();
+                if let Ok(Some(creds)) = state_ref.resolve_credentials_for_connection(connection_id)
+                {
+                    if let Some(password) = creds.expose_password() {
+                        // Cache the password for use in start_connection
+                        drop(state_ref);
+                        if let Ok(mut state_mut) = state.try_borrow_mut() {
+                            state_mut.cache_credentials(connection_id, "", password, "");
+                        }
+                        Self::start_connection_with_split(
+                            &state,
+                            &notebook,
+                            &split_view,
+                            connection_id,
+                        );
+                        return;
+                    }
+                }
+            }
+
+            // Need to prompt for VNC password
+            if let Some(window) = notebook.widget().ancestor(ApplicationWindow::static_type()) {
+                if let Some(app_window) = window.downcast_ref::<ApplicationWindow>() {
+                    Self::start_vnc_with_password_dialog(
+                        state,
+                        notebook,
+                        split_view,
+                        connection_id,
+                        app_window,
+                    );
+                    return;
+                }
+            }
+        }
+
+        // For SSH connections
         // SSH typically uses key-based auth, but we can pass credentials if available
         if let Some(ref creds) = resolved_credentials {
             // Store resolved credentials in cache for potential use
             if let (Some(username), Some(password)) = (&creds.username, creds.expose_password()) {
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
-                    state_mut.cache_credentials(
-                        connection_id,
-                        username,
-                        password,
-                        "",
-                    );
+                    state_mut.cache_credentials(connection_id, username, password, "");
                 }
             }
         }
 
-        // Start SSH/VNC connection
+        // Start SSH connection
         Self::start_connection_with_split(&state, &notebook, &split_view, connection_id);
     }
 
@@ -1170,6 +1817,33 @@ impl MainWindow {
         connection_id: Uuid,
         window: &ApplicationWindow,
     ) {
+        // Check if we can skip password dialog (verified credentials from KeePass)
+        let can_skip = {
+            let state_ref = state.borrow();
+            state_ref.can_skip_password_dialog(connection_id)
+        };
+
+        if can_skip {
+            // Try to resolve credentials from backends (KeePass)
+            let state_ref = state.borrow();
+            if let Ok(Some(creds)) = state_ref.resolve_credentials_for_connection(connection_id) {
+                if let (Some(username), Some(password)) = (&creds.username, creds.expose_password())
+                {
+                    drop(state_ref);
+                    Self::start_rdp_session_with_credentials(
+                        &state,
+                        &notebook,
+                        &split_view,
+                        connection_id,
+                        username,
+                        password,
+                        "",
+                    );
+                    return;
+                }
+            }
+        }
+
         // Check if we have cached credentials
         let cached = {
             let state_ref = state.borrow();
@@ -1177,7 +1851,7 @@ impl MainWindow {
                 use secrecy::ExposeSecret;
                 (
                     c.username.clone(),
-                    c.password.expose_secret().clone(),
+                    c.password.expose_secret().to_string(),
                     c.domain.clone(),
                 )
             })
@@ -1246,40 +1920,397 @@ impl MainWindow {
     }
 
     /// Starts RDP session with provided credentials
-    /// 
-    /// Note: Native RDP embedding not yet implemented. This creates a placeholder tab.
+    ///
+    /// Starts an RDP session using xfreerdp with provided credentials
+    ///
+    /// Respects the `client_mode` setting in `RdpConfig`:
+    /// - `Embedded`: Uses native RDP embedding with dynamic resolution (default)
+    /// - `External`: Uses external xfreerdp window
     fn start_rdp_session_with_credentials(
         state: &SharedAppState,
         notebook: &SharedNotebook,
         split_view: &SharedSplitView,
         connection_id: Uuid,
-        _username: &str,
-        _password: &str,
-        _domain: &str,
+        username: &str,
+        password: &str,
+        domain: &str,
+    ) {
+        use rustconn_core::models::RdpClientMode;
+
+        let state_ref = state.borrow();
+
+        if let Some(conn) = state_ref.get_connection(connection_id) {
+            let conn_name = conn.name.clone();
+            let host = conn.host.clone();
+            let port = conn.port;
+            let window_mode = conn.window_mode;
+
+            // Get RDP-specific options
+            let rdp_config =
+                if let rustconn_core::ProtocolConfig::Rdp(config) = &conn.protocol_config {
+                    config.clone()
+                } else {
+                    rustconn_core::models::RdpConfig::default()
+                };
+
+            drop(state_ref);
+
+            // Check client mode - if Embedded, use EmbeddedRdpWidget with fallback to external
+            if rdp_config.client_mode == RdpClientMode::Embedded {
+                use crate::embedded_rdp::{EmbeddedRdpWidget, RdpConfig as EmbeddedRdpConfig};
+
+                // Create embedded RDP widget
+                let embedded_widget = EmbeddedRdpWidget::new();
+
+                // Build embedded RDP config with dynamic resolution
+                // Use actual widget size for initial resolution to fill the available space
+                // Fall back to config resolution or default if widget size not available yet
+                let widget_width = split_view.widget().width();
+                let widget_height = split_view.widget().height();
+                #[allow(clippy::cast_sign_loss)]
+                let initial_resolution = if widget_width > 100 && widget_height > 100 {
+                    // Use actual widget size (subtract some margin for toolbar)
+                    (widget_width as u32, (widget_height - 40).max(100) as u32)
+                } else {
+                    // Widget not yet sized, use config or default
+                    rdp_config
+                        .resolution
+                        .as_ref()
+                        .map_or((1280, 720), |r| (r.width, r.height))
+                };
+
+                let mut embedded_config = EmbeddedRdpConfig::new(&host)
+                    .with_port(port)
+                    .with_resolution(initial_resolution.0, initial_resolution.1)
+                    .with_clipboard(true);
+
+                if !username.is_empty() {
+                    embedded_config = embedded_config.with_username(username);
+                }
+                if !password.is_empty() {
+                    embedded_config = embedded_config.with_password(password);
+                }
+                if !domain.is_empty() {
+                    embedded_config = embedded_config.with_domain(domain);
+                }
+
+                // Add extra args
+                if !rdp_config.custom_args.is_empty() {
+                    embedded_config =
+                        embedded_config.with_extra_args(rdp_config.custom_args.clone());
+                }
+
+                // Add shared folders for drive redirection
+                if !rdp_config.shared_folders.is_empty() {
+                    use crate::embedded_rdp::EmbeddedSharedFolder;
+                    let folders: Vec<EmbeddedSharedFolder> = rdp_config
+                        .shared_folders
+                        .iter()
+                        .map(|f| EmbeddedSharedFolder {
+                            local_path: f.local_path.clone(),
+                            share_name: f.share_name.clone(),
+                        })
+                        .collect();
+                    embedded_config = embedded_config.with_shared_folders(folders);
+
+                    // Warn that IronRDP doesn't support drive redirection yet
+                    eprintln!(
+                        "[EmbeddedRDP] Warning: {} shared folder(s) configured but IronRDP \
+                         doesn't support drive redirection yet. Use external mode for shared \
+                         folders.",
+                        rdp_config.shared_folders.len()
+                    );
+                }
+
+                // Wrap in Rc to keep widget alive in notebook
+                let embedded_widget = Rc::new(embedded_widget);
+
+                // Connect using embedded widget (will fallback to external window if needed)
+                if let Err(e) = embedded_widget.connect(&embedded_config) {
+                    eprintln!("RDP connection failed for '{conn_name}': {e}");
+                }
+
+                // Add embedded widget to notebook - shows connection status
+                // If using external window, widget shows "Session running in external window"
+                // The Rc<EmbeddedRdpWidget> is stored in notebook to keep it alive
+                let session_id = Uuid::new_v4();
+
+                // Connect state change callback to mark tab as disconnected when session ends
+                let notebook_for_state = notebook.clone();
+                embedded_widget.connect_state_changed(move |state| match state {
+                    crate::embedded_rdp::RdpConnectionState::Disconnected => {
+                        notebook_for_state.mark_tab_disconnected(session_id);
+                    }
+                    crate::embedded_rdp::RdpConnectionState::Connected => {
+                        notebook_for_state.mark_tab_connected(session_id);
+                    }
+                    _ => {}
+                });
+
+                // Connect reconnect callback
+                let widget_for_reconnect = embedded_widget.clone();
+                embedded_widget.connect_reconnect(move || {
+                    if let Err(e) = widget_for_reconnect.reconnect() {
+                        eprintln!("RDP reconnect failed: {e}");
+                    }
+                });
+
+                notebook.add_embedded_rdp_tab(
+                    session_id,
+                    connection_id,
+                    &conn_name,
+                    embedded_widget,
+                );
+
+                // Show notebook for RDP session tab - hide split view, expand notebook
+                split_view.widget().set_visible(false);
+                split_view.widget().set_vexpand(false);
+                notebook.widget().set_vexpand(true);
+                notebook.notebook().set_vexpand(true);
+
+                // If Fullscreen mode, maximize the window
+                if matches!(window_mode, rustconn_core::models::WindowMode::Fullscreen) {
+                    if let Some(window) = notebook
+                        .widget()
+                        .ancestor(gtk4::ApplicationWindow::static_type())
+                    {
+                        if let Some(app_window) = window.downcast_ref::<gtk4::ApplicationWindow>() {
+                            app_window.maximize();
+                        }
+                    }
+                }
+
+                // Update last_connected timestamp
+                if let Ok(mut state_mut) = state.try_borrow_mut() {
+                    let _ = state_mut.update_last_connected(connection_id);
+                }
+                return;
+            }
+
+            // External mode - use xfreerdp in external window
+            let (tab, _is_embedded) = EmbeddedSessionTab::new(connection_id, &conn_name, "rdp");
+            let session_id = tab.id();
+
+            // Get resolution from RDP config
+            let resolution = rdp_config.resolution.as_ref().map(|r| (r.width, r.height));
+
+            // Get extra args from RDP config
+            let extra_args = rdp_config.custom_args.clone();
+
+            // Prepare domain (use None if empty)
+            let domain_opt = if domain.is_empty() {
+                None
+            } else {
+                Some(domain)
+            };
+
+            // Convert shared folders to (share_name, local_path) tuples for external RDP
+            let shared_folders: Vec<(String, std::path::PathBuf)> = rdp_config
+                .shared_folders
+                .iter()
+                .map(|f| (f.share_name.clone(), f.local_path.clone()))
+                .collect();
+
+            // Start RDP connection using xfreerdp with shared folders
+            if let Err(e) = RdpLauncher::start_with_geometry(
+                &tab,
+                &host,
+                port,
+                Some(username),
+                Some(password),
+                domain_opt,
+                resolution,
+                &extra_args,
+                None,  // window_geometry
+                false, // remember_window_position
+                &shared_folders,
+            ) {
+                eprintln!("Failed to start RDP session '{conn_name}': {e}");
+            }
+
+            // Add tab widget to notebook
+            notebook.add_embedded_session_tab(session_id, &conn_name, tab.widget());
+
+            // For RDP/VNC sessions running in external windows, we add to split_view
+            // but don't show them - they only show when user explicitly switches to the tab.
+            // This prevents the placeholder from taking up space in split view.
+            if let Some(info) = notebook.get_session_info(session_id) {
+                split_view.add_session(info, None);
+                // Don't call show_session for external sessions - let tab switch handle it
+            }
+
+            // Update last_connected
+            if let Ok(mut state_mut) = state.try_borrow_mut() {
+                let _ = state_mut.update_last_connected(connection_id);
+            }
+        }
+    }
+
+    /// Starts a VNC connection with password dialog
+    fn start_vnc_with_password_dialog(
+        state: SharedAppState,
+        notebook: SharedNotebook,
+        split_view: SharedSplitView,
+        connection_id: Uuid,
+        window: &ApplicationWindow,
+    ) {
+        // Check if we can skip password dialog (verified credentials from KeePass)
+        let can_skip = {
+            let state_ref = state.borrow();
+            state_ref.can_skip_password_dialog(connection_id)
+        };
+
+        if can_skip {
+            // Try to resolve credentials from backends (KeePass)
+            let state_ref = state.borrow();
+            if let Ok(Some(creds)) = state_ref.resolve_credentials_for_connection(connection_id) {
+                if let Some(password) = creds.expose_password() {
+                    // Cache the password for use in start_connection
+                    drop(state_ref);
+                    if let Ok(mut state_mut) = state.try_borrow_mut() {
+                        state_mut.cache_credentials(connection_id, "", password, "");
+                    }
+                    Self::start_connection_with_split(
+                        &state,
+                        &notebook,
+                        &split_view,
+                        connection_id,
+                    );
+                    return;
+                }
+            }
+        }
+
+        // Get connection info for dialog
+        let conn_name = {
+            let state_ref = state.borrow();
+            if let Some(conn) = state_ref.get_connection(connection_id) {
+                conn.name.clone()
+            } else {
+                return;
+            }
+        };
+
+        // Create and show password dialog
+        let dialog = PasswordDialog::new(Some(window));
+        dialog.set_connection_name(&conn_name);
+        // VNC typically only needs password, hide username/domain by leaving them empty
+        // The dialog will focus on password field
+
+        // Try to load password from KeePass
+        {
+            let state_ref = state.borrow();
+            let settings = state_ref.settings();
+
+            if settings.secrets.kdbx_enabled {
+                if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
+                    let db_password = settings
+                        .secrets
+                        .kdbx_password
+                        .as_ref()
+                        .map(secrecy::ExposeSecret::expose_secret);
+                    let key_file = settings.secrets.kdbx_key_file.as_deref();
+
+                    eprintln!("DEBUG VNC: trying to load password for '{conn_name}' from KeePass");
+
+                    if let Ok(Some(password)) =
+                        rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
+                            kdbx_path,
+                            db_password,
+                            key_file,
+                            &conn_name,
+                        )
+                    {
+                        eprintln!("DEBUG VNC: loaded password ({} chars)", password.len());
+                        dialog.set_password(&password);
+                    }
+                }
+            }
+        }
+
+        dialog.show(move |result| {
+            if let Some(creds) = result {
+                // Cache credentials if requested (VNC only uses password)
+                if creds.save_credentials {
+                    if let Ok(mut state_mut) = state.try_borrow_mut() {
+                        // For VNC, we store empty username/domain but save the password
+                        state_mut.cache_credentials(connection_id, "", &creds.password, "");
+                    }
+                }
+
+                // Start VNC with password
+                Self::start_vnc_session_with_password(
+                    &state,
+                    &notebook,
+                    &split_view,
+                    connection_id,
+                    &creds.password,
+                );
+            }
+        });
+    }
+
+    /// Starts VNC session with provided password
+    fn start_vnc_session_with_password(
+        state: &SharedAppState,
+        notebook: &SharedNotebook,
+        split_view: &SharedSplitView,
+        connection_id: Uuid,
+        password: &str,
     ) {
         let state_ref = state.borrow();
 
         if let Some(conn) = state_ref.get_connection(connection_id) {
             let conn_name = conn.name.clone();
+            let host = conn.host.clone();
+            let port = conn.port;
+
+            // Get VNC-specific configuration
+            let vnc_config =
+                if let rustconn_core::ProtocolConfig::Vnc(config) = &conn.protocol_config {
+                    config.clone()
+                } else {
+                    rustconn_core::models::VncConfig::default()
+                };
+
             drop(state_ref);
 
-            // Native RDP embedding not yet implemented
-            // Create a placeholder terminal tab for now
-            let session_id = notebook.create_terminal_tab(connection_id, &conn_name, "rdp");
+            // Create VNC session tab with native widget
+            let session_id = notebook.create_vnc_session_tab(connection_id, &conn_name);
 
-            eprintln!(
-                "Note: Native RDP embedding not yet implemented. \
-                 Connection '{conn_name}' shown as placeholder."
-            );
+            // Get the VNC widget and initiate connection with config
+            if let Some(vnc_widget) = notebook.get_vnc_widget(session_id) {
+                // Connect state change callback to mark tab as disconnected when session ends
+                let notebook_for_state = notebook.clone();
+                vnc_widget.connect_state_changed(move |vnc_state| {
+                    if vnc_state == crate::session::SessionState::Disconnected {
+                        notebook_for_state.mark_tab_disconnected(session_id);
+                    }
+                });
 
-            // Show in split view
-            if let Some(info) = notebook.get_session_info(session_id) {
-                let terminal = notebook.get_terminal(session_id);
-                split_view.add_session(info, terminal);
-                let _ = split_view.show_session(session_id);
+                // Connect reconnect callback
+                let widget_for_reconnect = vnc_widget.clone();
+                vnc_widget.connect_reconnect(move || {
+                    if let Err(e) = widget_for_reconnect.reconnect() {
+                        eprintln!("VNC reconnect failed: {e}");
+                    }
+                });
+
+                // Initiate connection with VNC config (respects client_mode setting)
+                if let Err(e) =
+                    vnc_widget.connect_with_config(&host, port, Some(password), &vnc_config)
+                {
+                    eprintln!("Failed to connect VNC session '{conn_name}': {e}");
+                }
             }
 
-            // Update last_connected
+            // VNC displays in notebook tab - hide split view and expand notebook
+            split_view.widget().set_visible(false);
+            split_view.widget().set_vexpand(false);
+            notebook.widget().set_vexpand(true);
+            notebook.notebook().set_vexpand(true);
+
+            // Update last_connected timestamp
             if let Ok(mut state_mut) = state.try_borrow_mut() {
                 let _ = state_mut.update_last_connected(connection_id);
             }
@@ -1294,38 +2325,56 @@ impl MainWindow {
         connection_id: Uuid,
     ) -> Option<Uuid> {
         let session_id = Self::start_connection(state, notebook, connection_id)?;
-        
-        // Explicitly show the session in split view
-        // This is needed because switch_page signal may fire before session data is ready
+
+        // Get session info to check protocol
         if let Some(info) = notebook.get_session_info(session_id) {
+            // VNC, RDP, and SPICE sessions are displayed directly in notebook tab
+            if info.protocol == "vnc" || info.protocol == "rdp" || info.protocol == "spice" {
+                // Hide split view and expand notebook for VNC/RDP/SPICE
+                split_view.widget().set_visible(false);
+                split_view.widget().set_vexpand(false);
+                notebook.widget().set_vexpand(true);
+                notebook.notebook().set_vexpand(true);
+                return Some(session_id);
+            }
+
+            // For SSH, show terminal in split view
+            // For external sessions, show placeholder
             let terminal = notebook.get_terminal(session_id);
             split_view.add_session(info, terminal);
             let _ = split_view.show_session(session_id);
+
+            // Ensure split view is visible and expanded for SSH
+            split_view.widget().set_visible(true);
+            split_view.widget().set_vexpand(true);
+            notebook.widget().set_vexpand(false);
+            notebook.notebook().set_vexpand(false);
         }
-        
+
         Some(session_id)
     }
 
     /// Starts a connection and returns the `session_id`
     #[allow(clippy::too_many_lines)]
-    fn start_connection(state: &SharedAppState, notebook: &SharedNotebook, connection_id: Uuid) -> Option<Uuid> {
+    fn start_connection(
+        state: &SharedAppState,
+        notebook: &SharedNotebook,
+        connection_id: Uuid,
+    ) -> Option<Uuid> {
         let state_ref = state.borrow();
 
         if let Some(conn) = state_ref.get_connection(connection_id) {
-            let protocol = match &conn.protocol_config {
-                rustconn_core::ProtocolConfig::Ssh(_) => "ssh",
-                rustconn_core::ProtocolConfig::Rdp(_) => "rdp",
-                rustconn_core::ProtocolConfig::Vnc(_) => "vnc",
-                rustconn_core::ProtocolConfig::Spice(_) => "spice",
-            };
+            let protocol = get_protocol_string(&conn.protocol_config);
 
             // Check if logging is enabled
             let logging_enabled = state_ref.settings().logging.enabled;
             let conn_name = conn.name.clone();
 
             if protocol == "ssh" {
+                use rustconn_core::protocol::{format_command_message, format_connection_message};
+
                 // Create terminal tab for SSH
-                let session_id = notebook.create_terminal_tab(connection_id, &conn.name, protocol);
+                let session_id = notebook.create_terminal_tab(connection_id, &conn.name, &protocol);
 
                 // Build and spawn SSH command
                 let port = conn.port;
@@ -1382,8 +2431,34 @@ impl MainWindow {
                 // Wire up child exited callback for session cleanup
                 Self::setup_child_exited_handler(state, notebook, session_id);
 
+                // Build SSH command string for display
+                let mut ssh_cmd_parts = vec!["ssh".to_string()];
+                if port != 22 {
+                    ssh_cmd_parts.push("-p".to_string());
+                    ssh_cmd_parts.push(port.to_string());
+                }
+                if let Some(ref key) = identity_file {
+                    ssh_cmd_parts.push("-i".to_string());
+                    ssh_cmd_parts.push(key.clone());
+                }
+                ssh_cmd_parts.extend(extra_args.clone());
+                let destination = if let Some(ref user) = username {
+                    format!("{user}@{host}")
+                } else {
+                    host.clone()
+                };
+                ssh_cmd_parts.push(destination);
+                let ssh_command = ssh_cmd_parts.join(" ");
+
+                // Display CLI output feedback before executing command
+                let conn_msg = format_connection_message("SSH", &host);
+                let cmd_msg = format_command_message(&ssh_command);
+                let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
+                notebook.display_output(session_id, &feedback);
+
                 // Spawn SSH
-                let extra_refs: Vec<&str> = extra_args.iter().map(std::string::String::as_str).collect();
+                let extra_refs: Vec<&str> =
+                    extra_args.iter().map(std::string::String::as_str).collect();
                 notebook.spawn_ssh(
                     session_id,
                     &host,
@@ -1395,22 +2470,64 @@ impl MainWindow {
                 return Some(session_id);
             }
 
-            // Handle VNC connections with native embedding
+            // Handle VNC connections with native embedding or external client
             if protocol == "vnc" {
                 let conn_name = conn.name.clone();
                 let host = conn.host.clone();
                 let port = conn.port;
+
+                // Get VNC-specific configuration
+                let vnc_config =
+                    if let rustconn_core::ProtocolConfig::Vnc(config) = &conn.protocol_config {
+                        config.clone()
+                    } else {
+                        rustconn_core::models::VncConfig::default()
+                    };
+
+                // Get password from cached credentials (set by credential resolution flow)
+                let password: Option<String> =
+                    state_ref.get_cached_credentials(connection_id).map(|c| {
+                        use secrecy::ExposeSecret;
+                        eprintln!("[VNC] Found cached credentials for connection");
+                        c.password.expose_secret().to_string()
+                    });
+
+                eprintln!(
+                    "[VNC] Password available: {}",
+                    if password.is_some() { "yes" } else { "no" }
+                );
 
                 drop(state_ref);
 
                 // Create VNC session tab with native widget
                 let session_id = notebook.create_vnc_session_tab(connection_id, &conn_name);
 
-                // Get the VNC widget and initiate connection
+                // Get the VNC widget and initiate connection with config
                 if let Some(vnc_widget) = notebook.get_vnc_widget(session_id) {
-                    // Initiate connection (password will be requested via auth callback if needed)
-                    if let Err(e) = vnc_widget.connect(&host, port, None) {
-                        eprintln!("Failed to connect VNC session '{}': {}", conn_name, e);
+                    // Connect state change callback to mark tab as disconnected when session ends
+                    let notebook_for_state = notebook.clone();
+                    vnc_widget.connect_state_changed(move |vnc_state| {
+                        if vnc_state == crate::session::SessionState::Disconnected {
+                            notebook_for_state.mark_tab_disconnected(session_id);
+                        }
+                    });
+
+                    // Connect reconnect callback
+                    let widget_for_reconnect = vnc_widget.clone();
+                    vnc_widget.connect_reconnect(move || {
+                        if let Err(e) = widget_for_reconnect.reconnect() {
+                            eprintln!("VNC reconnect failed: {e}");
+                        }
+                    });
+
+                    // Initiate connection with VNC config (respects client_mode setting)
+                    if let Err(e) = vnc_widget.connect_with_config(
+                        &host,
+                        port,
+                        password.as_deref(),
+                        &vnc_config,
+                    ) {
+                        eprintln!("Failed to connect VNC session '{conn_name}': {e}");
                     }
                 }
 
@@ -1422,40 +2539,17 @@ impl MainWindow {
                 return Some(session_id);
             }
 
-            // Handle RDP connections with native embedding
+            // RDP connections are handled by start_rdp_session_with_credentials
+            // which is called from start_connection_with_credential_resolution
             if protocol == "rdp" {
-                let conn_name = conn.name.clone();
-                let host = conn.host.clone();
-                let port = conn.port;
-                let username = conn.username.clone();
-
-                drop(state_ref);
-
-                // Create RDP session tab with native widget
-                let session_id = notebook.create_rdp_session_tab(connection_id, &conn_name);
-
-                // Get the RDP widget and initiate connection
-                if let Some(rdp_widget) = notebook.get_rdp_widget(session_id) {
-                    // Build connection config
-                    use rustconn_core::ffi::RdpConnectionConfig;
-                    let mut config = RdpConnectionConfig::new(&host).with_port(port);
-
-                    if let Some(user) = &username {
-                        config = config.with_username(user);
-                    }
-
-                    // Initiate connection
-                    if let Err(e) = rdp_widget.connect(&config) {
-                        eprintln!("Failed to connect RDP session '{}': {}", conn_name, e);
-                    }
-                }
-
-                // Update last_connected timestamp
-                if let Ok(mut state_mut) = state.try_borrow_mut() {
-                    let _ = state_mut.update_last_connected(connection_id);
-                }
-
-                return Some(session_id);
+                // This branch should not be reached as RDP is handled earlier
+                // with credential resolution. If we get here, fall through to
+                // create a basic session without credentials.
+                eprintln!(
+                    "Warning: RDP connection reached start_connection without credentials. \
+                     Use start_connection_with_credential_resolution instead."
+                );
+                return None;
             }
 
             // Handle SPICE connections with native embedding
@@ -1464,12 +2558,13 @@ impl MainWindow {
                 let host = conn.host.clone();
                 let port = conn.port;
 
-                // Get SPICE-specific options
-                let spice_config = if let rustconn_core::ProtocolConfig::Spice(config) = &conn.protocol_config {
-                    Some(config.clone())
-                } else {
-                    None
-                };
+                // Get SPICE-specific options from connection config
+                let spice_opts =
+                    if let rustconn_core::ProtocolConfig::Spice(config) = &conn.protocol_config {
+                        Some(config.clone())
+                    } else {
+                        None
+                    };
 
                 drop(state_ref);
 
@@ -1478,29 +2573,44 @@ impl MainWindow {
 
                 // Get the SPICE widget and initiate connection
                 if let Some(spice_widget) = notebook.get_spice_widget(session_id) {
-                    // Build connection config
-                    use rustconn_core::ffi::SpiceConnectionConfig;
-                    let mut config = SpiceConnectionConfig::new(&host, port);
+                    // Build connection config using SpiceClientConfig from spice_client module
+                    use rustconn_core::SpiceClientConfig;
+                    let mut config = SpiceClientConfig::new(&host).with_port(port);
 
                     // Apply SPICE-specific settings if available
-                    if let Some(spice_opts) = spice_config {
-                        // Configure TLS if enabled
-                        if spice_opts.tls_enabled {
-                            use rustconn_core::ffi::SpiceTlsConfig;
-                            let mut tls = SpiceTlsConfig::new();
-                            if let Some(ca_path) = &spice_opts.ca_cert_path {
-                                tls = tls.with_ca_cert(ca_path);
-                            }
-                            tls = tls.with_skip_verify(spice_opts.skip_cert_verify);
-                            config = config.with_tls(tls);
+                    if let Some(opts) = spice_opts {
+                        // Configure TLS
+                        config = config.with_tls(opts.tls_enabled);
+                        if let Some(ca_path) = &opts.ca_cert_path {
+                            config = config.with_ca_cert(ca_path);
                         }
+                        config = config.with_skip_cert_verify(opts.skip_cert_verify);
 
                         // Configure USB redirection
-                        config = config.with_usb_redirection(spice_opts.usb_redirection);
+                        config = config.with_usb_redirection(opts.usb_redirection);
 
                         // Configure clipboard
-                        config = config.with_clipboard(spice_opts.clipboard_enabled);
+                        config = config.with_clipboard(opts.clipboard_enabled);
                     }
+
+                    // Connect state change callback to mark tab as disconnected
+                    let notebook_for_state = notebook.clone();
+                    spice_widget.connect_state_changed(move |spice_state| {
+                        use crate::embedded_spice::SpiceConnectionState;
+                        if spice_state == SpiceConnectionState::Disconnected
+                            || spice_state == SpiceConnectionState::Error
+                        {
+                            notebook_for_state.mark_tab_disconnected(session_id);
+                        }
+                    });
+
+                    // Connect reconnect callback
+                    let widget_for_reconnect = spice_widget.clone();
+                    spice_widget.connect_reconnect(move || {
+                        if let Err(e) = widget_for_reconnect.reconnect() {
+                            eprintln!("SPICE reconnect failed: {e}");
+                        }
+                    });
 
                     // Initiate connection
                     if let Err(e) = spice_widget.connect(&config) {
@@ -1512,6 +2622,86 @@ impl MainWindow {
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
                     let _ = state_mut.update_last_connected(connection_id);
                 }
+
+                return Some(session_id);
+            }
+
+            // Handle Zero Trust connections (protocol format: "zerotrust" or "zerotrust:provider")
+            if protocol == "zerotrust" || protocol.starts_with("zerotrust:") {
+                use rustconn_core::protocol::{format_command_message, format_connection_message};
+
+                let conn_name = conn.name.clone();
+                let username = conn.username.clone();
+
+                // Get Zero Trust config and build command
+                let (program, args, provider_name, provider_key) =
+                    if let rustconn_core::ProtocolConfig::ZeroTrust(zt_config) =
+                        &conn.protocol_config
+                    {
+                        let (prog, args) = zt_config.build_command(username.as_deref());
+                        let provider = zt_config.provider.display_name();
+                        // Get provider key for icon matching
+                        let key = match zt_config.provider {
+                            rustconn_core::models::ZeroTrustProvider::AwsSsm => "aws",
+                            rustconn_core::models::ZeroTrustProvider::GcpIap => "gcloud",
+                            rustconn_core::models::ZeroTrustProvider::AzureBastion => "azure",
+                            rustconn_core::models::ZeroTrustProvider::AzureSsh => "azure_ssh",
+                            rustconn_core::models::ZeroTrustProvider::OciBastion => "oci",
+                            rustconn_core::models::ZeroTrustProvider::CloudflareAccess => {
+                                "cloudflare"
+                            }
+                            rustconn_core::models::ZeroTrustProvider::Teleport => "teleport",
+                            rustconn_core::models::ZeroTrustProvider::TailscaleSsh => "tailscale",
+                            rustconn_core::models::ZeroTrustProvider::Boundary => "boundary",
+                            rustconn_core::models::ZeroTrustProvider::Generic => "generic",
+                        };
+                        (prog, args, provider, key)
+                    } else {
+                        return None;
+                    };
+
+                drop(state_ref);
+
+                // Create terminal tab for Zero Trust with provider-specific protocol
+                let tab_protocol = format!("zerotrust:{provider_key}");
+                let session_id =
+                    notebook.create_terminal_tab(connection_id, &conn_name, &tab_protocol);
+
+                // Update last_connected timestamp
+                if let Ok(mut state_mut) = state.try_borrow_mut() {
+                    let _ = state_mut.update_last_connected(connection_id);
+                }
+
+                // Set up session logging if enabled
+                if logging_enabled {
+                    Self::setup_session_logging(
+                        state,
+                        notebook,
+                        session_id,
+                        connection_id,
+                        &conn_name,
+                    );
+                }
+
+                // Wire up child exited callback for session cleanup
+                Self::setup_child_exited_handler(state, notebook, session_id);
+
+                // Build the full command string for display
+                let full_command = std::iter::once(program.as_str())
+                    .chain(args.iter().map(String::as_str))
+                    .collect::<Vec<_>>()
+                    .join(" ");
+
+                // Display CLI output feedback before executing command
+                let conn_msg = format_connection_message(provider_name, &conn_name);
+                let cmd_msg = format_command_message(&full_command);
+                let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
+                notebook.display_output(session_id, &feedback);
+
+                // Spawn the Zero Trust command through shell to use full PATH
+                // This is needed because VTE doesn't see snap/flatpak paths
+                let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
+                notebook.spawn_command(session_id, &[&shell, "-c", &full_command], None, None);
 
                 return Some(session_id);
             }
@@ -1531,26 +2721,82 @@ impl MainWindow {
         connection_id: Uuid,
         connection_name: &str,
     ) {
-        // Get the session logger from state and create a log file
-        let log_path = {
-            let state_ref = state.borrow();
-            state_ref.session_manager().logger().and_then(|logger| {
-                match logger.create_log_file(connection_id, connection_name) {
-                    Ok(path) => Some(path),
-                    Err(e) => {
-                        eprintln!("Warning: Failed to create log file: {e}");
-                        None
-                    }
-                }
-            })
+        // Get the log directory from settings
+        let log_dir = if let Ok(state_ref) = state.try_borrow() {
+            let settings = state_ref.settings();
+            if settings.logging.log_directory.is_absolute() {
+                settings.logging.log_directory.clone()
+            } else {
+                state_ref
+                    .config_manager()
+                    .config_dir()
+                    .join(&settings.logging.log_directory)
+            }
+        } else {
+            return;
         };
 
-        // Set the log file path on the terminal session
-        if let Some(path) = log_path {
-            notebook.set_log_file(session_id, path.clone());
+        // Ensure log directory exists
+        if let Err(e) = std::fs::create_dir_all(&log_dir) {
+            eprintln!(
+                "Failed to create log directory '{}': {}",
+                log_dir.display(),
+                e
+            );
+            return;
+        }
 
-            // Wire up contents changed callback for logging
-            Self::setup_contents_changed_handler(notebook, session_id, &path);
+        // Create log file path with timestamp
+        let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S");
+        let sanitized_name: String = connection_name
+            .chars()
+            .map(|c| {
+                if c.is_alphanumeric() || c == '-' || c == '_' {
+                    c
+                } else {
+                    '_'
+                }
+            })
+            .take(64)
+            .collect();
+        let log_filename = format!("{sanitized_name}_{timestamp}.log");
+        let log_path = log_dir.join(&log_filename);
+
+        // Create the log file and write header
+        match std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_path)
+        {
+            Ok(mut file) => {
+                use std::io::Write;
+                let header = format!(
+                    "=== Session Log ===\nConnection: {}\nConnection ID: {}\nSession ID: {}\nStarted: {}\n\n",
+                    connection_name,
+                    connection_id,
+                    session_id,
+                    chrono::Local::now().format("%Y-%m-%d %H:%M:%S")
+                );
+                if let Err(e) = file.write_all(header.as_bytes()) {
+                    eprintln!("Failed to write log header: {e}");
+                    return;
+                }
+
+                eprintln!(
+                    "Session logging enabled for '{}': {}",
+                    connection_name,
+                    log_path.display()
+                );
+
+                // Store log file path in session info
+                notebook.set_log_file(session_id, log_path.clone());
+
+                // Set up the contents changed handler to write terminal output
+                Self::setup_contents_changed_handler(notebook, session_id, &log_path);
+            }
+            Err(e) => {
+                eprintln!("Failed to create log file '{}': {}", log_path.display(), e);
+            }
         }
     }
 
@@ -1570,14 +2816,9 @@ impl MainWindow {
                 let _ = state_mut.terminate_session(session_id);
             }
 
-            // Finalize the log file if logging was enabled
-            if let Some(info) = notebook_clone.get_session_info(session_id) {
-                if let Some(ref log_path) = info.log_file {
-                    if let Err(e) = rustconn_core::SessionLogger::finalize_log(log_path) {
-                        eprintln!("Warning: Failed to finalize log file: {e}");
-                    }
-                }
-            }
+            // TODO: Finalize the log file if logging was enabled
+            // The finalize_log method needs to be implemented
+            let _ = notebook_clone.get_session_info(session_id);
 
             // Log the exit status for debugging
             if exit_status != 0 {
@@ -1609,20 +2850,36 @@ impl MainWindow {
         let change_counter: Rc<RefCell<u32>> = Rc::new(RefCell::new(0));
         let last_log_time: Rc<RefCell<std::time::Instant>> =
             Rc::new(RefCell::new(std::time::Instant::now()));
+        let flush_counter: Rc<RefCell<u32>> = Rc::new(RefCell::new(0));
 
         // Open the log file for appending
-        if let Ok(file) = OpenOptions::new().append(true).open(&log_path) {
-            *log_writer.borrow_mut() = Some(std::io::BufWriter::new(file));
+        match OpenOptions::new().append(true).open(log_path) {
+            Ok(file) => {
+                *log_writer.borrow_mut() = Some(std::io::BufWriter::new(file));
+            }
+            Err(e) => {
+                eprintln!(
+                    "Failed to open log file '{}' for session logging: {}",
+                    log_path.display(),
+                    e
+                );
+                return;
+            }
         }
 
         let log_writer_clone = log_writer;
         let counter_clone = change_counter;
         let last_time_clone = last_log_time;
+        let flush_counter_clone = flush_counter;
 
         notebook.connect_contents_changed(session_id, move || {
             // Increment change counter
             let mut counter = counter_clone.borrow_mut();
             *counter += 1;
+
+            // Increment flush counter
+            let mut flush_count = flush_counter_clone.borrow_mut();
+            *flush_count += 1;
 
             // Debounce: only log every 100 changes or every 5 seconds
             let now = std::time::Instant::now();
@@ -1637,7 +2894,12 @@ impl MainWindow {
                             "[{}] Terminal activity ({} changes)",
                             timestamp, *counter
                         );
-                        let _ = writer.flush();
+
+                        // Flush periodically (every 10 log entries or 30 seconds)
+                        if *flush_count >= 10 || elapsed.as_secs() >= 30 {
+                            let _ = writer.flush();
+                            *flush_count = 0;
+                        }
                     }
                 }
 
@@ -1648,11 +2910,239 @@ impl MainWindow {
         });
     }
 
-    /// Shows the new connection dialog
+    /// Shows the new connection dialog with optional template selection
     fn show_new_connection_dialog(
         window: &ApplicationWindow,
         state: SharedAppState,
         sidebar: SharedSidebar,
+    ) {
+        // Check if there are templates available
+        let templates = {
+            let state_ref = state.borrow();
+            state_ref.get_all_templates()
+        };
+
+        if templates.is_empty() {
+            // No templates, show regular connection dialog
+            Self::show_new_connection_dialog_internal(window, state, sidebar, None);
+        } else {
+            // Show template picker first
+            Self::show_template_picker_for_new_connection(window, state, sidebar, templates);
+        }
+    }
+
+    /// Shows a template picker dialog before creating a new connection
+    fn show_template_picker_for_new_connection(
+        window: &ApplicationWindow,
+        state: SharedAppState,
+        sidebar: SharedSidebar,
+        templates: Vec<rustconn_core::models::ConnectionTemplate>,
+    ) {
+        let picker_window = gtk4::Window::builder()
+            .title("Create Connection")
+            .transient_for(window)
+            .modal(true)
+            .default_width(400)
+            .default_height(350)
+            .build();
+
+        // Create header bar
+        let header = HeaderBar::new();
+        let cancel_btn = Button::builder().label("Cancel").build();
+        header.pack_start(&cancel_btn);
+        picker_window.set_titlebar(Some(&header));
+
+        // Create content
+        let content = gtk4::Box::new(Orientation::Vertical, 12);
+        content.set_margin_top(12);
+        content.set_margin_bottom(12);
+        content.set_margin_start(12);
+        content.set_margin_end(12);
+
+        let title_label = Label::builder()
+            .label("Choose how to create your connection:")
+            .halign(gtk4::Align::Start)
+            .css_classes(["heading"])
+            .build();
+        content.append(&title_label);
+
+        // Blank connection option
+        let blank_btn = Button::builder().label("Start from scratch").build();
+        let blank_box = gtk4::Box::new(Orientation::Vertical, 4);
+        blank_box.append(&blank_btn);
+        let blank_desc = Label::builder()
+            .label("Create a new connection with default settings")
+            .halign(gtk4::Align::Start)
+            .css_classes(["dim-label"])
+            .build();
+        blank_box.append(&blank_desc);
+        content.append(&blank_box);
+
+        // Separator
+        let separator = gtk4::Separator::new(Orientation::Horizontal);
+        separator.set_margin_top(8);
+        separator.set_margin_bottom(8);
+        content.append(&separator);
+
+        // Template section
+        let template_label = Label::builder()
+            .label("Or use a template:")
+            .halign(gtk4::Align::Start)
+            .build();
+        content.append(&template_label);
+
+        // Templates list
+        let scrolled = ScrolledWindow::builder()
+            .hscrollbar_policy(gtk4::PolicyType::Never)
+            .vscrollbar_policy(gtk4::PolicyType::Automatic)
+            .vexpand(true)
+            .build();
+
+        let templates_list = gtk4::ListBox::builder()
+            .selection_mode(gtk4::SelectionMode::Single)
+            .css_classes(["boxed-list"])
+            .build();
+
+        for template in &templates {
+            let hbox = gtk4::Box::new(Orientation::Horizontal, 8);
+            hbox.set_margin_top(8);
+            hbox.set_margin_bottom(8);
+            hbox.set_margin_start(8);
+            hbox.set_margin_end(8);
+
+            // Protocol icon
+            let icon_name = match template.protocol {
+                rustconn_core::models::ProtocolType::Ssh => "utilities-terminal-symbolic",
+                rustconn_core::models::ProtocolType::Rdp => "computer-symbolic",
+                rustconn_core::models::ProtocolType::Vnc => "video-display-symbolic",
+                rustconn_core::models::ProtocolType::Spice => "video-display-symbolic",
+                rustconn_core::models::ProtocolType::ZeroTrust => "cloud-symbolic",
+            };
+            let icon = gtk4::Image::from_icon_name(icon_name);
+            hbox.append(&icon);
+
+            // Template info
+            let info_box = gtk4::Box::new(Orientation::Vertical, 2);
+            info_box.set_hexpand(true);
+
+            let name_label = Label::builder()
+                .label(&template.name)
+                .halign(gtk4::Align::Start)
+                .build();
+            info_box.append(&name_label);
+
+            if let Some(ref desc) = template.description {
+                let desc_label = Label::builder()
+                    .label(desc)
+                    .halign(gtk4::Align::Start)
+                    .css_classes(["dim-label"])
+                    .build();
+                info_box.append(&desc_label);
+            }
+
+            hbox.append(&info_box);
+
+            let row = gtk4::ListBoxRow::builder().child(&hbox).build();
+            row.set_widget_name(&format!("template-{}", template.id));
+            templates_list.append(&row);
+        }
+
+        scrolled.set_child(Some(&templates_list));
+        content.append(&scrolled);
+
+        // Use template button
+        let use_template_btn = Button::builder()
+            .label("Use Selected Template")
+            .sensitive(false)
+            .css_classes(["suggested-action"])
+            .build();
+        content.append(&use_template_btn);
+
+        picker_window.set_child(Some(&content));
+
+        // Connect selection changed
+        let use_btn_clone = use_template_btn.clone();
+        templates_list.connect_row_selected(move |_, row| {
+            use_btn_clone.set_sensitive(row.is_some());
+        });
+
+        // Connect cancel button
+        let picker_clone = picker_window.clone();
+        cancel_btn.connect_clicked(move |_| {
+            picker_clone.close();
+        });
+
+        // Connect blank button
+        let picker_clone = picker_window.clone();
+        let window_clone = window.clone();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        blank_btn.connect_clicked(move |_| {
+            picker_clone.close();
+            Self::show_new_connection_dialog_internal(
+                &window_clone,
+                state_clone.clone(),
+                sidebar_clone.clone(),
+                None,
+            );
+        });
+
+        // Connect use template button
+        let picker_clone = picker_window.clone();
+        let window_clone = window.clone();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let templates_clone = templates.clone();
+        let list_clone = templates_list.clone();
+        use_template_btn.connect_clicked(move |_| {
+            if let Some(row) = list_clone.selected_row() {
+                if let Some(id_str) = row.widget_name().as_str().strip_prefix("template-") {
+                    if let Ok(id) = Uuid::parse_str(id_str) {
+                        if let Some(template) = templates_clone.iter().find(|t| t.id == id) {
+                            picker_clone.close();
+                            Self::show_new_connection_dialog_internal(
+                                &window_clone,
+                                state_clone.clone(),
+                                sidebar_clone.clone(),
+                                Some(template.clone()),
+                            );
+                        }
+                    }
+                }
+            }
+        });
+
+        // Double-click on template row
+        let picker_clone = picker_window.clone();
+        let window_clone = window.clone();
+        let state_clone = state;
+        let sidebar_clone = sidebar;
+        let templates_clone = templates;
+        templates_list.connect_row_activated(move |_, row| {
+            if let Some(id_str) = row.widget_name().as_str().strip_prefix("template-") {
+                if let Ok(id) = Uuid::parse_str(id_str) {
+                    if let Some(template) = templates_clone.iter().find(|t| t.id == id) {
+                        picker_clone.close();
+                        Self::show_new_connection_dialog_internal(
+                            &window_clone,
+                            state_clone.clone(),
+                            sidebar_clone.clone(),
+                            Some(template.clone()),
+                        );
+                    }
+                }
+            }
+        });
+
+        picker_window.present();
+    }
+
+    /// Internal function to show the new connection dialog with optional template
+    fn show_new_connection_dialog_internal(
+        window: &ApplicationWindow,
+        state: SharedAppState,
+        sidebar: SharedSidebar,
+        template: Option<rustconn_core::models::ConnectionTemplate>,
     ) {
         let dialog = ConnectionDialog::new(Some(&window.clone().upcast()));
         dialog.setup_key_file_chooser(Some(&window.clone().upcast()));
@@ -1664,28 +3154,156 @@ impl MainWindow {
             dialog.set_keepass_enabled(keepass_enabled);
         }
 
+        // If template provided, pre-populate the dialog
+        if let Some(ref tmpl) = template {
+            let connection = tmpl.apply(None);
+            dialog.set_connection(&connection);
+            dialog
+                .window()
+                .set_title(Some("New Connection from Template"));
+        }
+
         // Connect save to KeePass callback
         let window_for_keepass = window.clone();
-        dialog.connect_save_to_keepass(move |name, host, password| {
-            // For now, show a success message - actual KeePass save will be implemented
-            // when the SecretManager is properly integrated with the KDBX backend
+        let state_for_save = state.clone();
+        dialog.connect_save_to_keepass(move |name, host, username, password, protocol| {
+            let state_ref = state_for_save.borrow();
+            let settings = state_ref.settings();
+
+            if !settings.secrets.kdbx_enabled {
+                let alert = gtk4::AlertDialog::builder()
+                    .message("KeePass Not Enabled")
+                    .detail("Please enable KeePass integration in Settings first.")
+                    .modal(true)
+                    .build();
+                alert.show(Some(&window_for_keepass));
+                return;
+            }
+
+            let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() else {
+                let alert = gtk4::AlertDialog::builder()
+                    .message("KeePass Database Not Configured")
+                    .detail("Please select a KeePass database file in Settings.")
+                    .modal(true)
+                    .build();
+                alert.show(Some(&window_for_keepass));
+                return;
+            };
+
             let lookup_key = if name.trim().is_empty() {
                 host.to_string()
             } else {
                 name.to_string()
             };
-            let alert = gtk4::AlertDialog::builder()
-                .message("Save to KeePass")
-                .detail(format!(
-                    "Password for '{lookup_key}' would be saved to KeePass.\n\
-                     (Full integration pending SecretManager setup)"
-                ))
-                .modal(true)
-                .build();
-            alert.show(Some(&window_for_keepass));
-            // Note: The actual save implementation requires async SecretManager access
-            // which will be completed in task 8 (credential resolution integration)
-            let _ = password; // Acknowledge password is available for saving
+
+            // Get credentials - password and key file can be used together
+            let db_password = settings
+                .secrets
+                .kdbx_password
+                .as_ref()
+                .map(secrecy::ExposeSecret::expose_secret);
+
+            // Key file is optional additional authentication
+            let key_file = settings.secrets.kdbx_key_file.as_deref();
+
+            // Debug: check what credentials we have
+            eprintln!(
+                "DEBUG save_to_keepass: has_db_password={}, has_key_file={}, kdbx_path={}",
+                db_password.is_some(),
+                key_file.is_some(),
+                kdbx_path.display()
+            );
+
+            // Check if we have at least one credential
+            if db_password.is_none() && key_file.is_none() {
+                let alert = gtk4::AlertDialog::builder()
+                    .message("KeePass Credentials Required")
+                    .detail("Please enter the database password or select a key file in Settings.")
+                    .modal(true)
+                    .build();
+                alert.show(Some(&window_for_keepass));
+                return;
+            }
+
+            // Build URL for the entry with correct protocol
+            let url = format!("{protocol}://{host}");
+
+            // Save to KeePass
+            match rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
+                kdbx_path,
+                db_password,
+                key_file,
+                &lookup_key,
+                username,
+                password,
+                Some(&url),
+            ) {
+                Ok(()) => {
+                    let alert = gtk4::AlertDialog::builder()
+                        .message("Password Saved")
+                        .detail(format!("Password for '{lookup_key}' saved to KeePass."))
+                        .modal(true)
+                        .build();
+                    alert.show(Some(&window_for_keepass));
+                }
+                Err(e) => {
+                    let alert = gtk4::AlertDialog::builder()
+                        .message("Failed to Save Password")
+                        .detail(format!("Error: {e}"))
+                        .modal(true)
+                        .build();
+                    alert.show(Some(&window_for_keepass));
+                }
+            }
+        });
+
+        // Connect load from KeePass callback
+        let state_for_load = state.clone();
+        dialog.connect_load_from_keepass(move |name, host, _protocol| {
+            let state_ref = state_for_load.borrow();
+            let settings = state_ref.settings();
+
+            if !settings.secrets.kdbx_enabled {
+                return None;
+            }
+
+            let kdbx_path = settings.secrets.kdbx_path.as_ref()?;
+
+            let lookup_key = if name.trim().is_empty() {
+                host.to_string()
+            } else {
+                name.to_string()
+            };
+
+            // Get credentials - password and key file can be used together
+            let db_password = settings
+                .secrets
+                .kdbx_password
+                .as_ref()
+                .map(secrecy::ExposeSecret::expose_secret);
+
+            // Key file is optional additional authentication
+            let key_file = settings.secrets.kdbx_key_file.as_deref();
+
+            eprintln!(
+                "DEBUG load_from_keepass: lookup_key='{}', has_password={}, has_key_file={}",
+                lookup_key,
+                db_password.is_some(),
+                key_file.is_some()
+            );
+
+            match rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
+                kdbx_path,
+                db_password,
+                key_file,
+                &lookup_key,
+            ) {
+                Ok(password) => password,
+                Err(e) => {
+                    eprintln!("Failed to load password from KeePass: {e}");
+                    None
+                }
+            }
         });
 
         let window_clone = window.clone();
@@ -1804,8 +3422,12 @@ impl MainWindow {
             }
         }
 
-        let string_list =
-            gtk4::StringList::new(&strings.iter().map(std::string::String::as_str).collect::<Vec<_>>());
+        let string_list = gtk4::StringList::new(
+            &strings
+                .iter()
+                .map(std::string::String::as_str)
+                .collect::<Vec<_>>(),
+        );
         parent_dropdown.set_model(Some(&string_list));
         parent_dropdown.set_selected(preselected_index);
 
@@ -1853,7 +3475,7 @@ impl MainWindow {
                 match result {
                     Ok(_) => {
                         drop(state_mut);
-                        Self::reload_sidebar(&state_clone, &sidebar_clone);
+                        Self::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
                         window_clone.close();
                     }
                     Err(e) => {
@@ -1921,12 +3543,31 @@ impl MainWindow {
             dialog.set_settings(state_ref.settings());
         }
 
+        let window_clone = window.clone();
         dialog.run(move |result| {
             if let Some(settings) = result {
+                // Capture KeePass state for action update
+                let keepass_enabled = settings.secrets.kdbx_enabled;
+                let kdbx_path_exists = settings
+                    .secrets
+                    .kdbx_path
+                    .as_ref()
+                    .is_some_and(|p| p.exists());
+
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
                     if let Err(e) = state_mut.update_settings(settings) {
                         eprintln!("Failed to save settings: {e}");
+                    } else {
+                        // Update open-keepass action enabled state
+                        if let Some(action) = window_clone.lookup_action("open-keepass") {
+                            if let Some(simple_action) = action.downcast_ref::<gio::SimpleAction>()
+                            {
+                                simple_action.set_enabled(keepass_enabled && kdbx_path_exists);
+                            }
+                        }
                     }
+                } else {
+                    eprintln!("Failed to borrow state for settings update");
                 }
             }
         });
@@ -1972,9 +3613,35 @@ impl MainWindow {
 
             // Connect save to KeePass callback
             let window_for_keepass = window.clone();
+            let state_for_save = state.clone();
             let conn_name = conn.name.clone();
             let conn_host = conn.host;
-            dialog.connect_save_to_keepass(move |name, host, password| {
+            dialog.connect_save_to_keepass(move |name, host, username, password, protocol| {
+
+
+                let state_ref = state_for_save.borrow();
+                let settings = state_ref.settings();
+
+                if !settings.secrets.kdbx_enabled {
+                    let alert = gtk4::AlertDialog::builder()
+                        .message("KeePass Not Enabled")
+                        .detail("Please enable KeePass integration in Settings first.")
+                        .modal(true)
+                        .build();
+                    alert.show(Some(&window_for_keepass));
+                    return;
+                }
+
+                let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() else {
+                    let alert = gtk4::AlertDialog::builder()
+                        .message("KeePass Database Not Configured")
+                        .detail("Please select a KeePass database file in Settings.")
+                        .modal(true)
+                        .build();
+                    alert.show(Some(&window_for_keepass));
+                    return;
+                };
+
                 // Use connection name/host for lookup key
                 let lookup_key = if !name.trim().is_empty() {
                     name.to_string()
@@ -1985,16 +3652,116 @@ impl MainWindow {
                 } else {
                     conn_host.clone()
                 };
-                let alert = gtk4::AlertDialog::builder()
-                    .message("Save to KeePass")
-                    .detail(format!(
-                        "Password for '{lookup_key}' would be saved to KeePass.\n\
-                         (Full integration pending SecretManager setup)"
-                    ))
-                    .modal(true)
-                    .build();
-                alert.show(Some(&window_for_keepass));
-                let _ = password; // Acknowledge password is available for saving
+
+                // Get credentials - password and key file can be used together
+                let db_password = settings
+                    .secrets
+                    .kdbx_password
+                    .as_ref()
+                    .map(secrecy::ExposeSecret::expose_secret);
+
+                // Key file is optional additional authentication
+                let key_file = settings.secrets.kdbx_key_file.as_deref();
+
+                // Debug: check what credentials we have
+                eprintln!(
+                    "DEBUG save_to_keepass (edit): has_db_password={}, has_key_file={}, kdbx_path={}",
+                    db_password.is_some(),
+                    key_file.is_some(),
+                    kdbx_path.display()
+                );
+
+                // Check if we have at least one credential
+                if db_password.is_none() && key_file.is_none() {
+                    let alert = gtk4::AlertDialog::builder()
+                        .message("KeePass Credentials Required")
+                        .detail("Please enter the database password or select a key file in Settings.")
+                        .modal(true)
+                        .build();
+                    alert.show(Some(&window_for_keepass));
+                    return;
+                }
+
+                // Use protocol from callback parameter
+                let url = format!("{}://{}", protocol, if host.is_empty() { &conn_host } else { host });
+
+                match rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
+                    kdbx_path,
+                    db_password,
+                    key_file,
+                    &lookup_key,
+                    username,
+                    password,
+                    Some(&url),
+                ) {
+                    Ok(()) => {
+                        let alert = gtk4::AlertDialog::builder()
+                            .message("Password Saved")
+                            .detail(format!("Password for '{lookup_key}' saved to KeePass."))
+                            .modal(true)
+                            .build();
+                        alert.show(Some(&window_for_keepass));
+                    }
+                    Err(e) => {
+                        let alert = gtk4::AlertDialog::builder()
+                            .message("Failed to Save Password")
+                            .detail(format!("Error: {e}"))
+                            .modal(true)
+                            .build();
+                        alert.show(Some(&window_for_keepass));
+                    }
+                }
+            });
+
+            // Connect load from KeePass callback
+            let state_for_load = state.clone();
+            dialog.connect_load_from_keepass(move |name, host, _protocol| {
+
+
+                let state_ref = state_for_load.borrow();
+                let settings = state_ref.settings();
+
+                if !settings.secrets.kdbx_enabled {
+                    return None;
+                }
+
+                let kdbx_path = settings.secrets.kdbx_path.as_ref()?;
+
+                let lookup_key = if name.trim().is_empty() {
+                    host.to_string()
+                } else {
+                    name.to_string()
+                };
+
+                // Get credentials - password and key file can be used together
+                let db_password = settings
+                    .secrets
+                    .kdbx_password
+                    .as_ref()
+                    .map(secrecy::ExposeSecret::expose_secret);
+
+                // Key file is optional additional authentication
+                let key_file = settings.secrets.kdbx_key_file.as_deref();
+
+                eprintln!(
+                    "DEBUG load_from_keepass (edit): lookup_key='{}', has_password={}, has_key_file={}",
+                    lookup_key,
+                    db_password.is_some(),
+                    key_file.is_some()
+                );
+
+                match rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
+                    kdbx_path,
+                    db_password,
+                    key_file,
+                    &lookup_key,
+                ) {
+                    Ok(password) => password,
+                    Err(e) => {
+                        eprintln!("Failed to load password from KeePass: {e}");
+                        None
+                    }
+                }
             });
 
             let state_clone = state.clone();
@@ -2006,7 +3773,8 @@ impl MainWindow {
                         match state_mut.update_connection(id, updated_conn) {
                             Ok(()) => {
                                 drop(state_mut);
-                                Self::reload_sidebar(&state_clone, &sidebar_clone);
+                                // Preserve tree state when editing connections
+                                Self::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
                             }
                             Err(e) => {
                                 let alert = gtk4::AlertDialog::builder()
@@ -2021,6 +3789,200 @@ impl MainWindow {
                 }
             });
         }
+    }
+
+    /// Shows connection details in a popover
+    fn show_connection_details(
+        window: &ApplicationWindow,
+        state: &SharedAppState,
+        sidebar: &SharedSidebar,
+    ) {
+        // Get selected item
+        let Some(conn_item) = sidebar.get_selected_item() else {
+            return;
+        };
+
+        // Only show details for connections, not groups
+        if conn_item.is_group() {
+            return;
+        }
+
+        let id_str = conn_item.id();
+        let Ok(id) = Uuid::parse_str(&id_str) else {
+            return;
+        };
+
+        let state_ref = state.borrow();
+        let Some(conn) = state_ref.get_connection(id).cloned() else {
+            return;
+        };
+        drop(state_ref);
+
+        // Create details popover
+        let popover = gtk4::Popover::new();
+        popover.set_autohide(true);
+
+        let content = gtk4::Box::new(gtk4::Orientation::Vertical, 8);
+        content.set_margin_top(12);
+        content.set_margin_bottom(12);
+        content.set_margin_start(12);
+        content.set_margin_end(12);
+        content.set_width_request(300);
+
+        // Connection name header
+        let name_label = Label::builder()
+            .label(&conn.name)
+            .css_classes(["title-2"])
+            .halign(gtk4::Align::Start)
+            .build();
+        content.append(&name_label);
+
+        // Basic info
+        let info_grid = gtk4::Grid::builder()
+            .row_spacing(4)
+            .column_spacing(8)
+            .build();
+
+        let mut row = 0;
+
+        // Protocol
+        let protocol_label = Label::builder()
+            .label("Protocol:")
+            .halign(gtk4::Align::End)
+            .css_classes(["dim-label"])
+            .build();
+        let protocol_value = Label::builder()
+            .label(format!("{:?}", conn.protocol))
+            .halign(gtk4::Align::Start)
+            .build();
+        info_grid.attach(&protocol_label, 0, row, 1, 1);
+        info_grid.attach(&protocol_value, 1, row, 1, 1);
+        row += 1;
+
+        // Host
+        let host_label = Label::builder()
+            .label("Host:")
+            .halign(gtk4::Align::End)
+            .css_classes(["dim-label"])
+            .build();
+        let host_value = Label::builder()
+            .label(format!("{}:{}", conn.host, conn.port))
+            .halign(gtk4::Align::Start)
+            .selectable(true)
+            .build();
+        info_grid.attach(&host_label, 0, row, 1, 1);
+        info_grid.attach(&host_value, 1, row, 1, 1);
+        row += 1;
+
+        // Username if present
+        if let Some(ref username) = conn.username {
+            let user_label = Label::builder()
+                .label("Username:")
+                .halign(gtk4::Align::End)
+                .css_classes(["dim-label"])
+                .build();
+            let user_value = Label::builder()
+                .label(username)
+                .halign(gtk4::Align::Start)
+                .selectable(true)
+                .build();
+            info_grid.attach(&user_label, 0, row, 1, 1);
+            info_grid.attach(&user_value, 1, row, 1, 1);
+            row += 1;
+        }
+
+        // Tags if present
+        if !conn.tags.is_empty() {
+            let tags_label = Label::builder()
+                .label("Tags:")
+                .halign(gtk4::Align::End)
+                .css_classes(["dim-label"])
+                .build();
+            let tags_value = Label::builder()
+                .label(conn.tags.join(", "))
+                .halign(gtk4::Align::Start)
+                .wrap(true)
+                .build();
+            info_grid.attach(&tags_label, 0, row, 1, 1);
+            info_grid.attach(&tags_value, 1, row, 1, 1);
+        }
+
+        content.append(&info_grid);
+
+        // Custom properties section
+        if !conn.custom_properties.is_empty() {
+            let separator = gtk4::Separator::new(gtk4::Orientation::Horizontal);
+            separator.set_margin_top(8);
+            separator.set_margin_bottom(8);
+            content.append(&separator);
+
+            let props_header = Label::builder()
+                .label("Custom Properties")
+                .css_classes(["title-4"])
+                .halign(gtk4::Align::Start)
+                .build();
+            content.append(&props_header);
+
+            let props_grid = gtk4::Grid::builder()
+                .row_spacing(4)
+                .column_spacing(8)
+                .build();
+
+            for (idx, prop) in conn.custom_properties.iter().enumerate() {
+                let prop_name = Label::builder()
+                    .label(format!("{}:", prop.name))
+                    .halign(gtk4::Align::End)
+                    .css_classes(["dim-label"])
+                    .build();
+
+                #[allow(clippy::cast_possible_truncation)]
+                let row_idx = idx as i32;
+
+                if prop.is_protected() {
+                    // Show masked value for protected properties
+                    let prop_value = Label::builder()
+                        .label("••••••••")
+                        .halign(gtk4::Align::Start)
+                        .build();
+                    props_grid.attach(&prop_name, 0, row_idx, 1, 1);
+                    props_grid.attach(&prop_value, 1, row_idx, 1, 1);
+                } else if prop.is_url() {
+                    // Create clickable link for URL properties
+                    let link_button = gtk4::LinkButton::builder()
+                        .uri(&prop.value)
+                        .label(&prop.value)
+                        .halign(gtk4::Align::Start)
+                        .build();
+                    props_grid.attach(&prop_name, 0, row_idx, 1, 1);
+                    props_grid.attach(&link_button, 1, row_idx, 1, 1);
+                } else {
+                    // Regular text property
+                    let prop_value = Label::builder()
+                        .label(&prop.value)
+                        .halign(gtk4::Align::Start)
+                        .selectable(true)
+                        .wrap(true)
+                        .build();
+                    props_grid.attach(&prop_name, 0, row_idx, 1, 1);
+                    props_grid.attach(&prop_value, 1, row_idx, 1, 1);
+                }
+            }
+
+            content.append(&props_grid);
+        }
+
+        popover.set_child(Some(&content));
+        popover.set_parent(window);
+
+        // Position the popover near the sidebar
+        popover.set_position(gtk4::PositionType::Right);
+
+        // Connect to closed signal to unparent
+        popover.connect_closed(|p| {
+            p.unparent();
+        });
+
+        popover.popup();
     }
 
     /// Shows dialog to edit a group name
@@ -2125,7 +4087,8 @@ impl MainWindow {
                     }
                 }
                 drop(state_mut);
-                Self::reload_sidebar(&state_clone, &sidebar_clone);
+                // Preserve tree state when editing groups
+                Self::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
                 window_clone.close();
             }
         });
@@ -2163,9 +4126,7 @@ impl MainWindow {
                     "Are you sure you want to delete the group '{name}'?\n\nThis will also delete {connection_count} connection(s) in this group."
                 )
             } else {
-                format!(
-                    "Are you sure you want to delete the empty group '{name}'?"
-                )
+                format!("Are you sure you want to delete the empty group '{name}'?")
             }
         } else {
             format!("Are you sure you want to delete the connection '{name}'?")
@@ -2197,7 +4158,8 @@ impl MainWindow {
                     match delete_result {
                         Ok(()) => {
                             drop(state_mut);
-                            Self::reload_sidebar(&state_clone, &sidebar_clone);
+                            // Preserve tree state when deleting (scroll position, other expanded groups)
+                            Self::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
                         }
                         Err(e) => {
                             let error_alert = gtk4::AlertDialog::builder()
@@ -2353,8 +4315,8 @@ impl MainWindow {
                 }
             }
 
-            // Reload sidebar
-            Self::reload_sidebar(&state_clone, &sidebar_clone);
+            // Reload sidebar preserving state
+            Self::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
 
             // Show results
             if failures.is_empty() {
@@ -2464,8 +4426,8 @@ impl MainWindow {
                         }
                     }
 
-                    // Reload sidebar
-                    Self::reload_sidebar(&state_clone, &sidebar_clone);
+                    // Reload sidebar preserving state
+                    Self::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
 
                     // Show results if there were failures
                     if !failures.is_empty() {
@@ -2509,7 +4471,8 @@ impl MainWindow {
         };
 
         // Generate unique name for duplicate
-        let new_name = state_ref.generate_unique_connection_name(&format!("{} (copy)", conn.name));
+        let new_name = state_ref
+            .generate_unique_connection_name(&format!("{} (copy)", conn.name), conn.protocol);
         drop(state_ref);
 
         // Create duplicate with new ID and name
@@ -2526,10 +4489,59 @@ impl MainWindow {
             {
                 Ok(_) => {
                     drop(state_mut);
-                    Self::reload_sidebar(state, sidebar);
+                    // Preserve tree state when duplicating
+                    Self::reload_sidebar_preserving_state(state, sidebar);
                 }
                 Err(e) => {
                     eprintln!("Failed to duplicate connection: {e}");
+                }
+            }
+        }
+    }
+
+    /// Copies the selected connection to the internal clipboard
+    fn copy_selected_connection(state: &SharedAppState, sidebar: &SharedSidebar) {
+        // Get selected item using sidebar's method
+        let Some(conn_item) = sidebar.get_selected_item() else {
+            return;
+        };
+
+        // Can only copy connections, not groups
+        if conn_item.is_group() {
+            return;
+        }
+
+        let id_str = conn_item.id();
+        let Ok(id) = Uuid::parse_str(&id_str) else {
+            return;
+        };
+
+        if let Ok(mut state_mut) = state.try_borrow_mut() {
+            if let Err(e) = state_mut.copy_connection(id) {
+                eprintln!("Failed to copy connection: {e}");
+            }
+        }
+    }
+
+    /// Pastes a connection from the internal clipboard
+    fn paste_connection(state: &SharedAppState, sidebar: &SharedSidebar) {
+        // Check if clipboard has content
+        {
+            let state_ref = state.borrow();
+            if !state_ref.has_clipboard_content() {
+                return;
+            }
+        }
+
+        if let Ok(mut state_mut) = state.try_borrow_mut() {
+            match state_mut.paste_connection() {
+                Ok(_) => {
+                    drop(state_mut);
+                    // Preserve tree state when pasting
+                    Self::reload_sidebar_preserving_state(state, sidebar);
+                }
+                Err(e) => {
+                    eprintln!("Failed to paste connection: {e}");
                 }
             }
         }
@@ -2551,16 +4563,11 @@ impl MainWindow {
 
         // Add ungrouped connections
         for conn in state_ref.get_ungrouped_connections() {
-            let protocol = match &conn.protocol_config {
-                rustconn_core::ProtocolConfig::Ssh(_) => "ssh",
-                rustconn_core::ProtocolConfig::Rdp(_) => "rdp",
-                rustconn_core::ProtocolConfig::Vnc(_) => "vnc",
-                rustconn_core::ProtocolConfig::Spice(_) => "spice",
-            };
+            let protocol = get_protocol_string(&conn.protocol_config);
             let item = ConnectionItem::new_connection(
                 &conn.id.to_string(),
                 &conn.name,
-                protocol,
+                &protocol,
                 &conn.host,
             );
             store.append(&item);
@@ -2583,20 +4590,31 @@ impl MainWindow {
 
         // Add connections in this group
         for conn in state.get_connections_by_group(group_id) {
-            let protocol = match &conn.protocol_config {
-                rustconn_core::ProtocolConfig::Ssh(_) => "ssh",
-                rustconn_core::ProtocolConfig::Rdp(_) => "rdp",
-                rustconn_core::ProtocolConfig::Vnc(_) => "vnc",
-                rustconn_core::ProtocolConfig::Spice(_) => "spice",
-            };
+            let protocol = get_protocol_string(&conn.protocol_config);
             let item = ConnectionItem::new_connection(
                 &conn.id.to_string(),
                 &conn.name,
-                protocol,
+                &protocol,
                 &conn.host,
             );
             parent_item.add_child(&item);
         }
+    }
+
+    /// Reloads the sidebar while preserving tree state
+    ///
+    /// This method saves the current expanded groups, scroll position, and selection,
+    /// reloads the sidebar data, and then restores the state. Use this when editing
+    /// connections to maintain the user's view.
+    fn reload_sidebar_preserving_state(state: &SharedAppState, sidebar: &SharedSidebar) {
+        // Save current tree state
+        let tree_state = sidebar.save_state();
+
+        // Perform the reload
+        Self::reload_sidebar(state, sidebar);
+
+        // Restore tree state
+        sidebar.restore_state(&tree_state);
     }
 
     /// Presents the window to the user
@@ -2623,16 +4641,28 @@ impl MainWindow {
 
     /// Returns a reference to the connection sidebar
     #[must_use]
-    #[allow(dead_code)]
     pub fn sidebar(&self) -> &ConnectionSidebar {
         &self.sidebar
     }
 
+    /// Returns a clone of the shared sidebar Rc
+    #[must_use]
+    pub fn sidebar_rc(&self) -> Rc<ConnectionSidebar> {
+        self.sidebar.clone()
+    }
+
     /// Returns a reference to the terminal notebook
     #[must_use]
-    #[allow(dead_code)]
     pub fn terminal_notebook(&self) -> &TerminalNotebook {
         &self.terminal_notebook
+    }
+
+    /// Saves the current collapsed groups state to settings
+    pub fn save_collapsed_groups(&self) {
+        let collapsed = self.sidebar.get_collapsed_groups();
+        if let Ok(mut state) = self.state.try_borrow_mut() {
+            let _ = state.update_collapsed_groups(collapsed);
+        }
     }
 
     /// Opens a local shell terminal with split view integration
@@ -2650,6 +4680,12 @@ impl MainWindow {
             split_view.add_session(info, terminal);
             let _ = split_view.show_session(session_id);
         }
+
+        // Ensure split view is visible and expanded for local shell
+        split_view.widget().set_visible(true);
+        split_view.widget().set_vexpand(true);
+        notebook.widget().set_vexpand(false);
+        notebook.notebook().set_vexpand(false);
 
         // Note: The switch_page signal handler will automatically show the session
         // in the split view when the notebook switches to the new tab
@@ -2805,21 +4841,15 @@ impl MainWindow {
             match protocol_idx {
                 0 => {
                     // SSH - use terminal tab
-                    let session_id = notebook.create_terminal_tab(
-                        Uuid::nil(),
-                        &format!("Quick: {host}"),
-                        "ssh",
-                    );
+                    let session_id =
+                        notebook.create_terminal_tab(Uuid::nil(), &format!("Quick: {host}"), "ssh");
 
                     notebook.spawn_ssh(session_id, &host, port, username.as_deref(), None, &[]);
                 }
                 1 => {
                     // RDP - native embedding not yet implemented, show placeholder
-                    let _session_id = notebook.create_terminal_tab(
-                        Uuid::nil(),
-                        &format!("Quick: {host}"),
-                        "rdp",
-                    );
+                    let _session_id =
+                        notebook.create_terminal_tab(Uuid::nil(), &format!("Quick: {host}"), "rdp");
 
                     eprintln!(
                         "Note: Native RDP embedding not yet implemented. \
@@ -2828,11 +4858,8 @@ impl MainWindow {
                 }
                 2 => {
                     // VNC - native embedding not yet implemented, show placeholder
-                    let _session_id = notebook.create_terminal_tab(
-                        Uuid::nil(),
-                        &format!("Quick: {host}"),
-                        "vnc",
-                    );
+                    let _session_id =
+                        notebook.create_terminal_tab(Uuid::nil(), &format!("Quick: {host}"), "vnc");
 
                     eprintln!(
                         "Note: Native VNC embedding not yet implemented. \
@@ -2841,11 +4868,8 @@ impl MainWindow {
                 }
                 _ => {
                     // Default to SSH
-                    let session_id = notebook.create_terminal_tab(
-                        Uuid::nil(),
-                        &format!("Quick: {host}"),
-                        "ssh",
-                    );
+                    let session_id =
+                        notebook.create_terminal_tab(Uuid::nil(), &format!("Quick: {host}"), "ssh");
 
                     notebook.spawn_ssh(session_id, &host, port, username.as_deref(), None, &[]);
                 }
@@ -2953,16 +4977,11 @@ impl MainWindow {
 
         // Add sorted ungrouped connections
         for conn in &ungrouped {
-            let protocol = match &conn.protocol_config {
-                rustconn_core::ProtocolConfig::Ssh(_) => "ssh",
-                rustconn_core::ProtocolConfig::Rdp(_) => "rdp",
-                rustconn_core::ProtocolConfig::Vnc(_) => "vnc",
-                rustconn_core::ProtocolConfig::Spice(_) => "spice",
-            };
+            let protocol = get_protocol_string(&conn.protocol_config);
             let item = ConnectionItem::new_connection(
                 &conn.id.to_string(),
                 &conn.name,
-                protocol,
+                &protocol,
                 &conn.host,
             );
             store.append(&item);
@@ -3005,16 +5024,11 @@ impl MainWindow {
         });
 
         for conn in &connections {
-            let protocol = match &conn.protocol_config {
-                rustconn_core::ProtocolConfig::Ssh(_) => "ssh",
-                rustconn_core::ProtocolConfig::Rdp(_) => "rdp",
-                rustconn_core::ProtocolConfig::Vnc(_) => "vnc",
-                rustconn_core::ProtocolConfig::Spice(_) => "spice",
-            };
+            let protocol = get_protocol_string(&conn.protocol_config);
             let item = ConnectionItem::new_connection(
                 &conn.id.to_string(),
                 &conn.name,
-                protocol,
+                &protocol,
                 &conn.host,
             );
             parent_item.add_child(&item);
@@ -3096,130 +5110,68 @@ impl MainWindow {
             _ => return,
         }
 
+        // Save tree state before rebuild
+        let tree_state = sidebar.save_state();
+
         // Rebuild sidebar to reflect changes
         Self::rebuild_sidebar_sorted(state, sidebar);
+
+        // Restore tree state after rebuild
+        sidebar.restore_state(&tree_state);
     }
 
     /// Shows the export dialog
+    ///
+    /// Displays a dialog for exporting connections to various formats:
+    /// - Ansible Inventory (INI/YAML)
+    /// - SSH Config
+    /// - Remmina (.remmina files)
+    /// - Asbru-CM (YAML)
+    ///
+    /// Requirements: 3.1, 4.1, 5.1, 6.1
     fn show_export_dialog(window: &ApplicationWindow, state: SharedAppState) {
-        let file_dialog = gtk4::FileDialog::builder()
-            .title("Export Configuration")
-            .modal(true)
-            .build();
+        let dialog = ExportDialog::new(Some(&window.clone().upcast()));
 
-        // Set default filename
-        let default_name = format!(
-            "rustconn-export-{}.json",
-            chrono::Local::now().format("%Y%m%d")
-        );
-        file_dialog.set_initial_name(Some(&default_name));
-
-        let state_clone = state;
-        let window_clone = window.clone();
-        file_dialog.save(Some(window), gio::Cancellable::NONE, move |result| {
-            if let Ok(file) = result {
-                if let Some(path) = file.path() {
-                    Self::export_config(&window_clone, &state_clone, &path);
-                }
-            }
-        });
-    }
-
-    /// Exports configuration to file
-    fn export_config(window: &ApplicationWindow, state: &SharedAppState, path: &std::path::Path) {
+        // Get connections and groups from state
         let state_ref = state.borrow();
-
-        // Build export data (without secrets)
-        let mut export_data = serde_json::json!({
-            "version": "1.0",
-            "exported_at": chrono::Local::now().to_rfc3339(),
-            "connections": [],
-            "groups": []
-        });
-
-        // Export connections (without passwords)
-        let connections: Vec<serde_json::Value> = state_ref.list_connections()
+        let connections: Vec<_> = state_ref
+            .list_connections()
             .iter()
-            .map(|conn| {
-                serde_json::json!({
-                    "id": conn.id.to_string(),
-                    "name": conn.name,
-                    "host": conn.host,
-                    "port": conn.port,
-                    "username": conn.username,
-                    "group_id": conn.group_id.map(|id| id.to_string()),
-                    "tags": conn.tags,
-                    "protocol": match &conn.protocol_config {
-                        rustconn_core::ProtocolConfig::Ssh(ssh) => serde_json::json!({
-                            "type": "ssh",
-                            "key_path": ssh.key_path.as_ref().map(|p| p.to_string_lossy().to_string()),
-                            "proxy_jump": ssh.proxy_jump,
-                            "use_control_master": ssh.use_control_master,
-                        }),
-                        rustconn_core::ProtocolConfig::Rdp(rdp) => serde_json::json!({
-                            "type": "rdp",
-                            "resolution": rdp.resolution.as_ref().map(|r| format!("{}x{}", r.width, r.height)),
-                            "color_depth": rdp.color_depth,
-                        }),
-                        rustconn_core::ProtocolConfig::Vnc(vnc) => serde_json::json!({
-                            "type": "vnc",
-                            "encoding": vnc.encoding,
-                            "compression": vnc.compression,
-                            "quality": vnc.quality,
-                        }),
-                        rustconn_core::ProtocolConfig::Spice(spice) => serde_json::json!({
-                            "type": "spice",
-                            "tls_enabled": spice.tls_enabled,
-                            "usb_redirection": spice.usb_redirection,
-                            "clipboard_enabled": spice.clipboard_enabled,
-                        }),
-                    }
-                })
-            })
+            .map(|c| (*c).clone())
             .collect();
-
-        export_data["connections"] = serde_json::Value::Array(connections);
-
-        // Export groups
-        let groups: Vec<serde_json::Value> = state_ref
+        let groups: Vec<_> = state_ref
             .list_groups()
             .iter()
-            .map(|group| {
-                serde_json::json!({
-                    "id": group.id.to_string(),
-                    "name": group.name,
-                    "parent_id": group.parent_id.map(|id| id.to_string()),
-                })
-            })
+            .map(|g| (*g).clone())
             .collect();
-
-        export_data["groups"] = serde_json::Value::Array(groups);
-
         drop(state_ref);
 
-        // Write to file
-        match std::fs::write(
-            path,
-            serde_json::to_string_pretty(&export_data).unwrap_or_default(),
-        ) {
-            Ok(()) => {
-                // Show success message with warning about secrets
+        // Set data for export
+        dialog.set_connections(connections);
+        dialog.set_groups(groups);
+
+        let window_clone = window.clone();
+        dialog.run(move |result| {
+            if let Some(export_result) = result {
+                // Optionally open the output location on success
+                if !export_result.output_files.is_empty() {
+                    if let Some(first_file) = export_result.output_files.first() {
+                        ExportDialog::open_output_location(first_file);
+                    }
+                }
+
+                // Show success notification
                 let alert = gtk4::AlertDialog::builder()
-                    .message("Export Successful")
-                    .detail("Configuration exported successfully.\n\n⚠ Note: Passwords were NOT exported for security reasons. SSH key paths have been preserved.")
+                    .message("Export Complete")
+                    .detail(format!(
+                        "Successfully exported {} connection(s).\n{} skipped.",
+                        export_result.exported_count, export_result.skipped_count
+                    ))
                     .modal(true)
                     .build();
-                alert.show(Some(window));
+                alert.show(Some(&window_clone));
             }
-            Err(e) => {
-                let alert = gtk4::AlertDialog::builder()
-                    .message("Export Failed")
-                    .detail(format!("Failed to export configuration: {e}"))
-                    .modal(true)
-                    .build();
-                alert.show(Some(window));
-            }
-        }
+        });
     }
 
     // ========== Snippet Management Methods ==========
@@ -4196,8 +6148,12 @@ impl MainWindow {
             }
         }
 
-        let string_list =
-            gtk4::StringList::new(&strings.iter().map(std::string::String::as_str).collect::<Vec<_>>());
+        let string_list = gtk4::StringList::new(
+            &strings
+                .iter()
+                .map(std::string::String::as_str)
+                .collect::<Vec<_>>(),
+        );
         let group_dropdown = gtk4::DropDown::builder()
             .model(&string_list)
             .selected(current_index)
@@ -4228,7 +6184,8 @@ impl MainWindow {
                 match state_mut.move_connection_to_group(connection_id, target_group_id) {
                     Ok(()) => {
                         drop(state_mut);
-                        Self::reload_sidebar(&state_clone, &sidebar_clone);
+                        // Preserve tree state when moving connections
+                        Self::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
                         window_clone.close();
                     }
                     Err(e) => {
@@ -4244,5 +6201,735 @@ impl MainWindow {
         });
 
         move_window.present();
+    }
+
+    /// Shows an error toast/notification
+    fn show_error_toast(window: &ApplicationWindow, message: &str) {
+        let alert = gtk4::AlertDialog::builder()
+            .message("Error")
+            .detail(message)
+            .modal(true)
+            .build();
+        alert.show(Some(window));
+    }
+
+    // ========== Template Management Methods ==========
+
+    /// Shows the templates manager window
+    fn show_templates_manager(
+        window: &ApplicationWindow,
+        state: SharedAppState,
+        sidebar: SharedSidebar,
+    ) {
+        use crate::dialogs::{TemplateDialog, TemplateManagerDialog};
+
+        let manager_dialog = TemplateManagerDialog::new(Some(&window.clone().upcast()));
+
+        // Load templates from config file and active document
+        let templates = {
+            let state_ref = state.borrow();
+            state_ref.get_all_templates()
+        };
+        manager_dialog.set_templates(templates);
+
+        // Get references for closures
+        let templates_list = manager_dialog.templates_list().clone();
+        let state_templates = manager_dialog.state_templates().clone();
+        let manager_window = manager_dialog.window().clone();
+
+        // Connect filter dropdown
+        if let Some(content) = manager_window.child() {
+            if let Some(vbox) = content.downcast_ref::<gtk4::Box>() {
+                if let Some(filter_box) = vbox.first_child() {
+                    if let Some(hbox) = filter_box.downcast_ref::<gtk4::Box>() {
+                        if let Some(dropdown_widget) = hbox.last_child() {
+                            if let Some(filter_dropdown) =
+                                dropdown_widget.downcast_ref::<gtk4::DropDown>()
+                            {
+                                let list_clone = templates_list.clone();
+                                let templates_clone = state_templates.clone();
+                                filter_dropdown.connect_selected_notify(move |dropdown| {
+                                    let selected = dropdown.selected();
+                                    let filter = match selected {
+                                        1 => Some(rustconn_core::models::ProtocolType::Ssh),
+                                        2 => Some(rustconn_core::models::ProtocolType::Rdp),
+                                        3 => Some(rustconn_core::models::ProtocolType::Vnc),
+                                        4 => Some(rustconn_core::models::ProtocolType::Spice),
+                                        _ => None,
+                                    };
+                                    Self::refresh_templates_list(
+                                        &list_clone,
+                                        &templates_clone,
+                                        filter,
+                                    );
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Set up "New Template" callback
+        {
+            let state_clone = state.clone();
+            let templates_clone = state_templates.clone();
+            let list_clone = templates_list.clone();
+            let manager_clone = manager_window.clone();
+            manager_dialog.set_on_new(move || {
+                let dialog = TemplateDialog::new(Some(&manager_clone.clone().upcast()));
+                let state_inner = state_clone.clone();
+                let templates_inner = templates_clone.clone();
+                let list_inner = list_clone.clone();
+                let manager_inner = manager_clone.clone();
+                dialog.run(move |result| {
+                    if let Some(template) = result {
+                        // Add to state templates (local cache)
+                        templates_inner.borrow_mut().push(template.clone());
+                        // Save to config file and active document
+                        if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
+                            if let Err(e) = state_mut.add_template(template) {
+                                let alert = gtk4::AlertDialog::builder()
+                                    .message("Error Saving Template")
+                                    .detail(&e)
+                                    .modal(true)
+                                    .build();
+                                alert.show(Some(&manager_inner));
+                            }
+                        }
+                        // Refresh list
+                        Self::refresh_templates_list(&list_inner, &templates_inner, None);
+                    }
+                });
+            });
+        }
+
+        // Set up "Edit" callback
+        {
+            let state_clone = state.clone();
+            let templates_clone = state_templates.clone();
+            let list_clone = templates_list.clone();
+            let manager_clone = manager_window.clone();
+            manager_dialog.set_on_edit(move |template| {
+                let id = template.id;
+                let dialog = TemplateDialog::new(Some(&manager_clone.clone().upcast()));
+                dialog.set_template(&template);
+                let state_inner = state_clone.clone();
+                let templates_inner = templates_clone.clone();
+                let list_inner = list_clone.clone();
+                let manager_inner = manager_clone.clone();
+                dialog.run(move |result| {
+                    if let Some(updated) = result {
+                        // Update in state templates (local cache)
+                        let mut templates = templates_inner.borrow_mut();
+                        if let Some(pos) = templates.iter().position(|t| t.id == id) {
+                            templates[pos] = updated.clone();
+                        }
+                        drop(templates);
+                        // Update in config file and active document
+                        if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
+                            if let Err(e) = state_mut.update_template(updated) {
+                                let alert = gtk4::AlertDialog::builder()
+                                    .message("Error Saving Template")
+                                    .detail(&e)
+                                    .modal(true)
+                                    .build();
+                                alert.show(Some(&manager_inner));
+                            }
+                        }
+                        // Refresh list
+                        Self::refresh_templates_list(&list_inner, &templates_inner, None);
+                    }
+                });
+            });
+        }
+
+        // Set up "Delete" callback
+        {
+            let state_clone = state.clone();
+            let templates_clone = state_templates;
+            let list_clone = templates_list;
+            let manager_clone = manager_window.clone();
+            manager_dialog.set_on_delete(move |id| {
+                let alert = gtk4::AlertDialog::builder()
+                    .message("Delete Template?")
+                    .detail("Are you sure you want to delete this template?")
+                    .buttons(["Cancel", "Delete"])
+                    .default_button(0)
+                    .cancel_button(0)
+                    .modal(true)
+                    .build();
+
+                let state_inner = state_clone.clone();
+                let templates_inner = templates_clone.clone();
+                let list_inner = list_clone.clone();
+                alert.choose(
+                    Some(&manager_clone),
+                    gio::Cancellable::NONE,
+                    move |result| {
+                        if result == Ok(1) {
+                            // Remove from state templates (local cache)
+                            templates_inner.borrow_mut().retain(|t| t.id != id);
+                            // Remove from config file and active document
+                            if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
+                                if let Err(e) = state_mut.delete_template(id) {
+                                    eprintln!("Failed to delete template: {e}");
+                                }
+                            }
+                            // Refresh list
+                            Self::refresh_templates_list(&list_inner, &templates_inner, None);
+                        }
+                    },
+                );
+            });
+        }
+
+        // Set up "Use Template" callback
+        {
+            let state_clone = state;
+            let manager_clone = manager_window;
+            let sidebar_clone = sidebar;
+            manager_dialog.set_on_template_selected(move |template_opt| {
+                if let Some(template) = template_opt {
+                    // Create connection from template
+                    Self::show_new_connection_from_template(
+                        &manager_clone,
+                        state_clone.clone(),
+                        sidebar_clone.clone(),
+                        &template,
+                    );
+                }
+            });
+        }
+
+        manager_dialog.present();
+    }
+
+    /// Refreshes the templates list with optional protocol filter
+    fn refresh_templates_list(
+        list: &gtk4::ListBox,
+        templates: &std::rc::Rc<std::cell::RefCell<Vec<rustconn_core::models::ConnectionTemplate>>>,
+        protocol_filter: Option<rustconn_core::models::ProtocolType>,
+    ) {
+        use rustconn_core::models::ProtocolType;
+
+        // Clear existing rows
+        while let Some(row) = list.row_at_index(0) {
+            list.remove(&row);
+        }
+
+        let templates_ref = templates.borrow();
+
+        // Group templates by protocol
+        let mut ssh_templates: Vec<&rustconn_core::models::ConnectionTemplate> = Vec::new();
+        let mut rdp_templates: Vec<&rustconn_core::models::ConnectionTemplate> = Vec::new();
+        let mut vnc_templates: Vec<&rustconn_core::models::ConnectionTemplate> = Vec::new();
+        let mut spice_templates: Vec<&rustconn_core::models::ConnectionTemplate> = Vec::new();
+
+        for template in templates_ref.iter() {
+            if let Some(filter) = protocol_filter {
+                if template.protocol != filter {
+                    continue;
+                }
+            }
+            match template.protocol {
+                ProtocolType::Ssh | ProtocolType::ZeroTrust => ssh_templates.push(template),
+                ProtocolType::Rdp => rdp_templates.push(template),
+                ProtocolType::Vnc => vnc_templates.push(template),
+                ProtocolType::Spice => spice_templates.push(template),
+            }
+        }
+
+        // Helper to add section header
+        let add_section_header = |list: &gtk4::ListBox, title: &str| {
+            let label = Label::builder()
+                .label(title)
+                .halign(gtk4::Align::Start)
+                .css_classes(["heading"])
+                .margin_top(8)
+                .margin_bottom(4)
+                .margin_start(8)
+                .build();
+            let row = gtk4::ListBoxRow::builder()
+                .child(&label)
+                .selectable(false)
+                .activatable(false)
+                .build();
+            list.append(&row);
+        };
+
+        // Helper to add template row
+        let add_template_row =
+            |list: &gtk4::ListBox, template: &rustconn_core::models::ConnectionTemplate| {
+                let hbox = gtk4::Box::new(Orientation::Horizontal, 8);
+                hbox.set_margin_top(8);
+                hbox.set_margin_bottom(8);
+                hbox.set_margin_start(8);
+                hbox.set_margin_end(8);
+
+                // Protocol icon
+                let icon_name = match template.protocol {
+                    ProtocolType::Ssh => "utilities-terminal-symbolic",
+                    ProtocolType::Rdp => "computer-symbolic",
+                    ProtocolType::Vnc => "video-display-symbolic",
+                    ProtocolType::Spice => "video-display-symbolic",
+                    ProtocolType::ZeroTrust => "cloud-symbolic",
+                };
+                let icon = gtk4::Image::from_icon_name(icon_name);
+                hbox.append(&icon);
+
+                // Template info
+                let info_box = gtk4::Box::new(Orientation::Vertical, 2);
+                info_box.set_hexpand(true);
+
+                let name_label = Label::builder()
+                    .label(&template.name)
+                    .halign(gtk4::Align::Start)
+                    .css_classes(["heading"])
+                    .build();
+                info_box.append(&name_label);
+
+                let details = if let Some(ref desc) = template.description {
+                    desc.clone()
+                } else {
+                    let mut parts = Vec::new();
+                    if !template.host.is_empty() {
+                        parts.push(format!("Host: {}", template.host));
+                    }
+                    parts.push(format!("Port: {}", template.port));
+                    if let Some(ref user) = template.username {
+                        parts.push(format!("User: {user}"));
+                    }
+                    parts.join(" | ")
+                };
+
+                let details_label = Label::builder()
+                    .label(&details)
+                    .halign(gtk4::Align::Start)
+                    .css_classes(["dim-label"])
+                    .build();
+                info_box.append(&details_label);
+
+                hbox.append(&info_box);
+
+                let row = gtk4::ListBoxRow::builder().child(&hbox).build();
+                row.set_widget_name(&format!("template-{}", template.id));
+                list.append(&row);
+            };
+
+        // Add SSH templates
+        if !ssh_templates.is_empty() && protocol_filter.is_none() {
+            add_section_header(list, "SSH Templates");
+        }
+        for template in ssh_templates {
+            add_template_row(list, template);
+        }
+
+        // Add RDP templates
+        if !rdp_templates.is_empty() && protocol_filter.is_none() {
+            add_section_header(list, "RDP Templates");
+        }
+        for template in rdp_templates {
+            add_template_row(list, template);
+        }
+
+        // Add VNC templates
+        if !vnc_templates.is_empty() && protocol_filter.is_none() {
+            add_section_header(list, "VNC Templates");
+        }
+        for template in vnc_templates {
+            add_template_row(list, template);
+        }
+
+        // Add SPICE templates
+        if !spice_templates.is_empty() && protocol_filter.is_none() {
+            add_section_header(list, "SPICE Templates");
+        }
+        for template in spice_templates {
+            add_template_row(list, template);
+        }
+    }
+
+    /// Shows the new connection dialog pre-populated from a template
+    fn show_new_connection_from_template(
+        window: &gtk4::Window,
+        state: SharedAppState,
+        sidebar: SharedSidebar,
+        template: &rustconn_core::models::ConnectionTemplate,
+    ) {
+        use crate::dialogs::ConnectionDialog;
+
+        // Create connection from template
+        let connection = template.apply(None);
+
+        let dialog = ConnectionDialog::new(Some(window));
+        dialog.setup_key_file_chooser(Some(window));
+
+        // Set KeePass enabled state from settings
+        {
+            let state_ref = state.borrow();
+            let keepass_enabled = state_ref.settings().secrets.kdbx_enabled;
+            dialog.set_keepass_enabled(keepass_enabled);
+        }
+
+        // Pre-populate with template values
+        dialog.set_connection(&connection);
+        // Reset the title since we're creating a new connection
+        dialog
+            .window()
+            .set_title(Some("New Connection from Template"));
+
+        let window_clone = window.clone();
+        dialog.run(move |result| {
+            if let Some(conn) = result {
+                if let Ok(mut state_mut) = state.try_borrow_mut() {
+                    match state_mut.create_connection(conn) {
+                        Ok(_) => {
+                            // Reload sidebar
+                            drop(state_mut);
+                            Self::reload_sidebar(&state, &sidebar);
+                        }
+                        Err(e) => {
+                            let alert = gtk4::AlertDialog::builder()
+                                .message("Error Creating Connection")
+                                .detail(&e)
+                                .modal(true)
+                                .build();
+                            alert.show(Some(&window_clone));
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    /// Shows the new cluster dialog
+    fn show_new_cluster_dialog(
+        window: &ApplicationWindow,
+        state: SharedAppState,
+        notebook: SharedNotebook,
+    ) {
+        let dialog = ClusterDialog::new(Some(&window.clone().upcast()));
+
+        // Populate available connections
+        {
+            let state_ref = state.borrow();
+            let connections: Vec<_> = state_ref
+                .list_connections()
+                .iter()
+                .copied()
+                .cloned()
+                .collect();
+            dialog.set_connections(&connections);
+        }
+
+        let window_clone = window.clone();
+        let state_clone = state;
+        let notebook_clone = notebook;
+        dialog.run(move |result| {
+            if let Some(cluster) = result {
+                if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
+                    match state_mut.create_cluster(cluster) {
+                        Ok(_) => {
+                            let alert = gtk4::AlertDialog::builder()
+                                .message("Cluster Created")
+                                .detail("Cluster has been saved successfully.")
+                                .modal(true)
+                                .build();
+                            alert.show(Some(&window_clone));
+                        }
+                        Err(e) => {
+                            let alert = gtk4::AlertDialog::builder()
+                                .message("Error Creating Cluster")
+                                .detail(&e)
+                                .modal(true)
+                                .build();
+                            alert.show(Some(&window_clone));
+                        }
+                    }
+                }
+            }
+            // Keep notebook reference alive
+            let _ = &notebook_clone;
+        });
+    }
+
+    /// Shows the clusters manager dialog
+    fn show_clusters_manager(
+        window: &ApplicationWindow,
+        state: SharedAppState,
+        notebook: SharedNotebook,
+    ) {
+        let dialog = ClusterListDialog::new(Some(&window.clone().upcast()));
+
+        // Set up clusters provider for refresh operations
+        let state_for_provider = state.clone();
+        dialog.set_clusters_provider(move || {
+            if let Ok(state_ref) = state_for_provider.try_borrow() {
+                state_ref
+                    .get_all_clusters()
+                    .iter()
+                    .copied()
+                    .cloned()
+                    .collect()
+            } else {
+                Vec::new()
+            }
+        });
+
+        // Wrap dialog in Rc for shared access across callbacks
+        let dialog_ref = std::rc::Rc::new(dialog);
+
+        // Initial population of clusters - refresh after provider is set
+        // Use show callback to ensure dialog is ready
+        let dialog_for_refresh = dialog_ref.clone();
+        dialog_ref.window().connect_show(move |_| {
+            dialog_for_refresh.refresh_list();
+        });
+
+        // Helper to refresh the cluster list using the dialog's refresh_list method
+        let create_refresh_callback = |dialog_ref: std::rc::Rc<ClusterListDialog>| {
+            move || {
+                dialog_ref.refresh_list();
+            }
+        };
+
+        // Set up callbacks
+        let state_clone = state.clone();
+        let notebook_clone = notebook.clone();
+        let window_clone = window.clone();
+        dialog_ref.set_on_connect(move |cluster_id| {
+            Self::connect_cluster(&state_clone, &notebook_clone, &window_clone, cluster_id);
+        });
+
+        let state_clone = state.clone();
+        let notebook_clone = notebook.clone();
+        let dialog_window = dialog_ref.window().clone();
+        let dialog_ref_edit = dialog_ref.clone();
+        let refresh_after_edit = create_refresh_callback(dialog_ref_edit);
+        dialog_ref.set_on_edit(move |cluster_id| {
+            Self::edit_cluster(
+                &dialog_window,
+                &state_clone,
+                &notebook_clone,
+                cluster_id,
+                Box::new(refresh_after_edit.clone()),
+            );
+        });
+
+        let state_clone = state.clone();
+        let dialog_window = dialog_ref.window().clone();
+        let dialog_ref_delete = dialog_ref.clone();
+        let refresh_after_delete = create_refresh_callback(dialog_ref_delete);
+        dialog_ref.set_on_delete(move |cluster_id| {
+            Self::delete_cluster(
+                &dialog_window,
+                &state_clone,
+                cluster_id,
+                Box::new(refresh_after_delete.clone()),
+            );
+        });
+
+        let state_clone = state;
+        let notebook_clone = notebook;
+        let dialog_window = dialog_ref.window().clone();
+        let dialog_ref_new = dialog_ref.clone();
+        let refresh_after_new = create_refresh_callback(dialog_ref_new);
+        dialog_ref.set_on_new(move || {
+            Self::show_new_cluster_dialog_from_manager(
+                &dialog_window,
+                state_clone.clone(),
+                notebook_clone.clone(),
+                Box::new(refresh_after_new.clone()),
+            );
+        });
+
+        dialog_ref.show();
+    }
+
+    /// Shows new cluster dialog from the manager
+    fn show_new_cluster_dialog_from_manager(
+        parent: &gtk4::Window,
+        state: SharedAppState,
+        _notebook: SharedNotebook,
+        on_created: Box<dyn Fn() + 'static>,
+    ) {
+        let dialog = ClusterDialog::new(Some(parent));
+
+        // Populate available connections
+        {
+            let state_ref = state.borrow();
+            let connections: Vec<_> = state_ref
+                .list_connections()
+                .iter()
+                .copied()
+                .cloned()
+                .collect();
+            dialog.set_connections(&connections);
+        }
+
+        let state_clone = state;
+        let parent_clone = parent.clone();
+        dialog.run(move |result| {
+            if let Some(cluster) = result {
+                if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
+                    match state_mut.create_cluster(cluster) {
+                        Ok(_) => {
+                            // Refresh the cluster list in the parent dialog
+                            on_created();
+                        }
+                        Err(e) => {
+                            // Show error dialog
+                            let alert = gtk4::AlertDialog::builder()
+                                .message("Error Creating Cluster")
+                                .detail(format!("Failed to save cluster: {e}"))
+                                .modal(true)
+                                .build();
+                            alert.show(Some(&parent_clone));
+                        }
+                    }
+                } else {
+                    let alert = gtk4::AlertDialog::builder()
+                        .message("Error")
+                        .detail("Could not access application state")
+                        .modal(true)
+                        .build();
+                    alert.show(Some(&parent_clone));
+                }
+            }
+        });
+    }
+
+    /// Connects to all connections in a cluster
+    fn connect_cluster(
+        state: &SharedAppState,
+        notebook: &SharedNotebook,
+        _window: &ApplicationWindow,
+        cluster_id: Uuid,
+    ) {
+        let state_ref = state.borrow();
+        let Some(cluster) = state_ref.get_cluster(cluster_id) else {
+            return;
+        };
+
+        let connection_ids: Vec<Uuid> = cluster.connection_ids.clone();
+        drop(state_ref);
+
+        // Connect to each connection in the cluster using existing start_connection
+        for conn_id in connection_ids {
+            Self::start_connection(state, notebook, conn_id);
+        }
+    }
+
+    /// Edits a cluster
+    fn edit_cluster(
+        parent: &gtk4::Window,
+        state: &SharedAppState,
+        _notebook: &SharedNotebook,
+        cluster_id: Uuid,
+        on_updated: Box<dyn Fn() + 'static>,
+    ) {
+        let state_ref = state.borrow();
+        let Some(cluster) = state_ref.get_cluster(cluster_id).cloned() else {
+            return;
+        };
+        let connections: Vec<_> = state_ref
+            .list_connections()
+            .iter()
+            .copied()
+            .cloned()
+            .collect();
+        drop(state_ref);
+
+        let dialog = ClusterDialog::new(Some(parent));
+        dialog.set_connections(&connections);
+        dialog.set_cluster(&cluster);
+
+        let state_clone = state.clone();
+        let parent_clone = parent.clone();
+        dialog.run(move |result| {
+            if let Some(updated) = result {
+                if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
+                    match state_mut.update_cluster(updated) {
+                        Ok(()) => {
+                            // Refresh the cluster list
+                            on_updated();
+                        }
+                        Err(e) => {
+                            let alert = gtk4::AlertDialog::builder()
+                                .message("Error Updating Cluster")
+                                .detail(format!("Failed to save cluster: {e}"))
+                                .modal(true)
+                                .build();
+                            alert.show(Some(&parent_clone));
+                        }
+                    }
+                } else {
+                    let alert = gtk4::AlertDialog::builder()
+                        .message("Error")
+                        .detail("Could not access application state")
+                        .modal(true)
+                        .build();
+                    alert.show(Some(&parent_clone));
+                }
+            }
+        });
+    }
+
+    /// Deletes a cluster
+    fn delete_cluster(
+        parent: &gtk4::Window,
+        state: &SharedAppState,
+        cluster_id: Uuid,
+        on_deleted: Box<dyn Fn() + 'static>,
+    ) {
+        let state_ref = state.borrow();
+        let Some(cluster) = state_ref.get_cluster(cluster_id) else {
+            return;
+        };
+        let cluster_name = cluster.name.clone();
+        drop(state_ref);
+
+        let alert = gtk4::AlertDialog::builder()
+            .message("Delete Cluster?")
+            .detail(format!(
+                "Are you sure you want to delete the cluster '{cluster_name}'?\n\
+                This will not delete the connections in the cluster."
+            ))
+            .buttons(["Cancel", "Delete"])
+            .default_button(0)
+            .cancel_button(0)
+            .modal(true)
+            .build();
+
+        let state_clone = state.clone();
+        let parent_clone = parent.clone();
+        alert.choose(Some(parent), None::<&gio::Cancellable>, move |result| {
+            if result == Ok(1) {
+                if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
+                    match state_mut.delete_cluster(cluster_id) {
+                        Ok(()) => {
+                            // Refresh the cluster list
+                            on_deleted();
+                        }
+                        Err(e) => {
+                            let alert = gtk4::AlertDialog::builder()
+                                .message("Error Deleting Cluster")
+                                .detail(format!("Failed to delete cluster: {e}"))
+                                .modal(true)
+                                .build();
+                            alert.show(Some(&parent_clone));
+                        }
+                    }
+                } else {
+                    let alert = gtk4::AlertDialog::builder()
+                        .message("Error")
+                        .detail("Could not access application state")
+                        .modal(true)
+                        .build();
+                    alert.show(Some(&parent_clone));
+                }
+            }
+        });
     }
 }

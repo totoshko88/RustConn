@@ -11,7 +11,8 @@ use uuid::Uuid;
 
 use crate::error::ImportError;
 use crate::models::{
-    Connection, ConnectionGroup, ProtocolConfig, RdpConfig, SshAuthMethod, SshConfig, VncConfig,
+    Connection, ConnectionGroup, ProtocolConfig, RdpConfig, SshAuthMethod, SshConfig, SshKeySource,
+    VncConfig,
 };
 
 use super::traits::{ImportResult, ImportSource, SkippedEntry};
@@ -61,9 +62,13 @@ struct AsbruEntry {
     #[serde(default)]
     parent: Option<String>,
     /// Children (usually empty `HashMap` for connections)
-    /// Note: Parsed from YAML but not currently used for nested group import
+    ///
+    /// Parsed from YAML for structural completeness but not currently used
+    /// for nested group import. Asbru-CM stores children as a flat structure
+    /// with parent references rather than nested objects. This field must be
+    /// present to correctly deserialize the YAML structure.
     #[serde(default)]
-    #[allow(dead_code)]
+    #[allow(dead_code)] // Required for YAML deserialization completeness
     children: Option<HashMap<String, serde_yaml::Value>>,
 }
 
@@ -163,7 +168,7 @@ impl AsbruImporter {
     }
 
     /// Parses Asbru YAML content and returns an import result
-    #[must_use] 
+    #[must_use]
     pub fn parse_config(&self, content: &str, source_path: &str) -> ImportResult {
         let mut result = ImportResult::new();
 
@@ -259,7 +264,8 @@ impl AsbruImporter {
         let protocol_type = entry
             .protocol_type
             .as_ref()
-            .or(entry.method.as_ref()).map_or_else(|| "ssh".to_string(), |s| s.to_lowercase());
+            .or(entry.method.as_ref())
+            .map_or_else(|| "ssh".to_string(), |s| s.to_lowercase());
 
         let (protocol_config, default_port) = match protocol_type.as_str() {
             "ssh" | "sftp" | "scp" => {
@@ -297,6 +303,9 @@ impl AsbruImporter {
                     ProtocolConfig::Ssh(SshConfig {
                         auth_method,
                         key_path,
+                        key_source: SshKeySource::Default,
+                        agent_key_fingerprint: None,
+                        identities_only: false,
                         proxy_jump: None,
                         use_control_master: false,
                         custom_options,

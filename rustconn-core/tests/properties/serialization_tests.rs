@@ -4,11 +4,11 @@
 //! **Validates: Requirements 10.5, 10.6**
 
 use proptest::prelude::*;
+use rustconn_core::models::SharedFolder;
 use rustconn_core::{
     Connection, ProtocolConfig, RdpConfig, RdpGateway, Resolution, SpiceConfig,
-    SpiceImageCompression, SshAuthMethod, SshConfig, VncConfig,
+    SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, VncConfig,
 };
-use rustconn_core::models::SharedFolder;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -87,6 +87,9 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
                 SshConfig {
                     auth_method,
                     key_path,
+                    key_source: SshKeySource::Default,
+                    agent_key_fingerprint: None,
+                    identities_only: false,
                     proxy_jump,
                     use_control_master,
                     custom_options,
@@ -150,6 +153,7 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                 gateway,
                 shared_folders: Vec::new(),
                 custom_args,
+                client_mode: Default::default(),
             },
         )
 }
@@ -180,14 +184,16 @@ fn arb_vnc_config() -> impl Strategy<Value = VncConfig> {
         arb_optional_level(),
         arb_custom_args(),
     )
-        .prop_map(
-            |(encoding, compression, quality, custom_args)| VncConfig {
-                encoding,
-                compression,
-                quality,
-                custom_args,
-            },
-        )
+        .prop_map(|(encoding, compression, quality, custom_args)| VncConfig {
+            client_mode: Default::default(),
+            encoding,
+            compression,
+            quality,
+            view_only: false,
+            scaling: true,
+            clipboard_enabled: true,
+            custom_args,
+        })
 }
 
 // Strategy for SPICE image compression
@@ -205,7 +211,10 @@ fn arb_spice_image_compression() -> impl Strategy<Value = Option<SpiceImageCompr
 // Strategy for shared folders
 fn arb_shared_folders() -> impl Strategy<Value = Vec<SharedFolder>> {
     prop::collection::vec(
-        ("/[a-z]{1,10}(/[a-z]{1,10}){0,2}", "[A-Za-z][A-Za-z0-9_]{0,10}")
+        (
+            "/[a-z]{1,10}(/[a-z]{1,10}){0,2}",
+            "[A-Za-z][A-Za-z0-9_]{0,10}",
+        )
             .prop_map(|(path, name)| SharedFolder {
                 local_path: PathBuf::from(path),
                 share_name: name,
@@ -217,13 +226,13 @@ fn arb_shared_folders() -> impl Strategy<Value = Vec<SharedFolder>> {
 // Strategy for SPICE config
 fn arb_spice_config() -> impl Strategy<Value = SpiceConfig> {
     (
-        any::<bool>(),                      // tls_enabled
-        arb_optional_path(),                // ca_cert_path
-        any::<bool>(),                      // skip_cert_verify
-        any::<bool>(),                      // usb_redirection
-        arb_shared_folders(),               // shared_folders
-        any::<bool>(),                      // clipboard_enabled
-        arb_spice_image_compression(),      // image_compression
+        any::<bool>(),                 // tls_enabled
+        arb_optional_path(),           // ca_cert_path
+        any::<bool>(),                 // skip_cert_verify
+        any::<bool>(),                 // usb_redirection
+        arb_shared_folders(),          // shared_folders
+        any::<bool>(),                 // clipboard_enabled
+        arb_spice_image_compression(), // image_compression
     )
         .prop_map(
             |(

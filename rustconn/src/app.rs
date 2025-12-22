@@ -6,12 +6,18 @@
 
 use gtk4::prelude::*;
 use gtk4::{gio, glib, Application};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use crate::state::{create_shared_state, SharedAppState};
+use crate::tray::{TrayManager, TrayMessage};
 use crate::window::MainWindow;
 
 /// Application ID for `RustConn`
 pub const APP_ID: &str = "org.rustconn.RustConn";
+
+/// Shared tray manager type
+type SharedTrayManager = Rc<RefCell<Option<TrayManager>>>;
 
 /// Creates and configures the GTK4 Application
 ///
@@ -24,13 +30,22 @@ pub fn create_application() -> Application {
         .flags(gio::ApplicationFlags::default())
         .build();
 
-    app.connect_activate(build_ui);
+    // Create shared tray manager (will be initialized in build_ui)
+    let tray_manager: SharedTrayManager = Rc::new(RefCell::new(None));
+
+    let tray_manager_clone = tray_manager;
+    app.connect_activate(move |app| {
+        build_ui(app, tray_manager_clone.clone());
+    });
+
+    // Keep the application running even when all windows are closed (for tray icon)
+    app.set_accels_for_action("app.quit", &["<Control>q"]);
 
     app
 }
 
 /// Builds the main UI when the application is activated
-fn build_ui(app: &Application) {
+fn build_ui(app: &Application, tray_manager: SharedTrayManager) {
     // Load CSS styles for split view panes
     load_css_styles();
 
@@ -47,10 +62,152 @@ fn build_ui(app: &Application) {
     // Create main window with state
     let window = MainWindow::new(app, state.clone());
 
+    // Initialize tray icon if enabled in settings
+    let enable_tray = state.borrow().settings().ui.enable_tray_icon;
+    if enable_tray {
+        if let Some(tray) = TrayManager::new() {
+            // Update tray with initial state
+            update_tray_state(&tray, &state);
+            *tray_manager.borrow_mut() = Some(tray);
+        }
+    }
+
     // Set up application actions
-    setup_app_actions(app, &window, state);
+    setup_app_actions(app, &window, state.clone(), tray_manager.clone());
+
+    // Set up tray message polling
+    setup_tray_polling(app, &window, state, tray_manager);
 
     window.present();
+}
+
+/// Updates the tray icon state from the application state
+fn update_tray_state(tray: &TrayManager, state: &SharedAppState) {
+    let state_ref = state.borrow();
+
+    // Update active session count
+    let session_count = state_ref.active_sessions().len();
+    #[allow(clippy::cast_possible_truncation)]
+    tray.set_active_sessions(session_count as u32);
+
+    // Update recent connections (get last 10 connections sorted by last_connected)
+    let mut connections: Vec<_> = state_ref
+        .list_connections()
+        .iter()
+        .filter(|c| c.last_connected.is_some())
+        .map(|c| (c.id, c.name.clone(), c.last_connected))
+        .collect();
+    connections.sort_by(|a, b| b.2.cmp(&a.2));
+    let recent: Vec<_> = connections
+        .into_iter()
+        .take(10)
+        .map(|(id, name, _)| (id, name))
+        .collect();
+    tray.set_recent_connections(recent);
+}
+
+/// Sets up polling for tray messages
+fn setup_tray_polling(
+    app: &Application,
+    window: &MainWindow,
+    state: SharedAppState,
+    tray_manager: SharedTrayManager,
+) {
+    let app_weak = app.downgrade();
+    let window_weak = window.gtk_window().downgrade();
+    let state_clone = state;
+    let tray_manager_clone = tray_manager;
+
+    // Poll for tray messages every 100ms
+    glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+        let Some(app) = app_weak.upgrade() else {
+            return glib::ControlFlow::Break;
+        };
+
+        let tray_ref = tray_manager_clone.borrow();
+        let Some(tray) = tray_ref.as_ref() else {
+            return glib::ControlFlow::Continue;
+        };
+
+        // Process any pending tray messages
+        while let Some(msg) = tray.try_recv() {
+            match msg {
+                TrayMessage::ShowWindow => {
+                    if let Some(win) = window_weak.upgrade() {
+                        win.present();
+                    }
+                    tray.set_window_visible(true);
+                }
+                TrayMessage::HideWindow => {
+                    if let Some(win) = window_weak.upgrade() {
+                        win.set_visible(false);
+                    }
+                    tray.set_window_visible(false);
+                }
+                TrayMessage::ToggleWindow => {
+                    if let Some(win) = window_weak.upgrade() {
+                        if win.is_visible() {
+                            win.set_visible(false);
+                            tray.set_window_visible(false);
+                        } else {
+                            win.present();
+                            tray.set_window_visible(true);
+                        }
+                    }
+                }
+                TrayMessage::Connect(conn_id) => {
+                    // Show window first
+                    if let Some(win) = window_weak.upgrade() {
+                        win.present();
+                        tray.set_window_visible(true);
+                        // Trigger connection via window action
+                        let _ = gtk4::prelude::WidgetExt::activate_action(
+                            &win,
+                            "connect",
+                            Some(&conn_id.to_string().to_variant()),
+                        );
+                    }
+                }
+                TrayMessage::QuickConnect => {
+                    // Show window and trigger quick connect dialog
+                    if let Some(win) = window_weak.upgrade() {
+                        win.present();
+                        tray.set_window_visible(true);
+                        // Activate window action
+                        let _ =
+                            gtk4::prelude::WidgetExt::activate_action(&win, "quick-connect", None);
+                    }
+                }
+                TrayMessage::LocalShell => {
+                    // Show window and open local shell
+                    if let Some(win) = window_weak.upgrade() {
+                        win.present();
+                        tray.set_window_visible(true);
+                        // Activate window action
+                        let _ =
+                            gtk4::prelude::WidgetExt::activate_action(&win, "local-shell", None);
+                    }
+                }
+                TrayMessage::About => {
+                    // Show about dialog (app-level action)
+                    if let Some(win) = window_weak.upgrade() {
+                        win.present();
+                        tray.set_window_visible(true);
+                    }
+                    // About is an app action
+                    gio::prelude::ActionGroupExt::activate_action(&app, "about", None);
+                }
+                TrayMessage::Quit => {
+                    app.quit();
+                }
+            }
+        }
+
+        // Update tray state periodically
+        update_tray_state(tray, &state_clone);
+
+        glib::ControlFlow::Continue
+    });
 }
 
 /// Loads CSS styles for the application
@@ -72,6 +229,54 @@ fn load_css_styles() {
         /* Pane placeholder styles */
         .dim-label {
             opacity: 0.6;
+        }
+
+        /* Session tab styles - adaptive tabs */
+        .session-tab {
+            padding: 4px 6px;
+            border-radius: 4px;
+            min-height: 24px;
+        }
+
+        .session-tab:hover {
+            background-color: alpha(@theme_fg_color, 0.08);
+        }
+
+        .tab-icon {
+            opacity: 0.8;
+        }
+
+        .tab-label {
+            margin-left: 4px;
+            margin-right: 4px;
+        }
+
+        .tab-label-disconnected {
+            margin-left: 4px;
+            margin-right: 4px;
+            color: @error_color;
+        }
+
+        .tab-close-button {
+            min-width: 20px;
+            min-height: 20px;
+            padding: 2px;
+            opacity: 0.6;
+        }
+
+        .tab-close-button:hover {
+            opacity: 1.0;
+            background-color: alpha(@error_color, 0.15);
+        }
+
+        /* Notebook tab styling for many tabs */
+        notebook > header > tabs > tab {
+            min-width: 40px;
+            padding: 4px 8px;
+        }
+
+        notebook > header > tabs > tab label {
+            min-width: 0;
         }
 
         /* Floating controls styles - Requirement 5.2 */
@@ -130,11 +335,23 @@ fn load_css_styles() {
 }
 
 /// Sets up application-level actions
-fn setup_app_actions(app: &Application, window: &MainWindow, _state: SharedAppState) {
-    // Quit action
+fn setup_app_actions(
+    app: &Application,
+    window: &MainWindow,
+    state: SharedAppState,
+    _tray_manager: SharedTrayManager,
+) {
+    // Quit action - save collapsed groups state before quitting
     let quit_action = gio::SimpleAction::new("quit", None);
     let app_weak = app.downgrade();
+    let state_clone = state;
+    let sidebar_rc = window.sidebar_rc();
     quit_action.connect_activate(move |_, _| {
+        // Save collapsed groups state
+        let collapsed = sidebar_rc.get_collapsed_groups();
+        if let Ok(mut state_ref) = state_clone.try_borrow_mut() {
+            let _ = state_ref.update_collapsed_groups(collapsed);
+        }
         if let Some(app) = app_weak.upgrade() {
             app.quit();
         }
@@ -200,7 +417,7 @@ fn show_about_dialog(parent: &gtk4::ApplicationWindow) {
         .modal(true)
         .program_name("RustConn")
         .version("0.1.0")
-        .comments("A modern connection manager for Linux\n\nWayland-native GTK4 application for managing SSH, RDP, and VNC connections.")
+        .comments("A modern connection manager for Linux\n\nWayland-native GTK4 application for managing SSH, RDP, and VNC connections.\n\nMade with ❤️ in Ukraine 🇺🇦")
         .website("https://github.com/totoshko88/rustconn")
         .website_label("GitHub Repository")
         .license_type(gtk4::License::Gpl30)
@@ -208,12 +425,14 @@ fn show_about_dialog(parent: &gtk4::ApplicationWindow) {
         .build();
 
     // Add support/sponsorship information
+    // Note: & must be escaped as &amp; for Pango markup in GTK
     about.add_credit_section(
         "Support the Project",
         &[
-            "Ko-Fi: https://ko-fi.com/totoshko88",
-            "PayPal/Payoneer: totoshko88@gmail.com",
-            "UAH: https://send.monobank.ua/jar/2UgaGcQ3JC",
+            "☕ Ko-Fi", "one-time/monthly https://ko-fi.com/totoshko88",
+            "💳 PayPal", "international https://www.paypal.com/qrcodes/p2pqrc/JJLUXRZSQ5V3A",
+            "💸 Payoneer", "international https://link.payoneer.com/Token?t=135B68D8EB1E4860B4B632ECD755182F&amp;src=pl",
+            "🇺🇦 Monobank", "UAH hryvnia https://send.monobank.ua/jar/2UgaGcQ3JC",
         ],
     );
 
@@ -227,8 +446,11 @@ fn show_about_dialog(parent: &gtk4::ApplicationWindow) {
         ],
     );
 
-    // Load and set the application logo
-    let logo_path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/rustconn.svg");
+    // Load and set the application logo from the canonical icon location
+    let logo_path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/assets/icons/hicolor/scalable/apps/org.rustconn.RustConn.svg"
+    );
     if let Ok(logo) = gtk4::gdk::Texture::from_filename(logo_path) {
         about.set_logo(Some(&logo));
     }

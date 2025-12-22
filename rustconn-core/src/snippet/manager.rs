@@ -43,8 +43,9 @@ impl SnippetManager {
         })
     }
 
-    /// Creates a new SnippetManager with empty storage (for testing)
+    /// Creates a new `SnippetManager` with empty storage (for testing)
     #[cfg(test)]
+    #[must_use]
     pub fn new_empty(config_manager: ConfigManager) -> Self {
         Self {
             snippets: HashMap::new(),

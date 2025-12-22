@@ -63,8 +63,7 @@ pub struct SpiceSessionWidget {
     status_label: Label,
     /// Spinner for connection progress
     spinner: Spinner,
-    /// Status container (kept for future floating controls integration)
-    #[allow(dead_code)]
+    /// Status container (kept for preventing premature deallocation and future floating controls)
     status_container: GtkBox,
     /// State change callback
     state_callback: Rc<RefCell<Option<StateCallback>>>,

@@ -62,8 +62,7 @@ pub struct RdpSessionWidget {
     status_label: Label,
     /// Spinner for connection progress
     spinner: Spinner,
-    /// Status container (kept for future floating controls integration)
-    #[allow(dead_code)]
+    /// Status container (kept for preventing premature deallocation and future floating controls)
     status_container: GtkBox,
     /// Authentication callback
     auth_callback: Rc<RefCell<Option<AuthCallback>>>,
@@ -72,7 +71,6 @@ pub struct RdpSessionWidget {
     /// Error callback
     error_callback: Rc<RefCell<Option<ErrorCallback>>>,
 }
-
 
 impl RdpSessionWidget {
     /// Creates a new RDP session widget
@@ -344,7 +342,7 @@ impl RdpSessionWidget {
 
     /// Provides credentials for NLA authentication
     ///
-    /// This should be called in response to the auth_required callback.
+    /// This should be called in response to the `auth_required` callback.
     ///
     /// # Arguments
     ///

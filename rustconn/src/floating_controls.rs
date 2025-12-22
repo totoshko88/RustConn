@@ -10,9 +10,7 @@
 //! - Requirement 5.6: Auto-hide controls after configurable timeout
 
 use gtk4::prelude::*;
-use gtk4::{
-    Align, Box as GtkBox, Button, Orientation, Revealer, RevealerTransitionType, Widget,
-};
+use gtk4::{Align, Box as GtkBox, Button, Orientation, Revealer, RevealerTransitionType, Widget};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -210,7 +208,7 @@ impl FloatingControls {
         motion_controller.connect_enter(move |_, _, _| {
             // Cancel any pending hide timer
             if let Some(source_id) = auto_hide_source_enter.borrow_mut().take() {
-                source_id.remove();
+                let () = source_id.remove(); // Ignore error if source already removed
             }
             revealer_enter.set_reveal_child(true);
         });
@@ -219,7 +217,7 @@ impl FloatingControls {
         motion_controller.connect_leave(move |_| {
             // Cancel any existing timer
             if let Some(source_id) = auto_hide_source.borrow_mut().take() {
-                source_id.remove();
+                let () = source_id.remove(); // Ignore error if source already removed
             }
 
             let timeout_ms = *auto_hide_timeout_ms.borrow();
@@ -242,7 +240,7 @@ impl FloatingControls {
     pub fn show(&self) {
         // Cancel any pending hide timer
         if let Some(source_id) = self.auto_hide_source.borrow_mut().take() {
-            source_id.remove();
+            let () = source_id.remove(); // Ignore error if source already removed
         }
         self.revealer.set_reveal_child(true);
     }
@@ -251,7 +249,7 @@ impl FloatingControls {
     pub fn hide(&self) {
         // Cancel any pending hide timer
         if let Some(source_id) = self.auto_hide_source.borrow_mut().take() {
-            source_id.remove();
+            let () = source_id.remove(); // Ignore error if source already removed
         }
         self.revealer.set_reveal_child(false);
     }
@@ -314,10 +312,13 @@ impl FloatingControls {
         *self.fullscreen_active.borrow_mut() = active;
         if active {
             self.fullscreen_btn.set_icon_name("view-restore-symbolic");
-            self.fullscreen_btn.set_tooltip_text(Some("Exit Fullscreen"));
+            self.fullscreen_btn
+                .set_tooltip_text(Some("Exit Fullscreen"));
         } else {
-            self.fullscreen_btn.set_icon_name("view-fullscreen-symbolic");
-            self.fullscreen_btn.set_tooltip_text(Some("Toggle Fullscreen"));
+            self.fullscreen_btn
+                .set_icon_name("view-fullscreen-symbolic");
+            self.fullscreen_btn
+                .set_tooltip_text(Some("Toggle Fullscreen"));
         }
     }
 
@@ -401,7 +402,7 @@ mod property_tests {
     /// **Feature: native-protocol-embedding, Property 8: Session overlay contains required controls**
     /// **Validates: Requirements 5.1**
     ///
-    /// This test validates that for any FloatingControls instance, the overlay SHALL contain:
+    /// This test validates that for any `FloatingControls` instance, the overlay SHALL contain:
     /// - A disconnect button with correct icon and styling
     /// - A fullscreen button with correct icon and styling
     /// - A settings button with correct icon and styling
@@ -502,7 +503,7 @@ mod property_tests {
         // Test 2: Default trait produces same result
         // ====================================================================
         {
-            let controls: FloatingControls = Default::default();
+            let controls: FloatingControls = FloatingControls::default();
 
             // Verify all three buttons exist with icons
             assert!(
@@ -672,7 +673,7 @@ mod property_tests {
                 let state_after = controls.is_fullscreen_active();
                 assert_eq!(
                     state_after, state_before,
-                    "Cycle {}: Double toggle should preserve state", cycle
+                    "Cycle {cycle}: Double toggle should preserve state"
                 );
             }
         }
@@ -698,14 +699,13 @@ mod property_tests {
                 assert_eq!(
                     controls.fullscreen_button().icon_name().as_deref(),
                     Some(expected_icon),
-                    "Icon should be '{}' when fullscreen_active is {}",
-                    expected_icon, target_state
+                    "Icon should be '{expected_icon}' when fullscreen_active is {target_state}"
                 );
 
                 assert_eq!(
                     controls.is_fullscreen_active(),
                     target_state,
-                    "is_fullscreen_active() should return {}", target_state
+                    "is_fullscreen_active() should return {target_state}"
                 );
             }
         }

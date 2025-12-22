@@ -22,9 +22,19 @@ pub struct SecretManager {
     /// Backends in priority order (first = highest priority)
     backends: Vec<Arc<dyn SecretBackend>>,
     /// Session cache for retrieved credentials
-    cache: RwLock<HashMap<String, Credentials>>,
+    cache: Arc<RwLock<HashMap<String, Credentials>>>,
     /// Whether caching is enabled
     cache_enabled: bool,
+}
+
+impl Clone for SecretManager {
+    fn clone(&self) -> Self {
+        Self {
+            backends: self.backends.clone(),
+            cache: Arc::clone(&self.cache),
+            cache_enabled: self.cache_enabled,
+        }
+    }
 }
 
 impl SecretManager {
@@ -39,7 +49,7 @@ impl SecretManager {
     pub fn new(backends: Vec<Arc<dyn SecretBackend>>) -> Self {
         Self {
             backends,
-            cache: RwLock::new(HashMap::new()),
+            cache: Arc::new(RwLock::new(HashMap::new())),
             cache_enabled: true,
         }
     }

@@ -1,14 +1,17 @@
 //! Remmina configuration importer.
 //!
 //! Parses .remmina files from ~/.local/share/remmina/
+//! Supports importing passwords from GNOME Keyring via secret-tool.
 
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 
 use crate::error::ImportError;
 use crate::models::{
-    Connection, ProtocolConfig, RdpConfig, Resolution, SshAuthMethod, SshConfig, VncConfig,
+    Connection, PasswordSource, ProtocolConfig, RdpConfig, Resolution, SshAuthMethod, SshConfig,
+    SshKeySource, VncConfig,
 };
 
 use super::traits::{ImportResult, ImportSource, SkippedEntry};
@@ -20,6 +23,8 @@ use super::traits::{ImportResult, ImportSource, SkippedEntry};
 pub struct RemminaImporter {
     /// Custom paths to search for Remmina files
     custom_paths: Vec<PathBuf>,
+    /// Whether to import passwords from GNOME Keyring
+    import_passwords: bool,
 }
 
 impl RemminaImporter {
@@ -28,6 +33,7 @@ impl RemminaImporter {
     pub const fn new() -> Self {
         Self {
             custom_paths: Vec::new(),
+            import_passwords: true,
         }
     }
 
@@ -36,11 +42,78 @@ impl RemminaImporter {
     pub const fn with_paths(paths: Vec<PathBuf>) -> Self {
         Self {
             custom_paths: paths,
+            import_passwords: true,
         }
     }
 
+    /// Sets whether to import passwords from GNOME Keyring
+    #[must_use]
+    pub const fn with_password_import(mut self, import: bool) -> Self {
+        self.import_passwords = import;
+        self
+    }
+
+    /// Retrieves a password from GNOME Keyring for a Remmina connection
+    ///
+    /// Remmina stores passwords in the keyring with specific attributes.
+    fn get_password_from_keyring(filename: &str, protocol: &str) -> Option<String> {
+        // Remmina uses the filename (without path) as the key
+        // Format: secret-tool lookup filename <filename> protocol <protocol>
+        let output = Command::new("secret-tool")
+            .args(["lookup", "filename", filename, "protocol", protocol])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .output()
+            .ok()?;
+
+        if output.status.success() {
+            let password = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !password.is_empty() {
+                return Some(password);
+            }
+        }
+
+        // Try alternative lookup with just filename
+        let output = Command::new("secret-tool")
+            .args(["lookup", "filename", filename])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .output()
+            .ok()?;
+
+        if output.status.success() {
+            let password = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !password.is_empty() {
+                return Some(password);
+            }
+        }
+
+        // Try with Remmina-specific attributes
+        let output = Command::new("secret-tool")
+            .args([
+                "lookup",
+                "application",
+                "org.remmina.Remmina",
+                "filename",
+                filename,
+            ])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .output()
+            .ok()?;
+
+        if output.status.success() {
+            let password = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !password.is_empty() {
+                return Some(password);
+            }
+        }
+
+        None
+    }
+
     /// Parses a single .remmina file content
-    #[must_use] 
+    #[must_use]
     pub fn parse_remmina_file(&self, content: &str, source_path: &str) -> ImportResult {
         let mut result = ImportResult::new();
 
@@ -164,6 +237,9 @@ impl RemminaImporter {
                     ProtocolConfig::Ssh(SshConfig {
                         auth_method,
                         key_path,
+                        key_source: SshKeySource::Default,
+                        agent_key_fingerprint: None,
+                        identities_only: false,
                         proxy_jump: None,
                         use_control_master: false,
                         custom_options: HashMap::new(),
@@ -226,6 +302,23 @@ impl RemminaImporter {
         {
             if !username.is_empty() {
                 connection.username = Some(username.clone());
+            }
+        }
+
+        // Try to import password from GNOME Keyring if enabled
+        if self.import_passwords {
+            // Extract filename from source_path for keyring lookup
+            let filename = Path::new(source_path)
+                .file_name()
+                .and_then(|f| f.to_str())
+                .unwrap_or(source_path);
+
+            let protocol_str = protocol.as_deref().unwrap_or("SSH");
+
+            if let Some(_password) = Self::get_password_from_keyring(filename, protocol_str) {
+                // Mark that password is available in keyring
+                // The actual password will be retrieved at connection time
+                connection.password_source = PasswordSource::Keyring;
             }
         }
 
@@ -325,13 +418,13 @@ mod tests {
     #[test]
     fn test_parse_ssh_connection() {
         let importer = RemminaImporter::new();
-        let content = r#"
+        let content = r"
 [remmina]
 name=My SSH Server
 protocol=SSH
 server=192.168.1.100:22
 username=admin
-"#;
+";
 
         let result = importer.parse_remmina_file(content, "test.remmina");
         assert_eq!(result.connections.len(), 1);
@@ -346,7 +439,7 @@ username=admin
     #[test]
     fn test_parse_rdp_connection() {
         let importer = RemminaImporter::new();
-        let content = r#"
+        let content = r"
 [remmina]
 name=Windows Server
 protocol=RDP
@@ -354,7 +447,7 @@ server=192.168.1.50
 username=Administrator
 resolution=1920x1080
 colordepth=32
-"#;
+";
 
         let result = importer.parse_remmina_file(content, "test.remmina");
         assert_eq!(result.connections.len(), 1);
@@ -372,12 +465,12 @@ colordepth=32
     #[test]
     fn test_parse_vnc_connection() {
         let importer = RemminaImporter::new();
-        let content = r#"
+        let content = r"
 [remmina]
 name=VNC Desktop
 protocol=VNC
 server=192.168.1.75:5901
-"#;
+";
 
         let result = importer.parse_remmina_file(content, "test.remmina");
         assert_eq!(result.connections.len(), 1);
@@ -390,12 +483,12 @@ server=192.168.1.75:5901
     #[test]
     fn test_skip_unsupported_protocol() {
         let importer = RemminaImporter::new();
-        let content = r#"
+        let content = r"
 [remmina]
 name=Unknown
 protocol=SPICE
 server=192.168.1.100
-"#;
+";
 
         let result = importer.parse_remmina_file(content, "test.remmina");
         assert_eq!(result.connections.len(), 0);
@@ -405,11 +498,11 @@ server=192.168.1.100
     #[test]
     fn test_skip_no_server() {
         let importer = RemminaImporter::new();
-        let content = r#"
+        let content = r"
 [remmina]
 name=No Server
 protocol=SSH
-"#;
+";
 
         let result = importer.parse_remmina_file(content, "test.remmina");
         assert_eq!(result.connections.len(), 0);

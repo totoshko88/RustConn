@@ -287,48 +287,90 @@ proptest! {
 #[test]
 fn test_valid_state_transition_path() {
     // Disconnected -> Connecting
-    assert!(is_valid_transition(ConnectionState::Disconnected, ConnectionState::Connecting));
+    assert!(is_valid_transition(
+        ConnectionState::Disconnected,
+        ConnectionState::Connecting
+    ));
 
     // Connecting -> Authenticating
-    assert!(is_valid_transition(ConnectionState::Connecting, ConnectionState::Authenticating));
+    assert!(is_valid_transition(
+        ConnectionState::Connecting,
+        ConnectionState::Authenticating
+    ));
 
     // Authenticating -> Connected
-    assert!(is_valid_transition(ConnectionState::Authenticating, ConnectionState::Connected));
+    assert!(is_valid_transition(
+        ConnectionState::Authenticating,
+        ConnectionState::Connected
+    ));
 
     // Connected -> Disconnected
-    assert!(is_valid_transition(ConnectionState::Connected, ConnectionState::Disconnected));
+    assert!(is_valid_transition(
+        ConnectionState::Connected,
+        ConnectionState::Disconnected
+    ));
 }
 
 /// Test invalid state transitions
 #[test]
 fn test_invalid_state_transitions() {
     // Cannot go directly from Disconnected to Connected
-    assert!(!is_valid_transition(ConnectionState::Disconnected, ConnectionState::Connected));
+    assert!(!is_valid_transition(
+        ConnectionState::Disconnected,
+        ConnectionState::Connected
+    ));
 
     // Cannot go directly from Disconnected to Authenticating
-    assert!(!is_valid_transition(ConnectionState::Disconnected, ConnectionState::Authenticating));
+    assert!(!is_valid_transition(
+        ConnectionState::Disconnected,
+        ConnectionState::Authenticating
+    ));
 
     // Cannot go from Connected back to Connecting
-    assert!(!is_valid_transition(ConnectionState::Connected, ConnectionState::Connecting));
+    assert!(!is_valid_transition(
+        ConnectionState::Connected,
+        ConnectionState::Connecting
+    ));
 
     // Cannot go from Connected to Authenticating
-    assert!(!is_valid_transition(ConnectionState::Connected, ConnectionState::Authenticating));
+    assert!(!is_valid_transition(
+        ConnectionState::Connected,
+        ConnectionState::Authenticating
+    ));
 }
 
 /// Test error state transitions
 #[test]
 fn test_error_state_transitions() {
     // Any state can transition to Error
-    assert!(is_valid_transition(ConnectionState::Connecting, ConnectionState::Error));
-    assert!(is_valid_transition(ConnectionState::Authenticating, ConnectionState::Error));
-    assert!(is_valid_transition(ConnectionState::Connected, ConnectionState::Error));
+    assert!(is_valid_transition(
+        ConnectionState::Connecting,
+        ConnectionState::Error
+    ));
+    assert!(is_valid_transition(
+        ConnectionState::Authenticating,
+        ConnectionState::Error
+    ));
+    assert!(is_valid_transition(
+        ConnectionState::Connected,
+        ConnectionState::Error
+    ));
 
     // From Error, can retry (Connecting) or give up (Disconnected)
-    assert!(is_valid_transition(ConnectionState::Error, ConnectionState::Connecting));
-    assert!(is_valid_transition(ConnectionState::Error, ConnectionState::Disconnected));
+    assert!(is_valid_transition(
+        ConnectionState::Error,
+        ConnectionState::Connecting
+    ));
+    assert!(is_valid_transition(
+        ConnectionState::Error,
+        ConnectionState::Disconnected
+    ));
 
     // Cannot go directly from Error to Connected
-    assert!(!is_valid_transition(ConnectionState::Error, ConnectionState::Connected));
+    assert!(!is_valid_transition(
+        ConnectionState::Error,
+        ConnectionState::Connected
+    ));
 }
 
 // ============================================================================

@@ -111,10 +111,11 @@ pub fn detect_rdp_client() -> ClientInfo {
 
 /// Detects the VNC client on the system
 ///
-/// Checks for `vncviewer` binary (`TigerVNC` or `TightVNC`) and extracts version information.
+/// Checks for various VNC viewer binaries and extracts version information.
+/// Supported viewers: vncviewer (TigerVNC/TightVNC), gvncviewer, xvnc4viewer, vinagre, remmina, krdc
 #[must_use]
 pub fn detect_vnc_client() -> ClientInfo {
-    // Try vncviewer (TigerVNC/TightVNC)
+    // Try vncviewer (TigerVNC/TightVNC) - most common
     if let Some(info) = try_detect_client("VNC Viewer", "vncviewer", &["-h"]) {
         return info;
     }
@@ -124,9 +125,192 @@ pub fn detect_vnc_client() -> ClientInfo {
         return info;
     }
 
+    // Try gvncviewer (GTK-VNC viewer)
+    if let Some(info) = try_detect_client("GTK-VNC Viewer", "gvncviewer", &["--help"]) {
+        return info;
+    }
+
+    // Try xvnc4viewer (RealVNC)
+    if let Some(info) = try_detect_client("RealVNC Viewer", "xvnc4viewer", &["-h"]) {
+        return info;
+    }
+
+    // Try vinagre (GNOME Remote Desktop Viewer - deprecated but still available)
+    if let Some(info) = try_detect_client("Vinagre", "vinagre", &["--version"]) {
+        return info;
+    }
+
+    // Try remmina (supports VNC among other protocols)
+    if let Some(info) = try_detect_client("Remmina", "remmina", &["--version"]) {
+        return info;
+    }
+
+    // Try krdc (KDE Remote Desktop Client)
+    if let Some(info) = try_detect_client("KRDC", "krdc", &["--version"]) {
+        return info;
+    }
+
     ClientInfo::not_installed(
         "VNC Client",
-        "Install TigerVNC: sudo apt install tigervnc-viewer (Debian/Ubuntu) or sudo dnf install tigervnc (Fedora)",
+        "Install TigerVNC: sudo apt install tigervnc-viewer (Debian/Ubuntu) or sudo dnf install tigervnc (Fedora). Alternatives: gvncviewer, remmina, krdc",
+    )
+}
+
+/// Returns the path to the first available VNC viewer binary
+///
+/// This function checks for VNC viewers in order of preference and returns
+/// the path to the first one found. Returns `None` if no viewer is installed.
+///
+/// # Returns
+/// `Some(PathBuf)` with the path to the VNC viewer binary, or `None` if not found
+#[must_use]
+pub fn detect_vnc_viewer_path() -> Option<PathBuf> {
+    // VNC viewers in order of preference
+    let viewers = [
+        "vncviewer",   // TigerVNC, TightVNC - most common and feature-rich
+        "tigervnc",    // TigerVNC specific binary name
+        "gvncviewer",  // GTK-VNC viewer
+        "xvnc4viewer", // RealVNC
+        "vinagre",     // GNOME Vinagre (deprecated but still available)
+        "remmina",     // Remmina (supports VNC)
+        "krdc",        // KDE Remote Desktop Client
+    ];
+
+    for viewer in viewers {
+        if let Some(path) = which_binary(viewer) {
+            return Some(path);
+        }
+    }
+
+    None
+}
+
+/// Returns the name of the first available VNC viewer
+///
+/// This function checks for VNC viewers in order of preference and returns
+/// the binary name of the first one found. Returns `None` if no viewer is installed.
+///
+/// # Returns
+/// `Some(String)` with the VNC viewer binary name, or `None` if not found
+#[must_use]
+pub fn detect_vnc_viewer_name() -> Option<String> {
+    // VNC viewers in order of preference
+    let viewers = [
+        "vncviewer",   // TigerVNC, TightVNC - most common and feature-rich
+        "tigervnc",    // TigerVNC specific binary name
+        "gvncviewer",  // GTK-VNC viewer
+        "xvnc4viewer", // RealVNC
+        "vinagre",     // GNOME Vinagre (deprecated but still available)
+        "remmina",     // Remmina (supports VNC)
+        "krdc",        // KDE Remote Desktop Client
+    ];
+
+    for viewer in viewers {
+        if which_binary(viewer).is_some() {
+            return Some(viewer.to_string());
+        }
+    }
+
+    None
+}
+
+// ============================================================================
+// Zero Trust CLI Detection
+// ============================================================================
+
+/// Detects AWS CLI v2 for SSM Session Manager
+#[must_use]
+pub fn detect_aws_cli() -> ClientInfo {
+    if let Some(info) = try_detect_client("AWS CLI", "aws", &["--version"]) {
+        return info;
+    }
+    ClientInfo::not_installed(
+        "AWS CLI",
+        "Install AWS CLI v2: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html",
+    )
+}
+
+/// Detects Google Cloud CLI for IAP tunneling
+#[must_use]
+pub fn detect_gcloud_cli() -> ClientInfo {
+    if let Some(info) = try_detect_client("Google Cloud CLI", "gcloud", &["--version"]) {
+        return info;
+    }
+    ClientInfo::not_installed(
+        "Google Cloud CLI",
+        "Install gcloud: https://cloud.google.com/sdk/docs/install",
+    )
+}
+
+/// Detects Azure CLI for Bastion and SSH
+#[must_use]
+pub fn detect_azure_cli() -> ClientInfo {
+    if let Some(info) = try_detect_client("Azure CLI", "az", &["--version"]) {
+        return info;
+    }
+    ClientInfo::not_installed(
+        "Azure CLI",
+        "Install Azure CLI: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli",
+    )
+}
+
+/// Detects OCI CLI for Oracle Cloud Bastion
+#[must_use]
+pub fn detect_oci_cli() -> ClientInfo {
+    if let Some(info) = try_detect_client("OCI CLI", "oci", &["--version"]) {
+        return info;
+    }
+    ClientInfo::not_installed(
+        "OCI CLI",
+        "Install OCI CLI: https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm",
+    )
+}
+
+/// Detects Cloudflare Access tunnel client
+#[must_use]
+pub fn detect_cloudflared() -> ClientInfo {
+    if let Some(info) = try_detect_client("cloudflared", "cloudflared", &["--version"]) {
+        return info;
+    }
+    ClientInfo::not_installed(
+        "cloudflared",
+        "Install cloudflared: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/",
+    )
+}
+
+/// Detects Teleport SSH client
+#[must_use]
+pub fn detect_teleport() -> ClientInfo {
+    if let Some(info) = try_detect_client("Teleport", "tsh", &["version"]) {
+        return info;
+    }
+    ClientInfo::not_installed(
+        "Teleport",
+        "Install Teleport: https://goteleport.com/docs/installation/",
+    )
+}
+
+/// Detects Tailscale CLI
+#[must_use]
+pub fn detect_tailscale() -> ClientInfo {
+    if let Some(info) = try_detect_client("Tailscale", "tailscale", &["--version"]) {
+        return info;
+    }
+    ClientInfo::not_installed(
+        "Tailscale",
+        "Install Tailscale: https://tailscale.com/download/linux",
+    )
+}
+
+/// Detects `HashiCorp` Boundary client
+#[must_use]
+pub fn detect_boundary() -> ClientInfo {
+    if let Some(info) = try_detect_client("Boundary", "boundary", &["version"]) {
+        return info;
+    }
+    ClientInfo::not_installed(
+        "Boundary",
+        "Install Boundary: https://developer.hashicorp.com/boundary/downloads",
     )
 }
 

@@ -493,7 +493,7 @@ impl SnippetDialog {
     /// # Returns
     /// - `Some(Snippet)` with all fields populated from the dialog
     /// - Preserves the editing ID if editing an existing snippet
-    #[must_use] 
+    #[must_use]
     pub fn build_snippet(&self) -> Option<Snippet> {
         let name = self.name_entry.text().trim().to_string();
         let buffer = self.command_view.buffer();

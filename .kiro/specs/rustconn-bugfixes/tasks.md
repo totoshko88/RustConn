@@ -1,205 +1,347 @@
 # Implementation Plan
 
-- [x] 1. Fix Connection Dialog Save Button
-  - [x] 1.1 Store save button reference in ConnectionDialog struct
-    - Add `save_button: Button` field to struct
-    - Initialize during construction instead of finding via `last_child()`
-    - _Requirements: 1.1, 1.2_
-  - [x] 1.2 Connect save button handler directly in constructor
-    - Move click handler connection from `run()` to `new()`
-    - Ensure callback is properly invoked with built connection
-    - _Requirements: 1.1, 1.3_
-  - [x] 1.3 Write property test for connection validation
-    - **Property 1: Connection Validation**
-    - **Validates: Requirements 1.1, 1.2**
+## Phase 1: Critical Bug Fixes
 
-- [x] 2. Fix Asbru-CM Import
-  - [x] 2.1 Add hostname extraction fallback logic
-    - Implement `extract_hostname()` method with fallback chain
-    - Try ip → host → name → title fields
-    - Filter out "tmp" and empty values
-    - _Requirements: 2.1, 2.2_
-  - [x] 2.2 Preserve dynamic variables in imported data
-    - Detect ${VAR} syntax in fields
-    - Store as-is without modification
-    - _Requirements: 2.3_
-  - [x] 2.3 Write property test for hostname extraction
-    - **Property 2: Asbru Hostname Extraction**
-    - **Validates: Requirements 2.1, 2.2**
+- [x] 1. Fix Tray Icon Display
+  - [x] 1.1 Update tray icon path resolution
+    - Modify `rustconn/src/tray.rs` to prioritize SVG icon
+    - Add `find_icon_theme_path()` function with priority: dev path → installed path → XDG
+    - Ensure `icon_theme_path()` returns path to hicolor directory containing scalable/apps/
+    - _Requirements: 1.1, 1.2, 1.3_
 
-- [x] 3. Checkpoint - Dialog and Import Fixes
-  - Ensure all tests pass, ask the user if questions arise.
+  - [x] 1.2 Write unit test for icon path resolution
+    - Test development path detection
+    - Test fallback to PNG when SVG unavailable
+    - _Requirements: 1.3_
 
-- [x] 4. Fix Context Menu Operations
-  - [x] 4.1 Implement connect_selected method
-    - Get selected item from sidebar
-    - Call start_connection if not a group
-    - _Requirements: 3.1_
-  - [x] 4.2 Implement edit_selected_connection method
-    - Get selected connection
-    - Open ConnectionDialog with set_connection()
-    - Handle save callback to update connection
-    - _Requirements: 3.2_
-  - [x] 4.3 Implement duplicate_selected_connection method
-    - Clone selected connection
-    - Append "(copy)" to name
-    - Generate new UUID
-    - Save and refresh sidebar
-    - _Requirements: 3.3_
-  - [x] 4.4 Implement show_move_to_group_dialog method
-    - Show dialog with group list
-    - Update connection's group_id on selection
-    - _Requirements: 3.4_
-  - [x] 4.5 Implement delete confirmation for groups
-    - Show confirmation with connection count
-    - Delete group and all contained connections
-    - _Requirements: 3.5, 3.7_
-  - [x] 4.6 Implement group edit dialog
-    - Show simple rename dialog for groups
-    - Update group name on save
-    - _Requirements: 3.6_
-  - [x] 4.7 Write property test for connection duplication
-    - **Property 3: Connection Duplication**
-    - **Validates: Requirements 3.3**
-  - [x] 4.8 Write property test for group deletion cascade
-    - **Property 4: Group Deletion Cascade**
-    - **Validates: Requirements 3.7**
+- [x] 2. Fix GTK PopoverMenu Warning
+  - [x] 2.1 Update context menu lifecycle management
+    - Modify `show_context_menu_for_item()` in `rustconn/src/sidebar.rs`
+    - Connect to `closed` signal and call `unparent()` before destruction
+    - Use `popup()` instead of `present()` for proper state management
+    - _Requirements: 3.1, 3.2, 3.3_
 
-- [x] 5. Checkpoint - Context Menu Operations
-  - Ensure all tests pass, ask the user if questions arise.
+- [x] 3. Fix Session Logging
+  - [x] 3.1 Debug and fix SessionLogger integration
+    - Verify `SessionLogger::new()` is called when logging enabled
+    - Ensure log directory is created with `fs::create_dir_all()`
+    - Add error logging when file creation fails
+    - _Requirements: 9.1, 9.3_
 
-- [x] 6. Implement Group-Scoped Sorting
-  - [x] 6.1 Add sort_group method to ConnectionManager
-    - Sort connections within specific group by name
-    - Update sort_order values
-    - _Requirements: 4.1_
-  - [x] 6.2 Add sort_all method to ConnectionManager
-    - Sort all groups and their connections
-    - Sort ungrouped connections
+  - [x] 3.2 Wire SessionLogger to terminal output
+    - Connect VTE terminal output signal to logger.write()
+    - Ensure flush is called periodically
+    - _Requirements: 9.2_
+
+  - [x] 3.3 Write property test for logging
+    - **Property 7: Session Logger File Creation**
+    - **Validates: Requirements 9.1, 9.2**
+
+- [x] 4. Fix Cluster Save
+  - [x] 4.1 Debug ClusterDialog save callback
+    - Verify `on_save` callback is properly connected in `ClusterListDialog`
+    - Ensure cluster is added to ConfigManager
+    - Call `config_manager.save()` after adding cluster
+    - _Requirements: 10.1, 10.2_
+
+  - [x] 4.2 Write property test for cluster persistence
+    - **Property 8: Cluster Serialization Round-Trip**
+    - **Validates: Requirements 10.1, 10.2**
+
+- [x] 5. Fix Template Creation Button
+  - [x] 5.1 Debug TemplateManagerDialog new button
+    - Verify `new_btn.connect_clicked()` handler is connected
+    - Ensure `on_new` callback is set before showing dialog
+    - Check that TemplateDialog is created and presented
+    - _Requirements: 11.1, 11.2, 11.4_
+
+  - [x] 5.2 Write property test for template persistence
+    - **Property 9: Template Serialization Round-Trip**
+    - **Validates: Requirements 11.3**
+
+- [x] 6. Fix Copy/Paste Functionality
+  - [x] 6.1 Implement ConnectionClipboard
+    - Create `ConnectionClipboard` struct in `rustconn/src/state.rs`
+    - Add `copy()`, `paste()`, `has_content()`, `source_group()` methods
+    - Add clipboard field to AppState
+    - _Requirements: 12.1, 12.2, 12.3_
+
+  - [x] 6.2 Wire Copy/Paste actions
+    - Update `win.copy` action to call clipboard.copy()
+    - Update `win.paste` action to call clipboard.paste() and add connection
+    - Update menu item sensitivity based on clipboard state
+    - _Requirements: 12.4, 12.5, 12.6_
+
+  - [x] 6.3 Write property tests for clipboard
+    - **Property 10: Connection Copy Creates Valid Duplicate**
+    - **Property 11: Connection Paste Preserves Group**
+    - **Validates: Requirements 12.1, 12.2, 12.3**
+
+- [x] 7. Checkpoint - Ensure all bug fixes work
+  - Run application and verify all fixes manually
+  - Ensure all tests pass
+
+## Phase 2: UX Improvements
+
+- [x] 8. Implement Drag-and-Drop Visual Feedback
+  - [x] 8.1 Create drop indicator widget
+    - Add `DropIndicator` struct to `rustconn/src/sidebar.rs`
+    - Create horizontal Separator widget with CSS class "drop-indicator"
+    - Add CSS styling for indicator (accent color, 2px height)
+    - _Requirements: 2.1_
+
+  - [x] 8.2 Implement drop position tracking
+    - Add `connect_motion` handler to DropTarget
+    - Calculate drop position (before/after/into) based on Y coordinate
+    - Update indicator position in real-time
+    - _Requirements: 2.2, 2.3_
+
+  - [x] 8.3 Implement indicator cleanup
+    - Hide indicator on drag leave
+    - Hide indicator on drop completion
+    - _Requirements: 2.4_
+
+- [x] 9. Implement Connection Tree State Preservation
+  - [x] 9.1 Create TreeState struct
+    - Add `TreeState` struct with expanded_groups, scroll_position, selected_id
+    - Add `save_state()` method to ConnectionSidebar
+    - Add `restore_state()` method to ConnectionSidebar
+    - _Requirements: 7.1, 7.2, 7.3_
+
+  - [x] 9.2 Integrate state preservation
+    - Call `save_state()` before refresh operations
+    - Call `restore_state()` after refresh
+    - Add `refresh_preserving_state()` convenience method
+    - _Requirements: 7.4_
+
+- [x] 10. Checkpoint - Verify UX improvements
+  - Test drag-and-drop with visual indicator
+  - Test tree state preservation after edit
+
+## Phase 3: SSH Enhancements
+
+- [x] 11. Implement SSH IdentitiesOnly Option
+  - [x] 11.1 Add fields to SshConfig
+    - Add `identities_only: bool` field to SshConfig
+    - Add `ssh_agent_key_fingerprint: Option<String>` field
+    - Update Serialize/Deserialize derives
+    - _Requirements: 6.1, 8.1_
+
+  - [x] 11.2 Update SSH command builder
+    - Modify `build_command_args()` to include `-o IdentitiesOnly=yes` when enabled
+    - Ensure identity file is specified with `-i` flag
+    - _Requirements: 6.2, 6.3_
+
+  - [x] 11.3 Write property tests for SSH options
+    - **Property 4: SSH IdentitiesOnly Command Generation**
+    - **Property 5: SSH Config Serialization Round-Trip**
+    - **Property 6: SSH Agent Key Fingerprint Persistence**
+    - **Validates: Requirements 6.2, 6.3, 6.4, 8.1, 8.2, 8.4**
+
+  - [x] 11.4 Add UI controls
+    - Add "Use only specified key (IdentitiesOnly)" checkbox to SSH tab
+    - Persist ssh_agent_key_fingerprint when key is selected
+    - Restore key selection when loading connection
+    - _Requirements: 6.1, 8.2, 8.3_
+
+- [x] 12. Checkpoint - Verify SSH enhancements
+  - Test IdentitiesOnly prevents "Too many authentication failures"
+  - Test key selection persistence
+
+## Phase 4: CLI Enhancements
+
+- [x] 13. Implement CLI Output Feedback
+  - [x] 13.1 Create output formatting functions
+    - Add `format_connection_message()` function in `rustconn-core/src/protocol/cli.rs`
+    - Add `format_command_message()` function
+    - Use emoji prefixes: 🔗 for connection, ⚡ for command
+    - _Requirements: 5.1, 5.2, 5.3, 5.4_
+
+  - [x] 13.2 Write property tests for CLI output
+    - **Property 2: CLI Output Message Format**
+    - **Property 3: CLI Command Echo Format**
+    - **Validates: Requirements 5.1, 5.2, 5.3, 5.4**
+
+  - [x] 13.3 Integrate feedback into CLI connections
+    - Update CLI protocol handler to echo messages before execution
+    - Update ZeroTrust protocol handler similarly
+    - _Requirements: 5.1, 5.2_
+
+- [x] 14. Implement ZeroTrust Provider Icons
+  - [x] 14.1 Create provider icon cache module
+    - Create `rustconn-core/src/protocol/icons.rs`
+    - Implement `CloudProvider` enum (Aws, Gcloud, Azure, Generic)
+    - Implement `ProviderIconCache` struct
+    - _Requirements: 4.1, 4.4_
+
+  - [x] 14.2 Implement provider detection
+    - Add `detect_provider()` function to analyze CLI command
+    - Return appropriate CloudProvider based on command content
+    - _Requirements: 4.2_
+
+  - [x] 14.3 Write property test for provider detection
+    - **Property 1: Provider Icon Detection**
+    - **Validates: Requirements 4.2**
+
+  - [x] 14.4 Integrate icons into sidebar
+    - Update sidebar icon selection for ZeroTrust connections
+    - Use cached provider icons when available
+    - Fall back to generic cloud icon
     - _Requirements: 4.2, 4.3_
-  - [x] 6.3 Update sort_connections action in window.rs
-    - Check if selected item is a group
-    - Call sort_group or sort_all accordingly
-    - Refresh sidebar after sorting
-    - _Requirements: 4.1, 4.2, 4.3, 4.4_
-  - [x] 6.4 Write property test for group-scoped sorting
-    - **Property 5: Group-Scoped Sorting**
-    - **Validates: Requirements 4.1, 4.2, 4.3, 4.4**
 
-- [x] 7. Implement Drag-and-Drop Reordering
-  - [x] 7.1 Implement drag source prepare handler
-    - Encode item type and ID in drag data
-    - Set appropriate drag action
-    - _Requirements: 5.1, 5.4_
-  - [x] 7.2 Implement drop target handler
-    - Parse drag data
-    - Determine target position and group
-    - Call reorder/move methods
-    - _Requirements: 5.1, 5.2, 5.3_
-  - [x] 7.3 Add reorder_connection method to ConnectionManager
-    - Update sort_order for affected connections
-    - Handle same-group reordering
-    - _Requirements: 5.1, 5.5_
-  - [x] 7.4 Add move_connection_to_group method enhancement
-    - Update group_id and sort_order
-    - Handle move to root (group_id = None)
-    - _Requirements: 5.2, 5.3_
-  - [x] 7.5 Write property test for drag-drop reordering
-    - **Property 6: Drag-Drop Reordering**
-    - **Validates: Requirements 5.1, 5.2, 5.3, 5.5**
+- [x] 15. Checkpoint - Verify CLI enhancements
+  - Test CLI output messages appear correctly
+  - Test provider icons display for AWS/GCloud/Azure
 
-- [x] 8. Checkpoint - Sorting and Drag-Drop
-  - Ensure all tests pass, ask the user if questions arise.
+## Phase 5: Native Export/Import
 
-- [x] 9. Add Sort Recent Feature
-  - [x] 9.1 Add last_connected field to Connection model
-    - Add `last_connected: Option<DateTime<Utc>>` field
-    - Update serialization/deserialization
-    - _Requirements: 6.4_
-  - [x] 9.2 Add sort_by_recent method to ConnectionManager
-    - Sort by last_connected descending
-    - Place None timestamps at end
-    - _Requirements: 6.1, 6.2_
-  - [x] 9.3 Add update_last_connected method
-    - Update timestamp when connection starts
-    - Call from start_connection in window.rs
-    - _Requirements: 6.4_
-  - [x] 9.4 Add Sort Recent button to sidebar
-    - Add button with clock icon
-    - Connect to win.sort-recent action
-    - _Requirements: 6.3_
-  - [x] 9.5 Implement sort-recent action in window.rs
-    - Call sort_by_recent
-    - Refresh sidebar
-    - _Requirements: 6.1_
-  - [x] 9.6 Write property test for recent sort ordering
-    - **Property 7: Recent Sort Ordering**
-    - **Validates: Requirements 6.1, 6.2**
-  - [x] 9.7 Write property test for last connected update
-    - **Property 8: Last Connected Update**
-    - **Validates: Requirements 6.4**
+- [x] 16. Implement Native Export Format
+  - [x] 16.1 Create native export module
+    - Create `rustconn-core/src/export/native.rs`
+    - Define `NATIVE_FORMAT_VERSION` constant
+    - Implement `NativeExport` struct with all data types
+    - _Requirements: 13.1, 13.4_
 
-- [x] 10. Add Client Detection Settings Tab
-  - [x] 10.1 Create client detection module in rustconn-core
-    - Add protocol/detection.rs
-    - Implement detect_ssh_client, detect_rdp_client, detect_vnc_client
-    - Parse version from command output
-    - _Requirements: 7.2, 7.3, 7.4_
-  - [x] 10.2 Add ClientInfo struct
-    - Fields: name, path, version, installed
-    - Add installation hints for missing clients
-    - _Requirements: 7.5_
-  - [x] 10.3 Add Clients tab to SettingsDialog
-    - Create create_clients_tab method
-    - Display detected clients with status
-    - Add Refresh button
-    - _Requirements: 7.1, 7.6_
-  - [x] 10.4 Write property test for client detection
-    - **Property 9: Client Detection**
-    - **Validates: Requirements 7.2, 7.3, 7.4**
+  - [x] 16.2 Implement export functionality
+    - Add `to_json()` method for serialization
+    - Include connections, groups, templates, clusters, variables
+    - Add metadata and version info
+    - _Requirements: 13.2_
 
-- [x] 11. Add Protocol Selection to Quick Connect
-  - [x] 11.1 Update show_quick_connect_dialog
-    - Add protocol dropdown (SSH, RDP, VNC)
-    - Add port spin button
-    - Connect protocol change to port update
-    - _Requirements: 8.1, 8.2, 8.3, 8.4_
-  - [x] 11.2 Implement protocol-aware connection
-    - Create appropriate ProtocolConfig based on selection
-    - Use selected port
-    - _Requirements: 8.5_
-  - [x] 11.3 Write property test for protocol port defaults
-    - **Property 10: Protocol Port Defaults**
-    - **Validates: Requirements 8.2, 8.3, 8.4, 8.5**
+  - [x] 16.3 Implement import functionality
+    - Add `from_json()` method with version validation
+    - Implement `migrate()` function for future version upgrades
+    - Return appropriate errors for unsupported versions
+    - _Requirements: 13.3, 13.5_
 
-- [x] 12. Wire Up Unused Code
-  - [x] 12.1 Wire EmbeddedSessionTab methods
-    - Connect fullscreen_button, disconnect_button
-    - Use connection_id, protocol, is_embedded methods
-    - _Requirements: 9.2, 9.3_
-  - [x] 12.2 Wire SessionControls methods
-    - Connect set_fullscreen_icon to fullscreen toggle
-    - _Requirements: 9.3_
-  - [x] 12.3 Wire AppState methods
-    - Use generate_unique_group_name for new groups
-    - Use update_group_sort_order in sorting
-    - Use session management methods
-    - _Requirements: 9.4_
-  - [x] 12.4 Wire TerminalNotebook methods
-    - Use create_external_tab for non-embedded sessions
-    - Use send_text_to_session for snippets
-    - Use tab_count for UI state
-    - _Requirements: 9.5_
-  - [x] 12.5 Wire SelectionModelWrapper methods
-    - Use as_selection_model and is_multi where needed
-    - _Requirements: 9.4_
-  - [x] 12.6 Remove or use ImportDialog close_button
-    - Either wire to close action or remove field
-    - _Requirements: 9.1_
-  - [x] 12.7 Remove or use SettingsDialog build_settings
-    - Method is duplicated in run() callback, consolidate
-    - _Requirements: 9.1_
+  - [x] 16.4 Write property tests for native format
+    - **Property 12: Native Export Contains All Data Types**
+    - **Property 13: Native Import Restores All Data**
+    - **Property 14: Native Format Round-Trip**
+    - **Property 15: Native Format Schema Version**
+    - **Property 16: Native Import Version Validation**
+    - **Validates: Requirements 13.2, 13.3, 13.4, 13.5, 13.6**
 
-- [x] 13. Final Checkpoint - All Fixes Complete
-  - Ensure all tests pass, ask the user if questions arise.
+  - [x] 16.5 Add UI integration
+    - Add "RustConn Native (.rcn)" option to export dialog
+    - Add import support for .rcn files
+    - _Requirements: 13.1_
+
+- [x] 17. Checkpoint - Verify export/import
+  - Test full export/import round-trip
+  - Verify all data types are preserved
+
+## Phase 6: GTK4 Upgrade
+
+- [x] 18. Upgrade to GTK 4.20
+  - [x] 18.1 Update dependencies
+    - Update `gtk4` version in Cargo.toml to support 4.20
+    - Update `vte4` if needed for compatibility
+    - Update feature flags (v4_20 if available)
+    - _Requirements: 14.1_
+
+  - [x] 18.2 Update deprecated APIs
+    - Review and update any deprecated GTK4 patterns
+    - Use modern APIs where available
+    - _Requirements: 14.2_
+
+  - [x] 18.3 Verify compatibility
+    - Run full test suite
+    - Test all UI components manually
+    - _Requirements: 14.3_
+
+  - [x] 18.4 Document improvements
+    - Note any new GTK 4.20 features that could improve UI
+    - Create list of potential future enhancements
+    - _Requirements: 14.4_
+
+- [x] 19. Checkpoint - Verify GTK upgrade
+  - Ensure all tests pass
+  - Verify no regressions in UI
+
+## Phase 7: Embedded RDP/VNC (Advanced)
+
+- [x] 20. Implement Embedded RDP Widget
+  - [x] 20.1 Create embedded RDP module
+    - Create `rustconn/src/embedded_rdp.rs`
+    - Implement `EmbeddedRdpWidget` struct with DrawingArea
+    - Add Wayland surface handling infrastructure
+    - _Requirements: 16.1, 16.3_
+
+  - [x] 20.2 Implement FreeRDP integration
+    - Add wlfreerdp detection and initialization
+    - Set up BeginPaint/EndPaint callbacks
+    - Implement pixel buffer capture and blit to wl_buffer
+    - _Requirements: 16.4_
+
+  - [x] 20.3 Implement input forwarding
+    - Forward keyboard events to FreeRDP
+    - Forward mouse events to FreeRDP
+    - Handle focus management
+    - _Requirements: 16.5_
+
+  - [x] 20.4 Implement resize handling
+    - Detect widget resize events
+    - Notify remote session of resolution change
+    - Reallocate buffers as needed
+    - _Requirements: 16.7_
+
+  - [x] 20.5 Implement cleanup and fallback
+    - Proper cleanup on disconnect
+    - Detect wlfreerdp availability
+    - Fall back to external xfreerdp if unavailable
+    - _Requirements: 16.6, 16.8_
+
+- [x] 21. Implement Embedded VNC Widget
+  - [x] 21.1 Create embedded VNC module
+    - Create `rustconn/src/embedded_vnc.rs`
+    - Similar structure to RDP widget
+    - Use appropriate VNC library (libvncclient or similar)
+    - _Requirements: 16.2_
+
+  - [x] 21.2 Implement VNC rendering
+    - Set up frame buffer handling
+    - Blit to Wayland surface
+    - _Requirements: 16.3, 16.4_
+
+  - [x] 21.3 Implement VNC input
+    - Forward keyboard and mouse
+    - _Requirements: 16.5_
+
+- [x] 22. Checkpoint - Verify embedded RDP/VNC
+  - Test embedded RDP connection
+  - Test embedded VNC connection
+  - Test fallback to external mode
+
+## Phase 8: Performance Optimization
+
+- [x] 23. Optimize Application Performance
+  - [x] 23.1 Profile startup time
+    - Measure current startup time
+    - Identify bottlenecks
+    - Optimize lazy loading where possible
+    - _Requirements: 15.1_
+
+  - [x] 23.2 Optimize sidebar rendering
+    - Profile large connection list rendering
+    - Implement virtual scrolling if needed
+    - Optimize tree model updates
+    - _Requirements: 15.2_
+
+  - [x] 23.3 Optimize search performance
+    - Profile search with large datasets
+    - Implement debouncing for search input
+    - Optimize fuzzy matching algorithm
+    - _Requirements: 15.3_
+
+  - [x] 23.4 Optimize memory usage
+    - Profile memory usage
+    - Identify memory leaks
+    - Optimize data structures
+    - _Requirements: 15.4_
+
+- [x] 24. Final Checkpoint
+  - Run full test suite
+  - Verify all requirements are met
+  - Performance benchmarks pass
 

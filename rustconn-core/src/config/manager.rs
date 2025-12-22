@@ -6,8 +6,9 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::cluster::Cluster;
 use crate::error::{ConfigError, ConfigResult};
-use crate::models::{Connection, ConnectionGroup, Snippet};
+use crate::models::{Connection, ConnectionGroup, ConnectionTemplate, Snippet};
 
 use super::settings::AppSettings;
 
@@ -15,6 +16,8 @@ use super::settings::AppSettings;
 const CONNECTIONS_FILE: &str = "connections.toml";
 const GROUPS_FILE: &str = "groups.toml";
 const SNIPPETS_FILE: &str = "snippets.toml";
+const CLUSTERS_FILE: &str = "clusters.toml";
+const TEMPLATES_FILE: &str = "templates.toml";
 const CONFIG_FILE: &str = "config.toml";
 
 /// Wrapper for serializing a list of connections
@@ -36,6 +39,20 @@ struct GroupsFile {
 struct SnippetsFile {
     #[serde(default)]
     snippets: Vec<Snippet>,
+}
+
+/// Wrapper for serializing a list of clusters
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+struct ClustersFile {
+    #[serde(default)]
+    clusters: Vec<Cluster>,
+}
+
+/// Wrapper for serializing a list of templates
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+struct TemplatesFile {
+    #[serde(default)]
+    templates: Vec<ConnectionTemplate>,
 }
 
 /// Configuration manager for `RustConn`
@@ -206,6 +223,66 @@ impl ConfigManager {
         Self::save_toml_file(&path, &file)
     }
 
+    // ========== Clusters ==========
+
+    /// Loads clusters from the configuration file
+    ///
+    /// Returns an empty vector if the file doesn't exist.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file exists but cannot be parsed.
+    pub fn load_clusters(&self) -> ConfigResult<Vec<Cluster>> {
+        let path = self.config_dir.join(CLUSTERS_FILE);
+        Self::load_toml_file::<ClustersFile>(&path).map(|f| f.clusters)
+    }
+
+    /// Saves clusters to the configuration file
+    ///
+    /// Creates the configuration directory if it doesn't exist.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be written.
+    pub fn save_clusters(&self, clusters: &[Cluster]) -> ConfigResult<()> {
+        self.ensure_config_dir()?;
+        let path = self.config_dir.join(CLUSTERS_FILE);
+        let file = ClustersFile {
+            clusters: clusters.to_vec(),
+        };
+        Self::save_toml_file(&path, &file)
+    }
+
+    // ========== Templates ==========
+
+    /// Loads templates from the configuration file
+    ///
+    /// Returns an empty vector if the file doesn't exist.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file exists but cannot be parsed.
+    pub fn load_templates(&self) -> ConfigResult<Vec<ConnectionTemplate>> {
+        let path = self.config_dir.join(TEMPLATES_FILE);
+        Self::load_toml_file::<TemplatesFile>(&path).map(|f| f.templates)
+    }
+
+    /// Saves templates to the configuration file
+    ///
+    /// Creates the configuration directory if it doesn't exist.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be written.
+    pub fn save_templates(&self, templates: &[ConnectionTemplate]) -> ConfigResult<()> {
+        self.ensure_config_dir()?;
+        let path = self.config_dir.join(TEMPLATES_FILE);
+        let file = TemplatesFile {
+            templates: templates.to_vec(),
+        };
+        Self::save_toml_file(&path, &file)
+    }
+
     // ========== Application Settings ==========
 
     /// Loads application settings from the configuration file
@@ -285,6 +362,8 @@ impl ConfigManager {
     ///
     /// Returns an error if the connection is invalid.
     pub fn validate_connection(connection: &Connection) -> ConfigResult<()> {
+        use crate::models::ProtocolConfig;
+
         if connection.name.trim().is_empty() {
             return Err(ConfigError::Validation {
                 field: "name".to_string(),
@@ -292,14 +371,18 @@ impl ConfigManager {
             });
         }
 
-        if connection.host.trim().is_empty() {
+        // Host and port are optional for Zero Trust connections
+        // (the target is defined in the provider config)
+        let is_zerotrust = matches!(connection.protocol_config, ProtocolConfig::ZeroTrust(_));
+
+        if !is_zerotrust && connection.host.trim().is_empty() {
             return Err(ConfigError::Validation {
                 field: "host".to_string(),
                 reason: "Host cannot be empty".to_string(),
             });
         }
 
-        if connection.port == 0 {
+        if !is_zerotrust && connection.port == 0 {
             return Err(ConfigError::Validation {
                 field: "port".to_string(),
                 reason: "Port must be greater than 0".to_string(),
@@ -348,6 +431,22 @@ impl ConfigManager {
         Ok(())
     }
 
+    /// Validates a cluster
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the cluster is invalid.
+    pub fn validate_cluster(cluster: &Cluster) -> ConfigResult<()> {
+        if cluster.name.trim().is_empty() {
+            return Err(ConfigError::Validation {
+                field: "name".to_string(),
+                reason: "Cluster name cannot be empty".to_string(),
+            });
+        }
+
+        Ok(())
+    }
+
     /// Validates all connections and returns errors for invalid ones
     #[must_use]
     pub fn validate_connections(connections: &[Connection]) -> Vec<(usize, ConfigError)> {
@@ -375,6 +474,42 @@ impl ConfigManager {
             .iter()
             .enumerate()
             .filter_map(|(i, snippet)| Self::validate_snippet(snippet).err().map(|e| (i, e)))
+            .collect()
+    }
+
+    /// Validates all clusters and returns errors for invalid ones
+    #[must_use]
+    pub fn validate_clusters(clusters: &[Cluster]) -> Vec<(usize, ConfigError)> {
+        clusters
+            .iter()
+            .enumerate()
+            .filter_map(|(i, cluster)| Self::validate_cluster(cluster).err().map(|e| (i, e)))
+            .collect()
+    }
+
+    /// Validates a template
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the template is invalid.
+    pub fn validate_template(template: &ConnectionTemplate) -> ConfigResult<()> {
+        if template.name.trim().is_empty() {
+            return Err(ConfigError::Validation {
+                field: "name".to_string(),
+                reason: "Template name cannot be empty".to_string(),
+            });
+        }
+
+        Ok(())
+    }
+
+    /// Validates all templates and returns errors for invalid ones
+    #[must_use]
+    pub fn validate_templates(templates: &[ConnectionTemplate]) -> Vec<(usize, ConfigError)> {
+        templates
+            .iter()
+            .enumerate()
+            .filter_map(|(i, template)| Self::validate_template(template).err().map(|e| (i, e)))
             .collect()
     }
 }
@@ -416,7 +551,9 @@ mod tests {
             ProtocolConfig::Ssh(SshConfig::default()),
         );
 
-        manager.save_connections(&[conn.clone()]).unwrap();
+        manager
+            .save_connections(std::slice::from_ref(&conn))
+            .unwrap();
         let loaded = manager.load_connections().unwrap();
 
         assert_eq!(loaded.len(), 1);
@@ -431,7 +568,7 @@ mod tests {
 
         let group = ConnectionGroup::new("Production".to_string());
 
-        manager.save_groups(&[group.clone()]).unwrap();
+        manager.save_groups(std::slice::from_ref(&group)).unwrap();
         let loaded = manager.load_groups().unwrap();
 
         assert_eq!(loaded.len(), 1);
@@ -444,7 +581,9 @@ mod tests {
 
         let snippet = Snippet::new("List files".to_string(), "ls -la".to_string());
 
-        manager.save_snippets(&[snippet.clone()]).unwrap();
+        manager
+            .save_snippets(std::slice::from_ref(&snippet))
+            .unwrap();
         let loaded = manager.load_snippets().unwrap();
 
         assert_eq!(loaded.len(), 1);
@@ -508,6 +647,52 @@ mod tests {
         snippet.command = String::new();
 
         let result = ConfigManager::validate_snippet(&snippet);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_save_and_load_clusters() {
+        use crate::cluster::Cluster;
+        use uuid::Uuid;
+
+        let (manager, _temp) = create_test_manager();
+
+        let mut cluster = Cluster::new("Production Servers".to_string());
+        cluster.add_connection(Uuid::new_v4());
+        cluster.add_connection(Uuid::new_v4());
+        cluster.broadcast_enabled = true;
+
+        manager
+            .save_clusters(std::slice::from_ref(&cluster))
+            .unwrap();
+        let loaded = manager.load_clusters().unwrap();
+
+        assert_eq!(loaded.len(), 1);
+        assert_eq!(loaded[0].name, cluster.name);
+        assert_eq!(loaded[0].id, cluster.id);
+        assert_eq!(loaded[0].connection_ids.len(), 2);
+        assert!(loaded[0].broadcast_enabled);
+    }
+
+    #[test]
+    fn test_validate_cluster_empty_name() {
+        use crate::cluster::Cluster;
+
+        let mut cluster = Cluster::new("Test".to_string());
+        cluster.name = String::new();
+
+        let result = ConfigManager::validate_cluster(&cluster);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_validate_cluster_whitespace_name() {
+        use crate::cluster::Cluster;
+
+        let mut cluster = Cluster::new("Test".to_string());
+        cluster.name = "   ".to_string();
+
+        let result = ConfigManager::validate_cluster(&cluster);
         assert!(result.is_err());
     }
 }

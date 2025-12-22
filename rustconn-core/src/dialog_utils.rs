@@ -75,7 +75,9 @@ pub fn parse_args(text: &str) -> Vec<String> {
     if text.trim().is_empty() {
         return Vec::new();
     }
-    text.split_whitespace().map(std::string::ToString::to_string).collect()
+    text.split_whitespace()
+        .map(std::string::ToString::to_string)
+        .collect()
 }
 
 /// Formats a vector of arguments into a space-separated string.

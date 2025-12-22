@@ -2,120 +2,137 @@
 
 ## Introduction
 
-This document specifies requirements for a major refactoring of RustConn's protocol handling to achieve native Wayland-first embedding for VNC, RDP, and SPICE protocols. The current implementation relies on external processes (xfreerdp, vncviewer) which open separate windows. The goal is to embed all remote desktop sessions as native GTK4 widgets within the main application window, similar to how SSH sessions are already embedded via VTE4.
-
-Additionally, this refactoring includes cleanup of legacy X11 code and resolution of all clippy warnings to improve code quality.
+This specification covers the implementation of native embedded RDP protocol support using IronRDP, along with improvements to credential management, connection naming, SSH key handling, external mode enhancements, and fixes for discovered issues. The goal is to provide true embedded RDP rendering within GTK4 widgets (similar to how VNC uses vnc-rs), while also improving the overall user experience for credential handling and connection management.
 
 ## Glossary
 
-- **RustConn**: The connection manager application being developed
-- **VTE4**: Virtual Terminal Emulator library for GTK4, used for SSH terminal embedding
-- **gtk-vnc**: GTK widget library for VNC client functionality
-- **gtk-frdp**: GNOME's GTK widget wrapper around FreeRDP library for RDP embedding
-- **spice-gtk**: GTK widget library for SPICE protocol client
-- **GtkOverlay**: GTK4 widget that allows overlaying widgets on top of other widgets
-- **FFI**: Foreign Function Interface for calling C libraries from Rust
-- **Wayland**: Modern Linux display server protocol (replacement for X11)
-- **X11/XEmbed**: Legacy display server and its window embedding protocol
-- **FreeRDP**: Open-source RDP client library
-- **SPICE**: Simple Protocol for Independent Computing Environments, used for VM display
+- **RustConn**: The connection manager application
+- **IronRDP**: A pure Rust RDP client library for native protocol implementation
+- **FreeRDP**: External RDP client used as fallback (wlfreerdp/xfreerdp)
+- **Embedded Mode**: RDP session rendered directly in GTK DrawingArea widget
+- **External Mode**: RDP session running in separate FreeRDP window
+- **KeePass**: Password manager database (KDBX format)
+- **Keyring**: System credential storage (libsecret on Linux)
+- **Credential Backend**: Storage system for passwords (KeePass or Keyring)
+- **VNC Client**: Reference implementation using vnc-rs for native embedding
+- **DrawingArea**: GTK4 widget for custom rendering
+- **Ctrl+Alt+Del**: Special key combination for Windows security screen
+- **Quick Connect**: Feature to quickly connect without creating a saved connection
+- **Wayland Subsurface**: Wayland protocol for embedding surfaces within other surfaces
+- **SPICE**: Simple Protocol for Independent Computing Environments (virtualization display protocol)
 
 ## Requirements
 
-### Requirement 1: Remove X11 Legacy Code
+### Requirement 1: Native Embedded RDP
 
-**User Story:** As a developer, I want to remove X11-specific embedding code, so that the codebase is cleaner and focused on Wayland-native solutions.
-
-#### Acceptance Criteria
-
-1. WHEN the application starts THEN the RustConn system SHALL NOT check for X11 display server or attempt X11-specific embedding
-2. WHEN a user connects via RDP or VNC THEN the RustConn system SHALL use native GTK4 widgets instead of external process windows
-3. WHEN the `DisplayServer` enum is used THEN the RustConn system SHALL remove X11 variant and related detection logic
-4. WHEN the `embedded.rs` module is refactored THEN the RustConn system SHALL remove all XEmbed-related code and comments
-
-### Requirement 2: Native VNC Embedding
-
-**User Story:** As a user, I want VNC sessions to appear as embedded tabs within RustConn, so that I can manage all my remote sessions in one window.
+**User Story:** As a user, I want RDP sessions to be rendered directly within the RustConn window, so that I can manage multiple RDP connections in a unified interface without separate windows.
 
 #### Acceptance Criteria
 
-1. WHEN a user initiates a VNC connection THEN the RustConn system SHALL display the VNC session as an embedded GTK widget
-2. WHEN the VNC session is active THEN the RustConn system SHALL forward keyboard and mouse input to the remote host
-3. WHEN the VNC server requires authentication THEN the RustConn system SHALL prompt for credentials and handle VNC authentication protocols
-4. WHEN the VNC session window is resized THEN the RustConn system SHALL scale or adjust the remote display accordingly
-5. WHEN the VNC connection is lost THEN the RustConn system SHALL display an error state and offer reconnection options
-6. WHEN multiple VNC sessions are open THEN the RustConn system SHALL display each in a separate tab with proper isolation
+1. WHEN a user opens an RDP connection in embedded mode THEN the RustConn System SHALL render the RDP session directly in a GTK DrawingArea widget using IronRDP
+2. WHEN the user moves the mouse over the embedded RDP widget THEN the RustConn System SHALL forward mouse coordinates to the RDP server via IronRDP protocol
+3. WHEN the user types on the keyboard while the embedded RDP widget has focus THEN the RustConn System SHALL forward key events to the RDP server via IronRDP protocol
+4. WHEN the user clicks the Ctrl+Alt+Del button in the RDP toolbar THEN the RustConn System SHALL send the Ctrl+Alt+Del key sequence to the RDP server
+5. WHEN IronRDP connection fails or is unavailable THEN the RustConn System SHALL fall back to FreeRDP external mode and notify the user
+6. WHEN the user disconnects from an RDP session THEN the RustConn System SHALL properly clean up IronRDP resources and release memory
+7. WHEN the embedded RDP widget is resized THEN the RustConn System SHALL request dynamic resolution change from the RDP server
 
-### Requirement 3: Native RDP Embedding
+### Requirement 2: Smart Credential Dialog
 
-**User Story:** As a user, I want RDP sessions to appear as embedded tabs within RustConn, so that I can access Windows machines without separate windows.
-
-#### Acceptance Criteria
-
-1. WHEN a user initiates an RDP connection THEN the RustConn system SHALL display the RDP session as an embedded GTK widget using gtk-frdp
-2. WHEN the RDP session is active THEN the RustConn system SHALL render the remote desktop framebuffer to a GdkTexture
-3. WHEN the RDP server requires NLA authentication THEN the RustConn system SHALL handle Network Level Authentication properly
-4. WHEN RDP gateway is configured THEN the RustConn system SHALL route the connection through the specified gateway
-5. WHEN clipboard operations occur THEN the RustConn system SHALL synchronize clipboard content between local and remote systems
-6. WHEN audio redirection is enabled THEN the RustConn system SHALL play remote audio through local audio system
-7. WHEN the RDP session window is resized THEN the RustConn system SHALL negotiate new resolution with the remote host
-
-### Requirement 4: SPICE Protocol Support
-
-**User Story:** As a user managing virtual machines, I want SPICE protocol support, so that I can connect to libvirt/QEMU VMs with optimal performance.
+**User Story:** As a user, I want the application to use my saved credentials automatically, so that I don't have to enter passwords repeatedly for connections where credentials are already stored and have been used successfully.
 
 #### Acceptance Criteria
 
-1. WHEN a user creates a new connection THEN the RustConn system SHALL offer SPICE as a protocol option alongside SSH, RDP, and VNC
-2. WHEN a user initiates a SPICE connection THEN the RustConn system SHALL display the VM console as an embedded GTK widget
-3. WHEN the SPICE session is active THEN the RustConn system SHALL support USB redirection if configured
-4. WHEN the SPICE session is active THEN the RustConn system SHALL support shared folders if configured
-5. WHEN the SPICE agent is available THEN the RustConn system SHALL enable clipboard sharing and display auto-resize
-6. WHEN the SPICE connection uses TLS THEN the RustConn system SHALL validate certificates according to user preferences
+1. WHEN a user connects to a server with credentials saved in KeePass or Keyring that were previously used successfully THEN the RustConn System SHALL use those credentials without showing the password dialog
+2. WHEN a user connects to a server without saved credentials THEN the RustConn System SHALL show the password dialog
+3. WHEN a saved credential fails authentication THEN the RustConn System SHALL show the password dialog with an error message and mark credentials as requiring verification
+4. WHEN the password dialog is shown THEN the RustConn System SHALL pre-fill username and domain from saved connection settings
+5. WHEN credentials are used successfully THEN the RustConn System SHALL mark them as verified for future automatic use
 
-### Requirement 5: Floating Session Controls
+### Requirement 3: Unified Credential Storage
 
-**User Story:** As a user, I want floating control buttons over my remote sessions, so that I can quickly disconnect or toggle fullscreen without leaving the session view.
-
-#### Acceptance Criteria
-
-1. WHEN a remote session (VNC/RDP/SPICE) is displayed THEN the RustConn system SHALL overlay floating control buttons using GtkOverlay
-2. WHEN the user hovers over the session area THEN the RustConn system SHALL show the floating controls with fade-in animation
-3. WHEN the user clicks the disconnect button THEN the RustConn system SHALL terminate the session and show disconnected state
-4. WHEN the user clicks the fullscreen button THEN the RustConn system SHALL toggle the session between fullscreen and windowed mode
-5. WHEN the user clicks the settings button THEN the RustConn system SHALL display session-specific settings (resolution, quality, etc.)
-6. WHEN the floating controls are idle THEN the RustConn system SHALL auto-hide them after a configurable timeout
-
-### Requirement 6: Protocol Configuration Models
-
-**User Story:** As a developer, I want well-defined configuration models for each protocol, so that connection settings are type-safe and validated.
+**User Story:** As a user, I want a simple "Save Credentials" option that automatically chooses the best storage backend, so that I don't have to understand the technical differences between KeePass and Keyring.
 
 #### Acceptance Criteria
 
-1. WHEN a SPICE connection is configured THEN the RustConn system SHALL store SPICE-specific settings (TLS, USB redirection, shared folders)
-2. WHEN protocol configuration is serialized THEN the RustConn system SHALL produce valid TOML/JSON that can be deserialized back
-3. WHEN protocol configuration is loaded THEN the RustConn system SHALL validate all fields and report specific validation errors
-4. WHEN default values are needed THEN the RustConn system SHALL provide sensible defaults for each protocol type
+1. WHEN the user checks "Save Credentials" in the password dialog THEN the RustConn System SHALL store credentials to KeePass if KeePass integration is enabled, otherwise to Keyring
+2. WHEN KeePass integration is enabled and credentials exist in Keyring but not in KeePass THEN the RustConn System SHALL use the Keyring credentials
+3. WHEN KeePass integration is enabled and credentials exist in Keyring THEN the RustConn System SHALL display a "Save to KeePass" button in the connection settings
+4. WHEN the user clicks "Save to KeePass" THEN the RustConn System SHALL copy credentials from Keyring to KeePass and remove them from Keyring
+5. WHEN the system Keyring is unavailable THEN the RustConn System SHALL display a warning and disable Keyring-related options
+6. WHEN checking Keyring availability THEN the RustConn System SHALL verify that libsecret service is running and accessible
 
-### Requirement 7: Code Quality Improvements
+### Requirement 4: Connection Naming
 
-**User Story:** As a developer, I want all clippy warnings resolved, so that the codebase follows Rust best practices and is maintainable.
-
-#### Acceptance Criteria
-
-1. WHEN `cargo clippy -p rustconn` is run THEN the RustConn system SHALL produce zero warnings
-2. WHEN functions exceed 100 lines THEN the RustConn system SHALL refactor them into smaller, focused functions
-3. WHEN numeric casts are performed THEN the RustConn system SHALL use safe conversion methods (TryFrom, checked casts)
-4. WHEN match arms have identical bodies THEN the RustConn system SHALL consolidate them or use wildcards appropriately
-5. WHEN documentation references technical terms THEN the RustConn system SHALL use backticks for proper formatting
-
-### Requirement 8: FFI Integration Architecture
-
-**User Story:** As a developer, I want a clean FFI architecture for C library integration, so that gtk-vnc, gtk-frdp, and spice-gtk can be used safely from Rust.
+**User Story:** As a user, I want connections with duplicate names to be automatically distinguished, so that I can identify them easily in the connection list.
 
 #### Acceptance Criteria
 
-1. WHEN FFI bindings are created THEN the RustConn system SHALL use safe Rust wrappers around unsafe C calls
-2. WHEN GTK widgets from C libraries are used THEN the RustConn system SHALL integrate them properly with GTK4-rs widget hierarchy
-3. WHEN memory is allocated by C libraries THEN the RustConn system SHALL ensure proper cleanup through Drop implementations
-4. WHEN callbacks are passed to C libraries THEN the RustConn system SHALL handle Rust closure lifetimes correctly
+1. WHEN a user creates a connection with a name that already exists THEN the RustConn System SHALL append the protocol suffix in parentheses (e.g., "server (RDP)")
+2. WHEN multiple connections have the same name and protocol THEN the RustConn System SHALL append a numeric suffix (e.g., "server (RDP) 2")
+3. WHEN the user renames a connection to a unique name THEN the RustConn System SHALL remove any auto-generated suffix
+
+### Requirement 5: SSH Key Selection
+
+**User Story:** As a user, I want SSH connections to use only my selected key file, so that I don't get "Too many authentication failures" errors from trying multiple keys.
+
+#### Acceptance Criteria
+
+1. WHEN a user selects "File" authentication method with a specific key file THEN the RustConn System SHALL pass only that key using the `-i` flag to SSH
+2. WHEN a user selects "File" authentication method THEN the RustConn System SHALL add `-o IdentitiesOnly=yes` to prevent SSH from trying other keys
+3. WHEN a user selects "SSH Agent" authentication method THEN the RustConn System SHALL allow SSH to use all keys from the agent
+
+### Requirement 6: External Mode Improvements
+
+**User Story:** As a user, I want external RDP windows to have proper window decorations and remember their position, so that I can organize my workspace efficiently.
+
+#### Acceptance Criteria
+
+1. WHEN launching FreeRDP in external mode THEN the RustConn System SHALL include the `/decorations` flag to enable window decorations
+2. WHEN the user closes an external RDP session THEN the RustConn System SHALL save the window position and size
+3. WHEN the user opens the same connection again THEN the RustConn System SHALL restore the saved window position and size
+4. WHEN the "Remember window position" option is disabled THEN the RustConn System SHALL use default window placement
+
+### Requirement 7: Quick Connect Implementation
+
+**User Story:** As a user, I want to quickly connect to RDP and VNC servers without creating a saved connection, so that I can access servers for one-time tasks efficiently.
+
+#### Acceptance Criteria
+
+1. WHEN a user enters a hostname in Quick Connect and selects RDP protocol THEN the RustConn System SHALL establish an RDP connection to that host
+2. WHEN a user enters a hostname in Quick Connect and selects VNC protocol THEN the RustConn System SHALL establish a VNC connection to that host
+3. WHEN Quick Connect requires authentication THEN the RustConn System SHALL show the password dialog
+4. WHEN Quick Connect session ends THEN the RustConn System SHALL not save the connection to the connection list
+
+### Requirement 8: Wayland Subsurface Integration
+
+**User Story:** As a user, I want embedded protocol sessions to integrate properly with the Wayland compositor, so that I get smooth rendering and proper input handling.
+
+#### Acceptance Criteria
+
+1. WHEN running on Wayland THEN the RustConn System SHALL create a wl_subsurface for embedded RDP/VNC sessions
+2. WHEN the parent window moves or resizes THEN the RustConn System SHALL update the subsurface position accordingly
+3. WHEN the embedded session receives framebuffer updates THEN the RustConn System SHALL blit them to the Wayland surface using shared memory buffers
+4. WHEN running on X11 THEN the RustConn System SHALL fall back to Cairo-based rendering
+
+### Requirement 9: SPICE Protocol Support
+
+**User Story:** As a user, I want to connect to SPICE servers for virtual machine access, so that I can manage VMs with full display and input support.
+
+#### Acceptance Criteria
+
+1. WHEN a user creates a SPICE connection THEN the RustConn System SHALL connect using the SPICE protocol
+2. WHEN connected to a SPICE server THEN the RustConn System SHALL render the display in embedded mode
+3. WHEN the user interacts with the SPICE session THEN the RustConn System SHALL forward keyboard and mouse input
+4. WHEN SPICE native client is unavailable THEN the RustConn System SHALL fall back to external virt-viewer
+
+### Requirement 10: IronRDP Integration Architecture
+
+**User Story:** As a developer, I want a clean architecture for IronRDP integration, so that the codebase remains maintainable and testable.
+
+#### Acceptance Criteria
+
+1. WHEN implementing IronRDP client THEN the RustConn System SHALL follow the same architecture pattern as the VNC client (vnc-rs)
+2. WHEN IronRDP has dependency conflicts THEN the RustConn System SHALL use a feature flag to conditionally compile IronRDP support
+3. WHEN the RDP client receives framebuffer updates THEN the RustConn System SHALL convert them to the same event format as VNC for consistent GUI handling
+4. WHEN serializing RDP client configuration THEN the RustConn System SHALL support round-trip serialization to JSON

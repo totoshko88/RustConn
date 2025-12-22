@@ -10,8 +10,8 @@ use proptest::prelude::*;
 use rustconn_core::{
     config::AppSettings, config::ConfigManager, config::LoggingSettings, config::SecretBackendType,
     config::SecretSettings, config::TerminalSettings, config::UiSettings, Connection,
-    ConnectionGroup, ProtocolConfig, RdpConfig, RdpGateway, Resolution, Snippet,
-    SnippetVariable, SshAuthMethod, SshConfig, VncConfig,
+    ConnectionGroup, ProtocolConfig, RdpConfig, RdpGateway, Resolution, Snippet, SnippetVariable,
+    SshAuthMethod, SshConfig, SshKeySource, VncConfig,
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -94,6 +94,9 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
                 SshConfig {
                     auth_method,
                     key_path,
+                    key_source: SshKeySource::Default,
+                    agent_key_fingerprint: None,
+                    identities_only: false,
                     proxy_jump,
                     use_control_master,
                     custom_options,
@@ -157,6 +160,7 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                 gateway,
                 shared_folders: Vec::new(),
                 custom_args,
+                client_mode: Default::default(),
             },
         )
 }
@@ -187,14 +191,16 @@ fn arb_vnc_config() -> impl Strategy<Value = VncConfig> {
         arb_optional_level(),
         arb_custom_args(),
     )
-        .prop_map(
-            |(encoding, compression, quality, custom_args)| VncConfig {
-                encoding,
-                compression,
-                quality,
-                custom_args,
-            },
-        )
+        .prop_map(|(encoding, compression, quality, custom_args)| VncConfig {
+            client_mode: Default::default(),
+            encoding,
+            compression,
+            quality,
+            view_only: false,
+            scaling: true,
+            clipboard_enabled: true,
+            custom_args,
+        })
 }
 
 // Strategy for protocol config
@@ -327,8 +333,7 @@ fn arb_secret_backend_type() -> impl Strategy<Value = SecretBackendType> {
 fn arb_optional_kdbx_path() -> impl Strategy<Value = Option<PathBuf>> {
     prop_oneof![
         Just(None),
-        "[a-z]{1,10}(/[a-z]{1,10}){0,2}/[a-z]{1,10}\\.kdbx"
-            .prop_map(|s| Some(PathBuf::from(s))),
+        "[a-z]{1,10}(/[a-z]{1,10}){0,2}/[a-z]{1,10}\\.kdbx".prop_map(|s| Some(PathBuf::from(s))),
     ]
 }
 
@@ -346,7 +351,10 @@ fn arb_secret_settings() -> impl Strategy<Value = SecretSettings> {
                 enable_fallback,
                 kdbx_path,
                 kdbx_enabled,
-                kdbx_password: None, // Password is never serialized
+                kdbx_password: None,           // Password is never serialized
+                kdbx_password_encrypted: None, // Encrypted password for persistence
+                kdbx_key_file: None,           // Key file path
+                kdbx_use_key_file: false,      // Use key file instead of password
             },
         )
 }
@@ -405,13 +413,20 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         kdbx_path: None,
                         kdbx_enabled: false,
                         kdbx_password: None,
+                        kdbx_password_encrypted: None,
+                        kdbx_key_file: None,
+                        kdbx_use_key_file: false,
                     },
                     ui: UiSettings {
                         remember_window_geometry,
                         window_width,
                         window_height,
                         sidebar_width,
+                        enable_tray_icon: true,
+                        minimize_to_tray: false,
+                        collapsed_groups: std::collections::HashSet::new(),
                     },
+                    global_variables: Vec::new(),
                 }
             },
         )

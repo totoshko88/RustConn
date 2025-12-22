@@ -64,11 +64,21 @@ struct KeePassXcResponse {
 struct KeePassXcEntry {
     login: Option<String>,
     password: Option<String>,
+    /// Entry name from `KeePassXC`
+    ///
+    /// Part of the `KeePassXC` response structure. Currently unused but
+    /// preserved for potential future use in entry display or logging.
+    /// Required for correct JSON deserialization of `KeePassXC` responses.
     #[serde(default)]
-    #[allow(dead_code)]
+    #[allow(dead_code)] // Required for JSON deserialization completeness
     name: Option<String>,
+    /// Entry UUID from `KeePassXC`
+    ///
+    /// Part of the `KeePassXC` response structure. Currently unused but
+    /// preserved for potential future use in entry identification or updates.
+    /// Required for correct JSON deserialization of `KeePassXC` responses.
     #[serde(default)]
-    #[allow(dead_code)]
+    #[allow(dead_code)] // Required for JSON deserialization completeness
     uuid: Option<String>,
 }
 
@@ -271,7 +281,7 @@ impl SecretBackend for KeePassXcBackend {
             if let Some(entry) = entries.into_iter().next() {
                 let credentials = Credentials {
                     username: entry.login,
-                    password: entry.password.map(SecretString::new),
+                    password: entry.password.map(SecretString::from),
                     key_passphrase: None,
                 };
                 return Ok(Some(credentials));

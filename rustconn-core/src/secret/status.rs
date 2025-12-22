@@ -3,6 +3,9 @@
 //! This module provides functionality to detect the status of `KeePass` integration,
 //! including `KeePassXC` installation detection, version parsing, and KDBX file validation.
 
+// Allow missing errors documentation - status detection functions have straightforward errors
+#![allow(clippy::missing_errors_doc)]
+
 use std::path::Path;
 use std::process::Command;
 
@@ -153,6 +156,654 @@ impl KeePassStatus {
             parse_keepassxc_version(&version_output)
         }
     }
+
+    /// Retrieves a password from KDBX database using `keepassxc-cli`
+    ///
+    /// # Arguments
+    /// * `kdbx_path` - Path to the KDBX database file
+    /// * `db_password` - Password to unlock the database
+    /// * `entry_name` - Name of the entry to look up (connection name or host)
+    ///
+    /// # Returns
+    /// * `Ok(Some(String))` if the password is found
+    /// * `Ok(None)` if the entry is not found
+    /// * `Err(String)` with error description if retrieval fails
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - `keepassxc-cli` is not installed
+    /// - The KDBX file path is invalid
+    /// - The database password is incorrect
+    pub fn get_password_from_kdbx(
+        kdbx_path: &Path,
+        db_password: &str,
+        entry_name: &str,
+    ) -> Result<Option<String>, String> {
+        use std::io::Write as IoWrite;
+        use std::process::Stdio;
+
+        // First validate the path
+        Self::validate_kdbx_path(kdbx_path)?;
+
+        // Find keepassxc-cli
+        let cli_path = Self::find_keepassxc_cli()
+            .ok_or_else(|| "keepassxc-cli not found. Please install KeePassXC.".to_string())?;
+
+        // Use keepassxc-cli show command to get the password
+        // Format: keepassxc-cli show -s <database> <entry>
+        let mut child = Command::new(&cli_path)
+            .arg("show")
+            .arg("-s") // Show password attribute
+            .arg("-a")
+            .arg("Password") // Get password attribute
+            .arg(kdbx_path)
+            .arg(entry_name)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("Failed to run keepassxc-cli: {e}"))?;
+
+        // Write database password to stdin
+        if let Some(mut stdin) = child.stdin.take() {
+            stdin
+                .write_all(db_password.as_bytes())
+                .map_err(|e| format!("Failed to send password: {e}"))?;
+            stdin
+                .write_all(b"\n")
+                .map_err(|e| format!("Failed to send password: {e}"))?;
+        }
+
+        let output = child
+            .wait_with_output()
+            .map_err(|e| format!("Failed to wait for keepassxc-cli: {e}"))?;
+
+        if output.status.success() {
+            let password = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if password.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Some(password))
+            }
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            if stderr.contains("Could not find entry")
+                || stderr.contains("Entry not found")
+                || stderr.contains("No entry found")
+            {
+                Ok(None)
+            } else if stderr.contains("Invalid credentials") || stderr.contains("wrong password") {
+                Err("Invalid database password".to_string())
+            } else {
+                // Entry not found is not an error, just return None
+                Ok(None)
+            }
+        }
+    }
+
+    /// Saves a password to KDBX database using `keepassxc-cli`
+    ///
+    /// # Arguments
+    /// * `kdbx_path` - Path to the KDBX database file
+    /// * `db_password` - Password to unlock the database (None if using key file)
+    /// * `key_file` - Optional path to key file for authentication
+    /// * `entry_name` - Name of the entry (connection name or host)
+    /// * `username` - Username for the entry
+    /// * `password` - Password to save
+    /// * `url` - Optional URL for the entry
+    ///
+    /// # Returns
+    /// * `Ok(())` if the password is saved successfully
+    /// * `Err(String)` with error description if saving fails
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - `keepassxc-cli` is not installed
+    /// - The KDBX file path is invalid
+    /// - The database password/key file is incorrect
+    /// - The entry cannot be created
+    pub fn save_password_to_kdbx(
+        kdbx_path: &Path,
+        db_password: Option<&str>,
+        key_file: Option<&Path>,
+        entry_name: &str,
+        username: &str,
+        password: &str,
+        url: Option<&str>,
+    ) -> Result<(), String> {
+        use std::io::Write as IoWrite;
+        use std::process::Stdio;
+
+        // First validate the path
+        Self::validate_kdbx_path(kdbx_path)?;
+
+        // Find keepassxc-cli
+        let cli_path = Self::find_keepassxc_cli()
+            .ok_or_else(|| "keepassxc-cli not found. Please install KeePassXC.".to_string())?;
+
+        // Ensure RustConn group exists
+        Self::ensure_rustconn_group(kdbx_path, db_password, key_file, &cli_path)?;
+
+        // Build the entry path under RustConn group
+        let entry_path = format!("RustConn/{entry_name}");
+
+        // First, try to remove existing entry (ignore errors if it doesn't exist)
+        let _ = Self::delete_kdbx_entry(kdbx_path, db_password, key_file, &entry_path);
+
+        // Build command arguments for keepassxc-cli add
+        // Format: keepassxc-cli add [options] <database> <entry>
+        // -p/--password-prompt prompts for entry password via stdin (after db password)
+        let mut args = vec!["add".to_string(), "-q".to_string()];
+
+        // If using key file without password, add --no-password flag
+        if db_password.is_none() && key_file.is_some() {
+            args.push("--no-password".to_string());
+        }
+
+        // Add key file if provided
+        if let Some(kf) = key_file {
+            args.push("--key-file".to_string());
+            args.push(kf.display().to_string());
+        }
+
+        // Add username if not empty
+        if !username.is_empty() {
+            args.push("-u".to_string());
+            args.push(username.to_string());
+        }
+
+        // Add URL if provided
+        if let Some(u) = url {
+            if !u.is_empty() {
+                args.push("--url".to_string());
+                args.push(u.to_string());
+            }
+        }
+
+        // Add password prompt flag - this tells keepassxc-cli to read entry password from stdin
+        args.push("-p".to_string());
+
+        // Add database path and entry name
+        args.push(kdbx_path.display().to_string());
+        args.push(entry_path);
+
+        eprintln!("DEBUG: Running keepassxc-cli with args: {args:?}");
+
+        let mut child = Command::new(&cli_path)
+            .args(&args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("Failed to run keepassxc-cli: {e}"))?;
+
+        // Write passwords to stdin
+        // When using --no-password (key file only): only entry password is needed
+        // When using password: database password first, then entry password
+        if let Some(mut stdin) = child.stdin.take() {
+            // Database password (only if not using --no-password)
+            if let Some(db_pwd) = db_password {
+                stdin
+                    .write_all(db_pwd.as_bytes())
+                    .map_err(|e| format!("Failed to send database password: {e}"))?;
+                stdin
+                    .write_all(b"\n")
+                    .map_err(|e| format!("Failed to send newline: {e}"))?;
+            }
+
+            // Entry password (prompted by -p flag)
+            eprintln!("DEBUG: Sending entry password ({} chars)", password.len());
+            stdin
+                .write_all(password.as_bytes())
+                .map_err(|e| format!("Failed to send entry password: {e}"))?;
+            stdin
+                .write_all(b"\n")
+                .map_err(|e| format!("Failed to send newline: {e}"))?;
+
+            // Close stdin to signal end of input
+            drop(stdin);
+        }
+
+        let output = child
+            .wait_with_output()
+            .map_err(|e| format!("Failed to wait for keepassxc-cli: {e}"))?;
+
+        eprintln!(
+            "DEBUG: keepassxc-cli exit code: {:?}, stdout: '{}', stderr: '{}'",
+            output.status.code(),
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+
+        if output.status.success() {
+            Ok(())
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            if stderr.contains("Invalid credentials")
+                || stderr.contains("wrong password")
+                || stderr.contains("Error while reading the database")
+            {
+                Err("Invalid database password or key file".to_string())
+            } else if stderr.contains("Could not find group") {
+                Err("RustConn group not found in database. Please create a group named 'RustConn' in your KeePass database.".to_string())
+            } else if stderr.contains("already exists") {
+                // Entry already exists - try to edit it instead
+                Err(format!("Entry '{entry_name}' already exists"))
+            } else if stderr.is_empty() && stdout.is_empty() {
+                Err(format!(
+                    "Failed to save password to KeePass database (exit code: {:?}). \
+                     Try running: keepassxc-cli add -p {} 'RustConn/{}'",
+                    output.status.code(),
+                    kdbx_path.display(),
+                    entry_name
+                ))
+            } else {
+                let error_msg = if stderr.is_empty() { stdout } else { stderr };
+                Err(format!("KeePass error: {}", error_msg.trim()))
+            }
+        }
+    }
+
+    /// Ensures the `RustConn` group exists in the database
+    fn ensure_rustconn_group(
+        kdbx_path: &Path,
+        db_password: Option<&str>,
+        key_file: Option<&Path>,
+        cli_path: &Path,
+    ) -> Result<(), String> {
+        use std::io::Write as IoWrite;
+        use std::process::Stdio;
+
+        eprintln!("DEBUG: Checking if RustConn group exists...");
+
+        // First check if RustConn group exists using ls command
+        let mut args = vec!["ls".to_string(), "-q".to_string()];
+
+        // If using key file without password, add --no-password flag
+        if db_password.is_none() && key_file.is_some() {
+            args.push("--no-password".to_string());
+        }
+
+        if let Some(kf) = key_file {
+            args.push("--key-file".to_string());
+            args.push(kf.display().to_string());
+        }
+
+        args.push(kdbx_path.display().to_string());
+        args.push("RustConn".to_string());
+
+        let mut child = Command::new(cli_path)
+            .args(&args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("Failed to run keepassxc-cli: {e}"))?;
+
+        // Only send password if we have one
+        if let Some(mut stdin) = child.stdin.take() {
+            if let Some(db_pwd) = db_password {
+                stdin.write_all(db_pwd.as_bytes()).ok();
+                stdin.write_all(b"\n").ok();
+            }
+        }
+
+        let output = child.wait_with_output().ok();
+
+        // If group exists, we're done
+        if let Some(ref o) = output {
+            eprintln!(
+                "DEBUG: ls RustConn result: exit={:?}, stdout='{}', stderr='{}'",
+                o.status.code(),
+                String::from_utf8_lossy(&o.stdout),
+                String::from_utf8_lossy(&o.stderr)
+            );
+            if o.status.success() {
+                eprintln!("DEBUG: RustConn group exists");
+                return Ok(());
+            }
+        }
+
+        eprintln!("DEBUG: RustConn group doesn't exist, creating...");
+
+        // Group doesn't exist, create it using mkdir command
+        let mut args = vec!["mkdir".to_string(), "-q".to_string()];
+
+        // If using key file without password, add --no-password flag
+        if db_password.is_none() && key_file.is_some() {
+            args.push("--no-password".to_string());
+        }
+
+        if let Some(kf) = key_file {
+            args.push("--key-file".to_string());
+            args.push(kf.display().to_string());
+        }
+
+        args.push(kdbx_path.display().to_string());
+        args.push("RustConn".to_string());
+
+        let mut child = Command::new(cli_path)
+            .args(&args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("Failed to run keepassxc-cli mkdir: {e}"))?;
+
+        // Only send password if we have one
+        if let Some(mut stdin) = child.stdin.take() {
+            if let Some(db_pwd) = db_password {
+                stdin.write_all(db_pwd.as_bytes()).ok();
+                stdin.write_all(b"\n").ok();
+            }
+        }
+
+        let output = child
+            .wait_with_output()
+            .map_err(|e| format!("Failed to wait for keepassxc-cli: {e}"))?;
+
+        eprintln!(
+            "DEBUG: mkdir RustConn result: exit={:?}, stdout='{}', stderr='{}'",
+            output.status.code(),
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+
+        if output.status.success() {
+            eprintln!("DEBUG: RustConn group created successfully");
+            Ok(())
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            // If group already exists, that's fine
+            if stderr.contains("already exists") {
+                eprintln!("DEBUG: RustConn group already exists");
+                Ok(())
+            } else if stderr.contains("Invalid credentials") || stderr.contains("wrong password") {
+                Err("Invalid database password or key file".to_string())
+            } else {
+                // Don't fail if we can't create the group - the add command will give a better error
+                eprintln!("DEBUG: Failed to create group, but continuing: {stderr}");
+                Ok(())
+            }
+        }
+    }
+
+    /// Deletes an entry from KDBX database
+    fn delete_kdbx_entry(
+        kdbx_path: &Path,
+        db_password: Option<&str>,
+        key_file: Option<&Path>,
+        entry_path: &str,
+    ) -> Result<(), String> {
+        use std::io::Write as IoWrite;
+        use std::process::Stdio;
+
+        let cli_path =
+            Self::find_keepassxc_cli().ok_or_else(|| "keepassxc-cli not found".to_string())?;
+
+        let mut args = vec!["rm".to_string(), "-q".to_string()];
+
+        // If using key file without password, add --no-password flag
+        if db_password.is_none() && key_file.is_some() {
+            args.push("--no-password".to_string());
+        }
+
+        if let Some(kf) = key_file {
+            args.push("--key-file".to_string());
+            args.push(kf.display().to_string());
+        }
+
+        args.push(kdbx_path.display().to_string());
+        args.push(entry_path.to_string());
+
+        let mut child = Command::new(&cli_path)
+            .args(&args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("Failed to run keepassxc-cli: {e}"))?;
+
+        // Only send password if we have one
+        if let Some(mut stdin) = child.stdin.take() {
+            if let Some(db_pwd) = db_password {
+                stdin.write_all(db_pwd.as_bytes()).ok();
+                stdin.write_all(b"\n").ok();
+            }
+        }
+
+        let _ = child.wait_with_output();
+        Ok(())
+    }
+
+    /// Retrieves a password from KDBX database using `keepassxc-cli` with key file support
+    ///
+    /// # Arguments
+    /// * `kdbx_path` - Path to the KDBX database file
+    /// * `db_password` - Password to unlock the database (None if using key file only)
+    /// * `key_file` - Optional path to key file for authentication
+    /// * `entry_name` - Name of the entry to look up (connection name or host)
+    ///
+    /// # Returns
+    /// * `Ok(Some(String))` if the password is found
+    /// * `Ok(None)` if the entry is not found
+    /// * `Err(String)` with error description if retrieval fails
+    pub fn get_password_from_kdbx_with_key(
+        kdbx_path: &Path,
+        db_password: Option<&str>,
+        key_file: Option<&Path>,
+        entry_name: &str,
+    ) -> Result<Option<String>, String> {
+        use std::io::Write as IoWrite;
+        use std::process::Stdio;
+
+        // First validate the path
+        Self::validate_kdbx_path(kdbx_path)?;
+
+        // Find keepassxc-cli
+        let cli_path = Self::find_keepassxc_cli()
+            .ok_or_else(|| "keepassxc-cli not found. Please install KeePassXC.".to_string())?;
+
+        // Try both direct entry name and RustConn group path
+        let entry_paths = [entry_name.to_string(), format!("RustConn/{entry_name}")];
+
+        eprintln!(
+            "DEBUG get_password: entry_name='{}', has_password={}, has_key_file={}",
+            entry_name,
+            db_password.is_some(),
+            key_file.is_some()
+        );
+
+        for entry_path in &entry_paths {
+            let mut args = vec![
+                "show".to_string(),
+                "-s".to_string(),
+                "-a".to_string(),
+                "Password".to_string(),
+            ];
+
+            // If using key file without password, add --no-password flag
+            if db_password.is_none() && key_file.is_some() {
+                args.push("--no-password".to_string());
+            }
+
+            if let Some(kf) = key_file {
+                args.push("--key-file".to_string());
+                args.push(kf.display().to_string());
+            }
+
+            args.push(kdbx_path.display().to_string());
+            args.push(entry_path.clone());
+
+            eprintln!("DEBUG get_password: trying path '{entry_path}', args={args:?}");
+
+            let mut child = Command::new(&cli_path)
+                .args(&args)
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
+                .map_err(|e| format!("Failed to run keepassxc-cli: {e}"))?;
+
+            // Only send password if we have one (not using --no-password)
+            if let Some(mut stdin) = child.stdin.take() {
+                if let Some(db_pwd) = db_password {
+                    stdin
+                        .write_all(db_pwd.as_bytes())
+                        .map_err(|e| format!("Failed to send password: {e}"))?;
+                    stdin
+                        .write_all(b"\n")
+                        .map_err(|e| format!("Failed to send password: {e}"))?;
+                }
+            }
+
+            let output = child
+                .wait_with_output()
+                .map_err(|e| format!("Failed to wait for keepassxc-cli: {e}"))?;
+
+            eprintln!(
+                "DEBUG get_password: exit={:?}, stdout='[REDACTED]', stderr='{}'",
+                output.status.code(),
+                String::from_utf8_lossy(&output.stderr)
+            );
+
+            if output.status.success() {
+                let password = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !password.is_empty() {
+                    eprintln!(
+                        "DEBUG get_password: found password ({} chars)",
+                        password.len()
+                    );
+                    return Ok(Some(password));
+                }
+            }
+        }
+
+        eprintln!("DEBUG get_password: password not found");
+        Ok(None)
+    }
+
+    /// Verifies a KDBX database password using `keepassxc-cli`
+    ///
+    /// # Arguments
+    /// * `kdbx_path` - Path to the KDBX database file
+    /// * `password` - Password to verify
+    ///
+    /// # Returns
+    /// * `Ok(())` if the password is correct
+    /// * `Err(String)` with error description if verification fails
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - `keepassxc-cli` is not installed
+    /// - The KDBX file path is invalid
+    /// - The password is incorrect
+    /// - The database cannot be opened
+    pub fn verify_kdbx_password(kdbx_path: &Path, password: &str) -> Result<(), String> {
+        Self::verify_kdbx_credentials(kdbx_path, Some(password), None)
+    }
+
+    /// Verifies KDBX database credentials (password and/or key file) using `keepassxc-cli`
+    ///
+    /// # Arguments
+    /// * `kdbx_path` - Path to the KDBX database file
+    /// * `password` - Password to verify (None if using key file only)
+    /// * `key_file` - Optional path to key file
+    ///
+    /// # Returns
+    /// * `Ok(())` if the credentials are correct
+    /// * `Err(String)` with error description if verification fails
+    pub fn verify_kdbx_credentials(
+        kdbx_path: &Path,
+        password: Option<&str>,
+        key_file: Option<&Path>,
+    ) -> Result<(), String> {
+        use std::io::Write as IoWrite;
+        use std::process::Stdio;
+
+        // First validate the path
+        Self::validate_kdbx_path(kdbx_path)?;
+
+        // Find keepassxc-cli
+        let cli_path = Self::find_keepassxc_cli()
+            .ok_or_else(|| "keepassxc-cli not found. Please install KeePassXC.".to_string())?;
+
+        // Build command arguments
+        let mut args = vec!["ls".to_string()];
+
+        if let Some(kf) = key_file {
+            args.push("--key-file".to_string());
+            args.push(kf.display().to_string());
+        }
+
+        args.push(kdbx_path.display().to_string());
+
+        let mut child = Command::new(&cli_path)
+            .args(&args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("Failed to run keepassxc-cli: {e}"))?;
+
+        // Write password to stdin
+        if let Some(mut stdin) = child.stdin.take() {
+            if let Some(pwd) = password {
+                stdin
+                    .write_all(pwd.as_bytes())
+                    .map_err(|e| format!("Failed to send password: {e}"))?;
+            }
+            stdin
+                .write_all(b"\n")
+                .map_err(|e| format!("Failed to send password: {e}"))?;
+        }
+
+        let output = child
+            .wait_with_output()
+            .map_err(|e| format!("Failed to wait for keepassxc-cli: {e}"))?;
+
+        if output.status.success() {
+            Ok(())
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            if stderr.contains("Invalid credentials")
+                || stderr.contains("wrong password")
+                || stderr.contains("Error while reading the database")
+            {
+                Err("Invalid password or key file".to_string())
+            } else if stderr.is_empty() {
+                Err("Failed to open database. Check your credentials.".to_string())
+            } else {
+                Err(format!("Database error: {}", stderr.trim()))
+            }
+        }
+    }
+
+    /// Validates a key file path
+    ///
+    /// # Arguments
+    /// * `path` - Path to validate
+    ///
+    /// # Returns
+    /// * `Ok(())` if the path is valid
+    /// * `Err(String)` with a description of the validation failure
+    ///
+    /// Note: `KeePassXC` creates key files without extension by default,
+    /// so we don't require a specific extension.
+    pub fn validate_key_file_path(path: &Path) -> Result<(), String> {
+        // Check if file exists
+        if !path.exists() {
+            return Err(format!("Key file does not exist: {}", path.display()));
+        }
+
+        // Check if it's a file (not a directory)
+        if !path.is_file() {
+            return Err(format!("Path is not a file: {}", path.display()));
+        }
+
+        Ok(())
+    }
 }
 
 /// Parses a version string from `KeePassXC` CLI output
@@ -268,10 +919,7 @@ mod tests {
 
     #[test]
     fn test_parse_version_just_number() {
-        assert_eq!(
-            parse_keepassxc_version("2.7.6"),
-            Some("2.7.6".to_string())
-        );
+        assert_eq!(parse_keepassxc_version("2.7.6"), Some("2.7.6".to_string()));
     }
 
     #[test]

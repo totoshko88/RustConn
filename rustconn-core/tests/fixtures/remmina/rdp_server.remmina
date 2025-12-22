@@ -1,0 +1,10 @@
+[remmina]
+name=Windows Domain Server
+protocol=RDP
+server=192.168.1.100
+username=Administrator
+domain=CORP
+resolution=1920x1080
+colordepth=32
+sound=local
+group=Windows

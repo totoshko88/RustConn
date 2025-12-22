@@ -4,7 +4,7 @@
 //! **Validates: Requirements 5.5**
 
 use proptest::prelude::*;
-use rustconn_core::models::{Connection, ProtocolConfig, SshAuthMethod, SshConfig};
+use rustconn_core::models::{Connection, ProtocolConfig, SshAuthMethod, SshConfig, SshKeySource};
 use rustconn_core::Credentials;
 use std::path::PathBuf;
 
@@ -29,6 +29,9 @@ fn arb_ssh_config_with_key() -> impl Strategy<Value = SshConfig> {
     (arb_key_path(), any::<bool>()).prop_map(|(key_path, use_control_master)| SshConfig {
         auth_method: SshAuthMethod::PublicKey,
         key_path: Some(key_path),
+        key_source: SshKeySource::Default,
+        agent_key_fingerprint: None,
+        identities_only: false,
         proxy_jump: None,
         use_control_master,
         custom_options: std::collections::HashMap::new(),
@@ -64,7 +67,7 @@ fn arb_ssh_key_credentials() -> impl Strategy<Value = Credentials> {
             let mut creds = Credentials::empty();
             creds.username = username;
             if let Some(p) = passphrase {
-                creds.key_passphrase = Some(secrecy::SecretString::new(p));
+                creds.key_passphrase = Some(secrecy::SecretString::from(p));
             }
             creds
         })

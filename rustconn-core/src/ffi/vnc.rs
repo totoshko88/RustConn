@@ -215,7 +215,9 @@ impl VncDisplay {
     /// - A connection is already in progress
     pub fn open_host(&self, host: &str, port: u16) -> Result<(), VncError> {
         if host.is_empty() {
-            return Err(VncError::ConnectionFailed("Host cannot be empty".to_string()));
+            return Err(VncError::ConnectionFailed(
+                "Host cannot be empty".to_string(),
+            ));
         }
         if port == 0 {
             return Err(VncError::ConnectionFailed("Port cannot be 0".to_string()));
@@ -278,7 +280,11 @@ impl VncDisplay {
     /// # Errors
     ///
     /// Returns `VncError::InvalidCredential` if the value is empty.
-    pub fn set_credential(&self, cred_type: VncCredentialType, value: &str) -> Result<(), VncError> {
+    pub fn set_credential(
+        &self,
+        cred_type: VncCredentialType,
+        value: &str,
+    ) -> Result<(), VncError> {
         if value.is_empty() {
             return Err(VncError::InvalidCredential(format!(
                 "{cred_type} cannot be empty"

@@ -7,7 +7,7 @@ use chrono;
 use proptest::prelude::*;
 use rustconn_core::{
     ConfigManager, Connection, ConnectionManager, ProtocolConfig, RdpConfig, RdpGateway,
-    Resolution, SshAuthMethod, SshConfig, VncConfig,
+    Resolution, SshAuthMethod, SshConfig, SshKeySource, VncConfig,
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -91,6 +91,9 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
                 SshConfig {
                     auth_method,
                     key_path,
+                    key_source: SshKeySource::Default,
+                    agent_key_fingerprint: None,
+                    identities_only: false,
                     proxy_jump,
                     use_control_master,
                     custom_options,
@@ -154,6 +157,7 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                 gateway,
                 shared_folders: Vec::new(),
                 custom_args,
+                client_mode: Default::default(),
             },
         )
 }
@@ -184,14 +188,16 @@ fn arb_vnc_config() -> impl Strategy<Value = VncConfig> {
         arb_optional_level(),
         arb_custom_args(),
     )
-        .prop_map(
-            |(encoding, compression, quality, custom_args)| VncConfig {
-                encoding,
-                compression,
-                quality,
-                custom_args,
-            },
-        )
+        .prop_map(|(encoding, compression, quality, custom_args)| VncConfig {
+            client_mode: Default::default(),
+            encoding,
+            compression,
+            quality,
+            view_only: false,
+            scaling: true,
+            clipboard_enabled: true,
+            custom_args,
+        })
 }
 
 // Strategy for protocol config
@@ -2272,6 +2278,271 @@ proptest! {
             second_timestamp >= first_timestamp,
             "Second timestamp {} should be >= first timestamp {}",
             second_timestamp, first_timestamp
+        );
+    }
+}
+
+// ========== Connection Naming Property Tests ==========
+
+use rustconn_core::ProtocolType;
+
+// Strategy for generating protocol types
+fn arb_protocol_type() -> impl Strategy<Value = ProtocolType> {
+    prop_oneof![
+        Just(ProtocolType::Ssh),
+        Just(ProtocolType::Rdp),
+        Just(ProtocolType::Vnc),
+        Just(ProtocolType::Spice),
+    ]
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(100))]
+
+    /// **Feature: native-protocol-embedding, Property 13: Connection Name Deduplication**
+    /// **Validates: Requirements 4.1, 4.2**
+    ///
+    /// For any new connection with a name that already exists, the generated name
+    /// should include a protocol suffix and be unique among all connections.
+    #[test]
+    fn connection_name_deduplication_generates_unique_names(
+        base_name in arb_name(),
+        protocols in prop::collection::vec(arb_protocol_type(), 1..5),
+        hosts in prop::collection::vec(arb_host(), 1..5),
+    ) {
+        let (mut manager, _temp) = create_test_manager();
+
+        // Create multiple connections with the same base name
+        let mut created_names = Vec::new();
+
+        for (i, protocol) in protocols.iter().enumerate() {
+            let host = hosts.get(i % hosts.len()).cloned().unwrap_or_else(|| "example.com".to_string());
+
+            // Generate unique name
+            let unique_name = manager.generate_unique_name(&base_name, *protocol);
+
+            // Verify the generated name is unique among all existing connections
+            prop_assert!(
+                !manager.name_exists(&unique_name, None),
+                "Generated name '{}' should be unique before creation",
+                unique_name
+            );
+
+            // Create the connection with the generated name
+            let protocol_config = match protocol {
+                ProtocolType::Ssh => ProtocolConfig::Ssh(SshConfig::default()),
+                ProtocolType::Rdp => ProtocolConfig::Rdp(RdpConfig::default()),
+                ProtocolType::Vnc => ProtocolConfig::Vnc(VncConfig::default()),
+                ProtocolType::Spice => ProtocolConfig::Spice(rustconn_core::SpiceConfig::default()),
+                ProtocolType::ZeroTrust => ProtocolConfig::Ssh(SshConfig::default()), // Fallback
+            };
+
+            manager
+                .create_connection(unique_name.clone(), host, 22, protocol_config)
+                .expect("Should create connection");
+
+            // Verify the name is now taken
+            prop_assert!(
+                manager.name_exists(&unique_name, None),
+                "Name '{}' should exist after creation",
+                unique_name
+            );
+
+            // Verify all created names are unique
+            prop_assert!(
+                !created_names.contains(&unique_name),
+                "Generated name '{}' should not duplicate previous names",
+                unique_name
+            );
+
+            created_names.push(unique_name);
+        }
+
+        // Verify all connections have unique names
+        let all_names: Vec<String> = manager.list_connections().iter().map(|c| c.name.clone()).collect();
+        let unique_count = {
+            let mut sorted = all_names.clone();
+            sorted.sort();
+            sorted.dedup();
+            sorted.len()
+        };
+        prop_assert_eq!(
+            all_names.len(),
+            unique_count,
+            "All connection names should be unique"
+        );
+    }
+
+    /// **Feature: native-protocol-embedding, Property 13: Connection Name Deduplication**
+    /// **Validates: Requirements 4.1, 4.2**
+    ///
+    /// When a name already exists with a different protocol, the generated name
+    /// should include the protocol suffix.
+    #[test]
+    fn name_deduplication_adds_protocol_suffix_for_different_protocol(
+        base_name in arb_name(),
+        first_protocol in arb_protocol_type(),
+        second_protocol in arb_protocol_type(),
+        host in arb_host(),
+    ) {
+        let (mut manager, _temp) = create_test_manager();
+
+        // Create first connection with base name
+        let first_config = match first_protocol {
+            ProtocolType::Ssh => ProtocolConfig::Ssh(SshConfig::default()),
+            ProtocolType::Rdp => ProtocolConfig::Rdp(RdpConfig::default()),
+            ProtocolType::Vnc => ProtocolConfig::Vnc(VncConfig::default()),
+            ProtocolType::Spice => ProtocolConfig::Spice(rustconn_core::SpiceConfig::default()),
+            ProtocolType::ZeroTrust => ProtocolConfig::Ssh(SshConfig::default()),
+        };
+
+        manager
+            .create_connection(base_name.clone(), host.clone(), 22, first_config)
+            .expect("Should create first connection");
+
+        // Generate name for second connection
+        let second_name = manager.generate_unique_name(&base_name, second_protocol);
+
+        // If protocols are different, name should have protocol suffix
+        // If protocols are same, name should have protocol suffix (since base is taken)
+        prop_assert!(
+            second_name != base_name,
+            "Second name '{}' should differ from base name '{}' since base is taken",
+            second_name, base_name
+        );
+
+        // Name should contain protocol suffix
+        let expected_suffix = format!("({})", second_protocol);
+        prop_assert!(
+            second_name.contains(&expected_suffix),
+            "Second name '{}' should contain protocol suffix '{}'",
+            second_name, expected_suffix
+        );
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(100))]
+
+    /// **Feature: native-protocol-embedding, Property 14: Name Suffix Removal**
+    /// **Validates: Requirements 4.3**
+    ///
+    /// For any connection rename to a unique name, any auto-generated suffix
+    /// should be removed from the final name.
+    #[test]
+    fn name_suffix_removal_when_base_becomes_unique(
+        base_name in arb_name(),
+        protocol in arb_protocol_type(),
+        host in arb_host(),
+    ) {
+        let (mut manager, _temp) = create_test_manager();
+
+        // Create a connection with a suffixed name (simulating previous deduplication)
+        let suffixed_name = format!("{} ({})", base_name, protocol);
+
+        let protocol_config = match protocol {
+            ProtocolType::Ssh => ProtocolConfig::Ssh(SshConfig::default()),
+            ProtocolType::Rdp => ProtocolConfig::Rdp(RdpConfig::default()),
+            ProtocolType::Vnc => ProtocolConfig::Vnc(VncConfig::default()),
+            ProtocolType::Spice => ProtocolConfig::Spice(rustconn_core::SpiceConfig::default()),
+            ProtocolType::ZeroTrust => ProtocolConfig::Ssh(SshConfig::default()),
+        };
+
+        let conn_id = manager
+            .create_connection(suffixed_name.clone(), host, 22, protocol_config)
+            .expect("Should create connection");
+
+        // Since base_name is unique (no other connection has it), normalize should remove suffix
+        let normalized = manager.normalize_name(&suffixed_name, conn_id);
+
+        // The normalized name should be the base name (suffix removed)
+        prop_assert_eq!(
+            &normalized, &base_name,
+            "Normalized name '{}' should equal base name '{}' when base is unique",
+            normalized, base_name
+        );
+    }
+
+    /// **Feature: native-protocol-embedding, Property 14: Name Suffix Removal**
+    /// **Validates: Requirements 4.3**
+    ///
+    /// When the base name is still taken by another connection, the suffix
+    /// should be preserved.
+    #[test]
+    fn name_suffix_preserved_when_base_is_taken(
+        base_name in arb_name(),
+        protocol in arb_protocol_type(),
+        host1 in arb_host(),
+        host2 in arb_host(),
+    ) {
+        let (mut manager, _temp) = create_test_manager();
+
+        // Create first connection with base name
+        let first_config = match protocol {
+            ProtocolType::Ssh => ProtocolConfig::Ssh(SshConfig::default()),
+            ProtocolType::Rdp => ProtocolConfig::Rdp(RdpConfig::default()),
+            ProtocolType::Vnc => ProtocolConfig::Vnc(VncConfig::default()),
+            ProtocolType::Spice => ProtocolConfig::Spice(rustconn_core::SpiceConfig::default()),
+            ProtocolType::ZeroTrust => ProtocolConfig::Ssh(SshConfig::default()),
+        };
+
+        manager
+            .create_connection(base_name.clone(), host1, 22, first_config.clone())
+            .expect("Should create first connection");
+
+        // Create second connection with suffixed name
+        let suffixed_name = format!("{} ({})", base_name, protocol);
+        let second_id = manager
+            .create_connection(suffixed_name.clone(), host2, 22, first_config)
+            .expect("Should create second connection");
+
+        // Since base_name is taken, normalize should preserve the suffix
+        let normalized = manager.normalize_name(&suffixed_name, second_id);
+
+        // The normalized name should still have the suffix
+        prop_assert_eq!(
+            &normalized, &suffixed_name,
+            "Normalized name '{}' should preserve suffix when base '{}' is taken",
+            normalized, base_name
+        );
+    }
+
+    /// **Feature: native-protocol-embedding, Property 14: Name Suffix Removal**
+    /// **Validates: Requirements 4.3**
+    ///
+    /// Numeric suffixes should also be removed when the base name becomes unique.
+    #[test]
+    fn numeric_suffix_removal_when_base_becomes_unique(
+        base_name in arb_name(),
+        protocol in arb_protocol_type(),
+        suffix_number in 2u32..100u32,
+        host in arb_host(),
+    ) {
+        let (mut manager, _temp) = create_test_manager();
+
+        // Create a connection with a numeric suffixed name
+        let suffixed_name = format!("{} ({}) {}", base_name, protocol, suffix_number);
+
+        let protocol_config = match protocol {
+            ProtocolType::Ssh => ProtocolConfig::Ssh(SshConfig::default()),
+            ProtocolType::Rdp => ProtocolConfig::Rdp(RdpConfig::default()),
+            ProtocolType::Vnc => ProtocolConfig::Vnc(VncConfig::default()),
+            ProtocolType::Spice => ProtocolConfig::Spice(rustconn_core::SpiceConfig::default()),
+            ProtocolType::ZeroTrust => ProtocolConfig::Ssh(SshConfig::default()),
+        };
+
+        let conn_id = manager
+            .create_connection(suffixed_name.clone(), host, 22, protocol_config)
+            .expect("Should create connection");
+
+        // Since base_name is unique, normalize should remove the entire suffix
+        let normalized = manager.normalize_name(&suffixed_name, conn_id);
+
+        // The normalized name should be the base name
+        prop_assert_eq!(
+            &normalized, &base_name,
+            "Normalized name '{}' should equal base name '{}' when base is unique",
+            normalized, base_name
         );
     }
 }

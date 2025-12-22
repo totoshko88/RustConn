@@ -64,6 +64,7 @@ impl ProtocolRegistry {
             ProtocolType::Rdp => "rdp",
             ProtocolType::Vnc => "vnc",
             ProtocolType::Spice => "spice",
+            ProtocolType::ZeroTrust => "zerotrust",
         };
         self.protocols.get(id).cloned()
     }

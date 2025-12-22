@@ -6,8 +6,9 @@
 use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::{
-    Box as GtkBox, Button, CheckButton, Entry, Grid, HeaderBar, Label, Orientation, Window,
+    Box as GtkBox, Button, CheckButton, Entry, Grid, HeaderBar, Label, Orientation, Spinner, Window,
 };
+use rustconn_core::CancellationToken;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -22,6 +23,8 @@ pub struct PasswordDialogResult {
     pub domain: String,
     /// Whether to save credentials
     pub save_credentials: bool,
+    /// Whether the user requested migration to `KeePass`
+    pub migrate_to_keepass: bool,
 }
 
 /// Password prompt dialog
@@ -30,9 +33,16 @@ pub struct PasswordDialog {
     username_entry: Entry,
     password_entry: Entry,
     domain_entry: Entry,
-    #[allow(dead_code)]
     save_check: CheckButton,
+    migrate_button: Button,
+    connect_button: Button,
+    spinner: Spinner,
+    spinner_label: Label,
+    spinner_box: GtkBox,
     result: Rc<RefCell<Option<PasswordDialogResult>>>,
+    migrate_requested: Rc<RefCell<bool>>,
+    /// Cancellation token for pending async operations
+    cancel_token: Rc<RefCell<Option<CancellationToken>>>,
 }
 
 impl PasswordDialog {
@@ -77,6 +87,20 @@ impl PasswordDialog {
             .css_classes(["dim-label"])
             .build();
         content.append(&info_label);
+
+        // Loading indicator box (hidden by default)
+        let spinner_box = GtkBox::new(Orientation::Horizontal, 8);
+        spinner_box.set_halign(gtk4::Align::Center);
+        spinner_box.set_visible(false);
+
+        let spinner = Spinner::builder().spinning(false).build();
+        let spinner_label = Label::builder()
+            .label("Resolving credentials...")
+            .css_classes(["dim-label"])
+            .build();
+        spinner_box.append(&spinner);
+        spinner_box.append(&spinner_label);
+        content.append(&spinner_box);
 
         // Grid for fields
         let grid = Grid::builder().row_spacing(8).column_spacing(12).build();
@@ -126,19 +150,33 @@ impl PasswordDialog {
         row += 1;
 
         // Save credentials checkbox
-        let save_check = CheckButton::builder()
-            .label("Save credentials to keyring")
-            .build();
+        let save_check = CheckButton::builder().label("Save Credentials").build();
         grid.attach(&save_check, 1, row, 1, 1);
+        row += 1;
+
+        // Save to KeePass button (hidden by default)
+        let migrate_button = Button::builder()
+            .label("Save to KeePass")
+            .tooltip_text("Migrate credentials from system keyring to KeePass")
+            .visible(false)
+            .build();
+        grid.attach(&migrate_button, 1, row, 1, 1);
 
         window.set_child(Some(&content));
 
         let result: Rc<RefCell<Option<PasswordDialogResult>>> = Rc::new(RefCell::new(None));
+        let migrate_requested: Rc<RefCell<bool>> = Rc::new(RefCell::new(false));
 
         // Connect cancel
         let window_clone = window.clone();
         cancel_btn.connect_clicked(move |_| {
             window_clone.close();
+        });
+
+        // Connect migrate button
+        let migrate_requested_clone = migrate_requested.clone();
+        migrate_button.connect_clicked(move |_| {
+            *migrate_requested_clone.borrow_mut() = true;
         });
 
         // Connect connect button
@@ -148,20 +186,23 @@ impl PasswordDialog {
         let domain_clone = domain_entry.clone();
         let save_clone = save_check.clone();
         let result_clone = result.clone();
-        connect_btn.connect_clicked(move |_| {
+        let migrate_requested_clone = migrate_requested.clone();
+        let connect_btn_clone = connect_btn.clone();
+        connect_btn_clone.connect_clicked(move |_| {
             *result_clone.borrow_mut() = Some(PasswordDialogResult {
                 username: username_clone.text().to_string(),
                 password: password_clone.text().to_string(),
                 domain: domain_clone.text().to_string(),
                 save_credentials: save_clone.is_active(),
+                migrate_to_keepass: *migrate_requested_clone.borrow(),
             });
             window_clone.close();
         });
 
         // Connect Enter key in password field
-        let connect_btn_clone = connect_btn;
+        let connect_btn_for_enter = connect_btn.clone();
         password_entry.connect_activate(move |_| {
-            connect_btn_clone.emit_clicked();
+            connect_btn_for_enter.emit_clicked();
         });
 
         Self {
@@ -170,7 +211,14 @@ impl PasswordDialog {
             password_entry,
             domain_entry,
             save_check,
+            migrate_button,
+            connect_button: connect_btn,
+            spinner,
+            spinner_label,
+            spinner_box,
             result,
+            migrate_requested,
+            cancel_token: Rc::new(RefCell::new(None)),
         }
     }
 
@@ -184,9 +232,46 @@ impl PasswordDialog {
         self.domain_entry.set_text(domain);
     }
 
+    /// Sets the initial password
+    pub fn set_password(&self, password: &str) {
+        self.password_entry.set_text(password);
+    }
+
     /// Sets the connection name in the title
     pub fn set_connection_name(&self, name: &str) {
         self.window.set_title(Some(&format!("Connect to {name}")));
+    }
+
+    /// Shows or hides the "Save to `KeePass`" migration button
+    ///
+    /// This button should be shown when:
+    /// - `KeePass` integration is enabled
+    /// - Credentials exist in Keyring but not in `KeePass`
+    ///
+    /// # Requirements Coverage
+    /// - Requirement 3.3: Display "Save to `KeePass`" button when migration is needed
+    pub fn set_show_migrate_button(&self, show: bool) {
+        self.migrate_button.set_visible(show);
+    }
+
+    /// Pre-fills the dialog fields from connection settings
+    ///
+    /// This method populates the username and domain fields from the
+    /// connection's saved settings, allowing users to only enter the password.
+    ///
+    /// # Requirements Coverage
+    /// - Requirement 2.4: Pre-fill username and domain from saved connection settings
+    ///
+    /// # Arguments
+    /// * `username` - Optional username from connection settings
+    /// * `domain` - Optional domain from connection settings
+    pub fn prefill_from_connection(&self, username: Option<&str>, domain: Option<&str>) {
+        if let Some(user) = username {
+            self.username_entry.set_text(user);
+        }
+        if let Some(dom) = domain {
+            self.domain_entry.set_text(dom);
+        }
     }
 
     /// Shows the dialog and calls callback with result
@@ -214,5 +299,125 @@ impl PasswordDialog {
     #[must_use]
     pub const fn window(&self) -> &Window {
         &self.window
+    }
+
+    /// Shows the loading indicator during async credential resolution
+    ///
+    /// This method displays a spinner and message while credentials are being
+    /// resolved asynchronously, preventing UI freezing.
+    ///
+    /// # Requirements Coverage
+    /// - Requirement 9.3: Show loading indicator during async resolution
+    pub fn show_loading(&self, message: Option<&str>) {
+        let msg = message.unwrap_or("Resolving credentials...");
+        self.spinner_label.set_text(msg);
+        self.spinner.set_spinning(true);
+        self.spinner_box.set_visible(true);
+        self.connect_button.set_sensitive(false);
+    }
+
+    /// Hides the loading indicator
+    ///
+    /// This method hides the spinner and re-enables the connect button
+    /// after async credential resolution completes.
+    ///
+    /// # Requirements Coverage
+    /// - Requirement 9.3: Hide loading indicator when resolution completes
+    pub fn hide_loading(&self) {
+        self.spinner.set_spinning(false);
+        self.spinner_box.set_visible(false);
+        self.connect_button.set_sensitive(true);
+    }
+
+    /// Shows an error message without freezing the UI
+    ///
+    /// This method displays an error message in the loading area
+    /// when credential resolution fails.
+    ///
+    /// # Requirements Coverage
+    /// - Requirement 9.4: Display error message without freezing UI
+    pub fn show_error(&self, message: &str) {
+        self.spinner.set_spinning(false);
+        self.spinner_label.set_text(message);
+        self.spinner_label.add_css_class("error");
+        self.spinner_box.set_visible(true);
+        self.connect_button.set_sensitive(true);
+    }
+
+    /// Clears any error message
+    pub fn clear_error(&self) {
+        self.spinner_label.remove_css_class("error");
+        self.spinner_box.set_visible(false);
+    }
+
+    /// Returns a reference to the connect button for external control
+    #[must_use]
+    pub const fn connect_button(&self) -> &Button {
+        &self.connect_button
+    }
+
+    /// Sets the cancellation token for pending async operations
+    ///
+    /// When the dialog is closed, this token will be cancelled to stop
+    /// any pending credential resolution operations.
+    ///
+    /// # Requirements Coverage
+    /// - Requirement 9.5: Support cancellation of pending requests
+    pub fn set_cancel_token(&self, token: CancellationToken) {
+        *self.cancel_token.borrow_mut() = Some(token);
+    }
+
+    /// Cancels any pending async operations
+    ///
+    /// This method should be called when the dialog is closed to cancel
+    /// any pending credential resolution operations.
+    ///
+    /// # Requirements Coverage
+    /// - Requirement 9.5: Cancel on dialog close
+    pub fn cancel_pending_operations(&self) {
+        if let Some(token) = self.cancel_token.borrow().as_ref() {
+            token.cancel();
+        }
+    }
+
+    /// Clears the cancellation token
+    pub fn clear_cancel_token(&self) {
+        *self.cancel_token.borrow_mut() = None;
+    }
+
+    /// Shows the dialog with cancellation support
+    ///
+    /// This method shows the dialog and automatically cancels any pending
+    /// operations when the dialog is closed.
+    ///
+    /// # Requirements Coverage
+    /// - Requirement 9.5: Cancel on dialog close
+    pub fn show_with_cancellation<F: Fn(Option<PasswordDialogResult>) + 'static>(
+        &self,
+        callback: F,
+    ) {
+        let result = self.result.clone();
+        let cancel_token = self.cancel_token.clone();
+        let callback = Rc::new(callback);
+
+        self.window.connect_close_request(move |_| {
+            // Cancel any pending operations when dialog closes
+            if let Some(token) = cancel_token.borrow().as_ref() {
+                token.cancel();
+            }
+
+            let res = result.borrow().clone();
+            callback(res);
+            glib::Propagation::Proceed
+        });
+
+        self.window.present();
+
+        // Focus password field if username is set
+        if self.username_entry.text().is_empty() {
+            self.username_entry.grab_focus();
+        } else {
+            self.password_entry.grab_focus();
+        }
     }
 }

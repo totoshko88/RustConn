@@ -11,6 +11,7 @@ use uuid::Uuid;
 use crate::config::ConfigManager;
 use crate::error::{ConfigError, ConfigResult};
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig};
+use crate::performance::memory_optimizer;
 
 /// Manager for connection CRUD operations
 ///
@@ -30,6 +31,8 @@ impl ConnectionManager {
     /// Creates a new `ConnectionManager` with the given `ConfigManager`
     ///
     /// Loads existing connections and groups from storage.
+    /// Interns frequently repeated strings (protocol names, hostnames, usernames)
+    /// for memory efficiency.
     ///
     /// # Errors
     ///
@@ -37,6 +40,11 @@ impl ConnectionManager {
     pub fn new(config_manager: ConfigManager) -> ConfigResult<Self> {
         let connections_vec = config_manager.load_connections()?;
         let groups_vec = config_manager.load_groups()?;
+
+        // Intern strings for memory efficiency
+        for conn in &connections_vec {
+            Self::intern_connection_strings(conn);
+        }
 
         let connections = connections_vec.into_iter().map(|c| (c.id, c)).collect();
 
@@ -49,8 +57,9 @@ impl ConnectionManager {
         })
     }
 
-    /// Creates a new ConnectionManager with empty storage (for testing)
+    /// Creates a new `ConnectionManager` with empty storage (for testing)
     #[cfg(test)]
+    #[must_use]
     pub fn new_empty(config_manager: ConfigManager) -> Self {
         Self {
             connections: HashMap::new(),
@@ -87,6 +96,9 @@ impl ConnectionManager {
         let connection = Connection::new(name, host, port, protocol_config);
         ConfigManager::validate_connection(&connection)?;
 
+        // Intern strings for memory efficiency
+        Self::intern_connection_strings(&connection);
+
         let id = connection.id;
         self.connections.insert(id, connection);
         self.persist_connections()?;
@@ -103,6 +115,9 @@ impl ConnectionManager {
     /// Returns an error if validation fails or persistence fails.
     pub fn create_connection_from(&mut self, connection: Connection) -> ConfigResult<Uuid> {
         ConfigManager::validate_connection(&connection)?;
+
+        // Intern strings for memory efficiency
+        Self::intern_connection_strings(&connection);
 
         let id = connection.id;
         self.connections.insert(id, connection);
@@ -134,6 +149,9 @@ impl ConnectionManager {
         updated.touch();
 
         ConfigManager::validate_connection(&updated)?;
+
+        // Intern strings for memory efficiency
+        Self::intern_connection_strings(&updated);
 
         self.connections.insert(id, updated);
         self.persist_connections()?;
@@ -380,15 +398,12 @@ impl ConnectionManager {
     }
 
     /// Counts connections in a group (including child groups)
-    #[must_use] 
+    #[must_use]
     pub fn count_connections_in_group(&self, group_id: Uuid) -> usize {
         let groups = self.collect_descendant_groups(group_id);
         self.connections
             .values()
-            .filter(|conn| {
-                conn.group_id
-                    .is_some_and(|gid| groups.contains(&gid))
-            })
+            .filter(|conn| conn.group_id.is_some_and(|gid| groups.contains(&gid)))
             .count()
     }
 
@@ -713,11 +728,35 @@ impl ConnectionManager {
         let connections_vec = self.config_manager.load_connections()?;
         let groups_vec = self.config_manager.load_groups()?;
 
+        // Intern strings for memory efficiency
+        for conn in &connections_vec {
+            Self::intern_connection_strings(conn);
+        }
+
         self.connections = connections_vec.into_iter().map(|c| (c.id, c)).collect();
 
         self.groups = groups_vec.into_iter().map(|g| (g.id, g)).collect();
 
         Ok(())
+    }
+
+    /// Interns frequently repeated strings from a connection for memory efficiency
+    ///
+    /// This method interns protocol names, hostnames, and usernames which are
+    /// often repeated across many connections.
+    fn intern_connection_strings(conn: &Connection) {
+        let interner = memory_optimizer().interner();
+
+        // Intern protocol names (frequently repeated)
+        let _ = interner.intern(conn.protocol.as_str());
+
+        // Intern hostnames (often repeated across connections)
+        let _ = interner.intern(&conn.host);
+
+        // Intern usernames if present
+        if let Some(ref username) = conn.username {
+            let _ = interner.intern(username);
+        }
     }
 
     // ========== Sorting Operations ==========
@@ -1054,10 +1093,7 @@ impl ConnectionManager {
         }
 
         // Get target's sort_order
-        let target_sort_order = self
-            .connections
-            .get(&target_id)
-            .map_or(0, |c| c.sort_order);
+        let target_sort_order = self.connections.get(&target_id).map_or(0, |c| c.sort_order);
 
         // Get all connections in the same group, sorted by sort_order
         let mut group_connections: Vec<_> = self
@@ -1136,10 +1172,7 @@ impl ConnectionManager {
         }
 
         // Get target's sort_order
-        let target_sort_order = self
-            .groups
-            .get(&target_id)
-            .map_or(0, |g| g.sort_order);
+        let target_sort_order = self.groups.get(&target_id).map_or(0, |g| g.sort_order);
 
         // Get all sibling groups, sorted by sort_order
         let mut sibling_groups: Vec<_> = self
@@ -1172,6 +1205,146 @@ impl ConnectionManager {
 
         self.persist_groups()?;
         Ok(())
+    }
+
+    // ========== Connection Naming Operations ==========
+
+    /// Generates a unique name for a connection
+    ///
+    /// If the base name already exists, appends a protocol suffix (e.g., "server (RDP)").
+    /// If that still exists, appends a numeric suffix (e.g., "server (RDP) 2").
+    ///
+    /// # Arguments
+    ///
+    /// * `base_name` - The desired name for the connection
+    /// * `protocol` - The protocol type for the connection
+    ///
+    /// # Returns
+    ///
+    /// A unique name that doesn't conflict with existing connections
+    #[must_use]
+    pub fn generate_unique_name(
+        &self,
+        base_name: &str,
+        protocol: crate::models::ProtocolType,
+    ) -> String {
+        // Check if base name is unique
+        if !self.name_exists(base_name, None) {
+            return base_name.to_string();
+        }
+
+        // Try with protocol suffix
+        let name_with_protocol = format!("{base_name} ({protocol})");
+        if !self.name_exists(&name_with_protocol, None) {
+            return name_with_protocol;
+        }
+
+        // Try with numeric suffix
+        let mut counter = 2u32;
+        loop {
+            let name_with_number = format!("{name_with_protocol} {counter}");
+            if !self.name_exists(&name_with_number, None) {
+                return name_with_number;
+            }
+            counter += 1;
+            // Safety limit to prevent infinite loop
+            if counter > 1000 {
+                // Fall back to UUID suffix
+                return format!("{} ({})", base_name, uuid::Uuid::new_v4());
+            }
+        }
+    }
+
+    /// Checks if a connection name already exists
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name to check
+    /// * `exclude_id` - Optional ID to exclude from the check (for updates)
+    ///
+    /// # Returns
+    ///
+    /// `true` if a connection with this name exists (excluding the specified ID)
+    #[must_use]
+    pub fn name_exists(&self, name: &str, exclude_id: Option<Uuid>) -> bool {
+        self.connections
+            .values()
+            .any(|c| c.name.eq_ignore_ascii_case(name) && (exclude_id != Some(c.id)))
+    }
+
+    /// Checks if a name needs deduplication
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name to check
+    /// * `exclude_id` - Optional ID to exclude from the check
+    ///
+    /// # Returns
+    ///
+    /// `true` if the name conflicts with an existing connection
+    #[must_use]
+    pub fn needs_deduplication(&self, name: &str, exclude_id: Option<Uuid>) -> bool {
+        self.name_exists(name, exclude_id)
+    }
+
+    /// Normalizes a connection name by removing auto-generated suffixes if the base name is now unique
+    ///
+    /// Auto-generated suffixes follow the pattern:
+    /// - " (PROTOCOL)" - e.g., " (SSH)", " (RDP)", " (VNC)"
+    /// - " (PROTOCOL) N" - e.g., " (SSH) 2", " (RDP) 3"
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The current name of the connection
+    /// * `connection_id` - The ID of the connection being renamed (to exclude from uniqueness check)
+    ///
+    /// # Returns
+    ///
+    /// The normalized name with suffix removed if the base name is now unique,
+    /// otherwise returns the original name
+    #[must_use]
+    pub fn normalize_name(&self, name: &str, connection_id: Uuid) -> String {
+        // Try to extract base name by removing auto-generated suffixes
+        if let Some(base_name) = Self::extract_base_name(name) {
+            // Check if the base name is now unique (excluding this connection)
+            if !self.name_exists(&base_name, Some(connection_id)) {
+                return base_name;
+            }
+        }
+
+        // Return original name if no normalization possible
+        name.to_string()
+    }
+
+    /// Extracts the base name from a potentially suffixed name
+    ///
+    /// Handles patterns like:
+    /// - "server (SSH)" -> "server"
+    /// - "server (RDP) 2" -> "server"
+    /// - "server" -> None (no suffix to remove)
+    fn extract_base_name(name: &str) -> Option<String> {
+        // Pattern: "base (PROTOCOL) N" or "base (PROTOCOL)"
+        let protocols = ["SSH", "RDP", "VNC", "SPICE", "Zero Trust"];
+
+        for protocol in protocols {
+            // Check for " (PROTOCOL) N" pattern
+            let suffix_with_number = format!(" ({protocol}) ");
+            if let Some(pos) = name.find(&suffix_with_number) {
+                // Verify the rest is a number
+                let after_suffix = &name[pos + suffix_with_number.len()..];
+                if after_suffix.chars().all(|c| c.is_ascii_digit()) && !after_suffix.is_empty() {
+                    return Some(name[..pos].to_string());
+                }
+            }
+
+            // Check for " (PROTOCOL)" pattern at the end
+            let suffix = format!(" ({protocol})");
+            if name.ends_with(&suffix) {
+                return Some(name[..name.len() - suffix.len()].to_string());
+            }
+        }
+
+        None
     }
 }
 
@@ -1407,5 +1580,192 @@ mod tests {
 
         manager.create_group("Root".to_string()).unwrap();
         assert!(manager.validate_hierarchy());
+    }
+
+    // ========== Connection Naming Tests ==========
+
+    #[test]
+    fn test_generate_unique_name_no_conflict() {
+        let (manager, _temp) = create_test_manager();
+
+        let name = manager.generate_unique_name("server", crate::models::ProtocolType::Ssh);
+        assert_eq!(name, "server");
+    }
+
+    #[test]
+    fn test_generate_unique_name_with_protocol_suffix() {
+        let (mut manager, _temp) = create_test_manager();
+
+        // Create a connection with the base name
+        manager
+            .create_connection(
+                "server".to_string(),
+                "example.com".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            )
+            .unwrap();
+
+        // Generate unique name for RDP connection with same base name
+        let name = manager.generate_unique_name("server", crate::models::ProtocolType::Rdp);
+        assert_eq!(name, "server (RDP)");
+    }
+
+    #[test]
+    fn test_generate_unique_name_with_numeric_suffix() {
+        let (mut manager, _temp) = create_test_manager();
+
+        // Create connections with base name and protocol suffix
+        manager
+            .create_connection(
+                "server".to_string(),
+                "example.com".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            )
+            .unwrap();
+
+        manager
+            .create_connection(
+                "server (SSH)".to_string(),
+                "example2.com".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            )
+            .unwrap();
+
+        // Generate unique name - should get numeric suffix
+        let name = manager.generate_unique_name("server", crate::models::ProtocolType::Ssh);
+        assert_eq!(name, "server (SSH) 2");
+    }
+
+    #[test]
+    fn test_name_exists() {
+        let (mut manager, _temp) = create_test_manager();
+
+        let id = manager
+            .create_connection(
+                "Test Server".to_string(),
+                "example.com".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            )
+            .unwrap();
+
+        // Name should exist
+        assert!(manager.name_exists("Test Server", None));
+        // Case insensitive
+        assert!(manager.name_exists("test server", None));
+        // Different name should not exist
+        assert!(!manager.name_exists("Other Server", None));
+        // Should not exist when excluding the connection
+        assert!(!manager.name_exists("Test Server", Some(id)));
+    }
+
+    #[test]
+    fn test_normalize_name_removes_protocol_suffix() {
+        let (mut manager, _temp) = create_test_manager();
+
+        // Create a connection with protocol suffix
+        let id = manager
+            .create_connection(
+                "server (SSH)".to_string(),
+                "example.com".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            )
+            .unwrap();
+
+        // Base name "server" is now unique, so suffix should be removed
+        let normalized = manager.normalize_name("server (SSH)", id);
+        assert_eq!(normalized, "server");
+    }
+
+    #[test]
+    fn test_normalize_name_removes_numeric_suffix() {
+        let (mut manager, _temp) = create_test_manager();
+
+        // Create a connection with numeric suffix
+        let id = manager
+            .create_connection(
+                "server (SSH) 2".to_string(),
+                "example.com".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            )
+            .unwrap();
+
+        // Base name "server" is now unique, so suffix should be removed
+        let normalized = manager.normalize_name("server (SSH) 2", id);
+        assert_eq!(normalized, "server");
+    }
+
+    #[test]
+    fn test_normalize_name_keeps_suffix_when_conflict() {
+        let (mut manager, _temp) = create_test_manager();
+
+        // Create two connections
+        manager
+            .create_connection(
+                "server".to_string(),
+                "example.com".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            )
+            .unwrap();
+
+        let id2 = manager
+            .create_connection(
+                "server (SSH)".to_string(),
+                "example2.com".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            )
+            .unwrap();
+
+        // Base name "server" is taken, so suffix should be kept
+        let normalized = manager.normalize_name("server (SSH)", id2);
+        assert_eq!(normalized, "server (SSH)");
+    }
+
+    #[test]
+    fn test_extract_base_name() {
+        // Test protocol suffix extraction
+        assert_eq!(
+            ConnectionManager::extract_base_name("server (SSH)"),
+            Some("server".to_string())
+        );
+        assert_eq!(
+            ConnectionManager::extract_base_name("server (RDP)"),
+            Some("server".to_string())
+        );
+        assert_eq!(
+            ConnectionManager::extract_base_name("server (VNC)"),
+            Some("server".to_string())
+        );
+        assert_eq!(
+            ConnectionManager::extract_base_name("server (SPICE)"),
+            Some("server".to_string())
+        );
+
+        // Test numeric suffix extraction
+        assert_eq!(
+            ConnectionManager::extract_base_name("server (SSH) 2"),
+            Some("server".to_string())
+        );
+        assert_eq!(
+            ConnectionManager::extract_base_name("server (RDP) 10"),
+            Some("server".to_string())
+        );
+
+        // Test no suffix
+        assert_eq!(ConnectionManager::extract_base_name("server"), None);
+        assert_eq!(ConnectionManager::extract_base_name("my server name"), None);
+
+        // Test partial matches that shouldn't extract
+        assert_eq!(
+            ConnectionManager::extract_base_name("server (custom)"),
+            None
+        );
     }
 }

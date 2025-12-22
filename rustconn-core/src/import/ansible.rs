@@ -39,7 +39,7 @@ impl AnsibleInventoryImporter {
     }
 
     /// Parses inventory content (auto-detects format)
-    #[must_use] 
+    #[must_use]
     pub fn parse_inventory(&self, content: &str, source_path: &str) -> ImportResult {
         // Try YAML first, then INI
         if content.trim().starts_with("---") || content.contains("hosts:") {
@@ -50,7 +50,7 @@ impl AnsibleInventoryImporter {
     }
 
     /// Parses INI-style Ansible inventory
-    #[must_use] 
+    #[must_use]
     pub fn parse_ini_inventory(&self, content: &str, source_path: &str) -> ImportResult {
         let mut result = ImportResult::new();
         let mut current_group: Option<(String, Uuid)> = None;
@@ -221,7 +221,7 @@ impl AnsibleInventoryImporter {
     }
 
     /// Parses YAML-style Ansible inventory
-    #[must_use] 
+    #[must_use]
     pub fn parse_yaml_inventory(&self, content: &str, source_path: &str) -> ImportResult {
         let mut result = ImportResult::new();
 
@@ -351,7 +351,8 @@ impl AnsibleInventoryImporter {
                         serde_yaml::Value::Mapping(vars) => {
                             let hostname = vars
                                 .get(serde_yaml::Value::String("ansible_host".to_string()))
-                                .and_then(|v| v.as_str()).map_or_else(|| name.clone(), String::from);
+                                .and_then(|v| v.as_str())
+                                .map_or_else(|| name.clone(), String::from);
 
                             #[allow(clippy::cast_possible_truncation)]
                             let port = vars
@@ -501,14 +502,14 @@ mod tests {
     #[test]
     fn test_parse_ini_simple() {
         let importer = AnsibleInventoryImporter::new();
-        let content = r#"
+        let content = r"
 [webservers]
 web1.example.com
 web2.example.com ansible_host=192.168.1.2 ansible_port=2222
 
 [dbservers]
 db1.example.com ansible_user=postgres
-"#;
+";
 
         let result = importer.parse_ini_inventory(content, "test");
         assert_eq!(result.groups.len(), 2);
@@ -535,7 +536,7 @@ db1.example.com ansible_user=postgres
     #[test]
     fn test_parse_yaml_simple() {
         let importer = AnsibleInventoryImporter::new();
-        let content = r#"
+        let content = r"
 all:
   children:
     webservers:
@@ -549,7 +550,7 @@ all:
       hosts:
         db1.example.com:
           ansible_user: postgres
-"#;
+";
 
         let result = importer.parse_yaml_inventory(content, "test");
         assert_eq!(result.groups.len(), 2);
@@ -559,10 +560,10 @@ all:
     #[test]
     fn test_skip_host_ranges() {
         let importer = AnsibleInventoryImporter::new();
-        let content = r#"
+        let content = r"
 [webservers]
 web[1:10].example.com
-"#;
+";
 
         let result = importer.parse_ini_inventory(content, "test");
         assert_eq!(result.connections.len(), 0);

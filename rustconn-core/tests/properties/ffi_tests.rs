@@ -311,8 +311,12 @@ fn test_vnc_display_lifecycle() {
     assert_eq!(display.connection_state(), ConnectionState::Connecting);
 
     // Set credentials
-    display.set_credential(VncCredentialType::Password, "test").unwrap();
-    display.set_credential(VncCredentialType::Username, "user").unwrap();
+    display
+        .set_credential(VncCredentialType::Password, "test")
+        .unwrap();
+    display
+        .set_credential(VncCredentialType::Username, "user")
+        .unwrap();
 
     // Configure scaling
     display.set_scaling(true);
@@ -366,7 +370,6 @@ fn test_vnc_display_signal_callbacks() {
     assert!(!auth_called.get());
     assert!(!auth_failure_called.get());
 }
-
 
 // ============================================================================
 // Property Tests for RDP Display
@@ -681,7 +684,6 @@ fn test_rdp_display_signal_callbacks() {
     assert!(!error_called.get());
 }
 
-
 // ============================================================================
 // Property Tests for SPICE Display TLS Validation
 // **Feature: native-protocol-embedding, Property 9: TLS certificate validation respects configuration**
@@ -695,13 +697,16 @@ fn arb_ca_cert_path() -> impl Strategy<Value = PathBuf> {
 
 /// Strategy for generating SPICE TLS configurations
 fn arb_spice_tls_config() -> impl Strategy<Value = SpiceTlsConfig> {
-    (any::<bool>(), prop::option::of(arb_ca_cert_path()), any::<bool>()).prop_map(
-        |(enabled, ca_cert_path, skip_cert_verify)| SpiceTlsConfig {
+    (
+        any::<bool>(),
+        prop::option::of(arb_ca_cert_path()),
+        any::<bool>(),
+    )
+        .prop_map(|(enabled, ca_cert_path, skip_cert_verify)| SpiceTlsConfig {
             enabled,
             ca_cert_path,
             skip_cert_verify,
-        },
-    )
+        })
 }
 
 proptest! {
@@ -938,7 +943,6 @@ fn test_spice_display_tls_enforcement() {
     let result = display.open(&config);
     assert!(result.is_ok());
 }
-
 
 // ============================================================================
 // Property Tests for SPICE Display Widget Creation

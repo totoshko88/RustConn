@@ -64,7 +64,6 @@ impl DisplayServer {
     }
 }
 
-
 /// Error type for embedding operations
 #[derive(Debug, Clone)]
 pub enum EmbeddingError {
@@ -175,14 +174,12 @@ impl Default for SessionControls {
     }
 }
 
-
 /// Embedded session tab for RDP/VNC connections
 pub struct EmbeddedSessionTab {
     id: Uuid,
     connection_id: Uuid,
     protocol: String,
     container: GtkBox,
-    #[allow(dead_code)]
     embed_area: DrawingArea,
     controls: SessionControls,
     process: Rc<RefCell<Option<Child>>>,
@@ -227,38 +224,64 @@ impl EmbeddedSessionTab {
             let protocol_clone = protocol.to_string();
             let name_clone = connection_name.to_string();
             embed_area.set_draw_func(move |_area, cr, width, height| {
-                cr.set_source_rgb(0.15, 0.15, 0.15);
+                // Dark background
+                cr.set_source_rgb(0.12, 0.12, 0.14);
                 let _ = cr.paint();
 
-                cr.set_source_rgb(0.7, 0.7, 0.7);
                 cr.select_font_face(
                     "Sans",
                     gtk4::cairo::FontSlant::Normal,
                     gtk4::cairo::FontWeight::Normal,
                 );
 
-                cr.set_font_size(24.0);
-                let title = format!("{} Session", protocol_clone.to_uppercase());
-                let extents = cr.text_extents(&title).unwrap();
-                let x = (f64::from(width) - extents.width()) / 2.0;
-                let y = f64::from(height) / 2.0 - 30.0;
-                cr.move_to(x, y);
-                let _ = cr.show_text(&title);
+                // Icon placeholder (circle with protocol letter)
+                let center_y = f64::from(height) / 2.0 - 40.0;
+                cr.set_source_rgb(0.3, 0.5, 0.7);
+                cr.arc(
+                    f64::from(width) / 2.0,
+                    center_y,
+                    40.0,
+                    0.0,
+                    2.0 * std::f64::consts::PI,
+                );
+                let _ = cr.fill();
 
-                cr.set_font_size(16.0);
+                cr.set_source_rgb(1.0, 1.0, 1.0);
+                cr.set_font_size(32.0);
+                let letter = protocol_clone
+                    .chars()
+                    .next()
+                    .unwrap_or('?')
+                    .to_uppercase()
+                    .to_string();
+                let extents = cr.text_extents(&letter).unwrap();
+                cr.move_to(
+                    f64::from(width) / 2.0 - extents.width() / 2.0,
+                    center_y + extents.height() / 2.0,
+                );
+                let _ = cr.show_text(&letter);
+
+                // Connection name
+                cr.set_source_rgb(0.9, 0.9, 0.9);
+                cr.set_font_size(18.0);
                 let extents = cr.text_extents(&name_clone).unwrap();
-                let x = (f64::from(width) - extents.width()) / 2.0;
-                let y = f64::from(height) / 2.0;
-                cr.move_to(x, y);
+                cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 70.0);
                 let _ = cr.show_text(&name_clone);
 
-                cr.set_font_size(12.0);
+                // Status message
+                cr.set_font_size(13.0);
+                cr.set_source_rgb(0.6, 0.8, 0.6);
+                let status = "Session running in separate window";
+                let extents = cr.text_extents(status).unwrap();
+                cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 100.0);
+                let _ = cr.show_text(status);
+
+                // Info text
+                cr.set_font_size(11.0);
                 cr.set_source_rgb(0.5, 0.5, 0.5);
-                let info = "Running in external window (Wayland does not support embedding)";
+                let info = "Close this tab to disconnect • Use Disconnect button to terminate";
                 let extents = cr.text_extents(info).unwrap();
-                let x = (f64::from(width) - extents.width()) / 2.0;
-                let y = f64::from(height) / 2.0 + 40.0;
-                cr.move_to(x, y);
+                cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 130.0);
                 let _ = cr.show_text(info);
             });
         }
@@ -338,7 +361,6 @@ impl EmbeddedSessionTab {
     }
 }
 
-
 /// RDP session launcher for embedded and external sessions
 pub struct RdpLauncher;
 
@@ -371,6 +393,53 @@ impl RdpLauncher {
         domain: Option<&str>,
         resolution: Option<(u32, u32)>,
         extra_args: &[String],
+    ) -> Result<(), EmbeddingError> {
+        Self::start_with_geometry(
+            tab,
+            host,
+            port,
+            username,
+            password,
+            domain,
+            resolution,
+            extra_args,
+            None,
+            true,
+            &[],
+        )
+    }
+
+    /// Starts an RDP session with window geometry support
+    ///
+    /// # Arguments
+    ///
+    /// * `tab` - The embedded session tab
+    /// * `host` - Target hostname
+    /// * `port` - Target port
+    /// * `username` - Optional username
+    /// * `password` - Optional password
+    /// * `domain` - Optional domain
+    /// * `resolution` - Optional resolution (width, height)
+    /// * `extra_args` - Extra `FreeRDP` arguments
+    /// * `window_geometry` - Optional window geometry (x, y, width, height)
+    /// * `remember_window_position` - Whether to apply window geometry
+    /// * `shared_folders` - Shared folders for drive redirection (`share_name`, `local_path`)
+    ///
+    /// # Errors
+    /// Returns error if the RDP client fails to start
+    #[allow(clippy::too_many_arguments)]
+    pub fn start_with_geometry(
+        tab: &EmbeddedSessionTab,
+        host: &str,
+        port: u16,
+        username: Option<&str>,
+        password: Option<&str>,
+        domain: Option<&str>,
+        resolution: Option<(u32, u32)>,
+        extra_args: &[String],
+        window_geometry: Option<(i32, i32, i32, i32)>,
+        remember_window_position: bool,
+        shared_folders: &[(String, std::path::PathBuf)],
     ) -> Result<(), EmbeddingError> {
         use std::process::Command;
 
@@ -406,7 +475,28 @@ impl RdpLauncher {
             cmd.arg("/h:720");
         }
 
+        // Security settings - ignore certificate warnings
         cmd.arg("/cert:ignore");
+        // Enable dynamic resolution for better display
+        cmd.arg("/dynamic-resolution");
+
+        // Add decorations flag for window controls (Requirement 6.1)
+        cmd.arg("/decorations");
+
+        // Add window geometry if saved and remember_window_position is enabled (Requirements 6.2, 6.3, 6.4)
+        if remember_window_position {
+            if let Some((x, y, _width, _height)) = window_geometry {
+                cmd.arg(format!("/x:{x}"));
+                cmd.arg(format!("/y:{y}"));
+            }
+        }
+
+        // Add shared folders for drive redirection
+        for (share_name, local_path) in shared_folders {
+            if local_path.exists() {
+                cmd.arg(format!("/drive:{},{}", share_name, local_path.display()));
+            }
+        }
 
         for arg in extra_args {
             cmd.arg(arg);

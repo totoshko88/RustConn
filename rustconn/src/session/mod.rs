@@ -130,31 +130,31 @@ pub enum SessionState {
 impl SessionState {
     /// Returns whether the session is in a connected state
     #[must_use]
-    pub fn is_connected(&self) -> bool {
+    pub const fn is_connected(&self) -> bool {
         matches!(self, Self::Connected)
     }
 
     /// Returns whether the session is in a connecting state
     #[must_use]
-    pub fn is_connecting(&self) -> bool {
+    pub const fn is_connecting(&self) -> bool {
         matches!(self, Self::Connecting)
     }
 
     /// Returns whether the session is in an authenticating state
     #[must_use]
-    pub fn is_authenticating(&self) -> bool {
+    pub const fn is_authenticating(&self) -> bool {
         matches!(self, Self::Authenticating)
     }
 
     /// Returns whether the session is disconnected
     #[must_use]
-    pub fn is_disconnected(&self) -> bool {
+    pub const fn is_disconnected(&self) -> bool {
         matches!(self, Self::Disconnected)
     }
 
     /// Returns whether the session is in an error state
     #[must_use]
-    pub fn is_error(&self) -> bool {
+    pub const fn is_error(&self) -> bool {
         matches!(self, Self::Error(_))
     }
 
@@ -167,7 +167,7 @@ impl SessionState {
     /// - Connected → Disconnected, Error
     /// - Error → Disconnected, Connecting
     #[must_use]
-    pub fn can_transition_to(&self, target: &Self) -> bool {
+    pub const fn can_transition_to(&self, target: &Self) -> bool {
         match (self, target) {
             // From Disconnected
             (Self::Disconnected, Self::Connecting) => true,
@@ -275,7 +275,7 @@ mod tests {
 
     #[test]
     fn test_session_state_default() {
-        let state: SessionState = Default::default();
+        let state: SessionState = SessionState::default();
         assert_eq!(state, SessionState::Disconnected);
     }
 
@@ -319,8 +319,11 @@ mod tests {
         assert!(SessionState::Connecting.can_transition_to(&SessionState::Authenticating));
         assert!(SessionState::Connecting.can_transition_to(&SessionState::Connected));
         assert!(SessionState::Connecting.can_transition_to(&SessionState::Disconnected));
-        assert!(SessionState::Connecting
-            .can_transition_to(&SessionState::Error(SessionError::connection_failed("test"))));
+        assert!(
+            SessionState::Connecting.can_transition_to(&SessionState::Error(
+                SessionError::connection_failed("test")
+            ))
+        );
 
         // From Authenticating
         assert!(SessionState::Authenticating.can_transition_to(&SessionState::Connected));

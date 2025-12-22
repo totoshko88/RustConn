@@ -110,6 +110,9 @@ impl SelectionState {
     }
 
     /// Returns the total number of items
+    ///
+    /// Reserved for future use in property tests that need to verify
+    /// selection bounds against total item count.
     #[allow(dead_code)]
     pub fn item_count(&self) -> usize {
         self.items.len()

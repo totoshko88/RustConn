@@ -8,6 +8,6 @@ mod manager;
 #[allow(clippy::module_inception)]
 mod session;
 
-pub use logger::SessionLogger;
+pub use logger::{LogConfig, LogContext, LogError, LogResult, SessionLogger};
 pub use manager::SessionManager;
 pub use session::{Session, SessionState, SessionType};

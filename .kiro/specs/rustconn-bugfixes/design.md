@@ -1,329 +1,495 @@
-# Design Document
+# Design Document: RustConn Bug Fixes and Improvements
 
 ## Overview
 
-This document describes the design for fixing bugs and adding enhancements to RustConn. The changes address:
-1. Connection dialog Save button not working
-2. Asbru-CM import issues
-3. Context menu operations not functioning
-4. Group-scoped sorting
-5. Drag-and-drop reordering
-6. Sort Recent feature
-7. Client detection in Settings
-8. Protocol selection in Quick Connect
-9. Wiring up unused code
+This design document describes the technical approach for implementing bug fixes, UI improvements, and new features for RustConn. The changes are organized into several categories: critical bug fixes, UX improvements, new features, and technical upgrades.
 
 ## Architecture
 
-The fixes primarily affect the GUI layer (`rustconn` crate) with some enhancements to the core library (`rustconn-core`).
+The changes integrate with the existing `rustconn-core` and `rustconn` crates following the established patterns:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     rustconn (GUI)                          │
-├─────────────────────────────────────────────────────────────┤
-│  window.rs      - Action handlers, context menu wiring      │
-│  sidebar.rs     - Drag-and-drop, sorting UI                 │
-│  dialogs/       - Connection, Settings, Quick Connect       │
-│  state.rs       - Connection operations                     │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   rustconn-core (Library)                   │
-├─────────────────────────────────────────────────────────────┤
-│  connection/manager.rs - Sorting, reordering logic          │
-│  import/asbru.rs       - Improved hostname extraction       │
-│  protocol/             - Client detection utilities         │
-│  models/connection.rs  - last_connected timestamp           │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                        rustconn (GUI)                           │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
+│  │ Tray (fix)  │  │ Sidebar DnD │  │ Clipboard   │             │
+│  └─────────────┘  └─────────────┘  └─────────────┘             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
+│  │ RDP Widget  │  │ VNC Widget  │  │ Tree State  │             │
+│  └─────────────┘  └─────────────┘  └─────────────┘             │
+├─────────────────────────────────────────────────────────────────┤
+│                      rustconn-core                              │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                    Export/Import                         │   │
+│  │  ┌───────────┐ ┌───────────┐ ┌───────────┐             │   │
+│  │  │ Native RCN│ │ Schema    │ │ Migration │             │   │
+│  │  └───────────┘ └───────────┘ └───────────┘             │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                    Protocol Enhancements                 │   │
+│  │  ┌───────────┐ ┌───────────┐ ┌───────────┐             │   │
+│  │  │SSH Options│ │CLI Output │ │ Icon Cache│             │   │
+│  │  └───────────┘ └───────────┘ └───────────┘             │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                    Embedded RDP/VNC                      │   │
+│  │  ┌───────────┐ ┌───────────┐ ┌───────────┐             │   │
+│  │  │ Subsurface│ │ FreeRDP   │ │ Input Fwd │             │   │
+│  │  └───────────┘ └───────────┘ └───────────┘             │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Components and Interfaces
 
-### 1. Connection Dialog Fix
+### 1. Tray Icon Fix (`rustconn/src/tray.rs`)
 
-The Save button click handler needs to be properly connected. The issue is in `run()` method where the button is found via `header.last_child()` which may not reliably find the Save button.
-
-**Solution**: Store reference to save button during construction and connect handler directly.
+The current implementation uses PNG fallback. We need to prioritize SVG loading:
 
 ```rust
-pub struct ConnectionDialog {
-    // ... existing fields
-    save_button: Button,  // Add explicit reference
-}
-```
-
-### 2. Asbru Import Enhancement
-
-Add fallback hostname extraction from additional fields:
-
-```rust
-impl AsbruImporter {
-    fn extract_hostname(&self, entry: &AsbruEntry) -> Option<String> {
-        // Try primary fields
-        entry.ip.as_ref()
-            .or(entry.host.as_ref())
-            // Try extracting from name if it looks like hostname
-            .or_else(|| self.extract_hostname_from_name(&entry.name))
-            // Try extracting from title
-            .or_else(|| self.extract_hostname_from_name(&entry.title))
-            .filter(|h| !h.is_empty() && h != "tmp")
-            .cloned()
+impl Tray for RustConnTray {
+    fn icon_name(&self) -> String {
+        // Return the icon name for theme lookup
+        "org.rustconn.RustConn".to_string()
     }
-    
-    fn extract_hostname_from_name(&self, name: &Option<String>) -> Option<&String> {
-        name.as_ref().filter(|n| {
-            // Check if name looks like a hostname (contains dots or is IP-like)
-            n.contains('.') || n.parse::<std::net::IpAddr>().is_ok()
-        })
+
+    fn icon_theme_path(&self) -> String {
+        // Return path to scalable/apps directory containing SVG
+        Self::find_icon_theme_path()
+    }
+}
+
+impl RustConnTray {
+    fn find_icon_theme_path() -> String {
+        // Priority order:
+        // 1. Development path: rustconn/assets/icons/hicolor
+        // 2. Installed path: /usr/share/icons/hicolor
+        // 3. XDG data dirs
     }
 }
 ```
 
-### 3. Context Menu Actions
+### 2. Drag-and-Drop Visual Feedback (`rustconn/src/sidebar.rs`)
 
-Wire up the existing action handlers properly. The actions are defined but `connect_selected` is empty.
+Add drop indicator line using GTK4's drag-and-drop API:
 
 ```rust
-fn connect_selected(state: &SharedAppState, sidebar: &SharedSidebar, notebook: &SharedNotebook) {
-    if let Some(item) = sidebar.get_selected_item() {
-        if !item.is_group() {
-            if let Ok(conn_id) = Uuid::parse_str(&item.id()) {
-                Self::start_connection(state, notebook, conn_id);
-            }
-        }
-    }
+/// Drop position indicator
+pub struct DropIndicator {
+    /// Position type: before, after, or into (for groups)
+    position: DropPosition,
+    /// Target row index
+    target_index: u32,
 }
-```
 
-### 4. Group-Scoped Sorting
+pub enum DropPosition {
+    Before,
+    After,
+    Into, // For dropping into groups
+}
 
-Add sorting methods to `ConnectionManager`:
-
-```rust
-impl ConnectionManager {
-    /// Sorts connections within a specific group
-    pub fn sort_group(&mut self, group_id: Uuid) -> Result<(), String> {
-        let connections = self.get_connections_by_group(group_id);
-        let mut sorted: Vec<_> = connections.iter().collect();
-        sorted.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+impl ConnectionSidebar {
+    fn setup_drop_indicator(&self) {
+        // Create a horizontal line widget for drop indication
+        let indicator = gtk4::Separator::new(Orientation::Horizontal);
+        indicator.add_css_class("drop-indicator");
+        indicator.set_visible(false);
         
-        for (idx, conn) in sorted.iter().enumerate() {
-            self.update_connection_sort_order(conn.id, idx as i32)?;
-        }
-        Ok(())
+        // Add CSS for styling
+        // .drop-indicator { background: @accent_color; min-height: 2px; }
     }
     
-    /// Sorts all connections globally
-    pub fn sort_all(&mut self) -> Result<(), String> {
-        // Sort root groups
-        let mut groups: Vec<_> = self.get_root_groups();
-        groups.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-        
-        for (idx, group) in groups.iter().enumerate() {
-            self.update_group_sort_order(group.id, idx as i32)?;
-            self.sort_group(group.id)?;
-        }
-        
-        // Sort ungrouped connections
-        let mut ungrouped: Vec<_> = self.get_ungrouped_connections();
-        ungrouped.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-        
-        for (idx, conn) in ungrouped.iter().enumerate() {
-            self.update_connection_sort_order(conn.id, idx as i32)?;
-        }
-        
-        Ok(())
+    fn update_drop_indicator(&self, y: f64, target_row: Option<&TreeListRow>) {
+        // Calculate position relative to row
+        // Show line above, below, or highlight group
     }
 }
 ```
 
-### 5. Drag-and-Drop Implementation
+### 3. GTK PopoverMenu Fix
 
-Implement the drag-and-drop handlers in sidebar:
-
-```rust
-// In setup_list_item
-drag_source.connect_prepare(|source, _x, _y| {
-    if let Some(item) = get_item_from_source(source) {
-        let data = format!("{}:{}", if item.is_group() { "group" } else { "conn" }, item.id());
-        Some(gdk::ContentProvider::for_value(&data.to_value()))
-    } else {
-        None
-    }
-});
-
-drop_target.connect_drop(|target, value, _x, _y| {
-    let data = value.get::<String>().ok()?;
-    let (item_type, item_id) = data.split_once(':')?;
-    let target_item = get_item_from_target(target)?;
-    
-    // Emit signal to handle reordering in window.rs
-    true
-});
-```
-
-### 6. Sort Recent Feature
-
-Add `last_connected` field to Connection model and sorting method:
+The warning occurs when popover is destroyed while still "active". Fix by properly managing lifecycle:
 
 ```rust
-// In models/connection.rs
-pub struct Connection {
-    // ... existing fields
-    pub last_connected: Option<DateTime<Utc>>,
-}
-
-// In connection/manager.rs
-impl ConnectionManager {
-    pub fn sort_by_recent(&mut self) -> Result<(), String> {
-        let mut connections: Vec<_> = self.list_connections().to_vec();
-        connections.sort_by(|a, b| {
-            match (&b.last_connected, &a.last_connected) {
-                (Some(b_time), Some(a_time)) => b_time.cmp(a_time),
-                (Some(_), None) => std::cmp::Ordering::Less,
-                (None, Some(_)) => std::cmp::Ordering::Greater,
-                (None, None) => a.name.cmp(&b.name),
-            }
-        });
-        
-        for (idx, conn) in connections.iter().enumerate() {
-            self.update_connection_sort_order(conn.id, idx as i32)?;
-        }
-        Ok(())
-    }
+fn show_context_menu_for_item(widget: &impl IsA<Widget>, x: f64, y: f64, is_group: bool) {
+    let popover = gtk4::Popover::new();
+    popover.set_parent(widget);
     
-    pub fn update_last_connected(&mut self, connection_id: Uuid) -> Result<(), String> {
-        if let Some(conn) = self.get_connection_mut(connection_id) {
-            conn.last_connected = Some(Utc::now());
-            self.save()?;
-        }
-        Ok(())
-    }
-}
-```
-
-### 7. Client Detection
-
-Add client detection module:
-
-```rust
-// In rustconn-core/src/protocol/detection.rs
-pub struct ClientInfo {
-    pub name: String,
-    pub path: Option<PathBuf>,
-    pub version: Option<String>,
-    pub installed: bool,
-}
-
-pub fn detect_ssh_client() -> ClientInfo {
-    detect_client("ssh", &["ssh", "openssh"], &["-V"])
-}
-
-pub fn detect_rdp_client() -> ClientInfo {
-    detect_client("xfreerdp", &["xfreerdp", "xfreerdp3"], &["--version"])
-        .or_else(|| detect_client("rdesktop", &["rdesktop"], &["--version"]))
-}
-
-pub fn detect_vnc_client() -> ClientInfo {
-    detect_client("vncviewer", &["vncviewer", "tigervnc"], &["-h"])
-}
-
-fn detect_client(name: &str, binaries: &[&str], version_args: &[&str]) -> ClientInfo {
-    for binary in binaries {
-        if let Ok(output) = Command::new(binary).args(version_args).output() {
-            let version = parse_version(&output.stderr, &output.stdout);
-            return ClientInfo {
-                name: name.to_string(),
-                path: which::which(binary).ok(),
-                version,
-                installed: true,
-            };
-        }
-    }
-    ClientInfo {
-        name: name.to_string(),
-        path: None,
-        version: None,
-        installed: false,
-    }
-}
-```
-
-### 8. Quick Connect Protocol Selection
-
-Update Quick Connect dialog to include protocol dropdown:
-
-```rust
-fn show_quick_connect_dialog(window: &ApplicationWindow, notebook: SharedNotebook) {
-    let dialog = Window::builder()
-        .title("Quick Connect")
-        .modal(true)
-        .transient_for(window)
-        .build();
-    
-    // Protocol dropdown
-    let protocol_list = StringList::new(&["SSH", "RDP", "VNC"]);
-    let protocol_dropdown = DropDown::new(Some(protocol_list), gtk4::Expression::NONE);
-    
-    // Host entry
-    let host_entry = Entry::new();
-    
-    // Port spin (updates based on protocol)
-    let port_spin = SpinButton::with_range(1.0, 65535.0, 1.0);
-    port_spin.set_value(22.0);
-    
-    // Connect protocol change to port update
-    let port_clone = port_spin.clone();
-    protocol_dropdown.connect_selected_notify(move |dropdown| {
-        let default_port = match dropdown.selected() {
-            0 => 22.0,   // SSH
-            1 => 3389.0, // RDP
-            2 => 5900.0, // VNC
-            _ => 22.0,
-        };
-        port_clone.set_value(default_port);
+    // Connect to closed signal for cleanup
+    popover.connect_closed(|p| {
+        // Ensure parent is unset before destruction
+        p.unparent();
     });
     
-    // ... rest of dialog
+    // Use popover.popup() instead of present()
+    popover.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
+    popover.popup();
+}
+```
+
+### 4. ZeroTrust CLI Provider Icons (`rustconn-core/src/protocol/icons.rs`)
+
+```rust
+/// Cloud provider icon cache
+pub struct ProviderIconCache {
+    cache_dir: PathBuf,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CloudProvider {
+    Aws,
+    Gcloud,
+    Azure,
+    Generic,
+}
+
+impl ProviderIconCache {
+    pub fn new() -> Self {
+        let cache_dir = dirs::cache_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("rustconn/icons");
+        Self { cache_dir }
+    }
+    
+    /// Get icon path for provider, caching if needed
+    pub fn get_icon_path(&self, provider: CloudProvider) -> PathBuf {
+        let icon_name = match provider {
+            CloudProvider::Aws => "aws-logo.svg",
+            CloudProvider::Gcloud => "gcloud-logo.svg",
+            CloudProvider::Azure => "azure-logo.svg",
+            CloudProvider::Generic => "cloud-symbolic.svg",
+        };
+        self.cache_dir.join(icon_name)
+    }
+    
+    /// Detect provider from CLI command
+    pub fn detect_provider(command: &str) -> CloudProvider {
+        if command.contains("aws") { CloudProvider::Aws }
+        else if command.contains("gcloud") { CloudProvider::Gcloud }
+        else if command.contains("az ") || command.contains("azure") { CloudProvider::Azure }
+        else { CloudProvider::Generic }
+    }
+}
+```
+
+### 5. CLI Connection Output Feedback (`rustconn-core/src/protocol/cli.rs`)
+
+```rust
+/// Format connection start message
+pub fn format_connection_message(protocol: &str, host: &str) -> String {
+    format!("🔗 Connecting via {} to {}...", protocol, host)
+}
+
+/// Format command execution message
+pub fn format_command_message(command: &str) -> String {
+    format!("⚡ Executing: {}", command)
+}
+
+/// CLI connection with output feedback
+impl CliProtocol {
+    pub async fn connect_with_feedback(&self, terminal: &Terminal) -> Result<()> {
+        // Echo connection info
+        terminal.feed(&format_connection_message(&self.protocol_name, &self.host));
+        terminal.feed("\r\n");
+        
+        // Echo command
+        terminal.feed(&format_command_message(&self.command));
+        terminal.feed("\r\n\r\n");
+        
+        // Execute
+        self.execute(terminal).await
+    }
+}
+```
+
+### 6. SSH IdentitiesOnly Option (`rustconn-core/src/models/protocol.rs`)
+
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SshConfig {
+    // ... existing fields ...
+    
+    /// Use only the specified identity file (prevents "Too many authentication failures")
+    #[serde(default)]
+    pub identities_only: bool,
+    
+    /// SSH agent key fingerprint (for persistence)
+    #[serde(default)]
+    pub ssh_agent_key_fingerprint: Option<String>,
+}
+
+impl SshConfig {
+    /// Build SSH command arguments
+    pub fn build_command_args(&self) -> Vec<String> {
+        let mut args = Vec::new();
+        
+        if self.identities_only {
+            args.push("-o".to_string());
+            args.push("IdentitiesOnly=yes".to_string());
+        }
+        
+        if let Some(ref key_path) = self.identity_file {
+            args.push("-i".to_string());
+            args.push(key_path.clone());
+        }
+        
+        // ... other args
+        args
+    }
+}
+```
+
+### 7. Connection Tree State Preservation (`rustconn/src/sidebar.rs`)
+
+```rust
+/// Tree state for preservation across refreshes
+#[derive(Debug, Clone, Default)]
+pub struct TreeState {
+    /// Expanded group IDs
+    pub expanded_groups: HashSet<Uuid>,
+    /// Scroll position (vertical adjustment value)
+    pub scroll_position: f64,
+    /// Selected item ID
+    pub selected_id: Option<Uuid>,
+}
+
+impl ConnectionSidebar {
+    /// Save current tree state
+    pub fn save_state(&self) -> TreeState {
+        let mut state = TreeState::default();
+        
+        // Iterate tree model and record expanded rows
+        // Save scroll position from ScrolledWindow
+        // Save selected item ID
+        
+        state
+    }
+    
+    /// Restore tree state after refresh
+    pub fn restore_state(&self, state: &TreeState) {
+        // Expand saved groups
+        // Restore scroll position
+        // Restore selection
+    }
+    
+    /// Refresh tree while preserving state
+    pub fn refresh_preserving_state(&self) {
+        let state = self.save_state();
+        self.refresh();
+        self.restore_state(&state);
+    }
+}
+```
+
+### 8. Connection Clipboard (`rustconn/src/state.rs`)
+
+```rust
+/// Internal clipboard for connection copy/paste
+#[derive(Debug, Clone, Default)]
+pub struct ConnectionClipboard {
+    /// Copied connection data
+    connection: Option<Connection>,
+    /// Source group ID
+    source_group: Option<Uuid>,
+}
+
+impl ConnectionClipboard {
+    pub fn copy(&mut self, connection: &Connection, group_id: Option<Uuid>) {
+        self.connection = Some(connection.clone());
+        self.source_group = group_id;
+    }
+    
+    pub fn paste(&self) -> Option<Connection> {
+        self.connection.as_ref().map(|conn| {
+            let mut new_conn = conn.clone();
+            new_conn.id = Uuid::new_v4();
+            new_conn.name = format!("{} (Copy)", conn.name);
+            new_conn
+        })
+    }
+    
+    pub fn has_content(&self) -> bool {
+        self.connection.is_some()
+    }
+    
+    pub fn source_group(&self) -> Option<Uuid> {
+        self.source_group
+    }
+}
+```
+
+### 9. Native Export/Import Format (`rustconn-core/src/export/native.rs`)
+
+```rust
+/// RustConn native export format (.rcn)
+pub const NATIVE_FORMAT_VERSION: u32 = 1;
+pub const NATIVE_FILE_EXTENSION: &str = "rcn";
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NativeExport {
+    /// Format version for migrations
+    pub version: u32,
+    /// Export timestamp
+    pub exported_at: DateTime<Utc>,
+    /// Application version that created export
+    pub app_version: String,
+    /// All connections
+    pub connections: Vec<Connection>,
+    /// All groups with hierarchy
+    pub groups: Vec<Group>,
+    /// All templates
+    pub templates: Vec<ConnectionTemplate>,
+    /// All clusters
+    pub clusters: Vec<Cluster>,
+    /// Global variables
+    pub variables: Vec<Variable>,
+    /// Custom metadata
+    pub metadata: HashMap<String, String>,
+}
+
+impl NativeExport {
+    pub fn new() -> Self {
+        Self {
+            version: NATIVE_FORMAT_VERSION,
+            exported_at: Utc::now(),
+            app_version: env!("CARGO_PKG_VERSION").to_string(),
+            connections: Vec::new(),
+            groups: Vec::new(),
+            templates: Vec::new(),
+            clusters: Vec::new(),
+            variables: Vec::new(),
+            metadata: HashMap::new(),
+        }
+    }
+    
+    /// Export to JSON string
+    pub fn to_json(&self) -> Result<String, ExportError> {
+        serde_json::to_string_pretty(self)
+            .map_err(|e| ExportError::Serialization(e.to_string()))
+    }
+    
+    /// Import from JSON string with version validation
+    pub fn from_json(json: &str) -> Result<Self, ImportError> {
+        let export: Self = serde_json::from_str(json)
+            .map_err(|e| ImportError::Parse(e.to_string()))?;
+        
+        if export.version > NATIVE_FORMAT_VERSION {
+            return Err(ImportError::UnsupportedVersion(export.version));
+        }
+        
+        // Apply migrations if needed
+        Self::migrate(export)
+    }
+    
+    fn migrate(mut export: Self) -> Result<Self, ImportError> {
+        // Version 1 is current, no migrations needed yet
+        export.version = NATIVE_FORMAT_VERSION;
+        Ok(export)
+    }
+}
+```
+
+### 10. Embedded RDP/VNC via Wayland Subsurface
+
+This is a complex feature requiring Wayland and FreeRDP integration:
+
+```rust
+/// Embedded RDP widget using Wayland subsurface
+pub struct EmbeddedRdpWidget {
+    /// GTK drawing area for the subsurface
+    drawing_area: gtk4::DrawingArea,
+    /// Wayland surface handle
+    wl_surface: Option<WlSurface>,
+    /// Shared memory buffer for pixel data
+    shm_buffer: Option<ShmBuffer>,
+    /// FreeRDP context
+    freerdp_context: Option<FreeRdpContext>,
+    /// Frame buffer dimensions
+    width: u32,
+    height: u32,
+}
+
+impl EmbeddedRdpWidget {
+    pub fn new() -> Self {
+        let drawing_area = gtk4::DrawingArea::new();
+        drawing_area.set_hexpand(true);
+        drawing_area.set_vexpand(true);
+        
+        Self {
+            drawing_area,
+            wl_surface: None,
+            shm_buffer: None,
+            freerdp_context: None,
+            width: 0,
+            height: 0,
+        }
+    }
+    
+    /// Initialize Wayland subsurface
+    fn init_subsurface(&mut self, parent_surface: &WlSurface) -> Result<()> {
+        // Create wl_subsurface as child of parent
+        // Set up shared memory buffer
+        // Configure subsurface position
+    }
+    
+    /// Connect to RDP server
+    pub async fn connect(&mut self, config: &RdpConfig) -> Result<()> {
+        // Initialize FreeRDP in software rendering mode
+        // Set up BeginPaint/EndPaint callbacks
+        // Start connection
+    }
+    
+    /// FreeRDP EndPaint callback - blit frame to Wayland buffer
+    fn on_end_paint(&mut self, x: i32, y: i32, w: i32, h: i32) {
+        // Copy pixels from FreeRDP buffer to wl_buffer
+        // Damage the updated region
+        // Commit the surface
+    }
+    
+    /// Forward keyboard input to RDP session
+    pub fn send_key(&self, keyval: u32, pressed: bool) {
+        // Convert GTK keyval to RDP scancode
+        // Send to FreeRDP
+    }
+    
+    /// Forward mouse input to RDP session
+    pub fn send_mouse(&self, x: i32, y: i32, button: u32, pressed: bool) {
+        // Send mouse event to FreeRDP
+    }
 }
 ```
 
 ## Data Models
 
-### Connection Model Update
+### Extended SshConfig
 
 ```rust
-pub struct Connection {
-    pub id: Uuid,
-    pub name: String,
-    pub host: String,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SshConfig {
     pub port: u16,
     pub username: Option<String>,
-    pub protocol_config: ProtocolConfig,
-    pub group_id: Option<Uuid>,
-    pub tags: Vec<String>,
-    pub sort_order: i32,
-    pub last_connected: Option<DateTime<Utc>>,  // NEW
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub identity_file: Option<String>,
+    pub proxy_command: Option<String>,
+    pub forward_agent: bool,
+    pub compression: bool,
+    pub keep_alive_interval: Option<u32>,
+    pub strict_host_key_checking: Option<bool>,
+    // New fields
+    pub identities_only: bool,
+    pub ssh_agent_key_fingerprint: Option<String>,
 }
 ```
 
-### Client Detection Result
+### TreeState for Sidebar
 
 ```rust
-pub struct ClientInfo {
-    pub name: String,
-    pub path: Option<PathBuf>,
-    pub version: Option<String>,
-    pub installed: bool,
-}
-
-pub struct ClientDetectionResult {
-    pub ssh: ClientInfo,
-    pub rdp: ClientInfo,
-    pub vnc: ClientInfo,
+#[derive(Debug, Clone, Default)]
+pub struct TreeState {
+    pub expanded_groups: HashSet<Uuid>,
+    pub scroll_position: f64,
+    pub selected_id: Option<Uuid>,
 }
 ```
 
@@ -331,104 +497,142 @@ pub struct ClientDetectionResult {
 
 *A property is a characteristic or behavior that should hold true across all valid executions of a system-essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
 
-### Property Reflection
+### Property 1: Provider Icon Detection
+*For any* CLI command string, the provider detection function should return a valid CloudProvider enum value.
+**Validates: Requirements 4.2**
 
-After analyzing the prework, the following properties are consolidated:
-- Properties 4.1, 4.2, 4.3 can be combined into a single sorting property
-- Properties 5.1, 5.2, 5.3, 5.4 can be combined into a drag-drop property
-- Properties 7.2, 7.3, 7.4 can be combined into a client detection property
-- Properties 8.2, 8.3, 8.4 are examples, not properties
+### Property 2: CLI Output Message Format
+*For any* protocol name and host string, the connection message should contain both values and the 🔗 emoji.
+**Validates: Requirements 5.1, 5.3**
 
-### Property 1: Connection Validation
+### Property 3: CLI Command Echo Format
+*For any* command string, the command echo message should contain the exact command and the ⚡ emoji.
+**Validates: Requirements 5.2, 5.4**
 
-*For any* connection data with empty name or empty host, validation SHALL return an error.
+### Property 4: SSH IdentitiesOnly Command Generation
+*For any* SSH config with identities_only=true, the generated command should contain "-o IdentitiesOnly=yes".
+**Validates: Requirements 6.2, 6.3**
 
-**Validates: Requirements 1.1, 1.2**
+### Property 5: SSH Config Serialization Round-Trip
+*For any* valid SshConfig including identities_only and ssh_agent_key_fingerprint, serializing and deserializing should produce an equivalent config.
+**Validates: Requirements 6.4, 8.4**
 
-### Property 2: Asbru Hostname Extraction
+### Property 6: SSH Agent Key Fingerprint Persistence
+*For any* connection with a saved ssh_agent_key_fingerprint, loading the connection should preserve the fingerprint value.
+**Validates: Requirements 8.1, 8.2**
 
-*For any* Asbru entry with hostname in ip, host, name, or title field, the importer SHALL extract a valid hostname.
+### Property 7: Session Logger File Creation
+*For any* enabled LogConfig with valid path, creating a SessionLogger should result in a log file being created.
+**Validates: Requirements 9.1, 9.2**
 
-**Validates: Requirements 2.1, 2.2**
+### Property 8: Cluster Serialization Round-Trip
+*For any* valid Cluster, serializing and deserializing should produce an equivalent cluster.
+**Validates: Requirements 10.1, 10.2**
 
-### Property 3: Connection Duplication
+### Property 9: Template Serialization Round-Trip
+*For any* valid ConnectionTemplate, serializing and deserializing should produce an equivalent template.
+**Validates: Requirements 11.3**
 
-*For any* connection, duplicating it SHALL create a new connection with "(copy)" suffix and different UUID while preserving all other fields.
+### Property 10: Connection Copy Creates Valid Duplicate
+*For any* connection, copying and pasting should create a new connection with different ID and "(Copy)" suffix in name.
+**Validates: Requirements 12.1, 12.2**
 
-**Validates: Requirements 3.3**
+### Property 11: Connection Paste Preserves Group
+*For any* copied connection with a source group, pasting should return the same source group ID.
+**Validates: Requirements 12.3**
 
-### Property 4: Group Deletion Cascade
+### Property 12: Native Export Contains All Data Types
+*For any* NativeExport with connections, groups, templates, clusters, and variables, the JSON output should contain all data.
+**Validates: Requirements 13.2**
 
-*For any* group with connections, deleting the group SHALL remove all connections within that group.
+### Property 13: Native Import Restores All Data
+*For any* valid NativeExport JSON, importing should restore all connections, groups, templates, clusters, and variables.
+**Validates: Requirements 13.3**
 
-**Validates: Requirements 3.7**
+### Property 14: Native Format Round-Trip
+*For any* valid NativeExport, serializing to JSON and deserializing should produce an equivalent export.
+**Validates: Requirements 13.6**
 
-### Property 5: Group-Scoped Sorting
+### Property 15: Native Format Schema Version
+*For any* NativeExport, the JSON output should contain a version field with value >= 1.
+**Validates: Requirements 13.4**
 
-*For any* set of connections, sorting within a group SHALL only reorder connections in that group, leaving other groups unchanged.
-
-**Validates: Requirements 4.1, 4.2, 4.3, 4.4**
-
-### Property 6: Drag-Drop Reordering
-
-*For any* connection moved via drag-drop, the connection's group_id and sort_order SHALL be updated correctly.
-
-**Validates: Requirements 5.1, 5.2, 5.3, 5.5**
-
-### Property 7: Recent Sort Ordering
-
-*For any* set of connections with timestamps, sorting by recent SHALL place connections with more recent timestamps first, and connections without timestamps last.
-
-**Validates: Requirements 6.1, 6.2**
-
-### Property 8: Last Connected Update
-
-*For any* connection, after connecting, the last_connected timestamp SHALL be updated to current time.
-
-**Validates: Requirements 6.4**
-
-### Property 9: Client Detection
-
-*For any* installed client binary, detection SHALL return installed=true with version string.
-
-**Validates: Requirements 7.2, 7.3, 7.4**
-
-### Property 10: Protocol Port Defaults
-
-*For any* protocol selection in Quick Connect, the default port SHALL match the protocol standard (SSH=22, RDP=3389, VNC=5900).
-
-**Validates: Requirements 8.2, 8.3, 8.4, 8.5**
+### Property 16: Native Import Version Validation
+*For any* NativeExport JSON with version > NATIVE_FORMAT_VERSION, importing should return an UnsupportedVersion error.
+**Validates: Requirements 13.5**
 
 ## Error Handling
 
-- Connection dialog validation errors display via `AlertDialog`
-- Import errors collected and displayed in summary
-- Client detection failures return `installed: false` with helpful message
-- Drag-drop failures silently ignored (no state change)
-- Sorting failures logged but don't crash application
+```rust
+#[derive(Debug, thiserror::Error)]
+pub enum ExportError {
+    #[error("Serialization failed: {0}")]
+    Serialization(String),
+    #[error("File write failed: {0}")]
+    FileWrite(String),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum ImportError {
+    #[error("Parse failed: {0}")]
+    Parse(String),
+    #[error("Unsupported format version: {0}")]
+    UnsupportedVersion(u32),
+    #[error("File read failed: {0}")]
+    FileRead(String),
+    #[error("Migration failed: {0}")]
+    Migration(String),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum EmbeddedRdpError {
+    #[error("Wayland subsurface creation failed: {0}")]
+    SubsurfaceCreation(String),
+    #[error("FreeRDP initialization failed: {0}")]
+    FreeRdpInit(String),
+    #[error("Connection failed: {0}")]
+    Connection(String),
+    #[error("wlfreerdp not available, falling back to external mode")]
+    WlFreeRdpNotAvailable,
+}
+```
 
 ## Testing Strategy
 
+### Dual Testing Approach
+
+1. **Unit Tests**: Verify specific examples and edge cases
+2. **Property-Based Tests**: Verify universal properties using `proptest`
+
 ### Property-Based Testing
 
-Using `proptest` crate for property-based tests:
+Using `proptest` crate:
 
-1. **Connection Validation**: Generate random connection data, verify validation catches invalid inputs
-2. **Asbru Import**: Generate Asbru YAML entries, verify hostname extraction
-3. **Sorting**: Generate connection lists, verify sort order properties
-4. **Drag-Drop**: Generate reorder operations, verify state consistency
-5. **Recent Sort**: Generate connections with timestamps, verify ordering
+```rust
+use proptest::prelude::*;
 
-### Unit Tests
+proptest! {
+    #[test]
+    fn test_native_export_round_trip(
+        connections in prop::collection::vec(arb_connection(), 0..10),
+        groups in prop::collection::vec(arb_group(), 0..5),
+    ) {
+        let mut export = NativeExport::new();
+        export.connections = connections.clone();
+        export.groups = groups.clone();
+        
+        let json = export.to_json().unwrap();
+        let imported = NativeExport::from_json(&json).unwrap();
+        
+        prop_assert_eq!(export.connections.len(), imported.connections.len());
+        prop_assert_eq!(export.groups.len(), imported.groups.len());
+    }
+}
+```
 
-- Client detection with mocked binaries
-- Protocol port defaults
-- Connection duplication
-- Group deletion cascade
+### Test Organization
 
-### Integration Tests
-
-- Full import workflow
-- Context menu action execution
-- Settings persistence
+- Property tests in `rustconn-core/tests/properties/`
+- Unit tests co-located with source files
+- Integration tests for GTK components (manual testing)
 

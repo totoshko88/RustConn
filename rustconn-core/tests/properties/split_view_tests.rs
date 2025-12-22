@@ -132,7 +132,6 @@ proptest! {
     }
 }
 
-
 /// Strategy for generating session names
 fn session_name_strategy() -> impl Strategy<Value = String> {
     "[a-zA-Z][a-zA-Z0-9_-]{0,20}".prop_map(|s| s)
@@ -268,7 +267,6 @@ proptest! {
         );
     }
 }
-
 
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]

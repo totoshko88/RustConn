@@ -51,7 +51,6 @@ use thiserror::Error;
 /// Type alias for simple signal callbacks
 type SignalCallback<T> = Rc<RefCell<Option<Box<T>>>>;
 
-
 /// RDP-specific error type
 #[derive(Debug, Error)]
 pub enum RdpError {
@@ -283,7 +282,6 @@ impl RdpConnectionConfig {
         Ok(())
     }
 }
-
 
 /// Internal state for RDP display
 #[derive(Debug, Default)]
@@ -646,7 +644,6 @@ impl Drop for RdpDisplay {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -933,7 +930,7 @@ mod tests {
     #[test]
     fn test_rdp_connection_config_with_gateway() {
         let gateway = RdpGatewayConfig::new("gateway.example.com");
-        let config = RdpConnectionConfig::new("server.example.com").with_gateway(gateway.clone());
+        let config = RdpConnectionConfig::new("server.example.com").with_gateway(gateway);
 
         assert!(config.gateway.is_some());
         assert_eq!(config.gateway.unwrap().host, "gateway.example.com");
