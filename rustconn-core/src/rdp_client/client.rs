@@ -477,12 +477,32 @@ async fn run_active_session(
                 }
                 RdpClientCommand::SetDesktopSize { width, height } => {
                     // Request resolution change via Display Control Virtual Channel
-                    // IronRDP supports this through the active stage
-                    eprintln!("[IronRDP] Requesting resolution {width}x{height} for window");
-                    // Note: IronRDP's ActiveStage doesn't directly expose resize API
-                    // The server may support dynamic resolution via RDPEDISP
-                    // For now, we log the request - full implementation would require
-                    // sending Display Control PDUs
+                    if let Some(result) = active_stage.encode_resize(
+                        u32::from(width),
+                        u32::from(height),
+                        None,
+                        None,
+                    ) {
+                        match result {
+                            Ok(frame) => {
+                                let _ = writer.write_all(&frame).await;
+                                tracing::debug!(
+                                    "Resolution change requested: {}x{}",
+                                    width,
+                                    height
+                                );
+                            }
+                            Err(e) => {
+                                tracing::warn!("Failed to encode resize request: {}", e);
+                            }
+                        }
+                    } else {
+                        tracing::debug!(
+                            "Display Control not available for resize {}x{}",
+                            width,
+                            height
+                        );
+                    }
                 }
                 RdpClientCommand::RefreshScreen => {
                     // Request full screen refresh
@@ -490,45 +510,105 @@ async fn run_active_session(
                     eprintln!("[IronRDP] Screen refresh requested");
                 }
                 RdpClientCommand::ClipboardText(text) => {
-                    // Send text as Unicode key events (workaround for missing CLIPRDR)
-                    // This simulates typing the text character by character
-                    eprintln!(
-                        "[IronRDP] Pasting {} chars via Unicode key events",
-                        text.len()
-                    );
-
-                    for ch in text.chars() {
-                        // Send key press and release for each character
-                        let event_press = create_unicode_event(ch, true);
-                        let event_release = create_unicode_event(ch, false);
-                        send_input_events(
-                            &mut active_stage,
-                            &mut image,
-                            &mut writer,
-                            &[event_press],
-                        )
-                        .await;
-                        send_input_events(
-                            &mut active_stage,
-                            &mut image,
-                            &mut writer,
-                            &[event_release],
-                        )
-                        .await;
+                    // Try to send via CLIPRDR channel first
+                    if let Some(cliprdr) =
+                        active_stage.get_svc_processor_mut::<CliprdrClient>()
+                    {
+                        // Convert text to clipboard format and initiate copy
+                        let format = ironrdp::cliprdr::pdu::ClipboardFormat {
+                            id: ironrdp::cliprdr::pdu::ClipboardFormatId::CF_UNICODETEXT,
+                            name: None,
+                        };
+                        if let Ok(messages) = cliprdr.initiate_copy(&[format]) {
+                            if let Ok(frame) =
+                                active_stage.process_svc_processor_messages(messages)
+                            {
+                                let _ = writer.write_all(&frame).await;
+                            }
+                        }
+                        tracing::debug!("Clipboard text sent via CLIPRDR: {} chars", text.len());
+                    } else {
+                        // Fallback: send as Unicode key events
+                        tracing::debug!(
+                            "Pasting {} chars via Unicode key events (no CLIPRDR)",
+                            text.len()
+                        );
+                        for ch in text.chars() {
+                            let event_press = create_unicode_event(ch, true);
+                            let event_release = create_unicode_event(ch, false);
+                            send_input_events(
+                                &mut active_stage,
+                                &mut image,
+                                &mut writer,
+                                &[event_press],
+                            )
+                            .await;
+                            send_input_events(
+                                &mut active_stage,
+                                &mut image,
+                                &mut writer,
+                                &[event_release],
+                            )
+                            .await;
+                        }
                     }
                 }
                 RdpClientCommand::Authenticate { .. } => {}
                 RdpClientCommand::ClipboardData { format_id, data } => {
-                    // TODO: Send clipboard data to server via CLIPRDR channel
-                    tracing::debug!(
-                        "Clipboard data for format {}: {} bytes",
-                        format_id,
-                        data.len()
-                    );
+                    // Send clipboard data to server via CLIPRDR channel
+                    if let Some(cliprdr) =
+                        active_stage.get_svc_processor_mut::<CliprdrClient>()
+                    {
+                        let response =
+                            ironrdp::cliprdr::pdu::OwnedFormatDataResponse::new_data(data.clone());
+                        if let Ok(messages) = cliprdr.submit_format_data(response) {
+                            if let Ok(frame) =
+                                active_stage.process_svc_processor_messages(messages)
+                            {
+                                let _ = writer.write_all(&frame).await;
+                                tracing::debug!(
+                                    "Clipboard data sent for format {}: {} bytes",
+                                    format_id,
+                                    data.len()
+                                );
+                            }
+                        }
+                    }
                 }
                 RdpClientCommand::ClipboardCopy(formats) => {
-                    // TODO: Notify server about available clipboard formats
-                    tracing::debug!("Clipboard copy with {} formats", formats.len());
+                    // Notify server about available clipboard formats
+                    if let Some(cliprdr) =
+                        active_stage.get_svc_processor_mut::<CliprdrClient>()
+                    {
+                        let clipboard_formats: Vec<ironrdp::cliprdr::pdu::ClipboardFormat> =
+                            formats
+                                .iter()
+                                .map(|f| {
+                                    let mut format = ironrdp::cliprdr::pdu::ClipboardFormat::new(
+                                        ironrdp::cliprdr::pdu::ClipboardFormatId::new(f.id),
+                                    );
+                                    if let Some(ref name) = f.name {
+                                        format = format.with_name(
+                                            ironrdp::cliprdr::pdu::ClipboardFormatName::new(
+                                                name.clone(),
+                                            ),
+                                        );
+                                    }
+                                    format
+                                })
+                                .collect();
+                        if let Ok(messages) = cliprdr.initiate_copy(&clipboard_formats) {
+                            if let Ok(frame) =
+                                active_stage.process_svc_processor_messages(messages)
+                            {
+                                let _ = writer.write_all(&frame).await;
+                                tracing::debug!(
+                                    "Clipboard copy initiated with {} formats",
+                                    formats.len()
+                                );
+                            }
+                        }
+                    }
                 }
             }
         }
