@@ -136,13 +136,13 @@ jobs:
         run: cargo test -p rustconn-core
 
   msrv:
-    name: MSRV (1.76)
+    name: MSRV (1.85)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust 1.76
-        uses: dtolnay/rust-toolchain@1.76
+      - name: Install Rust 1.85
+        uses: dtolnay/rust-toolchain@1.85
 
       - name: Install GTK4 dependencies
         run: |
