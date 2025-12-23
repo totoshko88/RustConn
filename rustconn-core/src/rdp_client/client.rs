@@ -229,24 +229,21 @@ impl Drop for RdpClient {
 // IronRDP Integration
 // ============================================================================
 
-use ironrdp_connector::ClientConnector;
-use ironrdp_graphics::image_processing::PixelFormat as IronPixelFormat;
-use ironrdp_pdu::gcc::KeyboardType;
-use ironrdp_pdu::input::fast_path::{FastPathInputEvent, KeyboardFlags};
-use ironrdp_pdu::input::mouse::{MousePdu, PointerFlags};
-use ironrdp_pdu::rdp::capability_sets::MajorPlatformType;
-use ironrdp_pdu::rdp::client_info::{PerformanceFlags, TimezoneInfo};
-use ironrdp_session::image::DecodedImage;
-use ironrdp_session::{ActiveStage, ActiveStageOutput};
+use ironrdp::connector::{ClientConnector, Config, ConnectionResult, Credentials, DesktopSize};
+use ironrdp::graphics::image_processing::PixelFormat as IronPixelFormat;
+use ironrdp::pdu::gcc::KeyboardType;
+use ironrdp::pdu::input::fast_path::{FastPathInputEvent, KeyboardFlags};
+use ironrdp::pdu::input::mouse::PointerFlags;
+use ironrdp::pdu::input::MousePdu;
+use ironrdp::pdu::rdp::capability_sets::MajorPlatformType;
+use ironrdp::pdu::rdp::client_info::PerformanceFlags;
+use ironrdp::session::image::DecodedImage;
+use ironrdp::session::{ActiveStage, ActiveStageOutput};
 use ironrdp_tokio::{split_tokio_framed, FramedWrite, TokioFramed};
 use std::net::SocketAddr;
-use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::TcpStream;
 
-trait AsyncReadWrite: AsyncRead + AsyncWrite {}
-impl<T> AsyncReadWrite for T where T: AsyncRead + AsyncWrite {}
-
-type UpgradedFramed = TokioFramed<Box<dyn AsyncReadWrite + Unpin + Send + Sync>>;
+type UpgradedFramed = TokioFramed<ironrdp_tls::TlsStream<TcpStream>>;
 
 /// Runs the RDP client protocol loop using `IronRDP`
 async fn run_rdp_client(
@@ -291,32 +288,26 @@ async fn run_rdp_client(
         .await
         .map_err(|e| RdpClientError::ConnectionFailed(format!("Connection begin failed: {e}")))?;
 
-    // TLS upgrade
-    let (initial_stream, leftover_bytes) = framed.into_inner();
+    // TLS upgrade - returns stream and server public key directly
+    let initial_stream = framed.into_inner_no_leftover();
 
-    let (upgraded_stream, tls_cert) = ironrdp_tls::upgrade(initial_stream, &config.host)
+    let (upgraded_stream, server_public_key) = ironrdp_tls::upgrade(initial_stream, &config.host)
         .await
         .map_err(|e| RdpClientError::ConnectionFailed(format!("TLS upgrade failed: {e}")))?;
 
     let upgraded = ironrdp_tokio::mark_as_upgraded(should_upgrade, &mut connector);
 
-    let erased_stream: Box<dyn AsyncReadWrite + Unpin + Send + Sync> = Box::new(upgraded_stream);
-    let mut upgraded_framed = TokioFramed::new_with_leftover(erased_stream, leftover_bytes);
-
-    // Extract server public key for NLA
-    let server_public_key =
-        ironrdp_tls::extract_tls_server_public_key(&tls_cert).ok_or_else(|| {
-            RdpClientError::ConnectionFailed("Failed to extract server public key".into())
-        })?;
+    let mut upgraded_framed = TokioFramed::new(upgraded_stream);
 
     // Complete connection (NLA, licensing, capabilities)
+    // Note: We pass None for network_client since we don't need AAD/gateway
     let connection_result = ironrdp_tokio::connect_finalize(
         upgraded,
-        connector,
         &mut upgraded_framed,
-        &mut NoopNetworkClient,
-        ironrdp_connector::ServerName::new(&config.host),
-        server_public_key.to_owned(),
+        connector,
+        (&config.host).into(),
+        server_public_key,
+        None,
         None,
     )
     .await
@@ -340,9 +331,7 @@ async fn run_rdp_client(
 }
 
 /// Builds `IronRDP` connector configuration from our config
-fn build_connector_config(config: &RdpClientConfig) -> ironrdp_connector::Config {
-    use ironrdp_connector::{Config, Credentials, DesktopSize};
-
+fn build_connector_config(config: &RdpClientConfig) -> Config {
     // Always use UsernamePassword credentials
     // If username or password is missing, use empty strings
     // The server will prompt for credentials if needed
@@ -375,38 +364,21 @@ fn build_connector_config(config: &RdpClientConfig) -> ironrdp_connector::Config
         hardware_id: None,
         request_data: None,
         autologon: false,
-        enable_audio_playback: config.audio_enabled,
+        no_audio_playback: !config.audio_enabled,
         performance_flags: PerformanceFlags::default(),
         license_cache: None,
-        timezone_info: TimezoneInfo::default(),
-        enable_server_pointer: true,
+        no_server_pointer: false,
         pointer_software_rendering: true,
     }
 }
 
-/// Noop network client for `IronRDP` (we don't need AAD/gateway)
-struct NoopNetworkClient;
-
-impl ironrdp_tokio::NetworkClient for NoopNetworkClient {
-    #[allow(clippy::manual_async_fn)]
-    fn send(
-        &mut self,
-        _network_request: &ironrdp_connector::sspi::generator::NetworkRequest,
-    ) -> impl std::future::Future<Output = ironrdp_connector::ConnectorResult<Vec<u8>>> {
-        async {
-            Err(ironrdp_connector::ConnectorError::new(
-                "network",
-                ironrdp_connector::ConnectorErrorKind::General,
-            ))
-        }
-    }
-}
+/// Placeholder type for network client (not used, we pass None)
 
 /// Runs the active RDP session, processing framebuffer updates and input
 #[allow(clippy::too_many_lines)]
 async fn run_active_session(
     framed: UpgradedFramed,
-    connection_result: ironrdp_connector::ConnectionResult,
+    connection_result: ConnectionResult,
     event_tx: std::sync::mpsc::Sender<RdpClientEvent>,
     command_rx: std::sync::mpsc::Receiver<RdpClientCommand>,
     shutdown_signal: Arc<AtomicBool>,
