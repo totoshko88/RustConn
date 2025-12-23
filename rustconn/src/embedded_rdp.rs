@@ -2968,6 +2968,18 @@ impl EmbeddedRdpWidget {
                             );
                             // TODO: Send local clipboard data to server
                         }
+                        RdpClientEvent::ClipboardPasteRequest(format) => {
+                            // Backend requests to fetch data from server
+                            eprintln!(
+                                "[IronRDP] Requesting clipboard data for format: {:?}",
+                                format
+                            );
+                            if let Some(ref sender) = *ironrdp_tx.borrow() {
+                                let _ = sender.send(RdpClientCommand::RequestClipboardData {
+                                    format_id: format.id,
+                                });
+                            }
+                        }
                         _ => {}
                     }
                 }

@@ -377,6 +377,9 @@ pub enum RdpClientEvent {
     /// Server requests clipboard data from client
     ClipboardDataRequest(ClipboardFormatInfo),
 
+    /// Request to fetch clipboard data from server (internal, triggers `initiate_paste`)
+    ClipboardPasteRequest(ClipboardFormatInfo),
+
     /// Authentication required (for NLA)
     AuthRequired,
 
@@ -462,6 +465,12 @@ pub enum RdpClientCommand {
 
     /// Notify server that client clipboard has new data
     ClipboardCopy(Vec<ClipboardFormatInfo>),
+
+    /// Request clipboard data from server (triggers `initiate_paste`)
+    RequestClipboardData {
+        /// Format ID to request
+        format_id: u32,
+    },
 
     /// Request screen refresh
     RefreshScreen,

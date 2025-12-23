@@ -44,10 +44,11 @@ impl ClipboardMessageProxy for RustConnClipboardProxy {
                     .send(RdpClientEvent::ClipboardFormatsAvailable(format_infos));
             }
             ClipboardMessage::SendInitiatePaste(format_id) => {
+                // Request to fetch data from server - send as event to trigger initiate_paste
                 let format_info = ClipboardFormatInfo::new(format_id.value(), None);
                 let _ = self
                     .event_tx
-                    .send(RdpClientEvent::ClipboardDataRequest(format_info));
+                    .send(RdpClientEvent::ClipboardPasteRequest(format_info));
             }
             ClipboardMessage::SendFormatData(response) => {
                 let data = response.data();
@@ -120,10 +121,30 @@ impl CliprdrBackend for RustConnClipboardBackend {
 
     fn on_remote_copy(&mut self, available_formats: &[ClipboardFormat]) {
         trace!(?available_formats, "Remote copy - formats available");
+
+        // Notify GUI about available formats
         self.proxy
             .send_clipboard_message(ClipboardMessage::SendInitiateCopy(
                 available_formats.to_vec(),
             ));
+
+        // Auto-request text data if available (CF_UNICODETEXT preferred, then CF_TEXT)
+        let text_format = available_formats
+            .iter()
+            .find(|f| f.id == ClipboardFormatId::CF_UNICODETEXT)
+            .or_else(|| {
+                available_formats
+                    .iter()
+                    .find(|f| f.id == ClipboardFormatId::CF_TEXT)
+            });
+
+        if let Some(format) = text_format {
+            debug!("Auto-requesting clipboard text in format {:?}", format.id);
+            self.pending_paste_format = Some(format.id);
+            // Request the data - this will trigger on_format_data_response when server responds
+            self.proxy
+                .send_clipboard_message(ClipboardMessage::SendInitiatePaste(format.id));
+        }
     }
 
     fn on_format_data_request(&mut self, request: FormatDataRequest) {

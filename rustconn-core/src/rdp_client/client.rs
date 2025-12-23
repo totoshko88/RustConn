@@ -610,6 +610,25 @@ async fn run_active_session(
                         }
                     }
                 }
+                RdpClientCommand::RequestClipboardData { format_id } => {
+                    // Request clipboard data from server (initiate paste)
+                    if let Some(cliprdr) =
+                        active_stage.get_svc_processor_mut::<CliprdrClient>()
+                    {
+                        let format = ironrdp::cliprdr::pdu::ClipboardFormatId::new(format_id);
+                        if let Ok(messages) = cliprdr.initiate_paste(format) {
+                            if let Ok(frame) =
+                                active_stage.process_svc_processor_messages(messages)
+                            {
+                                let _ = writer.write_all(&frame).await;
+                                tracing::debug!(
+                                    "Clipboard paste initiated for format {}",
+                                    format_id
+                                );
+                            }
+                        }
+                    }
+                }
             }
         }
 
