@@ -1065,9 +1065,13 @@ fn cmd_test(name: &str, timeout: u64) -> Result<(), CliError> {
         .load_connections()
         .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
 
+    // Handle empty connections case
     if connections.is_empty() {
-        println!("No connections configured.");
-        return Ok(());
+        if name.eq_ignore_ascii_case("all") {
+            println!("No connections configured.");
+            return Ok(());
+        }
+        return Err(CliError::ConnectionNotFound(name.to_string()));
     }
 
     // Create the connection tester with the specified timeout
