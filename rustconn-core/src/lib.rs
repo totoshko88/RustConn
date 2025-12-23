@@ -142,8 +142,8 @@ pub use rdp_client::{
         SCANCODE_DELETE,
         STANDARD_RESOLUTIONS,
     },
-    is_embedded_rdp_available, keyval_to_unicode, PixelFormat, RdpClientCommand, RdpClientConfig,
-    RdpClientError, RdpClientEvent, RdpRect, RdpSecurityProtocol,
+    is_embedded_rdp_available, keyval_to_unicode, ClipboardFormatInfo, PixelFormat,
+    RdpClientCommand, RdpClientConfig, RdpClientError, RdpClientEvent, RdpRect, RdpSecurityProtocol,
 };
 #[cfg(feature = "rdp-embedded")]
 pub use rdp_client::{RdpClient, RdpCommandSender, RdpEventReceiver};

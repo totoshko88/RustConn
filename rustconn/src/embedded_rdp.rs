@@ -1155,6 +1155,10 @@ pub struct EmbeddedRdpWidget {
     reconnect_button: Button,
     /// Reconnect timer source ID for debounced resize reconnect
     reconnect_timer: Rc<RefCell<Option<glib::SourceId>>>,
+    /// Remote clipboard text (received from server via CLIPRDR)
+    remote_clipboard_text: Rc<RefCell<Option<String>>>,
+    /// Available clipboard formats from server
+    remote_clipboard_formats: Rc<RefCell<Vec<rustconn_core::ClipboardFormatInfo>>>,
 }
 
 impl EmbeddedRdpWidget {
@@ -1180,12 +1184,12 @@ impl EmbeddedRdpWidget {
         status_label.add_css_class("dim-label");
         toolbar.append(&status_label);
 
-        // Copy button - not supported with IronRDP (no CLIPRDR)
+        // Copy button - copies remote clipboard to local (enabled when data available)
         let copy_button = Button::with_label("Copy");
         copy_button.set_tooltip_text(Some(
-            "Copy from remote (not supported - use Ctrl+C in remote session)",
+            "Copy remote clipboard to local (waiting for remote data...)",
         ));
-        copy_button.set_sensitive(false); // Disable since not supported
+        copy_button.set_sensitive(false); // Disabled until we receive clipboard data
         toolbar.append(&copy_button);
 
         // Paste button - pastes from local clipboard to remote
@@ -1269,6 +1273,8 @@ impl EmbeddedRdpWidget {
             on_reconnect: Rc::new(RefCell::new(None)),
             reconnect_button,
             reconnect_timer: Rc::new(RefCell::new(None)),
+            remote_clipboard_text: Rc::new(RefCell::new(None)),
+            remote_clipboard_formats: Rc::new(RefCell::new(Vec::new())),
         };
 
         widget.setup_drawing();
@@ -1331,11 +1337,13 @@ impl EmbeddedRdpWidget {
 
     /// Sets up the clipboard Copy/Paste button handlers
     fn setup_clipboard_buttons(&self, copy_btn: &Button, paste_btn: &Button) {
-        // Copy button - get text from remote clipboard and copy to local
-        // Note: IronRDP doesn't implement CLIPRDR protocol, so we can't read remote clipboard
+        // Copy button - copy remote clipboard text to local clipboard
         {
             let state = self.state.clone();
             let is_embedded = self.is_embedded.clone();
+            let remote_clipboard_text = self.remote_clipboard_text.clone();
+            let drawing_area = self.drawing_area.clone();
+            let status_label = self.status_label.clone();
 
             copy_btn.connect_clicked(move |_| {
                 let current_state = *state.borrow();
@@ -1345,10 +1353,38 @@ impl EmbeddedRdpWidget {
                     return;
                 }
 
-                // IronRDP doesn't implement CLIPRDR (Clipboard Redirection) protocol
-                // so we cannot read the remote clipboard content
-                eprintln!("[RDP] Copy from remote: Not supported - IronRDP doesn't implement CLIPRDR protocol");
-                eprintln!("[RDP] Tip: Use Ctrl+C in the remote session, then manually paste where needed");
+                // Check if we have remote clipboard text
+                if let Some(ref text) = *remote_clipboard_text.borrow() {
+                    let char_count = text.len();
+                    eprintln!("[RDP] Copying {} chars from remote to local clipboard", char_count);
+
+                    // Copy to local clipboard
+                    let display = drawing_area.display();
+                    let clipboard = display.clipboard();
+                    clipboard.set_text(text);
+
+                    // Show feedback
+                    status_label.set_text(&format!("Copied {char_count} chars"));
+                    status_label.set_visible(true);
+                    let status_hide = status_label.clone();
+                    glib::timeout_add_local_once(
+                        std::time::Duration::from_secs(2),
+                        move || {
+                            status_hide.set_visible(false);
+                        },
+                    );
+                } else {
+                    eprintln!("[RDP] No remote clipboard text available");
+                    status_label.set_text("No remote clipboard data");
+                    status_label.set_visible(true);
+                    let status_hide = status_label.clone();
+                    glib::timeout_add_local_once(
+                        std::time::Duration::from_secs(2),
+                        move || {
+                            status_hide.set_visible(false);
+                        },
+                    );
+                }
             });
         }
 
@@ -2780,6 +2816,9 @@ impl EmbeddedRdpWidget {
         let is_embedded = self.is_embedded.clone();
         let is_ironrdp = self.is_ironrdp.clone();
         let ironrdp_tx = self.ironrdp_command_tx.clone();
+        let remote_clipboard_text = self.remote_clipboard_text.clone();
+        let remote_clipboard_formats = self.remote_clipboard_formats.clone();
+        let copy_button = self.copy_button.clone();
 
         // Store client in a shared reference for the polling closure
         let client = std::rc::Rc::new(std::cell::RefCell::new(Some(client)));
@@ -2900,6 +2939,34 @@ impl EmbeddedRdpWidget {
                         }
                         RdpClientEvent::AuthRequired => {
                             eprintln!("[IronRDP] Authentication required");
+                        }
+                        RdpClientEvent::ClipboardText(text) => {
+                            // Server sent clipboard text - store it and enable Copy button
+                            eprintln!(
+                                "[IronRDP] Clipboard text received: {} chars",
+                                text.len()
+                            );
+                            *remote_clipboard_text.borrow_mut() = Some(text);
+                            copy_button.set_sensitive(true);
+                            copy_button.set_tooltip_text(Some(
+                                "Copy remote clipboard to local",
+                            ));
+                        }
+                        RdpClientEvent::ClipboardFormatsAvailable(formats) => {
+                            // Server has clipboard data available
+                            eprintln!(
+                                "[IronRDP] Clipboard formats available: {:?}",
+                                formats
+                            );
+                            *remote_clipboard_formats.borrow_mut() = formats;
+                        }
+                        RdpClientEvent::ClipboardDataRequest(format) => {
+                            // Server requests clipboard data from us
+                            eprintln!(
+                                "[IronRDP] Server requests clipboard format: {:?}",
+                                format
+                            );
+                            // TODO: Send local clipboard data to server
                         }
                         _ => {}
                     }
