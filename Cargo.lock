@@ -2136,6 +2136,7 @@ dependencies = [
  "ironrdp-rdpdr",
  "ironrdp-rdpsnd",
  "ironrdp-session",
+ "ironrdp-svc",
 ]
 
 [[package]]

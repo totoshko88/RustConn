@@ -229,13 +229,18 @@ impl Drop for RdpClient {
 // IronRDP Integration
 // ============================================================================
 
-use ironrdp::connector::{ClientConnector, Config, ConnectionResult, Credentials, DesktopSize};
+use ironrdp::connector::{
+    BitmapConfig, ClientConnector, Config, ConnectionResult, Credentials, DesktopSize,
+};
 use ironrdp::graphics::image_processing::PixelFormat as IronPixelFormat;
 use ironrdp::pdu::gcc::KeyboardType;
 use ironrdp::pdu::input::fast_path::{FastPathInputEvent, KeyboardFlags};
 use ironrdp::pdu::input::mouse::PointerFlags;
 use ironrdp::pdu::input::MousePdu;
-use ironrdp::pdu::rdp::capability_sets::MajorPlatformType;
+use ironrdp::pdu::rdp::capability_sets::{
+    BitmapCodecs, CaptureFlags, Codec, CodecProperty, EntropyBits, MajorPlatformType,
+    RemoteFxContainer, RfxCapset, RfxCaps, RfxClientCapsContainer, RfxICap, RfxICapFlags,
+};
 use ironrdp::pdu::rdp::client_info::PerformanceFlags;
 use ironrdp::session::image::DecodedImage;
 use ironrdp::session::{ActiveStage, ActiveStageOutput};
@@ -246,6 +251,10 @@ use tokio::net::TcpStream;
 // Clipboard support
 use super::clipboard::RustConnClipboardBackend;
 use ironrdp::cliprdr::CliprdrClient;
+
+// RDPDR (shared folders) support
+use super::rdpdr::RustConnRdpdrBackend;
+use ironrdp::rdpdr::Rdpdr;
 
 type UpgradedFramed = TokioFramed<ironrdp_tls::TlsStream<TcpStream>>;
 
@@ -291,6 +300,41 @@ async fn run_rdp_client(
         let cliprdr: CliprdrClient = ironrdp::cliprdr::Cliprdr::new(Box::new(clipboard_backend));
         connector.static_channels.insert(cliprdr);
         tracing::debug!("Clipboard channel enabled");
+    }
+
+    // Phase 2.6: Add RDPDR channel for shared folders if configured
+    if !config.shared_folders.is_empty() {
+        // Get computer name for display in Windows Explorer
+        let computer_name = hostname::get()
+            .map(|h| h.to_string_lossy().into_owned())
+            .unwrap_or_else(|_| "RustConn".to_string());
+
+        // Create initial drives list from shared folders config
+        // Each folder gets a unique device_id starting from 1
+        let initial_drives: Vec<(u32, String)> = config
+            .shared_folders
+            .iter()
+            .enumerate()
+            .map(|(idx, folder)| {
+                // Use folder name as the drive name shown in Windows
+                #[allow(clippy::cast_possible_truncation)]
+                (idx as u32 + 1, folder.name.clone())
+            })
+            .collect();
+
+        // Create backend for the first shared folder
+        // For multiple folders, we use the first one as base path
+        if let Some(folder) = config.shared_folders.first() {
+            let base_path = folder.path.to_string_lossy().into_owned();
+            let rdpdr_backend = RustConnRdpdrBackend::new(base_path);
+            let rdpdr = Rdpdr::new(Box::new(rdpdr_backend), computer_name)
+                .with_drives(Some(initial_drives));
+            connector.static_channels.insert(rdpdr);
+            tracing::debug!(
+                "RDPDR channel enabled with {} shared folder(s)",
+                config.shared_folders.len()
+            );
+        }
     }
 
     // Phase 3: Perform RDP connection sequence
@@ -353,6 +397,13 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
         password: config.password.clone().unwrap_or_default(),
     };
 
+    // Configure RemoteFX codec for better image quality
+    let bitmap_config = Some(BitmapConfig {
+        lossy_compression: true,
+        color_depth: 32,
+        codecs: build_bitmap_codecs(),
+    });
+
     Config {
         credentials,
         domain: config.domain.clone(),
@@ -369,7 +420,7 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
             height: config.height,
         },
         desktop_scale_factor: 0,
-        bitmap: None,
+        bitmap: bitmap_config,
         client_build: 0,
         client_name: String::from("RustConn"),
         client_dir: String::new(),
@@ -383,6 +434,25 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
         no_server_pointer: false,
         pointer_software_rendering: true,
     }
+}
+
+/// Builds bitmap codecs configuration with RemoteFX support
+fn build_bitmap_codecs() -> BitmapCodecs {
+    // RemoteFX codec for high-quality graphics
+    let remotefx_codec = Codec {
+        id: 3, // CODEC_ID_REMOTEFX
+        property: CodecProperty::RemoteFx(RemoteFxContainer::ClientContainer(
+            RfxClientCapsContainer {
+                capture_flags: CaptureFlags::empty(),
+                caps_data: RfxCaps(RfxCapset(vec![RfxICap {
+                    flags: RfxICapFlags::empty(),
+                    entropy_bits: EntropyBits::Rlgr3,
+                }])),
+            },
+        )),
+    };
+
+    BitmapCodecs(vec![remotefx_codec])
 }
 
 /// Runs the active RDP session, processing framebuffer updates and input

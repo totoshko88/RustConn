@@ -45,6 +45,8 @@
 mod client;
 #[cfg(feature = "rdp-embedded")]
 pub mod clipboard;
+#[cfg(feature = "rdp-embedded")]
+pub mod rdpdr;
 mod config;
 mod error;
 mod event;
