@@ -243,6 +243,10 @@ use ironrdp_tokio::{split_tokio_framed, FramedWrite, TokioFramed};
 use std::net::SocketAddr;
 use tokio::net::TcpStream;
 
+// Clipboard support
+use super::clipboard::RustConnClipboardBackend;
+use ironrdp::cliprdr::CliprdrClient;
+
 type UpgradedFramed = TokioFramed<ironrdp_tls::TlsStream<TcpStream>>;
 
 /// Runs the RDP client protocol loop using `IronRDP`
@@ -280,6 +284,14 @@ async fn run_rdp_client(
     // Phase 2: Build IronRDP connector configuration
     let connector_config = build_connector_config(&config);
     let mut connector = ClientConnector::new(connector_config, client_addr);
+
+    // Phase 2.5: Add clipboard channel if enabled
+    if config.clipboard_enabled {
+        let clipboard_backend = RustConnClipboardBackend::new(event_tx.clone());
+        let cliprdr: CliprdrClient = ironrdp::cliprdr::Cliprdr::new(Box::new(clipboard_backend));
+        connector.static_channels.insert(cliprdr);
+        tracing::debug!("Clipboard channel enabled");
+    }
 
     // Phase 3: Perform RDP connection sequence
     let mut framed = TokioFramed::new(stream);
