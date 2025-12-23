@@ -575,17 +575,17 @@ impl VirtualScroller {
     }
 
     /// Updates the scroll offset
-    pub fn set_scroll_offset(&mut self, offset: f64) {
+    pub const fn set_scroll_offset(&mut self, offset: f64) {
         self.scroll_offset = offset.max(0.0);
     }
 
     /// Updates the viewport height
-    pub fn set_viewport_height(&mut self, height: f64) {
+    pub const fn set_viewport_height(&mut self, height: f64) {
         self.viewport_height = height.max(0.0);
     }
 
     /// Updates the total item count
-    pub fn set_total_items(&mut self, count: usize) {
+    pub const fn set_total_items(&mut self, count: usize) {
         self.total_items = count;
     }
 

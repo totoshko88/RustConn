@@ -61,7 +61,7 @@ impl SecretManager {
     }
 
     /// Enables or disables credential caching
-    pub fn set_cache_enabled(&mut self, enabled: bool) {
+    pub const fn set_cache_enabled(&mut self, enabled: bool) {
         self.cache_enabled = enabled;
     }
 

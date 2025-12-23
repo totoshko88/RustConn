@@ -430,7 +430,7 @@ impl EmbeddedSpiceWidget {
 
                 if let Ok(extents) = cr.text_extents(status_text) {
                     let x = (f64::from(w) - extents.width()) / 2.0;
-                    let y = (f64::from(h) + extents.height()) / 2.0;
+                    let y = f64::midpoint(f64::from(h), extents.height());
                     cr.move_to(x, y);
                     let _ = cr.show_text(status_text);
                 }

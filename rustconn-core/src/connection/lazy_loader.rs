@@ -40,7 +40,7 @@ impl LazyGroupLoader {
     }
 
     /// Marks root-level items as loaded
-    pub fn mark_root_loaded(&mut self) {
+    pub const fn mark_root_loaded(&mut self) {
         self.root_loaded = true;
     }
 

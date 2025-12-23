@@ -197,12 +197,12 @@ impl ExportResult {
     }
 
     /// Increments the exported count
-    pub fn increment_exported(&mut self) {
+    pub const fn increment_exported(&mut self) {
         self.exported_count += 1;
     }
 
     /// Increments the skipped count
-    pub fn increment_skipped(&mut self) {
+    pub const fn increment_skipped(&mut self) {
         self.skipped_count += 1;
     }
 }

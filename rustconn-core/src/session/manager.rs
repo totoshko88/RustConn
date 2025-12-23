@@ -89,7 +89,7 @@ impl SessionManager {
     }
 
     /// Enables or disables session logging
-    pub fn set_logging_enabled(&mut self, enabled: bool) {
+    pub const fn set_logging_enabled(&mut self, enabled: bool) {
         self.logging_enabled = enabled;
     }
 

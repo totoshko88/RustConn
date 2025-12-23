@@ -217,12 +217,12 @@ impl ClusterSession {
     }
 
     /// Enables or disables broadcast mode
-    pub fn set_broadcast_mode(&mut self, enabled: bool) {
+    pub const fn set_broadcast_mode(&mut self, enabled: bool) {
         self.broadcast_mode = enabled;
     }
 
     /// Toggles broadcast mode and returns the new state
-    pub fn toggle_broadcast_mode(&mut self) -> bool {
+    pub const fn toggle_broadcast_mode(&mut self) -> bool {
         self.broadcast_mode = !self.broadcast_mode;
         self.broadcast_mode
     }

@@ -179,7 +179,7 @@ impl Session {
     }
 
     /// Takes ownership of the process handle
-    pub fn take_process(&mut self) -> Option<Child> {
+    pub const fn take_process(&mut self) -> Option<Child> {
         self.process.take()
     }
 
@@ -190,7 +190,7 @@ impl Session {
     }
 
     /// Returns a mutable reference to the process if available
-    pub fn process_mut(&mut self) -> Option<&mut Child> {
+    pub const fn process_mut(&mut self) -> Option<&mut Child> {
         self.process.as_mut()
     }
 }

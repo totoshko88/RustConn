@@ -126,12 +126,12 @@ impl SessionStats {
     }
 
     /// Updates bytes sent
-    pub fn add_bytes_sent(&mut self, bytes: u64) {
+    pub const fn add_bytes_sent(&mut self, bytes: u64) {
         self.bytes_sent = self.bytes_sent.saturating_add(bytes);
     }
 
     /// Updates bytes received
-    pub fn add_bytes_received(&mut self, bytes: u64) {
+    pub const fn add_bytes_received(&mut self, bytes: u64) {
         self.bytes_received = self.bytes_received.saturating_add(bytes);
     }
 }

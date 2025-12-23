@@ -67,7 +67,7 @@ impl RustConnRdpdrBackend {
     }
 
     /// Allocates a new file ID
-    fn alloc_file_id(&mut self) -> u32 {
+    const fn alloc_file_id(&mut self) -> u32 {
         let id = self.next_file_id;
         self.next_file_id = self.next_file_id.wrapping_add(1);
         id
