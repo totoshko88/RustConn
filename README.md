@@ -33,6 +33,44 @@ RustConn includes several performance optimizations for handling large connectio
 
 ## Installation
 
+### Flatpak
+
+```bash
+# Install from Flatpak bundle (after release)
+flatpak install RustConn-0.3.1.flatpak
+
+# Run
+flatpak run org.rustconn.RustConn
+```
+
+### AppImage
+
+```bash
+chmod +x RustConn-0.3.1-x86_64.AppImage
+./RustConn-0.3.1-x86_64.AppImage
+```
+
+### Debian/Ubuntu
+
+```bash
+sudo dpkg -i rustconn_0.3.1-1_amd64.deb
+sudo apt-get install -f  # Install dependencies if needed
+```
+
+### openSUSE (OBS)
+
+```bash
+# Tumbleweed
+sudo zypper ar https://download.opensuse.org/repositories/home:/totoshko88:/rustconn/openSUSE_Tumbleweed/ rustconn
+sudo zypper ref
+sudo zypper in rustconn
+
+# Leap 16.0
+sudo zypper ar https://download.opensuse.org/repositories/home:/totoshko88:/rustconn/16.0/ rustconn
+sudo zypper ref
+sudo zypper in rustconn
+```
+
 ### From Source
 
 ```bash
