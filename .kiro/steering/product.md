@@ -4,60 +4,67 @@ inclusion: always
 
 # RustConn Product Context
 
-Linux connection manager for SSH, RDP, VNC, and SPICE remote connections. GTK4/libadwaita GUI targeting Wayland.
+Linux connection manager for SSH, RDP, VNC, and SPICE protocols. GTK4/libadwaita GUI targeting Wayland-first environments.
 
-## Feature Scope
+## Protocol Implementation
 
-| Protocol | Implementation | Session Type |
-|----------|----------------|--------------|
-| SSH | VTE terminal embedding | Embedded tab |
-| RDP | FreeRDP via `xfreerdp` | External window |
-| VNC | TigerVNC via `vncviewer` | External window |
+| Protocol | Backend | Session Type |
+|----------|---------|--------------|
+| SSH | VTE terminal | Embedded tab |
+| RDP | FreeRDP (`xfreerdp`) | External window |
+| VNC | TigerVNC (`vncviewer`) | External window |
 | SPICE | `remote-viewer` | External window |
 
-Supporting features: connection groups/tags, import/export (Remmina, Asbru-CM, SSH config, Ansible), credential backends (libsecret, KeePassXC), session logging, command snippets, cluster commands, Wake-on-LAN.
+## Core Features
 
-## Design Constraints
+- Connection organization via groups and tags
+- Import/export: Remmina, Asbru-CM, SSH config, Ansible inventory
+- Credential backends: libsecret, KeePassXC
+- Session logging, command snippets, cluster commands, Wake-on-LAN
 
-Apply these rules when implementing or modifying features:
+## Design Rules
 
-1. **No plaintext credentials** — Wrap secrets in `secrecy::SecretString`; store via `SecretBackend` trait implementations only
-2. **Wayland-first** — Use GTK4/libadwaita patterns; avoid X11-specific APIs
-3. **Crate boundaries** — `rustconn-core` must not import GTK; all business logic lives there
-4. **Trait extension** — New protocols implement `Protocol`; new formats implement `ImportSource`/`ExportTarget`; new credential stores implement `SecretBackend`
-5. **Graceful fallback** — Optional integrations (KeePassXC, system tray) must not break core functionality when unavailable
+When implementing or modifying code, enforce these constraints:
 
-## UI Implementation Rules
+| Rule | Requirement |
+|------|-------------|
+| Credentials | Wrap in `secrecy::SecretString`; persist via `SecretBackend` trait only |
+| Display server | Wayland-first; avoid X11-specific APIs |
+| Crate separation | `rustconn-core` must not import `gtk4`, `vte4`, or `adw` |
+| Extensibility | New protocols → `Protocol` trait; formats → `ImportSource`/`ExportTarget`; secrets → `SecretBackend` |
+| Resilience | Optional features (KeePassXC, tray) must not break core when unavailable |
 
-- Prefer `adw::` widgets over plain `gtk::` equivalents
-- Use `adw::ToastOverlay` for transient status messages
-- Modal dialogs via `adw::Dialog` or `gtk::Window` with `set_modal(true)`
-- Connection tree in sidebar (`gtk::TreeView`); sessions in `gtk::Notebook` tabs
-- Follow GNOME HIG spacing: 12px margins, 6px between related elements
+## UI Patterns
 
-## Error Handling Pattern
+- Prefer `adw::` widgets over `gtk::` equivalents
+- Transient messages: `adw::ToastOverlay`
+- Modal dialogs: `adw::Dialog` or `gtk::Window` with `set_modal(true)`
+- Layout: sidebar `gtk::TreeView` + `gtk::Notebook` session tabs
+- Spacing: 12px margins, 6px between related elements (GNOME HIG)
+
+## Error Handling
 
 ```rust
-// Define in rustconn_core::error
+// In rustconn_core::error
 #[derive(Debug, thiserror::Error)]
 pub enum FeatureError {
     #[error("description: {0}")]
     Variant(String),
 }
 
-// Return Result from all fallible functions
-pub fn do_thing() -> Result<Output, FeatureError> { ... }
+pub fn fallible_op() -> Result<T, FeatureError> { ... }
 ```
 
-- GUI: Show user-friendly message via toast or dialog
-- Logging: Use `tracing` macros for technical details
-- Never panic in library code; reserve `unwrap()`/`expect()` for truly impossible states
+- GUI layer: display user-friendly toast or dialog
+- Logging: `tracing` macros for technical details
+- No panics in library code; `unwrap()`/`expect()` only for impossible states
 
-## Decision Checklist
+## Implementation Checklist
 
-Before implementing, verify:
-- [ ] Does this belong in `rustconn-core` (logic) or `rustconn` (GUI)?
-- [ ] Are credentials handled via `SecretString` and `SecretBackend`?
-- [ ] Does the feature degrade gracefully if dependencies are missing?
-- [ ] Are errors returned as `Result`, not panics?
-- [ ] Does UI follow libadwaita patterns and GNOME HIG?
+Before writing code, verify:
+
+1. Crate placement: business logic → `rustconn-core`; UI → `rustconn`
+2. Secrets use `SecretString` and `SecretBackend`
+3. Feature degrades gracefully when dependencies are missing
+4. All fallible functions return `Result<T, E>`
+5. UI follows libadwaita patterns and GNOME HIG

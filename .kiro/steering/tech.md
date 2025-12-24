@@ -6,7 +6,7 @@ inclusion: always
 
 Rust 2021 edition, MSRV 1.85. Cargo workspace with three crates.
 
-## Workspace Crates
+## Crate Overview
 
 | Crate | Type | Key Dependencies |
 |-------|------|------------------|
@@ -14,37 +14,60 @@ Rust 2021 edition, MSRV 1.85. Cargo workspace with three crates.
 | `rustconn-core` | Library | `tokio` 1.48 (full), `serde`/`serde_json`/`serde_yaml`/`toml`, `uuid` (v4), `chrono`, `thiserror`, `secrecy`, `ring`+`argon2`, `regex` |
 | `rustconn-cli` | CLI binary | `clap` 4.5 (derive) |
 
-## Mandatory Code Rules
+## Code Style
 
 - `unsafe_code = "forbid"` — never use unsafe
-- Clippy `all`, `pedantic`, `nursery` enabled
-- Max line width: 100 chars, 4-space indent, Unix line endings
+- Clippy lints: `all`, `pedantic`, `nursery` enabled
+- Line width: 100 chars max
+- Indentation: 4 spaces
+- Line endings: Unix (LF)
 
 ## Required Patterns
 
-When writing Rust code, always follow these patterns:
+### Error Handling
+
+Always use `thiserror` for error types:
 
 ```rust
-// Error types: use thiserror
 #[derive(Debug, thiserror::Error)]
 pub enum MyError {
     #[error("description: {0}")]
     Variant(String),
 }
+```
 
-// Sensitive data: wrap in SecretString
+### Sensitive Data
+
+Wrap credentials in `SecretString`:
+
+```rust
 use secrecy::SecretString;
 let password: SecretString = SecretString::new(value.into());
+```
 
-// Identifiers: use Uuid
+### Identifiers
+
+Use UUID v4 for unique IDs:
+
+```rust
 use uuid::Uuid;
 let id = Uuid::new_v4();
+```
 
-// Timestamps: use chrono UTC
+### Timestamps
+
+Use chrono with UTC:
+
+```rust
 use chrono::{DateTime, Utc};
 let now: DateTime<Utc> = Utc::now();
+```
 
-// Async traits: use async-trait
+### Async Traits
+
+Use `async-trait` macro:
+
+```rust
 #[async_trait::async_trait]
 impl MyTrait for MyStruct {
     async fn method(&self) -> Result<(), Error> { ... }
@@ -55,16 +78,17 @@ impl MyTrait for MyStruct {
 
 | Do | Don't |
 |----|-------|
-| Return `Result<T, Error>` | Use `unwrap()`/`expect()` except for impossible states |
-| Use `thiserror` for error enums | Define errors without `#[derive(thiserror::Error)]` |
+| Return `Result<T, Error>` | Use `unwrap()`/`expect()` except impossible states |
+| Use `thiserror` for errors | Define errors without `#[derive(thiserror::Error)]` |
 | Wrap secrets in `SecretString` | Store credentials as plain `String` |
-| Use `tokio` for async runtime | Mix async runtimes |
+| Use `tokio` for async | Mix async runtimes |
 | Keep `rustconn-core` GUI-free | Import `gtk4`/`vte4` in `rustconn-core` |
 
 ## Testing
 
-Property-based tests: `rustconn-core/tests/properties/` using `proptest`
-Temp directories: use `tempfile` crate
+- Property-based tests: `rustconn-core/tests/properties/` using `proptest`
+- Temp directories: use `tempfile` crate
+- New property tests: add module to `tests/properties/mod.rs`
 
 ## Commands
 
