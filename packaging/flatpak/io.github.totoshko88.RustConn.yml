@@ -27,6 +27,21 @@ build-options:
     RUST_BACKTRACE: '1'
 
 modules:
+  - name: vte
+    buildsystem: meson
+    config-opts:
+      - -Dglade=false
+      - -Dgtk3=false
+      - -Dgtk4=true
+      - -Dvapi=false
+      - -Dicu=false
+      - -Dgir=false
+      - -Ddocs=false
+    sources:
+      - type: archive
+        url: https://download.gnome.org/sources/vte/0.78/vte-0.78.4.tar.xz
+        sha256: 2dea4e412266592b6460a3fe4488f5e3d50712f139815790c0ecb44710f7e17e
+
   - name: rustconn
     buildsystem: simple
     build-options:
