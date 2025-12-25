@@ -6,4 +6,5 @@
 - Bidirectional clipboard improvements for embedded RDP sessions
 
 ### Changed
+- Updated MSRV to 1.86
 - Updated dependencies: tempfile 3.24, criterion 0.8, cpal 0.17

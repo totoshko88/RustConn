@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bidirectional clipboard improvements for embedded RDP sessions
 
 ### Changed
+- Updated MSRV to 1.86
 - Updated dependencies: tempfile 3.24, criterion 0.8, cpal 0.17
 
 ## [0.4.0] - 2025-12-24

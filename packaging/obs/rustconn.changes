@@ -5,6 +5,7 @@ Thu Dec 25 2025 Anton Isaiev <totoshko88@gmail.com> - 0.4.1
   * IronRDP audio backend (RDPSND) with PCM format support
   * Optional rdp-audio feature for audio playback via cpal
   * Bidirectional clipboard improvements for embedded RDP
+  * Updated MSRV to 1.86
   * Updated dependencies: tempfile 3.24, criterion 0.8, cpal 0.17
 
 -------------------------------------------------------------------

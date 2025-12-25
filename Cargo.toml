@@ -11,7 +11,7 @@ version = "0.4.1"
 edition = "2021"
 authors = ["RustConn Contributors"]
 license = "MIT"
-rust-version = "1.85"
+rust-version = "1.86"
 
 [workspace.dependencies]
 # Async runtime
