@@ -20,13 +20,14 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install GTK4 dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             libgtk-4-dev \
             libvte-2.91-gtk4-dev \
-            libdbus-1-dev
+            libdbus-1-dev \
+            libasound2-dev
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -65,13 +66,14 @@ jobs:
         with:
           components: clippy
 
-      - name: Install GTK4 dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             libgtk-4-dev \
             libvte-2.91-gtk4-dev \
-            libdbus-1-dev
+            libdbus-1-dev \
+            libasound2-dev
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -94,13 +96,14 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install GTK4 dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             libgtk-4-dev \
             libvte-2.91-gtk4-dev \
-            libdbus-1-dev
+            libdbus-1-dev \
+            libasound2-dev
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -144,13 +147,14 @@ jobs:
       - name: Install Rust 1.86
         uses: dtolnay/rust-toolchain@1.86
 
-      - name: Install GTK4 dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             libgtk-4-dev \
             libvte-2.91-gtk4-dev \
-            libdbus-1-dev
+            libdbus-1-dev \
+            libasound2-dev
 
       - name: Cache cargo registry
         uses: actions/cache@v4
