@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Thu Dec 25 2025 Anton Isaiev <totoshko88@gmail.com> - 0.4.2
+
+- Update to version 0.4.2
+  * Fixed Asbru-CM import for installed configuration (environments key)
+  * Fixed application icon resolution for all installation scenarios
+  * Extended icon theme search paths
+
+-------------------------------------------------------------------
 Thu Dec 25 2025 Anton Isaiev <totoshko88@gmail.com> - 0.4.1
 
 - Update to version 0.4.1

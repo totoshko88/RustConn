@@ -185,16 +185,43 @@ impl AsbruImporter {
         };
 
         // Filter out special keys and parse entries
+        // Asbru-CM stores connections in two possible locations:
+        // 1. Top-level (exported files) - entries are at root level
+        // 2. Inside "environments" key (installed Asbru config)
         let mut config: HashMap<String, AsbruEntry> = HashMap::new();
-        for (key, value) in raw_config {
+
+        // Check if this is an installed Asbru config with "environments" key
+        if let Some(environments) = raw_config.get("environments") {
+            if let Some(env_map) = environments.as_mapping() {
+                for (key, value) in env_map {
+                    if let Some(key_str) = key.as_str() {
+                        // Skip special keys
+                        if key_str.starts_with("__") {
+                            continue;
+                        }
+                        // Try to deserialize as AsbruEntry
+                        if let Ok(entry) = serde_yaml::from_value(value.clone()) {
+                            config.insert(key_str.to_string(), entry);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Also check top-level entries (for exported files)
+        for (key, value) in &raw_config {
             // Skip special Asbru metadata keys
-            if key.starts_with("__") || key == "defaults" || key == "environments" {
+            if key.starts_with("__")
+                || key == "defaults"
+                || key == "environments"
+                || key.starts_with("config ")
+            {
                 continue;
             }
 
             // Try to deserialize as AsbruEntry
-            if let Ok(entry) = serde_yaml::from_value(value) {
-                config.insert(key, entry);
+            if let Ok(entry) = serde_yaml::from_value(value.clone()) {
+                config.insert(key.clone(), entry);
             }
             // Skip entries that don't match the expected structure
         }
@@ -707,5 +734,76 @@ dollar-uuid:
         let result = importer.parse_config(yaml, "test");
         assert_eq!(result.connections.len(), 1);
         assert_eq!(result.connections[0].host, "$HOSTNAME");
+    }
+
+    #[test]
+    fn test_parse_installed_asbru_format() {
+        let importer = AsbruImporter::new();
+        // Real installed Asbru-CM format with environments key
+        let yaml = r#"
+---
+__PAC__EXPORTED__FULL__: 1
+config version: 2
+defaults:
+  auto save: 1
+environments:
+  group-uuid-1234:
+    _is_group: 1
+    name: "Production"
+    children: {}
+  conn-uuid-5678:
+    _is_group: 0
+    name: "Web Server"
+    ip: "10.0.0.1"
+    port: 22
+    user: "ubuntu"
+    method: "SSH"
+    parent: "group-uuid-1234"
+  conn-uuid-9012:
+    _is_group: 0
+    name: "Database"
+    ip: "10.0.0.2"
+    port: 22
+    user: "admin"
+    method: "SSH"
+"#;
+
+        let result = importer.parse_config(yaml, "test");
+        assert_eq!(result.groups.len(), 1, "Should have 1 group");
+        assert_eq!(result.connections.len(), 2, "Should have 2 connections");
+
+        // Check group name
+        assert_eq!(result.groups[0].name, "Production");
+
+        // Check that one connection has parent group
+        let with_parent = result
+            .connections
+            .iter()
+            .filter(|c| c.group_id.is_some())
+            .count();
+        assert_eq!(with_parent, 1, "One connection should have parent group");
+    }
+
+    #[test]
+    fn test_parse_mixed_format() {
+        let importer = AsbruImporter::new();
+        // Test that both top-level and environments entries are parsed
+        let yaml = r#"
+---
+environments:
+  env-conn-uuid:
+    _is_group: 0
+    name: "Env Server"
+    ip: "10.0.0.1"
+    method: "SSH"
+top-level-uuid:
+  _is_group: 0
+  name: "Top Level Server"
+  ip: "10.0.0.2"
+  method: "SSH"
+"#;
+
+        let result = importer.parse_config(yaml, "test");
+        assert_eq!(result.connections.len(), 2, "Should parse both formats");
     }
 }

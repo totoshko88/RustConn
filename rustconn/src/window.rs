@@ -4641,9 +4641,30 @@ impl MainWindow {
         if let Some(display) = gtk4::gdk::Display::default() {
             let icon_theme = gtk4::IconTheme::for_display(&display);
 
-            // Add the icons directory to the icon search path (hicolor structure)
-            let icons_path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/icons");
-            icon_theme.add_search_path(icons_path);
+            // Add multiple icon search paths for different installation scenarios
+            // 1. Development path (cargo run)
+            let dev_icons_path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/icons");
+            icon_theme.add_search_path(dev_icons_path);
+
+            // 2. System installation paths
+            let system_paths = [
+                "/usr/share/icons",
+                "/usr/local/share/icons",
+                "/app/share/icons", // Flatpak
+            ];
+            for path in &system_paths {
+                if std::path::Path::new(path).exists() {
+                    icon_theme.add_search_path(path);
+                }
+            }
+
+            // 3. User local installation path
+            if let Some(data_dir) = dirs::data_dir() {
+                let user_icons = data_dir.join("icons");
+                if user_icons.exists() {
+                    icon_theme.add_search_path(user_icons.to_string_lossy().as_ref());
+                }
+            }
         }
     }
 

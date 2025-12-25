@@ -1,3 +1,12 @@
+rustconn (0.4.2-1) unstable; urgency=medium
+
+  * New upstream release
+    - Fixed Asbru-CM import for installed configuration (environments key)
+    - Fixed application icon resolution for all installation scenarios
+    - Extended icon theme search paths
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Thu, 25 Dec 2025 21:00:00 +0200
+
 rustconn (0.4.1-1) unstable; urgency=medium
 
   * New upstream release

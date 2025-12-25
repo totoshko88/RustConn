@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2025-12-25
+
+### Fixed
+- Asbru-CM import now correctly parses installed Asbru configuration (connections inside `environments` key)
+- Application icon now properly resolves in all installation scenarios (system, Flatpak, local, development)
+
+### Changed
+- Icon theme search paths extended to support multiple installation methods
+
 ## [0.4.1] - 2025-12-25
 
 ### Added
@@ -109,7 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No plaintext password storage
 - `unsafe_code = "forbid"` enforced
 
-[Unreleased]: https://github.com/totoshko88/rustconn/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/totoshko88/rustconn/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/totoshko88/rustconn/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/totoshko88/rustconn/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/totoshko88/rustconn/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/totoshko88/rustconn/compare/v0.3.0...v0.3.1
