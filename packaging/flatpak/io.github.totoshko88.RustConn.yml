@@ -4,7 +4,6 @@ runtime-version: '49'
 sdk: org.gnome.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
-  - org.freedesktop.Sdk.Extension.llvm19
 command: rustconn
 
 finish-args:
@@ -22,8 +21,7 @@ finish-args:
   - --socket=ssh-auth
 
 build-options:
-  append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/llvm19/bin
-  prepend-ld-library-path: /usr/lib/sdk/llvm19/lib
+  append-path: /usr/lib/sdk/rust-stable/bin
   env:
     CARGO_HOME: /run/build/rustconn/cargo
     RUST_BACKTRACE: '1'
