@@ -750,7 +750,7 @@ async fn run_event_loop(
 
         // Placeholder: Send simulated frame updates periodically
         frame_count += 1;
-        if frame_count % frame_interval == 0 {
+        if frame_count.is_multiple_of(frame_interval) {
             let test_rect = SpiceRect::new(0, 0, 64, 64);
             let test_data = vec![0x40u8; 64 * 64 * 4]; // Dark gray BGRA
             let _ = event_tx.send(SpiceClientEvent::FrameUpdate {

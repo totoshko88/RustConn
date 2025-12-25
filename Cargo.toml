@@ -50,8 +50,10 @@ tempfile = "3.24"
 unsafe_code = "forbid"
 
 [workspace.lints.clippy]
-all = "warn"
-pedantic = "warn"
-nursery = "warn"
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+# These lints suggest const fn but Vec/HashMap methods aren't const in stable Rust
+missing_const_for_fn = "allow"
 
 
