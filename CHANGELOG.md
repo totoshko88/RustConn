@@ -20,7 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Added context menu (Right-click) with Copy, Paste, and Select All options.
     - Added keyboard shortcuts: Ctrl+Shift+C (Copy) and Ctrl+Shift+V (Paste).
 - Refactored `Connection` model to support extensible automation configuration (`AutomationConfig`).
-- Initial work on dependency updates and UI improvements.
+
+### Changed
+- Updated `thiserror` from 1.0 to 2.0 (backwards compatible, no API changes required)
+- Note: `picky` remains pinned at `=7.0.0-rc.17` due to sspi 0.16.0 incompatibility with newer versions
 
 ## [0.4.2] - 2025-12-25
 
@@ -133,11 +136,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No plaintext password storage
 - `unsafe_code = "forbid"` enforced
 
-[Unreleased]: https://github.com/totoshko88/rustconn/compare/v0.4.2...HEAD
-[0.4.2]: https://github.com/totoshko88/rustconn/compare/v0.4.1...v0.4.2
-[0.4.1]: https://github.com/totoshko88/rustconn/compare/v0.4.0...v0.4.1
-[0.4.0]: https://github.com/totoshko88/rustconn/compare/v0.3.1...v0.4.0
-[0.3.1]: https://github.com/totoshko88/rustconn/compare/v0.3.0...v0.3.1
-[0.3.0]: https://github.com/totoshko88/rustconn/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/totoshko88/rustconn/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/totoshko88/rustconn/releases/tag/v0.1.0
+[Unreleased]: https://github.com/totoshko88/RustConn/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/totoshko88/RustConn/compare/v0.4.1...v0.4.2
+[0.4.1]: https://github.com/totoshko88/RustConn/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/totoshko88/RustConn/compare/v0.3.1...v0.4.0
+[0.3.1]: https://github.com/totoshko88/RustConn/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/totoshko88/RustConn/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/totoshko88/RustConn/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/totoshko88/RustConn/releases/tag/v0.1.0
