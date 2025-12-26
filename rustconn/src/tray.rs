@@ -168,11 +168,30 @@ mod tray_impl {
         }
 
         fn menu(&self) -> Vec<MenuItem<Self>> {
-            let state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+            // Clone state data to avoid holding lock during menu construction
+            let (window_visible, recent_connections, active_sessions) = {
+                match self.state.lock() {
+                    Ok(state) => (
+                        state.window_visible,
+                        state.recent_connections.clone(),
+                        state.active_sessions,
+                    ),
+                    Err(e) => {
+                        // Poisoned lock - recover with defaults
+                        let state = e.into_inner();
+                        (
+                            state.window_visible,
+                            state.recent_connections.clone(),
+                            state.active_sessions,
+                        )
+                    }
+                }
+            };
+
             let mut items: Vec<MenuItem<Self>> = Vec::new();
 
             // Toggle window visibility
-            let label = if state.window_visible {
+            let label = if window_visible {
                 "Hide Window"
             } else {
                 "Show Window"
@@ -188,9 +207,8 @@ mod tray_impl {
             items.push(MenuItem::Separator);
 
             // Recent connections submenu
-            if !state.recent_connections.is_empty() {
-                let recent_items: Vec<MenuItem<Self>> = state
-                    .recent_connections
+            if !recent_connections.is_empty() {
+                let recent_items: Vec<MenuItem<Self>> = recent_connections
                     .iter()
                     .take(10)
                     .map(|(id, name)| {
@@ -235,9 +253,9 @@ mod tray_impl {
             items.push(MenuItem::Separator);
 
             // Session count (informational)
-            if state.active_sessions > 0 {
+            if active_sessions > 0 {
                 items.push(MenuItem::Standard(StandardItem {
-                    label: format!("{} Active Session(s)", state.active_sessions),
+                    label: format!("{} Active Session(s)", active_sessions),
                     enabled: false,
                     ..Default::default()
                 }));
@@ -271,6 +289,8 @@ mod tray_impl {
         state: Arc<Mutex<TrayState>>,
         receiver: Receiver<TrayMessage>,
         handle: Handle<RustConnTray>,
+        /// Track if update is needed to avoid excessive D-Bus calls
+        needs_update: Arc<Mutex<bool>>,
     }
 
     impl TrayManager {
@@ -296,28 +316,55 @@ mod tray_impl {
                 state,
                 receiver,
                 handle,
+                needs_update: Arc::new(Mutex::new(false)),
             })
+        }
+
+        /// Trigger a menu update on the D-Bus service
+        fn trigger_update(&self) {
+            // Only update if there are actual changes
+            if let Ok(mut needs) = self.needs_update.lock() {
+                if *needs {
+                    let _ = self.handle.update(|_| {});
+                    *needs = false;
+                }
+            }
         }
 
         pub fn set_active_sessions(&self, count: u32) {
             if let Ok(mut state) = self.state.lock() {
-                state.active_sessions = count;
+                if state.active_sessions != count {
+                    state.active_sessions = count;
+                    if let Ok(mut needs) = self.needs_update.lock() {
+                        *needs = true;
+                    }
+                }
             }
-            let _ = self.handle.update(|_| {});
+            self.trigger_update();
         }
 
         pub fn set_recent_connections(&self, connections: Vec<(Uuid, String)>) {
             if let Ok(mut state) = self.state.lock() {
-                state.recent_connections = connections;
+                if state.recent_connections != connections {
+                    state.recent_connections = connections;
+                    if let Ok(mut needs) = self.needs_update.lock() {
+                        *needs = true;
+                    }
+                }
             }
-            let _ = self.handle.update(|_| {});
+            self.trigger_update();
         }
 
         pub fn set_window_visible(&self, visible: bool) {
             if let Ok(mut state) = self.state.lock() {
-                state.window_visible = visible;
+                if state.window_visible != visible {
+                    state.window_visible = visible;
+                    if let Ok(mut needs) = self.needs_update.lock() {
+                        *needs = true;
+                    }
+                }
             }
-            let _ = self.handle.update(|_| {});
+            self.trigger_update();
         }
 
         pub fn try_recv(&self) -> Option<TrayMessage> {
