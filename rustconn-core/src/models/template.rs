@@ -7,7 +7,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::connection::{Connection, PasswordSource};
+use super::connection::{AutomationConfig, Connection, PasswordSource};
 use super::custom_property::CustomProperty;
 use super::protocol::{ProtocolConfig, ProtocolType, RdpConfig, SpiceConfig, SshConfig, VncConfig};
 use crate::automation::ConnectionTask;
@@ -237,6 +237,7 @@ impl ConnectionTemplate {
             created_at: now,
             updated_at: now,
             protocol_config: self.protocol_config.clone(),
+            automation: AutomationConfig::default(),
             sort_order: 0,
             last_connected: None,
             password_source: self.password_source,
@@ -248,7 +249,6 @@ impl ConnectionTemplate {
             local_variables: std::collections::HashMap::new(),
             log_config: None,
             key_sequence: None,
-            expect_rules: Vec::new(),
             window_mode: super::connection::WindowMode::default(),
             remember_window_position: false,
             window_geometry: None,

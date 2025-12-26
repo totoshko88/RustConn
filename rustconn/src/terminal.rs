@@ -19,7 +19,7 @@
 use gtk4::prelude::*;
 use gtk4::{
     gdk, gio, glib, Box as GtkBox, Button, Image, Label, MenuButton, Notebook, Orientation,
-    Popover, ScrolledWindow, Widget,
+    Popover, PopoverMenu, ScrolledWindow, Widget,
 };
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
@@ -29,9 +29,12 @@ use uuid::Uuid;
 use vte4::prelude::*;
 use vte4::{PtyFlags, Terminal};
 
+use crate::automation::{AutomationSession, Trigger};
 use crate::session::{
     RdpSessionWidget, SessionState, SessionWidget, SpiceSessionWidget, VncSessionWidget,
 };
+use regex::Regex;
+use rustconn_core::models::AutomationConfig;
 
 /// Tab display mode based on available space
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -94,6 +97,8 @@ pub struct TerminalNotebook {
     terminals: Rc<RefCell<HashMap<Uuid, Terminal>>>,
     /// Map of session IDs to session widgets (for VNC/RDP/SPICE sessions)
     session_widgets: Rc<RefCell<HashMap<Uuid, SessionWidgetStorage>>>,
+    /// Map of session IDs to automation sessions
+    automation_sessions: Rc<RefCell<HashMap<Uuid, AutomationSession>>>,
     /// Session metadata
     session_info: Rc<RefCell<HashMap<Uuid, TerminalSession>>>,
     /// Current tab display mode
@@ -170,6 +175,7 @@ impl TerminalNotebook {
             sessions: Rc::new(RefCell::new(HashMap::new())),
             terminals: Rc::new(RefCell::new(HashMap::new())),
             session_widgets: Rc::new(RefCell::new(HashMap::new())),
+            automation_sessions: Rc::new(RefCell::new(HashMap::new())),
             session_info: Rc::new(RefCell::new(HashMap::new())),
             display_mode,
             tab_labels,
@@ -317,7 +323,13 @@ impl TerminalNotebook {
     ///
     /// This creates the terminal widget and prepares it for spawning a command.
     /// Returns the session UUID for tracking.
-    pub fn create_terminal_tab(&self, connection_id: Uuid, title: &str, protocol: &str) -> Uuid {
+    pub fn create_terminal_tab(
+        &self,
+        connection_id: Uuid,
+        title: &str,
+        protocol: &str,
+        automation: Option<&AutomationConfig>,
+    ) -> Uuid {
         let session_id = Uuid::new_v4();
         let is_first_session = self.sessions.borrow().is_empty();
 
@@ -331,6 +343,32 @@ impl TerminalNotebook {
         let terminal = Terminal::new();
         terminal.set_hexpand(true);
         terminal.set_vexpand(true);
+
+        // Setup automation if configured
+        if let Some(config) = automation {
+            if !config.expect_rules.is_empty() {
+                let mut triggers = Vec::new();
+                for rule in &config.expect_rules {
+                    if !rule.enabled {
+                        continue;
+                    }
+                    if let Ok(regex) = Regex::new(&rule.pattern) {
+                        triggers.push(Trigger {
+                            pattern: regex,
+                            response: rule.response.clone(),
+                            one_shot: true,
+                        });
+                    }
+                }
+
+                if !triggers.is_empty() {
+                    let session = AutomationSession::new(terminal.clone(), triggers);
+                    self.automation_sessions
+                        .borrow_mut()
+                        .insert(session_id, session);
+                }
+            }
+        }
 
         // Configure terminal appearance
         Self::configure_terminal(&terminal);
@@ -759,6 +797,74 @@ impl TerminalNotebook {
         terminal.set_input_enabled(true);
         terminal.set_allow_hyperlink(true);
         terminal.set_mouse_autohide(true);
+
+        // Keyboard shortcuts (Copy/Paste)
+        let controller = gtk4::EventControllerKey::new();
+        let term = terminal.clone();
+        controller.connect_key_pressed(move |_, key, _, state| {
+            let mask = gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::SHIFT_MASK;
+            if state.contains(mask) {
+                match key.name().as_deref() {
+                    Some("C") | Some("c") => {
+                        term.copy_clipboard_format(vte4::Format::Text);
+                        return glib::Propagation::Stop;
+                    }
+                    Some("V") | Some("v") => {
+                        term.paste_clipboard();
+                        return glib::Propagation::Stop;
+                    }
+                    _ => (),
+                }
+            }
+            glib::Propagation::Proceed
+        });
+        terminal.add_controller(controller);
+
+        // Context menu (Right click)
+        let click_controller = gtk4::GestureClick::new();
+        click_controller.set_button(3); // Right click
+        let term_menu = terminal.clone();
+        click_controller.connect_pressed(move |_gesture, _, x, y| {
+            let menu = gio::Menu::new();
+            menu.append(Some("Copy"), Some("terminal.copy"));
+            menu.append(Some("Paste"), Some("terminal.paste"));
+            menu.append(Some("Select All"), Some("terminal.select-all"));
+
+            let popover = PopoverMenu::from_model(Some(&menu));
+            popover.set_parent(&term_menu);
+            popover.set_has_arrow(false);
+            
+            // Create action group for the menu
+            let action_group = gio::SimpleActionGroup::new();
+            
+            let term_copy = term_menu.clone();
+            let action_copy = gio::SimpleAction::new("copy", None);
+            action_copy.connect_activate(move |_, _| {
+                term_copy.copy_clipboard_format(vte4::Format::Text);
+            });
+            action_group.add_action(&action_copy);
+
+            let term_paste = term_menu.clone();
+            let action_paste = gio::SimpleAction::new("paste", None);
+            action_paste.connect_activate(move |_, _| {
+                term_paste.paste_clipboard();
+            });
+            action_group.add_action(&action_paste);
+
+            let term_select = term_menu.clone();
+            let action_select = gio::SimpleAction::new("select-all", None);
+            action_select.connect_activate(move |_, _| {
+                term_select.select_all();
+            });
+            action_group.add_action(&action_select);
+
+            term_menu.insert_action_group("terminal", Some(&action_group));
+            
+            let rect = gdk::Rectangle::new(x as i32, y as i32, 1, 1);
+            popover.set_pointing_to(Some(&rect));
+            popover.popup();
+        });
+        terminal.add_controller(click_controller);
 
         // Set up terminal colors (dark theme)
         let bg_color = gdk::RGBA::new(0.1, 0.1, 0.1, 1.0);

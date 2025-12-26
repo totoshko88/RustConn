@@ -2517,7 +2517,12 @@ impl MainWindow {
                 use rustconn_core::protocol::{format_command_message, format_connection_message};
 
                 // Create terminal tab for SSH
-                let session_id = notebook.create_terminal_tab(connection_id, &conn.name, &protocol);
+                let session_id = notebook.create_terminal_tab(
+                    connection_id,
+                    &conn.name,
+                    &protocol,
+                    Some(&conn.automation),
+                );
 
                 // Build and spawn SSH command
                 let port = conn.port;
@@ -2831,12 +2836,17 @@ impl MainWindow {
                         return None;
                     };
 
+                let automation_config = conn.automation.clone();
                 drop(state_ref);
 
                 // Create terminal tab for Zero Trust with provider-specific protocol
                 let tab_protocol = format!("zerotrust:{provider_key}");
-                let session_id =
-                    notebook.create_terminal_tab(connection_id, &conn_name, &tab_protocol);
+                let session_id = notebook.create_terminal_tab(
+                    connection_id,
+                    &conn_name,
+                    &tab_protocol,
+                    Some(&automation_config),
+                );
 
                 // Update last_connected timestamp
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
@@ -4906,7 +4916,7 @@ impl MainWindow {
 
     /// Opens a local shell terminal with split view integration
     fn open_local_shell_with_split(notebook: &SharedNotebook, split_view: &SharedSplitView) {
-        let session_id = notebook.create_terminal_tab(Uuid::nil(), "Local Shell", "local");
+        let session_id = notebook.create_terminal_tab(Uuid::nil(), "Local Shell", "local", None);
 
         // Get user's default shell
         let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
@@ -5080,15 +5090,23 @@ impl MainWindow {
             match protocol_idx {
                 0 => {
                     // SSH - use terminal tab
-                    let session_id =
-                        notebook.create_terminal_tab(Uuid::nil(), &format!("Quick: {host}"), "ssh");
+                    let session_id = notebook.create_terminal_tab(
+                        Uuid::nil(),
+                        &format!("Quick: {host}"),
+                        "ssh",
+                        None,
+                    );
 
                     notebook.spawn_ssh(session_id, &host, port, username.as_deref(), None, &[]);
                 }
                 1 => {
                     // RDP - native embedding not yet implemented, show placeholder
-                    let _session_id =
-                        notebook.create_terminal_tab(Uuid::nil(), &format!("Quick: {host}"), "rdp");
+                    let _session_id = notebook.create_terminal_tab(
+                        Uuid::nil(),
+                        &format!("Quick: {host}"),
+                        "rdp",
+                        None,
+                    );
 
                     eprintln!(
                         "Note: Native RDP embedding not yet implemented. \
@@ -5097,8 +5115,12 @@ impl MainWindow {
                 }
                 2 => {
                     // VNC - native embedding not yet implemented, show placeholder
-                    let _session_id =
-                        notebook.create_terminal_tab(Uuid::nil(), &format!("Quick: {host}"), "vnc");
+                    let _session_id = notebook.create_terminal_tab(
+                        Uuid::nil(),
+                        &format!("Quick: {host}"),
+                        "vnc",
+                        None,
+                    );
 
                     eprintln!(
                         "Note: Native VNC embedding not yet implemented. \
@@ -5107,8 +5129,12 @@ impl MainWindow {
                 }
                 _ => {
                     // Default to SSH
-                    let session_id =
-                        notebook.create_terminal_tab(Uuid::nil(), &format!("Quick: {host}"), "ssh");
+                    let session_id = notebook.create_terminal_tab(
+                        Uuid::nil(),
+                        &format!("Quick: {host}"),
+                        "ssh",
+                        None,
+                    );
 
                     notebook.spawn_ssh(session_id, &host, port, username.as_deref(), None, &[]);
                 }

@@ -12,7 +12,7 @@ Build-Depends: debhelper-compat (= 13),
                libssl-dev,
                pkg-config
 Standards-Version: 4.6.2
-Homepage: https://github.com/totoshko88/rust-cm
+Homepage: https://github.com/totoshko88/RustConn
 Rules-Requires-Root: no
 
 Package: rustconn

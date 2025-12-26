@@ -4449,7 +4449,7 @@ impl ConnectionDialog {
         self.set_log_config(conn.log_config.as_ref());
 
         // Set expect rules
-        self.set_expect_rules(&conn.expect_rules);
+        self.set_expect_rules(&conn.automation.expect_rules);
 
         // Set connection tasks
         self.set_pre_connect_task(conn.pre_connect_task.as_ref());
@@ -5462,7 +5462,7 @@ impl ConnectionDialogData<'_> {
         conn.log_config = self.build_log_config();
 
         // Set expect rules (filter out empty patterns)
-        conn.expect_rules = self
+        conn.automation.expect_rules = self
             .expect_rules
             .iter()
             .filter(|r| !r.pattern.is_empty())

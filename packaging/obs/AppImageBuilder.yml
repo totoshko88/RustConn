@@ -67,4 +67,4 @@ AppDir:
 
 AppImage:
   arch: x86_64
-  update-information: gh-releases-zsync|totoshko88|rust-cm|latest|RustConn-*x86_64.AppImage.zsync
+  update-information: gh-releases-zsync|totoshko88|RustConn|latest|RustConn-*x86_64.AppImage.zsync

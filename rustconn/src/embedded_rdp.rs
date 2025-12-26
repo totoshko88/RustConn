@@ -3042,10 +3042,29 @@ impl EmbeddedRdpWidget {
                         RdpClientEvent::CursorPosition { .. } => {
                             // Server-side cursor position update - we handle this client-side
                         }
-                        RdpClientEvent::CursorUpdate { .. } => {
-                            // Custom cursor bitmap - for now just use default
-                            // TODO: Create custom cursor from bitmap data
-                            drawing_area.set_cursor_from_name(Some("default"));
+                        RdpClientEvent::CursorUpdate {
+                            hotspot_x,
+                            hotspot_y,
+                            width,
+                            height,
+                            data,
+                        } => {
+                            // Create custom cursor from bitmap data
+                            let bytes = glib::Bytes::from(&data);
+                            let texture = gdk::MemoryTexture::new(
+                                i32::from(width),
+                                i32::from(height),
+                                gdk::MemoryFormat::B8g8r8a8,
+                                &bytes,
+                                usize::from(width) * 4,
+                            );
+                            let cursor = gdk::Cursor::from_texture(
+                                &texture,
+                                i32::from(hotspot_x),
+                                i32::from(hotspot_y),
+                                None,
+                            );
+                            drawing_area.set_cursor(Some(&cursor));
                         }
                         RdpClientEvent::ServerMessage(msg) => {
                             tracing::debug!("[IronRDP] Server message: {}", msg);

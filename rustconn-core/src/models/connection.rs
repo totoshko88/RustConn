@@ -13,6 +13,17 @@ use crate::session::LogConfig;
 use crate::variables::Variable;
 use crate::wol::WolConfig;
 
+/// Automation configuration for a connection
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct AutomationConfig {
+    /// Expect rules for interactive prompts
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub expect_rules: Vec<ExpectRule>,
+    /// Post-login scripts to execute
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub post_login_scripts: Vec<String>,
+}
+
 /// Source of password/credentials for a connection
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -152,6 +163,9 @@ pub struct Connection {
     pub updated_at: DateTime<Utc>,
     /// Protocol-specific configuration
     pub protocol_config: ProtocolConfig,
+    /// Automation configuration
+    #[serde(default)]
+    pub automation: AutomationConfig,
     /// Sort order for manual ordering (lower values appear first)
     #[serde(default)]
     pub sort_order: i32,
@@ -185,9 +199,6 @@ pub struct Connection {
     /// Key sequence to send after connection is established
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub key_sequence: Option<KeySequence>,
-    /// Expect rules for automated pattern matching
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub expect_rules: Vec<ExpectRule>,
     /// Window mode for connection display (embedded, external, fullscreen)
     #[serde(default)]
     pub window_mode: WindowMode,
@@ -227,7 +238,7 @@ impl Connection {
             local_variables: HashMap::new(),
             log_config: None,
             key_sequence: None,
-            expect_rules: Vec::new(),
+            automation: AutomationConfig::default(),
             window_mode: WindowMode::default(),
             remember_window_position: false,
             window_geometry: None,
@@ -535,25 +546,25 @@ impl Connection {
     /// Sets the expect rules for this connection
     #[must_use]
     pub fn with_expect_rules(mut self, rules: Vec<ExpectRule>) -> Self {
-        self.expect_rules = rules;
+        self.automation.expect_rules = rules;
         self
     }
 
     /// Returns true if this connection has expect rules configured
     #[must_use]
     pub fn has_expect_rules(&self) -> bool {
-        !self.expect_rules.is_empty()
+        !self.automation.expect_rules.is_empty()
     }
 
     /// Gets a reference to the expect rules
     #[must_use]
     pub fn get_expect_rules(&self) -> &[ExpectRule] {
-        &self.expect_rules
+        &self.automation.expect_rules
     }
 
     /// Adds an expect rule to this connection
     pub fn add_expect_rule(&mut self, rule: ExpectRule) {
-        self.expect_rules.push(rule);
+        self.automation.expect_rules.push(rule);
         self.touch();
     }
 
@@ -562,9 +573,9 @@ impl Connection {
     /// # Returns
     /// `true` if a rule was removed, `false` otherwise
     pub fn remove_expect_rule(&mut self, id: uuid::Uuid) -> bool {
-        let len_before = self.expect_rules.len();
-        self.expect_rules.retain(|r| r.id != id);
-        let removed = self.expect_rules.len() < len_before;
+        let len_before = self.automation.expect_rules.len();
+        self.automation.expect_rules.retain(|r| r.id != id);
+        let removed = self.automation.expect_rules.len() < len_before;
         if removed {
             self.touch();
         }
@@ -573,7 +584,7 @@ impl Connection {
 
     /// Sets the expect rules, updating the timestamp
     pub fn set_expect_rules(&mut self, rules: Vec<ExpectRule>) {
-        self.expect_rules = rules;
+        self.automation.expect_rules = rules;
         self.touch();
     }
 

@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: rustconn
 Upstream-Contact: Anton Isaiev <totoshko88@gmail.com>
-Source: https://github.com/totoshko88/rust-cm
+Source: https://github.com/totoshko88/RustConn
 
 Files: *
 Copyright: 2025 Anton Isaiev

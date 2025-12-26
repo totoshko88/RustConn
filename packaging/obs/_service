@@ -1,6 +1,6 @@
 <services>
   <service name="obs_scm">
-    <param name="url">https://github.com/totoshko88/rust-cm.git</param>
+    <param name="url">https://github.com/totoshko88/RustConn.git</param>
     <param name="scm">git</param>
     <param name="revision">v0.4.0</param>
     <param name="versionformat">@PARENT_TAG@</param>

@@ -15,7 +15,7 @@ path = "src/main.rs"
 rustconn-core = { path = "../rustconn-core" }
 tokio = { workspace = true }
 gtk4 = { workspace = true, features = ["v4_14"] }
-vte4 = { workspace = true }
+vte4 = { workspace = true, features = ["v0_72"] }
 uuid = { workspace = true }
 regex = "1.10"
 chrono = { workspace = true }

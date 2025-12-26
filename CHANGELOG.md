@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Real-time connection status indicators in the sidebar (green/red dots) to show connected/disconnected state.
+- Support for custom cursors in RDP sessions (server-side cursor updates).
+- Full integration of "Expect" automation engine:
+    - Regex-based pattern matching on terminal output.
+    - Automatic response injection.
+    - Support for "one-shot" triggers.
+- Terminal improvements:
+    - Added context menu (Right-click) with Copy, Paste, and Select All options.
+    - Added keyboard shortcuts: Ctrl+Shift+C (Copy) and Ctrl+Shift+V (Paste).
+- Refactored `Connection` model to support extensible automation configuration (`AutomationConfig`).
 - Initial work on dependency updates and UI improvements.
 
 ## [0.4.2] - 2025-12-25

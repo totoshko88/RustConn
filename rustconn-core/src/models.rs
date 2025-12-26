@@ -11,7 +11,7 @@ mod protocol;
 mod snippet;
 mod template;
 
-pub use connection::{Connection, PasswordSource, WindowGeometry, WindowMode};
+pub use connection::{AutomationConfig, Connection, PasswordSource, WindowGeometry, WindowMode};
 pub use credentials::Credentials;
 pub use custom_property::{CustomProperty, PropertyType};
 pub use group::ConnectionGroup;
