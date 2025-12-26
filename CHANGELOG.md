@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - Planned
+
+### Added
+- Real-time connection status indicators in the sidebar (green/red dots) to show connected/disconnected state.
+- Initial work on dependency updates and UI improvements.
+
 ## [0.4.2] - 2025-12-25
 
 ### Fixed

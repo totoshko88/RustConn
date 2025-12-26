@@ -199,6 +199,17 @@ impl DropIndicator {
                 margin-bottom: 4px;
                 padding-bottom: 4px;
             }
+
+            /* Status icons */
+            .status-connected {
+                color: #2ec27e; /* Green */
+            }
+            .status-connecting {
+                color: #f5c211; /* Yellow */
+            }
+            .status-failed {
+                color: #e01b24; /* Red */
+            }
             
             /* Group highlight for drop-into */
             .drop-target-into {
@@ -220,6 +231,13 @@ impl DropIndicator {
             .drop-into-group row:selected {
                 background-color: alpha(@accent_bg_color, 0.4);
                 border-radius: 6px;
+            }
+            
+            .status-connected {
+                color: #2ec27e;
+            }
+            .status-connecting {
+                color: #e5a50a;
             }
             ",
         );
@@ -429,6 +447,9 @@ pub struct ConnectionSidebar {
     drop_indicator: Rc<DropIndicator>,
     /// Scrolled window containing the list view
     scrolled_window: ScrolledWindow,
+    /// Map of connection IDs to their current status
+    /// Used to preserve status across tree refreshes
+    connection_statuses: Rc<RefCell<std::collections::HashMap<String, String>>>,
     /// Lazy group loader for on-demand loading of connection groups
     lazy_loader: Rc<RefCell<LazyGroupLoader>>,
     /// Virtual scroller for efficient rendering of large lists
@@ -554,14 +575,27 @@ impl ConnectionSidebar {
         let factory = SignalListItemFactory::new();
         let group_ops_mode = Rc::new(RefCell::new(false));
         let group_ops_mode_clone = group_ops_mode.clone();
+
+        // Map to store signal handlers: ListItem -> SignalHandlerId
+        let signal_handlers: Rc<
+            RefCell<std::collections::HashMap<ListItem, glib::SignalHandlerId>>,
+        > = Rc::new(RefCell::new(std::collections::HashMap::new()));
+        let signal_handlers_bind = signal_handlers.clone();
+        let signal_handlers_unbind = signal_handlers.clone();
+
         factory.connect_setup(move |factory, obj| {
             if let Some(list_item) = obj.downcast_ref::<ListItem>() {
                 Self::setup_list_item(factory, list_item, *group_ops_mode_clone.borrow());
             }
         });
-        factory.connect_bind(|factory, obj| {
+        factory.connect_bind(move |factory, obj| {
             if let Some(list_item) = obj.downcast_ref::<ListItem>() {
-                Self::bind_list_item(factory, list_item);
+                Self::bind_list_item(factory, list_item, &signal_handlers_bind);
+            }
+        });
+        factory.connect_unbind(move |factory, obj| {
+            if let Some(list_item) = obj.downcast_ref::<ListItem>() {
+                Self::unbind_list_item(factory, list_item, &signal_handlers_unbind);
             }
         });
 
@@ -756,6 +790,7 @@ impl ConnectionSidebar {
             history_popover,
             drop_indicator,
             scrolled_window,
+            connection_statuses: Rc::new(RefCell::new(std::collections::HashMap::new())),
             lazy_loader: Rc::new(RefCell::new(LazyGroupLoader::new())),
             virtual_scroller: Rc::new(RefCell::new(None)),
             virtual_scroll_config: VirtualScrollConfig::default(),
@@ -945,6 +980,12 @@ impl ConnectionSidebar {
         let icon = gtk4::Image::from_icon_name("network-server-symbolic");
         content_box.append(&icon);
 
+        let status_icon = gtk4::Image::from_icon_name("emblem-default-symbolic");
+        status_icon.set_pixel_size(10);
+        status_icon.set_visible(false);
+        status_icon.add_css_class("status-icon");
+        content_box.append(&status_icon);
+
         let label = Label::new(None);
         label.set_halign(gtk4::Align::Start);
         label.set_hexpand(true);
@@ -1031,7 +1072,11 @@ impl ConnectionSidebar {
     }
 
     /// Binds data to a list item
-    fn bind_list_item(_factory: &SignalListItemFactory, list_item: &ListItem) {
+    fn bind_list_item(
+        _factory: &SignalListItemFactory,
+        list_item: &ListItem,
+        handlers: &Rc<RefCell<std::collections::HashMap<ListItem, glib::SignalHandlerId>>>,
+    ) {
         let Some(expander) = list_item.child().and_downcast::<TreeExpander>() else {
             return;
         };
@@ -1063,6 +1108,48 @@ impl ConnectionSidebar {
             }
         }
 
+        // Update status icon
+        if let Some(status_icon) = content_box
+            .first_child()
+            .and_then(|c| c.next_sibling())
+            .and_downcast::<gtk4::Image>()
+        {
+            // Helper to update icon state
+            let update_icon = |icon: &gtk4::Image, status: &str| {
+                icon.remove_css_class("status-connected");
+                icon.remove_css_class("status-connecting");
+                icon.remove_css_class("status-failed");
+
+                if status == "connected" {
+                    icon.set_icon_name(Some("emblem-default-symbolic"));
+                    icon.set_visible(true);
+                    icon.add_css_class("status-connected");
+                } else if status == "connecting" {
+                    icon.set_icon_name(Some("network-transmit-receive-symbolic"));
+                    icon.set_visible(true);
+                    icon.add_css_class("status-connecting");
+                } else if status == "failed" {
+                    icon.set_icon_name(Some("dialog-error-symbolic"));
+                    icon.set_visible(true);
+                    icon.add_css_class("status-failed");
+                } else {
+                    icon.set_visible(false);
+                }
+            };
+
+            // Initial update
+            update_icon(&status_icon, &item.status());
+
+            // Connect to notify::status
+            let status_icon_clone = status_icon.clone();
+            let handler_id = item.connect_notify_local(Some("status"), move |item, _| {
+                update_icon(&status_icon_clone, &item.status());
+            });
+
+            // Store handler ID on list_item for cleanup
+            handlers.borrow_mut().insert(list_item.clone(), handler_id);
+        }
+
         // Update label with dirty indicator for documents
         if let Some(label) = content_box.last_child().and_downcast::<Label>() {
             let name = item.name();
@@ -1071,6 +1158,25 @@ impl ConnectionSidebar {
             } else {
                 label.set_text(&name);
             }
+        }
+    }
+
+    /// Unbinds data from a list item
+    fn unbind_list_item(
+        _factory: &SignalListItemFactory,
+        list_item: &ListItem,
+        handlers: &Rc<RefCell<std::collections::HashMap<ListItem, glib::SignalHandlerId>>>,
+    ) {
+        let Some(row) = list_item.item().and_downcast::<TreeListRow>() else {
+            return;
+        };
+        let Some(item) = row.item().and_downcast::<ConnectionItem>() else {
+            return;
+        };
+
+        // Retrieve and disconnect handler
+        if let Some(handler_id) = handlers.borrow_mut().remove(list_item) {
+            item.disconnect(handler_id);
         }
     }
 
@@ -1505,8 +1611,21 @@ impl ConnectionSidebar {
 
             // Add connections to their groups or directly to document
             for (conn_id, conn_name, protocol, host, group_id) in &connections {
-                let conn_item =
-                    ConnectionItem::new_connection(&conn_id.to_string(), conn_name, protocol, host);
+                // Check if we have a stored status for this connection
+                let status = self
+                    .connection_statuses
+                    .borrow()
+                    .get(&conn_id.to_string())
+                    .cloned()
+                    .unwrap_or_else(|| "disconnected".to_string());
+
+                let conn_item = ConnectionItem::new_connection_with_status(
+                    &conn_id.to_string(),
+                    conn_name,
+                    protocol,
+                    host,
+                    &status,
+                );
 
                 if let Some(gid) = group_id {
                     if let Some(group_item) = group_items.get(gid) {
@@ -1538,6 +1657,45 @@ impl ConnectionSidebar {
                 }
             }
         }
+    }
+
+    /// Updates the status of a connection item
+    pub fn update_connection_status(&self, id: &str, status: &str) {
+        // Update the status map
+        self.connection_statuses
+            .borrow_mut()
+            .insert(id.to_string(), status.to_string());
+
+        // Helper to recursively find and update item
+        fn update_item_recursive(model: &gio::ListModel, id: &str, status: &str) -> bool {
+            let n_items = model.n_items();
+            for i in 0..n_items {
+                if let Some(item) = model.item(i).and_downcast::<ConnectionItem>() {
+                    if item.id() == id {
+                        item.set_status(status);
+                        return true;
+                    }
+
+                    // Check children if it's a group or document
+                    if item.is_group() || item.is_document() {
+                        if let Some(children) = item.children() {
+                            if update_item_recursive(&children, id, status) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            false
+        }
+
+        let model = self.store.upcast_ref::<gio::ListModel>();
+        update_item_recursive(model, id, status);
+    }
+
+    /// Gets the status of a connection item
+    pub fn get_connection_status(&self, id: &str) -> Option<String> {
+        self.connection_statuses.borrow().get(id).cloned()
     }
 
     /// Gets the document ID for a selected item
@@ -2308,6 +2466,8 @@ mod imp {
         is_dirty: RefCell<bool>,
         #[property(get, set)]
         host: RefCell<String>,
+        #[property(get, set)]
+        status: RefCell<String>,
         pub(super) children: RefCell<Option<gio::ListStore>>,
     }
 
@@ -2338,6 +2498,28 @@ impl ConnectionItem {
             .property("is-document", false)
             .property("is-dirty", false)
             .property("host", host)
+            .property("status", "disconnected")
+            .build()
+    }
+
+    /// Creates a new connection item with status
+    #[must_use]
+    pub fn new_connection_with_status(
+        id: &str,
+        name: &str,
+        protocol: &str,
+        host: &str,
+        status: &str,
+    ) -> Self {
+        glib::Object::builder()
+            .property("id", id)
+            .property("name", name)
+            .property("protocol", protocol)
+            .property("is-group", false)
+            .property("is-document", false)
+            .property("is-dirty", false)
+            .property("host", host)
+            .property("status", status)
             .build()
     }
 

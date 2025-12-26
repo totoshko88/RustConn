@@ -1650,11 +1650,24 @@ impl EmbeddedVncWidget {
                     }
                     VncClientEvent::Error(msg) => {
                         tracing::error!("[EmbeddedVNC] Error: {}", msg);
-                        *state.borrow_mut() = VncConnectionState::Error;
-                        toolbar.set_visible(false);
-                        if let Some(ref callback) = *on_error.borrow() {
-                            callback(&msg);
+
+                        // Handle "unexpected end of file" as a disconnect rather than a hard error
+                        // This often happens when the server closes the connection cleanly but abruptly
+                        if msg.contains("unexpected end of file") {
+                            tracing::debug!("[EmbeddedVNC] Treating EOF as disconnect");
+                            *state.borrow_mut() = VncConnectionState::Disconnected;
+                            toolbar.set_visible(false);
+                            if let Some(ref callback) = *on_state_changed.borrow() {
+                                callback(VncConnectionState::Disconnected);
+                            }
+                        } else {
+                            *state.borrow_mut() = VncConnectionState::Error;
+                            toolbar.set_visible(false);
+                            if let Some(ref callback) = *on_error.borrow() {
+                                callback(&msg);
+                            }
                         }
+
                         drawing_area.queue_draw();
                         return glib::ControlFlow::Break;
                     }

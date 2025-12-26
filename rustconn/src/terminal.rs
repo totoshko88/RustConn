@@ -1197,6 +1197,15 @@ impl TerminalNotebook {
         self.terminals.borrow().get(&session_id).cloned()
     }
 
+    /// Gets the cursor row of a terminal session
+    pub fn get_terminal_cursor_row(&self, session_id: Uuid) -> Option<i64> {
+        if let Some(terminal) = self.get_terminal(session_id) {
+            let (row, _col) = terminal.cursor_position();
+            return Some(row);
+        }
+        None
+    }
+
     /// Gets session info for a session
     #[must_use]
     pub fn get_session_info(&self, session_id: Uuid) -> Option<TerminalSession> {
