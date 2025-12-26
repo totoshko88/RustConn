@@ -7,10 +7,10 @@
 //! **Validates: Requirements 9.1, 9.4**
 
 use proptest::prelude::*;
+use rustconn_core::models::AutomationConfig;
 use rustconn_core::{
     AsyncCredentialResolver, AsyncCredentialResult, CancellationToken, SecretManager,
 };
-use rustconn_core::models::AutomationConfig;
 use std::sync::Arc;
 use std::time::Duration;
 
