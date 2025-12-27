@@ -203,12 +203,20 @@ jobs:
         id: changelog
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
-          # Extract changelog section for this version
-          awk -v ver="## \\[${VERSION}\\]" '
-            $0 ~ ver {found=1; next}
-            found && /^## \[/ {exit}
+          # Extract changelog section for this version (handles ## [X.Y.Z] - DATE format)
+          awk -v ver="${VERSION}" '
+            /^## \[/ {
+              if (found) exit
+              if (index($0, "[" ver "]") > 0) found=1
+              next
+            }
             found {print}
           ' CHANGELOG.md > version_changelog.md
+          
+          # Debug: show what was extracted
+          echo "=== Extracted changelog for ${VERSION} ==="
+          cat version_changelog.md
+          echo "=== End changelog ==="
           
           # If no changelog found, use default message
           if [ ! -s version_changelog.md ]; then
