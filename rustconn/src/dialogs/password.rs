@@ -28,6 +28,7 @@ pub struct PasswordDialogResult {
 }
 
 /// Password prompt dialog
+#[allow(dead_code)] // Fields kept for GTK widget lifecycle
 pub struct PasswordDialog {
     window: Window,
     username_entry: Entry,

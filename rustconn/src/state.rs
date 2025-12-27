@@ -111,6 +111,7 @@ impl ConnectionClipboard {
     }
 
     /// Clears the clipboard
+    #[allow(dead_code)] // May be used in future for clipboard management
     pub fn clear(&mut self) {
         self.connection = None;
         self.source_group = None;
@@ -288,16 +289,25 @@ impl AppState {
     }
 
     /// Checks if credentials are cached for a connection
+    ///
+    /// Note: Part of credential caching API.
+    #[allow(dead_code)]
     pub fn has_cached_credentials(&self, connection_id: Uuid) -> bool {
         self.password_cache.contains_key(&connection_id)
     }
 
     /// Clears cached credentials for a connection
+    ///
+    /// Note: Part of credential caching API.
+    #[allow(dead_code)]
     pub fn clear_cached_credentials(&mut self, connection_id: Uuid) {
         self.password_cache.remove(&connection_id);
     }
 
     /// Clears all cached credentials
+    ///
+    /// Note: Part of credential caching API.
+    #[allow(dead_code)]
     pub fn clear_all_cached_credentials(&mut self) {
         self.password_cache.clear();
     }
@@ -305,17 +315,26 @@ impl AppState {
     // ========== Credential Verification Operations ==========
 
     /// Marks credentials as verified for a connection after successful authentication
+    ///
+    /// Note: Part of credential verification API.
+    #[allow(dead_code)]
     pub fn mark_credentials_verified(&mut self, connection_id: Uuid) {
         self.verification_manager.mark_verified(connection_id);
     }
 
     /// Marks credentials as unverified for a connection after failed authentication
+    ///
+    /// Note: Part of credential verification API.
+    #[allow(dead_code)]
     pub fn mark_credentials_unverified(&mut self, connection_id: Uuid, error: Option<String>) {
         self.verification_manager
             .mark_unverified(connection_id, error);
     }
 
     /// Checks if credentials are verified for a connection
+    ///
+    /// Note: Part of credential verification API.
+    #[allow(dead_code)]
     pub fn are_credentials_verified(&self, connection_id: Uuid) -> bool {
         self.verification_manager.is_verified(connection_id)
     }
@@ -397,6 +416,9 @@ impl AppState {
     /// Generates a unique name without protocol suffix (legacy method for backward compatibility)
     ///
     /// This method is kept for cases where protocol is not known or not relevant.
+    ///
+    /// Note: Part of connection naming API.
+    #[allow(dead_code)]
     pub fn generate_unique_connection_name_simple(&self, base_name: &str) -> String {
         if !self.connection_exists_by_name(base_name) {
             return base_name.to_string();
@@ -415,6 +437,9 @@ impl AppState {
     /// Normalizes a connection name by removing auto-generated suffixes if the base name is now unique
     ///
     /// This should be called when renaming a connection to potentially simplify the name.
+    ///
+    /// Note: Part of connection naming API.
+    #[allow(dead_code)]
     pub fn normalize_connection_name(&self, name: &str, connection_id: Uuid) -> String {
         self.connection_manager.normalize_name(name, connection_id)
     }
@@ -460,6 +485,9 @@ impl AppState {
     }
 
     /// Searches connections
+    ///
+    /// Note: Part of connection search API.
+    #[allow(dead_code)]
     pub fn search_connections(&self, query: &str) -> Vec<&Connection> {
         self.connection_manager.search(query)
     }
@@ -555,6 +583,9 @@ impl AppState {
     }
 
     /// Updates the sort order of a connection
+    ///
+    /// Note: Part of connection ordering API.
+    #[allow(dead_code)]
     pub fn update_connection_sort_order(
         &mut self,
         connection_id: Uuid,
@@ -572,6 +603,9 @@ impl AppState {
     }
 
     /// Updates the sort order of a group
+    ///
+    /// Note: Part of group ordering API.
+    #[allow(dead_code)]
     pub fn update_group_sort_order(
         &mut self,
         group_id: Uuid,
@@ -589,6 +623,9 @@ impl AppState {
     }
 
     /// Reorders connections by updating their `sort_order` values
+    ///
+    /// Note: Part of connection ordering API.
+    #[allow(dead_code)]
     pub fn reorder_connections(&mut self, connection_ids: &[Uuid]) -> Result<(), String> {
         for (index, &id) in connection_ids.iter().enumerate() {
             #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
@@ -646,6 +683,9 @@ impl AppState {
     // ========== Session Operations ==========
 
     /// Starts a session for a connection
+    ///
+    /// Note: Part of session management API.
+    #[allow(dead_code)]
     pub fn start_session(
         &mut self,
         connection_id: Uuid,
@@ -670,6 +710,9 @@ impl AppState {
     }
 
     /// Gets a session by ID
+    ///
+    /// Note: Part of session management API.
+    #[allow(dead_code)]
     pub fn get_session(&self, session_id: Uuid) -> Option<&Session> {
         self.session_manager.get_session(session_id)
     }
@@ -680,11 +723,17 @@ impl AppState {
     }
 
     /// Gets the session manager (for building commands)
+    ///
+    /// Note: Part of session management API.
+    #[allow(dead_code)]
     pub const fn session_manager(&self) -> &SessionManager {
         &self.session_manager
     }
 
     /// Gets mutable session manager
+    ///
+    /// Note: Part of session management API.
+    #[allow(dead_code)]
     pub fn session_manager_mut(&mut self) -> &mut SessionManager {
         &mut self.session_manager
     }
@@ -730,11 +779,17 @@ impl AppState {
     // ========== Secret/Credential Operations ==========
 
     /// Gets a reference to the secret manager
+    ///
+    /// Note: Part of secret management API.
+    #[allow(dead_code)]
     pub const fn secret_manager(&self) -> &SecretManager {
         &self.secret_manager
     }
 
     /// Gets a mutable reference to the secret manager
+    ///
+    /// Note: Part of secret management API.
+    #[allow(dead_code)]
     pub fn secret_manager_mut(&mut self) -> &mut SecretManager {
         &mut self.secret_manager
     }
@@ -743,6 +798,9 @@ impl AppState {
     ///
     /// Note: This uses a cached tokio runtime to avoid creating a new one each time.
     /// For better performance in async contexts, use `secret_manager()` directly.
+    ///
+    /// Note: Part of secret management API.
+    #[allow(dead_code)]
     pub fn store_credentials(
         &self,
         connection_id: Uuid,
@@ -766,6 +824,9 @@ impl AppState {
     ///
     /// Note: This uses a cached tokio runtime to avoid creating a new one each time.
     /// For better performance in async contexts, use `secret_manager()` directly.
+    ///
+    /// Note: Part of secret management API.
+    #[allow(dead_code)]
     pub fn retrieve_credentials(&self, connection_id: Uuid) -> Result<Option<Credentials>, String> {
         let secret_manager = self.secret_manager.clone();
         let id_str = connection_id.to_string();
@@ -784,6 +845,9 @@ impl AppState {
     ///
     /// Note: This uses a cached tokio runtime to avoid creating a new one each time.
     /// For better performance in async contexts, use `secret_manager()` directly.
+    ///
+    /// Note: Part of secret management API.
+    #[allow(dead_code)]
     pub fn delete_credentials(&self, connection_id: Uuid) -> Result<(), String> {
         let secret_manager = self.secret_manager.clone();
         let id_str = connection_id.to_string();
@@ -975,6 +1039,9 @@ impl AppState {
     /// # Requirements Coverage
     /// - Requirement 9.1: Async operations instead of blocking calls
     /// - Requirement 9.2: Avoid `block_on()` in GUI code
+    ///
+    /// Note: Part of async credential resolution API.
+    #[allow(dead_code)]
     pub fn resolve_credentials_with_callback<F>(
         &self,
         connection: Connection,
@@ -1003,6 +1070,9 @@ impl AppState {
     /// # Requirements Coverage
     /// - Requirement 9.1: Async operations instead of blocking calls
     /// - Requirement 9.5: Support cancellation of pending requests
+    ///
+    /// Note: Part of async credential resolution API.
+    #[allow(dead_code)]
     pub fn resolve_credentials_with_timeout<F>(
         &self,
         connection: Connection,
@@ -1040,6 +1110,9 @@ impl AppState {
     /// # Requirements Coverage
     /// - Requirement 9.1: Async operations instead of blocking calls
     /// - Requirement 9.5: Support cancellation of pending requests
+    ///
+    /// Note: Part of async credential resolution API.
+    #[allow(dead_code)]
     pub fn resolve_credentials_async(
         &self,
         connection: Connection,
@@ -1056,6 +1129,9 @@ impl AppState {
     ///
     /// # Returns
     /// A `PendingCredentialResolution` that can be awaited or cancelled
+    ///
+    /// Note: Part of async credential resolution API.
+    #[allow(dead_code)]
     pub fn resolve_credentials_async_with_timeout(
         &self,
         connection: Connection,
@@ -1066,6 +1142,9 @@ impl AppState {
     }
 
     /// Checks if `KeePass` integration is currently active
+    ///
+    /// Note: Part of KeePass integration API.
+    #[allow(dead_code)]
     pub const fn is_keepass_active(&self) -> bool {
         self.settings.secrets.kdbx_enabled && self.settings.secrets.kdbx_path.is_some()
     }
@@ -1282,6 +1361,9 @@ impl AppState {
     }
 
     /// Imports connections from an import result (legacy method)
+    ///
+    /// Note: Prefer `import_connections_with_source` for better organization.
+    #[allow(dead_code)]
     pub fn import_connections(&mut self, result: &ImportResult) -> Result<usize, String> {
         self.import_connections_with_source(result, "Unknown")
     }
@@ -1343,16 +1425,25 @@ impl AppState {
     }
 
     /// Gets a mutable reference to a document by ID
+    ///
+    /// Note: Part of document management API.
+    #[allow(dead_code)]
     pub fn get_document_mut(&mut self, id: Uuid) -> Option<&mut Document> {
         self.document_manager.get_mut(id)
     }
 
     /// Lists all document IDs
+    ///
+    /// Note: Part of document management API.
+    #[allow(dead_code)]
     pub fn list_document_ids(&self) -> Vec<Uuid> {
         self.document_manager.document_ids()
     }
 
     /// Returns the number of loaded documents
+    ///
+    /// Note: Part of document management API.
+    #[allow(dead_code)]
     pub fn document_count(&self) -> usize {
         self.document_manager.document_count()
     }
@@ -1363,16 +1454,25 @@ impl AppState {
     }
 
     /// Marks a document as dirty
+    ///
+    /// Note: Part of document management API.
+    #[allow(dead_code)]
     pub fn mark_document_dirty(&mut self, id: Uuid) {
         self.document_manager.mark_dirty(id);
     }
 
     /// Returns true if any document has unsaved changes
+    ///
+    /// Note: Part of document management API.
+    #[allow(dead_code)]
     pub fn has_dirty_documents(&self) -> bool {
         self.document_manager.has_dirty_documents()
     }
 
     /// Returns IDs of all dirty documents
+    ///
+    /// Note: Part of document management API.
+    #[allow(dead_code)]
     pub fn dirty_document_ids(&self) -> Vec<Uuid> {
         self.document_manager.dirty_document_ids()
     }
@@ -1388,6 +1488,9 @@ impl AppState {
     }
 
     /// Sets the active document
+    ///
+    /// Note: Part of document management API.
+    #[allow(dead_code)]
     pub fn set_active_document(&mut self, id: Option<Uuid>) {
         self.active_document_id = id;
     }
@@ -1421,11 +1524,17 @@ impl AppState {
     }
 
     /// Gets the document manager
+    ///
+    /// Note: Part of document management API.
+    #[allow(dead_code)]
     pub const fn document_manager(&self) -> &DocumentManager {
         &self.document_manager
     }
 
     /// Gets a mutable reference to the document manager
+    ///
+    /// Note: Part of document management API.
+    #[allow(dead_code)]
     pub fn document_manager_mut(&mut self) -> &mut DocumentManager {
         &mut self.document_manager
     }
@@ -1433,11 +1542,17 @@ impl AppState {
     // ========== Cluster Operations ==========
 
     /// Gets the cluster manager
+    ///
+    /// Note: Part of cluster management API.
+    #[allow(dead_code)]
     pub const fn cluster_manager(&self) -> &ClusterManager {
         &self.cluster_manager
     }
 
     /// Gets a mutable reference to the cluster manager
+    ///
+    /// Note: Part of cluster management API.
+    #[allow(dead_code)]
     pub fn cluster_manager_mut(&mut self) -> &mut ClusterManager {
         &mut self.cluster_manager
     }
@@ -1578,11 +1693,17 @@ impl AppState {
     // ========== Clipboard Operations ==========
 
     /// Gets a reference to the connection clipboard
+    ///
+    /// Note: Part of clipboard API for connection copy/paste.
+    #[allow(dead_code)]
     pub const fn clipboard(&self) -> &ConnectionClipboard {
         &self.clipboard
     }
 
     /// Gets a mutable reference to the connection clipboard
+    ///
+    /// Note: Part of clipboard API for connection copy/paste.
+    #[allow(dead_code)]
     pub fn clipboard_mut(&mut self) -> &mut ConnectionClipboard {
         &mut self.clipboard
     }

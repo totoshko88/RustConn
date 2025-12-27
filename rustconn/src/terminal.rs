@@ -67,6 +67,7 @@ use crate::embedded_rdp::EmbeddedRdpWidget;
 use crate::embedded_spice::EmbeddedSpiceWidget;
 
 /// Session widget storage for non-SSH sessions
+#[allow(dead_code)] // Enum variants store widgets for GTK lifecycle
 enum SessionWidgetStorage {
     /// VNC session widget
     Vnc(Rc<VncSessionWidget>),
@@ -77,6 +78,7 @@ enum SessionWidgetStorage {
 }
 
 /// Terminal notebook widget for managing multiple terminal sessions
+#[allow(dead_code)] // Many fields kept for GTK widget lifecycle
 pub struct TerminalNotebook {
     /// Main container with notebook and overflow button
     container: GtkBox,
@@ -102,6 +104,7 @@ pub struct TerminalNotebook {
 }
 
 /// Widgets that make up a tab label (for updating display mode)
+#[allow(dead_code)] // Fields kept for GTK widget lifecycle
 struct TabLabelWidgets {
     container: GtkBox,
     icon: Image,
@@ -610,7 +613,10 @@ impl TerminalNotebook {
     ///
     /// Note: RDP uses `EmbeddedRdpWidget` via `add_embedded_rdp_tab`,
     /// SPICE uses `EmbeddedSpiceWidget` via `create_spice_session_tab`
+    ///
+    /// Note: Part of session widget API for protocol-specific access.
     #[must_use]
+    #[allow(dead_code)]
     pub fn get_session_widget(&self, session_id: Uuid) -> Option<SessionWidget> {
         let widgets = self.session_widgets.borrow();
         if let Some(SessionWidgetStorage::Vnc(_)) = widgets.get(&session_id) {
@@ -635,7 +641,10 @@ impl TerminalNotebook {
     /// - VNC: VncSessionWidget overlay
     /// - RDP: EmbeddedRdpWidget
     /// - SPICE: EmbeddedSpiceWidget
+    ///
+    /// Note: Part of session widget API for split view integration.
     #[must_use]
+    #[allow(dead_code)]
     pub fn get_session_display_widget(&self, session_id: Uuid) -> Option<Widget> {
         // Check for VNC/RDP/SPICE session widgets first
         let widgets = self.session_widgets.borrow();
@@ -658,7 +667,10 @@ impl TerminalNotebook {
     }
 
     /// Gets the session state for a VNC session
+    ///
+    /// Note: Part of session widget API for VNC state access.
     #[must_use]
+    #[allow(dead_code)]
     pub fn get_session_state(&self, session_id: Uuid) -> Option<SessionState> {
         let widgets = self.session_widgets.borrow();
         match widgets.get(&session_id) {
@@ -1302,7 +1314,10 @@ impl TerminalNotebook {
     }
 
     /// Returns the number of active sessions (excluding Welcome tab)
+    ///
+    /// Note: Part of session management API.
     #[must_use]
+    #[allow(dead_code)]
     pub fn session_count(&self) -> usize {
         self.sessions.borrow().len()
     }
@@ -1312,6 +1327,9 @@ impl TerminalNotebook {
     /// This is used to control whether notebook pages expand vertically.
     /// When showing SSH sessions in split view, we want notebook pages collapsed.
     /// When showing VNC/RDP/SPICE sessions, we want the active page expanded.
+    ///
+    /// Note: Part of layout management API for split view.
+    #[allow(dead_code)]
     pub fn set_pages_vexpand(&self, _expand: bool) {
         // Don't modify individual page vexpand - it causes issues when switching
         // between different session types. Instead, control the notebook itself.
@@ -1320,11 +1338,17 @@ impl TerminalNotebook {
     /// Shows only the specified page content, hides all others
     ///
     /// This ensures that inactive VNC/RDP pages don't affect layout sizing.
+    ///
+    /// Note: Part of layout management API for split view.
+    #[allow(dead_code)]
     pub fn show_only_current_page(&self) {
         // No-op - hiding pages causes RDP disconnection issues
     }
 
     /// Shows all page contents (for VNC/RDP/SPICE mode)
+    ///
+    /// Note: Part of layout management API for split view.
+    #[allow(dead_code)]
     pub fn show_all_pages(&self) {
         // No-op - all pages are always visible
     }
@@ -1533,6 +1557,9 @@ impl TerminalNotebook {
     ///
     /// Used when switching to a terminal session to ensure notebook
     /// only shows tabs without any page content taking space.
+    ///
+    /// Note: Part of layout management API for split view.
+    #[allow(dead_code)]
     pub fn hide_all_page_content(&self) {
         let n_pages = self.notebook.n_pages();
         for page_num in 0..n_pages {

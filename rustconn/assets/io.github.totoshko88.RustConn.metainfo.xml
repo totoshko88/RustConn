@@ -49,6 +49,15 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.5.1" date="2025-12-28">
+      <description>
+        <p>Version 0.5.1:</p>
+        <ul>
+          <li>Removed dead code and placeholder implementations</li>
+          <li>Code cleanup and documentation improvements</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.5.0" date="2025-12-27">
       <description>
         <p>Version 0.5.0:</p>

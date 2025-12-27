@@ -1,13 +1,17 @@
 //! `RustConn` CLI - Command-line interface for `RustConn` connection manager
 //!
-//! Provides commands for listing, adding, exporting, importing, and testing connections.
+//! Provides commands for listing, adding, exporting, importing, testing connections,
+//! managing snippets, groups, and Wake-on-LAN functionality.
 
+use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use rustconn_core::config::ConfigManager;
-use rustconn_core::models::{Connection, ConnectionGroup, ProtocolType};
+use rustconn_core::models::{Connection, ConnectionGroup, ProtocolType, Snippet};
+use rustconn_core::snippet::SnippetManager;
+use rustconn_core::wol::{MacAddress, WolConfig};
 
 /// `RustConn` command-line interface for managing remote connections
 #[derive(Parser)]
@@ -33,9 +37,17 @@ pub enum Commands {
         #[arg(short, long, default_value = "table", value_enum)]
         format: OutputFormat,
 
-        /// Filter connections by protocol (ssh, rdp, vnc)
+        /// Filter connections by protocol (ssh, rdp, vnc, spice)
         #[arg(short, long)]
         protocol: Option<String>,
+
+        /// Filter connections by group name
+        #[arg(short, long)]
+        group: Option<String>,
+
+        /// Filter connections by tag
+        #[arg(short, long)]
+        tag: Option<String>,
     },
 
     /// Connect to a server by name or ID
@@ -143,6 +155,29 @@ pub enum Commands {
         #[arg(short, long)]
         user: Option<String>,
     },
+
+    /// Send Wake-on-LAN magic packet
+    #[command(about = "Wake a sleeping machine using Wake-on-LAN")]
+    Wol {
+        /// Connection name or MAC address (format: AA:BB:CC:DD:EE:FF or AA-BB-CC-DD-EE-FF)
+        target: String,
+
+        /// Broadcast address (default: 255.255.255.255)
+        #[arg(short, long, default_value = "255.255.255.255")]
+        broadcast: String,
+
+        /// UDP port (default: 9)
+        #[arg(short, long, default_value = "9")]
+        port: u16,
+    },
+
+    /// Manage command snippets
+    #[command(subcommand, about = "Manage command snippets")]
+    Snippet(SnippetCommands),
+
+    /// Manage connection groups
+    #[command(subcommand, about = "Manage connection groups")]
+    Group(GroupCommands),
 }
 
 /// Output format for the list command
@@ -167,6 +202,8 @@ pub enum ExportFormatArg {
     Remmina,
     /// Asbru-CM YAML format
     Asbru,
+    /// Native `RustConn` format (.rcn)
+    Native,
 }
 
 /// Import format options
@@ -180,13 +217,172 @@ pub enum ImportFormatArg {
     Remmina,
     /// Asbru-CM YAML format
     Asbru,
+    /// Native `RustConn` format (.rcn)
+    Native,
+}
+
+/// Snippet subcommands
+#[derive(Subcommand)]
+pub enum SnippetCommands {
+    /// List all snippets
+    #[command(about = "List all command snippets")]
+    List {
+        /// Output format
+        #[arg(short, long, default_value = "table", value_enum)]
+        format: OutputFormat,
+
+        /// Filter by category
+        #[arg(short, long)]
+        category: Option<String>,
+
+        /// Filter by tag
+        #[arg(short, long)]
+        tag: Option<String>,
+    },
+
+    /// Show snippet details
+    #[command(about = "Show snippet details and variables")]
+    Show {
+        /// Snippet name or ID
+        name: String,
+    },
+
+    /// Add a new snippet
+    #[command(about = "Add a new command snippet")]
+    Add {
+        /// Snippet name
+        #[arg(short, long)]
+        name: String,
+
+        /// Command template (use ${var} for variables)
+        #[arg(short, long)]
+        command: String,
+
+        /// Description
+        #[arg(short, long)]
+        description: Option<String>,
+
+        /// Category
+        #[arg(long)]
+        category: Option<String>,
+
+        /// Tags (comma-separated)
+        #[arg(short, long)]
+        tags: Option<String>,
+    },
+
+    /// Delete a snippet
+    #[command(about = "Delete a command snippet")]
+    Delete {
+        /// Snippet name or ID
+        name: String,
+    },
+
+    /// Execute a snippet with variable substitution
+    #[command(about = "Show snippet command with variable substitution")]
+    Run {
+        /// Snippet name or ID
+        name: String,
+
+        /// Variable values (format: var=value, can be repeated)
+        #[arg(short, long, value_parser = parse_key_val)]
+        var: Vec<(String, String)>,
+
+        /// Actually execute the command (default: just print)
+        #[arg(short, long)]
+        execute: bool,
+    },
+}
+
+/// Group subcommands
+#[derive(Subcommand)]
+pub enum GroupCommands {
+    /// List all groups
+    #[command(about = "List all connection groups")]
+    List {
+        /// Output format
+        #[arg(short, long, default_value = "table", value_enum)]
+        format: OutputFormat,
+    },
+
+    /// Show group details
+    #[command(about = "Show group details and connections")]
+    Show {
+        /// Group name or ID
+        name: String,
+    },
+
+    /// Create a new group
+    #[command(about = "Create a new connection group")]
+    Create {
+        /// Group name
+        #[arg(short, long)]
+        name: String,
+
+        /// Parent group name or ID
+        #[arg(short, long)]
+        parent: Option<String>,
+
+        /// Description
+        #[arg(short, long)]
+        description: Option<String>,
+    },
+
+    /// Delete a group
+    #[command(about = "Delete a connection group")]
+    Delete {
+        /// Group name or ID
+        name: String,
+    },
+
+    /// Add a connection to a group
+    #[command(about = "Add a connection to a group")]
+    AddConnection {
+        /// Group name or ID
+        #[arg(short, long)]
+        group: String,
+
+        /// Connection name or ID
+        #[arg(short, long)]
+        connection: String,
+    },
+
+    /// Remove a connection from a group
+    #[command(about = "Remove a connection from a group")]
+    RemoveConnection {
+        /// Group name or ID
+        #[arg(short, long)]
+        group: String,
+
+        /// Connection name or ID
+        #[arg(short, long)]
+        connection: String,
+    },
+}
+
+/// Parse a key=value pair for variable substitution
+fn parse_key_val(s: &str) -> Result<(String, String), String> {
+    let pos = s
+        .find('=')
+        .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{s}`"))?;
+    Ok((s[..pos].to_string(), s[pos + 1..].to_string()))
 }
 
 fn main() {
     let cli = Cli::parse();
 
     let result = match cli.command {
-        Commands::List { format, protocol } => cmd_list(format, protocol.as_deref()),
+        Commands::List {
+            format,
+            protocol,
+            group,
+            tag,
+        } => cmd_list(
+            format,
+            protocol.as_deref(),
+            group.as_deref(),
+            tag.as_deref(),
+        ),
         Commands::Connect { name } => cmd_connect(&name),
         Commands::Add {
             name,
@@ -221,6 +417,13 @@ fn main() {
             port,
             user.as_deref(),
         ),
+        Commands::Wol {
+            target,
+            broadcast,
+            port,
+        } => cmd_wol(&target, &broadcast, port),
+        Commands::Snippet(subcmd) => cmd_snippet(subcmd),
+        Commands::Group(subcmd) => cmd_group(subcmd),
     };
 
     if let Err(e) = result {
@@ -230,7 +433,12 @@ fn main() {
 }
 
 /// List connections command handler
-fn cmd_list(format: OutputFormat, protocol: Option<&str>) -> Result<(), CliError> {
+fn cmd_list(
+    format: OutputFormat,
+    protocol: Option<&str>,
+    group: Option<&str>,
+    tag: Option<&str>,
+) -> Result<(), CliError> {
     let config_manager = ConfigManager::new()
         .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
 
@@ -238,17 +446,51 @@ fn cmd_list(format: OutputFormat, protocol: Option<&str>) -> Result<(), CliError
         .load_connections()
         .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
 
-    // Filter by protocol if specified
-    let filtered: Vec<&Connection> = protocol.map_or_else(
-        || connections.iter().collect(),
-        |proto_filter| {
-            let proto_lower = proto_filter.to_lowercase();
-            connections
+    let groups = config_manager
+        .load_groups()
+        .map_err(|e| CliError::Config(format!("Failed to load groups: {e}")))?;
+
+    // Find group ID if group filter is specified
+    let group_id: Option<uuid::Uuid> = group
+        .map(|group_filter| {
+            let group_lower = group_filter.to_lowercase();
+            groups
                 .iter()
-                .filter(|c| c.protocol.as_str() == proto_lower)
-                .collect()
-        },
-    );
+                .find(|g| g.name.to_lowercase() == group_lower)
+                .map(|g| g.id)
+                .ok_or_else(|| CliError::Group(format!("Group not found: {group_filter}")))
+        })
+        .transpose()?;
+
+    // Filter connections
+    let filtered: Vec<&Connection> = connections
+        .iter()
+        .filter(|c| {
+            // Filter by protocol
+            if let Some(proto_filter) = protocol {
+                if c.protocol.as_str() != proto_filter.to_lowercase() {
+                    return false;
+                }
+            }
+
+            // Filter by group
+            if let Some(gid) = group_id {
+                if c.group_id != Some(gid) {
+                    return false;
+                }
+            }
+
+            // Filter by tag
+            if let Some(tag_filter) = tag {
+                let tag_lower = tag_filter.to_lowercase();
+                if !c.tags.iter().any(|t| t.to_lowercase() == tag_lower) {
+                    return false;
+                }
+            }
+
+            true
+        })
+        .collect();
 
     match format {
         OutputFormat::Table => print_table(&filtered),
@@ -874,6 +1116,7 @@ fn cmd_export(format: ExportFormatArg, output: &std::path::Path) -> Result<(), C
         ExportFormatArg::SshConfig => rustconn_core::export::ExportFormat::SshConfig,
         ExportFormatArg::Remmina => rustconn_core::export::ExportFormat::Remmina,
         ExportFormatArg::Asbru => rustconn_core::export::ExportFormat::Asbru,
+        ExportFormatArg::Native => rustconn_core::export::ExportFormat::Native,
     };
 
     // Create export options
@@ -1074,7 +1317,8 @@ fn import_connections(
     file: &std::path::Path,
 ) -> Result<rustconn_core::import::ImportResult, CliError> {
     use rustconn_core::import::{
-        AnsibleInventoryImporter, AsbruImporter, ImportSource, RemminaImporter, SshConfigImporter,
+        AnsibleInventoryImporter, AsbruImporter, ImportResult, ImportSource, RemminaImporter,
+        SshConfigImporter,
     };
 
     let result = match format {
@@ -1101,6 +1345,18 @@ fn import_connections(
             importer
                 .import_from_path(file)
                 .map_err(|e| CliError::Import(e.to_string()))?
+        }
+        ImportFormatArg::Native => {
+            // Native format uses NativeExport::from_file
+            let native = rustconn_core::export::NativeExport::from_file(file)
+                .map_err(|e| CliError::Import(e.to_string()))?;
+
+            ImportResult {
+                connections: native.connections,
+                groups: native.groups,
+                skipped: Vec::new(),
+                errors: Vec::new(),
+            }
         }
     };
 
@@ -1472,6 +1728,18 @@ pub enum CliError {
     #[error("Connection test failed: {0}")]
     TestFailed(String),
 
+    /// Wake-on-LAN error
+    #[error("Wake-on-LAN error: {0}")]
+    Wol(String),
+
+    /// Snippet error
+    #[error("Snippet error: {0}")]
+    Snippet(String),
+
+    /// Group error
+    #[error("Group error: {0}")]
+    Group(String),
+
     /// IO error
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
@@ -1490,9 +1758,13 @@ impl CliError {
             // Connection-related failures use exit code 2
             Self::TestFailed(_) | Self::ConnectionNotFound(_) => exit_codes::CONNECTION_FAILURE,
             // All other errors use exit code 1
-            Self::Config(_) | Self::Export(_) | Self::Import(_) | Self::Io(_) => {
-                exit_codes::GENERAL_ERROR
-            }
+            Self::Config(_)
+            | Self::Export(_)
+            | Self::Import(_)
+            | Self::Io(_)
+            | Self::Wol(_)
+            | Self::Snippet(_)
+            | Self::Group(_) => exit_codes::GENERAL_ERROR,
         }
     }
 
@@ -1500,5 +1772,673 @@ impl CliError {
     #[must_use]
     pub const fn is_connection_failure(&self) -> bool {
         matches!(self, Self::TestFailed(_) | Self::ConnectionNotFound(_))
+    }
+}
+
+// ============================================================================
+// Wake-on-LAN command
+// ============================================================================
+
+/// Wake-on-LAN command handler
+fn cmd_wol(target: &str, broadcast: &str, port: u16) -> Result<(), CliError> {
+    // Try to parse target as MAC address first
+    let mac = if let Ok(mac) = target.parse::<MacAddress>() {
+        mac
+    } else {
+        // Try to find connection by name and get its WOL config
+        let config_manager = ConfigManager::new()
+            .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+        let connections = config_manager
+            .load_connections()
+            .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
+        let connection = find_connection(&connections, target)?;
+
+        connection
+            .wol_config
+            .as_ref()
+            .map(|wol| wol.mac_address)
+            .ok_or_else(|| {
+                CliError::Wol(format!(
+                    "Connection '{}' does not have Wake-on-LAN configured",
+                    connection.name
+                ))
+            })?
+    };
+
+    let config = WolConfig::new(mac)
+        .with_broadcast_address(broadcast)
+        .with_port(port);
+
+    println!("Sending Wake-on-LAN magic packet...");
+    println!("  MAC Address: {mac}");
+    println!("  Broadcast:   {broadcast}:{port}");
+
+    rustconn_core::wol::send_wol(&config).map_err(|e| CliError::Wol(e.to_string()))?;
+
+    println!("Magic packet sent successfully!");
+    println!(
+        "Note: The target machine may take up to {} seconds to wake up.",
+        config.wait_seconds
+    );
+
+    Ok(())
+}
+
+// ============================================================================
+// Snippet commands
+// ============================================================================
+
+/// Snippet command handler
+fn cmd_snippet(subcmd: SnippetCommands) -> Result<(), CliError> {
+    match subcmd {
+        SnippetCommands::List {
+            format,
+            category,
+            tag,
+        } => cmd_snippet_list(format, category.as_deref(), tag.as_deref()),
+        SnippetCommands::Show { name } => cmd_snippet_show(&name),
+        SnippetCommands::Add {
+            name,
+            command,
+            description,
+            category,
+            tags,
+        } => cmd_snippet_add(&name, &command, description.as_deref(), category, tags),
+        SnippetCommands::Delete { name } => cmd_snippet_delete(&name),
+        SnippetCommands::Run { name, var, execute } => cmd_snippet_run(&name, &var, execute),
+    }
+}
+
+/// List snippets command
+fn cmd_snippet_list(
+    format: OutputFormat,
+    category: Option<&str>,
+    tag: Option<&str>,
+) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let snippet_manager = SnippetManager::new(config_manager)
+        .map_err(|e| CliError::Snippet(format!("Failed to load snippets: {e}")))?;
+
+    let snippets: Vec<&Snippet> = match (category, tag) {
+        (Some(cat), _) => snippet_manager.get_by_category(cat),
+        (None, Some(t)) => snippet_manager.filter_by_tag(t),
+        (None, None) => snippet_manager.list_snippets(),
+    };
+
+    match format {
+        OutputFormat::Table => print_snippet_table(&snippets),
+        OutputFormat::Json => print_snippet_json(&snippets)?,
+        OutputFormat::Csv => print_snippet_csv(&snippets),
+    }
+
+    Ok(())
+}
+
+/// Print snippets as table
+fn print_snippet_table(snippets: &[&Snippet]) {
+    if snippets.is_empty() {
+        println!("No snippets found.");
+        return;
+    }
+
+    let name_width = snippets
+        .iter()
+        .map(|s| s.name.len())
+        .max()
+        .unwrap_or(4)
+        .max(4);
+    let cat_width = snippets
+        .iter()
+        .filter_map(|s| s.category.as_ref())
+        .map(String::len)
+        .max()
+        .unwrap_or(8)
+        .max(8);
+
+    println!(
+        "{:<name_width$}  {:<cat_width$}  COMMAND",
+        "NAME", "CATEGORY"
+    );
+    println!("{:-<name_width$}  {:-<cat_width$}  {:-<40}", "", "", "");
+
+    for snippet in snippets {
+        let category = snippet.category.as_deref().unwrap_or("-");
+        let command = if snippet.command.len() > 40 {
+            format!("{}...", &snippet.command[..37])
+        } else {
+            snippet.command.clone()
+        };
+        println!(
+            "{:<name_width$}  {:<cat_width$}  {command}",
+            snippet.name, category
+        );
+    }
+}
+
+/// Print snippets as JSON
+fn print_snippet_json(snippets: &[&Snippet]) -> Result<(), CliError> {
+    let json = serde_json::to_string_pretty(snippets)
+        .map_err(|e| CliError::Snippet(format!("Failed to serialize: {e}")))?;
+    println!("{json}");
+    Ok(())
+}
+
+/// Print snippets as CSV
+fn print_snippet_csv(snippets: &[&Snippet]) {
+    println!("name,category,command,tags");
+    for snippet in snippets {
+        let name = escape_csv_field(&snippet.name);
+        let category = snippet.category.as_deref().unwrap_or("");
+        let command = escape_csv_field(&snippet.command);
+        let tags = snippet.tags.join(";");
+        println!("{name},{category},{command},{tags}");
+    }
+}
+
+/// Show snippet details
+fn cmd_snippet_show(name: &str) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let snippet_manager = SnippetManager::new(config_manager)
+        .map_err(|e| CliError::Snippet(format!("Failed to load snippets: {e}")))?;
+
+    let snippet = find_snippet(&snippet_manager, name)?;
+
+    println!("Snippet Details:");
+    println!("  ID:       {}", snippet.id);
+    println!("  Name:     {}", snippet.name);
+    println!("  Command:  {}", snippet.command);
+
+    if let Some(ref desc) = snippet.description {
+        println!("  Description: {desc}");
+    }
+    if let Some(ref cat) = snippet.category {
+        println!("  Category: {cat}");
+    }
+    if !snippet.tags.is_empty() {
+        println!("  Tags:     {}", snippet.tags.join(", "));
+    }
+
+    // Show variables
+    let variables = SnippetManager::extract_variables(&snippet.command);
+    if !variables.is_empty() {
+        println!("\nVariables:");
+        for var in &variables {
+            let default = snippet
+                .variables
+                .iter()
+                .find(|v| &v.name == var)
+                .and_then(|v| v.default_value.as_ref());
+            if let Some(def) = default {
+                println!("  ${{{var}}} (default: {def})");
+            } else {
+                println!("  ${{{var}}}");
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Add a new snippet
+fn cmd_snippet_add(
+    name: &str,
+    command: &str,
+    description: Option<&str>,
+    category: Option<String>,
+    tags: Option<String>,
+) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let mut snippet_manager = SnippetManager::new(config_manager)
+        .map_err(|e| CliError::Snippet(format!("Failed to load snippets: {e}")))?;
+
+    let mut snippet = Snippet::new(name.to_string(), command.to_string());
+
+    if let Some(desc) = description {
+        snippet.description = Some(desc.to_string());
+    }
+    if let Some(cat) = category {
+        snippet = snippet.with_category(&cat);
+    }
+    if let Some(tags_str) = tags {
+        let tag_vec: Vec<String> = tags_str.split(',').map(|s| s.trim().to_string()).collect();
+        snippet = snippet.with_tags(tag_vec);
+    }
+
+    // Extract and add variables
+    let variables = SnippetManager::extract_variable_objects(command);
+    snippet = snippet.with_variables(variables);
+
+    let id = snippet_manager
+        .create_snippet_from(snippet)
+        .map_err(|e| CliError::Snippet(format!("Failed to create snippet: {e}")))?;
+
+    println!("Created snippet '{name}' with ID {id}");
+
+    // Show extracted variables
+    let vars = SnippetManager::extract_variables(command);
+    if !vars.is_empty() {
+        println!("Variables: {}", vars.join(", "));
+    }
+
+    Ok(())
+}
+
+/// Delete a snippet
+fn cmd_snippet_delete(name: &str) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let mut snippet_manager = SnippetManager::new(config_manager)
+        .map_err(|e| CliError::Snippet(format!("Failed to load snippets: {e}")))?;
+
+    let snippet = find_snippet(&snippet_manager, name)?;
+    let id = snippet.id;
+    let snippet_name = snippet.name.clone();
+
+    snippet_manager
+        .delete_snippet(id)
+        .map_err(|e| CliError::Snippet(format!("Failed to delete snippet: {e}")))?;
+
+    println!("Deleted snippet '{snippet_name}' (ID: {id})");
+
+    Ok(())
+}
+
+/// Run a snippet with variable substitution
+fn cmd_snippet_run(name: &str, vars: &[(String, String)], execute: bool) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let snippet_manager = SnippetManager::new(config_manager)
+        .map_err(|e| CliError::Snippet(format!("Failed to load snippets: {e}")))?;
+
+    let snippet = find_snippet(&snippet_manager, name)?;
+
+    // Build values map
+    let values: HashMap<String, String> = vars.iter().cloned().collect();
+
+    // Check for missing variables
+    let missing = SnippetManager::get_missing_variables(snippet, &values);
+    if !missing.is_empty() {
+        return Err(CliError::Snippet(format!(
+            "Missing required variables: {}. Use --var name=value to provide them.",
+            missing.join(", ")
+        )));
+    }
+
+    // Substitute variables
+    let command = SnippetManager::substitute_with_defaults(snippet, &values);
+
+    if execute {
+        println!("Executing: {command}");
+        let status = std::process::Command::new("sh")
+            .arg("-c")
+            .arg(&command)
+            .status()
+            .map_err(|e| CliError::Snippet(format!("Failed to execute command: {e}")))?;
+
+        if !status.success() {
+            return Err(CliError::Snippet(format!(
+                "Command exited with status: {}",
+                status.code().unwrap_or(-1)
+            )));
+        }
+    } else {
+        println!("{command}");
+    }
+
+    Ok(())
+}
+
+/// Find a snippet by name or ID
+fn find_snippet<'a>(
+    manager: &'a SnippetManager,
+    name_or_id: &str,
+) -> Result<&'a Snippet, CliError> {
+    // Try UUID first
+    if let Ok(uuid) = uuid::Uuid::parse_str(name_or_id) {
+        if let Some(snippet) = manager.get_snippet(uuid) {
+            return Ok(snippet);
+        }
+    }
+
+    // Search by name
+    let snippets = manager.list_snippets();
+    let matches: Vec<_> = snippets
+        .iter()
+        .filter(|s| s.name.eq_ignore_ascii_case(name_or_id))
+        .collect();
+
+    match matches.len() {
+        0 => Err(CliError::Snippet(format!(
+            "Snippet not found: {name_or_id}"
+        ))),
+        1 => Ok(matches[0]),
+        _ => Err(CliError::Snippet(format!(
+            "Ambiguous snippet name: {name_or_id}"
+        ))),
+    }
+}
+
+// ============================================================================
+// Group commands
+// ============================================================================
+
+/// Group command handler
+fn cmd_group(subcmd: GroupCommands) -> Result<(), CliError> {
+    match subcmd {
+        GroupCommands::List { format } => cmd_group_list(format),
+        GroupCommands::Show { name } => cmd_group_show(&name),
+        GroupCommands::Create {
+            name,
+            parent,
+            description,
+        } => cmd_group_create(&name, parent.as_deref(), description.as_deref()),
+        GroupCommands::Delete { name } => cmd_group_delete(&name),
+        GroupCommands::AddConnection { group, connection } => {
+            cmd_group_add_connection(&group, &connection)
+        }
+        GroupCommands::RemoveConnection { group, connection } => {
+            cmd_group_remove_connection(&group, &connection)
+        }
+    }
+}
+
+/// List groups command
+fn cmd_group_list(format: OutputFormat) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let groups = config_manager
+        .load_groups()
+        .map_err(|e| CliError::Group(format!("Failed to load groups: {e}")))?;
+
+    match format {
+        OutputFormat::Table => print_group_table(&groups),
+        OutputFormat::Json => print_group_json(&groups)?,
+        OutputFormat::Csv => print_group_csv(&groups),
+    }
+
+    Ok(())
+}
+
+/// Print groups as table
+fn print_group_table(groups: &[ConnectionGroup]) {
+    if groups.is_empty() {
+        println!("No groups found.");
+        return;
+    }
+
+    let name_width = groups
+        .iter()
+        .map(|g| g.name.len())
+        .max()
+        .unwrap_or(4)
+        .max(4);
+
+    println!("{:<name_width$}  PARENT", "NAME");
+    println!("{:-<name_width$}  {:-<20}", "", "");
+
+    for group in groups {
+        let parent = group.parent_id.map_or_else(
+            || "-".to_string(),
+            |id| {
+                groups
+                    .iter()
+                    .find(|g| g.id == id)
+                    .map_or_else(|| id.to_string(), |g| g.name.clone())
+            },
+        );
+        let parent_display = if parent.len() > 20 {
+            format!("{}...", &parent[..17])
+        } else {
+            parent
+        };
+        println!("{:<name_width$}  {parent_display}", group.name);
+    }
+}
+
+/// Print groups as JSON
+fn print_group_json(groups: &[ConnectionGroup]) -> Result<(), CliError> {
+    let json = serde_json::to_string_pretty(groups)
+        .map_err(|e| CliError::Group(format!("Failed to serialize: {e}")))?;
+    println!("{json}");
+    Ok(())
+}
+
+/// Print groups as CSV
+fn print_group_csv(groups: &[ConnectionGroup]) {
+    println!("name,parent_id");
+    for group in groups {
+        let name = escape_csv_field(&group.name);
+        let parent = group.parent_id.map(|id| id.to_string()).unwrap_or_default();
+        println!("{name},{parent}");
+    }
+}
+
+/// Show group details
+fn cmd_group_show(name: &str) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let groups = config_manager
+        .load_groups()
+        .map_err(|e| CliError::Group(format!("Failed to load groups: {e}")))?;
+
+    let connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
+    let group = find_group(&groups, name)?;
+
+    println!("Group Details:");
+    println!("  ID:   {}", group.id);
+    println!("  Name: {}", group.name);
+
+    if let Some(parent_id) = group.parent_id {
+        let parent_name = groups
+            .iter()
+            .find(|g| g.id == parent_id)
+            .map_or("(unknown)", |g| g.name.as_str());
+        println!("  Parent: {parent_name} ({parent_id})");
+    }
+
+    // Find connections in this group
+    let group_connections: Vec<_> = connections
+        .iter()
+        .filter(|c| c.group_id == Some(group.id))
+        .collect();
+
+    println!("\nConnections ({}):", group_connections.len());
+    for conn in &group_connections {
+        println!("  - {} ({})", conn.name, conn.host);
+    }
+
+    Ok(())
+}
+
+/// Create a new group
+fn cmd_group_create(
+    name: &str,
+    parent: Option<&str>,
+    _description: Option<&str>,
+) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let mut groups = config_manager
+        .load_groups()
+        .map_err(|e| CliError::Group(format!("Failed to load groups: {e}")))?;
+
+    // Check for duplicate name
+    if groups.iter().any(|g| g.name.eq_ignore_ascii_case(name)) {
+        return Err(CliError::Group(format!(
+            "Group with name '{name}' already exists"
+        )));
+    }
+
+    let group = if let Some(parent_name) = parent {
+        let parent_group = find_group(&groups, parent_name)?;
+        ConnectionGroup::with_parent(name.to_string(), parent_group.id)
+    } else {
+        ConnectionGroup::new(name.to_string())
+    };
+
+    let id = group.id;
+    groups.push(group);
+
+    config_manager
+        .save_groups(&groups)
+        .map_err(|e| CliError::Group(format!("Failed to save groups: {e}")))?;
+
+    println!("Created group '{name}' with ID {id}");
+
+    Ok(())
+}
+
+/// Delete a group
+fn cmd_group_delete(name: &str) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let mut groups = config_manager
+        .load_groups()
+        .map_err(|e| CliError::Group(format!("Failed to load groups: {e}")))?;
+
+    let group = find_group(&groups, name)?;
+    let id = group.id;
+    let group_name = group.name.clone();
+
+    groups.retain(|g| g.id != id);
+
+    config_manager
+        .save_groups(&groups)
+        .map_err(|e| CliError::Group(format!("Failed to save groups: {e}")))?;
+
+    println!("Deleted group '{group_name}' (ID: {id})");
+
+    Ok(())
+}
+
+/// Add a connection to a group
+fn cmd_group_add_connection(group_name: &str, connection_name: &str) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let groups = config_manager
+        .load_groups()
+        .map_err(|e| CliError::Group(format!("Failed to load groups: {e}")))?;
+
+    let mut connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
+    let group = find_group(&groups, group_name)?;
+    let group_id = group.id;
+    let grp_name = group.name.clone();
+
+    // Find and update the connection
+    let connection = connections
+        .iter_mut()
+        .find(|c| {
+            c.name.eq_ignore_ascii_case(connection_name) || c.id.to_string() == connection_name
+        })
+        .ok_or_else(|| CliError::ConnectionNotFound(connection_name.to_string()))?;
+
+    if connection.group_id == Some(group_id) {
+        return Err(CliError::Group(format!(
+            "Connection '{}' is already in group '{grp_name}'",
+            connection.name
+        )));
+    }
+
+    let conn_name = connection.name.clone();
+    connection.group_id = Some(group_id);
+
+    config_manager
+        .save_connections(&connections)
+        .map_err(|e| CliError::Config(format!("Failed to save connections: {e}")))?;
+
+    println!("Added connection '{conn_name}' to group '{grp_name}'");
+
+    Ok(())
+}
+
+/// Remove a connection from a group
+fn cmd_group_remove_connection(group_name: &str, connection_name: &str) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let groups = config_manager
+        .load_groups()
+        .map_err(|e| CliError::Group(format!("Failed to load groups: {e}")))?;
+
+    let mut connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
+    let group = find_group(&groups, group_name)?;
+    let group_id = group.id;
+    let grp_name = group.name.clone();
+
+    // Find and update the connection
+    let connection = connections
+        .iter_mut()
+        .find(|c| {
+            c.name.eq_ignore_ascii_case(connection_name) || c.id.to_string() == connection_name
+        })
+        .ok_or_else(|| CliError::ConnectionNotFound(connection_name.to_string()))?;
+
+    if connection.group_id != Some(group_id) {
+        return Err(CliError::Group(format!(
+            "Connection '{}' is not in group '{grp_name}'",
+            connection.name
+        )));
+    }
+
+    let conn_name = connection.name.clone();
+    connection.group_id = None;
+
+    config_manager
+        .save_connections(&connections)
+        .map_err(|e| CliError::Config(format!("Failed to save connections: {e}")))?;
+
+    println!("Removed connection '{conn_name}' from group '{grp_name}'");
+
+    Ok(())
+}
+
+/// Find a group by name or ID
+fn find_group<'a>(
+    groups: &'a [ConnectionGroup],
+    name_or_id: &str,
+) -> Result<&'a ConnectionGroup, CliError> {
+    // Try UUID first
+    if let Ok(uuid) = uuid::Uuid::parse_str(name_or_id) {
+        if let Some(group) = groups.iter().find(|g| g.id == uuid) {
+            return Ok(group);
+        }
+    }
+
+    // Search by name (case-insensitive)
+    let matches: Vec<_> = groups
+        .iter()
+        .filter(|g| g.name.eq_ignore_ascii_case(name_or_id))
+        .collect();
+
+    match matches.len() {
+        0 => Err(CliError::Group(format!("Group not found: {name_or_id}"))),
+        1 => Ok(matches[0]),
+        _ => Err(CliError::Group(format!(
+            "Ambiguous group name: {name_or_id}"
+        ))),
     }
 }

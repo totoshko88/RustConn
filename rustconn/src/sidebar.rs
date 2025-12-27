@@ -118,7 +118,10 @@ impl DropIndicator {
     }
 
     /// Returns the highlighted group index
+    ///
+    /// Note: Part of drag-drop API, used internally by drop target handlers.
     #[must_use]
+    #[allow(dead_code)]
     pub fn highlighted_group_index(&self) -> Option<u32> {
         *self.highlighted_group_index.borrow()
     }
@@ -297,13 +300,19 @@ impl DropIndicator {
     }
 
     /// Returns the current target index
+    ///
+    /// Note: Part of drag-drop API for determining drop position.
     #[must_use]
+    #[allow(dead_code)]
     pub fn target_index(&self) -> Option<u32> {
         *self.target_index.borrow()
     }
 
     /// Returns whether the indicator is currently visible
+    ///
+    /// Note: Part of drag-drop API for visual feedback state.
     #[must_use]
+    #[allow(dead_code)]
     pub fn is_visible(&self) -> bool {
         self.indicator.is_visible()
     }
@@ -335,18 +344,6 @@ impl SelectionModelWrapper {
     #[must_use]
     pub fn new_multi(model: TreeListModel) -> Self {
         Self::Multi(MultiSelection::new(Some(model)))
-    }
-
-    /// Returns the underlying selection model as a `SelectionModel`
-    ///
-    /// Note: This method only works in single selection mode. In multi-selection
-    /// mode, it will panic. Use `is_multi()` to check the mode first.
-    #[must_use]
-    pub fn as_selection_model(&self) -> &impl IsA<gtk4::SelectionModel> {
-        match self {
-            Self::Single(s) => s,
-            Self::Multi(_) => panic!("Cannot return MultiSelection as SelectionModel reference"),
-        }
     }
 
     /// Returns true if in multi-selection mode
@@ -418,6 +415,7 @@ impl SelectionModelWrapper {
 /// This struct is used by `invoke_drag_drop()` and `set_drag_drop_callback()` methods
 /// to pass drag-drop operation details to registered callbacks.
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Fields used by drag-drop callback system
 pub struct DragDropData {
     /// Type of the dragged item ("conn" or "group")
     pub item_type: String,
@@ -433,6 +431,7 @@ pub struct DragDropData {
 const MAX_SEARCH_HISTORY: usize = 10;
 
 /// Sidebar widget for connection tree display
+#[allow(dead_code)] // Many fields kept for GTK widget lifecycle
 pub struct ConnectionSidebar {
     container: GtkBox,
     search_entry: SearchEntry,
@@ -816,6 +815,9 @@ impl ConnectionSidebar {
     }
 
     /// Sets the callback for drag-drop operations
+    ///
+    /// Note: Part of drag-drop callback API for external handlers.
+    #[allow(dead_code)]
     pub fn set_drag_drop_callback<F>(&self, callback: F)
     where
         F: Fn(DragDropData) + 'static,
@@ -824,6 +826,9 @@ impl ConnectionSidebar {
     }
 
     /// Invokes the drag-drop callback if set
+    ///
+    /// Note: Part of drag-drop callback API for external handlers.
+    #[allow(dead_code)]
     pub fn invoke_drag_drop(&self, data: DragDropData) {
         if let Some(ref callback) = *self.drag_drop_callback.borrow() {
             callback(data);
@@ -1234,6 +1239,9 @@ impl ConnectionSidebar {
     }
 
     /// Shows the context menu for a connection item
+    ///
+    /// Note: Context menu shown via `show_context_menu_for_item` with group awareness.
+    #[allow(dead_code)]
     fn show_context_menu(widget: &impl IsA<Widget>, x: f64, y: f64) {
         Self::show_context_menu_for_item(widget, x, y, false);
     }
@@ -1400,7 +1408,10 @@ impl ConnectionSidebar {
     }
 
     /// Returns the search spinner widget
+    ///
+    /// Note: Spinner is typically accessed via `show_search_pending`/`hide_search_pending`.
     #[must_use]
+    #[allow(dead_code)]
     pub const fn search_spinner(&self) -> &gtk4::Spinner {
         &self.search_spinner
     }
@@ -1447,12 +1458,18 @@ impl ConnectionSidebar {
     }
 
     /// Returns a reference to the lazy group loader
+    ///
+    /// Note: Part of lazy loading API for large connection lists.
     #[must_use]
+    #[allow(dead_code)]
     pub fn lazy_loader(&self) -> std::cell::Ref<'_, LazyGroupLoader> {
         self.lazy_loader.borrow()
     }
 
     /// Returns a mutable reference to the lazy group loader
+    ///
+    /// Note: Part of lazy loading API for large connection lists.
+    #[allow(dead_code)]
     pub fn lazy_loader_mut(&self) -> std::cell::RefMut<'_, LazyGroupLoader> {
         self.lazy_loader.borrow_mut()
     }
@@ -1460,7 +1477,10 @@ impl ConnectionSidebar {
     /// Checks if a group needs to be loaded
     ///
     /// Returns true if the group's children have not been loaded yet.
+    ///
+    /// Note: Part of lazy loading API for large connection lists.
     #[must_use]
+    #[allow(dead_code)]
     pub fn needs_group_loading(&self, group_id: Uuid) -> bool {
         self.lazy_loader.borrow().needs_loading(group_id)
     }
@@ -1468,6 +1488,9 @@ impl ConnectionSidebar {
     /// Marks a group as loaded
     ///
     /// Call this after loading a group's children to prevent re-loading.
+    ///
+    /// Note: Part of lazy loading API for large connection lists.
+    #[allow(dead_code)]
     pub fn mark_group_loaded(&self, group_id: Uuid) {
         self.lazy_loader.borrow_mut().mark_group_loaded(group_id);
     }
@@ -1475,12 +1498,18 @@ impl ConnectionSidebar {
     /// Marks root items as loaded
     ///
     /// Call this after the initial sidebar population.
+    ///
+    /// Note: Part of lazy loading API for large connection lists.
+    #[allow(dead_code)]
     pub fn mark_root_loaded(&self) {
         self.lazy_loader.borrow_mut().mark_root_loaded();
     }
 
     /// Checks if root items have been loaded
+    ///
+    /// Note: Part of lazy loading API for large connection lists.
     #[must_use]
+    #[allow(dead_code)]
     pub fn is_root_loaded(&self) -> bool {
         self.lazy_loader.borrow().is_root_loaded()
     }
@@ -1488,6 +1517,9 @@ impl ConnectionSidebar {
     /// Resets the lazy loading state
     ///
     /// Call this when the connection database is reloaded.
+    ///
+    /// Note: Part of lazy loading API for large connection lists.
+    #[allow(dead_code)]
     pub fn reset_lazy_loading(&self) {
         self.lazy_loader.borrow_mut().reset();
     }
@@ -1498,7 +1530,10 @@ impl ConnectionSidebar {
     ///
     /// Call this after populating the sidebar to enable virtual scrolling
     /// for large connection lists.
+    ///
+    /// Note: Part of virtual scrolling API for performance optimization.
     #[allow(clippy::cast_lossless)]
+    #[allow(dead_code)]
     pub fn setup_virtual_scrolling(&self, item_count: usize) {
         if self.virtual_scroll_config.should_enable(item_count) {
             let viewport_height = f64::from(self.scrolled_window.height());
@@ -1516,6 +1551,9 @@ impl ConnectionSidebar {
     }
 
     /// Updates the virtual scroller when the viewport is resized
+    ///
+    /// Note: Part of virtual scrolling API for performance optimization.
+    #[allow(dead_code)]
     pub fn update_viewport_height(&self, height: f64) {
         if let Some(ref mut scroller) = *self.virtual_scroller.borrow_mut() {
             scroller.set_viewport_height(height);
@@ -1523,6 +1561,9 @@ impl ConnectionSidebar {
     }
 
     /// Updates the virtual scroller when scrolling occurs
+    ///
+    /// Note: Part of virtual scrolling API for performance optimization.
+    #[allow(dead_code)]
     pub fn update_scroll_offset(&self, offset: f64) {
         if let Some(ref mut scroller) = *self.virtual_scroller.borrow_mut() {
             scroller.set_scroll_offset(offset);
@@ -1530,7 +1571,10 @@ impl ConnectionSidebar {
     }
 
     /// Returns the visible range of items for virtual scrolling
+    ///
+    /// Note: Part of virtual scrolling API for performance optimization.
     #[must_use]
+    #[allow(dead_code)]
     pub fn visible_range(&self) -> Option<(usize, usize)> {
         self.virtual_scroller
             .borrow()
@@ -1539,18 +1583,27 @@ impl ConnectionSidebar {
     }
 
     /// Returns whether virtual scrolling is currently enabled
+    ///
+    /// Note: Part of virtual scrolling API for performance optimization.
     #[must_use]
+    #[allow(dead_code)]
     pub fn is_virtual_scrolling_enabled(&self) -> bool {
         self.virtual_scroller.borrow().is_some()
     }
 
     /// Returns a reference to the selection state for virtual scrolling
+    ///
+    /// Note: Part of selection state API for virtual scrolling.
     #[must_use]
+    #[allow(dead_code)]
     pub fn selection_state(&self) -> std::cell::Ref<'_, CoreSelectionState> {
         self.selection_state.borrow()
     }
 
     /// Returns a mutable reference to the selection state
+    ///
+    /// Note: Part of selection state API for virtual scrolling.
+    #[allow(dead_code)]
     pub fn selection_state_mut(&self) -> std::cell::RefMut<'_, CoreSelectionState> {
         self.selection_state.borrow_mut()
     }
@@ -1558,33 +1611,51 @@ impl ConnectionSidebar {
     /// Selects an item by ID in the persistent selection state
     ///
     /// This preserves the selection across virtual scrolling operations.
+    ///
+    /// Note: Part of selection state API for virtual scrolling.
+    #[allow(dead_code)]
     pub fn persist_selection(&self, id: Uuid) {
         self.selection_state.borrow_mut().select(id);
     }
 
     /// Deselects an item by ID from the persistent selection state
+    ///
+    /// Note: Part of selection state API for virtual scrolling.
+    #[allow(dead_code)]
     pub fn unpersist_selection(&self, id: Uuid) {
         self.selection_state.borrow_mut().deselect(id);
     }
 
     /// Toggles selection for an item in the persistent selection state
+    ///
+    /// Note: Part of selection state API for virtual scrolling.
+    #[allow(dead_code)]
     pub fn toggle_persisted_selection(&self, id: Uuid) {
         self.selection_state.borrow_mut().toggle(id);
     }
 
     /// Checks if an item is in the persistent selection state
+    ///
+    /// Note: Part of selection state API for virtual scrolling.
     #[must_use]
+    #[allow(dead_code)]
     pub fn is_selection_persisted(&self, id: Uuid) -> bool {
         self.selection_state.borrow().is_selected(id)
     }
 
     /// Clears all selections
+    ///
+    /// Note: Part of selection state API for virtual scrolling.
+    #[allow(dead_code)]
     pub fn clear_selection_state(&self) {
         self.selection_state.borrow_mut().clear();
     }
 
     /// Returns the count of selected items
+    ///
+    /// Note: Part of selection state API for virtual scrolling.
     #[must_use]
+    #[allow(dead_code)]
     pub fn selection_count(&self) -> usize {
         self.selection_state.borrow().selection_count()
     }
@@ -1593,6 +1664,9 @@ impl ConnectionSidebar {
     ///
     /// This method clears the current store and repopulates it with
     /// document headers followed by their groups and connections.
+    ///
+    /// Note: Part of document-based sidebar API.
+    #[allow(dead_code)]
     pub fn populate_with_documents(
         &self,
         documents: &[(Uuid, String, bool)], // (id, name, is_dirty)
@@ -1658,6 +1732,9 @@ impl ConnectionSidebar {
     }
 
     /// Updates the dirty indicator for a document in the sidebar
+    ///
+    /// Note: Part of document-based sidebar API.
+    #[allow(dead_code)]
     pub fn update_document_dirty_state(&self, doc_id: Uuid, is_dirty: bool) {
         let n_items = self.store.n_items();
         for i in 0..n_items {
@@ -1743,7 +1820,10 @@ impl ConnectionSidebar {
     }
 
     /// Gets the active session count for a connection
+    ///
+    /// Note: Part of session status tracking API.
     #[must_use]
+    #[allow(dead_code)]
     pub fn get_session_count(&self, id: &str) -> usize {
         self.connection_statuses
             .borrow()
@@ -1785,6 +1865,9 @@ impl ConnectionSidebar {
     /// Gets the document ID for a selected item
     ///
     /// Traverses up the tree to find the parent document
+    ///
+    /// Note: Part of document-based sidebar API.
+    #[allow(dead_code)]
     pub fn get_document_for_item(&self, item_id: Uuid) -> Option<Uuid> {
         let n_items = self.store.n_items();
         for i in 0..n_items {
@@ -1807,6 +1890,9 @@ impl ConnectionSidebar {
     }
 
     /// Helper to find an item in children recursively
+    ///
+    /// Note: Part of document-based sidebar API.
+    #[allow(dead_code)]
     fn find_item_in_children(model: &gio::ListModel, item_id: &str) -> bool {
         let n_items = model.n_items();
         for i in 0..n_items {
@@ -1826,7 +1912,10 @@ impl ConnectionSidebar {
 
     /// Returns the bulk actions bar
     /// Returns the bulk actions bar
+    ///
+    /// Note: Part of group operations mode API.
     #[must_use]
+    #[allow(dead_code)]
     pub const fn bulk_actions_bar(&self) -> &GtkBox {
         &self.bulk_actions_bar
     }
@@ -1934,18 +2023,27 @@ impl ConnectionSidebar {
     }
 
     /// Returns the selection model wrapper
+    ///
+    /// Note: Part of selection model API.
+    #[allow(dead_code)]
     pub fn selection_model(&self) -> Rc<RefCell<SelectionModelWrapper>> {
         self.selection_model.clone()
     }
 
     /// Returns the drop indicator
+    ///
+    /// Note: Part of drag-drop API.
     #[must_use]
+    #[allow(dead_code)]
     pub fn drop_indicator(&self) -> Rc<DropIndicator> {
         self.drop_indicator.clone()
     }
 
     /// Returns the scrolled window containing the list view
+    ///
+    /// Note: Part of scroll management API.
     #[must_use]
+    #[allow(dead_code)]
     pub const fn scrolled_window(&self) -> &ScrolledWindow {
         &self.scrolled_window
     }
@@ -2064,6 +2162,9 @@ impl ConnectionSidebar {
 
     /// Highlights a group row to indicate drop-into action
     /// Now handled by CSS classes on the row widget itself
+    ///
+    /// Note: Part of drag-drop visual feedback API.
+    #[allow(dead_code)]
     fn highlight_group_at_index(_list_view: &ListView, drop_indicator: &DropIndicator, index: u32) {
         drop_indicator.set_highlighted_group(Some(index));
     }
@@ -2281,12 +2382,18 @@ impl ConnectionSidebar {
     }
 
     /// Gets the search history
+    ///
+    /// Note: Part of search history API.
     #[must_use]
+    #[allow(dead_code)]
     pub fn get_search_history(&self) -> Vec<String> {
         self.search_history.borrow().clone()
     }
 
     /// Clears the search history
+    ///
+    /// Note: Part of search history API.
+    #[allow(dead_code)]
     pub fn clear_search_history(&self) {
         self.search_history.borrow_mut().clear();
     }
@@ -2309,7 +2416,10 @@ impl ConnectionSidebar {
     }
 
     /// Checks if there is a saved pre-search state
+    ///
+    /// Note: Part of search state preservation API.
     #[must_use]
+    #[allow(dead_code)]
     pub fn has_pre_search_state(&self) -> bool {
         self.pre_search_state.borrow().is_some()
     }
@@ -2501,6 +2611,9 @@ impl ConnectionSidebar {
     ///     sidebar.populate_with_documents(&documents, get_contents);
     /// });
     /// ```
+    ///
+    /// Note: Part of tree state preservation API.
+    #[allow(dead_code)]
     pub fn refresh_preserving_state<F>(&self, refresh_fn: F)
     where
         F: FnOnce(),
