@@ -17,8 +17,6 @@ finish-args:
   - --share=network
   # Home directory access for SSH keys
   - --filesystem=home/.ssh:ro
-  # D-Bus access for libsecret (credential storage)
-  - --talk-name=org.freedesktop.secrets
   # SSH agent socket
   - --socket=ssh-auth
 
