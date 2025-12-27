@@ -175,6 +175,7 @@ impl Default for SessionControls {
 }
 
 /// Embedded session tab for RDP/VNC connections
+#[allow(dead_code)] // Fields kept for GTK widget lifecycle
 pub struct EmbeddedSessionTab {
     id: Uuid,
     connection_id: Uuid,

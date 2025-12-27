@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2025-12-28
+
+### Added
+- Search debouncing with visual spinner indicator in sidebar (100ms delay for better UX)
+- Pre-search state preservation (expanded groups, scroll position restored when search cleared)
+- Clipboard file transfer UI for embedded RDP sessions:
+  - "Save Files" button appears when files are available on remote clipboard
+  - Folder selection dialog for choosing download destination
+  - Progress tracking and completion notifications
+  - Automatic file saving with status feedback
+- CLI: Wake-on-LAN command (`wol`) - send magic packets by MAC address or connection name
+- CLI: Snippet management commands (`snippet list/show/add/delete/run`)
+  - Variable extraction and substitution support
+  - Execute snippets with `--execute` flag
+- CLI: Group management commands (`group list/show/create/delete/add-connection/remove-connection`)
+- CLI: Connection list filters (`--group`, `--tag`) for `list` command
+- CLI: Native format (.rcn) support for import/export
+
+### Changed
+- Removed global `#![allow(dead_code)]` from `rustconn/src/main.rs`
+- Added targeted `#[allow(dead_code)]` annotations with documentation comments to GTK widget fields kept for lifecycle management
+- Removed unused code:
+  - `STANDARD_RESOLUTIONS` and `find_best_standard_resolution` from `embedded_rdp.rs`
+  - `connect_kdbx_enable_switch` from `dialogs/settings.rs` (extended version exists)
+  - `update_reconnect_button_visibility` from `embedded_rdp.rs`
+  - `as_selection_model` from `sidebar.rs`
+- Added public methods to `AutomationSession`: `remaining_triggers()`, `is_complete()`
+- Documented API methods in `sidebar.rs`, `state.rs`, `terminal.rs`, `window.rs` with `#[allow(dead_code)]` annotations for future use
+- Removed `--talk-name=org.freedesktop.secrets` from Flatpak manifest (unnecessary D-Bus permission)
+- Refactored `dialogs/export.rs`: extracted `do_export()` and `format_result_summary()` to eliminate code duplication
+
 ## [0.5.0] - 2025-12-27
 
 ### Added
@@ -171,7 +202,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No plaintext password storage
 - `unsafe_code = "forbid"` enforced
 
-[Unreleased]: https://github.com/totoshko88/RustConn/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/totoshko88/RustConn/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/totoshko88/RustConn/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/totoshko88/RustConn/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/totoshko88/RustConn/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/totoshko88/RustConn/compare/v0.4.0...v0.4.1

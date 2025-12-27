@@ -55,6 +55,9 @@ use gtk4::{
     EventControllerScroll, EventControllerScrollFlags, GestureClick, Label, Orientation,
 };
 use std::cell::RefCell;
+use std::collections::HashMap;
+use std::io::Write;
+use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::rc::Rc;
 use std::sync::mpsc;
@@ -63,49 +66,9 @@ use std::thread::{self, JoinHandle};
 use thiserror::Error;
 
 #[cfg(feature = "rdp-embedded")]
+use rustconn_core::rdp_client::ClipboardFileInfo;
+#[cfg(feature = "rdp-embedded")]
 use rustconn_core::RdpClientCommand;
-
-/// Standard RDP/display resolutions (width, height)
-/// Sorted by total pixels for efficient lookup
-const STANDARD_RESOLUTIONS: &[(u32, u32)] = &[
-    (640, 480),   // VGA
-    (800, 600),   // SVGA
-    (1024, 768),  // XGA
-    (1152, 864),  // XGA+
-    (1280, 720),  // HD 720p
-    (1280, 800),  // WXGA
-    (1280, 1024), // SXGA
-    (1366, 768),  // HD
-    (1440, 900),  // WXGA+
-    (1600, 900),  // HD+
-    (1600, 1200), // UXGA
-    (1680, 1050), // WSXGA+
-    (1920, 1080), // Full HD
-    (1920, 1200), // WUXGA
-    (2560, 1440), // QHD
-    (2560, 1600), // WQXGA
-    (3840, 2160), // 4K UHD
-];
-
-/// Finds the best matching standard resolution for the given dimensions
-///
-/// Returns the largest standard resolution that fits within the given dimensions,
-/// or the smallest standard resolution if none fit.
-#[must_use]
-fn find_best_standard_resolution(width: u32, height: u32) -> (u32, u32) {
-    // Find the largest resolution that fits within the given dimensions
-    let mut best = STANDARD_RESOLUTIONS[0]; // Start with smallest
-
-    for &(res_w, res_h) in STANDARD_RESOLUTIONS {
-        if res_w <= width && res_h <= height {
-            // This resolution fits, and since we iterate in ascending order,
-            // it's larger than or equal to the previous best
-            best = (res_w, res_h);
-        }
-    }
-
-    best
-}
 
 /// Error type for embedded RDP operations
 #[derive(Debug, Error, Clone)]
@@ -149,6 +112,175 @@ pub enum EmbeddedRdpError {
     /// Thread communication error
     #[error("Thread communication error: {0}")]
     ThreadError(String),
+}
+
+// ============================================================================
+// Clipboard File Transfer State (for rdp-embedded feature)
+// ============================================================================
+
+/// State of a single file download from RDP clipboard
+#[cfg(feature = "rdp-embedded")]
+#[derive(Debug, Clone)]
+pub struct FileDownloadState {
+    /// File information from server
+    pub file_info: ClipboardFileInfo,
+    /// Total file size (may be updated after size request)
+    pub total_size: u64,
+    /// Bytes received so far
+    pub bytes_received: u64,
+    /// Accumulated data chunks
+    pub data: Vec<u8>,
+    /// Whether download is complete
+    pub complete: bool,
+    /// Local path where file will be saved
+    pub local_path: Option<PathBuf>,
+}
+
+#[cfg(feature = "rdp-embedded")]
+impl FileDownloadState {
+    /// Creates a new file download state
+    fn new(file_info: ClipboardFileInfo) -> Self {
+        let total_size = file_info.size;
+        Self {
+            file_info,
+            total_size,
+            bytes_received: 0,
+            data: Vec::new(),
+            complete: false,
+            local_path: None,
+        }
+    }
+
+    /// Returns download progress as fraction (0.0 to 1.0)
+    #[allow(dead_code)] // API method for future progress UI
+    fn progress(&self) -> f64 {
+        if self.total_size == 0 {
+            return if self.complete { 1.0 } else { 0.0 };
+        }
+        #[allow(clippy::cast_precision_loss)]
+        let progress = self.bytes_received as f64 / self.total_size as f64;
+        progress.min(1.0)
+    }
+}
+
+/// Manages clipboard file transfer state
+#[cfg(feature = "rdp-embedded")]
+#[derive(Debug, Default)]
+pub struct ClipboardFileTransfer {
+    /// Available files from server clipboard
+    pub available_files: Vec<ClipboardFileInfo>,
+    /// Active downloads keyed by stream_id
+    pub downloads: HashMap<u32, FileDownloadState>,
+    /// Next stream ID to use for requests
+    pub next_stream_id: u32,
+    /// Target directory for saving files
+    pub target_directory: Option<PathBuf>,
+    /// Total files to download
+    pub total_files: usize,
+    /// Completed downloads count
+    pub completed_count: usize,
+}
+
+#[cfg(feature = "rdp-embedded")]
+impl ClipboardFileTransfer {
+    /// Creates a new file transfer manager
+    fn new() -> Self {
+        Self {
+            available_files: Vec::new(),
+            downloads: HashMap::new(),
+            next_stream_id: 1,
+            target_directory: None,
+            total_files: 0,
+            completed_count: 0,
+        }
+    }
+
+    /// Sets available files from server clipboard
+    fn set_available_files(&mut self, files: Vec<ClipboardFileInfo>) {
+        self.available_files = files;
+        self.downloads.clear();
+        self.next_stream_id = 1;
+        self.total_files = 0;
+        self.completed_count = 0;
+    }
+
+    /// Starts download for a file, returns stream_id
+    fn start_download(&mut self, file_index: u32) -> Option<u32> {
+        let file_info = self.available_files.get(file_index as usize)?.clone();
+        let stream_id = self.next_stream_id;
+        self.next_stream_id += 1;
+        self.downloads
+            .insert(stream_id, FileDownloadState::new(file_info));
+        Some(stream_id)
+    }
+
+    /// Updates file size for a download
+    fn update_size(&mut self, stream_id: u32, size: u64) {
+        if let Some(state) = self.downloads.get_mut(&stream_id) {
+            state.total_size = size;
+        }
+    }
+
+    /// Appends data to a download
+    fn append_data(&mut self, stream_id: u32, data: &[u8], is_last: bool) {
+        if let Some(state) = self.downloads.get_mut(&stream_id) {
+            state.data.extend_from_slice(data);
+            state.bytes_received += data.len() as u64;
+            if is_last {
+                state.complete = true;
+                self.completed_count += 1;
+            }
+        }
+    }
+
+    /// Saves a completed download to disk
+    fn save_download(&self, stream_id: u32) -> Result<PathBuf, std::io::Error> {
+        let state = self.downloads.get(&stream_id).ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::NotFound, "Download not found")
+        })?;
+
+        if !state.complete {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Download not complete",
+            ));
+        }
+
+        let target_dir = self.target_directory.as_ref().ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::NotFound, "Target directory not set")
+        })?;
+
+        let file_path = target_dir.join(&state.file_info.name);
+        let mut file = std::fs::File::create(&file_path)?;
+        file.write_all(&state.data)?;
+        Ok(file_path)
+    }
+
+    /// Returns overall progress (0.0 to 1.0)
+    fn overall_progress(&self) -> f64 {
+        if self.total_files == 0 {
+            return 0.0;
+        }
+        #[allow(clippy::cast_precision_loss)]
+        let progress = self.completed_count as f64 / self.total_files as f64;
+        progress
+    }
+
+    /// Returns true if all downloads are complete
+    fn all_complete(&self) -> bool {
+        self.total_files > 0 && self.completed_count >= self.total_files
+    }
+
+    /// Clears all state
+    #[allow(dead_code)] // API method for cleanup on disconnect
+    fn clear(&mut self) {
+        self.available_files.clear();
+        self.downloads.clear();
+        self.next_stream_id = 1;
+        self.target_directory = None;
+        self.total_files = 0;
+        self.completed_count = 0;
+    }
 }
 
 // ============================================================================
@@ -230,6 +362,7 @@ pub enum FreeRdpThreadState {
 /// - Requirement 6.3: FreeRDP threading isolation
 /// - Requirement 6.1: QSocketNotifier error handling
 /// - Requirement 6.2: Wayland requestActivate warning suppression
+#[allow(dead_code)] // process field kept for process lifecycle management
 pub struct FreeRdpThread {
     /// Handle to the FreeRDP process
     process: Arc<Mutex<Option<Child>>>,
@@ -1099,6 +1232,7 @@ type FallbackCallback = Box<dyn Fn(&str) + 'static>;
 /// // Connect
 /// widget.connect(&config)?;
 /// ```
+#[allow(dead_code)] // Many fields kept for GTK widget lifecycle and signal handlers
 pub struct EmbeddedRdpWidget {
     /// Main container widget
     container: GtkBox,
@@ -1162,6 +1296,18 @@ pub struct EmbeddedRdpWidget {
     /// Audio player for RDP audio redirection
     #[cfg(feature = "rdp-audio")]
     audio_player: Rc<RefCell<Option<crate::audio::RdpAudioPlayer>>>,
+    /// Clipboard file transfer state
+    #[cfg(feature = "rdp-embedded")]
+    file_transfer: Rc<RefCell<ClipboardFileTransfer>>,
+    /// Save Files button (shown when files available on remote clipboard)
+    #[cfg(feature = "rdp-embedded")]
+    save_files_button: Button,
+    /// File transfer progress callback
+    #[cfg(feature = "rdp-embedded")]
+    on_file_progress: Rc<RefCell<Option<Box<dyn Fn(f64, &str) + 'static>>>>,
+    /// File transfer complete callback
+    #[cfg(feature = "rdp-embedded")]
+    on_file_complete: Rc<RefCell<Option<Box<dyn Fn(usize, &str) + 'static>>>>,
 }
 
 impl EmbeddedRdpWidget {
@@ -1210,6 +1356,16 @@ impl EmbeddedRdpWidget {
         ctrl_alt_del_button.add_css_class("suggested-action"); // Blue button style
         ctrl_alt_del_button.set_tooltip_text(Some("Send Ctrl+Alt+Del to remote session"));
         toolbar.append(&ctrl_alt_del_button);
+
+        // Save Files button (shown when files available on remote clipboard)
+        #[cfg(feature = "rdp-embedded")]
+        let save_files_button = Button::with_label("Save Files");
+        #[cfg(feature = "rdp-embedded")]
+        {
+            save_files_button.set_tooltip_text(Some("Save files from remote clipboard"));
+            save_files_button.set_visible(false); // Hidden until files available
+            toolbar.append(&save_files_button);
+        }
 
         // Reconnect button (shown when disconnected)
         let reconnect_button = Button::with_label("Reconnect");
@@ -1280,6 +1436,14 @@ impl EmbeddedRdpWidget {
             remote_clipboard_formats: Rc::new(RefCell::new(Vec::new())),
             #[cfg(feature = "rdp-audio")]
             audio_player: Rc::new(RefCell::new(None)),
+            #[cfg(feature = "rdp-embedded")]
+            file_transfer: Rc::new(RefCell::new(ClipboardFileTransfer::new())),
+            #[cfg(feature = "rdp-embedded")]
+            save_files_button: save_files_button.clone(),
+            #[cfg(feature = "rdp-embedded")]
+            on_file_progress: Rc::new(RefCell::new(None)),
+            #[cfg(feature = "rdp-embedded")]
+            on_file_complete: Rc::new(RefCell::new(None)),
         };
 
         widget.setup_drawing();
@@ -1289,6 +1453,8 @@ impl EmbeddedRdpWidget {
         widget.setup_ctrl_alt_del_button(&ctrl_alt_del_button);
         widget.setup_reconnect_button();
         widget.setup_visibility_handler();
+        #[cfg(feature = "rdp-embedded")]
+        widget.setup_save_files_button(&save_files_button);
 
         widget
     }
@@ -1315,6 +1481,118 @@ impl EmbeddedRdpWidget {
         });
     }
 
+    /// Sets up the Save Files button click handler for clipboard file transfer
+    #[cfg(feature = "rdp-embedded")]
+    fn setup_save_files_button(&self, button: &Button) {
+        let file_transfer = self.file_transfer.clone();
+        let ironrdp_tx = self.ironrdp_command_tx.clone();
+        let on_progress = self.on_file_progress.clone();
+        let on_complete = self.on_file_complete.clone();
+        let status_label = self.status_label.clone();
+        let save_btn = button.clone();
+
+        button.connect_clicked(move |_| {
+            let files = file_transfer.borrow().available_files.clone();
+            if files.is_empty() {
+                return;
+            }
+
+            // Show file chooser dialog for target directory
+            let dialog = gtk4::FileDialog::builder()
+                .title("Select folder to save files")
+                .modal(true)
+                .build();
+
+            let file_transfer_clone = file_transfer.clone();
+            let ironrdp_tx_clone = ironrdp_tx.clone();
+            let on_progress_clone = on_progress.clone();
+            let _on_complete_clone = on_complete.clone();
+            let status_label_clone = status_label.clone();
+            let save_btn_clone = save_btn.clone();
+            let files_clone = files.clone();
+
+            dialog.select_folder(
+                None::<&gtk4::Window>,
+                None::<&gtk4::gio::Cancellable>,
+                move |result| {
+                    if let Ok(folder) = result {
+                        if let Some(path) = folder.path() {
+                            // Set target directory and start downloads
+                            {
+                                let mut transfer = file_transfer_clone.borrow_mut();
+                                transfer.target_directory = Some(path.clone());
+                                transfer.total_files = files_clone.len();
+                                transfer.completed_count = 0;
+                            }
+
+                            // Disable button during transfer
+                            save_btn_clone.set_sensitive(false);
+                            save_btn_clone.set_label("Downloading...");
+
+                            // Request file contents for each file
+                            if let Some(ref sender) = *ironrdp_tx_clone.borrow() {
+                                for (idx, file) in files_clone.iter().enumerate() {
+                                    let stream_id = {
+                                        let mut transfer = file_transfer_clone.borrow_mut();
+                                        transfer.start_download(idx as u32)
+                                    };
+
+                                    if let Some(sid) = stream_id {
+                                        // First request size, then data
+                                        let _ =
+                                            sender.send(RdpClientCommand::RequestFileContents {
+                                                stream_id: sid,
+                                                file_index: file.index,
+                                                request_size: true,
+                                                offset: 0,
+                                                length: 0,
+                                            });
+
+                                        // Then request actual data
+                                        let _ =
+                                            sender.send(RdpClientCommand::RequestFileContents {
+                                                stream_id: sid,
+                                                file_index: file.index,
+                                                request_size: false,
+                                                offset: 0,
+                                                length: u32::MAX, // Request all data
+                                            });
+                                    }
+                                }
+                            }
+
+                            // Show progress
+                            status_label_clone.set_text("Downloading files...");
+                            status_label_clone.set_visible(true);
+
+                            if let Some(ref callback) = *on_progress_clone.borrow() {
+                                callback(0.0, "Starting download...");
+                            }
+                        }
+                    }
+                },
+            );
+        });
+    }
+
+    /// Connects a callback for file transfer progress updates
+    #[cfg(feature = "rdp-embedded")]
+    pub fn connect_file_progress<F>(&self, callback: F)
+    where
+        F: Fn(f64, &str) + 'static,
+    {
+        *self.on_file_progress.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// Connects a callback for file transfer completion
+    #[cfg(feature = "rdp-embedded")]
+    pub fn connect_file_complete<F>(&self, callback: F)
+    where
+        F: Fn(usize, &str) + 'static,
+    {
+        *self.on_file_complete.borrow_mut() = Some(Box::new(callback));
+    }
+
     /// Connects a callback for reconnect button clicks
     ///
     /// The callback is invoked when the user clicks the Reconnect button
@@ -1324,20 +1602,6 @@ impl EmbeddedRdpWidget {
         F: Fn() + 'static,
     {
         *self.on_reconnect.borrow_mut() = Some(Box::new(callback));
-    }
-
-    /// Updates the reconnect button visibility based on connection state
-    fn update_reconnect_button_visibility(&self) {
-        let state = *self.state.borrow();
-        let show_reconnect = matches!(
-            state,
-            RdpConnectionState::Disconnected | RdpConnectionState::Error
-        );
-        self.reconnect_button.set_visible(show_reconnect);
-        // Show toolbar when reconnect button should be visible
-        if show_reconnect {
-            self.toolbar.set_visible(true);
-        }
     }
 
     /// Sets up the clipboard Copy/Paste button handlers
@@ -2833,6 +3097,11 @@ impl EmbeddedRdpWidget {
         let remote_clipboard_text = self.remote_clipboard_text.clone();
         let remote_clipboard_formats = self.remote_clipboard_formats.clone();
         let copy_button = self.copy_button.clone();
+        let file_transfer = self.file_transfer.clone();
+        let save_files_button = self.save_files_button.clone();
+        let status_label = self.status_label.clone();
+        let on_file_progress = self.on_file_progress.clone();
+        let on_file_complete = self.on_file_complete.clone();
         #[cfg(feature = "rdp-audio")]
         let audio_player = self.audio_player.clone();
 
@@ -3146,7 +3415,20 @@ impl EmbeddedRdpWidget {
                                     file.is_directory()
                                 );
                             }
-                            // TODO: Store file list for UI display and download
+                            // Store file list and show Save Files button
+                            let file_count = files.len();
+                            file_transfer.borrow_mut().set_available_files(files);
+                            if file_count > 0 {
+                                save_files_button.set_label(&format!("Save {} Files", file_count));
+                                save_files_button.set_tooltip_text(Some(&format!(
+                                    "Save {} files from remote clipboard",
+                                    file_count
+                                )));
+                                save_files_button.set_visible(true);
+                                save_files_button.set_sensitive(true);
+                            } else {
+                                save_files_button.set_visible(false);
+                            }
                         }
                         RdpClientEvent::ClipboardFileContents {
                             stream_id,
@@ -3160,7 +3442,72 @@ impl EmbeddedRdpWidget {
                                 data.len(),
                                 is_last
                             );
-                            // TODO: Write data to local file
+                            // Append data to download state
+                            file_transfer
+                                .borrow_mut()
+                                .append_data(stream_id, &data, is_last);
+
+                            // Update progress
+                            let (progress, completed, total) = {
+                                let transfer = file_transfer.borrow();
+                                (
+                                    transfer.overall_progress(),
+                                    transfer.completed_count,
+                                    transfer.total_files,
+                                )
+                            };
+
+                            if let Some(ref callback) = *on_file_progress.borrow() {
+                                callback(
+                                    progress,
+                                    &format!("Downloaded {}/{} files", completed, total),
+                                );
+                            }
+
+                            // If this file is complete, save it
+                            if is_last {
+                                match file_transfer.borrow().save_download(stream_id) {
+                                    Ok(path) => {
+                                        tracing::info!(
+                                            "[Clipboard] Saved file: {}",
+                                            path.display()
+                                        );
+                                    }
+                                    Err(e) => {
+                                        tracing::error!("[Clipboard] Failed to save file: {}", e);
+                                    }
+                                }
+                            }
+
+                            // Check if all downloads complete
+                            if file_transfer.borrow().all_complete() {
+                                let count = file_transfer.borrow().completed_count;
+                                let target = file_transfer
+                                    .borrow()
+                                    .target_directory
+                                    .as_ref()
+                                    .map(|p| p.display().to_string())
+                                    .unwrap_or_default();
+
+                                // Reset button
+                                save_files_button.set_sensitive(true);
+                                let file_count = file_transfer.borrow().available_files.len();
+                                save_files_button.set_label(&format!("Save {} Files", file_count));
+
+                                // Show completion status
+                                status_label.set_text(&format!("Saved {} files", count));
+                                let status_hide = status_label.clone();
+                                glib::timeout_add_local_once(
+                                    std::time::Duration::from_secs(3),
+                                    move || {
+                                        status_hide.set_visible(false);
+                                    },
+                                );
+
+                                if let Some(ref callback) = *on_file_complete.borrow() {
+                                    callback(count, &target);
+                                }
+                            }
                         }
                         RdpClientEvent::ClipboardFileSize { stream_id, size } => {
                             // File size information received
@@ -3169,7 +3516,8 @@ impl EmbeddedRdpWidget {
                                 stream_id,
                                 size
                             );
-                            // TODO: Use for progress indication
+                            // Update size for progress indication
+                            file_transfer.borrow_mut().update_size(stream_id, size);
                         }
                     }
                 }

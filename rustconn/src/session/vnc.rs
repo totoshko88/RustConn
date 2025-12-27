@@ -53,6 +53,7 @@ type StateCallback = Box<dyn Fn(SessionState) + 'static>;
 /// // Connect to VNC server
 /// widget.connect("192.168.1.100", 5900, None);
 /// ```
+#[allow(dead_code)] // Fields kept for GTK widget lifecycle
 pub struct VncSessionWidget {
     /// The GTK overlay container
     overlay: Overlay,

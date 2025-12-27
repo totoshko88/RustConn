@@ -35,12 +35,30 @@ struct AutomationState {
 }
 
 /// Manages automation for a terminal session
+///
+/// The `state` field holds the shared automation state that is accessed by the
+/// polling timer. Even though it's not directly read after construction, it must
+/// be kept alive to prevent the `Rc` from being dropped while the timer is active.
 pub struct AutomationSession {
-    #[allow(dead_code)]
+    /// Shared state accessed by the polling timer callback.
+    /// Kept alive to maintain the `Rc` reference count.
     state: Rc<RefCell<AutomationState>>,
 }
 
 impl AutomationSession {
+    /// Returns the number of remaining triggers
+    #[must_use]
+    pub fn remaining_triggers(&self) -> usize {
+        self.state.borrow().triggers.len()
+    }
+
+    /// Returns whether all triggers have been processed
+    #[must_use]
+    pub fn is_complete(&self) -> bool {
+        self.state.borrow().triggers.is_empty()
+    }
+
+    /// Creates a new automation session with the given triggers
     pub fn new(terminal: Terminal, triggers: Vec<Trigger>) -> Self {
         tracing::info!(
             "AutomationSession: Created with {} triggers",

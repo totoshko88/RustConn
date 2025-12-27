@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.5.0
+Version:        0.5.1
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later
@@ -158,6 +158,11 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sat Dec 28 2025 Anton Isaiev <totoshko88@gmail.com> - 0.5.1-0
+- Update to version 0.5.1
+- Removed dead code and placeholder implementations
+- Code cleanup and documentation improvements
+
 * Sat Dec 27 2025 Anton Isaiev <totoshko88@gmail.com> - 0.5.0-0
 - Update to version 0.5.0
 - RDP clipboard file transfer support (CF_HDROP format)

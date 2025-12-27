@@ -24,6 +24,7 @@ use std::rc::Rc;
 pub type ExportCallback = Rc<RefCell<Option<Box<dyn Fn(Option<ExportResult>)>>>>;
 
 /// Export dialog for exporting connections to external formats
+#[allow(dead_code)] // Fields kept for GTK widget lifecycle
 pub struct ExportDialog {
     window: Window,
     stack: Stack,
@@ -424,40 +425,41 @@ impl ExportDialog {
     }
 
     /// Performs the export operation
-    fn do_export(&self, options: &ExportOptions) -> Result<ExportResult, String> {
-        let connections = self.connections.borrow();
-        let groups = self.groups.borrow();
-
+    fn do_export(
+        connections: &[Connection],
+        groups: &[ConnectionGroup],
+        options: &ExportOptions,
+    ) -> Result<ExportResult, String> {
         match options.format {
             ExportFormat::Ansible => {
                 let exporter = AnsibleExporter;
                 exporter
-                    .export(&connections, &groups, options)
+                    .export(connections, groups, options)
                     .map_err(|e| e.to_string())
             }
             ExportFormat::SshConfig => {
                 let exporter = SshConfigExporter;
                 exporter
-                    .export(&connections, &groups, options)
+                    .export(connections, groups, options)
                     .map_err(|e| e.to_string())
             }
             ExportFormat::Remmina => {
                 let exporter = RemminaExporter;
                 exporter
-                    .export(&connections, &groups, options)
+                    .export(connections, groups, options)
                     .map_err(|e| e.to_string())
             }
             ExportFormat::Asbru => {
                 let exporter = AsbruExporter;
                 exporter
-                    .export(&connections, &groups, options)
+                    .export(connections, groups, options)
                     .map_err(|e| e.to_string())
             }
             ExportFormat::Native => {
                 // Native export includes all data types
                 let export = NativeExport::with_data(
-                    connections.clone(),
-                    groups.clone(),
+                    connections.to_vec(),
+                    groups.to_vec(),
                     Vec::new(), // Templates would need to be passed in
                     Vec::new(), // Clusters would need to be passed in
                     Vec::new(), // Variables would need to be passed in
@@ -474,8 +476,8 @@ impl ExportDialog {
         }
     }
 
-    /// Shows the export results
-    fn show_results(&self, result: &ExportResult, format: ExportFormat) {
+    /// Formats the result summary message
+    fn format_result_summary(result: &ExportResult, format: ExportFormat) -> String {
         let summary = format!(
             "Successfully exported {} connection(s) to {} format.",
             result.exported_count,
@@ -483,16 +485,13 @@ impl ExportDialog {
         );
 
         if result.skipped_count > 0 {
-            self.result_label.set_text(&format!(
+            format!(
                 "{}\n\n{} connection(s) were skipped (unsupported protocol).",
                 summary, result.skipped_count
-            ));
+            )
         } else {
-            self.result_label.set_text(&summary);
+            summary
         }
-
-        let details = Self::format_export_details(result);
-        self.result_details.set_text(&details);
     }
 
     /// Formats export result details into a displayable string
@@ -734,40 +733,7 @@ impl ExportDialog {
             progress_bar.set_fraction(0.5);
             progress_label.set_text("Writing output files...");
 
-            let export_result = match format {
-                ExportFormat::Ansible => {
-                    let exporter = AnsibleExporter;
-                    exporter.export(&conns, &grps, &options)
-                }
-                ExportFormat::SshConfig => {
-                    let exporter = SshConfigExporter;
-                    exporter.export(&conns, &grps, &options)
-                }
-                ExportFormat::Remmina => {
-                    let exporter = RemminaExporter;
-                    exporter.export(&conns, &grps, &options)
-                }
-                ExportFormat::Asbru => {
-                    let exporter = AsbruExporter;
-                    exporter.export(&conns, &grps, &options)
-                }
-                ExportFormat::Native => {
-                    // Native export includes all data types
-                    let export = NativeExport::with_data(
-                        conns.clone(),
-                        grps.clone(),
-                        Vec::new(), // Templates would need to be passed in
-                        Vec::new(), // Clusters would need to be passed in
-                        Vec::new(), // Variables would need to be passed in
-                    );
-                    export.to_file(&options.output_path).map(|()| {
-                        let mut result = ExportResult::new();
-                        result.exported_count = conns.len();
-                        result.add_output_file(options.output_path.clone());
-                        result
-                    })
-                }
-            };
+            let export_result = Self::do_export(&conns, &grps, &options);
 
             progress_bar.set_fraction(1.0);
             progress_spinner.set_spinning(false);
@@ -776,21 +742,9 @@ impl ExportDialog {
                 Ok(result) => {
                     progress_label.set_text("Export complete");
 
-                    // Show results
-                    let summary = format!(
-                        "Successfully exported {} connection(s) to {} format.",
-                        result.exported_count,
-                        format.display_name()
-                    );
-
-                    if result.skipped_count > 0 {
-                        result_label.set_text(&format!(
-                            "{}\n\n{} connection(s) were skipped (unsupported protocol).",
-                            summary, result.skipped_count
-                        ));
-                    } else {
-                        result_label.set_text(&summary);
-                    }
+                    // Show results using helper method
+                    let summary = Self::format_result_summary(&result, format);
+                    result_label.set_text(&summary);
 
                     let details = Self::format_export_details(&result);
                     result_details.set_text(&details);

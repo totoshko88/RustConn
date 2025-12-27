@@ -3,8 +3,6 @@
 //! A GTK4-based connection manager supporting SSH, RDP, and VNC protocols
 //! with Wayland-native support and `KeePassXC` integration.
 
-// Allow dead code for methods that may be used in the future
-#![allow(dead_code)]
 // Allow common clippy lints for GUI code
 #![allow(clippy::too_many_lines)]
 #![allow(clippy::cast_precision_loss)]

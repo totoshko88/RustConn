@@ -31,6 +31,7 @@ pub struct ClusterDialog {
 }
 
 /// Represents a connection selection row in the cluster dialog
+#[allow(dead_code)] // Fields kept for GTK widget lifecycle and future use
 struct ConnectionSelectionRow {
     /// The row widget
     row: ListBoxRow,
@@ -39,9 +40,6 @@ struct ConnectionSelectionRow {
     /// Connection ID
     connection_id: Uuid,
     /// Connection name (for display)
-    ///
-    /// Stored for potential future use in search/filter functionality
-    /// and debugging purposes.
     connection_name: String,
 }
 
@@ -378,20 +376,15 @@ pub struct ClusterListDialog {
 }
 
 /// Represents a cluster row in the list dialog
+#[allow(dead_code)] // Fields kept for GTK widget lifecycle and future dynamic updates
 struct ClusterListRow {
     /// The row widget
     row: ListBoxRow,
     /// Cluster ID
     cluster_id: Uuid,
     /// Cluster name label
-    ///
-    /// Stored for potential future use in dynamic updates
-    /// (e.g., updating label when cluster is renamed).
     name_label: Label,
     /// Connection count label
-    ///
-    /// Stored for potential future use in dynamic updates
-    /// (e.g., updating count when connections are added/removed).
     count_label: Label,
     /// Connect button
     connect_button: Button,

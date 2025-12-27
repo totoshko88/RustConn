@@ -3920,7 +3920,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "chrono",
  "cpal",
@@ -3943,7 +3943,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "chrono",
  "clap",
@@ -3958,7 +3958,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "argon2",
  "async-trait",

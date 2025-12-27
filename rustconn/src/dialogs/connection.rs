@@ -36,6 +36,7 @@ use std::rc::Rc;
 use uuid::Uuid;
 
 /// Connection dialog for creating/editing connections
+#[allow(dead_code)] // Many fields kept for GTK widget lifecycle and signal handlers
 pub struct ConnectionDialog {
     window: Window,
     /// Header bar save button - stored for potential future use
@@ -184,6 +185,7 @@ pub struct ConnectionDialog {
 }
 
 /// Represents a local variable row in the connection dialog
+#[allow(dead_code)] // Fields kept for GTK widget lifecycle
 struct LocalVariableRow {
     /// The row widget
     row: ListBoxRow,
@@ -200,9 +202,6 @@ struct LocalVariableRow {
     /// Delete button
     delete_button: Button,
     /// Whether this is an inherited global variable (read-only name)
-    ///
-    /// When true, the variable name was inherited from global variables
-    /// and should not be editable. Currently used for display purposes.
     is_inherited: bool,
 }
 

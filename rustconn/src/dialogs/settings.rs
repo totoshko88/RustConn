@@ -24,6 +24,7 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 /// Settings dialog for application preferences
+#[allow(dead_code)] // Fields kept for GTK widget lifecycle
 pub struct SettingsDialog {
     window: Window,
     save_button: Button,
@@ -832,28 +833,6 @@ impl SettingsDialog {
         backend_frame.set_child(Some(&backend_vbox));
 
         (backend_frame, secret_backend_dropdown, enable_fallback)
-    }
-
-    /// Connects the KDBX enable switch to control sensitivity of related widgets
-    fn connect_kdbx_enable_switch(
-        switch: &Switch,
-        path_entry: &Entry,
-        password_entry: &PasswordEntry,
-        save_password_check: &CheckButton,
-        browse_button: &Button,
-    ) {
-        let path_entry = path_entry.clone();
-        let password_entry = password_entry.clone();
-        let save_password_check = save_password_check.clone();
-        let browse_button = browse_button.clone();
-
-        switch.connect_state_set(move |_, state| {
-            path_entry.set_sensitive(state);
-            password_entry.set_sensitive(state);
-            save_password_check.set_sensitive(state);
-            browse_button.set_sensitive(state);
-            gtk4::glib::Propagation::Proceed
-        });
     }
 
     /// Connects the KDBX enable switch with key file support

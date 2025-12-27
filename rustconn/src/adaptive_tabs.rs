@@ -119,6 +119,7 @@ impl TabInfo {
 }
 
 /// Single tab widget that adapts to display mode
+#[allow(dead_code)] // Fields kept for GTK widget lifecycle
 struct AdaptiveTab {
     container: GtkBox,
     icon: Image,

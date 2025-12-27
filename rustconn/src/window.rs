@@ -67,6 +67,7 @@ type SharedExternalWindowManager = Rc<ExternalWindowManager>;
 /// Main application window wrapper
 ///
 /// Provides access to the main window and its components.
+#[allow(dead_code)] // Fields kept for GTK widget lifecycle and future use
 pub struct MainWindow {
     window: ApplicationWindow,
     sidebar: SharedSidebar,
@@ -1227,12 +1228,61 @@ impl MainWindow {
             });
         }
 
-        // Connect sidebar search
+        // Connect sidebar search with debouncing
         let state_clone = state.clone();
         let sidebar_clone = sidebar.clone();
         sidebar.search_entry().connect_search_changed(move |entry| {
-            let query = entry.text();
-            Self::filter_connections(&state_clone, &sidebar_clone, &query);
+            let query = entry.text().to_string();
+
+            // Save pre-search state on first keystroke
+            if !query.is_empty() {
+                sidebar_clone.save_pre_search_state();
+            }
+
+            // Check if we should debounce
+            let debouncer = sidebar_clone.search_debouncer();
+            if debouncer.should_proceed() {
+                // Immediate search - hide spinner and filter
+                sidebar_clone.hide_search_pending();
+                Self::filter_connections(&state_clone, &sidebar_clone, &query);
+
+                // Restore state if search cleared
+                if query.is_empty() {
+                    sidebar_clone.restore_pre_search_state();
+                }
+            } else {
+                // Debounced - show spinner and schedule search
+                sidebar_clone.show_search_pending();
+                sidebar_clone.set_pending_search_query(Some(query.clone()));
+
+                // Schedule delayed search using glib timeout
+                let state_for_timeout = state_clone.clone();
+                let sidebar_for_timeout = sidebar_clone.clone();
+                let delay_ms = debouncer.delay().as_millis() as u32;
+
+                glib::timeout_add_local_once(
+                    std::time::Duration::from_millis(u64::from(delay_ms)),
+                    move || {
+                        // Only proceed if this is still the pending query
+                        if let Some(pending) = sidebar_for_timeout.pending_search_query() {
+                            if pending == query {
+                                sidebar_for_timeout.hide_search_pending();
+                                sidebar_for_timeout.set_pending_search_query(None);
+                                Self::filter_connections(
+                                    &state_for_timeout,
+                                    &sidebar_for_timeout,
+                                    &pending,
+                                );
+
+                                // Restore state if search cleared
+                                if pending.is_empty() {
+                                    sidebar_for_timeout.restore_pre_search_state();
+                                }
+                            }
+                        }
+                    },
+                );
+            }
         });
 
         // Add to search history when user presses Enter or stops searching
@@ -4895,7 +4945,10 @@ impl MainWindow {
     }
 
     /// Returns a reference to the connection sidebar
+    ///
+    /// Note: Part of public API for accessing sidebar from external code.
     #[must_use]
+    #[allow(dead_code)]
     pub fn sidebar(&self) -> &ConnectionSidebar {
         &self.sidebar
     }
@@ -4907,12 +4960,18 @@ impl MainWindow {
     }
 
     /// Returns a reference to the terminal notebook
+    ///
+    /// Note: Part of public API for accessing notebook from external code.
     #[must_use]
+    #[allow(dead_code)]
     pub fn terminal_notebook(&self) -> &TerminalNotebook {
         &self.terminal_notebook
     }
 
     /// Saves the current expanded groups state to settings
+    ///
+    /// Note: Part of tree state persistence API.
+    #[allow(dead_code)]
     pub fn save_expanded_groups(&self) {
         let expanded = self.sidebar.get_expanded_groups();
         if let Ok(mut state) = self.state.try_borrow_mut() {

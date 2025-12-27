@@ -522,6 +522,7 @@ type FrameCallback = Box<dyn Fn(u32, u32, u32, u32) + 'static>;
 /// // Connect
 /// widget.connect(&config)?;
 /// ```
+#[allow(dead_code)] // Many fields kept for GTK widget lifecycle and signal handlers
 pub struct EmbeddedVncWidget {
     /// Main container widget
     container: GtkBox,
