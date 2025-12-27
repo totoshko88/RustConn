@@ -8,14 +8,11 @@
 |-------------|--------|--------------|--------|
 | openSUSE Tumbleweed | Rolling | System (1.87+) | ✅ |
 | openSUSE Leap | 16.0 | devel:languages:rust | ✅ |
-| Fedora | 42 | System (1.87+) | ✅ |
-| Fedora | 41 | devel:languages:rust | ✅ |
-| Fedora | 40 | devel:languages:rust | ✅ |
-| Ubuntu | 24.10 | devel:languages:rust | ✅ |
-| Ubuntu | 24.04 | devel:languages:rust | ✅ |
-| Debian | 13 | devel:languages:rust | ✅ |
 
 **Примітка:** MSRV (Minimum Supported Rust Version) = 1.87
+
+Fedora, Ubuntu, Debian не підтримуються в OBS через відсутність Rust 1.87.
+Використовуйте GitHub releases для .deb та AppImage пакетів.
 
 ## Автоматичне оновлення
 

@@ -68,7 +68,7 @@ sudo zypper ref
 sudo zypper in rustconn
 
 # Leap 16.0
-sudo zypper ar https://download.opensuse.org/repositories/home:/totoshko88:/rustconn/16.0/ rustconn
+sudo zypper ar https://download.opensuse.org/repositories/home:/totoshko88:/rustconn/openSUSE_Leap_16.0/ rustconn
 sudo zypper ref
 sudo zypper in rustconn
 ```

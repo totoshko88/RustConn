@@ -17,27 +17,6 @@
     <arch>x86_64</arch>
   </repository>
   
-  <!-- Fedora 42 - should have Rust 1.87+ -->
-  <repository name="Fedora_42">
-    <path project="Fedora:42" repository="standard"/>
-    <arch>x86_64</arch>
-  </repository>
-  
-  <!-- Fedora 41 - uses rustup in spec for Rust 1.87 -->
-  <repository name="Fedora_41">
-    <path project="Fedora:41" repository="standard"/>
-    <arch>x86_64</arch>
-  </repository>
-  
-  <!-- Ubuntu 24.04 - uses rustup in spec for Rust 1.87 -->
-  <repository name="xUbuntu_24.04">
-    <path project="Ubuntu:24.04" repository="universe"/>
-    <arch>x86_64</arch>
-  </repository>
-  
-  <!-- Debian 13 (Trixie) - uses rustup in spec for Rust 1.87 -->
-  <repository name="Debian_13">
-    <path project="Debian:13" repository="standard"/>
-    <arch>x86_64</arch>
-  </repository>
+  <!-- Note: Fedora/Ubuntu/Debian removed - no Rust 1.87 available in OBS
+       Use GitHub releases for .deb and AppImage packages -->
 </project>
