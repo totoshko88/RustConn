@@ -1,4 +1,19 @@
 -------------------------------------------------------------------
+Sat Dec 28 2025 Anton Isaiev <totoshko88@gmail.com> - 0.5.1
+
+- Update to version 0.5.1
+  * CLI: Wake-on-LAN command (wol) - send magic packets by MAC or connection name
+  * CLI: Snippet management commands (snippet list/show/add/delete/run)
+  * CLI: Group management commands (group list/show/create/delete/add-connection/remove-connection)
+  * CLI: Connection list filters (--group, --tag) for list command
+  * CLI: Native format (.rcn) support for import/export
+  * Search debouncing with visual spinner indicator (100ms delay)
+  * Pre-search state preservation (expanded groups, scroll position)
+  * Clipboard file transfer UI for embedded RDP sessions
+  * Dead code cleanup with targeted #[allow(dead_code)] annotations
+  * Refactored export dialog to eliminate code duplication
+
+-------------------------------------------------------------------
 Sat Dec 27 2025 Anton Isaiev <totoshko88@gmail.com> - 0.5.0
 
 - Update to version 0.5.0

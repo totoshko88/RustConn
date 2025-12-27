@@ -39,7 +39,7 @@ RustConn includes several performance optimizations for handling large connectio
 
 ```bash
 # Install from Flatpak bundle (after release)
-flatpak install RustConn-0.5.0.flatpak
+flatpak install RustConn-0.5.1.flatpak
 
 # Run
 flatpak run io.github.totoshko88.RustConn
@@ -48,14 +48,14 @@ flatpak run io.github.totoshko88.RustConn
 ### AppImage
 
 ```bash
-chmod +x RustConn-0.5.0-x86_64.AppImage
-./RustConn-0.5.0-x86_64.AppImage
+chmod +x RustConn-0.5.1-x86_64.AppImage
+./RustConn-0.5.1-x86_64.AppImage
 ```
 
 ### Debian/Ubuntu
 
 ```bash
-sudo dpkg -i rustconn_0.5.0-1_amd64.deb
+sudo dpkg -i rustconn_0.5.1-1_amd64.deb
 sudo apt-get install -f  # Install dependencies if needed
 ```
 
