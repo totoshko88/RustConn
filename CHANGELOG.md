@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Improved display server detection using GDK4 Wayland bindings when available
-- Refactored `window.rs` into modular structure (reduced from 7283 to 4659 lines):
+- Refactored `window.rs` into modular structure (reduced from 7283 to 3485 lines, -52%):
   - `window_types.rs` - Type aliases and `get_protocol_string()` utility
   - `window_snippets.rs` - Snippet management methods
   - `window_templates.rs` - Template management methods
@@ -24,10 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `window_clusters.rs` - Cluster management methods
   - `window_connection_dialogs.rs` - New connection/group dialogs, template picker, import dialog
   - `window_sorting.rs` - Sorting and drag-drop reordering operations
-- Refactored `embedded_rdp.rs` into modular structure (reduced from 4234 to 3366 lines):
+  - `window_operations.rs` - Connection operations (delete, duplicate, copy, paste, reload)
+  - `window_edit_dialogs.rs` - Edit dialogs (edit connection, connection details, edit group, quick connect)
+- Refactored `embedded_rdp.rs` into modular structure (reduced from 4234 to 2901 lines):
   - `embedded_rdp_types.rs` - Error types, enums, config structs, callback types
   - `embedded_rdp_buffer.rs` - PixelBuffer and WaylandSurfaceHandle
   - `embedded_rdp_launcher.rs` - SafeFreeRdpLauncher with Qt warning suppression
+  - `embedded_rdp_thread.rs` - FreeRdpThread, ClipboardFileTransfer, FileDownloadState
 - Refactored `sidebar.rs` into modular structure (reduced from 2787 to 1937 lines):
   - `sidebar_types.rs` - TreeState, SessionStatusInfo, DropPosition, DropIndicator, SelectionModelWrapper, DragDropData
   - `sidebar_ui.rs` - UI helper functions (popovers, context menus, button boxes, protocol icons)
