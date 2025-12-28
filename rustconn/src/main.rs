@@ -63,9 +63,11 @@ pub mod tray;
 pub mod wayland_surface;
 mod window;
 mod window_clusters;
+mod window_connection_dialogs;
 mod window_groups;
 mod window_sessions;
 mod window_snippets;
+mod window_sorting;
 mod window_templates;
 mod window_types;
 
