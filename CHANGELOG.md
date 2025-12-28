@@ -15,13 +15,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Improved display server detection using GDK4 Wayland bindings when available
-- Refactored `window.rs` into modular structure (reduced from 7283 to 5475 lines):
+- Refactored `window.rs` into modular structure (reduced from 7283 to 5478 lines):
   - `window_types.rs` - Type aliases and `get_protocol_string()` utility
   - `window_snippets.rs` - Snippet management methods
   - `window_templates.rs` - Template management methods
   - `window_sessions.rs` - Session management methods
   - `window_groups.rs` - Group management dialogs (move to group, error toast)
   - `window_clusters.rs` - Cluster management methods
+- Refactored `embedded_rdp.rs` into modular structure (reduced from 4234 to 3366 lines):
+  - `embedded_rdp_types.rs` - Error types, enums, config structs, callback types
+  - `embedded_rdp_buffer.rs` - PixelBuffer and WaylandSurfaceHandle
+  - `embedded_rdp_launcher.rs` - SafeFreeRdpLauncher with Qt warning suppression
+- Refactored `sidebar.rs` into modular structure (reduced from 2787 to 1937 lines):
+  - `sidebar_types.rs` - TreeState, SessionStatusInfo, DropPosition, DropIndicator, SelectionModelWrapper, DragDropData
+  - `sidebar_ui.rs` - UI helper functions (popovers, context menus, button boxes, protocol icons)
+- Refactored `embedded_vnc.rs` into modular structure (reduced from 2304 to 1857 lines):
+  - `embedded_vnc_types.rs` - Error types, VncConnectionState, VncConfig, VncPixelBuffer, VncWaylandSurface, callback types
 
 ### Fixed
 - Tab icons now match sidebar icons for all protocols (SSH, RDP, VNC, SPICE, ZeroTrust providers)
