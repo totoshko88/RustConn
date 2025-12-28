@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.5.2] - 2025-12-28
+## [0.5.2] - 2025-12-29
 
 ### Added
 - `wayland-native` feature flag with `gdk4-wayland` integration for improved Wayland detection
@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SSH and ZeroTrust sessions now show correct protocol-specific icons in tabs
 - Cluster list not refreshing after deleting a cluster (borrow conflict in callback)
 - Snippet dialog Save button not clickable (unreliable widget tree traversal replaced with direct reference)
+- Template dialog not showing all fields (missing vexpand on notebook and scrolled window)
 
 ### Improved
 - Extracted coordinate transformation utilities to `embedded_rdp_ui.rs` and `embedded_vnc_ui.rs`
@@ -56,6 +57,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added unit tests for coordinate transformation and button conversion functions
 - Made RDP event polling interval configurable via `RdpConfig::polling_interval_ms` (default 16ms = ~60 FPS)
 - Added `RdpConfig::with_polling_interval()` builder method for custom polling rates
+- CI: Added `libadwaita-1-dev` dependency to all build jobs
+- CI: Added dedicated property tests job for better test visibility
+- CI: Consolidated OBS publish workflow into release workflow
+- CI: Auto-generate OBS changelog from CHANGELOG.md during release
 
 ### Documentation
 - Added `#![warn(missing_docs)]` and documentation for public APIs in `rustconn-core`

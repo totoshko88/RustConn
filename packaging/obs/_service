@@ -2,7 +2,7 @@
   <service name="obs_scm">
     <param name="url">https://github.com/totoshko88/RustConn.git</param>
     <param name="scm">git</param>
-    <param name="revision">v0.5.0</param>
+    <param name="revision">v0.5.2</param>
     <param name="versionformat">@PARENT_TAG@</param>
     <param name="versionrewrite-pattern">v(.*)</param>
     <param name="versionrewrite-replacement">\1</param>

@@ -290,6 +290,17 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
+      - name: Validate OBS credentials
+        run: |
+          if [ -z "${{ secrets.OBS_USERNAME }}" ]; then
+            echo "::error::OBS_USERNAME secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.OBS_PASSWORD }}" ]; then
+            echo "::error::OBS_PASSWORD secret is not set"
+            exit 1
+          fi
+
       - name: Install osc
         run: |
           sudo apt-get update
@@ -314,6 +325,46 @@ jobs:
           cd home:totoshko88:rustconn/rustconn
           osc up
 
+      - name: Generate OBS changelog from CHANGELOG.md
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          DATE=$(date '+%a %b %d %Y')
+          OBS_DIR="home:totoshko88:rustconn/rustconn"
+          
+          # Extract changelog section for this version
+          awk -v ver="${VERSION}" '
+            /^## \[/ {
+              if (found) exit
+              if (index($0, "[" ver "]") > 0) found=1
+              next
+            }
+            found && /^### / { section=$0; next }
+            found && NF { print "  * " $0 }
+          ' CHANGELOG.md > version_changes.txt
+          
+          # Create new changelog entry
+          cat > new_entry.txt << EOF
+          -------------------------------------------------------------------
+          ${DATE} Anton Isaiev <totoshko88@gmail.com> - ${VERSION}
+
+          - Update to version ${VERSION}
+          EOF
+          
+          # Add extracted changes
+          cat version_changes.txt >> new_entry.txt
+          echo "" >> new_entry.txt
+          
+          # Prepend to existing changelog
+          if [ -f "$OBS_DIR/rustconn.changes" ]; then
+            cat new_entry.txt "$OBS_DIR/rustconn.changes" > temp_changes
+            mv temp_changes "$OBS_DIR/rustconn.changes"
+          else
+            mv new_entry.txt "$OBS_DIR/rustconn.changes"
+          fi
+          
+          echo "=== Generated OBS changelog entry ==="
+          head -30 "$OBS_DIR/rustconn.changes"
+
       - name: Update OBS files
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
@@ -324,10 +375,6 @@ jobs:
           
           # Update spec version
           sed -i "s/^Version:.*$/Version:        $VERSION/" "$OBS_DIR/rustconn.spec"
-          
-          # Copy updated changelog and spec from repo
-          cp packaging/obs/rustconn.changes "$OBS_DIR/rustconn.changes"
-          cp packaging/obs/rustconn.spec "$OBS_DIR/rustconn.spec"
           
           # Copy vendor tarball if exists
           if [ -f "vendor.tar.zst" ]; then

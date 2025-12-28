@@ -49,15 +49,17 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
-    <release version="0.5.2" date="2025-12-28">
+    <release version="0.5.2" date="2025-12-29">
       <description>
-        <p>Version 0.5.2 - Wayland integration and API improvements:</p>
+        <p>Version 0.5.2 - Code refactoring and bug fixes:</p>
         <ul>
-          <li>Native Wayland subsurface integration module for embedded sessions</li>
-          <li>Lazy loading API for connection groups (improved startup performance)</li>
-          <li>Virtual scrolling state management for large connection lists</li>
-          <li>Sidebar integration with lazy loading and virtual scrolling</li>
-          <li>Documentation for public APIs in rustconn-core</li>
+          <li>Refactored window.rs into modular structure (reduced from 7283 to 2396 lines, -67%)</li>
+          <li>Refactored embedded_rdp.rs, sidebar.rs, embedded_vnc.rs into modular structure</li>
+          <li>Fixed tab icons to match sidebar icons for all protocols</li>
+          <li>Fixed Snippet dialog Save button not clickable</li>
+          <li>Fixed Template dialog not showing all fields</li>
+          <li>Added wayland-native feature flag with gdk4-wayland integration</li>
+          <li>CI improvements: libadwaita-1-dev, property tests job, OBS changelog generation</li>
         </ul>
       </description>
     </release>

@@ -1,12 +1,19 @@
 -------------------------------------------------------------------
-Sat Dec 28 2025 Anton Isaiev <totoshko88@gmail.com> - 0.5.2
+Sun Dec 29 2025 Anton Isaiev <totoshko88@gmail.com> - 0.5.2
 
 - Update to version 0.5.2
-  * Native Wayland subsurface integration module (wayland_surface.rs)
-  * Lazy loading API for connection groups (LazyGroupLoader)
-  * Virtual scrolling state management (SelectionState, VirtualScrollConfig)
-  * Sidebar integration with lazy loading and virtual scrolling APIs
-  * Documentation for public APIs (#![warn(missing_docs)] enabled)
+  * Refactored window.rs into modular structure (reduced from 7283 to 2396 lines, -67%)
+  * Refactored embedded_rdp.rs into modular structure (reduced from 4234 to 2803 lines, -34%)
+  * Refactored sidebar.rs into modular structure (reduced from 2787 to 1937 lines, -30%)
+  * Refactored embedded_vnc.rs into modular structure (reduced from 2304 to 1857 lines, -19%)
+  * Fixed tab icons to match sidebar icons for all protocols
+  * Fixed Snippet dialog Save button not clickable
+  * Fixed Template dialog not showing all fields
+  * Added wayland-native feature flag with gdk4-wayland integration
+  * CI: Added libadwaita-1-dev dependency to all build jobs
+  * CI: Added dedicated property tests job
+  * CI: Consolidated OBS publish workflow into release workflow
+  * CI: Auto-generate OBS changelog from CHANGELOG.md during release
 
 -------------------------------------------------------------------
 Sat Dec 28 2025 Anton Isaiev <totoshko88@gmail.com> - 0.5.1

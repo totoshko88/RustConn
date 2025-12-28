@@ -157,12 +157,12 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
-* Sat Dec 28 2025 Anton Isaiev <totoshko88@gmail.com> - 0.5.2-0
+* Sun Dec 29 2025 Anton Isaiev <totoshko88@gmail.com> - 0.5.2-0
 - Update to version 0.5.2
-- Native Wayland subsurface integration module
-- Lazy loading API for connection groups
-- Virtual scrolling state management
-- Documentation for public APIs
+- Refactored window.rs, embedded_rdp.rs, sidebar.rs, embedded_vnc.rs into modular structure
+- Fixed tab icons, Snippet dialog Save button, Template dialog layout
+- Added wayland-native feature flag with gdk4-wayland integration
+- CI improvements: libadwaita-1-dev, property tests job, OBS changelog generation
 
 * Sat Dec 28 2025 Anton Isaiev <totoshko88@gmail.com> - 0.5.1-0
 - Update to version 0.5.1

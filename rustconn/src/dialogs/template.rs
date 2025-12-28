@@ -47,7 +47,7 @@ impl TemplateDialog {
             .title("New Template")
             .modal(true)
             .default_width(500)
-            .default_height(400)
+            .default_height(500)
             .build();
 
         if let Some(p) = parent {
@@ -75,6 +75,7 @@ impl TemplateDialog {
 
         // Create notebook for tabs
         let notebook = Notebook::new();
+        notebook.set_vexpand(true);
         content.append(&notebook);
 
         // === Basic Tab ===
@@ -231,6 +232,7 @@ impl TemplateDialog {
         let scrolled = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
             .vscrollbar_policy(gtk4::PolicyType::Automatic)
+            .vexpand(true)
             .build();
 
         let grid = Grid::builder()
