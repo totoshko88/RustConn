@@ -26,6 +26,7 @@ pub struct SnippetDialog {
     command_view: TextView,
     variables_list: ListBox,
     add_var_button: Button,
+    save_btn: Button,
     editing_id: Rc<RefCell<Option<Uuid>>>,
     variables: Rc<RefCell<Vec<VariableRow>>>,
     on_save: super::SnippetCallback,
@@ -131,6 +132,7 @@ impl SnippetDialog {
             command_view,
             variables_list,
             add_var_button,
+            save_btn,
             editing_id: Rc::new(RefCell::new(None)),
             variables,
             on_save,
@@ -495,27 +497,118 @@ impl SnippetDialog {
     /// - Preserves the editing ID if editing an existing snippet
     #[must_use]
     pub fn build_snippet(&self) -> Option<Snippet> {
-        let name = self.name_entry.text().trim().to_string();
-        let buffer = self.command_view.buffer();
+        Self::build_snippet_from_fields(
+            &self.name_entry,
+            &self.description_entry,
+            &self.category_entry,
+            &self.tags_entry,
+            &self.command_view,
+            &self.variables,
+            &self.editing_id,
+        )
+    }
+
+    /// Runs the dialog and calls the callback with the result
+    ///
+    /// Connects the Save button to `validate()` and `build_snippet()` methods,
+    /// then presents the dialog window.
+    pub fn run<F: Fn(Option<Snippet>) + 'static>(&self, cb: F) {
+        // Store callback
+        *self.on_save.borrow_mut() = Some(Box::new(cb));
+
+        // Wire up the add variable button
+        self.wire_add_var_button();
+
+        // Connect save button directly using stored reference
+        let window = self.window.clone();
+        let on_save = self.on_save.clone();
+        let name_entry = self.name_entry.clone();
+        let description_entry = self.description_entry.clone();
+        let category_entry = self.category_entry.clone();
+        let tags_entry = self.tags_entry.clone();
+        let command_view = self.command_view.clone();
+        let variables = self.variables.clone();
+        let editing_id = self.editing_id.clone();
+
+        self.save_btn.connect_clicked(move |_| {
+            // Validate
+            let name = name_entry.text();
+            if name.trim().is_empty() {
+                let alert = gtk4::AlertDialog::builder()
+                    .message("Validation Error")
+                    .detail("Snippet name is required")
+                    .modal(true)
+                    .build();
+                alert.show(Some(&window));
+                return;
+            }
+
+            let buffer = command_view.buffer();
+            let (start, end) = buffer.bounds();
+            let command = buffer.text(&start, &end, false);
+            if command.trim().is_empty() {
+                let alert = gtk4::AlertDialog::builder()
+                    .message("Validation Error")
+                    .detail("Command is required")
+                    .modal(true)
+                    .build();
+                alert.show(Some(&window));
+                return;
+            }
+
+            // Build snippet
+            let snippet = Self::build_snippet_from_fields(
+                &name_entry,
+                &description_entry,
+                &category_entry,
+                &tags_entry,
+                &command_view,
+                &variables,
+                &editing_id,
+            );
+
+            if let Some(ref cb) = *on_save.borrow() {
+                cb(snippet);
+            }
+            window.close();
+        });
+
+        self.window.present();
+    }
+
+    /// Builds a Snippet from the provided field references
+    ///
+    /// Helper method to avoid code duplication between `run()` closure and `build_snippet()`.
+    fn build_snippet_from_fields(
+        name_entry: &Entry,
+        description_entry: &Entry,
+        category_entry: &Entry,
+        tags_entry: &Entry,
+        command_view: &TextView,
+        variables: &Rc<RefCell<Vec<VariableRow>>>,
+        editing_id: &Rc<RefCell<Option<Uuid>>>,
+    ) -> Option<Snippet> {
+        let name = name_entry.text().trim().to_string();
+        let buffer = command_view.buffer();
         let (start, end) = buffer.bounds();
         let command = buffer.text(&start, &end, false).to_string();
 
         let mut snippet = Snippet::new(name, command);
 
         // Description
-        let desc = self.description_entry.text();
+        let desc = description_entry.text();
         if !desc.trim().is_empty() {
             snippet.description = Some(desc.trim().to_string());
         }
 
         // Category
-        let cat = self.category_entry.text();
+        let cat = category_entry.text();
         if !cat.trim().is_empty() {
             snippet.category = Some(cat.trim().to_string());
         }
 
         // Tags
-        let tags_text = self.tags_entry.text();
+        let tags_text = tags_entry.text();
         if !tags_text.trim().is_empty() {
             snippet.tags = tags_text
                 .split(',')
@@ -525,7 +618,7 @@ impl SnippetDialog {
         }
 
         // Variables
-        let vars = self.variables.borrow();
+        let vars = variables.borrow();
         snippet.variables = vars
             .iter()
             .map(|v| {
@@ -548,126 +641,11 @@ impl SnippetDialog {
             .collect();
 
         // Preserve ID if editing
-        if let Some(id) = *self.editing_id.borrow() {
+        if let Some(id) = *editing_id.borrow() {
             snippet.id = id;
         }
 
         Some(snippet)
-    }
-
-    /// Runs the dialog and calls the callback with the result
-    ///
-    /// Connects the Save button to `validate()` and `build_snippet()` methods,
-    /// then presents the dialog window.
-    pub fn run<F: Fn(Option<Snippet>) + 'static>(&self, cb: F) {
-        // Store callback
-        *self.on_save.borrow_mut() = Some(Box::new(cb));
-
-        // Wire up the add variable button
-        self.wire_add_var_button();
-
-        // Get the save button from header bar and connect it
-        if let Some(titlebar) = self.window.titlebar() {
-            if let Some(header) = titlebar.downcast_ref::<HeaderBar>() {
-                if let Some(save_btn) = header.last_child() {
-                    if let Some(btn) = save_btn.downcast_ref::<Button>() {
-                        let window = self.window.clone();
-                        let on_save = self.on_save.clone();
-                        let name_entry = self.name_entry.clone();
-                        let description_entry = self.description_entry.clone();
-                        let category_entry = self.category_entry.clone();
-                        let tags_entry = self.tags_entry.clone();
-                        let command_view = self.command_view.clone();
-                        let variables = self.variables.clone();
-                        let editing_id = self.editing_id.clone();
-
-                        btn.connect_clicked(move |_| {
-                            // Validate using the validate() method logic
-                            let name = name_entry.text();
-                            if name.trim().is_empty() {
-                                let alert = gtk4::AlertDialog::builder()
-                                    .message("Validation Error")
-                                    .detail("Snippet name is required")
-                                    .modal(true)
-                                    .build();
-                                alert.show(Some(&window));
-                                return;
-                            }
-
-                            let buffer = command_view.buffer();
-                            let (start, end) = buffer.bounds();
-                            let command = buffer.text(&start, &end, false);
-                            if command.trim().is_empty() {
-                                let alert = gtk4::AlertDialog::builder()
-                                    .message("Validation Error")
-                                    .detail("Command is required")
-                                    .modal(true)
-                                    .build();
-                                alert.show(Some(&window));
-                                return;
-                            }
-
-                            // Build snippet using build_snippet() method logic
-                            let mut snippet =
-                                Snippet::new(name.trim().to_string(), command.to_string());
-
-                            let desc = description_entry.text();
-                            if !desc.trim().is_empty() {
-                                snippet.description = Some(desc.trim().to_string());
-                            }
-
-                            let cat = category_entry.text();
-                            if !cat.trim().is_empty() {
-                                snippet.category = Some(cat.trim().to_string());
-                            }
-
-                            let tags_text = tags_entry.text();
-                            if !tags_text.trim().is_empty() {
-                                snippet.tags = tags_text
-                                    .split(',')
-                                    .map(|s| s.trim().to_string())
-                                    .filter(|s| !s.is_empty())
-                                    .collect();
-                            }
-
-                            // Build variables with description and default_value fields
-                            let vars = variables.borrow();
-                            snippet.variables = vars
-                                .iter()
-                                .map(|v| {
-                                    let desc = v.desc_entry.text();
-                                    let default = v.default_entry.text();
-                                    SnippetVariable {
-                                        name: v.name_entry.text().to_string(),
-                                        description: if desc.trim().is_empty() {
-                                            None
-                                        } else {
-                                            Some(desc.trim().to_string())
-                                        },
-                                        default_value: if default.trim().is_empty() {
-                                            None
-                                        } else {
-                                            Some(default.trim().to_string())
-                                        },
-                                    }
-                                })
-                                .collect();
-
-                            if let Some(id) = *editing_id.borrow() {
-                                snippet.id = id;
-                            }
-
-                            if let Some(ref cb) = *on_save.borrow() {
-                                cb(Some(snippet));
-                            }
-                            window.close();
-                        });
-                    }
-                }
-            }
-        }
-
-        self.window.present();
     }
 
     /// Returns a reference to the underlying window

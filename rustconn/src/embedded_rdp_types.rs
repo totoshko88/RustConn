@@ -85,7 +85,7 @@ pub struct EmbeddedSharedFolder {
 }
 
 /// RDP connection configuration
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct RdpConfig {
     /// Target hostname or IP address
     pub host: String,
@@ -111,14 +111,16 @@ pub struct RdpConfig {
     pub window_geometry: Option<(i32, i32, i32, i32)>,
     /// Whether to remember window position
     pub remember_window_position: bool,
+    /// Event polling interval in milliseconds (default: 16ms = ~60 FPS)
+    /// Lower values = smoother but more CPU usage
+    /// Higher values = less CPU but choppier display
+    pub polling_interval_ms: u32,
 }
 
-impl RdpConfig {
-    /// Creates a new RDP configuration with default settings
-    #[must_use]
-    pub fn new(host: impl Into<String>) -> Self {
+impl Default for RdpConfig {
+    fn default() -> Self {
         Self {
-            host: host.into(),
+            host: String::new(),
             port: 3389,
             username: None,
             password: None,
@@ -130,6 +132,18 @@ impl RdpConfig {
             extra_args: Vec::new(),
             window_geometry: None,
             remember_window_position: true,
+            polling_interval_ms: 16, // ~60 FPS
+        }
+    }
+}
+
+impl RdpConfig {
+    /// Creates a new RDP configuration with default settings
+    #[must_use]
+    pub fn new(host: impl Into<String>) -> Self {
+        Self {
+            host: host.into(),
+            ..Default::default()
         }
     }
 
@@ -201,6 +215,21 @@ impl RdpConfig {
     #[must_use]
     pub const fn with_remember_window_position(mut self, remember: bool) -> Self {
         self.remember_window_position = remember;
+        self
+    }
+
+    /// Sets the event polling interval in milliseconds
+    ///
+    /// Default is 16ms (~60 FPS). Lower values give smoother display
+    /// but use more CPU. Higher values save CPU but may appear choppy.
+    ///
+    /// Recommended values:
+    /// - 16ms (~60 FPS) - smooth, good for interactive use
+    /// - 33ms (~30 FPS) - balanced, good for most use cases
+    /// - 50ms (~20 FPS) - low CPU, acceptable for static content
+    #[must_use]
+    pub const fn with_polling_interval(mut self, interval_ms: u32) -> Self {
+        self.polling_interval_ms = interval_ms;
         self
     }
 }
@@ -289,7 +318,8 @@ mod tests {
             .with_username("admin")
             .with_domain("CORP")
             .with_resolution(1920, 1080)
-            .with_clipboard(true);
+            .with_clipboard(true)
+            .with_polling_interval(33);
 
         assert_eq!(config.host, "server.example.com");
         assert_eq!(config.port, 3390);
@@ -298,6 +328,13 @@ mod tests {
         assert_eq!(config.width, 1920);
         assert_eq!(config.height, 1080);
         assert!(config.clipboard_enabled);
+        assert_eq!(config.polling_interval_ms, 33);
+    }
+
+    #[test]
+    fn test_rdp_config_default_polling() {
+        let config = RdpConfig::new("test.example.com");
+        assert_eq!(config.polling_interval_ms, 16); // Default ~60 FPS
     }
 
     #[test]

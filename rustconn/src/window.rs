@@ -12,9 +12,12 @@ use std::rc::Rc;
 use uuid::Uuid;
 
 use crate::window_clusters as clusters;
+use crate::window_document_actions as doc_actions;
 use crate::window_edit_dialogs as edit_dialogs;
 use crate::window_groups as groups;
 use crate::window_operations as operations;
+use crate::window_protocols as protocols;
+use crate::window_rdp_vnc as rdp_vnc;
 use crate::window_sessions as sessions;
 use crate::window_snippets as snippets;
 use crate::window_templates as templates;
@@ -23,8 +26,7 @@ use crate::window_types::{
     SharedSplitView,
 };
 
-use crate::dialogs::{ExportDialog, PasswordDialog, SettingsDialog};
-use crate::embedded::{EmbeddedSessionTab, RdpLauncher};
+use crate::dialogs::{ExportDialog, SettingsDialog};
 use crate::external_window::ExternalWindowManager;
 use crate::sidebar::{ConnectionItem, ConnectionSidebar};
 use crate::split_view::{SplitDirection, SplitTerminalView};
@@ -864,290 +866,7 @@ impl MainWindow {
         state: &SharedAppState,
         sidebar: &SharedSidebar,
     ) {
-        use crate::dialogs::{
-            CloseDocumentDialog, DocumentDialogResult, NewDocumentDialog, OpenDocumentDialog,
-            SaveDocumentDialog,
-        };
-
-        // New document action
-        let new_doc_action = gio::SimpleAction::new("new-document", None);
-        let window_weak = window.downgrade();
-        let state_clone = state.clone();
-        let sidebar_clone = sidebar.clone();
-        new_doc_action.connect_activate(move |_, _| {
-            if let Some(win) = window_weak.upgrade() {
-                let dialog = NewDocumentDialog::new(Some(&win.clone().upcast()));
-                let state_for_cb = state_clone.clone();
-                let _sidebar_for_cb = sidebar_clone.clone();
-                dialog.set_callback(move |result| {
-                    if let Some(DocumentDialogResult::Create { name, password: _ }) = result {
-                        let mut state_ref = state_for_cb.borrow_mut();
-                        let _doc_id = state_ref.create_document(name);
-                        drop(state_ref);
-                        // Refresh sidebar - would need to call load_connections or similar
-                    }
-                });
-                dialog.present();
-            }
-        });
-        window.add_action(&new_doc_action);
-
-        // Open document action
-        let open_doc_action = gio::SimpleAction::new("open-document", None);
-        let window_weak = window.downgrade();
-        let state_clone = state.clone();
-        let sidebar_clone = sidebar.clone();
-        open_doc_action.connect_activate(move |_, _| {
-            if let Some(win) = window_weak.upgrade() {
-                let dialog = OpenDocumentDialog::new();
-                let state_for_cb = state_clone.clone();
-                let _sidebar_for_cb = sidebar_clone.clone();
-                let win_for_cb = win.clone();
-                dialog.set_callback(move |result| {
-                    if let Some(DocumentDialogResult::Open { path, password }) = result {
-                        let mut state_ref = state_for_cb.borrow_mut();
-                        match state_ref.open_document(&path, password.as_deref()) {
-                            Ok(_doc_id) => {
-                                drop(state_ref);
-                                // Refresh sidebar
-                            }
-                            Err(e) => {
-                                drop(state_ref);
-                                groups::show_error_toast(
-                                    &win_for_cb,
-                                    &format!("Failed to open document: {e}"),
-                                );
-                            }
-                        }
-                    }
-                });
-                dialog.present(Some(&win.clone().upcast()));
-            }
-        });
-        window.add_action(&open_doc_action);
-
-        // Save document action
-        let save_doc_action = gio::SimpleAction::new("save-document", None);
-        let window_weak = window.downgrade();
-        let state_clone = state.clone();
-        save_doc_action.connect_activate(move |_, _| {
-            if let Some(win) = window_weak.upgrade() {
-                let state_ref = state_clone.borrow();
-                if let Some(doc_id) = state_ref.active_document_id() {
-                    if let Some(doc) = state_ref.get_document(doc_id) {
-                        let doc_name = doc.name.clone();
-                        let existing_path =
-                            state_ref.get_document_path(doc_id).map(|p| p.to_path_buf());
-                        drop(state_ref);
-
-                        if let Some(path) = existing_path {
-                            // Save to existing path
-                            let mut state_ref = state_clone.borrow_mut();
-                            if let Err(e) = state_ref.save_document(doc_id, &path, None) {
-                                drop(state_ref);
-                                groups::show_error_toast(
-                                    &win,
-                                    &format!("Failed to save document: {e}"),
-                                );
-                            }
-                        } else {
-                            // Show save dialog
-                            let dialog = SaveDocumentDialog::new();
-                            let state_for_cb = state_clone.clone();
-                            let win_for_cb = win.clone();
-                            dialog.set_callback(move |result| {
-                                if let Some(DocumentDialogResult::Save { id, path, password }) =
-                                    result
-                                {
-                                    let mut state_ref = state_for_cb.borrow_mut();
-                                    if let Err(e) =
-                                        state_ref.save_document(id, &path, password.as_deref())
-                                    {
-                                        drop(state_ref);
-                                        groups::show_error_toast(
-                                            &win_for_cb,
-                                            &format!("Failed to save document: {e}"),
-                                        );
-                                    }
-                                }
-                            });
-                            dialog.present(Some(&win.clone().upcast()), doc_id, &doc_name);
-                        }
-                    }
-                }
-            }
-        });
-        window.add_action(&save_doc_action);
-
-        // Close document action
-        let close_doc_action = gio::SimpleAction::new("close-document", None);
-        let window_weak = window.downgrade();
-        let state_clone = state.clone();
-        let sidebar_clone = sidebar.clone();
-        close_doc_action.connect_activate(move |_, _| {
-            if let Some(win) = window_weak.upgrade() {
-                let state_ref = state_clone.borrow();
-                if let Some(doc_id) = state_ref.active_document_id() {
-                    let is_dirty = state_ref.is_document_dirty(doc_id);
-                    let doc_name = state_ref
-                        .get_document(doc_id)
-                        .map(|d| d.name.clone())
-                        .unwrap_or_else(|| "Untitled".to_string());
-                    drop(state_ref);
-
-                    if is_dirty {
-                        // Show save prompt
-                        let dialog = CloseDocumentDialog::new();
-                        let state_for_cb = state_clone.clone();
-                        let _sidebar_for_cb = sidebar_clone.clone();
-                        let _win_for_cb = win.clone();
-                        dialog.set_callback(move |result| {
-                            match result {
-                                Some(DocumentDialogResult::Close { id, save: true }) => {
-                                    // Save then close
-                                    let state_ref = state_for_cb.borrow();
-                                    let existing_path =
-                                        state_ref.get_document_path(id).map(|p| p.to_path_buf());
-                                    drop(state_ref);
-
-                                    if let Some(path) = existing_path {
-                                        let mut state_ref = state_for_cb.borrow_mut();
-                                        let _ = state_ref.save_document(id, &path, None);
-                                        let _ = state_ref.close_document(id);
-                                    }
-                                    // Refresh sidebar
-                                }
-                                Some(DocumentDialogResult::Close { id, save: false }) => {
-                                    // Close without saving
-                                    let mut state_ref = state_for_cb.borrow_mut();
-                                    let _ = state_ref.close_document(id);
-                                    // Refresh sidebar
-                                }
-                                _ => {}
-                            }
-                        });
-                        dialog.present(Some(&win.clone().upcast()), doc_id, &doc_name);
-                    } else {
-                        // Close directly
-                        let mut state_ref = state_clone.borrow_mut();
-                        let _ = state_ref.close_document(doc_id);
-                        // Refresh sidebar
-                    }
-                }
-            }
-        });
-        window.add_action(&close_doc_action);
-
-        // Export document action
-        let export_doc_action = gio::SimpleAction::new("export-document", None);
-        let window_weak = window.downgrade();
-        let state_clone = state.clone();
-        export_doc_action.connect_activate(move |_, _| {
-            if let Some(win) = window_weak.upgrade() {
-                let state_ref = state_clone.borrow();
-                if let Some(doc_id) = state_ref.active_document_id() {
-                    if let Some(doc) = state_ref.get_document(doc_id) {
-                        let doc_name = doc.name.clone();
-                        drop(state_ref);
-
-                        // Show file save dialog for export
-                        let filter = gtk4::FileFilter::new();
-                        filter.add_pattern("*.json");
-                        filter.add_pattern("*.yaml");
-                        filter.set_name(Some("Document Files"));
-
-                        let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
-                        filters.append(&filter);
-
-                        let dialog = gtk4::FileDialog::builder()
-                            .title("Export Document")
-                            .filters(&filters)
-                            .initial_name(format!("{doc_name}.json"))
-                            .modal(true)
-                            .build();
-
-                        let state_for_cb = state_clone.clone();
-                        let win_for_cb = win.clone();
-
-                        dialog.save(
-                            Some(&win.clone().upcast::<gtk4::Window>()),
-                            gtk4::gio::Cancellable::NONE,
-                            move |result| {
-                                if let Ok(file) = result {
-                                    if let Some(path) = file.path() {
-                                        let state_ref = state_for_cb.borrow();
-                                        if let Err(e) = state_ref.export_document(doc_id, &path) {
-                                            drop(state_ref);
-                                            groups::show_error_toast(
-                                                &win_for_cb,
-                                                &format!("Failed to export document: {e}"),
-                                            );
-                                        }
-                                    }
-                                }
-                            },
-                        );
-                    }
-                }
-            }
-        });
-        window.add_action(&export_doc_action);
-
-        // Import document action
-        let import_doc_action = gio::SimpleAction::new("import-document", None);
-        let window_weak = window.downgrade();
-        let state_clone = state.clone();
-        let sidebar_clone = sidebar.clone();
-        import_doc_action.connect_activate(move |_, _| {
-            if let Some(win) = window_weak.upgrade() {
-                // Show file open dialog for import
-                let filter = gtk4::FileFilter::new();
-                filter.add_pattern("*.json");
-                filter.add_pattern("*.yaml");
-                filter.add_pattern("*.yml");
-                filter.add_pattern("*.rcdb");
-                filter.set_name(Some("Document Files"));
-
-                let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
-                filters.append(&filter);
-
-                let dialog = gtk4::FileDialog::builder()
-                    .title("Import Document")
-                    .filters(&filters)
-                    .modal(true)
-                    .build();
-
-                let state_for_cb = state_clone.clone();
-                let _sidebar_for_cb = sidebar_clone.clone();
-                let win_for_cb = win.clone();
-
-                dialog.open(
-                    Some(&win.clone().upcast::<gtk4::Window>()),
-                    gtk4::gio::Cancellable::NONE,
-                    move |result| {
-                        if let Ok(file) = result {
-                            if let Some(path) = file.path() {
-                                let mut state_ref = state_for_cb.borrow_mut();
-                                match state_ref.import_document(&path) {
-                                    Ok(_doc_id) => {
-                                        drop(state_ref);
-                                        // Refresh sidebar
-                                    }
-                                    Err(e) => {
-                                        drop(state_ref);
-                                        groups::show_error_toast(
-                                            &win_for_cb,
-                                            &format!("Failed to import document: {e}"),
-                                        );
-                                    }
-                                }
-                            }
-                        }
-                    },
-                );
-            }
-        });
-        window.add_action(&import_doc_action);
+        doc_actions::setup_document_actions(window, state, sidebar);
     }
 
     /// Sets up miscellaneous actions (drag-drop)
@@ -1903,119 +1622,17 @@ impl MainWindow {
         connection_id: Uuid,
         window: &ApplicationWindow,
     ) {
-        // Check if we can skip password dialog (verified credentials from KeePass)
-        let can_skip = {
-            let state_ref = state.borrow();
-            state_ref.can_skip_password_dialog(connection_id)
-        };
-
-        if can_skip {
-            // Try to resolve credentials from backends (KeePass)
-            let state_ref = state.borrow();
-            if let Ok(Some(creds)) = state_ref.resolve_credentials_for_connection(connection_id) {
-                if let (Some(username), Some(password)) = (&creds.username, creds.expose_password())
-                {
-                    drop(state_ref);
-                    Self::start_rdp_session_with_credentials(
-                        &state,
-                        &notebook,
-                        &split_view,
-                        &sidebar,
-                        connection_id,
-                        username,
-                        password,
-                        "",
-                    );
-                    return;
-                }
-            }
-        }
-
-        // Check if we have cached credentials
-        let cached = {
-            let state_ref = state.borrow();
-            state_ref.get_cached_credentials(connection_id).map(|c| {
-                use secrecy::ExposeSecret;
-                (
-                    c.username.clone(),
-                    c.password.expose_secret().to_string(),
-                    c.domain.clone(),
-                )
-            })
-        };
-
-        if let Some((username, password, domain)) = cached {
-            // Use cached credentials directly
-            Self::start_rdp_session_with_credentials(
-                &state,
-                &notebook,
-                &split_view,
-                &sidebar,
-                connection_id,
-                &username,
-                &password,
-                &domain,
-            );
-            return;
-        }
-
-        // Get connection info for dialog
-        let (conn_name, username, domain) = {
-            let state_ref = state.borrow();
-            if let Some(conn) = state_ref.get_connection(connection_id) {
-                (
-                    conn.name.clone(),
-                    conn.username.clone().unwrap_or_default(),
-                    conn.domain.clone().unwrap_or_default(),
-                )
-            } else {
-                return;
-            }
-        };
-
-        // Create and show password dialog
-        let dialog = PasswordDialog::new(Some(window));
-        dialog.set_connection_name(&conn_name);
-        dialog.set_username(&username);
-        dialog.set_domain(&domain);
-
-        let sidebar_clone = sidebar.clone();
-        dialog.show(move |result| {
-            if let Some(creds) = result {
-                // Cache credentials if requested
-                if creds.save_credentials {
-                    if let Ok(mut state_mut) = state.try_borrow_mut() {
-                        state_mut.cache_credentials(
-                            connection_id,
-                            &creds.username,
-                            &creds.password,
-                            &creds.domain,
-                        );
-                    }
-                }
-
-                // Start RDP with credentials
-                Self::start_rdp_session_with_credentials(
-                    &state,
-                    &notebook,
-                    &split_view,
-                    &sidebar_clone,
-                    connection_id,
-                    &creds.username,
-                    &creds.password,
-                    &creds.domain,
-                );
-            }
-        });
+        rdp_vnc::start_rdp_with_password_dialog(
+            state,
+            notebook,
+            split_view,
+            sidebar,
+            connection_id,
+            window,
+        );
     }
 
     /// Starts RDP session with provided credentials
-    ///
-    /// Starts an RDP session using xfreerdp with provided credentials
-    ///
-    /// Respects the `client_mode` setting in `RdpConfig`:
-    /// - `Embedded`: Uses native RDP embedding with dynamic resolution (default)
-    /// - `External`: Uses external xfreerdp window
     #[allow(clippy::too_many_arguments)]
     fn start_rdp_session_with_credentials(
         state: &SharedAppState,
@@ -2027,229 +1644,16 @@ impl MainWindow {
         password: &str,
         domain: &str,
     ) {
-        use rustconn_core::models::RdpClientMode;
-
-        let state_ref = state.borrow();
-
-        if let Some(conn) = state_ref.get_connection(connection_id) {
-            let conn_name = conn.name.clone();
-            let host = conn.host.clone();
-            let port = conn.port;
-            let window_mode = conn.window_mode;
-
-            // Get RDP-specific options
-            let rdp_config =
-                if let rustconn_core::ProtocolConfig::Rdp(config) = &conn.protocol_config {
-                    config.clone()
-                } else {
-                    rustconn_core::models::RdpConfig::default()
-                };
-
-            drop(state_ref);
-
-            // Check client mode - if Embedded, use EmbeddedRdpWidget with fallback to external
-            if rdp_config.client_mode == RdpClientMode::Embedded {
-                use crate::embedded_rdp::{EmbeddedRdpWidget, RdpConfig as EmbeddedRdpConfig};
-
-                // Create embedded RDP widget
-                let embedded_widget = EmbeddedRdpWidget::new();
-
-                // Build embedded RDP config with dynamic resolution
-                // Calculate initial resolution from saved window geometry
-                // Content area = window_width - sidebar_width, window_height - toolbar/tabs
-                let state_ref = state.borrow();
-                let settings = state_ref.settings();
-                let content_width = settings
-                    .ui
-                    .window_width
-                    .unwrap_or(1200)
-                    .saturating_sub(settings.ui.sidebar_width.unwrap_or(250));
-                let content_height = settings.ui.window_height.unwrap_or(800).saturating_sub(100);
-                drop(state_ref);
-
-                #[allow(clippy::cast_sign_loss)]
-                let initial_resolution = if content_width > 100 && content_height > 100 {
-                    (content_width as u32, content_height as u32)
-                } else {
-                    // Fallback to config resolution or default
-                    rdp_config
-                        .resolution
-                        .as_ref()
-                        .map_or((1920, 1080), |r| (r.width, r.height))
-                };
-
-                let mut embedded_config = EmbeddedRdpConfig::new(&host)
-                    .with_port(port)
-                    .with_resolution(initial_resolution.0, initial_resolution.1)
-                    .with_clipboard(true);
-
-                if !username.is_empty() {
-                    embedded_config = embedded_config.with_username(username);
-                }
-                if !password.is_empty() {
-                    embedded_config = embedded_config.with_password(password);
-                }
-                if !domain.is_empty() {
-                    embedded_config = embedded_config.with_domain(domain);
-                }
-
-                // Add extra args
-                if !rdp_config.custom_args.is_empty() {
-                    embedded_config =
-                        embedded_config.with_extra_args(rdp_config.custom_args.clone());
-                }
-
-                // Add shared folders for drive redirection
-                if !rdp_config.shared_folders.is_empty() {
-                    use crate::embedded_rdp::EmbeddedSharedFolder;
-                    let folders: Vec<EmbeddedSharedFolder> = rdp_config
-                        .shared_folders
-                        .iter()
-                        .map(|f| EmbeddedSharedFolder {
-                            local_path: f.local_path.clone(),
-                            share_name: f.share_name.clone(),
-                        })
-                        .collect();
-                    embedded_config = embedded_config.with_shared_folders(folders);
-                }
-
-                // Wrap in Rc to keep widget alive in notebook
-                let embedded_widget = Rc::new(embedded_widget);
-
-                // Connect using embedded widget (will fallback to external window if needed)
-                if let Err(e) = embedded_widget.connect(&embedded_config) {
-                    eprintln!("RDP connection failed for '{}': {}", conn_name, e);
-                    sidebar.update_connection_status(&connection_id.to_string(), "failed");
-                } else {
-                    sidebar.update_connection_status(&connection_id.to_string(), "connecting");
-                }
-
-                // Add embedded widget to notebook - shows connection status
-                // If using external window, widget shows "Session running in external window"
-                // The Rc<EmbeddedRdpWidget> is stored in notebook to keep it alive
-                let session_id = Uuid::new_v4();
-
-                // Connect state change callback to mark tab as disconnected when session ends
-                let notebook_for_state = notebook.clone();
-                let sidebar_for_state = sidebar.clone();
-                embedded_widget.connect_state_changed(move |state| match state {
-                    crate::embedded_rdp::RdpConnectionState::Disconnected => {
-                        notebook_for_state.mark_tab_disconnected(session_id);
-                        // Decrement session count - status changes only if no other sessions active
-                        sidebar_for_state.decrement_session_count(
-                            &connection_id.to_string(),
-                            // If tab is still open, it's an unexpected disconnection (failure)
-                            notebook_for_state.get_session_info(session_id).is_some(),
-                        );
-                    }
-                    crate::embedded_rdp::RdpConnectionState::Connected => {
-                        notebook_for_state.mark_tab_connected(session_id);
-                        sidebar_for_state.increment_session_count(&connection_id.to_string());
-                    }
-                    _ => {}
-                });
-
-                // Connect reconnect callback
-                let widget_for_reconnect = embedded_widget.clone();
-                embedded_widget.connect_reconnect(move || {
-                    if let Err(e) = widget_for_reconnect.reconnect() {
-                        eprintln!("RDP reconnect failed: {}", e);
-                    }
-                });
-
-                notebook.add_embedded_rdp_tab(
-                    session_id,
-                    connection_id,
-                    &conn_name,
-                    embedded_widget,
-                );
-
-                // Show notebook for RDP session tab - hide split view, expand notebook
-                split_view.widget().set_visible(false);
-                split_view.widget().set_vexpand(false);
-                notebook.widget().set_vexpand(true);
-                notebook.notebook().set_vexpand(true);
-
-                // If Fullscreen mode, maximize the window
-                if matches!(window_mode, rustconn_core::models::WindowMode::Fullscreen) {
-                    if let Some(window) = notebook
-                        .widget()
-                        .ancestor(gtk4::ApplicationWindow::static_type())
-                    {
-                        if let Some(app_window) = window.downcast_ref::<gtk4::ApplicationWindow>() {
-                            app_window.maximize();
-                        }
-                    }
-                }
-
-                // Update last_connected timestamp
-                if let Ok(mut state_mut) = state.try_borrow_mut() {
-                    let _ = state_mut.update_last_connected(connection_id);
-                }
-                return;
-            }
-
-            // External mode - use xfreerdp in external window
-            let (tab, _is_embedded) = EmbeddedSessionTab::new(connection_id, &conn_name, "rdp");
-            let session_id = tab.id();
-
-            // Get resolution from RDP config
-            let resolution = rdp_config.resolution.as_ref().map(|r| (r.width, r.height));
-
-            // Get extra args from RDP config
-            let extra_args = rdp_config.custom_args.clone();
-
-            // Prepare domain (use None if empty)
-            let domain_opt = if domain.is_empty() {
-                None
-            } else {
-                Some(domain)
-            };
-
-            // Convert shared folders to (share_name, local_path) tuples for external RDP
-            let shared_folders: Vec<(String, std::path::PathBuf)> = rdp_config
-                .shared_folders
-                .iter()
-                .map(|f| (f.share_name.clone(), f.local_path.clone()))
-                .collect();
-
-            // Start RDP connection using xfreerdp with shared folders
-            if let Err(e) = RdpLauncher::start_with_geometry(
-                &tab,
-                &host,
-                port,
-                Some(username),
-                Some(password),
-                domain_opt,
-                resolution,
-                &extra_args,
-                None,  // window_geometry
-                false, // remember_window_position
-                &shared_folders,
-            ) {
-                eprintln!("Failed to start RDP session '{}': {}", conn_name, e);
-                sidebar.update_connection_status(&connection_id.to_string(), "failed");
-            } else {
-                // External RDP window started - increment session count
-                sidebar.increment_session_count(&connection_id.to_string());
-            }
-
-            // Add tab widget to notebook
-            notebook.add_embedded_session_tab(session_id, &conn_name, "rdp", tab.widget());
-
-            // For RDP/VNC sessions running in external windows, we add to split_view
-            // but don't show them - they only show when user explicitly switches to the tab.
-            // This prevents the placeholder from taking up space in split view.
-            if let Some(info) = notebook.get_session_info(session_id) {
-                split_view.add_session(info, None);
-                // Don't call show_session for external sessions - let tab switch handle it
-            }
-
-            // Update last_connected
-            if let Ok(mut state_mut) = state.try_borrow_mut() {
-                let _ = state_mut.update_last_connected(connection_id);
-            }
-        }
+        rdp_vnc::start_rdp_session_with_credentials(
+            state,
+            notebook,
+            split_view,
+            sidebar,
+            connection_id,
+            username,
+            password,
+            domain,
+        );
     }
 
     /// Starts a VNC connection with password dialog
@@ -2261,110 +1665,18 @@ impl MainWindow {
         connection_id: Uuid,
         window: &ApplicationWindow,
     ) {
-        // Check if we can skip password dialog (verified credentials from KeePass)
-        let can_skip = {
-            let state_ref = state.borrow();
-            state_ref.can_skip_password_dialog(connection_id)
-        };
-
-        if can_skip {
-            // Try to resolve credentials from backends (KeePass)
-            let state_ref = state.borrow();
-            if let Ok(Some(creds)) = state_ref.resolve_credentials_for_connection(connection_id) {
-                if let Some(password) = creds.expose_password() {
-                    // Cache the password for use in start_connection
-                    drop(state_ref);
-                    if let Ok(mut state_mut) = state.try_borrow_mut() {
-                        state_mut.cache_credentials(connection_id, "", password, "");
-                    }
-                    Self::start_connection_with_split(
-                        &state,
-                        &notebook,
-                        &split_view,
-                        &sidebar,
-                        connection_id,
-                    );
-                    return;
-                }
-            }
-        }
-
-        // Get connection info for dialog
-        let conn_name = {
-            let state_ref = state.borrow();
-            if let Some(conn) = state_ref.get_connection(connection_id) {
-                conn.name.clone()
-            } else {
-                return;
-            }
-        };
-
-        // Create and show password dialog
-        let dialog = PasswordDialog::new(Some(window));
-        dialog.set_connection_name(&conn_name);
-        // VNC typically only needs password, hide username/domain by leaving them empty
-        // The dialog will focus on password field
-
-        // Try to load password from KeePass
-        {
-            use secrecy::ExposeSecret;
-            let state_ref = state.borrow();
-            let settings = state_ref.settings();
-
-            if settings.secrets.kdbx_enabled {
-                if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
-                    let db_password = settings
-                        .secrets
-                        .kdbx_password
-                        .as_ref()
-                        .map(|p| p.expose_secret());
-                    let key_file = settings.secrets.kdbx_key_file.as_deref();
-
-                    eprintln!(
-                        "DEBUG VNC: trying to load password for '{}' from KeePass",
-                        conn_name
-                    );
-
-                    if let Ok(Some(password)) =
-                        rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
-                            kdbx_path,
-                            db_password,
-                            key_file,
-                            &conn_name,
-                        )
-                    {
-                        eprintln!("DEBUG VNC: loaded password");
-                        dialog.set_password(&password);
-                    }
-                }
-            }
-        }
-
-        let sidebar_clone = sidebar.clone();
-        dialog.show(move |result| {
-            if let Some(creds) = result {
-                // Cache credentials if requested (VNC only uses password)
-                if creds.save_credentials {
-                    if let Ok(mut state_mut) = state.try_borrow_mut() {
-                        // For VNC, we store empty username/domain but save the password
-                        state_mut.cache_credentials(connection_id, "", &creds.password, "");
-                    }
-                }
-
-                // Start VNC with password
-                Self::start_vnc_session_with_password(
-                    &state,
-                    &notebook,
-                    &split_view,
-                    &sidebar_clone,
-                    connection_id,
-                    &creds.password,
-                );
-            }
-        });
+        rdp_vnc::start_vnc_with_password_dialog(
+            state,
+            notebook,
+            split_view,
+            sidebar,
+            connection_id,
+            window,
+        );
     }
 
     /// Starts VNC session with provided password
+    #[allow(dead_code)]
     fn start_vnc_session_with_password(
         state: &SharedAppState,
         notebook: &SharedNotebook,
@@ -2373,76 +1685,18 @@ impl MainWindow {
         connection_id: Uuid,
         password: &str,
     ) {
-        let state_ref = state.borrow();
-
-        if let Some(conn) = state_ref.get_connection(connection_id) {
-            let conn_name = conn.name.clone();
-            let host = conn.host.clone();
-            let port = conn.port;
-
-            // Get VNC-specific configuration
-            let vnc_config =
-                if let rustconn_core::ProtocolConfig::Vnc(config) = &conn.protocol_config {
-                    config.clone()
-                } else {
-                    rustconn_core::models::VncConfig::default()
-                };
-
-            drop(state_ref);
-
-            // Create VNC session tab with native widget
-            let session_id = notebook.create_vnc_session_tab(connection_id, &conn_name);
-
-            // Get the VNC widget and initiate connection with config
-            if let Some(vnc_widget) = notebook.get_vnc_widget(session_id) {
-                // Connect state change callback to mark tab as disconnected when session ends
-                let notebook_for_state = notebook.clone();
-                let sidebar_for_state = sidebar.clone();
-                vnc_widget.connect_state_changed(move |vnc_state| {
-                    if vnc_state == crate::session::SessionState::Disconnected {
-                        notebook_for_state.mark_tab_disconnected(session_id);
-                        sidebar_for_state
-                            .decrement_session_count(&connection_id.to_string(), false);
-                    } else if vnc_state == crate::session::SessionState::Connected {
-                        notebook_for_state.mark_tab_connected(session_id);
-                        sidebar_for_state.increment_session_count(&connection_id.to_string());
-                    }
-                });
-
-                // Connect reconnect callback
-                let widget_for_reconnect = vnc_widget.clone();
-                vnc_widget.connect_reconnect(move || {
-                    if let Err(e) = widget_for_reconnect.reconnect() {
-                        eprintln!("VNC reconnect failed: {}", e);
-                    }
-                });
-
-                // Initiate connection with VNC config (respects client_mode setting)
-                if let Err(e) =
-                    vnc_widget.connect_with_config(&host, port, Some(password), &vnc_config)
-                {
-                    eprintln!("Failed to connect VNC session '{}': {}", conn_name, e);
-                    sidebar.update_connection_status(&connection_id.to_string(), "failed");
-                } else {
-                    sidebar.update_connection_status(&connection_id.to_string(), "connecting");
-                }
-            }
-
-            // VNC displays in notebook tab - hide split view and expand notebook
-            split_view.widget().set_visible(false);
-            split_view.widget().set_vexpand(false);
-            notebook.widget().set_vexpand(true);
-            notebook.notebook().set_vexpand(true);
-
-            // Update last_connected timestamp
-            if let Ok(mut state_mut) = state.try_borrow_mut() {
-                let _ = state_mut.update_last_connected(connection_id);
-            }
-        }
+        rdp_vnc::start_vnc_session_with_password(
+            state,
+            notebook,
+            split_view,
+            sidebar,
+            connection_id,
+            password,
+        );
     }
 
     /// Starts a connection with split view integration
-    fn start_connection_with_split(
+    pub fn start_connection_with_split(
         state: &SharedAppState,
         notebook: &SharedNotebook,
         split_view: &SharedSplitView,
@@ -2518,7 +1772,6 @@ impl MainWindow {
     }
 
     /// Starts a connection and returns the `session_id`
-    #[allow(clippy::too_many_lines)]
     pub fn start_connection(
         state: &SharedAppState,
         notebook: &SharedNotebook,
@@ -2527,407 +1780,65 @@ impl MainWindow {
     ) -> Option<Uuid> {
         let state_ref = state.borrow();
 
-        if let Some(conn) = state_ref.get_connection(connection_id) {
-            let protocol = get_protocol_string(&conn.protocol_config);
+        let conn = state_ref.get_connection(connection_id)?;
+        let protocol = get_protocol_string(&conn.protocol_config);
+        let logging_enabled = state_ref.settings().logging.enabled;
 
-            // Check if logging is enabled
-            let logging_enabled = state_ref.settings().logging.enabled;
-            let conn_name = conn.name.clone();
+        // Clone connection data before dropping borrow
+        let conn_clone = conn.clone();
+        drop(state_ref);
 
-            if protocol == "ssh" {
-                use rustconn_core::protocol::{format_command_message, format_connection_message};
-
-                // Create terminal tab for SSH
-                let session_id = notebook.create_terminal_tab(
-                    connection_id,
-                    &conn.name,
-                    &protocol,
-                    Some(&conn.automation),
-                );
-
-                // Build and spawn SSH command
-                let port = conn.port;
-                let host = conn.host.clone();
-                let username = conn.username.clone();
-
-                // Get SSH-specific options
-                let (identity_file, extra_args) =
-                    if let rustconn_core::ProtocolConfig::Ssh(ssh_config) = &conn.protocol_config {
-                        let key = ssh_config
-                            .key_path
-                            .as_ref()
-                            .map(|p| p.to_string_lossy().to_string());
-                        let mut args = Vec::new();
-
-                        if let Some(proxy) = &ssh_config.proxy_jump {
-                            args.push("-J".to_string());
-                            args.push(proxy.clone());
-                        }
-
-                        if ssh_config.use_control_master {
-                            args.push("-o".to_string());
-                            args.push("ControlMaster=auto".to_string());
-                        }
-
-                        for (k, v) in &ssh_config.custom_options {
-                            args.push("-o".to_string());
-                            args.push(format!("{k}={v}"));
-                        }
-
-                        (key, args)
-                    } else {
-                        (None, Vec::new())
-                    };
-
-                drop(state_ref);
-
-                // Update last_connected timestamp
-                if let Ok(mut state_mut) = state.try_borrow_mut() {
-                    let _ = state_mut.update_last_connected(connection_id);
-                }
-
-                // Set up session logging if enabled
-                if logging_enabled {
-                    Self::setup_session_logging(
-                        state,
-                        notebook,
-                        session_id,
-                        connection_id,
-                        &conn_name,
-                    );
-                }
-
-                // Wire up child exited callback for session cleanup
-                Self::setup_child_exited_handler(
-                    state,
-                    notebook,
-                    sidebar,
-                    session_id,
-                    connection_id,
-                );
-
-                // Build SSH command string for display
-                let mut ssh_cmd_parts = vec!["ssh".to_string()];
-                if port != 22 {
-                    ssh_cmd_parts.push("-p".to_string());
-                    ssh_cmd_parts.push(port.to_string());
-                }
-                if let Some(ref key) = identity_file {
-                    ssh_cmd_parts.push("-i".to_string());
-                    ssh_cmd_parts.push(key.clone());
-                }
-                ssh_cmd_parts.extend(extra_args.clone());
-                let destination = if let Some(ref user) = username {
-                    format!("{user}@{host}")
-                } else {
-                    host.clone()
-                };
-                ssh_cmd_parts.push(destination);
-                let ssh_command = ssh_cmd_parts.join(" ");
-
-                // Display CLI output feedback before executing command
-                let conn_msg = format_connection_message("SSH", &host);
-                let cmd_msg = format_command_message(&ssh_command);
-                let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
-                notebook.display_output(session_id, &feedback);
-
-                // Spawn SSH
-                let extra_refs: Vec<&str> =
-                    extra_args.iter().map(std::string::String::as_str).collect();
-                notebook.spawn_ssh(
-                    session_id,
-                    &host,
-                    port,
-                    username.as_deref(),
-                    identity_file.as_deref(),
-                    &extra_refs,
-                );
-
-                // Wire up child exited callback for session cleanup
-                Self::setup_child_exited_handler(
-                    state,
-                    notebook,
-                    sidebar,
-                    session_id,
-                    connection_id,
-                );
-
-                return Some(session_id);
-            }
-
-            // Handle VNC connections with native embedding or external client
-            if protocol == "vnc" {
-                let conn_name = conn.name.clone();
-                let host = conn.host.clone();
-                let port = conn.port;
-
-                // Get VNC-specific configuration
-                let vnc_config =
-                    if let rustconn_core::ProtocolConfig::Vnc(config) = &conn.protocol_config {
-                        config.clone()
-                    } else {
-                        rustconn_core::models::VncConfig::default()
-                    };
-
-                // Get password from cached credentials (set by credential resolution flow)
-                let password: Option<String> =
-                    state_ref.get_cached_credentials(connection_id).map(|c| {
-                        use secrecy::ExposeSecret;
-                        tracing::debug!("[VNC] Found cached credentials for connection");
-                        c.password.expose_secret().to_string()
-                    });
-
-                tracing::debug!(
-                    "[VNC] Password available: {}",
-                    if password.is_some() { "yes" } else { "no" }
-                );
-
-                drop(state_ref);
-
-                // Create VNC session tab with native widget
-                let session_id = notebook.create_vnc_session_tab(connection_id, &conn_name);
-
-                // Get the VNC widget and initiate connection with config
-                if let Some(vnc_widget) = notebook.get_vnc_widget(session_id) {
-                    // Connect state change callback to mark tab as disconnected when session ends
-                    let notebook_for_state = notebook.clone();
-                    let sidebar_for_state = sidebar.clone();
-                    vnc_widget.connect_state_changed(move |vnc_state| {
-                        if vnc_state == crate::session::SessionState::Disconnected {
-                            notebook_for_state.mark_tab_disconnected(session_id);
-                            sidebar_for_state
-                                .decrement_session_count(&connection_id.to_string(), false);
-                        } else if vnc_state == crate::session::SessionState::Connected {
-                            notebook_for_state.mark_tab_connected(session_id);
-                            sidebar_for_state.increment_session_count(&connection_id.to_string());
-                        }
-                    });
-
-                    // Connect reconnect callback
-                    let widget_for_reconnect = vnc_widget.clone();
-                    vnc_widget.connect_reconnect(move || {
-                        if let Err(e) = widget_for_reconnect.reconnect() {
-                            eprintln!("VNC reconnect failed: {}", e);
-                        }
-                    });
-
-                    // Initiate connection with VNC config (respects client_mode setting)
-                    if let Err(e) = vnc_widget.connect_with_config(
-                        &host,
-                        port,
-                        password.as_deref(),
-                        &vnc_config,
-                    ) {
-                        eprintln!("Failed to connect VNC session '{}': {}", conn_name, e);
-                        sidebar.update_connection_status(&connection_id.to_string(), "failed");
-                    } else {
-                        sidebar.update_connection_status(&connection_id.to_string(), "connecting");
-                    }
-                }
-
-                // Update last_connected timestamp
-                if let Ok(mut state_mut) = state.try_borrow_mut() {
-                    let _ = state_mut.update_last_connected(connection_id);
-                }
-
-                return Some(session_id);
-            }
-
-            // RDP connections are handled by start_rdp_session_with_credentials
-            // which is called from start_connection_with_credential_resolution
-            if protocol == "rdp" {
-                // This branch should not be reached as RDP is handled earlier
-                // with credential resolution. If we get here, fall through to
-                // create a basic session without credentials.
+        match protocol.as_str() {
+            "ssh" => protocols::start_ssh_connection(
+                state,
+                notebook,
+                sidebar,
+                connection_id,
+                &conn_clone,
+                logging_enabled,
+            ),
+            "vnc" => protocols::start_vnc_connection(
+                state,
+                notebook,
+                sidebar,
+                connection_id,
+                &conn_clone,
+            ),
+            "rdp" => {
+                // RDP connections are handled by start_rdp_session_with_credentials
+                // which is called from start_connection_with_credential_resolution
                 eprintln!(
                     "Warning: RDP connection reached start_connection without credentials. \
                      Use start_connection_with_credential_resolution instead."
                 );
-                return None;
+                None
             }
-
-            // Handle SPICE connections with native embedding
-            if protocol == "spice" {
-                let conn_name = conn.name.clone();
-                let host = conn.host.clone();
-                let port = conn.port;
-
-                // Get SPICE-specific options from connection config
-                let spice_opts =
-                    if let rustconn_core::ProtocolConfig::Spice(config) = &conn.protocol_config {
-                        Some(config.clone())
-                    } else {
-                        None
-                    };
-
-                drop(state_ref);
-
-                // Create SPICE session tab with native widget
-                let session_id = notebook.create_spice_session_tab(connection_id, &conn_name);
-
-                // Get the SPICE widget and initiate connection
-                if let Some(spice_widget) = notebook.get_spice_widget(session_id) {
-                    // Build connection config using SpiceClientConfig from spice_client module
-                    use rustconn_core::SpiceClientConfig;
-                    let mut config = SpiceClientConfig::new(&host).with_port(port);
-
-                    // Apply SPICE-specific settings if available
-                    if let Some(opts) = spice_opts {
-                        // Configure TLS
-                        config = config.with_tls(opts.tls_enabled);
-                        if let Some(ca_path) = &opts.ca_cert_path {
-                            config = config.with_ca_cert(ca_path);
-                        }
-                        config = config.with_skip_cert_verify(opts.skip_cert_verify);
-
-                        // Configure USB redirection
-                        config = config.with_usb_redirection(opts.usb_redirection);
-
-                        // Configure clipboard
-                        config = config.with_clipboard(opts.clipboard_enabled);
-                    }
-
-                    // Connect state change callback to mark tab as disconnected
-                    let notebook_for_state = notebook.clone();
-                    let sidebar_for_state = sidebar.clone();
-                    spice_widget.connect_state_changed(move |spice_state| {
-                        use crate::embedded_spice::SpiceConnectionState;
-                        if spice_state == SpiceConnectionState::Disconnected
-                            || spice_state == SpiceConnectionState::Error
-                        {
-                            notebook_for_state.mark_tab_disconnected(session_id);
-                            sidebar_for_state.decrement_session_count(
-                                &connection_id.to_string(),
-                                spice_state == SpiceConnectionState::Error,
-                            );
-                        } else if spice_state == SpiceConnectionState::Connected {
-                            notebook_for_state.mark_tab_connected(session_id);
-                            sidebar_for_state.increment_session_count(&connection_id.to_string());
-                        }
-                    });
-
-                    // Connect reconnect callback
-                    let widget_for_reconnect = spice_widget.clone();
-                    spice_widget.connect_reconnect(move || {
-                        if let Err(e) = widget_for_reconnect.reconnect() {
-                            eprintln!("SPICE reconnect failed: {}", e);
-                        }
-                    });
-
-                    // Initiate connection
-                    if let Err(e) = spice_widget.connect(&config) {
-                        eprintln!("Failed to connect SPICE session '{conn_name}': {e}");
-                    }
-                }
-
-                // Update last_connected timestamp
-                if let Ok(mut state_mut) = state.try_borrow_mut() {
-                    let _ = state_mut.update_last_connected(connection_id);
-                }
-
-                return Some(session_id);
-            }
-
-            // Handle Zero Trust connections (protocol format: "zerotrust" or "zerotrust:provider")
-            if protocol == "zerotrust" || protocol.starts_with("zerotrust:") {
-                use rustconn_core::protocol::{format_command_message, format_connection_message};
-
-                let conn_name = conn.name.clone();
-                let username = conn.username.clone();
-
-                // Get Zero Trust config and build command
-                let (program, args, provider_name, provider_key) =
-                    if let rustconn_core::ProtocolConfig::ZeroTrust(zt_config) =
-                        &conn.protocol_config
-                    {
-                        let (prog, args) = zt_config.build_command(username.as_deref());
-                        let provider = zt_config.provider.display_name();
-                        // Get provider key for icon matching
-                        let key = match zt_config.provider {
-                            rustconn_core::models::ZeroTrustProvider::AwsSsm => "aws",
-                            rustconn_core::models::ZeroTrustProvider::GcpIap => "gcloud",
-                            rustconn_core::models::ZeroTrustProvider::AzureBastion => "azure",
-                            rustconn_core::models::ZeroTrustProvider::AzureSsh => "azure_ssh",
-                            rustconn_core::models::ZeroTrustProvider::OciBastion => "oci",
-                            rustconn_core::models::ZeroTrustProvider::CloudflareAccess => {
-                                "cloudflare"
-                            }
-                            rustconn_core::models::ZeroTrustProvider::Teleport => "teleport",
-                            rustconn_core::models::ZeroTrustProvider::TailscaleSsh => "tailscale",
-                            rustconn_core::models::ZeroTrustProvider::Boundary => "boundary",
-                            rustconn_core::models::ZeroTrustProvider::Generic => "generic",
-                        };
-                        (prog, args, provider, key)
-                    } else {
-                        return None;
-                    };
-
-                let automation_config = conn.automation.clone();
-                drop(state_ref);
-
-                // Create terminal tab for Zero Trust with provider-specific protocol
-                let tab_protocol = format!("zerotrust:{provider_key}");
-                let session_id = notebook.create_terminal_tab(
-                    connection_id,
-                    &conn_name,
-                    &tab_protocol,
-                    Some(&automation_config),
-                );
-
-                // Update last_connected timestamp
-                if let Ok(mut state_mut) = state.try_borrow_mut() {
-                    let _ = state_mut.update_last_connected(connection_id);
-                }
-
-                // Set up session logging if enabled
-                if logging_enabled {
-                    Self::setup_session_logging(
-                        state,
-                        notebook,
-                        session_id,
-                        connection_id,
-                        &conn_name,
-                    );
-                }
-
-                // Wire up child exited callback for session cleanup
-                Self::setup_child_exited_handler(
+            "spice" => protocols::start_spice_connection(
+                state,
+                notebook,
+                sidebar,
+                connection_id,
+                &conn_clone,
+            ),
+            p if p == "zerotrust" || p.starts_with("zerotrust:") => {
+                protocols::start_zerotrust_connection(
                     state,
                     notebook,
                     sidebar,
-                    session_id,
                     connection_id,
-                );
-
-                // Build the full command string for display
-                let full_command = std::iter::once(program.as_str())
-                    .chain(args.iter().map(String::as_str))
-                    .collect::<Vec<_>>()
-                    .join(" ");
-
-                // Display CLI output feedback before executing command
-                let conn_msg = format_connection_message(provider_name, &conn_name);
-                let cmd_msg = format_command_message(&full_command);
-                let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
-                notebook.display_output(session_id, &feedback);
-
-                // Spawn the Zero Trust command through shell to use full PATH
-                // This is needed because VTE doesn't see snap/flatpak paths
-                let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
-                notebook.spawn_command(session_id, &[&shell, "-c", &full_command], None, None);
-
-                return Some(session_id);
+                    &conn_clone,
+                    logging_enabled,
+                )
             }
-
-            // Unknown protocol - should not happen
-            drop(state_ref);
-            return None;
+            _ => {
+                // Unknown protocol
+                None
+            }
         }
-        None
     }
 
     /// Sets up session logging for a terminal session
-    fn setup_session_logging(
+    pub fn setup_session_logging(
         state: &SharedAppState,
         notebook: &SharedNotebook,
         session_id: Uuid,
@@ -3014,7 +1925,7 @@ impl MainWindow {
     }
 
     /// Sets up the child exited handler for session cleanup
-    fn setup_child_exited_handler(
+    pub fn setup_child_exited_handler(
         state: &SharedAppState,
         notebook: &SharedNotebook,
         sidebar: &SharedSidebar,

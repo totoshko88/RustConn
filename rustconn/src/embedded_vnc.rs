@@ -478,16 +478,9 @@ impl EmbeddedVncWidget {
                 let vnc_w = f64::from(*vnc_width_motion.borrow());
                 let vnc_h = f64::from(*vnc_height_motion.borrow());
 
-                // Calculate scale and offset (same as in drawing)
-                let scale_x = widget_w / vnc_w;
-                let scale_y = widget_h / vnc_h;
-                let scale = scale_x.min(scale_y);
-                let offset_x = vnc_w.mul_add(-scale, widget_w) / 2.0;
-                let offset_y = vnc_h.mul_add(-scale, widget_h) / 2.0;
-
-                // Transform coordinates
-                let vnc_x = ((x - offset_x) / scale).clamp(0.0, vnc_w - 1.0);
-                let vnc_y = ((y - offset_y) / scale).clamp(0.0, vnc_h - 1.0);
+                let (vnc_x, vnc_y) = crate::embedded_vnc_ui::transform_widget_to_vnc(
+                    x, y, widget_w, widget_h, vnc_w, vnc_h,
+                );
 
                 #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
                 let vnc_x = vnc_x as u16;
@@ -539,14 +532,9 @@ impl EmbeddedVncWidget {
                 let vnc_w = f64::from(*vnc_width_press.borrow());
                 let vnc_h = f64::from(*vnc_height_press.borrow());
 
-                let scale_x = widget_w / vnc_w;
-                let scale_y = widget_h / vnc_h;
-                let scale = scale_x.min(scale_y);
-                let offset_x = vnc_w.mul_add(-scale, widget_w) / 2.0;
-                let offset_y = vnc_h.mul_add(-scale, widget_h) / 2.0;
-
-                let vnc_x = ((x - offset_x) / scale).clamp(0.0, vnc_w - 1.0);
-                let vnc_y = ((y - offset_y) / scale).clamp(0.0, vnc_h - 1.0);
+                let (vnc_x, vnc_y) = crate::embedded_vnc_ui::transform_widget_to_vnc(
+                    x, y, widget_w, widget_h, vnc_w, vnc_h,
+                );
 
                 #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
                 let vnc_x = vnc_x as u16;
@@ -554,12 +542,7 @@ impl EmbeddedVncWidget {
                 let vnc_y = vnc_y as u16;
 
                 // Convert GTK button to VNC button mask and update state
-                let button_bit = match button {
-                    1 => 0x01, // Left button
-                    2 => 0x02, // Middle button
-                    3 => 0x04, // Right button
-                    _ => 0x00,
-                };
+                let button_bit = crate::embedded_vnc_ui::gtk_button_to_vnc_mask(button);
                 let buttons = *button_state_press.borrow() | button_bit;
                 *button_state_press.borrow_mut() = buttons;
 
@@ -597,14 +580,9 @@ impl EmbeddedVncWidget {
                 let vnc_w = f64::from(*vnc_width_release.borrow());
                 let vnc_h = f64::from(*vnc_height_release.borrow());
 
-                let scale_x = widget_w / vnc_w;
-                let scale_y = widget_h / vnc_h;
-                let scale = scale_x.min(scale_y);
-                let offset_x = vnc_w.mul_add(-scale, widget_w) / 2.0;
-                let offset_y = vnc_h.mul_add(-scale, widget_h) / 2.0;
-
-                let vnc_x = ((x - offset_x) / scale).clamp(0.0, vnc_w - 1.0);
-                let vnc_y = ((y - offset_y) / scale).clamp(0.0, vnc_h - 1.0);
+                let (vnc_x, vnc_y) = crate::embedded_vnc_ui::transform_widget_to_vnc(
+                    x, y, widget_w, widget_h, vnc_w, vnc_h,
+                );
 
                 #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
                 let vnc_x = vnc_x as u16;
@@ -612,12 +590,7 @@ impl EmbeddedVncWidget {
                 let vnc_y = vnc_y as u16;
 
                 // Clear the button bit from state
-                let button_bit = match button {
-                    1 => 0x01,
-                    2 => 0x02,
-                    3 => 0x04,
-                    _ => 0x00,
-                };
+                let button_bit = crate::embedded_vnc_ui::gtk_button_to_vnc_mask(button);
                 let buttons = *button_state_release.borrow() & !button_bit;
                 *button_state_release.borrow_mut() = buttons;
 
