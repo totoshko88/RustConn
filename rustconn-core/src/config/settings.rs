@@ -69,6 +69,7 @@ impl Default for TerminalSettings {
 
 /// Logging settings
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[allow(clippy::struct_excessive_bools)] // Logging modes are independent boolean flags
 pub struct LoggingSettings {
     /// Enable session logging
     #[serde(default)]
@@ -79,6 +80,15 @@ pub struct LoggingSettings {
     /// Number of days to retain logs
     #[serde(default = "default_retention_days")]
     pub retention_days: u32,
+    /// Log terminal activity (change counts) - default mode
+    #[serde(default = "default_true")]
+    pub log_activity: bool,
+    /// Log user input (commands)
+    #[serde(default)]
+    pub log_input: bool,
+    /// Log full terminal output (transcript)
+    #[serde(default)]
+    pub log_output: bool,
 }
 
 fn default_log_dir() -> PathBuf {
@@ -95,6 +105,9 @@ impl Default for LoggingSettings {
             enabled: false,
             log_directory: default_log_dir(),
             retention_days: default_retention_days(),
+            log_activity: true,
+            log_input: false,
+            log_output: false,
         }
     }
 }

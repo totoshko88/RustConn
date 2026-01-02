@@ -13,7 +13,7 @@ use gtk4::{
 };
 use rustconn_core::export::{
     AnsibleExporter, AsbruExporter, ExportFormat, ExportOptions, ExportResult, ExportTarget,
-    NativeExport, RemminaExporter, SshConfigExporter,
+    NativeExport, RemminaExporter, RoyalTsExporter, SshConfigExporter,
 };
 use rustconn_core::models::{Connection, ConnectionGroup};
 use std::cell::RefCell;
@@ -180,6 +180,7 @@ impl ExportDialog {
             "Remmina",
             "Asbru-CM",
             "RustConn Native (.rcn)",
+            "Royal TS (.rtsz)",
         ]);
         let format_dropdown = DropDown::new(Some(format_list), gtk4::Expression::NONE);
         format_dropdown.set_selected(0);
@@ -377,6 +378,7 @@ impl ExportDialog {
             2 => ExportFormat::Remmina,
             3 => ExportFormat::Asbru,
             4 => ExportFormat::Native,
+            5 => ExportFormat::RoyalTs,
             _ => ExportFormat::Ansible,
         }
     }
@@ -460,6 +462,12 @@ impl ExportDialog {
                 result.exported_count = connections.len();
                 result.add_output_file(options.output_path.clone());
                 Ok(result)
+            }
+            ExportFormat::RoyalTs => {
+                let exporter = RoyalTsExporter;
+                exporter
+                    .export(connections, groups, options)
+                    .map_err(|e| e.to_string())
             }
         }
     }
@@ -548,6 +556,7 @@ impl ExportDialog {
                 2 => ExportFormat::Remmina,
                 3 => ExportFormat::Asbru,
                 4 => ExportFormat::Native,
+                5 => ExportFormat::RoyalTs,
                 _ => ExportFormat::Ansible,
             };
 
@@ -605,6 +614,10 @@ impl ExportDialog {
                         filter.add_pattern("*.rcn");
                         filter.set_name(Some("RustConn Native (*.rcn)"));
                     }
+                    ExportFormat::RoyalTs => {
+                        filter.add_pattern("*.rtsz");
+                        filter.set_name(Some("Royal TS (*.rtsz)"));
+                    }
                 }
 
                 let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
@@ -634,6 +647,7 @@ impl ExportDialog {
                     2 => ExportFormat::Remmina,
                     3 => ExportFormat::Asbru,
                     4 => ExportFormat::Native,
+                    5 => ExportFormat::RoyalTs,
                     _ => ExportFormat::Ansible,
                 };
 
@@ -700,6 +714,7 @@ impl ExportDialog {
                 2 => ExportFormat::Remmina,
                 3 => ExportFormat::Asbru,
                 4 => ExportFormat::Native,
+                5 => ExportFormat::RoyalTs,
                 _ => ExportFormat::Ansible,
             };
 

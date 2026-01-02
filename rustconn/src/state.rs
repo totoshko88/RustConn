@@ -1909,6 +1909,120 @@ impl AppState {
     pub const fn has_clipboard_content(&self) -> bool {
         self.clipboard.has_content()
     }
+
+    // ========== Session Restore Operations ==========
+
+    /// Saves active sessions for later restoration
+    ///
+    /// This method collects information about currently active sessions
+    /// and stores them in settings for restoration on next startup.
+    ///
+    /// # Arguments
+    /// * `sessions` - List of active terminal sessions to save
+    ///
+    /// Note: Part of session restore API - called on app shutdown.
+    #[allow(dead_code)]
+    pub fn save_active_sessions(
+        &mut self,
+        sessions: &[crate::terminal::TerminalSession],
+    ) -> Result<(), String> {
+        use rustconn_core::config::SavedSession;
+
+        let now = Utc::now();
+        let saved: Vec<SavedSession> = sessions
+            .iter()
+            .filter_map(|session| {
+                // Get connection details
+                self.get_connection(session.connection_id)
+                    .map(|conn| SavedSession {
+                        connection_id: conn.id,
+                        connection_name: conn.name.clone(),
+                        protocol: session.protocol.clone(),
+                        host: conn.host.clone(),
+                        port: conn.port,
+                        saved_at: now,
+                    })
+            })
+            .collect();
+
+        self.settings.ui.session_restore.saved_sessions = saved;
+        self.config_manager
+            .save_settings(&self.settings)
+            .map_err(|e| format!("Failed to save session restore settings: {e}"))
+    }
+
+    /// Gets sessions that should be restored based on settings
+    ///
+    /// Filters saved sessions by max_age_hours and returns only those
+    /// whose connections still exist.
+    ///
+    /// # Returns
+    /// List of saved sessions that are eligible for restoration
+    ///
+    /// Note: Part of session restore API - called on app startup.
+    #[must_use]
+    #[allow(dead_code)]
+    pub fn get_sessions_to_restore(&self) -> Vec<rustconn_core::config::SavedSession> {
+        if !self.settings.ui.session_restore.enabled {
+            return Vec::new();
+        }
+
+        let max_age = self.settings.ui.session_restore.max_age_hours;
+        let now = Utc::now();
+
+        self.settings
+            .ui
+            .session_restore
+            .saved_sessions
+            .iter()
+            .filter(|session| {
+                // Check if connection still exists
+                if self.get_connection(session.connection_id).is_none() {
+                    return false;
+                }
+
+                // Check age limit (0 = no limit)
+                if max_age > 0 {
+                    let age_hours = (now - session.saved_at).num_hours();
+                    if age_hours > i64::from(max_age) {
+                        return false;
+                    }
+                }
+
+                true
+            })
+            .cloned()
+            .collect()
+    }
+
+    /// Clears saved sessions
+    ///
+    /// Note: Part of session restore API.
+    #[allow(dead_code)]
+    pub fn clear_saved_sessions(&mut self) -> Result<(), String> {
+        self.settings.ui.session_restore.saved_sessions.clear();
+        self.config_manager
+            .save_settings(&self.settings)
+            .map_err(|e| format!("Failed to clear saved sessions: {e}"))
+    }
+
+    /// Checks if session restore is enabled
+    ///
+    /// Note: Part of session restore API.
+    #[must_use]
+    #[allow(dead_code)]
+    pub const fn is_session_restore_enabled(&self) -> bool {
+        self.settings.ui.session_restore.enabled
+    }
+
+    /// Checks if prompt should be shown before restoring sessions
+    ///
+    /// Note: Part of session restore API.
+    #[must_use]
+    #[allow(dead_code)]
+    pub const fn should_prompt_on_restore(&self) -> bool {
+        self.settings.ui.session_restore.prompt_on_restore
+    }
 }
 
 /// Shared application state type

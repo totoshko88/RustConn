@@ -204,6 +204,8 @@ pub enum ExportFormatArg {
     Asbru,
     /// Native `RustConn` format (.rcn)
     Native,
+    /// Royal TS XML format (.rtsz)
+    RoyalTs,
 }
 
 /// Import format options
@@ -219,6 +221,8 @@ pub enum ImportFormatArg {
     Asbru,
     /// Native `RustConn` format (.rcn)
     Native,
+    /// Royal TS XML format (.rtsz)
+    RoyalTs,
 }
 
 /// Snippet subcommands
@@ -1122,6 +1126,7 @@ fn cmd_export(format: ExportFormatArg, output: &std::path::Path) -> Result<(), C
         ExportFormatArg::Remmina => rustconn_core::export::ExportFormat::Remmina,
         ExportFormatArg::Asbru => rustconn_core::export::ExportFormat::Asbru,
         ExportFormatArg::Native => rustconn_core::export::ExportFormat::Native,
+        ExportFormatArg::RoyalTs => rustconn_core::export::ExportFormat::RoyalTs,
     };
 
     // Create export options
@@ -1161,7 +1166,7 @@ fn export_connections(
 ) -> Result<rustconn_core::export::ExportResult, CliError> {
     use rustconn_core::export::{
         AnsibleExporter, AsbruExporter, ExportFormat, ExportTarget, NativeExport, RemminaExporter,
-        SshConfigExporter,
+        RoyalTsExporter, SshConfigExporter,
     };
 
     let result = match options.format {
@@ -1209,6 +1214,12 @@ fn export_connections(
                 warnings: Vec::new(),
                 output_files: vec![options.output_path.clone()],
             }
+        }
+        ExportFormat::RoyalTs => {
+            let exporter = RoyalTsExporter::new();
+            exporter
+                .export(connections, groups, options)
+                .map_err(|e| CliError::Export(e.to_string()))?
         }
     };
 
@@ -1323,7 +1334,7 @@ fn import_connections(
 ) -> Result<rustconn_core::import::ImportResult, CliError> {
     use rustconn_core::import::{
         AnsibleInventoryImporter, AsbruImporter, ImportResult, ImportSource, RemminaImporter,
-        SshConfigImporter,
+        RoyalTsImporter, SshConfigImporter,
     };
 
     let result = match format {
@@ -1362,6 +1373,12 @@ fn import_connections(
                 skipped: Vec::new(),
                 errors: Vec::new(),
             }
+        }
+        ImportFormatArg::RoyalTs => {
+            let importer = RoyalTsImporter::new();
+            importer
+                .import_from_path(file)
+                .map_err(|e| CliError::Import(e.to_string()))?
         }
     };
 

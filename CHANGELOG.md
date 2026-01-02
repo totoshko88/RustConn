@@ -5,6 +5,57 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.4] - 2026-01-02
+
+### Changed
+- Updated dependencies: cc, iri-string, itoa, libredox, proc-macro2, rustls-native-certs, ryu, serde_json, signal-hook-registry, syn, zeroize_derive
+- Note: sspi and picky-krb kept at previous versions due to rand_core compatibility issues
+
+### Added
+- Close Tab action implementation for terminal notebook
+- Session Restore feature with UI settings in Settings dialog:
+  - Enable/disable session restore on startup
+  - Option to prompt before restoring sessions
+  - Configurable maximum session age (hours)
+  - Sessions saved on app close, restored on next startup
+- `AppState` methods for session restore: `save_active_sessions()`, `get_sessions_to_restore()`, `clear_saved_sessions()`
+- `TerminalNotebook.get_all_sessions()` method for collecting active sessions
+- Password Generator feature:
+  - New `password_generator` module in `rustconn-core` with secure password generation using `ring::rand`
+  - Configurable character sets: lowercase, uppercase, digits, special, extended special
+  - Option to exclude ambiguous characters (0, O, l, 1, I)
+  - Password strength evaluation with entropy calculation
+  - Crack time estimation based on entropy
+  - Password Generator dialog accessible from Tools menu
+  - Real-time strength indicator with level bar
+  - Copy to clipboard functionality
+- Advanced session logging modes with three configurable options:
+  - Activity logging (default) - tracks session activity changes
+  - User input logging - captures commands typed by user
+  - Terminal output logging - records full terminal transcript
+  - Settings UI with checkboxes in Session Logging tab
+- Royal TS (.rtsz XML) import support:
+  - SSH, RDP, and VNC connection import
+  - Folder hierarchy preservation as connection groups
+  - Credential reference resolution (username/domain)
+  - Trash folder filtering (deleted connections are skipped)
+  - Accessible via Import dialog
+- Royal TS (.rtsz XML) export support:
+  - SSH, RDP, and VNC connection export
+  - Folder hierarchy export as Royal TS folders
+  - Username and domain export for credentials
+  - Accessible via Export dialog
+- RDPDR directory change notifications with inotify integration:
+  - `dir_watcher` module using `notify` crate for file system monitoring
+  - `FileAction` enum matching MS-FSCC `FILE_ACTION_*` constants
+  - `CompletionFilter` struct with MS-SMB2 `FILE_NOTIFY_CHANGE_*` flags
+  - `DirectoryWatcher` with recursive/non-recursive watch support
+  - `build_file_notify_info()` for MS-FSCC 2.4.42 `FILE_NOTIFY_INFORMATION` structures
+  - Note: RDP responses pending ironrdp upstream support for `ClientDriveNotifyChangeDirectoryResponse`
+
+### Fixed
+- Close Tab keyboard shortcut (Ctrl+W) now properly closes active session tab
+
 ## [0.5.3] - 2026-01-02
 
 ### Added
@@ -330,7 +381,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No plaintext password storage
 - `unsafe_code = "forbid"` enforced
 
-[Unreleased]: https://github.com/totoshko88/RustConn/compare/v0.5.3...HEAD
+[Unreleased]: https://github.com/totoshko88/RustConn/compare/v0.5.4...HEAD
+[0.5.4]: https://github.com/totoshko88/RustConn/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/totoshko88/RustConn/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/totoshko88/RustConn/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/totoshko88/RustConn/compare/v0.5.0...v0.5.1

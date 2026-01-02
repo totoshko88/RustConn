@@ -14,7 +14,7 @@ use gtk4::{
 use rustconn_core::export::NativeExport;
 use rustconn_core::import::{
     AnsibleInventoryImporter, AsbruImporter, ImportResult, ImportSource, RemminaImporter,
-    SshConfigImporter,
+    RoyalTsImporter, SshConfigImporter,
 };
 use rustconn_core::progress::LocalProgressReporter;
 use std::cell::{Cell, RefCell};
@@ -215,6 +215,12 @@ impl ImportDialog {
                 "Import from a RustConn native export file",
                 true,
             ),
+            (
+                "royalts_file",
+                "Royal TS (.rtsz)",
+                "Import from a Royal TS export file",
+                true,
+            ),
         ];
 
         for (id, name, desc, available) in sources {
@@ -386,6 +392,7 @@ impl ImportDialog {
             "ansible" => "Ansible",
             "ansible_file" => "Ansible File",
             "native_file" => "RustConn Native",
+            "royalts_file" => "Royal TS",
             _ => "Unknown",
         }
     }
@@ -672,6 +679,21 @@ impl ImportDialog {
 
                 if source_id == "native_file" {
                     Self::handle_native_file_import(
+                        &window,
+                        &stack,
+                        &progress_bar,
+                        &progress_label,
+                        &result_label,
+                        &result_details,
+                        &result_cell,
+                        &source_name_cell,
+                        btn,
+                    );
+                    return;
+                }
+
+                if source_id == "royalts_file" {
+                    Self::handle_royalts_file_import(
                         &window,
                         &stack,
                         &progress_bar,
@@ -1217,6 +1239,85 @@ impl ImportDialog {
                                 btn_clone.set_sensitive(true);
                             }
                         }
+                    }
+                }
+            },
+        );
+    }
+
+    /// Handles the special case of importing from a Royal TS file (.rtsz)
+    #[allow(clippy::too_many_arguments)]
+    fn handle_royalts_file_import(
+        window: &Window,
+        stack: &Stack,
+        progress_bar: &ProgressBar,
+        progress_label: &Label,
+        result_label: &Label,
+        result_details: &Label,
+        result_cell: &Rc<RefCell<Option<ImportResult>>>,
+        source_name_cell: &Rc<RefCell<String>>,
+        btn: &Button,
+    ) {
+        let file_dialog = gtk4::FileDialog::builder()
+            .title("Select Royal TS File")
+            .modal(true)
+            .build();
+
+        let filter = gtk4::FileFilter::new();
+        filter.add_pattern("*.rtsz");
+        filter.add_pattern("*.json");
+        filter.set_name(Some("Royal TS files (*.rtsz, *.json)"));
+        let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
+        filters.append(&filter);
+        file_dialog.set_filters(Some(&filters));
+
+        let stack_clone = stack.clone();
+        let progress_bar_clone = progress_bar.clone();
+        let progress_label_clone = progress_label.clone();
+        let result_label_clone = result_label.clone();
+        let result_details_clone = result_details.clone();
+        let result_cell_clone = result_cell.clone();
+        let source_name_cell_clone = source_name_cell.clone();
+        let btn_clone = btn.clone();
+
+        file_dialog.open(
+            Some(window),
+            gtk4::gio::Cancellable::NONE,
+            move |file_result| {
+                if let Ok(file) = file_result {
+                    if let Some(path) = file.path() {
+                        stack_clone.set_visible_child_name("progress");
+                        btn_clone.set_sensitive(false);
+                        progress_bar_clone.set_fraction(0.5);
+                        progress_label_clone
+                            .set_text(&format!("Importing from {}...", path.display()));
+
+                        let importer = RoyalTsImporter::new();
+                        let result = importer.import_from_path(&path).unwrap_or_default();
+
+                        let filename = path.file_name().map_or_else(
+                            || "Royal TS".to_string(),
+                            |n| n.to_string_lossy().to_string(),
+                        );
+
+                        source_name_cell_clone.borrow_mut().clone_from(&filename);
+
+                        progress_bar_clone.set_fraction(1.0);
+
+                        let conn_count = result.connections.len();
+                        let group_count = result.groups.len();
+                        let summary = format!(
+                            "Successfully imported {conn_count} connection(s) and {group_count} group(s).\nConnections will be added to '{filename} Import' group."
+                        );
+                        result_label_clone.set_text(&summary);
+
+                        let details = Self::format_import_details(&result);
+                        result_details_clone.set_text(&details);
+
+                        *result_cell_clone.borrow_mut() = Some(result);
+                        stack_clone.set_visible_child_name("result");
+                        btn_clone.set_label("Done");
+                        btn_clone.set_sensitive(true);
                     }
                 }
             },

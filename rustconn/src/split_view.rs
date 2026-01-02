@@ -659,9 +659,11 @@ impl SplitTerminalView {
             "✨ Features:\n\
              🖥️  Embedded SSH terminals with split view\n\
              🔒  Secure credential storage (KeePass/Keyring)\n\
-             📁  Import from Remmina, Asbru-CM, SSH config, Ansible inventory\n\
+             📁  Import/Export: Remmina, Asbru-CM, Royal TS, SSH config, Ansible\n\
+             🔑  Password Generator with strength analysis\n\
+             🔄  Session Restore on startup\n\
+             🤖  Expect automation for SSH\n\
              🏷️  Organize with groups and tags\n\
-             ⚡ Performance optimizations for large connection databases\n\
              🌐  Zero Trust: AWS SSM, GCP IAP, Azure Bastion, OCI Bastion",
         ));
         features.set_justify(gtk4::Justification::Left);

@@ -417,7 +417,18 @@ fn show_about_dialog(parent: &gtk4::ApplicationWindow) {
         .modal(true)
         .program_name("RustConn")
         .version(env!("CARGO_PKG_VERSION"))
-        .comments("A modern connection manager for Linux\n\nWayland-native GTK4 application for managing SSH, RDP, VNC, and SPICE connections.\n\nEmbedded RDP features: clipboard, shared folders, RemoteFX.\nSupports Zero Trust providers (AWS SSM, GCP IAP, Azure Bastion).\n\nMade with ❤️ in Ukraine 🇺🇦")
+        .comments(
+            "A modern connection manager for Linux\n\n\
+            Wayland-native GTK4 application for managing SSH, RDP, VNC, and SPICE connections.\n\n\
+            Features:\n\
+            • Embedded RDP with clipboard, shared folders, RemoteFX\n\
+            • Zero Trust providers (AWS SSM, GCP IAP, Azure Bastion)\n\
+            • Import/Export: Remmina, Asbru-CM, Royal TS, SSH config\n\
+            • Password Generator with strength analysis\n\
+            • Session Restore on startup\n\
+            • Expect automation for SSH\n\n\
+            Made with ❤️ in Ukraine 🇺🇦",
+        )
         .website("https://github.com/totoshko88/rustconn")
         .website_label("GitHub Repository")
         .license_type(gtk4::License::Gpl30)
@@ -441,6 +452,7 @@ fn show_about_dialog(parent: &gtk4::ApplicationWindow) {
         &[
             "GTK4 and the GNOME project",
             "The Rust community",
+            "IronRDP project",
             "FreeRDP project",
             "All contributors and supporters",
         ],

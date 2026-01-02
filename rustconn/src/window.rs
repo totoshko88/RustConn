@@ -235,6 +235,10 @@ impl MainWindow {
         tools_section.append(Some("Active Sessions"), Some("win.show-sessions"));
         tools_section.append(Some("Connection History..."), Some("win.show-history"));
         tools_section.append(Some("Statistics..."), Some("win.show-statistics"));
+        tools_section.append(
+            Some("Password Generator..."),
+            Some("win.password-generator"),
+        );
         menu.append_section(None, &tools_section);
 
         // File section (import/export connections)
@@ -507,8 +511,28 @@ impl MainWindow {
         });
         window.add_action(&paste_action);
 
-        // Close tab action - placeholder
+        // Close tab action - closes the currently active session tab
         let close_tab_action = gio::SimpleAction::new("close-tab", None);
+        let notebook_clone = terminal_notebook.clone();
+        let split_view_clone = self.split_view.clone();
+        let sidebar_clone = self.sidebar.clone();
+        close_tab_action.connect_activate(move |_, _| {
+            if let Some(session_id) = notebook_clone.get_active_session_id() {
+                // Get connection ID before closing
+                let connection_id = notebook_clone
+                    .get_session_info(session_id)
+                    .map(|info| info.connection_id);
+
+                // Clear from split view first
+                split_view_clone.clear_session_from_panes(session_id);
+                // Then close the tab
+                notebook_clone.close_tab(session_id);
+                // Decrement session count in sidebar if we have a connection ID
+                if let Some(conn_id) = connection_id {
+                    sidebar_clone.decrement_session_count(&conn_id.to_string(), false);
+                }
+            }
+        });
         window.add_action(&close_tab_action);
 
         // Local shell action
@@ -802,7 +826,7 @@ impl MainWindow {
 
     /// Sets up history and statistics actions
     fn setup_history_actions(&self, window: &ApplicationWindow, state: &SharedAppState) {
-        use crate::dialogs::{HistoryDialog, StatisticsDialog};
+        use crate::dialogs::{show_password_generator_dialog, HistoryDialog, StatisticsDialog};
 
         // Show history action
         let show_history_action = gio::SimpleAction::new("show-history", None);
@@ -875,6 +899,16 @@ impl MainWindow {
             }
         });
         window.add_action(&show_statistics_action);
+
+        // Password generator action
+        let password_generator_action = gio::SimpleAction::new("password-generator", None);
+        let window_weak = window.downgrade();
+        password_generator_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                show_password_generator_dialog(Some(&win));
+            }
+        });
+        window.add_action(&password_generator_action);
     }
 
     /// Sets up split view actions
@@ -1932,20 +1966,27 @@ impl MainWindow {
         connection_id: Uuid,
         connection_name: &str,
     ) {
-        // Get the log directory from settings
-        let log_dir = if let Ok(state_ref) = state.try_borrow() {
-            let settings = state_ref.settings();
-            if settings.logging.log_directory.is_absolute() {
-                settings.logging.log_directory.clone()
+        // Get the log directory and logging modes from settings
+        let (log_dir, log_activity, log_input, log_output) =
+            if let Ok(state_ref) = state.try_borrow() {
+                let settings = state_ref.settings();
+                let dir = if settings.logging.log_directory.is_absolute() {
+                    settings.logging.log_directory.clone()
+                } else {
+                    state_ref
+                        .config_manager()
+                        .config_dir()
+                        .join(&settings.logging.log_directory)
+                };
+                (
+                    dir,
+                    settings.logging.log_activity,
+                    settings.logging.log_input,
+                    settings.logging.log_output,
+                )
             } else {
-                state_ref
-                    .config_manager()
-                    .config_dir()
-                    .join(&settings.logging.log_directory)
-            }
-        } else {
-            return;
-        };
+                return;
+            };
 
         // Ensure log directory exists
         if let Err(e) = std::fs::create_dir_all(&log_dir) {
@@ -2002,8 +2043,15 @@ impl MainWindow {
                 // Store log file path in session info
                 notebook.set_log_file(session_id, log_path.clone());
 
-                // Set up the contents changed handler to write terminal output
-                Self::setup_contents_changed_handler(notebook, session_id, &log_path);
+                // Set up logging handlers based on settings
+                Self::setup_logging_handlers(
+                    notebook,
+                    session_id,
+                    &log_path,
+                    log_activity,
+                    log_input,
+                    log_output,
+                );
             }
             Err(e) => {
                 eprintln!("Failed to create log file '{}': {}", log_path.display(), e);
@@ -2091,15 +2139,20 @@ impl MainWindow {
         });
     }
 
-    /// Sets up the contents changed handler for session logging
+    /// Sets up logging handlers for a terminal session based on settings
     ///
-    /// Note: VTE4's Rust bindings have limited support for extracting terminal text.
-    /// This handler logs activity timestamps when terminal content changes.
-    /// For full session logging, consider using the script command or terminal recording.
-    fn setup_contents_changed_handler(
+    /// Supports three logging modes:
+    /// - Activity: logs change counts (default, lightweight)
+    /// - Input: logs user commands sent to terminal
+    /// - Output: logs full terminal transcript
+    #[allow(clippy::too_many_arguments)]
+    fn setup_logging_handlers(
         notebook: &SharedNotebook,
         session_id: Uuid,
         log_path: &std::path::Path,
+        log_activity: bool,
+        log_input: bool,
+        log_output: bool,
     ) {
         use std::cell::RefCell;
         use std::fs::OpenOptions;
@@ -2109,12 +2162,6 @@ impl MainWindow {
         // Create a shared writer for the log file
         let log_writer: Rc<RefCell<Option<std::io::BufWriter<std::fs::File>>>> =
             Rc::new(RefCell::new(None));
-
-        // Debounce counter to avoid excessive logging
-        let change_counter: Rc<RefCell<u32>> = Rc::new(RefCell::new(0));
-        let last_log_time: Rc<RefCell<std::time::Instant>> =
-            Rc::new(RefCell::new(std::time::Instant::now()));
-        let flush_counter: Rc<RefCell<u32>> = Rc::new(RefCell::new(0));
 
         // Open the log file for appending
         match OpenOptions::new().append(true).open(log_path) {
@@ -2131,47 +2178,172 @@ impl MainWindow {
             }
         }
 
-        let log_writer_clone = log_writer;
-        let counter_clone = change_counter;
-        let last_time_clone = last_log_time;
-        let flush_counter_clone = flush_counter;
+        // Set up activity logging (change counts)
+        if log_activity {
+            let log_writer_clone = log_writer.clone();
+            let change_counter: Rc<RefCell<u32>> = Rc::new(RefCell::new(0));
+            let last_log_time: Rc<RefCell<std::time::Instant>> =
+                Rc::new(RefCell::new(std::time::Instant::now()));
+            let flush_counter: Rc<RefCell<u32>> = Rc::new(RefCell::new(0));
 
-        notebook.connect_contents_changed(session_id, move || {
-            // Increment change counter
-            let mut counter = counter_clone.borrow_mut();
-            *counter += 1;
+            notebook.connect_contents_changed(session_id, move || {
+                let mut counter = change_counter.borrow_mut();
+                *counter += 1;
 
-            // Increment flush counter
-            let mut flush_count = flush_counter_clone.borrow_mut();
-            *flush_count += 1;
+                let mut flush_count = flush_counter.borrow_mut();
+                *flush_count += 1;
 
-            // Debounce: only log every 100 changes or every 5 seconds
-            let now = std::time::Instant::now();
-            let elapsed = now.duration_since(*last_time_clone.borrow());
+                let now = std::time::Instant::now();
+                let elapsed = now.duration_since(*last_log_time.borrow());
 
-            if *counter >= 100 || elapsed.as_secs() >= 5 {
-                if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut() {
-                    if let Some(ref mut writer) = *writer_opt {
-                        let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
-                        let _ = writeln!(
-                            writer,
-                            "[{}] Terminal activity ({} changes)",
-                            timestamp, *counter
-                        );
+                if *counter >= 100 || elapsed.as_secs() >= 5 {
+                    if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut() {
+                        if let Some(ref mut writer) = *writer_opt {
+                            let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+                            let _ = writeln!(
+                                writer,
+                                "[{}] Terminal activity ({} changes)",
+                                timestamp, *counter
+                            );
 
-                        // Flush periodically (every 10 log entries or 30 seconds)
-                        if *flush_count >= 10 || elapsed.as_secs() >= 30 {
-                            let _ = writer.flush();
-                            *flush_count = 0;
+                            if *flush_count >= 10 || elapsed.as_secs() >= 30 {
+                                let _ = writer.flush();
+                                *flush_count = 0;
+                            }
+                        }
+                    }
+
+                    *counter = 0;
+                    *last_log_time.borrow_mut() = now;
+                }
+            });
+        }
+
+        // Set up input logging (user commands)
+        if log_input {
+            let log_writer_clone = log_writer.clone();
+            let input_buffer: Rc<RefCell<String>> = Rc::new(RefCell::new(String::new()));
+            let last_flush: Rc<RefCell<std::time::Instant>> =
+                Rc::new(RefCell::new(std::time::Instant::now()));
+
+            notebook.connect_commit(session_id, move |text| {
+                let mut buffer = input_buffer.borrow_mut();
+
+                // Handle special characters
+                for ch in text.chars() {
+                    match ch {
+                        '\r' | '\n' => {
+                            // End of command - log it
+                            if !buffer.is_empty() {
+                                if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut() {
+                                    if let Some(ref mut writer) = *writer_opt {
+                                        let timestamp =
+                                            chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+                                        let _ =
+                                            writeln!(writer, "[{}] INPUT: {}", timestamp, *buffer);
+                                        let _ = writer.flush();
+                                    }
+                                }
+                                buffer.clear();
+                            }
+                        }
+                        '\x7f' | '\x08' => {
+                            // Backspace - remove last char
+                            buffer.pop();
+                        }
+                        '\x03' => {
+                            // Ctrl+C
+                            if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut() {
+                                if let Some(ref mut writer) = *writer_opt {
+                                    let timestamp =
+                                        chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+                                    let _ = writeln!(writer, "[{}] INPUT: ^C", timestamp);
+                                    let _ = writer.flush();
+                                }
+                            }
+                            buffer.clear();
+                        }
+                        '\x04' => {
+                            // Ctrl+D
+                            if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut() {
+                                if let Some(ref mut writer) = *writer_opt {
+                                    let timestamp =
+                                        chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+                                    let _ = writeln!(writer, "[{}] INPUT: ^D", timestamp);
+                                    let _ = writer.flush();
+                                }
+                            }
+                        }
+                        _ if ch.is_control() => {
+                            // Skip other control characters
+                        }
+                        _ => {
+                            buffer.push(ch);
                         }
                     }
                 }
 
-                // Reset counter and time
-                *counter = 0;
-                *last_time_clone.borrow_mut() = now;
-            }
-        });
+                // Periodic flush for long-running commands
+                let now = std::time::Instant::now();
+                if now.duration_since(*last_flush.borrow()).as_secs() >= 30 && !buffer.is_empty() {
+                    if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut() {
+                        if let Some(ref mut writer) = *writer_opt {
+                            let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+                            let _ =
+                                writeln!(writer, "[{}] INPUT (partial): {}", timestamp, *buffer);
+                            let _ = writer.flush();
+                        }
+                    }
+                    *last_flush.borrow_mut() = now;
+                }
+            });
+        }
+
+        // Set up output logging (full transcript)
+        if log_output {
+            let log_writer_clone = log_writer.clone();
+            let notebook_clone = notebook.clone();
+            let last_content: Rc<RefCell<String>> = Rc::new(RefCell::new(String::new()));
+            let last_log_time: Rc<RefCell<std::time::Instant>> =
+                Rc::new(RefCell::new(std::time::Instant::now()));
+
+            notebook.connect_contents_changed(session_id, move || {
+                let now = std::time::Instant::now();
+                let elapsed = now.duration_since(*last_log_time.borrow());
+
+                // Only capture transcript every 5 seconds to avoid performance issues
+                if elapsed.as_secs() >= 5 {
+                    if let Some(current_text) = notebook_clone.get_terminal_text(session_id) {
+                        let mut last = last_content.borrow_mut();
+
+                        // Only log if content changed
+                        if current_text != *last {
+                            // Find new content (simple diff - just log new lines)
+                            let new_lines: Vec<&str> =
+                                current_text.lines().skip(last.lines().count()).collect();
+
+                            if !new_lines.is_empty() {
+                                if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut() {
+                                    if let Some(ref mut writer) = *writer_opt {
+                                        let timestamp =
+                                            chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+                                        let _ = writeln!(writer, "[{}] OUTPUT:", timestamp);
+                                        for line in new_lines {
+                                            let _ = writeln!(writer, "  {}", line);
+                                        }
+                                        let _ = writer.flush();
+                                    }
+                                }
+                            }
+
+                            *last = current_text;
+                        }
+                    }
+
+                    *last_log_time.borrow_mut() = now;
+                }
+            });
+        }
     }
 
     /// Shows the new connection dialog with optional template selection

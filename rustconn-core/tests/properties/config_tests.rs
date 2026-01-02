@@ -408,6 +408,9 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         enabled: logging_enabled,
                         log_directory,
                         retention_days,
+                        log_activity: true,
+                        log_input: false,
+                        log_output: false,
                     },
                     secrets: SecretSettings {
                         preferred_backend,

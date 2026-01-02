@@ -23,8 +23,11 @@ dirs = { workspace = true }
 shellexpand = { workspace = true }
 regex = { workspace = true }
 ring = { workspace = true }
+quick-xml = { version = "0.37", features = ["serialize"] }
 argon2 = { workspace = true }
 hostname = "0.4"
+# File system notifications for RDPDR directory change monitoring
+notify = { version = "7.0", default-features = false, features = ["macos_fsevent"] }
 # Tracing for structured logging and performance profiling
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

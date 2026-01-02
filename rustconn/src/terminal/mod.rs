@@ -607,6 +607,15 @@ impl TerminalNotebook {
         self.session_info.borrow().get(&session_id).cloned()
     }
 
+    /// Gets all active sessions
+    ///
+    /// Note: Part of session restore API - used to collect sessions for saving.
+    #[must_use]
+    #[allow(dead_code)]
+    pub fn get_all_sessions(&self) -> Vec<TerminalSession> {
+        self.session_info.borrow().values().cloned().collect()
+    }
+
     /// Sets the log file path for a session
     pub fn set_log_file(&self, session_id: Uuid, log_file: PathBuf) {
         if let Some(info) = self.session_info.borrow_mut().get_mut(&session_id) {
@@ -768,6 +777,34 @@ impl TerminalNotebook {
                 callback();
             });
         }
+    }
+
+    /// Connects a callback for user input (commit signal - data sent to PTY)
+    pub fn connect_commit<F>(&self, session_id: Uuid, callback: F)
+    where
+        F: Fn(&str) + 'static,
+    {
+        if let Some(terminal) = self.get_terminal(session_id) {
+            terminal.connect_commit(move |_terminal, text, _size| {
+                callback(text);
+            });
+        }
+    }
+
+    /// Gets the current terminal text content for transcript logging
+    #[must_use]
+    pub fn get_terminal_text(&self, session_id: Uuid) -> Option<String> {
+        self.get_terminal(session_id).map(|terminal| {
+            // Get terminal dimensions for text range
+            let row_count = terminal.row_count();
+            let col_count = terminal.column_count();
+
+            // Use text_range_format to get all visible text
+            // Start from row 0, col 0 to end row, end col
+            let (text, _len) =
+                terminal.text_range_format(vte4::Format::Text, 0, 0, row_count, col_count);
+            text.map_or_else(String::new, |g| g.to_string())
+        })
     }
 
     /// Adds an embedded session tab (for RDP/VNC external processes)

@@ -11,6 +11,7 @@ pub mod asbru;
 pub mod batch;
 pub mod native;
 pub mod remmina;
+pub mod royalts;
 pub mod ssh_config;
 
 use std::path::PathBuf;
@@ -23,6 +24,7 @@ pub use batch::{
 };
 pub use native::{NativeExport, NativeImportError, NATIVE_FILE_EXTENSION, NATIVE_FORMAT_VERSION};
 pub use remmina::RemminaExporter;
+pub use royalts::RoyalTsExporter;
 pub use ssh_config::SshConfigExporter;
 
 use serde::{Deserialize, Serialize};
@@ -45,6 +47,8 @@ pub enum ExportFormat {
     Asbru,
     /// `RustConn` native format (.rcn)
     Native,
+    /// Royal TS XML format (.rtsz)
+    RoyalTs,
 }
 
 impl ExportFormat {
@@ -57,6 +61,7 @@ impl ExportFormat {
             Self::Remmina,
             Self::Asbru,
             Self::Native,
+            Self::RoyalTs,
         ]
     }
 
@@ -69,6 +74,7 @@ impl ExportFormat {
             Self::Remmina => "Remmina",
             Self::Asbru => "Asbru-CM",
             Self::Native => "RustConn Native",
+            Self::RoyalTs => "Royal TS",
         }
     }
 
@@ -81,6 +87,7 @@ impl ExportFormat {
             Self::Remmina => "remmina",
             Self::Asbru => "yml",
             Self::Native => NATIVE_FILE_EXTENSION,
+            Self::RoyalTs => "rtsz",
         }
     }
 
@@ -329,12 +336,13 @@ mod tests {
     #[test]
     fn test_export_format_all() {
         let formats = ExportFormat::all();
-        assert_eq!(formats.len(), 5);
+        assert_eq!(formats.len(), 6);
         assert!(formats.contains(&ExportFormat::Ansible));
         assert!(formats.contains(&ExportFormat::SshConfig));
         assert!(formats.contains(&ExportFormat::Remmina));
         assert!(formats.contains(&ExportFormat::Asbru));
         assert!(formats.contains(&ExportFormat::Native));
+        assert!(formats.contains(&ExportFormat::RoyalTs));
     }
 
     #[test]
@@ -344,6 +352,7 @@ mod tests {
         assert_eq!(ExportFormat::Remmina.display_name(), "Remmina");
         assert_eq!(ExportFormat::Asbru.display_name(), "Asbru-CM");
         assert_eq!(ExportFormat::Native.display_name(), "RustConn Native");
+        assert_eq!(ExportFormat::RoyalTs.display_name(), "Royal TS");
     }
 
     #[test]
@@ -353,6 +362,7 @@ mod tests {
         assert_eq!(ExportFormat::Remmina.file_extension(), "remmina");
         assert_eq!(ExportFormat::Asbru.file_extension(), "yml");
         assert_eq!(ExportFormat::Native.file_extension(), "rcn");
+        assert_eq!(ExportFormat::RoyalTs.file_extension(), "rtsz");
     }
 
     #[test]
@@ -362,6 +372,7 @@ mod tests {
         assert!(ExportFormat::Remmina.exports_to_directory());
         assert!(!ExportFormat::Asbru.exports_to_directory());
         assert!(!ExportFormat::Native.exports_to_directory());
+        assert!(!ExportFormat::RoyalTs.exports_to_directory());
     }
 
     #[test]

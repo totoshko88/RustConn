@@ -37,6 +37,7 @@ pub mod export;
 pub mod ffi;
 pub mod import;
 pub mod models;
+pub mod password_generator;
 pub mod performance;
 pub mod progress;
 pub mod protocol;
@@ -91,7 +92,7 @@ pub use ffi::{
 };
 pub use import::{
     AnsibleInventoryImporter, AsbruImporter, BatchCancelHandle, BatchImportResult, BatchImporter,
-    ImportResult, ImportSource, RemminaImporter, SkippedEntry, SshConfigImporter,
+    ImportResult, ImportSource, RemminaImporter, RoyalTsImporter, SkippedEntry, SshConfigImporter,
     BATCH_IMPORT_THRESHOLD, DEFAULT_IMPORT_BATCH_SIZE,
 };
 pub use models::{
@@ -100,6 +101,10 @@ pub use models::{
     PasswordSource, PropertyType, ProtocolConfig, ProtocolType, RdpConfig, RdpGateway, Resolution,
     Snippet, SnippetVariable, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig,
     SshKeySource, TemplateError, VncConfig, WindowGeometry, WindowMode,
+};
+pub use password_generator::{
+    estimate_crack_time, CharacterSet, PasswordGenerator, PasswordGeneratorConfig,
+    PasswordGeneratorError, PasswordGeneratorResult, PasswordStrength,
 };
 pub use performance::{
     format_bytes, memory_optimizer, metrics, AllocationStats, BatchProcessor, CompactString,

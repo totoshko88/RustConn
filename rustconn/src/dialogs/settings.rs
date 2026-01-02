@@ -37,6 +37,9 @@ pub struct SettingsDialog {
     log_dir_entry: Entry,
     retention_spin: SpinButton,
     open_logs_button: Button,
+    log_activity_check: CheckButton,
+    log_input_check: CheckButton,
+    log_output_check: CheckButton,
     // Secret settings
     secret_backend_dropdown: DropDown,
     enable_fallback: CheckButton,
@@ -56,6 +59,10 @@ pub struct SettingsDialog {
     remember_geometry: CheckButton,
     enable_tray_icon: CheckButton,
     minimize_to_tray: CheckButton,
+    // Session restore settings
+    session_restore_enabled: CheckButton,
+    prompt_on_restore: CheckButton,
+    max_age_spin: SpinButton,
     // SSH Agent settings
     ssh_agent_status_label: Label,
     ssh_agent_socket_label: Label,
@@ -117,8 +124,16 @@ impl SettingsDialog {
         notebook.append_page(&terminal_page, Some(&Label::new(Some("Terminal"))));
 
         // === Logging Tab ===
-        let (logging_page, logging_enabled_switch, log_dir_entry, retention_spin, open_logs_button) =
-            Self::create_logging_tab();
+        let (
+            logging_page,
+            logging_enabled_switch,
+            log_dir_entry,
+            retention_spin,
+            open_logs_button,
+            log_activity_check,
+            log_input_check,
+            log_output_check,
+        ) = Self::create_logging_tab();
         notebook.append_page(&logging_page, Some(&Label::new(Some("Logging"))));
 
         // === Secrets Tab ===
@@ -140,8 +155,15 @@ impl SettingsDialog {
         notebook.append_page(&secrets_page, Some(&Label::new(Some("Secrets"))));
 
         // === UI Tab ===
-        let (ui_page, remember_geometry, enable_tray_icon, minimize_to_tray) =
-            Self::create_ui_tab();
+        let (
+            ui_page,
+            remember_geometry,
+            enable_tray_icon,
+            minimize_to_tray,
+            session_restore_enabled,
+            prompt_on_restore,
+            max_age_spin,
+        ) = Self::create_ui_tab();
         notebook.append_page(&ui_page, Some(&Label::new(Some("Interface"))));
 
         // === Clients Tab ===
@@ -175,6 +197,9 @@ impl SettingsDialog {
             let logging_enabled_switch_clone = logging_enabled_switch.clone();
             let log_dir_entry_clone = log_dir_entry.clone();
             let retention_spin_clone = retention_spin.clone();
+            let log_activity_check_clone = log_activity_check.clone();
+            let log_input_check_clone = log_input_check.clone();
+            let log_output_check_clone = log_output_check.clone();
             let secret_backend_dropdown_clone = secret_backend_dropdown.clone();
             let enable_fallback_clone = enable_fallback.clone();
             let kdbx_path_entry_clone = kdbx_path_entry.clone();
@@ -186,6 +211,9 @@ impl SettingsDialog {
             let remember_geometry_clone = remember_geometry.clone();
             let enable_tray_icon_clone = enable_tray_icon.clone();
             let minimize_to_tray_clone = minimize_to_tray.clone();
+            let session_restore_enabled_clone = session_restore_enabled.clone();
+            let prompt_on_restore_clone = prompt_on_restore.clone();
+            let max_age_spin_clone = max_age_spin.clone();
             let settings_clone = settings.clone();
 
             save_btn.connect_clicked(move |_| {
@@ -203,6 +231,9 @@ impl SettingsDialog {
                     enabled: logging_enabled_switch_clone.is_active(),
                     log_directory: PathBuf::from(log_dir_entry_clone.text().to_string()),
                     retention_days: retention_spin_clone.value() as u32,
+                    log_activity: log_activity_check_clone.is_active(),
+                    log_input: log_input_check_clone.is_active(),
+                    log_output: log_output_check_clone.is_active(),
                 };
 
                 // Map dropdown index to backend type
@@ -265,6 +296,15 @@ impl SettingsDialog {
                     kdbx_use_key_file: kdbx_use_key_file_check_clone.is_active(),
                 };
 
+                // SpinButton value is constrained by adjustment to valid u32 range
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                let session_restore = rustconn_core::config::SessionRestoreSettings {
+                    enabled: session_restore_enabled_clone.is_active(),
+                    prompt_on_restore: prompt_on_restore_clone.is_active(),
+                    max_age_hours: max_age_spin_clone.value() as u32,
+                    saved_sessions: existing.ui.session_restore.saved_sessions.clone(),
+                };
+
                 let ui = UiSettings {
                     remember_window_geometry: remember_geometry_clone.is_active(),
                     window_width: existing.ui.window_width,
@@ -273,7 +313,7 @@ impl SettingsDialog {
                     enable_tray_icon: enable_tray_icon_clone.is_active(),
                     minimize_to_tray: minimize_to_tray_clone.is_active(),
                     expanded_groups: existing.ui.expanded_groups.clone(),
-                    session_restore: existing.ui.session_restore.clone(),
+                    session_restore,
                 };
 
                 let new_settings = AppSettings {
@@ -306,6 +346,9 @@ impl SettingsDialog {
             log_dir_entry,
             retention_spin,
             open_logs_button,
+            log_activity_check,
+            log_input_check,
+            log_output_check,
             secret_backend_dropdown,
             enable_fallback,
             kdbx_path_entry,
@@ -321,6 +364,9 @@ impl SettingsDialog {
             remember_geometry,
             enable_tray_icon,
             minimize_to_tray,
+            session_restore_enabled,
+            prompt_on_restore,
+            max_age_spin,
             ssh_agent_status_label,
             ssh_agent_socket_label,
             ssh_agent_start_button,
@@ -396,7 +442,17 @@ impl SettingsDialog {
         (frame, font_family_entry, font_size_spin, scrollback_spin)
     }
 
-    fn create_logging_tab() -> (Frame, Switch, Entry, SpinButton, Button) {
+    #[allow(clippy::type_complexity)]
+    fn create_logging_tab() -> (
+        Frame,
+        Switch,
+        Entry,
+        SpinButton,
+        Button,
+        CheckButton,
+        CheckButton,
+        CheckButton,
+    ) {
         let vbox = GtkBox::new(Orientation::Vertical, 12);
         vbox.set_margin_top(12);
         vbox.set_margin_bottom(12);
@@ -406,7 +462,7 @@ impl SettingsDialog {
         // Enable logging switch row (similar to KeePass)
         let enable_row = GtkBox::new(Orientation::Horizontal, 12);
         let enable_label = Label::builder()
-            .label("Session Logging")
+            .label("Persist logs")
             .halign(gtk4::Align::Start)
             .hexpand(true)
             .build();
@@ -414,6 +470,39 @@ impl SettingsDialog {
         enable_row.append(&enable_label);
         enable_row.append(&logging_enabled_switch);
         vbox.append(&enable_row);
+
+        // Logging mode checkboxes
+        let mode_label = Label::builder()
+            .label("Log content:")
+            .halign(gtk4::Align::Start)
+            .margin_top(8)
+            .css_classes(["dim-label"])
+            .build();
+        vbox.append(&mode_label);
+
+        let mode_box = GtkBox::new(Orientation::Vertical, 4);
+        mode_box.set_margin_start(12);
+
+        let log_activity_check = CheckButton::builder()
+            .label("Activity (change counts)")
+            .active(true)
+            .sensitive(false)
+            .build();
+        let log_input_check = CheckButton::builder()
+            .label("User input (commands)")
+            .active(false)
+            .sensitive(false)
+            .build();
+        let log_output_check = CheckButton::builder()
+            .label("Terminal output (transcript)")
+            .active(false)
+            .sensitive(false)
+            .build();
+
+        mode_box.append(&log_activity_check);
+        mode_box.append(&log_input_check);
+        mode_box.append(&log_output_check);
+        vbox.append(&mode_box);
 
         let grid = Grid::builder()
             .row_spacing(8)
@@ -496,10 +585,16 @@ impl SettingsDialog {
         let dir_entry_clone = log_dir_entry.clone();
         let retention_clone = retention_spin.clone();
         let open_logs_btn_clone = open_logs_btn.clone();
+        let log_activity_clone = log_activity_check.clone();
+        let log_input_clone = log_input_check.clone();
+        let log_output_clone = log_output_check.clone();
         logging_enabled_switch.connect_state_set(move |_, state| {
             dir_entry_clone.set_sensitive(state);
             retention_clone.set_sensitive(state);
             open_logs_btn_clone.set_sensitive(state);
+            log_activity_clone.set_sensitive(state);
+            log_input_clone.set_sensitive(state);
+            log_output_clone.set_sensitive(state);
             gtk4::glib::Propagation::Proceed
         });
 
@@ -516,6 +611,9 @@ impl SettingsDialog {
             log_dir_entry,
             retention_spin,
             open_logs_btn,
+            log_activity_check,
+            log_input_check,
+            log_output_check,
         )
     }
 
@@ -1071,7 +1169,15 @@ impl SettingsDialog {
         );
     }
 
-    fn create_ui_tab() -> (Frame, CheckButton, CheckButton, CheckButton) {
+    fn create_ui_tab() -> (
+        Frame,
+        CheckButton,
+        CheckButton,
+        CheckButton,
+        CheckButton,
+        CheckButton,
+        SpinButton,
+    ) {
         let vbox = GtkBox::new(Orientation::Vertical, 12);
         vbox.set_margin_top(12);
         vbox.set_margin_bottom(12);
@@ -1133,6 +1239,70 @@ impl SettingsDialog {
             .build();
         vbox.append(&tray_note);
 
+        // Session restore settings section
+        let restore_label = Label::builder()
+            .label("<b>Session Restore</b>")
+            .use_markup(true)
+            .halign(gtk4::Align::Start)
+            .margin_top(12)
+            .build();
+        vbox.append(&restore_label);
+
+        let session_restore_enabled = CheckButton::builder()
+            .label("Restore sessions on startup")
+            .active(false)
+            .margin_start(12)
+            .build();
+        vbox.append(&session_restore_enabled);
+
+        let prompt_on_restore = CheckButton::builder()
+            .label("Ask before restoring sessions")
+            .active(true)
+            .margin_start(12)
+            .sensitive(false)
+            .build();
+        vbox.append(&prompt_on_restore);
+
+        // Max age setting
+        let age_box = GtkBox::new(Orientation::Horizontal, 6);
+        age_box.set_margin_start(12);
+
+        let age_label = Label::builder()
+            .label("Maximum session age (hours, 0 = no limit):")
+            .halign(gtk4::Align::Start)
+            .build();
+        age_box.append(&age_label);
+
+        let max_age_adj = gtk4::Adjustment::new(24.0, 0.0, 168.0, 1.0, 6.0, 0.0);
+        let max_age_spin = SpinButton::builder()
+            .adjustment(&max_age_adj)
+            .climb_rate(1.0)
+            .digits(0)
+            .sensitive(false)
+            .build();
+        age_box.append(&max_age_spin);
+
+        vbox.append(&age_box);
+
+        // Connect session restore enabled to control other widgets
+        let prompt_clone = prompt_on_restore.clone();
+        let max_age_clone = max_age_spin.clone();
+        session_restore_enabled.connect_toggled(move |check| {
+            let active = check.is_active();
+            prompt_clone.set_sensitive(active);
+            max_age_clone.set_sensitive(active);
+        });
+
+        let restore_note = Label::builder()
+            .label("<small>Sessions are saved when the application closes and restored on next startup.</small>")
+            .use_markup(true)
+            .halign(gtk4::Align::Start)
+            .margin_start(12)
+            .margin_top(6)
+            .css_classes(["dim-label"])
+            .build();
+        vbox.append(&restore_note);
+
         let frame = Frame::builder()
             .label("Interface Settings")
             .child(&vbox)
@@ -1140,7 +1310,15 @@ impl SettingsDialog {
             .valign(gtk4::Align::Start)
             .build();
 
-        (frame, remember_geometry, enable_tray_icon, minimize_to_tray)
+        (
+            frame,
+            remember_geometry,
+            enable_tray_icon,
+            minimize_to_tray,
+            session_restore_enabled,
+            prompt_on_restore,
+            max_age_spin,
+        )
     }
 
     /// Creates the Clients tab showing detected protocol clients
@@ -1968,6 +2146,17 @@ impl SettingsDialog {
         self.retention_spin.set_sensitive(settings.logging.enabled);
         self.open_logs_button
             .set_sensitive(settings.logging.enabled);
+        // Logging mode checkboxes
+        self.log_activity_check
+            .set_active(settings.logging.log_activity);
+        self.log_input_check.set_active(settings.logging.log_input);
+        self.log_output_check
+            .set_active(settings.logging.log_output);
+        self.log_activity_check
+            .set_sensitive(settings.logging.enabled);
+        self.log_input_check.set_sensitive(settings.logging.enabled);
+        self.log_output_check
+            .set_sensitive(settings.logging.enabled);
 
         // Secret settings - using dropdown index
         let backend_idx = match settings.secrets.preferred_backend {
@@ -2049,6 +2238,18 @@ impl SettingsDialog {
         // Update sensitivity of minimize_to_tray based on enable_tray_icon
         self.minimize_to_tray
             .set_sensitive(settings.ui.enable_tray_icon);
+
+        // Session restore settings
+        self.session_restore_enabled
+            .set_active(settings.ui.session_restore.enabled);
+        self.prompt_on_restore
+            .set_active(settings.ui.session_restore.prompt_on_restore);
+        self.max_age_spin
+            .set_value(f64::from(settings.ui.session_restore.max_age_hours));
+        // Update sensitivity based on enabled state
+        let restore_enabled = settings.ui.session_restore.enabled;
+        self.prompt_on_restore.set_sensitive(restore_enabled);
+        self.max_age_spin.set_sensitive(restore_enabled);
     }
 
     /// Runs the dialog and calls the callback with the result

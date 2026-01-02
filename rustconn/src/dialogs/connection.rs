@@ -5632,6 +5632,9 @@ impl ConnectionDialogData<'_> {
             timestamp_format,
             max_size_mb,
             retention_days,
+            log_activity: true,
+            log_input: false,
+            log_output: false,
         })
     }
 

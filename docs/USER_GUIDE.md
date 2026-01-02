@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-RustConn is a modern connection manager for Linux, designed to manage SSH, RDP, VNC, SPICE, and Zero Trust remote connections through a GTK4-based GUI with Wayland-native support. It supports custom console-based connections and integrates with secret managers (KeePassXC, libsecret). Import/export from Asbru-CM, Remmina, SSH config, and Ansible inventory.
+RustConn is a modern connection manager for Linux, designed to manage SSH, RDP, VNC, SPICE, and Zero Trust remote connections through a GTK4-based GUI with Wayland-native support. It supports custom console-based connections and integrates with secret managers (KeePassXC, libsecret). Import/export from Asbru-CM, Remmina, SSH config, Ansible inventory, and Royal TS.
 
 ## Table of Contents
 
@@ -314,6 +314,8 @@ Templates are connection presets that can be applied to new connections.
 - Remmina profiles
 - Asbru-CM configuration
 - Ansible inventory (INI/YAML)
+- Royal TS (.rtsz XML)
+- RustConn Native (.rcn)
 
 ### Export Configuration
 
@@ -323,6 +325,14 @@ Templates are connection presets that can be applied to new connections.
 1. Click export button in sidebar, or
 2. Press **Ctrl+Shift+E**, or
 3. Menu → "Export..."
+
+**Supported formats:**
+- SSH Config
+- Remmina profiles
+- Asbru-CM configuration
+- Ansible inventory
+- Royal TS (.rtsz XML)
+- RustConn Native (.rcn)
 
 ---
 

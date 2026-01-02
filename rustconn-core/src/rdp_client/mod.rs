@@ -48,6 +48,8 @@ mod client;
 #[cfg(feature = "rdp-embedded")]
 pub mod clipboard;
 mod config;
+#[cfg(feature = "rdp-embedded")]
+pub mod dir_watcher;
 mod error;
 mod event;
 pub mod input;

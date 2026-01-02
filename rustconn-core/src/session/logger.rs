@@ -56,6 +56,7 @@ pub type LogResult<T> = std::result::Result<T, LogError>;
 /// Defines how session output should be logged, including file paths,
 /// timestamp formatting, and retention policies.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(clippy::struct_excessive_bools)] // Logging modes are independent boolean flags
 pub struct LogConfig {
     /// Whether logging is enabled
     pub enabled: bool,
@@ -67,6 +68,12 @@ pub struct LogConfig {
     pub max_size_mb: u32,
     /// Number of days to retain log files (0 = no limit)
     pub retention_days: u32,
+    /// Log terminal activity (change counts) - default mode
+    pub log_activity: bool,
+    /// Log user input (commands typed)
+    pub log_input: bool,
+    /// Log full terminal output (transcript)
+    pub log_output: bool,
 }
 
 impl Default for LogConfig {
@@ -79,6 +86,9 @@ impl Default for LogConfig {
             timestamp_format: String::from("%Y-%m-%d %H:%M:%S"),
             max_size_mb: 10,
             retention_days: 30,
+            log_activity: true,
+            log_input: false,
+            log_output: false,
         }
     }
 }
@@ -122,6 +132,27 @@ impl LogConfig {
         self
     }
 
+    /// Sets whether to log terminal activity (change counts)
+    #[must_use]
+    pub const fn with_log_activity(mut self, enabled: bool) -> Self {
+        self.log_activity = enabled;
+        self
+    }
+
+    /// Sets whether to log user input (commands)
+    #[must_use]
+    pub const fn with_log_input(mut self, enabled: bool) -> Self {
+        self.log_input = enabled;
+        self
+    }
+
+    /// Sets whether to log full terminal output (transcript)
+    #[must_use]
+    pub const fn with_log_output(mut self, enabled: bool) -> Self {
+        self.log_output = enabled;
+        self
+    }
+
     /// Validates the configuration
     ///
     /// # Errors
@@ -144,12 +175,15 @@ impl serde::Serialize for LogConfig {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut state = serializer.serialize_struct("LogConfig", 5)?;
+        let mut state = serializer.serialize_struct("LogConfig", 8)?;
         state.serialize_field("enabled", &self.enabled)?;
         state.serialize_field("path_template", &self.path_template)?;
         state.serialize_field("timestamp_format", &self.timestamp_format)?;
         state.serialize_field("max_size_mb", &self.max_size_mb)?;
         state.serialize_field("retention_days", &self.retention_days)?;
+        state.serialize_field("log_activity", &self.log_activity)?;
+        state.serialize_field("log_input", &self.log_input)?;
+        state.serialize_field("log_output", &self.log_output)?;
         state.end()
     }
 }
@@ -160,12 +194,23 @@ impl<'de> serde::Deserialize<'de> for LogConfig {
         D: serde::Deserializer<'de>,
     {
         #[derive(serde::Deserialize)]
+        #[allow(clippy::struct_excessive_bools)]
         struct LogConfigHelper {
             enabled: bool,
             path_template: String,
             timestamp_format: String,
             max_size_mb: u32,
             retention_days: u32,
+            #[serde(default = "default_log_activity")]
+            log_activity: bool,
+            #[serde(default)]
+            log_input: bool,
+            #[serde(default)]
+            log_output: bool,
+        }
+
+        fn default_log_activity() -> bool {
+            true
         }
 
         let helper = LogConfigHelper::deserialize(deserializer)?;
@@ -175,6 +220,9 @@ impl<'de> serde::Deserialize<'de> for LogConfig {
             timestamp_format: helper.timestamp_format,
             max_size_mb: helper.max_size_mb,
             retention_days: helper.retention_days,
+            log_activity: helper.log_activity,
+            log_input: helper.log_input,
+            log_output: helper.log_output,
         })
     }
 }

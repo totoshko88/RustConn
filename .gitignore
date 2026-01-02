@@ -49,3 +49,6 @@ coverage/
 
 # Logs
 *.log
+
+# Internal planning
+ROADMAP.md
