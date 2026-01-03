@@ -192,12 +192,12 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
     ];
 
     for tip in tips {
-        let tip_label = Label::builder()
+        let tip_item = Label::builder()
             .label(tip)
             .halign(gtk4::Align::Start)
             .wrap(true)
             .build();
-        tips_box.append(&tip_label);
+        tips_box.append(&tip_item);
     }
 
     content.append(&tips_box);
