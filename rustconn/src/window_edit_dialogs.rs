@@ -302,7 +302,7 @@ pub fn rename_selected_item(
         })
         .transient_for(window)
         .modal(true)
-        .default_width(350)
+        .default_width(750)
         .build();
 
     let header = gtk4::HeaderBar::new();
@@ -454,7 +454,7 @@ pub fn show_edit_group_dialog(
         .title("Edit Group")
         .transient_for(window)
         .modal(true)
-        .default_width(300)
+        .default_width(750)
         .build();
 
     let header = gtk4::HeaderBar::new();
