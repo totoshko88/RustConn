@@ -1,21 +1,23 @@
 # RustConn User Guide
 
-RustConn is a modern connection manager for Linux, designed to manage SSH, RDP, VNC, SPICE, and Zero Trust remote connections through a GTK4-based GUI with Wayland-native support. It supports custom console-based connections and integrates with secret managers (KeePassXC, libsecret). Import/export from Asbru-CM, Remmina, SSH config, Ansible inventory, and Royal TS.
+RustConn is a modern connection manager for Linux, designed to manage SSH, RDP, VNC, SPICE, and Zero Trust remote connections through a GTK4/libadwaita GUI with Wayland-native support.
 
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
-2. [Connections](#connections)
-3. [Groups](#groups)
-4. [Documents](#documents)
+2. [Main Interface](#main-interface)
+3. [Connections](#connections)
+4. [Groups](#groups)
 5. [Sessions](#sessions)
-6. [Snippets](#snippets)
-7. [Templates](#templates)
-8. [Import/Export](#importexport)
-9. [Settings](#settings)
-10. [Keyboard Shortcuts](#keyboard-shortcuts)
-11. [Performance Features](#performance-features)
-12. [Tracing and Debugging](#tracing-and-debugging)
+6. [Templates](#templates)
+7. [Snippets](#snippets)
+8. [Clusters](#clusters)
+9. [Import/Export](#importexport)
+10. [Tools](#tools)
+11. [Settings](#settings)
+12. [Keyboard Shortcuts](#keyboard-shortcuts)
+13. [CLI Usage](#cli-usage)
+14. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -23,223 +25,198 @@ RustConn is a modern connection manager for Linux, designed to manage SSH, RDP, 
 
 ### Installation
 
+**Flatpak (recommended):**
 ```bash
-# Install dependencies (Ubuntu/Debian)
-sudo apt install libgtk-4-dev libvte-2.91-gtk4-dev libdbus-1-dev pkg-config
-
-# Build and run
-cargo run -p rustconn --release
+flatpak install io.github.totoshko88.RustConn
 ```
 
-### Main Interface
+**Debian/Ubuntu:**
+```bash
+sudo dpkg -i rustconn_0.5.5_amd64.deb
+sudo apt-get install -f
+```
+
+**AppImage:**
+```bash
+chmod +x RustConn-0.5.5-x86_64.AppImage
+./RustConn-0.5.5-x86_64.AppImage
+```
+
+**From source:**
+```bash
+sudo apt install libgtk-4-dev libvte-2.91-gtk4-dev libadwaita-1-dev libdbus-1-dev pkg-config
+cargo build --release -p rustconn
+```
+
+---
+
+## Main Interface
 
 The main window consists of:
-- **Header Bar** - Application menu, search, and actions
-- **Sidebar** (left) - Connection tree with groups
-- **Terminal Area** (right) - Active SSH sessions in tabs
+
+- **Header Bar** — Application menu, search field, and action buttons
+- **Sidebar** (left) — Connection tree with groups, sorted alphabetically
+- **Session Area** (right) — Active sessions in tabs (SSH terminals, embedded RDP/VNC)
+- **Toast Overlay** — Non-blocking notifications for operations
+
+### Color Scheme
+
+Switch between System, Light, and Dark themes in Settings → Appearance.
 
 ---
 
 ## Connections
 
-Connections are the core entities in RustConn. Each connection stores all information needed to connect to a remote host.
-
 ### Create Connection
 
-**Purpose:** Add a new remote connection to your list.
-
-**How to:**
-1. Click **"+"** button in sidebar, or
-2. Press **Ctrl+N**, or
-3. Right-click in sidebar → "New Connection"
-
-**Fields:**
-- **Name** - Display name for the connection
-- **Host** - Hostname or IP address
-- **Port** - Connection port (default: 22 for SSH, 3389 for RDP, 5900 for VNC)
-- **Protocol** - SSH, RDP, or VNC
-- **Username** - Login username
-- **Authentication** - Password, SSH Key, or KeePass
+1. Click **"+"** button in header bar, or press **Ctrl+N**
+2. Fill in connection details across tabs:
+   - **Basic** — Name, host, port, protocol, group
+   - **Authentication** — Username, password, SSH key
+   - **Protocol-specific** — SSH options, RDP settings, VNC config
+   - **Automation** — Expect scripts, startup commands
+   - **Tags** — Organize with custom tags
+3. Click **Create**
 
 ### Edit Connection
 
-**Purpose:** Modify an existing connection's settings.
+- Double-click connection, or
+- Select → Press **Enter**, or
+- Right-click → **Edit**
 
-**How to:**
-1. Double-click connection in sidebar, or
-2. Select connection → Press **Enter**, or
-3. Right-click → "Edit"
+### Rename Connection
 
-### Delete Connection
+- Press **F2**, or
+- Right-click → **Rename**
 
-**Purpose:** Remove a connection from your list.
+### View Connection Details
 
-**How to:**
-1. Select connection → Press **Delete**, or
-2. Right-click → "Delete"
-
-**Note:** This action cannot be undone.
-
-### Duplicate Connection
-
-**Purpose:** Create a copy of an existing connection with a new ID.
-
-**How to:**
-1. Right-click connection → "Duplicate"
+- Right-click → **View Details** — Opens Info tab with all connection properties
 
 ### Connect
 
-**Purpose:** Establish a connection to the remote host.
+- Double-click connection, or
+- Right-click → **Connect**
 
-**How to:**
-1. Double-click connection, or
-2. Select connection → Press **Enter**, or
-3. Right-click → "Connect"
+**Session types by protocol:**
+- **SSH** — Embedded VTE terminal tab
+- **RDP** — Embedded IronRDP widget or external FreeRDP
+- **VNC** — Embedded vnc-rs widget or external TigerVNC
+- **SPICE** — Embedded spice-client or external remote-viewer
+- **ZeroTrust** — Provider-specific (AWS SSM, GCP IAP, Azure Bastion, etc.)
 
-**SSH:** Opens in embedded terminal tab
-**RDP/VNC:** Opens in external window
+### Quick Connect
+
+Press **Ctrl+K** for temporary connection without saving:
+- Supports SSH, RDP, VNC protocols
+- Can use templates to pre-fill settings
+- Connection is not saved to database
+
+### Duplicate / Copy / Paste
+
+- **Duplicate** — Right-click → Duplicate (creates copy with new ID)
+- **Copy** — Ctrl+C (copies connection to clipboard)
+- **Paste** — Ctrl+V (pastes copied connection)
+
+### Delete Connection
+
+- Select → Press **Delete**, or
+- Right-click → **Delete**
 
 ---
 
 ## Groups
 
-Groups help organize connections into logical categories.
+Groups organize connections into folders with hierarchical structure.
 
 ### Create Group
 
-**Purpose:** Create a folder to organize connections.
-
-**How to:**
-1. Click folder icon in sidebar, or
-2. Press **Ctrl+G**, or
-3. Right-click → "New Group"
+- Click folder icon in header bar, or
+- Press **Ctrl+G**, or
+- Right-click in sidebar → **New Group**
 
 ### Create Subgroup
 
-**Purpose:** Create a nested group inside another group.
-
-**How to:**
-1. Right-click on parent group → "New Subgroup"
+Right-click on parent group → **New Subgroup**
 
 ### Rename Group
 
-**Purpose:** Change the group's display name.
+- Press **F2**, or
+- Right-click → **Rename**
 
-**How to:**
-1. Right-click group → "Rename"
+### Move to Group
 
-### Delete Group
+- Drag and drop connection onto group, or
+- Right-click → **Move to Group** → Select destination
 
-**Purpose:** Remove a group and optionally its contents.
+### Sorting
 
-**How to:**
-1. Select group → Press **Delete**, or
-2. Right-click → "Delete"
-
-**Note:** Connections inside will be moved to root level.
-
-### Move Connection to Group
-
-**Purpose:** Organize a connection into a group.
-
-**How to:**
-1. Drag and drop connection onto group, or
-2. Right-click connection → "Move to Group" → Select group
-
----
-
-## Documents
-
-Documents are separate configuration files that can contain their own connections, groups, and variables.
-
-### New Document
-
-**Purpose:** Create a new empty document.
-
-**How to:**
-1. Menu → "New Document"
-
-### Open Document
-
-**Purpose:** Load an existing document file.
-
-**How to:**
-1. Menu → "Open Document..."
-2. Select `.rustconn` file
-
-### Save Document
-
-**Purpose:** Save current document to disk.
-
-**How to:**
-1. Menu → "Save Document", or
-2. Press **Ctrl+S**
-
-### Close Document
-
-**Purpose:** Close the current document.
-
-**How to:**
-1. Menu → "Close Document"
-
-**Note:** You will be prompted to save unsaved changes.
-
-### Export Document
-
-**Purpose:** Export document to a portable format.
-
-**How to:**
-1. Menu → "Export Document..."
-2. Choose format (JSON/YAML)
-3. Select destination
-
-### Import Document
-
-**Purpose:** Import connections from a document file.
-
-**How to:**
-1. Menu → "Import Document..."
-2. Select file to import
+Connections and groups are sorted alphabetically by default. Drag-and-drop to reorder manually.
 
 ---
 
 ## Sessions
 
-Sessions represent active connections to remote hosts.
+### Active Sessions
 
-### View Active Sessions
+Sessions appear as tabs in the session area. Each tab shows:
+- Connection name
+- Protocol icon
+- Connection status indicator (green = connected, red = disconnected)
+- Close button
 
-**Purpose:** See all currently active connections.
+### Session Management
 
-**How to:**
-1. Menu → "Sessions" → "Show Sessions", or
-2. Press **Ctrl+Shift+S**
+- **Switch tabs** — Click tab or Ctrl+Tab / Ctrl+Shift+Tab
+- **Close tab** — Click X or Ctrl+W
+- **Split view** — Ctrl+\\ (horizontal) or Ctrl+| (vertical)
 
-### Switch Between Sessions
+### Session Restore
 
-**Purpose:** Navigate between open terminal tabs.
+Enable in Settings → Session to restore sessions on startup:
+- Sessions are saved when app closes
+- Option to prompt before restoring
+- Configurable maximum session age
 
-**How to:**
-1. Click on tab, or
-2. Press **Ctrl+Tab** (next), **Ctrl+Shift+Tab** (previous), or
-3. Press **Ctrl+1-9** for specific tab
+### Session Logging
 
-### Close Session
+Enable in Settings → Logging:
+- **Activity logging** — Track session activity changes
+- **User input logging** — Capture commands typed
+- **Terminal output logging** — Record full transcript
 
-**Purpose:** Disconnect and close a session.
+### Connection History
 
-**How to:**
-1. Click **X** on tab, or
-2. Press **Ctrl+W** (closes current tab)
+View past connections in Tools → Connection History:
+- Search and filter history
+- Connect directly from history
+- View statistics (success rate, duration)
 
-### Split View
+---
 
-**Purpose:** View multiple terminals side by side.
+## Templates
 
-**How to:**
-1. Press **Ctrl+\\** for horizontal split
-2. Press **Ctrl+|** for vertical split
-3. Press **Ctrl+Shift+W** to close pane
+Templates are connection presets for quick creation.
+
+### Manage Templates
+
+Menu → Tools → **Manage Templates**
+
+### Create Template
+
+1. Open Manage Templates
+2. Click **Create Template**
+3. Configure protocol-specific settings
+4. Save template
+
+### Use Template
+
+- In Quick Connect dialog, select template from dropdown
+- Template fills protocol, host, port, username automatically
+
+### Create Connection from Template
+
+In Manage Templates, select template → Click **Create** to create a new connection based on it.
 
 ---
 
@@ -249,52 +226,37 @@ Snippets are reusable command templates with variable substitution.
 
 ### Create Snippet
 
-**Purpose:** Save a frequently used command.
+Menu → Tools → **Manage Snippets** → Create
 
-**How to:**
-1. Menu → "Snippets" → "New Snippet"
-2. Enter name and command
-3. Use `${variable}` for placeholders
+Variables use `${variable}` syntax:
+```bash
+ssh ${user}@${host} -p ${port}
+```
 
 ### Execute Snippet
 
-**Purpose:** Run a saved command in the current terminal.
-
-**How to:**
-1. Menu → "Snippets" → "Execute Snippet"
-2. Select snippet from list
-3. Fill in variable values if prompted
-
-### Manage Snippets
-
-**Purpose:** View, edit, or delete saved snippets.
-
-**How to:**
-1. Menu → "Snippets" → "Manage Snippets"
+1. Select active terminal session
+2. Menu → Tools → **Execute Snippet**
+3. Select snippet, fill variables
+4. Command is sent to terminal
 
 ---
 
-## Templates
+## Clusters
 
-Templates are connection presets that can be applied to new connections.
+Clusters allow executing commands on multiple connections simultaneously.
 
-### Create Template
+### Create Cluster
 
-**Purpose:** Save connection settings as a reusable template.
+Menu → Tools → **Manage Clusters** → Create
 
-**How to:**
-1. Menu → "Templates" → "Manage Templates"
-2. Click "New Template"
-3. Configure settings
+Select connections to include in the cluster.
 
-### Apply Template
+### Execute Cluster Command
 
-**Purpose:** Use a template when creating a new connection.
-
-**How to:**
-1. Create new connection
-2. Select template from dropdown
-3. Fields will be pre-populated
+1. Select cluster
+2. Enter command
+3. Command executes on all cluster members
 
 ---
 
@@ -302,12 +264,7 @@ Templates are connection presets that can be applied to new connections.
 
 ### Import Connections
 
-**Purpose:** Import connections from other applications.
-
-**How to:**
-1. Click import button in sidebar, or
-2. Press **Ctrl+I**, or
-3. Menu → "Import..."
+Press **Ctrl+I** or Menu → **Import**
 
 **Supported formats:**
 - SSH Config (`~/.ssh/config`)
@@ -317,14 +274,11 @@ Templates are connection presets that can be applied to new connections.
 - Royal TS (.rtsz XML)
 - RustConn Native (.rcn)
 
-### Export Configuration
+**Tip:** Double-click import source to start import immediately.
 
-**Purpose:** Export all connections to a file.
+### Export Connections
 
-**How to:**
-1. Click export button in sidebar, or
-2. Press **Ctrl+Shift+E**, or
-3. Menu → "Export..."
+Press **Ctrl+Shift+E** or Menu → **Export**
 
 **Supported formats:**
 - SSH Config
@@ -336,57 +290,101 @@ Templates are connection presets that can be applied to new connections.
 
 ---
 
+## Tools
+
+### Password Generator
+
+Menu → Tools → **Password Generator**
+
+Features:
+- Configurable length (4-128 characters)
+- Character sets: lowercase, uppercase, digits, special, extended
+- Exclude ambiguous characters (0, O, l, 1, I)
+- Real-time strength indicator with entropy calculation
+- Crack time estimation
+- Copy to clipboard
+
+**Security Tips** (shown in dialog):
+- Use 16+ characters for critical accounts
+- Never reuse passwords across services
+- Store in password manager, not plain text
+- Enable 2FA when available
+- Change passwords after breach reports
+
+### Wake-on-LAN
+
+Send magic packets to wake remote machines:
+- Configure MAC address in connection settings
+- Right-click connection → **Wake-on-LAN**
+
+### Connection Statistics
+
+Menu → Tools → **Connection Statistics**
+
+View success rates, connection durations, and usage patterns.
+
+---
+
 ## Settings
 
-### Terminal Settings
+Access via **Ctrl+,** or Menu → **Settings**
 
-- **Font Family** - Terminal font (default: Monospace)
-- **Font Size** - Font size in points
-- **Scrollback Lines** - Number of lines to keep in history
+### Appearance
 
-### Logging Settings
+- **Color Scheme** — System, Light, or Dark theme
+- **Remember Window Geometry** — Save size/position
 
-- **Enable Logging** - Record session output to files
-- **Log Directory** - Where to store log files
-- **Retention Days** - How long to keep logs
+### Terminal
 
-### Secret Settings
+- **Font Family** — Terminal font (default: Monospace)
+- **Font Size** — Size in points
+- **Scrollback Lines** — History buffer size
 
-- **Preferred Backend** - KeePassXC, KDBX File, or libsecret
-- **Enable Fallback** - Use libsecret if primary unavailable
-- **KeePass Integration** - Configure KDBX database path
+### Session
 
-### UI Settings
+- **Enable Session Restore** — Restore sessions on startup
+- **Prompt Before Restore** — Ask before restoring
+- **Maximum Session Age** — Hours to keep saved sessions
 
-- **Remember Geometry** - Save window size/position
-- **Enable Tray Icon** - Show icon in system tray
-- **Minimize to Tray** - Hide to tray instead of closing
+### Logging
+
+- **Enable Logging** — Record session output
+- **Log Directory** — Storage location
+- **Retention Days** — Auto-cleanup period
+- **Logging Modes** — Activity, user input, terminal output
+
+### Secrets
+
+- **Preferred Backend** — libsecret, KeePassXC, or KDBX file
+- **Enable Fallback** — Use libsecret if primary unavailable
+- **KDBX Path** — Path to KeePass database file
+- **KDBX Password/Key File** — Database credentials
+
+### Tray Icon
+
+- **Enable Tray Icon** — Show in system tray
+- **Minimize to Tray** — Hide instead of close
+- **Start Minimized** — Launch to tray
 
 ---
 
 ## Keyboard Shortcuts
 
-### Global
+Press **Ctrl+?** or **F1** to open searchable shortcuts dialog.
+
+### Connections
 
 | Shortcut | Action |
 |----------|--------|
 | Ctrl+N | New Connection |
 | Ctrl+G | New Group |
-| Ctrl+I | Import |
-| Ctrl+Shift+E | Export |
-| Ctrl+, | Settings |
-| Ctrl+Q | Quit |
-
-### Navigation
-
-| Shortcut | Action |
-|----------|--------|
-| Ctrl+F | Focus Search |
-| Ctrl+L | Focus Sidebar |
-| Ctrl+T | Focus Terminal |
-| Ctrl+Tab | Next Tab |
-| Ctrl+Shift+Tab | Previous Tab |
-| Ctrl+1-9 | Go to Tab N |
+| Ctrl+K | Quick Connect |
+| Enter | Connect / Edit |
+| F2 | Rename |
+| Delete | Delete |
+| Ctrl+C | Copy Connection |
+| Ctrl+V | Paste Connection |
+| Ctrl+D | Duplicate |
 
 ### Terminal
 
@@ -396,196 +394,69 @@ Templates are connection presets that can be applied to new connections.
 | Ctrl+Shift+V | Paste |
 | Ctrl+W | Close Tab |
 | Ctrl+\\ | Split Horizontal |
-| Ctrl+| | Split Vertical |
+| Ctrl+\| | Split Vertical |
 
-### Editing
+### Navigation
 
 | Shortcut | Action |
 |----------|--------|
-| Enter | Connect/Edit |
-| Delete | Delete Selected |
-| F2 | Rename |
+| Ctrl+F | Focus Search |
+| Ctrl+Tab | Next Tab |
+| Ctrl+Shift+Tab | Previous Tab |
+| Ctrl+1-9 | Go to Tab N |
+
+### Application
+
+| Shortcut | Action |
+|----------|--------|
+| Ctrl+I | Import |
+| Ctrl+Shift+E | Export |
+| Ctrl+, | Settings |
+| Ctrl+? / F1 | Keyboard Shortcuts |
+| Ctrl+Q | Quit |
 
 ---
 
-## Tray Icon
+## CLI Usage
 
-When enabled, RustConn shows an icon in the system tray with:
+RustConn includes a CLI tool for headless operations.
 
-- **Show/Hide Window** - Toggle main window visibility
-- **Recent Connections** - Quick access to recent connections
-- **Quick Connect** - Open quick connect dialog
-- **Active Sessions** - Shows count of active sessions
-- **Quit** - Exit application
-
----
-
-## Performance Features
-
-RustConn includes several performance optimizations designed to handle large connection databases efficiently.
-
-### Search Caching
-
-**Purpose:** Speed up repeated searches by caching results.
-
-**How it works:**
-- Search results are cached with a configurable TTL (default: 30 seconds)
-- Repeated searches return cached results instantly
-- Cache is automatically invalidated when connections are added, modified, or deleted
-- Maximum 100 cached queries to prevent unbounded memory growth
-
-**Behavior:**
-- First search: Executes full search, caches results
-- Repeated search within TTL: Returns cached results immediately
-- After TTL expires: Re-executes search, updates cache
-
-### Lazy Loading
-
-**Purpose:** Reduce startup time for large connection databases.
-
-**How it works:**
-- Only root-level groups and ungrouped connections load at startup
-- Child groups and connections load when you expand a parent group
-- Loaded children remain in memory for quick re-expansion
-- Search always searches all connections regardless of lazy loading state
-
-**Benefits:**
-- Faster application startup
-- Lower initial memory usage
-- Responsive UI even with thousands of connections
-
-### Virtual Scrolling
-
-**Purpose:** Maintain responsive scrolling with large connection lists.
-
-**How it works:**
-- Activates automatically when connection count exceeds 100
-- Only renders visible items plus a small buffer (5 items above/below)
-- Selection state is preserved when items scroll in and out of view
-- Targets 60fps (16ms) scroll updates
-
-**When to expect it:**
-- Sidebar with 100+ connections
-- Large search result sets
-
-### Debounced Search
-
-**Purpose:** Prevent excessive searches during rapid typing.
-
-**How it works:**
-- 100ms delay after you stop typing before search executes
-- Each keystroke resets the timer
-- Visual indicator shows when search is pending
-
-**Benefits:**
-- Smoother typing experience
-- Reduced CPU usage during search
-- More responsive UI
-
-### Embedded SPICE Sessions
-
-**Purpose:** View SPICE remote sessions directly in the application window.
-
-**Requirements:**
-- Requires `spice-client` crate (version 0.2.0) - included by default.
-
-**Behavior:**
-- SPICE connections open in embedded tabs (like SSH)
-- Keyboard and mouse events are forwarded to the SPICE server
-- If native connection fails, falls back to external `remote-viewer`
-
-### ZeroTrust Connections
-
-**Purpose:** Connect through cloud provider bastion services and zero-trust access platforms.
-
-**Supported Providers:**
-- **AWS SSM** - AWS Systems Manager Session Manager
-- **GCP IAP** - Google Cloud Identity-Aware Proxy
-- **Azure Bastion** - Azure Bastion service
-- **Azure SSH** - Azure SSH extension
-- **OCI Bastion** - Oracle Cloud Infrastructure Bastion
-- **Cloudflare Access** - Cloudflare Zero Trust
-- **Teleport** - Gravitational Teleport
-- **Tailscale SSH** - Tailscale SSH
-- **HashiCorp Boundary** - HashiCorp Boundary
-
-**How to:**
-1. Create new connection → Select "ZeroTrust" protocol
-2. Choose provider from dropdown
-3. Configure provider-specific settings (instance ID, project, etc.)
-4. Save and connect
-
-**Note:** Each provider requires its CLI tool to be installed and configured:
-- AWS: `aws` CLI with SSM plugin
-- GCP: `gcloud` CLI
-- Azure: `az` CLI
-- Tailscale: `tailscale` CLI
-
----
-
-## Tracing and Debugging
-
-RustConn uses structured logging via the `tracing` crate for diagnostics and performance profiling.
-
-### Enabling Tracing
-
-Set the `RUST_LOG` environment variable before starting RustConn:
+### Basic Commands
 
 ```bash
-# Basic info logging
-RUST_LOG=info cargo run -p rustconn
+# List connections
+rustconn-cli list
+rustconn-cli list --group "Production" --tag "web"
 
-# Debug logging
-RUST_LOG=debug cargo run -p rustconn
+# Connect
+rustconn-cli connect "My Server"
 
-# Trace logging (very verbose)
-RUST_LOG=trace cargo run -p rustconn
+# Import/Export
+rustconn-cli import ssh-config ~/.ssh/config
+rustconn-cli export native backup.rcn
 ```
 
-### Module-Specific Logging
-
-Target specific modules for focused debugging:
+### Snippet Commands
 
 ```bash
-# Search operations
-RUST_LOG=rustconn_core::search=debug cargo run -p rustconn
-
-# Connection management
-RUST_LOG=rustconn_core::connection=debug cargo run -p rustconn
-
-# Credential resolution
-RUST_LOG=rustconn_core::secret=debug cargo run -p rustconn
-
-# Import/export operations
-RUST_LOG=rustconn_core::import=debug,rustconn_core::export=debug cargo run -p rustconn
-
-# Multiple modules
-RUST_LOG=rustconn_core::search=trace,rustconn_core::connection=debug cargo run -p rustconn
+rustconn-cli snippet list
+rustconn-cli snippet show "Deploy Script"
+rustconn-cli snippet run "Deploy Script" --execute
 ```
 
-### Traced Operations
-
-The following operations include tracing spans with timing information:
-
-- **Connection establishment**: Protocol, host, port, duration
-- **Search execution**: Query, result count, cache hit/miss
-- **Import/export**: Format, item count, progress
-- **Credential resolution**: Backend used, success/failure
-
-### Performance Profiling
-
-For performance analysis, enable info-level logging to see operation timings:
+### Group Commands
 
 ```bash
-RUST_LOG=info cargo run -p rustconn 2>&1 | grep -E "(span|duration)"
+rustconn-cli group list
+rustconn-cli group create "New Group"
+rustconn-cli group add-connection "Group Name" "Connection Name"
 ```
 
-### Log Output
-
-Logs are written to stderr by default. Redirect to a file for analysis:
+### Wake-on-LAN
 
 ```bash
-RUST_LOG=debug cargo run -p rustconn 2> rustconn.log
+rustconn-cli wol AA:BB:CC:DD:EE:FF
+rustconn-cli wol "My Server"  # Uses connection's MAC
 ```
 
 ---
@@ -595,25 +466,53 @@ RUST_LOG=debug cargo run -p rustconn 2> rustconn.log
 ### Connection Fails
 
 1. Verify host and port are correct
-2. Check network connectivity
+2. Check network connectivity: `ping hostname`
 3. Verify credentials
 4. Check firewall settings
+5. For SSH: verify key permissions (`chmod 600 ~/.ssh/id_rsa`)
 
 ### KeePass Integration Not Working
 
 1. Ensure KeePassXC is installed
-2. Enable browser integration in KeePassXC
+2. Enable browser integration in KeePassXC settings
 3. Configure KDBX path in Settings → Secrets
+4. Provide database password or key file
 
-### Terminal Not Responding
+### Embedded RDP/VNC Not Working
 
-1. Check if connection is still active
-2. Try pressing Enter
-3. Close and reconnect
+1. Check if IronRDP/vnc-rs features are enabled
+2. For external mode, verify FreeRDP/TigerVNC is installed
+3. Check display server (Wayland vs X11) compatibility
+
+### Session Restore Not Working
+
+1. Verify enabled in Settings → Session
+2. Check maximum session age setting
+3. Ensure app was closed normally (not killed)
+
+### Tray Icon Not Appearing
+
+1. Verify system tray support (requires `ksni` feature)
+2. Check desktop environment compatibility
+3. Some DEs require extensions for tray support
+
+### Debug Logging
+
+Enable detailed logging for troubleshooting:
+
+```bash
+RUST_LOG=debug rustconn 2> rustconn.log
+```
+
+Module-specific logging:
+```bash
+RUST_LOG=rustconn_core::connection=debug rustconn
+RUST_LOG=rustconn_core::secret=debug rustconn
+```
 
 ---
 
 ## Support
 
-- GitHub Issues: Report bugs and feature requests
-- Documentation: See README.md for technical details
+- **GitHub Issues:** https://github.com/totoshko88/RustConn/issues
+- **Documentation:** See README.md and CHANGELOG.md
