@@ -170,6 +170,38 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
     grid.attach(&ambiguous_check, 2, 3, 1, 1);
 
     content.append(&grid);
+
+    // Security Tips section
+    let tips_label = Label::builder()
+        .label("Security Tips")
+        .halign(gtk4::Align::Start)
+        .css_classes(["heading"])
+        .margin_top(12)
+        .build();
+    content.append(&tips_label);
+
+    let tips_box = GtkBox::new(Orientation::Vertical, 4);
+    tips_box.add_css_class("dim-label");
+
+    let tips = [
+        "• Use 16+ characters for critical accounts (banking, email, admin)",
+        "• Never reuse passwords across different services",
+        "• Store passwords in a password manager, not in plain text files",
+        "• Enable two-factor authentication (2FA) when available",
+        "• Change passwords immediately if a service reports a breach",
+    ];
+
+    for tip in tips {
+        let tip_label = Label::builder()
+            .label(tip)
+            .halign(gtk4::Align::Start)
+            .wrap(true)
+            .build();
+        tips_box.append(&tip_label);
+    }
+
+    content.append(&tips_box);
+
     window.set_child(Some(&content));
 
     // State
