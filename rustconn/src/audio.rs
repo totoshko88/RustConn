@@ -11,6 +11,11 @@
 //! 3. `RdpClientEvent::AudioVolume` - adjusts playback volume
 //! 4. `RdpClientEvent::AudioClose` - stops playback
 
+// Mutex locks in audio callbacks are safe - they protect a simple buffer and
+// are held only briefly. Poisoning would indicate a panic in the audio thread
+// which is unrecoverable anyway.
+#![allow(clippy::unwrap_used)]
+
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Stream, StreamConfig};
 use rustconn_core::AudioFormatInfo;

@@ -3,6 +3,10 @@
 //! This module provides thread-safe FreeRDP wrapper and clipboard file transfer
 //! state management for RDP sessions.
 
+// Mutex locks in this module protect simple state flags and process handles.
+// They are held briefly and poisoning would indicate unrecoverable thread panic.
+#![allow(clippy::unwrap_used)]
+
 use crate::embedded_rdp_buffer::PixelBuffer;
 use crate::embedded_rdp_types::{
     EmbeddedRdpError, FreeRdpThreadState, RdpCommand, RdpConfig, RdpEvent,
@@ -315,7 +319,7 @@ impl FreeRdpThread {
                     }
                 }
                 Ok(RdpCommand::SendCtrlAltDel) => {
-                    eprintln!("[FreeRDP] Ctrl+Alt+Del requested");
+                    tracing::debug!("[FreeRDP] Ctrl+Alt+Del requested");
                 }
                 Ok(RdpCommand::Shutdown) => {
                     *state.lock().unwrap() = FreeRdpThreadState::ShuttingDown;
