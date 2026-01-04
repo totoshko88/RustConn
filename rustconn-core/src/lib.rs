@@ -49,6 +49,7 @@ pub mod snippet;
 pub mod spice_client;
 pub mod split_view;
 pub mod ssh_agent;
+pub mod terminal_themes;
 pub mod testing;
 pub mod tracing;
 pub mod variables;

@@ -403,6 +403,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         font_family,
                         font_size,
                         scrollback_lines,
+                        ..TerminalSettings::default()
                     },
                     logging: LoggingSettings {
                         enabled: logging_enabled,

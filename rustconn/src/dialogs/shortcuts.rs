@@ -83,6 +83,11 @@ const SHORTCUTS: &[ShortcutEntry] = &[
         category: "Terminal",
     },
     ShortcutEntry {
+        keys: "Ctrl+Shift+F",
+        description: "Search in terminal",
+        category: "Terminal",
+    },
+    ShortcutEntry {
         keys: "Ctrl+W",
         description: "Close current tab",
         category: "Terminal",

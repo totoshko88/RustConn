@@ -540,6 +540,17 @@ impl MainWindow {
         });
         window.add_action(&paste_action);
 
+        // Terminal search action
+        let terminal_search_action = gio::SimpleAction::new("terminal-search", None);
+        let notebook_clone = terminal_notebook.clone();
+        let window_weak = window.downgrade();
+        terminal_search_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                Self::show_terminal_search_dialog(&win, &notebook_clone);
+            }
+        });
+        window.add_action(&terminal_search_action);
+
         // Close tab action - closes the currently active session tab
         let close_tab_action = gio::SimpleAction::new("close-tab", None);
         let notebook_clone = terminal_notebook.clone();
@@ -952,17 +963,6 @@ impl MainWindow {
             }
         });
         window.add_action(&password_generator_action);
-
-        // Screenshot capture action
-        let capture_screenshot_action = gio::SimpleAction::new("capture-screenshot", None);
-        let window_weak = window.downgrade();
-        let notebook_clone = self.terminal_notebook.clone();
-        capture_screenshot_action.connect_activate(move |_, _| {
-            if let Some(win) = window_weak.upgrade() {
-                Self::capture_screenshot_simple(&win, &notebook_clone);
-            }
-        });
-        window.add_action(&capture_screenshot_action);
     }
 
     /// Sets up split view actions
@@ -1382,16 +1382,6 @@ impl MainWindow {
 
         let state_ref = state.borrow();
 
-        // Parse query and use SearchEngine for advanced search
-        let search_engine = SearchEngine::new();
-        let parsed_query = match SearchEngine::parse_query(query) {
-            Ok(q) => q,
-            Err(_) => {
-                // Fall back to simple text search on parse error
-                rustconn_core::search::SearchQuery::with_text(query)
-            }
-        };
-
         // Get connections and groups for search
         let connections: Vec<_> = state_ref
             .list_connections()
@@ -1401,32 +1391,74 @@ impl MainWindow {
             .collect();
         let groups: Vec<_> = state_ref.list_groups().iter().cloned().cloned().collect();
 
-        // Perform search with ranking
-        let results = search_engine.search(&parsed_query, &connections, &groups);
+        // Check for special multiple protocol filter syntax
+        if let Some(protocols_str) = query.strip_prefix("protocols:") {
+            // Handle multiple protocol filters with OR logic
+            let protocol_names: Vec<&str> = protocols_str.split(',').collect();
+            let mut filtered_connections = Vec::new();
 
-        // Display results sorted by relevance
-        for result in results {
-            if let Some(conn) = connections.iter().find(|c| c.id == result.connection_id) {
+            for conn in &connections {
                 let protocol = get_protocol_string(&conn.protocol_config);
+                let protocol_lower = protocol.to_lowercase();
 
-                // Create display name with relevance indicator
-                let display_name = if result.score >= 0.9 {
-                    format!("★★★ {}", conn.name) // High relevance
-                } else if result.score >= 0.7 {
-                    format!("★★ {}", conn.name) // Medium relevance
-                } else if result.score >= 0.5 {
-                    format!("★ {}", conn.name) // Low relevance
-                } else {
-                    conn.name.clone() // Very low relevance
-                };
+                // Check if connection matches any of the selected protocols
+                if protocol_names
+                    .iter()
+                    .any(|p| p.to_lowercase() == protocol_lower)
+                {
+                    filtered_connections.push(conn);
+                }
+            }
 
+            // Display filtered connections
+            for conn in filtered_connections {
+                let protocol = get_protocol_string(&conn.protocol_config);
                 let item = ConnectionItem::new_connection(
                     &conn.id.to_string(),
-                    &display_name,
+                    &conn.name,
                     &protocol,
                     &conn.host,
                 );
                 store.append(&item);
+            }
+        } else {
+            // Use standard search engine for other queries
+            let search_engine = SearchEngine::new();
+            let parsed_query = match SearchEngine::parse_query(query) {
+                Ok(q) => q,
+                Err(_) => {
+                    // Fall back to simple text search on parse error
+                    rustconn_core::search::SearchQuery::with_text(query)
+                }
+            };
+
+            // Perform search with ranking
+            let results = search_engine.search(&parsed_query, &connections, &groups);
+
+            // Display results sorted by relevance
+            for result in results {
+                if let Some(conn) = connections.iter().find(|c| c.id == result.connection_id) {
+                    let protocol = get_protocol_string(&conn.protocol_config);
+
+                    // Create display name with relevance indicator
+                    let display_name = if result.score >= 0.9 {
+                        format!("★★★ {}", conn.name) // High relevance
+                    } else if result.score >= 0.7 {
+                        format!("★★ {}", conn.name) // Medium relevance
+                    } else if result.score >= 0.5 {
+                        format!("★ {}", conn.name) // Low relevance
+                    } else {
+                        conn.name.clone() // Very low relevance
+                    };
+
+                    let item = ConnectionItem::new_connection(
+                        &conn.id.to_string(),
+                        &display_name,
+                        &protocol,
+                        &conn.host,
+                    );
+                    store.append(&item);
+                }
             }
         }
     }
@@ -2367,12 +2399,12 @@ impl MainWindow {
 
     /// Shows the settings dialog
     fn show_settings_dialog(window: &ApplicationWindow, state: SharedAppState) {
-        let dialog = SettingsDialog::new(Some(&window.clone().upcast()));
+        let mut dialog = SettingsDialog::new(Some(&window.clone().upcast()));
 
         // Load current settings
         {
             let state_ref = state.borrow();
-            dialog.set_settings(state_ref.settings());
+            dialog.set_settings(state_ref.settings().clone());
         }
 
         let window_clone = window.clone();
@@ -2384,7 +2416,7 @@ impl MainWindow {
                     .secrets
                     .kdbx_path
                     .as_ref()
-                    .is_some_and(|p| p.exists());
+                    .is_some_and(|p: &std::path::PathBuf| p.exists());
 
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
                     if let Err(e) = state_mut.update_settings(settings) {
@@ -2404,34 +2436,6 @@ impl MainWindow {
             }
         });
     }
-
-    /// Captures a screenshot of the active terminal or session (placeholder implementation)
-    fn capture_screenshot_simple(window: &ApplicationWindow, notebook: &SharedNotebook) {
-        // Check if there's an active session
-        let has_active_session = notebook.get_active_terminal().is_some() 
-            || notebook.notebook().current_page().is_some();
-
-        if !has_active_session {
-            crate::toast::show_toast_on_window(
-                window,
-                "No active session to capture",
-                crate::toast::ToastType::Warning,
-            );
-            return;
-        }
-
-        // For now, show a placeholder message
-        // TODO: Implement actual screenshot capture using GTK4 snapshot API
-        crate::toast::show_toast_on_window(
-            window,
-            "Screenshot capture feature coming soon",
-            crate::toast::ToastType::Info,
-        );
-        
-        tracing::info!("Screenshot capture requested - feature not yet implemented");
-    }
-
-    /// Captures a screenshot of the active terminal or session
 
     /// Edits the selected connection or group
     fn edit_selected_connection(
@@ -2774,5 +2778,14 @@ impl MainWindow {
                 alert.show(Some(&window_clone));
             }
         });
+    }
+
+    /// Shows the terminal search dialog
+    fn show_terminal_search_dialog(window: &ApplicationWindow, notebook: &SharedNotebook) {
+        if let Some(terminal) = notebook.get_active_terminal() {
+            let dialog =
+                crate::dialogs::TerminalSearchDialog::new(Some(&window.clone().upcast()), terminal);
+            dialog.show();
+        }
     }
 }

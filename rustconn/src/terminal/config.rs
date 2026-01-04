@@ -5,24 +5,50 @@
 use gtk4::gdk;
 use gtk4::glib;
 use gtk4::prelude::*;
+use rustconn_core::config::TerminalSettings;
+use rustconn_core::terminal_themes::{Color, TerminalTheme};
 use vte4::prelude::*;
-use vte4::Terminal;
+use vte4::{CursorBlinkMode, CursorShape, Terminal};
 
 /// Configures terminal appearance and behavior
 pub fn configure_terminal(terminal: &Terminal) {
+    configure_terminal_with_settings(terminal, &TerminalSettings::default());
+}
+
+/// Configures terminal with specific settings
+pub fn configure_terminal_with_settings(terminal: &Terminal, settings: &TerminalSettings) {
     // Cursor settings
-    terminal.set_cursor_blink_mode(vte4::CursorBlinkMode::On);
-    terminal.set_cursor_shape(vte4::CursorShape::Block);
+    let cursor_blink = match settings.cursor_blink.as_str() {
+        "On" => CursorBlinkMode::On,
+        "Off" => CursorBlinkMode::Off,
+        "System" => CursorBlinkMode::System,
+        _ => CursorBlinkMode::On,
+    };
+    terminal.set_cursor_blink_mode(cursor_blink);
+
+    let cursor_shape = match settings.cursor_shape.as_str() {
+        "Block" => CursorShape::Block,
+        "IBeam" => CursorShape::Ibeam,
+        "Underline" => CursorShape::Underline,
+        _ => CursorShape::Block,
+    };
+    terminal.set_cursor_shape(cursor_shape);
 
     // Scrolling behavior
-    terminal.set_scroll_on_output(false);
-    terminal.set_scroll_on_keystroke(true);
-    terminal.set_scrollback_lines(10000);
+    terminal.set_scroll_on_output(settings.scroll_on_output);
+    terminal.set_scroll_on_keystroke(settings.scroll_on_keystroke);
+    terminal.set_scrollback_lines(i64::from(settings.scrollback_lines));
 
     // Input handling
     terminal.set_input_enabled(true);
-    terminal.set_allow_hyperlink(true);
-    terminal.set_mouse_autohide(true);
+    terminal.set_allow_hyperlink(settings.allow_hyperlinks);
+    terminal.set_mouse_autohide(settings.mouse_autohide);
+
+    // Bold text - VTE4 doesn't have set_allow_bold, remove this setting
+    // terminal.set_allow_bold(settings.allow_bold);
+
+    // Bell
+    terminal.set_audible_bell(settings.audible_bell);
 
     // Keyboard shortcuts (Copy/Paste)
     setup_keyboard_shortcuts(terminal);
@@ -31,8 +57,8 @@ pub fn configure_terminal(terminal: &Terminal) {
     setup_context_menu(terminal);
 
     // Colors and font
-    setup_colors(terminal);
-    setup_font(terminal);
+    setup_colors_with_theme(terminal, &settings.color_theme);
+    setup_font_with_settings(terminal, settings);
 }
 
 /// Sets up keyboard shortcuts for copy/paste
@@ -110,38 +136,34 @@ fn setup_context_menu(terminal: &Terminal) {
     terminal.add_controller(click_controller);
 }
 
-/// Sets up terminal colors (dark theme)
-fn setup_colors(terminal: &Terminal) {
-    let bg_color = gdk::RGBA::new(0.1, 0.1, 0.1, 1.0);
-    let fg_color = gdk::RGBA::new(0.9, 0.9, 0.9, 1.0);
+/// Converts Color to gdk::RGBA
+fn color_to_rgba(color: &Color) -> gdk::RGBA {
+    gdk::RGBA::new(color.r, color.g, color.b, 1.0)
+}
+
+/// Sets up terminal colors with theme
+fn setup_colors_with_theme(terminal: &Terminal, theme_name: &str) {
+    let theme = TerminalTheme::by_name(theme_name).unwrap_or_else(TerminalTheme::dark_theme);
+
+    let bg_color = color_to_rgba(&theme.background);
+    let fg_color = color_to_rgba(&theme.foreground);
+    let cursor_color = color_to_rgba(&theme.cursor);
+
     terminal.set_color_background(&bg_color);
     terminal.set_color_foreground(&fg_color);
+    terminal.set_color_cursor(Some(&cursor_color));
 
-    // Set up palette colors (standard 16-color palette)
-    let palette: [gdk::RGBA; 16] = [
-        gdk::RGBA::new(0.0, 0.0, 0.0, 1.0), // Black
-        gdk::RGBA::new(0.8, 0.0, 0.0, 1.0), // Red
-        gdk::RGBA::new(0.0, 0.8, 0.0, 1.0), // Green
-        gdk::RGBA::new(0.8, 0.8, 0.0, 1.0), // Yellow
-        gdk::RGBA::new(0.0, 0.0, 0.8, 1.0), // Blue
-        gdk::RGBA::new(0.8, 0.0, 0.8, 1.0), // Magenta
-        gdk::RGBA::new(0.0, 0.8, 0.8, 1.0), // Cyan
-        gdk::RGBA::new(0.8, 0.8, 0.8, 1.0), // White
-        gdk::RGBA::new(0.4, 0.4, 0.4, 1.0), // Bright Black
-        gdk::RGBA::new(1.0, 0.0, 0.0, 1.0), // Bright Red
-        gdk::RGBA::new(0.0, 1.0, 0.0, 1.0), // Bright Green
-        gdk::RGBA::new(1.0, 1.0, 0.0, 1.0), // Bright Yellow
-        gdk::RGBA::new(0.0, 0.0, 1.0, 1.0), // Bright Blue
-        gdk::RGBA::new(1.0, 0.0, 1.0, 1.0), // Bright Magenta
-        gdk::RGBA::new(0.0, 1.0, 1.0, 1.0), // Bright Cyan
-        gdk::RGBA::new(1.0, 1.0, 1.0, 1.0), // Bright White
-    ];
-    let palette_refs: Vec<&gdk::RGBA> = palette.iter().collect();
+    // Set up palette colors
+    let palette_rgba: Vec<gdk::RGBA> = theme.palette.iter().map(color_to_rgba).collect();
+    let palette_refs: Vec<&gdk::RGBA> = palette_rgba.iter().collect();
     terminal.set_colors(Some(&fg_color), Some(&bg_color), &palette_refs);
 }
 
-/// Sets up terminal font
-fn setup_font(terminal: &Terminal) {
-    let font_desc = gtk4::pango::FontDescription::from_string("Monospace 11");
+/// Sets up terminal font with settings
+fn setup_font_with_settings(terminal: &Terminal, settings: &TerminalSettings) {
+    let font_desc = gtk4::pango::FontDescription::from_string(&format!(
+        "{} {}",
+        settings.font_family, settings.font_size
+    ));
     terminal.set_font(Some(&font_desc));
 }

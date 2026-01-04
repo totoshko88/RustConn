@@ -42,6 +42,8 @@ pub struct ConnectionDialog {
     /// Header bar save button - stored for potential future use
     /// (e.g., enabling/disabling based on validation state)
     save_button: Button,
+    /// Test connection button
+    test_button: Button,
     // Basic fields
     name_entry: Entry,
     description_view: TextView,
@@ -255,7 +257,7 @@ impl ConnectionDialog {
     #[must_use]
     #[allow(clippy::too_many_lines)]
     pub fn new(parent: Option<&Window>) -> Self {
-        let (window, save_btn) = Self::create_window_with_header(parent);
+        let (window, save_btn, test_btn) = Self::create_window_with_header(parent);
         let notebook = Self::create_notebook(&window);
 
         // === Basic Tab ===
@@ -605,6 +607,7 @@ impl ConnectionDialog {
         let result = Self {
             window,
             save_button: save_btn,
+            test_button: test_btn,
             name_entry,
             description_view,
             host_entry,
@@ -721,6 +724,97 @@ impl ConnectionDialog {
         // Wire up inline validation for required fields
         Self::setup_inline_validation_for(&result);
 
+        // Set up test button handler
+        let test_button = result.test_button.clone();
+        let name_entry = result.name_entry.clone();
+        let host_entry = result.host_entry.clone();
+        let port_spin = result.port_spin.clone();
+        let protocol_dropdown = result.protocol_dropdown.clone();
+        let _username_entry = result.username_entry.clone();
+        let window = result.window.clone();
+
+        test_button.connect_clicked(move |btn| {
+            // Validate required fields
+            let name = name_entry.text();
+            let host = host_entry.text();
+
+            if name.trim().is_empty() || host.trim().is_empty() {
+                let dialog = gtk4::AlertDialog::builder()
+                    .message("Connection Test Failed")
+                    .detail("Please fill in required fields (name and host)")
+                    .modal(true)
+                    .build();
+                dialog.show(Some(&window));
+                return;
+            }
+
+            // Create a minimal connection for testing
+            #[allow(clippy::cast_sign_loss)]
+            let port = port_spin.value().max(0.0) as u16;
+            let protocol_index = protocol_dropdown.selected();
+
+            let protocol_config = match protocol_index {
+                0 => rustconn_core::models::ProtocolConfig::Ssh(
+                    rustconn_core::models::SshConfig::default(),
+                ),
+                1 => rustconn_core::models::ProtocolConfig::Rdp(
+                    rustconn_core::models::RdpConfig::default(),
+                ),
+                2 => rustconn_core::models::ProtocolConfig::Vnc(
+                    rustconn_core::models::VncConfig::default(),
+                ),
+                3 => rustconn_core::models::ProtocolConfig::Spice(
+                    rustconn_core::models::SpiceConfig::default(),
+                ),
+                _ => rustconn_core::models::ProtocolConfig::Ssh(
+                    rustconn_core::models::SshConfig::default(),
+                ),
+            };
+
+            let connection = rustconn_core::models::Connection::new(
+                name.to_string(),
+                host.to_string(),
+                port,
+                protocol_config,
+            );
+
+            // Show testing status
+            btn.set_sensitive(false);
+            btn.set_label("Testing...");
+
+            // Perform the test asynchronously
+            let connection_clone = connection.clone();
+            let test_button_clone = btn.clone();
+            let window_clone = window.clone();
+
+            gtk4::glib::spawn_future_local(async move {
+                let tester = rustconn_core::testing::ConnectionTester::new();
+                let result = tester.test_connection(&connection_clone).await;
+
+                // Update UI on main thread
+                test_button_clone.set_sensitive(true);
+                test_button_clone.set_label("Test");
+
+                if result.is_success() {
+                    let latency = result.latency_ms.unwrap_or(0);
+                    let dialog = gtk4::AlertDialog::builder()
+                        .message("Connection Test Successful")
+                        .detail(&format!("Connection successful! Latency: {}ms", latency))
+                        .modal(true)
+                        .build();
+                    dialog.show(Some(&window_clone));
+                } else {
+                    let error = result.error.unwrap_or_else(|| "Unknown error".to_string());
+                    let dialog = gtk4::AlertDialog::builder()
+                        .message("Connection Test Failed")
+                        .detail(&error)
+                        .modal(true)
+                        .build();
+                    dialog.show(Some(&window_clone));
+                }
+            });
+        });
+
         result
     }
 
@@ -766,7 +860,7 @@ impl ConnectionDialog {
     }
 
     /// Creates the main window with header bar containing Save button
-    fn create_window_with_header(parent: Option<&Window>) -> (Window, Button) {
+    fn create_window_with_header(parent: Option<&Window>) -> (Window, Button, Button) {
         let window = Window::builder()
             .title("New Connection")
             .modal(true)
@@ -778,16 +872,21 @@ impl ConnectionDialog {
             window.set_transient_for(Some(p));
         }
 
-        // Create header bar with Close/Create buttons (GNOME HIG)
+        // Create header bar with Close/Test/Create buttons (GNOME HIG)
         let header = HeaderBar::new();
         header.set_show_title_buttons(false);
         let close_btn = Button::builder().label("Close").build();
+        let test_btn = Button::builder()
+            .label("Test")
+            .tooltip_text("Test connection")
+            .build();
         let save_btn = Button::builder()
             .label("Create")
             .css_classes(["suggested-action"])
             .build();
         header.pack_start(&close_btn);
         header.pack_end(&save_btn);
+        header.pack_end(&test_btn);
         window.set_titlebar(Some(&header));
         window.set_default_widget(Some(&save_btn));
 
@@ -797,7 +896,7 @@ impl ConnectionDialog {
             window_clone.close();
         });
 
-        (window, save_btn)
+        (window, save_btn, test_btn)
     }
 
     /// Creates the notebook widget and adds it to the window

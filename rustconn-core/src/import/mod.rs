@@ -13,6 +13,7 @@
 mod ansible;
 mod asbru;
 pub mod batch;
+mod rdm;
 mod remmina;
 mod royalts;
 mod ssh_config;
@@ -24,6 +25,7 @@ pub use batch::{
     BatchCancelHandle, BatchImportResult, BatchImporter, BATCH_IMPORT_THRESHOLD,
     DEFAULT_IMPORT_BATCH_SIZE,
 };
+pub use rdm::RdmImporter;
 pub use remmina::RemminaImporter;
 pub use royalts::RoyalTsImporter;
 pub use ssh_config::SshConfigImporter;

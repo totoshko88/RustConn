@@ -74,6 +74,7 @@ spice-embedded = ["dep:spice-client"]
 proptest = { workspace = true }
 tempfile = { workspace = true }
 criterion = { version = "0.8", features = ["html_reports"] }
+zip = { version = "2.1", default-features = false, features = ["deflate"] }
 
 [[bench]]
 name = "search_bench"

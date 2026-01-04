@@ -300,6 +300,19 @@ fn load_css_styles() {
             background-color: alpha(@accent_color, 0.8);
         }
 
+        /* Multiple filter active state - shows when 2+ filters are selected */
+        .filter-button.filter-active-multiple {
+            background-color: @accent_color;
+            color: @accent_fg_color;
+            border: 2px solid alpha(@accent_color, 0.6);
+            box-shadow: 0 0 0 1px alpha(@accent_color, 0.3);
+        }
+
+        .filter-button.filter-active-multiple:hover {
+            background-color: alpha(@accent_color, 0.9);
+            box-shadow: 0 0 0 2px alpha(@accent_color, 0.4);
+        }
+
         /* Floating controls styles - Requirement 5.2 */
         .floating-controls {
             background-color: alpha(@window_bg_color, 0.85);
@@ -557,6 +570,7 @@ fn setup_app_actions(
     // Terminal shortcuts
     app.set_accels_for_action("win.copy", &["<Control><Shift>c"]);
     app.set_accels_for_action("win.paste", &["<Control><Shift>v"]);
+    app.set_accels_for_action("win.terminal-search", &["<Control><Shift>f"]);
     app.set_accels_for_action("win.close-tab", &["<Control>w"]);
     app.set_accels_for_action("win.next-tab", &["<Control>Tab", "<Control>Page_Down"]);
     app.set_accels_for_action("win.prev-tab", &["<Control><Shift>Tab", "<Control>Page_Up"]);
@@ -577,7 +591,6 @@ fn setup_app_actions(
 
     // View shortcuts
     app.set_accels_for_action("win.toggle-fullscreen", &["F11"]);
-    app.set_accels_for_action("win.capture-screenshot", &["<Control><Shift>s"]);
 }
 
 /// Shows the about dialog

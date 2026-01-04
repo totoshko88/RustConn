@@ -32,6 +32,14 @@ pub struct SettingsDialog {
     font_family_entry: Entry,
     font_size_spin: SpinButton,
     scrollback_spin: SpinButton,
+    color_theme_dropdown: DropDown,
+    cursor_shape_dropdown: DropDown,
+    cursor_blink_dropdown: DropDown,
+    scroll_on_output_check: CheckButton,
+    scroll_on_keystroke_check: CheckButton,
+    allow_hyperlinks_check: CheckButton,
+    mouse_autohide_check: CheckButton,
+    audible_bell_check: CheckButton,
     // Logging settings
     logging_enabled_switch: Switch,
     log_dir_entry: Entry,
@@ -128,8 +136,20 @@ impl SettingsDialog {
         window.set_child(Some(&content));
 
         // === Terminal Tab ===
-        let (terminal_page, font_family_entry, font_size_spin, scrollback_spin) =
-            Self::create_terminal_tab();
+        let (
+            terminal_page,
+            font_family_entry,
+            font_size_spin,
+            scrollback_spin,
+            color_theme_dropdown,
+            cursor_shape_dropdown,
+            cursor_blink_dropdown,
+            scroll_on_output_check,
+            scroll_on_keystroke_check,
+            allow_hyperlinks_check,
+            mouse_autohide_check,
+            audible_bell_check,
+        ) = Self::create_terminal_tab();
         notebook.append_page(&terminal_page, Some(&Label::new(Some("Terminal"))));
 
         // === Logging Tab ===
@@ -203,6 +223,14 @@ impl SettingsDialog {
             let font_family_entry_clone = font_family_entry.clone();
             let font_size_spin_clone = font_size_spin.clone();
             let scrollback_spin_clone = scrollback_spin.clone();
+            let color_theme_dropdown_clone = color_theme_dropdown.clone();
+            let cursor_shape_dropdown_clone = cursor_shape_dropdown.clone();
+            let cursor_blink_dropdown_clone = cursor_blink_dropdown.clone();
+            let scroll_on_output_check_clone = scroll_on_output_check.clone();
+            let scroll_on_keystroke_check_clone = scroll_on_keystroke_check.clone();
+            let allow_hyperlinks_check_clone = allow_hyperlinks_check.clone();
+            let mouse_autohide_check_clone = mouse_autohide_check.clone();
+            let audible_bell_check_clone = audible_bell_check.clone();
             let logging_enabled_switch_clone = logging_enabled_switch.clone();
             let log_dir_entry_clone = log_dir_entry.clone();
             let retention_spin_clone = retention_spin.clone();
@@ -232,6 +260,26 @@ impl SettingsDialog {
                     font_family: font_family_entry_clone.text().to_string(),
                     font_size: font_size_spin_clone.value() as u32,
                     scrollback_lines: scrollback_spin_clone.value() as u32,
+                    color_theme: color_theme_dropdown_clone
+                        .selected_item()
+                        .and_then(|item| item.downcast::<gtk4::StringObject>().ok())
+                        .map(|obj| obj.string().to_string())
+                        .unwrap_or_else(|| "Dark".to_string()),
+                    cursor_shape: cursor_shape_dropdown_clone
+                        .selected_item()
+                        .and_then(|item| item.downcast::<gtk4::StringObject>().ok())
+                        .map(|obj| obj.string().to_string())
+                        .unwrap_or_else(|| "Block".to_string()),
+                    cursor_blink: cursor_blink_dropdown_clone
+                        .selected_item()
+                        .and_then(|item| item.downcast::<gtk4::StringObject>().ok())
+                        .map(|obj| obj.string().to_string())
+                        .unwrap_or_else(|| "On".to_string()),
+                    scroll_on_output: scroll_on_output_check_clone.is_active(),
+                    scroll_on_keystroke: scroll_on_keystroke_check_clone.is_active(),
+                    allow_hyperlinks: allow_hyperlinks_check_clone.is_active(),
+                    mouse_autohide: mouse_autohide_check_clone.is_active(),
+                    audible_bell: audible_bell_check_clone.is_active(),
                 };
 
                 // SpinButton values are constrained by their adjustments to valid u32 ranges
@@ -351,6 +399,14 @@ impl SettingsDialog {
             font_family_entry,
             font_size_spin,
             scrollback_spin,
+            color_theme_dropdown,
+            cursor_shape_dropdown,
+            cursor_blink_dropdown,
+            scroll_on_output_check,
+            scroll_on_keystroke_check,
+            allow_hyperlinks_check,
+            mouse_autohide_check,
+            audible_bell_check,
             logging_enabled_switch,
             log_dir_entry,
             retention_spin,
@@ -390,7 +446,29 @@ impl SettingsDialog {
         }
     }
 
-    fn create_terminal_tab() -> (Frame, Entry, SpinButton, SpinButton) {
+    #[allow(clippy::type_complexity)]
+    fn create_terminal_tab() -> (
+        Frame,
+        Entry,
+        SpinButton,
+        SpinButton,
+        DropDown,
+        DropDown,
+        DropDown,
+        CheckButton,
+        CheckButton,
+        CheckButton,
+        CheckButton,
+        CheckButton,
+    ) {
+        use rustconn_core::terminal_themes::TerminalTheme;
+
+        let scrolled = ScrolledWindow::builder()
+            .hscrollbar_policy(gtk4::PolicyType::Never)
+            .vscrollbar_policy(gtk4::PolicyType::Automatic)
+            .vexpand(true)
+            .build();
+
         let grid = Grid::builder()
             .row_spacing(8)
             .column_spacing(12)
@@ -401,6 +479,16 @@ impl SettingsDialog {
             .build();
 
         let mut row = 0;
+
+        // === Font Settings ===
+        let font_header = Label::builder()
+            .label("Font")
+            .halign(gtk4::Align::Start)
+            .css_classes(["heading"])
+            .margin_top(6)
+            .build();
+        grid.attach(&font_header, 0, row, 2, 1);
+        row += 1;
 
         // Font family
         let font_label = Label::builder()
@@ -427,6 +515,82 @@ impl SettingsDialog {
         grid.attach(&font_size_spin, 1, row, 1, 1);
         row += 1;
 
+        // === Color Theme ===
+        let color_header = Label::builder()
+            .label("Colors")
+            .halign(gtk4::Align::Start)
+            .css_classes(["heading"])
+            .margin_top(12)
+            .build();
+        grid.attach(&color_header, 0, row, 2, 1);
+        row += 1;
+
+        // Color theme dropdown
+        let theme_label = Label::builder()
+            .label("Color Theme:")
+            .halign(gtk4::Align::End)
+            .build();
+        let theme_names = TerminalTheme::theme_names();
+        let theme_list =
+            StringList::new(&theme_names.iter().map(String::as_str).collect::<Vec<_>>());
+        let color_theme_dropdown = DropDown::builder()
+            .model(&theme_list)
+            .selected(0) // Default to first theme (Dark)
+            .build();
+        grid.attach(&theme_label, 0, row, 1, 1);
+        grid.attach(&color_theme_dropdown, 1, row, 1, 1);
+        row += 1;
+
+        // === Cursor Settings ===
+        let cursor_header = Label::builder()
+            .label("Cursor")
+            .halign(gtk4::Align::Start)
+            .css_classes(["heading"])
+            .margin_top(12)
+            .build();
+        grid.attach(&cursor_header, 0, row, 2, 1);
+        row += 1;
+
+        // Cursor shape
+        let cursor_shape_label = Label::builder()
+            .label("Cursor Shape:")
+            .halign(gtk4::Align::End)
+            .build();
+        let cursor_shapes = ["Block", "IBeam", "Underline"];
+        let cursor_shape_list = StringList::new(&cursor_shapes);
+        let cursor_shape_dropdown = DropDown::builder()
+            .model(&cursor_shape_list)
+            .selected(0) // Default to Block
+            .build();
+        grid.attach(&cursor_shape_label, 0, row, 1, 1);
+        grid.attach(&cursor_shape_dropdown, 1, row, 1, 1);
+        row += 1;
+
+        // Cursor blink
+        let cursor_blink_label = Label::builder()
+            .label("Cursor Blink:")
+            .halign(gtk4::Align::End)
+            .build();
+        let cursor_blink_modes = ["On", "Off", "System"];
+        let cursor_blink_list = StringList::new(&cursor_blink_modes);
+        let cursor_blink_dropdown = DropDown::builder()
+            .model(&cursor_blink_list)
+            .selected(0) // Default to On
+            .build();
+        grid.attach(&cursor_blink_label, 0, row, 1, 1);
+        grid.attach(&cursor_blink_dropdown, 1, row, 1, 1);
+        row += 1;
+
+        // === Scrolling Settings ===
+        let scroll_header = Label::builder()
+            .label("Scrolling")
+            .halign(gtk4::Align::Start)
+            .css_classes(["heading"])
+            .margin_top(12)
+            .build();
+        grid.attach(&scroll_header, 0, row, 2, 1);
+        row += 1;
+
         // Scrollback lines
         let scrollback_label = Label::builder()
             .label("Scrollback Lines:")
@@ -440,15 +604,81 @@ impl SettingsDialog {
             .build();
         grid.attach(&scrollback_label, 0, row, 1, 1);
         grid.attach(&scrollback_spin, 1, row, 1, 1);
+        row += 1;
+
+        // Scroll on output
+        let scroll_on_output_check = CheckButton::builder()
+            .label("Scroll on output")
+            .active(false)
+            .build();
+        grid.attach(&scroll_on_output_check, 0, row, 2, 1);
+        row += 1;
+
+        // Scroll on keystroke
+        let scroll_on_keystroke_check = CheckButton::builder()
+            .label("Scroll on keystroke")
+            .active(true)
+            .build();
+        grid.attach(&scroll_on_keystroke_check, 0, row, 2, 1);
+        row += 1;
+
+        // === Behavior Settings ===
+        let behavior_header = Label::builder()
+            .label("Behavior")
+            .halign(gtk4::Align::Start)
+            .css_classes(["heading"])
+            .margin_top(12)
+            .build();
+        grid.attach(&behavior_header, 0, row, 2, 1);
+        row += 1;
+
+        // Allow hyperlinks
+        let allow_hyperlinks_check = CheckButton::builder()
+            .label("Allow hyperlinks")
+            .active(true)
+            .build();
+        grid.attach(&allow_hyperlinks_check, 0, row, 2, 1);
+        row += 1;
+
+        // Mouse autohide
+        let mouse_autohide_check = CheckButton::builder()
+            .label("Hide mouse when typing")
+            .active(true)
+            .build();
+        grid.attach(&mouse_autohide_check, 0, row, 2, 1);
+        row += 1;
+
+        // Audible bell
+        let audible_bell_check = CheckButton::builder()
+            .label("Audible bell")
+            .active(false)
+            .build();
+        grid.attach(&audible_bell_check, 0, row, 2, 1);
+
+        scrolled.set_child(Some(&grid));
 
         let frame = Frame::builder()
             .label("Terminal Settings")
-            .child(&grid)
+            .child(&scrolled)
             .margin_top(12)
-            .valign(gtk4::Align::Start)
+            .valign(gtk4::Align::Fill)
+            .vexpand(true)
             .build();
 
-        (frame, font_family_entry, font_size_spin, scrollback_spin)
+        (
+            frame,
+            font_family_entry,
+            font_size_spin,
+            scrollback_spin,
+            color_theme_dropdown,
+            cursor_shape_dropdown,
+            cursor_blink_dropdown,
+            scroll_on_output_check,
+            scroll_on_keystroke_check,
+            allow_hyperlinks_check,
+            mouse_autohide_check,
+            audible_bell_check,
+        )
     }
 
     #[allow(clippy::type_complexity)]
@@ -2203,6 +2433,45 @@ impl SettingsDialog {
             .set_value(f64::from(settings.terminal.font_size));
         self.scrollback_spin
             .set_value(f64::from(settings.terminal.scrollback_lines));
+
+        // Set color theme dropdown
+        let theme_names = rustconn_core::terminal_themes::TerminalTheme::theme_names();
+        if let Some(index) = theme_names
+            .iter()
+            .position(|name| name == &settings.terminal.color_theme)
+        {
+            self.color_theme_dropdown.set_selected(index as u32);
+        }
+
+        // Set cursor shape dropdown
+        let cursor_shapes = ["Block", "IBeam", "Underline"];
+        if let Some(index) = cursor_shapes
+            .iter()
+            .position(|&shape| shape == settings.terminal.cursor_shape)
+        {
+            self.cursor_shape_dropdown.set_selected(index as u32);
+        }
+
+        // Set cursor blink dropdown
+        let cursor_blink_modes = ["On", "Off", "System"];
+        if let Some(index) = cursor_blink_modes
+            .iter()
+            .position(|&mode| mode == settings.terminal.cursor_blink)
+        {
+            self.cursor_blink_dropdown.set_selected(index as u32);
+        }
+
+        // Set checkboxes
+        self.scroll_on_output_check
+            .set_active(settings.terminal.scroll_on_output);
+        self.scroll_on_keystroke_check
+            .set_active(settings.terminal.scroll_on_keystroke);
+        self.allow_hyperlinks_check
+            .set_active(settings.terminal.allow_hyperlinks);
+        self.mouse_autohide_check
+            .set_active(settings.terminal.mouse_autohide);
+        self.audible_bell_check
+            .set_active(settings.terminal.audible_bell);
 
         // Logging settings
         self.logging_enabled_switch

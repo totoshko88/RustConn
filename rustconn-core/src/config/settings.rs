@@ -33,6 +33,7 @@ pub struct AppSettings {
 
 /// Terminal-related settings
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[allow(clippy::struct_excessive_bools)] // Terminal settings are independent boolean flags
 pub struct TerminalSettings {
     /// Font family for terminal
     #[serde(default = "default_font_family")]
@@ -43,6 +44,30 @@ pub struct TerminalSettings {
     /// Scrollback buffer lines
     #[serde(default = "default_scrollback")]
     pub scrollback_lines: u32,
+    /// Color theme
+    #[serde(default = "default_color_theme")]
+    pub color_theme: String,
+    /// Cursor shape
+    #[serde(default = "default_cursor_shape")]
+    pub cursor_shape: String,
+    /// Cursor blink mode
+    #[serde(default = "default_cursor_blink")]
+    pub cursor_blink: String,
+    /// Scroll on output
+    #[serde(default = "default_scroll_on_output")]
+    pub scroll_on_output: bool,
+    /// Scroll on keystroke
+    #[serde(default = "default_scroll_on_keystroke")]
+    pub scroll_on_keystroke: bool,
+    /// Allow hyperlinks
+    #[serde(default = "default_allow_hyperlinks")]
+    pub allow_hyperlinks: bool,
+    /// Mouse autohide
+    #[serde(default = "default_mouse_autohide")]
+    pub mouse_autohide: bool,
+    /// Audible bell
+    #[serde(default = "default_audible_bell")]
+    pub audible_bell: bool,
 }
 
 fn default_font_family() -> String {
@@ -57,12 +82,52 @@ const fn default_scrollback() -> u32 {
     10000
 }
 
+fn default_color_theme() -> String {
+    "Dark".to_string()
+}
+
+fn default_cursor_shape() -> String {
+    "Block".to_string()
+}
+
+fn default_cursor_blink() -> String {
+    "On".to_string()
+}
+
+const fn default_scroll_on_output() -> bool {
+    false
+}
+
+const fn default_scroll_on_keystroke() -> bool {
+    true
+}
+
+const fn default_allow_hyperlinks() -> bool {
+    true
+}
+
+const fn default_mouse_autohide() -> bool {
+    true
+}
+
+const fn default_audible_bell() -> bool {
+    false
+}
+
 impl Default for TerminalSettings {
     fn default() -> Self {
         Self {
             font_family: default_font_family(),
             font_size: default_font_size(),
             scrollback_lines: default_scrollback(),
+            color_theme: default_color_theme(),
+            cursor_shape: default_cursor_shape(),
+            cursor_blink: default_cursor_blink(),
+            scroll_on_output: default_scroll_on_output(),
+            scroll_on_keystroke: default_scroll_on_keystroke(),
+            allow_hyperlinks: default_allow_hyperlinks(),
+            mouse_autohide: default_mouse_autohide(),
+            audible_bell: default_audible_bell(),
         }
     }
 }
