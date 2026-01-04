@@ -164,6 +164,11 @@ impl ConnectionSidebar {
         spice_filter.add_css_class("flat");
         spice_filter.add_css_class("filter-button");
 
+        let zerotrust_filter = Button::with_label("ZeroTrust");
+        zerotrust_filter.set_tooltip_text(Some("Filter ZeroTrust connections"));
+        zerotrust_filter.add_css_class("flat");
+        zerotrust_filter.add_css_class("filter-button");
+
         // Clear filter button
         let clear_filter = Button::from_icon_name("edit-clear-symbolic");
         clear_filter.set_tooltip_text(Some("Clear all filters"));
@@ -173,6 +178,7 @@ impl ConnectionSidebar {
         filter_box.append(&rdp_filter);
         filter_box.append(&vnc_filter);
         filter_box.append(&spice_filter);
+        filter_box.append(&zerotrust_filter);
         filter_box.append(&clear_filter);
 
         // Store filter buttons for later reference
@@ -189,6 +195,9 @@ impl ConnectionSidebar {
         protocol_filter_buttons
             .borrow_mut()
             .insert("SPICE".to_string(), spice_filter.clone());
+        protocol_filter_buttons
+            .borrow_mut()
+            .insert("ZeroTrust".to_string(), zerotrust_filter.clone());
 
         // Active protocol filters state
         let active_protocol_filters = Rc::new(RefCell::new(HashSet::new()));
@@ -242,6 +251,19 @@ impl ConnectionSidebar {
                 button,
                 &active_filters_spice,
                 &buttons_spice,
+                &search_entry_for_filter,
+            );
+        });
+
+        let search_entry_for_filter = search_entry.clone();
+        let active_filters_zerotrust = active_protocol_filters.clone();
+        let buttons_zerotrust = protocol_filter_buttons.clone();
+        zerotrust_filter.connect_clicked(move |button| {
+            Self::toggle_protocol_filter(
+                "ZeroTrust",
+                button,
+                &active_filters_zerotrust,
+                &buttons_zerotrust,
                 &search_entry_for_filter,
             );
         });
