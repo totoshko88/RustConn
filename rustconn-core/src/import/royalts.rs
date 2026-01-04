@@ -190,7 +190,7 @@ impl RoyalTsImporter {
                     current_field.clear();
                 }
                 Ok(Event::Text(e)) => {
-                    let text = e.unescape().unwrap_or_default().to_string();
+                    let text = std::str::from_utf8(&e).unwrap_or_default().to_string();
                     if text.is_empty() {
                         continue;
                     }

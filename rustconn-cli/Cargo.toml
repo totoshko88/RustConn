@@ -18,7 +18,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 uuid = { workspace = true }
 thiserror = { workspace = true }
-clap = { version = "4.5", features = ["derive"] }
+clap = { version = "4.5.23", features = ["derive"] }
 chrono = { workspace = true }
 
 [dev-dependencies]
