@@ -279,6 +279,27 @@ fn load_css_styles() {
             min-width: 0;
         }
 
+        /* Quick Filter button styles */
+        .filter-button {
+            min-width: 48px;
+            padding: 4px 8px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .filter-button:hover {
+            background-color: alpha(@theme_fg_color, 0.08);
+        }
+
+        .filter-button.suggested-action {
+            background-color: @accent_color;
+            color: @accent_fg_color;
+        }
+
+        .filter-button.suggested-action:hover {
+            background-color: alpha(@accent_color, 0.8);
+        }
+
         /* Floating controls styles - Requirement 5.2 */
         .floating-controls {
             background-color: alpha(@window_bg_color, 0.85);
