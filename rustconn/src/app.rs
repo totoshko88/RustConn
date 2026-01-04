@@ -574,6 +574,9 @@ fn setup_app_actions(
     app.set_accels_for_action("win.split-vertical", &["<Control><Shift>s"]);
     app.set_accels_for_action("win.close-pane", &["<Control><Shift>w"]);
     app.set_accels_for_action("win.focus-next-pane", &["<Control>grave"]); // Ctrl+`
+
+    // View shortcuts
+    app.set_accels_for_action("win.toggle-fullscreen", &["F11"]);
 }
 
 /// Shows the about dialog

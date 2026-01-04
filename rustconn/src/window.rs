@@ -644,6 +644,20 @@ impl MainWindow {
             }
         });
         window.add_action(&prev_tab_action);
+
+        // Toggle fullscreen action
+        let toggle_fullscreen_action = gio::SimpleAction::new("toggle-fullscreen", None);
+        let window_weak = window.downgrade();
+        toggle_fullscreen_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                if win.is_fullscreen() {
+                    win.unfullscreen();
+                } else {
+                    win.fullscreen();
+                }
+            }
+        });
+        window.add_action(&toggle_fullscreen_action);
     }
 
     /// Sets up group operations actions (select all, delete selected, etc.)
