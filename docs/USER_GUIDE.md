@@ -32,14 +32,14 @@ flatpak install io.github.totoshko88.RustConn
 
 **Debian/Ubuntu:**
 ```bash
-sudo dpkg -i rustconn_0.5.5_amd64.deb
+sudo dpkg -i rustconn_0.5.6_amd64.deb
 sudo apt-get install -f
 ```
 
 **AppImage:**
 ```bash
-chmod +x RustConn-0.5.5-x86_64.AppImage
-./RustConn-0.5.5-x86_64.AppImage
+chmod +x RustConn-0.5.6-x86_64.AppImage
+./RustConn-0.5.6-x86_64.AppImage
 ```
 
 **From source:**

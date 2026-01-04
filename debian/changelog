@@ -1,3 +1,12 @@
+rustconn (0.5.6-1) unstable; urgency=medium
+
+  * New upstream release
+  * Updated USER_GUIDE.md with complete v0.5.5+ feature documentation
+  * Unified dialog widths (Rename, Edit Group dialogs now 750px)
+  * Added Security Tips section to Password Generator dialog
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Sun, 04 Jan 2026 12:00:00 +0200
+
 rustconn (0.5.5-1) unstable; urgency=medium
 
   * New upstream release

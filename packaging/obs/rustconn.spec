@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.5.5
+Version:        0.5.6
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later

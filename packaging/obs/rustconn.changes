@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Sun Jan 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.5.6
+
+- Update to version 0.5.6
+  * Updated USER_GUIDE.md with complete v0.5.5+ feature documentation
+  * Unified dialog widths (Rename, Edit Group dialogs now 750px)
+  * Added Security Tips section to Password Generator dialog
+
+-------------------------------------------------------------------
 Sat Jan 03 2026 Anton Isaiev <totoshko88@gmail.com> - 0.5.5
 
 - Update to version 0.5.5
