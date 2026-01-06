@@ -89,6 +89,8 @@ pub struct ConnectionSidebar {
     active_protocol_filters: Rc<RefCell<HashSet<String>>>,
     /// Quick filter buttons for protocol filtering
     protocol_filter_buttons: Rc<RefCell<std::collections::HashMap<String, Button>>>,
+    /// KeePass button for showing integration status
+    keepass_button: Button,
 }
 
 impl ConnectionSidebar {
@@ -616,8 +618,8 @@ impl ConnectionSidebar {
 
         container.append(&overlay);
 
-        // Add buttons at the bottom
-        let button_box = Self::create_button_box();
+        // Add buttons at the bottom (with KeePass button reference)
+        let (button_box, keepass_button) = sidebar_ui::create_button_box_with_keepass();
         container.append(&button_box);
 
         // Create debouncer for search with 100ms delay
@@ -648,6 +650,7 @@ impl ConnectionSidebar {
             pre_search_state: Rc::new(RefCell::new(None)),
             active_protocol_filters,
             protocol_filter_buttons,
+            keepass_button,
         }
     }
 
@@ -675,11 +678,6 @@ impl ConnectionSidebar {
     /// Creates the bulk actions toolbar for group operations mode
     fn create_bulk_actions_bar() -> GtkBox {
         sidebar_ui::create_bulk_actions_bar()
-    }
-
-    /// Creates the button box at the bottom of the sidebar
-    fn create_button_box() -> GtkBox {
-        sidebar_ui::create_button_box()
     }
 
     /// Sets up a list item widget
@@ -2125,6 +2123,38 @@ impl ConnectionSidebar {
 
         // Restore state after refresh
         self.restore_state(&state);
+    }
+
+    /// Updates the KeePass button status based on integration state
+    ///
+    /// When KeePass integration is enabled and database exists, the button
+    /// appears active (suggested-action style). Otherwise it appears inactive (dim).
+    pub fn update_keepass_status(&self, enabled: bool, database_exists: bool) {
+        let is_active = enabled && database_exists;
+
+        if is_active {
+            self.keepass_button.remove_css_class("dim-label");
+            self.keepass_button.add_css_class("suggested-action");
+            self.keepass_button
+                .set_tooltip_text(Some("Open KeePass Database (Active)"));
+        } else {
+            self.keepass_button.remove_css_class("suggested-action");
+            self.keepass_button.add_css_class("dim-label");
+            if enabled {
+                self.keepass_button
+                    .set_tooltip_text(Some("KeePass Database Not Found"));
+            } else {
+                self.keepass_button
+                    .set_tooltip_text(Some("KeePass Integration Disabled"));
+            }
+        }
+    }
+
+    /// Returns the KeePass button widget
+    #[must_use]
+    #[allow(dead_code)] // Part of KeePass integration API
+    pub const fn keepass_button(&self) -> &Button {
+        &self.keepass_button
     }
 }
 

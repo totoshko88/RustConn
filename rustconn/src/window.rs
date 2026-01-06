@@ -165,6 +165,9 @@ impl MainWindow {
         // Load initial data
         main_window.load_connections();
 
+        // Initialize KeePass button status
+        main_window.update_keepass_button_status();
+
         // Connect signals
         main_window.connect_signals();
 
@@ -1403,6 +1406,27 @@ impl MainWindow {
 
         // Apply expanded state after populating
         self.sidebar.apply_expanded_groups(&expanded_groups);
+    }
+
+    /// Updates the KeePass button status in the sidebar based on current settings
+    fn update_keepass_button_status(&self) {
+        let state_ref = self.state.borrow();
+        let settings = state_ref.settings();
+        let enabled = settings.secrets.kdbx_enabled;
+        let database_exists = settings
+            .secrets
+            .kdbx_path
+            .as_ref()
+            .is_some_and(|p| p.exists());
+        drop(state_ref);
+
+        self.sidebar.update_keepass_status(enabled, database_exists);
+    }
+
+    /// Public method to refresh KeePass button status (called after settings change)
+    #[allow(dead_code)] // Part of KeePass integration API, called from settings dialog
+    pub fn refresh_keepass_status(&self) {
+        self.update_keepass_button_status();
     }
 
     /// Filters connections based on search query

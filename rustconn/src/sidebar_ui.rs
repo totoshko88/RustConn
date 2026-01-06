@@ -454,9 +454,9 @@ pub fn create_bulk_actions_bar() -> GtkBox {
     bar
 }
 
-/// Creates the button box at the bottom of the sidebar
+/// Creates the button box at the bottom of the sidebar with KeePass button reference
 #[must_use]
-pub fn create_button_box() -> GtkBox {
+pub fn create_button_box_with_keepass() -> (GtkBox, Button) {
     let button_box = GtkBox::new(Orientation::Horizontal, 6);
     button_box.set_margin_start(12);
     button_box.set_margin_end(12);
@@ -525,5 +525,15 @@ pub fn create_button_box() -> GtkBox {
     )]);
     button_box.append(&export_button);
 
-    button_box
+    // KeePass button - shows integration status
+    let keepass_button = Button::from_icon_name("dialog-password-symbolic");
+    keepass_button.set_tooltip_text(Some("Open KeePass Database"));
+    keepass_button.set_action_name(Some("win.open-keepass"));
+    keepass_button.add_css_class("keepass-button");
+    keepass_button.update_property(&[gtk4::accessible::Property::Label(
+        "Open KeePass database for credential management",
+    )]);
+    button_box.append(&keepass_button);
+
+    (button_box, keepass_button)
 }
