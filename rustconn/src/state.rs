@@ -350,25 +350,17 @@ impl AppState {
     ///
     /// Returns true if:
     /// - Credentials are verified (previously successful auth)
-    /// - AND we have cached credentials or can resolve them from backends
+    /// - AND we have cached credentials
+    ///
+    /// Note: This method only checks the in-memory cache to avoid blocking the UI.
+    /// KeePass credential resolution is done asynchronously when needed.
     pub fn can_skip_password_dialog(&self, connection_id: Uuid) -> bool {
         if !self.verification_manager.is_verified(connection_id) {
             return false;
         }
 
-        // Check if we have cached credentials
-        if self.password_cache.contains_key(&connection_id) {
-            return true;
-        }
-
-        // Check if we can resolve credentials from backends
-        if let Some(conn) = self.get_connection(connection_id) {
-            if let Ok(Some(_creds)) = self.resolve_credentials(conn) {
-                return true;
-            }
-        }
-
-        false
+        // Check if we have cached credentials (fast, non-blocking)
+        self.password_cache.contains_key(&connection_id)
     }
 
     // ========== Connection Operations ==========
@@ -915,12 +907,16 @@ impl AppState {
             && self.settings.secrets.kdbx_enabled
         {
             if let Some(ref kdbx_path) = self.settings.secrets.kdbx_path {
-                // Get the lookup key (connection name or host)
-                let lookup_key = if connection.name.trim().is_empty() {
+                // Get the lookup key with protocol for uniqueness
+                // Format: "name (protocol)" or "host (protocol)" if name is empty
+                let protocol = connection.protocol_config.protocol_type();
+                let protocol_str = protocol.as_str();
+                let base_name = if connection.name.trim().is_empty() {
                     connection.host.clone()
                 } else {
                     connection.name.clone()
                 };
+                let lookup_key = format!("{base_name} ({protocol_str})");
 
                 // Get credentials - password and key file can be used together
                 let db_password = self
@@ -944,6 +940,7 @@ impl AppState {
                     db_password,
                     key_file,
                     &lookup_key,
+                    None, // Protocol already included in lookup_key
                 ) {
                     Ok(Some(password)) => {
                         tracing::debug!("[resolve_credentials] Found password in KeePass");

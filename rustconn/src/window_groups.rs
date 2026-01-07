@@ -3,6 +3,7 @@
 //! This module contains methods for managing connection groups,
 //! including move to group dialog and related functionality.
 
+use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::{Button, HeaderBar, Label, Orientation};
 use std::rc::Rc;
@@ -172,8 +173,14 @@ pub fn show_move_to_group_dialog(
 
         match result {
             Ok(()) => {
-                MainWindow::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
-                window_clone.close();
+                // Defer sidebar reload to prevent UI freeze
+                let state = state_clone.clone();
+                let sidebar = sidebar_clone.clone();
+                let window = window_clone.clone();
+                glib::idle_add_local_once(move || {
+                    MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+                    window.close();
+                });
             }
             Err(e) => {
                 let alert = gtk4::AlertDialog::builder()

@@ -337,6 +337,23 @@ impl TerminalNotebook {
         }
     }
 
+    /// Gets the RDP session widget for a session
+    #[must_use]
+    pub fn get_rdp_widget(&self, session_id: Uuid) -> Option<Rc<EmbeddedRdpWidget>> {
+        let widgets = self.session_widgets.borrow();
+        match widgets.get(&session_id) {
+            Some(SessionWidgetStorage::EmbeddedRdp(widget)) => Some(widget.clone()),
+            _ => None,
+        }
+    }
+
+    /// Queues a redraw for an RDP widget
+    pub fn queue_rdp_redraw(&self, session_id: Uuid) {
+        if let Some(widget) = self.get_rdp_widget(session_id) {
+            widget.queue_draw();
+        }
+    }
+
     /// Gets the SPICE session widget for a session
     #[must_use]
     pub fn get_spice_widget(&self, session_id: Uuid) -> Option<Rc<EmbeddedSpiceWidget>> {
@@ -479,7 +496,22 @@ impl TerminalNotebook {
         let page_num = self.sessions.borrow_mut().remove(&session_id);
 
         self.terminals.borrow_mut().remove(&session_id);
-        self.session_widgets.borrow_mut().remove(&session_id);
+
+        // Disconnect embedded widgets before removing to stop polling loops
+        if let Some(widget_storage) = self.session_widgets.borrow_mut().remove(&session_id) {
+            match widget_storage {
+                SessionWidgetStorage::EmbeddedRdp(widget) => {
+                    widget.disconnect();
+                }
+                SessionWidgetStorage::EmbeddedSpice(widget) => {
+                    widget.disconnect();
+                }
+                SessionWidgetStorage::Vnc(widget) => {
+                    widget.disconnect();
+                }
+            }
+        }
+
         self.session_info.borrow_mut().remove(&session_id);
 
         self.tab_labels.borrow_mut().remove(&session_id);

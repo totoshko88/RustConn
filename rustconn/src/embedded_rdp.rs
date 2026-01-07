@@ -178,6 +178,11 @@ pub struct EmbeddedRdpWidget {
     /// File transfer complete callback
     #[cfg(feature = "rdp-embedded")]
     on_file_complete: Rc<RefCell<Option<Box<dyn Fn(usize, &str) + 'static>>>>,
+    /// Connection generation counter to track stale callbacks
+    /// Incremented on each connect() call to invalidate old polling loops
+    connection_generation: Rc<RefCell<u64>>,
+    /// Unique widget ID for debugging
+    widget_id: u64,
 }
 
 impl EmbeddedRdpWidget {
@@ -314,6 +319,12 @@ impl EmbeddedRdpWidget {
             on_file_progress: Rc::new(RefCell::new(None)),
             #[cfg(feature = "rdp-embedded")]
             on_file_complete: Rc::new(RefCell::new(None)),
+            connection_generation: Rc::new(RefCell::new(0)),
+            widget_id: {
+                use std::sync::atomic::{AtomicU64, Ordering};
+                static WIDGET_COUNTER: AtomicU64 = AtomicU64::new(1);
+                WIDGET_COUNTER.fetch_add(1, Ordering::SeqCst)
+            },
         };
 
         widget.setup_drawing();
@@ -1126,6 +1137,7 @@ impl EmbeddedRdpWidget {
         let on_error = self.on_error.clone();
         let toolbar = self.toolbar.clone();
         let status_label = self.status_label.clone();
+        let connection_generation = self.connection_generation.clone();
 
         self.drawing_area
             .connect_resize(move |area, new_width, new_height| {
@@ -1185,6 +1197,7 @@ impl EmbeddedRdpWidget {
                 let toolbar_clone = toolbar.clone();
                 let status_label_clone = status_label.clone();
                 let area_clone = area.clone();
+                let connection_generation_clone = connection_generation.clone();
                 let new_w = new_width;
                 let new_h = new_height;
 
@@ -1252,6 +1265,17 @@ impl EmbeddedRdpWidget {
                                 callback(RdpConnectionState::Connecting);
                             }
 
+                            // Increment generation for the new connection
+                            let generation = {
+                                let mut gen = connection_generation_clone.borrow_mut();
+                                *gen += 1;
+                                *gen
+                            };
+                            tracing::debug!(
+                                "[IronRDP] Resize reconnect starting generation {}",
+                                generation
+                            );
+
                             // Start new IronRDP connection
                             Self::reconnect_ironrdp(
                                 cfg,
@@ -1267,6 +1291,8 @@ impl EmbeddedRdpWidget {
                                 is_embedded_clone.clone(),
                                 is_ironrdp_clone.clone(),
                                 ironrdp_tx_clone.clone(),
+                                connection_generation_clone.clone(),
+                                generation,
                             );
                         }
                     },
@@ -1293,6 +1319,8 @@ impl EmbeddedRdpWidget {
         is_embedded: Rc<RefCell<bool>>,
         is_ironrdp: Rc<RefCell<bool>>,
         ironrdp_tx: Rc<RefCell<Option<std::sync::mpsc::Sender<RdpClientCommand>>>>,
+        connection_generation: Rc<RefCell<u64>>,
+        generation: u64,
     ) {
         use rustconn_core::{RdpClient, RdpClientConfig, RdpClientEvent};
 
@@ -1338,6 +1366,19 @@ impl EmbeddedRdpWidget {
         glib::timeout_add_local(
             std::time::Duration::from_millis(polling_interval),
             move || {
+                // Check if this polling loop is stale (a newer connection was started)
+                if *connection_generation.borrow() != generation {
+                    tracing::debug!(
+                        "[IronRDP] Reconnect polling loop generation {} is stale, stopping",
+                        generation
+                    );
+                    // Clean up client without firing callbacks
+                    if let Some(mut c) = client_ref.borrow_mut().take() {
+                        c.disconnect();
+                    }
+                    return glib::ControlFlow::Break;
+                }
+
                 // Check if we're still in embedded mode
                 if !*is_embedded.borrow() || !*is_ironrdp.borrow() {
                     // Clean up client
@@ -1376,15 +1417,27 @@ impl EmbeddedRdpWidget {
                                 needs_redraw = true;
                             }
                             RdpClientEvent::Disconnected => {
-                                tracing::debug!("[IronRDP] Disconnected after reconnect");
-                                *state.borrow_mut() = RdpConnectionState::Disconnected;
-                                toolbar.set_visible(false);
-                                status_label.set_visible(false);
-                                if let Some(ref callback) = *on_state_changed.borrow() {
-                                    callback(RdpConnectionState::Disconnected);
+                                tracing::debug!(
+                                    "[IronRDP] Disconnected after reconnect in generation {}",
+                                    generation
+                                );
+                                // Check if this polling loop is still current before firing callback
+                                if *connection_generation.borrow() == generation {
+                                    *state.borrow_mut() = RdpConnectionState::Disconnected;
+                                    toolbar.set_visible(false);
+                                    status_label.set_visible(false);
+                                    if let Some(ref callback) = *on_state_changed.borrow() {
+                                        callback(RdpConnectionState::Disconnected);
+                                    }
+                                    needs_redraw = true;
+                                    should_break = true;
+                                } else {
+                                    tracing::debug!(
+                                        "[IronRDP] Ignoring Disconnected from stale reconnect gen {}",
+                                        generation
+                                    );
+                                    should_break = true;
                                 }
-                                needs_redraw = true;
-                                should_break = true;
                             }
                             RdpClientEvent::Error(msg) => {
                                 tracing::error!("[IronRDP] Error after reconnect: {}", msg);
@@ -1497,6 +1550,11 @@ impl EmbeddedRdpWidget {
     #[must_use]
     pub const fn drawing_area(&self) -> &DrawingArea {
         &self.drawing_area
+    }
+
+    /// Queues a redraw of the drawing area
+    pub fn queue_draw(&self) {
+        self.drawing_area.queue_draw();
     }
 
     /// Returns the current connection state
@@ -1656,6 +1714,12 @@ impl EmbeddedRdpWidget {
     /// - Requirement 1.5: Fallback to FreeRDP external mode
     /// - Requirement 6.4: Automatic fallback to external mode on failure
     pub fn connect(&self, config: &RdpConfig) -> Result<(), EmbeddedRdpError> {
+        tracing::debug!(
+            "[EmbeddedRDP] connect() called on widget {}, current generation: {}",
+            self.widget_id,
+            *self.connection_generation.borrow()
+        );
+
         // Store configuration
         *self.config.borrow_mut() = Some(config.clone());
 
@@ -1730,6 +1794,17 @@ impl EmbeddedRdpWidget {
     #[cfg(feature = "rdp-embedded")]
     fn connect_ironrdp(&self, config: &RdpConfig) -> Result<(), EmbeddedRdpError> {
         use rustconn_core::{RdpClient, RdpClientConfig, RdpClientEvent};
+
+        // Increment connection generation to invalidate any stale polling loops
+        let generation = {
+            let mut gen = self.connection_generation.borrow_mut();
+            *gen += 1;
+            *gen
+        };
+        tracing::debug!(
+            "[EmbeddedRDP] Starting connection generation {}",
+            generation
+        );
 
         tracing::debug!(
             "[EmbeddedRDP] Attempting IronRDP connection to {}:{}",
@@ -1837,6 +1912,7 @@ impl EmbeddedRdpWidget {
         let status_label = self.status_label.clone();
         let on_file_progress = self.on_file_progress.clone();
         let on_file_complete = self.on_file_complete.clone();
+        let connection_generation = self.connection_generation.clone();
         #[cfg(feature = "rdp-audio")]
         let audio_player = self.audio_player.clone();
 
@@ -1848,6 +1924,20 @@ impl EmbeddedRdpWidget {
         glib::timeout_add_local(
             std::time::Duration::from_millis(polling_interval),
             move || {
+                // Check if this polling loop is stale (a newer connection was started)
+                if *connection_generation.borrow() != generation {
+                    tracing::debug!(
+                        "[IronRDP] Polling loop generation {} is stale (current: {}), stopping",
+                        generation,
+                        *connection_generation.borrow()
+                    );
+                    // Clean up client without firing callbacks
+                    if let Some(mut c) = client_ref.borrow_mut().take() {
+                        c.disconnect();
+                    }
+                    return glib::ControlFlow::Break;
+                }
+
                 // Check if we're still in embedded mode
                 if !*is_embedded.borrow() || !*is_ironrdp.borrow() {
                     // Clean up client
@@ -1883,14 +1973,26 @@ impl EmbeddedRdpWidget {
                                 needs_redraw = true;
                             }
                             RdpClientEvent::Disconnected => {
-                                tracing::debug!("[IronRDP] Disconnected");
-                                *state.borrow_mut() = RdpConnectionState::Disconnected;
-                                toolbar.set_visible(false);
-                                if let Some(ref callback) = *on_state_changed.borrow() {
-                                    callback(RdpConnectionState::Disconnected);
+                                tracing::debug!(
+                                    "[IronRDP] Disconnected event in generation {}",
+                                    generation
+                                );
+                                // Check if this polling loop is still current before firing callback
+                                if *connection_generation.borrow() == generation {
+                                    *state.borrow_mut() = RdpConnectionState::Disconnected;
+                                    toolbar.set_visible(false);
+                                    if let Some(ref callback) = *on_state_changed.borrow() {
+                                        callback(RdpConnectionState::Disconnected);
+                                    }
+                                    needs_redraw = true;
+                                    should_break = true;
+                                } else {
+                                    tracing::debug!(
+                                        "[IronRDP] Ignoring Disconnected from stale generation {}",
+                                        generation
+                                    );
+                                    should_break = true;
                                 }
-                                needs_redraw = true;
-                                should_break = true;
                             }
                             RdpClientEvent::Error(msg) => {
                                 tracing::error!("[IronRDP] Error: {}", msg);

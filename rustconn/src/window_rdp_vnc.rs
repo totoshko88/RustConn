@@ -9,7 +9,6 @@ use crate::sidebar::ConnectionSidebar;
 use crate::split_view::SplitTerminalView;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
-use crate::window::MainWindow;
 use gtk4::prelude::*;
 
 use std::rc::Rc;
@@ -34,34 +33,7 @@ pub fn start_rdp_with_password_dialog(
     connection_id: Uuid,
     window: &gtk4::Window,
 ) {
-    // Check if we can skip password dialog (verified credentials from KeePass)
-    let can_skip = {
-        let state_ref = state.borrow();
-        state_ref.can_skip_password_dialog(connection_id)
-    };
-
-    if can_skip {
-        // Try to resolve credentials from backends (KeePass)
-        let state_ref = state.borrow();
-        if let Ok(Some(creds)) = state_ref.resolve_credentials_for_connection(connection_id) {
-            if let (Some(username), Some(password)) = (&creds.username, creds.expose_password()) {
-                drop(state_ref);
-                start_rdp_session_with_credentials(
-                    &state,
-                    &notebook,
-                    &split_view,
-                    &sidebar,
-                    connection_id,
-                    username,
-                    password,
-                    "",
-                );
-                return;
-            }
-        }
-    }
-
-    // Check if we have cached credentials
+    // Check if we have cached credentials (fast, non-blocking)
     let cached = {
         let state_ref = state.borrow();
         state_ref.get_cached_credentials(connection_id).map(|c| {
@@ -492,38 +464,33 @@ pub fn start_vnc_with_password_dialog(
     connection_id: Uuid,
     window: &gtk4::Window,
 ) {
-    // Check if we can skip password dialog (verified credentials from KeePass)
-    let can_skip = {
+    // Check if we have cached credentials (fast, non-blocking)
+    let cached_password = {
         let state_ref = state.borrow();
-        state_ref.can_skip_password_dialog(connection_id)
+        state_ref.get_cached_credentials(connection_id).map(|c| {
+            use secrecy::ExposeSecret;
+            c.password.expose_secret().to_string()
+        })
     };
 
-    if can_skip {
-        // Try to resolve credentials from backends (KeePass)
-        let state_ref = state.borrow();
-        if let Ok(Some(creds)) = state_ref.resolve_credentials_for_connection(connection_id) {
-            if let Some(password) = creds.expose_password() {
-                drop(state_ref);
-                if let Ok(mut state_mut) = state.try_borrow_mut() {
-                    state_mut.cache_credentials(connection_id, "", password, "");
-                }
-                MainWindow::start_connection_with_split(
-                    &state,
-                    &notebook,
-                    &split_view,
-                    &sidebar,
-                    connection_id,
-                );
-                return;
-            }
-        }
+    if let Some(password) = cached_password {
+        // Use cached credentials directly
+        start_vnc_session_with_password(
+            &state,
+            &notebook,
+            &split_view,
+            &sidebar,
+            connection_id,
+            &password,
+        );
+        return;
     }
 
     // Get connection info for dialog
-    let conn_name = {
+    let (conn_name, conn_host) = {
         let state_ref = state.borrow();
         if let Some(conn) = state_ref.get_connection(connection_id) {
-            conn.name.clone()
+            (conn.name.clone(), conn.host.clone())
         } else {
             return;
         }
@@ -533,31 +500,78 @@ pub fn start_vnc_with_password_dialog(
     let dialog = PasswordDialog::new(Some(window));
     dialog.set_connection_name(&conn_name);
 
-    // Try to load password from KeePass
+    // Try to load password from KeePass asynchronously
     {
+        use gtk4::glib;
         use secrecy::ExposeSecret;
         let state_ref = state.borrow();
         let settings = state_ref.settings();
 
         if settings.secrets.kdbx_enabled {
-            if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
+            if let Some(kdbx_path) = settings.secrets.kdbx_path.clone() {
                 let db_password = settings
                     .secrets
                     .kdbx_password
                     .as_ref()
-                    .map(|p| p.expose_secret());
-                let key_file = settings.secrets.kdbx_key_file.as_deref();
+                    .map(|p| p.expose_secret().to_string());
+                let key_file = settings.secrets.kdbx_key_file.clone();
 
-                if let Ok(Some(password)) =
-                    rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
-                        kdbx_path,
-                        db_password,
-                        key_file,
-                        &conn_name,
-                    )
-                {
-                    dialog.set_password(&password);
-                }
+                // Build lookup key with protocol for uniqueness
+                // Format: "name (vnc)" or "host (vnc)" if name is empty
+                let base_name = if conn_name.trim().is_empty() {
+                    conn_host.clone()
+                } else {
+                    conn_name.clone()
+                };
+                let lookup_key = format!("{base_name} (vnc)");
+
+                // Get password entry for async callback
+                let password_entry = dialog.password_entry().clone();
+
+                // Drop state borrow before spawning
+                drop(state_ref);
+
+                // Run KeePass operation in background thread to avoid blocking UI
+                let (tx, rx) = std::sync::mpsc::channel();
+                std::thread::spawn(move || {
+                    let result =
+                        rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
+                            &kdbx_path,
+                            db_password.as_deref(),
+                            key_file.as_deref(),
+                            &lookup_key,
+                            None, // Protocol already included in lookup_key
+                        );
+                    let _ = tx.send(result);
+                });
+
+                // Poll for result using idle callback
+                glib::idle_add_local_once(move || {
+                    fn check_result(
+                        rx: std::sync::mpsc::Receiver<Result<Option<String>, String>>,
+                        password_entry: gtk4::Entry,
+                    ) {
+                        match rx.try_recv() {
+                            Ok(Ok(Some(password))) => {
+                                password_entry.set_text(&password);
+                            }
+                            Ok(Ok(None) | Err(_)) => {
+                                // No password found or error - just continue without pre-fill
+                            }
+                            Err(std::sync::mpsc::TryRecvError::Empty) => {
+                                // Not ready yet, schedule another check
+                                glib::timeout_add_local_once(
+                                    std::time::Duration::from_millis(50),
+                                    move || check_result(rx, password_entry),
+                                );
+                            }
+                            Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                                // Thread error - just continue without pre-fill
+                            }
+                        }
+                    }
+                    check_result(rx, password_entry);
+                });
             }
         }
     }

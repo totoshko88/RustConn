@@ -281,6 +281,14 @@ impl PasswordDialog {
         self.password_entry.set_text(password);
     }
 
+    /// Gets a reference to the password entry widget
+    ///
+    /// This is useful for async operations that need to update the password field.
+    #[must_use]
+    pub fn password_entry(&self) -> &Entry {
+        &self.password_entry
+    }
+
     /// Sets the connection name in the title
     pub fn set_connection_name(&self, name: &str) {
         self.window.set_title(Some(&format!("Connect to {name}")));

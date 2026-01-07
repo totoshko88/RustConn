@@ -594,9 +594,108 @@ impl MainWindow {
                 if let Some(conn_id) = connection_id {
                     sidebar_clone.decrement_session_count(&conn_id.to_string(), false);
                 }
+
+                // After closing, if there's an active session, ensure it's shown properly
+                if let Some(new_session_id) = notebook_clone.get_active_session_id() {
+                    if let Some(info) = notebook_clone.get_session_info(new_session_id) {
+                        if info.protocol == "ssh" || info.protocol.starts_with("zerotrust") {
+                            let _ = split_view_clone.show_session(new_session_id);
+                        } else if info.protocol == "rdp" {
+                            // Trigger redraw for RDP widget
+                            notebook_clone.queue_rdp_redraw(new_session_id);
+                        }
+                    }
+                }
             }
         });
         window.add_action(&close_tab_action);
+
+        // Close tab by ID action - closes a specific session tab without switching first
+        let close_tab_by_id_action =
+            gio::SimpleAction::new("close-tab-by-id", Some(glib::VariantTy::STRING));
+        let notebook_clone = terminal_notebook.clone();
+        let split_view_clone = self.split_view.clone();
+        let sidebar_clone = self.sidebar.clone();
+        close_tab_by_id_action.connect_activate(move |_, param| {
+            if let Some(param) = param {
+                if let Some(session_id_str) = param.get::<String>() {
+                    if let Ok(session_id) = uuid::Uuid::parse_str(&session_id_str) {
+                        // Get the currently active session BEFORE closing
+                        // This is important because page numbers will shift after removal
+                        let current_active_session = notebook_clone.get_active_session_id();
+                        let is_closing_active = current_active_session == Some(session_id);
+
+                        // Get connection ID before closing
+                        let connection_id = notebook_clone
+                            .get_session_info(session_id)
+                            .map(|info| info.connection_id);
+
+                        // Clear from split view first
+                        split_view_clone.clear_session_from_panes(session_id);
+                        // Then close the tab
+                        notebook_clone.close_tab(session_id);
+                        // Decrement session count in sidebar if we have a connection ID
+                        if let Some(conn_id) = connection_id {
+                            sidebar_clone.decrement_session_count(&conn_id.to_string(), false);
+                        }
+
+                        // Use idle_add to defer showing the correct session until after
+                        // GTK finishes processing the switch-page signal from remove_page
+                        let notebook_for_idle = notebook_clone.clone();
+                        let split_view_for_idle = split_view_clone.clone();
+                        if is_closing_active {
+                            // We closed the active tab, show whatever is now active
+                            glib::idle_add_local_once(move || {
+                                if let Some(new_session_id) =
+                                    notebook_for_idle.get_active_session_id()
+                                {
+                                    if let Some(info) =
+                                        notebook_for_idle.get_session_info(new_session_id)
+                                    {
+                                        if info.protocol == "ssh"
+                                            || info.protocol.starts_with("zerotrust")
+                                        {
+                                            let _ =
+                                                split_view_for_idle.show_session(new_session_id);
+                                        } else if info.protocol == "rdp" {
+                                            notebook_for_idle.queue_rdp_redraw(new_session_id);
+                                        }
+                                    }
+                                }
+                            });
+                        } else if let Some(active_id) = current_active_session {
+                            // We closed a non-active tab, re-show the previously active session
+                            // Defer to next main loop iteration to override switch-page effects
+                            glib::idle_add_local_once(move || {
+                                notebook_for_idle.switch_to_tab(active_id);
+                                if let Some(info) = notebook_for_idle.get_session_info(active_id) {
+                                    if info.protocol == "ssh"
+                                        || info.protocol.starts_with("zerotrust")
+                                    {
+                                        let _ = split_view_for_idle.show_session(active_id);
+                                    } else if info.protocol == "rdp" {
+                                        notebook_for_idle.queue_rdp_redraw(active_id);
+                                    } else if info.protocol == "vnc" {
+                                        if let Some(vnc_widget) =
+                                            notebook_for_idle.get_vnc_widget(active_id)
+                                        {
+                                            vnc_widget.widget().queue_draw();
+                                        }
+                                    } else if info.protocol == "spice" {
+                                        if let Some(spice_widget) =
+                                            notebook_for_idle.get_spice_widget(active_id)
+                                        {
+                                            spice_widget.widget().queue_draw();
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        });
+        window.add_action(&close_tab_by_id_action);
 
         // Local shell action
         let local_shell_action = gio::SimpleAction::new("local-shell", None);
@@ -1322,44 +1421,14 @@ impl MainWindow {
                     }
                 } else {
                     // Welcome tab (page 0) - show welcome content in focused pane
+                    // Show split view for Welcome (same as SSH)
+                    split_view_clone.widget().set_visible(true);
+                    split_view_clone.widget().set_vexpand(true);
+                    notebook_container.set_vexpand(false);
+                    notebook_widget.set_vexpand(false);
                     split_view_clone.show_welcome_in_focused_pane();
                 }
             });
-
-        // Connect close-tab action with split_view cleanup
-        let notebook_for_close = terminal_notebook;
-        let split_view_for_close = split_view;
-        let sidebar_for_close = sidebar.clone();
-        if let Some(action) = window.lookup_action("close-tab") {
-            if let Some(simple_action) = action.downcast_ref::<gio::SimpleAction>() {
-                simple_action.connect_activate(move |_, _| {
-                    if let Some(session_id) = notebook_for_close.get_active_session_id() {
-                        // Get connection ID to update sidebar
-                        if let Some(info) = notebook_for_close.get_session_info(session_id) {
-                            // Decrement session count - status changes only if no other sessions
-                            sidebar_for_close
-                                .decrement_session_count(&info.connection_id.to_string(), false);
-                        }
-
-                        // First clear from split view panes
-                        split_view_for_close.clear_session_from_panes(session_id);
-                        // Then close the tab
-                        notebook_for_close.close_tab(session_id);
-
-                        // After closing, if there's an active session, ensure it's shown in split view
-                        if let Some(new_session_id) = notebook_for_close.get_active_session_id() {
-                            if let Some(info) = notebook_for_close.get_session_info(new_session_id)
-                            {
-                                if info.protocol == "ssh" || info.protocol.starts_with("zerotrust")
-                                {
-                                    let _ = split_view_for_close.show_session(new_session_id);
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        }
 
         // Save window state on close and handle minimize to tray
         let state_clone = state.clone();

@@ -5571,9 +5571,9 @@ impl ConnectionDialog {
 
     /// Sets up the callback for the "Load from `KeePass`" button
     ///
-    /// The callback receives the connection name, host, and protocol, and should return the password.
-    /// If the password is found, it will be set in the password entry.
-    pub fn connect_load_from_keepass<F: Fn(&str, &str, &str) -> Option<String> + 'static>(
+    /// The callback receives the connection name, host, protocol, password entry, and window.
+    /// The callback should handle the async loading and update the password entry when done.
+    pub fn connect_load_from_keepass<F: Fn(&str, &str, &str, Entry, gtk4::Window) + 'static>(
         &self,
         callback: F,
     ) {
@@ -5606,15 +5606,13 @@ impl ConnectionDialog {
                 return;
             }
 
-            if let Some(password) = callback(&name, &host, protocol) {
-                password_entry.set_text(&password);
-            } else {
-                crate::toast::show_toast_on_window(
-                    &window,
-                    "No password found in KeePass for this connection",
-                    crate::toast::ToastType::Info,
-                );
-            }
+            callback(
+                &name,
+                &host,
+                protocol,
+                password_entry.clone(),
+                window.clone().into(),
+            );
         });
     }
 

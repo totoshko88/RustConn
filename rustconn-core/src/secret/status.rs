@@ -262,6 +262,9 @@ impl KeePassStatus {
     /// - The KDBX file path is invalid
     /// - The database password/key file is incorrect
     /// - The entry cannot be created
+    ///
+    /// Note: Entry names include protocol suffix to allow same name for different protocols.
+    /// Format: `RustConn/{entry_name} ({protocol})` where protocol is extracted from URL.
     pub fn save_password_to_kdbx(
         kdbx_path: &Path,
         db_password: Option<&str>,
@@ -285,6 +288,7 @@ impl KeePassStatus {
         Self::ensure_rustconn_group(kdbx_path, db_password, key_file, &cli_path)?;
 
         // Build the entry path under RustConn group
+        // entry_name should already include protocol suffix if needed (e.g., "server (rdp)")
         let entry_path = format!("RustConn/{entry_name}");
 
         // First, try to remove existing entry (ignore errors if it doesn't exist)
@@ -327,7 +331,7 @@ impl KeePassStatus {
         args.push(kdbx_path.display().to_string());
         args.push(entry_path);
 
-        eprintln!("DEBUG: Running keepassxc-cli with args: {args:?}");
+        tracing::debug!("Running keepassxc-cli with args: {args:?}");
 
         let mut child = Command::new(&cli_path)
             .args(&args)
@@ -368,8 +372,8 @@ impl KeePassStatus {
             .wait_with_output()
             .map_err(|e| format!("Failed to wait for keepassxc-cli: {e}"))?;
 
-        eprintln!(
-            "DEBUG: keepassxc-cli exit code: {:?}, stdout: '{}', stderr: '{}'",
+        tracing::debug!(
+            "keepassxc-cli exit code: {:?}, stdout: '{}', stderr: '{}'",
             output.status.code(),
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
@@ -415,7 +419,7 @@ impl KeePassStatus {
         use std::io::Write as IoWrite;
         use std::process::Stdio;
 
-        eprintln!("DEBUG: Checking if RustConn group exists...");
+        tracing::debug!("Checking if RustConn group exists...");
 
         // First check if RustConn group exists using ls command
         let mut args = vec!["ls".to_string(), "-q".to_string()];
@@ -453,19 +457,19 @@ impl KeePassStatus {
 
         // If group exists, we're done
         if let Some(ref o) = output {
-            eprintln!(
-                "DEBUG: ls RustConn result: exit={:?}, stdout='{}', stderr='{}'",
+            tracing::debug!(
+                "ls RustConn result: exit={:?}, stdout='{}', stderr='{}'",
                 o.status.code(),
                 String::from_utf8_lossy(&o.stdout),
                 String::from_utf8_lossy(&o.stderr)
             );
             if o.status.success() {
-                eprintln!("DEBUG: RustConn group exists");
+                tracing::debug!("RustConn group exists");
                 return Ok(());
             }
         }
 
-        eprintln!("DEBUG: RustConn group doesn't exist, creating...");
+        tracing::debug!("RustConn group doesn't exist, creating...");
 
         // Group doesn't exist, create it using mkdir command
         let mut args = vec!["mkdir".to_string(), "-q".to_string()];
@@ -503,27 +507,27 @@ impl KeePassStatus {
             .wait_with_output()
             .map_err(|e| format!("Failed to wait for keepassxc-cli: {e}"))?;
 
-        eprintln!(
-            "DEBUG: mkdir RustConn result: exit={:?}, stdout='{}', stderr='{}'",
+        tracing::debug!(
+            "mkdir RustConn result: exit={:?}, stdout='{}', stderr='{}'",
             output.status.code(),
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
 
         if output.status.success() {
-            eprintln!("DEBUG: RustConn group created successfully");
+            tracing::debug!("RustConn group created successfully");
             Ok(())
         } else {
             let stderr = String::from_utf8_lossy(&output.stderr);
             // If group already exists, that's fine
             if stderr.contains("already exists") {
-                eprintln!("DEBUG: RustConn group already exists");
+                tracing::debug!("RustConn group already exists");
                 Ok(())
             } else if stderr.contains("Invalid credentials") || stderr.contains("wrong password") {
                 Err("Invalid database password or key file".to_string())
             } else {
                 // Don't fail if we can't create the group - the add command will give a better error
-                eprintln!("DEBUG: Failed to create group, but continuing: {stderr}");
+                tracing::debug!("Failed to create group, but continuing: {stderr}");
                 Ok(())
             }
         }
@@ -584,16 +588,20 @@ impl KeePassStatus {
     /// * `db_password` - Password to unlock the database (None if using key file only)
     /// * `key_file` - Optional path to key file for authentication
     /// * `entry_name` - Name of the entry to look up (connection name or host)
+    /// * `protocol` - Optional protocol (ssh, rdp, vnc, spice) for more specific lookup
     ///
     /// # Returns
     /// * `Ok(Some(String))` if the password is found
     /// * `Ok(None)` if the entry is not found
     /// * `Err(String)` with error description if retrieval fails
+    ///
+    /// Note: Searches in order: `RustConn/{name}`, `RustConn/{base_name}` (without protocol suffix), `{name}`
     pub fn get_password_from_kdbx_with_key(
         kdbx_path: &Path,
         db_password: Option<&str>,
         key_file: Option<&Path>,
         entry_name: &str,
+        protocol: Option<&str>,
     ) -> Result<Option<String>, String> {
         use std::io::Write as IoWrite;
         use std::process::Stdio;
@@ -605,12 +613,33 @@ impl KeePassStatus {
         let cli_path = Self::find_keepassxc_cli()
             .ok_or_else(|| "keepassxc-cli not found. Please install KeePassXC.".to_string())?;
 
-        // Try both direct entry name and RustConn group path
-        let entry_paths = [entry_name.to_string(), format!("RustConn/{entry_name}")];
+        // Build list of paths to try, prioritizing exact match then legacy formats
+        let mut entry_paths = Vec::new();
+
+        // First try exact entry name (may already include protocol suffix)
+        entry_paths.push(format!("RustConn/{entry_name}"));
+
+        // If entry_name contains protocol suffix like "name (ssh)", also try without it (legacy)
+        // This handles migration from old format where entries were stored without protocol
+        if let Some(base_name) = entry_name
+            .strip_suffix(')')
+            .and_then(|s| s.rfind(" (").map(|pos| &entry_name[..pos]))
+        {
+            entry_paths.push(format!("RustConn/{base_name}"));
+        }
+
+        // If protocol provided separately, try with it (for backward compatibility)
+        if let Some(proto) = protocol {
+            entry_paths.push(format!("RustConn/{entry_name} ({proto})"));
+        }
+
+        // Finally try direct entry name without RustConn prefix
+        entry_paths.push(entry_name.to_string());
 
         tracing::debug!(
-            "DEBUG get_password: entry_name='{}', has_password={}, has_key_file={}",
+            "get_password: entry_name='{}', protocol={:?}, has_password={}, has_key_file={}",
             entry_name,
+            protocol,
             db_password.is_some(),
             key_file.is_some()
         );
@@ -636,7 +665,7 @@ impl KeePassStatus {
             args.push(kdbx_path.display().to_string());
             args.push(entry_path.clone());
 
-            tracing::debug!("DEBUG get_password: trying path '{entry_path}', args={args:?}");
+            tracing::debug!("get_password: trying path '{entry_path}'");
 
             let mut child = Command::new(&cli_path)
                 .args(&args)
@@ -663,7 +692,7 @@ impl KeePassStatus {
                 .map_err(|e| format!("Failed to wait for keepassxc-cli: {e}"))?;
 
             tracing::debug!(
-                "DEBUG get_password: exit={:?}, stdout='[REDACTED]', stderr='{}'",
+                "get_password: exit={:?}, stderr='{}'",
                 output.status.code(),
                 String::from_utf8_lossy(&output.stderr)
             );
@@ -671,13 +700,13 @@ impl KeePassStatus {
             if output.status.success() {
                 let password = String::from_utf8_lossy(&output.stdout).trim().to_string();
                 if !password.is_empty() {
-                    tracing::debug!("DEBUG get_password: found password");
+                    tracing::debug!("get_password: found password at '{entry_path}'");
                     return Ok(Some(password));
                 }
             }
         }
 
-        tracing::debug!("DEBUG get_password: password not found");
+        tracing::debug!("get_password: password not found");
         Ok(None)
     }
 

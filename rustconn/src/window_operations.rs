@@ -8,6 +8,7 @@ use crate::state::SharedAppState;
 use crate::window::MainWindow;
 use crate::window_types::get_protocol_string;
 use gtk4::gio;
+use gtk4::glib;
 use gtk4::prelude::*;
 
 use std::rc::Rc;
@@ -79,8 +80,12 @@ pub fn delete_selected_connection(
                 match delete_result {
                     Ok(()) => {
                         drop(state_mut);
-                        // Preserve tree state when deleting (scroll position, other expanded groups)
-                        MainWindow::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
+                        // Defer sidebar reload to prevent UI freeze
+                        let state = state_clone.clone();
+                        let sidebar = sidebar_clone.clone();
+                        glib::idle_add_local_once(move || {
+                            MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+                        });
                     }
                     Err(e) => {
                         let error_alert = gtk4::AlertDialog::builder()
@@ -141,14 +146,18 @@ pub fn duplicate_selected_connection(
         {
             Ok(_) => {
                 drop(state_mut);
-                // Preserve tree state when duplicating
-                MainWindow::reload_sidebar_preserving_state(state, sidebar);
-                // Show success toast
-                crate::toast::show_toast_on_window(
-                    window,
-                    "Connection duplicated",
-                    crate::toast::ToastType::Success,
-                );
+                // Defer sidebar reload to prevent UI freeze
+                let state = state.clone();
+                let sidebar = sidebar.clone();
+                let window = window.clone();
+                glib::idle_add_local_once(move || {
+                    MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+                    crate::toast::show_toast_on_window(
+                        &window,
+                        "Connection duplicated",
+                        crate::toast::ToastType::Success,
+                    );
+                });
             }
             Err(e) => {
                 tracing::error!("Failed to duplicate connection: {e}");
@@ -223,13 +232,18 @@ pub fn paste_connection(window: &gtk4::Window, state: &SharedAppState, sidebar: 
         match state_mut.paste_connection() {
             Ok(_) => {
                 drop(state_mut);
-                // Preserve tree state when pasting
-                MainWindow::reload_sidebar_preserving_state(state, sidebar);
-                crate::toast::show_toast_on_window(
-                    window,
-                    "Connection pasted",
-                    crate::toast::ToastType::Success,
-                );
+                // Defer sidebar reload to prevent UI freeze
+                let state = state.clone();
+                let sidebar = sidebar.clone();
+                let window = window.clone();
+                glib::idle_add_local_once(move || {
+                    MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+                    crate::toast::show_toast_on_window(
+                        &window,
+                        "Connection pasted",
+                        crate::toast::ToastType::Success,
+                    );
+                });
             }
             Err(e) => {
                 tracing::error!("Failed to paste connection: {e}");
@@ -355,8 +369,8 @@ pub fn delete_selected_connections(
         .title("Delete Selected Items?")
         .transient_for(window)
         .modal(true)
-        .default_width(400)
-        .default_height(if item_names.len() > 10 { 400 } else { 250 })
+        .default_width(500)
+        .default_height(if item_names.len() > 10 { 400 } else { 300 })
         .build();
 
     let header = HeaderBar::new();
@@ -448,30 +462,36 @@ pub fn delete_selected_connections(
             }
         }
 
-        // Reload sidebar preserving state
-        MainWindow::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
+        // Defer sidebar reload to prevent UI freeze
+        let state = state_clone.clone();
+        let sidebar = sidebar_clone.clone();
+        let window = window_clone.clone();
+        let failures_clone = failures.clone();
+        glib::idle_add_local_once(move || {
+            MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
 
-        // Show results
-        if failures.is_empty() {
-            let success_alert = gtk4::AlertDialog::builder()
-                .message("Deletion Complete")
-                .detail(format!("Successfully deleted {success_count} item(s)."))
-                .modal(true)
-                .build();
-            success_alert.show(Some(&window_clone));
-        } else {
-            let error_alert = gtk4::AlertDialog::builder()
-                .message("Deletion Partially Complete")
-                .detail(format!(
-                    "Deleted {} item(s).\n\nFailed to delete {} item(s):\n{}",
-                    success_count,
-                    failures.len(),
-                    failures.join("\n")
-                ))
-                .modal(true)
-                .build();
-            error_alert.show(Some(&window_clone));
-        }
+            // Show results
+            if failures_clone.is_empty() {
+                let success_alert = gtk4::AlertDialog::builder()
+                    .message("Deletion Complete")
+                    .detail(format!("Successfully deleted {success_count} item(s)."))
+                    .modal(true)
+                    .build();
+                success_alert.show(Some(&window));
+            } else {
+                let error_alert = gtk4::AlertDialog::builder()
+                    .message("Deletion Partially Complete")
+                    .detail(format!(
+                        "Deleted {} item(s).\n\nFailed to delete {} item(s):\n{}",
+                        success_count,
+                        failures_clone.len(),
+                        failures_clone.join("\n")
+                    ))
+                    .modal(true)
+                    .build();
+                error_alert.show(Some(&window));
+            }
+        });
     });
 
     dialog.present();
@@ -660,25 +680,31 @@ pub fn show_move_selected_to_group_dialog(
             }
         }
 
-        // Reload sidebar preserving state
-        MainWindow::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
+        // Defer sidebar reload to prevent UI freeze
+        let state = state_clone.clone();
+        let sidebar = sidebar_clone.clone();
+        let window = window_clone.clone();
+        let parent = parent_window.clone();
+        let failures_clone = failures.clone();
+        glib::idle_add_local_once(move || {
+            MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+            window.close();
 
-        window_clone.close();
-
-        // Show results if there were failures
-        if !failures.is_empty() {
-            let error_alert = gtk4::AlertDialog::builder()
-                .message("Move Partially Complete")
-                .detail(format!(
-                    "Moved {} item(s).\n\nFailed to move {} item(s):\n{}",
-                    success_count,
-                    failures.len(),
-                    failures.join("\n")
-                ))
-                .modal(true)
-                .build();
-            error_alert.show(Some(&parent_window));
-        }
+            // Show results if there were failures
+            if !failures_clone.is_empty() {
+                let error_alert = gtk4::AlertDialog::builder()
+                    .message("Move Partially Complete")
+                    .detail(format!(
+                        "Moved {} item(s).\n\nFailed to move {} item(s):\n{}",
+                        success_count,
+                        failures_clone.len(),
+                        failures_clone.join("\n")
+                    ))
+                    .modal(true)
+                    .build();
+                error_alert.show(Some(&parent));
+            }
+        });
     });
 
     move_window.present();

@@ -11,6 +11,7 @@ use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
 use crate::window::MainWindow;
 use adw::prelude::*;
+use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::{Button, Label, Orientation};
 use libadwaita as adw;
@@ -94,8 +95,15 @@ pub fn edit_selected_connection(
 
         // Connect load from KeePass callback
         let state_for_load = state.clone();
-        dialog.connect_load_from_keepass(move |name, host, _protocol| {
-            handle_load_from_keepass(&state_for_load, name, host)
+        dialog.connect_load_from_keepass(move |name, host, protocol, password_entry, window| {
+            handle_load_from_keepass(
+                &state_for_load,
+                name,
+                host,
+                protocol,
+                password_entry,
+                window,
+            );
         });
 
         let state_clone = state.clone();
@@ -107,11 +115,12 @@ pub fn edit_selected_connection(
                     match state_mut.update_connection(id, updated_conn) {
                         Ok(()) => {
                             drop(state_mut);
-                            // Preserve tree state when editing connections
-                            MainWindow::reload_sidebar_preserving_state(
-                                &state_clone,
-                                &sidebar_clone,
-                            );
+                            // Defer sidebar reload to prevent UI freeze
+                            let state = state_clone.clone();
+                            let sidebar = sidebar_clone.clone();
+                            glib::idle_add_local_once(move || {
+                                MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+                            });
                         }
                         Err(e) => {
                             let alert = gtk4::AlertDialog::builder()
@@ -156,7 +165,7 @@ fn handle_save_to_keepass(
         return;
     }
 
-    let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() else {
+    let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
         let alert = gtk4::AlertDialog::builder()
             .message("KeePass Database Not Configured")
             .detail("Please select a KeePass database file in Settings.")
@@ -166,8 +175,9 @@ fn handle_save_to_keepass(
         return;
     };
 
-    // Use connection name/host for lookup key
-    let lookup_key = if !name.trim().is_empty() {
+    // Build lookup key with protocol for uniqueness
+    // Format: "name (protocol)" or "host (protocol)" if name is empty
+    let base_name = if !name.trim().is_empty() {
         name.to_string()
     } else if !host.trim().is_empty() {
         host.to_string()
@@ -176,16 +186,17 @@ fn handle_save_to_keepass(
     } else {
         conn_host.to_string()
     };
+    let lookup_key = format!("{base_name} ({protocol})");
 
     // Get credentials - password and key file can be used together
     let db_password = settings
         .secrets
         .kdbx_password
         .as_ref()
-        .map(|p| p.expose_secret());
+        .map(|p| p.expose_secret().to_string());
 
     // Key file is optional additional authentication
-    let key_file = settings.secrets.kdbx_key_file.as_deref();
+    let key_file = settings.secrets.kdbx_key_file.clone();
 
     // Check if we have at least one credential
     if db_password.is_none() && key_file.is_none() {
@@ -205,75 +216,185 @@ fn handle_save_to_keepass(
         if host.is_empty() { conn_host } else { host }
     );
 
-    match rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
-        kdbx_path,
-        db_password,
-        key_file,
-        &lookup_key,
-        username,
-        password,
-        Some(&url),
-    ) {
-        Ok(()) => {
-            let alert = gtk4::AlertDialog::builder()
-                .message("Password Saved")
-                .detail(format!("Password for '{lookup_key}' saved to KeePass."))
-                .modal(true)
-                .build();
-            alert.show(Some(window));
+    // Clone data for the background thread
+    let username = username.to_string();
+    let password = password.to_string();
+    let lookup_key_clone = lookup_key.clone();
+    let window = window.clone();
+
+    // Drop state borrow before spawning
+    drop(state_ref);
+
+    // Run KeePass operation in background thread to avoid blocking UI
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let result = rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
+            &kdbx_path,
+            db_password.as_deref(),
+            key_file.as_deref(),
+            &lookup_key_clone,
+            &username,
+            &password,
+            Some(&url),
+        );
+        let _ = tx.send(result);
+    });
+
+    // Poll for result using idle callback
+    glib::idle_add_local_once(move || {
+        fn check_result(
+            rx: std::sync::mpsc::Receiver<Result<(), String>>,
+            window: gtk4::Window,
+            lookup_key: String,
+        ) {
+            match rx.try_recv() {
+                Ok(Ok(())) => {
+                    let alert = gtk4::AlertDialog::builder()
+                        .message("Password Saved")
+                        .detail(format!("Password for '{lookup_key}' saved to KeePass."))
+                        .modal(true)
+                        .build();
+                    alert.show(Some(&window));
+                }
+                Ok(Err(e)) => {
+                    let alert = gtk4::AlertDialog::builder()
+                        .message("Failed to Save Password")
+                        .detail(format!("Error: {e}"))
+                        .modal(true)
+                        .build();
+                    alert.show(Some(&window));
+                }
+                Err(std::sync::mpsc::TryRecvError::Empty) => {
+                    // Not ready yet, schedule another check
+                    glib::timeout_add_local_once(std::time::Duration::from_millis(50), move || {
+                        check_result(rx, window, lookup_key);
+                    });
+                }
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                    let alert = gtk4::AlertDialog::builder()
+                        .message("Failed to Save Password")
+                        .detail("Thread error: channel disconnected")
+                        .modal(true)
+                        .build();
+                    alert.show(Some(&window));
+                }
+            }
         }
-        Err(e) => {
-            let alert = gtk4::AlertDialog::builder()
-                .message("Failed to Save Password")
-                .detail(format!("Error: {e}"))
-                .modal(true)
-                .build();
-            alert.show(Some(window));
-        }
-    }
+        check_result(rx, window, lookup_key);
+    });
 }
 
-/// Handles loading password from KeePass
-fn handle_load_from_keepass(state: &SharedAppState, name: &str, host: &str) -> Option<String> {
+/// Handles loading password from KeePass (async version)
+fn handle_load_from_keepass(
+    state: &SharedAppState,
+    name: &str,
+    host: &str,
+    protocol: &str,
+    password_entry: gtk4::Entry,
+    window: gtk4::Window,
+) {
     use secrecy::ExposeSecret;
 
     let state_ref = state.borrow();
     let settings = state_ref.settings();
 
     if !settings.secrets.kdbx_enabled {
-        return None;
+        crate::toast::show_toast_on_window(
+            &window,
+            "KeePass integration is not enabled",
+            crate::toast::ToastType::Warning,
+        );
+        return;
     }
 
-    let kdbx_path = settings.secrets.kdbx_path.as_ref()?;
+    let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
+        crate::toast::show_toast_on_window(
+            &window,
+            "KeePass database not configured",
+            crate::toast::ToastType::Warning,
+        );
+        return;
+    };
 
-    let lookup_key = if name.trim().is_empty() {
+    // Build lookup key that includes protocol for uniqueness
+    // Format: "name (protocol)" or "host (protocol)" if name is empty
+    let base_name = if name.trim().is_empty() {
         host.to_string()
     } else {
         name.to_string()
     };
+    let lookup_key = format!("{base_name} ({protocol})");
 
     // Get credentials - password and key file can be used together
     let db_password = settings
         .secrets
         .kdbx_password
         .as_ref()
-        .map(|p| p.expose_secret());
+        .map(|p| p.expose_secret().to_string());
 
     // Key file is optional additional authentication
-    let key_file = settings.secrets.kdbx_key_file.as_deref();
+    let key_file = settings.secrets.kdbx_key_file.clone();
 
-    match rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
-        kdbx_path,
-        db_password,
-        key_file,
-        &lookup_key,
-    ) {
-        Ok(password) => password,
-        Err(e) => {
-            eprintln!("Failed to load password from KeePass: {e}");
-            None
+    // Drop state borrow before spawning
+    drop(state_ref);
+
+    // Run KeePass operation in background thread to avoid blocking UI
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let result = rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
+            &kdbx_path,
+            db_password.as_deref(),
+            key_file.as_deref(),
+            &lookup_key,
+            None, // Protocol already included in lookup_key
+        );
+        let _ = tx.send(result);
+    });
+
+    // Poll for result using idle callback
+    glib::idle_add_local_once(move || {
+        fn check_result(
+            rx: std::sync::mpsc::Receiver<Result<Option<String>, String>>,
+            password_entry: gtk4::Entry,
+            window: gtk4::Window,
+        ) {
+            match rx.try_recv() {
+                Ok(Ok(Some(password))) => {
+                    password_entry.set_text(&password);
+                }
+                Ok(Ok(None)) => {
+                    crate::toast::show_toast_on_window(
+                        &window,
+                        "No password found in KeePass for this connection",
+                        crate::toast::ToastType::Info,
+                    );
+                }
+                Ok(Err(e)) => {
+                    tracing::warn!("Failed to load password from KeePass: {e}");
+                    crate::toast::show_toast_on_window(
+                        &window,
+                        "Failed to load password from KeePass",
+                        crate::toast::ToastType::Error,
+                    );
+                }
+                Err(std::sync::mpsc::TryRecvError::Empty) => {
+                    // Not ready yet, schedule another check
+                    glib::timeout_add_local_once(std::time::Duration::from_millis(50), move || {
+                        check_result(rx, password_entry, window);
+                    });
+                }
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                    tracing::warn!("Thread error loading from KeePass: channel disconnected");
+                    crate::toast::show_toast_on_window(
+                        &window,
+                        "Failed to load password from KeePass",
+                        crate::toast::ToastType::Error,
+                    );
+                }
+            }
         }
-    }
+        check_result(rx, password_entry, window);
+    });
 }
 
 /// Renames the selected connection or group with a simple inline dialog
@@ -389,7 +510,7 @@ pub fn rename_selected_item(
             if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
                 if let Some(existing) = state_mut.get_group(id).cloned() {
                     let mut updated = existing;
-                    updated.name = new_name;
+                    updated.name = new_name.clone();
                     if let Err(e) = state_mut.connection_manager().update_group(id, updated) {
                         let alert = gtk4::AlertDialog::builder()
                             .message("Error")
@@ -401,8 +522,14 @@ pub fn rename_selected_item(
                     }
                 }
                 drop(state_mut);
-                MainWindow::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
-                window_clone.close();
+                // Defer sidebar reload to prevent UI freeze
+                let state = state_clone.clone();
+                let sidebar = sidebar_clone.clone();
+                let window = window_clone.clone();
+                glib::idle_add_local_once(move || {
+                    MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+                    window.close();
+                });
             }
         } else {
             // Rename connection
@@ -413,11 +540,14 @@ pub fn rename_selected_item(
                     match state_mut.update_connection(id, updated) {
                         Ok(()) => {
                             drop(state_mut);
-                            MainWindow::reload_sidebar_preserving_state(
-                                &state_clone,
-                                &sidebar_clone,
-                            );
-                            window_clone.close();
+                            // Defer sidebar reload to prevent UI freeze
+                            let state = state_clone.clone();
+                            let sidebar = sidebar_clone.clone();
+                            let window = window_clone.clone();
+                            glib::idle_add_local_once(move || {
+                                MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+                                window.close();
+                            });
                         }
                         Err(e) => {
                             let alert = gtk4::AlertDialog::builder()
@@ -557,9 +687,14 @@ pub fn show_edit_group_dialog(
                 }
             }
             drop(state_mut);
-            // Preserve tree state when editing groups
-            MainWindow::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
-            window_clone.close();
+            // Defer sidebar reload to prevent UI freeze
+            let state = state_clone.clone();
+            let sidebar = sidebar_clone.clone();
+            let window = window_clone.clone();
+            glib::idle_add_local_once(move || {
+                MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+                window.close();
+            });
         }
     });
 

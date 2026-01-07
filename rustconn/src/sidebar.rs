@@ -1339,10 +1339,26 @@ impl ConnectionSidebar {
             let info = statuses.entry(id.to_string()).or_default();
             info.active_count += 1;
             info.status = "connected".to_string();
+            tracing::debug!(
+                "[Sidebar] increment_session_count: id={}, count={}, status={}",
+                id,
+                info.active_count,
+                info.status
+            );
             info.status.clone()
         };
 
-        Self::update_item_status_recursive(self.store.upcast_ref::<gio::ListModel>(), id, &status);
+        let found = Self::update_item_status_recursive(
+            self.store.upcast_ref::<gio::ListModel>(),
+            id,
+            &status,
+        );
+        if !found {
+            tracing::warn!(
+                "[Sidebar] increment_session_count: item not found in tree for id={}",
+                id
+            );
+        }
     }
 
     /// Decrements the session count for a connection
@@ -1356,6 +1372,12 @@ impl ConnectionSidebar {
             let mut statuses = self.connection_statuses.borrow_mut();
             if let Some(info) = statuses.get_mut(id) {
                 info.active_count = info.active_count.saturating_sub(1);
+                tracing::debug!(
+                    "[Sidebar] decrement_session_count: id={}, count={}, failed={}",
+                    id,
+                    info.active_count,
+                    failed
+                );
                 if info.active_count == 0 {
                     info.status = if failed {
                         "failed".to_string()
@@ -1392,6 +1414,11 @@ impl ConnectionSidebar {
         for i in 0..n_items {
             if let Some(item) = model.item(i).and_downcast::<ConnectionItem>() {
                 if item.id() == id {
+                    tracing::debug!(
+                        "[Sidebar] update_item_status_recursive: found id={}, setting status={}",
+                        id,
+                        status
+                    );
                     item.set_status(status);
                     return true;
                 }

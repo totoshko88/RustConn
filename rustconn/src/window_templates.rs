@@ -2,6 +2,7 @@
 //!
 //! This module contains methods for managing connection templates.
 
+use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::{gio, Label, Orientation};
 use std::rc::Rc;
@@ -385,9 +386,16 @@ pub fn show_new_connection_from_template(
             if let Ok(mut state_mut) = state.try_borrow_mut() {
                 match state_mut.create_connection(conn) {
                     Ok(_) => {
-                        // Reload sidebar preserving tree state
                         drop(state_mut);
-                        MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+                        // Defer sidebar reload to prevent UI freeze
+                        let state_clone = state.clone();
+                        let sidebar_clone = sidebar.clone();
+                        glib::idle_add_local_once(move || {
+                            MainWindow::reload_sidebar_preserving_state(
+                                &state_clone,
+                                &sidebar_clone,
+                            );
+                        });
                     }
                     Err(e) => {
                         let alert = gtk4::AlertDialog::builder()

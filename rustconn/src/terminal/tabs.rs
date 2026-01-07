@@ -167,18 +167,23 @@ pub fn create_tab_label_with_protocol(
     // Set accessible label for close button
     crate::utils::set_accessible_label(&close_button, &format!("Close {title} session"));
 
-    // Connect close button
+    // Connect close button - directly close this specific tab without switching first
     let notebook_weak = notebook.downgrade();
     let sessions_clone = sessions.clone();
     close_button.connect_clicked(move |button| {
-        if let Some(notebook) = notebook_weak.upgrade() {
+        if notebook_weak.upgrade().is_some() {
             let sessions = sessions_clone.borrow();
-            if let Some(&page_num) = sessions.get(&session_id) {
-                notebook.set_current_page(Some(page_num));
+            if sessions.contains_key(&session_id) {
                 drop(sessions);
+                // Activate close-tab-by-id action with session_id as parameter
                 if let Some(root) = button.root() {
                     if let Some(window) = root.downcast_ref::<gtk4::ApplicationWindow>() {
-                        gtk4::prelude::ActionGroupExt::activate_action(window, "close-tab", None);
+                        let session_id_str = session_id.to_string();
+                        gtk4::prelude::ActionGroupExt::activate_action(
+                            window,
+                            "close-tab-by-id",
+                            Some(&session_id_str.to_variant()),
+                        );
                     }
                 }
             }

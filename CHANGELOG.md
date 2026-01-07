@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - SSH Agent tab: Agent status and key lists load asynchronously
   - Available SSH keys scan runs in background
 - Cursor Shape/Blink toggle buttons in Terminal settings now have uniform width (240px)
+- KeePassXC debug output now uses `tracing::debug!` instead of `eprintln!`
+- KeePass entry path format changed to `RustConn/{name} ({protocol})` to support same name for different protocols
 - Updated dependencies: indexmap 2.12.1→2.13.0, syn 2.0.113→2.0.114, zerocopy 0.8.32→0.8.33, zmij 1.0.10→1.0.12
 - Note: sspi and picky-krb kept at previous versions due to rand_core compatibility issues
 
@@ -31,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SSH Agent "+" buttons in Available Key Files list now load keys with passphrase dialog
 - SSH Agent "Remove Key" (trash) button now actually removes keys from the agent
 - SSH Agent Refresh button updates both loaded keys and available keys lists
+- VNC password dialog now correctly loads password from KeePass using consistent lookup key (name or host)
+- KeePass passwords for connections with same name but different protocols no longer overwrite each other
+- Welcome tab now displays correctly when switching back from connections (fallback to first pane if none focused)
 
 ## [0.5.7] - 2026-01-07
 
