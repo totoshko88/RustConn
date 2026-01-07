@@ -90,6 +90,7 @@ pub struct SettingsDialog {
     ssh_agent_loading_spinner: Spinner,
     ssh_agent_error_label: Label,
     ssh_agent_refresh_button: Button,
+    ssh_agent_available_keys_list: gtk4::ListBox,
     ssh_agent_manager: Rc<RefCell<SshAgentManager>>,
     // Current settings
     settings: Rc<RefCell<AppSettings>>,
@@ -177,6 +178,7 @@ impl SettingsDialog {
             ssh_agent_loading_spinner,
             ssh_agent_error_label,
             ssh_agent_refresh_button,
+            ssh_agent_available_keys_list,
         ) = create_ssh_agent_page();
 
         let clients_page = create_clients_page();
@@ -242,6 +244,7 @@ impl SettingsDialog {
             ssh_agent_loading_spinner,
             ssh_agent_error_label,
             ssh_agent_refresh_button,
+            ssh_agent_available_keys_list,
             ssh_agent_manager,
             settings,
             on_save: None,
@@ -273,6 +276,49 @@ impl SettingsDialog {
         // Setup close handler - auto-save on close for PreferencesWindow
         let callback_rc = Rc::new(callback);
         self.setup_close_handler(callback_rc);
+
+        // Connect SSH Agent Add Key button handler
+        {
+            let manager_clone = self.ssh_agent_manager.clone();
+            let keys_list_clone = self.ssh_agent_keys_list.clone();
+            let status_label_clone = self.ssh_agent_status_label.clone();
+            let socket_label_clone = self.ssh_agent_socket_label.clone();
+
+            self.ssh_agent_add_key_button.connect_clicked(move |button| {
+                show_add_key_file_chooser(
+                    button,
+                    &manager_clone,
+                    &keys_list_clone,
+                    &status_label_clone,
+                    &socket_label_clone,
+                );
+            });
+        }
+
+        // Connect SSH Agent Refresh button handler
+        {
+            let manager_clone = self.ssh_agent_manager.clone();
+            let keys_list_clone = self.ssh_agent_keys_list.clone();
+            let status_label_clone = self.ssh_agent_status_label.clone();
+            let socket_label_clone = self.ssh_agent_socket_label.clone();
+            let available_keys_list_clone = self.ssh_agent_available_keys_list.clone();
+
+            self.ssh_agent_refresh_button.connect_clicked(move |_| {
+                load_ssh_agent_settings(
+                    &status_label_clone,
+                    &socket_label_clone,
+                    &keys_list_clone,
+                    &manager_clone,
+                );
+                populate_available_keys_list(
+                    &available_keys_list_clone,
+                    &manager_clone,
+                    &keys_list_clone,
+                    &status_label_clone,
+                    &socket_label_clone,
+                );
+            });
+        }
 
         // Show the window
         self.window.present();
@@ -341,6 +387,15 @@ impl SettingsDialog {
             &self.ssh_agent_socket_label,
             &self.ssh_agent_keys_list,
             &self.ssh_agent_manager,
+        );
+
+        // Populate available keys list with working buttons
+        populate_available_keys_list(
+            &self.ssh_agent_available_keys_list,
+            &self.ssh_agent_manager,
+            &self.ssh_agent_keys_list,
+            &self.ssh_agent_status_label,
+            &self.ssh_agent_socket_label,
         );
     }
 
