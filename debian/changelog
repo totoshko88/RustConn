@@ -1,11 +1,16 @@
 rustconn (0.5.6-1) unstable; urgency=medium
 
   * New upstream release
-  * Updated USER_GUIDE.md with complete v0.5.5+ feature documentation
-  * Unified dialog widths (Rename, Edit Group dialogs now 750px)
+  * Migrated to native libadwaita architecture (adw::Application, adw::ApplicationWindow)
+  * All dialogs redesigned to use adw::Window with adw::HeaderBar following GNOME HIG
+  * Added KeePass status button in sidebar toolbar with visual integration indicator
+  * Added Quick Filter functionality for protocol filtering (SSH, RDP, VNC, SPICE, ZeroTrust)
+  * Enhanced terminal settings with color themes, cursor options, and behavior controls
   * Added Security Tips section to Password Generator dialog
+  * Fixed Quick Filter logic and button state synchronization
+  * Updated USER_GUIDE.md with complete v0.5.5+ feature documentation
 
- -- Anton Isaiev <totoshko88@gmail.com>  Sun, 04 Jan 2026 12:00:00 +0200
+ -- Anton Isaiev <totoshko88@gmail.com>  Tue, 07 Jan 2026 12:00:00 +0200
 
 rustconn (0.5.5-1) unstable; urgency=medium
 
