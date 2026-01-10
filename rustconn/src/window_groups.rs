@@ -3,6 +3,7 @@
 //! This module contains methods for managing connection groups,
 //! including move to group dialog and related functionality.
 
+use crate::alert;
 use adw::prelude::*;
 use gtk4::glib;
 use gtk4::prelude::*;
@@ -188,12 +189,7 @@ pub fn show_move_to_group_dialog(
                 });
             }
             Err(e) => {
-                let alert = gtk4::AlertDialog::builder()
-                    .message("Error Moving Item")
-                    .detail(&e)
-                    .modal(true)
-                    .build();
-                alert.show(Some(&parent_window));
+                alert::show_error(&parent_window, "Error Moving Item", &e);
             }
         }
     });
@@ -218,11 +214,6 @@ fn is_descendant_of(
 }
 
 /// Shows an error toast/notification
-pub fn show_error_toast(window: &impl gtk4::prelude::IsA<gtk4::Window>, message: &str) {
-    let alert = gtk4::AlertDialog::builder()
-        .message("Error")
-        .detail(message)
-        .modal(true)
-        .build();
-    alert.show(Some(window));
+pub fn show_error_toast(window: &impl gtk4::prelude::IsA<gtk4::Widget>, message: &str) {
+    alert::show_error(window, "Error", message);
 }

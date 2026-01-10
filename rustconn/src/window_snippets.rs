@@ -4,11 +4,12 @@
 
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{gio, Button, Label, Orientation};
+use gtk4::{Button, Label, Orientation};
 use libadwaita as adw;
 use std::rc::Rc;
 use uuid::Uuid;
 
+use crate::alert;
 use crate::dialogs::SnippetDialog;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
@@ -26,20 +27,14 @@ pub fn show_new_snippet_dialog(window: &gtk4::Window, state: SharedAppState) {
             if let Ok(mut state_mut) = state.try_borrow_mut() {
                 match state_mut.create_snippet(snippet) {
                     Ok(_) => {
-                        let alert = gtk4::AlertDialog::builder()
-                            .message("Snippet Created")
-                            .detail("Snippet has been saved successfully.")
-                            .modal(true)
-                            .build();
-                        alert.show(Some(&window_clone));
+                        alert::show_success(
+                            &window_clone,
+                            "Snippet Created",
+                            "Snippet has been saved successfully.",
+                        );
                     }
                     Err(e) => {
-                        let alert = gtk4::AlertDialog::builder()
-                            .message("Error Creating Snippet")
-                            .detail(&e)
-                            .modal(true)
-                            .build();
-                        alert.show(Some(&window_clone));
+                        alert::show_error(&window_clone, "Error Creating Snippet", &e);
                     }
                 }
             }
@@ -206,22 +201,16 @@ pub fn show_snippets_manager(
         if let Some(row) = list_clone.selected_row() {
             if let Some(id_str) = row.widget_name().as_str().strip_prefix("snippet-") {
                 if let Ok(id) = Uuid::parse_str(id_str) {
-                    let alert = gtk4::AlertDialog::builder()
-                        .message("Delete Snippet?")
-                        .detail("Are you sure you want to delete this snippet?")
-                        .buttons(["Cancel", "Delete"])
-                        .default_button(0)
-                        .cancel_button(0)
-                        .modal(true)
-                        .build();
-
                     let state_inner = state_clone.clone();
                     let list_inner = list_clone.clone();
-                    alert.choose(
-                        Some(&manager_clone),
-                        gio::Cancellable::NONE,
-                        move |result| {
-                            if result == Ok(1) {
+                    alert::show_confirm(
+                        &manager_clone,
+                        "Delete Snippet?",
+                        "Are you sure you want to delete this snippet?",
+                        "Delete",
+                        true,
+                        move |confirmed| {
+                            if confirmed {
                                 if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
                                     let _ = state_mut.delete_snippet(id);
                                     drop(state_mut);
@@ -405,12 +394,12 @@ pub fn execute_snippet(
 ) {
     // Check if there's an active terminal
     if notebook.get_active_terminal().is_none() {
-        let alert = gtk4::AlertDialog::builder()
-            .message("No Active Terminal")
-            .detail("Please open a terminal session first before executing a snippet.")
-            .modal(true)
-            .build();
-        alert.show(Some(parent));
+        let window: &gtk4::Window = parent.upcast_ref();
+        alert::show_error(
+            window,
+            "No Active Terminal",
+            "Please open a terminal session first before executing a snippet.",
+        );
         return;
     }
 

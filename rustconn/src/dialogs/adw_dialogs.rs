@@ -3,8 +3,7 @@
 //! This module provides helper functions for creating native-looking
 //! toasts using libadwaita components.
 //!
-//! Note: libadwaita 0.8 doesn't have AlertDialog/MessageDialog.
-//! For dialogs, use gtk4::AlertDialog directly (GTK4.10+).
+//! Note: For alert dialogs, use `adw::AlertDialog` via the `crate::alert` module.
 
 use gtk4::prelude::*;
 use libadwaita as adw;

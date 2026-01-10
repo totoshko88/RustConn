@@ -12,6 +12,7 @@
 #![allow(clippy::missing_panics_doc)] // Internal GUI functions don't need panic docs
 
 pub mod adaptive_tabs;
+pub mod alert;
 mod app;
 #[cfg(feature = "rdp-audio")]
 pub mod audio;

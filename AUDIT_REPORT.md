@@ -289,14 +289,44 @@ Migrated Settings dialog from deprecated `PreferencesWindow` to `PreferencesDial
     - `ksni` for zvariant 5.x compatibility
     - `picky`/`sspi` for rand_core resolution
 
-14. **Continue adw widget migrations** (IN PROGRESS)
+14. **Continue adw widget migrations** (COMPLETED)
     - ✅ `ActionRow` + `Switch` → `adw::SwitchRow` in password_generator.rs (6 switches)
     - ✅ `ActionRow` + `Switch` → `adw::SwitchRow` in cluster.rs (1 switch)
     - ✅ `ActionRow` + `Switch` → `adw::SwitchRow` in export.rs (2 switches)
     - ✅ `ActionRow` + `Entry` → `adw::EntryRow` in window_connection_dialogs.rs (New Group)
     - ✅ `ActionRow` + `Entry` → `adw::EntryRow` in window_edit_dialogs.rs (Edit Group, Rename)
     - ✅ `ActionRow` + `SpinButton` → `adw::SpinRow` in ui_tab.rs (session max age)
-    - `gtk4::AlertDialog` → `adw::AlertDialog` (many usages - lower priority)
+    - ✅ `gtk4::AlertDialog` → `adw::AlertDialog` (50+ usages migrated via `alert.rs` helper)
+
+---
+
+## Section 5: AlertDialog Migration Summary
+
+### ✅ COMPLETED: Full Migration to `adw::AlertDialog`
+
+Created `rustconn/src/alert.rs` helper module with:
+- `show_alert()` - Simple info/error alert with OK button
+- `show_confirm()` - Confirmation dialog with Cancel/Confirm buttons
+- `show_error()` - Error alert (alias for `show_alert`)
+- `show_success()` - Success alert (alias for `show_alert`)
+- `show_validation_error()` - Validation error with standard heading
+- `show_save_changes()` - Three-button dialog (Don't Save/Cancel/Save)
+
+**Files migrated:**
+| File | Usages | Status |
+|------|--------|--------|
+| `window_groups.rs` | 2 | ✅ |
+| `window_snippets.rs` | 4 | ✅ |
+| `window_edit_dialogs.rs` | 15 | ✅ |
+| `window_operations.rs` | 8 | ✅ |
+| `window_templates.rs` | 4 | ✅ |
+| `window_sessions.rs` | 1 | ✅ |
+| `window_clusters.rs` | 6 | ✅ |
+| `window_connection_dialogs.rs` | 8 | ✅ |
+| `window.rs` | 1 | ✅ |
+| `app.rs` | 1 | ✅ |
+| `dialogs/connection.rs` | 5 | ✅ |
+| `dialogs/document.rs` | 1 | ✅ |
 
 ---
 

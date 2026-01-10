@@ -3,6 +3,7 @@
 //! This module contains dialog functions for creating new connections and groups,
 //! including template picker and parent group selection.
 
+use crate::alert;
 use crate::dialogs::{ConnectionDialog, ImportDialog};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
@@ -71,22 +72,20 @@ pub fn show_new_connection_dialog_internal(
         let settings = state_ref.settings();
 
         if !settings.secrets.kdbx_enabled {
-            let alert = gtk4::AlertDialog::builder()
-                .message("KeePass Not Enabled")
-                .detail("Please enable KeePass integration in Settings first.")
-                .modal(true)
-                .build();
-            alert.show(Some(&window_for_keepass));
+            alert::show_error(
+                &window_for_keepass,
+                "KeePass Not Enabled",
+                "Please enable KeePass integration in Settings first.",
+            );
             return;
         }
 
         let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
-            let alert = gtk4::AlertDialog::builder()
-                .message("KeePass Database Not Configured")
-                .detail("Please select a KeePass database file in Settings.")
-                .modal(true)
-                .build();
-            alert.show(Some(&window_for_keepass));
+            alert::show_error(
+                &window_for_keepass,
+                "KeePass Database Not Configured",
+                "Please select a KeePass database file in Settings.",
+            );
             return;
         };
 
@@ -111,12 +110,11 @@ pub fn show_new_connection_dialog_internal(
 
         // Check if we have at least one credential
         if db_password.is_none() && key_file.is_none() {
-            let alert = gtk4::AlertDialog::builder()
-                .message("KeePass Credentials Required")
-                .detail("Please enter the database password or select a key file in Settings.")
-                .modal(true)
-                .build();
-            alert.show(Some(&window_for_keepass));
+            alert::show_error(
+                &window_for_keepass,
+                "KeePass Credentials Required",
+                "Please enter the database password or select a key file in Settings.",
+            );
             return;
         }
 
@@ -158,20 +156,14 @@ pub fn show_new_connection_dialog_internal(
             ) {
                 match rx.try_recv() {
                     Ok(Ok(())) => {
-                        let alert = gtk4::AlertDialog::builder()
-                            .message("Password Saved")
-                            .detail(format!("Password for '{lookup_key}' saved to KeePass."))
-                            .modal(true)
-                            .build();
-                        alert.show(Some(&window));
+                        alert::show_success(
+                            &window,
+                            "Password Saved",
+                            &format!("Password for '{lookup_key}' saved to KeePass."),
+                        );
                     }
                     Ok(Err(e)) => {
-                        let alert = gtk4::AlertDialog::builder()
-                            .message("Failed to Save Password")
-                            .detail(format!("Error: {e}"))
-                            .modal(true)
-                            .build();
-                        alert.show(Some(&window));
+                        alert::show_error(&window, "Failed to Save Password", &format!("Error: {e}"));
                     }
                     Err(std::sync::mpsc::TryRecvError::Empty) => {
                         // Not ready yet, schedule another check
@@ -181,12 +173,11 @@ pub fn show_new_connection_dialog_internal(
                         );
                     }
                     Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                        let alert = gtk4::AlertDialog::builder()
-                            .message("Failed to Save Password")
-                            .detail("Thread error: channel disconnected")
-                            .modal(true)
-                            .build();
-                        alert.show(Some(&window));
+                        alert::show_error(
+                            &window,
+                            "Failed to Save Password",
+                            "Thread error: channel disconnected",
+                        );
                     }
                 }
             }
@@ -323,12 +314,7 @@ pub fn show_new_connection_dialog_internal(
                     }
                     Err(e) => {
                         // Show error in UI dialog with proper transient parent
-                        let alert = gtk4::AlertDialog::builder()
-                            .message("Error Creating Connection")
-                            .detail(&e)
-                            .modal(true)
-                            .build();
-                        alert.show(Some(&window_clone));
+                        alert::show_error(&window_clone, "Error Creating Connection", &e);
                     }
                 }
             }
@@ -467,12 +453,7 @@ pub fn show_new_group_dialog_with_parent(
     create_btn.connect_clicked(move |_| {
         let name = name_row_clone.text().to_string();
         if name.trim().is_empty() {
-            let alert = gtk4::AlertDialog::builder()
-                .message("Validation Error")
-                .detail("Group name cannot be empty")
-                .modal(true)
-                .build();
-            alert.show(Some(&window_clone));
+            alert::show_validation_error(&window_clone, "Group name cannot be empty");
             return;
         }
 
@@ -503,12 +484,7 @@ pub fn show_new_group_dialog_with_parent(
                     });
                 }
                 Err(e) => {
-                    let alert = gtk4::AlertDialog::builder()
-                        .message("Error")
-                        .detail(&e)
-                        .modal(true)
-                        .build();
-                    alert.show(Some(&window_clone));
+                    alert::show_error(&window_clone, "Error", &e);
                 }
             }
         }
@@ -538,21 +514,15 @@ pub fn show_import_dialog(window: &gtk4::Window, state: SharedAppState, sidebar:
                                 &state_clone,
                                 &sidebar_clone,
                             );
-                            let alert = gtk4::AlertDialog::builder()
-                                .message("Import Successful")
-                                .detail(format!("Imported {count} connections to '{source}' group"))
-                                .modal(true)
-                                .build();
-                            alert.show(Some(&window));
+                            alert::show_success(
+                                &window,
+                                "Import Successful",
+                                &format!("Imported {count} connections to '{source}' group"),
+                            );
                         });
                     }
                     Err(e) => {
-                        let alert = gtk4::AlertDialog::builder()
-                            .message("Import Failed")
-                            .detail(&e)
-                            .modal(true)
-                            .build();
-                        alert.show(Some(&window_clone));
+                        alert::show_error(&window_clone, "Import Failed", &e);
                     }
                 }
             }

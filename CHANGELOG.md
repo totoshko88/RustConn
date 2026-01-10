@@ -41,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Edit Group dialog
   - Rename dialog (connections and groups)
 - Migrated Settings UI tab from `SpinButton` to `adw::SpinRow` for session max age
+- Added `alert.rs` helper module for modern `adw::AlertDialog` API
+- Migrated all `gtk4::AlertDialog` usages to `adw::AlertDialog` via helper module (50+ usages across 12 files)
 - Updated documentation (INSTALL.md, USER_GUIDE.md) for version 0.5.9
   - Connection dialog (`dialogs/connection.rs`)
   - SSH Agent passphrase dialog (`dialogs/settings/ssh_agent_tab.rs`)

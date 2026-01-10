@@ -2,9 +2,10 @@
 //!
 //! This module contains methods for managing connection templates.
 
+use crate::alert;
 use gtk4::glib;
 use gtk4::prelude::*;
-use gtk4::{gio, Label, Orientation};
+use gtk4::{Label, Orientation};
 use std::rc::Rc;
 
 use crate::dialogs::{ConnectionDialog, TemplateDialog, TemplateManagerDialog};
@@ -84,12 +85,7 @@ pub fn show_templates_manager(
                     // Save to config file and active document
                     if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
                         if let Err(e) = state_mut.add_template(template) {
-                            let alert = gtk4::AlertDialog::builder()
-                                .message("Error Saving Template")
-                                .detail(&e)
-                                .modal(true)
-                                .build();
-                            alert.show(Some(&manager_inner));
+                            alert::show_error(&manager_inner, "Error Saving Template", &e);
                         }
                     }
                     // Refresh list
@@ -124,12 +120,7 @@ pub fn show_templates_manager(
                     // Update in config file and active document
                     if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
                         if let Err(e) = state_mut.update_template(updated) {
-                            let alert = gtk4::AlertDialog::builder()
-                                .message("Error Saving Template")
-                                .detail(&e)
-                                .modal(true)
-                                .build();
-                            alert.show(Some(&manager_inner));
+                            alert::show_error(&manager_inner, "Error Saving Template", &e);
                         }
                     }
                     // Refresh list
@@ -145,24 +136,22 @@ pub fn show_templates_manager(
         let templates_clone = state_templates.clone();
         let list_clone = templates_list.clone();
         let manager_clone = manager_window.clone();
+        let state_inner = state_clone.clone();
+        let templates_inner = templates_clone.clone();
+        let list_inner = list_clone.clone();
+        let manager_clone_for_confirm = manager_clone.clone();
         manager_dialog.set_on_delete(move |id| {
-            let alert = gtk4::AlertDialog::builder()
-                .message("Delete Template?")
-                .detail("Are you sure you want to delete this template?")
-                .buttons(["Cancel", "Delete"])
-                .default_button(0)
-                .cancel_button(0)
-                .modal(true)
-                .build();
-
-            let state_inner = state_clone.clone();
-            let templates_inner = templates_clone.clone();
-            let list_inner = list_clone.clone();
-            alert.choose(
-                Some(&manager_clone),
-                gio::Cancellable::NONE,
-                move |result| {
-                    if result == Ok(1) {
+            let state_inner = state_inner.clone();
+            let templates_inner = templates_inner.clone();
+            let list_inner = list_inner.clone();
+            alert::show_confirm(
+                &manager_clone_for_confirm,
+                "Delete Template?",
+                "Are you sure you want to delete this template?",
+                "Delete",
+                true,
+                move |confirmed| {
+                    if confirmed {
                         // Remove from state templates (local cache)
                         templates_inner.borrow_mut().retain(|t| t.id != id);
                         // Remove from config file and active document
@@ -398,12 +387,7 @@ pub fn show_new_connection_from_template(
                         });
                     }
                     Err(e) => {
-                        let alert = gtk4::AlertDialog::builder()
-                            .message("Error Creating Connection")
-                            .detail(&e)
-                            .modal(true)
-                            .build();
-                        alert.show(Some(&window_clone));
+                        alert::show_error(&window_clone, "Error Creating Connection", &e);
                     }
                 }
             }

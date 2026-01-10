@@ -11,6 +11,7 @@
 // OCI Bastion has target_id and target_ip fields which are semantically different
 #![allow(clippy::similar_names)]
 
+use crate::alert;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -765,28 +766,24 @@ impl ConnectionDialog {
             // Zero Trust connections have different validation requirements
             if protocol_index == 4 {
                 // Zero Trust - show info message about testing
-                let dialog = gtk4::AlertDialog::builder()
-                    .message("Zero Trust Connection Test")
-                    .detail(
-                        "Zero Trust connections require provider-specific authentication.\n\n\
-                             To test the connection:\n\
-                             1. Save the connection first\n\
-                             2. Use the Connect button to initiate the connection\n\
-                             3. The provider CLI will handle authentication",
-                    )
-                    .modal(true)
-                    .build();
-                dialog.show(Some(&window));
+                alert::show_alert(
+                    &window,
+                    "Zero Trust Connection Test",
+                    "Zero Trust connections require provider-specific authentication.\n\n\
+                     To test the connection:\n\
+                     1. Save the connection first\n\
+                     2. Use the Connect button to initiate the connection\n\
+                     3. The provider CLI will handle authentication",
+                );
                 return;
             }
 
             if name.trim().is_empty() || host.trim().is_empty() {
-                let dialog = gtk4::AlertDialog::builder()
-                    .message("Connection Test Failed")
-                    .detail("Please fill in required fields (name and host)")
-                    .modal(true)
-                    .build();
-                dialog.show(Some(&window));
+                alert::show_error(
+                    &window,
+                    "Connection Test Failed",
+                    "Please fill in required fields (name and host)",
+                );
                 return;
             }
 
@@ -900,23 +897,17 @@ impl ConnectionDialog {
 
                         if result.is_success() {
                             let latency = result.latency_ms.unwrap_or(0);
-                            let dialog = gtk4::AlertDialog::builder()
-                                .message("Connection Test Successful")
-                                .detail(&format!("Connection successful! Latency: {}ms", latency))
-                                .modal(true)
-                                .build();
-                            dialog.show(Some(&window_clone));
+                            alert::show_success(
+                                &window_clone,
+                                "Connection Test Successful",
+                                &format!("Connection successful! Latency: {}ms", latency),
+                            );
                         } else {
                             let error = result
                                 .error
                                 .clone()
                                 .unwrap_or_else(|| "Unknown error".to_string());
-                            let dialog = gtk4::AlertDialog::builder()
-                                .message("Connection Test Failed")
-                                .detail(&error)
-                                .modal(true)
-                                .build();
-                            dialog.show(Some(&window_clone));
+                            alert::show_error(&window_clone, "Connection Test Failed", &error);
                         }
                         return gtk4::glib::ControlFlow::Break;
                     }
@@ -926,12 +917,7 @@ impl ConnectionDialog {
                 if *poll_count_clone.borrow() > 150 {
                     test_button_clone.set_sensitive(true);
                     test_button_clone.set_label("Test");
-                    let dialog = gtk4::AlertDialog::builder()
-                        .message("Connection Test Failed")
-                        .detail("Test timed out")
-                        .modal(true)
-                        .build();
-                    dialog.show(Some(&window_clone));
+                    alert::show_error(&window_clone, "Connection Test Failed", "Test timed out");
                     return gtk4::glib::ControlFlow::Break;
                 }
 

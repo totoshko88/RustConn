@@ -10,6 +10,7 @@ use libadwaita as adw;
 use std::rc::Rc;
 use uuid::Uuid;
 
+use crate::alert;
 use crate::toast::ToastOverlay;
 use crate::window_clusters as clusters;
 use crate::window_document_actions as doc_actions;
@@ -2940,15 +2941,14 @@ impl MainWindow {
                 }
 
                 // Show success notification
-                let alert = gtk4::AlertDialog::builder()
-                    .message("Export Complete")
-                    .detail(format!(
+                alert::show_success(
+                    &window_clone,
+                    "Export Complete",
+                    &format!(
                         "Successfully exported {} connection(s).\n{} skipped.",
                         export_result.exported_count, export_result.skipped_count
-                    ))
-                    .modal(true)
-                    .build();
-                alert.show(Some(&window_clone));
+                    ),
+                );
             }
         });
     }

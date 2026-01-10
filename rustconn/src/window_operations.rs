@@ -3,12 +3,12 @@
 //! This module contains functions for connection operations like delete,
 //! duplicate, copy, paste, and reload sidebar.
 
+use crate::alert;
 use crate::sidebar::{ConnectionItem, ConnectionSidebar};
 use crate::state::SharedAppState;
 use crate::window::MainWindow;
 use crate::window_types::get_protocol_string;
 use adw::prelude::*;
-use gtk4::gio;
 use gtk4::glib;
 use gtk4::prelude::*;
 use libadwaita as adw;
@@ -56,51 +56,43 @@ pub fn delete_selected_connection(
         format!("Are you sure you want to delete the connection '{name}'?")
     };
 
-    let alert = gtk4::AlertDialog::builder()
-        .message(format!("Delete {item_type}?"))
-        .detail(&detail)
-        .buttons(["Cancel", "Delete"])
-        .default_button(0)
-        .cancel_button(0)
-        .modal(true)
-        .build();
-
     let state_clone = state.clone();
     let sidebar_clone = sidebar.clone();
     let window_clone = window.clone();
-    alert.choose(Some(window), gio::Cancellable::NONE, move |result| {
-        if result == Ok(1) {
-            // "Delete" button
-            if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
-                let delete_result = if is_group {
-                    // Use cascade delete to remove group and all its connections
-                    state_mut.delete_group_cascade(id)
-                } else {
-                    state_mut.delete_connection(id)
-                };
+    alert::show_confirm(
+        window,
+        &format!("Delete {item_type}?"),
+        &detail,
+        "Delete",
+        true,
+        move |confirmed| {
+            if confirmed {
+                if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
+                    let delete_result = if is_group {
+                        // Use cascade delete to remove group and all its connections
+                        state_mut.delete_group_cascade(id)
+                    } else {
+                        state_mut.delete_connection(id)
+                    };
 
-                match delete_result {
-                    Ok(()) => {
-                        drop(state_mut);
-                        // Defer sidebar reload to prevent UI freeze
-                        let state = state_clone.clone();
-                        let sidebar = sidebar_clone.clone();
-                        glib::idle_add_local_once(move || {
-                            MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
-                        });
-                    }
-                    Err(e) => {
-                        let error_alert = gtk4::AlertDialog::builder()
-                            .message("Error Deleting")
-                            .detail(&e)
-                            .modal(true)
-                            .build();
-                        error_alert.show(Some(&window_clone));
+                    match delete_result {
+                        Ok(()) => {
+                            drop(state_mut);
+                            // Defer sidebar reload to prevent UI freeze
+                            let state = state_clone.clone();
+                            let sidebar = sidebar_clone.clone();
+                            glib::idle_add_local_once(move || {
+                                MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+                            });
+                        }
+                        Err(e) => {
+                            alert::show_error(&window_clone, "Error Deleting", &e);
+                        }
                     }
                 }
             }
-        }
-    });
+        },
+    );
 }
 
 /// Duplicates the selected connection
@@ -334,12 +326,11 @@ pub fn delete_selected_connections(
     let selected_ids = sidebar.get_selected_ids();
 
     if selected_ids.is_empty() {
-        let alert = gtk4::AlertDialog::builder()
-            .message("No Selection")
-            .detail("Please select one or more items to delete.")
-            .modal(true)
-            .build();
-        alert.show(Some(window));
+        alert::show_alert(
+            window,
+            "No Selection",
+            "Please select one or more items to delete.",
+        );
         return;
     }
 
@@ -477,24 +468,22 @@ pub fn delete_selected_connections(
 
             // Show results
             if failures_clone.is_empty() {
-                let success_alert = gtk4::AlertDialog::builder()
-                    .message("Deletion Complete")
-                    .detail(format!("Successfully deleted {success_count} item(s)."))
-                    .modal(true)
-                    .build();
-                success_alert.show(Some(&window));
+                alert::show_success(
+                    &window,
+                    "Deletion Complete",
+                    &format!("Successfully deleted {success_count} item(s)."),
+                );
             } else {
-                let error_alert = gtk4::AlertDialog::builder()
-                    .message("Deletion Partially Complete")
-                    .detail(format!(
+                alert::show_error(
+                    &window,
+                    "Deletion Partially Complete",
+                    &format!(
                         "Deleted {} item(s).\n\nFailed to delete {} item(s):\n{}",
                         success_count,
                         failures_clone.len(),
                         failures_clone.join("\n")
-                    ))
-                    .modal(true)
-                    .build();
-                error_alert.show(Some(&window));
+                    ),
+                );
             }
         });
     });
@@ -511,12 +500,11 @@ pub fn show_move_selected_to_group_dialog(
     let selected_ids = sidebar.get_selected_ids();
 
     if selected_ids.is_empty() {
-        let alert = gtk4::AlertDialog::builder()
-            .message("No Selection")
-            .detail("Please select one or more items to move.")
-            .modal(true)
-            .build();
-        alert.show(Some(window));
+        alert::show_alert(
+            window,
+            "No Selection",
+            "Please select one or more items to move.",
+        );
         return;
     }
 
@@ -700,17 +688,16 @@ pub fn show_move_selected_to_group_dialog(
 
             // Show results if there were failures
             if !failures_clone.is_empty() {
-                let error_alert = gtk4::AlertDialog::builder()
-                    .message("Move Partially Complete")
-                    .detail(format!(
+                alert::show_error(
+                    &parent,
+                    "Move Partially Complete",
+                    &format!(
                         "Moved {} item(s).\n\nFailed to move {} item(s):\n{}",
                         success_count,
                         failures_clone.len(),
                         failures_clone.join("\n")
-                    ))
-                    .modal(true)
-                    .build();
-                error_alert.show(Some(&parent));
+                    ),
+                );
             }
         });
     });

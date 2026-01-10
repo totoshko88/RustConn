@@ -3,7 +3,7 @@
 //! This module contains methods for managing connection clusters,
 //! including cluster dialogs and related functionality.
 
-use gtk4::gio;
+use crate::alert;
 use gtk4::prelude::*;
 use std::rc::Rc;
 use uuid::Uuid;
@@ -48,20 +48,14 @@ pub fn show_new_cluster_dialog(
             if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
                 match state_mut.create_cluster(cluster) {
                     Ok(_) => {
-                        let alert = gtk4::AlertDialog::builder()
-                            .message("Cluster Created")
-                            .detail("Cluster has been saved successfully.")
-                            .modal(true)
-                            .build();
-                        alert.show(Some(&window_clone));
+                        alert::show_success(
+                            &window_clone,
+                            "Cluster Created",
+                            "Cluster has been saved successfully.",
+                        );
                     }
                     Err(e) => {
-                        let alert = gtk4::AlertDialog::builder()
-                            .message("Error Creating Cluster")
-                            .detail(&e)
-                            .modal(true)
-                            .build();
-                        alert.show(Some(&window_clone));
+                        alert::show_error(&window_clone, "Error Creating Cluster", &e);
                     }
                 }
             }
@@ -208,12 +202,11 @@ fn show_new_cluster_dialog_from_manager(
                     on_created();
                 }
                 Err(e) => {
-                    let alert = gtk4::AlertDialog::builder()
-                        .message("Error Creating Cluster")
-                        .detail(&format!("Failed to save cluster: {e}"))
-                        .modal(true)
-                        .build();
-                    alert.show(Some(&parent_clone));
+                    alert::show_error(
+                        &parent_clone,
+                        "Error Creating Cluster",
+                        &format!("Failed to save cluster: {e}"),
+                    );
                 }
             }
         }
@@ -276,21 +269,19 @@ fn edit_cluster(
                         on_updated();
                     }
                     Err(e) => {
-                        let alert = gtk4::AlertDialog::builder()
-                            .message("Error Updating Cluster")
-                            .detail(&format!("Failed to save cluster: {e}"))
-                            .modal(true)
-                            .build();
-                        alert.show(Some(&parent_clone));
+                        alert::show_error(
+                            &parent_clone,
+                            "Error Updating Cluster",
+                            &format!("Failed to save cluster: {e}"),
+                        );
                     }
                 }
             } else {
-                let alert = gtk4::AlertDialog::builder()
-                    .message("Error")
-                    .detail("Could not access application state")
-                    .modal(true)
-                    .build();
-                alert.show(Some(&parent_clone));
+                alert::show_error(
+                    &parent_clone,
+                    "Error",
+                    "Could not access application state",
+                );
             }
         }
     });
@@ -310,44 +301,41 @@ fn delete_cluster(
     let cluster_name = cluster.name.clone();
     drop(state_ref);
 
-    let alert = gtk4::AlertDialog::builder()
-        .message("Delete Cluster?")
-        .detail(&format!(
-            "Are you sure you want to delete the cluster '{cluster_name}'?\n\
-            This will not delete the connections in the cluster."
-        ))
-        .buttons(["Cancel", "Delete"])
-        .default_button(0)
-        .cancel_button(0)
-        .modal(true)
-        .build();
-
     let state_clone = state.clone();
     let parent_clone = parent.clone();
-    alert.choose(Some(parent), None::<&gio::Cancellable>, move |result| {
-        if result == Ok(1) {
-            let delete_result = if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
-                let res = state_mut.delete_cluster(cluster_id);
-                drop(state_mut); // Explicitly drop before calling on_deleted
-                res
-            } else {
-                Err("Could not access application state".to_string())
-            };
+    alert::show_confirm(
+        parent,
+        "Delete Cluster?",
+        &format!(
+            "Are you sure you want to delete the cluster '{cluster_name}'?\n\
+            This will not delete the connections in the cluster."
+        ),
+        "Delete",
+        true,
+        move |confirmed| {
+            if confirmed {
+                let delete_result = if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
+                    let res = state_mut.delete_cluster(cluster_id);
+                    drop(state_mut); // Explicitly drop before calling on_deleted
+                    res
+                } else {
+                    Err("Could not access application state".to_string())
+                };
 
-            match delete_result {
-                Ok(()) => {
-                    // Refresh the list after successful deletion
-                    on_deleted();
-                }
-                Err(e) => {
-                    let alert = gtk4::AlertDialog::builder()
-                        .message("Error Deleting Cluster")
-                        .detail(&format!("Failed to delete cluster: {e}"))
-                        .modal(true)
-                        .build();
-                    alert.show(Some(&parent_clone));
+                match delete_result {
+                    Ok(()) => {
+                        // Refresh the list after successful deletion
+                        on_deleted();
+                    }
+                    Err(e) => {
+                        alert::show_error(
+                            &parent_clone,
+                            "Error Deleting Cluster",
+                            &format!("Failed to delete cluster: {e}"),
+                        );
+                    }
                 }
             }
-        }
-    });
+        },
+    );
 }

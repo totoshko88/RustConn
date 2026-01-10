@@ -736,16 +736,14 @@ designed with Wayland-first approach.\n\n\
 
 /// Shows an error dialog
 fn show_error_dialog(app: &adw::Application, title: &str, message: &str) {
-    let dialog = gtk4::AlertDialog::builder()
-        .message(title)
-        .detail(message)
-        .modal(true)
-        .build();
+    let dialog = adw::AlertDialog::new(Some(title), Some(message));
+    dialog.add_response("ok", "OK");
+    dialog.set_default_response(Some("ok"));
 
     // Create a temporary window to show the dialog
     let window = adw::ApplicationWindow::builder().application(app).build();
 
-    dialog.show(Some(&window));
+    dialog.present(Some(&window));
 }
 
 /// Runs the GTK4 application

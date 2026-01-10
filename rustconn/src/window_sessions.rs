@@ -3,8 +3,9 @@
 //! This module contains methods for managing active sessions,
 //! including the sessions manager dialog and related functionality.
 
+use crate::alert;
 use gtk4::prelude::*;
-use gtk4::{gio, Button, HeaderBar, Label, Orientation};
+use gtk4::{Button, HeaderBar, Label, Orientation};
 use std::rc::Rc;
 use uuid::Uuid;
 
@@ -168,25 +169,19 @@ pub fn show_sessions_manager(
         if let Some(row) = list_clone.selected_row() {
             if let Some(id_str) = row.widget_name().as_str().strip_prefix("session-") {
                 if let Ok(id) = Uuid::parse_str(id_str) {
-                    let alert = gtk4::AlertDialog::builder()
-                        .message("Terminate Session?")
-                        .detail("Are you sure you want to terminate this session?")
-                        .buttons(["Cancel", "Terminate"])
-                        .default_button(0)
-                        .cancel_button(0)
-                        .modal(true)
-                        .build();
-
                     let state_inner = state_clone.clone();
                     let notebook_inner = notebook_clone.clone();
                     let list_inner = list_clone.clone();
                     let count_inner = count_clone.clone();
                     let sidebar_inner = sidebar_clone.clone();
-                    alert.choose(
-                        Some(&manager_clone),
-                        gio::Cancellable::NONE,
-                        move |result| {
-                            if result == Ok(1) {
+                    alert::show_confirm(
+                        &manager_clone,
+                        "Terminate Session?",
+                        "Are you sure you want to terminate this session?",
+                        "Terminate",
+                        true,
+                        move |confirmed| {
+                            if confirmed {
                                 // Terminate session in state manager
                                 if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
                                     let _ = state_mut.terminate_session(id);

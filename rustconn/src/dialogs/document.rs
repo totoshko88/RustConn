@@ -2,6 +2,7 @@
 //!
 //! Provides dialogs for creating, opening, saving, and managing documents.
 
+use crate::alert::{self, SaveChangesResponse};
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -470,47 +471,40 @@ impl CloseDocumentDialog {
 
     /// Shows the confirmation dialog
     pub fn present(&self, parent: Option<&gtk4::Window>, doc_id: Uuid, doc_name: &str) {
-        let dialog = gtk4::AlertDialog::builder()
-            .message("Save changes?")
-            .detail(format!(
-                "Document \"{doc_name}\" has unsaved changes. Do you want to save before closing?"
-            ))
-            .buttons(["Don't Save", "Cancel", "Save"])
-            .default_button(2)
-            .cancel_button(1)
-            .modal(true)
-            .build();
-
         let on_complete = self.on_complete.clone();
 
-        dialog.choose(parent, gtk4::gio::Cancellable::NONE, move |result| {
-            match result {
-                Ok(0) => {
-                    // Don't Save
-                    if let Some(ref cb) = *on_complete.borrow() {
-                        cb(Some(DocumentDialogResult::Close {
-                            id: doc_id,
-                            save: false,
-                        }));
+        alert::show_save_changes(
+            parent.expect("Parent window required"),
+            "Save changes?",
+            &format!(
+                "Document \"{doc_name}\" has unsaved changes. Do you want to save before closing?"
+            ),
+            move |response| {
+                match response {
+                    SaveChangesResponse::DontSave => {
+                        if let Some(ref cb) = *on_complete.borrow() {
+                            cb(Some(DocumentDialogResult::Close {
+                                id: doc_id,
+                                save: false,
+                            }));
+                        }
+                    }
+                    SaveChangesResponse::Save => {
+                        if let Some(ref cb) = *on_complete.borrow() {
+                            cb(Some(DocumentDialogResult::Close {
+                                id: doc_id,
+                                save: true,
+                            }));
+                        }
+                    }
+                    SaveChangesResponse::Cancel => {
+                        if let Some(ref cb) = *on_complete.borrow() {
+                            cb(None);
+                        }
                     }
                 }
-                Ok(2) => {
-                    // Save
-                    if let Some(ref cb) = *on_complete.borrow() {
-                        cb(Some(DocumentDialogResult::Close {
-                            id: doc_id,
-                            save: true,
-                        }));
-                    }
-                }
-                _ => {
-                    // Cancel or error
-                    if let Some(ref cb) = *on_complete.borrow() {
-                        cb(None);
-                    }
-                }
-            }
-        });
+            },
+        );
     }
 }
 

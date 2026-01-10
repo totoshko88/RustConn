@@ -3,6 +3,7 @@
 //! This module contains functions for editing connections and groups,
 //! showing connection details, and quick connect dialog.
 
+use crate::alert;
 use crate::dialogs::ConnectionDialog;
 use crate::embedded_rdp::{EmbeddedRdpWidget, RdpConfig as EmbeddedRdpConfig};
 use crate::sidebar::ConnectionSidebar;
@@ -123,12 +124,7 @@ pub fn edit_selected_connection(
                             });
                         }
                         Err(e) => {
-                            let alert = gtk4::AlertDialog::builder()
-                                .message("Error Updating Connection")
-                                .detail(&e)
-                                .modal(true)
-                                .build();
-                            alert.show(Some(&window_clone));
+                            alert::show_error(&window_clone, "Error Updating Connection", &e);
                         }
                     }
                 }
@@ -156,22 +152,20 @@ fn handle_save_to_keepass(
     let settings = state_ref.settings();
 
     if !settings.secrets.kdbx_enabled {
-        let alert = gtk4::AlertDialog::builder()
-            .message("KeePass Not Enabled")
-            .detail("Please enable KeePass integration in Settings first.")
-            .modal(true)
-            .build();
-        alert.show(Some(window));
+        alert::show_error(
+            window,
+            "KeePass Not Enabled",
+            "Please enable KeePass integration in Settings first.",
+        );
         return;
     }
 
     let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
-        let alert = gtk4::AlertDialog::builder()
-            .message("KeePass Database Not Configured")
-            .detail("Please select a KeePass database file in Settings.")
-            .modal(true)
-            .build();
-        alert.show(Some(window));
+        alert::show_error(
+            window,
+            "KeePass Database Not Configured",
+            "Please select a KeePass database file in Settings.",
+        );
         return;
     };
 
@@ -200,12 +194,11 @@ fn handle_save_to_keepass(
 
     // Check if we have at least one credential
     if db_password.is_none() && key_file.is_none() {
-        let alert = gtk4::AlertDialog::builder()
-            .message("KeePass Credentials Required")
-            .detail("Please enter the database password or select a key file in Settings.")
-            .modal(true)
-            .build();
-        alert.show(Some(window));
+        alert::show_error(
+            window,
+            "KeePass Credentials Required",
+            "Please enter the database password or select a key file in Settings.",
+        );
         return;
     }
 
@@ -249,20 +242,14 @@ fn handle_save_to_keepass(
         ) {
             match rx.try_recv() {
                 Ok(Ok(())) => {
-                    let alert = gtk4::AlertDialog::builder()
-                        .message("Password Saved")
-                        .detail(format!("Password for '{lookup_key}' saved to KeePass."))
-                        .modal(true)
-                        .build();
-                    alert.show(Some(&window));
+                    alert::show_success(
+                        &window,
+                        "Password Saved",
+                        &format!("Password for '{lookup_key}' saved to KeePass."),
+                    );
                 }
                 Ok(Err(e)) => {
-                    let alert = gtk4::AlertDialog::builder()
-                        .message("Failed to Save Password")
-                        .detail(format!("Error: {e}"))
-                        .modal(true)
-                        .build();
-                    alert.show(Some(&window));
+                    alert::show_error(&window, "Failed to Save Password", &format!("Error: {e}"));
                 }
                 Err(std::sync::mpsc::TryRecvError::Empty) => {
                     // Not ready yet, schedule another check
@@ -271,12 +258,11 @@ fn handle_save_to_keepass(
                     });
                 }
                 Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                    let alert = gtk4::AlertDialog::builder()
-                        .message("Failed to Save Password")
-                        .detail("Thread error: channel disconnected")
-                        .modal(true)
-                        .build();
-                    alert.show(Some(&window));
+                    alert::show_error(
+                        &window,
+                        "Failed to Save Password",
+                        "Thread error: channel disconnected",
+                    );
                 }
             }
         }
@@ -475,12 +461,7 @@ pub fn rename_selected_item(
     save_btn.connect_clicked(move |_| {
         let new_name = name_row_clone.text().trim().to_string();
         if new_name.is_empty() {
-            let alert = gtk4::AlertDialog::builder()
-                .message("Validation Error")
-                .detail("Name cannot be empty")
-                .modal(true)
-                .build();
-            alert.show(Some(&window_clone));
+            alert::show_validation_error(&window_clone, "Name cannot be empty");
             return;
         }
 
@@ -494,12 +475,10 @@ pub fn rename_selected_item(
             let state_ref = state_clone.borrow();
             if state_ref.group_exists_by_name(&new_name) {
                 drop(state_ref);
-                let alert = gtk4::AlertDialog::builder()
-                    .message("Validation Error")
-                    .detail(format!("Group with name '{new_name}' already exists"))
-                    .modal(true)
-                    .build();
-                alert.show(Some(&window_clone));
+                alert::show_validation_error(
+                    &window_clone,
+                    &format!("Group with name '{new_name}' already exists"),
+                );
                 return;
             }
             drop(state_ref);
@@ -509,12 +488,7 @@ pub fn rename_selected_item(
                     let mut updated = existing;
                     updated.name = new_name.clone();
                     if let Err(e) = state_mut.connection_manager().update_group(id, updated) {
-                        let alert = gtk4::AlertDialog::builder()
-                            .message("Error")
-                            .detail(format!("{e}"))
-                            .modal(true)
-                            .build();
-                        alert.show(Some(&window_clone));
+                        alert::show_error(&window_clone, "Error", &format!("{e}"));
                         return;
                     }
                 }
@@ -547,12 +521,7 @@ pub fn rename_selected_item(
                             });
                         }
                         Err(e) => {
-                            let alert = gtk4::AlertDialog::builder()
-                                .message("Error")
-                                .detail(&e)
-                                .modal(true)
-                                .build();
-                            alert.show(Some(&window_clone));
+                            alert::show_error(&window_clone, "Error", &e);
                         }
                     }
                 }
@@ -639,12 +608,7 @@ pub fn show_edit_group_dialog(
     save_btn.connect_clicked(move |_| {
         let new_name = name_row_clone.text().to_string();
         if new_name.trim().is_empty() {
-            let alert = gtk4::AlertDialog::builder()
-                .message("Validation Error")
-                .detail("Group name cannot be empty")
-                .modal(true)
-                .build();
-            alert.show(Some(&window_clone));
+            alert::show_validation_error(&window_clone, "Group name cannot be empty");
             return;
         }
 
@@ -653,12 +617,10 @@ pub fn show_edit_group_dialog(
             let state_ref = state_clone.borrow();
             if state_ref.group_exists_by_name(&new_name) {
                 drop(state_ref);
-                let alert = gtk4::AlertDialog::builder()
-                    .message("Validation Error")
-                    .detail(format!("Group with name '{new_name}' already exists"))
-                    .modal(true)
-                    .build();
-                alert.show(Some(&window_clone));
+                alert::show_validation_error(
+                    &window_clone,
+                    &format!("Group with name '{new_name}' already exists"),
+                );
                 return;
             }
             drop(state_ref);
@@ -672,12 +634,7 @@ pub fn show_edit_group_dialog(
                     .connection_manager()
                     .update_group(group_id, updated)
                 {
-                    let alert = gtk4::AlertDialog::builder()
-                        .message("Error")
-                        .detail(format!("{e}"))
-                        .modal(true)
-                        .build();
-                    alert.show(Some(&window_clone));
+                    alert::show_error(&window_clone, "Error", &format!("{e}"));
                     return;
                 }
             }
