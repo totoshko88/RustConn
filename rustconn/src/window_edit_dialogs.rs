@@ -459,10 +459,11 @@ pub fn rename_selected_item(
     name_group.add(&name_row);
     content.append(&name_group);
 
-    let main_box = gtk4::Box::new(Orientation::Vertical, 0);
-    main_box.append(&header);
-    main_box.append(&content);
-    rename_window.set_content(Some(&main_box));
+    // Use ToolbarView for proper adw::Window layout
+    let toolbar_view = adw::ToolbarView::new();
+    toolbar_view.add_top_bar(&header);
+    toolbar_view.set_content(Some(&content));
+    rename_window.set_content(Some(&toolbar_view));
 
     // Cancel button
     let window_clone = rename_window.clone();
@@ -626,10 +627,11 @@ pub fn show_edit_group_dialog(
     name_group.add(&name_row);
     content.append(&name_group);
 
-    let main_box = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
-    main_box.append(&header);
-    main_box.append(&content);
-    group_window.set_content(Some(&main_box));
+    // Use ToolbarView for proper adw::Window layout
+    let toolbar_view = adw::ToolbarView::new();
+    toolbar_view.add_top_bar(&header);
+    toolbar_view.set_content(Some(&content));
+    group_window.set_content(Some(&toolbar_view));
 
     let window_clone = group_window.clone();
     cancel_btn.connect_clicked(move |_| {
@@ -852,11 +854,11 @@ pub fn show_quick_connect_dialog_with_state(
 
     content.append(&settings_group);
 
-    // Main box with header
-    let main_box = gtk4::Box::new(Orientation::Vertical, 0);
-    main_box.append(&header);
-    main_box.append(&content);
-    quick_window.set_content(Some(&main_box));
+    // Use ToolbarView for proper adw::Window layout
+    let toolbar_view = adw::ToolbarView::new();
+    toolbar_view.add_top_bar(&header);
+    toolbar_view.set_content(Some(&content));
+    quick_window.set_content(Some(&toolbar_view));
 
     // Track if port was manually changed
     let port_manually_changed = Rc::new(RefCell::new(false));

@@ -187,10 +187,10 @@ impl ShortcutsDialog {
         content.set_margin_end(12);
 
         // Use ToolbarView for adw::Window
-        let main_box = GtkBox::new(Orientation::Vertical, 0);
-        main_box.append(&header);
-        main_box.append(&content);
-        window.set_content(Some(&main_box));
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header);
+        toolbar_view.set_content(Some(&content));
+        window.set_content(Some(&toolbar_view));
 
         // Search entry
         let search_entry = SearchEntry::builder()

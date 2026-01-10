@@ -255,35 +255,39 @@ impl EmbeddedSessionTab {
                     .unwrap_or('?')
                     .to_uppercase()
                     .to_string();
-                let extents = cr.text_extents(&letter).unwrap();
-                cr.move_to(
-                    f64::from(width) / 2.0 - extents.width() / 2.0,
-                    center_y + extents.height() / 2.0,
-                );
-                let _ = cr.show_text(&letter);
+                if let Ok(extents) = cr.text_extents(&letter) {
+                    cr.move_to(
+                        f64::from(width) / 2.0 - extents.width() / 2.0,
+                        center_y + extents.height() / 2.0,
+                    );
+                    let _ = cr.show_text(&letter);
+                }
 
                 // Connection name
                 cr.set_source_rgb(0.9, 0.9, 0.9);
                 cr.set_font_size(18.0);
-                let extents = cr.text_extents(&name_clone).unwrap();
-                cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 70.0);
-                let _ = cr.show_text(&name_clone);
+                if let Ok(extents) = cr.text_extents(&name_clone) {
+                    cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 70.0);
+                    let _ = cr.show_text(&name_clone);
+                }
 
                 // Status message
                 cr.set_font_size(13.0);
                 cr.set_source_rgb(0.6, 0.8, 0.6);
                 let status = "Session running in separate window";
-                let extents = cr.text_extents(status).unwrap();
-                cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 100.0);
-                let _ = cr.show_text(status);
+                if let Ok(extents) = cr.text_extents(status) {
+                    cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 100.0);
+                    let _ = cr.show_text(status);
+                }
 
                 // Info text
                 cr.set_font_size(11.0);
                 cr.set_source_rgb(0.5, 0.5, 0.5);
                 let info = "Close this tab to disconnect • Use Disconnect button to terminate";
-                let extents = cr.text_extents(info).unwrap();
-                cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 130.0);
-                let _ = cr.show_text(info);
+                if let Ok(extents) = cr.text_extents(info) {
+                    cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 130.0);
+                    let _ = cr.show_text(info);
+                }
             });
         }
 

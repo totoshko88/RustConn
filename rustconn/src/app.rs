@@ -4,6 +4,7 @@
 //! for the `RustConn` GTK4 application, including state management and
 //! action setup.
 
+use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{gio, glib};
 use libadwaita as adw;
@@ -400,13 +401,13 @@ fn load_css_styles() {
         }
 
         .toast-success {
-            border-left: 4px solid #2ec27e;
-            background-color: alpha(#2ec27e, 0.1);
+            border-left: 4px solid @success_color;
+            background-color: alpha(@success_color, 0.1);
         }
 
         .toast-warning {
-            border-left: 4px solid #e5a50a;
-            background-color: alpha(#e5a50a, 0.1);
+            border-left: 4px solid @warning_color;
+            background-color: alpha(@warning_color, 0.1);
         }
 
         .toast-error {
@@ -421,12 +422,12 @@ fn load_css_styles() {
         }
 
         entry.warning {
-            border-color: #e5a50a;
-            box-shadow: 0 0 0 1px #e5a50a;
+            border-color: @warning_color;
+            box-shadow: 0 0 0 1px @warning_color;
         }
 
         entry.success {
-            border-color: #2ec27e;
+            border-color: @success_color;
         }
 
         label.error {
@@ -435,7 +436,7 @@ fn load_css_styles() {
         }
 
         label.warning {
-            color: #e5a50a;
+            color: @warning_color;
             font-size: 0.9em;
         }
 
@@ -519,11 +520,11 @@ fn load_css_styles() {
 
         /* Status indicator styles for settings dialog */
         .success {
-            color: #2ec27e;
+            color: @success_color;
         }
 
         .warning {
-            color: #e5a50a;
+            color: @warning_color;
         }
 
         .error {
@@ -532,12 +533,12 @@ fn load_css_styles() {
 
         /* Status icons with better visibility */
         label.success {
-            color: #2ec27e;
+            color: @success_color;
             font-weight: 600;
         }
 
         label.warning {
-            color: #e5a50a;
+            color: @warning_color;
             font-weight: 600;
         }
 
@@ -653,74 +654,84 @@ fn setup_app_actions(
 
 /// Shows the about dialog
 fn show_about_dialog(parent: &adw::ApplicationWindow) {
-    let about = gtk4::AboutDialog::builder()
-        .transient_for(parent)
-        .modal(true)
-        .program_name("RustConn")
+    let description = "\
+<b>RustConn</b> is a modern GTK4/libadwaita connection manager for Linux, \
+designed with Wayland-first approach.\n\n\
+<b>Supported Protocols:</b>\n\
+• SSH — embedded VTE terminal with tabs\n\
+• RDP — native IronRDP or FreeRDP backend\n\
+• VNC — TigerVNC integration\n\
+• SPICE — for virtual machines\n\n\
+<b>Key Features:</b>\n\
+• Connection organization with groups and tags\n\
+• Import/Export: Remmina, Asbru-CM, SSH config, Ansible, Royal TS\n\
+• Secure credential storage via libsecret or KeePassXC\n\
+• Session logging and command snippets\n\
+• Zero Trust integrations (AWS SSM, GCP IAP, Azure, Tailscale, etc.)\n\n\
+<b>Developed by Anton Isaiev, 2024-2026</b>";
+
+    let about = adw::AboutDialog::builder()
+        .application_name("RustConn")
+        .developer_name("Modern connection manager for Linux")
         .version(env!("CARGO_PKG_VERSION"))
-        .comments(
-            "A modern connection manager for Linux\n\n\
-            Wayland-native GTK4 application for managing SSH, RDP, VNC, and SPICE connections.\n\n\
-            Features:\n\
-            • Embedded RDP with clipboard, shared folders, RemoteFX\n\
-            • Zero Trust providers (AWS SSM, GCP IAP, Azure Bastion)\n\
-            • Import/Export: Remmina, Asbru-CM, Royal TS, SSH config\n\
-            • Password Generator with strength analysis\n\
-            • Session Restore on startup\n\
-            • Expect automation for SSH\n\n\
-            Made with ❤️ in Ukraine 🇺🇦",
-        )
-        .website("https://github.com/totoshko88/rustconn")
-        .website_label("GitHub Repository")
+        .comments(description)
+        .website("https://github.com/totoshko88/RustConn")
+        .issue_url("https://github.com/totoshko88/rustconn/issues")
         .license_type(gtk4::License::Gpl30)
-        .authors(vec!["Anton Isaiev <totoshko88@gmail.com>"])
+        .developers(vec!["Anton Isaiev <totoshko88@gmail.com>"])
+        .copyright("© 2024-2026 Anton Isaiev")
+        .application_icon("io.github.totoshko88.RustConn")
         .build();
 
+    // Add documentation links
+    about.add_link("📖 User Guide", "https://github.com/totoshko88/RustConn/blob/main/docs/USER_GUIDE.md");
+    about.add_link("📦 Installation", "https://github.com/totoshko88/RustConn/blob/main/docs/INSTALL.md");
+    about.add_link("🚀 Releases", "https://github.com/totoshko88/RustConn/releases");
+    about.add_link("📜 License (GPL v3.0)", "https://www.gnu.org/licenses/gpl-3.0.html");
+
     // Add support/sponsorship information
-    // Note: & must be escaped as &amp; for Pango markup in GTK
     about.add_credit_section(
-        "Support the Project",
+        Some("Support the Project"),
         &[
-            "☕ Ko-Fi", "one-time/monthly https://ko-fi.com/totoshko88",
-            "💳 PayPal", "international https://www.paypal.com/qrcodes/p2pqrc/JJLUXRZSQ5V3A",
-            "💸 Payoneer", "international https://link.payoneer.com/Token?t=135B68D8EB1E4860B4B632ECD755182F&amp;src=pl",
-            "🇺🇦 Monobank", "UAH hryvnia https://send.monobank.ua/jar/2UgaGcQ3JC",
+            "☕ Ko-Fi: https://ko-fi.com/totoshko88",
+            "💳 PayPal: https://www.paypal.com/qrcodes/p2pqrc/JJLUXRZSQ5V3A",
+            "🇺🇦 Monobank: https://send.monobank.ua/jar/2UgaGcQ3JC",
         ],
     );
 
     about.add_credit_section(
-        "Acknowledgments",
+        Some("Acknowledgments"),
         &[
             "GTK4 and the GNOME project",
             "The Rust community",
             "IronRDP project",
             "FreeRDP project",
             "All contributors and supporters",
+            "Made with ❤️ in Ukraine 🇺🇦",
         ],
     );
 
-    // Load and set the application logo
-    // Try multiple locations: system paths first, then development path
-    let icon_paths = [
-        // System installation paths
-        "/usr/share/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg",
-        "/usr/local/share/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg",
-        "/app/share/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg", // Flatpak
-        // Development path (cargo run)
-        concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg"
-        ),
-    ];
+    // Add legal sections for key dependencies
+    about.add_legal_section(
+        "GTK4 & libadwaita",
+        Some("© The GNOME Project"),
+        gtk4::License::Lgpl21,
+        None,
+    );
+    about.add_legal_section(
+        "IronRDP",
+        Some("© Devolutions Inc."),
+        gtk4::License::MitX11,
+        None,
+    );
+    about.add_legal_section(
+        "VTE Terminal",
+        Some("© The GNOME Project"),
+        gtk4::License::Lgpl21,
+        None,
+    );
 
-    for path in &icon_paths {
-        if let Ok(logo) = gtk4::gdk::Texture::from_filename(path) {
-            about.set_logo(Some(&logo));
-            break;
-        }
-    }
-
-    about.present();
+    about.present(Some(parent));
 }
 
 /// Shows an error dialog

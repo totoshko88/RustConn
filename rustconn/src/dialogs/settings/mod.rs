@@ -1,7 +1,9 @@
-//! Settings dialog using libadwaita PreferencesWindow
+//! Settings dialog using libadwaita PreferencesDialog
 //!
 //! This module contains the settings dialog using modern Adwaita components
 //! for a native GNOME look and feel.
+//!
+//! Migrated to `PreferencesDialog` (libadwaita 1.5+) from deprecated `PreferencesWindow`.
 
 mod clients_tab;
 mod logging_tab;
@@ -18,7 +20,6 @@ pub use terminal_tab::*;
 pub use ui_tab::*;
 
 use adw::prelude::*;
-use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::{
     Box as GtkBox, Button, CheckButton, DropDown, Entry, Label, PasswordEntry, SpinButton, Spinner,
@@ -33,10 +34,10 @@ use std::rc::Rc;
 /// Callback type for settings save
 pub type SettingsCallback = Option<Rc<dyn Fn(AppSettings)>>;
 
-/// Main settings dialog using AdwPreferencesWindow
+/// Main settings dialog using AdwPreferencesDialog (libadwaita 1.5+)
 #[allow(dead_code)] // Fields kept for GTK widget lifecycle
 pub struct SettingsDialog {
-    window: adw::PreferencesWindow,
+    dialog: adw::PreferencesDialog,
     // Terminal settings
     font_family_entry: Entry,
     font_size_spin: SpinButton,
@@ -99,20 +100,12 @@ pub struct SettingsDialog {
 }
 
 impl SettingsDialog {
-    /// Creates a new settings dialog using AdwPreferencesWindow
+    /// Creates a new settings dialog using AdwPreferencesDialog
     #[must_use]
-    pub fn new(parent: Option<&gtk4::Window>) -> Self {
-        let window = adw::PreferencesWindow::builder()
-            .title("Settings")
-            .modal(true)
-            .default_width(750)
-            .default_height(700)
+    pub fn new(_parent: Option<&gtk4::Window>) -> Self {
+        let dialog = adw::PreferencesDialog::builder()
             .search_enabled(true)
             .build();
-
-        if let Some(parent) = parent {
-            window.set_transient_for(Some(parent));
-        }
 
         // Create all pages
         let (
@@ -183,13 +176,13 @@ impl SettingsDialog {
 
         let clients_page = create_clients_page();
 
-        // Add pages to window
-        window.add(&terminal_page);
-        window.add(&logging_page);
-        window.add(&secrets_page);
-        window.add(&ui_page);
-        window.add(&ssh_agent_page);
-        window.add(&clients_page);
+        // Add pages to dialog
+        dialog.add(&terminal_page);
+        dialog.add(&logging_page);
+        dialog.add(&secrets_page);
+        dialog.add(&ui_page);
+        dialog.add(&ssh_agent_page);
+        dialog.add(&clients_page);
 
         // Initialize settings
         let settings: Rc<RefCell<AppSettings>> = Rc::new(RefCell::new(AppSettings::default()));
@@ -198,7 +191,7 @@ impl SettingsDialog {
         let ssh_agent_manager = Rc::new(RefCell::new(SshAgentManager::from_env()));
 
         Self {
-            window,
+            dialog,
             font_family_entry,
             font_size_spin,
             scrollback_spin,
@@ -265,7 +258,7 @@ impl SettingsDialog {
     }
 
     /// Shows the dialog and loads current settings
-    pub fn run<F>(&self, callback: F)
+    pub fn run<F>(&self, parent: Option<&impl IsA<gtk4::Widget>>, callback: F)
     where
         F: Fn(Option<AppSettings>) + 'static,
     {
@@ -273,7 +266,7 @@ impl SettingsDialog {
         let settings = self.settings.borrow().clone();
         self.load_settings(&settings);
 
-        // Setup close handler - auto-save on close for PreferencesWindow
+        // Setup close handler - auto-save on close for PreferencesDialog
         let callback_rc = Rc::new(callback);
         self.setup_close_handler(callback_rc);
 
@@ -321,9 +314,10 @@ impl SettingsDialog {
             });
         }
 
-        // Show the window
-        self.window.present();
+        // Present the dialog - PreferencesDialog uses present() with parent widget
+        self.dialog.present(parent);
     }
+
 
     /// Loads settings into the UI controls
     fn load_settings(&self, settings: &AppSettings) {
@@ -448,8 +442,8 @@ impl SettingsDialog {
         // Store callback reference
         let on_save_callback = self.on_save.clone();
 
-        // PreferencesWindow auto-saves on close
-        self.window.connect_close_request(move |_| {
+        // PreferencesDialog uses connect_closed signal (not connect_close_request)
+        self.dialog.connect_closed(move |_| {
             // Collect terminal settings
             let terminal = collect_terminal_settings(
                 &font_family_entry_clone,
@@ -520,8 +514,11 @@ impl SettingsDialog {
 
             // Call external callback with settings
             external_callback(Some(new_settings));
-
-            glib::Propagation::Proceed
         });
+    }
+
+    /// Returns a reference to the dialog for toast notifications
+    pub fn dialog(&self) -> &adw::PreferencesDialog {
+        &self.dialog
     }
 }

@@ -214,15 +214,15 @@ impl DropIndicator {
                 padding-bottom: 4px;
             }
 
-            /* Status icons */
+            /* Status icons - using Adwaita semantic colors */
             .status-connected {
-                color: #2ec27e; /* Green */
+                color: @success_color;
             }
             .status-connecting {
-                color: #f5c211; /* Yellow */
+                color: @warning_color;
             }
             .status-failed {
-                color: #e01b24; /* Red */
+                color: @error_color;
             }
             
             /* Group highlight for drop-into */
@@ -248,10 +248,10 @@ impl DropIndicator {
             }
             
             .status-connected {
-                color: #2ec27e;
+                color: @success_color;
             }
             .status-connecting {
-                color: #e5a50a;
+                color: @warning_color;
             }
             ",
         );

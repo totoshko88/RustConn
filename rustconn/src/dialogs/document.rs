@@ -86,10 +86,10 @@ impl NewDocumentDialog {
         content.set_margin_end(12);
 
         // Use ToolbarView for adw::Window
-        let main_box = GtkBox::new(Orientation::Vertical, 0);
-        main_box.append(&header);
-        main_box.append(&content);
-        window.set_content(Some(&main_box));
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header);
+        toolbar_view.set_content(Some(&content));
+        window.set_content(Some(&toolbar_view));
 
         // Name field
         let name_label = Label::builder()
@@ -343,10 +343,10 @@ impl OpenDocumentDialog {
         content.append(&password_entry);
 
         // Use ToolbarView for adw::Window
-        let main_box = GtkBox::new(Orientation::Vertical, 0);
-        main_box.append(&header);
-        main_box.append(&content);
-        window.set_content(Some(&main_box));
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header);
+        toolbar_view.set_content(Some(&content));
+        window.set_content(Some(&toolbar_view));
 
         // Cancel
         let window_clone = window.clone();
@@ -565,10 +565,10 @@ impl DocumentProtectionDialog {
         content.set_margin_end(12);
 
         // Use ToolbarView for adw::Window
-        let main_box = GtkBox::new(Orientation::Vertical, 0);
-        main_box.append(&header);
-        main_box.append(&content);
-        window.set_content(Some(&main_box));
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header);
+        toolbar_view.set_content(Some(&content));
+        window.set_content(Some(&toolbar_view));
 
         // Info label
         let info_label = Label::builder()

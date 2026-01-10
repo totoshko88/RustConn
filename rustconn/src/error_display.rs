@@ -4,8 +4,10 @@
 //! user-friendly messages and displaying them appropriately.
 
 use crate::error::AppStateError;
+use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{AlertDialog, Button, Expander, Label, Orientation, ScrolledWindow};
+use libadwaita as adw;
 
 /// Converts an `AppStateError` to a user-friendly message
 ///
@@ -112,7 +114,7 @@ pub fn show_error_dialog(
     }
 
     // Create a custom dialog with expandable details
-    let dialog = gtk4::Window::builder()
+    let dialog = adw::Window::builder()
         .title(title)
         .modal(true)
         .default_width(450)
@@ -124,11 +126,9 @@ pub fn show_error_dialog(
     }
 
     // Header bar with close button
-    let header = gtk4::HeaderBar::new();
-    header.set_show_title_buttons(false);
+    let header = adw::HeaderBar::new();
     let close_btn = Button::builder().label("Close").build();
     header.pack_end(&close_btn);
-    dialog.set_titlebar(Some(&header));
 
     // Content
     let content = gtk4::Box::new(Orientation::Vertical, 12);
@@ -185,7 +185,11 @@ pub fn show_error_dialog(
     expander.set_child(Some(&details_scroll));
     content.append(&expander);
 
-    dialog.set_child(Some(&content));
+    // Use ToolbarView for proper adw::Window layout
+    let toolbar_view = adw::ToolbarView::new();
+    toolbar_view.add_top_bar(&header);
+    toolbar_view.set_content(Some(&content));
+    dialog.set_content(Some(&toolbar_view));
 
     // Connect close button
     let dialog_clone = dialog.clone();

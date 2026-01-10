@@ -74,10 +74,10 @@ impl StatisticsDialog {
         clamp.set_child(Some(&content_box));
         scrolled.set_child(Some(&clamp));
 
-        let main_box = GtkBox::new(Orientation::Vertical, 0);
-        main_box.append(&header);
-        main_box.append(&scrolled);
-        window.set_content(Some(&main_box));
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header);
+        toolbar_view.set_content(Some(&scrolled));
+        window.set_content(Some(&toolbar_view));
 
         let on_clear: Rc<RefCell<Option<Box<dyn Fn() + 'static>>>> = Rc::new(RefCell::new(None));
 

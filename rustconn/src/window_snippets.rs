@@ -2,8 +2,10 @@
 //!
 //! This module contains methods for managing and executing command snippets.
 
+use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{gio, Button, HeaderBar, Label, Orientation};
+use gtk4::{gio, Button, Label, Orientation};
+use libadwaita as adw;
 use std::rc::Rc;
 use uuid::Uuid;
 
@@ -52,7 +54,7 @@ pub fn show_snippets_manager(
     state: SharedAppState,
     notebook: SharedNotebook,
 ) {
-    let manager_window = gtk4::Window::builder()
+    let manager_window = adw::Window::builder()
         .title("Manage Snippets")
         .transient_for(window)
         .modal(true)
@@ -61,8 +63,7 @@ pub fn show_snippets_manager(
         .build();
 
     // Create header bar with Close/Create buttons (GNOME HIG)
-    let header = HeaderBar::new();
-    header.set_show_title_buttons(false);
+    let header = adw::HeaderBar::new();
     let close_btn = Button::builder().label("Close").build();
     let new_btn = Button::builder()
         .label("Create")
@@ -70,7 +71,6 @@ pub fn show_snippets_manager(
         .build();
     header.pack_start(&close_btn);
     header.pack_end(&new_btn);
-    manager_window.set_titlebar(Some(&header));
 
     // Close button handler
     let window_clone = manager_window.clone();
@@ -121,7 +121,11 @@ pub fn show_snippets_manager(
     button_box.append(&execute_btn);
     content.append(&button_box);
 
-    manager_window.set_child(Some(&content));
+    // Use ToolbarView for proper adw::Window layout
+    let toolbar_view = adw::ToolbarView::new();
+    toolbar_view.add_top_bar(&header);
+    toolbar_view.set_content(Some(&content));
+    manager_window.set_content(Some(&toolbar_view));
 
     // Populate snippets list
     populate_snippets_list(&state, &snippets_list, "");
@@ -316,7 +320,7 @@ pub fn populate_snippets_list(state: &SharedAppState, list: &gtk4::ListBox, quer
 
 /// Shows a snippet picker for quick execution
 pub fn show_snippet_picker(window: &gtk4::Window, state: SharedAppState, notebook: SharedNotebook) {
-    let picker_window = gtk4::Window::builder()
+    let picker_window = adw::Window::builder()
         .title("Execute Snippet")
         .transient_for(window)
         .modal(true)
@@ -324,10 +328,9 @@ pub fn show_snippet_picker(window: &gtk4::Window, state: SharedAppState, noteboo
         .default_height(400)
         .build();
 
-    let header = HeaderBar::new();
+    let header = adw::HeaderBar::new();
     let cancel_btn = Button::builder().label("Cancel").build();
     header.pack_start(&cancel_btn);
-    picker_window.set_titlebar(Some(&header));
 
     let content = gtk4::Box::new(Orientation::Vertical, 8);
     content.set_margin_top(12);
@@ -352,7 +355,11 @@ pub fn show_snippet_picker(window: &gtk4::Window, state: SharedAppState, noteboo
     scrolled.set_child(Some(&snippets_list));
     content.append(&scrolled);
 
-    picker_window.set_child(Some(&content));
+    // Use ToolbarView for proper adw::Window layout
+    let toolbar_view = adw::ToolbarView::new();
+    toolbar_view.add_top_bar(&header);
+    toolbar_view.set_content(Some(&content));
+    picker_window.set_content(Some(&toolbar_view));
 
     populate_snippets_list(&state, &snippets_list, "");
 
@@ -425,14 +432,14 @@ pub fn show_variable_input_dialog(
     notebook: &SharedNotebook,
     snippet: &rustconn_core::Snippet,
 ) {
-    let var_window = gtk4::Window::builder()
+    let var_window = adw::Window::builder()
         .title("Enter Variable Values")
         .transient_for(parent)
         .modal(true)
         .default_width(400)
         .build();
 
-    let header = HeaderBar::new();
+    let header = adw::HeaderBar::new();
     let cancel_btn = Button::builder().label("Cancel").build();
     let execute_btn = Button::builder()
         .label("Execute")
@@ -440,7 +447,6 @@ pub fn show_variable_input_dialog(
         .build();
     header.pack_start(&cancel_btn);
     header.pack_end(&execute_btn);
-    var_window.set_titlebar(Some(&header));
 
     let content = gtk4::Box::new(Orientation::Vertical, 8);
     content.set_margin_top(12);
@@ -482,7 +488,12 @@ pub fn show_variable_input_dialog(
     }
 
     content.append(&grid);
-    var_window.set_child(Some(&content));
+
+    // Use ToolbarView for proper adw::Window layout
+    let toolbar_view = adw::ToolbarView::new();
+    toolbar_view.add_top_bar(&header);
+    toolbar_view.set_content(Some(&content));
+    var_window.set_content(Some(&toolbar_view));
 
     // Connect cancel
     let window_clone = var_window.clone();

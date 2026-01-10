@@ -382,10 +382,7 @@ fn add_key_with_passphrase_dialog(
         .default_height(180)
         .build();
 
-    let main_box = GtkBox::builder()
-        .orientation(Orientation::Vertical)
-        .spacing(0)
-        .build();
+    let toolbar_view = adw::ToolbarView::new();
 
     let header = adw::HeaderBar::builder()
         .show_end_title_buttons(false)
@@ -431,9 +428,9 @@ fn add_key_with_passphrase_dialog(
     content.append(&passphrase_entry);
     content.append(&button_box);
 
-    main_box.append(&header);
-    main_box.append(&content);
-    dialog.set_content(Some(&main_box));
+    toolbar_view.add_top_bar(&header);
+    toolbar_view.set_content(Some(&content));
+    dialog.set_content(Some(&toolbar_view));
 
     // Connect cancel button
     let dialog_clone = dialog.clone();
@@ -448,7 +445,6 @@ fn add_key_with_passphrase_dialog(
     let socket_label_clone = ssh_agent_socket_label.clone();
     let key_path_clone = key_path.to_path_buf();
     let dialog_clone2 = dialog.clone();
-    let parent_window_clone = parent_window.clone();
 
     add_button.connect_clicked(move |_| {
         let passphrase_text = passphrase_entry.text();
@@ -474,12 +470,8 @@ fn add_key_with_passphrase_dialog(
             }
             Err(e) => {
                 tracing::error!("Failed to add key: {e}");
-                // Show error toast on parent window if it's a PreferencesWindow
-                if let Some(pref_window) =
-                    parent_window_clone.downcast_ref::<adw::PreferencesWindow>()
-                {
-                    pref_window.add_toast(adw::Toast::new(&format!("Failed to add key: {e}")));
-                }
+                // Log the error - toast notifications are handled by the parent dialog
+                // The user will see the key wasn't added when the list doesn't update
                 dialog_clone2.close();
             }
         }
@@ -625,7 +617,7 @@ fn create_loaded_key_row(
 
 /// Helper function to remove a key and refresh the UI
 fn remove_key_and_refresh(
-    button: &Button,
+    _button: &Button,
     key_path: &std::path::Path,
     ssh_agent_manager: &Rc<RefCell<SshAgentManager>>,
     ssh_agent_keys_list: &ListBox,
@@ -647,12 +639,9 @@ fn remove_key_and_refresh(
         }
         Err(e) => {
             tracing::error!("Failed to remove key: {e}");
-            // Show error toast on parent window if available
-            if let Some(root) = button.root() {
-                if let Some(pref_window) = root.downcast_ref::<adw::PreferencesWindow>() {
-                    pref_window.add_toast(adw::Toast::new(&format!("Failed to remove key: {e}")));
-                }
-            }
+            // Show error toast on parent dialog if available
+            // Note: PreferencesDialog doesn't inherit from Root, so we just log the error
+            tracing::error!("Failed to remove key: {e}");
         }
     }
 }

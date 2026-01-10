@@ -10,7 +10,7 @@ use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
     Box as GtkBox, Button, CheckButton, Entry, Label, ListBox, ListBoxRow, Orientation,
-    ScrolledWindow, Switch,
+    ScrolledWindow,
 };
 use libadwaita as adw;
 use rustconn_core::cluster::Cluster;
@@ -26,7 +26,7 @@ pub type ClusterCallback = Rc<RefCell<Option<Box<dyn Fn(Option<Cluster>)>>>>;
 pub struct ClusterDialog {
     window: adw::Window,
     name_entry: Entry,
-    broadcast_switch: Switch,
+    broadcast_row: adw::SwitchRow,
     connections_list: ListBox,
     connection_rows: Rc<RefCell<Vec<ConnectionSelectionRow>>>,
     editing_id: Rc<RefCell<Option<Uuid>>>,
@@ -121,17 +121,12 @@ impl ClusterDialog {
         name_row.set_activatable_widget(Some(&name_entry));
         details_group.add(&name_row);
 
-        // Broadcast mode switch
-        let broadcast_switch = Switch::builder()
-            .active(false)
-            .valign(gtk4::Align::Center)
-            .build();
-        let broadcast_row = adw::ActionRow::builder()
+        // Broadcast mode switch row
+        let broadcast_row = adw::SwitchRow::builder()
             .title("Broadcast mode")
             .subtitle("Send keyboard input to all cluster sessions simultaneously")
+            .active(false)
             .build();
-        broadcast_row.add_suffix(&broadcast_switch);
-        broadcast_row.set_activatable_widget(Some(&broadcast_switch));
         details_group.add(&broadcast_row);
 
         content.append(&details_group);
@@ -149,7 +144,7 @@ impl ClusterDialog {
         let window_clone = window.clone();
         let on_save_clone = on_save.clone();
         let name_entry_clone = name_entry.clone();
-        let broadcast_switch_clone = broadcast_switch.clone();
+        let broadcast_row_clone = broadcast_row.clone();
         let connection_rows_clone = connection_rows.clone();
         let editing_id_clone = editing_id.clone();
         save_btn.connect_clicked(move |_| {
@@ -187,7 +182,7 @@ impl ClusterDialog {
                 Cluster::new(name)
             };
 
-            cluster.broadcast_enabled = broadcast_switch_clone.is_active();
+            cluster.broadcast_enabled = broadcast_row_clone.is_active();
             for conn_id in selected_ids {
                 cluster.add_connection(conn_id);
             }
@@ -201,7 +196,7 @@ impl ClusterDialog {
         Self {
             window,
             name_entry,
-            broadcast_switch,
+            broadcast_row,
             connections_list,
             connection_rows,
             editing_id,
@@ -344,7 +339,7 @@ impl ClusterDialog {
         *self.editing_id.borrow_mut() = Some(cluster.id);
         self.window.set_title(Some("Edit Cluster"));
         self.name_entry.set_text(&cluster.name);
-        self.broadcast_switch.set_active(cluster.broadcast_enabled);
+        self.broadcast_row.set_active(cluster.broadcast_enabled);
 
         // Select the connections that are in the cluster
         for row in self.connection_rows.borrow().iter() {

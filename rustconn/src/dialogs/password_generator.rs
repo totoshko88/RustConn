@@ -4,11 +4,9 @@
 //! Migrated to use libadwaita components for GNOME HIG compliance.
 
 use adw::prelude::*;
-use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::{
     Adjustment, Box as GtkBox, Button, Entry, Label, LevelBar, Orientation, Scale, SpinButton,
-    Switch,
 };
 use libadwaita as adw;
 use rustconn_core::{
@@ -70,10 +68,10 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
     clamp.set_child(Some(&content));
     scrolled.set_child(Some(&clamp));
 
-    let main_box = GtkBox::new(Orientation::Vertical, 0);
-    main_box.append(&header);
-    main_box.append(&scrolled);
-    window.set_content(Some(&main_box));
+    let toolbar_view = adw::ToolbarView::new();
+    toolbar_view.add_top_bar(&header);
+    toolbar_view.set_content(Some(&scrolled));
+    window.set_content(Some(&toolbar_view));
 
     // === Password Display Group ===
     let password_group = adw::PreferencesGroup::builder()
@@ -202,68 +200,43 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
         .build();
 
     // Lowercase
-    let lowercase_switch = Switch::builder()
-        .active(true)
-        .valign(gtk4::Align::Center)
-        .build();
-    let lowercase_row = adw::ActionRow::builder()
+    let lowercase_row = adw::SwitchRow::builder()
         .title("Lowercase")
         .subtitle("a-z")
+        .active(true)
         .build();
-    lowercase_row.add_suffix(&lowercase_switch);
-    lowercase_row.set_activatable_widget(Some(&lowercase_switch));
     charset_group.add(&lowercase_row);
 
     // Uppercase
-    let uppercase_switch = Switch::builder()
-        .active(true)
-        .valign(gtk4::Align::Center)
-        .build();
-    let uppercase_row = adw::ActionRow::builder()
+    let uppercase_row = adw::SwitchRow::builder()
         .title("Uppercase")
         .subtitle("A-Z")
+        .active(true)
         .build();
-    uppercase_row.add_suffix(&uppercase_switch);
-    uppercase_row.set_activatable_widget(Some(&uppercase_switch));
     charset_group.add(&uppercase_row);
 
     // Digits
-    let digits_switch = Switch::builder()
-        .active(true)
-        .valign(gtk4::Align::Center)
-        .build();
-    let digits_row = adw::ActionRow::builder()
+    let digits_row = adw::SwitchRow::builder()
         .title("Digits")
         .subtitle("0-9")
+        .active(true)
         .build();
-    digits_row.add_suffix(&digits_switch);
-    digits_row.set_activatable_widget(Some(&digits_switch));
     charset_group.add(&digits_row);
 
     // Special
-    let special_switch = Switch::builder()
-        .active(true)
-        .valign(gtk4::Align::Center)
-        .build();
-    let special_row = adw::ActionRow::builder()
+    let special_row = adw::SwitchRow::builder()
         .title("Special")
         .subtitle("!@#$%^&amp;*")
+        .active(true)
         .build();
-    special_row.add_suffix(&special_switch);
-    special_row.set_activatable_widget(Some(&special_switch));
     charset_group.add(&special_row);
 
     // Extended special
-    let extended_switch = Switch::builder()
-        .active(false)
-        .valign(gtk4::Align::Center)
-        .build();
-    let extended_row = adw::ActionRow::builder()
+    let extended_row = adw::SwitchRow::builder()
         .title("Extended")
         .subtitle("()[]{}|;:,.&lt;&gt;?/")
+        .active(false)
         .build();
-    extended_row.add_suffix(&extended_switch);
-    extended_row.set_activatable_widget(Some(&extended_switch));
     charset_group.add(&extended_row);
 
     content.append(&charset_group);
@@ -272,16 +245,11 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
     let options_group = adw::PreferencesGroup::builder().title("Options").build();
 
     // Exclude ambiguous
-    let ambiguous_switch = Switch::builder()
-        .active(false)
-        .valign(gtk4::Align::Center)
-        .build();
-    let ambiguous_row = adw::ActionRow::builder()
+    let ambiguous_row = adw::SwitchRow::builder()
         .title("Exclude ambiguous")
         .subtitle("Avoid 0O, 1lI to prevent confusion")
+        .active(false)
         .build();
-    ambiguous_row.add_suffix(&ambiguous_switch);
-    ambiguous_row.set_activatable_widget(Some(&ambiguous_switch));
     options_group.add(&ambiguous_row);
 
     content.append(&options_group);
@@ -326,12 +294,12 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
     // Helper to build config from UI state
     let build_config = {
         let length_spin = length_spin.clone();
-        let lowercase_switch = lowercase_switch.clone();
-        let uppercase_switch = uppercase_switch.clone();
-        let digits_switch = digits_switch.clone();
-        let special_switch = special_switch.clone();
-        let extended_switch = extended_switch.clone();
-        let ambiguous_switch = ambiguous_switch.clone();
+        let lowercase_row = lowercase_row.clone();
+        let uppercase_row = uppercase_row.clone();
+        let digits_row = digits_row.clone();
+        let special_row = special_row.clone();
+        let extended_row = extended_row.clone();
+        let ambiguous_row = ambiguous_row.clone();
 
         move || {
             #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
@@ -339,12 +307,12 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
 
             PasswordGeneratorConfig::new()
                 .with_length(length)
-                .with_lowercase(lowercase_switch.is_active())
-                .with_uppercase(uppercase_switch.is_active())
-                .with_digits(digits_switch.is_active())
-                .with_special(special_switch.is_active())
-                .with_extended_special(extended_switch.is_active())
-                .with_exclude_ambiguous(ambiguous_switch.is_active())
+                .with_lowercase(lowercase_row.is_active())
+                .with_uppercase(uppercase_row.is_active())
+                .with_digits(digits_row.is_active())
+                .with_special(special_row.is_active())
+                .with_extended_special(extended_row.is_active())
+                .with_exclude_ambiguous(ambiguous_row.is_active())
         }
     };
 
@@ -429,20 +397,19 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
         generate_password_clone();
     });
 
-    // Connect switch changes
-    let connect_switch = |switch: &Switch, generate_fn: Rc<dyn Fn()>| {
-        switch.connect_state_set(move |_, _| {
+    // Connect switch changes - SwitchRow uses notify::active signal
+    let connect_switch_row = |row: &adw::SwitchRow, generate_fn: Rc<dyn Fn()>| {
+        row.connect_active_notify(move |_| {
             generate_fn();
-            glib::Propagation::Proceed
         });
     };
 
-    connect_switch(&lowercase_switch, generate_password.clone());
-    connect_switch(&uppercase_switch, generate_password.clone());
-    connect_switch(&digits_switch, generate_password.clone());
-    connect_switch(&special_switch, generate_password.clone());
-    connect_switch(&extended_switch, generate_password.clone());
-    connect_switch(&ambiguous_switch, generate_password.clone());
+    connect_switch_row(&lowercase_row, generate_password.clone());
+    connect_switch_row(&uppercase_row, generate_password.clone());
+    connect_switch_row(&digits_row, generate_password.clone());
+    connect_switch_row(&special_row, generate_password.clone());
+    connect_switch_row(&extended_row, generate_password.clone());
+    connect_switch_row(&ambiguous_row, generate_password.clone());
 
     // Generate initial password
     generate_password();

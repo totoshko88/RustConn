@@ -605,7 +605,7 @@ impl SplitTerminalView {
 
         // Use AdwStatusPage for center content
         let status_page = adw::StatusPage::builder()
-            .icon_name("view-paged-symbolic")
+            .icon_name("object-flip-horizontal-symbolic")
             .title("Empty Pane")
             .description("Drag a session tab here\nOr double-click a connection")
             .vexpand(true)
@@ -677,7 +677,7 @@ impl SplitTerminalView {
         let features_group = adw::PreferencesGroup::builder().title("Features").build();
 
         let features = [
-            ("display-symbolic", "Embedded SSH terminals"),
+            ("utilities-terminal-symbolic", "Embedded SSH terminals"),
             ("channel-secure-symbolic", "Secure credential storage"),
             ("document-open-symbolic", "Import/Export connections"),
             ("dialog-password-symbolic", "Password Generator"),
@@ -1244,8 +1244,8 @@ impl SplitTerminalView {
     fn create_external_session_placeholder(name: &str, protocol: &str) -> adw::StatusPage {
         let icon_name = match protocol {
             "rdp" => "computer-symbolic",
-            "vnc" => "video-display-symbolic",
-            "spice" => "video-display-symbolic",
+            "vnc" => "preferences-desktop-remote-desktop-symbolic",
+            "spice" => "preferences-desktop-remote-desktop-symbolic",
             _ => "network-server-symbolic",
         };
 

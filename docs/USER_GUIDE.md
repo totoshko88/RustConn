@@ -1,6 +1,8 @@
 # RustConn User Guide
 
-RustConn is a modern connection manager for Linux, designed to manage SSH, RDP, VNC, SPICE, and Zero Trust remote connections through a GTK4/libadwaita GUI with Wayland-native support.
+**Version 0.5.9** | GTK4/libadwaita Connection Manager for Linux
+
+RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
 ## Table of Contents
 
@@ -23,185 +25,199 @@ RustConn is a modern connection manager for Linux, designed to manage SSH, RDP, 
 
 ## Getting Started
 
-### Installation
+### Quick Start
 
-**Flatpak (recommended):**
-```bash
-flatpak install io.github.totoshko88.RustConn
-```
+1. Install RustConn (see [INSTALL.md](INSTALL.md))
+2. Launch from application menu or run `rustconn`
+3. Create your first connection with **Ctrl+N**
+4. Double-click to connect
 
-**Debian/Ubuntu:**
-```bash
-sudo dpkg -i rustconn_0.5.6_amd64.deb
-sudo apt-get install -f
-```
+### First Connection
 
-**AppImage:**
-```bash
-chmod +x RustConn-0.5.6-x86_64.AppImage
-./RustConn-0.5.6-x86_64.AppImage
-```
-
-**From source:**
-```bash
-sudo apt install libgtk-4-dev libvte-2.91-gtk4-dev libadwaita-1-dev libdbus-1-dev pkg-config
-cargo build --release -p rustconn
-```
+1. Press **Ctrl+N** or click **+** in header bar
+2. Enter connection name and host
+3. Select protocol (SSH, RDP, VNC, SPICE)
+4. Configure authentication (password or SSH key)
+5. Click **Create**
+6. Double-click the connection to connect
 
 ---
 
 ## Main Interface
 
-The main window consists of:
+### Layout
 
-- **Header Bar** — Application menu, search field, and action buttons
-- **Sidebar** (left) — Connection tree with groups, sorted alphabetically
-- **Sidebar Toolbar** (bottom of sidebar) — Quick actions including:
-  - Delete, Add Group, Group Operations, Sort, Import, Export
-  - **KeePass Button** — Shows integration status (active/inactive), opens KeePass database
-- **Session Area** (right) — Active sessions in tabs (SSH terminals, embedded RDP/VNC)
-- **Toast Overlay** — Non-blocking notifications for operations
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Header Bar: Menu | Search | + | Quick Connect | Split      │
+├──────────────────┬──────────────────────────────────────────┤
+│                  │                                          │
+│    Sidebar       │         Session Area                     │
+│                  │                                          │
+│  ▼ Production    │  ┌─────┬─────┬─────┐                    │
+│    ├─ Web-01     │  │ Tab1│ Tab2│ Tab3│                    │
+│    ├─ Web-02     │  └─────┴─────┴─────┘                    │
+│    └─ DB-01      │                                          │
+│  ▼ Development   │    Terminal / Embedded RDP / VNC         │
+│    └─ Dev-VM     │                                          │
+│                  │                                          │
+├──────────────────┤                                          │
+│ Toolbar: 🗑️ 📁 ⚙️ │                                          │
+└──────────────────┴──────────────────────────────────────────┘
+```
 
-### KeePass Integration Status
+### Components
 
-The KeePass button in the sidebar toolbar shows the current integration status:
-- **Active (highlighted)** — KeePass integration enabled and database file exists
-- **Inactive (dimmed)** — Integration disabled or database file not found
+- **Header Bar** — Application menu, search, action buttons
+- **Sidebar** — Connection tree with groups (alphabetically sorted)
+- **Sidebar Toolbar** — Delete, Add Group, Group Operations, Sort, Import, Export, KeePass status
+- **Session Area** — Active sessions in tabs
+- **Toast Overlay** — Non-blocking notifications
 
-Click the button to open KeePassXC with the configured database.
+### Quick Filter
 
-### Color Scheme
+Filter connections by protocol using the filter bar below search:
+- Click protocol buttons (SSH, RDP, VNC, SPICE, ZeroTrust)
+- Multiple protocols can be selected (OR logic)
+- Clear search field to reset filters
 
-Switch between System, Light, and Dark themes in Settings → Appearance.
+### KeePass Status Button
+
+Shows integration status in sidebar toolbar:
+- **Highlighted** — KeePass enabled and database exists
+- **Dimmed** — Disabled or database not found
+- Click to open KeePassXC with configured database
 
 ---
 
 ## Connections
 
-### Create Connection
+### Create Connection (Ctrl+N)
 
-1. Click **"+"** button in header bar, or press **Ctrl+N**
-2. Fill in connection details across tabs:
-   - **Basic** — Name, host, port, protocol, group
-   - **Authentication** — Username, password, SSH key
-   - **Protocol-specific** — SSH options, RDP settings, VNC config
-   - **Automation** — Expect scripts, startup commands
-   - **Tags** — Organize with custom tags
-3. Click **Create**
+**Basic Tab:**
+- Name, Host, Port
+- Protocol selection
+- Parent group
+- Tags
 
-### Edit Connection
+**Authentication Tab:**
+- Username
+- Password (stored securely via libsecret/KeePass)
+- SSH key selection
+- Key passphrase
 
-- Double-click connection, or
-- Select → Press **Enter**, or
-- Right-click → **Edit**
+**Protocol Tabs** (varies by protocol):
 
-### Rename Connection
+| Protocol | Options |
+|----------|---------|
+| SSH | Auth method, proxy jump, agent forwarding, startup command |
+| RDP | Resolution, color depth, audio, gateway, shared folders |
+| VNC | Encoding, compression, quality, view-only, scaling |
+| SPICE | TLS, USB redirection, clipboard, image compression |
+| ZeroTrust | Provider-specific (AWS SSM, GCP IAP, Azure, etc.) |
 
-- Press **F2**, or
-- Right-click → **Rename**
+**Advanced Tabs:**
+- **Display** — Window mode settings
+- **Logging** — Session logging configuration
+- **WOL** — Wake-on-LAN MAC address
+- **Variables** — Local variables for automation
+- **Automation** — Expect rules for auto-login
+- **Tasks** — Pre/post connection commands
+- **Custom Properties** — Metadata fields
 
-### View Connection Details
+### Quick Connect (Ctrl+K)
 
-- Right-click → **View Details** — Opens Info tab with all connection properties
+Temporary connection without saving:
+- Supports SSH, RDP, VNC
+- Optional template selection for pre-filling
+- Password field for RDP/VNC
 
-### Connect
+### Connection Actions
 
-- Double-click connection, or
-- Right-click → **Connect**
+| Action | Method |
+|--------|--------|
+| Connect | Double-click, Enter, or right-click → Connect |
+| Edit | Ctrl+E or right-click → Edit |
+| Rename | F2 or right-click → Rename |
+| View Details | Right-click → View Details (opens Info tab) |
+| Duplicate | Ctrl+D or right-click → Duplicate |
+| Copy/Paste | Ctrl+C / Ctrl+V |
+| Delete | Delete key or right-click → Delete |
+| Move to Group | Drag-drop or right-click → Move to Group |
 
-**Session types by protocol:**
-- **SSH** — Embedded VTE terminal tab
-- **RDP** — Embedded IronRDP widget or external FreeRDP
-- **VNC** — Embedded vnc-rs widget or external TigerVNC
-- **SPICE** — Embedded spice-client or external remote-viewer
-- **ZeroTrust** — Provider-specific (AWS SSM, GCP IAP, Azure Bastion, etc.)
+### Test Connection
 
-### Quick Connect
-
-Press **Ctrl+K** for temporary connection without saving:
-- Supports SSH, RDP, VNC protocols
-- Can use templates to pre-fill settings
-- Connection is not saved to database
-
-### Duplicate / Copy / Paste
-
-- **Duplicate** — Right-click → Duplicate (creates copy with new ID)
-- **Copy** — Ctrl+C (copies connection to clipboard)
-- **Paste** — Ctrl+V (pastes copied connection)
-
-### Delete Connection
-
-- Select → Press **Delete**, or
-- Right-click → **Delete**
+In connection dialog, click **Test** to verify connectivity before saving.
 
 ---
 
 ## Groups
 
-Groups organize connections into folders with hierarchical structure.
-
 ### Create Group
 
-- Click folder icon in header bar, or
-- Press **Ctrl+G**, or
+- **Ctrl+Shift+N** or click folder icon
 - Right-click in sidebar → **New Group**
+- Right-click on group → **New Subgroup**
 
-### Create Subgroup
+### Group Operations
 
-Right-click on parent group → **New Subgroup**
-
-### Rename Group
-
-- Press **F2**, or
-- Right-click → **Rename**
-
-### Move to Group
-
-- Drag and drop connection onto group, or
-- Right-click → **Move to Group** → Select destination
+- **Rename** — F2 or right-click → Rename
+- **Move** — Drag-drop or right-click → Move to Group
+- **Delete** — Delete key (moves children to root)
 
 ### Sorting
 
-Connections and groups are sorted alphabetically by default. Drag-and-drop to reorder manually.
+- Alphabetical by default
+- Drag-drop for manual reordering
+- Click Sort button in toolbar to reset
 
 ---
 
 ## Sessions
 
-### Active Sessions
+### Session Types
 
-Sessions appear as tabs in the session area. Each tab shows:
-- Connection name
-- Protocol icon
-- Connection status indicator (green = connected, red = disconnected)
-- Close button
+| Protocol | Session Type |
+|----------|--------------|
+| SSH | Embedded VTE terminal tab |
+| RDP | Embedded IronRDP or external FreeRDP |
+| VNC | Embedded vnc-rs or external TigerVNC |
+| SPICE | Embedded spice-client or external remote-viewer |
+| ZeroTrust | Provider CLI in terminal |
 
-### Session Management
+### Tab Management
 
-- **Switch tabs** — Click tab or Ctrl+Tab / Ctrl+Shift+Tab
-- **Close tab** — Click X or Ctrl+W
-- **Split view** — Ctrl+\\ (horizontal) or Ctrl+| (vertical)
+- **Switch** — Click tab or Ctrl+Tab / Ctrl+Shift+Tab
+- **Close** — Click X or Ctrl+W
+- **Reorder** — Drag tabs
+
+### Split View
+
+- **Horizontal Split** — Ctrl+Shift+H
+- **Vertical Split** — Ctrl+Shift+S
+- **Close Pane** — Ctrl+Shift+W
+- **Focus Next Pane** — Ctrl+`
+
+### Status Indicators
+
+Sidebar shows connection status:
+- 🟢 Green dot — Connected
+- 🔴 Red dot — Disconnected
 
 ### Session Restore
 
-Enable in Settings → Session to restore sessions on startup:
-- Sessions are saved when app closes
-- Option to prompt before restoring
-- Configurable maximum session age
+Enable in Settings → Session:
+- Sessions saved on app close
+- Restored on next startup
+- Optional prompt before restore
+- Configurable maximum age
 
 ### Session Logging
 
-Enable in Settings → Logging:
-- **Activity logging** — Track session activity changes
-- **User input logging** — Capture commands typed
-- **Terminal output logging** — Record full transcript
-
-### Connection History
-
-View past connections in Tools → Connection History:
-- Search and filter history
-- Connect directly from history
-- View statistics (success rate, duration)
+Three logging modes (Settings → Logging):
+- **Activity** — Track session activity changes
+- **User Input** — Capture typed commands
+- **Terminal Output** — Full transcript
 
 ---
 
@@ -217,65 +233,59 @@ Menu → Tools → **Manage Templates**
 
 1. Open Manage Templates
 2. Click **Create Template**
-3. Configure protocol-specific settings
-4. Save template
+3. Configure protocol and settings
+4. Save
 
 ### Use Template
 
-- In Quick Connect dialog, select template from dropdown
-- Template fills protocol, host, port, username automatically
+- **Quick Connect** — Select template from dropdown
+- **Manage Templates** — Select → **Create** to make connection
 
-### Create Connection from Template
-
-In Manage Templates, select template → Click **Create** to create a new connection based on it.
+Double-click template to create connection from it.
 
 ---
 
 ## Snippets
 
-Snippets are reusable command templates with variable substitution.
+Reusable command templates with variable substitution.
 
-### Create Snippet
+### Syntax
 
-Menu → Tools → **Manage Snippets** → Create
-
-Variables use `${variable}` syntax:
 ```bash
 ssh ${user}@${host} -p ${port}
+sudo systemctl restart ${service}
 ```
+
+### Manage Snippets
+
+Menu → Tools → **Manage Snippets**
 
 ### Execute Snippet
 
-1. Select active terminal session
+1. Select active terminal
 2. Menu → Tools → **Execute Snippet**
 3. Select snippet, fill variables
-4. Command is sent to terminal
+4. Command sent to terminal
 
 ---
 
 ## Clusters
 
-Clusters allow executing commands on multiple connections simultaneously.
+Execute commands on multiple connections simultaneously.
 
 ### Create Cluster
 
 Menu → Tools → **Manage Clusters** → Create
 
-Select connections to include in the cluster.
+### Broadcast Mode
 
-### Execute Cluster Command
-
-1. Select cluster
-2. Enter command
-3. Command executes on all cluster members
+Enable broadcast switch to send input to all cluster members.
 
 ---
 
 ## Import/Export
 
-### Import Connections
-
-Press **Ctrl+I** or Menu → **Import**
+### Import (Ctrl+I)
 
 **Supported formats:**
 - SSH Config (`~/.ssh/config`)
@@ -285,11 +295,9 @@ Press **Ctrl+I** or Menu → **Import**
 - Royal TS (.rtsz XML)
 - RustConn Native (.rcn)
 
-**Tip:** Double-click import source to start import immediately.
+Double-click source to start import immediately.
 
-### Export Connections
-
-Press **Ctrl+Shift+E** or Menu → **Export**
+### Export (Ctrl+Shift+E)
 
 **Supported formats:**
 - SSH Config
@@ -298,6 +306,10 @@ Press **Ctrl+Shift+E** or Menu → **Export**
 - Ansible inventory
 - Royal TS (.rtsz XML)
 - RustConn Native (.rcn)
+
+Options:
+- Include passwords (where supported)
+- Export selected only
 
 ---
 
@@ -308,31 +320,34 @@ Press **Ctrl+Shift+E** or Menu → **Export**
 Menu → Tools → **Password Generator**
 
 Features:
-- Configurable length (4-128 characters)
+- Length: 4-128 characters
 - Character sets: lowercase, uppercase, digits, special, extended
-- Exclude ambiguous characters (0, O, l, 1, I)
-- Real-time strength indicator with entropy calculation
+- Exclude ambiguous (0, O, l, 1, I)
+- Strength indicator with entropy
 - Crack time estimation
 - Copy to clipboard
 
-**Security Tips** (shown in dialog):
-- Use 16+ characters for critical accounts
-- Never reuse passwords across services
-- Store in password manager, not plain text
-- Enable 2FA when available
-- Change passwords after breach reports
+### Connection History
 
-### Wake-on-LAN
+Menu → Tools → **Connection History**
 
-Send magic packets to wake remote machines:
-- Configure MAC address in connection settings
-- Right-click connection → **Wake-on-LAN**
+- Search and filter past connections
+- Connect directly from history
+- Reset history
 
 ### Connection Statistics
 
 Menu → Tools → **Connection Statistics**
 
-View success rates, connection durations, and usage patterns.
+- Success rate visualization
+- Connection duration tracking
+- Reset statistics
+
+### Wake-on-LAN
+
+Right-click connection → **Wake-on-LAN**
+
+Requires MAC address configured in connection WOL tab.
 
 ---
 
@@ -340,90 +355,79 @@ View success rates, connection durations, and usage patterns.
 
 Access via **Ctrl+,** or Menu → **Settings**
 
-The Settings dialog uses a clean, modern layout with section headers and organized tabs.
-
 ### Appearance
 
-- **Color Scheme** — System, Light, or Dark theme (uses libadwaita StyleManager)
-- **Remember Window Geometry** — Save size/position
+- **Theme** — System, Light, Dark (libadwaita StyleManager)
+- **Remember Window Geometry**
 
 ### Terminal
 
-- **Font Family** — Terminal font (default: Monospace)
-- **Font Size** — Size in points
-- **Scrollback Lines** — History buffer size
-- **Color Theme** — Dark, Light, Solarized Dark/Light, Monokai, Dracula
-- **Cursor Shape** — Block, IBeam, or Underline
-- **Cursor Blink** — On, Off, or System default
-- **Behavior** — Scroll on output/keystroke, hyperlinks, mouse autohide, audible bell
+- **Font** — Family and size
+- **Scrollback** — History buffer lines
+- **Color Theme** — Dark, Light, Solarized, Monokai, Dracula
+- **Cursor** — Shape (Block/IBeam/Underline) and blink mode
+- **Behavior** — Scroll on output/keystroke, hyperlinks, mouse autohide, bell
 
 ### Session
 
-- **Enable Session Restore** — Restore sessions on startup
-- **Prompt Before Restore** — Ask before restoring
-- **Maximum Session Age** — Hours to keep saved sessions
+- **Enable Session Restore**
+- **Prompt Before Restore**
+- **Maximum Session Age** (hours)
 
 ### Logging
 
-- **Enable Logging** — Record session output
-- **Log Directory** — Storage location
-- **Retention Days** — Auto-cleanup period
+- **Enable Logging**
+- **Log Directory**
+- **Retention Days**
 - **Logging Modes** — Activity, user input, terminal output
 
 ### Secrets
 
-- **Preferred Backend** — libsecret, KeePassXC, or KDBX file
+- **Preferred Backend** — libsecret, KeePassXC, KDBX file
 - **Enable Fallback** — Use libsecret if primary unavailable
-- **KDBX Path** — Path to KeePass database file
+- **KDBX Path** — KeePass database file
 - **KDBX Authentication** — Password and/or key file
+
+### SSH Agent
+
+- **Loaded Keys** — Currently loaded SSH keys
+- **Available Keys** — Keys in ~/.ssh/
+- **Add/Remove Keys** — Manage agent keys
 
 ### Clients
 
-Displays detected CLI tools with version information:
+Auto-detected CLI tools with versions:
 
-**Protocol Clients:**
-- SSH Client (OpenSSH)
-- RDP Client (FreeRDP)
-- VNC Client (TigerVNC)
-- SPICE Client (remote-viewer)
+**Protocol Clients:** SSH, RDP (FreeRDP), VNC (TigerVNC), SPICE (remote-viewer)
 
-**Zero Trust Clients:**
-- AWS CLI (SSM)
-- Google Cloud CLI
-- Azure CLI
-- OCI CLI
-- Cloudflare CLI
-- Teleport CLI
-- Tailscale CLI
-- Boundary CLI
+**Zero Trust:** AWS, GCP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary
 
-The Clients tab automatically searches PATH and common user directories (`~/bin/`, `~/.local/bin/`, `~/.cargo/bin/`) for installed tools.
+Searches PATH and user directories (`~/bin/`, `~/.local/bin/`, `~/.cargo/bin/`).
 
 ### Tray Icon
 
-- **Enable Tray Icon** — Show in system tray
-- **Minimize to Tray** — Hide instead of close
-- **Start Minimized** — Launch to tray
+- **Enable Tray Icon**
+- **Minimize to Tray**
+- **Start Minimized**
 
 ---
 
 ## Keyboard Shortcuts
 
-Press **Ctrl+?** or **F1** to open searchable shortcuts dialog.
+Press **Ctrl+?** or **F1** for searchable shortcuts dialog.
 
 ### Connections
 
 | Shortcut | Action |
 |----------|--------|
 | Ctrl+N | New Connection |
-| Ctrl+G | New Group |
-| Ctrl+K | Quick Connect |
-| Enter | Connect / Edit |
+| Ctrl+Shift+N | New Group |
+| Ctrl+Shift+Q | Quick Connect |
+| Ctrl+E | Edit Connection |
 | F2 | Rename |
 | Delete | Delete |
-| Ctrl+C | Copy Connection |
-| Ctrl+V | Paste Connection |
 | Ctrl+D | Duplicate |
+| Ctrl+C / Ctrl+V | Copy / Paste |
 
 ### Terminal
 
@@ -431,26 +435,29 @@ Press **Ctrl+?** or **F1** to open searchable shortcuts dialog.
 |----------|--------|
 | Ctrl+Shift+C | Copy |
 | Ctrl+Shift+V | Paste |
+| Ctrl+Shift+F | Terminal Search |
 | Ctrl+W | Close Tab |
-| Ctrl+\\ | Split Horizontal |
-| Ctrl+\| | Split Vertical |
+| Ctrl+Tab | Next Tab |
+| Ctrl+Shift+Tab | Previous Tab |
 
-### Navigation
+### Split View
 
 | Shortcut | Action |
 |----------|--------|
-| Ctrl+F | Focus Search |
-| Ctrl+Tab | Next Tab |
-| Ctrl+Shift+Tab | Previous Tab |
-| Ctrl+1-9 | Go to Tab N |
+| Ctrl+Shift+H | Split Horizontal |
+| Ctrl+Shift+S | Split Vertical |
+| Ctrl+Shift+W | Close Pane |
+| Ctrl+` | Focus Next Pane |
 
 ### Application
 
 | Shortcut | Action |
 |----------|--------|
+| Ctrl+F | Search |
 | Ctrl+I | Import |
 | Ctrl+Shift+E | Export |
 | Ctrl+, | Settings |
+| F11 | Toggle Fullscreen |
 | Ctrl+? / F1 | Keyboard Shortcuts |
 | Ctrl+Q | Quit |
 
@@ -458,9 +465,7 @@ Press **Ctrl+?** or **F1** to open searchable shortcuts dialog.
 
 ## CLI Usage
 
-RustConn includes a CLI tool for headless operations.
-
-### Basic Commands
+### Commands
 
 ```bash
 # List connections
@@ -473,78 +478,62 @@ rustconn-cli connect "My Server"
 # Import/Export
 rustconn-cli import ssh-config ~/.ssh/config
 rustconn-cli export native backup.rcn
-```
 
-### Snippet Commands
-
-```bash
+# Snippets
 rustconn-cli snippet list
-rustconn-cli snippet show "Deploy Script"
-rustconn-cli snippet run "Deploy Script" --execute
-```
+rustconn-cli snippet run "Deploy" --execute
 
-### Group Commands
-
-```bash
+# Groups
 rustconn-cli group list
 rustconn-cli group create "New Group"
-rustconn-cli group add-connection "Group Name" "Connection Name"
-```
 
-### Wake-on-LAN
-
-```bash
+# Wake-on-LAN
 rustconn-cli wol AA:BB:CC:DD:EE:FF
-rustconn-cli wol "My Server"  # Uses connection's MAC
+rustconn-cli wol "Server Name"
 ```
 
 ---
 
 ## Troubleshooting
 
-### Connection Fails
+### Connection Issues
 
-1. Verify host and port are correct
-2. Check network connectivity: `ping hostname`
-3. Verify credentials
-4. Check firewall settings
-5. For SSH: verify key permissions (`chmod 600 ~/.ssh/id_rsa`)
+1. Verify host/port: `ping hostname`
+2. Check credentials
+3. SSH key permissions: `chmod 600 ~/.ssh/id_rsa`
+4. Firewall settings
 
-### KeePass Integration Not Working
+### KeePass Not Working
 
-1. Ensure KeePassXC is installed
-2. Enable browser integration in KeePassXC settings
+1. Install KeePassXC
+2. Enable browser integration in KeePassXC
 3. Configure KDBX path in Settings → Secrets
-4. Provide database password or key file
+4. Provide password/key file
 
-### Embedded RDP/VNC Not Working
+### Embedded RDP/VNC Issues
 
-1. Check if IronRDP/vnc-rs features are enabled
-2. For external mode, verify FreeRDP/TigerVNC is installed
-3. Check display server (Wayland vs X11) compatibility
+1. Check IronRDP/vnc-rs features enabled
+2. For external: verify FreeRDP/TigerVNC installed
+3. Wayland vs X11 compatibility
 
-### Session Restore Not Working
+### Session Restore Issues
 
-1. Verify enabled in Settings → Session
-2. Check maximum session age setting
-3. Ensure app was closed normally (not killed)
+1. Enable in Settings → Session
+2. Check maximum age setting
+3. Ensure normal app close (not killed)
 
-### Tray Icon Not Appearing
+### Tray Icon Missing
 
-1. Verify system tray support (requires `ksni` feature)
-2. Check desktop environment compatibility
-3. Some DEs require extensions for tray support
+1. Requires `tray-icon` feature
+2. Check DE tray support
+3. Some DEs need extensions
 
 ### Debug Logging
 
-Enable detailed logging for troubleshooting:
-
 ```bash
 RUST_LOG=debug rustconn 2> rustconn.log
-```
 
-Module-specific logging:
-```bash
+# Module-specific
 RUST_LOG=rustconn_core::connection=debug rustconn
 RUST_LOG=rustconn_core::secret=debug rustconn
 ```
@@ -553,5 +542,8 @@ RUST_LOG=rustconn_core::secret=debug rustconn
 
 ## Support
 
-- **GitHub Issues:** https://github.com/totoshko88/RustConn/issues
-- **Documentation:** See README.md and CHANGELOG.md
+- **GitHub:** https://github.com/totoshko88/RustConn
+- **Issues:** https://github.com/totoshko88/RustConn/issues
+- **Releases:** https://github.com/totoshko88/RustConn/releases
+
+**Made with ❤️ in Ukraine 🇺🇦**

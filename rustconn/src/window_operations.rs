@@ -7,9 +7,11 @@ use crate::sidebar::{ConnectionItem, ConnectionSidebar};
 use crate::state::SharedAppState;
 use crate::window::MainWindow;
 use crate::window_types::get_protocol_string;
+use adw::prelude::*;
 use gtk4::gio;
 use gtk4::glib;
 use gtk4::prelude::*;
+use libadwaita as adw;
 
 use std::rc::Rc;
 use uuid::Uuid;
@@ -327,7 +329,7 @@ pub fn delete_selected_connections(
     sidebar: &SharedSidebar,
 ) {
     use gtk4::prelude::*;
-    use gtk4::{Button, HeaderBar, Label, Orientation};
+    use gtk4::Label;
 
     let selected_ids = sidebar.get_selected_ids();
 
@@ -365,7 +367,7 @@ pub fn delete_selected_connections(
     };
 
     // Create custom dialog with scrolling for large lists
-    let dialog = gtk4::Window::builder()
+    let dialog = adw::Window::builder()
         .title("Delete Selected Items?")
         .transient_for(window)
         .modal(true)
@@ -373,17 +375,16 @@ pub fn delete_selected_connections(
         .default_height(if item_names.len() > 10 { 400 } else { 300 })
         .build();
 
-    let header = HeaderBar::new();
-    let cancel_btn = Button::builder().label("Cancel").build();
-    let delete_btn = Button::builder()
+    let header = adw::HeaderBar::new();
+    let cancel_btn = gtk4::Button::builder().label("Cancel").build();
+    let delete_btn = gtk4::Button::builder()
         .label("Delete All")
         .css_classes(["destructive-action"])
         .build();
     header.pack_start(&cancel_btn);
     header.pack_end(&delete_btn);
-    dialog.set_titlebar(Some(&header));
 
-    let content = gtk4::Box::new(Orientation::Vertical, 12);
+    let content = gtk4::Box::new(gtk4::Orientation::Vertical, 12);
     content.set_margin_top(12);
     content.set_margin_bottom(12);
     content.set_margin_start(12);
@@ -425,7 +426,11 @@ pub fn delete_selected_connections(
         .build();
     content.append(&warning_label);
 
-    dialog.set_child(Some(&content));
+    // Use ToolbarView for proper adw::Window layout
+    let toolbar_view = adw::ToolbarView::new();
+    toolbar_view.add_top_bar(&header);
+    toolbar_view.set_content(Some(&content));
+    dialog.set_content(Some(&toolbar_view));
 
     // Connect cancel button
     let dialog_weak = dialog.downgrade();
@@ -535,15 +540,14 @@ pub fn show_move_selected_to_group_dialog(
     }
 
     // Create dialog
-    let move_window = gtk4::Window::builder()
+    let move_window = adw::Window::builder()
         .title("Move")
         .transient_for(window)
         .modal(true)
         .default_width(750)
         .build();
 
-    let header = gtk4::HeaderBar::new();
-    header.set_show_title_buttons(false);
+    let header = adw::HeaderBar::new();
     let cancel_btn = gtk4::Button::builder().label("Cancel").build();
     let move_btn = gtk4::Button::builder()
         .label("Move")
@@ -551,7 +555,6 @@ pub fn show_move_selected_to_group_dialog(
         .build();
     header.pack_start(&cancel_btn);
     header.pack_end(&move_btn);
-    move_window.set_titlebar(Some(&header));
 
     let content = gtk4::Box::new(gtk4::Orientation::Vertical, 12);
     content.set_margin_top(12);
@@ -639,7 +642,12 @@ pub fn show_move_selected_to_group_dialog(
         .build();
 
     content.append(&group_dropdown);
-    move_window.set_child(Some(&content));
+
+    // Use ToolbarView for proper adw::Window layout
+    let toolbar_view = adw::ToolbarView::new();
+    toolbar_view.add_top_bar(&header);
+    toolbar_view.set_content(Some(&content));
+    move_window.set_content(Some(&toolbar_view));
 
     // Connect cancel
     let window_clone = move_window.clone();

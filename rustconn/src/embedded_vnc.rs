@@ -351,12 +351,13 @@ impl EmbeddedVncWidget {
 
                     cr.set_source_rgb(1.0, 1.0, 1.0);
                     cr.set_font_size(32.0);
-                    let extents = cr.text_extents("V").unwrap();
-                    cr.move_to(
-                        f64::from(width) / 2.0 - extents.width() / 2.0,
-                        center_y + extents.height() / 2.0,
-                    );
-                    let _ = cr.show_text("V");
+                    if let Ok(extents) = cr.text_extents("V") {
+                        cr.move_to(
+                            f64::from(width) / 2.0 - extents.width() / 2.0,
+                            center_y + extents.height() / 2.0,
+                        );
+                        let _ = cr.show_text("V");
+                    }
 
                     // Connection info
                     let config_ref = config.borrow();
@@ -364,9 +365,10 @@ impl EmbeddedVncWidget {
 
                     cr.set_source_rgb(0.9, 0.9, 0.9);
                     cr.set_font_size(18.0);
-                    let extents = cr.text_extents(host).unwrap();
-                    cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 70.0);
-                    let _ = cr.show_text(host);
+                    if let Ok(extents) = cr.text_extents(host) {
+                        cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 70.0);
+                        let _ = cr.show_text(host);
+                    }
 
                     // Status message
                     cr.set_font_size(13.0);
@@ -388,9 +390,10 @@ impl EmbeddedVncWidget {
                     };
                     cr.set_source_rgb(color.0, color.1, color.2);
 
-                    let extents = cr.text_extents(status_text).unwrap();
-                    cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 100.0);
-                    let _ = cr.show_text(status_text);
+                    if let Ok(extents) = cr.text_extents(status_text) {
+                        cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 100.0);
+                        let _ = cr.show_text(status_text);
+                    }
                 }
             });
     }

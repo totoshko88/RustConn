@@ -3,9 +3,11 @@
 //! This module contains methods for managing connection groups,
 //! including move to group dialog and related functionality.
 
+use adw::prelude::*;
 use gtk4::glib;
 use gtk4::prelude::*;
-use gtk4::{Button, HeaderBar, Label, Orientation};
+use gtk4::{Button, Label, Orientation};
+use libadwaita as adw;
 use std::rc::Rc;
 use uuid::Uuid;
 
@@ -45,15 +47,14 @@ pub fn show_move_to_group_dialog(
     drop(state_ref);
 
     // Create dialog
-    let move_window = gtk4::Window::builder()
+    let move_window = adw::Window::builder()
         .title("Move")
         .transient_for(window)
         .modal(true)
         .default_width(750)
         .build();
 
-    let header = HeaderBar::new();
-    header.set_show_title_buttons(false);
+    let header = adw::HeaderBar::new();
     let cancel_btn = Button::builder().label("Cancel").build();
     let move_btn = Button::builder()
         .label("Move")
@@ -61,7 +62,6 @@ pub fn show_move_to_group_dialog(
         .build();
     header.pack_start(&cancel_btn);
     header.pack_end(&move_btn);
-    move_window.set_titlebar(Some(&header));
 
     let content = gtk4::Box::new(Orientation::Vertical, 12);
     content.set_margin_top(12);
@@ -140,7 +140,12 @@ pub fn show_move_to_group_dialog(
         .build();
 
     content.append(&group_dropdown);
-    move_window.set_child(Some(&content));
+
+    // Use ToolbarView for proper adw::Window layout
+    let toolbar_view = adw::ToolbarView::new();
+    toolbar_view.add_top_bar(&header);
+    toolbar_view.set_content(Some(&content));
+    move_window.set_content(Some(&toolbar_view));
 
     // Connect cancel
     let window_clone = move_window.clone();

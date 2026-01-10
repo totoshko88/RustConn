@@ -20,7 +20,7 @@ pub fn create_ui_page() -> (
 ) {
     let page = adw::PreferencesPage::builder()
         .title("Interface")
-        .icon_name("preferences-desktop-appearance-symbolic")
+        .icon_name("applications-graphics-symbolic")
         .build();
 
     // === Appearance Group ===

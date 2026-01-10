@@ -10,7 +10,7 @@ use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
     Box as GtkBox, Button, DropDown, Entry, FileDialog, Frame, Grid, Label, Orientation,
-    ProgressBar, ScrolledWindow, Separator, Spinner, Stack, StringList, Switch,
+    ProgressBar, ScrolledWindow, Separator, Spinner, Stack, StringList,
 };
 use libadwaita as adw;
 use rustconn_core::export::{
@@ -36,8 +36,8 @@ pub struct ExportDialog {
     output_path_entry: Entry,
     browse_button: Button,
     // Options
-    include_passwords_switch: Switch,
-    include_groups_switch: Switch,
+    include_passwords_row: adw::SwitchRow,
+    include_groups_row: adw::SwitchRow,
     // Progress
     progress_bar: ProgressBar,
     progress_label: Label,
@@ -101,10 +101,10 @@ impl ExportDialog {
         content.append(&stack);
 
         // Use ToolbarView for adw::Window
-        let main_box = GtkBox::new(Orientation::Vertical, 0);
-        main_box.append(&header);
-        main_box.append(&content);
-        window.set_content(Some(&main_box));
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header);
+        toolbar_view.set_content(Some(&content));
+        window.set_content(Some(&toolbar_view));
 
         // === Options Page ===
         let (
@@ -112,8 +112,8 @@ impl ExportDialog {
             format_dropdown,
             output_path_entry,
             browse_button,
-            include_passwords_switch,
-            include_groups_switch,
+            include_passwords_row,
+            include_groups_row,
         ) = Self::create_options_page();
         stack.add_named(&options_page, Some("options"));
 
@@ -137,8 +137,8 @@ impl ExportDialog {
             format_dropdown,
             output_path_entry,
             browse_button,
-            include_passwords_switch,
-            include_groups_switch,
+            include_passwords_row,
+            include_groups_row,
             progress_bar,
             progress_label,
             progress_spinner,
@@ -154,7 +154,7 @@ impl ExportDialog {
 
     /// Creates the options page with format selection and output path
     #[allow(clippy::type_complexity)]
-    fn create_options_page() -> (ScrolledWindow, DropDown, Entry, Button, Switch, Switch) {
+    fn create_options_page() -> (ScrolledWindow, DropDown, Entry, Button, adw::SwitchRow, adw::SwitchRow) {
         let scrolled = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
             .vscrollbar_policy(gtk4::PolicyType::Automatic)
@@ -255,31 +255,21 @@ impl ExportDialog {
         // Options section using AdwPreferencesGroup
         let options_group = adw::PreferencesGroup::builder().title("Options").build();
 
-        // Include passwords switch
-        let include_passwords_switch = Switch::builder()
-            .active(false)
-            .valign(gtk4::Align::Center)
-            .build();
-        let passwords_row = adw::ActionRow::builder()
+        // Include passwords switch row
+        let include_passwords_row = adw::SwitchRow::builder()
             .title("Include passwords")
             .subtitle("If supported by format")
+            .active(false)
             .build();
-        passwords_row.add_suffix(&include_passwords_switch);
-        passwords_row.set_activatable_widget(Some(&include_passwords_switch));
-        options_group.add(&passwords_row);
+        options_group.add(&include_passwords_row);
 
-        // Include groups switch
-        let include_groups_switch = Switch::builder()
-            .active(true)
-            .valign(gtk4::Align::Center)
-            .build();
-        let groups_row = adw::ActionRow::builder()
+        // Include groups switch row
+        let include_groups_row = adw::SwitchRow::builder()
             .title("Include group hierarchy")
             .subtitle("Preserve folder structure")
+            .active(true)
             .build();
-        groups_row.add_suffix(&include_groups_switch);
-        groups_row.set_activatable_widget(Some(&include_groups_switch));
-        options_group.add(&groups_row);
+        options_group.add(&include_groups_row);
 
         // Security warning row
         let warning_row = adw::ActionRow::builder()
@@ -301,8 +291,8 @@ impl ExportDialog {
             format_dropdown,
             output_path_entry,
             browse_button,
-            include_passwords_switch,
-            include_groups_switch,
+            include_passwords_row,
+            include_groups_row,
         )
     }
 
@@ -418,8 +408,8 @@ impl ExportDialog {
     pub fn get_export_options(&self) -> Option<ExportOptions> {
         self.get_output_path().map(|output_path| {
             ExportOptions::new(self.get_selected_format(), output_path)
-                .with_passwords(self.include_passwords_switch.is_active())
-                .with_groups(self.include_groups_switch.is_active())
+                .with_passwords(self.include_passwords_row.is_active())
+                .with_groups(self.include_groups_row.is_active())
         })
     }
 
@@ -688,8 +678,8 @@ impl ExportDialog {
         let stack = self.stack.clone();
         let format_dropdown = self.format_dropdown.clone();
         let output_path_entry = self.output_path_entry.clone();
-        let include_passwords = self.include_passwords_switch.clone();
-        let include_groups = self.include_groups_switch.clone();
+        let include_passwords = self.include_passwords_row.clone();
+        let include_groups = self.include_groups_row.clone();
         let progress_bar = self.progress_bar.clone();
         let progress_label = self.progress_label.clone();
         let progress_spinner = self.progress_spinner.clone();

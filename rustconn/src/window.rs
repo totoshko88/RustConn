@@ -192,7 +192,7 @@ impl MainWindow {
         header_bar.pack_start(&add_button);
 
         // Quick connect button
-        let quick_connect_button = Button::from_icon_name("network-transmit-symbolic");
+        let quick_connect_button = Button::from_icon_name("go-jump-symbolic");
         quick_connect_button.set_tooltip_text(Some("Quick Connect (Ctrl+Shift+Q)"));
         quick_connect_button.set_action_name(Some("win.quick-connect"));
         header_bar.pack_start(&quick_connect_button);
@@ -221,7 +221,7 @@ impl MainWindow {
         split_vertical_button.set_action_name(Some("win.split-vertical"));
         header_bar.pack_end(&split_vertical_button);
 
-        let split_horizontal_button = Button::from_icon_name("view-paged-symbolic");
+        let split_horizontal_button = Button::from_icon_name("object-flip-horizontal-symbolic");
         split_horizontal_button.set_tooltip_text(Some("Split Horizontal (Ctrl+Shift+H)"));
         split_horizontal_button.set_action_name(Some("win.split-horizontal"));
         header_bar.pack_end(&split_horizontal_button);
@@ -2553,7 +2553,7 @@ impl MainWindow {
         state: SharedAppState,
         notebook: SharedNotebook,
     ) {
-        let mut dialog = SettingsDialog::new(Some(&window.clone().upcast()));
+        let mut dialog = SettingsDialog::new(None);
 
         // Load current settings
         {
@@ -2562,7 +2562,7 @@ impl MainWindow {
         }
 
         let window_clone = window.clone();
-        dialog.run(move |result| {
+        dialog.run(Some(window), move |result| {
             if let Some(settings) = result {
                 // Capture KeePass state for action update
                 let keepass_enabled = settings.secrets.kdbx_enabled;

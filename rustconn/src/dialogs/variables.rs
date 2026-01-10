@@ -81,10 +81,10 @@ impl VariablesDialog {
         content.set_margin_end(12);
 
         // Use ToolbarView for adw::Window
-        let main_box = GtkBox::new(Orientation::Vertical, 0);
-        main_box.append(&header);
-        main_box.append(&content);
-        window.set_content(Some(&main_box));
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header);
+        toolbar_view.set_content(Some(&content));
+        window.set_content(Some(&toolbar_view));
 
         // Variables list in PreferencesGroup
         let (group, variables_list, add_button) = Self::create_variables_section();

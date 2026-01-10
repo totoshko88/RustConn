@@ -27,7 +27,8 @@ quick-xml = { version = "0.38", features = ["serialize"] }
 argon2 = { workspace = true }
 hostname = "0.4"
 # File system notifications for RDPDR directory change monitoring
-notify = { version = "8.2", default-features = false, features = ["macos_fsevent"] }
+# Linux-only application, no macOS features needed
+notify = { version = "8.2", default-features = false }
 # Tracing for structured logging and performance profiling
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
@@ -74,7 +75,7 @@ spice-embedded = ["dep:spice-client"]
 proptest = { workspace = true }
 tempfile = { workspace = true }
 criterion = { version = "0.8", features = ["html_reports"] }
-zip = { version = "2.1", default-features = false, features = ["deflate"] }
+zip = { version = "2.2", default-features = false, features = ["deflate"] }
 
 [[bench]]
 name = "search_bench"

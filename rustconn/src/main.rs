@@ -3,37 +3,13 @@
 //! A GTK4-based connection manager supporting SSH, RDP, and VNC protocols
 //! with Wayland-native support and `KeePassXC` integration.
 
-// Allow common clippy lints for GUI code
-#![allow(clippy::too_many_lines)]
-#![allow(clippy::cast_precision_loss)]
-#![allow(clippy::type_complexity)]
-#![allow(clippy::missing_const_for_fn)]
-#![allow(clippy::option_if_let_else)]
-#![allow(clippy::redundant_clone)]
-#![allow(clippy::needless_pass_by_value)]
-#![allow(clippy::unused_self)]
-#![allow(clippy::match_same_arms)]
-#![allow(clippy::cast_possible_truncation)]
-#![allow(clippy::significant_drop_tightening)]
-#![allow(clippy::must_use_candidate)]
-#![allow(clippy::missing_errors_doc)]
-#![allow(clippy::missing_panics_doc)]
-#![allow(clippy::doc_markdown)]
-#![allow(clippy::wildcard_imports)]
-#![allow(clippy::manual_let_else)]
-#![allow(clippy::branches_sharing_code)]
-#![allow(clippy::uninlined_format_args)]
-#![allow(clippy::needless_borrows_for_generic_args)]
-#![allow(clippy::redundant_closure_for_method_calls)]
-#![allow(clippy::map_unwrap_or)]
-#![allow(clippy::cloned_instead_of_copied)]
-#![allow(clippy::cast_possible_wrap)]
-#![allow(clippy::only_used_in_recursion)]
-#![allow(clippy::unnecessary_wraps)]
-#![allow(clippy::assigning_clones)]
-#![allow(clippy::inefficient_to_string)]
-#![allow(clippy::no_effect_underscore_binding)]
-#![allow(clippy::manual_map)]
+// Global clippy lint configuration for GUI code
+// Only truly necessary suppressions are kept globally; others should be applied per-function
+#![allow(clippy::too_many_lines)] // GUI setup functions are inherently long
+#![allow(clippy::type_complexity)] // GTK callback types are complex by design
+#![allow(clippy::significant_drop_tightening)] // GTK widget drops are managed by GTK
+#![allow(clippy::missing_errors_doc)] // Internal GUI functions don't need error docs
+#![allow(clippy::missing_panics_doc)] // Internal GUI functions don't need panic docs
 
 pub mod adaptive_tabs;
 mod app;

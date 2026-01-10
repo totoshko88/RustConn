@@ -7,7 +7,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.5.8"
+version = "0.5.9"
 edition = "2021"
 authors = ["RustConn Contributors"]
 license = "MIT"
@@ -25,27 +25,27 @@ serde_yaml = "0.9"
 toml = "0.8"
 
 # GTK4 and VTE
-gtk4 = "0.10.2"
+gtk4 = "0.10"
 vte4 = "0.9"
-libadwaita = "0.8"
+libadwaita = { version = "0.8", features = ["v1_6"] }
 
 # Utilities
-uuid = { version = "1.6", features = ["v4", "serde"] }
+uuid = { version = "1.11", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
-thiserror = "2.0.17"
+thiserror = "2.0"
 async-trait = "0.1"
 secrecy = { version = "0.10", features = ["serde"] }
 dirs = "6.0"
 shellexpand = "3.1"
-regex = "1.10"
+regex = "1.11"
 
 # Encryption
 ring = "0.17"
 argon2 = "0.5"
 
 # Testing
-proptest = "1.4"
-tempfile = "3.24"
+proptest = "1.6"
+tempfile = "3.15"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

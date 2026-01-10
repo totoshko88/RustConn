@@ -389,10 +389,11 @@ pub fn show_new_group_dialog_with_parent(
 
     clamp.set_child(Some(&content));
 
-    let main_box = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
-    main_box.append(&header);
-    main_box.append(&clamp);
-    group_window.set_content(Some(&main_box));
+    // Use ToolbarView for proper adw::Window layout
+    let toolbar_view = adw::ToolbarView::new();
+    toolbar_view.add_top_bar(&header);
+    toolbar_view.set_content(Some(&clamp));
+    group_window.set_content(Some(&toolbar_view));
 
     // === Group Details ===
     let details_group = adw::PreferencesGroup::builder()

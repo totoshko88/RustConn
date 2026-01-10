@@ -74,9 +74,9 @@ impl ImportDialog {
             window_clone.close();
         });
 
-        // Create main layout with header at top
-        let main_box = GtkBox::new(Orientation::Vertical, 0);
-        main_box.append(&header);
+        // Create main layout with header at top using ToolbarView
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header);
 
         // Create main content area
         let content = GtkBox::new(Orientation::Vertical, 12);
@@ -90,8 +90,8 @@ impl ImportDialog {
         stack.set_vexpand(true);
         content.append(&stack);
 
-        main_box.append(&content);
-        window.set_content(Some(&main_box));
+        toolbar_view.set_content(Some(&content));
+        window.set_content(Some(&toolbar_view));
 
         // === Source Selection Page ===
         let source_page = Self::create_source_page();

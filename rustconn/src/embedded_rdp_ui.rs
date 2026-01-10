@@ -116,12 +116,13 @@ pub fn draw_status_overlay(
     // "R" letter in circle
     cr.set_source_rgb(1.0, 1.0, 1.0);
     cr.set_font_size(32.0);
-    let extents = cr.text_extents("R").unwrap();
-    cr.move_to(
-        f64::from(width) / 2.0 - extents.width() / 2.0,
-        center_y + extents.height() / 2.0,
-    );
-    let _ = cr.show_text("R");
+    if let Ok(extents) = cr.text_extents("R") {
+        cr.move_to(
+            f64::from(width) / 2.0 - extents.width() / 2.0,
+            center_y + extents.height() / 2.0,
+        );
+        let _ = cr.show_text("R");
+    }
 
     // Host name
     let config_ref = config.borrow();
@@ -132,9 +133,10 @@ pub fn draw_status_overlay(
 
     cr.set_source_rgb(0.9, 0.9, 0.9);
     cr.set_font_size(18.0);
-    let extents = cr.text_extents(host).unwrap();
-    cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 70.0);
-    let _ = cr.show_text(host);
+    if let Ok(extents) = cr.text_extents(host) {
+        cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 70.0);
+        let _ = cr.show_text(host);
+    }
 
     // Status message
     cr.set_font_size(13.0);
@@ -164,18 +166,20 @@ pub fn draw_status_overlay(
     };
 
     cr.set_source_rgb(status_color.0, status_color.1, status_color.2);
-    let extents = cr.text_extents(status_text).unwrap();
-    cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 100.0);
-    let _ = cr.show_text(status_text);
+    if let Ok(extents) = cr.text_extents(status_text) {
+        cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 100.0);
+        let _ = cr.show_text(status_text);
+    }
 
     // Hint for external mode
     if current_state == RdpConnectionState::Connected && !embedded {
         cr.set_source_rgb(0.6, 0.6, 0.6);
         cr.set_font_size(11.0);
         let hint = "Switch to the FreeRDP window to interact with the session";
-        let extents = cr.text_extents(hint).unwrap();
-        cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 125.0);
-        let _ = cr.show_text(hint);
+        if let Ok(extents) = cr.text_extents(hint) {
+            cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 125.0);
+            let _ = cr.show_text(hint);
+        }
     }
 }
 

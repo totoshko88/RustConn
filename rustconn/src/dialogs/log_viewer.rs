@@ -67,10 +67,10 @@ impl LogViewerDialog {
         paned.set_margin_end(12);
 
         // Use ToolbarView for adw::Window
-        let main_box = GtkBox::new(Orientation::Vertical, 0);
-        main_box.append(&header);
-        main_box.append(&paned);
-        window.set_content(Some(&main_box));
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header);
+        toolbar_view.set_content(Some(&paned));
+        window.set_content(Some(&toolbar_view));
 
         // Left side: Log file list
         let left_box = GtkBox::new(Orientation::Vertical, 8);

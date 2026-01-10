@@ -5,6 +5,49 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.9] - 2026-01-10
+
+### Changed
+- Migrated Settings dialog from deprecated `PreferencesWindow` to `PreferencesDialog` (libadwaita 1.5+)
+- Updated libadwaita feature from `v1_4` to `v1_6` for full feature set
+- Updated workspace dependencies:
+  - `uuid` 1.6 → 1.11
+  - `regex` 1.10 → 1.11
+  - `proptest` 1.4 → 1.6
+  - `tempfile` 3.24 → 3.15
+  - `zip` 2.1 → 2.2
+- Removed unnecessary `macos_kqueue` feature from `notify` crate
+- Note: `ksni` 0.3.3 and `sspi`/`picky-krb` kept at current versions due to `zvariant`/`rand_core` version conflicts
+- Migrated all dialogs to use `adw::ToolbarView` for proper libadwaita layout:
+
+### Fixed
+- Fixed missing icon for "Embedded SSH terminals" feature on Welcome page (`display-symbolic` → `utilities-terminal-symbolic`)
+- Fixed missing Quick Connect header bar icon (`network-transmit-symbolic` → `go-jump-symbolic`)
+- Fixed missing Split Horizontal header bar icon (`view-paged-symbolic` → `object-flip-horizontal-symbolic`)
+- Fixed missing Interface tab icon in Settings (`preferences-desktop-appearance-symbolic` → `applications-graphics-symbolic`)
+
+### Improved
+- Migrated About dialog from `gtk4::AboutDialog` to `adw::AboutDialog` for modern GNOME look
+- Migrated Password Generator dialog switches from `ActionRow` + `Switch` to `adw::SwitchRow` for cleaner code
+- Migrated Cluster dialog broadcast switch from `ActionRow` + `Switch` to `adw::SwitchRow`
+- Migrated Export dialog switches from `ActionRow` + `Switch` to `adw::SwitchRow`
+- Enhanced About dialog with custom links and credits:
+  - Added short description under logo
+  - Added Releases, Details, and License links
+  - Added "Made with ❤️ in Ukraine 🇺🇦" to Acknowledgments
+  - Connection dialog (`dialogs/connection.rs`)
+  - SSH Agent passphrase dialog (`dialogs/settings/ssh_agent_tab.rs`)
+- Enabled libadwaita `v1_4` feature for `adw::ToolbarView` support
+- Replaced hardcoded CSS colors with Adwaita semantic colors:
+  - Status indicators now use `@success_color`, `@warning_color`, `@error_color`
+  - Toast notifications use semantic colors for success/warning states
+  - Form validation styles use semantic colors
+- Reduced global clippy suppressions in `main.rs` from 30+ to 5 essential ones
+- Replaced `unwrap()` calls in Cairo drawing code with proper error handling (`if let Ok(...)`)
+
+### Fixed
+- Cairo text rendering in embedded RDP/VNC widgets no longer panics on font errors
+
 ## [0.5.8] - 2026-01-07
 
 ### Changed
@@ -508,7 +551,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No plaintext password storage
 - `unsafe_code = "forbid"` enforced
 
-[Unreleased]: https://github.com/totoshko88/RustConn/compare/v0.5.8...HEAD
+[Unreleased]: https://github.com/totoshko88/RustConn/compare/v0.5.9...HEAD
+[0.5.9]: https://github.com/totoshko88/RustConn/compare/v0.5.8...v0.5.9
 [0.5.8]: https://github.com/totoshko88/RustConn/compare/v0.5.7...v0.5.8
 [0.5.7]: https://github.com/totoshko88/RustConn/compare/v0.5.6...v0.5.7
 [0.5.6]: https://github.com/totoshko88/RustConn/compare/v0.5.5...v0.5.6

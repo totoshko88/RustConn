@@ -108,10 +108,10 @@ impl SnippetDialog {
         clamp.set_child(Some(&content));
         scrolled.set_child(Some(&clamp));
 
-        let main_box = GtkBox::new(Orientation::Vertical, 0);
-        main_box.append(&header);
-        main_box.append(&scrolled);
-        window.set_content(Some(&main_box));
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header);
+        toolbar_view.set_content(Some(&scrolled));
+        window.set_content(Some(&toolbar_view));
 
         // === Basic Info Section ===
         let (basic_frame, name_entry, description_entry, category_entry, tags_entry) =
