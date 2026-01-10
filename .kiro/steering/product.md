@@ -4,79 +4,78 @@ inclusion: always
 
 # RustConn Product Context
 
-Linux connection manager for SSH, RDP, VNC, and SPICE protocols. GTK4/libadwaita GUI targeting Wayland-first environments.
+Linux connection manager for SSH, RDP, VNC, SPICE protocols. GTK4/libadwaita GUI, Wayland-first.
 
 ## Protocol Architecture
 
 | Protocol | Backend | Session Type |
 |----------|---------|--------------|
-| SSH | VTE terminal | Embedded tab (primary use case) |
+| SSH | VTE terminal | Embedded tab (primary) |
 | RDP | FreeRDP (`xfreerdp`) | External window |
 | VNC | TigerVNC (`vncviewer`) | External window |
 | SPICE | `remote-viewer` | External window |
 
-## Core Features
+## Core Capabilities
 
-- Connection organization: groups, tags
+- Connection organization via groups and tags
 - Import/export: Remmina, Asbru-CM, SSH config, Ansible inventory, Royal TS
 - Credential backends: libsecret (default), KeePassXC (optional)
 - Session logging, command snippets, cluster commands, Wake-on-LAN
 
-## Mandatory Constraints
+## Critical Rules
 
-### Credentials — CRITICAL
+### Credential Security
+
+All passwords and keys MUST use `SecretString`:
 
 ```rust
-// ALWAYS use SecretString for passwords/keys
 use secrecy::SecretString;
 let password: SecretString = SecretString::new(value.into());
-
-// ALWAYS persist via SecretBackend trait
-impl SecretBackend for MyBackend { ... }
 ```
 
-NEVER store passwords as plain `String`.
+Persist credentials via `SecretBackend` trait only. Never store as plain `String`.
 
-### Crate Boundaries — ENFORCED
+### Crate Boundaries
 
-| Code Type | Crate | Rule |
-|-----------|-------|------|
-| Business logic | `rustconn-core` | MUST NOT import `gtk4`, `vte4`, `adw` |
+| Code Type | Crate | Constraint |
+|-----------|-------|------------|
+| Business logic | `rustconn-core` | NO `gtk4`/`vte4`/`adw` imports |
 | GUI/widgets | `rustconn` | Depends on `rustconn-core` |
-| CLI | `rustconn-cli` | Depends on `rustconn-core` |
+| CLI | `rustconn-cli` | Depends on `rustconn-core` only |
+
+Decision: "Does this need GTK?" → No: `rustconn-core` / Yes: `rustconn`
 
 ### Display Server
 
-- Wayland-first design
-- AVOID X11-specific APIs
-- Test on Wayland before X11
+- Wayland-first — avoid X11-specific APIs
+- Test Wayland before X11
 
 ### Graceful Degradation
 
-Optional features (KeePassXC, tray icon) MUST NOT break core functionality when unavailable. Check feature availability at runtime.
+Optional features (KeePassXC, tray icon) must not break core functionality. Check availability at runtime.
 
-## Extensibility Traits
+## Extensibility
 
-| Adding | Implement | Location |
-|--------|-----------|----------|
+| Feature | Trait | Location |
+|---------|-------|----------|
 | Protocol | `Protocol` | `rustconn-core/src/protocol/` |
 | Import format | `ImportSource` | `rustconn-core/src/import/` |
 | Export format | `ExportTarget` | `rustconn-core/src/export/` |
 | Secret backend | `SecretBackend` | `rustconn-core/src/secret/` |
 
-## UI Implementation (`rustconn/`)
+## UI Patterns (`rustconn/`)
 
 | Pattern | Implementation |
 |---------|----------------|
-| Widget preference | `adw::` over `gtk::` equivalents |
-| Transient messages | `adw::ToastOverlay` |
-| Modal dialogs | `adw::Dialog` or `gtk::Window` with `set_modal(true)` |
-| Main layout | Sidebar `gtk::TreeView` + `gtk::Notebook` tabs |
+| Widgets | Prefer `adw::` over `gtk::` equivalents |
+| Toasts | `adw::ToastOverlay` |
+| Dialogs | `adw::Dialog` or `gtk::Window` with `set_modal(true)` |
+| Layout | Sidebar `gtk::TreeView` + `gtk::Notebook` tabs |
 | Spacing | 12px margins, 6px between related elements (GNOME HIG) |
 
 ## Error Handling
 
-### In `rustconn-core`
+### `rustconn-core`
 
 ```rust
 #[derive(Debug, thiserror::Error)]
@@ -86,21 +85,19 @@ pub enum FeatureError {
 }
 ```
 
-- Return `Result<T, E>` from all fallible functions
-- NO panics; `unwrap()`/`expect()` only for provably impossible states
+- Return `Result<T, E>` from fallible functions
+- No panics; `unwrap()`/`expect()` only for provably impossible states
 
-### In `rustconn` (GUI)
+### `rustconn` (GUI)
 
-- Display user-friendly toast/dialog for errors
+- Show user-friendly toast/dialog for errors
 - Log technical details via `tracing`
 - Never expose internal error messages to users
 
 ## Pre-Implementation Checklist
 
-Before writing code:
-
-1. Crate placement — Business logic → `rustconn-core`; UI → `rustconn`
-2. Secrets — Wrapped in `SecretString`, persisted via `SecretBackend`
-3. Degradation — Feature works when optional dependencies missing
-4. Error handling — All fallible functions return `Result<T, E>`
-5. UI patterns — Follows libadwaita patterns and GNOME HIG
+1. **Crate placement** — Business logic → `rustconn-core`; UI → `rustconn`
+2. **Secrets** — Wrapped in `SecretString`, persisted via `SecretBackend`
+3. **Degradation** — Feature works when optional dependencies missing
+4. **Errors** — All fallible functions return `Result<T, E>`
+5. **UI** — Follows libadwaita patterns and GNOME HIG
