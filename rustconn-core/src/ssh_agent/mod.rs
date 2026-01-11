@@ -673,6 +673,84 @@ impl SshAgentManager {
         Ok(keys)
     }
 
+    /// Gets the public key for a specific fingerprint from the SSH agent.
+    ///
+    /// Uses `ssh-add -L` to list all public keys and matches by fingerprint.
+    /// This is useful when you need to specify a particular agent key for SSH connection.
+    ///
+    /// # Arguments
+    ///
+    /// * `fingerprint` - The key fingerprint to search for (e.g., "SHA256:abc123...")
+    ///
+    /// # Returns
+    ///
+    /// The public key in OpenSSH format (e.g., "ssh-ed25519 AAAA... comment")
+    ///
+    /// # Errors
+    ///
+    /// Returns `AgentError::NotRunning` if no socket is configured.
+    /// Returns `AgentError::KeyNotFound` if no key matches the fingerprint.
+    pub fn get_public_key_by_fingerprint(&self, fingerprint: &str) -> AgentResult<String> {
+        use std::process::Command;
+
+        let socket_path = self.socket_path.as_ref().ok_or(AgentError::NotRunning)?;
+
+        // Get all public keys from agent
+        let output = Command::new("ssh-add")
+            .arg("-L")
+            .env("SSH_AUTH_SOCK", socket_path)
+            .output()
+            .map_err(AgentError::Io)?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            if stderr.contains("no identities") || stderr.contains("The agent has no identities") {
+                return Err(AgentError::KeyNotFound(fingerprint.to_string()));
+            }
+            return Err(AgentError::ParseError(stderr.to_string()));
+        }
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+
+        // For each public key line, compute its fingerprint and compare
+        for line in stdout.lines() {
+            let line = line.trim();
+            if line.is_empty() {
+                continue;
+            }
+
+            // Compute fingerprint of this public key using ssh-keygen
+            let keygen_output = Command::new("ssh-keygen")
+                .arg("-lf")
+                .arg("-")
+                .stdin(std::process::Stdio::piped())
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+                .spawn();
+
+            if let Ok(mut child) = keygen_output {
+                use std::io::Write;
+                if let Some(ref mut stdin) = child.stdin {
+                    let _ = stdin.write_all(line.as_bytes());
+                }
+
+                if let Ok(output) = child.wait_with_output() {
+                    if output.status.success() {
+                        let fp_line = String::from_utf8_lossy(&output.stdout);
+                        // Output format: "256 SHA256:xxx comment (ED25519)"
+                        // Extract fingerprint (second field)
+                        let parts: Vec<&str> = fp_line.split_whitespace().collect();
+                        if parts.len() >= 2 && parts[1] == fingerprint {
+                            return Ok(line.to_string());
+                        }
+                    }
+                }
+            }
+        }
+
+        Err(AgentError::KeyNotFound(fingerprint.to_string()))
+    }
+
     /// Checks if a file contains a private key by reading its header
     fn is_private_key_file(path: &PathBuf) -> bool {
         use std::io::{BufRead, BufReader};

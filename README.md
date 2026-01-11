@@ -2,7 +2,7 @@
 
 Modern connection manager for Linux with GTK4/Wayland-native interface.
 
-[![Demo](https://img.youtube.com/vi/QTtXEybA2H8/maxresdefault.jpg)](https://youtu.be/QTtXEybA2H8)
+[![Demo](https://img.youtube.com/vi/BNFikAeEZY0/maxresdefault.jpg)](https://youtu.be/BNFikAeEZY0)
 
 ## Features
 

@@ -258,6 +258,9 @@ impl SettingsDialog {
                 match SshAgentManager::start_agent() {
                     Ok(socket_path) => {
                         tracing::info!("SSH agent started with socket: {socket_path}");
+                        // Update the process environment so other components can find the agent
+                        // SAFETY: This is safe in single-threaded GTK context
+                        std::env::set_var("SSH_AUTH_SOCK", &socket_path);
                         // Update the manager with the new socket path
                         manager_clone.borrow_mut().set_socket_path(Some(socket_path));
                         // Refresh the UI

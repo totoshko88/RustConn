@@ -53,8 +53,8 @@ ironrdp-tokio = { version = "0.7", features = ["reqwest"], optional = true }
 ironrdp-tls = { version = "0.1", features = ["native-tls"], optional = true }
 # MONITORING: picky pinned to =7.0.0-rc.17 due to sspi/rand_core conflict with ironrdp.
 # Check periodically if newer ironrdp versions resolve this dependency issue.
-# Last checked: 2026-01-01 (ironrdp 0.13, picky 7.0.0-rc.17)
-# Issue: sspi crate requires specific rand_core version incompatible with picky rc.20+
+# Last checked: 2026-01-11 (ironrdp 0.13, picky 7.0.0-rc.17 required)
+# Issue: sspi 0.16 requires picky API that changed in rc.18+ (BigUint vs BoxedUint)
 picky = "=7.0.0-rc.17"
 # Note: ironrdp-rdpdr-native 0.4 requires ironrdp-rdpdr 0.4.x but ironrdp 0.13 uses 0.3.x
 # We implement our own simple RDPDR backend instead
@@ -75,7 +75,6 @@ spice-embedded = ["dep:spice-client"]
 proptest = { workspace = true }
 tempfile = { workspace = true }
 criterion = { version = "0.8", features = ["html_reports"] }
-zip = { version = "2.2", default-features = false, features = ["deflate"] }
 
 [[bench]]
 name = "search_bench"

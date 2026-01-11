@@ -1796,10 +1796,11 @@ impl ConnectionDialog {
         let agent_key_dropdown = DropDown::new(Some(agent_key_list), gtk4::Expression::NONE);
         agent_key_dropdown.set_selected(0);
         agent_key_dropdown.set_sensitive(false);
+        agent_key_dropdown.set_hexpand(false);
 
         let agent_key_row = adw::ActionRow::builder()
-            .title("Agent Key")
-            .subtitle("Select key from SSH agent")
+            .title("Key")
+            .subtitle("Select from SSH agent")
             .build();
         agent_key_row.add_suffix(&agent_key_dropdown);
         auth_group.add(&agent_key_row);
@@ -6091,20 +6092,12 @@ impl ConnectionDialog {
         // Update the stored keys
         *self.ssh_agent_keys.borrow_mut() = keys.clone();
 
-        // Build the dropdown items
+        // Build the dropdown items with shortened display
         let items: Vec<String> = if keys.is_empty() {
             vec!["(No keys loaded)".to_string()]
         } else {
             keys.iter()
-                .map(|key| {
-                    // Format: "comment (key_type, fingerprint_short)"
-                    let fp_short = if key.fingerprint.len() > 20 {
-                        format!("{}...", &key.fingerprint[..20])
-                    } else {
-                        key.fingerprint.clone()
-                    };
-                    format!("{} ({}, {})", key.comment, key.key_type, fp_short)
-                })
+                .map(|key| Self::format_agent_key_short(key))
                 .collect()
         };
 
@@ -6119,6 +6112,24 @@ impl ConnectionDialog {
             // Agent source is selected
             self.ssh_agent_key_dropdown.set_sensitive(has_keys);
         }
+    }
+
+    /// Formats an agent key for short display in dropdown button
+    /// Shows: "comment_start...comment_end (TYPE)"
+    fn format_agent_key_short(key: &rustconn_core::ssh_agent::AgentKey) -> String {
+        let comment = &key.comment;
+        let max_comment_len = 24;
+
+        let short_comment = if comment.len() > max_comment_len {
+            // Show first 10 and last 10 chars with ellipsis
+            let start = &comment[..10];
+            let end = &comment[comment.len() - 10..];
+            format!("{start}…{end}")
+        } else {
+            comment.clone()
+        };
+
+        format!("{short_comment} ({})", key.key_type)
     }
 
     /// Sets the global variables to display as inherited in the Variables tab

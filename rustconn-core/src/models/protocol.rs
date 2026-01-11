@@ -152,8 +152,9 @@ impl SshConfig {
     /// - **File auth method**: When `key_source` is `SshKeySource::File`, adds `-i <path>`
     ///   and `-o IdentitiesOnly=yes` to prevent SSH from trying other keys (avoiding
     ///   "Too many authentication failures" errors).
-    /// - **Agent auth method**: When `key_source` is `SshKeySource::Agent`, does NOT add
-    ///   `IdentitiesOnly` to allow SSH to use all keys from the agent.
+    /// - **Agent auth method**: When `key_source` is `SshKeySource::Agent`, uses the key
+    ///   comment (which often contains the key file path) to specify the identity file.
+    ///   SSH will match this to the corresponding key in the agent.
     /// - **Legacy behavior**: If `identities_only` is explicitly set to true, it will
     ///   still be honored for backward compatibility.
     #[must_use]
@@ -162,8 +163,8 @@ impl SshConfig {
 
         // Determine if we should add IdentitiesOnly based on key source
         // File auth method should always use IdentitiesOnly to prevent "Too many auth failures"
-        // Agent auth method should NOT use IdentitiesOnly to allow all agent keys
-        let should_use_identities_only =
+        // Agent auth method with a valid key path should also use IdentitiesOnly
+        let mut should_use_identities_only =
             self.identities_only || matches!(self.key_source, SshKeySource::File { .. });
 
         // Add identity file if specified via key_source (preferred) or key_path (legacy)
@@ -172,17 +173,49 @@ impl SshConfig {
                 args.push("-i".to_string());
                 args.push(path.display().to_string());
             }
-            SshKeySource::Agent { .. } | SshKeySource::Default => {
-                // For Agent or Default, check legacy key_path field
+            SshKeySource::Agent { comment, .. } => {
+                // The comment often contains the key file path (e.g., "/home/user/.ssh/id_ed25519")
+                // If it's a valid path, use it with -i flag - SSH will match it to the agent key
+                if !comment.is_empty() {
+                    let key_path = std::path::Path::new(comment);
+                    // Check if comment looks like a file path and the public key exists
+                    if comment.starts_with('/') || comment.starts_with('~') {
+                        // Expand ~ to home directory
+                        let expanded_path = if comment.starts_with('~') {
+                            dirs::home_dir().map_or_else(
+                                || key_path.to_path_buf(),
+                                |home| home.join(comment.strip_prefix("~/").unwrap_or(comment)),
+                            )
+                        } else {
+                            key_path.to_path_buf()
+                        };
+
+                        // Check if the key file or its .pub version exists
+                        let pub_path = expanded_path.with_extension(
+                            expanded_path.extension().map_or_else(
+                                || "pub".to_string(),
+                                |e| format!("{}.pub", e.to_string_lossy()),
+                            ),
+                        );
+
+                        if expanded_path.exists() || pub_path.exists() {
+                            args.push("-i".to_string());
+                            args.push(expanded_path.display().to_string());
+                            // Enable IdentitiesOnly to use only this specific key
+                            should_use_identities_only = true;
+                        }
+                    }
+                }
+                // If comment is not a valid path, SSH will try all agent keys (no -i flag added)
+            }
+            SshKeySource::Default | SshKeySource::File { .. } => {
+                // Default or File with empty path - check legacy key_path field
                 if let Some(ref key_path) = self.key_path {
                     if !key_path.as_os_str().is_empty() {
                         args.push("-i".to_string());
                         args.push(key_path.display().to_string());
                     }
                 }
-            }
-            SshKeySource::File { .. } => {
-                // File source is handled above in the first match arm
             }
         }
 

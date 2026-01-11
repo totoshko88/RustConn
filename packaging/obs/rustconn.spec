@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.5.8
+Version:        0.5.9
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later
@@ -157,6 +157,16 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sat Jan 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.5.9-0
+- Update to version 0.5.9
+- Migrated Settings dialog from deprecated PreferencesWindow to PreferencesDialog
+- Updated libadwaita feature from v1_4 to v1_6
+- Migrated Template dialog to modern libadwaita patterns
+- Fixed Zero Trust (AWS SSM) connection status icon showing as failed
+- Fixed remote-viewer version parsing in Settings Clients tab
+- Fixed SSH Agent key selection when connecting
+- Improved agent key dropdown display in Connection Dialog
+
 * Tue Jan 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.5.8-0
 - Update to version 0.5.8
 - Fixed SSH Agent "Add Key" button - now opens file chooser to select any SSH key file

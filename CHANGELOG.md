@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed KeePass Settings: Added "Check" button to verify database connection
 - Fixed KeePass Settings: `verify_kdbx_credentials` now correctly handles key-file-only authentication with `--no-password` flag
 - Fixed SSH Agent Settings: "Start Agent" button now properly starts ssh-agent and updates UI
+- Fixed Zero Trust (AWS SSM) connection status icon showing as failed despite successful connection
 
 ### Improved
 - Migrated About dialog from `gtk4::AboutDialog` to `adw::AboutDialog` for modern GNOME look

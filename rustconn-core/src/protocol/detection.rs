@@ -384,6 +384,7 @@ fn parse_version(output: &str) -> Option<String> {
         // FreeRDP: "This is FreeRDP version 2.10.0"
         // rdesktop: "rdesktop 1.9.0"
         // vncviewer: "TigerVNC Viewer 64-bit v1.12.0"
+        // remote-viewer: "remote-viewer version 11.0"
 
         // Return the first meaningful line as version info
         if line.contains("version")
@@ -393,6 +394,7 @@ fn parse_version(output: &str) -> Option<String> {
             || line.contains("VNC")
             || line.contains("TigerVNC")
             || line.contains("TightVNC")
+            || line.contains("remote-viewer")
         {
             // Clean up the version string
             return Some(extract_version_string(line));
