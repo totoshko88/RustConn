@@ -273,6 +273,7 @@ impl AsbruImporter {
     }
 
     /// Converts an Asbru entry to a Connection
+    #[allow(clippy::too_many_lines)]
     fn convert_entry(
         &self,
         key: &str,
@@ -362,10 +363,25 @@ impl AsbruImporter {
                     22u16,
                 )
             }
-            "rdp" | "rdesktop" | "xfreerdp" | "freerdp" | "rdesktop3" => {
+            // Match RDP protocols - Asbru stores as "rdp (rdesktop)", "rdp (xfreerdp)", etc.
+            s if s == "rdp"
+                || s.starts_with("rdp ")
+                || s.starts_with("rdp(")
+                || s == "rdesktop"
+                || s == "xfreerdp"
+                || s == "freerdp"
+                || s == "rdesktop3" =>
+            {
                 (ProtocolConfig::Rdp(RdpConfig::default()), 3389u16)
             }
-            "vnc" | "vncviewer" | "tigervnc" | "realvnc" => {
+            // Match VNC protocols - Asbru stores as "vnc (vncviewer)", "vnc (tigervnc)", etc.
+            s if s == "vnc"
+                || s.starts_with("vnc ")
+                || s.starts_with("vnc(")
+                || s == "vncviewer"
+                || s == "tigervnc"
+                || s == "realvnc" =>
+            {
                 (ProtocolConfig::Vnc(VncConfig::default()), 5900u16)
             }
             _ => {
@@ -583,6 +599,71 @@ windows-uuid:
 
         let conn = &result.connections[0];
         assert!(matches!(conn.protocol_config, ProtocolConfig::Rdp(_)));
+    }
+
+    #[test]
+    fn test_parse_rdp_rdesktop_format() {
+        let importer = AsbruImporter::new();
+        // Asbru-CM stores RDP with client info like "rdp (rdesktop)"
+        let yaml = r#"
+rdp-rdesktop-uuid:
+  _is_group: 0
+  name: "Windows via rdesktop"
+  ip: "192.168.1.50"
+  port: 3389
+  user: "Administrator"
+  method: "rdp (rdesktop)"
+"#;
+
+        let result = importer.parse_config(yaml, "test");
+        assert_eq!(result.connections.len(), 1);
+        assert_eq!(result.skipped.len(), 0);
+
+        let conn = &result.connections[0];
+        assert!(matches!(conn.protocol_config, ProtocolConfig::Rdp(_)));
+    }
+
+    #[test]
+    fn test_parse_rdp_xfreerdp_format() {
+        let importer = AsbruImporter::new();
+        // Asbru-CM stores RDP with client info like "rdp (xfreerdp)"
+        let yaml = r#"
+rdp-xfreerdp-uuid:
+  _is_group: 0
+  name: "Windows via xfreerdp"
+  ip: "192.168.1.50"
+  port: 3389
+  user: "Administrator"
+  method: "rdp (xfreerdp)"
+"#;
+
+        let result = importer.parse_config(yaml, "test");
+        assert_eq!(result.connections.len(), 1);
+        assert_eq!(result.skipped.len(), 0);
+
+        let conn = &result.connections[0];
+        assert!(matches!(conn.protocol_config, ProtocolConfig::Rdp(_)));
+    }
+
+    #[test]
+    fn test_parse_vnc_vncviewer_format() {
+        let importer = AsbruImporter::new();
+        // Asbru-CM stores VNC with client info like "vnc (vncviewer)"
+        let yaml = r#"
+vnc-viewer-uuid:
+  _is_group: 0
+  name: "Linux via VNC"
+  ip: "192.168.1.60"
+  port: 5900
+  method: "vnc (vncviewer)"
+"#;
+
+        let result = importer.parse_config(yaml, "test");
+        assert_eq!(result.connections.len(), 1);
+        assert_eq!(result.skipped.len(), 0);
+
+        let conn = &result.connections[0];
+        assert!(matches!(conn.protocol_config, ProtocolConfig::Vnc(_)));
     }
 
     #[test]
