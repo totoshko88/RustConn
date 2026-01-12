@@ -372,8 +372,8 @@ impl EmbeddedSpiceWidget {
             if embedded && current_state == SpiceConnectionState::Connected {
                 // Render the pixel buffer
                 let buffer = pixel_buffer.borrow();
-                let buf_w = buffer.width() as i32;
-                let buf_h = buffer.height() as i32;
+                let buf_w = crate::utils::dimension_to_i32(buffer.width());
+                let buf_h = crate::utils::dimension_to_i32(buffer.height());
 
                 if buf_w > 0 && buf_h > 0 && !buffer.data().is_empty() {
                     // Calculate scaling to fit widget while maintaining aspect ratio

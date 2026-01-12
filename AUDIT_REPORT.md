@@ -355,8 +355,8 @@ fn to_vnc_coord(value: f64, max: u16) -> u16 {
 
 - [ ] **P3:** Migrate `block_on()` credential operations to fully async with `glib::spawn_future_local`
 - [ ] **P3:** Add integration tests for async/GTK interaction patterns
-- [ ] **P3:** Create numeric conversion utility module for coordinate handling
-- [ ] **P3:** Document all remaining `#[allow]` annotations with safety justifications
+- [x] **P3:** Create numeric conversion utility module for coordinate handling (see Section 10)
+- [x] **P3:** Document all remaining `#[allow]` annotations with safety justifications (see Section 10)
 
 ---
 
@@ -464,6 +464,39 @@ Extracted helper struct and 3 protocol-specific functions:
 
 ---
 
+## 10. Numeric Conversion Utilities (Completed)
+
+Created a comprehensive numeric conversion utility module in `rustconn/src/utils.rs` to handle coordinate and dimension conversions safely across embedded protocol viewers (VNC, RDP, SPICE).
+
+### New Utility Functions
+
+| Function | Purpose | Safety Justification |
+|----------|---------|---------------------|
+| `coord_to_u16(f64)` | GTK coordinates → VNC/RDP u16 | Clamps to valid range before cast |
+| `coord_to_i32(f64)` | GTK coordinates → FreeRDP i32 | Clamps to valid range before cast |
+| `dimension_to_u16(u32)` | Widget dimensions → protocol u16 | Clamps to u16::MAX before cast |
+| `dimension_to_i32(u32)` | Widget dimensions → Cairo i32 | Clamps to i32::MAX before cast |
+| `stride_to_i32(u32)` | Buffer stride → Cairo i32 | Clamps to i32::MAX before cast |
+| `dimension_diff(u32, u32)` | Resize threshold calculation | Uses `abs_diff()` for safety |
+| `progress_fraction(u64, u64)` | Progress bar fraction (0.0-1.0) | Handles division by zero |
+| `progress_percentage(u64, u64)` | Progress percentage (0-100) | Handles division by zero |
+
+### Files Refactored
+
+- `rustconn/src/embedded_vnc.rs` - Mouse coordinates, desktop size, surface damage
+- `rustconn/src/embedded_rdp.rs` - Mouse coordinates, resolution, resize diff
+- `rustconn/src/embedded_spice.rs` - Buffer dimensions
+- `rustconn/src/embedded_rdp_thread.rs` - Progress calculations
+
+### Benefits
+
+- **Centralized safety**: All numeric casts now go through documented, tested functions
+- **Eliminated scattered `#[allow]` annotations**: Removed 15+ inline cast suppressions
+- **Comprehensive documentation**: Each function includes safety justification
+- **Unit tested**: All conversion functions have test coverage
+
+---
+
 ## Appendix: Files Requiring Attention
 
 | Priority | File | Issue Type | Status |
@@ -483,8 +516,11 @@ Extracted helper struct and 3 protocol-specific functions:
 | Medium | `rustconn/src/window_protocols.rs` | State borrow safety | Done |
 | Medium | `rustconn/src/window_clusters.rs` | State borrow safety | Done |
 | Medium | `rustconn/src/window_operations.rs` | State borrow safety | Done |
+| Low | `rustconn/src/embedded_vnc.rs` | Cast annotations | Done (P3) |
+| Low | `rustconn/src/embedded_rdp.rs` | Cast annotations | Done (P3) |
+| Low | `rustconn/src/embedded_spice.rs` | Cast annotations | Done (P3) |
+| Low | `rustconn/src/embedded_rdp_thread.rs` | Progress casts | Done (P3) |
 | Low | Multiple dialog files | Large functions | Pending |
-| Low | Multiple embedded_*.rs | Cast annotations | Documented |
 
 ---
 

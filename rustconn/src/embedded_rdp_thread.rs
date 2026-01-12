@@ -68,9 +68,7 @@ impl FileDownloadState {
         if self.total_size == 0 {
             return if self.complete { 1.0 } else { 0.0 };
         }
-        #[allow(clippy::cast_precision_loss)]
-        let progress = self.bytes_received as f64 / self.total_size as f64;
-        progress.min(1.0)
+        crate::utils::progress_fraction(self.bytes_received, self.total_size)
     }
 }
 
@@ -168,12 +166,11 @@ impl ClipboardFileTransfer {
     }
 
     /// Returns overall progress (0.0 to 1.0)
-    #[allow(clippy::cast_precision_loss)]
     pub fn overall_progress(&self) -> f64 {
         if self.total_files == 0 {
             return 0.0;
         }
-        self.completed_count as f64 / self.total_files as f64
+        crate::utils::progress_fraction(self.completed_count as u64, self.total_files as u64)
     }
 
     /// Returns true if all downloads are complete

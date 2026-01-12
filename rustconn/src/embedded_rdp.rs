@@ -702,9 +702,9 @@ impl EmbeddedRdpWidget {
                     if let Ok(surface) = gtk4::cairo::ImageSurface::create_for_data(
                         data.to_vec(),
                         gtk4::cairo::Format::ARgb32,
-                        buf_width as i32,
-                        buf_height as i32,
-                        buffer.stride() as i32,
+                        crate::utils::dimension_to_i32(buf_width),
+                        crate::utils::dimension_to_i32(buf_height),
+                        crate::utils::stride_to_i32(buffer.stride()),
                     ) {
                         // Scale to fit the drawing area while maintaining aspect ratio
                         let scale_x = f64::from(width) / f64::from(buf_width);
@@ -907,24 +907,20 @@ impl EmbeddedRdpWidget {
                 let buttons = *button_state_motion.borrow();
 
                 if using_ironrdp {
-                    #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
                     if let Some(ref tx) = *ironrdp_tx.borrow() {
                         let _ = tx.send(RdpClientCommand::PointerEvent {
-                            x: rdp_x as u16,
-                            y: rdp_y as u16,
+                            x: crate::utils::coord_to_u16(rdp_x),
+                            y: crate::utils::coord_to_u16(rdp_y),
                             buttons,
                         });
                     }
-                } else {
-                    #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
-                    if let Some(ref thread) = *freerdp_thread.borrow() {
-                        let _ = thread.send_command(RdpCommand::MouseEvent {
-                            x: rdp_x as i32,
-                            y: rdp_y as i32,
-                            button: u32::from(buttons),
-                            pressed: false,
-                        });
-                    }
+                } else if let Some(ref thread) = *freerdp_thread.borrow() {
+                    let _ = thread.send_command(RdpCommand::MouseEvent {
+                        x: crate::utils::coord_to_i32(rdp_x),
+                        y: crate::utils::coord_to_i32(rdp_y),
+                        button: u32::from(buttons),
+                        pressed: false,
+                    });
                 }
             }
         });
@@ -972,25 +968,21 @@ impl EmbeddedRdpWidget {
                 *button_state_press.borrow_mut() = buttons;
 
                 if using_ironrdp {
-                    #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
                     if let Some(ref tx) = *ironrdp_tx.borrow() {
                         let rdp_button = crate::embedded_rdp_ui::gtk_button_to_rdp_button(button);
                         let _ = tx.send(RdpClientCommand::MouseButtonPress {
-                            x: rdp_x as u16,
-                            y: rdp_y as u16,
+                            x: crate::utils::coord_to_u16(rdp_x),
+                            y: crate::utils::coord_to_u16(rdp_y),
                             button: rdp_button,
                         });
                     }
-                } else {
-                    #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
-                    if let Some(ref thread) = *freerdp_thread.borrow() {
-                        let _ = thread.send_command(RdpCommand::MouseEvent {
-                            x: rdp_x as i32,
-                            y: rdp_y as i32,
-                            button,
-                            pressed: true,
-                        });
-                    }
+                } else if let Some(ref thread) = *freerdp_thread.borrow() {
+                    let _ = thread.send_command(RdpCommand::MouseEvent {
+                        x: crate::utils::coord_to_i32(rdp_x),
+                        y: crate::utils::coord_to_i32(rdp_y),
+                        button,
+                        pressed: true,
+                    });
                 }
             }
         });
@@ -1028,25 +1020,21 @@ impl EmbeddedRdpWidget {
                 *button_state_release.borrow_mut() = buttons;
 
                 if using_ironrdp {
-                    #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
                     if let Some(ref tx) = *ironrdp_tx.borrow() {
                         let rdp_button = crate::embedded_rdp_ui::gtk_button_to_rdp_button(button);
                         let _ = tx.send(RdpClientCommand::MouseButtonRelease {
-                            x: rdp_x as u16,
-                            y: rdp_y as u16,
+                            x: crate::utils::coord_to_u16(rdp_x),
+                            y: crate::utils::coord_to_u16(rdp_y),
                             button: rdp_button,
                         });
                     }
-                } else {
-                    #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
-                    if let Some(ref thread) = *freerdp_thread.borrow() {
-                        let _ = thread.send_command(RdpCommand::MouseEvent {
-                            x: rdp_x as i32,
-                            y: rdp_y as i32,
-                            button,
-                            pressed: false,
-                        });
-                    }
+                } else if let Some(ref thread) = *freerdp_thread.borrow() {
+                    let _ = thread.send_command(RdpCommand::MouseEvent {
+                        x: crate::utils::coord_to_i32(rdp_x),
+                        y: crate::utils::coord_to_i32(rdp_y),
+                        button,
+                        pressed: false,
+                    });
                 }
             }
         });
@@ -1165,8 +1153,8 @@ impl EmbeddedRdpWidget {
                 // Only reconnect if size changed significantly (more than 50 pixels in any dimension)
                 let rdp_w = *rdp_width.borrow();
                 let rdp_h = *rdp_height.borrow();
-                let width_diff = (new_width as i32 - rdp_w as i32).unsigned_abs();
-                let height_diff = (new_height as i32 - rdp_h as i32).unsigned_abs();
+                let width_diff = crate::utils::dimension_diff(new_width, rdp_w);
+                let height_diff = crate::utils::dimension_diff(new_height, rdp_h);
 
                 if width_diff < 50 && height_diff < 50 {
                     return; // Size change too small, just scale
@@ -1327,7 +1315,10 @@ impl EmbeddedRdpWidget {
         // Convert GUI config to RdpClientConfig
         let mut client_config = RdpClientConfig::new(&config.host)
             .with_port(config.port)
-            .with_resolution(config.width as u16, config.height as u16)
+            .with_resolution(
+                crate::utils::dimension_to_u16(config.width),
+                crate::utils::dimension_to_u16(config.height),
+            )
             .with_clipboard(config.clipboard_enabled);
 
         if let Some(ref username) = config.username {
@@ -1847,7 +1838,10 @@ impl EmbeddedRdpWidget {
         // Convert GUI config to RdpClientConfig
         let mut client_config = RdpClientConfig::new(&config.host)
             .with_port(config.port)
-            .with_resolution(config.width as u16, config.height as u16)
+            .with_resolution(
+                crate::utils::dimension_to_u16(config.width),
+                crate::utils::dimension_to_u16(config.height),
+            )
             .with_clipboard(config.clipboard_enabled)
             .with_shared_folders(shared_folders);
 
