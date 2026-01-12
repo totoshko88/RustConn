@@ -10,11 +10,14 @@
 //! 2. `RdpClientEvent::AudioData` - queues PCM data for playback
 //! 3. `RdpClientEvent::AudioVolume` - adjusts playback volume
 //! 4. `RdpClientEvent::AudioClose` - stops playback
+//!
+//! # Safety Notes
+//!
+//! Mutex locks in audio callbacks are safe - they protect a simple buffer and
+//! are held only briefly. Poisoning would indicate a panic in the audio thread
+//! which is unrecoverable anyway. The `unwrap()` calls in audio callbacks are
+//! intentional and documented with function-level `#[allow]` attributes.
 
-// Mutex locks in audio callbacks are safe - they protect a simple buffer and
-// are held only briefly. Poisoning would indicate a panic in the audio thread
-// which is unrecoverable anyway.
-#![allow(clippy::unwrap_used)]
 // Audio processing requires numeric casts that are intentional and safe for audio data
 #![allow(clippy::cast_precision_loss)]
 #![allow(clippy::cast_possible_truncation)]
@@ -184,6 +187,12 @@ impl RdpAudioPlayer {
     }
 
     /// Creates an i16 audio stream
+    ///
+    /// # Panics
+    ///
+    /// The audio callback panics if the buffer mutex is poisoned, which indicates
+    /// an unrecoverable panic occurred in another thread while holding the lock.
+    #[allow(clippy::unwrap_used)]
     fn create_i16_stream(
         &self,
         device: &cpal::Device,
@@ -199,7 +208,7 @@ impl RdpAudioPlayer {
                     let vol_raw = volume.load(Ordering::Relaxed);
                     let vol = vol_raw as f32 / 65535.0;
 
-                    // Buffer lock is still needed but volume is now lock-free
+                    // Buffer lock - panics only if poisoned (unrecoverable state)
                     let mut buf = buffer.lock().unwrap();
                     let samples = buf.pop_samples(data.len());
 
@@ -225,6 +234,12 @@ impl RdpAudioPlayer {
     }
 
     /// Creates a u8 audio stream (8-bit unsigned)
+    ///
+    /// # Panics
+    ///
+    /// The audio callback panics if the buffer mutex is poisoned, which indicates
+    /// an unrecoverable panic occurred in another thread while holding the lock.
+    #[allow(clippy::unwrap_used)]
     fn create_u8_stream(
         &self,
         device: &cpal::Device,
@@ -240,6 +255,7 @@ impl RdpAudioPlayer {
                     let vol_raw = volume.load(Ordering::Relaxed);
                     let vol = vol_raw as f32 / 65535.0;
 
+                    // Buffer lock - panics only if poisoned (unrecoverable state)
                     let mut buf = buffer.lock().unwrap();
                     let samples = buf.pop_samples(data.len());
 

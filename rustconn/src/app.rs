@@ -752,9 +752,17 @@ fn show_error_dialog(app: &adw::Application, title: &str, message: &str) {
 /// Runs the GTK4 application
 ///
 /// This is the main entry point that initializes GTK and runs the event loop.
+///
+/// # Returns
+///
+/// Returns `glib::ExitCode::FAILURE` if libadwaita initialization fails,
+/// otherwise returns the application's exit code.
 pub fn run() -> glib::ExitCode {
     // Initialize libadwaita before creating the application
-    adw::init().expect("Failed to initialize libadwaita");
+    if let Err(e) = adw::init() {
+        eprintln!("Failed to initialize libadwaita: {e}");
+        return glib::ExitCode::FAILURE;
+    }
 
     let app = create_application();
     app.run()

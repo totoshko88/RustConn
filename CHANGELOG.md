@@ -5,6 +5,26 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-01-12
+
+### Changed
+- **Code Audit & Cleanup Release** - comprehensive codebase audit and modernization
+- Removed `check_structs.rs` development artifact containing unsafe code (violated `unsafe_code = "forbid"` policy)
+- Replaced `blocking_send()` with `try_send()` in VNC input handlers to prevent UI freezes
+- Replaced `unwrap()` with safe alternatives in `sidebar.rs` iterator access
+- Replaced `expect()` with proper error handling in `validation.rs` regex compilation
+- Replaced module-level `#![allow(clippy::unwrap_used)]` with targeted function-level annotations in `embedded_rdp_thread.rs`
+- Improved `app.rs` initialization to return proper error instead of panicking
+
+### Fixed
+- VNC keyboard/mouse input no longer blocks GTK main thread on channel send
+- Sidebar protocol filter no longer panics on empty filter set
+- Regex validation errors now return `Result` instead of panicking
+- FreeRDP thread mutex operations now have documented safety invariants
+
+### Removed
+- `rustconn-core/src/check_structs.rs` - development artifact with unsafe code
+
 ## [0.5.9] - 2026-01-10
 
 ### Changed

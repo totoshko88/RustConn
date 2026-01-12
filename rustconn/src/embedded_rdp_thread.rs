@@ -2,10 +2,13 @@
 //!
 //! This module provides thread-safe FreeRDP wrapper and clipboard file transfer
 //! state management for RDP sessions.
-
-// Mutex locks in this module protect simple state flags and process handles.
-// They are held briefly and poisoning would indicate unrecoverable thread panic.
-#![allow(clippy::unwrap_used)]
+//!
+//! # Safety Notes
+//!
+//! Mutex locks in this module protect simple state flags and process handles.
+//! They are held briefly and poisoning would indicate an unrecoverable thread panic,
+//! which is why `unwrap()` is used on lock acquisition - if the lock is poisoned,
+//! the thread that held it panicked, and we cannot safely continue.
 
 use crate::embedded_rdp_buffer::PixelBuffer;
 use crate::embedded_rdp_types::{
@@ -246,7 +249,11 @@ impl FreeRdpThread {
             );
         });
 
-        *state.lock().unwrap() = FreeRdpThreadState::Idle;
+        // Safe: lock is not poisoned at this point (thread just started)
+        #[allow(clippy::unwrap_used)]
+        {
+            *state.lock().unwrap() = FreeRdpThreadState::Idle;
+        }
 
         Ok(Self {
             process,
@@ -260,6 +267,12 @@ impl FreeRdpThread {
     }
 
     /// Main loop for FreeRDP operations running in dedicated thread
+    ///
+    /// # Panics
+    ///
+    /// Panics if mutex locks are poisoned, which indicates an unrecoverable
+    /// thread panic occurred while holding the lock.
+    #[allow(clippy::unwrap_used)]
     fn run_freerdp_loop(
         cmd_rx: mpsc::Receiver<RdpCommand>,
         evt_tx: mpsc::Sender<RdpEvent>,
@@ -335,6 +348,11 @@ impl FreeRdpThread {
     }
 
     /// Launches FreeRDP with Qt error suppression
+    ///
+    /// # Panics
+    ///
+    /// Panics if the process mutex is poisoned.
+    #[allow(clippy::unwrap_used)]
     fn launch_freerdp(
         config: &RdpConfig,
         process: &Arc<Mutex<Option<Child>>>,
@@ -407,6 +425,11 @@ impl FreeRdpThread {
     }
 
     /// Cleans up the FreeRDP process
+    ///
+    /// # Panics
+    ///
+    /// Panics if the process mutex is poisoned.
+    #[allow(clippy::unwrap_used)]
     fn cleanup_process(process: &Arc<Mutex<Option<Child>>>) {
         let child = process.lock().unwrap().take();
         if let Some(mut child) = child {
@@ -428,11 +451,21 @@ impl FreeRdpThread {
     }
 
     /// Returns the current thread state
+    ///
+    /// # Panics
+    ///
+    /// Panics if the state mutex is poisoned.
+    #[allow(clippy::unwrap_used)]
     pub fn state(&self) -> FreeRdpThreadState {
         *self.state.lock().unwrap()
     }
 
     /// Returns whether fallback was triggered
+    ///
+    /// # Panics
+    ///
+    /// Panics if the fallback_triggered mutex is poisoned.
+    #[allow(clippy::unwrap_used)]
     pub fn fallback_triggered(&self) -> bool {
         *self.fallback_triggered.lock().unwrap()
     }

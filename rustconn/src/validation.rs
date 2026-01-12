@@ -136,19 +136,34 @@ pub fn port_number() -> ValidatorFn {
 }
 
 /// Validates that a field matches a regex pattern
+///
+/// # Panics
+///
+/// This function will return an error validator if the regex pattern is invalid,
+/// rather than panicking at runtime.
 #[must_use]
 pub fn pattern(field_name: &str, regex: &str, error_message: &str) -> ValidatorFn {
     let name = field_name.to_string();
     let msg = error_message.to_string();
-    let re = regex::Regex::new(regex).expect("Invalid regex pattern");
-
-    Box::new(move |value: &str| {
-        if re.is_match(value) {
-            ValidationResult::Valid
-        } else {
-            ValidationResult::Error(format!("{name}: {msg}"))
+    
+    // Compile regex at validator creation time, handle invalid patterns gracefully
+    match regex::Regex::new(regex) {
+        Ok(re) => Box::new(move |value: &str| {
+            if re.is_match(value) {
+                ValidationResult::Valid
+            } else {
+                ValidationResult::Error(format!("{name}: {msg}"))
+            }
+        }),
+        Err(e) => {
+            // Log the error and return a validator that always fails
+            tracing::error!("Invalid regex pattern '{}': {}", regex, e);
+            let pattern = regex.to_string();
+            Box::new(move |_value: &str| {
+                ValidationResult::Error(format!("Invalid validation pattern: {pattern}"))
+            })
         }
-    })
+    }
 }
 
 /// Combines multiple validators, returning the first error found

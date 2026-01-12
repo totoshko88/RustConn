@@ -1,3 +1,15 @@
+rustconn (0.6.0-1) unstable; urgency=medium
+
+  * New upstream release - Code Audit & Cleanup
+  * Removed check_structs.rs development artifact containing unsafe code
+  * Replaced blocking_send() with try_send() in VNC input handlers
+  * Replaced unwrap() with safe alternatives in sidebar.rs iterator access
+  * Replaced expect() with proper error handling in validation.rs regex
+  * Replaced module-level clippy allows with targeted function-level annotations
+  * Improved app.rs initialization error handling
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Sun, 12 Jan 2026 12:00:00 +0200
+
 rustconn (0.5.9-1) unstable; urgency=medium
 
   * New upstream release
