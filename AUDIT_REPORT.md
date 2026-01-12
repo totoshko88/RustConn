@@ -353,10 +353,42 @@ fn to_vnc_coord(value: f64, max: u16) -> u16 {
 
 ### Medium-Term (Next Quarter)
 
-- [ ] **P3:** Migrate `block_on()` credential operations to fully async with `glib::spawn_future_local`
-- [ ] **P3:** Add integration tests for async/GTK interaction patterns
+- [ ] **P3:** Migrate `block_on()` credential operations to fully async with `glib::spawn_future_local` (complex - see Section 12)
+- [x] **P3:** Add integration tests for async/GTK interaction patterns (see Section 11)
 - [x] **P3:** Create numeric conversion utility module for coordinate handling (see Section 10)
 - [x] **P3:** Document all remaining `#[allow]` annotations with safety justifications (see Section 10)
+
+---
+
+## 12. Remaining Work: `block_on()` Migration (Deferred)
+
+The final P3 item involves migrating blocking credential operations in `state.rs` to fully async patterns using `glib::spawn_future_local`. This is deferred due to complexity and risk.
+
+### Current State
+
+The following methods in `rustconn/src/state.rs` use `with_runtime()` + `block_on()`:
+
+| Method | Line | Purpose |
+|--------|------|---------|
+| `store_credentials` | ~824 | Store credentials to secret backend |
+| `retrieve_credentials` | ~845 | Retrieve credentials from secret backend |
+| `delete_credentials` | ~866 | Delete credentials from secret backend |
+| `has_secret_backend` | ~879 | Check if any backend is available |
+| `resolve_credentials` | ~978 | Resolve credentials using resolution chain |
+
+### Why Deferred
+
+1. **Async alternatives already exist**: `resolve_credentials_with_callback`, `resolve_credentials_async`, etc. are implemented but marked `#[allow(dead_code)]`
+2. **Caller migration required**: All callers in `window.rs`, `window_protocols.rs`, etc. would need to be converted to async patterns
+3. **GTK integration complexity**: Requires careful use of `glib::spawn_future_local` and `glib::idle_add_local_once` for UI updates
+4. **Risk of regressions**: Credential resolution is critical path - changes could break authentication flows
+
+### Recommended Approach (Future)
+
+1. Start with `resolve_credentials` as it has the most callers
+2. Create a wrapper that uses `glib::spawn_future_local` internally
+3. Update callers one at a time, testing each change
+4. Remove blocking methods once all callers are migrated
 
 ---
 
@@ -494,6 +526,43 @@ Created a comprehensive numeric conversion utility module in `rustconn/src/utils
 - **Eliminated scattered `#[allow]` annotations**: Removed 15+ inline cast suppressions
 - **Comprehensive documentation**: Each function includes safety justification
 - **Unit tested**: All conversion functions have test coverage
+
+---
+
+## 11. Async/GTK Integration Tests (Completed)
+
+Added comprehensive integration tests for async credential resolution patterns in `rustconn-core/tests/integration/async_patterns_tests.rs`. These tests validate the async patterns that should be used instead of blocking `block_on()` calls in GTK context.
+
+### Test Categories
+
+| Category | Tests | Purpose |
+|----------|-------|---------|
+| Callback Patterns | 4 | Verify callback invocation, concurrent resolutions, cancellation, timeout |
+| Result Handling | 5 | Test `AsyncCredentialResult` variants (Success, Error, Cancelled, Timeout) |
+| CancellationToken | 2 | Thread safety, reset functionality |
+| Channel Patterns | 3 | GTK idle_add polling pattern, disconnection handling, timeout pattern |
+
+### Key Tests
+
+- `callback_is_invoked_on_completion` - Verifies async resolution invokes callback with result
+- `concurrent_resolutions_complete_independently` - Tests 5 parallel credential resolutions
+- `cancellation_stops_pending_resolution` - Validates `CancellationToken` cancellation
+- `timeout_returns_appropriate_result` - Tests timeout handling
+- `channel_pattern_delivers_results` - Validates the `spawn_blocking_with_callback` pattern
+- `channel_timeout_pattern_works` - Tests timeout with channel polling
+
+### Requirements Coverage
+
+These tests validate:
+- **Requirement 9.1**: Async operations instead of blocking calls
+- **Requirement 9.2**: Avoid `block_on()` in GUI code
+- **Requirement 9.5**: Support cancellation of pending requests
+
+### Running the Tests
+
+```bash
+cargo test -p rustconn-core --test integration_tests async_patterns
+```
 
 ---
 

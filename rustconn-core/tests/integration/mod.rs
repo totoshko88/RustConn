@@ -3,5 +3,6 @@
 //! These tests verify that exporting connections to various formats
 //! and re-importing them preserves all connection data.
 
+pub mod async_patterns_tests;
 pub mod export_import_roundtrip;
 pub mod importer_tests;
