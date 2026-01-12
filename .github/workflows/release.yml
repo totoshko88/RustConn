@@ -139,6 +139,7 @@ jobs:
         run: |
           source $HOME/.cargo/env
           VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
+          BUILD_DATE=$(date '+%a %b %d %Y')
           
           # Setup rpmbuild directories
           mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
@@ -149,9 +150,9 @@ jobs:
             .
           
           # Create spec file for GitHub CI build (simplified, no vendor)
-          cat > ~/rpmbuild/SPECS/rustconn.spec << 'SPECEOF'
+          cat > ~/rpmbuild/SPECS/rustconn.spec << SPECEOF
           Name:           rustconn
-          Version:        VERSION_PLACEHOLDER
+          Version:        ${VERSION}
           Release:        1%{?dist}
           Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
           License:        GPL-3.0-or-later
@@ -174,20 +175,20 @@ jobs:
           %install
           install -Dm755 %{_builddir}/rustconn %{buildroot}%{_bindir}/rustconn
           install -Dm755 %{_builddir}/rustconn-cli %{buildroot}%{_bindir}/rustconn-cli
-          install -Dm644 %{_builddir}/io.github.totoshko88.RustConn.desktop \
+          install -Dm644 %{_builddir}/io.github.totoshko88.RustConn.desktop \\
               %{buildroot}%{_datadir}/applications/io.github.totoshko88.RustConn.desktop
-          install -Dm644 %{_builddir}/io.github.totoshko88.RustConn.metainfo.xml \
+          install -Dm644 %{_builddir}/io.github.totoshko88.RustConn.metainfo.xml \\
               %{buildroot}%{_datadir}/metainfo/io.github.totoshko88.RustConn.metainfo.xml
           
           for size in 48 64 128 256; do
-              if [ -f "%{_builddir}/icons/${size}.png" ]; then
-                  install -Dm644 "%{_builddir}/icons/${size}.png" \
-                      "%{buildroot}%{_datadir}/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png"
+              if [ -f "%{_builddir}/icons/\${size}.png" ]; then
+                  install -Dm644 "%{_builddir}/icons/\${size}.png" \\
+                      "%{buildroot}%{_datadir}/icons/hicolor/\${size}x\${size}/apps/io.github.totoshko88.RustConn.png"
               fi
           done
           
           if [ -f "%{_builddir}/icons/scalable.svg" ]; then
-              install -Dm644 "%{_builddir}/icons/scalable.svg" \
+              install -Dm644 "%{_builddir}/icons/scalable.svg" \\
                   "%{buildroot}%{_datadir}/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg"
           fi
           
@@ -199,12 +200,9 @@ jobs:
           %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
           
           %changelog
-          * $(date '+%a %b %d %Y') Anton Isaiev <totoshko88@gmail.com> - VERSION_PLACEHOLDER-1
-          - Release VERSION_PLACEHOLDER
+          * ${BUILD_DATE} Anton Isaiev <totoshko88@gmail.com> - ${VERSION}-1
+          - Release ${VERSION}
           SPECEOF
-          
-          # Replace version placeholder
-          sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" ~/rpmbuild/SPECS/rustconn.spec
           
           # Copy pre-built binaries and assets to BUILD dir
           cp target/release/rustconn ~/rpmbuild/BUILD/
