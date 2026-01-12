@@ -1835,6 +1835,93 @@ impl MainWindow {
         resolved_credentials: Option<rustconn_core::Credentials>,
         cached_credentials: Option<(String, String, String)>,
     ) {
+        // Check if port check is needed BEFORE prompting for credentials
+        let (should_check, host, port, timeout) = {
+            let state_ref = state.borrow();
+            let settings = state_ref.settings();
+            let conn = state_ref.get_connection(connection_id);
+            if let Some(conn) = conn {
+                let should = settings.connection.pre_connect_port_check && !conn.skip_port_check;
+                (
+                    should,
+                    conn.host.clone(),
+                    conn.port,
+                    settings.connection.port_check_timeout_secs,
+                )
+            } else {
+                return;
+            }
+        };
+
+        if should_check {
+            // Run port check in background thread BEFORE showing password dialog
+            let state_clone = state.clone();
+            let notebook_clone = notebook.clone();
+            let split_view_clone = split_view.clone();
+            let sidebar_clone = sidebar.clone();
+
+            crate::utils::spawn_blocking_with_callback(
+                move || rustconn_core::check_port(&host, port, timeout),
+                move |result| {
+                    match result {
+                        Ok(_) => {
+                            // Port is open, proceed with credential handling
+                            Self::handle_rdp_credentials_internal(
+                                state_clone,
+                                notebook_clone,
+                                split_view_clone,
+                                sidebar_clone,
+                                connection_id,
+                                resolved_credentials,
+                                cached_credentials,
+                            );
+                        }
+                        Err(e) => {
+                            // Port check failed, show error and update sidebar
+                            tracing::warn!("Port check failed for RDP connection: {e}");
+                            sidebar_clone
+                                .update_connection_status(&connection_id.to_string(), "failed");
+                            if let Some(root) = notebook_clone.widget().root() {
+                                if let Some(window) = root.downcast_ref::<gtk4::Window>() {
+                                    crate::alert::show_error(
+                                        window,
+                                        "Connection Failed",
+                                        &format!(
+                                            "{e}\n\n\
+                                            The host may be offline or the port may be blocked."
+                                        ),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                },
+            );
+        } else {
+            // Port check disabled, proceed directly
+            Self::handle_rdp_credentials_internal(
+                state,
+                notebook,
+                split_view,
+                sidebar,
+                connection_id,
+                resolved_credentials,
+                cached_credentials,
+            );
+        }
+    }
+
+    /// Internal RDP credential handling (after port check)
+    #[allow(clippy::too_many_arguments)]
+    fn handle_rdp_credentials_internal(
+        state: SharedAppState,
+        notebook: SharedNotebook,
+        split_view: SharedSplitView,
+        sidebar: SharedSidebar,
+        connection_id: Uuid,
+        resolved_credentials: Option<rustconn_core::Credentials>,
+        cached_credentials: Option<(String, String, String)>,
+    ) {
         // Use resolved credentials if available
         if let Some(ref creds) = resolved_credentials {
             if let (Some(username), Some(password)) = (&creds.username, creds.expose_password()) {
@@ -1888,6 +1975,93 @@ impl MainWindow {
     /// Handles VNC credential resolution and connection start
     #[allow(clippy::too_many_arguments)]
     fn handle_vnc_credentials(
+        state: SharedAppState,
+        notebook: SharedNotebook,
+        split_view: SharedSplitView,
+        sidebar: SharedSidebar,
+        connection_id: Uuid,
+        resolved_credentials: Option<rustconn_core::Credentials>,
+        cached_credentials: Option<(String, String, String)>,
+    ) {
+        // Check if port check is needed BEFORE prompting for credentials
+        let (should_check, host, port, timeout) = {
+            let state_ref = state.borrow();
+            let settings = state_ref.settings();
+            let conn = state_ref.get_connection(connection_id);
+            if let Some(conn) = conn {
+                let should = settings.connection.pre_connect_port_check && !conn.skip_port_check;
+                (
+                    should,
+                    conn.host.clone(),
+                    conn.port,
+                    settings.connection.port_check_timeout_secs,
+                )
+            } else {
+                return;
+            }
+        };
+
+        if should_check {
+            // Run port check in background thread BEFORE showing password dialog
+            let state_clone = state.clone();
+            let notebook_clone = notebook.clone();
+            let split_view_clone = split_view.clone();
+            let sidebar_clone = sidebar.clone();
+
+            crate::utils::spawn_blocking_with_callback(
+                move || rustconn_core::check_port(&host, port, timeout),
+                move |result| {
+                    match result {
+                        Ok(_) => {
+                            // Port is open, proceed with credential handling
+                            Self::handle_vnc_credentials_internal(
+                                state_clone,
+                                notebook_clone,
+                                split_view_clone,
+                                sidebar_clone,
+                                connection_id,
+                                resolved_credentials,
+                                cached_credentials,
+                            );
+                        }
+                        Err(e) => {
+                            // Port check failed, show error and update sidebar
+                            tracing::warn!("Port check failed for VNC connection: {e}");
+                            sidebar_clone
+                                .update_connection_status(&connection_id.to_string(), "failed");
+                            if let Some(root) = notebook_clone.widget().root() {
+                                if let Some(window) = root.downcast_ref::<gtk4::Window>() {
+                                    crate::alert::show_error(
+                                        window,
+                                        "Connection Failed",
+                                        &format!(
+                                            "{e}\n\n\
+                                            The host may be offline or the port may be blocked."
+                                        ),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                },
+            );
+        } else {
+            // Port check disabled, proceed directly
+            Self::handle_vnc_credentials_internal(
+                state,
+                notebook,
+                split_view,
+                sidebar,
+                connection_id,
+                resolved_credentials,
+                cached_credentials,
+            );
+        }
+    }
+
+    /// Internal VNC credential handling (after port check)
+    #[allow(clippy::too_many_arguments)]
+    fn handle_vnc_credentials_internal(
         state: SharedAppState,
         notebook: SharedNotebook,
         split_view: SharedSplitView,

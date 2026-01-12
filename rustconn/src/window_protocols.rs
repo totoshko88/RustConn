@@ -6,7 +6,10 @@
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
+use crate::utils::spawn_blocking_with_callback;
 use crate::window::MainWindow;
+use gtk4::prelude::*;
+use rustconn_core::check_port;
 use std::rc::Rc;
 use uuid::Uuid;
 
@@ -163,6 +166,70 @@ pub fn start_vnc_connection(
     connection_id: Uuid,
     conn: &rustconn_core::Connection,
 ) -> Option<Uuid> {
+    // Check if port check is needed
+    let settings = state.borrow().settings().clone();
+    let should_check = settings.connection.pre_connect_port_check && !conn.skip_port_check;
+
+    if should_check {
+        let host = conn.host.clone();
+        let port = conn.port;
+        let timeout = settings.connection.port_check_timeout_secs;
+        let state_clone = state.clone();
+        let notebook_clone = notebook.clone();
+        let sidebar_clone = sidebar.clone();
+        let conn_clone = conn.clone();
+
+        // Run port check in background thread
+        spawn_blocking_with_callback(
+            move || check_port(&host, port, timeout),
+            move |result| {
+                match result {
+                    Ok(_) => {
+                        // Port is open, proceed with connection
+                        start_vnc_connection_internal(
+                            &state_clone,
+                            &notebook_clone,
+                            &sidebar_clone,
+                            connection_id,
+                            &conn_clone,
+                        );
+                    }
+                    Err(e) => {
+                        // Port check failed, show error
+                        tracing::warn!("Port check failed for VNC connection: {e}");
+                        sidebar_clone
+                            .update_connection_status(&connection_id.to_string(), "failed");
+                        if let Some(root) = notebook_clone.widget().root() {
+                            if let Some(window) = root.downcast_ref::<gtk4::Window>() {
+                                crate::alert::show_error(
+                                    window,
+                                    "Connection Failed",
+                                    &format!(
+                                        "{e}\n\nThe host may be offline or the port may be blocked."
+                                    ),
+                                );
+                            }
+                        }
+                    }
+                }
+            },
+        );
+        // Return None since the actual session will be created asynchronously
+        None
+    } else {
+        // Port check disabled, proceed directly
+        start_vnc_connection_internal(state, notebook, sidebar, connection_id, conn)
+    }
+}
+
+/// Internal function to start VNC connection (after port check)
+fn start_vnc_connection_internal(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    connection_id: Uuid,
+    conn: &rustconn_core::Connection,
+) -> Option<Uuid> {
     let conn_name = conn.name.clone();
     let host = conn.host.clone();
     let port = conn.port;
@@ -258,6 +325,70 @@ pub fn start_vnc_connection(
 ///
 /// Creates a SPICE session tab with native widget and initiates connection.
 pub fn start_spice_connection(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    connection_id: Uuid,
+    conn: &rustconn_core::Connection,
+) -> Option<Uuid> {
+    // Check if port check is needed
+    let settings = state.borrow().settings().clone();
+    let should_check = settings.connection.pre_connect_port_check && !conn.skip_port_check;
+
+    if should_check {
+        let host = conn.host.clone();
+        let port = conn.port;
+        let timeout = settings.connection.port_check_timeout_secs;
+        let state_clone = state.clone();
+        let notebook_clone = notebook.clone();
+        let sidebar_clone = sidebar.clone();
+        let conn_clone = conn.clone();
+
+        // Run port check in background thread
+        spawn_blocking_with_callback(
+            move || check_port(&host, port, timeout),
+            move |result| {
+                match result {
+                    Ok(_) => {
+                        // Port is open, proceed with connection
+                        start_spice_connection_internal(
+                            &state_clone,
+                            &notebook_clone,
+                            &sidebar_clone,
+                            connection_id,
+                            &conn_clone,
+                        );
+                    }
+                    Err(e) => {
+                        // Port check failed, show error
+                        tracing::warn!("Port check failed for SPICE connection: {e}");
+                        sidebar_clone
+                            .update_connection_status(&connection_id.to_string(), "failed");
+                        if let Some(root) = notebook_clone.widget().root() {
+                            if let Some(window) = root.downcast_ref::<gtk4::Window>() {
+                                crate::alert::show_error(
+                                    window,
+                                    "Connection Failed",
+                                    &format!(
+                                        "{e}\n\nThe host may be offline or the port may be blocked."
+                                    ),
+                                );
+                            }
+                        }
+                    }
+                }
+            },
+        );
+        // Return None since the actual session will be created asynchronously
+        None
+    } else {
+        // Port check disabled, proceed directly
+        start_spice_connection_internal(state, notebook, sidebar, connection_id, conn)
+    }
+}
+
+/// Internal function to start SPICE connection (after port check)
+fn start_spice_connection_internal(
     state: &SharedAppState,
     notebook: &SharedNotebook,
     sidebar: &SharedSidebar,

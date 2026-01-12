@@ -34,6 +34,7 @@
     </ul>
   </description>
   <launchable type="desktop-id">io.github.totoshko88.RustConn.desktop</launchable>
+  <icon type="stock">io.github.totoshko88.RustConn</icon>
   <screenshots>
     <screenshot type="default">
       <caption>Main window with connection sidebar</caption>

@@ -80,6 +80,7 @@ fn create_test_connection(
         window_mode: WindowMode::default(),
         remember_window_position: false,
         window_geometry: None,
+        skip_port_check: false,
     }
 }
 

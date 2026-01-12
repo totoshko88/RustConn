@@ -502,6 +502,7 @@ impl SettingsDialog {
                 logging,
                 secrets,
                 ui,
+                connection: settings_clone.borrow().connection.clone(),
                 global_variables: settings_clone.borrow().global_variables.clone(),
                 history: settings_clone.borrow().history.clone(),
             };

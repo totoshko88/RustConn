@@ -23,6 +23,9 @@ pub struct AppSettings {
     /// UI settings
     #[serde(default)]
     pub ui: UiSettings,
+    /// Connection settings
+    #[serde(default)]
+    pub connection: ConnectionSettings,
     /// Global variables
     #[serde(default)]
     pub global_variables: Vec<Variable>,
@@ -365,6 +368,30 @@ impl Default for UiSettings {
             minimize_to_tray: false,
             expanded_groups: std::collections::HashSet::new(),
             session_restore: SessionRestoreSettings::default(),
+        }
+    }
+}
+
+/// Connection settings for pre-connect checks and timeouts
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ConnectionSettings {
+    /// Enable TCP port check before connecting (faster failure detection)
+    #[serde(default = "default_true")]
+    pub pre_connect_port_check: bool,
+    /// Timeout in seconds for port check (default: 3)
+    #[serde(default = "default_port_check_timeout")]
+    pub port_check_timeout_secs: u32,
+}
+
+const fn default_port_check_timeout() -> u32 {
+    3
+}
+
+impl Default for ConnectionSettings {
+    fn default() -> Self {
+        Self {
+            pre_connect_port_check: true,
+            port_check_timeout_secs: default_port_check_timeout(),
         }
     }
 }

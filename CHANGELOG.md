@@ -8,13 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.6.0] - 2026-01-12
 
 ### Added
+- **Pre-connect Port Check** - Fast TCP port reachability check before launching RDP/VNC/SPICE connections:
+  - Provides faster feedback (2-3s vs 30-60s timeout) when hosts are unreachable
+  - Configurable globally in Settings → Connection with timeout setting (default: 3s)
+  - Per-connection "Skip port check" option for special cases (firewalls, port knocking, VPN)
+  - New `ConnectionSettings` struct in `AppSettings` for connection-related settings
+  - New `skip_port_check` field on `Connection` model
 - **CLI Feature Parity** - CLI now supports all major GUI features:
   - `template list/show/create/delete/apply` - Connection template management
   - `cluster list/show/create/delete/add-connection/remove-connection` - Cluster management
   - `var list/show/set/delete` - Global variables management
   - `duplicate` - Duplicate existing connections
   - `stats` - Show connection statistics (counts by protocol, groups, templates, clusters, snippets, variables, usage)
+- **GitHub CI RPM Build** - Added Fedora RPM package build to release workflow:
+  - Builds in Fedora 41 container with Rust 1.87
+  - RPM package included in GitHub releases alongside .deb and AppImage
+  - Installation instructions for Fedora in release notes
 - Added `load_variables()` and `save_variables()` methods to `ConfigManager` for global variables persistence
+- Added `<icon>` element to metainfo.xml for explicit AppStream icon declaration
 - Added `<developer_name>` tag to metainfo.xml for backward compatibility with older AppStream parsers
 - Added `author` and `license` fields to AppImage packaging (AppImageBuilder.yml)
 - Added `debian.copyright` file to OBS debian packaging

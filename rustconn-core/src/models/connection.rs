@@ -211,6 +211,9 @@ pub struct Connection {
     /// Saved window geometry for external windows
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub window_geometry: Option<WindowGeometry>,
+    /// Skip pre-connect port check for this connection (overrides global setting)
+    #[serde(default)]
+    pub skip_port_check: bool,
 }
 
 impl Connection {
@@ -246,6 +249,7 @@ impl Connection {
             window_mode: WindowMode::default(),
             remember_window_position: false,
             window_geometry: None,
+            skip_port_check: false,
         }
     }
 

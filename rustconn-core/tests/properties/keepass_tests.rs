@@ -397,6 +397,7 @@ fn create_test_connection(name: &str, host: &str) -> Connection {
         window_mode: rustconn_core::models::WindowMode::default(),
         remember_window_position: false,
         window_geometry: None,
+        skip_port_check: false,
     }
 }
 
@@ -765,6 +766,7 @@ mod hierarchy_tests {
             window_mode: rustconn_core::models::WindowMode::default(),
             remember_window_position: false,
             window_geometry: None,
+            skip_port_check: false,
         }
     }
 

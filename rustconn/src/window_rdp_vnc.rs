@@ -123,6 +123,31 @@ pub fn start_rdp_session_with_credentials(
     password: &str,
     domain: &str,
 ) {
+    // Port check is now done earlier in handle_rdp_credentials
+    start_rdp_session_internal(
+        state,
+        notebook,
+        split_view,
+        sidebar,
+        connection_id,
+        username,
+        password,
+        domain,
+    );
+}
+
+/// Internal function to start RDP session (after port check)
+#[allow(clippy::too_many_arguments)]
+fn start_rdp_session_internal(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    split_view: &SharedSplitView,
+    sidebar: &SharedSidebar,
+    connection_id: Uuid,
+    username: &str,
+    password: &str,
+    domain: &str,
+) {
     use rustconn_core::models::RdpClientMode;
 
     let state_ref = state.borrow();
@@ -578,6 +603,26 @@ pub fn start_vnc_with_password_dialog(
 
 /// Starts VNC session with provided password
 pub fn start_vnc_session_with_password(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    split_view: &SharedSplitView,
+    sidebar: &SharedSidebar,
+    connection_id: Uuid,
+    password: &str,
+) {
+    // Port check is now done earlier in handle_vnc_credentials
+    start_vnc_session_internal(
+        state,
+        notebook,
+        split_view,
+        sidebar,
+        connection_id,
+        password,
+    );
+}
+
+/// Internal function to start VNC session (after port check)
+fn start_vnc_session_internal(
     state: &SharedAppState,
     notebook: &SharedNotebook,
     split_view: &SharedSplitView,
