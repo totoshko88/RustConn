@@ -99,6 +99,148 @@ jobs:
           name: debian-package
           path: dist/*.deb
 
+  build-rpm:
+    name: Build RPM Package
+    runs-on: ubuntu-24.04
+    container:
+      image: fedora:41
+    steps:
+      - name: Install build tools
+        run: |
+          dnf install -y \
+            git \
+            curl \
+            gcc \
+            make \
+            pkg-config \
+            gtk4-devel \
+            vte291-gtk4-devel \
+            libadwaita-devel \
+            dbus-devel \
+            openssl-devel \
+            alsa-lib-devel \
+            rpm-build \
+            zstd
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.87.0 --profile minimal
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Build release binary
+        run: |
+          source $HOME/.cargo/env
+          cargo build --release -p rustconn -p rustconn-cli
+
+      - name: Create RPM package
+        run: |
+          source $HOME/.cargo/env
+          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
+          
+          # Setup rpmbuild directories
+          mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+          
+          # Create source tarball
+          tar --transform "s,^,rustconn-${VERSION}/," -czf ~/rpmbuild/SOURCES/rustconn-${VERSION}.tar.gz \
+            --exclude=target --exclude=.git --exclude='*.AppImage' --exclude='*.deb' --exclude='*.rpm' \
+            .
+          
+          # Create spec file for GitHub CI build (simplified, no vendor)
+          cat > ~/rpmbuild/SPECS/rustconn.spec << 'SPECEOF'
+          Name:           rustconn
+          Version:        VERSION_PLACEHOLDER
+          Release:        1%{?dist}
+          Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
+          License:        GPL-3.0-or-later
+          URL:            https://github.com/totoshko88/RustConn
+          
+          Requires:       gtk4 >= 4.14
+          Requires:       libadwaita
+          Requires:       vte291-gtk4
+          Requires:       openssh-clients
+          Requires:       alsa-lib
+          Recommends:     freerdp
+          Recommends:     tigervnc
+          Recommends:     virt-viewer
+          
+          %description
+          RustConn is a modern connection manager for Linux desktops built with GTK4.
+          It provides a unified interface for managing SSH, RDP, VNC, and SPICE
+          remote connections with support for both embedded and external clients.
+          
+          %install
+          install -Dm755 %{_builddir}/rustconn %{buildroot}%{_bindir}/rustconn
+          install -Dm755 %{_builddir}/rustconn-cli %{buildroot}%{_bindir}/rustconn-cli
+          install -Dm644 %{_builddir}/io.github.totoshko88.RustConn.desktop \
+              %{buildroot}%{_datadir}/applications/io.github.totoshko88.RustConn.desktop
+          install -Dm644 %{_builddir}/io.github.totoshko88.RustConn.metainfo.xml \
+              %{buildroot}%{_datadir}/metainfo/io.github.totoshko88.RustConn.metainfo.xml
+          
+          for size in 48 64 128 256; do
+              if [ -f "%{_builddir}/icons/${size}.png" ]; then
+                  install -Dm644 "%{_builddir}/icons/${size}.png" \
+                      "%{buildroot}%{_datadir}/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png"
+              fi
+          done
+          
+          if [ -f "%{_builddir}/icons/scalable.svg" ]; then
+              install -Dm644 "%{_builddir}/icons/scalable.svg" \
+                  "%{buildroot}%{_datadir}/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg"
+          fi
+          
+          %files
+          %{_bindir}/rustconn
+          %{_bindir}/rustconn-cli
+          %{_datadir}/applications/io.github.totoshko88.RustConn.desktop
+          %{_datadir}/metainfo/io.github.totoshko88.RustConn.metainfo.xml
+          %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
+          
+          %changelog
+          * $(date '+%a %b %d %Y') Anton Isaiev <totoshko88@gmail.com> - VERSION_PLACEHOLDER-1
+          - Release VERSION_PLACEHOLDER
+          SPECEOF
+          
+          # Replace version placeholder
+          sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" ~/rpmbuild/SPECS/rustconn.spec
+          
+          # Copy pre-built binaries and assets to BUILD dir
+          cp target/release/rustconn ~/rpmbuild/BUILD/
+          cp target/release/rustconn-cli ~/rpmbuild/BUILD/
+          cp rustconn/assets/io.github.totoshko88.RustConn.desktop ~/rpmbuild/BUILD/
+          cp rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml ~/rpmbuild/BUILD/
+          
+          # Copy icons
+          mkdir -p ~/rpmbuild/BUILD/icons
+          for size in 48 64 128 256; do
+            if [ -f "rustconn/assets/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png" ]; then
+              cp "rustconn/assets/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png" \
+                 ~/rpmbuild/BUILD/icons/${size}.png
+            fi
+          done
+          if [ -f "rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg" ]; then
+            cp "rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg" \
+               ~/rpmbuild/BUILD/icons/scalable.svg
+          fi
+          
+          # Build RPM (binary only, skip build phase)
+          rpmbuild -bb --define "_topdir $HOME/rpmbuild" ~/rpmbuild/SPECS/rustconn.spec
+          
+          # Copy to dist
+          mkdir -p dist
+          cp ~/rpmbuild/RPMS/*/*.rpm dist/
+          
+          echo "=== Built RPM packages ==="
+          ls -la dist/
+
+      - name: Upload RPM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpm-package
+          path: dist/*.rpm
+
   build-appimage:
     name: Build AppImage
     runs-on: ubuntu-24.04
@@ -174,7 +316,7 @@ jobs:
 
   release:
     name: Create Release
-    needs: [build-deb, build-appimage]
+    needs: [build-deb, build-rpm, build-appimage]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
@@ -187,6 +329,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: debian-package
+          path: dist/
+
+      - name: Download RPM artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: rpm-package
           path: dist/
 
       - name: Download AppImage artifact
@@ -242,6 +390,11 @@ jobs:
           \`\`\`bash
           sudo dpkg -i rustconn_${VERSION}_amd64.deb
           sudo apt-get install -f  # Install dependencies if needed
+          \`\`\`
+
+          ### Fedora
+          \`\`\`bash
+          sudo dnf install rustconn-${VERSION}-1.fc41.x86_64.rpm
           \`\`\`
 
           ### AppImage

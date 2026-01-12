@@ -27,7 +27,6 @@ pub struct LogViewerDialog {
 impl LogViewerDialog {
     /// Creates a new log viewer dialog
     #[must_use]
-    #[allow(clippy::too_many_lines)]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
         let window = adw::Window::builder()
             .title("Session Logs")
@@ -40,92 +39,15 @@ impl LogViewerDialog {
             window.set_transient_for(Some(p));
         }
 
-        // Create header bar with Close/Refresh buttons (GNOME HIG)
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label("Close").build();
-        let refresh_btn = Button::builder()
-            .icon_name("view-refresh-symbolic")
-            .tooltip_text("Refresh log list")
-            .build();
-        header.pack_start(&close_btn);
-        header.pack_end(&refresh_btn);
-
-        // Close button handler
-        let window_clone = window.clone();
-        close_btn.connect_clicked(move |_| {
-            window_clone.close();
-        });
-
-        // Create main content with paned view
-        let paned = Paned::new(Orientation::Horizontal);
-        paned.set_position(250);
-        paned.set_margin_top(12);
-        paned.set_margin_bottom(12);
-        paned.set_margin_start(12);
-        paned.set_margin_end(12);
-
-        // Use ToolbarView for adw::Window
-        let toolbar_view = adw::ToolbarView::new();
-        toolbar_view.add_top_bar(&header);
-        toolbar_view.set_content(Some(&paned));
+        // Create UI components
+        let (toolbar_view, paned, close_btn, refresh_btn) = Self::create_header_and_layout();
         window.set_content(Some(&toolbar_view));
 
-        // Left side: Log file list
-        let left_box = GtkBox::new(Orientation::Vertical, 8);
+        let (log_list, list_scrolled) = Self::create_log_list();
+        let (log_content, content_scrolled) = Self::create_content_view();
 
-        let list_label = Label::builder()
-            .label("Log Files")
-            .halign(gtk4::Align::Start)
-            .css_classes(["heading"])
-            .build();
-        left_box.append(&list_label);
-
-        let list_scrolled = ScrolledWindow::builder()
-            .hscrollbar_policy(gtk4::PolicyType::Never)
-            .vscrollbar_policy(gtk4::PolicyType::Automatic)
-            .vexpand(true)
-            .build();
-
-        let log_list = ListBox::builder()
-            .selection_mode(gtk4::SelectionMode::Single)
-            .css_classes(["boxed-list"])
-            .build();
-        log_list.set_placeholder(Some(&Label::new(Some("No log files found"))));
-        list_scrolled.set_child(Some(&log_list));
-        left_box.append(&list_scrolled);
-
-        paned.set_start_child(Some(&left_box));
-
-        // Right side: Log content viewer
-        let right_box = GtkBox::new(Orientation::Vertical, 8);
-
-        let content_label = Label::builder()
-            .label("Log Content")
-            .halign(gtk4::Align::Start)
-            .css_classes(["heading"])
-            .build();
-        right_box.append(&content_label);
-
-        let content_scrolled = ScrolledWindow::builder()
-            .hscrollbar_policy(gtk4::PolicyType::Automatic)
-            .vscrollbar_policy(gtk4::PolicyType::Automatic)
-            .vexpand(true)
-            .hexpand(true)
-            .build();
-
-        let log_content = TextView::builder()
-            .editable(false)
-            .monospace(true)
-            .wrap_mode(gtk4::WrapMode::None)
-            .build();
-        content_scrolled.set_child(Some(&log_content));
-        right_box.append(&content_scrolled);
-
-        paned.set_end_child(Some(&right_box));
-
-        window.set_child(Some(&paned));
+        // Assemble paned layout
+        Self::assemble_paned_layout(&paned, list_scrolled, content_scrolled);
 
         // Get default log directory
         let log_dir = Self::get_default_log_dir();
@@ -177,6 +99,100 @@ impl LogViewerDialog {
         dialog.populate_log_list();
 
         dialog
+    }
+
+    /// Creates the header bar and main layout components
+    fn create_header_and_layout() -> (adw::ToolbarView, Paned, Button, Button) {
+        let header = adw::HeaderBar::new();
+        header.set_show_end_title_buttons(false);
+        header.set_show_start_title_buttons(false);
+
+        let close_btn = Button::builder().label("Close").build();
+        let refresh_btn = Button::builder()
+            .icon_name("view-refresh-symbolic")
+            .tooltip_text("Refresh log list")
+            .build();
+        header.pack_start(&close_btn);
+        header.pack_end(&refresh_btn);
+
+        let paned = Paned::new(Orientation::Horizontal);
+        paned.set_position(250);
+        paned.set_margin_top(12);
+        paned.set_margin_bottom(12);
+        paned.set_margin_start(12);
+        paned.set_margin_end(12);
+
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header);
+        toolbar_view.set_content(Some(&paned));
+
+        (toolbar_view, paned, close_btn, refresh_btn)
+    }
+
+    /// Creates the log file list component
+    fn create_log_list() -> (ListBox, ScrolledWindow) {
+        let list_scrolled = ScrolledWindow::builder()
+            .hscrollbar_policy(gtk4::PolicyType::Never)
+            .vscrollbar_policy(gtk4::PolicyType::Automatic)
+            .vexpand(true)
+            .build();
+
+        let log_list = ListBox::builder()
+            .selection_mode(gtk4::SelectionMode::Single)
+            .css_classes(["boxed-list"])
+            .build();
+        log_list.set_placeholder(Some(&Label::new(Some("No log files found"))));
+        list_scrolled.set_child(Some(&log_list));
+
+        (log_list, list_scrolled)
+    }
+
+    /// Creates the log content view component
+    fn create_content_view() -> (TextView, ScrolledWindow) {
+        let content_scrolled = ScrolledWindow::builder()
+            .hscrollbar_policy(gtk4::PolicyType::Automatic)
+            .vscrollbar_policy(gtk4::PolicyType::Automatic)
+            .vexpand(true)
+            .hexpand(true)
+            .build();
+
+        let log_content = TextView::builder()
+            .editable(false)
+            .monospace(true)
+            .wrap_mode(gtk4::WrapMode::None)
+            .build();
+        content_scrolled.set_child(Some(&log_content));
+
+        (log_content, content_scrolled)
+    }
+
+    /// Assembles the paned layout with left and right panels
+    fn assemble_paned_layout(
+        paned: &Paned,
+        list_scrolled: ScrolledWindow,
+        content_scrolled: ScrolledWindow,
+    ) {
+        // Left side: Log file list
+        let left_box = GtkBox::new(Orientation::Vertical, 8);
+        let list_label = Label::builder()
+            .label("Log Files")
+            .halign(gtk4::Align::Start)
+            .css_classes(["heading"])
+            .build();
+        left_box.append(&list_label);
+        left_box.append(&list_scrolled);
+        paned.set_start_child(Some(&left_box));
+
+        // Right side: Log content viewer
+        let right_box = GtkBox::new(Orientation::Vertical, 8);
+        let content_label = Label::builder()
+            .label("Log Content")
+            .halign(gtk4::Align::Start)
+            .css_classes(["heading"])
+            .build();
+        right_box.append(&content_label);
+        right_box.append(&content_scrolled);
+        paned.set_end_child(Some(&right_box));
     }
 
     /// Gets the default log directory
@@ -286,18 +302,32 @@ impl LogViewerDialog {
         }
     }
 
-    /// Loads log content into the text view
+    /// Loads log content into the text view asynchronously
+    ///
+    /// Uses `spawn_blocking_with_callback` to avoid blocking the GTK main thread
+    /// when reading large log files.
     fn load_log_content(text_view: &TextView, path: &Path) {
         let buffer = text_view.buffer();
 
-        match fs::read_to_string(path) {
-            Ok(content) => {
-                buffer.set_text(&content);
-            }
-            Err(e) => {
-                buffer.set_text(&format!("Error loading log file: {e}"));
-            }
-        }
+        // Show loading indicator
+        buffer.set_text("Loading...");
+
+        // Clone path for the background thread
+        let path_clone = path.to_path_buf();
+        let buffer_clone = buffer.clone();
+
+        // Read file in background thread to avoid blocking UI
+        crate::utils::spawn_blocking_with_callback(
+            move || fs::read_to_string(&path_clone),
+            move |result: Result<String, std::io::Error>| match result {
+                Ok(content) => {
+                    buffer_clone.set_text(&content);
+                }
+                Err(e) => {
+                    buffer_clone.set_text(&format!("Error loading log file: {e}"));
+                }
+            },
+        );
     }
 
     /// Formats a file size in human-readable format

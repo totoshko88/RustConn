@@ -810,6 +810,7 @@ mod tests {
             window_mode: crate::models::WindowMode::default(),
             remember_window_position: false,
             window_geometry: None,
+            skip_port_check: false,
         }
     }
 

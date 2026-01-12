@@ -40,9 +40,10 @@ pub fn delete_selected_connection(
     // Show confirmation dialog with connection count for groups
     let item_type = if is_group { "group" } else { "connection" };
     let detail = if is_group {
-        let state_ref = state.borrow();
-        let connection_count = state_ref.count_connections_in_group(id);
-        drop(state_ref);
+        let connection_count = state
+            .try_borrow()
+            .map(|s| s.count_connections_in_group(id))
+            .unwrap_or(0);
 
         if connection_count > 0 {
             format!(
@@ -116,15 +117,17 @@ pub fn duplicate_selected_connection(
         return;
     };
 
-    let state_ref = state.borrow();
-    let Some(conn) = state_ref.get_connection(id).cloned() else {
+    let (conn, new_name) = if let Ok(state_ref) = state.try_borrow() {
+        let Some(conn) = state_ref.get_connection(id).cloned() else {
+            return;
+        };
+        // Generate unique name for duplicate
+        let new_name = state_ref
+            .generate_unique_connection_name(&format!("{} (copy)", conn.name), conn.protocol);
+        (conn, new_name)
+    } else {
         return;
     };
-
-    // Generate unique name for duplicate
-    let new_name =
-        state_ref.generate_unique_connection_name(&format!("{} (copy)", conn.name), conn.protocol);
-    drop(state_ref);
 
     // Create duplicate with new ID and name
     let mut duplicate = conn;
@@ -210,16 +213,18 @@ pub fn copy_selected_connection(
 /// Pastes a connection from the internal clipboard
 pub fn paste_connection(window: &gtk4::Window, state: &SharedAppState, sidebar: &SharedSidebar) {
     // Check if clipboard has content
-    {
-        let state_ref = state.borrow();
-        if !state_ref.has_clipboard_content() {
-            crate::toast::show_toast_on_window(
-                window,
-                "Nothing to paste - copy a connection first",
-                crate::toast::ToastType::Warning,
-            );
-            return;
-        }
+    let has_content = state
+        .try_borrow()
+        .map(|s| s.has_clipboard_content())
+        .unwrap_or(false);
+
+    if !has_content {
+        crate::toast::show_toast_on_window(
+            window,
+            "Nothing to paste - copy a connection first",
+            crate::toast::ToastType::Warning,
+        );
+        return;
     }
 
     if let Ok(mut state_mut) = state.try_borrow_mut() {
@@ -256,7 +261,10 @@ pub fn reload_sidebar(state: &SharedAppState, sidebar: &SharedSidebar) {
     let store = sidebar.store();
     store.remove_all();
 
-    let state_ref = state.borrow();
+    let Ok(state_ref) = state.try_borrow() else {
+        tracing::warn!("Could not borrow state for sidebar reload");
+        return;
+    };
 
     // Add root groups with their children
     for group in state_ref.get_root_groups() {
@@ -313,51 +321,37 @@ pub fn add_group_children_static(
     }
 }
 
-/// Deletes all selected connections (bulk delete for group operations mode)
-#[allow(clippy::too_many_lines)]
-pub fn delete_selected_connections(
-    window: &gtk4::Window,
+/// Builds a list of items to delete with their display names
+fn build_delete_item_list(
     state: &SharedAppState,
-    sidebar: &SharedSidebar,
-) {
+    selected_ids: &[Uuid],
+) -> Option<(Vec<String>, usize, usize)> {
+    let state_ref = state.try_borrow().ok()?;
+    let mut names: Vec<String> = Vec::new();
+    let mut conn_count = 0;
+    let mut grp_count = 0;
+
+    for id in selected_ids {
+        if let Some(conn) = state_ref.get_connection(*id) {
+            names.push(format!("• {} (connection)", conn.name));
+            conn_count += 1;
+        } else if let Some(group) = state_ref.get_group(*id) {
+            names.push(format!("• {} (group)", group.name));
+            grp_count += 1;
+        }
+    }
+    Some((names, conn_count, grp_count))
+}
+
+/// Creates the bulk delete confirmation dialog UI
+fn create_bulk_delete_dialog(
+    window: &gtk4::Window,
+    item_names: &[String],
+    summary: &str,
+) -> (adw::Window, gtk4::Button, gtk4::Button) {
     use gtk4::prelude::*;
     use gtk4::Label;
 
-    let selected_ids = sidebar.get_selected_ids();
-
-    if selected_ids.is_empty() {
-        alert::show_alert(
-            window,
-            "No Selection",
-            "Please select one or more items to delete.",
-        );
-        return;
-    }
-
-    // Build list of items to delete for confirmation
-    let state_ref = state.borrow();
-    let mut item_names: Vec<String> = Vec::new();
-    let mut connection_count = 0;
-    let mut group_count = 0;
-
-    for id in &selected_ids {
-        if let Some(conn) = state_ref.get_connection(*id) {
-            item_names.push(format!("• {} (connection)", conn.name));
-            connection_count += 1;
-        } else if let Some(group) = state_ref.get_group(*id) {
-            item_names.push(format!("• {} (group)", group.name));
-            group_count += 1;
-        }
-    }
-    drop(state_ref);
-
-    let summary = match (connection_count, group_count) {
-        (c, 0) => format!("{c} connection(s)"),
-        (0, g) => format!("{g} group(s)"),
-        (c, g) => format!("{c} connection(s) and {g} group(s)"),
-    };
-
-    // Create custom dialog with scrolling for large lists
     let dialog = adw::Window::builder()
         .title("Delete Selected Items?")
         .transient_for(window)
@@ -423,6 +417,97 @@ pub fn delete_selected_connections(
     toolbar_view.set_content(Some(&content));
     dialog.set_content(Some(&toolbar_view));
 
+    (dialog, cancel_btn, delete_btn)
+}
+
+/// Performs bulk deletion and shows results
+fn perform_bulk_delete(
+    state: &SharedAppState,
+    sidebar: &SharedSidebar,
+    window: &gtk4::Window,
+    selected_ids: Vec<Uuid>,
+) {
+    let mut success_count = 0;
+    let mut failures: Vec<String> = Vec::new();
+
+    if let Ok(mut state_mut) = state.try_borrow_mut() {
+        for id in &selected_ids {
+            // Try to delete as connection first, then as group
+            let delete_result = state_mut
+                .delete_connection(*id)
+                .or_else(|_| state_mut.delete_group(*id));
+
+            match delete_result {
+                Ok(()) => success_count += 1,
+                Err(e) => failures.push(format!("{id}: {e}")),
+            }
+        }
+    }
+
+    // Defer sidebar reload to prevent UI freeze
+    let state = state.clone();
+    let sidebar = sidebar.clone();
+    let window = window.clone();
+    glib::idle_add_local_once(move || {
+        MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+
+        // Show results
+        if failures.is_empty() {
+            alert::show_success(
+                &window,
+                "Deletion Complete",
+                &format!("Successfully deleted {success_count} item(s)."),
+            );
+        } else {
+            alert::show_error(
+                &window,
+                "Deletion Partially Complete",
+                &format!(
+                    "Deleted {} item(s).\n\nFailed to delete {} item(s):\n{}",
+                    success_count,
+                    failures.len(),
+                    failures.join("\n")
+                ),
+            );
+        }
+    });
+}
+
+/// Deletes all selected connections (bulk delete for group operations mode)
+pub fn delete_selected_connections(
+    window: &gtk4::Window,
+    state: &SharedAppState,
+    sidebar: &SharedSidebar,
+) {
+    use gtk4::prelude::*;
+
+    let selected_ids = sidebar.get_selected_ids();
+
+    if selected_ids.is_empty() {
+        alert::show_alert(
+            window,
+            "No Selection",
+            "Please select one or more items to delete.",
+        );
+        return;
+    }
+
+    // Build list of items to delete for confirmation
+    let Some((item_names, connection_count, group_count)) =
+        build_delete_item_list(state, &selected_ids)
+    else {
+        return;
+    };
+
+    let summary = match (connection_count, group_count) {
+        (c, 0) => format!("{c} connection(s)"),
+        (0, g) => format!("{g} group(s)"),
+        (c, g) => format!("{c} connection(s) and {g} group(s)"),
+    };
+
+    // Create dialog
+    let (dialog, cancel_btn, delete_btn) = create_bulk_delete_dialog(window, &item_names, &summary);
+
     // Connect cancel button
     let dialog_weak = dialog.downgrade();
     cancel_btn.connect_clicked(move |_| {
@@ -440,52 +525,12 @@ pub fn delete_selected_connections(
         if let Some(d) = dialog_weak.upgrade() {
             d.close();
         }
-
-        let mut success_count = 0;
-        let mut failures: Vec<String> = Vec::new();
-
-        if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
-            for id in &selected_ids {
-                // Try to delete as connection first, then as group
-                let delete_result = state_mut
-                    .delete_connection(*id)
-                    .or_else(|_| state_mut.delete_group(*id));
-
-                match delete_result {
-                    Ok(()) => success_count += 1,
-                    Err(e) => failures.push(format!("{id}: {e}")),
-                }
-            }
-        }
-
-        // Defer sidebar reload to prevent UI freeze
-        let state = state_clone.clone();
-        let sidebar = sidebar_clone.clone();
-        let window = window_clone.clone();
-        let failures_clone = failures.clone();
-        glib::idle_add_local_once(move || {
-            MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
-
-            // Show results
-            if failures_clone.is_empty() {
-                alert::show_success(
-                    &window,
-                    "Deletion Complete",
-                    &format!("Successfully deleted {success_count} item(s)."),
-                );
-            } else {
-                alert::show_error(
-                    &window,
-                    "Deletion Partially Complete",
-                    &format!(
-                        "Deleted {} item(s).\n\nFailed to delete {} item(s):\n{}",
-                        success_count,
-                        failures_clone.len(),
-                        failures_clone.join("\n")
-                    ),
-                );
-            }
-        });
+        perform_bulk_delete(
+            &state_clone,
+            &sidebar_clone,
+            &window_clone,
+            selected_ids.clone(),
+        );
     });
 
     dialog.present();
@@ -509,18 +554,21 @@ pub fn show_move_selected_to_group_dialog(
     }
 
     // Separate connections and groups
-    let state_ref = state.borrow();
-    let connection_ids: Vec<Uuid> = selected_ids
-        .iter()
-        .filter(|id| state_ref.get_connection(**id).is_some())
-        .copied()
-        .collect();
-    let group_ids_to_move: Vec<Uuid> = selected_ids
-        .iter()
-        .filter(|id| state_ref.get_group(**id).is_some())
-        .copied()
-        .collect();
-    drop(state_ref);
+    let (connection_ids, group_ids_to_move) = if let Ok(state_ref) = state.try_borrow() {
+        let conn_ids: Vec<Uuid> = selected_ids
+            .iter()
+            .filter(|id| state_ref.get_connection(**id).is_some())
+            .copied()
+            .collect();
+        let grp_ids: Vec<Uuid> = selected_ids
+            .iter()
+            .filter(|id| state_ref.get_group(**id).is_some())
+            .copied()
+            .collect();
+        (conn_ids, grp_ids)
+    } else {
+        return;
+    };
 
     let total_items = connection_ids.len() + group_ids_to_move.len();
     if total_items == 0 {
@@ -569,37 +617,39 @@ pub fn show_move_selected_to_group_dialog(
     content.append(&info_label);
 
     // Build group dropdown with hierarchical sorting
-    let state_ref = state.borrow();
-    let groups: Vec<_> = state_ref
-        .list_groups()
-        .iter()
-        .map(|g| (*g).clone())
-        .collect();
+    let mut group_paths: Vec<(Uuid, String)> = if let Ok(state_ref) = state.try_borrow() {
+        let groups: Vec<_> = state_ref
+            .list_groups()
+            .iter()
+            .map(|g| (*g).clone())
+            .collect();
 
-    // Build paths for all groups, excluding groups being moved and their descendants
-    let mut group_paths: Vec<(Uuid, String)> = groups
-        .iter()
-        .filter(|g| {
-            // Exclude groups being moved
-            if group_ids_to_move.contains(&g.id) {
-                return false;
-            }
-            // Exclude descendants of groups being moved
-            for &moving_id in &group_ids_to_move {
-                if is_descendant_of_group(&state_ref, g.id, moving_id) {
+        // Build paths for all groups, excluding groups being moved and their descendants
+        groups
+            .iter()
+            .filter(|g| {
+                // Exclude groups being moved
+                if group_ids_to_move.contains(&g.id) {
                     return false;
                 }
-            }
-            true
-        })
-        .map(|g| {
-            let path = state_ref
-                .get_group_path(g.id)
-                .unwrap_or_else(|| g.name.clone());
-            (g.id, path)
-        })
-        .collect();
-    drop(state_ref);
+                // Exclude descendants of groups being moved
+                for &moving_id in &group_ids_to_move {
+                    if is_descendant_of_group(&state_ref, g.id, moving_id) {
+                        return false;
+                    }
+                }
+                true
+            })
+            .map(|g| {
+                let path = state_ref
+                    .get_group_path(g.id)
+                    .unwrap_or_else(|| g.name.clone());
+                (g.id, path)
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
 
     // Sort by path (hierarchical + alphabetical)
     group_paths.sort_by(|a, b| a.1.to_lowercase().cmp(&b.1.to_lowercase()));

@@ -89,6 +89,7 @@ fn create_test_connection(id: Uuid, name: &str, host: &str) -> Connection {
         window_mode: rustconn_core::models::WindowMode::default(),
         remember_window_position: false,
         window_geometry: None,
+        skip_port_check: false,
     }
 }
 

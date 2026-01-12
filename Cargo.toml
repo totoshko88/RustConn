@@ -7,10 +7,10 @@ members = [
 ]
 
 [workspace.package]
-version = "0.5.9"
+version = "0.6.0"
 edition = "2021"
-authors = ["RustConn Contributors"]
-license = "MIT"
+authors = ["Anton Isaiev <totoshko88@gmail.com>"]
+license = "GPL-3.0-or-later"
 rust-version = "1.87"
 
 [workspace.dependencies]

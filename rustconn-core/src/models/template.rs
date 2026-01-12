@@ -253,6 +253,7 @@ impl ConnectionTemplate {
             window_mode: super::connection::WindowMode::default(),
             remember_window_position: false,
             window_geometry: None,
+            skip_port_check: false,
         }
     }
 

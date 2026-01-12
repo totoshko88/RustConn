@@ -307,9 +307,9 @@ impl EmbeddedVncWidget {
                         if let Ok(surface) = gtk4::cairo::ImageSurface::create_for_data(
                             data.to_vec(),
                             gtk4::cairo::Format::ARgb32,
-                            buf_width as i32,
-                            buf_height as i32,
-                            buffer.stride() as i32,
+                            crate::utils::dimension_to_i32(buf_width),
+                            crate::utils::dimension_to_i32(buf_height),
+                            crate::utils::stride_to_i32(buffer.stride()),
                         ) {
                             // Scale to fit the drawing area while maintaining aspect ratio
                             let scale_x = f64::from(width) / f64::from(buf_width);
@@ -420,7 +420,8 @@ impl EmbeddedVncWidget {
                 // GDK Key values are compatible with X11 keysyms
                 let keysym = keyval.into_glib();
                 if let Some(ref sender) = *command_sender.borrow() {
-                    let _ = sender.blocking_send(VncClientCommand::KeyEvent {
+                    // Use try_send to avoid blocking GTK main thread
+                    let _ = sender.try_send(VncClientCommand::KeyEvent {
                         keysym,
                         pressed: true,
                     });
@@ -444,7 +445,8 @@ impl EmbeddedVncWidget {
             if embedded && current_state == VncConnectionState::Connected && !view_only {
                 let keysym = keyval.into_glib();
                 if let Some(ref sender) = *command_sender.borrow() {
-                    let _ = sender.blocking_send(VncClientCommand::KeyEvent {
+                    // Use try_send to avoid blocking GTK main thread
+                    let _ = sender.try_send(VncClientCommand::KeyEvent {
                         keysym,
                         pressed: false,
                     });
@@ -485,14 +487,13 @@ impl EmbeddedVncWidget {
                     x, y, widget_w, widget_h, vnc_w, vnc_h,
                 );
 
-                #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
-                let vnc_x = vnc_x as u16;
-                #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
-                let vnc_y = vnc_y as u16;
+                let vnc_x = crate::utils::coord_to_u16(vnc_x);
+                let vnc_y = crate::utils::coord_to_u16(vnc_y);
                 let buttons = *button_state_motion.borrow();
 
                 if let Some(ref sender) = *command_sender.borrow() {
-                    let _ = sender.blocking_send(VncClientCommand::PointerEvent {
+                    // Use try_send to avoid blocking GTK main thread
+                    let _ = sender.try_send(VncClientCommand::PointerEvent {
                         x: vnc_x,
                         y: vnc_y,
                         buttons,
@@ -539,10 +540,8 @@ impl EmbeddedVncWidget {
                     x, y, widget_w, widget_h, vnc_w, vnc_h,
                 );
 
-                #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
-                let vnc_x = vnc_x as u16;
-                #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
-                let vnc_y = vnc_y as u16;
+                let vnc_x = crate::utils::coord_to_u16(vnc_x);
+                let vnc_y = crate::utils::coord_to_u16(vnc_y);
 
                 // Convert GTK button to VNC button mask and update state
                 let button_bit = crate::embedded_vnc_ui::gtk_button_to_vnc_mask(button);
@@ -550,7 +549,8 @@ impl EmbeddedVncWidget {
                 *button_state_press.borrow_mut() = buttons;
 
                 if let Some(ref sender) = *command_sender.borrow() {
-                    let _ = sender.blocking_send(VncClientCommand::PointerEvent {
+                    // Use try_send to avoid blocking GTK main thread
+                    let _ = sender.try_send(VncClientCommand::PointerEvent {
                         x: vnc_x,
                         y: vnc_y,
                         buttons,
@@ -587,10 +587,8 @@ impl EmbeddedVncWidget {
                     x, y, widget_w, widget_h, vnc_w, vnc_h,
                 );
 
-                #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
-                let vnc_x = vnc_x as u16;
-                #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
-                let vnc_y = vnc_y as u16;
+                let vnc_x = crate::utils::coord_to_u16(vnc_x);
+                let vnc_y = crate::utils::coord_to_u16(vnc_y);
 
                 // Clear the button bit from state
                 let button_bit = crate::embedded_vnc_ui::gtk_button_to_vnc_mask(button);
@@ -598,7 +596,8 @@ impl EmbeddedVncWidget {
                 *button_state_release.borrow_mut() = buttons;
 
                 if let Some(ref sender) = *command_sender.borrow() {
-                    let _ = sender.blocking_send(VncClientCommand::PointerEvent {
+                    // Use try_send to avoid blocking GTK main thread
+                    let _ = sender.try_send(VncClientCommand::PointerEvent {
                         x: vnc_x,
                         y: vnc_y,
                         buttons,
@@ -659,10 +658,10 @@ impl EmbeddedVncWidget {
                         *last_requested.borrow_mut() = (best_w, best_h);
 
                         if let Some(ref sender) = *command_sender.borrow() {
-                            #[allow(clippy::cast_possible_truncation)]
-                            let _ = sender.blocking_send(VncClientCommand::SetDesktopSize {
-                                width: best_w as u16,
-                                height: best_h as u16,
+                            // Use try_send to avoid blocking GTK main thread
+                            let _ = sender.try_send(VncClientCommand::SetDesktopSize {
+                                width: crate::utils::dimension_to_u16(best_w),
+                                height: crate::utils::dimension_to_u16(best_h),
                             });
                             eprintln!(
                                 "[VNC] Requesting standard resolution {}x{} for window {}x{}",
@@ -762,8 +761,9 @@ impl EmbeddedVncWidget {
                             // Send text as key presses via VNC client
                             // (ClipboardText only syncs clipboard, doesn't paste)
                             if let Some(ref sender) = *tx.borrow() {
-                                let _ = sender
-                                    .blocking_send(VncClientCommand::TypeText(text.to_string()));
+                                // Use try_send to avoid blocking GTK main thread
+                                let _ =
+                                    sender.try_send(VncClientCommand::TypeText(text.to_string()));
                                 // Show brief feedback
                                 status.set_text(&format!("Pasted {char_count} chars"));
                                 status.set_visible(true);
@@ -806,7 +806,8 @@ impl EmbeddedVncWidget {
 
             // Send Ctrl+Alt+Del via VNC client
             if let Some(ref sender) = *command_sender.borrow() {
-                let _ = sender.blocking_send(VncClientCommand::SendCtrlAltDel);
+                // Use try_send to avoid blocking GTK main thread
+                let _ = sender.try_send(VncClientCommand::SendCtrlAltDel);
                 tracing::debug!("[VNC] Sent Ctrl+Alt+Del");
             }
         });
@@ -1120,9 +1121,10 @@ impl EmbeddedVncWidget {
                                 desired_width,
                                 desired_height
                             );
-                            let _ = sender.blocking_send(VncClientCommand::SetDesktopSize {
-                                width: desired_width as u16,
-                                height: desired_height as u16,
+                            // Use try_send to avoid blocking GTK main thread
+                            let _ = sender.try_send(VncClientCommand::SetDesktopSize {
+                                width: crate::utils::dimension_to_u16(desired_width),
+                                height: crate::utils::dimension_to_u16(desired_height),
                             });
                         }
                         drawing_area.queue_draw();
@@ -1423,9 +1425,12 @@ impl EmbeddedVncWidget {
             .update_region(x, y, width, height, data, stride);
 
         // Damage the Wayland surface region
-        self.wl_surface
-            .borrow()
-            .damage(x as i32, y as i32, width as i32, height as i32);
+        self.wl_surface.borrow().damage(
+            crate::utils::dimension_to_i32(x),
+            crate::utils::dimension_to_i32(y),
+            crate::utils::dimension_to_i32(width),
+            crate::utils::dimension_to_i32(height),
+        );
 
         // Commit the surface
         self.wl_surface.borrow().commit();
@@ -1467,9 +1472,12 @@ impl EmbeddedVncWidget {
             .copy_rect(src_x, src_y, dst_x, dst_y, width, height);
 
         // Damage the destination region
-        self.wl_surface
-            .borrow()
-            .damage(dst_x as i32, dst_y as i32, width as i32, height as i32);
+        self.wl_surface.borrow().damage(
+            crate::utils::dimension_to_i32(dst_x),
+            crate::utils::dimension_to_i32(dst_y),
+            crate::utils::dimension_to_i32(width),
+            crate::utils::dimension_to_i32(height),
+        );
 
         // Commit the surface
         self.wl_surface.borrow().commit();
@@ -1524,7 +1532,8 @@ impl EmbeddedVncWidget {
 
         if let Some(ref sender) = *self.command_sender.borrow() {
             use rustconn_core::VncClientCommand;
-            let _ = sender.blocking_send(VncClientCommand::SendCtrlAltDel);
+            // Use try_send to avoid blocking GTK main thread
+            let _ = sender.try_send(VncClientCommand::SendCtrlAltDel);
         }
     }
 

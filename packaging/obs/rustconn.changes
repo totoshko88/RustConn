@@ -1,4 +1,25 @@
 -------------------------------------------------------------------
+Sun Jan 12 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.0
+
+- Update to version 0.6.0 - Code Audit & Cleanup Release
+  * Removed check_structs.rs development artifact containing unsafe code
+  * Replaced blocking_send() with try_send() in VNC input handlers
+  * Replaced unwrap() with safe alternatives in sidebar.rs iterator access
+  * Replaced expect() with proper error handling in validation.rs regex
+  * Replaced module-level clippy allows with targeted function-level annotations
+  * Improved app.rs initialization error handling
+  * Updated Cargo.toml license from MIT to GPL-3.0-or-later
+  * Updated Cargo.toml authors to Anton Isaiev
+  * Added developer_name tag to metainfo.xml for AppStream compatibility
+  * Added author and license fields to AppImage packaging
+  * Added debian.copyright file to OBS debian packaging
+  * Updated dependencies: base64ct, cc, data-encoding, find-msvc-tools, flate2,
+    getrandom, libc, toml, zbus, zbus_macros, zbus_names, zmij, zvariant,
+    zvariant_derive, zvariant_utils
+  * Removed unused cfg_aliases, nix, static_assertions dependencies
+  * Note: sspi and picky-krb kept at previous versions due to rand_core conflict
+
+-------------------------------------------------------------------
 Sat Jan 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.5.9
 
 - Update to version 0.5.9

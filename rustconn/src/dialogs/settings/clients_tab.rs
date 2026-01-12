@@ -481,16 +481,13 @@ fn parse_version_output(command: &str, output: &str) -> Option<String> {
             .filter(|s| !s.is_empty()),
 
         "remote-viewer" => {
-            // Format: "remote-viewer version 11.0"
+            // Format: "remote-viewer, version 11.0" or localized "remote-viewer, версія 11.0"
+            // The version number is always the last word on the first line
             output.lines().next().and_then(|line| {
                 let trimmed = line.trim();
                 if trimmed.starts_with("remote-viewer") {
-                    // Extract version number after "version"
-                    trimmed
-                        .split_whitespace()
-                        .skip_while(|&w| w != "version")
-                        .nth(1)
-                        .map(String::from)
+                    // Extract the last word which should be the version number
+                    trimmed.split_whitespace().last().map(String::from)
                 } else {
                     Some(trimmed.to_string())
                 }

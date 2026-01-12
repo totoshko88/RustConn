@@ -12,6 +12,7 @@
 mod interning;
 mod lazy_loader;
 mod manager;
+mod port_check;
 mod virtual_scroll;
 
 pub use interning::{
@@ -20,4 +21,5 @@ pub use interning::{
 };
 pub use lazy_loader::LazyGroupLoader;
 pub use manager::ConnectionManager;
+pub use port_check::{check_port, check_port_async, PortCheckError, PortCheckResult};
 pub use virtual_scroll::{SelectionState, VirtualScrollConfig};

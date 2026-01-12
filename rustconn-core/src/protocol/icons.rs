@@ -233,6 +233,12 @@ pub fn detect_provider(command: &str) -> CloudProvider {
         return CloudProvider::Boundary;
     }
 
+    // Check for Cloudflare commands BEFORE Azure
+    // (cloudflared commands may contain "az" as arguments, e.g., "cloudflared az tunnel")
+    if contains_tool("cloudflared") || cmd_lower.contains("cloudflare") {
+        return CloudProvider::Cloudflare;
+    }
+
     // Check for Azure commands - enhanced detection
     // Patterns: "az ", "azure", "bastion"
     if contains_tool("az")
@@ -247,11 +253,6 @@ pub fn detect_provider(command: &str) -> CloudProvider {
     // Check for OCI commands
     if contains_tool("oci") || cmd_lower.contains("oracle") {
         return CloudProvider::Oci;
-    }
-
-    // Check for Cloudflare commands
-    if contains_tool("cloudflared") || cmd_lower.contains("cloudflare") {
-        return CloudProvider::Cloudflare;
     }
 
     // Check for Teleport commands

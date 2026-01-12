@@ -354,6 +354,9 @@ impl AppState {
     ///
     /// Note: This method only checks the in-memory cache to avoid blocking the UI.
     /// KeePass credential resolution is done asynchronously when needed.
+    ///
+    /// Note: Part of credential verification API - used internally by resolve_credentials_gtk.
+    #[allow(dead_code)]
     pub fn can_skip_password_dialog(&self, connection_id: Uuid) -> bool {
         if !self.verification_manager.is_verified(connection_id) {
             return false;
@@ -806,10 +809,31 @@ impl AppState {
 
     /// Stores credentials for a connection (blocking wrapper for async operation)
     ///
+    /// # Deprecation Warning
+    ///
+    /// This method blocks the calling thread and should NOT be used from GTK UI callbacks
+    /// as it will freeze the interface. Use the async pattern with `spawn_blocking_with_callback`
+    /// instead for GUI code.
+    ///
+    /// # Example (preferred async pattern)
+    ///
+    /// ```ignore
+    /// crate::utils::spawn_blocking_with_callback(
+    ///     move || {
+    ///         // blocking credential operation here
+    ///     },
+    ///     move |result| {
+    ///         // handle result on GTK main thread
+    ///     },
+    /// );
+    /// ```
+    ///
     /// Note: This uses a cached tokio runtime to avoid creating a new one each time.
     /// For better performance in async contexts, use `secret_manager()` directly.
-    ///
-    /// Note: Part of secret management API.
+    #[deprecated(
+        since = "0.5.0",
+        note = "Blocks UI thread. Use spawn_blocking_with_callback pattern for GUI code."
+    )]
     #[allow(dead_code)]
     pub fn store_credentials(
         &self,
@@ -832,10 +856,18 @@ impl AppState {
 
     /// Retrieves credentials for a connection (blocking wrapper for async operation)
     ///
+    /// # Deprecation Warning
+    ///
+    /// This method blocks the calling thread and should NOT be used from GTK UI callbacks
+    /// as it will freeze the interface. Use the async pattern with `spawn_blocking_with_callback`
+    /// instead for GUI code.
+    ///
     /// Note: This uses a cached tokio runtime to avoid creating a new one each time.
     /// For better performance in async contexts, use `secret_manager()` directly.
-    ///
-    /// Note: Part of secret management API.
+    #[deprecated(
+        since = "0.5.0",
+        note = "Blocks UI thread. Use spawn_blocking_with_callback pattern for GUI code."
+    )]
     #[allow(dead_code)]
     pub fn retrieve_credentials(&self, connection_id: Uuid) -> Result<Option<Credentials>, String> {
         let secret_manager = self.secret_manager.clone();
@@ -853,10 +885,18 @@ impl AppState {
 
     /// Deletes credentials for a connection (blocking wrapper for async operation)
     ///
+    /// # Deprecation Warning
+    ///
+    /// This method blocks the calling thread and should NOT be used from GTK UI callbacks
+    /// as it will freeze the interface. Use the async pattern with `spawn_blocking_with_callback`
+    /// instead for GUI code.
+    ///
     /// Note: This uses a cached tokio runtime to avoid creating a new one each time.
     /// For better performance in async contexts, use `secret_manager()` directly.
-    ///
-    /// Note: Part of secret management API.
+    #[deprecated(
+        since = "0.5.0",
+        note = "Blocks UI thread. Use spawn_blocking_with_callback pattern for GUI code."
+    )]
     #[allow(dead_code)]
     pub fn delete_credentials(&self, connection_id: Uuid) -> Result<(), String> {
         let secret_manager = self.secret_manager.clone();
@@ -873,6 +913,9 @@ impl AppState {
     }
 
     /// Checks if any secret backend is available (blocking wrapper)
+    ///
+    /// Note: Used internally by resolve_credentials_blocking and should_prompt_for_credentials.
+    #[allow(dead_code)]
     pub fn has_secret_backend(&self) -> bool {
         let secret_manager = self.secret_manager.clone();
 
@@ -894,6 +937,9 @@ impl AppState {
     /// - `Ok(Some(Credentials))` - Credentials found from a backend
     /// - `Ok(None)` - No credentials found, caller should prompt user or use stored
     /// - `Err(String)` - Error during resolution
+    ///
+    /// Note: This is a blocking method. Prefer `resolve_credentials_gtk` for GUI code.
+    #[allow(dead_code)]
     pub fn resolve_credentials(
         &self,
         connection: &Connection,
@@ -987,6 +1033,9 @@ impl AppState {
     /// Resolves credentials for a connection by ID
     ///
     /// Convenience method that looks up the connection and resolves credentials.
+    ///
+    /// Note: This is a blocking method. Prefer `resolve_credentials_gtk` for GUI code.
+    #[allow(dead_code)]
     pub fn resolve_credentials_for_connection(
         &self,
         connection_id: Uuid,
@@ -1003,6 +1052,9 @@ impl AppState {
     ///
     /// Returns `true` if the connection's password source requires user input
     /// and no credentials are available from other sources.
+    ///
+    /// Note: Part of credential resolution API - used internally.
+    #[allow(dead_code)]
     pub fn should_prompt_for_credentials(&self, connection: &Connection) -> bool {
         match connection.password_source {
             PasswordSource::Prompt => true,
@@ -1162,6 +1214,157 @@ impl AppState {
     #[allow(dead_code)]
     pub const fn is_keepass_active(&self) -> bool {
         self.settings.secrets.kdbx_enabled && self.settings.secrets.kdbx_path.is_some()
+    }
+
+    // ========== GTK-Friendly Async Credential Operations ==========
+
+    /// Resolves credentials for a connection without blocking the GTK main thread
+    ///
+    /// This method spawns the credential resolution in a background thread and
+    /// delivers the result via callback in the GTK main thread. This is the
+    /// preferred method for credential resolution in GUI code.
+    ///
+    /// # Arguments
+    /// * `connection_id` - The ID of the connection to resolve credentials for
+    /// * `callback` - Function called with the result when resolution completes
+    ///
+    /// # Requirements Coverage
+    /// - Requirement 9.1: Async operations instead of blocking calls
+    /// - Requirement 9.2: Avoid `block_on()` in GUI code
+    ///
+    /// # Example
+    /// ```ignore
+    /// state.resolve_credentials_gtk(connection_id, move |result| {
+    ///     match result {
+    ///         Ok(Some(creds)) => { /* use credentials */ }
+    ///         Ok(None) => { /* prompt user */ }
+    ///         Err(e) => { /* show error */ }
+    ///     }
+    /// });
+    /// ```
+    pub fn resolve_credentials_gtk<F>(&self, connection_id: Uuid, callback: F)
+    where
+        F: FnOnce(Result<Option<Credentials>, String>) + 'static,
+    {
+        // Get connection and settings needed for resolution
+        let connection = if let Some(conn) = self.get_connection(connection_id) {
+            conn.clone()
+        } else {
+            callback(Err(format!("Connection not found: {connection_id}")));
+            return;
+        };
+
+        // Capture settings needed for KeePass resolution
+        let kdbx_enabled = self.settings.secrets.kdbx_enabled;
+        let kdbx_path = self.settings.secrets.kdbx_path.clone();
+        let kdbx_password = self.settings.secrets.kdbx_password.clone();
+        let kdbx_key_file = self.settings.secrets.kdbx_key_file.clone();
+        let secret_settings = self.settings.secrets.clone();
+        let secret_manager = self.secret_manager.clone();
+
+        // Spawn blocking operation in background thread
+        crate::utils::spawn_blocking_with_callback(
+            move || {
+                Self::resolve_credentials_blocking(
+                    &connection,
+                    kdbx_enabled,
+                    kdbx_path,
+                    kdbx_password,
+                    kdbx_key_file,
+                    secret_settings,
+                    secret_manager,
+                )
+            },
+            callback,
+        );
+    }
+
+    /// Internal blocking credential resolution (runs in background thread)
+    ///
+    /// This is extracted from `resolve_credentials` to be callable from a background
+    /// thread without needing `&self`.
+    fn resolve_credentials_blocking(
+        connection: &Connection,
+        kdbx_enabled: bool,
+        kdbx_path: Option<std::path::PathBuf>,
+        kdbx_password: Option<SecretString>,
+        kdbx_key_file: Option<std::path::PathBuf>,
+        secret_settings: rustconn_core::config::SecretSettings,
+        secret_manager: SecretManager,
+    ) -> Result<Option<Credentials>, String> {
+        use rustconn_core::secret::KeePassStatus;
+        use secrecy::ExposeSecret;
+
+        // For KeePass password source, directly use KeePassStatus to retrieve password
+        if connection.password_source == PasswordSource::KeePass && kdbx_enabled {
+            if let Some(ref kdbx_path) = kdbx_path {
+                // Get the lookup key with protocol for uniqueness
+                let protocol = connection.protocol_config.protocol_type();
+                let protocol_str = protocol.as_str();
+                let base_name = if connection.name.trim().is_empty() {
+                    connection.host.clone()
+                } else {
+                    connection.name.clone()
+                };
+                let lookup_key = format!("{base_name} ({protocol_str})");
+
+                // Get credentials - password and key file can be used together
+                let db_password = kdbx_password.as_ref().map(|p| p.expose_secret());
+                let key_file = kdbx_key_file.as_deref();
+
+                tracing::debug!(
+                    "[resolve_credentials_blocking] KeePass lookup: key='{}', has_password={}, has_key_file={}",
+                    lookup_key,
+                    db_password.is_some(),
+                    key_file.is_some()
+                );
+
+                match KeePassStatus::get_password_from_kdbx_with_key(
+                    kdbx_path,
+                    db_password,
+                    key_file,
+                    &lookup_key,
+                    None,
+                ) {
+                    Ok(Some(password)) => {
+                        tracing::debug!("[resolve_credentials_blocking] Found password in KeePass");
+                        let creds = if let Some(ref username) = connection.username {
+                            Credentials::with_password(username, &password)
+                        } else {
+                            Credentials {
+                                username: None,
+                                password: Some(SecretString::from(password)),
+                                key_passphrase: None,
+                            }
+                        };
+                        return Ok(Some(creds));
+                    }
+                    Ok(None) => {
+                        tracing::debug!(
+                            "[resolve_credentials_blocking] No password found in KeePass"
+                        );
+                    }
+                    Err(e) => {
+                        tracing::error!("[resolve_credentials_blocking] KeePass error: {}", e);
+                    }
+                }
+            }
+        }
+
+        // Fall back to the standard resolver for other password sources
+        let resolver = CredentialResolver::new(Arc::new(secret_manager), secret_settings);
+        let connection = connection.clone();
+
+        // Create a new runtime for this thread (background thread doesn't have one)
+        let rt =
+            tokio::runtime::Runtime::new().map_err(|e| format!("Failed to create runtime: {e}"))?;
+
+        rt.block_on(async {
+            resolver
+                .resolve(&connection)
+                .await
+                .map_err(|e| format!("Failed to resolve credentials: {e}"))
+        })
     }
 
     // ========== Settings Operations ==========

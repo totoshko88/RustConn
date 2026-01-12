@@ -83,52 +83,13 @@ pub fn create_logging_page() -> (
     open_logs_row.add_suffix(&open_logs_btn);
 
     let log_dir_entry_clone = log_dir_entry.clone();
-    let open_logs_btn_clone = open_logs_btn.clone();
     open_logs_row.connect_activated(move |_| {
-        let log_dir = log_dir_entry_clone.text();
-        let log_path = if log_dir.starts_with('/') {
-            PathBuf::from(log_dir.as_str())
-        } else {
-            dirs::config_dir()
-                .unwrap_or_else(|| PathBuf::from("."))
-                .join("rustconn")
-                .join(log_dir.as_str())
-        };
-
-        if !log_path.exists() {
-            if let Err(e) = std::fs::create_dir_all(&log_path) {
-                tracing::error!("Failed to create logs directory: {e}");
-                return;
-            }
-        }
-
-        if let Err(e) = open::that(&log_path) {
-            tracing::error!("Failed to open logs directory: {e}");
-        }
+        open_logs_directory(&log_dir_entry_clone);
     });
 
     let log_dir_entry_clone2 = log_dir_entry.clone();
     open_logs_btn.connect_clicked(move |_| {
-        let log_dir = log_dir_entry_clone2.text();
-        let log_path = if log_dir.starts_with('/') {
-            PathBuf::from(log_dir.as_str())
-        } else {
-            dirs::config_dir()
-                .unwrap_or_else(|| PathBuf::from("."))
-                .join("rustconn")
-                .join(log_dir.as_str())
-        };
-
-        if !log_path.exists() {
-            if let Err(e) = std::fs::create_dir_all(&log_path) {
-                tracing::error!("Failed to create logs directory: {e}");
-                return;
-            }
-        }
-
-        if let Err(e) = open::that(&log_path) {
-            tracing::error!("Failed to open logs directory: {e}");
-        }
+        open_logs_directory(&log_dir_entry_clone2);
     });
 
     general_group.add(&open_logs_row);
@@ -185,14 +146,14 @@ pub fn create_logging_page() -> (
     // Connect switch to enable/disable other controls
     let log_dir_entry_clone = log_dir_entry.clone();
     let retention_clone = retention_spin.clone();
-    let open_logs_btn_clone2 = open_logs_btn_clone;
+    let open_logs_btn_clone = open_logs_btn.clone();
     let log_activity_clone = log_activity_check.clone();
     let log_input_clone = log_input_check.clone();
     let log_output_clone = log_output_check.clone();
     logging_enabled_switch.connect_state_set(move |_, state| {
         log_dir_entry_clone.set_sensitive(state);
         retention_clone.set_sensitive(state);
-        open_logs_btn_clone2.set_sensitive(state);
+        open_logs_btn_clone.set_sensitive(state);
         log_activity_clone.set_sensitive(state);
         log_input_clone.set_sensitive(state);
         log_output_clone.set_sensitive(state);
@@ -254,4 +215,41 @@ pub fn collect_logging_settings(
         log_input: log_input_check.is_active(),
         log_output: log_output_check.is_active(),
     }
+}
+
+/// Opens the logs directory asynchronously
+///
+/// Creates the directory if it doesn't exist, then opens it in the file manager.
+/// Uses background thread to avoid blocking UI on slow filesystems.
+fn open_logs_directory(log_dir_entry: &Entry) {
+    let log_dir = log_dir_entry.text().to_string();
+    let log_path = if log_dir.starts_with('/') {
+        PathBuf::from(&log_dir)
+    } else {
+        dirs::config_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("rustconn")
+            .join(&log_dir)
+    };
+
+    // Run directory creation in background to avoid blocking UI
+    crate::utils::spawn_blocking_with_callback(
+        move || {
+            if !log_path.exists() {
+                if let Err(e) = std::fs::create_dir_all(&log_path) {
+                    return Err(format!("Failed to create logs directory: {e}"));
+                }
+            }
+            // open::that spawns a process and returns immediately, so it's safe here
+            if let Err(e) = open::that(&log_path) {
+                return Err(format!("Failed to open logs directory: {e}"));
+            }
+            Ok(())
+        },
+        |result: Result<(), String>| {
+            if let Err(e) = result {
+                tracing::error!("{e}");
+            }
+        },
+    );
 }

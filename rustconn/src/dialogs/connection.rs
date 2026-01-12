@@ -816,98 +816,87 @@ impl ConnectionDialog {
             let test_button_clone = btn.clone();
             let window_clone = window.clone();
 
-            // Use Arc to share result between threads
-            let result_holder: std::sync::Arc<
-                std::sync::Mutex<Option<rustconn_core::testing::TestResult>>,
-            > = std::sync::Arc::new(std::sync::Mutex::new(None));
-            let result_holder_clone = result_holder.clone();
+            // Use spawn_blocking_with_timeout utility for cleaner async handling
+            crate::utils::spawn_blocking_with_timeout(
+                move || {
+                    let Ok(rt) = tokio::runtime::Runtime::new() else {
+                        return rustconn_core::testing::TestResult::failure(
+                            conn_id,
+                            conn_name.clone(),
+                            "Failed to create tokio runtime",
+                        );
+                    };
+                    let tester = rustconn_core::testing::ConnectionTester::new();
 
-            std::thread::spawn(move || {
-                let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
-                let tester = rustconn_core::testing::ConnectionTester::new();
+                    // Create a minimal connection for testing
+                    let protocol_config = match protocol {
+                        rustconn_core::models::ProtocolType::Ssh => {
+                            rustconn_core::models::ProtocolConfig::Ssh(
+                                rustconn_core::models::SshConfig::default(),
+                            )
+                        }
+                        rustconn_core::models::ProtocolType::Rdp => {
+                            rustconn_core::models::ProtocolConfig::Rdp(
+                                rustconn_core::models::RdpConfig::default(),
+                            )
+                        }
+                        rustconn_core::models::ProtocolType::Vnc => {
+                            rustconn_core::models::ProtocolConfig::Vnc(
+                                rustconn_core::models::VncConfig::default(),
+                            )
+                        }
+                        rustconn_core::models::ProtocolType::Spice => {
+                            rustconn_core::models::ProtocolConfig::Spice(
+                                rustconn_core::models::SpiceConfig::default(),
+                            )
+                        }
+                        rustconn_core::models::ProtocolType::ZeroTrust => {
+                            rustconn_core::models::ProtocolConfig::Ssh(
+                                rustconn_core::models::SshConfig::default(),
+                            )
+                        }
+                    };
+                    let mut test_conn = rustconn_core::models::Connection::new(
+                        conn_name,
+                        host,
+                        port,
+                        protocol_config,
+                    );
+                    test_conn.id = conn_id;
 
-                // Create a minimal connection for testing
-                let protocol_config = match protocol {
-                    rustconn_core::models::ProtocolType::Ssh => {
-                        rustconn_core::models::ProtocolConfig::Ssh(
-                            rustconn_core::models::SshConfig::default(),
-                        )
-                    }
-                    rustconn_core::models::ProtocolType::Rdp => {
-                        rustconn_core::models::ProtocolConfig::Rdp(
-                            rustconn_core::models::RdpConfig::default(),
-                        )
-                    }
-                    rustconn_core::models::ProtocolType::Vnc => {
-                        rustconn_core::models::ProtocolConfig::Vnc(
-                            rustconn_core::models::VncConfig::default(),
-                        )
-                    }
-                    rustconn_core::models::ProtocolType::Spice => {
-                        rustconn_core::models::ProtocolConfig::Spice(
-                            rustconn_core::models::SpiceConfig::default(),
-                        )
-                    }
-                    rustconn_core::models::ProtocolType::ZeroTrust => {
-                        rustconn_core::models::ProtocolConfig::Ssh(
-                            rustconn_core::models::SshConfig::default(),
-                        )
-                    }
-                };
-                let mut test_conn =
-                    rustconn_core::models::Connection::new(conn_name, host, port, protocol_config);
-                test_conn.id = conn_id;
+                    rt.block_on(tester.test_connection(&test_conn))
+                },
+                std::time::Duration::from_secs(15),
+                move |result: Option<rustconn_core::testing::TestResult>| {
+                    // Update UI
+                    test_button_clone.set_sensitive(true);
+                    test_button_clone.set_label("Test");
 
-                let result = rt.block_on(tester.test_connection(&test_conn));
-
-                // Store result
-                if let Ok(mut guard) = result_holder_clone.lock() {
-                    *guard = Some(result);
-                }
-            });
-
-            // Poll for result using timeout_add
-            let poll_count = std::rc::Rc::new(std::cell::RefCell::new(0u32));
-            let poll_count_clone = poll_count.clone();
-
-            gtk4::glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-                *poll_count_clone.borrow_mut() += 1;
-
-                // Check if result is ready
-                if let Ok(guard) = result_holder.lock() {
-                    if let Some(ref result) = *guard {
-                        // Update UI
-                        test_button_clone.set_sensitive(true);
-                        test_button_clone.set_label("Test");
-
-                        if result.is_success() {
-                            let latency = result.latency_ms.unwrap_or(0);
+                    match result {
+                        Some(test_result) if test_result.is_success() => {
+                            let latency = test_result.latency_ms.unwrap_or(0);
                             alert::show_success(
                                 &window_clone,
                                 "Connection Test Successful",
                                 &format!("Connection successful! Latency: {}ms", latency),
                             );
-                        } else {
-                            let error = result
+                        }
+                        Some(test_result) => {
+                            let error = test_result
                                 .error
-                                .clone()
                                 .unwrap_or_else(|| "Unknown error".to_string());
                             alert::show_error(&window_clone, "Connection Test Failed", &error);
                         }
-                        return gtk4::glib::ControlFlow::Break;
+                        None => {
+                            alert::show_error(
+                                &window_clone,
+                                "Connection Test Failed",
+                                "Test timed out",
+                            );
+                        }
                     }
-                }
-
-                // Timeout after 15 seconds (150 * 100ms)
-                if *poll_count_clone.borrow() > 150 {
-                    test_button_clone.set_sensitive(true);
-                    test_button_clone.set_label("Test");
-                    alert::show_error(&window_clone, "Connection Test Failed", "Test timed out");
-                    return gtk4::glib::ControlFlow::Break;
-                }
-
-                gtk4::glib::ControlFlow::Continue
-            });
+                },
+            );
         });
 
         result

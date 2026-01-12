@@ -1878,9 +1878,11 @@ impl ConnectionSidebar {
             search_entry.set_text("");
         } else if filters.len() == 1 {
             // Single protocol filter - use standard search syntax
-            let protocol = filters.iter().next().unwrap();
-            let query = format!("protocol:{}", protocol.to_lowercase());
-            search_entry.set_text(&query);
+            // Safe: we just checked filters.len() == 1, so next() will succeed
+            if let Some(protocol) = filters.iter().next() {
+                let query = format!("protocol:{}", protocol.to_lowercase());
+                search_entry.set_text(&query);
+            }
         } else {
             // Multiple protocol filters - use special syntax that filter_connections can recognize
             let mut protocols: Vec<String> = filters.iter().cloned().collect();

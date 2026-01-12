@@ -123,6 +123,31 @@ pub fn start_rdp_session_with_credentials(
     password: &str,
     domain: &str,
 ) {
+    // Port check is now done earlier in handle_rdp_credentials
+    start_rdp_session_internal(
+        state,
+        notebook,
+        split_view,
+        sidebar,
+        connection_id,
+        username,
+        password,
+        domain,
+    );
+}
+
+/// Internal function to start RDP session (after port check)
+#[allow(clippy::too_many_arguments)]
+fn start_rdp_session_internal(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    split_view: &SharedSplitView,
+    sidebar: &SharedSidebar,
+    connection_id: Uuid,
+    username: &str,
+    password: &str,
+    domain: &str,
+) {
     use rustconn_core::models::RdpClientMode;
 
     let state_ref = state.borrow();
@@ -502,7 +527,7 @@ pub fn start_vnc_with_password_dialog(
 
     // Try to load password from KeePass asynchronously
     {
-        use gtk4::glib;
+        use crate::utils::spawn_blocking_with_callback;
         use secrecy::ExposeSecret;
         let state_ref = state.borrow();
         let settings = state_ref.settings();
@@ -531,47 +556,24 @@ pub fn start_vnc_with_password_dialog(
                 // Drop state borrow before spawning
                 drop(state_ref);
 
-                // Run KeePass operation in background thread to avoid blocking UI
-                let (tx, rx) = std::sync::mpsc::channel();
-                std::thread::spawn(move || {
-                    let result =
+                // Run KeePass operation in background thread using utility function
+                spawn_blocking_with_callback(
+                    move || {
                         rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
                             &kdbx_path,
                             db_password.as_deref(),
                             key_file.as_deref(),
                             &lookup_key,
                             None, // Protocol already included in lookup_key
-                        );
-                    let _ = tx.send(result);
-                });
-
-                // Poll for result using idle callback
-                glib::idle_add_local_once(move || {
-                    fn check_result(
-                        rx: std::sync::mpsc::Receiver<Result<Option<String>, String>>,
-                        password_entry: gtk4::Entry,
-                    ) {
-                        match rx.try_recv() {
-                            Ok(Ok(Some(password))) => {
-                                password_entry.set_text(&password);
-                            }
-                            Ok(Ok(None) | Err(_)) => {
-                                // No password found or error - just continue without pre-fill
-                            }
-                            Err(std::sync::mpsc::TryRecvError::Empty) => {
-                                // Not ready yet, schedule another check
-                                glib::timeout_add_local_once(
-                                    std::time::Duration::from_millis(50),
-                                    move || check_result(rx, password_entry),
-                                );
-                            }
-                            Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                                // Thread error - just continue without pre-fill
-                            }
+                        )
+                    },
+                    move |result: Result<Option<String>, String>| {
+                        if let Ok(Some(password)) = result {
+                            password_entry.set_text(&password);
                         }
-                    }
-                    check_result(rx, password_entry);
-                });
+                        // Silently ignore errors - just continue without pre-fill
+                    },
+                );
             }
         }
     }
@@ -601,6 +603,26 @@ pub fn start_vnc_with_password_dialog(
 
 /// Starts VNC session with provided password
 pub fn start_vnc_session_with_password(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    split_view: &SharedSplitView,
+    sidebar: &SharedSidebar,
+    connection_id: Uuid,
+    password: &str,
+) {
+    // Port check is now done earlier in handle_vnc_credentials
+    start_vnc_session_internal(
+        state,
+        notebook,
+        split_view,
+        sidebar,
+        connection_id,
+        password,
+    );
+}
+
+/// Internal function to start VNC session (after port check)
+fn start_vnc_session_internal(
     state: &SharedAppState,
     notebook: &SharedNotebook,
     split_view: &SharedSplitView,

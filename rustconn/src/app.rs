@@ -90,7 +90,8 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     if enable_tray {
         if let Some(tray) = TrayManager::new() {
             // Update tray with initial state
-            update_tray_state(&tray, &state);
+            let mut initial_cache = TrayStateCache::default();
+            update_tray_state(&tray, &state, &mut initial_cache);
             *tray_manager.borrow_mut() = Some(tray);
         }
     }
@@ -105,31 +106,59 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
 }
 
 /// Updates the tray icon state from the application state
-fn update_tray_state(tray: &TrayManager, state: &SharedAppState) {
+///
+/// Only updates if state has actually changed to avoid unnecessary work.
+fn update_tray_state(tray: &TrayManager, state: &SharedAppState, last_state: &mut TrayStateCache) {
     let state_ref = state.borrow();
 
-    // Update active session count
+    // Update active session count only if changed
     let session_count = state_ref.active_sessions().len();
     #[allow(clippy::cast_possible_truncation)]
-    tray.set_active_sessions(session_count as u32);
+    let session_count_u32 = session_count as u32;
 
-    // Update recent connections (get last 10 connections sorted by last_connected)
-    let mut connections: Vec<_> = state_ref
+    if last_state.session_count != session_count_u32 {
+        tray.set_active_sessions(session_count_u32);
+        last_state.session_count = session_count_u32;
+    }
+
+    // Update recent connections only if connection list has changed
+    // Use a simple hash of connection count + last_connected timestamps as dirty check
+    let connections_hash = state_ref
         .list_connections()
         .iter()
         .filter(|c| c.last_connected.is_some())
-        .map(|c| (c.id, c.name.clone(), c.last_connected))
-        .collect();
-    connections.sort_by(|a, b| b.2.cmp(&a.2));
-    let recent: Vec<_> = connections
-        .into_iter()
-        .take(10)
-        .map(|(id, name, _)| (id, name))
-        .collect();
-    tray.set_recent_connections(recent);
+        .map(|c| c.last_connected.map_or(0, |t| t.timestamp()))
+        .sum::<i64>();
+
+    if last_state.connections_hash != connections_hash {
+        let mut connections: Vec<_> = state_ref
+            .list_connections()
+            .iter()
+            .filter(|c| c.last_connected.is_some())
+            .map(|c| (c.id, c.name.clone(), c.last_connected))
+            .collect();
+        connections.sort_by(|a, b| b.2.cmp(&a.2));
+        let recent: Vec<_> = connections
+            .into_iter()
+            .take(10)
+            .map(|(id, name, _)| (id, name))
+            .collect();
+        tray.set_recent_connections(recent);
+        last_state.connections_hash = connections_hash;
+    }
+}
+
+/// Cache for tray state to avoid unnecessary updates
+#[derive(Default)]
+struct TrayStateCache {
+    session_count: u32,
+    connections_hash: i64,
 }
 
 /// Sets up polling for tray messages
+///
+/// Uses a 250ms interval (reduced from 100ms) with dirty-flag tracking
+/// to minimize CPU usage when idle.
 fn setup_tray_polling(
     app: &adw::Application,
     window: &MainWindow,
@@ -141,8 +170,12 @@ fn setup_tray_polling(
     let state_clone = state;
     let tray_manager_clone = tray_manager;
 
-    // Poll for tray messages every 100ms
-    glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+    // State cache to track changes and avoid unnecessary updates
+    let state_cache = std::rc::Rc::new(std::cell::RefCell::new(TrayStateCache::default()));
+
+    // Poll for tray messages every 250ms (increased from 100ms for better efficiency)
+    // Message handling is still responsive enough for user interactions
+    glib::timeout_add_local(std::time::Duration::from_millis(250), move || {
         let Some(app) = app_weak.upgrade() else {
             return glib::ControlFlow::Break;
         };
@@ -226,8 +259,8 @@ fn setup_tray_polling(
             }
         }
 
-        // Update tray state periodically
-        update_tray_state(tray, &state_clone);
+        // Update tray state only if changed (dirty-flag tracking)
+        update_tray_state(tray, &state_clone, &mut state_cache.borrow_mut());
 
         glib::ControlFlow::Continue
     });
@@ -752,9 +785,17 @@ fn show_error_dialog(app: &adw::Application, title: &str, message: &str) {
 /// Runs the GTK4 application
 ///
 /// This is the main entry point that initializes GTK and runs the event loop.
+///
+/// # Returns
+///
+/// Returns `glib::ExitCode::FAILURE` if libadwaita initialization fails,
+/// otherwise returns the application's exit code.
 pub fn run() -> glib::ExitCode {
     // Initialize libadwaita before creating the application
-    adw::init().expect("Failed to initialize libadwaita");
+    if let Err(e) = adw::init() {
+        eprintln!("Failed to initialize libadwaita: {e}");
+        return glib::ExitCode::FAILURE;
+    }
 
     let app = create_application();
     app.run()

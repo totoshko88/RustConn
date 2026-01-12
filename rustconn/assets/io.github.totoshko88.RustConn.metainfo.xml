@@ -8,6 +8,7 @@
   <developer id="io.github.totoshko88">
     <name>Anton Isaiev</name>
   </developer>
+  <developer_name>Anton Isaiev</developer_name>
   <description>
     <p>
       RustConn is a modern connection manager for Linux desktops built with GTK4.
@@ -33,6 +34,7 @@
     </ul>
   </description>
   <launchable type="desktop-id">io.github.totoshko88.RustConn.desktop</launchable>
+  <icon type="stock">io.github.totoshko88.RustConn</icon>
   <screenshots>
     <screenshot type="default">
       <caption>Main window with connection sidebar</caption>
@@ -52,6 +54,19 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.6.0" date="2026-01-12">
+      <description>
+        <p>Version 0.6.0 - Code Audit and Cleanup Release:</p>
+        <ul>
+          <li>Comprehensive codebase audit and modernization</li>
+          <li>Removed unsafe code artifact (check_structs.rs)</li>
+          <li>Fixed VNC input handlers to prevent UI freezes</li>
+          <li>Improved error handling throughout the codebase</li>
+          <li>Fixed package metadata for proper author/license display</li>
+          <li>Updated license field in Cargo.toml to GPL-3.0-or-later</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.5.9" date="2026-01-11">
       <description>
         <p>Version 0.5.9 - Settings and Template Dialog Improvements:</p>

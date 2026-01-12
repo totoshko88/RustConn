@@ -353,6 +353,31 @@ impl ConfigManager {
         Self::save_toml_file(&path, settings)
     }
 
+    // ========== Global Variables ==========
+
+    /// Loads global variables from the settings file
+    ///
+    /// Returns an empty vector if no variables are configured.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the settings file cannot be read.
+    pub fn load_variables(&self) -> ConfigResult<Vec<crate::variables::Variable>> {
+        let settings = self.load_settings()?;
+        Ok(settings.global_variables)
+    }
+
+    /// Saves global variables to the settings file
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the settings file cannot be written.
+    pub fn save_variables(&self, variables: &[crate::variables::Variable]) -> ConfigResult<()> {
+        let mut settings = self.load_settings()?;
+        settings.global_variables = variables.to_vec();
+        self.save_settings(&settings)
+    }
+
     // ========== Generic TOML Operations ==========
 
     /// Loads and parses a TOML file

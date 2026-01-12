@@ -138,13 +138,13 @@ impl MainWindow {
         let toast_overlay = Rc::new(ToastOverlay::new());
         toast_overlay.set_child(Some(&paned));
 
-        // Create main layout with header bar for adw::ApplicationWindow
-        let main_box = gtk4::Box::new(Orientation::Vertical, 0);
-        main_box.append(&header_bar);
-        main_box.append(toast_overlay.widget());
-        toast_overlay.widget().set_vexpand(true);
+        // Create main layout using adw::ToolbarView for proper libadwaita integration
+        // This provides better responsive behavior and follows GNOME HIG
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header_bar);
+        toolbar_view.set_content(Some(toast_overlay.widget()));
 
-        window.set_content(Some(&main_box));
+        window.set_content(Some(&toolbar_view));
 
         // Create external window manager
         let external_window_manager = Rc::new(ExternalWindowManager::new());
@@ -1675,6 +1675,8 @@ impl MainWindow {
     /// 2. Try to resolve credentials from configured backends (`KeePass`, Keyring)
     /// 3. Fall back to cached credentials if available
     /// 4. Prompt user if no credentials found and required
+    ///
+    /// Uses async credential resolution to avoid blocking the GTK main thread.
     fn start_connection_with_credential_resolution(
         state: SharedAppState,
         notebook: SharedNotebook,
@@ -1682,165 +1684,398 @@ impl MainWindow {
         sidebar: SharedSidebar,
         connection_id: Uuid,
     ) {
-        // Get connection info and determine credential handling
-        let (is_rdp, _password_source, _needs_prompt) = {
-            let state_ref = state.borrow();
+        // Get connection info and cached credentials (fast, non-blocking)
+        let (protocol_type, cached_credentials) = {
+            let Ok(state_ref) = state.try_borrow() else {
+                tracing::warn!("Could not borrow state for credential resolution");
+                return;
+            };
+
             let conn = match state_ref.get_connection(connection_id) {
                 Some(c) => c,
                 None => return,
             };
 
-            let is_rdp = matches!(conn.protocol_config, rustconn_core::ProtocolConfig::Rdp(_));
-            let password_source = conn.password_source;
-            let needs_prompt = state_ref.should_prompt_for_credentials(conn);
+            let protocol_type = conn.protocol_config.protocol_type();
 
-            (is_rdp, password_source, needs_prompt)
-        };
-
-        // Try to resolve credentials from backends
-        let resolved_credentials = {
-            let state_ref = state.borrow();
-            match state_ref.resolve_credentials_for_connection(connection_id) {
-                Ok(creds) => creds,
-                Err(e) => {
-                    eprintln!("Warning: Failed to resolve credentials: {e}");
-                    None
-                }
-            }
-        };
-
-        // Check for cached credentials
-        let cached_credentials = {
-            let state_ref = state.borrow();
-            state_ref.get_cached_credentials(connection_id).map(|c| {
+            let cached = state_ref.get_cached_credentials(connection_id).map(|c| {
                 use secrecy::ExposeSecret;
                 (
                     c.username.clone(),
                     c.password.expose_secret().to_string(),
                     c.domain.clone(),
                 )
-            })
+            });
+
+            (protocol_type, cached)
         };
 
-        // Determine if we have usable credentials (for future use in enhanced prompting)
-        let _has_credentials = resolved_credentials.is_some() || cached_credentials.is_some();
+        // If we have cached credentials, use them immediately (no async needed)
+        if let Some((username, password, domain)) = cached_credentials {
+            Self::handle_resolved_credentials(
+                state,
+                notebook,
+                split_view,
+                sidebar,
+                connection_id,
+                protocol_type,
+                Some(rustconn_core::Credentials::with_password(
+                    &username, &password,
+                )),
+                Some((username, password, domain)),
+            );
+            return;
+        }
 
-        // For RDP connections that need credentials
-        if is_rdp {
-            // Use resolved credentials if available
-            if let Some(ref creds) = resolved_credentials {
-                if let (Some(username), Some(password)) = (&creds.username, creds.expose_password())
-                {
-                    Self::start_rdp_session_with_credentials(
-                        &state,
-                        &notebook,
-                        &split_view,
-                        &sidebar,
-                        connection_id,
-                        username,
-                        password,
-                        "",
-                    );
-                    return;
-                }
+        // Resolve credentials asynchronously to avoid blocking GTK main thread
+        let state_clone = state.clone();
+        let notebook_clone = notebook.clone();
+        let split_view_clone = split_view.clone();
+        let sidebar_clone = sidebar.clone();
+
+        {
+            let Ok(state_ref) = state.try_borrow() else {
+                tracing::warn!("Could not borrow state for async credential resolution");
+                return;
+            };
+
+            state_ref.resolve_credentials_gtk(connection_id, move |result| {
+                let resolved_credentials = match result {
+                    Ok(creds) => creds,
+                    Err(e) => {
+                        tracing::warn!("Failed to resolve credentials: {e}");
+                        None
+                    }
+                };
+
+                Self::handle_resolved_credentials(
+                    state_clone,
+                    notebook_clone,
+                    split_view_clone,
+                    sidebar_clone,
+                    connection_id,
+                    protocol_type,
+                    resolved_credentials,
+                    None, // No cached credentials
+                );
+            });
+        }
+    }
+
+    /// Handles resolved credentials and starts the appropriate connection
+    ///
+    /// This is called either immediately (if cached credentials exist) or
+    /// from the async callback (after credential resolution completes).
+    #[allow(clippy::too_many_arguments)]
+    fn handle_resolved_credentials(
+        state: SharedAppState,
+        notebook: SharedNotebook,
+        split_view: SharedSplitView,
+        sidebar: SharedSidebar,
+        connection_id: Uuid,
+        protocol_type: rustconn_core::ProtocolType,
+        resolved_credentials: Option<rustconn_core::Credentials>,
+        cached_credentials: Option<(String, String, String)>,
+    ) {
+        use rustconn_core::ProtocolType;
+
+        match protocol_type {
+            ProtocolType::Rdp => {
+                Self::handle_rdp_credentials(
+                    state,
+                    notebook,
+                    split_view,
+                    sidebar,
+                    connection_id,
+                    resolved_credentials,
+                    cached_credentials,
+                );
             }
+            ProtocolType::Vnc => {
+                Self::handle_vnc_credentials(
+                    state,
+                    notebook,
+                    split_view,
+                    sidebar,
+                    connection_id,
+                    resolved_credentials,
+                    cached_credentials,
+                );
+            }
+            ProtocolType::Ssh | ProtocolType::Spice | ProtocolType::ZeroTrust => {
+                // For SSH/SPICE, cache credentials if available and start connection
+                if let Some(ref creds) = resolved_credentials {
+                    if let (Some(username), Some(password)) =
+                        (&creds.username, creds.expose_password())
+                    {
+                        if let Ok(mut state_mut) = state.try_borrow_mut() {
+                            state_mut.cache_credentials(connection_id, username, password, "");
+                        }
+                    }
+                }
+                Self::start_connection_with_split(
+                    &state,
+                    &notebook,
+                    &split_view,
+                    &sidebar,
+                    connection_id,
+                );
+            }
+        }
+    }
 
-            // Use cached credentials if available
-            if let Some((username, password, domain)) = cached_credentials {
+    /// Handles RDP credential resolution and connection start
+    #[allow(clippy::too_many_arguments)]
+    fn handle_rdp_credentials(
+        state: SharedAppState,
+        notebook: SharedNotebook,
+        split_view: SharedSplitView,
+        sidebar: SharedSidebar,
+        connection_id: Uuid,
+        resolved_credentials: Option<rustconn_core::Credentials>,
+        cached_credentials: Option<(String, String, String)>,
+    ) {
+        // Check if port check is needed BEFORE prompting for credentials
+        let (should_check, host, port, timeout) = {
+            let state_ref = state.borrow();
+            let settings = state_ref.settings();
+            let conn = state_ref.get_connection(connection_id);
+            if let Some(conn) = conn {
+                let should = settings.connection.pre_connect_port_check && !conn.skip_port_check;
+                (
+                    should,
+                    conn.host.clone(),
+                    conn.port,
+                    settings.connection.port_check_timeout_secs,
+                )
+            } else {
+                return;
+            }
+        };
+
+        if should_check {
+            // Run port check in background thread BEFORE showing password dialog
+            let state_clone = state.clone();
+            let notebook_clone = notebook.clone();
+            let split_view_clone = split_view.clone();
+            let sidebar_clone = sidebar.clone();
+
+            crate::utils::spawn_blocking_with_callback(
+                move || rustconn_core::check_port(&host, port, timeout),
+                move |result| {
+                    match result {
+                        Ok(_) => {
+                            // Port is open, proceed with credential handling
+                            Self::handle_rdp_credentials_internal(
+                                state_clone,
+                                notebook_clone,
+                                split_view_clone,
+                                sidebar_clone,
+                                connection_id,
+                                resolved_credentials,
+                                cached_credentials,
+                            );
+                        }
+                        Err(e) => {
+                            // Port check failed, show error and update sidebar
+                            tracing::warn!("Port check failed for RDP connection: {e}");
+                            sidebar_clone
+                                .update_connection_status(&connection_id.to_string(), "failed");
+                            if let Some(root) = notebook_clone.widget().root() {
+                                if let Some(window) = root.downcast_ref::<gtk4::Window>() {
+                                    crate::alert::show_error(
+                                        window,
+                                        "Connection Failed",
+                                        &format!(
+                                            "{e}\n\n\
+                                            The host may be offline or the port may be blocked."
+                                        ),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                },
+            );
+        } else {
+            // Port check disabled, proceed directly
+            Self::handle_rdp_credentials_internal(
+                state,
+                notebook,
+                split_view,
+                sidebar,
+                connection_id,
+                resolved_credentials,
+                cached_credentials,
+            );
+        }
+    }
+
+    /// Internal RDP credential handling (after port check)
+    #[allow(clippy::too_many_arguments)]
+    fn handle_rdp_credentials_internal(
+        state: SharedAppState,
+        notebook: SharedNotebook,
+        split_view: SharedSplitView,
+        sidebar: SharedSidebar,
+        connection_id: Uuid,
+        resolved_credentials: Option<rustconn_core::Credentials>,
+        cached_credentials: Option<(String, String, String)>,
+    ) {
+        // Use resolved credentials if available
+        if let Some(ref creds) = resolved_credentials {
+            if let (Some(username), Some(password)) = (&creds.username, creds.expose_password()) {
                 Self::start_rdp_session_with_credentials(
                     &state,
                     &notebook,
                     &split_view,
                     &sidebar,
                     connection_id,
-                    &username,
-                    &password,
-                    &domain,
+                    username,
+                    password,
+                    "",
                 );
                 return;
             }
-
-            // Check if we can skip password dialog (verified credentials from KeePass)
-            let can_skip = {
-                let state_ref = state.borrow();
-                state_ref.can_skip_password_dialog(connection_id)
-            };
-
-            if can_skip {
-                // Try to resolve credentials one more time (they should be available)
-                let state_ref = state.borrow();
-                if let Ok(Some(creds)) = state_ref.resolve_credentials_for_connection(connection_id)
-                {
-                    if let (Some(username), Some(password)) =
-                        (&creds.username, creds.expose_password())
-                    {
-                        drop(state_ref);
-                        Self::start_rdp_session_with_credentials(
-                            &state,
-                            &notebook,
-                            &split_view,
-                            &sidebar,
-                            connection_id,
-                            username,
-                            password,
-                            "",
-                        );
-                        return;
-                    }
-                }
-            }
-
-            // Need to prompt for credentials
-            if let Some(window) = notebook
-                .widget()
-                .ancestor(adw::ApplicationWindow::static_type())
-            {
-                if let Some(app_window) = window.downcast_ref::<adw::ApplicationWindow>() {
-                    Self::start_rdp_with_password_dialog(
-                        state,
-                        notebook,
-                        split_view,
-                        sidebar,
-                        connection_id,
-                        app_window,
-                    );
-                    return;
-                }
-            }
         }
 
-        // Check if this is a VNC connection
-        let is_vnc = {
+        // Use cached credentials if available
+        if let Some((username, password, domain)) = cached_credentials {
+            Self::start_rdp_session_with_credentials(
+                &state,
+                &notebook,
+                &split_view,
+                &sidebar,
+                connection_id,
+                &username,
+                &password,
+                &domain,
+            );
+            return;
+        }
+
+        // Need to prompt for credentials
+        if let Some(window) = notebook
+            .widget()
+            .ancestor(adw::ApplicationWindow::static_type())
+        {
+            if let Some(app_window) = window.downcast_ref::<adw::ApplicationWindow>() {
+                Self::start_rdp_with_password_dialog(
+                    state,
+                    notebook,
+                    split_view,
+                    sidebar,
+                    connection_id,
+                    app_window,
+                );
+            }
+        }
+    }
+
+    /// Handles VNC credential resolution and connection start
+    #[allow(clippy::too_many_arguments)]
+    fn handle_vnc_credentials(
+        state: SharedAppState,
+        notebook: SharedNotebook,
+        split_view: SharedSplitView,
+        sidebar: SharedSidebar,
+        connection_id: Uuid,
+        resolved_credentials: Option<rustconn_core::Credentials>,
+        cached_credentials: Option<(String, String, String)>,
+    ) {
+        // Check if port check is needed BEFORE prompting for credentials
+        let (should_check, host, port, timeout) = {
             let state_ref = state.borrow();
-            state_ref
-                .get_connection(connection_id)
-                .is_some_and(|c| matches!(c.protocol_config, rustconn_core::ProtocolConfig::Vnc(_)))
+            let settings = state_ref.settings();
+            let conn = state_ref.get_connection(connection_id);
+            if let Some(conn) = conn {
+                let should = settings.connection.pre_connect_port_check && !conn.skip_port_check;
+                (
+                    should,
+                    conn.host.clone(),
+                    conn.port,
+                    settings.connection.port_check_timeout_secs,
+                )
+            } else {
+                return;
+            }
         };
 
-        // For VNC connections - check if we have password
-        if is_vnc {
-            // Use resolved credentials if available (VNC only needs password)
-            if let Some(ref creds) = resolved_credentials {
-                if creds.expose_password().is_some() {
-                    // Cache the password for use in start_connection
-                    if let Some(password) = creds.expose_password() {
-                        if let Ok(mut state_mut) = state.try_borrow_mut() {
-                            state_mut.cache_credentials(connection_id, "", password, "");
+        if should_check {
+            // Run port check in background thread BEFORE showing password dialog
+            let state_clone = state.clone();
+            let notebook_clone = notebook.clone();
+            let split_view_clone = split_view.clone();
+            let sidebar_clone = sidebar.clone();
+
+            crate::utils::spawn_blocking_with_callback(
+                move || rustconn_core::check_port(&host, port, timeout),
+                move |result| {
+                    match result {
+                        Ok(_) => {
+                            // Port is open, proceed with credential handling
+                            Self::handle_vnc_credentials_internal(
+                                state_clone,
+                                notebook_clone,
+                                split_view_clone,
+                                sidebar_clone,
+                                connection_id,
+                                resolved_credentials,
+                                cached_credentials,
+                            );
+                        }
+                        Err(e) => {
+                            // Port check failed, show error and update sidebar
+                            tracing::warn!("Port check failed for VNC connection: {e}");
+                            sidebar_clone
+                                .update_connection_status(&connection_id.to_string(), "failed");
+                            if let Some(root) = notebook_clone.widget().root() {
+                                if let Some(window) = root.downcast_ref::<gtk4::Window>() {
+                                    crate::alert::show_error(
+                                        window,
+                                        "Connection Failed",
+                                        &format!(
+                                            "{e}\n\n\
+                                            The host may be offline or the port may be blocked."
+                                        ),
+                                    );
+                                }
+                            }
                         }
                     }
-                    Self::start_connection_with_split(
-                        &state,
-                        &notebook,
-                        &split_view,
-                        &sidebar,
-                        connection_id,
-                    );
-                    return;
-                }
-            }
+                },
+            );
+        } else {
+            // Port check disabled, proceed directly
+            Self::handle_vnc_credentials_internal(
+                state,
+                notebook,
+                split_view,
+                sidebar,
+                connection_id,
+                resolved_credentials,
+                cached_credentials,
+            );
+        }
+    }
 
-            // Use cached credentials if available
-            if cached_credentials.is_some() {
+    /// Internal VNC credential handling (after port check)
+    #[allow(clippy::too_many_arguments)]
+    fn handle_vnc_credentials_internal(
+        state: SharedAppState,
+        notebook: SharedNotebook,
+        split_view: SharedSplitView,
+        sidebar: SharedSidebar,
+        connection_id: Uuid,
+        resolved_credentials: Option<rustconn_core::Credentials>,
+        cached_credentials: Option<(String, String, String)>,
+    ) {
+        // Use resolved credentials if available (VNC only needs password)
+        if let Some(ref creds) = resolved_credentials {
+            if let Some(password) = creds.expose_password() {
+                if let Ok(mut state_mut) = state.try_borrow_mut() {
+                    state_mut.cache_credentials(connection_id, "", password, "");
+                }
                 Self::start_connection_with_split(
                     &state,
                     &notebook,
@@ -1850,68 +2085,36 @@ impl MainWindow {
                 );
                 return;
             }
-
-            // Check if we can skip password dialog (verified credentials from KeePass)
-            let can_skip = {
-                let state_ref = state.borrow();
-                state_ref.can_skip_password_dialog(connection_id)
-            };
-
-            if can_skip {
-                // Try to resolve credentials one more time (they should be available)
-                let state_ref = state.borrow();
-                if let Ok(Some(creds)) = state_ref.resolve_credentials_for_connection(connection_id)
-                {
-                    if let Some(password) = creds.expose_password() {
-                        // Cache the password for use in start_connection
-                        drop(state_ref);
-                        if let Ok(mut state_mut) = state.try_borrow_mut() {
-                            state_mut.cache_credentials(connection_id, "", password, "");
-                        }
-                        Self::start_connection_with_split(
-                            &state,
-                            &notebook,
-                            &split_view,
-                            &sidebar,
-                            connection_id,
-                        );
-                        return;
-                    }
-                }
-            }
-
-            // Need to prompt for VNC password
-            if let Some(window) = notebook
-                .widget()
-                .ancestor(adw::ApplicationWindow::static_type())
-            {
-                if let Some(app_window) = window.downcast_ref::<adw::ApplicationWindow>() {
-                    Self::start_vnc_with_password_dialog(
-                        state,
-                        notebook,
-                        split_view,
-                        sidebar,
-                        connection_id,
-                        app_window,
-                    );
-                    return;
-                }
-            }
         }
 
-        // For SSH connections
-        // SSH typically uses key-based auth, but we can pass credentials if available
-        if let Some(ref creds) = resolved_credentials {
-            // Store resolved credentials in cache for potential use
-            if let (Some(username), Some(password)) = (&creds.username, creds.expose_password()) {
-                if let Ok(mut state_mut) = state.try_borrow_mut() {
-                    state_mut.cache_credentials(connection_id, username, password, "");
-                }
-            }
+        // Use cached credentials if available
+        if cached_credentials.is_some() {
+            Self::start_connection_with_split(
+                &state,
+                &notebook,
+                &split_view,
+                &sidebar,
+                connection_id,
+            );
+            return;
         }
 
-        // Start SSH connection
-        Self::start_connection_with_split(&state, &notebook, &split_view, &sidebar, connection_id);
+        // Need to prompt for VNC password
+        if let Some(window) = notebook
+            .widget()
+            .ancestor(adw::ApplicationWindow::static_type())
+        {
+            if let Some(app_window) = window.downcast_ref::<adw::ApplicationWindow>() {
+                Self::start_vnc_with_password_dialog(
+                    state,
+                    notebook,
+                    split_view,
+                    sidebar,
+                    connection_id,
+                    app_window,
+                );
+            }
+        }
     }
 
     /// Starts an RDP connection with password dialog
@@ -2128,6 +2331,9 @@ impl MainWindow {
     }
 
     /// Sets up session logging for a terminal session
+    ///
+    /// Directory creation and file opening are performed asynchronously
+    /// to avoid blocking the GTK main thread on slow storage.
     pub fn setup_session_logging(
         state: &SharedAppState,
         notebook: &SharedNotebook,
@@ -2157,16 +2363,6 @@ impl MainWindow {
                 return;
             };
 
-        // Ensure log directory exists
-        if let Err(e) = std::fs::create_dir_all(&log_dir) {
-            eprintln!(
-                "Failed to create log directory '{}': {}",
-                log_dir.display(),
-                e
-            );
-            return;
-        }
-
         // Create log file path with timestamp
         let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S");
         let sanitized_name: String = connection_name
@@ -2183,49 +2379,82 @@ impl MainWindow {
         let log_filename = format!("{}_{}.log", sanitized_name, timestamp);
         let log_path = log_dir.join(&log_filename);
 
-        // Create the log file and write header
-        match std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&log_path)
-        {
-            Ok(mut file) => {
-                use std::io::Write;
-                let header = format!(
-                    "=== Session Log ===\nConnection: {}\nConnection ID: {}\nSession ID: {}\nStarted: {}\n\n",
-                    connection_name,
-                    connection_id,
-                    session_id,
-                    chrono::Local::now().format("%Y-%m-%d %H:%M:%S")
-                );
-                if let Err(e) = file.write_all(header.as_bytes()) {
-                    eprintln!("Failed to write log header: {}", e);
-                    return;
+        // Clone data for the background thread (must be owned/static)
+        let connection_name_for_header = connection_name.to_string();
+        let connection_name_for_callback = connection_name.to_string();
+        let log_dir_clone = log_dir.clone();
+        let log_path_clone = log_path.clone();
+
+        // Clone notebook for the callback
+        let notebook_clone = notebook.clone();
+
+        // Perform directory creation and file opening in background thread
+        crate::utils::spawn_blocking_with_callback(
+            move || {
+                // Ensure log directory exists
+                if let Err(e) = std::fs::create_dir_all(&log_dir_clone) {
+                    return Err(format!(
+                        "Failed to create log directory '{}': {}",
+                        log_dir_clone.display(),
+                        e
+                    ));
                 }
 
-                eprintln!(
-                    "Session logging enabled for '{}': {}",
-                    connection_name,
-                    log_path.display()
-                );
+                // Create the log file and write header
+                match std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(&log_path_clone)
+                {
+                    Ok(mut file) => {
+                        use std::io::Write;
+                        let header = format!(
+                            "=== Session Log ===\nConnection: {}\nConnection ID: {}\nSession ID: {}\nStarted: {}\n\n",
+                            connection_name_for_header,
+                            connection_id,
+                            session_id,
+                            chrono::Local::now().format("%Y-%m-%d %H:%M:%S")
+                        );
+                        if let Err(e) = file.write_all(header.as_bytes()) {
+                            return Err(format!("Failed to write log header: {}", e));
+                        }
+                        Ok(log_path_clone)
+                    }
+                    Err(e) => Err(format!(
+                        "Failed to create log file '{}': {}",
+                        log_path_clone.display(),
+                        e
+                    )),
+                }
+            },
+            move |result: Result<std::path::PathBuf, String>| {
+                match result {
+                    Ok(log_path) => {
+                        eprintln!(
+                            "Session logging enabled for '{}': {}",
+                            connection_name_for_callback,
+                            log_path.display()
+                        );
 
-                // Store log file path in session info
-                notebook.set_log_file(session_id, log_path.clone());
+                        // Store log file path in session info
+                        notebook_clone.set_log_file(session_id, log_path.clone());
 
-                // Set up logging handlers based on settings
-                Self::setup_logging_handlers(
-                    notebook,
-                    session_id,
-                    &log_path,
-                    log_activity,
-                    log_input,
-                    log_output,
-                );
-            }
-            Err(e) => {
-                eprintln!("Failed to create log file '{}': {}", log_path.display(), e);
-            }
-        }
+                        // Set up logging handlers based on settings
+                        Self::setup_logging_handlers(
+                            &notebook_clone,
+                            session_id,
+                            &log_path,
+                            log_activity,
+                            log_input,
+                            log_output,
+                        );
+                    }
+                    Err(e) => {
+                        eprintln!("{}", e);
+                    }
+                }
+            },
+        );
     }
 
     /// Sets up the child exited handler for session cleanup

@@ -1,16 +1,20 @@
 //! `RustConn` CLI - Command-line interface for `RustConn` connection manager
 //!
 //! Provides commands for listing, adding, exporting, importing, testing connections,
-//! managing snippets, groups, and Wake-on-LAN functionality.
+//! managing snippets, groups, templates, clusters, variables, and Wake-on-LAN functionality.
 
 use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand, ValueEnum};
+use rustconn_core::cluster::Cluster;
 use rustconn_core::config::ConfigManager;
-use rustconn_core::models::{Connection, ConnectionGroup, ProtocolType, Snippet};
+use rustconn_core::models::{
+    Connection, ConnectionGroup, ConnectionTemplate, ProtocolType, Snippet,
+};
 use rustconn_core::snippet::SnippetManager;
+use rustconn_core::variables::Variable;
 use rustconn_core::wol::{MacAddress, WolConfig};
 
 /// `RustConn` command-line interface for managing remote connections
@@ -178,6 +182,33 @@ pub enum Commands {
     /// Manage connection groups
     #[command(subcommand, about = "Manage connection groups")]
     Group(GroupCommands),
+
+    /// Manage connection templates
+    #[command(subcommand, about = "Manage connection templates")]
+    Template(TemplateCommands),
+
+    /// Manage connection clusters
+    #[command(subcommand, about = "Manage connection clusters")]
+    Cluster(ClusterCommands),
+
+    /// Manage global variables
+    #[command(subcommand, about = "Manage global variables")]
+    Var(VariableCommands),
+
+    /// Duplicate a connection
+    #[command(about = "Duplicate an existing connection")]
+    Duplicate {
+        /// Connection name or UUID to duplicate
+        name: String,
+
+        /// New name for the duplicated connection
+        #[arg(short, long)]
+        new_name: Option<String>,
+    },
+
+    /// Show connection statistics
+    #[command(about = "Show connection statistics")]
+    Stats,
 }
 
 /// Output format for the list command
@@ -364,6 +395,197 @@ pub enum GroupCommands {
     },
 }
 
+/// Template subcommands
+#[derive(Subcommand)]
+pub enum TemplateCommands {
+    /// List all templates
+    #[command(about = "List all connection templates")]
+    List {
+        /// Output format
+        #[arg(short, long, default_value = "table", value_enum)]
+        format: OutputFormat,
+
+        /// Filter by protocol (ssh, rdp, vnc, spice)
+        #[arg(short, long)]
+        protocol: Option<String>,
+    },
+
+    /// Show template details
+    #[command(about = "Show template details")]
+    Show {
+        /// Template name or ID
+        name: String,
+    },
+
+    /// Create a new template
+    #[command(about = "Create a new connection template")]
+    Create {
+        /// Template name
+        #[arg(short, long)]
+        name: String,
+
+        /// Protocol type (ssh, rdp, vnc, spice)
+        #[arg(short = 'P', long, default_value = "ssh")]
+        protocol: String,
+
+        /// Default host
+        #[arg(short = 'H', long)]
+        host: Option<String>,
+
+        /// Default port
+        #[arg(short, long)]
+        port: Option<u16>,
+
+        /// Default username
+        #[arg(short, long)]
+        user: Option<String>,
+
+        /// Description
+        #[arg(short, long)]
+        description: Option<String>,
+    },
+
+    /// Delete a template
+    #[command(about = "Delete a connection template")]
+    Delete {
+        /// Template name or ID
+        name: String,
+    },
+
+    /// Create a connection from a template
+    #[command(about = "Create a new connection from a template")]
+    Apply {
+        /// Template name or ID
+        template: String,
+
+        /// Name for the new connection
+        #[arg(short, long)]
+        name: Option<String>,
+
+        /// Override host
+        #[arg(short = 'H', long)]
+        host: Option<String>,
+
+        /// Override port
+        #[arg(short, long)]
+        port: Option<u16>,
+
+        /// Override username
+        #[arg(short, long)]
+        user: Option<String>,
+    },
+}
+
+/// Cluster subcommands
+#[derive(Subcommand)]
+pub enum ClusterCommands {
+    /// List all clusters
+    #[command(about = "List all connection clusters")]
+    List {
+        /// Output format
+        #[arg(short, long, default_value = "table", value_enum)]
+        format: OutputFormat,
+    },
+
+    /// Show cluster details
+    #[command(about = "Show cluster details and connections")]
+    Show {
+        /// Cluster name or ID
+        name: String,
+    },
+
+    /// Create a new cluster
+    #[command(about = "Create a new connection cluster")]
+    Create {
+        /// Cluster name
+        #[arg(short, long)]
+        name: String,
+
+        /// Connection names or IDs to include (comma-separated)
+        #[arg(short, long)]
+        connections: Option<String>,
+
+        /// Enable broadcast mode by default
+        #[arg(short, long)]
+        broadcast: bool,
+    },
+
+    /// Delete a cluster
+    #[command(about = "Delete a connection cluster")]
+    Delete {
+        /// Cluster name or ID
+        name: String,
+    },
+
+    /// Add a connection to a cluster
+    #[command(about = "Add a connection to a cluster")]
+    AddConnection {
+        /// Cluster name or ID
+        #[arg(short = 'C', long)]
+        cluster: String,
+
+        /// Connection name or ID
+        #[arg(short, long)]
+        connection: String,
+    },
+
+    /// Remove a connection from a cluster
+    #[command(about = "Remove a connection from a cluster")]
+    RemoveConnection {
+        /// Cluster name or ID
+        #[arg(short = 'C', long)]
+        cluster: String,
+
+        /// Connection name or ID
+        #[arg(short, long)]
+        connection: String,
+    },
+}
+
+/// Variable subcommands
+#[derive(Subcommand)]
+pub enum VariableCommands {
+    /// List all global variables
+    #[command(about = "List all global variables")]
+    List {
+        /// Output format
+        #[arg(short, long, default_value = "table", value_enum)]
+        format: OutputFormat,
+    },
+
+    /// Show variable details
+    #[command(about = "Show variable value")]
+    Show {
+        /// Variable name
+        name: String,
+    },
+
+    /// Set a global variable
+    #[command(about = "Set a global variable value")]
+    Set {
+        /// Variable name
+        name: String,
+
+        /// Variable value
+        value: String,
+
+        /// Mark as secret (value will be masked in output)
+        #[arg(short, long)]
+        secret: bool,
+
+        /// Description
+        #[arg(short, long)]
+        description: Option<String>,
+    },
+
+    /// Delete a global variable
+    #[command(about = "Delete a global variable")]
+    Delete {
+        /// Variable name
+        name: String,
+    },
+}
+
 /// Parse a key=value pair for variable substitution
 fn parse_key_val(s: &str) -> Result<(String, String), String> {
     let pos = s
@@ -428,6 +650,11 @@ fn main() {
         } => cmd_wol(&target, &broadcast, port),
         Commands::Snippet(subcmd) => cmd_snippet(subcmd),
         Commands::Group(subcmd) => cmd_group(subcmd),
+        Commands::Template(subcmd) => cmd_template(subcmd),
+        Commands::Cluster(subcmd) => cmd_cluster(subcmd),
+        Commands::Var(subcmd) => cmd_var(subcmd),
+        Commands::Duplicate { name, new_name } => cmd_duplicate(&name, new_name.as_deref()),
+        Commands::Stats => cmd_stats(),
     };
 
     if let Err(e) = result {
@@ -1762,6 +1989,18 @@ pub enum CliError {
     #[error("Group error: {0}")]
     Group(String),
 
+    /// Template error
+    #[error("Template error: {0}")]
+    Template(String),
+
+    /// Cluster error
+    #[error("Cluster error: {0}")]
+    Cluster(String),
+
+    /// Variable error
+    #[error("Variable error: {0}")]
+    Variable(String),
+
     /// IO error
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
@@ -1786,7 +2025,10 @@ impl CliError {
             | Self::Io(_)
             | Self::Wol(_)
             | Self::Snippet(_)
-            | Self::Group(_) => exit_codes::GENERAL_ERROR,
+            | Self::Group(_)
+            | Self::Template(_)
+            | Self::Cluster(_)
+            | Self::Variable(_) => exit_codes::GENERAL_ERROR,
         }
     }
 
@@ -2463,4 +2705,944 @@ fn find_group<'a>(
             "Ambiguous group name: {name_or_id}"
         ))),
     }
+}
+
+// ============================================================================
+// Template commands
+// ============================================================================
+
+/// Template command handler
+fn cmd_template(subcmd: TemplateCommands) -> Result<(), CliError> {
+    match subcmd {
+        TemplateCommands::List { format, protocol } => {
+            cmd_template_list(format, protocol.as_deref())
+        }
+        TemplateCommands::Show { name } => cmd_template_show(&name),
+        TemplateCommands::Create {
+            name,
+            protocol,
+            host,
+            port,
+            user,
+            description,
+        } => cmd_template_create(
+            &name,
+            &protocol,
+            host.as_deref(),
+            port,
+            user.as_deref(),
+            description.as_deref(),
+        ),
+        TemplateCommands::Delete { name } => cmd_template_delete(&name),
+        TemplateCommands::Apply {
+            template,
+            name,
+            host,
+            port,
+            user,
+        } => cmd_template_apply(
+            &template,
+            name.as_deref(),
+            host.as_deref(),
+            port,
+            user.as_deref(),
+        ),
+    }
+}
+
+/// List templates command
+fn cmd_template_list(format: OutputFormat, protocol: Option<&str>) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let templates = config_manager
+        .load_templates()
+        .map_err(|e| CliError::Template(format!("Failed to load templates: {e}")))?;
+
+    // Filter by protocol if specified
+    let filtered: Vec<&ConnectionTemplate> = if let Some(proto) = protocol {
+        let proto_lower = proto.to_lowercase();
+        templates
+            .iter()
+            .filter(|t| t.protocol.as_str() == proto_lower)
+            .collect()
+    } else {
+        templates.iter().collect()
+    };
+
+    match format {
+        OutputFormat::Table => print_template_table(&filtered),
+        OutputFormat::Json => print_template_json(&filtered)?,
+        OutputFormat::Csv => print_template_csv(&filtered),
+    }
+
+    Ok(())
+}
+
+/// Print templates as table
+fn print_template_table(templates: &[&ConnectionTemplate]) {
+    if templates.is_empty() {
+        println!("No templates found.");
+        return;
+    }
+
+    let name_width = templates
+        .iter()
+        .map(|t| t.name.len())
+        .max()
+        .unwrap_or(4)
+        .max(4);
+
+    println!("{:<name_width$}  PROTOCOL  PORT  HOST", "NAME");
+    println!("{:-<name_width$}  {:-<8}  {:-<5}  {:-<20}", "", "", "", "");
+
+    for template in templates {
+        let host = if template.host.is_empty() {
+            "-"
+        } else {
+            &template.host
+        };
+        let host_display = if host.len() > 20 {
+            format!("{}...", &host[..17])
+        } else {
+            host.to_string()
+        };
+        println!(
+            "{:<name_width$}  {:<8}  {:<5}  {host_display}",
+            template.name, template.protocol, template.port
+        );
+    }
+}
+
+/// Print templates as JSON
+fn print_template_json(templates: &[&ConnectionTemplate]) -> Result<(), CliError> {
+    let json = serde_json::to_string_pretty(templates)
+        .map_err(|e| CliError::Template(format!("Failed to serialize: {e}")))?;
+    println!("{json}");
+    Ok(())
+}
+
+/// Print templates as CSV
+fn print_template_csv(templates: &[&ConnectionTemplate]) {
+    println!("name,protocol,port,host,username");
+    for template in templates {
+        let name = escape_csv_field(&template.name);
+        let host = &template.host;
+        let user = template.username.as_deref().unwrap_or("");
+        println!(
+            "{name},{},{},{host},{user}",
+            template.protocol, template.port
+        );
+    }
+}
+
+/// Show template details
+fn cmd_template_show(name: &str) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let templates = config_manager
+        .load_templates()
+        .map_err(|e| CliError::Template(format!("Failed to load templates: {e}")))?;
+
+    let template = find_template(&templates, name)?;
+
+    println!("Template Details:");
+    println!("  ID:       {}", template.id);
+    println!("  Name:     {}", template.name);
+    println!("  Protocol: {}", template.protocol);
+    println!("  Port:     {}", template.port);
+
+    if !template.host.is_empty() {
+        println!("  Host:     {}", template.host);
+    }
+    if let Some(ref user) = template.username {
+        println!("  Username: {user}");
+    }
+    if let Some(ref desc) = template.description {
+        println!("  Description: {desc}");
+    }
+    if !template.tags.is_empty() {
+        println!("  Tags:     {}", template.tags.join(", "));
+    }
+
+    Ok(())
+}
+
+/// Create a new template
+fn cmd_template_create(
+    name: &str,
+    protocol: &str,
+    host: Option<&str>,
+    port: Option<u16>,
+    user: Option<&str>,
+    description: Option<&str>,
+) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let mut templates = config_manager
+        .load_templates()
+        .map_err(|e| CliError::Template(format!("Failed to load templates: {e}")))?;
+
+    // Create template based on protocol
+    let mut template = match protocol.to_lowercase().as_str() {
+        "ssh" => ConnectionTemplate::new_ssh(name.to_string()),
+        "rdp" => ConnectionTemplate::new_rdp(name.to_string()),
+        "vnc" => ConnectionTemplate::new_vnc(name.to_string()),
+        "spice" => ConnectionTemplate::new_spice(name.to_string()),
+        _ => {
+            return Err(CliError::Template(format!(
+                "Unknown protocol '{protocol}'. Supported: ssh, rdp, vnc, spice"
+            )))
+        }
+    };
+
+    // Apply optional fields
+    if let Some(h) = host {
+        template = template.with_host(h);
+    }
+    if let Some(p) = port {
+        template = template.with_port(p);
+    }
+    if let Some(u) = user {
+        template = template.with_username(u);
+    }
+    if let Some(d) = description {
+        template = template.with_description(d);
+    }
+
+    let id = template.id;
+    templates.push(template);
+
+    config_manager
+        .save_templates(&templates)
+        .map_err(|e| CliError::Template(format!("Failed to save templates: {e}")))?;
+
+    println!("Created template '{name}' with ID {id}");
+
+    Ok(())
+}
+
+/// Delete a template
+fn cmd_template_delete(name: &str) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let mut templates = config_manager
+        .load_templates()
+        .map_err(|e| CliError::Template(format!("Failed to load templates: {e}")))?;
+
+    let template = find_template(&templates, name)?;
+    let id = template.id;
+    let template_name = template.name.clone();
+
+    templates.retain(|t| t.id != id);
+
+    config_manager
+        .save_templates(&templates)
+        .map_err(|e| CliError::Template(format!("Failed to save templates: {e}")))?;
+
+    println!("Deleted template '{template_name}' (ID: {id})");
+
+    Ok(())
+}
+
+/// Apply a template to create a new connection
+fn cmd_template_apply(
+    template_name: &str,
+    conn_name: Option<&str>,
+    host: Option<&str>,
+    port: Option<u16>,
+    user: Option<&str>,
+) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let templates = config_manager
+        .load_templates()
+        .map_err(|e| CliError::Template(format!("Failed to load templates: {e}")))?;
+
+    let template = find_template(&templates, template_name)?;
+
+    // Apply template to create connection
+    let mut connection = template.apply(conn_name.map(String::from));
+
+    // Override with provided values
+    if let Some(h) = host {
+        connection.host = h.to_string();
+    }
+    if let Some(p) = port {
+        connection.port = p;
+    }
+    if let Some(u) = user {
+        connection.username = Some(u.to_string());
+    }
+
+    // Load and save connections
+    let mut connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
+    let id = connection.id;
+    let name = connection.name.clone();
+    connections.push(connection);
+
+    config_manager
+        .save_connections(&connections)
+        .map_err(|e| CliError::Config(format!("Failed to save connections: {e}")))?;
+
+    println!("Created connection '{name}' from template '{template_name}' (ID: {id})");
+
+    Ok(())
+}
+
+/// Find a template by name or ID
+fn find_template<'a>(
+    templates: &'a [ConnectionTemplate],
+    name_or_id: &str,
+) -> Result<&'a ConnectionTemplate, CliError> {
+    // Try UUID first
+    if let Ok(uuid) = uuid::Uuid::parse_str(name_or_id) {
+        if let Some(template) = templates.iter().find(|t| t.id == uuid) {
+            return Ok(template);
+        }
+    }
+
+    // Search by name (case-insensitive)
+    let matches: Vec<_> = templates
+        .iter()
+        .filter(|t| t.name.eq_ignore_ascii_case(name_or_id))
+        .collect();
+
+    match matches.len() {
+        0 => Err(CliError::Template(format!(
+            "Template not found: {name_or_id}"
+        ))),
+        1 => Ok(matches[0]),
+        _ => Err(CliError::Template(format!(
+            "Ambiguous template name: {name_or_id}"
+        ))),
+    }
+}
+
+// ============================================================================
+// Cluster commands
+// ============================================================================
+
+/// Cluster command handler
+fn cmd_cluster(subcmd: ClusterCommands) -> Result<(), CliError> {
+    match subcmd {
+        ClusterCommands::List { format } => cmd_cluster_list(format),
+        ClusterCommands::Show { name } => cmd_cluster_show(&name),
+        ClusterCommands::Create {
+            name,
+            connections,
+            broadcast,
+        } => cmd_cluster_create(&name, connections.as_deref(), broadcast),
+        ClusterCommands::Delete { name } => cmd_cluster_delete(&name),
+        ClusterCommands::AddConnection {
+            cluster,
+            connection,
+        } => cmd_cluster_add_connection(&cluster, &connection),
+        ClusterCommands::RemoveConnection {
+            cluster,
+            connection,
+        } => cmd_cluster_remove_connection(&cluster, &connection),
+    }
+}
+
+/// List clusters command
+fn cmd_cluster_list(format: OutputFormat) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let clusters = config_manager
+        .load_clusters()
+        .map_err(|e| CliError::Cluster(format!("Failed to load clusters: {e}")))?;
+
+    match format {
+        OutputFormat::Table => print_cluster_table(&clusters),
+        OutputFormat::Json => print_cluster_json(&clusters)?,
+        OutputFormat::Csv => print_cluster_csv(&clusters),
+    }
+
+    Ok(())
+}
+
+/// Print clusters as table
+fn print_cluster_table(clusters: &[Cluster]) {
+    if clusters.is_empty() {
+        println!("No clusters found.");
+        return;
+    }
+
+    let name_width = clusters
+        .iter()
+        .map(|c| c.name.len())
+        .max()
+        .unwrap_or(4)
+        .max(4);
+
+    println!("{:<name_width$}  CONNECTIONS  BROADCAST", "NAME");
+    println!("{:-<name_width$}  {:-<11}  {:-<9}", "", "", "");
+
+    for cluster in clusters {
+        let broadcast = if cluster.broadcast_enabled {
+            "Yes"
+        } else {
+            "No"
+        };
+        println!(
+            "{:<name_width$}  {:<11}  {broadcast}",
+            cluster.name,
+            cluster.connection_count()
+        );
+    }
+}
+
+/// Print clusters as JSON
+fn print_cluster_json(clusters: &[Cluster]) -> Result<(), CliError> {
+    let json = serde_json::to_string_pretty(clusters)
+        .map_err(|e| CliError::Cluster(format!("Failed to serialize: {e}")))?;
+    println!("{json}");
+    Ok(())
+}
+
+/// Print clusters as CSV
+fn print_cluster_csv(clusters: &[Cluster]) {
+    println!("name,connection_count,broadcast_enabled");
+    for cluster in clusters {
+        let name = escape_csv_field(&cluster.name);
+        println!(
+            "{name},{},{}",
+            cluster.connection_count(),
+            cluster.broadcast_enabled
+        );
+    }
+}
+
+/// Show cluster details
+fn cmd_cluster_show(name: &str) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let clusters = config_manager
+        .load_clusters()
+        .map_err(|e| CliError::Cluster(format!("Failed to load clusters: {e}")))?;
+
+    let connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
+    let cluster = find_cluster(&clusters, name)?;
+
+    println!("Cluster Details:");
+    println!("  ID:        {}", cluster.id);
+    println!("  Name:      {}", cluster.name);
+    println!(
+        "  Broadcast: {}",
+        if cluster.broadcast_enabled {
+            "Enabled"
+        } else {
+            "Disabled"
+        }
+    );
+
+    println!("\nConnections ({}):", cluster.connection_count());
+    for conn_id in &cluster.connection_ids {
+        if let Some(conn) = connections.iter().find(|c| c.id == *conn_id) {
+            println!(
+                "  - {} ({} {}:{})",
+                conn.name, conn.protocol, conn.host, conn.port
+            );
+        } else {
+            println!("  - {conn_id} (not found)");
+        }
+    }
+
+    Ok(())
+}
+
+/// Create a new cluster
+fn cmd_cluster_create(
+    name: &str,
+    connections: Option<&str>,
+    broadcast: bool,
+) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let mut clusters = config_manager
+        .load_clusters()
+        .map_err(|e| CliError::Cluster(format!("Failed to load clusters: {e}")))?;
+
+    let all_connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
+    let mut cluster = Cluster::new(name.to_string());
+    cluster.broadcast_enabled = broadcast;
+
+    // Add connections if specified
+    if let Some(conn_list) = connections {
+        for conn_name in conn_list.split(',').map(str::trim) {
+            let conn = find_connection(&all_connections, conn_name)?;
+            cluster.add_connection(conn.id);
+        }
+    }
+
+    let id = cluster.id;
+    clusters.push(cluster);
+
+    config_manager
+        .save_clusters(&clusters)
+        .map_err(|e| CliError::Cluster(format!("Failed to save clusters: {e}")))?;
+
+    println!("Created cluster '{name}' with ID {id}");
+
+    Ok(())
+}
+
+/// Delete a cluster
+fn cmd_cluster_delete(name: &str) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let mut clusters = config_manager
+        .load_clusters()
+        .map_err(|e| CliError::Cluster(format!("Failed to load clusters: {e}")))?;
+
+    let cluster = find_cluster(&clusters, name)?;
+    let id = cluster.id;
+    let cluster_name = cluster.name.clone();
+
+    clusters.retain(|c| c.id != id);
+
+    config_manager
+        .save_clusters(&clusters)
+        .map_err(|e| CliError::Cluster(format!("Failed to save clusters: {e}")))?;
+
+    println!("Deleted cluster '{cluster_name}' (ID: {id})");
+
+    Ok(())
+}
+
+/// Add a connection to a cluster
+fn cmd_cluster_add_connection(cluster_name: &str, connection_name: &str) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let mut clusters = config_manager
+        .load_clusters()
+        .map_err(|e| CliError::Cluster(format!("Failed to load clusters: {e}")))?;
+
+    let connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
+    let connection = find_connection(&connections, connection_name)?;
+    let conn_id = connection.id;
+    let conn_name = connection.name.clone();
+
+    // Find and update cluster
+    let cluster = clusters
+        .iter_mut()
+        .find(|c| c.name.eq_ignore_ascii_case(cluster_name) || c.id.to_string() == cluster_name)
+        .ok_or_else(|| CliError::Cluster(format!("Cluster not found: {cluster_name}")))?;
+
+    if cluster.contains_connection(conn_id) {
+        return Err(CliError::Cluster(format!(
+            "Connection '{conn_name}' is already in cluster '{}'",
+            cluster.name
+        )));
+    }
+
+    let clust_name = cluster.name.clone();
+    cluster.add_connection(conn_id);
+
+    config_manager
+        .save_clusters(&clusters)
+        .map_err(|e| CliError::Cluster(format!("Failed to save clusters: {e}")))?;
+
+    println!("Added connection '{conn_name}' to cluster '{clust_name}'");
+
+    Ok(())
+}
+
+/// Remove a connection from a cluster
+fn cmd_cluster_remove_connection(
+    cluster_name: &str,
+    connection_name: &str,
+) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let mut clusters = config_manager
+        .load_clusters()
+        .map_err(|e| CliError::Cluster(format!("Failed to load clusters: {e}")))?;
+
+    let connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
+    let connection = find_connection(&connections, connection_name)?;
+    let conn_id = connection.id;
+    let conn_name = connection.name.clone();
+
+    // Find and update cluster
+    let cluster = clusters
+        .iter_mut()
+        .find(|c| c.name.eq_ignore_ascii_case(cluster_name) || c.id.to_string() == cluster_name)
+        .ok_or_else(|| CliError::Cluster(format!("Cluster not found: {cluster_name}")))?;
+
+    if !cluster.contains_connection(conn_id) {
+        return Err(CliError::Cluster(format!(
+            "Connection '{conn_name}' is not in cluster '{}'",
+            cluster.name
+        )));
+    }
+
+    let clust_name = cluster.name.clone();
+    cluster.remove_connection(conn_id);
+
+    config_manager
+        .save_clusters(&clusters)
+        .map_err(|e| CliError::Cluster(format!("Failed to save clusters: {e}")))?;
+
+    println!("Removed connection '{conn_name}' from cluster '{clust_name}'");
+
+    Ok(())
+}
+
+/// Find a cluster by name or ID
+fn find_cluster<'a>(clusters: &'a [Cluster], name_or_id: &str) -> Result<&'a Cluster, CliError> {
+    // Try UUID first
+    if let Ok(uuid) = uuid::Uuid::parse_str(name_or_id) {
+        if let Some(cluster) = clusters.iter().find(|c| c.id == uuid) {
+            return Ok(cluster);
+        }
+    }
+
+    // Search by name (case-insensitive)
+    let matches: Vec<_> = clusters
+        .iter()
+        .filter(|c| c.name.eq_ignore_ascii_case(name_or_id))
+        .collect();
+
+    match matches.len() {
+        0 => Err(CliError::Cluster(format!(
+            "Cluster not found: {name_or_id}"
+        ))),
+        1 => Ok(matches[0]),
+        _ => Err(CliError::Cluster(format!(
+            "Ambiguous cluster name: {name_or_id}"
+        ))),
+    }
+}
+
+// ============================================================================
+// Variable commands
+// ============================================================================
+
+/// Variable command handler
+fn cmd_var(subcmd: VariableCommands) -> Result<(), CliError> {
+    match subcmd {
+        VariableCommands::List { format } => cmd_var_list(format),
+        VariableCommands::Show { name } => cmd_var_show(&name),
+        VariableCommands::Set {
+            name,
+            value,
+            secret,
+            description,
+        } => cmd_var_set(&name, &value, secret, description.as_deref()),
+        VariableCommands::Delete { name } => cmd_var_delete(&name),
+    }
+}
+
+/// List variables command
+fn cmd_var_list(format: OutputFormat) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let variables = config_manager
+        .load_variables()
+        .map_err(|e| CliError::Variable(format!("Failed to load variables: {e}")))?;
+
+    match format {
+        OutputFormat::Table => print_var_table(&variables),
+        OutputFormat::Json => print_var_json(&variables)?,
+        OutputFormat::Csv => print_var_csv(&variables),
+    }
+
+    Ok(())
+}
+
+/// Print variables as table
+fn print_var_table(variables: &[Variable]) {
+    if variables.is_empty() {
+        println!("No variables found.");
+        return;
+    }
+
+    let name_width = variables
+        .iter()
+        .map(|v| v.name.len())
+        .max()
+        .unwrap_or(4)
+        .max(4);
+
+    println!("{:<name_width$}  SECRET  VALUE", "NAME");
+    println!("{:-<name_width$}  {:-<6}  {:-<30}", "", "", "");
+
+    for var in variables {
+        let secret = if var.is_secret { "Yes" } else { "No" };
+        let value = var.display_value();
+        let value_display = if value.len() > 30 {
+            format!("{}...", &value[..27])
+        } else {
+            value.to_string()
+        };
+        println!("{:<name_width$}  {:<6}  {value_display}", var.name, secret);
+    }
+}
+
+/// Print variables as JSON
+fn print_var_json(variables: &[Variable]) -> Result<(), CliError> {
+    // Create a safe output that masks secret values
+    let safe_output: Vec<_> = variables
+        .iter()
+        .map(|v| {
+            serde_json::json!({
+                "name": v.name,
+                "value": v.display_value(),
+                "is_secret": v.is_secret,
+                "description": v.description
+            })
+        })
+        .collect();
+
+    let json = serde_json::to_string_pretty(&safe_output)
+        .map_err(|e| CliError::Variable(format!("Failed to serialize: {e}")))?;
+    println!("{json}");
+    Ok(())
+}
+
+/// Print variables as CSV
+fn print_var_csv(variables: &[Variable]) {
+    println!("name,value,is_secret,description");
+    for var in variables {
+        let name = escape_csv_field(&var.name);
+        let value = escape_csv_field(var.display_value());
+        let desc = var.description.as_deref().unwrap_or("");
+        println!(
+            "{name},{value},{},{}",
+            var.is_secret,
+            escape_csv_field(desc)
+        );
+    }
+}
+
+/// Show variable details
+fn cmd_var_show(name: &str) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let variables = config_manager
+        .load_variables()
+        .map_err(|e| CliError::Variable(format!("Failed to load variables: {e}")))?;
+
+    let var = variables
+        .iter()
+        .find(|v| v.name == name)
+        .ok_or_else(|| CliError::Variable(format!("Variable not found: {name}")))?;
+
+    println!("Variable Details:");
+    println!("  Name:   {}", var.name);
+    println!("  Value:  {}", var.display_value());
+    println!("  Secret: {}", if var.is_secret { "Yes" } else { "No" });
+
+    if let Some(ref desc) = var.description {
+        println!("  Description: {desc}");
+    }
+
+    Ok(())
+}
+
+/// Set a variable
+fn cmd_var_set(
+    name: &str,
+    value: &str,
+    secret: bool,
+    description: Option<&str>,
+) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let mut variables = config_manager
+        .load_variables()
+        .map_err(|e| CliError::Variable(format!("Failed to load variables: {e}")))?;
+
+    // Check if variable exists
+    let existing_idx = variables.iter().position(|v| v.name == name);
+
+    let var = if secret {
+        Variable::new_secret(name, value)
+    } else {
+        Variable::new(name, value)
+    };
+
+    let var = if let Some(desc) = description {
+        var.with_description(desc)
+    } else {
+        var
+    };
+
+    let action = if let Some(idx) = existing_idx {
+        variables[idx] = var;
+        "Updated"
+    } else {
+        variables.push(var);
+        "Created"
+    };
+
+    config_manager
+        .save_variables(&variables)
+        .map_err(|e| CliError::Variable(format!("Failed to save variables: {e}")))?;
+
+    println!("{action} variable '{name}'");
+
+    Ok(())
+}
+
+/// Delete a variable
+fn cmd_var_delete(name: &str) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let mut variables = config_manager
+        .load_variables()
+        .map_err(|e| CliError::Variable(format!("Failed to load variables: {e}")))?;
+
+    let initial_len = variables.len();
+    variables.retain(|v| v.name != name);
+
+    if variables.len() == initial_len {
+        return Err(CliError::Variable(format!("Variable not found: {name}")));
+    }
+
+    config_manager
+        .save_variables(&variables)
+        .map_err(|e| CliError::Variable(format!("Failed to save variables: {e}")))?;
+
+    println!("Deleted variable '{name}'");
+
+    Ok(())
+}
+
+// ============================================================================
+// Duplicate and Stats commands
+// ============================================================================
+
+/// Duplicate a connection
+fn cmd_duplicate(name: &str, new_name: Option<&str>) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let mut connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
+    let source = find_connection(&connections, name)?;
+
+    // Create a duplicate with new ID
+    let mut duplicate = source.clone();
+    duplicate.id = uuid::Uuid::new_v4();
+    duplicate.name = new_name
+        .map(String::from)
+        .unwrap_or_else(|| format!("{} (copy)", source.name));
+    duplicate.created_at = chrono::Utc::now();
+    duplicate.updated_at = chrono::Utc::now();
+    duplicate.last_connected = None;
+
+    let id = duplicate.id;
+    let dup_name = duplicate.name.clone();
+    connections.push(duplicate);
+
+    config_manager
+        .save_connections(&connections)
+        .map_err(|e| CliError::Config(format!("Failed to save connections: {e}")))?;
+
+    println!("Created duplicate connection '{dup_name}' (ID: {id})");
+
+    Ok(())
+}
+
+/// Show connection statistics
+fn cmd_stats() -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
+    let groups = config_manager
+        .load_groups()
+        .map_err(|e| CliError::Config(format!("Failed to load groups: {e}")))?;
+
+    let templates = config_manager
+        .load_templates()
+        .map_err(|e| CliError::Config(format!("Failed to load templates: {e}")))?;
+
+    let clusters = config_manager
+        .load_clusters()
+        .map_err(|e| CliError::Config(format!("Failed to load clusters: {e}")))?;
+
+    let snippets_count = config_manager.load_snippets().map(|s| s.len()).unwrap_or(0);
+
+    let variables = config_manager
+        .load_variables()
+        .map_err(|e| CliError::Config(format!("Failed to load variables: {e}")))?;
+
+    // Count by protocol
+    let mut by_protocol: HashMap<String, usize> = HashMap::new();
+    for conn in &connections {
+        *by_protocol
+            .entry(conn.protocol.as_str().to_string())
+            .or_insert(0) += 1;
+    }
+
+    // Count recently used (last 7 days)
+    let week_ago = chrono::Utc::now() - chrono::Duration::days(7);
+    let recent_count = connections
+        .iter()
+        .filter(|c| c.last_connected.is_some_and(|t| t > week_ago))
+        .count();
+
+    // Count connections with last_connected set (ever used)
+    let ever_used = connections
+        .iter()
+        .filter(|c| c.last_connected.is_some())
+        .count();
+
+    println!("RustConn Statistics");
+    println!("===================\n");
+
+    println!("Connections: {}", connections.len());
+    for (proto, count) in &by_protocol {
+        println!("  {proto}: {count}");
+    }
+
+    println!("\nGroups:     {}", groups.len());
+    println!("Templates:  {}", templates.len());
+    println!("Clusters:   {}", clusters.len());
+    println!("Snippets:   {snippets_count}");
+    println!("Variables:  {}", variables.len());
+
+    println!("\nUsage:");
+    println!("  Recently used (7 days): {recent_count}");
+    println!("  Ever connected: {ever_used}");
+
+    Ok(())
 }

@@ -146,6 +146,7 @@ fn handle_save_to_keepass(
     password: &str,
     protocol: &str,
 ) {
+    use crate::utils::spawn_blocking_with_callback;
     use secrecy::ExposeSecret;
 
     let state_ref = state.borrow();
@@ -218,56 +219,32 @@ fn handle_save_to_keepass(
     // Drop state borrow before spawning
     drop(state_ref);
 
-    // Run KeePass operation in background thread to avoid blocking UI
-    let (tx, rx) = std::sync::mpsc::channel();
-    std::thread::spawn(move || {
-        let result = rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
-            &kdbx_path,
-            db_password.as_deref(),
-            key_file.as_deref(),
-            &lookup_key_clone,
-            &username,
-            &password,
-            Some(&url),
-        );
-        let _ = tx.send(result);
-    });
-
-    // Poll for result using idle callback
-    glib::idle_add_local_once(move || {
-        fn check_result(
-            rx: std::sync::mpsc::Receiver<Result<(), String>>,
-            window: gtk4::Window,
-            lookup_key: String,
-        ) {
-            match rx.try_recv() {
-                Ok(Ok(())) => {
-                    alert::show_success(
-                        &window,
-                        "Password Saved",
-                        &format!("Password for '{lookup_key}' saved to KeePass."),
-                    );
-                }
-                Ok(Err(e)) => {
-                    alert::show_error(&window, "Failed to Save Password", &format!("Error: {e}"));
-                }
-                Err(std::sync::mpsc::TryRecvError::Empty) => {
-                    // Not ready yet, schedule another check
-                    glib::timeout_add_local_once(std::time::Duration::from_millis(50), move || {
-                        check_result(rx, window, lookup_key);
-                    });
-                }
-                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                    alert::show_error(
-                        &window,
-                        "Failed to Save Password",
-                        "Thread error: channel disconnected",
-                    );
-                }
+    // Run KeePass operation in background thread using utility function
+    spawn_blocking_with_callback(
+        move || {
+            rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
+                &kdbx_path,
+                db_password.as_deref(),
+                key_file.as_deref(),
+                &lookup_key_clone,
+                &username,
+                &password,
+                Some(&url),
+            )
+        },
+        move |result: Result<(), String>| match result {
+            Ok(()) => {
+                alert::show_success(
+                    &window,
+                    "Password Saved",
+                    &format!("Password for '{lookup_key}' saved to KeePass."),
+                );
             }
-        }
-        check_result(rx, window, lookup_key);
-    });
+            Err(e) => {
+                alert::show_error(&window, "Failed to Save Password", &format!("Error: {e}"));
+            }
+        },
+    );
 }
 
 /// Handles loading password from KeePass (async version)
@@ -279,6 +256,7 @@ fn handle_load_from_keepass(
     password_entry: gtk4::Entry,
     window: gtk4::Window,
 ) {
+    use crate::utils::spawn_blocking_with_callback;
     use secrecy::ExposeSecret;
 
     let state_ref = state.borrow();
@@ -324,63 +302,38 @@ fn handle_load_from_keepass(
     // Drop state borrow before spawning
     drop(state_ref);
 
-    // Run KeePass operation in background thread to avoid blocking UI
-    let (tx, rx) = std::sync::mpsc::channel();
-    std::thread::spawn(move || {
-        let result = rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
-            &kdbx_path,
-            db_password.as_deref(),
-            key_file.as_deref(),
-            &lookup_key,
-            None, // Protocol already included in lookup_key
-        );
-        let _ = tx.send(result);
-    });
-
-    // Poll for result using idle callback
-    glib::idle_add_local_once(move || {
-        fn check_result(
-            rx: std::sync::mpsc::Receiver<Result<Option<String>, String>>,
-            password_entry: gtk4::Entry,
-            window: gtk4::Window,
-        ) {
-            match rx.try_recv() {
-                Ok(Ok(Some(password))) => {
-                    password_entry.set_text(&password);
-                }
-                Ok(Ok(None)) => {
-                    crate::toast::show_toast_on_window(
-                        &window,
-                        "No password found in KeePass for this connection",
-                        crate::toast::ToastType::Info,
-                    );
-                }
-                Ok(Err(e)) => {
-                    tracing::warn!("Failed to load password from KeePass: {e}");
-                    crate::toast::show_toast_on_window(
-                        &window,
-                        "Failed to load password from KeePass",
-                        crate::toast::ToastType::Error,
-                    );
-                }
-                Err(std::sync::mpsc::TryRecvError::Empty) => {
-                    // Not ready yet, schedule another check
-                    glib::timeout_add_local_once(std::time::Duration::from_millis(50), move || {
-                        check_result(rx, password_entry, window);
-                    });
-                }
-                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                    tracing::warn!("Thread error loading from KeePass: channel disconnected");
-                    crate::toast::show_toast_on_window(
-                        &window,
-                        "Failed to load password from KeePass",
-                        crate::toast::ToastType::Error,
-                    );
-                }
+    // Run KeePass operation in background thread using utility function
+    spawn_blocking_with_callback(
+        move || {
+            rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
+                &kdbx_path,
+                db_password.as_deref(),
+                key_file.as_deref(),
+                &lookup_key,
+                None, // Protocol already included in lookup_key
+            )
+        },
+        move |result: Result<Option<String>, String>| match result {
+            Ok(Some(password)) => {
+                password_entry.set_text(&password);
             }
-        }
-        check_result(rx, password_entry, window);
-    });
+            Ok(None) => {
+                crate::toast::show_toast_on_window(
+                    &window,
+                    "No password found in KeePass for this connection",
+                    crate::toast::ToastType::Info,
+                );
+            }
+            Err(e) => {
+                tracing::warn!("Failed to load password from KeePass: {e}");
+                crate::toast::show_toast_on_window(
+                    &window,
+                    "Failed to load password from KeePass",
+                    crate::toast::ToastType::Error,
+                );
+            }
+        },
+    );
 }
 
 /// Renames the selected connection or group with a simple inline dialog
@@ -654,7 +607,6 @@ pub fn show_edit_group_dialog(
 }
 
 /// Shows the quick connect dialog with protocol selection and template support
-#[allow(clippy::too_many_lines)]
 pub fn show_quick_connect_dialog(
     window: &gtk4::Window,
     notebook: SharedNotebook,
@@ -664,8 +616,161 @@ pub fn show_quick_connect_dialog(
     show_quick_connect_dialog_with_state(window, notebook, split_view, sidebar, None);
 }
 
+/// Parameters for a quick connect session
+struct QuickConnectParams {
+    host: String,
+    port: u16,
+    username: Option<String>,
+    password: Option<String>,
+}
+
+/// Starts a quick SSH connection
+fn start_quick_ssh(
+    notebook: &SharedNotebook,
+    params: &QuickConnectParams,
+    terminal_settings: &rustconn_core::config::TerminalSettings,
+) {
+    let session_id = notebook.create_terminal_tab_with_settings(
+        Uuid::nil(),
+        &format!("Quick: {}", params.host),
+        "ssh",
+        None,
+        terminal_settings,
+    );
+    notebook.spawn_ssh(
+        session_id,
+        &params.host,
+        params.port,
+        params.username.as_deref(),
+        None,
+        &[],
+    );
+}
+
+/// Starts a quick RDP connection
+fn start_quick_rdp(
+    notebook: &SharedNotebook,
+    split_view: &SharedSplitView,
+    sidebar: &SharedSidebar,
+    params: &QuickConnectParams,
+) {
+    let embedded_widget = EmbeddedRdpWidget::new();
+
+    let mut embedded_config = EmbeddedRdpConfig::new(&params.host)
+        .with_port(params.port)
+        .with_resolution(1920, 1080)
+        .with_clipboard(true);
+
+    if let Some(ref user) = params.username {
+        embedded_config = embedded_config.with_username(user);
+    }
+
+    if let Some(ref pass) = params.password {
+        embedded_config = embedded_config.with_password(pass);
+    }
+
+    let embedded_widget = Rc::new(embedded_widget);
+    let session_id = Uuid::new_v4();
+
+    // Connect state change callback
+    let notebook_for_state = notebook.clone();
+    let sidebar_for_state = sidebar.clone();
+    let connection_id = Uuid::nil();
+    embedded_widget.connect_state_changed(move |rdp_state| match rdp_state {
+        crate::embedded_rdp::RdpConnectionState::Disconnected => {
+            notebook_for_state.mark_tab_disconnected(session_id);
+            sidebar_for_state.decrement_session_count(&connection_id.to_string(), false);
+        }
+        crate::embedded_rdp::RdpConnectionState::Connected => {
+            notebook_for_state.mark_tab_connected(session_id);
+        }
+        _ => {}
+    });
+
+    // Connect reconnect callback
+    let widget_for_reconnect = embedded_widget.clone();
+    embedded_widget.connect_reconnect(move || {
+        if let Err(e) = widget_for_reconnect.reconnect() {
+            tracing::error!("RDP reconnect failed: {}", e);
+        }
+    });
+
+    // Start connection
+    if let Err(e) = embedded_widget.connect(&embedded_config) {
+        tracing::error!("RDP connection failed for '{}': {}", params.host, e);
+    }
+
+    notebook.add_embedded_rdp_tab(
+        session_id,
+        Uuid::nil(),
+        &format!("Quick: {}", params.host),
+        embedded_widget,
+    );
+
+    // Show notebook for RDP session
+    split_view.widget().set_visible(false);
+    split_view.widget().set_vexpand(false);
+    notebook.widget().set_vexpand(true);
+    notebook.notebook().set_vexpand(true);
+}
+
+/// Starts a quick VNC connection
+fn start_quick_vnc(
+    notebook: &SharedNotebook,
+    split_view: &SharedSplitView,
+    sidebar: &SharedSidebar,
+    params: &QuickConnectParams,
+) {
+    let session_id = notebook.create_vnc_session_tab_with_host(
+        Uuid::nil(),
+        &format!("Quick: {}", params.host),
+        &params.host,
+    );
+
+    // Get the VNC widget and initiate connection
+    if let Some(vnc_widget) = notebook.get_vnc_widget(session_id) {
+        let vnc_config = rustconn_core::models::VncConfig::default();
+
+        // Connect state change callback
+        let notebook_for_state = notebook.clone();
+        let sidebar_for_state = sidebar.clone();
+        let connection_id = Uuid::nil();
+        vnc_widget.connect_state_changed(move |vnc_state| {
+            if vnc_state == crate::session::SessionState::Disconnected {
+                notebook_for_state.mark_tab_disconnected(session_id);
+                sidebar_for_state.decrement_session_count(&connection_id.to_string(), false);
+            } else if vnc_state == crate::session::SessionState::Connected {
+                notebook_for_state.mark_tab_connected(session_id);
+            }
+        });
+
+        // Connect reconnect callback
+        let widget_for_reconnect = vnc_widget.clone();
+        vnc_widget.connect_reconnect(move || {
+            if let Err(e) = widget_for_reconnect.reconnect() {
+                tracing::error!("VNC reconnect failed: {}", e);
+            }
+        });
+
+        // Initiate connection with password if provided
+        if let Err(e) = vnc_widget.connect_with_config(
+            &params.host,
+            params.port,
+            params.password.as_deref(),
+            &vnc_config,
+        ) {
+            tracing::error!("Failed to connect VNC session '{}': {}", params.host, e);
+        }
+    }
+
+    // Show notebook for VNC session
+    split_view.widget().set_visible(false);
+    split_view.widget().set_vexpand(false);
+    notebook.widget().set_vexpand(true);
+    notebook.notebook().set_vexpand(true);
+}
+
 /// Shows the quick connect dialog with optional state for template access
-#[allow(clippy::too_many_lines)]
 pub fn show_quick_connect_dialog_with_state(
     window: &gtk4::Window,
     notebook: SharedNotebook,
@@ -921,146 +1026,18 @@ pub fn show_quick_connect_dialog_with_state(
             }
         };
 
-        let protocol_idx = protocol_clone.selected();
+        let params = QuickConnectParams {
+            host,
+            port,
+            username,
+            password,
+        };
 
-        match protocol_idx {
-            0 => {
-                // SSH - use terminal tab
-                let session_id = notebook.create_terminal_tab_with_settings(
-                    Uuid::nil(),
-                    &format!("Quick: {host}"),
-                    "ssh",
-                    None,
-                    &terminal_settings,
-                );
-
-                notebook.spawn_ssh(session_id, &host, port, username.as_deref(), None, &[]);
-            }
-            1 => {
-                // RDP - use embedded RDP widget
-                let embedded_widget = EmbeddedRdpWidget::new();
-
-                let mut embedded_config = EmbeddedRdpConfig::new(&host)
-                    .with_port(port)
-                    .with_resolution(1920, 1080)
-                    .with_clipboard(true);
-
-                if let Some(ref user) = username {
-                    embedded_config = embedded_config.with_username(user);
-                }
-
-                if let Some(ref pass) = password {
-                    embedded_config = embedded_config.with_password(pass);
-                }
-
-                let embedded_widget = Rc::new(embedded_widget);
-                let session_id = Uuid::new_v4();
-
-                // Connect state change callback
-                let notebook_for_state = notebook.clone();
-                let sidebar_for_state = sidebar.clone();
-                let connection_id = Uuid::nil();
-                embedded_widget.connect_state_changed(move |rdp_state| match rdp_state {
-                    crate::embedded_rdp::RdpConnectionState::Disconnected => {
-                        notebook_for_state.mark_tab_disconnected(session_id);
-                        sidebar_for_state
-                            .decrement_session_count(&connection_id.to_string(), false);
-                    }
-                    crate::embedded_rdp::RdpConnectionState::Connected => {
-                        notebook_for_state.mark_tab_connected(session_id);
-                    }
-                    _ => {}
-                });
-
-                // Connect reconnect callback
-                let widget_for_reconnect = embedded_widget.clone();
-                embedded_widget.connect_reconnect(move || {
-                    if let Err(e) = widget_for_reconnect.reconnect() {
-                        tracing::error!("RDP reconnect failed: {}", e);
-                    }
-                });
-
-                // Start connection
-                if let Err(e) = embedded_widget.connect(&embedded_config) {
-                    tracing::error!("RDP connection failed for '{}': {}", host, e);
-                }
-
-                notebook.add_embedded_rdp_tab(
-                    session_id,
-                    Uuid::nil(),
-                    &format!("Quick: {host}"),
-                    embedded_widget,
-                );
-
-                // Show notebook for RDP session
-                split_view.widget().set_visible(false);
-                split_view.widget().set_vexpand(false);
-                notebook.widget().set_vexpand(true);
-                notebook.notebook().set_vexpand(true);
-            }
-            2 => {
-                // VNC - use VNC session widget
-                let session_id = notebook.create_vnc_session_tab_with_host(
-                    Uuid::nil(),
-                    &format!("Quick: {host}"),
-                    &host,
-                );
-
-                // Get the VNC widget and initiate connection
-                if let Some(vnc_widget) = notebook.get_vnc_widget(session_id) {
-                    let vnc_config = rustconn_core::models::VncConfig::default();
-
-                    // Connect state change callback
-                    let notebook_for_state = notebook.clone();
-                    let sidebar_for_state = sidebar.clone();
-                    let connection_id = Uuid::nil();
-                    vnc_widget.connect_state_changed(move |vnc_state| {
-                        if vnc_state == crate::session::SessionState::Disconnected {
-                            notebook_for_state.mark_tab_disconnected(session_id);
-                            sidebar_for_state
-                                .decrement_session_count(&connection_id.to_string(), false);
-                        } else if vnc_state == crate::session::SessionState::Connected {
-                            notebook_for_state.mark_tab_connected(session_id);
-                        }
-                    });
-
-                    // Connect reconnect callback
-                    let widget_for_reconnect = vnc_widget.clone();
-                    vnc_widget.connect_reconnect(move || {
-                        if let Err(e) = widget_for_reconnect.reconnect() {
-                            tracing::error!("VNC reconnect failed: {}", e);
-                        }
-                    });
-
-                    // Initiate connection with password if provided
-                    if let Err(e) = vnc_widget.connect_with_config(
-                        &host,
-                        port,
-                        password.as_deref(),
-                        &vnc_config,
-                    ) {
-                        tracing::error!("Failed to connect VNC session '{}': {}", host, e);
-                    }
-                }
-
-                // Show notebook for VNC session
-                split_view.widget().set_visible(false);
-                split_view.widget().set_vexpand(false);
-                notebook.widget().set_vexpand(true);
-                notebook.notebook().set_vexpand(true);
-            }
-            _ => {
-                // Default to SSH
-                let session_id = notebook.create_terminal_tab_with_settings(
-                    Uuid::nil(),
-                    &format!("Quick: {host}"),
-                    "ssh",
-                    None,
-                    &terminal_settings,
-                );
-
-                notebook.spawn_ssh(session_id, &host, port, username.as_deref(), None, &[]);
-            }
+        match protocol_clone.selected() {
+            0 => start_quick_ssh(&notebook, &params, &terminal_settings),
+            1 => start_quick_rdp(&notebook, &split_view, &sidebar, &params),
+            2 => start_quick_vnc(&notebook, &split_view, &sidebar, &params),
+            _ => start_quick_ssh(&notebook, &params, &terminal_settings),
         }
 
         window_clone.close();
