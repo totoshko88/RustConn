@@ -9,6 +9,7 @@
     <name>Anton Isaiev</name>
   </developer>
   <developer_name>Anton Isaiev</developer_name>
+  <update_contact>totoshko88@gmail.com</update_contact>
   <description>
     <p>
       RustConn is a modern connection manager for Linux desktops built with GTK4.
