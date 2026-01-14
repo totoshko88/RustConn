@@ -26,7 +26,16 @@ cargo build --release
 ./target/release/rustconn
 ```
 
+### Installation from source
+
+You can install `rustconn` directly from the repository:
+
+```bash
+cargo install --git https://github.com/totoshko88/rustconn.git --locked
+```
+
 **Dependencies:** GTK4 4.14+, VTE4, libadwaita | **Optional:** FreeRDP, TigerVNC, virt-viewer
+
 
 ## Quick Start
 
