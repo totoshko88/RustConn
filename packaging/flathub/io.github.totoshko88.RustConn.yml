@@ -58,4 +58,5 @@ modules:
       - type: git
         url: https://github.com/totoshko88/RustConn.git
         tag: v0.6.2
+        commit: 81359faa30a36c94f2463f20ead530add34f5ef0
       - cargo-sources.json
