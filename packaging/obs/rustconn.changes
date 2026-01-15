@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Wed Jan 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.2
+
+- Update to version 0.6.2 - MobaXterm Import/Export and UX Improvements
+  * MobaXterm Import/Export - Full support for .mxtsessions files
+  * Connection History Button - Quick access from sidebar toolbar
+  * Run Snippet from Context Menu - Right-click on connection → "Run Snippet..."
+  * Persistent Search History - Up to 20 recent searches saved across sessions
+  * Updated quick-xml 0.38 → 0.39, resvg 0.45 → 0.46
+
+-------------------------------------------------------------------
 Sun Jan 12 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.1
 
 - Update to version 0.6.1 - Credential Inheritance and Jump Host Support

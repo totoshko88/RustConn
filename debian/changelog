@@ -1,8 +1,13 @@
 rustconn (0.6.2-1) unstable; urgency=medium
 
-  * Development version 0.6.2
+  * Update to version 0.6.2 - MobaXterm Import/Export and UX Improvements
+    - MobaXterm Import/Export - Full support for .mxtsessions files
+    - Connection History Button - Quick access from sidebar toolbar
+    - Run Snippet from Context Menu - Right-click on connection → "Run Snippet..."
+    - Persistent Search History - Up to 20 recent searches saved across sessions
+    - Updated quick-xml 0.38 → 0.39, resvg 0.45 → 0.46
 
- -- Anton Isaiev <totoshko88@gmail.com>  Thu, 15 Jan 2026 12:00:00 +0200
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 15 Jan 2026 12:00:00 +0200
 
 rustconn (0.6.1-1) unstable; urgency=medium
 

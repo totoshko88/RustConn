@@ -496,9 +496,7 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     let history_button = Button::from_icon_name("document-open-recent-symbolic");
     history_button.set_tooltip_text(Some("Connection History"));
     history_button.set_action_name(Some("win.show-history"));
-    history_button.update_property(&[gtk4::accessible::Property::Label(
-        "View connection history",
-    )]);
+    history_button.update_property(&[gtk4::accessible::Property::Label("View connection history")]);
     toolbar.append(&history_button);
 
     // Sort alphabetically button

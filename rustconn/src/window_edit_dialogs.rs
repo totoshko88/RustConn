@@ -90,23 +90,24 @@ pub fn edit_selected_connection(
         }
 
         // Connect save to KeePass callback
-        let window_for_keepass = window.clone();
         let state_for_save = state.clone();
         let conn_name = conn.name.clone();
         let conn_host = conn.host.clone();
-        dialog.connect_save_to_keepass(move |name, host, username, password, protocol| {
-            handle_save_to_keepass(
-                &window_for_keepass,
-                &state_for_save,
-                &conn_name,
-                &conn_host,
-                name,
-                host,
-                username,
-                password,
-                protocol,
-            );
-        });
+        dialog.connect_save_to_keepass(
+            move |name, host, username, password, protocol, dialog_window| {
+                handle_save_to_keepass(
+                    &dialog_window,
+                    &state_for_save,
+                    &conn_name,
+                    &conn_host,
+                    name,
+                    host,
+                    username,
+                    password,
+                    protocol,
+                );
+            },
+        );
 
         // Connect load from KeePass callback
         let state_for_load = state.clone();
@@ -150,7 +151,7 @@ pub fn edit_selected_connection(
 /// Handles saving password to KeePass
 #[allow(clippy::too_many_arguments)]
 fn handle_save_to_keepass(
-    window: &gtk4::Window,
+    window: &adw::Window,
     state: &SharedAppState,
     conn_name: &str,
     conn_host: &str,

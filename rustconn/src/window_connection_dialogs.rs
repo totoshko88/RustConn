@@ -67,101 +67,106 @@ pub fn show_new_connection_dialog_internal(
     }
 
     // Connect save to KeePass callback
-    let window_for_keepass = window.clone();
     let state_for_save = state.clone();
-    dialog.connect_save_to_keepass(move |name, host, username, password, protocol| {
-        use crate::utils::spawn_blocking_with_callback;
-        use secrecy::ExposeSecret;
+    dialog.connect_save_to_keepass(
+        move |name, host, username, password, protocol, dialog_window| {
+            use crate::utils::spawn_blocking_with_callback;
+            use secrecy::ExposeSecret;
 
-        let state_ref = state_for_save.borrow();
-        let settings = state_ref.settings();
+            let state_ref = state_for_save.borrow();
+            let settings = state_ref.settings();
 
-        if !settings.secrets.kdbx_enabled {
-            alert::show_error(
-                &window_for_keepass,
-                "KeePass Not Enabled",
-                "Please enable KeePass integration in Settings first.",
+            if !settings.secrets.kdbx_enabled {
+                alert::show_error(
+                    &dialog_window,
+                    "KeePass Not Enabled",
+                    "Please enable KeePass integration in Settings first.",
+                );
+                return;
+            }
+
+            let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
+                alert::show_error(
+                    &dialog_window,
+                    "KeePass Database Not Configured",
+                    "Please select a KeePass database file in Settings.",
+                );
+                return;
+            };
+
+            // Build lookup key with protocol suffix for uniqueness
+            // Format: "name (protocol)" or "host (protocol)" if name is empty
+            let base_name = if name.trim().is_empty() {
+                host.to_string()
+            } else {
+                name.to_string()
+            };
+            let lookup_key = format!("{base_name} ({protocol})");
+
+            // Get credentials - password and key file can be used together
+            let db_password = settings
+                .secrets
+                .kdbx_password
+                .as_ref()
+                .map(|p| p.expose_secret().to_string());
+
+            // Key file is optional additional authentication
+            let key_file = settings.secrets.kdbx_key_file.clone();
+
+            // Check if we have at least one credential
+            if db_password.is_none() && key_file.is_none() {
+                alert::show_error(
+                    &dialog_window,
+                    "KeePass Credentials Required",
+                    "Please enter the database password or select a key file in Settings.",
+                );
+                return;
+            }
+
+            // Build URL for the entry with correct protocol
+            let url = format!("{}://{}", protocol, host);
+
+            // Clone data for the background thread
+            let username = username.to_string();
+            let password = password.to_string();
+            let lookup_key_clone = lookup_key.clone();
+            let window = dialog_window.clone();
+
+            // Drop state borrow before spawning
+            drop(state_ref);
+
+            // Run KeePass operation in background thread using utility function
+            spawn_blocking_with_callback(
+                move || {
+                    rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
+                        &kdbx_path,
+                        db_password.as_deref(),
+                        key_file.as_deref(),
+                        &lookup_key_clone,
+                        &username,
+                        &password,
+                        Some(&url),
+                    )
+                },
+                move |result: Result<(), String>| match result {
+                    Ok(()) => {
+                        alert::show_success(
+                            &window,
+                            "Password Saved",
+                            &format!("Password for '{lookup_key}' saved to KeePass."),
+                        );
+                    }
+                    Err(e) => {
+                        alert::show_error(
+                            &window,
+                            "Failed to Save Password",
+                            &format!("Error: {e}"),
+                        );
+                    }
+                },
             );
-            return;
-        }
-
-        let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
-            alert::show_error(
-                &window_for_keepass,
-                "KeePass Database Not Configured",
-                "Please select a KeePass database file in Settings.",
-            );
-            return;
-        };
-
-        // Build lookup key with protocol suffix for uniqueness
-        // Format: "name (protocol)" or "host (protocol)" if name is empty
-        let base_name = if name.trim().is_empty() {
-            host.to_string()
-        } else {
-            name.to_string()
-        };
-        let lookup_key = format!("{base_name} ({protocol})");
-
-        // Get credentials - password and key file can be used together
-        let db_password = settings
-            .secrets
-            .kdbx_password
-            .as_ref()
-            .map(|p| p.expose_secret().to_string());
-
-        // Key file is optional additional authentication
-        let key_file = settings.secrets.kdbx_key_file.clone();
-
-        // Check if we have at least one credential
-        if db_password.is_none() && key_file.is_none() {
-            alert::show_error(
-                &window_for_keepass,
-                "KeePass Credentials Required",
-                "Please enter the database password or select a key file in Settings.",
-            );
-            return;
-        }
-
-        // Build URL for the entry with correct protocol
-        let url = format!("{}://{}", protocol, host);
-
-        // Clone data for the background thread
-        let username = username.to_string();
-        let password = password.to_string();
-        let lookup_key_clone = lookup_key.clone();
-        let window = window_for_keepass.clone();
-
-        // Drop state borrow before spawning
-        drop(state_ref);
-
-        // Run KeePass operation in background thread using utility function
-        spawn_blocking_with_callback(
-            move || {
-                rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
-                    &kdbx_path,
-                    db_password.as_deref(),
-                    key_file.as_deref(),
-                    &lookup_key_clone,
-                    &username,
-                    &password,
-                    Some(&url),
-                )
-            },
-            move |result: Result<(), String>| match result {
-                Ok(()) => {
-                    alert::show_success(
-                        &window,
-                        "Password Saved",
-                        &format!("Password for '{lookup_key}' saved to KeePass."),
-                    );
-                }
-                Err(e) => {
-                    alert::show_error(&window, "Failed to Save Password", &format!("Error: {e}"));
-                }
-            },
-        );
-    });
+        },
+    );
 
     // Connect load from KeePass callback
     let state_for_load = state.clone();

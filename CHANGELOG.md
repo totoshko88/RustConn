@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation: Removed hardcoded version numbers from INSTALL.md package commands (use wildcards)
 
 ### Fixed
+- **KeePass Alert Dialog Focus** - "Password Saved" alert now appears in front of the connection dialog
+  - Previously the alert appeared behind the New/Edit Connection dialog
+  - Fixed by passing the dialog window as parent instead of main window
 
 ### Dependencies
 - Updated `quick-xml` 0.38 → 0.39

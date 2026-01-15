@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.6.1
+Version:        0.6.2
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later
@@ -157,6 +157,14 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Wed Jan 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.2-0
+- Update to version 0.6.2
+- MobaXterm Import/Export - Full support for .mxtsessions files
+- Connection History Button - Quick access from sidebar toolbar
+- Run Snippet from Context Menu - Right-click on connection → "Run Snippet..."
+- Persistent Search History - Up to 20 recent searches saved across sessions
+- Updated quick-xml 0.38 → 0.39, resvg 0.45 → 0.46
+
 * Sat Jan 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.5.9-0
 - Update to version 0.5.9
 - Migrated Settings dialog from deprecated PreferencesWindow to PreferencesDialog

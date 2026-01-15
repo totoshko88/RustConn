@@ -6019,8 +6019,8 @@ impl ConnectionDialog {
 
     /// Sets up the callback for the "Save to `KeePass`" button
     ///
-    /// The callback receives the connection name, host, username, password, and protocol to save.
-    pub fn connect_save_to_keepass<F: Fn(&str, &str, &str, &str, &str) + 'static>(
+    /// The callback receives the connection name, host, username, password, protocol, and dialog window.
+    pub fn connect_save_to_keepass<F: Fn(&str, &str, &str, &str, &str, adw::Window) + 'static>(
         &self,
         callback: F,
     ) {
@@ -6064,7 +6064,7 @@ impl ConnectionDialog {
                 return;
             }
 
-            callback(&name, &host, &username, &password, protocol);
+            callback(&name, &host, &username, &password, protocol, window.clone());
         });
     }
 
