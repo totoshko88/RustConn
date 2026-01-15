@@ -15,8 +15,8 @@ use gtk4::{
 use libadwaita as adw;
 use rustconn_core::export::NativeExport;
 use rustconn_core::import::{
-    AnsibleInventoryImporter, AsbruImporter, ImportResult, ImportSource, RdmImporter,
-    RemminaImporter, RoyalTsImporter, SshConfigImporter,
+    AnsibleInventoryImporter, AsbruImporter, ImportResult, ImportSource, MobaXtermImporter,
+    RdmImporter, RemminaImporter, RoyalTsImporter, SshConfigImporter,
 };
 use rustconn_core::progress::LocalProgressReporter;
 use std::cell::{Cell, RefCell};
@@ -244,6 +244,12 @@ impl ImportDialog {
                 "Import from a Remote Desktop Manager JSON export file",
                 true,
             ),
+            (
+                "mobaxterm_file",
+                "MobaXterm (.mxtsessions)",
+                "Import from a MobaXterm session export file",
+                true,
+            ),
         ];
 
         for (id, name, desc, available) in sources {
@@ -417,6 +423,7 @@ impl ImportDialog {
             "native_file" => "RustConn Native",
             "royalts_file" => "Royal TS",
             "rdm_file" => "Remote Desktop Manager",
+            "mobaxterm_file" => "MobaXterm",
             _ => "Unknown",
         }
     }
@@ -733,6 +740,21 @@ impl ImportDialog {
 
                 if source_id == "rdm_file" {
                     Self::handle_rdm_file_import(
+                        &window,
+                        &stack,
+                        &progress_bar,
+                        &progress_label,
+                        &result_label,
+                        &result_details,
+                        &result_cell,
+                        &source_name_cell,
+                        btn,
+                    );
+                    return;
+                }
+
+                if source_id == "mobaxterm_file" {
+                    Self::handle_mobaxterm_file_import(
                         &window,
                         &stack,
                         &progress_bar,
@@ -1454,6 +1476,90 @@ impl ImportDialog {
                         // Extract filename for display
                         let filename = path.file_name().map_or_else(
                             || "RDM JSON".to_string(),
+                            |n| n.to_string_lossy().to_string(),
+                        );
+
+                        source_name_cell_clone.borrow_mut().clone_from(&filename);
+
+                        progress_bar_clone.set_fraction(1.0);
+
+                        // Show results
+                        let conn_count = result.connections.len();
+                        let group_count = result.groups.len();
+                        let summary = format!(
+                            "Successfully imported {conn_count} connection(s) and {group_count} group(s).\nConnections will be added to '{filename} Import' group."
+                        );
+                        result_label_clone.set_text(&summary);
+
+                        let details = Self::format_import_details(&result);
+                        result_details_clone.set_text(&details);
+
+                        *result_cell_clone.borrow_mut() = Some(result);
+                        stack_clone.set_visible_child_name("result");
+                        btn_clone.set_label("Done");
+                        btn_clone.set_sensitive(true);
+                    }
+                } else {
+                    // User cancelled file selection - return to source page
+                    stack_clone.set_visible_child_name("source");
+                    btn_clone.set_sensitive(true);
+                }
+            },
+        );
+    }
+
+    /// Handles the special case of importing from a MobaXterm session file
+    #[allow(clippy::too_many_arguments)]
+    fn handle_mobaxterm_file_import(
+        window: &adw::Window,
+        stack: &Stack,
+        progress_bar: &ProgressBar,
+        progress_label: &Label,
+        result_label: &Label,
+        result_details: &Label,
+        result_cell: &Rc<RefCell<Option<ImportResult>>>,
+        source_name_cell: &Rc<RefCell<String>>,
+        btn: &Button,
+    ) {
+        let file_dialog = gtk4::FileDialog::builder()
+            .title("Select MobaXterm Session File")
+            .modal(true)
+            .build();
+
+        let filter = gtk4::FileFilter::new();
+        filter.add_pattern("*.mxtsessions");
+        filter.set_name(Some("MobaXterm Sessions (*.mxtsessions)"));
+        let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
+        filters.append(&filter);
+        file_dialog.set_filters(Some(&filters));
+
+        let stack_clone = stack.clone();
+        let progress_bar_clone = progress_bar.clone();
+        let progress_label_clone = progress_label.clone();
+        let result_label_clone = result_label.clone();
+        let result_details_clone = result_details.clone();
+        let result_cell_clone = result_cell.clone();
+        let source_name_cell_clone = source_name_cell.clone();
+        let btn_clone = btn.clone();
+
+        file_dialog.open(
+            Some(window),
+            gtk4::gio::Cancellable::NONE,
+            move |file_result| {
+                if let Ok(file) = file_result {
+                    if let Some(path) = file.path() {
+                        stack_clone.set_visible_child_name("progress");
+                        btn_clone.set_sensitive(false);
+                        progress_bar_clone.set_fraction(0.5);
+                        progress_label_clone
+                            .set_text(&format!("Importing from {}...", path.display()));
+
+                        let importer = MobaXtermImporter::with_path(path.clone());
+                        let result = importer.import_from_path(&path).unwrap_or_default();
+
+                        // Extract filename for display
+                        let filename = path.file_name().map_or_else(
+                            || "MobaXterm".to_string(),
                             |n| n.to_string_lossy().to_string(),
                         );
 
