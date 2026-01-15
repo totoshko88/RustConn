@@ -1,3 +1,13 @@
+rustconn (0.6.3-1) unstable; urgency=medium
+
+  * Update to version 0.6.3 - Bitwarden Integration and Secret Backend Improvements
+    - Bitwarden CLI Integration - New secret backend for Bitwarden password manager
+    - Password Manager Detection - Automatic detection of installed managers
+    - Enhanced Secrets Settings UI - Improved backend selection with dynamic config
+    - Detects GNOME Secrets, KeePassXC, KeePass2, Bitwarden CLI, 1Password CLI
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 15 Jan 2026 18:00:00 +0200
+
 rustconn (0.6.2-1) unstable; urgency=medium
 
   * Update to version 0.6.2 - MobaXterm Import/Export and UX Improvements

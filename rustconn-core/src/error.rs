@@ -126,6 +126,10 @@ pub enum SecretError {
     /// libsecret-specific error
     #[error("libsecret error: {0}")]
     LibSecret(String),
+
+    /// Bitwarden-specific error
+    #[error("Bitwarden error: {0}")]
+    Bitwarden(String),
 }
 
 /// Errors related to configuration import operations

@@ -2116,16 +2116,16 @@ impl ConnectionSidebar {
             self.keepass_button.remove_css_class("dim-label");
             self.keepass_button.add_css_class("suggested-action");
             self.keepass_button
-                .set_tooltip_text(Some("Open KeePass Database (Active)"));
+                .set_tooltip_text(Some("Open Password Vault (Active)"));
         } else {
             self.keepass_button.remove_css_class("suggested-action");
             self.keepass_button.add_css_class("dim-label");
             if enabled {
                 self.keepass_button
-                    .set_tooltip_text(Some("KeePass Database Not Found"));
+                    .set_tooltip_text(Some("Password Vault Not Found"));
             } else {
                 self.keepass_button
-                    .set_tooltip_text(Some("KeePass Integration Disabled"));
+                    .set_tooltip_text(Some("Password Vault Disabled"));
             }
         }
     }

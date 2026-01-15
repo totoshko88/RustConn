@@ -354,11 +354,13 @@ fn arb_secret_settings() -> impl Strategy<Value = SecretSettings> {
                 enable_fallback,
                 kdbx_path,
                 kdbx_enabled,
-                kdbx_password: None,           // Password is never serialized
-                kdbx_password_encrypted: None, // Encrypted password for persistence
-                kdbx_key_file: None,           // Key file path
-                kdbx_use_key_file: false,      // Use key file instead of password
-                kdbx_use_password: true,       // Use password for authentication
+                kdbx_password: None,              // Password is never serialized
+                kdbx_password_encrypted: None,    // Encrypted password for persistence
+                kdbx_key_file: None,              // Key file path
+                kdbx_use_key_file: false,         // Use key file instead of password
+                kdbx_use_password: true,          // Use password for authentication
+                bitwarden_password: None,         // Bitwarden password is never serialized
+                bitwarden_password_encrypted: None, // Encrypted Bitwarden password
             },
         )
 }
@@ -425,6 +427,8 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         kdbx_key_file: None,
                         kdbx_use_key_file: false,
                         kdbx_use_password: true,
+                        bitwarden_password: None,
+                        bitwarden_password_encrypted: None,
                     },
                     ui: UiSettings {
                         color_scheme: ColorScheme::default(),

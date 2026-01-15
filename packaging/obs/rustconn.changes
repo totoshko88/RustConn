@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Wed Jan 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.3
+
+- Update to version 0.6.3 - Bitwarden Integration and Secret Backend Improvements
+  * Bitwarden CLI Integration - New secret backend for Bitwarden password manager
+  * Password Manager Detection - Automatic detection of installed managers
+  * Enhanced Secrets Settings UI - Improved backend selection with dynamic config
+  * Detects GNOME Secrets, KeePassXC, KeePass2, Bitwarden CLI, 1Password CLI
+
+-------------------------------------------------------------------
 Wed Jan 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.2
 
 - Update to version 0.6.2 - MobaXterm Import/Export and UX Improvements

@@ -535,13 +535,13 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     )]);
     toolbar.append(&export_button);
 
-    // KeePass button - shows integration status
+    // Password vault button - shows integration status
     let keepass_button = Button::from_icon_name("dialog-password-symbolic");
-    keepass_button.set_tooltip_text(Some("Open KeePass Database"));
+    keepass_button.set_tooltip_text(Some("Open Password Vault"));
     keepass_button.set_action_name(Some("win.open-keepass"));
     keepass_button.add_css_class("keepass-button");
     keepass_button.update_property(&[gtk4::accessible::Property::Label(
-        "Open KeePass database for credential management",
+        "Open password vault for credential management",
     )]);
     toolbar.append(&keepass_button);
 

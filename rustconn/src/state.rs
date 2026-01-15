@@ -1405,6 +1405,11 @@ impl AppState {
             settings.secrets.clear_password();
         }
 
+        // Encrypt Bitwarden password before saving if present
+        if settings.secrets.bitwarden_password.is_some() {
+            settings.secrets.encrypt_bitwarden_password();
+        }
+
         self.config_manager
             .save_settings(&settings)
             .map_err(|e| format!("Failed to save settings: {e}"))?;

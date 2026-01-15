@@ -1576,11 +1576,11 @@ impl ConnectionDialog {
             .build();
         let save_to_keepass_button = Button::builder()
             .icon_name("document-save-symbolic")
-            .tooltip_text("Save to KeePass")
+            .tooltip_text("Save password to vault")
             .build();
         let load_from_keepass_button = Button::builder()
             .icon_name("document-open-symbolic")
-            .tooltip_text("Load from KeePass")
+            .tooltip_text("Load password from vault")
             .build();
         let password_box = GtkBox::new(Orientation::Horizontal, 4);
         password_box.append(&password_entry);
@@ -6049,7 +6049,7 @@ impl ConnectionDialog {
             if password.is_empty() {
                 crate::toast::show_toast_on_window(
                     &window,
-                    "Please enter a password to save to KeePass",
+                    "Please enter a password to save",
                     crate::toast::ToastType::Warning,
                 );
                 return;

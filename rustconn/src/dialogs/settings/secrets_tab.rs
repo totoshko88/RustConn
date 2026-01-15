@@ -37,6 +37,12 @@ pub struct SecretsPageWidgets {
     pub password_row: adw::ActionRow,
     pub save_password_row: adw::ActionRow,
     pub key_file_row: adw::ActionRow,
+    // Bitwarden widgets
+    pub bitwarden_group: adw::PreferencesGroup,
+    pub bitwarden_status_label: Label,
+    pub bitwarden_unlock_button: Button,
+    pub bitwarden_password_entry: PasswordEntry,
+    pub bitwarden_save_password_check: CheckButton,
 }
 
 /// Creates the secrets settings page using AdwPreferencesPage
@@ -53,7 +59,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .description("Choose how passwords are stored")
         .build();
 
-    let backend_strings = StringList::new(&["KeePassXC", "libsecret", "KDBX File"]);
+    // Simplified: KeePassXC, libsecret, Bitwarden
+    let backend_strings = StringList::new(&["KeePassXC", "libsecret", "Bitwarden"]);
     let secret_backend_dropdown = DropDown::builder()
         .model(&backend_strings)
         .selected(0)
@@ -67,13 +74,24 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     backend_row.set_activatable_widget(Some(&secret_backend_dropdown));
     backend_group.add(&backend_row);
 
+    // Version info row - shows version of selected backend
+    let version_label = Label::builder()
+        .halign(gtk4::Align::End)
+        .valign(gtk4::Align::Center)
+        .build();
+    let version_row = adw::ActionRow::builder()
+        .title("Version")
+        .build();
+    version_row.add_suffix(&version_label);
+    backend_group.add(&version_row);
+
     let enable_fallback = CheckButton::builder()
         .valign(gtk4::Align::Center)
         .active(true)
         .build();
     let fallback_row = adw::ActionRow::builder()
         .title("Enable fallback")
-        .subtitle("Use libsecret if KeePassXC unavailable")
+        .subtitle("Use libsecret if primary backend unavailable")
         .activatable_widget(&enable_fallback)
         .build();
     fallback_row.add_prefix(&enable_fallback);
@@ -81,16 +99,198 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     page.add(&backend_group);
 
+    // Detect installed tools
+    let keepassxc_installed = std::process::Command::new("which")
+        .arg("keepassxc-cli")
+        .output()
+        .is_ok_and(|output| output.status.success());
+    let keepassxc_version = if keepassxc_installed {
+        get_cli_version("keepassxc-cli", &["--version"])
+    } else {
+        None
+    };
+
+    // Bitwarden CLI status - check multiple paths
+    let bw_paths = ["bw", "/snap/bin/bw", "/usr/local/bin/bw"];
+    let mut bitwarden_installed = false;
+    let mut bitwarden_cmd = "bw".to_string();
+    for path in &bw_paths {
+        if std::process::Command::new(path)
+            .arg("--version")
+            .output()
+            .is_ok_and(|output| output.status.success())
+        {
+            bitwarden_installed = true;
+            bitwarden_cmd = (*path).to_string();
+            break;
+        }
+    }
+    // Also check via which
+    if !bitwarden_installed {
+        if let Ok(output) = std::process::Command::new("which").arg("bw").output() {
+            if output.status.success() {
+                bitwarden_installed = true;
+                bitwarden_cmd = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            }
+        }
+    }
+    let bitwarden_version = if bitwarden_installed {
+        get_cli_version(&bitwarden_cmd, &["--version"])
+    } else {
+        None
+    };
+
+    // === Bitwarden Configuration Group ===
+    let bitwarden_group = adw::PreferencesGroup::builder()
+        .title("Bitwarden")
+        .description("Configure Bitwarden CLI integration")
+        .build();
+
+    // Password entry for unlocking
+    let bitwarden_password_entry = PasswordEntry::builder()
+        .placeholder_text("Master password")
+        .hexpand(true)
+        .show_peek_icon(true)
+        .valign(gtk4::Align::Center)
+        .build();
+    let bw_password_row = adw::ActionRow::builder()
+        .title("Master Password")
+        .subtitle("Required to unlock vault")
+        .build();
+    bw_password_row.add_suffix(&bitwarden_password_entry);
+    bw_password_row.set_activatable_widget(Some(&bitwarden_password_entry));
+    bitwarden_group.add(&bw_password_row);
+
+    // Save password checkbox for Bitwarden
+    let bitwarden_save_password_check = CheckButton::builder()
+        .valign(gtk4::Align::Center)
+        .build();
+    let bw_save_password_row = adw::ActionRow::builder()
+        .title("Save password")
+        .subtitle("Encrypted storage (machine-specific)")
+        .activatable_widget(&bitwarden_save_password_check)
+        .build();
+    bw_save_password_row.add_prefix(&bitwarden_save_password_check);
+    bitwarden_group.add(&bw_save_password_row);
+
+    let bitwarden_status_label = Label::builder()
+        .label(if bitwarden_installed {
+            "Checking status..."
+        } else {
+            "Not installed"
+        })
+        .halign(gtk4::Align::End)
+        .valign(gtk4::Align::Center)
+        .css_classes(["dim-label"])
+        .build();
+
+    let bitwarden_unlock_button = Button::builder()
+        .label("Unlock")
+        .valign(gtk4::Align::Center)
+        .sensitive(bitwarden_installed)
+        .tooltip_text("Unlock Bitwarden vault")
+        .build();
+
+    let bw_status_box = GtkBox::builder()
+        .orientation(Orientation::Horizontal)
+        .spacing(12)
+        .valign(gtk4::Align::Center)
+        .build();
+    bw_status_box.append(&bitwarden_status_label);
+    bw_status_box.append(&bitwarden_unlock_button);
+
+    let bw_status_row = adw::ActionRow::builder()
+        .title("Vault Status")
+        .subtitle("Login with 'bw login' in terminal first")
+        .build();
+    bw_status_row.add_suffix(&bw_status_box);
+    bitwarden_group.add(&bw_status_row);
+
+    // Connect unlock button
+    {
+        let status_label = bitwarden_status_label.clone();
+        let password_entry = bitwarden_password_entry.clone();
+        let bw_cmd = bitwarden_cmd.clone();
+        bitwarden_unlock_button.connect_clicked(move |button| {
+            let password = password_entry.text();
+            if password.is_empty() {
+                update_status_label(&status_label, "Enter password", "warning");
+                return;
+            }
+
+            button.set_sensitive(false);
+            status_label.set_text("Unlocking...");
+            update_status_label(&status_label, "Unlocking...", "dim-label");
+
+            // Run unlock with password via environment variable
+            let result = std::process::Command::new(&bw_cmd)
+                .arg("unlock")
+                .arg("--passwordenv")
+                .arg("BW_PASSWORD")
+                .env("BW_PASSWORD", password.as_str())
+                .output();
+
+            match result {
+                Ok(output) => {
+                    if output.status.success() {
+                        let stdout = String::from_utf8_lossy(&output.stdout);
+                        // Extract session key from output
+                        if let Some(session_key) = extract_session_key(&stdout) {
+                            // Set session key in environment for future commands
+                            std::env::set_var("BW_SESSION", &session_key);
+                            update_status_label(&status_label, "Unlocked", "success");
+                            password_entry.set_text("");
+                        } else {
+                            update_status_label(&status_label, "Unlocked", "success");
+                        }
+                    } else {
+                        let stderr = String::from_utf8_lossy(&output.stderr);
+                        let msg = if stderr.contains("Invalid master password") {
+                            "Invalid password"
+                        } else if stderr.contains("not logged in") {
+                            "Not logged in"
+                        } else {
+                            "Unlock failed"
+                        };
+                        update_status_label(&status_label, msg, "error");
+                    }
+                }
+                Err(_) => {
+                    update_status_label(&status_label, "Command failed", "error");
+                }
+            }
+
+            button.set_sensitive(true);
+        });
+    }
+
+    // Check Bitwarden status synchronously (runs in idle callback to not block UI)
+    if bitwarden_installed {
+        let status_label = bitwarden_status_label.clone();
+        let bw_cmd_clone = bitwarden_cmd.clone();
+        glib::idle_add_local_once(move || {
+            let status = check_bitwarden_status_sync(&bw_cmd_clone);
+            status_label.set_text(&status.0);
+            status_label.remove_css_class("dim-label");
+            status_label.remove_css_class("success");
+            status_label.remove_css_class("warning");
+            status_label.remove_css_class("error");
+            status_label.add_css_class(status.1);
+        });
+    }
+
+    page.add(&bitwarden_group);
+
     // === KeePass Database Group ===
     let kdbx_group = adw::PreferencesGroup::builder()
         .title("KeePass Database")
-        .description("Configure KDBX file integration")
+        .description("Configure KDBX file integration (works with KeePassXC, GNOME Secrets, etc.)")
         .build();
 
     let kdbx_enabled_switch = Switch::builder().valign(gtk4::Align::Center).build();
     let kdbx_enabled_row = adw::ActionRow::builder()
-        .title("KeePass Integration")
-        .subtitle("Enable database connection")
+        .title("KDBX Integration")
+        .subtitle("Enable direct database access")
         .build();
     kdbx_enabled_row.add_suffix(&kdbx_enabled_switch);
     kdbx_enabled_row.set_activatable_widget(Some(&kdbx_enabled_switch));
@@ -192,7 +392,9 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     page.add(&auth_group);
 
     // === Status Group ===
-    let status_group = adw::PreferencesGroup::builder().title("Status").build();
+    let status_group = adw::PreferencesGroup::builder()
+        .title("KDBX Status")
+        .build();
 
     // Check connection button
     let kdbx_check_button = Button::builder()
@@ -219,35 +421,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let status_row = adw::ActionRow::builder().title("Connection Status").build();
     status_row.add_suffix(&status_box);
     status_group.add(&status_row);
-
-    // Check KeePassXC installation
-    let keepassxc_installed = std::process::Command::new("which")
-        .arg("keepassxc-cli")
-        .output()
-        .is_ok_and(|output| output.status.success());
-
-    let (status_text, status_css) = if keepassxc_installed {
-        ("Installed", "success")
-    } else {
-        ("Not installed", "warning")
-    };
-
-    let keepassxc_label = Label::builder()
-        .label(status_text)
-        .halign(gtk4::Align::End)
-        .valign(gtk4::Align::Center)
-        .css_classes([status_css])
-        .build();
-    let keepassxc_row = adw::ActionRow::builder()
-        .title("KeePassXC CLI")
-        .subtitle(if keepassxc_installed {
-            "Ready for use"
-        } else {
-            "Install for database integration"
-        })
-        .build();
-    keepassxc_row.add_suffix(&keepassxc_label);
-    status_group.add(&keepassxc_row);
 
     page.add(&status_group);
 
@@ -276,15 +449,83 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         glib::Propagation::Proceed
     });
 
-    // Initial visibility based on default states
-    // Key file row hidden by default (use_key_file is false)
+    // Setup visibility for Bitwarden group based on backend selection
+    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden
+    let bitwarden_group_clone = bitwarden_group.clone();
+    let kdbx_group_clone = kdbx_group.clone();
+    let auth_group_clone2 = auth_group.clone();
+    let status_group_clone2 = status_group.clone();
+    let kdbx_enabled_switch_clone = kdbx_enabled_switch.clone();
+    let version_label_clone = version_label.clone();
+    let version_row_clone = version_row.clone();
+    let keepassxc_version_clone = keepassxc_version.clone();
+    let bitwarden_version_clone = bitwarden_version.clone();
+    secret_backend_dropdown.connect_selected_notify(move |dropdown| {
+        let selected = dropdown.selected();
+        // Show Bitwarden group only when Bitwarden is selected (index 2)
+        bitwarden_group_clone.set_visible(selected == 2);
+        // Show KDBX groups only when KeePassXC is selected (index 0)
+        let show_kdbx = selected == 0;
+        kdbx_group_clone.set_visible(show_kdbx);
+        // Auth and status groups depend on both backend selection and kdbx_enabled
+        let kdbx_enabled = kdbx_enabled_switch_clone.is_active();
+        auth_group_clone2.set_visible(show_kdbx && kdbx_enabled);
+        status_group_clone2.set_visible(show_kdbx && kdbx_enabled);
+
+        // Update version label based on selected backend
+        match selected {
+            0 => {
+                // KeePassXC
+                version_row_clone.set_visible(true);
+                if let Some(ref ver) = keepassxc_version_clone {
+                    version_label_clone.set_text(&format!("v{ver}"));
+                    version_label_clone.remove_css_class("error");
+                    version_label_clone.add_css_class("success");
+                } else {
+                    version_label_clone.set_text("Not installed");
+                    version_label_clone.remove_css_class("success");
+                    version_label_clone.add_css_class("error");
+                }
+            }
+            1 => {
+                // libsecret - don't show version
+                version_row_clone.set_visible(false);
+            }
+            2 => {
+                // Bitwarden
+                version_row_clone.set_visible(true);
+                if let Some(ref ver) = bitwarden_version_clone {
+                    version_label_clone.set_text(&format!("v{ver}"));
+                    version_label_clone.remove_css_class("error");
+                    version_label_clone.add_css_class("success");
+                } else {
+                    version_label_clone.set_text("Not installed");
+                    version_label_clone.remove_css_class("success");
+                    version_label_clone.add_css_class("error");
+                }
+            }
+            _ => {
+                version_row_clone.set_visible(false);
+            }
+        }
+    });
+
+    // Initial visibility based on default states (KeePassXC selected by default)
     key_file_row.set_visible(false);
-    // Password row visible by default (use_password is true)
     password_row.set_visible(true);
     save_password_row.set_visible(true);
-    // Auth and Status groups hidden by default (kdbx_enabled is false)
     auth_group.set_visible(false);
     status_group.set_visible(false);
+    bitwarden_group.set_visible(false);
+
+    // Set initial version display for KeePassXC (default selection)
+    if let Some(ref ver) = keepassxc_version {
+        version_label.set_text(&format!("v{ver}"));
+        version_label.add_css_class("success");
+    } else {
+        version_label.set_text("Not installed");
+        version_label.add_css_class("error");
+    }
 
     // Setup browse button for database file
     let kdbx_path_entry_clone = kdbx_path_entry.clone();
@@ -295,7 +536,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             .modal(true)
             .build();
 
-        // Add filter for .kdbx files
         let filter = FileFilter::new();
         filter.add_pattern("*.kdbx");
         filter.set_name(Some("KeePass Database (*.kdbx)"));
@@ -305,7 +545,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         dialog.set_filters(Some(&filters));
         dialog.set_default_filter(Some(&filter));
 
-        // Get the root window
         let root = button.root();
         let window = root.and_then(|r| r.downcast::<gtk4::Window>().ok());
 
@@ -331,7 +570,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             .modal(true)
             .build();
 
-        // Add filter for key files
         let filter = FileFilter::new();
         filter.add_pattern("*.keyx");
         filter.add_pattern("*.key");
@@ -347,7 +585,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         dialog.set_filters(Some(&filters));
         dialog.set_default_filter(Some(&filter));
 
-        // Get the root window
         let root = button.root();
         let window = root.and_then(|r| r.downcast::<gtk4::Window>().ok());
 
@@ -380,7 +617,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
         let kdbx_path = std::path::Path::new(path_text.as_str());
 
-        // Get password if enabled
         let password = if kdbx_use_password_check_clone.is_active() {
             let pwd = kdbx_password_entry_check.text();
             if pwd.is_empty() {
@@ -392,7 +628,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             None
         };
 
-        // Get key file if enabled
         let key_file = if kdbx_use_key_file_check_clone.is_active() {
             let kf = kdbx_key_file_entry_check.text();
             if kf.is_empty() {
@@ -404,7 +639,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             None
         };
 
-        // Verify credentials
         let result = rustconn_core::secret::KeePassStatus::verify_kdbx_credentials(
             kdbx_path,
             password.as_deref(),
@@ -445,7 +679,84 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         password_row,
         save_password_row,
         key_file_row,
+        bitwarden_group,
+        bitwarden_status_label,
+        bitwarden_unlock_button,
+        bitwarden_password_entry,
+        bitwarden_save_password_check,
     }
+}
+
+/// Gets CLI version from command output
+fn get_cli_version(command: &str, args: &[&str]) -> Option<String> {
+    std::process::Command::new(command)
+        .args(args)
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .and_then(|o| {
+            let output = String::from_utf8_lossy(&o.stdout);
+            parse_version(&output)
+        })
+}
+
+/// Parses version from output string
+fn parse_version(output: &str) -> Option<String> {
+    // Try to find version pattern like "1.2.3" or "v1.2.3"
+    let re = regex::Regex::new(r"v?(\d+\.\d+(?:\.\d+)?)").ok()?;
+    re.captures(output)
+        .and_then(|c| c.get(1))
+        .map(|m| m.as_str().to_string())
+}
+
+/// Checks Bitwarden vault status synchronously
+fn check_bitwarden_status_sync(bw_cmd: &str) -> (String, &'static str) {
+    let output = std::process::Command::new(bw_cmd).arg("status").output();
+
+    match output {
+        Ok(o) if o.status.success() => {
+            let status_str = String::from_utf8_lossy(&o.stdout);
+            if let Ok(status) = serde_json::from_str::<serde_json::Value>(&status_str) {
+                if let Some(status_val) = status.get("status").and_then(|v| v.as_str()) {
+                    return match status_val {
+                        "unlocked" => ("Unlocked".to_string(), "success"),
+                        "locked" => ("Locked".to_string(), "warning"),
+                        "unauthenticated" => ("Not logged in".to_string(), "error"),
+                        _ => (format!("Status: {status_val}"), "dim-label"),
+                    };
+                }
+            }
+            ("Unknown".to_string(), "dim-label")
+        }
+        _ => ("Error checking status".to_string(), "error"),
+    }
+}
+
+/// Extracts session key from `bw unlock` output
+fn extract_session_key(output: &str) -> Option<String> {
+    // Output format: export BW_SESSION="<session_key>"
+    // or: $ export BW_SESSION="<session_key>"
+    for line in output.lines() {
+        if line.contains("BW_SESSION=") {
+            // Extract the value between quotes
+            if let Some(start) = line.find('"') {
+                if let Some(end) = line.rfind('"') {
+                    if end > start {
+                        return Some(line[start + 1..end].to_string());
+                    }
+                }
+            }
+            // Try without quotes (BW_SESSION=value)
+            if let Some(pos) = line.find("BW_SESSION=") {
+                let value_start = pos + "BW_SESSION=".len();
+                let value = line[value_start..].trim().trim_matches('"');
+                if !value.is_empty() {
+                    return Some(value.to_string());
+                }
+            }
+        }
+    }
+    None
 }
 
 /// Updates the status label with text and CSS class
@@ -461,10 +772,11 @@ fn update_status_label(label: &Label, text: &str, css_class: &str) {
 /// Loads secret settings into UI controls
 #[allow(clippy::too_many_arguments)]
 pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSettings) {
+    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden
     let backend_index = match settings.preferred_backend {
-        SecretBackendType::KeePassXc => 0,
+        SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => 0,
         SecretBackendType::LibSecret => 1,
-        SecretBackendType::KdbxFile => 2,
+        SecretBackendType::Bitwarden => 2,
     };
     widgets.secret_backend_dropdown.set_selected(backend_index);
     widgets.enable_fallback.set_active(settings.enable_fallback);
@@ -494,9 +806,23 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
         .kdbx_save_password_check
         .set_active(settings.kdbx_password_encrypted.is_some());
 
+    // Load Bitwarden save password state
+    widgets
+        .bitwarden_save_password_check
+        .set_active(settings.bitwarden_password_encrypted.is_some());
+
     // Update visibility based on loaded settings
-    widgets.auth_group.set_visible(settings.kdbx_enabled);
-    widgets.status_group.set_visible(settings.kdbx_enabled);
+    // Show KDBX groups only when KeePassXC is selected (index 0)
+    let show_kdbx = backend_index == 0;
+    widgets.kdbx_group.set_visible(show_kdbx);
+    widgets
+        .auth_group
+        .set_visible(show_kdbx && settings.kdbx_enabled);
+    widgets
+        .status_group
+        .set_visible(show_kdbx && settings.kdbx_enabled);
+    // Show Bitwarden group only when Bitwarden is selected (index 2)
+    widgets.bitwarden_group.set_visible(backend_index == 2);
     widgets.password_row.set_visible(settings.kdbx_use_password);
     widgets
         .save_password_row
@@ -537,10 +863,11 @@ pub fn collect_secret_settings(
     widgets: &SecretsPageWidgets,
     settings: &Rc<RefCell<rustconn_core::config::AppSettings>>,
 ) -> SecretSettings {
+    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden
     let preferred_backend = match widgets.secret_backend_dropdown.selected() {
         0 => SecretBackendType::KeePassXc,
         1 => SecretBackendType::LibSecret,
-        2 => SecretBackendType::KdbxFile,
+        2 => SecretBackendType::Bitwarden,
         _ => SecretBackendType::default(),
     };
 
@@ -580,6 +907,28 @@ pub fn collect_secret_settings(
         (None, None)
     };
 
+    // Collect Bitwarden password if save is enabled
+    let (bitwarden_password, bitwarden_password_encrypted) =
+        if widgets.bitwarden_save_password_check.is_active() {
+            let password_text = widgets.bitwarden_password_entry.text();
+            if password_text.is_empty() {
+                // Keep existing encrypted password if field is empty but save is checked
+                (None, settings.borrow().secrets.bitwarden_password_encrypted.clone())
+            } else {
+                let password = secrecy::SecretString::new(password_text.to_string().into());
+                // Mark for encryption (will be encrypted when settings are saved)
+                let encrypted = settings
+                    .borrow()
+                    .secrets
+                    .bitwarden_password_encrypted
+                    .clone()
+                    .or_else(|| Some("encrypted_password_placeholder".to_string()));
+                (Some(password), encrypted)
+            }
+        } else {
+            (None, None)
+        };
+
     SecretSettings {
         preferred_backend,
         enable_fallback: widgets.enable_fallback.is_active(),
@@ -590,5 +939,7 @@ pub fn collect_secret_settings(
         kdbx_key_file,
         kdbx_use_key_file: widgets.kdbx_use_key_file_check.is_active(),
         kdbx_use_password: widgets.kdbx_use_password_check.is_active(),
+        bitwarden_password,
+        bitwarden_password_encrypted,
     }
 }

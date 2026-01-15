@@ -212,6 +212,13 @@ pub struct SecretSettings {
     /// Whether to use password for authentication
     #[serde(default = "default_true")]
     pub kdbx_use_password: bool,
+    /// Bitwarden master password (NOT serialized for security - runtime only)
+    #[serde(skip)]
+    pub bitwarden_password: Option<SecretString>,
+    /// Encrypted Bitwarden master password for persistence (hex encoded)
+    /// Uses machine-specific key derivation for security
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bitwarden_password_encrypted: Option<String>,
 }
 
 const fn default_true() -> bool {
@@ -230,6 +237,8 @@ impl Default for SecretSettings {
             kdbx_key_file: None,
             kdbx_use_key_file: false,
             kdbx_use_password: true,
+            bitwarden_password: None,
+            bitwarden_password_encrypted: None,
         }
     }
 }
@@ -256,10 +265,12 @@ pub enum SecretBackendType {
     /// `KeePassXC` browser integration
     #[default]
     KeePassXc,
-    /// Direct KDBX file access
+    /// Direct KDBX file access (GNOME Secrets, `OneKeePass`, KeePass compatible)
     KdbxFile,
     /// libsecret (GNOME Keyring/KDE Wallet)
     LibSecret,
+    /// Bitwarden CLI
+    Bitwarden,
 }
 
 /// Color scheme preference
@@ -462,6 +473,39 @@ impl SecretSettings {
     pub fn clear_password(&mut self) {
         self.kdbx_password = None;
         self.kdbx_password_encrypted = None;
+    }
+
+    /// Encrypts the Bitwarden master password for storage
+    /// Uses a simple XOR cipher with machine-specific key
+    pub fn encrypt_bitwarden_password(&mut self) {
+        if let Some(ref password) = self.bitwarden_password {
+            use secrecy::ExposeSecret;
+            let key = Self::get_machine_key();
+            let encrypted = Self::xor_cipher(password.expose_secret().as_bytes(), &key);
+            self.bitwarden_password_encrypted = Some(base64_encode(&encrypted));
+        }
+    }
+
+    /// Decrypts the stored Bitwarden master password
+    /// Returns true if decryption was successful
+    pub fn decrypt_bitwarden_password(&mut self) -> bool {
+        if let Some(ref encrypted) = self.bitwarden_password_encrypted {
+            if let Some(decoded) = base64_decode(encrypted) {
+                let key = Self::get_machine_key();
+                let decrypted = Self::xor_cipher(&decoded, &key);
+                if let Ok(password_str) = String::from_utf8(decrypted) {
+                    self.bitwarden_password = Some(SecretString::from(password_str));
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    /// Clears both encrypted and runtime Bitwarden password
+    pub fn clear_bitwarden_password(&mut self) {
+        self.bitwarden_password = None;
+        self.bitwarden_password_encrypted = None;
     }
 
     /// Gets a machine-specific key for encryption

@@ -5,6 +5,28 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] - 2026-01-15
+
+### Added
+- **Bitwarden CLI Integration** - New secret backend for Bitwarden password manager:
+  - Full `SecretBackend` trait implementation with async credential resolution
+  - Vault status checking (locked/unlocked/unauthenticated)
+  - Session token management with automatic refresh
+  - Secure credential lookup by connection name or host
+  - Settings UI with vault status indicator and unlock functionality
+- **Password Manager Detection** - Automatic detection of installed password managers:
+  - Detects GNOME Secrets, KeePassXC, KeePass2, Bitwarden CLI, 1Password CLI
+  - Shows installed managers with version info in Settings → Secrets tab
+  - New "Installed Password Managers" section for quick overview
+- **Enhanced Secrets Settings UI** - Improved backend selection experience:
+  - Backend dropdown now includes all 4 options: KeePassXC, libsecret, KDBX File, Bitwarden
+  - Dynamic configuration groups based on selected backend
+  - Bitwarden-specific settings with vault status checking
+
+### Changed
+- `SecretBackendType` enum extended with `Bitwarden` variant
+- `SecretError` extended with `Bitwarden` variant for CLI-specific errors
+
 ## [Unreleased] - 0.6.2
 
 ### Added

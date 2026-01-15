@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.6.2
+Version:        0.6.3
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later
@@ -157,6 +157,13 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Wed Jan 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.3-0
+- Update to version 0.6.3
+- Bitwarden CLI Integration - New secret backend for Bitwarden password manager
+- Password Manager Detection - Automatic detection of installed managers
+- Enhanced Secrets Settings UI - Improved backend selection with dynamic config
+- Detects GNOME Secrets, KeePassXC, KeePass2, Bitwarden CLI, 1Password CLI
+
 * Wed Jan 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.2-0
 - Update to version 0.6.2
 - MobaXterm Import/Export - Full support for .mxtsessions files

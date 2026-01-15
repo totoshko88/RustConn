@@ -419,6 +419,10 @@ impl SettingsDialog {
         let kdbx_key_file_entry_clone = self.secrets_widgets.kdbx_key_file_entry.clone();
         let kdbx_use_key_file_check_clone = self.secrets_widgets.kdbx_use_key_file_check.clone();
         let kdbx_use_password_check_clone = self.secrets_widgets.kdbx_use_password_check.clone();
+        let bitwarden_password_entry_clone =
+            self.secrets_widgets.bitwarden_password_entry.clone();
+        let bitwarden_save_password_check_clone =
+            self.secrets_widgets.bitwarden_save_password_check.clone();
 
         // UI controls
         let color_scheme_box_clone = self.color_scheme_box.clone();
@@ -482,6 +486,11 @@ impl SettingsDialog {
                 password_row: adw::ActionRow::new(),      // dummy
                 save_password_row: adw::ActionRow::new(), // dummy
                 key_file_row: adw::ActionRow::new(),      // dummy
+                bitwarden_group: adw::PreferencesGroup::new(), // dummy
+                bitwarden_status_label: Label::new(None), // dummy
+                bitwarden_unlock_button: Button::new(),   // dummy
+                bitwarden_password_entry: bitwarden_password_entry_clone.clone(),
+                bitwarden_save_password_check: bitwarden_save_password_check_clone.clone(),
             };
             let secrets = collect_secret_settings(&secrets_widgets_for_collect, &settings_clone);
 

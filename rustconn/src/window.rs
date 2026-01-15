@@ -392,40 +392,33 @@ impl MainWindow {
         });
         window.add_action(&settings_action);
 
-        // Open KeePass action - opens KeePassXC with configured database
+        // Open password vault action - opens the configured password manager
         let open_keepass_action = gio::SimpleAction::new("open-keepass", None);
         let state_clone = state.clone();
         open_keepass_action.connect_activate(move |_, _| {
             let state_ref = state_clone.borrow();
             let settings = state_ref.settings();
+            let backend = settings.secrets.preferred_backend;
+            drop(state_ref);
 
-            if settings.secrets.kdbx_enabled {
-                if let Some(ref kdbx_path) = settings.secrets.kdbx_path {
-                    if kdbx_path.exists() {
-                        // Open KeePassXC with the database file
-                        if let Err(e) = std::process::Command::new("keepassxc")
-                            .arg(kdbx_path)
-                            .spawn()
-                        {
-                            eprintln!("Failed to open KeePassXC: {e}");
-                        }
-                    } else {
-                        eprintln!("KeePass database file not found: {}", kdbx_path.display());
-                    }
-                }
+            // Open the password manager for the configured backend
+            if let Err(e) = rustconn_core::secret::open_password_manager(&backend) {
+                eprintln!("Failed to open password manager: {e}");
             }
         });
-        // Initially disabled, will be enabled when integration is active
-        open_keepass_action.set_enabled(
-            state.borrow().settings().secrets.kdbx_enabled
-                && state
-                    .borrow()
-                    .settings()
-                    .secrets
-                    .kdbx_path
-                    .as_ref()
-                    .is_some_and(|p| p.exists()),
-        );
+        // Enable based on backend type - always enabled for libsecret/bitwarden,
+        // for KeePassXC/KdbxFile requires kdbx_enabled and valid path
+        let settings = state.borrow().settings().clone();
+        let action_enabled = match settings.secrets.preferred_backend {
+            rustconn_core::config::SecretBackendType::LibSecret
+            | rustconn_core::config::SecretBackendType::Bitwarden => true,
+            rustconn_core::config::SecretBackendType::KeePassXc
+            | rustconn_core::config::SecretBackendType::KdbxFile => {
+                settings.secrets.kdbx_enabled
+                    && settings.secrets.kdbx_path.as_ref().is_some_and(|p| p.exists())
+            }
+        };
+        open_keepass_action.set_enabled(action_enabled);
         window.add_action(&open_keepass_action);
 
         // Export action
@@ -1577,16 +1570,28 @@ impl MainWindow {
         self.sidebar.apply_expanded_groups(&expanded_groups);
     }
 
-    /// Updates the KeePass button status in the sidebar based on current settings
+    /// Updates the password vault button status in the sidebar based on current settings
     fn update_keepass_button_status(&self) {
         let state_ref = self.state.borrow();
         let settings = state_ref.settings();
-        let enabled = settings.secrets.kdbx_enabled;
-        let database_exists = settings
-            .secrets
-            .kdbx_path
-            .as_ref()
-            .is_some_and(|p| p.exists());
+        let backend = settings.secrets.preferred_backend;
+
+        // For libsecret and Bitwarden, always enabled (no database file needed)
+        // For KeePassXC/KdbxFile, check if enabled and database exists
+        let (enabled, database_exists) = match backend {
+            rustconn_core::config::SecretBackendType::LibSecret
+            | rustconn_core::config::SecretBackendType::Bitwarden => (true, true),
+            rustconn_core::config::SecretBackendType::KeePassXc
+            | rustconn_core::config::SecretBackendType::KdbxFile => {
+                let kdbx_enabled = settings.secrets.kdbx_enabled;
+                let db_exists = settings
+                    .secrets
+                    .kdbx_path
+                    .as_ref()
+                    .is_some_and(|p| p.exists());
+                (kdbx_enabled, db_exists)
+            }
+        };
         drop(state_ref);
 
         self.sidebar.update_keepass_status(enabled, database_exists);
@@ -2882,7 +2887,8 @@ impl MainWindow {
         let window_clone = window.clone();
         dialog.run(Some(window), move |result| {
             if let Some(settings) = result {
-                // Capture KeePass state for action update
+                // Capture backend and KeePass state for action update
+                let backend = settings.secrets.preferred_backend;
                 let keepass_enabled = settings.secrets.kdbx_enabled;
                 let kdbx_path_exists = settings
                     .secrets
@@ -2897,11 +2903,19 @@ impl MainWindow {
                     if let Err(e) = state_mut.update_settings(settings) {
                         eprintln!("Failed to save settings: {e}");
                     } else {
-                        // Update open-keepass action enabled state
+                        // Update open-keepass action enabled state based on backend
                         if let Some(action) = window_clone.lookup_action("open-keepass") {
                             if let Some(simple_action) = action.downcast_ref::<gio::SimpleAction>()
                             {
-                                simple_action.set_enabled(keepass_enabled && kdbx_path_exists);
+                                let action_enabled = match backend {
+                                    rustconn_core::config::SecretBackendType::LibSecret
+                                    | rustconn_core::config::SecretBackendType::Bitwarden => true,
+                                    rustconn_core::config::SecretBackendType::KeePassXc
+                                    | rustconn_core::config::SecretBackendType::KdbxFile => {
+                                        keepass_enabled && kdbx_path_exists
+                                    }
+                                };
+                                simple_action.set_enabled(action_enabled);
                             }
                         }
                     }

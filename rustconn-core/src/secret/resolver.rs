@@ -179,20 +179,28 @@ impl CredentialResolver {
 
     /// Selects the appropriate storage backend based on settings
     ///
-    /// Returns `KeePass` if enabled, otherwise `Keyring`.
+    /// Returns the preferred backend type based on configuration.
     ///
     /// # Requirements Coverage
     ///
-    /// - Requirement 3.1: Store to `KeePass` if enabled, otherwise Keyring
+    /// - Requirement 3.1: Store to preferred backend based on settings
     ///
     /// # Returns
     /// The selected backend type
     #[must_use]
     pub const fn select_storage_backend(&self) -> SecretBackendType {
-        if self.settings.kdbx_enabled && self.settings.kdbx_path.is_some() {
-            SecretBackendType::KdbxFile
-        } else {
-            SecretBackendType::LibSecret
+        match self.settings.preferred_backend {
+            SecretBackendType::Bitwarden => SecretBackendType::Bitwarden,
+            SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
+                if self.settings.kdbx_enabled && self.settings.kdbx_path.is_some() {
+                    SecretBackendType::KdbxFile
+                } else if self.settings.enable_fallback {
+                    SecretBackendType::LibSecret
+                } else {
+                    self.settings.preferred_backend
+                }
+            }
+            SecretBackendType::LibSecret => SecretBackendType::LibSecret,
         }
     }
 
@@ -374,11 +382,11 @@ impl CredentialResolver {
 
     /// Stores credentials using the unified storage backend
     ///
-    /// Automatically selects `KeePass` or Keyring based on settings.
+    /// Automatically selects backend based on settings.
     ///
     /// # Requirements Coverage
     ///
-    /// - Requirement 3.1: Store to `KeePass` if enabled, otherwise Keyring
+    /// - Requirement 3.1: Store to preferred backend based on settings
     ///
     /// # Arguments
     /// * `connection` - The connection to store credentials for
@@ -401,6 +409,11 @@ impl CredentialResolver {
             SecretBackendType::LibSecret => {
                 let connection_id = connection.id.to_string();
                 self.secret_manager.store(&connection_id, credentials).await
+            }
+            SecretBackendType::Bitwarden => {
+                // For Bitwarden, use connection name as identifier
+                let lookup_key = Self::generate_lookup_key(connection);
+                self.secret_manager.store(&lookup_key, credentials).await
             }
         }
     }
@@ -430,6 +443,11 @@ impl CredentialResolver {
             SecretBackendType::LibSecret => {
                 let connection_id = connection.id.to_string();
                 self.secret_manager.store(&connection_id, credentials).await
+            }
+            SecretBackendType::Bitwarden => {
+                // For Bitwarden, use hierarchical path as entry name
+                let lookup_key = Self::generate_hierarchical_lookup_key(connection, groups);
+                self.secret_manager.store(&lookup_key, credentials).await
             }
         }
     }
