@@ -1,0 +1,33 @@
+name: Snap Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Snap
+        uses: snapcore/action-build@v1
+        id: build
+
+      - name: Upload Snap artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: snap-${{ github.ref_name }}
+          path: ${{ steps.build.outputs.snap }}
+
+      - name: Publish to Snap Store
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAP_STORE_TOKEN }}
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          release: stable

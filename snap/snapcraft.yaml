@@ -1,0 +1,68 @@
+name: rustconn
+base: core24
+version: '0.6.3'
+summary: Modern connection manager for Linux
+description: |
+  RustConn is a GTK4/libadwaita connection manager supporting SSH, RDP, VNC, 
+  SPICE protocols and Zero Trust integrations (AWS SSM, GCP IAP, Azure, etc.)
+  
+  Features:
+  - Embedded SSH terminals with split view
+  - Connection organization via groups and tags
+  - Import/Export: Remmina, Asbru-CM, SSH config, Ansible, Royal TS, MobaXterm
+  - Credential backends: libsecret, KeePassXC, Bitwarden CLI
+  - Session logging, command snippets, cluster commands, Wake-on-LAN
+
+grade: stable
+confinement: strict
+icon: rustconn/assets/icons/hicolor/256x256/apps/io.github.totoshko88.RustConn.png
+
+architectures:
+  - build-on: amd64
+
+apps:
+  rustconn:
+    command: usr/bin/rustconn
+    desktop: usr/share/applications/io.github.totoshko88.RustConn.desktop
+    extensions: [gnome]
+    plugs:
+      - home
+      - network
+      - network-bind
+      - ssh-keys
+      - gpg-keys
+      - password-manager-service
+      - desktop
+      - desktop-legacy
+      - wayland
+      - x11
+      - opengl
+
+parts:
+  rustconn:
+    plugin: rust
+    source: .
+    rust-channel: "1.87"
+    rust-path: [rustconn]
+    rust-use-global-lto: true
+    build-packages:
+      - libgtk-4-dev
+      - libadwaita-1-dev
+      - libvte-2.91-gtk4-dev
+      - libssl-dev
+      - pkg-config
+      - clang
+      - cmake
+    stage-packages:
+      - libgtk-4-1
+      - libadwaita-1-0
+      - libvte-2.91-gtk4-0
+      - openssh-client
+    organize:
+      bin/rustconn: usr/bin/rustconn
+    override-build: |
+      craftctl default
+      mkdir -p $CRAFT_PART_INSTALL/usr/share/applications
+      mkdir -p $CRAFT_PART_INSTALL/usr/share/icons
+      cp rustconn/assets/io.github.totoshko88.RustConn.desktop $CRAFT_PART_INSTALL/usr/share/applications/
+      cp -r rustconn/assets/icons/hicolor $CRAFT_PART_INSTALL/usr/share/icons/
