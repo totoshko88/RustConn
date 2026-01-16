@@ -64,16 +64,6 @@ parts:
       - libadwaita-1-0
       - libvte-2.91-gtk4-0
       - libasound2t64
-      - libgraphene-1.0-0
-      - libpango-1.0-0
-      - libpangocairo-1.0-0
-      - libpangoft2-1.0-0
-      - libharfbuzz0b
-      - libcairo2
-      - libcairo-gobject2
-      - libgdk-pixbuf-2.0-0
-      - libglib2.0-0t64
-      - libgio-3.0-cil
       - libssl3t64
       - openssh-client
     organize:
