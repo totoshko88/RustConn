@@ -49,6 +49,7 @@ apps:
       - wayland
       - x11
       - opengl
+      - audio-playback
       - gtk-4-themes
       - icon-themes
     environment:
@@ -81,6 +82,12 @@ parts:
       - libvte-2.91-gtk4-0
       - libasound2t64
       - libssl3t64
+      - libegl1
+      - libgl1
+      - libgles2
+      - libglx-mesa0
+      - libvulkan1
+      - mesa-vulkan-drivers
       - openssh-client
     organize:
       bin/rustconn: usr/bin/rustconn
@@ -93,15 +100,16 @@ parts:
       cp -r rustconn/assets/icons/hicolor $CRAFT_PART_INSTALL/usr/share/icons/
       cat > $CRAFT_PART_INSTALL/bin/rustconn-wrapper << 'ENDSCRIPT'
       #!/bin/bash
+      # Ensure XDG_RUNTIME_DIR exists
+      mkdir -p "$XDG_RUNTIME_DIR" 2>/dev/null || true
       # Symlink Wayland socket for HiDPI scaling support
-      if [ -n "$WAYLAND_DISPLAY" ] && [ -e "/run/user/$(id -u)/$WAYLAND_DISPLAY" ]; then
-        if [ ! -e "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]; then
-          ln -sf "/run/user/$(id -u)/$WAYLAND_DISPLAY" "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY"
-        fi
+      REAL_RUNTIME="/run/user/$(id -u)"
+      if [ -n "$WAYLAND_DISPLAY" ] && [ -e "$REAL_RUNTIME/$WAYLAND_DISPLAY" ]; then
+        ln -sf "$REAL_RUNTIME/$WAYLAND_DISPLAY" "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" 2>/dev/null || true
       fi
       # Symlink PulseAudio socket
-      if [ -e "/run/user/$(id -u)/pulse" ] && [ ! -e "$XDG_RUNTIME_DIR/pulse" ]; then
-        ln -sf "/run/user/$(id -u)/pulse" "$XDG_RUNTIME_DIR/pulse"
+      if [ -e "$REAL_RUNTIME/pulse" ]; then
+        ln -sf "$REAL_RUNTIME/pulse" "$XDG_RUNTIME_DIR/pulse" 2>/dev/null || true
       fi
       exec "$SNAP/usr/bin/rustconn" "$@"
       ENDSCRIPT
