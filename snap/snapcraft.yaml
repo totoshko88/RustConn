@@ -34,7 +34,7 @@ plugs:
 
 apps:
   rustconn:
-    command: usr/bin/rustconn
+    command: bin/rustconn-wrapper
     desktop: usr/share/applications/io.github.totoshko88.RustConn.desktop
     common-id: io.github.totoshko88.RustConn
     plugs:
@@ -53,10 +53,11 @@ apps:
       - icon-themes
     environment:
       GTK_USE_PORTAL: "1"
-      LD_LIBRARY_PATH: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$SNAP/usr/lib:$LD_LIBRARY_PATH
-      GI_TYPELIB_PATH: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/girepository-1.0
-      GTK_PATH: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gtk-4.0
+      LD_LIBRARY_PATH: $SNAP/usr/lib/x86_64-linux-gnu:$SNAP/usr/lib:$LD_LIBRARY_PATH
+      GI_TYPELIB_PATH: $SNAP/usr/lib/x86_64-linux-gnu/girepository-1.0
+      GTK_PATH: $SNAP/usr/lib/x86_64-linux-gnu/gtk-4.0
       XDG_DATA_DIRS: $SNAP/usr/share:$XDG_DATA_DIRS
+      XCURSOR_PATH: $SNAP/usr/share/icons
 
 parts:
   rustconn:
@@ -87,5 +88,21 @@ parts:
       craftctl default
       mkdir -p $CRAFT_PART_INSTALL/usr/share/applications
       mkdir -p $CRAFT_PART_INSTALL/usr/share/icons
+      mkdir -p $CRAFT_PART_INSTALL/bin
       cp rustconn/assets/io.github.totoshko88.RustConn.desktop $CRAFT_PART_INSTALL/usr/share/applications/
       cp -r rustconn/assets/icons/hicolor $CRAFT_PART_INSTALL/usr/share/icons/
+      cat > $CRAFT_PART_INSTALL/bin/rustconn-wrapper << 'ENDSCRIPT'
+      #!/bin/bash
+      # Symlink Wayland socket for HiDPI scaling support
+      if [ -n "$WAYLAND_DISPLAY" ] && [ -e "/run/user/$(id -u)/$WAYLAND_DISPLAY" ]; then
+        if [ ! -e "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]; then
+          ln -sf "/run/user/$(id -u)/$WAYLAND_DISPLAY" "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY"
+        fi
+      fi
+      # Symlink PulseAudio socket
+      if [ -e "/run/user/$(id -u)/pulse" ] && [ ! -e "$XDG_RUNTIME_DIR/pulse" ]; then
+        ln -sf "/run/user/$(id -u)/pulse" "$XDG_RUNTIME_DIR/pulse"
+      fi
+      exec "$SNAP/usr/bin/rustconn" "$@"
+      ENDSCRIPT
+      chmod +x $CRAFT_PART_INSTALL/bin/rustconn-wrapper
