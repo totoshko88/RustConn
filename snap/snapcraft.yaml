@@ -22,9 +22,19 @@ platforms:
     build-on: [amd64]
     build-for: [amd64]
 
+plugs:
+  gtk-4-themes:
+    interface: content
+    target: $SNAP/share/themes
+    default-provider: gtk-common-themes
+  icon-themes:
+    interface: content
+    target: $SNAP/share/icons
+    default-provider: gtk-common-themes
+
 apps:
   rustconn:
-    command: bin/rustconn-wrapper
+    command: usr/bin/rustconn
     desktop: usr/share/applications/io.github.totoshko88.RustConn.desktop
     common-id: io.github.totoshko88.RustConn
     plugs:
@@ -39,18 +49,14 @@ apps:
       - wayland
       - x11
       - opengl
-
-layout:
-  /usr/share/libdrm:
-    bind: $SNAP/usr/share/libdrm
-  /usr/share/drirc.d:
-    symlink: $SNAP/usr/share/drirc.d
-  /usr/share/X11:
-    symlink: $SNAP/usr/share/X11
-  /usr/share/icons:
-    bind: $SNAP/usr/share/icons
-  /usr/share/glib-2.0/schemas:
-    bind: $SNAP/usr/share/glib-2.0/schemas
+      - gtk-4-themes
+      - icon-themes
+    environment:
+      GTK_USE_PORTAL: "1"
+      LD_LIBRARY_PATH: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$SNAP/usr/lib:$LD_LIBRARY_PATH
+      GI_TYPELIB_PATH: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/girepository-1.0
+      GTK_PATH: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gtk-4.0
+      XDG_DATA_DIRS: $SNAP/usr/share:$XDG_DATA_DIRS
 
 parts:
   rustconn:
@@ -74,14 +80,6 @@ parts:
       - libvte-2.91-gtk4-0
       - libasound2t64
       - libssl3t64
-      - libgl1
-      - libglx-mesa0
-      - libdrm2
-      - libgbm1
-      - libegl1
-      - libwayland-client0
-      - libwayland-egl1
-      - libxkbcommon0
       - openssh-client
     organize:
       bin/rustconn: usr/bin/rustconn
@@ -89,20 +87,5 @@ parts:
       craftctl default
       mkdir -p $CRAFT_PART_INSTALL/usr/share/applications
       mkdir -p $CRAFT_PART_INSTALL/usr/share/icons
-      mkdir -p $CRAFT_PART_INSTALL/bin
       cp rustconn/assets/io.github.totoshko88.RustConn.desktop $CRAFT_PART_INSTALL/usr/share/applications/
       cp -r rustconn/assets/icons/hicolor $CRAFT_PART_INSTALL/usr/share/icons/
-      cat > $CRAFT_PART_INSTALL/bin/rustconn-wrapper << 'WRAPPER'
-      #!/bin/bash
-      export GTK_USE_PORTAL=1
-      export GDK_BACKEND=wayland,x11
-      export GDK_GL=gles
-      export GSK_RENDERER=gl
-      export LD_LIBRARY_PATH=$SNAP/usr/lib/x86_64-linux-gnu:$SNAP/usr/lib:$LD_LIBRARY_PATH
-      export GI_TYPELIB_PATH=$SNAP/usr/lib/x86_64-linux-gnu/girepository-1.0
-      export XDG_DATA_DIRS=$SNAP/usr/share:$XDG_DATA_DIRS
-      export GTK_PATH=$SNAP/usr/lib/x86_64-linux-gnu/gtk-4.0
-      export GDK_PIXBUF_MODULE_FILE=$SNAP/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache
-      exec "$SNAP/usr/bin/rustconn" "$@"
-      WRAPPER
-      chmod +x $CRAFT_PART_INSTALL/bin/rustconn-wrapper
