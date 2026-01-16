@@ -1,5 +1,5 @@
 name: rustconn
-base: core24
+base: core22
 version: '0.6.3'
 summary: Modern connection manager for Linux
 description: |
@@ -17,10 +17,8 @@ grade: stable
 confinement: strict
 icon: rustconn/assets/icons/hicolor/256x256/apps/io.github.totoshko88.RustConn.png
 
-platforms:
-  amd64:
-    build-on: [amd64]
-    build-for: [amd64]
+architectures:
+  - build-on: amd64
 
 apps:
   rustconn:
@@ -60,6 +58,7 @@ parts:
       - libgtk-4-1
       - libadwaita-1-0
       - libvte-2.91-gtk4-0
+      - libasound2
       - openssh-client
     organize:
       bin/rustconn: usr/bin/rustconn
