@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.3] - 2026-01-15
+## [0.6.3] - 2026-01-16
 
 ### Added
 - **Bitwarden CLI Integration** - New secret backend for Bitwarden password manager:
@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Session token management with automatic refresh
   - Secure credential lookup by connection name or host
   - Settings UI with vault status indicator and unlock functionality
+  - Master password persistence with encrypted storage (machine-specific)
 - **Password Manager Detection** - Automatic detection of installed password managers:
   - Detects GNOME Secrets, KeePassXC, KeePass2, Bitwarden CLI, 1Password CLI
   - Shows installed managers with version info in Settings → Secrets tab
@@ -22,10 +23,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Backend dropdown now includes all 4 options: KeePassXC, libsecret, KDBX File, Bitwarden
   - Dynamic configuration groups based on selected backend
   - Bitwarden-specific settings with vault status checking
+- **Universal Password Vault Button** - Sidebar button now opens appropriate password manager:
+  - Opens KeePassXC/GNOME Secrets for KeePassXC backend
+  - Opens Seahorse/GNOME Settings for libsecret backend
+  - Opens Bitwarden web vault for Bitwarden backend
 
 ### Changed
 - `SecretBackendType` enum extended with `Bitwarden` variant
 - `SecretError` extended with `Bitwarden` variant for CLI-specific errors
+- Renamed "Save to KeePass" / "Load from KeePass" buttons to universal "Save password to vault" / "Load password from vault"
+- Renamed sidebar "Open KeePass Database" button to "Open Password Vault"
+- Improved split view button icons for better intuitiveness:
+  - Split Vertical now uses `object-flip-horizontal-symbolic`
+  - Split Horizontal now uses `object-flip-vertical-symbolic`
+
+### Updated Dependencies
+- `aws-lc-rs` 1.15.2 → 1.15.3
+- `aws-lc-sys` 0.35.0 → 0.36.0
+- `chrono` 0.4.42 → 0.4.43
+- `clap_lex` 0.7.6 → 0.7.7
+- `time` 0.3.44 → 0.3.45
+- `tower` 0.5.2 → 0.5.3
+- `zune-jpeg` 0.5.8 → 0.5.9
 
 ## [Unreleased] - 0.6.2
 
