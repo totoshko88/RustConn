@@ -342,6 +342,67 @@ const fn default_gateway_port() -> u16 {
     443
 }
 
+/// RDP performance mode for quality/speed tradeoff
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum RdpPerformanceMode {
+    /// Best quality - 32-bit color, all visual effects
+    Quality,
+    /// Balanced - 24-bit color, moderate compression
+    #[default]
+    Balanced,
+    /// Best speed - 16-bit color, maximum compression, no effects
+    Speed,
+}
+
+impl RdpPerformanceMode {
+    /// Returns all available performance modes
+    #[must_use]
+    pub const fn all() -> &'static [Self] {
+        &[Self::Quality, Self::Balanced, Self::Speed]
+    }
+
+    /// Returns the display name for this mode
+    #[must_use]
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::Quality => "Quality (32-bit)",
+            Self::Balanced => "Balanced (24-bit)",
+            Self::Speed => "Speed (16-bit)",
+        }
+    }
+
+    /// Returns the index of this mode in the `all()` array
+    #[must_use]
+    pub const fn index(self) -> u32 {
+        match self {
+            Self::Quality => 0,
+            Self::Balanced => 1,
+            Self::Speed => 2,
+        }
+    }
+
+    /// Creates a mode from an index
+    #[must_use]
+    pub const fn from_index(index: u32) -> Self {
+        match index {
+            0 => Self::Quality,
+            2 => Self::Speed,
+            _ => Self::Balanced,
+        }
+    }
+
+    /// Returns the recommended color depth for this mode
+    #[must_use]
+    pub const fn color_depth(self) -> u8 {
+        match self {
+            Self::Quality => 32,
+            Self::Balanced => 24,
+            Self::Speed => 16,
+        }
+    }
+}
+
 /// RDP client mode selection
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
@@ -394,10 +455,13 @@ pub struct RdpConfig {
     /// RDP client mode (embedded or external)
     #[serde(default)]
     pub client_mode: RdpClientMode,
+    /// Performance mode (quality/balanced/speed)
+    #[serde(default)]
+    pub performance_mode: RdpPerformanceMode,
     /// Screen resolution
     #[serde(skip_serializing_if = "Option::is_none")]
     pub resolution: Option<Resolution>,
-    /// Color depth (8, 15, 16, 24, or 32)
+    /// Color depth (8, 15, 16, 24, or 32) - overrides performance_mode if set
     #[serde(skip_serializing_if = "Option::is_none")]
     pub color_depth: Option<u8>,
     /// Enable audio redirection
@@ -412,6 +476,95 @@ pub struct RdpConfig {
     /// Custom command-line arguments
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub custom_args: Vec<String>,
+}
+
+impl RdpConfig {
+    /// Returns the effective color depth based on performance mode and explicit setting
+    #[must_use]
+    pub fn effective_color_depth(&self) -> u8 {
+        self.color_depth
+            .unwrap_or_else(|| self.performance_mode.color_depth())
+    }
+}
+
+/// VNC performance mode for quality/speed tradeoff
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum VncPerformanceMode {
+    /// Best quality - Tight encoding, no compression, max quality
+    Quality,
+    /// Balanced - Tight encoding, moderate compression/quality
+    #[default]
+    Balanced,
+    /// Best speed - ZRLE encoding, max compression, low quality
+    Speed,
+}
+
+impl VncPerformanceMode {
+    /// Returns all available performance modes
+    #[must_use]
+    pub const fn all() -> &'static [Self] {
+        &[Self::Quality, Self::Balanced, Self::Speed]
+    }
+
+    /// Returns the display name for this mode
+    #[must_use]
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::Quality => "Quality",
+            Self::Balanced => "Balanced",
+            Self::Speed => "Speed",
+        }
+    }
+
+    /// Returns the index of this mode in the `all()` array
+    #[must_use]
+    pub const fn index(self) -> u32 {
+        match self {
+            Self::Quality => 0,
+            Self::Balanced => 1,
+            Self::Speed => 2,
+        }
+    }
+
+    /// Creates a mode from an index
+    #[must_use]
+    pub const fn from_index(index: u32) -> Self {
+        match index {
+            0 => Self::Quality,
+            2 => Self::Speed,
+            _ => Self::Balanced,
+        }
+    }
+
+    /// Returns the recommended encoding for this mode
+    #[must_use]
+    pub const fn encoding(self) -> &'static str {
+        match self {
+            Self::Quality | Self::Balanced => "tight",
+            Self::Speed => "zrle",
+        }
+    }
+
+    /// Returns the recommended compression level (0-9) for this mode
+    #[must_use]
+    pub const fn compression(self) -> u8 {
+        match self {
+            Self::Quality => 0,
+            Self::Balanced => 5,
+            Self::Speed => 9,
+        }
+    }
+
+    /// Returns the recommended quality level (0-9) for this mode
+    #[must_use]
+    pub const fn quality(self) -> u8 {
+        match self {
+            Self::Quality => 9,
+            Self::Balanced => 5,
+            Self::Speed => 1,
+        }
+    }
 }
 
 /// VNC client mode selection
@@ -466,13 +619,16 @@ pub struct VncConfig {
     /// VNC client mode (embedded or external)
     #[serde(default)]
     pub client_mode: VncClientMode,
-    /// Preferred encoding (e.g., "tight", "zrle", "hextile")
+    /// Performance mode (quality/balanced/speed)
+    #[serde(default)]
+    pub performance_mode: VncPerformanceMode,
+    /// Preferred encoding (e.g., "tight", "zrle", "hextile") - overrides performance_mode if set
     #[serde(skip_serializing_if = "Option::is_none")]
     pub encoding: Option<String>,
-    /// Compression level (0-9)
+    /// Compression level (0-9) - overrides performance_mode if set
     #[serde(skip_serializing_if = "Option::is_none")]
     pub compression: Option<u8>,
-    /// Quality level (0-9)
+    /// Quality level (0-9) - overrides performance_mode if set
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quality: Option<u8>,
     /// View-only mode (no input)
@@ -487,6 +643,30 @@ pub struct VncConfig {
     /// Custom command-line arguments (for external client)
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub custom_args: Vec<String>,
+}
+
+impl VncConfig {
+    /// Returns the effective encoding based on performance mode and explicit setting
+    #[must_use]
+    pub fn effective_encoding(&self) -> &str {
+        self.encoding
+            .as_deref()
+            .unwrap_or_else(|| self.performance_mode.encoding())
+    }
+
+    /// Returns the effective compression level based on performance mode and explicit setting
+    #[must_use]
+    pub fn effective_compression(&self) -> u8 {
+        self.compression
+            .unwrap_or_else(|| self.performance_mode.compression())
+    }
+
+    /// Returns the effective quality level based on performance mode and explicit setting
+    #[must_use]
+    pub fn effective_quality(&self) -> u8 {
+        self.quality
+            .unwrap_or_else(|| self.performance_mode.quality())
+    }
 }
 
 /// SPICE image compression mode

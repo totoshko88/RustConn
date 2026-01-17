@@ -3,6 +3,7 @@
 //! This module contains error types, enums, and configuration structs
 //! used by the embedded RDP widget.
 
+use rustconn_core::models::RdpPerformanceMode;
 use std::path::PathBuf;
 use thiserror::Error;
 
@@ -103,6 +104,8 @@ pub struct RdpConfig {
     pub height: u32,
     /// Enable clipboard sharing
     pub clipboard_enabled: bool,
+    /// Performance mode (Quality/Balanced/Speed)
+    pub performance_mode: RdpPerformanceMode,
     /// Shared folders for drive redirection
     pub shared_folders: Vec<EmbeddedSharedFolder>,
     /// Additional FreeRDP arguments
@@ -128,6 +131,7 @@ impl Default for RdpConfig {
             width: 1920,
             height: 1080,
             clipboard_enabled: true,
+            performance_mode: RdpPerformanceMode::default(),
             shared_folders: Vec::new(),
             extra_args: Vec::new(),
             window_geometry: None,
@@ -187,6 +191,13 @@ impl RdpConfig {
     #[must_use]
     pub const fn with_clipboard(mut self, enabled: bool) -> Self {
         self.clipboard_enabled = enabled;
+        self
+    }
+
+    /// Sets the performance mode (Quality/Balanced/Speed)
+    #[must_use]
+    pub const fn with_performance_mode(mut self, mode: RdpPerformanceMode) -> Self {
+        self.performance_mode = mode;
         self
     }
 

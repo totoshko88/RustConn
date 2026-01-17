@@ -3,6 +3,7 @@
 // Allow struct with multiple bools - RDP has many boolean options
 #![allow(clippy::struct_excessive_bools)]
 
+use crate::models::RdpPerformanceMode;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -93,6 +94,10 @@ pub struct RdpClientConfig {
     /// Scale factor for `HiDPI` displays (100 = 100%)
     #[serde(default = "default_scale_factor")]
     pub scale_factor: u32,
+
+    /// Performance mode (Quality/Balanced/Speed)
+    #[serde(default)]
+    pub performance_mode: RdpPerformanceMode,
 }
 
 const fn default_true() -> bool {
@@ -139,6 +144,7 @@ impl Default for RdpClientConfig {
             shared_folders: Vec::new(),
             dynamic_resolution: true,
             scale_factor: 100,
+            performance_mode: RdpPerformanceMode::default(),
         }
     }
 }
@@ -235,6 +241,13 @@ impl RdpClientConfig {
     #[must_use]
     pub const fn with_scale_factor(mut self, factor: u32) -> Self {
         self.scale_factor = factor;
+        self
+    }
+
+    /// Sets the performance mode (Quality/Balanced/Speed)
+    #[must_use]
+    pub const fn with_performance_mode(mut self, mode: RdpPerformanceMode) -> Self {
+        self.performance_mode = mode;
         self
     }
 

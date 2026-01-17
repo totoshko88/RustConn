@@ -41,7 +41,7 @@ spice-client = { version = "0.2.0", optional = true }
 # native-tls instead of rustls to match rdw approach
 # Features: cliprdr (clipboard), rdpdr (shared folders), dvc (dynamic channels),
 # displaycontrol (dynamic resolution), rdpsnd (audio)
-ironrdp = { version = "0.13", features = [
+ironrdp = { version = "0.14", features = [
     "connector", "session", "graphics", "pdu", "core", "svc",
     "cliprdr",        # Clipboard redirection
     "rdpdr",          # Device/drive redirection (shared folders)
@@ -49,15 +49,13 @@ ironrdp = { version = "0.13", features = [
     "displaycontrol", # Dynamic resolution changes (MS-RDPEDISP)
     "rdpsnd",         # Audio redirection
 ], optional = true }
-ironrdp-tokio = { version = "0.7", features = ["reqwest"], optional = true }
-ironrdp-tls = { version = "0.1", features = ["native-tls"], optional = true }
-# MONITORING: picky pinned to =7.0.0-rc.17 due to sspi/rand_core conflict with ironrdp.
-# Check periodically if newer ironrdp versions resolve this dependency issue.
-# Last checked: 2026-01-11 (ironrdp 0.13, picky 7.0.0-rc.17 required)
-# Issue: sspi 0.16 requires picky API that changed in rc.18+ (BigUint vs BoxedUint)
-picky = "=7.0.0-rc.17"
-# Note: ironrdp-rdpdr-native 0.4 requires ironrdp-rdpdr 0.4.x but ironrdp 0.13 uses 0.3.x
-# We implement our own simple RDPDR backend instead
+ironrdp-tokio = { version = "0.8", features = ["reqwest"], optional = true }
+ironrdp-tls = { version = "0.2", features = ["native-tls"], optional = true }
+# MONITORING: picky pinned to match ironrdp requirements
+# Last checked: 2026-01-17 (ironrdp 0.14 requires picky 7.0.0-rc.20)
+# sspi/picky-krb dependency conflict resolved in ironrdp 0.14
+picky = "=7.0.0-rc.20"
+# Note: ironrdp-rdpdr-native 0.5 requires ironrdp-rdpdr 0.5.x which matches ironrdp 0.14
 
 [features]
 default = ["vnc-embedded", "rdp-embedded"]

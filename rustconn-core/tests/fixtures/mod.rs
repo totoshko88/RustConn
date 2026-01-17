@@ -118,6 +118,7 @@ pub fn sample_rdp_connection_with_domain() -> Connection {
         shared_folders: Vec::new(),
         custom_args: Vec::new(),
         client_mode: Default::default(),
+        performance_mode: Default::default(),
     };
 
     let mut conn = Connection::new(
@@ -139,6 +140,7 @@ pub fn sample_rdp_connection_with_domain() -> Connection {
 pub fn sample_vnc_connection_custom_port() -> Connection {
     let vnc_config = VncConfig {
         client_mode: Default::default(),
+        performance_mode: Default::default(),
         encoding: Some("tight".to_string()),
         compression: Some(6),
         quality: Some(8),

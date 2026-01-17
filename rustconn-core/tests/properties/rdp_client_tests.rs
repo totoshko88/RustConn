@@ -121,6 +121,7 @@ fn arb_rdp_client_config() -> impl Strategy<Value = RdpClientConfig> {
                     shared_folders: Vec::new(),
                     dynamic_resolution,
                     scale_factor,
+                    performance_mode: rustconn_core::models::RdpPerformanceMode::default(),
                 }
             },
         )

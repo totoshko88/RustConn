@@ -156,6 +156,7 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                 shared_folders: Vec::new(),
                 custom_args,
                 client_mode: Default::default(),
+                performance_mode: Default::default(),
             },
         )
 }
@@ -188,6 +189,7 @@ fn arb_vnc_config() -> impl Strategy<Value = VncConfig> {
     )
         .prop_map(|(encoding, compression, quality, custom_args)| VncConfig {
             client_mode: Default::default(),
+            performance_mode: Default::default(),
             encoding,
             compression,
             quality,

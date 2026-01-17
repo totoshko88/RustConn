@@ -90,15 +90,17 @@ impl ConnectionSidebar {
     #[must_use]
     pub fn new() -> Self {
         let container = GtkBox::new(Orientation::Vertical, 0);
-        container.set_width_request(250);
+        // GNOME HIG recommends 180-200px for sidebars
+        container.set_width_request(180);
         container.add_css_class("sidebar");
 
         // Search box with entry and help button
+        // Reduced spacing per GNOME HIG (6px between related elements)
         let search_box = GtkBox::new(Orientation::Horizontal, 4);
-        search_box.set_margin_start(8);
-        search_box.set_margin_end(8);
-        search_box.set_margin_top(8);
-        search_box.set_margin_bottom(8);
+        search_box.set_margin_start(6);
+        search_box.set_margin_end(6);
+        search_box.set_margin_top(6);
+        search_box.set_margin_bottom(6);
 
         // Search entry
         let search_entry = SearchEntry::new();
@@ -130,11 +132,11 @@ impl ConnectionSidebar {
 
         search_box.append(&help_button);
 
-        // Quick Filter buttons
-        let filter_box = GtkBox::new(Orientation::Horizontal, 6);
-        filter_box.set_margin_start(12);
-        filter_box.set_margin_end(12);
-        filter_box.set_margin_bottom(6);
+        // Quick Filter buttons - compact spacing per GNOME HIG
+        let filter_box = GtkBox::new(Orientation::Horizontal, 2);
+        filter_box.set_margin_start(6);
+        filter_box.set_margin_end(6);
+        filter_box.set_margin_bottom(4);
         filter_box.add_css_class("linked");
 
         // Protocol filter buttons with icons

@@ -5,6 +5,56 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.4] - 2026-01-17
+
+### Added
+- **Snap Package** - New distribution format for easy installation via Snapcraft:
+  - Classic confinement for full system access (SSH keys, network, etc.)
+  - Automatic updates via Snap Store
+  - Available via `sudo snap install rustconn --classic`
+- **GitHub Actions Snap Workflow** - Automated Snap package builds:
+  - Builds on tag push (`v*`) and manual trigger
+  - Uploads artifacts for testing
+  - Publishes to Snap Store stable channel on release tags
+- **RDP/VNC Performance Modes** - New dropdown in connection dialog to optimize for different network conditions:
+  - Quality: Best visual quality (32-bit color for RDP, Tight encoding with high quality for VNC)
+  - Balanced: Good balance of quality and performance (24-bit color, medium compression)
+  - Speed: Optimized for slow connections (16-bit color for RDP, ZRLE encoding with high compression for VNC)
+
+### Changed
+- Updated documentation with Snap installation instructions
+
+### Fixed
+- **RDP Initial Resolution** - Embedded RDP sessions now start with correct resolution matching actual widget size
+  - Previously used saved window settings which could differ from actual content area
+  - Now waits for GTK layout (100ms) to get accurate widget dimensions
+- **RDP Dynamic Resolution** - Window resize now triggers automatic reconnect with new resolution
+  - Debounced reconnect after 500ms of no resize activity
+  - Preserves shared folders and credentials during reconnect
+  - Works around Windows RDP servers not supporting Display Control channel
+- **Sidebar Fixed Width** - Sidebar no longer resizes when window is resized
+  - Content area (RDP/VNC/terminal) now properly expands to fill available space
+- **RDP Cursor Colors** - Fixed inverted cursor colors in embedded RDP sessions (BGRA→ARGB conversion)
+
+### Updated Dependencies
+- `ironrdp` 0.13 → 0.14 (embedded RDP client)
+- `ironrdp-tokio` 0.7 → 0.8
+- `ironrdp-tls` 0.1 → 0.2
+- `sspi` 0.16 → 0.18.7 (Windows authentication)
+- `picky` 7.0.0-rc.17 → 7.0.0-rc.20
+- `picky-krb` 0.11 → 0.12 (Kerberos support)
+- `hickory-proto` 0.24 → 0.25
+- `hickory-resolver` 0.24 → 0.25
+- `cc` 1.2.52 → 1.2.53
+- `find-msvc-tools` 0.1.7 → 0.1.8
+- `js-sys` 0.3.83 → 0.3.85
+- `rand_core` 0.9.3 → 0.9.5
+- `rustls-pki-types` 1.13.2 → 1.14.0
+- `rustls-webpki` 0.103.8 → 0.103.9
+- `wasm-bindgen` 0.2.106 → 0.2.108
+- `web-sys` 0.3.83 → 0.3.85
+- `wit-bindgen` 0.46.0 → 0.51.0
+
 ## [0.6.3] - 2026-01-16
 
 ### Added

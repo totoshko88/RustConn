@@ -24,10 +24,10 @@ use rustconn_core::automation::{ConnectionTask, ExpectRule, TaskCondition};
 use rustconn_core::models::{
     AwsSsmConfig, AzureBastionConfig, AzureSshConfig, BoundaryConfig, CloudflareAccessConfig,
     Connection, CustomProperty, GcpIapConfig, GenericZeroTrustConfig, OciBastionConfig,
-    PasswordSource, PropertyType, ProtocolConfig, RdpClientMode, RdpConfig, Resolution,
-    SharedFolder, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource,
-    TailscaleSshConfig, TeleportConfig, VncClientMode, VncConfig, WindowMode, ZeroTrustConfig,
-    ZeroTrustProvider, ZeroTrustProviderConfig,
+    PasswordSource, PropertyType, ProtocolConfig, RdpClientMode, RdpConfig, RdpPerformanceMode,
+    Resolution, SharedFolder, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig,
+    SshKeySource, TailscaleSshConfig, TeleportConfig, VncClientMode, VncConfig, VncPerformanceMode,
+    WindowMode, ZeroTrustConfig, ZeroTrustProvider, ZeroTrustProviderConfig,
 };
 use rustconn_core::session::LogConfig;
 use rustconn_core::variables::Variable;
@@ -83,6 +83,7 @@ pub struct ConnectionDialog {
     ssh_options_entry: Entry,
     // RDP fields
     rdp_client_mode_dropdown: DropDown,
+    rdp_performance_mode_dropdown: DropDown,
     rdp_width_spin: SpinButton,
     rdp_height_spin: SpinButton,
     rdp_color_dropdown: DropDown,
@@ -93,6 +94,7 @@ pub struct ConnectionDialog {
     rdp_custom_args_entry: Entry,
     // VNC fields
     vnc_client_mode_dropdown: DropDown,
+    vnc_performance_mode_dropdown: DropDown,
     vnc_encoding_entry: Entry,
     vnc_compression_spin: SpinButton,
     vnc_quality_spin: SpinButton,
@@ -328,6 +330,7 @@ impl ConnectionDialog {
         let (
             rdp_box,
             rdp_client_mode_dropdown,
+            rdp_performance_mode_dropdown,
             rdp_width_spin,
             rdp_height_spin,
             rdp_color_dropdown,
@@ -343,6 +346,7 @@ impl ConnectionDialog {
         let (
             vnc_box,
             vnc_client_mode_dropdown,
+            vnc_performance_mode_dropdown,
             vnc_encoding_entry,
             vnc_compression_spin,
             vnc_quality_spin,
@@ -548,6 +552,7 @@ impl ConnectionDialog {
             &ssh_startup_entry,
             &ssh_options_entry,
             &rdp_client_mode_dropdown,
+            &rdp_performance_mode_dropdown,
             &rdp_width_spin,
             &rdp_height_spin,
             &rdp_color_dropdown,
@@ -556,6 +561,7 @@ impl ConnectionDialog {
             &rdp_shared_folders,
             &rdp_custom_args_entry,
             &vnc_client_mode_dropdown,
+            &vnc_performance_mode_dropdown,
             &vnc_encoding_entry,
             &vnc_compression_spin,
             &vnc_quality_spin,
@@ -652,6 +658,7 @@ impl ConnectionDialog {
             ssh_startup_entry,
             ssh_options_entry,
             rdp_client_mode_dropdown,
+            rdp_performance_mode_dropdown,
             rdp_width_spin,
             rdp_height_spin,
             rdp_color_dropdown,
@@ -661,6 +668,7 @@ impl ConnectionDialog {
             rdp_shared_folders_list,
             rdp_custom_args_entry,
             vnc_client_mode_dropdown,
+            vnc_performance_mode_dropdown,
             vnc_encoding_entry,
             vnc_compression_spin,
             vnc_quality_spin,
@@ -1152,6 +1160,7 @@ impl ConnectionDialog {
         ssh_startup_entry: &Entry,
         ssh_options_entry: &Entry,
         rdp_client_mode_dropdown: &DropDown,
+        rdp_performance_mode_dropdown: &DropDown,
         rdp_width_spin: &SpinButton,
         rdp_height_spin: &SpinButton,
         rdp_color_dropdown: &DropDown,
@@ -1160,6 +1169,7 @@ impl ConnectionDialog {
         rdp_shared_folders: &Rc<RefCell<Vec<SharedFolder>>>,
         rdp_custom_args_entry: &Entry,
         vnc_client_mode_dropdown: &DropDown,
+        vnc_performance_mode_dropdown: &DropDown,
         vnc_encoding_entry: &Entry,
         vnc_compression_spin: &SpinButton,
         vnc_quality_spin: &SpinButton,
@@ -1255,6 +1265,7 @@ impl ConnectionDialog {
         let rdp_gateway_entry = rdp_gateway_entry.clone();
         let rdp_shared_folders = rdp_shared_folders.clone();
         let rdp_custom_args_entry = rdp_custom_args_entry.clone();
+        let rdp_performance_mode_dropdown = rdp_performance_mode_dropdown.clone();
         let vnc_client_mode_dropdown = vnc_client_mode_dropdown.clone();
         let vnc_encoding_entry = vnc_encoding_entry.clone();
         let vnc_compression_spin = vnc_compression_spin.clone();
@@ -1263,6 +1274,7 @@ impl ConnectionDialog {
         let vnc_scaling_check = vnc_scaling_check.clone();
         let vnc_clipboard_check = vnc_clipboard_check.clone();
         let vnc_custom_args_entry = vnc_custom_args_entry.clone();
+        let vnc_performance_mode_dropdown = vnc_performance_mode_dropdown.clone();
         let spice_tls_check = spice_tls_check.clone();
         let spice_ca_cert_entry = spice_ca_cert_entry.clone();
         let spice_skip_verify_check = spice_skip_verify_check.clone();
@@ -1418,6 +1430,8 @@ impl ConnectionDialog {
                 wol_broadcast_entry: &wol_broadcast_entry,
                 wol_port_spin: &wol_port_spin,
                 wol_wait_spin: &wol_wait_spin,
+                rdp_performance_mode_dropdown: &rdp_performance_mode_dropdown,
+                vnc_performance_mode_dropdown: &vnc_performance_mode_dropdown,
                 editing_id: &editing_id,
             };
 
@@ -2019,6 +2033,7 @@ impl ConnectionDialog {
     fn create_rdp_options() -> (
         GtkBox,
         DropDown,
+        DropDown,
         SpinButton,
         SpinButton,
         DropDown,
@@ -2064,6 +2079,25 @@ impl ConnectionDialog {
             .build();
         client_mode_row.add_suffix(&client_mode_dropdown);
         display_group.add(&client_mode_row);
+
+        // Performance mode dropdown
+        let performance_mode_list = StringList::new(&[
+            RdpPerformanceMode::Quality.display_name(),
+            RdpPerformanceMode::Balanced.display_name(),
+            RdpPerformanceMode::Speed.display_name(),
+        ]);
+        let performance_mode_dropdown = DropDown::builder()
+            .model(&performance_mode_list)
+            .valign(gtk4::Align::Center)
+            .build();
+        performance_mode_dropdown.set_selected(1); // Default to Balanced
+
+        let performance_mode_row = adw::ActionRow::builder()
+            .title("Performance Mode")
+            .subtitle("Quality/speed tradeoff for image rendering")
+            .build();
+        performance_mode_row.add_suffix(&performance_mode_dropdown);
+        display_group.add(&performance_mode_row);
 
         // Resolution
         let res_box = GtkBox::new(Orientation::Horizontal, 4);
@@ -2233,6 +2267,7 @@ impl ConnectionDialog {
         (
             vbox,
             client_mode_dropdown,
+            performance_mode_dropdown,
             width_spin,
             height_spin,
             color_dropdown,
@@ -2340,6 +2375,7 @@ impl ConnectionDialog {
     fn create_vnc_options() -> (
         GtkBox,
         DropDown,
+        DropDown,
         Entry,
         SpinButton,
         SpinButton,
@@ -2384,6 +2420,25 @@ impl ConnectionDialog {
             .build();
         client_mode_row.add_suffix(&client_mode_dropdown);
         display_group.add(&client_mode_row);
+
+        // Performance mode dropdown
+        let performance_mode_list = StringList::new(&[
+            VncPerformanceMode::Quality.display_name(),
+            VncPerformanceMode::Balanced.display_name(),
+            VncPerformanceMode::Speed.display_name(),
+        ]);
+        let performance_mode_dropdown = DropDown::builder()
+            .model(&performance_mode_list)
+            .valign(gtk4::Align::Center)
+            .build();
+        performance_mode_dropdown.set_selected(1); // Default to Balanced
+
+        let performance_mode_row = adw::ActionRow::builder()
+            .title("Performance Mode")
+            .subtitle("Quality/speed tradeoff for image rendering")
+            .build();
+        performance_mode_row.add_suffix(&performance_mode_dropdown);
+        display_group.add(&performance_mode_row);
 
         // Encoding
         let encoding_entry = Entry::builder()
@@ -2502,6 +2557,7 @@ impl ConnectionDialog {
         (
             vbox,
             client_mode_dropdown,
+            performance_mode_dropdown,
             encoding_entry,
             compression_spin,
             quality_spin,
@@ -5776,6 +5832,10 @@ impl ConnectionDialog {
         self.rdp_client_mode_dropdown
             .set_selected(rdp.client_mode.index());
 
+        // Set performance mode dropdown
+        self.rdp_performance_mode_dropdown
+            .set_selected(rdp.performance_mode.index());
+
         if let Some(ref res) = rdp.resolution {
             self.rdp_width_spin.set_value(f64::from(res.width));
             self.rdp_height_spin.set_value(f64::from(res.height));
@@ -5838,6 +5898,10 @@ impl ConnectionDialog {
         // Set client mode dropdown
         self.vnc_client_mode_dropdown
             .set_selected(vnc.client_mode.index());
+
+        // Set performance mode dropdown
+        self.vnc_performance_mode_dropdown
+            .set_selected(vnc.performance_mode.index());
 
         let encoding_text = vnc.encoding.as_deref().unwrap_or("");
         self.vnc_encoding_entry.set_text(encoding_text);
@@ -6232,6 +6296,7 @@ struct ConnectionDialogData<'a> {
     ssh_startup_entry: &'a Entry,
     ssh_options_entry: &'a Entry,
     rdp_client_mode_dropdown: &'a DropDown,
+    rdp_performance_mode_dropdown: &'a DropDown,
     rdp_width_spin: &'a SpinButton,
     rdp_height_spin: &'a SpinButton,
     rdp_color_dropdown: &'a DropDown,
@@ -6240,6 +6305,7 @@ struct ConnectionDialogData<'a> {
     rdp_shared_folders: &'a Rc<RefCell<Vec<SharedFolder>>>,
     rdp_custom_args_entry: &'a Entry,
     vnc_client_mode_dropdown: &'a DropDown,
+    vnc_performance_mode_dropdown: &'a DropDown,
     vnc_encoding_entry: &'a Entry,
     vnc_compression_spin: &'a SpinButton,
     vnc_quality_spin: &'a SpinButton,
@@ -6846,6 +6912,8 @@ impl ConnectionDialogData<'_> {
 
     fn build_rdp_config(&self) -> RdpConfig {
         let client_mode = RdpClientMode::from_index(self.rdp_client_mode_dropdown.selected());
+        let performance_mode =
+            RdpPerformanceMode::from_index(self.rdp_performance_mode_dropdown.selected());
 
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let resolution = Some(Resolution::new(
@@ -6881,6 +6949,7 @@ impl ConnectionDialogData<'_> {
 
         RdpConfig {
             client_mode,
+            performance_mode,
             resolution,
             color_depth,
             audio_redirect: self.rdp_audio_check.is_active(),
@@ -6892,6 +6961,8 @@ impl ConnectionDialogData<'_> {
 
     fn build_vnc_config(&self) -> VncConfig {
         let client_mode = VncClientMode::from_index(self.vnc_client_mode_dropdown.selected());
+        let performance_mode =
+            VncPerformanceMode::from_index(self.vnc_performance_mode_dropdown.selected());
 
         let encoding = {
             let text = self.vnc_encoding_entry.text();
@@ -6911,6 +6982,7 @@ impl ConnectionDialogData<'_> {
 
         VncConfig {
             client_mode,
+            performance_mode,
             encoding,
             compression,
             quality,

@@ -227,6 +227,12 @@ pub fn detect_provider(command: &str) -> CloudProvider {
         return CloudProvider::Tailscale;
     }
 
+    // Check for Teleport commands BEFORE Azure
+    // (tsh commands may contain "az" as arguments, e.g., "tsh az a")
+    if contains_tool("tsh") || cmd_lower.contains("teleport") {
+        return CloudProvider::Teleport;
+    }
+
     // Check for Boundary commands BEFORE Azure
     // (boundary commands may contain "az" as arguments, e.g., "boundary az -")
     if contains_tool("boundary") || cmd_lower.contains("hashicorp") {
@@ -253,11 +259,6 @@ pub fn detect_provider(command: &str) -> CloudProvider {
     // Check for OCI commands
     if contains_tool("oci") || cmd_lower.contains("oracle") {
         return CloudProvider::Oci;
-    }
-
-    // Check for Teleport commands
-    if contains_tool("tsh") || cmd_lower.contains("teleport") {
-        return CloudProvider::Teleport;
     }
 
     CloudProvider::Generic

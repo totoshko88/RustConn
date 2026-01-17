@@ -19,9 +19,10 @@ use libadwaita as adw;
 use rustconn_core::models::{
     AwsSsmConfig, AzureBastionConfig, AzureSshConfig, BoundaryConfig, CloudflareAccessConfig,
     ConnectionTemplate, GcpIapConfig, GenericZeroTrustConfig, OciBastionConfig, ProtocolConfig,
-    ProtocolType, RdpClientMode, RdpConfig, Resolution, SpiceConfig, SpiceImageCompression,
-    SshAuthMethod, SshConfig, SshKeySource, TailscaleSshConfig, TeleportConfig, VncClientMode,
-    VncConfig, ZeroTrustConfig, ZeroTrustProvider, ZeroTrustProviderConfig,
+    ProtocolType, RdpClientMode, RdpConfig, RdpPerformanceMode, Resolution, SpiceConfig,
+    SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, TailscaleSshConfig,
+    TeleportConfig, VncClientMode, VncConfig, VncPerformanceMode, ZeroTrustConfig,
+    ZeroTrustProvider, ZeroTrustProviderConfig,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -2324,6 +2325,7 @@ impl TemplateDialog {
 
         ProtocolConfig::Rdp(RdpConfig {
             client_mode,
+            performance_mode: RdpPerformanceMode::default(),
             resolution: Some(resolution),
             color_depth: Some(color_depth),
             audio_redirect: audio_check.is_active(),
@@ -2373,6 +2375,7 @@ impl TemplateDialog {
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         ProtocolConfig::Vnc(VncConfig {
             client_mode,
+            performance_mode: VncPerformanceMode::default(),
             encoding: if encoding.is_empty() {
                 None
             } else {

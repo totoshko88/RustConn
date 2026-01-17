@@ -135,12 +135,18 @@ where
             let _ = event_tx.send(RdpClientEvent::CursorPosition { x, y });
         }
         ActiveStageOutput::PointerBitmap(pointer) => {
+            // Convert cursor bitmap from IronRDP's BGRA to Cairo's ARGB32 format
+            // Same conversion as for framebuffer data (swap R and B channels)
+            let mut converted_data = pointer.bitmap_data.clone();
+            for chunk in converted_data.chunks_exact_mut(4) {
+                chunk.swap(0, 2); // Swap B and R
+            }
             let _ = event_tx.send(RdpClientEvent::CursorUpdate {
                 width: pointer.width,
                 height: pointer.height,
                 hotspot_x: pointer.hotspot_x,
                 hotspot_y: pointer.hotspot_y,
-                data: pointer.bitmap_data.clone(),
+                data: converted_data,
             });
         }
         ActiveStageOutput::Terminate(reason) => {
@@ -205,7 +211,7 @@ where
             desktop_size,
             enable_server_pointer,
             pointer_software_rendering,
-        } = connection_activation.state
+        } = connection_activation.connection_activation_state()
         {
             tracing::debug!(
                 ?desktop_size,

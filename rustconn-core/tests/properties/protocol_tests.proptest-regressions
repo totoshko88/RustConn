@@ -6,3 +6,4 @@
 # everyone who runs the test benefits from these saved cases.
 cc 5b8dac3871c11bdaac484561e9b20e8ede54c47b84910961fcc0804d34d6a1c8 # shrinks to (command, expected_provider) = ("boundary az -", Boundary)
 cc f4ec084ba6f1b66d1330a0ab5ff84dfe260dd46097977bce89ac2268bf7da1be # shrinks to (command, expected_provider) = ("cloudflared az a", Cloudflare)
+cc 560d3f8f27fa88c2c91f1e779c8f3cb3e2db697d08992212f4a4aea3ebd38022 # shrinks to (command, expected_provider) = ("tsh az a", Teleport)

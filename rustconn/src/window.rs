@@ -97,6 +97,9 @@ impl MainWindow {
             paned.set_position(sidebar_width);
         }
 
+        // Sidebar should not resize when window resizes - only content area should
+        paned.set_resize_start_child(false);
+        paned.set_resize_end_child(true);
         paned.set_shrink_start_child(false);
         paned.set_shrink_end_child(false);
 

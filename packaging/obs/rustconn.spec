@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.6.3
+Version:        0.6.4
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later
@@ -157,6 +157,19 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Fri Jan 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.4-0
+- Update to version 0.6.4
+- Snap Package - New distribution format for easy installation via Snapcraft
+- Classic confinement for full system access (SSH keys, network, etc.)
+- Automatic updates via Snap Store
+- GitHub Actions Snap Workflow - Automated builds and publishing
+- RDP/VNC Performance Modes - Quality/Balanced/Speed presets for different networks
+- Fixed RDP initial resolution matching actual widget size
+- Fixed RDP dynamic resolution with debounced reconnect (500ms)
+- Fixed sidebar fixed width (no longer resizes with window)
+- Fixed RDP cursor colors (BGRA→ARGB conversion)
+- Updated ironrdp 0.13 → 0.14, ironrdp-tokio 0.7 → 0.8
+
 * Wed Jan 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.3-0
 - Update to version 0.6.3
 - Bitwarden CLI Integration - New secret backend for Bitwarden password manager

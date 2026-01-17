@@ -21,9 +21,10 @@ pub use protocol::ProtocolType;
 pub use protocol::{
     AwsSsmConfig, AzureBastionConfig, AzureSshConfig, BoundaryConfig, CloudflareAccessConfig,
     GcpIapConfig, GenericZeroTrustConfig, OciBastionConfig, ProtocolConfig, RdpClientMode,
-    RdpConfig, RdpGateway, Resolution, SharedFolder, SpiceConfig, SpiceImageCompression,
-    SshAuthMethod, SshConfig, SshKeySource, TailscaleSshConfig, TeleportConfig, VncClientMode,
-    VncConfig, ZeroTrustConfig, ZeroTrustProvider, ZeroTrustProviderConfig,
+    RdpConfig, RdpGateway, RdpPerformanceMode, Resolution, SharedFolder, SpiceConfig,
+    SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, TailscaleSshConfig,
+    TeleportConfig, VncClientMode, VncConfig, VncPerformanceMode, ZeroTrustConfig,
+    ZeroTrustProvider, ZeroTrustProviderConfig,
 };
 pub use snippet::{Snippet, SnippetVariable};
 pub use template::{group_templates_by_protocol, ConnectionTemplate, TemplateError};
