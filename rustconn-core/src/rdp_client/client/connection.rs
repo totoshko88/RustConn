@@ -130,9 +130,10 @@ pub async fn establish_connection(
     // TLS upgrade - returns stream and server certificate
     let initial_stream = framed.into_inner_no_leftover();
 
-    let (upgraded_stream, server_cert) = ironrdp_tls::upgrade(initial_stream, &config.host)
-        .await
-        .map_err(|e| RdpClientError::ConnectionFailed(format!("TLS upgrade failed: {e}")))?;
+    let (upgraded_stream, server_cert) =
+        ironrdp_tls::upgrade(initial_stream, &config.host)
+            .await
+            .map_err(|e| RdpClientError::ConnectionFailed(format!("TLS upgrade failed: {e}")))?;
 
     // Extract server public key from certificate
     let server_public_key = ironrdp_tls::extract_tls_server_public_key(&server_cert)

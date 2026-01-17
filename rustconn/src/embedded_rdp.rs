@@ -1392,11 +1392,39 @@ impl EmbeddedRdpWidget {
                             RdpClientEvent::Connected { width, height } => {
                                 tracing::debug!("[IronRDP] Reconnected: {}x{}", width, height);
                                 *state.borrow_mut() = RdpConnectionState::Connected;
-                                *rdp_width_ref.borrow_mut() = u32::from(width);
-                                *rdp_height_ref.borrow_mut() = u32::from(height);
+
+                                // Get actual widget size and request resize if different
+                                let widget_w = drawing_area.width();
+                                let widget_h = drawing_area.height();
+                                let (target_w, target_h) = if widget_w > 100 && widget_h > 100 {
+                                    (widget_w.unsigned_abs(), widget_h.unsigned_abs())
+                                } else {
+                                    (u32::from(width), u32::from(height))
+                                };
+
+                                // If server returned different size, request resize
+                                if target_w != u32::from(width) || target_h != u32::from(height) {
+                                    tracing::debug!(
+                                        "[IronRDP] Requesting resize from {}x{} to {}x{}",
+                                        width,
+                                        height,
+                                        target_w,
+                                        target_h
+                                    );
+                                    if let Some(ref tx) = *ironrdp_tx.borrow() {
+                                        let _ = tx.send(RdpClientCommand::SetDesktopSize {
+                                            width: crate::utils::dimension_to_u16(target_w),
+                                            height: crate::utils::dimension_to_u16(target_h),
+                                        });
+                                    }
+                                }
+
+                                // Use target size for buffer
+                                *rdp_width_ref.borrow_mut() = target_w;
+                                *rdp_height_ref.borrow_mut() = target_h;
                                 {
                                     let mut buffer = pixel_buffer.borrow_mut();
-                                    buffer.resize(u32::from(width), u32::from(height));
+                                    buffer.resize(target_w, target_h);
                                     buffer.clear();
                                 }
                                 // Show toolbar and hide status label when connected
@@ -1972,11 +2000,39 @@ impl EmbeddedRdpWidget {
                             RdpClientEvent::Connected { width, height } => {
                                 tracing::debug!("[IronRDP] Connected: {}x{}", width, height);
                                 *state.borrow_mut() = RdpConnectionState::Connected;
-                                *rdp_width_ref.borrow_mut() = u32::from(width);
-                                *rdp_height_ref.borrow_mut() = u32::from(height);
+
+                                // Get actual widget size and request resize if different
+                                let widget_w = drawing_area.width();
+                                let widget_h = drawing_area.height();
+                                let (target_w, target_h) = if widget_w > 100 && widget_h > 100 {
+                                    (widget_w.unsigned_abs(), widget_h.unsigned_abs())
+                                } else {
+                                    (u32::from(width), u32::from(height))
+                                };
+
+                                // If server returned different size, request resize
+                                if target_w != u32::from(width) || target_h != u32::from(height) {
+                                    tracing::debug!(
+                                        "[IronRDP] Requesting resize from {}x{} to {}x{}",
+                                        width,
+                                        height,
+                                        target_w,
+                                        target_h
+                                    );
+                                    if let Some(ref tx) = *ironrdp_tx.borrow() {
+                                        let _ = tx.send(RdpClientCommand::SetDesktopSize {
+                                            width: crate::utils::dimension_to_u16(target_w),
+                                            height: crate::utils::dimension_to_u16(target_h),
+                                        });
+                                    }
+                                }
+
+                                // Use target size for buffer (will be updated on ResolutionChanged)
+                                *rdp_width_ref.borrow_mut() = target_w;
+                                *rdp_height_ref.borrow_mut() = target_h;
                                 {
                                     let mut buffer = pixel_buffer.borrow_mut();
-                                    buffer.resize(u32::from(width), u32::from(height));
+                                    buffer.resize(target_w, target_h);
                                     buffer.clear();
                                 }
                                 if let Some(ref callback) = *on_state_changed.borrow() {

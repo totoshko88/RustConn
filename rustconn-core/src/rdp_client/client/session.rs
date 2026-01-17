@@ -7,7 +7,9 @@ use ironrdp::graphics::image_processing::PixelFormat as IronPixelFormat;
 use ironrdp::pdu::WriteBuf;
 use ironrdp::session::image::DecodedImage;
 use ironrdp::session::{fast_path, ActiveStage, ActiveStageOutput};
-use ironrdp_tokio::{single_sequence_step_read, split_tokio_framed, Framed, FramedRead, FramedWrite};
+use ironrdp_tokio::{
+    single_sequence_step_read, split_tokio_framed, Framed, FramedRead, FramedWrite,
+};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
