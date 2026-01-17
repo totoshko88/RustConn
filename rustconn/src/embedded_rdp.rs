@@ -1112,7 +1112,6 @@ impl EmbeddedRdpWidget {
     fn setup_resize_handler(&self) {
         let width = self.width.clone();
         let height = self.height.clone();
-        let pixel_buffer = self.pixel_buffer.clone();
         let state = self.state.clone();
         let is_embedded = self.is_embedded.clone();
         let is_ironrdp = self.is_ironrdp.clone();
@@ -1121,19 +1120,11 @@ impl EmbeddedRdpWidget {
         let rdp_width = self.rdp_width.clone();
         let rdp_height = self.rdp_height.clone();
         let ironrdp_tx = self.ironrdp_command_tx.clone();
-        let on_state_changed = self.on_state_changed.clone();
-        let on_error = self.on_error.clone();
-        let toolbar = self.toolbar.clone();
-        let status_label = self.status_label.clone();
-        let connection_generation = self.connection_generation.clone();
 
         self.drawing_area
             .connect_resize(move |area, new_width, new_height| {
                 let new_width = new_width.unsigned_abs();
                 let new_height = new_height.unsigned_abs();
-
-                let _old_width = *width.borrow();
-                let _old_height = *height.borrow();
 
                 *width.borrow_mut() = new_width;
                 *height.borrow_mut() = new_height;
@@ -1141,7 +1132,7 @@ impl EmbeddedRdpWidget {
                 // Always queue redraw for immediate visual feedback (scaling)
                 area.queue_draw();
 
-                // Check if we should trigger reconnect
+                // Check if we should trigger resize
                 let current_state = *state.borrow();
                 let embedded = *is_embedded.borrow();
                 let using_ironrdp = *is_ironrdp.borrow();
@@ -1160,359 +1151,48 @@ impl EmbeddedRdpWidget {
                     return; // Size change too small, just scale
                 }
 
-                // Cancel any pending reconnect timer
-                // Note: We just take the SourceId from the Option. If the timer has already
-                // fired, the callback has already run and cleared itself. We don't call
-                // remove() because the source may have already been removed by glib after
-                // the callback executed, which would cause a panic.
+                // Cancel any pending resize timer
                 let _ = reconnect_timer.borrow_mut().take();
 
-                // Show reconnect pending indicator
-                status_label.set_text("Resizing...");
-                status_label.set_visible(true);
-
-                // Set up debounced reconnect (500ms delay)
-                let config_clone = config.clone();
-                let state_clone = state.clone();
-                let is_embedded_clone = is_embedded.clone();
-                let is_ironrdp_clone = is_ironrdp.clone();
+                // Set up debounced resize request (500ms delay)
+                // We use SetDesktopSize instead of reconnecting to preserve RDPDR channel
+                let ironrdp_tx_clone = ironrdp_tx.clone();
                 let rdp_width_clone = rdp_width.clone();
                 let rdp_height_clone = rdp_height.clone();
-                let ironrdp_tx_clone = ironrdp_tx.clone();
-                let pixel_buffer_clone = pixel_buffer.clone();
-                let on_state_changed_clone = on_state_changed.clone();
-                let on_error_clone = on_error.clone();
-                let toolbar_clone = toolbar.clone();
-                let status_label_clone = status_label.clone();
-                let area_clone = area.clone();
-                let connection_generation_clone = connection_generation.clone();
+                let config_clone = config.clone();
                 let new_w = new_width;
                 let new_h = new_height;
 
                 let source_id = glib::timeout_add_local_once(
                     std::time::Duration::from_millis(500),
                     move || {
-                        // Check if still connected and in IronRDP mode
-                        let current_state = *state_clone.borrow();
-                        let embedded = *is_embedded_clone.borrow();
-                        let using_ironrdp = *is_ironrdp_clone.borrow();
-
-                        if current_state != RdpConnectionState::Connected
-                            || !embedded
-                            || !using_ironrdp
-                        {
-                            status_label_clone.set_visible(false);
-                            return;
-                        }
-
-                        // Get current config
-                        let config_opt = config_clone.borrow().clone();
-                        if let Some(mut cfg) = config_opt {
-                            // Update status label
-                            status_label_clone.set_text("Reconnecting...");
-
+                        // Send SetDesktopSize command to request resolution change
+                        // This preserves RDPDR channel (shared folders) unlike reconnecting
+                        if let Some(ref tx) = *ironrdp_tx_clone.borrow() {
                             tracing::debug!(
-                                "[IronRDP] Reconnecting with new resolution {}x{} (was {}x{})",
+                                "[IronRDP] Requesting resize to {}x{} via SetDesktopSize",
                                 new_w,
-                                new_h,
-                                cfg.width,
-                                cfg.height
+                                new_h
                             );
-
-                            // Update config with new resolution
-                            cfg.width = new_w;
-                            cfg.height = new_h;
-                            *config_clone.borrow_mut() = Some(cfg.clone());
-
-                            // Disconnect current session
-                            if let Some(ref tx) = *ironrdp_tx_clone.borrow() {
-                                let _ = tx.send(RdpClientCommand::Disconnect);
-                            }
-                            *ironrdp_tx_clone.borrow_mut() = None;
-
-                            // Clear pixel buffer and prepare for new connection
-                            {
-                                let mut buffer = pixel_buffer_clone.borrow_mut();
-                                buffer.resize(new_w, new_h);
-                                // Fill with dark gray to show reconnecting
-                                for chunk in buffer.data_mut().chunks_exact_mut(4) {
-                                    chunk[0] = 0x1E; // B
-                                    chunk[1] = 0x1E; // G
-                                    chunk[2] = 0x1E; // R
-                                    chunk[3] = 0xFF; // A
-                                }
-                                buffer.set_has_data(true);
-                            }
+                            let _ = tx.send(RdpClientCommand::SetDesktopSize {
+                                width: crate::utils::dimension_to_u16(new_w),
+                                height: crate::utils::dimension_to_u16(new_h),
+                            });
+                            // Update stored dimensions optimistically
+                            // They will be corrected by ResolutionChanged event if server responds
                             *rdp_width_clone.borrow_mut() = new_w;
                             *rdp_height_clone.borrow_mut() = new_h;
-                            area_clone.queue_draw();
-
-                            // Reconnect with new resolution
-                            *state_clone.borrow_mut() = RdpConnectionState::Connecting;
-                            if let Some(ref callback) = *on_state_changed_clone.borrow() {
-                                callback(RdpConnectionState::Connecting);
+                            // Update config
+                            if let Some(ref mut cfg) = *config_clone.borrow_mut() {
+                                cfg.width = new_w;
+                                cfg.height = new_h;
                             }
-
-                            // Increment generation for the new connection
-                            let generation = {
-                                let mut gen = connection_generation_clone.borrow_mut();
-                                *gen += 1;
-                                *gen
-                            };
-                            tracing::debug!(
-                                "[IronRDP] Resize reconnect starting generation {}",
-                                generation
-                            );
-
-                            // Start new IronRDP connection
-                            Self::reconnect_ironrdp(
-                                cfg,
-                                state_clone.clone(),
-                                area_clone.clone(),
-                                toolbar_clone.clone(),
-                                status_label_clone.clone(),
-                                on_state_changed_clone.clone(),
-                                on_error_clone.clone(),
-                                rdp_width_clone.clone(),
-                                rdp_height_clone.clone(),
-                                pixel_buffer_clone.clone(),
-                                is_embedded_clone.clone(),
-                                is_ironrdp_clone.clone(),
-                                ironrdp_tx_clone.clone(),
-                                connection_generation_clone.clone(),
-                                generation,
-                            );
                         }
                     },
                 );
 
                 *reconnect_timer.borrow_mut() = Some(source_id);
             });
-    }
-
-    /// Reconnects IronRDP with new configuration (called from resize handler)
-    #[cfg(feature = "rdp-embedded")]
-    #[allow(clippy::too_many_arguments)]
-    fn reconnect_ironrdp(
-        config: RdpConfig,
-        state: Rc<RefCell<RdpConnectionState>>,
-        drawing_area: DrawingArea,
-        toolbar: GtkBox,
-        status_label: Label,
-        on_state_changed: Rc<RefCell<Option<StateCallback>>>,
-        on_error: Rc<RefCell<Option<ErrorCallback>>>,
-        rdp_width_ref: Rc<RefCell<u32>>,
-        rdp_height_ref: Rc<RefCell<u32>>,
-        pixel_buffer: Rc<RefCell<PixelBuffer>>,
-        is_embedded: Rc<RefCell<bool>>,
-        is_ironrdp: Rc<RefCell<bool>>,
-        ironrdp_tx: Rc<RefCell<Option<std::sync::mpsc::Sender<RdpClientCommand>>>>,
-        connection_generation: Rc<RefCell<u64>>,
-        generation: u64,
-    ) {
-        use rustconn_core::{RdpClient, RdpClientConfig, RdpClientEvent};
-
-        // Convert GUI config to RdpClientConfig
-        let mut client_config = RdpClientConfig::new(&config.host)
-            .with_port(config.port)
-            .with_resolution(
-                crate::utils::dimension_to_u16(config.width),
-                crate::utils::dimension_to_u16(config.height),
-            )
-            .with_clipboard(config.clipboard_enabled);
-
-        if let Some(ref username) = config.username {
-            client_config = client_config.with_username(username);
-        }
-
-        if let Some(ref password) = config.password {
-            client_config = client_config.with_password(password);
-        }
-
-        if let Some(ref domain) = config.domain {
-            client_config = client_config.with_domain(domain);
-        }
-
-        // Create and connect the IronRDP client
-        let mut client = RdpClient::new(client_config);
-        if let Err(e) = client.connect() {
-            tracing::error!("[IronRDP] Reconnect failed: {}", e);
-            *state.borrow_mut() = RdpConnectionState::Error;
-            if let Some(ref callback) = *on_error.borrow() {
-                callback(&format!("Reconnect failed: {e}"));
-            }
-            return;
-        }
-
-        // Store command sender for input handling
-        if let Some(tx) = client.command_sender() {
-            *ironrdp_tx.borrow_mut() = Some(tx);
-        }
-
-        // Store client in a shared reference for the polling closure
-        let client = std::rc::Rc::new(std::cell::RefCell::new(Some(client)));
-        let client_ref = client.clone();
-        let polling_interval = u64::from(config.polling_interval_ms);
-
-        glib::timeout_add_local(
-            std::time::Duration::from_millis(polling_interval),
-            move || {
-                // Check if this polling loop is stale (a newer connection was started)
-                if *connection_generation.borrow() != generation {
-                    tracing::debug!(
-                        "[IronRDP] Reconnect polling loop generation {} is stale, stopping",
-                        generation
-                    );
-                    // Clean up client without firing callbacks
-                    if let Some(mut c) = client_ref.borrow_mut().take() {
-                        c.disconnect();
-                    }
-                    return glib::ControlFlow::Break;
-                }
-
-                // Check if we're still in embedded mode
-                if !*is_embedded.borrow() || !*is_ironrdp.borrow() {
-                    // Clean up client
-                    if let Some(mut c) = client_ref.borrow_mut().take() {
-                        c.disconnect();
-                    }
-                    *ironrdp_tx.borrow_mut() = None;
-                    toolbar.set_visible(false);
-                    return glib::ControlFlow::Break;
-                }
-
-                // Track if we need to redraw
-                let mut needs_redraw = false;
-                let mut should_break = false;
-
-                // Poll for events from IronRDP client
-                if let Some(ref client) = *client_ref.borrow() {
-                    while let Some(event) = client.try_recv_event() {
-                        match event {
-                            RdpClientEvent::Connected { width, height } => {
-                                tracing::debug!("[IronRDP] Reconnected: {}x{}", width, height);
-                                *state.borrow_mut() = RdpConnectionState::Connected;
-
-                                // Use server's resolution for the buffer
-                                // The draw function will scale to fit the widget
-                                let server_w = u32::from(width);
-                                let server_h = u32::from(height);
-                                *rdp_width_ref.borrow_mut() = server_w;
-                                *rdp_height_ref.borrow_mut() = server_h;
-                                {
-                                    let mut buffer = pixel_buffer.borrow_mut();
-                                    buffer.resize(server_w, server_h);
-                                    buffer.clear();
-                                }
-                                // Show toolbar and hide status label when connected
-                                toolbar.set_visible(true);
-                                status_label.set_visible(false);
-                                if let Some(ref callback) = *on_state_changed.borrow() {
-                                    callback(RdpConnectionState::Connected);
-                                }
-                                needs_redraw = true;
-                            }
-                            RdpClientEvent::Disconnected => {
-                                tracing::debug!(
-                                    "[IronRDP] Disconnected after reconnect in generation {}",
-                                    generation
-                                );
-                                // Check if this polling loop is still current before firing callback
-                                if *connection_generation.borrow() == generation {
-                                    *state.borrow_mut() = RdpConnectionState::Disconnected;
-                                    toolbar.set_visible(false);
-                                    status_label.set_visible(false);
-                                    if let Some(ref callback) = *on_state_changed.borrow() {
-                                        callback(RdpConnectionState::Disconnected);
-                                    }
-                                    needs_redraw = true;
-                                    should_break = true;
-                                } else {
-                                    tracing::debug!(
-                                        "[IronRDP] Ignoring Disconnected from stale reconnect gen {}",
-                                        generation
-                                    );
-                                    should_break = true;
-                                }
-                            }
-                            RdpClientEvent::Error(msg) => {
-                                tracing::error!("[IronRDP] Error after reconnect: {}", msg);
-                                *state.borrow_mut() = RdpConnectionState::Error;
-                                toolbar.set_visible(false);
-                                status_label.set_visible(false);
-                                if let Some(ref callback) = *on_error.borrow() {
-                                    callback(&msg);
-                                }
-                                needs_redraw = true;
-                                should_break = true;
-                            }
-                            RdpClientEvent::FrameUpdate { rect, data } => {
-                                let mut buffer = pixel_buffer.borrow_mut();
-                                buffer.update_region(
-                                    u32::from(rect.x),
-                                    u32::from(rect.y),
-                                    u32::from(rect.width),
-                                    u32::from(rect.height),
-                                    &data,
-                                    u32::from(rect.width) * 4,
-                                );
-                                needs_redraw = true;
-                            }
-                            RdpClientEvent::FullFrameUpdate {
-                                width,
-                                height,
-                                data,
-                            } => {
-                                let mut buffer = pixel_buffer.borrow_mut();
-                                if buffer.width() != u32::from(width)
-                                    || buffer.height() != u32::from(height)
-                                {
-                                    buffer.resize(u32::from(width), u32::from(height));
-                                    *rdp_width_ref.borrow_mut() = u32::from(width);
-                                    *rdp_height_ref.borrow_mut() = u32::from(height);
-                                }
-                                buffer.update_region(
-                                    0,
-                                    0,
-                                    u32::from(width),
-                                    u32::from(height),
-                                    &data,
-                                    u32::from(width) * 4,
-                                );
-                                needs_redraw = true;
-                            }
-                            RdpClientEvent::ResolutionChanged { width, height } => {
-                                *rdp_width_ref.borrow_mut() = u32::from(width);
-                                *rdp_height_ref.borrow_mut() = u32::from(height);
-                                {
-                                    let mut buffer = pixel_buffer.borrow_mut();
-                                    buffer.resize(u32::from(width), u32::from(height));
-                                    for chunk in buffer.data_mut().chunks_exact_mut(4) {
-                                        chunk[0] = 0x1E;
-                                        chunk[1] = 0x1E;
-                                        chunk[2] = 0x1E;
-                                        chunk[3] = 0xFF;
-                                    }
-                                    buffer.set_has_data(true);
-                                }
-                                needs_redraw = true;
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-
-                if needs_redraw {
-                    drawing_area.queue_draw();
-                }
-
-                if should_break {
-                    return glib::ControlFlow::Break;
-                }
-
-                glib::ControlFlow::Continue
-            },
-        );
     }
 
     /// Sets up the resize handler (fallback when rdp-embedded is disabled)
