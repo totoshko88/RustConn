@@ -1658,9 +1658,7 @@ impl EmbeddedRdpWidget {
                                 tracing::debug!("[IronRDP] Connected: {}x{}", width, height);
                                 *state.borrow_mut() = RdpConnectionState::Connected;
 
-                                // Use server's resolution for the buffer
-                                // The draw function will scale to fit the widget
-                                // We don't request resize here to avoid breaking RDPDR channel
+                                // Use server's resolution for the buffer initially
                                 let server_w = u32::from(width);
                                 let server_h = u32::from(height);
                                 *rdp_width_ref.borrow_mut() = server_w;
@@ -1674,6 +1672,42 @@ impl EmbeddedRdpWidget {
                                     callback(RdpConnectionState::Connected);
                                 }
                                 needs_redraw = true;
+
+                                // Schedule SetDesktopSize after a delay to allow RDPDR to initialize
+                                // This ensures shared folders are established before resize
+                                let ironrdp_tx_resize = ironrdp_tx.clone();
+                                let drawing_area_resize = drawing_area.clone();
+                                let rdp_width_resize = rdp_width_ref.clone();
+                                let rdp_height_resize = rdp_height_ref.clone();
+                                glib::timeout_add_local_once(
+                                    std::time::Duration::from_secs(2),
+                                    move || {
+                                        let widget_w = drawing_area_resize.width();
+                                        let widget_h = drawing_area_resize.height();
+                                        if widget_w > 100 && widget_h > 100 {
+                                            let target_w = widget_w.unsigned_abs();
+                                            let target_h = widget_h.unsigned_abs();
+                                            let current_w = *rdp_width_resize.borrow();
+                                            let current_h = *rdp_height_resize.borrow();
+                                            // Only resize if significantly different
+                                            let w_diff = crate::utils::dimension_diff(target_w, current_w);
+                                            let h_diff = crate::utils::dimension_diff(target_h, current_h);
+                                            if w_diff > 50 || h_diff > 50 {
+                                                tracing::debug!(
+                                                    "[IronRDP] Initial resize to widget size {}x{}",
+                                                    target_w,
+                                                    target_h
+                                                );
+                                                if let Some(ref tx) = *ironrdp_tx_resize.borrow() {
+                                                    let _ = tx.send(RdpClientCommand::SetDesktopSize {
+                                                        width: crate::utils::dimension_to_u16(target_w),
+                                                        height: crate::utils::dimension_to_u16(target_h),
+                                                    });
+                                                }
+                                            }
+                                        }
+                                    },
+                                );
                             }
                             RdpClientEvent::Disconnected => {
                                 tracing::debug!(
