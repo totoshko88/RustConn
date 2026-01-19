@@ -672,13 +672,28 @@ impl MainWindow {
                             .get_session_info(session_id)
                             .map(|info| info.connection_id);
 
-                        // Clear from split view first
-                        split_view_clone.clear_session_from_panes(session_id);
+                        // Clear tab color indicator
+                        notebook_clone.clear_tab_split_color(session_id);
+
+                        // Close session from split view with auto-cleanup
+                        // Returns true if split view should be hidden
+                        let should_hide_split =
+                            split_view_clone.close_session_from_panes(session_id);
+
                         // Then close the tab
                         notebook_clone.close_tab(session_id);
+
                         // Decrement session count in sidebar if we have a connection ID
                         if let Some(conn_id) = connection_id {
                             sidebar_clone.decrement_session_count(&conn_id.to_string(), false);
+                        }
+
+                        // Hide split view if no sessions remain in panes
+                        if should_hide_split {
+                            split_view_clone.widget().set_visible(false);
+                            split_view_clone.widget().set_vexpand(false);
+                            notebook_clone.widget().set_vexpand(true);
+                            notebook_clone.show_tab_view_content();
                         }
 
                         // Use idle_add to defer showing the correct session until after
@@ -1234,24 +1249,65 @@ impl MainWindow {
         let split_view_clone = self.split_view.clone();
         let split_view_for_close = self.split_view.clone();
         let notebook_for_split_h = self.terminal_notebook.clone();
+        let notebook_for_visibility_h = self.terminal_notebook.clone();
         split_horizontal_action.connect_activate(move |_, _| {
+            // Get current active session before splitting
+            let current_session = notebook_for_visibility_h.get_active_session_id();
+
             let sv = split_view_for_close.clone();
-            if let Some(new_pane_id) =
-                split_view_clone.split_with_close_callback(SplitDirection::Horizontal, move || {
+            if let Some((new_pane_id, new_color_index)) = split_view_clone
+                .split_with_close_callback(SplitDirection::Horizontal, move || {
                     let _ = sv.close_pane();
                 })
             {
                 let notebook = notebook_for_split_h.clone();
+                let notebook_for_drop = notebook_for_split_h.clone();
                 let sv_for_click = split_view_clone.clone();
                 let nb_for_click = notebook.clone();
 
-                // Setup drop target
-                split_view_clone.setup_pane_drop_target_with_callback(
+                // Per spec: Split transforms current tab into Container Tab
+                // Show current session in the first (original) pane
+                if let Some(session_id) = current_session {
+                    // Ensure session is registered in split_view
+                    if let Some(info) = notebook_for_visibility_h.get_session_info(session_id) {
+                        let terminal = notebook_for_visibility_h.get_terminal(session_id);
+                        split_view_clone.add_session(info, terminal);
+                    }
+                    // Show in the focused (original) pane
+                    let _ = split_view_clone.show_session(session_id);
+
+                    // Get the original pane's color (assigned during first split)
+                    // The original pane gets color 0 (blue), new pane gets color 1 (green)
+                    let original_color = if new_color_index > 0 {
+                        0
+                    } else {
+                        new_color_index
+                    };
+                    // Store session color in split_view for tracking
+                    split_view_clone.set_session_color(session_id, original_color);
+                    notebook_for_visibility_h.set_tab_split_color(session_id, original_color);
+                }
+
+                // Make split view visible and hide TabView content
+                split_view_clone.widget().set_visible(true);
+                split_view_clone.widget().set_vexpand(true);
+                notebook_for_visibility_h.widget().set_vexpand(false);
+                notebook_for_visibility_h.hide_tab_view_content();
+
+                // Setup drop target for the new (empty) pane
+                let sv_for_drop = split_view_clone.clone();
+                split_view_clone.setup_pane_drop_target_with_callbacks(
                     new_pane_id,
                     move |session_id| {
                         let info = notebook.get_session_info(session_id)?;
                         let terminal = notebook.get_terminal(session_id);
                         Some((info, terminal))
+                    },
+                    move |session_id, color_index| {
+                        // Store session color in split_view for tracking
+                        sv_for_drop.set_session_color(session_id, color_index);
+                        // Set tab color indicator when session is dropped into pane
+                        notebook_for_drop.set_tab_split_color(session_id, color_index);
                     },
                 );
 
@@ -1306,24 +1362,65 @@ impl MainWindow {
         let split_view_clone = self.split_view.clone();
         let split_view_for_close = self.split_view.clone();
         let notebook_for_split_v = self.terminal_notebook.clone();
+        let notebook_for_visibility_v = self.terminal_notebook.clone();
         split_vertical_action.connect_activate(move |_, _| {
+            // Get current active session before splitting
+            let current_session = notebook_for_visibility_v.get_active_session_id();
+
             let sv = split_view_for_close.clone();
-            if let Some(new_pane_id) =
-                split_view_clone.split_with_close_callback(SplitDirection::Vertical, move || {
+            if let Some((new_pane_id, new_color_index)) = split_view_clone
+                .split_with_close_callback(SplitDirection::Vertical, move || {
                     let _ = sv.close_pane();
                 })
             {
                 let notebook = notebook_for_split_v.clone();
+                let notebook_for_drop = notebook_for_split_v.clone();
                 let sv_for_click = split_view_clone.clone();
                 let nb_for_click = notebook.clone();
 
-                // Setup drop target
-                split_view_clone.setup_pane_drop_target_with_callback(
+                // Per spec: Split transforms current tab into Container Tab
+                // Show current session in the first (original) pane
+                if let Some(session_id) = current_session {
+                    // Ensure session is registered in split_view
+                    if let Some(info) = notebook_for_visibility_v.get_session_info(session_id) {
+                        let terminal = notebook_for_visibility_v.get_terminal(session_id);
+                        split_view_clone.add_session(info, terminal);
+                    }
+                    // Show in the focused (original) pane
+                    let _ = split_view_clone.show_session(session_id);
+
+                    // Get the original pane's color (assigned during first split)
+                    // The original pane gets color 0 (blue), new pane gets color 1 (green)
+                    let original_color = if new_color_index > 0 {
+                        0
+                    } else {
+                        new_color_index
+                    };
+                    // Store session color in split_view for tracking
+                    split_view_clone.set_session_color(session_id, original_color);
+                    notebook_for_visibility_v.set_tab_split_color(session_id, original_color);
+                }
+
+                // Make split view visible and hide TabView content
+                split_view_clone.widget().set_visible(true);
+                split_view_clone.widget().set_vexpand(true);
+                notebook_for_visibility_v.widget().set_vexpand(false);
+                notebook_for_visibility_v.hide_tab_view_content();
+
+                // Setup drop target for the new (empty) pane
+                let sv_for_drop = split_view_clone.clone();
+                split_view_clone.setup_pane_drop_target_with_callbacks(
                     new_pane_id,
                     move |session_id| {
                         let info = notebook.get_session_info(session_id)?;
                         let terminal = notebook.get_terminal(session_id);
                         Some((info, terminal))
+                    },
+                    move |session_id, color_index| {
+                        // Store session color in split_view for tracking
+                        sv_for_drop.set_session_color(session_id, color_index);
+                        // Set tab color indicator when session is dropped into pane
+                        notebook_for_drop.set_tab_split_color(session_id, color_index);
                     },
                 );
 
@@ -1393,13 +1490,33 @@ impl MainWindow {
         let unsplit_session_action =
             gio::SimpleAction::new("unsplit-session", Some(glib::VariantTy::STRING));
         let split_view_clone = self.split_view.clone();
+        let notebook_for_unsplit = self.terminal_notebook.clone();
         unsplit_session_action.connect_activate(move |_, param| {
             if let Some(param) = param {
                 if let Some(session_id_str) = param.get::<String>() {
                     if let Ok(session_id) = Uuid::parse_str(&session_id_str) {
-                        // Clear session from split pane (will auto-collapse if needed)
+                        // Clear session from split pane (will show "Drag Tab Here" placeholder)
                         split_view_clone.clear_session_from_panes(session_id);
-                        // Session remains in TabView, just not displayed in split
+
+                        // Move terminal back to TabView
+                        notebook_for_unsplit.reparent_terminal_to_tab(session_id);
+
+                        // Clear tab color indicator
+                        notebook_for_unsplit.clear_tab_split_color(session_id);
+
+                        // Check if any sessions remain in split view
+                        let has_sessions_in_split = split_view_clone
+                            .pane_ids()
+                            .iter()
+                            .any(|&pane_id| split_view_clone.get_pane_session(pane_id).is_some());
+
+                        if !has_sessions_in_split {
+                            // No sessions in split view - hide it and show TabView
+                            split_view_clone.widget().set_visible(false);
+                            split_view_clone.widget().set_vexpand(false);
+                            notebook_for_unsplit.widget().set_vexpand(true);
+                            notebook_for_unsplit.show_tab_view_content();
+                        }
                     }
                 }
             }
@@ -1461,11 +1578,19 @@ impl MainWindow {
         // Set up drag-and-drop for initial pane with notebook lookup
         if let Some(initial_pane_id) = split_view.pane_ids().first().copied() {
             let notebook_for_drop = terminal_notebook.clone();
-            split_view.setup_pane_drop_target_with_callback(initial_pane_id, move |session_id| {
-                let info = notebook_for_drop.get_session_info(session_id)?;
-                let terminal = notebook_for_drop.get_terminal(session_id);
-                Some((info, terminal))
-            });
+            let notebook_for_color = terminal_notebook.clone();
+            split_view.setup_pane_drop_target_with_callbacks(
+                initial_pane_id,
+                move |session_id| {
+                    let info = notebook_for_drop.get_session_info(session_id)?;
+                    let terminal = notebook_for_drop.get_terminal(session_id);
+                    Some((info, terminal))
+                },
+                move |session_id, color_index| {
+                    // Set tab color indicator when session is dropped into pane
+                    notebook_for_color.set_tab_split_color(session_id, color_index);
+                },
+            );
         }
 
         // Set up click handlers for focus management
@@ -1626,7 +1751,8 @@ impl MainWindow {
             );
         });
 
-        // Connect TabView page selection to show session in split view
+        // Connect TabView page selection - per spec, do NOT auto-fill split panes
+        // Split view is shown ONLY when selected session is displayed in a split pane
         let split_view_clone = split_view.clone();
         let notebook_clone = terminal_notebook.clone();
         terminal_notebook.tab_view().connect_notify_local(
@@ -1648,73 +1774,64 @@ impl MainWindow {
                             // For VNC/RDP/SPICE: hide split view, show TabView content
                             split_view_clone.widget().set_visible(false);
                             split_view_clone.widget().set_vexpand(false);
+                            notebook_clone.widget().set_vexpand(true);
                             notebook_clone.show_tab_view_content();
                             return;
                         }
                     }
 
-                    // For SSH sessions: show terminal in split view, hide TabView content
-                    split_view_clone.widget().set_visible(true);
-                    split_view_clone.widget().set_vexpand(true);
-                    notebook_clone.hide_tab_view_content();
+                    // For SSH: check if this session belongs to a split (has color assigned)
+                    // or is currently displayed in a split pane
+                    let has_split_color = split_view_clone.get_session_color(session_id).is_some();
+                    let is_displayed = split_view_clone.is_session_displayed(session_id);
 
-                    // Check if this session is already shown in any pane
-                    let pane_ids = split_view_clone.pane_ids();
-                    let mut found_pane = None;
+                    if has_split_color || is_displayed {
+                        // Session belongs to split view - show split view
+                        split_view_clone.widget().set_visible(true);
+                        split_view_clone.widget().set_vexpand(true);
+                        notebook_clone.widget().set_vexpand(false);
+                        notebook_clone.hide_tab_view_content();
 
-                    for pane_id in &pane_ids {
-                        let pane_session = split_view_clone.get_pane_session(*pane_id);
-                        if pane_session == Some(session_id) {
-                            found_pane = Some(*pane_id);
-                            break;
-                        }
-                    }
-
-                    if let Some(pane_id) = found_pane {
-                        // Session already shown in this pane - just focus it
-                        let _ = split_view_clone.focus_pane(pane_id);
-                        // Also grab focus on the terminal
-                        if let Some(terminal) = split_view_clone.get_terminal(session_id) {
-                            terminal.grab_focus();
+                        // If session is displayed in a pane, focus that pane
+                        if is_displayed {
+                            for pane_id in split_view_clone.pane_ids() {
+                                if split_view_clone.get_pane_session(pane_id) == Some(session_id) {
+                                    let _ = split_view_clone.focus_pane(pane_id);
+                                    if let Some(terminal) =
+                                        split_view_clone.get_terminal(session_id)
+                                    {
+                                        terminal.grab_focus();
+                                    }
+                                    break;
+                                }
+                            }
                         }
                     } else {
-                        // Session not shown in any pane - find best pane to show it
-                        // Prefer: 1) empty pane, 2) focused pane, 3) first pane
-                        let mut target_pane = None;
+                        // Session NOT in split view - show in TabView directly
+                        // Move terminal back to TabView page if it was in split view
+                        notebook_clone.reparent_terminal_to_tab(session_id);
 
-                        // First, look for an empty pane (no session)
-                        for pane_id in &pane_ids {
-                            if split_view_clone.get_pane_session(*pane_id).is_none() {
-                                target_pane = Some(*pane_id);
-                                break;
-                            }
+                        // Clear any split color indicator
+                        notebook_clone.clear_tab_split_color(session_id);
+
+                        // Register session for potential drag-and-drop (without moving terminal)
+                        if let Some(info) = notebook_clone.get_session_info(session_id) {
+                            // Don't pass terminal - it stays in TabView
+                            split_view_clone.add_session(info, None);
                         }
 
-                        // If no empty pane, use focused pane or first pane
-                        if target_pane.is_none() {
-                            target_pane = split_view_clone
-                                .focused_pane_id()
-                                .or_else(|| pane_ids.first().copied());
-                        }
-
-                        if let Some(pane_id) = target_pane {
-                            let _ = split_view_clone.focus_pane(pane_id);
-
-                            // Always ensure session and terminal are in split_view
-                            if let Some(info) = notebook_clone.get_session_info(session_id) {
-                                let terminal = notebook_clone.get_terminal(session_id);
-                                split_view_clone.add_session(info, terminal);
-                            }
-
-                            let _ = split_view_clone.show_session(session_id);
-                        }
+                        // Hide split view, show TabView content
+                        split_view_clone.widget().set_visible(false);
+                        split_view_clone.widget().set_vexpand(false);
+                        notebook_clone.widget().set_vexpand(true);
+                        notebook_clone.show_tab_view_content();
                     }
                 } else {
-                    // Welcome tab (page 0) - show welcome content in focused pane
-                    split_view_clone.widget().set_visible(true);
-                    split_view_clone.widget().set_vexpand(true);
-                    notebook_clone.hide_tab_view_content();
-                    split_view_clone.show_welcome_in_focused_pane();
+                    // Welcome tab (page 0) - show TabView welcome
+                    split_view_clone.widget().set_visible(false);
+                    split_view_clone.widget().set_vexpand(false);
+                    notebook_clone.widget().set_vexpand(true);
+                    notebook_clone.show_tab_view_content();
                 }
             },
         );
@@ -2564,17 +2681,17 @@ impl MainWindow {
                 return Some(session_id);
             }
 
-            // For SSH, show terminal in split view
-            // For external sessions, show placeholder
-            let terminal = notebook.get_terminal(session_id);
-            split_view.add_session(info.clone(), terminal.clone());
-            let _ = split_view.show_session(session_id);
+            // For SSH: register session info for potential drag-and-drop
+            // Per spec: new connections ALWAYS open in a new tab, never in split pane
+            // Don't pass terminal - it stays in TabView page
+            split_view.add_session(info.clone(), None);
 
-            // Ensure split view is visible and expanded for SSH
-            split_view.widget().set_visible(true);
-            split_view.widget().set_vexpand(true);
-            notebook.widget().set_vexpand(false);
-            notebook.hide_tab_view_content();
+            // Per spec: new connections always show in TabView (as a new tab)
+            // Hide split view, show TabView content
+            split_view.widget().set_visible(false);
+            split_view.widget().set_vexpand(false);
+            notebook.widget().set_vexpand(true);
+            notebook.show_tab_view_content();
 
             // For SSH and Zero Trust, we assume connected for now
             if info.protocol == "ssh" || info.protocol.starts_with("zerotrust") {

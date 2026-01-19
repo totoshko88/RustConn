@@ -102,57 +102,7 @@ impl TerminalNotebook {
         };
 
         term_notebook.setup_tab_view_signals();
-        term_notebook.setup_tab_bar_drag_source();
         term_notebook
-    }
-
-    /// Sets up a custom drag source on the TabBar for dragging tabs to split panes
-    /// This works alongside libadwaita's built-in tab drag for reordering
-    fn setup_tab_bar_drag_source(&self) {
-        use gtk4::gdk;
-
-        let drag_source = gtk4::DragSource::new();
-        drag_source.set_actions(gdk::DragAction::MOVE);
-
-        // We need to determine which tab is being dragged based on the selected page
-        let tab_view = self.tab_view.clone();
-        let sessions = self.sessions.clone();
-
-        drag_source.connect_prepare(move |_source, _x, _y| {
-            // Get the currently selected page's session ID
-            if let Some(selected_page) = tab_view.selected_page() {
-                let sessions_ref = sessions.borrow();
-                for (session_id, page) in sessions_ref.iter() {
-                    if page == &selected_page {
-                        let session_id_str = session_id.to_string();
-                        let value = glib::Value::from(&session_id_str);
-                        let content = gdk::ContentProvider::for_value(&value);
-                        return Some(content);
-                    }
-                }
-            }
-            None
-        });
-
-        // Set a drag icon to indicate dragging
-        let tab_view_for_icon = self.tab_view.clone();
-        let sessions_for_icon = self.sessions.clone();
-        drag_source.connect_drag_begin(move |source, _drag| {
-            // Create a simple icon for the drag
-            if let Some(selected_page) = tab_view_for_icon.selected_page() {
-                let sessions_ref = sessions_for_icon.borrow();
-                if sessions_ref.values().any(|p| p == &selected_page) {
-                    // Use the page title as a hint
-                    let title = selected_page.title();
-                    let label = gtk4::Label::new(Some(&title));
-                    label.add_css_class("drag-icon");
-                    let paintable = gtk4::WidgetPaintable::new(Some(&label));
-                    source.set_icon(Some(&paintable), 0, 0);
-                }
-            }
-        });
-
-        self.tab_bar.add_controller(drag_source);
     }
 
     /// Sets up TabView signals for close requests
@@ -343,12 +293,20 @@ impl TerminalNotebook {
         // Apply user settings
         config::configure_terminal_with_settings(&terminal, settings);
 
-        // Create empty container for TabView page
-        // The actual terminal will be displayed in split_view
+        // Create scrolled window for terminal
+        let scrolled = gtk4::ScrolledWindow::builder()
+            .hscrollbar_policy(gtk4::PolicyType::Never)
+            .vscrollbar_policy(gtk4::PolicyType::Automatic)
+            .hexpand(true)
+            .vexpand(true)
+            .child(&terminal)
+            .build();
+
+        // Create container for TabView page with terminal inside
         let container = GtkBox::new(Orientation::Vertical, 0);
         container.set_hexpand(true);
         container.set_vexpand(true);
-        // Don't append terminal here - it will be shown in split_view
+        container.append(&scrolled);
 
         // Add page to TabView
         let page = self.tab_view.append(&container);
@@ -752,6 +710,39 @@ impl TerminalNotebook {
         }
     }
 
+    /// Sets a color indicator on a tab to show it's in a split pane
+    /// Applies a colored left border to the tab's title in the TabBar
+    pub fn set_tab_split_color(&self, session_id: Uuid, color_index: usize) {
+        if let Some(page) = self.sessions.borrow().get(&session_id) {
+            // Remove any existing tab color classes
+            for (_, tab_class) in crate::split_view::SPLIT_PANE_COLORS {
+                page.child().remove_css_class(tab_class);
+            }
+
+            // Add the new tab color class to the page's child
+            let tab_class = crate::split_view::get_tab_color_class(color_index);
+            page.child().add_css_class(tab_class);
+
+            // Also set a colored indicator icon
+            let icon = gio::ThemedIcon::new("media-record-symbolic");
+            page.set_indicator_icon(Some(&icon));
+            page.set_indicator_activatable(false);
+        }
+    }
+
+    /// Removes the split color indicator from a tab
+    pub fn clear_tab_split_color(&self, session_id: Uuid) {
+        if let Some(page) = self.sessions.borrow().get(&session_id) {
+            page.set_indicator_icon(gio::Icon::NONE);
+
+            // Remove all tab color classes from the page's child
+            let child = page.child();
+            for (_, tab_class) in crate::split_view::SPLIT_PANE_COLORS {
+                child.remove_css_class(tab_class);
+            }
+        }
+    }
+
     /// Gets the terminal widget for a session
     #[must_use]
     pub fn get_terminal(&self, session_id: Uuid) -> Option<Terminal> {
@@ -1001,6 +992,57 @@ impl TerminalNotebook {
     #[allow(dead_code)]
     pub fn hide_all_page_content(&self) {
         // TabView handles visibility automatically
+    }
+
+    /// Moves terminal back to its TabView page container
+    /// Call this when session exits split view and returns to TabView display
+    pub fn reparent_terminal_to_tab(&self, session_id: Uuid) {
+        let Some(terminal) = self.terminals.borrow().get(&session_id).cloned() else {
+            return;
+        };
+        let Some(page) = self.sessions.borrow().get(&session_id).cloned() else {
+            return;
+        };
+
+        // Get the page's child (container box)
+        let child = page.child();
+        let Some(container) = child.downcast_ref::<GtkBox>() else {
+            return;
+        };
+
+        // Check if terminal is already in this container (via scrolled window)
+        if let Some(parent) = terminal.parent() {
+            if let Some(grandparent) = parent.parent() {
+                if grandparent == child {
+                    return; // Already in place
+                }
+            }
+        }
+
+        // Remove terminal from current parent (if any)
+        if let Some(parent) = terminal.parent() {
+            if let Some(scrolled) = parent.downcast_ref::<gtk4::ScrolledWindow>() {
+                scrolled.set_child(None::<&Widget>);
+            } else if let Some(box_widget) = parent.downcast_ref::<GtkBox>() {
+                box_widget.remove(&terminal);
+            }
+        }
+
+        // Create new scrolled window and add terminal
+        let scrolled = gtk4::ScrolledWindow::builder()
+            .hscrollbar_policy(gtk4::PolicyType::Never)
+            .vscrollbar_policy(gtk4::PolicyType::Automatic)
+            .hexpand(true)
+            .vexpand(true)
+            .child(&terminal)
+            .build();
+
+        // Clear container and add scrolled window
+        while let Some(existing) = container.first_child() {
+            container.remove(&existing);
+        }
+        container.append(&scrolled);
+        terminal.set_visible(true);
     }
 
     /// Shows TabView content area (for RDP/VNC/SPICE sessions)

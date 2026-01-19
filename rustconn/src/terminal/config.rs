@@ -88,11 +88,15 @@ fn setup_context_menu(terminal: &Terminal) {
     let click_controller = gtk4::GestureClick::new();
     click_controller.set_button(3); // Right click
     let term_menu = terminal.clone();
-    click_controller.connect_pressed(move |_gesture, _, x, y| {
+    click_controller.connect_pressed(move |gesture, _, x, y| {
         let menu = gio::Menu::new();
-        menu.append(Some("Copy"), Some("terminal.copy"));
-        menu.append(Some("Paste"), Some("terminal.paste"));
-        menu.append(Some("Select All"), Some("terminal.select-all"));
+
+        // Clipboard section
+        let clipboard_section = gio::Menu::new();
+        clipboard_section.append(Some("Copy"), Some("terminal.copy"));
+        clipboard_section.append(Some("Paste"), Some("terminal.paste"));
+        clipboard_section.append(Some("Select All"), Some("terminal.select-all"));
+        menu.append_section(None, &clipboard_section);
 
         let popover = PopoverMenu::from_model(Some(&menu));
         popover.set_parent(&term_menu);
@@ -127,6 +131,9 @@ fn setup_context_menu(terminal: &Terminal) {
         let rect = gdk::Rectangle::new(x as i32, y as i32, 1, 1);
         popover.set_pointing_to(Some(&rect));
         popover.popup();
+
+        // Claim the gesture to prevent pane context menu from also showing
+        gesture.set_state(gtk4::EventSequenceState::Claimed);
     });
     terminal.add_controller(click_controller);
 }

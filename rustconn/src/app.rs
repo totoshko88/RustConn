@@ -282,6 +282,54 @@ fn load_css_styles() {
             border-radius: 4px;
         }
 
+        /* Split pane color indicators - applied to pane containers */
+        /* These show which pane a session belongs to */
+        .split-color-blue {
+            border-left: 4px solid #3584e4;
+        }
+        .split-color-green {
+            border-left: 4px solid #33d17a;
+        }
+        .split-color-orange {
+            border-left: 4px solid #ff7800;
+        }
+        .split-color-purple {
+            border-left: 4px solid #9141ac;
+        }
+        .split-color-cyan {
+            border-left: 4px solid #00b4d8;
+        }
+        .split-color-pink {
+            border-left: 4px solid #f66151;
+        }
+
+        /* Tab color indicators - applied to tab content containers */
+        /* These color the left border of the tab content to match pane color */
+        .tab-split-blue {
+            border-left: 3px solid #3584e4;
+            padding-left: 6px;
+        }
+        .tab-split-green {
+            border-left: 3px solid #33d17a;
+            padding-left: 6px;
+        }
+        .tab-split-orange {
+            border-left: 3px solid #ff7800;
+            padding-left: 6px;
+        }
+        .tab-split-purple {
+            border-left: 3px solid #9141ac;
+            padding-left: 6px;
+        }
+        .tab-split-cyan {
+            border-left: 3px solid #00b4d8;
+            padding-left: 6px;
+        }
+        .tab-split-pink {
+            border-left: 3px solid #f66151;
+            padding-left: 6px;
+        }
+
         /* Pane placeholder styles */
         .dim-label {
             opacity: 0.6;
