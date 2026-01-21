@@ -5,15 +5,42 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.5] - 2026-01-17
+## [0.6.5] - 2026-01-21
 
 ### Changed
+- **Split View Redesign** - Complete rewrite of split view functionality with tab-scoped layouts:
+  - Each tab now maintains its own independent split layout (no more global split state)
+  - Tree-based panel structure supporting unlimited nested splits
+  - Color-coded panel borders (6 colors) to visually identify split containers
+  - Panels within the same split share the same border color
+  - Tab color indicators match their panel's color when in split view
+  - "Select Tab" button in empty panels as alternative to drag-and-drop
+  - Proper cleanup when closing split view (colors released, terminals reparented)
+  - When last panel is closed, split view closes and session returns to regular tab
+  - New `rustconn-core/src/split/` module with GUI-free split layout logic
+  - Comprehensive property tests for split view operations
 - **Terminal Tabs Migration** - Migrated terminal notebook from `gtk::Notebook` to `adw::TabView`:
   - Modern GNOME HIG compliant tab bar with `adw::TabBar`
   - Native tab drag-and-drop support
   - Automatic tab overflow handling
   - Better integration with libadwaita theming
   - Improved accessibility with proper ARIA labels
+
+### Fixed
+- **KeePass Password Saving** - Fixed "Failed to Save Password" error when connection name contains `/` character (e.g., connections in subgroups). Now sanitizes lookup keys by replacing `/` with `-`
+- **Connection Dialog Password Field** - Renamed "Password:" label to "Value:" and added show/hide toggle button. Field visibility now depends on password source selection (hidden for Prompt/Inherit/None, shown for Stored/KeePass/Keyring)
+- **Group Dialog Password Source** - Added password source dropdown (Prompt, Stored, KeePass, Keyring, Inherit, None) with Value field and show/hide toggle to group dialogs
+- **Template Dialog Field Alignment** - Changed Basic tab fields from `Entry` to `adw::EntryRow` for proper width stretching consistent with Connection dialog
+- **CSS Parser Errors** - Removed unsupported `:has()` pseudoclass from CSS rules, eliminating 6 "Unknown pseudoclass" errors on startup
+- **zbus DEBUG Spam** - Added tracing filter to suppress verbose zbus DEBUG messages (`zbus=warn` directive)
+- **Split View "Loading..." Panels** - Fixed panels getting stuck showing "Loading..." after multiple splits and "Select Tab" operations:
+  - Terminals moved via "Select Tab" are now stored in bridge's internal map for restoration
+  - `restore_panel_contents()` is now called after each split to restore terminal content
+  - `show_session()` is only called on first split; subsequent splits preserve existing panel content
+- **Split View Context Menu Freeze** - Fixed window freeze when right-clicking in split view panels. Context menu popover is now created dynamically on each click to avoid GTK popup grabbing conflicts
+- Empty panel close button now properly triggers panel removal and split view cleanup
+- Tab colors now correctly match their panel's color in split view
+- Focus rectangle properly follows active panel when clicking or switching tabs
 
 ## [0.6.4] - 2026-01-17
 

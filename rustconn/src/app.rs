@@ -271,6 +271,145 @@ fn load_css_styles() {
     let provider = gtk4::CssProvider::new();
     provider.load_from_string(
         r"
+        /* ============================================================
+         * Split View Redesign Styles
+         * Requirements: 6.2, 6.3, 6.4, 12.4
+         * ============================================================ */
+
+        /* Base panel styling - applied to all panels in split containers */
+        /* Requirement 6.3: Panel borders within Split_Container */
+        .split-panel {
+            border-radius: 6px;
+            margin: 3px;
+            background-color: @view_bg_color;
+        }
+
+        /* Focused panel styling - highlights the currently focused panel */
+        /* Requirement 12.3: Keyboard accessible interactive elements */
+        .focused-panel {
+            border: 2px solid @accent_color;
+            box-shadow: 0 0 0 1px alpha(@accent_color, 0.3);
+        }
+
+        /* Panel border colors by ColorId index (0-5) */
+        /* Requirement 6.3: Panel borders painted using assigned Color_ID */
+        /* Requirement 6.4: Colors visually distinct in light and dark themes */
+
+        /* Color 0: Blue (#3584e4) - GNOME Blue */
+        .split-panel-color-0 {
+            border-left: 4px solid #3584e4;
+        }
+
+        /* Color 1: Green (#2ec27e) - GNOME Green */
+        .split-panel-color-1 {
+            border-left: 4px solid #2ec27e;
+        }
+
+        /* Color 2: Orange (#ff7800) - Vibrant Orange */
+        .split-panel-color-2 {
+            border-left: 4px solid #ff7800;
+        }
+
+        /* Color 3: Purple (#9141ac) - GNOME Purple */
+        .split-panel-color-3 {
+            border-left: 4px solid #9141ac;
+        }
+
+        /* Color 4: Cyan (#00b4d8) - Bright Cyan */
+        .split-panel-color-4 {
+            border-left: 4px solid #00b4d8;
+        }
+
+        /* Color 5: Red (#e01b24) - GNOME Red */
+        .split-panel-color-5 {
+            border-left: 4px solid #e01b24;
+        }
+
+        /* Tab header color indicators by ColorId index (0-5) */
+        /* Requirement 6.2: Color_ID displayed as indicator in tab header */
+        /* These are small colored dots/badges shown in tab headers */
+
+        .split-tab-indicator-0 {
+            background-color: #3584e4;
+            border-radius: 50%;
+            min-width: 8px;
+            min-height: 8px;
+            margin-right: 6px;
+        }
+
+        .split-tab-indicator-1 {
+            background-color: #2ec27e;
+            border-radius: 50%;
+            min-width: 8px;
+            min-height: 8px;
+            margin-right: 6px;
+        }
+
+        .split-tab-indicator-2 {
+            background-color: #ff7800;
+            border-radius: 50%;
+            min-width: 8px;
+            min-height: 8px;
+            margin-right: 6px;
+        }
+
+        .split-tab-indicator-3 {
+            background-color: #9141ac;
+            border-radius: 50%;
+            min-width: 8px;
+            min-height: 8px;
+            margin-right: 6px;
+        }
+
+        .split-tab-indicator-4 {
+            background-color: #00b4d8;
+            border-radius: 50%;
+            min-width: 8px;
+            min-height: 8px;
+            margin-right: 6px;
+        }
+
+        .split-tab-indicator-5 {
+            background-color: #e01b24;
+            border-radius: 50%;
+            min-width: 8px;
+            min-height: 8px;
+            margin-right: 6px;
+        }
+
+        /* Empty panel placeholder styling */
+        /* Requirement 4.1: Empty panel displays placeholder with Select Tab button */
+        .empty-panel-placeholder {
+            background-color: alpha(@view_bg_color, 0.5);
+            border: 2px dashed alpha(@borders, 0.5);
+            border-radius: 6px;
+        }
+
+        /* Panel close button styling */
+        /* Requirement 4.5: Close button (X icon) in top-right corner */
+        .panel-close-button {
+            min-width: 24px;
+            min-height: 24px;
+            padding: 4px;
+            opacity: 0.6;
+            background-color: alpha(@view_bg_color, 0.8);
+            border-radius: 50%;
+        }
+
+        .panel-close-button:hover {
+            opacity: 1.0;
+            background-color: alpha(@error_color, 0.15);
+            color: @error_color;
+        }
+
+        .panel-close-button:active {
+            background-color: alpha(@error_color, 0.25);
+        }
+
+        /* ============================================================
+         * Legacy Split View Styles (for backward compatibility)
+         * ============================================================ */
+
         /* Split view pane styles */
         .focused-pane {
             border: 2px solid @accent_color;
@@ -282,7 +421,7 @@ fn load_css_styles() {
             border-radius: 4px;
         }
 
-        /* Split pane color indicators - applied to pane containers */
+        /* Legacy split pane color indicators - applied to pane containers */
         /* These show which pane a session belongs to */
         .split-color-blue {
             border-left: 4px solid #3584e4;
@@ -303,7 +442,7 @@ fn load_css_styles() {
             border-left: 4px solid #f66151;
         }
 
-        /* Tab color indicators - applied to tab content containers */
+        /* Legacy tab color indicators - applied to tab content containers */
         /* These color the left border of the tab content to match pane color */
         .tab-split-blue {
             border-left: 3px solid #3584e4;
@@ -329,6 +468,9 @@ fn load_css_styles() {
             border-left: 3px solid #f66151;
             padding-left: 6px;
         }
+
+        /* Note: :has() pseudoclass is not supported in GTK4 CSS */
+        /* Tab indicator colors are applied directly via CSS classes on the tab content */
 
         /* Pane placeholder styles */
         .dim-label {
@@ -644,12 +786,40 @@ fn load_css_styles() {
         }
 
         /* Drop target highlight for drag-and-drop to split panes */
+        /* Requirement 8.1: Highlight target zone with focus border when drag enters */
+        /* Requirement 8.2: Remove highlight when drag leaves */
         .drop-target-highlight {
             background-color: alpha(@accent_color, 0.15);
             border: 2px dashed @accent_color;
             border-radius: 6px;
             transition: background-color 150ms ease-in-out,
                         border-color 150ms ease-in-out;
+        }
+
+        /* Requirement 8.3: Distinguish between Empty_Panel and Occupied_Panel drop targets */
+        /* Empty panel drop target - uses accent color (inviting) */
+        .drop-target-empty {
+            background-color: alpha(@accent_color, 0.2);
+            border: 2px dashed @accent_color;
+            border-radius: 6px;
+            box-shadow: inset 0 0 12px alpha(@accent_color, 0.15);
+        }
+
+        /* Occupied panel drop target - uses warning color (indicates replacement/eviction) */
+        .drop-target-occupied {
+            background-color: alpha(@warning_color, 0.15);
+            border: 2px dashed @warning_color;
+            border-radius: 6px;
+            box-shadow: inset 0 0 12px alpha(@warning_color, 0.1);
+        }
+
+        /* Drag source visual feedback */
+        /* Requirement 7.4: Visual feedback during drag */
+        .dragging {
+            opacity: 0.5;
+            background-color: alpha(@accent_color, 0.1);
+            border: 1px dashed @accent_color;
+            border-radius: 4px;
         }
 
         /* Tab styles for sessions in split view - distinct color */
@@ -803,7 +973,7 @@ Developed by Anton Isaiev, 2024-2026";
         Some("Support the Project"),
         &[
             "☕ Ko-Fi: https://ko-fi.com/totoshko88",
-            "💳 PayPal: https://www.paypal.com/qrcodes/p2pqrc/JJLUXRZSQ5V3A",
+            "💳 PayPal: https://www.paypal.com/paypalme/totoshko88",
             "🇺🇦 Monobank: https://send.monobank.ua/jar/2UgaGcQ3JC",
         ],
     );

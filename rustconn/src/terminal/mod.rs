@@ -32,6 +32,8 @@ use crate::automation::{AutomationSession, Trigger};
 use crate::embedded_rdp::EmbeddedRdpWidget;
 use crate::embedded_spice::EmbeddedSpiceWidget;
 use crate::session::{SessionState, SessionWidget, VncSessionWidget};
+use crate::split_view::TabSplitManager;
+use rustconn_core::split::TabId;
 
 /// Terminal notebook widget for managing multiple terminal sessions
 /// Now using adw::TabView for modern GNOME HIG compliance
@@ -53,6 +55,11 @@ pub struct TerminalNotebook {
     automation_sessions: Rc<RefCell<HashMap<Uuid, AutomationSession>>>,
     /// Session metadata
     session_info: Rc<RefCell<HashMap<Uuid, TerminalSession>>>,
+    /// Tab split manager for managing split layouts per tab
+    /// Requirements 3.1, 3.3, 3.4: Each tab maintains its own split container
+    split_manager: Rc<RefCell<TabSplitManager>>,
+    /// Map of session IDs to their TabId (for split layout tracking)
+    session_tab_ids: Rc<RefCell<HashMap<Uuid, TabId>>>,
 }
 
 impl TerminalNotebook {
@@ -99,6 +106,8 @@ impl TerminalNotebook {
             session_widgets: Rc::new(RefCell::new(HashMap::new())),
             automation_sessions: Rc::new(RefCell::new(HashMap::new())),
             session_info: Rc::new(RefCell::new(HashMap::new())),
+            split_manager: Rc::new(RefCell::new(TabSplitManager::new())),
+            session_tab_ids: Rc::new(RefCell::new(HashMap::new())),
         };
 
         term_notebook.setup_tab_view_signals();
@@ -112,6 +121,8 @@ impl TerminalNotebook {
         let session_widgets = self.session_widgets.clone();
         let session_info = self.session_info.clone();
         let tab_view = self.tab_view.clone();
+        let split_manager = self.split_manager.clone();
+        let session_tab_ids = self.session_tab_ids.clone();
 
         // Handle create-window signal - we must connect this to prevent the default
         // behavior which causes CRITICAL warnings. Returning None cancels the tearoff.
@@ -137,6 +148,12 @@ impl TerminalNotebook {
             };
 
             if let Some(session_id) = session_id {
+                // Clean up split layout for this session's tab
+                // Requirement 3.4: Split_Container is destroyed when tab is closed
+                if let Some(tab_id) = session_tab_ids.borrow_mut().remove(&session_id) {
+                    split_manager.borrow_mut().remove(tab_id);
+                }
+
                 // Clean up session data
                 sessions.borrow_mut().remove(&session_id);
                 terminals.borrow_mut().remove(&session_id);
@@ -168,21 +185,14 @@ impl TerminalNotebook {
         });
     }
 
-    /// Creates the welcome tab content
+    /// Creates the welcome tab content - uses the full welcome screen with features
     fn create_welcome_tab() -> GtkBox {
         let container = GtkBox::new(Orientation::Vertical, 0);
         container.set_hexpand(true);
         container.set_vexpand(true);
 
-        // Use adw::StatusPage for empty state
-        let status_page = adw::StatusPage::new();
-        status_page.set_icon_name(Some("network-server-symbolic"));
-        status_page.set_title("Welcome to RustConn");
-        status_page.set_description(Some(
-            "Select a connection from the sidebar or create a new one to get started.",
-        ));
-        status_page.set_vexpand(true);
-
+        // Use the full welcome content from SplitViewBridge for consistency
+        let status_page = crate::split_view::SplitViewBridge::create_welcome_content_static();
         container.append(&status_page);
         container
     }
@@ -714,19 +724,76 @@ impl TerminalNotebook {
     /// Applies a colored left border to the tab's title in the TabBar
     pub fn set_tab_split_color(&self, session_id: Uuid, color_index: usize) {
         if let Some(page) = self.sessions.borrow().get(&session_id) {
-            // Remove any existing tab color classes
+            // Remove any existing tab color classes from the page's child
             for (_, tab_class) in crate::split_view::SPLIT_PANE_COLORS {
                 page.child().remove_css_class(tab_class);
+            }
+            // Remove old indicator classes
+            for i in 0..6 {
+                page.child()
+                    .remove_css_class(&format!("split-indicator-{}", i));
             }
 
             // Add the new tab color class to the page's child
             let tab_class = crate::split_view::get_tab_color_class(color_index);
             page.child().add_css_class(tab_class);
 
-            // Also set a colored indicator icon
-            let icon = gio::ThemedIcon::new("media-record-symbolic");
-            page.set_indicator_icon(Some(&icon));
+            // Add indicator class for potential CSS styling
+            let indicator_class = format!("split-indicator-{}", color_index);
+            page.child().add_css_class(&indicator_class);
+
+            // Create a colored circle icon for the indicator
+            // This provides a visible colored indicator in the tab header
+            if let Some(icon) = crate::split_view::create_colored_circle_icon(color_index, 16) {
+                page.set_indicator_icon(Some(&icon));
+            } else {
+                // Fallback to symbolic icon if colored icon creation fails
+                let icon = gio::ThemedIcon::new("media-record-symbolic");
+                page.set_indicator_icon(Some(&icon));
+            }
             page.set_indicator_activatable(false);
+        }
+    }
+
+    /// Sets a color indicator on a tab using the new ColorId system.
+    ///
+    /// This method is used by the new split view system to show color indicators
+    /// on tabs that contain split containers.
+    ///
+    /// # Requirements
+    /// - 6.2: Tab header shows color indicator when tab contains Split_Container
+    ///
+    /// # Arguments
+    ///
+    /// * `session_id` - The session UUID
+    /// * `color_id` - The ColorId from the split layout model
+    #[allow(dead_code)] // Will be used in window integration tasks
+    pub fn set_tab_split_color_id(
+        &self,
+        session_id: Uuid,
+        color_id: rustconn_core::split::ColorId,
+    ) {
+        self.set_tab_split_color(session_id, color_id.index() as usize);
+    }
+
+    /// Updates the tab color indicator based on the session's split state.
+    ///
+    /// This method checks if the session's tab has a split layout and updates
+    /// the color indicator accordingly. If the tab is split, it shows the
+    /// assigned color; otherwise, it clears the indicator.
+    ///
+    /// # Requirements
+    /// - 6.2: Tab header shows color indicator when tab contains Split_Container
+    ///
+    /// # Arguments
+    ///
+    /// * `session_id` - The session UUID
+    #[allow(dead_code)] // Will be used in window integration tasks
+    pub fn update_tab_color_indicator(&self, session_id: Uuid) {
+        if let Some(color_index) = self.get_session_split_color(session_id) {
+            self.set_tab_split_color(session_id, color_index);
+        } else {
+            self.clear_tab_split_color(session_id);
         }
     }
 
@@ -735,10 +802,14 @@ impl TerminalNotebook {
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             page.set_indicator_icon(gio::Icon::NONE);
 
-            // Remove all tab color classes from the page's child
+            // Remove all tab color classes and indicator classes from the page's child
             let child = page.child();
             for (_, tab_class) in crate::split_view::SPLIT_PANE_COLORS {
                 child.remove_css_class(tab_class);
+            }
+            // Remove indicator classes
+            for i in 0..6 {
+                child.remove_css_class(&format!("split-indicator-{}", i));
             }
         }
     }
@@ -1064,6 +1135,97 @@ impl TerminalNotebook {
     #[allow(dead_code)]
     pub fn is_tab_view_content_visible(&self) -> bool {
         self.tab_view.is_visible()
+    }
+
+    // ========================================================================
+    // Split Layout Management
+    // ========================================================================
+
+    /// Returns a reference to the split manager.
+    ///
+    /// The split manager handles tab-scoped split layouts, allowing each tab
+    /// to have its own independent panel configuration.
+    ///
+    /// # Requirements
+    /// - 3.1: Each Root_Tab maintains its own Split_Container
+    #[must_use]
+    #[allow(dead_code)] // Will be used in window integration tasks
+    pub fn split_manager(&self) -> Rc<RefCell<TabSplitManager>> {
+        Rc::clone(&self.split_manager)
+    }
+
+    /// Gets or creates a TabId for a session.
+    ///
+    /// This associates a session with a TabId for split layout tracking.
+    /// If the session doesn't have a TabId yet, one is created.
+    ///
+    /// # Arguments
+    ///
+    /// * `session_id` - The session UUID
+    ///
+    /// # Returns
+    ///
+    /// The TabId associated with this session
+    #[allow(dead_code)] // Will be used in window integration tasks
+    pub fn get_or_create_tab_id(&self, session_id: Uuid) -> TabId {
+        let mut tab_ids = self.session_tab_ids.borrow_mut();
+        *tab_ids.entry(session_id).or_default()
+    }
+
+    /// Gets the TabId for a session if it exists.
+    ///
+    /// # Arguments
+    ///
+    /// * `session_id` - The session UUID
+    ///
+    /// # Returns
+    ///
+    /// The TabId if the session has one, None otherwise
+    #[must_use]
+    #[allow(dead_code)] // Will be used in window integration tasks
+    pub fn get_tab_id(&self, session_id: Uuid) -> Option<TabId> {
+        self.session_tab_ids.borrow().get(&session_id).copied()
+    }
+
+    /// Checks if a session's tab has a split layout.
+    ///
+    /// # Arguments
+    ///
+    /// * `session_id` - The session UUID
+    ///
+    /// # Returns
+    ///
+    /// `true` if the session's tab has splits, `false` otherwise
+    #[must_use]
+    #[allow(dead_code)] // Will be used in window integration tasks
+    pub fn is_session_split(&self, session_id: Uuid) -> bool {
+        if let Some(tab_id) = self.get_tab_id(session_id) {
+            self.split_manager.borrow().is_split(tab_id)
+        } else {
+            false
+        }
+    }
+
+    /// Gets the color for a session's split container.
+    ///
+    /// # Arguments
+    ///
+    /// * `session_id` - The session UUID
+    ///
+    /// # Returns
+    ///
+    /// The color index if the session has a split container with a color
+    #[must_use]
+    #[allow(dead_code)] // Will be used in window integration tasks
+    pub fn get_session_split_color(&self, session_id: Uuid) -> Option<usize> {
+        if let Some(tab_id) = self.get_tab_id(session_id) {
+            self.split_manager
+                .borrow()
+                .get_tab_color(tab_id)
+                .map(|c| c.index() as usize)
+        } else {
+            None
+        }
     }
 }
 

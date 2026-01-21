@@ -25,16 +25,20 @@ use crate::window_sessions as sessions;
 use crate::window_snippets as snippets;
 use crate::window_templates as templates;
 use crate::window_types::{
-    get_protocol_string, SharedExternalWindowManager, SharedNotebook, SharedSidebar,
-    SharedSplitView,
+    get_protocol_string, SessionSplitBridges, SharedExternalWindowManager, SharedNotebook,
+    SharedSidebar, SharedSplitView, SharedTabSplitManager,
 };
 
 use crate::dialogs::{ExportDialog, SettingsDialog};
 use crate::external_window::ExternalWindowManager;
 use crate::sidebar::{ConnectionItem, ConnectionSidebar};
-use crate::split_view::{SplitDirection, SplitTerminalView};
+use crate::split_view::{SplitDirection, SplitViewBridge, TabSplitManager};
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
+use rustconn_core::split::ColorPool;
+
+/// Shared color pool type for global color allocation across all split containers
+type SharedColorPool = Rc<RefCell<ColorPool>>;
 
 /// Shared toast overlay reference
 pub type SharedToastOverlay = Rc<ToastOverlay>;
@@ -48,6 +52,16 @@ pub struct MainWindow {
     sidebar: SharedSidebar,
     terminal_notebook: SharedNotebook,
     split_view: SharedSplitView,
+    /// New tab-scoped split manager (for migration to new split view system)
+    tab_split_manager: SharedTabSplitManager,
+    /// Per-session split bridges - each session that has been split gets its own bridge
+    /// Requirement 3: Each tab maintains its own independent split layout
+    session_split_bridges: SessionSplitBridges,
+    /// Global color pool shared across all split containers
+    /// Ensures different split containers get different colors
+    global_color_pool: SharedColorPool,
+    /// Container for split views - we swap which bridge is visible based on active session
+    split_container: gtk4::Box,
     state: SharedAppState,
     paned: Paned,
     external_window_manager: SharedExternalWindowManager,
@@ -116,8 +130,29 @@ impl MainWindow {
             sidebar.load_search_history(search_history);
         }
 
+        // Create global color pool shared across all split containers
+        // This ensures different split containers get different colors
+        let global_color_pool: SharedColorPool = Rc::new(RefCell::new(ColorPool::new()));
+
         // Create split terminal view as the main terminal container
-        let split_view = Rc::new(SplitTerminalView::new());
+        // Uses the global color pool for consistent color allocation
+        let split_view = Rc::new(SplitViewBridge::with_color_pool(Rc::clone(
+            &global_color_pool,
+        )));
+
+        // Create new tab-scoped split manager (for migration to new split view system)
+        let tab_split_manager: SharedTabSplitManager =
+            Rc::new(RefCell::new(TabSplitManager::new()));
+
+        // Create per-session split bridges map
+        // Requirement 3: Each tab maintains its own independent split layout
+        let session_split_bridges: SessionSplitBridges =
+            Rc::new(RefCell::new(std::collections::HashMap::new()));
+
+        // Create container for split views - we swap which bridge is visible based on active session
+        let split_container = gtk4::Box::new(Orientation::Vertical, 0);
+        split_container.set_vexpand(true);
+        split_container.set_hexpand(true);
 
         // Create terminal notebook for tab management (using adw::TabView)
         let terminal_notebook = Rc::new(TerminalNotebook::new());
@@ -143,6 +178,10 @@ impl MainWindow {
         split_view.widget().set_hexpand(true);
         terminal_container.append(split_view.widget());
 
+        // Add split_container for per-session split views (initially hidden)
+        split_container.set_visible(false);
+        terminal_container.append(&split_container);
+
         // Note: drag-and-drop is set up in connect_signals after we have access to notebook
 
         paned.set_end_child(Some(&terminal_container));
@@ -167,6 +206,10 @@ impl MainWindow {
             sidebar,
             terminal_notebook,
             split_view,
+            tab_split_manager,
+            session_split_bridges,
+            global_color_pool,
+            split_container,
             state,
             paned,
             external_window_manager,
@@ -637,12 +680,13 @@ impl MainWindow {
                     sidebar_clone.decrement_session_count(&conn_id.to_string(), false);
                 }
 
-                // After closing, if there's an active session, ensure it's shown properly
+                // After closing, the selected-page handler will take care of
+                // showing the correct content for the new active session.
+                // We only need to handle RDP redraw here since it's not handled
+                // by the selected-page handler.
                 if let Some(new_session_id) = notebook_clone.get_active_session_id() {
                     if let Some(info) = notebook_clone.get_session_info(new_session_id) {
-                        if info.protocol == "ssh" || info.protocol.starts_with("zerotrust") {
-                            let _ = split_view_clone.show_session(new_session_id);
-                        } else if info.protocol == "rdp" {
+                        if info.protocol == "rdp" {
                             // Trigger redraw for RDP widget
                             notebook_clone.queue_rdp_redraw(new_session_id);
                         }
@@ -696,12 +740,13 @@ impl MainWindow {
                             notebook_clone.show_tab_view_content();
                         }
 
-                        // Use idle_add to defer showing the correct session until after
-                        // GTK finishes processing the switch-page signal from remove_page
+                        // The selected-page handler will take care of showing the correct
+                        // content for the new active session. We only need to handle
+                        // special cases here.
                         let notebook_for_idle = notebook_clone.clone();
-                        let split_view_for_idle = split_view_clone.clone();
                         if is_closing_active {
-                            // We closed the active tab, show whatever is now active
+                            // We closed the active tab - selected-page handler will fire
+                            // Just handle RDP redraw
                             glib::idle_add_local_once(move || {
                                 if let Some(new_session_id) =
                                     notebook_for_idle.get_active_session_id()
@@ -709,28 +754,19 @@ impl MainWindow {
                                     if let Some(info) =
                                         notebook_for_idle.get_session_info(new_session_id)
                                     {
-                                        if info.protocol == "ssh"
-                                            || info.protocol.starts_with("zerotrust")
-                                        {
-                                            let _ =
-                                                split_view_for_idle.show_session(new_session_id);
-                                        } else if info.protocol == "rdp" {
+                                        if info.protocol == "rdp" {
                                             notebook_for_idle.queue_rdp_redraw(new_session_id);
                                         }
                                     }
                                 }
                             });
                         } else if let Some(active_id) = current_active_session {
-                            // We closed a non-active tab, re-show the previously active session
+                            // We closed a non-active tab, ensure we stay on the active tab
                             // Defer to next main loop iteration to override switch-page effects
                             glib::idle_add_local_once(move || {
                                 notebook_for_idle.switch_to_tab(active_id);
                                 if let Some(info) = notebook_for_idle.get_session_info(active_id) {
-                                    if info.protocol == "ssh"
-                                        || info.protocol.starts_with("zerotrust")
-                                    {
-                                        let _ = split_view_for_idle.show_session(active_id);
-                                    } else if info.protocol == "rdp" {
+                                    if info.protocol == "rdp" {
                                         notebook_for_idle.queue_rdp_redraw(active_id);
                                     } else if info.protocol == "vnc" {
                                         if let Some(vnc_widget) =
@@ -1244,59 +1280,133 @@ impl MainWindow {
 
     /// Sets up split view actions
     fn setup_split_view_actions(&self, window: &adw::ApplicationWindow) {
+        // Helper function to get or create a split bridge for a session
+        // Requirement 3: Each tab maintains its own independent split layout
+        // A session gets its own bridge when it initiates a split.
+        // If the session is already displayed in another bridge, we still create
+        // a new bridge for it (the session will be moved to the new bridge).
+        fn get_or_create_session_bridge(
+            session_id: Uuid,
+            session_split_bridges: &SessionSplitBridges,
+            color_pool: &SharedColorPool,
+        ) -> Rc<SplitViewBridge> {
+            let mut bridges = session_split_bridges.borrow_mut();
+            // Check if this session already owns a bridge
+            if let Some(bridge) = bridges.get(&session_id) {
+                // Session already has its own bridge - use it
+                tracing::debug!(
+                    "get_or_create_session_bridge: REUSING existing bridge for session {:?}, \
+                     pool_ptr={:p}, pool_allocated={}",
+                    session_id,
+                    &*color_pool.borrow(),
+                    color_pool.borrow().allocated_count()
+                );
+                bridge.clone()
+            } else {
+                // Create a new bridge for this session with the shared color pool
+                // This ensures different split containers get different colors
+                tracing::debug!(
+                    "get_or_create_session_bridge: CREATING new bridge for session {:?}, \
+                     pool_ptr={:p}, pool_allocated={}",
+                    session_id,
+                    &*color_pool.borrow(),
+                    color_pool.borrow().allocated_count()
+                );
+                let new_bridge = Rc::new(SplitViewBridge::with_color_pool(Rc::clone(color_pool)));
+                bridges.insert(session_id, new_bridge.clone());
+                new_bridge
+            }
+        }
+
         // Split horizontal action
         let split_horizontal_action = gio::SimpleAction::new("split-horizontal", None);
-        let split_view_clone = self.split_view.clone();
-        let split_view_for_close = self.split_view.clone();
+        let session_bridges = self.session_split_bridges.clone();
         let notebook_for_split_h = self.terminal_notebook.clone();
-        let notebook_for_visibility_h = self.terminal_notebook.clone();
+        let split_container_h = self.split_container.clone();
+        let global_split_view_h = self.split_view.clone();
+        let color_pool_h = self.global_color_pool.clone();
         split_horizontal_action.connect_activate(move |_, _| {
             // Get current active session before splitting
-            let current_session = notebook_for_visibility_h.get_active_session_id();
+            let Some(current_session) = notebook_for_split_h.get_active_session_id() else {
+                return; // No active session to split
+            };
 
-            let sv = split_view_for_close.clone();
-            if let Some((new_pane_id, new_color_index)) = split_view_clone
+            tracing::debug!("split-horizontal: splitting session {:?}", current_session);
+
+            // Get or create a split bridge for this session (with shared color pool)
+            let split_view =
+                get_or_create_session_bridge(current_session, &session_bridges, &color_pool_h);
+
+            // Check if this is the first split (bridge has only 1 panel)
+            // If bridge already has multiple panels, we don't need to show the current session
+            // because restore_panel_contents() already restored all terminals
+            let is_first_split = split_view.pane_count() == 1;
+
+            // Clone for close callback
+            let sv_for_close = split_view.clone();
+            if let Some((new_pane_id, new_color_index, original_color_index)) = split_view
                 .split_with_close_callback(SplitDirection::Horizontal, move || {
-                    let _ = sv.close_pane();
+                    let _ = sv_for_close.close_pane();
                 })
             {
+                tracing::debug!(
+                    "split-horizontal: session {:?} got original_color={}, new_color={}, \
+                     is_first_split={}",
+                    current_session,
+                    original_color_index,
+                    new_color_index,
+                    is_first_split
+                );
+
                 let notebook = notebook_for_split_h.clone();
                 let notebook_for_drop = notebook_for_split_h.clone();
-                let sv_for_click = split_view_clone.clone();
+                let sv_for_click = split_view.clone();
                 let nb_for_click = notebook.clone();
 
                 // Per spec: Split transforms current tab into Container Tab
-                // Show current session in the first (original) pane
-                if let Some(session_id) = current_session {
+                // Only show current session in the original pane if this is the FIRST split
+                // For subsequent splits, restore_panel_contents() already restored all terminals
+                if is_first_split {
                     // Ensure session is registered in split_view
-                    if let Some(info) = notebook_for_visibility_h.get_session_info(session_id) {
-                        let terminal = notebook_for_visibility_h.get_terminal(session_id);
-                        split_view_clone.add_session(info, terminal);
+                    if let Some(info) = notebook_for_split_h.get_session_info(current_session) {
+                        let terminal = notebook_for_split_h.get_terminal(current_session);
+                        split_view.add_session(info, terminal);
                     }
                     // Show in the focused (original) pane
-                    let _ = split_view_clone.show_session(session_id);
+                    let _ = split_view.show_session(current_session);
 
-                    // Get the original pane's color (assigned during first split)
-                    // The original pane gets color 0 (blue), new pane gets color 1 (green)
-                    let original_color = if new_color_index > 0 {
-                        0
-                    } else {
-                        new_color_index
-                    };
-                    // Store session color in split_view for tracking
-                    split_view_clone.set_session_color(session_id, original_color);
-                    notebook_for_visibility_h.set_tab_split_color(session_id, original_color);
+                    // Use the original pane's color (properly allocated during split)
+                    split_view.set_session_color(current_session, original_color_index);
+                    notebook_for_split_h.set_tab_split_color(current_session, original_color_index);
+                    tracing::debug!(
+                        "split-horizontal: applied color {} to tab for session {:?}",
+                        original_color_index,
+                        current_session
+                    );
                 }
 
+                // Swap visible split view in container
+                // Remove old split view widget if any
+                while let Some(child) = split_container_h.first_child() {
+                    split_container_h.remove(&child);
+                }
+                // Add this session's split view
+                split_view.widget().set_vexpand(true);
+                split_view.widget().set_hexpand(true);
+                split_container_h.append(split_view.widget());
+
                 // Make split view visible and hide TabView content
-                split_view_clone.widget().set_visible(true);
-                split_view_clone.widget().set_vexpand(true);
-                notebook_for_visibility_h.widget().set_vexpand(false);
-                notebook_for_visibility_h.hide_tab_view_content();
+                split_view.widget().set_visible(true);
+                split_container_h.set_visible(true);
+                notebook_for_split_h.widget().set_vexpand(false);
+                notebook_for_split_h.hide_tab_view_content();
+
+                // Also hide global split view (we're using per-session now)
+                global_split_view_h.widget().set_visible(false);
 
                 // Setup drop target for the new (empty) pane
-                let sv_for_drop = split_view_clone.clone();
-                split_view_clone.setup_pane_drop_target_with_callbacks(
+                let sv_for_drop = split_view.clone();
+                split_view.setup_pane_drop_target_with_callbacks(
                     new_pane_id,
                     move |session_id| {
                         let info = notebook.get_session_info(session_id)?;
@@ -1311,105 +1421,231 @@ impl MainWindow {
                     },
                 );
 
-                // Setup click handler for new pane
-                let split_panes = sv_for_click.panes_ref();
-                if let Some(pane) = split_panes.iter().find(|p| p.id() == new_pane_id) {
-                    let focused_pane = sv_for_click.focused_pane_ref();
-                    let panes_clone = sv_for_click.panes_ref_clone();
+                // Setup click handlers for ALL panes (both original and new)
+                // This ensures focus rectangle moves correctly when clicking any pane
+                let sv_for_focus = sv_for_click.clone();
+                let panes_clone = sv_for_click.panes_ref_clone();
+                let nb_for_click_clone = nb_for_click.clone();
+                let sv_for_terminal = sv_for_click.clone();
+                sv_for_click.setup_all_panel_click_handlers(move |clicked_pane_uuid| {
+                    // Update the bridge's focused pane state (handles all focus styling)
+                    sv_for_focus.set_focused_pane(Some(clicked_pane_uuid));
+                    // Get session_id from the clicked pane
+                    let session_to_switch = {
+                        let panes_ref = panes_clone.borrow();
+                        panes_ref
+                            .iter()
+                            .find(|p| p.id() == clicked_pane_uuid)
+                            .and_then(|p| p.current_session())
+                    };
+                    // Switch to the tab if there's a session in this pane
+                    if let Some(session_id) = session_to_switch {
+                        nb_for_click_clone.switch_to_tab(session_id);
+                        // Grab focus on the terminal (click event is claimed, so we must do this)
+                        if let Some(terminal) = sv_for_terminal.get_terminal(session_id) {
+                            terminal.grab_focus();
+                        }
+                    }
+                });
 
-                    pane.setup_click_handler(move |clicked_pane_id| {
-                        *focused_pane.borrow_mut() = Some(clicked_pane_id);
-                        // Get session_id and update CSS, then drop borrow before switch_to_tab
-                        let session_to_switch = {
-                            let panes_ref = panes_clone.borrow();
-                            let mut session_id = None;
-                            for p in panes_ref.iter() {
-                                let container = p.container();
-                                if p.id() == clicked_pane_id {
-                                    container.add_css_class("focused-pane");
-                                    container.remove_css_class("unfocused-pane");
-                                    session_id = p.current_session();
-                                } else {
-                                    container.remove_css_class("focused-pane");
-                                    container.add_css_class("unfocused-pane");
+                // Setup select tab callback for this per-session bridge
+                let split_view_for_select = split_view.clone();
+                let notebook_for_select = notebook_for_split_h.clone();
+                let notebook_for_provider = notebook_for_split_h.clone();
+                let notebook_for_terminal = notebook_for_split_h.clone();
+                // Clone session_bridges so we can register the new session in the map
+                let session_bridges_for_select = session_bridges.clone();
+                // Clone for clearing from previous split
+                let session_bridges_for_clear = session_bridges.clone();
+                // Clone for provider closure
+                let split_view_for_provider = split_view.clone();
+                split_view.setup_select_tab_callback_with_provider(
+                    move || {
+                        // Get all sessions from the notebook, excluding those already in THIS split
+                        notebook_for_provider
+                            .get_all_sessions()
+                            .into_iter()
+                            .map(|s| (s.id, s.name))
+                            .filter(|(id, _)| !split_view_for_provider.is_session_displayed(*id))
+                            .collect()
+                    },
+                    move |panel_uuid, session_id| {
+                        tracing::debug!(
+                            "Select Tab callback (horizontal): moving session {} to panel {}",
+                            session_id,
+                            panel_uuid
+                        );
+
+                        // First, clear this session from any previous split view
+                        {
+                            let bridges = session_bridges_for_clear.borrow();
+                            for (other_session_id, other_bridge) in bridges.iter() {
+                                // Skip if this is the same bridge we're adding to
+                                if Rc::ptr_eq(other_bridge, &split_view_for_select) {
+                                    continue;
+                                }
+                                // Check if this session is displayed in another bridge
+                                if other_bridge.is_session_displayed(session_id) {
+                                    tracing::debug!(
+                                        "Select Tab callback (horizontal): clearing session {} \
+                                         from previous split (owner: {})",
+                                        session_id,
+                                        other_session_id
+                                    );
+                                    other_bridge.clear_session_from_panes(session_id);
+                                    // Clear the old tab color
+                                    notebook_for_select.clear_tab_split_color(session_id);
+                                    break;
                                 }
                             }
-                            session_id
-                        };
-                        // Borrow dropped, safe to call switch_to_tab
-                        if let Some(session_id) = session_to_switch {
-                            nb_for_click.switch_to_tab(session_id);
                         }
-                    });
 
-                    // Setup context menu for new pane
-                    let panes_for_menu = sv_for_click.panes_ref_clone();
-                    let sessions_for_menu = sv_for_click.shared_sessions();
-                    pane.setup_context_menu(move |ctx_pane_id| {
-                        Self::build_pane_context_menu(
-                            ctx_pane_id,
-                            &panes_for_menu,
-                            &sessions_for_menu,
-                        )
-                    });
-                }
+                        // Get terminal from notebook (not from bridge's internal map)
+                        let Some(terminal) = notebook_for_terminal.get_terminal(session_id) else {
+                            tracing::warn!(
+                            "Select Tab callback (horizontal): no terminal found for session {}",
+                            session_id
+                        );
+                            return;
+                        };
+
+                        // Move the session to the panel with the terminal
+                        // This returns the color index on success
+                        match split_view_for_select
+                            .move_session_to_panel_with_terminal(panel_uuid, session_id, &terminal)
+                        {
+                            Ok(color_index) => {
+                                // Register this session in session_split_bridges
+                                session_bridges_for_select
+                                    .borrow_mut()
+                                    .insert(session_id, split_view_for_select.clone());
+
+                                // Set tab color indicator using the color from the panel
+                                notebook_for_select.set_tab_split_color(session_id, color_index);
+
+                                tracing::debug!(
+                                    "Select Tab callback (horizontal): moved session {} to panel {} with color {}",
+                                    session_id,
+                                    panel_uuid,
+                                    color_index
+                                );
+                            }
+                            Err(e) => {
+                                tracing::warn!("Failed to move session to panel: {}", e);
+                            }
+                        }
+
+                        // Note: Do NOT call switch_to_tab() here - the terminal should be
+                        // displayed in the split panel, not switched to as the active tab
+                    },
+                );
+
+                // Setup close panel callback for empty panel close buttons
+                let split_view_for_close = split_view.clone();
+                split_view.setup_close_panel_callback(move |pane_uuid| {
+                    // Focus the pane first so close_pane() closes the correct one
+                    split_view_for_close.set_focused_pane(Some(pane_uuid));
+
+                    // Update focus styling via the adapter
+                    if let Some(panel_id) = split_view_for_close.get_panel_id_for_uuid(pane_uuid) {
+                        if let Err(e) = split_view_for_close.adapter_set_focus(panel_id) {
+                            tracing::warn!("Failed to set focus on panel: {}", e);
+                        }
+                    }
+                });
             }
         });
         window.add_action(&split_horizontal_action);
 
         // Split vertical action
         let split_vertical_action = gio::SimpleAction::new("split-vertical", None);
-        let split_view_clone = self.split_view.clone();
-        let split_view_for_close = self.split_view.clone();
+        let session_bridges_v = self.session_split_bridges.clone();
         let notebook_for_split_v = self.terminal_notebook.clone();
-        let notebook_for_visibility_v = self.terminal_notebook.clone();
+        let split_container_v = self.split_container.clone();
+        let global_split_view_v = self.split_view.clone();
+        let color_pool_v = self.global_color_pool.clone();
         split_vertical_action.connect_activate(move |_, _| {
             // Get current active session before splitting
-            let current_session = notebook_for_visibility_v.get_active_session_id();
+            let Some(current_session) = notebook_for_split_v.get_active_session_id() else {
+                return; // No active session to split
+            };
 
-            let sv = split_view_for_close.clone();
-            if let Some((new_pane_id, new_color_index)) = split_view_clone
+            tracing::debug!("split-vertical: splitting session {:?}", current_session);
+
+            // Get or create a split bridge for this session (with shared color pool)
+            let split_view =
+                get_or_create_session_bridge(current_session, &session_bridges_v, &color_pool_v);
+
+            // Check if this is the first split (bridge has only 1 panel)
+            // If bridge already has multiple panels, we don't need to show the current session
+            // because restore_panel_contents() already restored all terminals
+            let is_first_split = split_view.pane_count() == 1;
+
+            // Clone for close callback
+            let sv_for_close = split_view.clone();
+            if let Some((new_pane_id, new_color_index, original_color_index)) = split_view
                 .split_with_close_callback(SplitDirection::Vertical, move || {
-                    let _ = sv.close_pane();
+                    let _ = sv_for_close.close_pane();
                 })
             {
+                tracing::debug!(
+                    "split-vertical: session {:?} got original_color={}, new_color={}, \
+                     is_first_split={}",
+                    current_session,
+                    original_color_index,
+                    new_color_index,
+                    is_first_split
+                );
+
                 let notebook = notebook_for_split_v.clone();
                 let notebook_for_drop = notebook_for_split_v.clone();
-                let sv_for_click = split_view_clone.clone();
+                let sv_for_click = split_view.clone();
                 let nb_for_click = notebook.clone();
 
                 // Per spec: Split transforms current tab into Container Tab
-                // Show current session in the first (original) pane
-                if let Some(session_id) = current_session {
+                // Only show current session in the original pane if this is the FIRST split
+                // For subsequent splits, restore_panel_contents() already restored all terminals
+                if is_first_split {
                     // Ensure session is registered in split_view
-                    if let Some(info) = notebook_for_visibility_v.get_session_info(session_id) {
-                        let terminal = notebook_for_visibility_v.get_terminal(session_id);
-                        split_view_clone.add_session(info, terminal);
+                    if let Some(info) = notebook_for_split_v.get_session_info(current_session) {
+                        let terminal = notebook_for_split_v.get_terminal(current_session);
+                        split_view.add_session(info, terminal);
                     }
                     // Show in the focused (original) pane
-                    let _ = split_view_clone.show_session(session_id);
+                    let _ = split_view.show_session(current_session);
 
-                    // Get the original pane's color (assigned during first split)
-                    // The original pane gets color 0 (blue), new pane gets color 1 (green)
-                    let original_color = if new_color_index > 0 {
-                        0
-                    } else {
-                        new_color_index
-                    };
-                    // Store session color in split_view for tracking
-                    split_view_clone.set_session_color(session_id, original_color);
-                    notebook_for_visibility_v.set_tab_split_color(session_id, original_color);
+                    // Use the original pane's color (properly allocated during split)
+                    split_view.set_session_color(current_session, original_color_index);
+                    notebook_for_split_v.set_tab_split_color(current_session, original_color_index);
+                    tracing::debug!(
+                        "split-vertical: applied color {} to tab for session {:?}",
+                        original_color_index,
+                        current_session
+                    );
                 }
 
+                // Swap visible split view in container
+                // Remove old split view widget if any
+                while let Some(child) = split_container_v.first_child() {
+                    split_container_v.remove(&child);
+                }
+                // Add this session's split view
+                split_view.widget().set_vexpand(true);
+                split_view.widget().set_hexpand(true);
+                split_container_v.append(split_view.widget());
+
                 // Make split view visible and hide TabView content
-                split_view_clone.widget().set_visible(true);
-                split_view_clone.widget().set_vexpand(true);
-                notebook_for_visibility_v.widget().set_vexpand(false);
-                notebook_for_visibility_v.hide_tab_view_content();
+                split_view.widget().set_visible(true);
+                split_container_v.set_visible(true);
+                notebook_for_split_v.widget().set_vexpand(false);
+                notebook_for_split_v.hide_tab_view_content();
+
+                // Also hide global split view (we're using per-session now)
+                global_split_view_v.widget().set_visible(false);
 
                 // Setup drop target for the new (empty) pane
-                let sv_for_drop = split_view_clone.clone();
-                split_view_clone.setup_pane_drop_target_with_callbacks(
+                let sv_for_drop = split_view.clone();
+                split_view.setup_pane_drop_target_with_callbacks(
                     new_pane_id,
                     move |session_id| {
                         let info = notebook.get_session_info(session_id)?;
@@ -1424,98 +1660,295 @@ impl MainWindow {
                     },
                 );
 
-                // Setup click handler for new pane
-                let split_panes = sv_for_click.panes_ref();
-                if let Some(pane) = split_panes.iter().find(|p| p.id() == new_pane_id) {
-                    let focused_pane = sv_for_click.focused_pane_ref();
-                    let panes_clone = sv_for_click.panes_ref_clone();
+                // Setup click handlers for ALL panes (both original and new)
+                // This ensures focus rectangle moves correctly when clicking any pane
+                let sv_for_focus = sv_for_click.clone();
+                let panes_clone = sv_for_click.panes_ref_clone();
+                let nb_for_click_clone = nb_for_click.clone();
+                let sv_for_terminal = sv_for_click.clone();
+                sv_for_click.setup_all_panel_click_handlers(move |clicked_pane_uuid| {
+                    // Update the bridge's focused pane state (handles all focus styling)
+                    sv_for_focus.set_focused_pane(Some(clicked_pane_uuid));
+                    // Get session_id from the clicked pane
+                    let session_to_switch = {
+                        let panes_ref = panes_clone.borrow();
+                        panes_ref
+                            .iter()
+                            .find(|p| p.id() == clicked_pane_uuid)
+                            .and_then(|p| p.current_session())
+                    };
+                    // Switch to the tab if there's a session in this pane
+                    if let Some(session_id) = session_to_switch {
+                        nb_for_click_clone.switch_to_tab(session_id);
+                        // Grab focus on the terminal (click event is claimed, so we must do this)
+                        if let Some(terminal) = sv_for_terminal.get_terminal(session_id) {
+                            terminal.grab_focus();
+                        }
+                    }
+                });
 
-                    pane.setup_click_handler(move |clicked_pane_id| {
-                        *focused_pane.borrow_mut() = Some(clicked_pane_id);
-                        // Get session_id and update CSS, then drop borrow before switch_to_tab
-                        let session_to_switch = {
-                            let panes_ref = panes_clone.borrow();
-                            let mut session_id = None;
-                            for p in panes_ref.iter() {
-                                let container = p.container();
-                                if p.id() == clicked_pane_id {
-                                    container.add_css_class("focused-pane");
-                                    container.remove_css_class("unfocused-pane");
-                                    session_id = p.current_session();
-                                } else {
-                                    container.remove_css_class("focused-pane");
-                                    container.add_css_class("unfocused-pane");
+                // Setup select tab callback for this per-session bridge
+                let split_view_for_select = split_view.clone();
+                let notebook_for_select = notebook_for_split_v.clone();
+                let notebook_for_provider = notebook_for_split_v.clone();
+                let notebook_for_terminal = notebook_for_split_v.clone();
+                // Clone session_bridges so we can register the new session in the map
+                let session_bridges_for_select = session_bridges_v.clone();
+                // Clone for clearing from previous split
+                let session_bridges_for_clear = session_bridges_v.clone();
+                // Clone for provider closure
+                let split_view_for_provider = split_view.clone();
+                split_view.setup_select_tab_callback_with_provider(
+                    move || {
+                        // Get all sessions from the notebook, excluding those already in THIS split
+                        notebook_for_provider
+                            .get_all_sessions()
+                            .into_iter()
+                            .map(|s| (s.id, s.name))
+                            .filter(|(id, _)| !split_view_for_provider.is_session_displayed(*id))
+                            .collect()
+                    },
+                    move |panel_uuid, session_id| {
+                        tracing::debug!(
+                            "Select Tab callback (vertical): moving session {} to panel {}",
+                            session_id,
+                            panel_uuid
+                        );
+
+                        // First, clear this session from any previous split view
+                        {
+                            let bridges = session_bridges_for_clear.borrow();
+                            for (other_session_id, other_bridge) in bridges.iter() {
+                                // Skip if this is the same bridge we're adding to
+                                if Rc::ptr_eq(other_bridge, &split_view_for_select) {
+                                    continue;
+                                }
+                                // Check if this session is displayed in another bridge
+                                if other_bridge.is_session_displayed(session_id) {
+                                    tracing::debug!(
+                                        "Select Tab callback (vertical): clearing session {} \
+                                         from previous split (owner: {})",
+                                        session_id,
+                                        other_session_id
+                                    );
+                                    other_bridge.clear_session_from_panes(session_id);
+                                    // Clear the old tab color
+                                    notebook_for_select.clear_tab_split_color(session_id);
+                                    break;
                                 }
                             }
-                            session_id
-                        };
-                        // Borrow dropped, safe to call switch_to_tab
-                        if let Some(session_id) = session_to_switch {
-                            nb_for_click.switch_to_tab(session_id);
                         }
-                    });
 
-                    // Setup context menu for new pane
-                    let panes_for_menu = sv_for_click.panes_ref_clone();
-                    let sessions_for_menu = sv_for_click.shared_sessions();
-                    pane.setup_context_menu(move |ctx_pane_id| {
-                        Self::build_pane_context_menu(
-                            ctx_pane_id,
-                            &panes_for_menu,
-                            &sessions_for_menu,
-                        )
-                    });
-                }
+                        // Get terminal from notebook (not from bridge's internal map)
+                        let Some(terminal) = notebook_for_terminal.get_terminal(session_id) else {
+                            tracing::warn!(
+                                "Select Tab callback (vertical): no terminal found for session {}",
+                                session_id
+                            );
+                            return;
+                        };
+
+                        // Move the session to the panel with the terminal
+                        // This returns the color index on success
+                        match split_view_for_select
+                            .move_session_to_panel_with_terminal(panel_uuid, session_id, &terminal)
+                        {
+                            Ok(color_index) => {
+                                // Register this session in session_split_bridges
+                                session_bridges_for_select
+                                    .borrow_mut()
+                                    .insert(session_id, split_view_for_select.clone());
+
+                                // Set tab color indicator using the color from the panel
+                                notebook_for_select.set_tab_split_color(session_id, color_index);
+
+                                tracing::debug!(
+                                    "Select Tab callback (vertical): moved session {} to panel {} with color {}",
+                                    session_id,
+                                    panel_uuid,
+                                    color_index
+                                );
+                            }
+                            Err(e) => {
+                                tracing::warn!("Failed to move session to panel: {}", e);
+                            }
+                        }
+
+                        // Note: Do NOT call switch_to_tab() here - the terminal should be
+                        // displayed in the split panel, not switched to as the active tab
+                    },
+                );
+
+                // Setup close panel callback for empty panel close buttons
+                let split_view_for_close = split_view.clone();
+                split_view.setup_close_panel_callback(move |pane_uuid| {
+                    // Focus the pane first so close_pane() closes the correct one
+                    split_view_for_close.set_focused_pane(Some(pane_uuid));
+
+                    // Update focus styling via the adapter
+                    if let Some(panel_id) = split_view_for_close.get_panel_id_for_uuid(pane_uuid) {
+                        if let Err(e) = split_view_for_close.adapter_set_focus(panel_id) {
+                            tracing::warn!("Failed to set focus on panel: {}", e);
+                        }
+                    }
+                });
             }
         });
         window.add_action(&split_vertical_action);
 
         // Close pane action
         let close_pane_action = gio::SimpleAction::new("close-pane", None);
-        let split_view_clone = self.split_view.clone();
+        let session_bridges_close = self.session_split_bridges.clone();
+        let notebook_for_close = self.terminal_notebook.clone();
+        let split_view_for_close = self.split_view.clone();
+        let split_container_close = self.split_container.clone();
         close_pane_action.connect_activate(move |_, _| {
-            let _ = split_view_clone.close_pane();
+            // Find the bridge for the current session and close its focused pane
+            if let Some(session_id) = notebook_for_close.get_active_session_id() {
+                let bridges = session_bridges_close.borrow();
+                if let Some(bridge) = bridges.get(&session_id) {
+                    // Get the session in the focused pane before closing
+                    let focused_session = bridge.get_focused_session();
+
+                    tracing::debug!(
+                        "close-pane: closing focused pane, focused_session={:?}, \
+                         pane_count_before={}",
+                        focused_session,
+                        bridge.pane_count()
+                    );
+
+                    match bridge.close_pane() {
+                        Ok(should_close_split) => {
+                            // Clear tab color for the session that was in the closed pane
+                            if let Some(sess_id) = focused_session {
+                                notebook_for_close.clear_tab_split_color(sess_id);
+                            }
+
+                            // Check if we should close the split view
+                            // This happens when: no panels remain, no sessions remain,
+                            // or only one panel with one session remains
+                            let remaining_sessions: Vec<Uuid> = bridge
+                                .pane_ids()
+                                .iter()
+                                .filter_map(|&pane_id| bridge.get_pane_session(pane_id))
+                                .collect();
+
+                            let pane_count = bridge.pane_count();
+                            let is_empty = bridge.is_empty();
+
+                            tracing::debug!(
+                                "close-pane: after close - should_close_split={}, pane_count={}, \
+                                 is_empty={}, remaining_sessions={:?}",
+                                should_close_split,
+                                pane_count,
+                                is_empty,
+                                remaining_sessions
+                            );
+
+                            let should_unsplit = should_close_split
+                                || is_empty
+                                || (pane_count == 1 && remaining_sessions.len() == 1);
+
+                            tracing::debug!(
+                                "close-pane: should_unsplit={} (should_close_split={} || \
+                                 is_empty={} || (pane_count==1 && remaining==1)={})",
+                                should_unsplit,
+                                should_close_split,
+                                is_empty,
+                                pane_count == 1 && remaining_sessions.len() == 1
+                            );
+
+                            if should_unsplit {
+                                // Close split view and show remaining session as regular tab
+                                tracing::debug!(
+                                    "close-pane: closing split view for session {}, \
+                                     remaining_sessions={:?}",
+                                    session_id,
+                                    remaining_sessions
+                                );
+
+                                // Clear tab colors for all remaining sessions
+                                for sess_id in &remaining_sessions {
+                                    notebook_for_close.clear_tab_split_color(*sess_id);
+                                    // Reparent terminal back to TabView
+                                    notebook_for_close.reparent_terminal_to_tab(*sess_id);
+                                }
+
+                                // Hide split view and show TabView
+                                bridge.widget().set_visible(false);
+                                split_view_for_close.widget().set_visible(false);
+                                split_container_close.set_visible(false);
+                                notebook_for_close.widget().set_vexpand(true);
+                                notebook_for_close.show_tab_view_content();
+
+                                // Clear tab color for the main session too
+                                notebook_for_close.clear_tab_split_color(session_id);
+                            } else {
+                                // Multiple panels remain - restore terminal content
+                                bridge.restore_panel_contents();
+                            }
+                        }
+                        Err(e) => {
+                            tracing::warn!("Failed to close pane: {}", e);
+                        }
+                    }
+                }
+            }
         });
         window.add_action(&close_pane_action);
 
         // Focus next pane action
         let focus_next_pane_action = gio::SimpleAction::new("focus-next-pane", None);
-        let split_view_clone = self.split_view.clone();
+        let session_bridges_focus = self.session_split_bridges.clone();
+        let notebook_for_focus = self.terminal_notebook.clone();
         focus_next_pane_action.connect_activate(move |_, _| {
-            let _ = split_view_clone.focus_next_pane();
+            if let Some(session_id) = notebook_for_focus.get_active_session_id() {
+                let bridges = session_bridges_focus.borrow();
+                if let Some(bridge) = bridges.get(&session_id) {
+                    let _ = bridge.focus_next_pane();
+                }
+            }
         });
         window.add_action(&focus_next_pane_action);
 
         // Unsplit session action - moves session from split pane to its own tab
         let unsplit_session_action =
             gio::SimpleAction::new("unsplit-session", Some(glib::VariantTy::STRING));
-        let split_view_clone = self.split_view.clone();
+        let session_bridges_unsplit = self.session_split_bridges.clone();
         let notebook_for_unsplit = self.terminal_notebook.clone();
+        let split_container_unsplit = self.split_container.clone();
         unsplit_session_action.connect_activate(move |_, param| {
             if let Some(param) = param {
                 if let Some(session_id_str) = param.get::<String>() {
                     if let Ok(session_id) = Uuid::parse_str(&session_id_str) {
-                        // Clear session from split pane (will show "Drag Tab Here" placeholder)
-                        split_view_clone.clear_session_from_panes(session_id);
+                        // Find the bridge containing this session
+                        let bridges = session_bridges_unsplit.borrow();
+                        for bridge in bridges.values() {
+                            if bridge.is_session_displayed(session_id) {
+                                // Clear session from split pane
+                                bridge.clear_session_from_panes(session_id);
 
-                        // Move terminal back to TabView
-                        notebook_for_unsplit.reparent_terminal_to_tab(session_id);
+                                // Move terminal back to TabView
+                                notebook_for_unsplit.reparent_terminal_to_tab(session_id);
 
-                        // Clear tab color indicator
-                        notebook_for_unsplit.clear_tab_split_color(session_id);
+                                // Clear tab color indicator
+                                notebook_for_unsplit.clear_tab_split_color(session_id);
 
-                        // Check if any sessions remain in split view
-                        let has_sessions_in_split = split_view_clone
-                            .pane_ids()
-                            .iter()
-                            .any(|&pane_id| split_view_clone.get_pane_session(pane_id).is_some());
+                                // Check if any sessions remain in this split view
+                                let has_sessions_in_split = bridge
+                                    .pane_ids()
+                                    .iter()
+                                    .any(|&pane_id| bridge.get_pane_session(pane_id).is_some());
 
-                        if !has_sessions_in_split {
-                            // No sessions in split view - hide it and show TabView
-                            split_view_clone.widget().set_visible(false);
-                            split_view_clone.widget().set_vexpand(false);
-                            notebook_for_unsplit.widget().set_vexpand(true);
-                            notebook_for_unsplit.show_tab_view_content();
+                                if !has_sessions_in_split {
+                                    // No sessions in split view - hide it and show TabView
+                                    bridge.widget().set_visible(false);
+                                    split_container_unsplit.set_visible(false);
+                                    notebook_for_unsplit.widget().set_vexpand(true);
+                                    notebook_for_unsplit.show_tab_view_content();
+                                }
+                                break;
+                            }
                         }
                     }
                 }
@@ -1575,6 +2008,91 @@ impl MainWindow {
         let paned = self.paned.clone();
         let window = self.window.clone();
 
+        // Set up "Select Tab" callback for empty panel placeholders
+        // This provides an alternative to drag-and-drop for moving sessions to split panels
+        {
+            let split_view_for_select = split_view.clone();
+            let notebook_for_select = terminal_notebook.clone();
+            let notebook_for_provider = terminal_notebook.clone();
+            let notebook_for_terminal = terminal_notebook.clone();
+            split_view.setup_select_tab_callback_with_provider(
+                move || {
+                    // Get all sessions from the notebook
+                    notebook_for_provider
+                        .get_all_sessions()
+                        .into_iter()
+                        .map(|s| (s.id, s.name))
+                        .collect()
+                },
+                move |panel_uuid, session_id| {
+                    tracing::debug!(
+                        "Select Tab callback: moving session {} to panel {}",
+                        session_id,
+                        panel_uuid
+                    );
+
+                    // Get terminal from notebook (not from bridge's internal map)
+                    let Some(terminal) = notebook_for_terminal.get_terminal(session_id) else {
+                        tracing::warn!(
+                            "Select Tab callback (global): no terminal found for session {}",
+                            session_id
+                        );
+                        return;
+                    };
+
+                    // Move the session to the panel with the terminal
+                    if let Err(e) = split_view_for_select
+                        .move_session_to_panel_with_terminal(panel_uuid, session_id, &terminal)
+                    {
+                        tracing::warn!("Failed to move session to panel: {}", e);
+                        return;
+                    }
+
+                    // Get color for this pane using the new method
+                    let color_index = split_view_for_select.get_pane_color(panel_uuid);
+
+                    tracing::debug!(
+                        "Select Tab callback (global): panel {} has color {:?}",
+                        panel_uuid,
+                        color_index
+                    );
+
+                    // Set tab color indicator
+                    if let Some(color) = color_index {
+                        notebook_for_select.set_tab_split_color(session_id, color);
+                        split_view_for_select.set_session_color(session_id, color);
+                        tracing::debug!(
+                            "Select Tab callback (global): applied color {} to session {}",
+                            color,
+                            session_id
+                        );
+                    } else {
+                        tracing::warn!(
+                            "Select Tab callback (global): no color found for panel {}",
+                            panel_uuid
+                        );
+                    }
+
+                    // Note: Do NOT call switch_to_tab() here - the terminal should be
+                    // displayed in the split panel, not switched to as the active tab
+                },
+            );
+
+            // Setup close panel callback for empty panel close buttons
+            let split_view_for_close = split_view.clone();
+            split_view.setup_close_panel_callback(move |pane_uuid| {
+                // Focus the pane first so close_pane() closes the correct one
+                split_view_for_close.set_focused_pane(Some(pane_uuid));
+
+                // Update focus styling via the adapter
+                if let Some(panel_id) = split_view_for_close.get_panel_id_for_uuid(pane_uuid) {
+                    if let Err(e) = split_view_for_close.adapter_set_focus(panel_id) {
+                        tracing::warn!("Failed to set focus on panel: {}", e);
+                    }
+                }
+            });
+        }
+
         // Set up drag-and-drop for initial pane with notebook lookup
         if let Some(initial_pane_id) = split_view.pane_ids().first().copied() {
             let notebook_for_drop = terminal_notebook.clone();
@@ -1593,56 +2111,36 @@ impl MainWindow {
             );
         }
 
-        // Set up click handlers for focus management
+        // Set up click handlers for focus management on global split view
+        // Note: This is for the global split view; per-session bridges set up their own handlers
         {
             let split_view_for_click = split_view.clone();
             let notebook_for_click = terminal_notebook.clone();
-            if let Some(initial_pane_id) = split_view.pane_ids().first().copied() {
-                let split_panes = split_view_for_click.panes_ref();
-                if let Some(pane) = split_panes.iter().find(|p| p.id() == initial_pane_id) {
-                    let focused_pane = split_view_for_click.focused_pane_ref();
-                    let panes_clone = split_view_for_click.panes_ref_clone();
-                    let notebook_clone = notebook_for_click.clone();
+            let sv_for_focus = split_view_for_click.clone();
+            let panes_clone = split_view_for_click.panes_ref_clone();
+            let notebook_clone = notebook_for_click.clone();
+            let sv_for_terminal = split_view_for_click.clone();
 
-                    pane.setup_click_handler(move |clicked_pane_id| {
-                        // Update focused pane
-                        *focused_pane.borrow_mut() = Some(clicked_pane_id);
-
-                        // Get session_id and update CSS, then drop borrow before switch_to_tab
-                        let session_to_switch = {
-                            let panes_ref = panes_clone.borrow();
-                            let mut session_id = None;
-                            for p in panes_ref.iter() {
-                                let container = p.container();
-                                if p.id() == clicked_pane_id {
-                                    container.add_css_class("focused-pane");
-                                    container.remove_css_class("unfocused-pane");
-                                    session_id = p.current_session();
-                                } else {
-                                    container.remove_css_class("focused-pane");
-                                    container.add_css_class("unfocused-pane");
-                                }
-                            }
-                            session_id
-                        };
-                        // Borrow dropped, safe to call switch_to_tab
-                        if let Some(session_id) = session_to_switch {
-                            notebook_clone.switch_to_tab(session_id);
-                        }
-                    });
-
-                    // Set up context menu for initial pane
-                    let panes_for_menu = split_view_for_click.panes_ref_clone();
-                    let sessions_for_menu = split_view_for_click.shared_sessions();
-                    pane.setup_context_menu(move |ctx_pane_id| {
-                        Self::build_pane_context_menu(
-                            ctx_pane_id,
-                            &panes_for_menu,
-                            &sessions_for_menu,
-                        )
-                    });
+            split_view_for_click.setup_all_panel_click_handlers(move |clicked_pane_uuid| {
+                // Update the bridge's focused pane state (handles all focus styling)
+                sv_for_focus.set_focused_pane(Some(clicked_pane_uuid));
+                // Get session_id from the clicked pane
+                let session_to_switch = {
+                    let panes_ref = panes_clone.borrow();
+                    panes_ref
+                        .iter()
+                        .find(|p| p.id() == clicked_pane_uuid)
+                        .and_then(|p| p.current_session())
+                };
+                // Switch to the tab if there's a session in this pane
+                if let Some(session_id) = session_to_switch {
+                    notebook_clone.switch_to_tab(session_id);
+                    // Grab focus on the terminal (click event is claimed, so we must do this)
+                    if let Some(terminal) = sv_for_terminal.get_terminal(session_id) {
+                        terminal.grab_focus();
+                    }
                 }
-            }
+            });
         }
 
         // Connect sidebar search with debouncing
@@ -1753,7 +2251,10 @@ impl MainWindow {
 
         // Connect TabView page selection - per spec, do NOT auto-fill split panes
         // Split view is shown ONLY when selected session is displayed in a split pane
-        let split_view_clone = split_view.clone();
+        // Requirement 3: Each tab maintains its own independent split layout
+        let session_bridges_for_tab = self.session_split_bridges.clone();
+        let split_container_for_tab = self.split_container.clone();
+        let global_split_view = split_view.clone();
         let notebook_clone = terminal_notebook.clone();
         terminal_notebook.tab_view().connect_notify_local(
             Some("selected-page"),
@@ -1772,64 +2273,79 @@ impl MainWindow {
                             || info.protocol == "spice"
                         {
                             // For VNC/RDP/SPICE: hide split view, show TabView content
-                            split_view_clone.widget().set_visible(false);
-                            split_view_clone.widget().set_vexpand(false);
+                            global_split_view.widget().set_visible(false);
+                            split_container_for_tab.set_visible(false);
                             notebook_clone.widget().set_vexpand(true);
                             notebook_clone.show_tab_view_content();
                             return;
                         }
                     }
 
-                    // For SSH: check if this session belongs to a split (has color assigned)
-                    // or is currently displayed in a split pane
-                    let has_split_color = split_view_clone.get_session_color(session_id).is_some();
-                    let is_displayed = split_view_clone.is_session_displayed(session_id);
+                    // For SSH: check if this session has its own split bridge
+                    let bridges = session_bridges_for_tab.borrow();
+                    if let Some(bridge) = bridges.get(&session_id) {
+                        // Session has its own split bridge - show it
+                        // Swap visible split view in container
+                        while let Some(child) = split_container_for_tab.first_child() {
+                            split_container_for_tab.remove(&child);
+                        }
+                        bridge.widget().set_vexpand(true);
+                        bridge.widget().set_hexpand(true);
+                        split_container_for_tab.append(bridge.widget());
 
-                    if has_split_color || is_displayed {
-                        // Session belongs to split view - show split view
-                        split_view_clone.widget().set_visible(true);
-                        split_view_clone.widget().set_vexpand(true);
+                        // Show split container, hide TabView content
+                        bridge.widget().set_visible(true);
+                        split_container_for_tab.set_visible(true);
+                        global_split_view.widget().set_visible(false);
                         notebook_clone.widget().set_vexpand(false);
                         notebook_clone.hide_tab_view_content();
 
-                        // If session is displayed in a pane, focus that pane
-                        if is_displayed {
-                            for pane_id in split_view_clone.pane_ids() {
-                                if split_view_clone.get_pane_session(pane_id) == Some(session_id) {
-                                    let _ = split_view_clone.focus_pane(pane_id);
-                                    if let Some(terminal) =
-                                        split_view_clone.get_terminal(session_id)
-                                    {
-                                        terminal.grab_focus();
-                                    }
-                                    break;
+                        // Reparent terminal to split pane if needed
+                        let has_split_color = bridge.get_session_color(session_id).is_some();
+                        let is_displayed = bridge.is_session_displayed(session_id);
+                        if has_split_color && !is_displayed {
+                            let _ = bridge.reparent_terminal_to_split(session_id);
+                        }
+
+                        // Update tab colors for ALL sessions in this split view
+                        // Each tab should have the color of its pane
+                        for pane_id in bridge.pane_ids() {
+                            if let Some(pane_session_id) = bridge.get_pane_session(pane_id) {
+                                if let Some(pane_color) = bridge.get_pane_color(pane_id) {
+                                    notebook_clone.set_tab_split_color(pane_session_id, pane_color);
+                                    bridge.set_session_color(pane_session_id, pane_color);
                                 }
                             }
                         }
+
+                        // Focus the pane containing the selected session
+                        for pane_id in bridge.pane_ids() {
+                            if bridge.get_pane_session(pane_id) == Some(session_id) {
+                                let _ = bridge.focus_pane(pane_id);
+                                if let Some(terminal) = bridge.get_terminal(session_id) {
+                                    terminal.grab_focus();
+                                }
+                                break;
+                            }
+                        }
                     } else {
-                        // Session NOT in split view - show in TabView directly
+                        // Session NOT in any split view - show in TabView directly
                         // Move terminal back to TabView page if it was in split view
                         notebook_clone.reparent_terminal_to_tab(session_id);
 
                         // Clear any split color indicator
                         notebook_clone.clear_tab_split_color(session_id);
 
-                        // Register session for potential drag-and-drop (without moving terminal)
-                        if let Some(info) = notebook_clone.get_session_info(session_id) {
-                            // Don't pass terminal - it stays in TabView
-                            split_view_clone.add_session(info, None);
-                        }
-
-                        // Hide split view, show TabView content
-                        split_view_clone.widget().set_visible(false);
-                        split_view_clone.widget().set_vexpand(false);
+                        // Hide split views, show TabView content
+                        global_split_view.widget().set_visible(false);
+                        split_container_for_tab.set_visible(false);
                         notebook_clone.widget().set_vexpand(true);
                         notebook_clone.show_tab_view_content();
                     }
                 } else {
                     // Welcome tab (page 0) - show TabView welcome
-                    split_view_clone.widget().set_visible(false);
-                    split_view_clone.widget().set_vexpand(false);
+                    global_split_view.widget().set_visible(false);
+                    split_container_for_tab.set_visible(false);
                     notebook_clone.widget().set_vexpand(true);
                     notebook_clone.show_tab_view_content();
                 }
@@ -1917,6 +2433,10 @@ impl MainWindow {
     }
 
     /// Builds context menu for a split view pane
+    ///
+    /// Note: This is currently unused as the adapter handles context menus via
+    /// `setup_panel_context_menu`. Kept for potential future use.
+    #[allow(dead_code)]
     fn build_pane_context_menu(
         pane_id: Uuid,
         panes: &Rc<RefCell<Vec<crate::split_view::TerminalPane>>>,
@@ -3569,22 +4089,21 @@ impl MainWindow {
         let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
         notebook.spawn_command(session_id, &[&shell], None, None);
 
-        // Explicitly show the session in split view
-        // This is needed because switch_page signal may fire before session data is ready
+        // Per spec (Requirement 1): New connections ALWAYS create independent Root_Tabs
+        // Register session for potential drag-and-drop, but don't show in split pane
         if let Some(info) = notebook.get_session_info(session_id) {
-            let terminal = notebook.get_terminal(session_id);
-            split_view.add_session(info, terminal);
-            let _ = split_view.show_session(session_id);
+            // Don't pass terminal - it stays in TabView page
+            split_view.add_session(info, None);
         }
 
-        // Ensure split view is visible and expanded for local shell
-        split_view.widget().set_visible(true);
-        split_view.widget().set_vexpand(true);
-        notebook.widget().set_vexpand(false);
-        notebook.hide_tab_view_content();
+        // Hide split view, show TabView content for the new tab
+        split_view.widget().set_visible(false);
+        split_view.widget().set_vexpand(false);
+        notebook.widget().set_vexpand(true);
+        notebook.show_tab_view_content();
 
-        // Note: The switch_page signal handler will automatically show the session
-        // in the split view when the notebook switches to the new tab
+        // Note: The switch_page signal handler will handle visibility
+        // based on whether the session has a split_color assigned
     }
 
     /// Shows the quick connect dialog with protocol selection

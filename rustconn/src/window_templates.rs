@@ -355,12 +355,10 @@ pub fn show_new_connection_from_template(
         dialog.set_groups(&groups);
     }
 
-    // Set KeePass enabled state from settings
-    {
-        let state_ref = state.borrow();
-        let keepass_enabled = state_ref.settings().secrets.kdbx_enabled;
-        dialog.set_keepass_enabled(keepass_enabled);
-    }
+    // Set up password visibility toggle and source visibility
+    dialog.connect_password_visibility_toggle();
+    dialog.connect_password_source_visibility();
+    dialog.update_password_row_visibility();
 
     // Pre-populate with template values
     dialog.set_connection(&connection);

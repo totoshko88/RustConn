@@ -55,15 +55,16 @@ pub struct ConnectionDialog {
     host_entry: Entry,
     port_spin: SpinButton,
     username_entry: Entry,
+    domain_entry: Entry,
     tags_entry: Entry,
     protocol_dropdown: DropDown,
     protocol_stack: Stack,
     // Password source selection
     password_source_dropdown: DropDown,
-    // Password entry and KeePass buttons
+    // Password entry and visibility toggle
     password_entry: Entry,
-    save_to_keepass_button: Button,
-    load_from_keepass_button: Button,
+    password_visibility_button: Button,
+    password_row: GtkBox,
     // Group selection
     group_dropdown: DropDown,
     groups_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
@@ -280,15 +281,17 @@ impl ConnectionDialog {
             port_label,
             username_entry,
             username_label,
+            domain_entry,
+            _domain_label,
             tags_entry,
             tags_label,
             protocol_dropdown,
             password_source_dropdown,
             password_source_label,
             password_entry,
-            password_entry_label,
-            load_from_keepass_button,
-            save_to_keepass_button,
+            _password_entry_label,
+            password_visibility_button,
+            password_row,
             group_dropdown,
         ) = Self::create_basic_tab();
         // Wrap basic grid in ScrolledWindow for consistent styling
@@ -419,10 +422,7 @@ impl ConnectionDialog {
             &tags_label,
             &password_source_dropdown,
             &password_source_label,
-            &password_entry,
-            &password_entry_label,
-            &load_from_keepass_button,
-            &save_to_keepass_button,
+            &password_row,
         );
 
         // === Data Tab (Variables + Custom Properties) ===
@@ -534,6 +534,7 @@ impl ConnectionDialog {
             &host_entry,
             &port_spin,
             &username_entry,
+            &domain_entry,
             &tags_entry,
             &protocol_dropdown,
             &password_source_dropdown,
@@ -635,13 +636,14 @@ impl ConnectionDialog {
             host_entry,
             port_spin,
             username_entry,
+            domain_entry,
             tags_entry,
             protocol_dropdown,
             protocol_stack,
             password_source_dropdown,
             password_entry,
-            save_to_keepass_button,
-            load_from_keepass_button,
+            password_visibility_button,
+            password_row,
             group_dropdown,
             groups_data: Rc::new(RefCell::new(vec![(None, "(Root)".to_string())])),
             ssh_auth_dropdown,
@@ -1058,10 +1060,7 @@ impl ConnectionDialog {
         tags_label: &Label,
         password_source_dropdown: &DropDown,
         password_source_label: &Label,
-        password_entry: &Entry,
-        password_label: &Label,
-        load_from_keepass_button: &Button,
-        save_to_keepass_button: &Button,
+        password_row: &GtkBox,
     ) {
         let stack_clone = stack.clone();
         let port_clone = port_spin.clone();
@@ -1074,10 +1073,7 @@ impl ConnectionDialog {
         let tags_label = tags_label.clone();
         let password_source_dropdown = password_source_dropdown.clone();
         let password_source_label = password_source_label.clone();
-        let password_entry = password_entry.clone();
-        let password_label = password_label.clone();
-        let load_from_keepass_button = load_from_keepass_button.clone();
-        let save_to_keepass_button = save_to_keepass_button.clone();
+        let password_row = password_row.clone();
 
         dropdown.connect_selected_notify(move |dropdown| {
             let protocols = ["ssh", "rdp", "vnc", "spice", "zerotrust"];
@@ -1103,10 +1099,10 @@ impl ConnectionDialog {
                 tags_label.set_visible(visible);
                 password_source_dropdown.set_visible(visible);
                 password_source_label.set_visible(visible);
-                password_entry.set_visible(visible);
-                password_label.set_visible(visible);
-                load_from_keepass_button.set_visible(visible);
-                save_to_keepass_button.set_visible(visible);
+                // Password row visibility controlled by password_source_dropdown
+                if !visible {
+                    password_row.set_visible(false);
+                }
             }
         });
     }
@@ -1142,6 +1138,7 @@ impl ConnectionDialog {
         host_entry: &Entry,
         port_spin: &SpinButton,
         username_entry: &Entry,
+        domain_entry: &Entry,
         tags_entry: &Entry,
         protocol_dropdown: &DropDown,
         password_source_dropdown: &DropDown,
@@ -1240,6 +1237,7 @@ impl ConnectionDialog {
         let host_entry = host_entry.clone();
         let port_spin = port_spin.clone();
         let username_entry = username_entry.clone();
+        let domain_entry = domain_entry.clone();
         let tags_entry = tags_entry.clone();
         let protocol_dropdown = protocol_dropdown.clone();
         let password_source_dropdown = password_source_dropdown.clone();
@@ -1342,6 +1340,7 @@ impl ConnectionDialog {
                 host_entry: &host_entry,
                 port_spin: &port_spin,
                 username_entry: &username_entry,
+                domain_entry: &domain_entry,
                 tags_entry: &tags_entry,
                 protocol_dropdown: &protocol_dropdown,
                 password_source_dropdown: &password_source_dropdown,
@@ -1462,13 +1461,15 @@ impl ConnectionDialog {
         Label,
         Entry,
         Label,
+        Entry,
+        Label,
         DropDown,
         DropDown,
         Label,
         Entry,
         Label,
         Button,
-        Button,
+        GtkBox,
         DropDown,
     ) {
         let vbox = GtkBox::new(Orientation::Vertical, 8);
@@ -1565,6 +1566,19 @@ impl ConnectionDialog {
         grid.attach(&username_entry, 1, row, 2, 1);
         row += 1;
 
+        // Domain (for RDP/Windows authentication)
+        let domain_label = Label::builder()
+            .label("Domain:")
+            .halign(gtk4::Align::End)
+            .build();
+        let domain_entry = Entry::builder()
+            .placeholder_text("Optional (e.g., WORKGROUP)")
+            .hexpand(true)
+            .build();
+        grid.attach(&domain_label, 0, row, 1, 1);
+        grid.attach(&domain_entry, 1, row, 2, 1);
+        row += 1;
+
         // Password Source
         let password_source_label = Label::builder()
             .label("Password:")
@@ -1578,30 +1592,40 @@ impl ConnectionDialog {
         grid.attach(&password_source_dropdown, 1, row, 2, 1);
         row += 1;
 
-        // Password with KeePass buttons
+        // Password with visibility toggle - use grid row for proper alignment
         let password_entry_label = Label::builder()
-            .label("Password:")
+            .label("Value:")
             .halign(gtk4::Align::End)
             .build();
         let password_entry = Entry::builder()
-            .placeholder_text("Password")
+            .placeholder_text("Password value")
             .hexpand(true)
             .visibility(false)
             .build();
-        let save_to_keepass_button = Button::builder()
-            .icon_name("document-save-symbolic")
-            .tooltip_text("Save password to vault")
-            .build();
-        let load_from_keepass_button = Button::builder()
-            .icon_name("document-open-symbolic")
-            .tooltip_text("Load password from vault")
+        let password_visibility_button = Button::builder()
+            .icon_name("view-reveal-symbolic")
+            .tooltip_text("Show/hide password")
             .build();
         let password_box = GtkBox::new(Orientation::Horizontal, 4);
         password_box.append(&password_entry);
-        password_box.append(&save_to_keepass_button);
-        password_box.append(&load_from_keepass_button);
+        password_box.append(&password_visibility_button);
+        password_box.set_hexpand(true);
+
+        // Password row container - wraps label and entry box for show/hide
+        let password_row = GtkBox::new(Orientation::Horizontal, 0);
+        password_row.set_visible(false);
+        // Attach label and password box to grid for proper alignment
         grid.attach(&password_entry_label, 0, row, 1, 1);
         grid.attach(&password_box, 1, row, 2, 1);
+        // Bind visibility of label and box to password_row visibility
+        password_row
+            .bind_property("visible", &password_entry_label, "visible")
+            .sync_create()
+            .build();
+        password_row
+            .bind_property("visible", &password_box, "visible")
+            .sync_create()
+            .build();
         row += 1;
 
         // Tags
@@ -1664,6 +1688,8 @@ impl ConnectionDialog {
             port_label,
             username_entry,
             username_label,
+            domain_entry,
+            domain_label,
             tags_entry,
             tags_label,
             protocol_dropdown,
@@ -1671,8 +1697,8 @@ impl ConnectionDialog {
             password_source_label,
             password_entry,
             password_entry_label,
-            load_from_keepass_button,
-            save_to_keepass_button,
+            password_visibility_button,
+            password_row,
             group_dropdown,
         )
     }
@@ -5273,6 +5299,9 @@ impl ConnectionDialog {
         if let Some(ref username) = conn.username {
             self.username_entry.set_text(username);
         }
+        if let Some(ref domain) = conn.domain {
+            self.domain_entry.set_text(domain);
+        }
         // Filter out desc: tags for backward compatibility with old imports
         let display_tags: Vec<&str> = conn
             .tags
@@ -6076,113 +6105,61 @@ impl ConnectionDialog {
     ///
     /// This controls the sensitivity of the `KeePass` buttons.
     /// When `KeePass` is not enabled, the buttons are disabled.
-    pub fn set_keepass_enabled(&self, enabled: bool) {
-        self.save_to_keepass_button.set_sensitive(enabled);
-        self.load_from_keepass_button.set_sensitive(enabled);
+    /// Updates password row visibility based on password source
+    /// Shows for: Stored(1), KeePass(2), Keyring(3)
+    /// Hides for: Prompt(0), Inherit(4), None(5)
+    pub fn update_password_row_visibility(&self) {
+        let selected = self.password_source_dropdown.selected();
+        // Show for Stored(1), KeePass(2), Keyring(3)
+        let show_password = matches!(selected, 1..=3);
+        self.password_row.set_visible(show_password);
     }
 
-    /// Sets up the callback for the "Save to `KeePass`" button
-    ///
-    /// The callback receives the connection name, host, username, password, protocol, and dialog window.
-    pub fn connect_save_to_keepass<F: Fn(&str, &str, &str, &str, &str, adw::Window) + 'static>(
-        &self,
-        callback: F,
-    ) {
-        let name_entry = self.name_entry.clone();
-        let host_entry = self.host_entry.clone();
-        let username_entry = self.username_entry.clone();
+    /// Connects password visibility toggle button
+    pub fn connect_password_visibility_toggle(&self) {
+        use std::cell::Cell;
+
         let password_entry = self.password_entry.clone();
-        let protocol_dropdown = self.protocol_dropdown.clone();
-        let window = self.window.clone();
+        // Track visibility state - starts hidden (false)
+        let is_visible = Rc::new(Cell::new(false));
 
-        self.save_to_keepass_button.connect_clicked(move |_| {
-            let name = name_entry.text();
-            let host = host_entry.text();
-            let username = username_entry.text();
-            let password = password_entry.text();
-
-            // Get selected protocol
-            let protocol = match protocol_dropdown.selected() {
-                0 => "ssh",
-                1 => "rdp",
-                2 => "vnc",
-                3 => "spice",
-                _ => "ssh",
-            };
-
-            if password.is_empty() {
-                crate::toast::show_toast_on_window(
-                    &window,
-                    "Please enter a password to save",
-                    crate::toast::ToastType::Warning,
-                );
-                return;
+        self.password_visibility_button.connect_clicked(move |btn| {
+            let currently_visible = is_visible.get();
+            let new_visible = !currently_visible;
+            is_visible.set(new_visible);
+            password_entry.set_visibility(new_visible);
+            // Update icon
+            if new_visible {
+                btn.set_icon_name("view-conceal-symbolic");
+            } else {
+                btn.set_icon_name("view-reveal-symbolic");
             }
-
-            if name.trim().is_empty() && host.trim().is_empty() {
-                crate::toast::show_toast_on_window(
-                    &window,
-                    "Please enter a connection name or host first",
-                    crate::toast::ToastType::Warning,
-                );
-                return;
-            }
-
-            callback(&name, &host, &username, &password, protocol, window.clone());
         });
     }
 
-    /// Sets up the callback for the "Load from `KeePass`" button
-    ///
-    /// The callback receives the connection name, host, protocol, password entry, and window.
-    /// The callback should handle the async loading and update the password entry when done.
-    pub fn connect_load_from_keepass<F: Fn(&str, &str, &str, Entry, gtk4::Window) + 'static>(
-        &self,
-        callback: F,
-    ) {
-        let name_entry = self.name_entry.clone();
-        let host_entry = self.host_entry.clone();
-        let password_entry = self.password_entry.clone();
-        let protocol_dropdown = self.protocol_dropdown.clone();
-        let window = self.window.clone();
+    /// Connects password source dropdown to update password row visibility
+    pub fn connect_password_source_visibility(&self) {
+        let password_row = self.password_row.clone();
 
-        self.load_from_keepass_button.connect_clicked(move |_| {
-            let name = name_entry.text();
-            let host = host_entry.text();
-
-            // Get current protocol from dropdown
-            let protocol = match protocol_dropdown.selected() {
-                0 => "ssh",
-                1 => "rdp",
-                2 => "vnc",
-                3 => "spice",
-                4 => "zerotrust",
-                _ => "ssh",
-            };
-
-            if name.trim().is_empty() && host.trim().is_empty() {
-                crate::toast::show_toast_on_window(
-                    &window,
-                    "Please enter a connection name or host to look up",
-                    crate::toast::ToastType::Warning,
-                );
-                return;
-            }
-
-            callback(
-                &name,
-                &host,
-                protocol,
-                password_entry.clone(),
-                window.clone().into(),
-            );
-        });
+        self.password_source_dropdown
+            .connect_selected_notify(move |dropdown| {
+                let selected = dropdown.selected();
+                // Show for Stored(1), KeePass(2), Keyring(3)
+                let show_password = matches!(selected, 1..=3);
+                password_row.set_visible(show_password);
+            });
     }
 
     /// Returns the password entry widget for external access
     #[must_use]
     pub const fn password_entry(&self) -> &Entry {
         &self.password_entry
+    }
+
+    /// Returns the password row widget for external access
+    #[must_use]
+    pub const fn password_row(&self) -> &GtkBox {
+        &self.password_row
     }
 
     /// Refreshes the agent keys dropdown with keys from the SSH agent
@@ -6279,6 +6256,7 @@ struct ConnectionDialogData<'a> {
     host_entry: &'a Entry,
     port_spin: &'a SpinButton,
     username_entry: &'a Entry,
+    domain_entry: &'a Entry,
     tags_entry: &'a Entry,
     protocol_dropdown: &'a DropDown,
     password_source_dropdown: &'a DropDown,
@@ -6462,6 +6440,11 @@ impl ConnectionDialogData<'_> {
         let username = self.username_entry.text();
         if !username.trim().is_empty() {
             conn.username = Some(username.trim().to_string());
+        }
+
+        let domain = self.domain_entry.text();
+        if !domain.trim().is_empty() {
+            conn.domain = Some(domain.trim().to_string());
         }
 
         let tags_text = self.tags_entry.text();

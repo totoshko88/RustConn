@@ -727,7 +727,10 @@ impl ConnectionSidebar {
             let row = list_item.item()?.downcast::<TreeListRow>().ok()?;
             let item = row.item()?.downcast::<ConnectionItem>().ok()?;
 
-            // Encode item type and ID in drag data: "type:id"
+            // Encode item type and ID in drag data
+            // Format for sidebar reorganization: "type:id" (e.g., "group:uuid" or "conn:uuid")
+            // Format for split pane drops: "sidebar:uuid" for connections
+            // Requirement 7.3: Sidebar_Item can be dragged from sidebar
             let item_type = if item.is_group() { "group" } else { "conn" };
             let drag_data = format!("{}:{}", item_type, item.id());
             let bytes = glib::Bytes::from(drag_data.as_bytes());
@@ -735,8 +738,27 @@ impl ConnectionSidebar {
             Some(gdk::ContentProvider::for_bytes("text/plain", &bytes))
         });
 
+        // Visual feedback during drag
+        // Requirement 7.4: Visual feedback during drag
+        let list_item_weak_begin = list_item.downgrade();
+        drag_source.connect_drag_begin(move |_source, _drag| {
+            if let Some(list_item) = list_item_weak_begin.upgrade() {
+                if let Some(expander) = list_item.child() {
+                    expander.add_css_class("dragging");
+                }
+            }
+        });
+
         // Clean up drop indicator when drag ends
-        drag_source.connect_drag_end(|source, _drag, _delete_data| {
+        let list_item_weak_end = list_item.downgrade();
+        drag_source.connect_drag_end(move |source, _drag, _delete_data| {
+            // Remove dragging CSS class
+            if let Some(list_item) = list_item_weak_end.upgrade() {
+                if let Some(expander) = list_item.child() {
+                    expander.remove_css_class("dragging");
+                }
+            }
+
             // Find the sidebar and hide the drop indicator
             if let Some(widget) = source.widget() {
                 if let Some(list_view) = widget.ancestor(ListView::static_type()) {

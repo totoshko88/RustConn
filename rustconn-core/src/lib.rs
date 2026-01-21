@@ -47,6 +47,7 @@ pub mod secret;
 pub mod session;
 pub mod snippet;
 pub mod spice_client;
+pub mod split;
 pub mod split_view;
 pub mod ssh_agent;
 pub mod terminal_themes;
@@ -181,6 +182,12 @@ pub use spice_client::{
 #[cfg(feature = "spice-embedded")]
 pub use spice_client::{SpiceClient, SpiceClientState, SpiceCommandSender, SpiceEventReceiver};
 pub use split_view::{PaneModel, SessionInfo, SplitDirection, SplitViewModel};
+// New split view redesign types (tab-scoped layouts)
+pub use split::SplitDirection as NewSplitDirection;
+pub use split::{
+    ColorId, ColorPool, DropResult, LeafPanel, PanelId, PanelNode, SessionId as SplitSessionId,
+    SplitError, SplitLayoutModel, SplitNode, TabId, SPLIT_COLORS,
+};
 pub use ssh_agent::{
     parse_agent_output, parse_key_list, AgentError, AgentKey, AgentResult, AgentStatus,
     SshAgentManager,
