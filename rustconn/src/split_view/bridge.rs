@@ -449,6 +449,8 @@ pub type SharedTerminals = Rc<RefCell<HashMap<Uuid, Terminal>>>;
 pub type SessionColorMap = Rc<RefCell<HashMap<Uuid, usize>>>;
 /// Shared color pool type for global color allocation across all split containers
 pub type SharedColorPool = Rc<RefCell<ColorPool>>;
+/// Container color type - the single color assigned to this split container
+pub type ContainerColor = Rc<RefCell<Option<usize>>>;
 
 /// Shared panel UUID map type for sharing between bridge and callbacks
 type SharedPanelUuidMap = Rc<RefCell<HashMap<PanelId, Uuid>>>;
@@ -467,6 +469,9 @@ pub struct SplitViewBridge {
     session_colors: SessionColorMap,
     /// Color pool for allocation (shared across all split containers)
     color_pool: SharedColorPool,
+    /// Container color - the single color assigned to this entire split container
+    /// All panels/sessions in this container share this color
+    container_color: ContainerColor,
     /// Panel ID to Uuid mapping (for legacy compatibility)
     /// Wrapped in Rc for sharing with callbacks
     panel_uuid_map: SharedPanelUuidMap,
@@ -530,6 +535,7 @@ impl SplitViewBridge {
             terminals: Rc::new(RefCell::new(HashMap::new())),
             session_colors: Rc::new(RefCell::new(HashMap::new())),
             color_pool,
+            container_color: Rc::new(RefCell::new(None)),
             panel_uuid_map: Rc::new(RefCell::new(panel_uuid_map)),
             uuid_panel_map: Rc::new(RefCell::new(uuid_panel_map)),
             focused_pane_uuid: RefCell::new(focused_uuid),
@@ -587,6 +593,34 @@ impl SplitViewBridge {
     /// Clears the color for a session
     pub fn clear_session_color(&self, session_id: Uuid) {
         self.session_colors.borrow_mut().remove(&session_id);
+    }
+
+    /// Returns the container color for this split view
+    ///
+    /// All panels/sessions in this container share this single color.
+    /// Returns `None` if no color has been allocated yet (before first split).
+    #[must_use]
+    pub fn get_container_color(&self) -> Option<usize> {
+        *self.container_color.borrow()
+    }
+
+    /// Allocates and sets the container color if not already set
+    ///
+    /// This should be called on the first split to assign a unique color
+    /// to this container. All subsequent panels will use this same color.
+    fn ensure_container_color(&self) -> usize {
+        let mut container_color = self.container_color.borrow_mut();
+        if let Some(color) = *container_color {
+            color
+        } else {
+            let color = usize::from(self.color_pool.borrow_mut().allocate().index());
+            *container_color = Some(color);
+            tracing::debug!(
+                "ensure_container_color: allocated container color {} for this bridge",
+                color
+            );
+            color
+        }
     }
 
     /// Returns shared sessions reference
@@ -737,9 +771,9 @@ impl SplitViewBridge {
 
     /// Splits with a close callback
     ///
-    /// Returns (new_pane_uuid, new_pane_color_index, original_pane_color_index)
-    /// The original pane is where the current session should be displayed.
-    /// The new pane is empty and ready for drop targets.
+    /// Returns (new_pane_uuid, container_color_index, container_color_index)
+    /// Both color indices are the same - the container's color.
+    /// All panels in this split container share the same color.
     pub fn split_with_close_callback<F>(
         &self,
         direction: SplitDirection,
@@ -756,67 +790,21 @@ impl SplitViewBridge {
         let new_panel_id = adapter.split(direction.to_core()).ok()?;
         drop(adapter); // Release borrow before modifying other state
 
-        // Log color pool state before allocation
-        let pool_allocated_before = self.color_pool.borrow().allocated_count();
+        // Ensure container has a color allocated (only allocates once on first split)
+        let container_color = self.ensure_container_color();
+
         tracing::debug!(
-            "split_with_close_callback: color pool state BEFORE split: {} colors allocated, \
-             bridge_ptr={:p}, original_pane_uuid={:?}",
-            pool_allocated_before,
-            &*self.color_pool.borrow(),
-            original_uuid
+            "split_with_close_callback: using container color {} for all panels in this bridge",
+            container_color
         );
 
-        // Allocate colors for both panes
-        // Original pane gets first color (if not already assigned)
-        let original_color_index = {
+        // Set the container color on all panes (both existing and new)
+        {
             let mut panes = self.panes.borrow_mut();
-            if let Some(original_pane) = panes.iter_mut().find(|p| p.id() == original_uuid) {
-                if let Some(existing_color) = original_pane.color_index() {
-                    tracing::debug!(
-                        "split_with_close_callback: original pane {:?} already has color {}",
-                        original_uuid,
-                        existing_color
-                    );
-                    existing_color
-                } else {
-                    let color = usize::from(self.color_pool.borrow_mut().allocate().index());
-                    tracing::debug!(
-                        "split_with_close_callback: allocated NEW color {} for original pane {:?}",
-                        color,
-                        original_uuid
-                    );
-                    original_pane.set_color_index(color);
-                    color
-                }
-            } else {
-                // Shouldn't happen, but allocate a color anyway
-                let color = usize::from(self.color_pool.borrow_mut().allocate().index());
-                tracing::debug!(
-                    "split_with_close_callback: FALLBACK - allocated color {} (pane {:?} not found)",
-                    color,
-                    original_uuid
-                );
-                color
+            for pane in panes.iter_mut() {
+                pane.set_color_index(container_color);
             }
-        };
-
-        // New pane gets next color
-        let new_color_index = usize::from(self.color_pool.borrow_mut().allocate().index());
-        tracing::debug!(
-            "split_with_close_callback: allocated NEW color {} for new pane",
-            new_color_index
-        );
-
-        // Log final state
-        let pool_allocated_after = self.color_pool.borrow().allocated_count();
-        tracing::debug!(
-            "split_with_close_callback: color pool state AFTER split: {} colors allocated \
-             (original_color={}, new_color={}), pool_ptr={:p}",
-            pool_allocated_after,
-            original_color_index,
-            new_color_index,
-            &*self.color_pool.borrow()
-        );
+        }
 
         // Create UUID mapping for new panel
         let new_uuid = Uuid::new_v4();
@@ -827,8 +815,8 @@ impl SplitViewBridge {
             .borrow_mut()
             .insert(new_uuid, new_panel_id);
 
-        // Create legacy pane for backward compatibility
-        let new_pane = TerminalPane::with_id_and_color(new_uuid, new_color_index);
+        // Create legacy pane for backward compatibility with the container color
+        let new_pane = TerminalPane::with_id_and_color(new_uuid, container_color);
         self.panes.borrow_mut().push(new_pane);
 
         // Focus stays on original pane (where session will be displayed)
@@ -840,7 +828,8 @@ impl SplitViewBridge {
         // We need to restore the actual terminal content from self.terminals.
         self.restore_panel_contents();
 
-        Some((new_uuid, new_color_index, original_color_index))
+        // Return the same color for both - all panels share the container color
+        Some((new_uuid, container_color, container_color))
     }
 
     /// Shows a session in the focused pane
@@ -1047,19 +1036,6 @@ impl SplitViewBridge {
             .into_iter()
             .find(|&pid| adapter.get_panel_session(pid) == Some(session));
 
-        // Release color for this pane before removing
-        if let Some(panel_id) = panel_to_remove {
-            if let Some(&pane_uuid) = self.panel_uuid_map.borrow().get(&panel_id) {
-                if let Some(pane) = self.panes.borrow().iter().find(|p| p.id() == pane_uuid) {
-                    if let Some(color_index) = pane.color_index() {
-                        self.color_pool
-                            .borrow_mut()
-                            .release(rustconn_core::split::ColorId::new(color_index as u8));
-                    }
-                }
-            }
-        }
-
         self.clear_session_color(session_id);
         self.remove_session(session_id);
 
@@ -1081,6 +1057,16 @@ impl SplitViewBridge {
         let no_sessions = !remaining_panels
             .iter()
             .any(|&pid| adapter.get_panel_session(pid).is_some());
+
+        // Release container color only when closing the entire split view
+        if no_panels || no_sessions {
+            if let Some(color) = *self.container_color.borrow() {
+                self.color_pool
+                    .borrow_mut()
+                    .release(rustconn_core::split::ColorId::new(color as u8));
+                *self.container_color.borrow_mut() = None;
+            }
+        }
 
         // Per Requirement 13.3: When the last remaining Panel in a Split_Container
         // is closed, close the parent Root_Tab. We signal this by returning true
@@ -1111,15 +1097,6 @@ impl SplitViewBridge {
             self.clear_session_color(session_id);
         }
 
-        // Release color for this pane
-        if let Some(pane) = self.panes.borrow().iter().find(|p| p.id() == focused_uuid) {
-            if let Some(color_index) = pane.color_index() {
-                self.color_pool
-                    .borrow_mut()
-                    .release(rustconn_core::split::ColorId::new(color_index as u8));
-            }
-        }
-
         let mut adapter = self.adapter.borrow_mut();
         adapter.remove_panel(panel_id).map_err(|e| e.to_string())?;
 
@@ -1133,6 +1110,16 @@ impl SplitViewBridge {
         // Check if this was the last panel
         let remaining_panels = adapter.panel_ids();
         let should_close_split = remaining_panels.is_empty();
+
+        // Release container color only when closing the entire split view
+        if should_close_split {
+            if let Some(color) = *self.container_color.borrow() {
+                self.color_pool
+                    .borrow_mut()
+                    .release(rustconn_core::split::ColorId::new(color as u8));
+                *self.container_color.borrow_mut() = None;
+            }
+        }
 
         // Update focused pane to first available
         if let Some(&new_panel_id) = remaining_panels.first() {
@@ -1510,7 +1497,15 @@ impl SplitViewBridge {
             })
             .collect();
 
+        // Release container color back to pool
+        if let Some(color) = *self.container_color.borrow() {
+            self.color_pool
+                .borrow_mut()
+                .release(rustconn_core::split::ColorId::new(color as u8));
+        }
+
         // Clear all state
+        *self.container_color.borrow_mut() = None;
         self.session_colors.borrow_mut().clear();
         self.sessions.borrow_mut().clear();
         self.terminals.borrow_mut().clear();
@@ -2197,8 +2192,8 @@ impl SplitViewBridge {
     /// This is the preferred method when the terminal is stored in `TerminalNotebook`
     /// rather than in the bridge's internal `terminals` map.
     ///
-    /// The session's color is set to match the target panel's color, ensuring
-    /// consistent tab coloring when sessions are moved between panels.
+    /// The session's color is set to match the container's color, ensuring
+    /// consistent tab coloring for all sessions in this split container.
     ///
     /// # Arguments
     ///
@@ -2208,7 +2203,7 @@ impl SplitViewBridge {
     ///
     /// # Returns
     ///
-    /// `Ok(color_index)` with the panel's color on success, or an error message on failure.
+    /// `Ok(color_index)` with the container's color on success, or an error message on failure.
     pub fn move_session_to_panel_with_terminal(
         &self,
         panel_uuid: Uuid,
@@ -2266,24 +2261,26 @@ impl SplitViewBridge {
         self.adapter.borrow().set_panel_content(panel_id, &scrolled);
         terminal.set_visible(true);
 
-        // Update pane's current_session for filtering in Select Tab and get pane color
-        let pane_color = {
+        // Update pane's current_session for filtering in Select Tab
+        {
             let mut panes = self.panes.borrow_mut();
             if let Some(pane) = panes.iter_mut().find(|p| p.id() == panel_uuid) {
                 pane.set_current_session(Some(session_id));
-                pane.color_index()
             } else {
                 tracing::warn!(
                     "move_session_to_panel_with_terminal: pane not found for uuid={}",
                     panel_uuid
                 );
-                None
             }
-        };
+        }
 
-        // Set session color to match pane color for consistent tab coloring
-        let color_index =
-            pane_color.ok_or_else(|| format!("Panel {} has no color assigned", panel_uuid))?;
+        // Use the container's color for consistent tab coloring
+        let color_index = self.get_container_color().ok_or_else(|| {
+            format!(
+                "Container has no color assigned (panel_uuid={})",
+                panel_uuid
+            )
+        })?;
         self.set_session_color(session_id, color_index);
 
         // Update focused pane UUID
@@ -2295,7 +2292,8 @@ impl SplitViewBridge {
         }
 
         tracing::debug!(
-            "move_session_to_panel_with_terminal: SUCCESS - session {} in panel {} with color {}",
+            "move_session_to_panel_with_terminal: SUCCESS - session {} in panel {} with \
+             container color {}",
             session_id,
             panel_id,
             color_index
