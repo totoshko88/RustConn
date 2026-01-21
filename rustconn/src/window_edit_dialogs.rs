@@ -7,7 +7,7 @@ use crate::alert;
 use crate::dialogs::ConnectionDialog;
 use crate::embedded_rdp::{EmbeddedRdpWidget, RdpConfig as EmbeddedRdpConfig};
 use crate::sidebar::ConnectionSidebar;
-use crate::split_view::SplitTerminalView;
+use crate::split_view::SplitViewBridge;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
 use crate::window::MainWindow;
@@ -28,7 +28,7 @@ pub type SharedSidebar = Rc<ConnectionSidebar>;
 pub type SharedNotebook = Rc<TerminalNotebook>;
 
 /// Type alias for shared split view reference
-pub type SharedSplitView = Rc<SplitTerminalView>;
+pub type SharedSplitView = Rc<SplitViewBridge>;
 
 /// Edits the selected connection or group
 pub fn edit_selected_connection(
@@ -82,45 +82,10 @@ pub fn edit_selected_connection(
 
         dialog.set_connection(&conn);
 
-        // Set KeePass enabled state from settings
-        {
-            let state_ref = state.borrow();
-            let keepass_enabled = state_ref.settings().secrets.kdbx_enabled;
-            dialog.set_keepass_enabled(keepass_enabled);
-        }
-
-        // Connect save to KeePass callback
-        let state_for_save = state.clone();
-        let conn_name = conn.name.clone();
-        let conn_host = conn.host.clone();
-        dialog.connect_save_to_keepass(
-            move |name, host, username, password, protocol, dialog_window| {
-                handle_save_to_keepass(
-                    &dialog_window,
-                    &state_for_save,
-                    &conn_name,
-                    &conn_host,
-                    name,
-                    host,
-                    username,
-                    password,
-                    protocol,
-                );
-            },
-        );
-
-        // Connect load from KeePass callback
-        let state_for_load = state.clone();
-        dialog.connect_load_from_keepass(move |name, host, protocol, password_entry, window| {
-            handle_load_from_keepass(
-                &state_for_load,
-                name,
-                host,
-                protocol,
-                password_entry,
-                window,
-            );
-        });
+        // Set up password visibility toggle and source visibility
+        dialog.connect_password_visibility_toggle();
+        dialog.connect_password_source_visibility();
+        dialog.update_password_row_visibility();
 
         let state_clone = state.clone();
         let sidebar_clone = sidebar.clone();
@@ -146,209 +111,6 @@ pub fn edit_selected_connection(
             }
         });
     }
-}
-
-/// Handles saving password to KeePass
-#[allow(clippy::too_many_arguments)]
-fn handle_save_to_keepass(
-    window: &adw::Window,
-    state: &SharedAppState,
-    conn_name: &str,
-    conn_host: &str,
-    name: &str,
-    host: &str,
-    username: &str,
-    password: &str,
-    protocol: &str,
-) {
-    use crate::utils::spawn_blocking_with_callback;
-    use secrecy::ExposeSecret;
-
-    let state_ref = state.borrow();
-    let settings = state_ref.settings();
-
-    if !settings.secrets.kdbx_enabled {
-        alert::show_error(
-            window,
-            "KeePass Not Enabled",
-            "Please enable KeePass integration in Settings first.",
-        );
-        return;
-    }
-
-    let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
-        alert::show_error(
-            window,
-            "KeePass Database Not Configured",
-            "Please select a KeePass database file in Settings.",
-        );
-        return;
-    };
-
-    // Build lookup key with protocol for uniqueness
-    // Format: "name (protocol)" or "host (protocol)" if name is empty
-    let base_name = if !name.trim().is_empty() {
-        name.to_string()
-    } else if !host.trim().is_empty() {
-        host.to_string()
-    } else if !conn_name.is_empty() {
-        conn_name.to_string()
-    } else {
-        conn_host.to_string()
-    };
-    let lookup_key = format!("{base_name} ({protocol})");
-
-    // Get credentials - password and key file can be used together
-    let db_password = settings
-        .secrets
-        .kdbx_password
-        .as_ref()
-        .map(|p| p.expose_secret().to_string());
-
-    // Key file is optional additional authentication
-    let key_file = settings.secrets.kdbx_key_file.clone();
-
-    // Check if we have at least one credential
-    if db_password.is_none() && key_file.is_none() {
-        alert::show_error(
-            window,
-            "KeePass Credentials Required",
-            "Please enter the database password or select a key file in Settings.",
-        );
-        return;
-    }
-
-    // Use protocol from callback parameter
-    let url = format!(
-        "{}://{}",
-        protocol,
-        if host.is_empty() { conn_host } else { host }
-    );
-
-    // Clone data for the background thread
-    let username = username.to_string();
-    let password = password.to_string();
-    let lookup_key_clone = lookup_key.clone();
-    let window = window.clone();
-
-    // Drop state borrow before spawning
-    drop(state_ref);
-
-    // Run KeePass operation in background thread using utility function
-    spawn_blocking_with_callback(
-        move || {
-            rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
-                &kdbx_path,
-                db_password.as_deref(),
-                key_file.as_deref(),
-                &lookup_key_clone,
-                &username,
-                &password,
-                Some(&url),
-            )
-        },
-        move |result: Result<(), String>| match result {
-            Ok(()) => {
-                alert::show_success(
-                    &window,
-                    "Password Saved",
-                    &format!("Password for '{lookup_key}' saved to KeePass."),
-                );
-            }
-            Err(e) => {
-                alert::show_error(&window, "Failed to Save Password", &format!("Error: {e}"));
-            }
-        },
-    );
-}
-
-/// Handles loading password from KeePass (async version)
-fn handle_load_from_keepass(
-    state: &SharedAppState,
-    name: &str,
-    host: &str,
-    protocol: &str,
-    password_entry: gtk4::Entry,
-    window: gtk4::Window,
-) {
-    use crate::utils::spawn_blocking_with_callback;
-    use secrecy::ExposeSecret;
-
-    let state_ref = state.borrow();
-    let settings = state_ref.settings();
-
-    if !settings.secrets.kdbx_enabled {
-        crate::toast::show_toast_on_window(
-            &window,
-            "KeePass integration is not enabled",
-            crate::toast::ToastType::Warning,
-        );
-        return;
-    }
-
-    let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
-        crate::toast::show_toast_on_window(
-            &window,
-            "KeePass database not configured",
-            crate::toast::ToastType::Warning,
-        );
-        return;
-    };
-
-    // Build lookup key that includes protocol for uniqueness
-    // Format: "name (protocol)" or "host (protocol)" if name is empty
-    let base_name = if name.trim().is_empty() {
-        host.to_string()
-    } else {
-        name.to_string()
-    };
-    let lookup_key = format!("{base_name} ({protocol})");
-
-    // Get credentials - password and key file can be used together
-    let db_password = settings
-        .secrets
-        .kdbx_password
-        .as_ref()
-        .map(|p| p.expose_secret().to_string());
-
-    // Key file is optional additional authentication
-    let key_file = settings.secrets.kdbx_key_file.clone();
-
-    // Drop state borrow before spawning
-    drop(state_ref);
-
-    // Run KeePass operation in background thread using utility function
-    spawn_blocking_with_callback(
-        move || {
-            rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
-                &kdbx_path,
-                db_password.as_deref(),
-                key_file.as_deref(),
-                &lookup_key,
-                None, // Protocol already included in lookup_key
-            )
-        },
-        move |result: Result<Option<String>, String>| match result {
-            Ok(Some(password)) => {
-                password_entry.set_text(&password);
-            }
-            Ok(None) => {
-                crate::toast::show_toast_on_window(
-                    &window,
-                    "No password found in KeePass for this connection",
-                    crate::toast::ToastType::Info,
-                );
-            }
-            Err(e) => {
-                tracing::warn!("Failed to load password from KeePass: {e}");
-                crate::toast::show_toast_on_window(
-                    &window,
-                    "Failed to load password from KeePass",
-                    crate::toast::ToastType::Error,
-                );
-            }
-        },
-    );
 }
 
 /// Renames the selected connection or group with a simple inline dialog
@@ -666,8 +428,72 @@ pub fn show_edit_group_dialog(
         .build();
     credentials_group.add(&username_row);
 
-    let password_row = adw::PasswordEntryRow::builder().title("Password").build();
-    credentials_group.add(&password_row);
+    // Password Source dropdown
+    let password_source_list =
+        gtk4::StringList::new(&["Prompt", "Stored", "KeePass", "Keyring", "Inherit", "None"]);
+    let password_source_dropdown = gtk4::DropDown::builder()
+        .model(&password_source_list)
+        .valign(gtk4::Align::Center)
+        .build();
+    // Set initial selection based on group's password_source
+    let initial_source_idx = match group.password_source {
+        Some(PasswordSource::Prompt) => 0,
+        Some(PasswordSource::Stored) => 1,
+        Some(PasswordSource::KeePass) => 2,
+        Some(PasswordSource::Keyring) => 3,
+        Some(PasswordSource::Inherit) => 4,
+        Some(PasswordSource::None) | None => 5,
+    };
+    password_source_dropdown.set_selected(initial_source_idx);
+
+    let password_source_row = adw::ActionRow::builder().title("Password").build();
+    password_source_row.add_suffix(&password_source_dropdown);
+    credentials_group.add(&password_source_row);
+
+    // Password Value entry with visibility toggle
+    let password_entry = gtk4::Entry::builder()
+        .placeholder_text("Password value")
+        .visibility(false)
+        .hexpand(true)
+        .build();
+    let password_visibility_btn = gtk4::Button::builder()
+        .icon_name("view-reveal-symbolic")
+        .tooltip_text("Show/hide password")
+        .valign(gtk4::Align::Center)
+        .build();
+
+    let password_value_row = adw::ActionRow::builder().title("Value").build();
+    password_value_row.add_suffix(&password_entry);
+    password_value_row.add_suffix(&password_visibility_btn);
+    credentials_group.add(&password_value_row);
+
+    // Show/hide password value row based on source selection
+    // Show for Stored(1), KeePass(2), Keyring(3)
+    let show_value = matches!(initial_source_idx, 1..=3);
+    password_value_row.set_visible(show_value);
+
+    // Connect password source dropdown to show/hide value row
+    let value_row_clone = password_value_row.clone();
+    password_source_dropdown.connect_selected_notify(move |dropdown| {
+        let selected = dropdown.selected();
+        let show = matches!(selected, 1..=3);
+        value_row_clone.set_visible(show);
+    });
+
+    // Connect password visibility toggle
+    let password_entry_clone = password_entry.clone();
+    let is_visible = std::rc::Rc::new(std::cell::Cell::new(false));
+    password_visibility_btn.connect_clicked(move |btn| {
+        let currently_visible = is_visible.get();
+        let new_visible = !currently_visible;
+        is_visible.set(new_visible);
+        password_entry_clone.set_visibility(new_visible);
+        if new_visible {
+            btn.set_icon_name("view-conceal-symbolic");
+        } else {
+            btn.set_icon_name("view-reveal-symbolic");
+        }
+    });
 
     let domain_row = adw::EntryRow::builder()
         .title("Domain")
@@ -688,7 +514,8 @@ pub fn show_edit_group_dialog(
     let window_clone = group_window.clone();
     let name_row_clone = name_row;
     let username_row_clone = username_row;
-    let password_row_clone = password_row;
+    let password_entry_clone = password_entry.clone();
+    let password_source_clone = password_source_dropdown.clone();
     let domain_row_clone = domain_row;
     let dropdown_clone = parent_dropdown;
     let old_name = group.name;
@@ -708,10 +535,22 @@ pub fn show_edit_group_dialog(
         };
 
         let username = username_row_clone.text().to_string();
-        let password = password_row_clone.text().to_string();
+        let password = password_entry_clone.text().to_string();
         let domain = domain_row_clone.text().to_string();
 
-        let has_new_password = !password.is_empty();
+        // Get selected password source
+        let password_source_idx = password_source_clone.selected();
+        let new_password_source = match password_source_idx {
+            0 => PasswordSource::Prompt,
+            1 => PasswordSource::Stored,
+            2 => PasswordSource::KeePass,
+            3 => PasswordSource::Keyring,
+            4 => PasswordSource::Inherit,
+            _ => PasswordSource::None,
+        };
+
+        // Password is relevant only for Stored, KeePass, Keyring
+        let has_new_password = !password.is_empty() && matches!(password_source_idx, 1..=3);
 
         // Check for duplicate name (but allow keeping same name)
         if new_name != old_name {
@@ -739,21 +578,13 @@ pub fn show_edit_group_dialog(
                     Some(username.clone())
                 };
 
-                updated.username = if username.trim().is_empty() {
-                    None
-                } else {
-                    Some(username.clone())
-                };
-
                 updated.domain = if domain.trim().is_empty() {
                     None
                 } else {
                     Some(domain)
                 };
 
-                if has_new_password {
-                    updated.password_source = Some(PasswordSource::Keyring);
-                }
+                updated.password_source = Some(new_password_source);
 
                 if let Err(e) = state_mut
                     .connection_manager()
@@ -763,7 +594,7 @@ pub fn show_edit_group_dialog(
                     return;
                 }
 
-                // Save password if provided
+                // Save password if provided and source requires it
                 if has_new_password {
                     let secret_manager = state_mut.secret_manager().clone();
                     let creds = Credentials::with_password(
@@ -914,7 +745,7 @@ fn start_quick_rdp(
     split_view.widget().set_visible(false);
     split_view.widget().set_vexpand(false);
     notebook.widget().set_vexpand(true);
-    notebook.notebook().set_vexpand(true);
+    notebook.show_tab_view_content();
 }
 
 /// Starts a quick VNC connection
@@ -970,7 +801,7 @@ fn start_quick_vnc(
     split_view.widget().set_visible(false);
     split_view.widget().set_vexpand(false);
     notebook.widget().set_vexpand(true);
-    notebook.notebook().set_vexpand(true);
+    notebook.show_tab_view_content();
 }
 
 /// Shows the quick connect dialog with optional state for template access

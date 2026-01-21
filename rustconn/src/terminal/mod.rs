@@ -1,4 +1,4 @@
-//! Terminal notebook area
+//! Terminal notebook area using adw::TabView
 //!
 //! This module provides the tabbed terminal interface using VTE4
 //! for SSH sessions and native GTK widgets for VNC/RDP/SPICE connections.
@@ -7,20 +7,20 @@
 //!
 //! - `types` - Data structures for sessions and tabs
 //! - `config` - Terminal appearance and behavior configuration
-//! - `tabs` - Tab creation and management
+//! - `tabs` - Tab creation and management (legacy, kept for icon helpers)
 
 mod config;
 mod tabs;
 mod types;
 
-pub use types::{SessionWidgetStorage, TabDisplayMode, TabLabelWidgets, TerminalSession};
+pub use types::{SessionWidgetStorage, TerminalSession};
 
 use gtk4::prelude::*;
-use gtk4::{
-    gio, glib, Box as GtkBox, Label, MenuButton, Notebook, Orientation, Popover, ScrolledWindow,
-    Widget,
-};
-use std::cell::{Cell, RefCell};
+use gtk4::{gio, glib, Box as GtkBox, Orientation, Widget};
+use libadwaita as adw;
+use regex::Regex;
+use rustconn_core::models::AutomationConfig;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -32,21 +32,21 @@ use crate::automation::{AutomationSession, Trigger};
 use crate::embedded_rdp::EmbeddedRdpWidget;
 use crate::embedded_spice::EmbeddedSpiceWidget;
 use crate::session::{SessionState, SessionWidget, VncSessionWidget};
-use regex::Regex;
-use rustconn_core::models::AutomationConfig;
+use crate::split_view::TabSplitManager;
+use rustconn_core::split::TabId;
 
 /// Terminal notebook widget for managing multiple terminal sessions
+/// Now using adw::TabView for modern GNOME HIG compliance
 #[allow(dead_code)] // Many fields kept for GTK widget lifecycle
 pub struct TerminalNotebook {
-    /// Main container with notebook and overflow button
+    /// Main container with TabView and TabBar
     container: GtkBox,
-    notebook: Notebook,
-    /// Overflow menu button (shown when tabs don't fit)
-    overflow_button: MenuButton,
-    /// Overflow popover content
-    overflow_box: GtkBox,
-    /// Map of session IDs to their tab indices
-    sessions: Rc<RefCell<HashMap<Uuid, u32>>>,
+    /// The adw::TabView for managing tabs
+    tab_view: adw::TabView,
+    /// The adw::TabBar for displaying tabs
+    tab_bar: adw::TabBar,
+    /// Map of session IDs to their TabPage
+    sessions: Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
     /// Map of session IDs to terminal widgets (for SSH sessions)
     terminals: Rc<RefCell<HashMap<Uuid, Terminal>>>,
     /// Map of session IDs to session widgets (for VNC/RDP/SPICE sessions)
@@ -55,134 +55,192 @@ pub struct TerminalNotebook {
     automation_sessions: Rc<RefCell<HashMap<Uuid, AutomationSession>>>,
     /// Session metadata
     session_info: Rc<RefCell<HashMap<Uuid, TerminalSession>>>,
-    /// Current tab display mode
-    display_mode: Rc<Cell<TabDisplayMode>>,
-    /// Map of session IDs to their tab label widgets (for updating display mode)
-    tab_labels: Rc<RefCell<HashMap<Uuid, TabLabelWidgets>>>,
+    /// Tab split manager for managing split layouts per tab
+    /// Requirements 3.1, 3.3, 3.4: Each tab maintains its own split container
+    split_manager: Rc<RefCell<TabSplitManager>>,
+    /// Map of session IDs to their TabId (for split layout tracking)
+    session_tab_ids: Rc<RefCell<HashMap<Uuid, TabId>>>,
 }
 
 impl TerminalNotebook {
-    /// Creates a new terminal notebook
+    /// Creates a new terminal notebook using adw::TabView
     #[must_use]
     pub fn new() -> Self {
         let container = GtkBox::new(Orientation::Vertical, 0);
 
-        let notebook = Notebook::new();
-        notebook.set_scrollable(true);
-        notebook.set_show_border(false);
-        notebook.set_tab_pos(gtk4::PositionType::Top);
-        notebook.set_hexpand(true);
-        notebook.set_vexpand(true);
+        // Create TabView - content visibility controlled dynamically
+        // For SSH: TabView hidden, content in split_view
+        // For RDP/VNC/SPICE: TabView visible, content in TabView pages
+        let tab_view = adw::TabView::new();
+        tab_view.set_hexpand(true);
+        tab_view.set_vexpand(true); // Will expand when visible for RDP/VNC/SPICE
 
-        // Create overflow menu button
-        let overflow_button = MenuButton::new();
-        overflow_button.set_icon_name("view-more-symbolic");
-        overflow_button.add_css_class("flat");
-        overflow_button.set_tooltip_text(Some("All tabs"));
-        overflow_button.set_visible(false);
+        // Create TabBar - this is what we show
+        let tab_bar = adw::TabBar::new();
+        tab_bar.set_view(Some(&tab_view));
+        tab_bar.set_autohide(false);
+        tab_bar.set_expand_tabs(false);
+        tab_bar.set_inverted(false);
 
-        // Create overflow popover
-        let overflow_popover = Popover::new();
-        let overflow_scroll = ScrolledWindow::new();
-        overflow_scroll.set_max_content_height(400);
-        overflow_scroll.set_propagate_natural_height(true);
-        overflow_scroll.set_policy(gtk4::PolicyType::Never, gtk4::PolicyType::Automatic);
+        // Enable drag-and-drop for reordering tabs within the bar
+        // but NOT to external targets (we handle that separately)
+        tab_bar.set_extra_drag_preload(false);
 
-        let overflow_box = GtkBox::new(Orientation::Vertical, 2);
-        overflow_box.set_margin_start(4);
-        overflow_box.set_margin_end(4);
-        overflow_box.set_margin_top(4);
-        overflow_box.set_margin_bottom(4);
-        overflow_scroll.set_child(Some(&overflow_box));
-        overflow_popover.set_child(Some(&overflow_scroll));
-        overflow_button.set_popover(Some(&overflow_popover));
+        // Only add TabBar to container - TabView is hidden but still manages tabs
+        container.append(&tab_bar);
+        // TabView must be in widget tree for TabBar to work, but hidden
+        container.append(&tab_view);
 
-        // Header box with notebook tabs and overflow button
-        let header_box = GtkBox::new(Orientation::Horizontal, 0);
-        header_box.append(&notebook);
-        header_box.append(&overflow_button);
-
-        container.append(&header_box);
-
-        // Add a welcome tab
+        // Add a welcome page
         let welcome = Self::create_welcome_tab();
-        let welcome_label = Label::new(Some("Welcome"));
-        notebook.append_page(&welcome, Some(&welcome_label));
-
-        let display_mode = Rc::new(Cell::new(TabDisplayMode::Full));
-        let tab_labels = Rc::new(RefCell::new(HashMap::new()));
+        let welcome_page = tab_view.append(&welcome);
+        welcome_page.set_title("Welcome");
+        welcome_page.set_icon(Some(&gio::ThemedIcon::new("go-home-symbolic")));
 
         let term_notebook = Self {
             container,
-            notebook,
-            overflow_button,
-            overflow_box,
+            tab_view,
+            tab_bar,
             sessions: Rc::new(RefCell::new(HashMap::new())),
             terminals: Rc::new(RefCell::new(HashMap::new())),
             session_widgets: Rc::new(RefCell::new(HashMap::new())),
             automation_sessions: Rc::new(RefCell::new(HashMap::new())),
             session_info: Rc::new(RefCell::new(HashMap::new())),
-            display_mode,
-            tab_labels,
+            split_manager: Rc::new(RefCell::new(TabSplitManager::new())),
+            session_tab_ids: Rc::new(RefCell::new(HashMap::new())),
         };
 
-        term_notebook.setup_adaptive_tabs();
+        term_notebook.setup_tab_view_signals();
         term_notebook
     }
 
-    /// Sets up the adaptive tab display handler
-    fn setup_adaptive_tabs(&self) {
-        let notebook = self.notebook.clone();
-        let display_mode = self.display_mode.clone();
-        let tab_labels = self.tab_labels.clone();
-        let overflow_button = self.overflow_button.clone();
+    /// Sets up TabView signals for close requests
+    fn setup_tab_view_signals(&self) {
+        let sessions = self.sessions.clone();
+        let terminals = self.terminals.clone();
+        let session_widgets = self.session_widgets.clone();
+        let session_info = self.session_info.clone();
+        let tab_view = self.tab_view.clone();
+        let split_manager = self.split_manager.clone();
+        let session_tab_ids = self.session_tab_ids.clone();
 
-        notebook.connect_notify_local(Some("width-request"), move |nb, _| {
-            tabs::update_tab_display_mode(nb, &display_mode, &tab_labels, &overflow_button);
+        // Handle create-window signal - we must connect this to prevent the default
+        // behavior which causes CRITICAL warnings. Returning None cancels the tearoff.
+        // Note: libadwaita will still show a CRITICAL warning, but this is unavoidable
+        // without implementing multi-window support.
+        self.tab_view.connect_create_window(|_| {
+            // Log instead of letting libadwaita complain
+            tracing::debug!("Tab tearoff attempted but not supported - cancelling");
+            // Return None to cancel the operation
+            // The CRITICAL warning from libadwaita is unavoidable
+            None
         });
 
-        let display_mode2 = self.display_mode.clone();
-        let tab_labels2 = self.tab_labels.clone();
-        let overflow_button2 = self.overflow_button.clone();
-        let notebook2 = self.notebook.clone();
+        // Handle close-page signal
+        self.tab_view.connect_close_page(move |view, page| {
+            // Find session ID for this page
+            let session_id = {
+                let sessions_ref = sessions.borrow();
+                sessions_ref
+                    .iter()
+                    .find(|(_, p)| *p == page)
+                    .map(|(id, _)| *id)
+            };
 
-        self.notebook.connect_page_added(move |_, _, _| {
-            tabs::update_tab_display_mode(
-                &notebook2,
-                &display_mode2,
-                &tab_labels2,
-                &overflow_button2,
-            );
-        });
+            if let Some(session_id) = session_id {
+                // Clean up split layout for this session's tab
+                // Requirement 3.4: Split_Container is destroyed when tab is closed
+                if let Some(tab_id) = session_tab_ids.borrow_mut().remove(&session_id) {
+                    split_manager.borrow_mut().remove(tab_id);
+                }
 
-        let display_mode3 = self.display_mode.clone();
-        let tab_labels3 = self.tab_labels.clone();
-        let overflow_button3 = self.overflow_button.clone();
-        let notebook3 = self.notebook.clone();
+                // Clean up session data
+                sessions.borrow_mut().remove(&session_id);
+                terminals.borrow_mut().remove(&session_id);
 
-        self.notebook.connect_page_removed(move |_, _, _| {
-            tabs::update_tab_display_mode(
-                &notebook3,
-                &display_mode3,
-                &tab_labels3,
-                &overflow_button3,
-            );
+                // Disconnect embedded widgets before removing
+                if let Some(widget_storage) = session_widgets.borrow_mut().remove(&session_id) {
+                    match widget_storage {
+                        SessionWidgetStorage::EmbeddedRdp(widget) => widget.disconnect(),
+                        SessionWidgetStorage::EmbeddedSpice(widget) => widget.disconnect(),
+                        SessionWidgetStorage::Vnc(widget) => widget.disconnect(),
+                    }
+                }
+
+                session_info.borrow_mut().remove(&session_id);
+            }
+
+            // Confirm close
+            view.close_page_finish(page, true);
+
+            // If no more sessions, show welcome page
+            if sessions.borrow().is_empty() && tab_view.n_pages() == 0 {
+                let welcome = Self::create_welcome_tab();
+                let welcome_page = tab_view.append(&welcome);
+                welcome_page.set_title("Welcome");
+                welcome_page.set_icon(Some(&gio::ThemedIcon::new("go-home-symbolic")));
+            }
+
+            glib::Propagation::Stop
         });
     }
 
-    /// Creates the welcome tab content
+    /// Creates the welcome tab content - uses the full welcome screen with features
     fn create_welcome_tab() -> GtkBox {
         let container = GtkBox::new(Orientation::Vertical, 0);
-        let spacer = gtk4::DrawingArea::new();
-        spacer.set_content_width(1);
-        spacer.set_content_height(1);
-        container.append(&spacer);
+        container.set_hexpand(true);
+        container.set_vexpand(true);
+
+        // Use the full welcome content from SplitViewBridge for consistency
+        let status_page = crate::split_view::SplitViewBridge::create_welcome_content_static();
+        container.append(&status_page);
         container
     }
 
+    /// Gets the icon name for a protocol
+    fn get_protocol_icon(protocol: &str) -> &'static str {
+        // Handle zerotrust:provider format
+        if let Some(provider) = protocol.strip_prefix("zerotrust:") {
+            return match provider {
+                "aws" | "aws_ssm" => "network-workgroup-symbolic",
+                "gcloud" | "gcp_iap" => "weather-overcast-symbolic",
+                "azure" | "azure_bastion" => "weather-few-clouds-symbolic",
+                "azure_ssh" => "weather-showers-symbolic",
+                "oci" | "oci_bastion" => "drive-harddisk-symbolic",
+                "cloudflare" | "cloudflare_access" => "security-high-symbolic",
+                "teleport" => "emblem-system-symbolic",
+                "tailscale" | "tailscale_ssh" => "network-vpn-symbolic",
+                "boundary" => "dialog-password-symbolic",
+                "generic" => "system-run-symbolic",
+                _ => "folder-remote-symbolic",
+            };
+        }
+
+        match protocol.to_lowercase().as_str() {
+            "ssh" => "network-server-symbolic",
+            "rdp" => "computer-symbolic",
+            "vnc" => "video-display-symbolic",
+            "spice" => "video-x-generic-symbolic",
+            "zerotrust" => "folder-remote-symbolic",
+            _ => "network-server-symbolic",
+        }
+    }
+
+    /// Removes the welcome page if it exists
+    fn remove_welcome_page(&self) {
+        if self.sessions.borrow().is_empty() && self.tab_view.n_pages() > 0 {
+            // Find and remove welcome page
+            for i in 0..self.tab_view.n_pages() {
+                let page = self.tab_view.nth_page(i);
+                if page.title() == "Welcome" {
+                    self.tab_view.close_page(&page);
+                    break;
+                }
+            }
+        }
+    }
+
     /// Creates a new terminal tab for an SSH session with default settings
-    ///
-    /// For custom terminal settings, use `create_terminal_tab_with_settings` instead.
     #[allow(dead_code)]
     pub fn create_terminal_tab(
         &self,
@@ -200,6 +258,97 @@ impl TerminalNotebook {
         )
     }
 
+    /// Creates a new terminal tab with specific settings
+    pub fn create_terminal_tab_with_settings(
+        &self,
+        connection_id: Uuid,
+        title: &str,
+        protocol: &str,
+        automation: Option<&AutomationConfig>,
+        settings: &rustconn_core::config::TerminalSettings,
+    ) -> Uuid {
+        let session_id = Uuid::new_v4();
+        self.remove_welcome_page();
+
+        let terminal = Terminal::new();
+        terminal.set_hexpand(true);
+        terminal.set_vexpand(true);
+
+        // Setup automation if configured
+        if let Some(cfg) = automation {
+            if !cfg.expect_rules.is_empty() {
+                let mut triggers = Vec::new();
+                for rule in &cfg.expect_rules {
+                    if !rule.enabled {
+                        continue;
+                    }
+                    if let Ok(regex) = Regex::new(&rule.pattern) {
+                        triggers.push(Trigger {
+                            pattern: regex,
+                            response: rule.response.clone(),
+                            one_shot: true,
+                        });
+                    }
+                }
+
+                if !triggers.is_empty() {
+                    let session = AutomationSession::new(terminal.clone(), triggers);
+                    self.automation_sessions
+                        .borrow_mut()
+                        .insert(session_id, session);
+                }
+            }
+        }
+
+        // Apply user settings
+        config::configure_terminal_with_settings(&terminal, settings);
+
+        // Create scrolled window for terminal
+        let scrolled = gtk4::ScrolledWindow::builder()
+            .hscrollbar_policy(gtk4::PolicyType::Never)
+            .vscrollbar_policy(gtk4::PolicyType::Automatic)
+            .hexpand(true)
+            .vexpand(true)
+            .child(&terminal)
+            .build();
+
+        // Create container for TabView page with terminal inside
+        let container = GtkBox::new(Orientation::Vertical, 0);
+        container.set_hexpand(true);
+        container.set_vexpand(true);
+        container.append(&scrolled);
+
+        // Add page to TabView
+        let page = self.tab_view.append(&container);
+        page.set_title(title);
+        page.set_icon(Some(&gio::ThemedIcon::new(Self::get_protocol_icon(
+            protocol,
+        ))));
+        page.set_tooltip(title);
+
+        // Store session data
+        self.sessions.borrow_mut().insert(session_id, page.clone());
+        self.terminals.borrow_mut().insert(session_id, terminal);
+
+        self.session_info.borrow_mut().insert(
+            session_id,
+            TerminalSession {
+                id: session_id,
+                connection_id,
+                name: title.to_string(),
+                protocol: protocol.to_string(),
+                is_embedded: true,
+                log_file: None,
+                history_entry_id: None,
+            },
+        );
+
+        // Select the new page
+        self.tab_view.set_selected_page(&page);
+
+        session_id
+    }
+
     /// Creates a new VNC session tab
     pub fn create_vnc_session_tab(&self, connection_id: Uuid, title: &str) -> Uuid {
         self.create_vnc_session_tab_with_host(connection_id, title, "")
@@ -213,11 +362,7 @@ impl TerminalNotebook {
         host: &str,
     ) -> Uuid {
         let session_id = Uuid::new_v4();
-        let is_first_session = self.sessions.borrow().is_empty();
-
-        if is_first_session && self.notebook.n_pages() > 0 {
-            self.notebook.remove_page(Some(0));
-        }
+        self.remove_welcome_page();
 
         let vnc_widget = Rc::new(VncSessionWidget::new());
 
@@ -226,20 +371,17 @@ impl TerminalNotebook {
         container.set_vexpand(true);
         container.append(vnc_widget.widget());
 
-        let tab_label = tabs::create_tab_label_with_protocol(
-            title,
-            session_id,
-            &self.notebook,
-            &self.sessions,
-            "vnc",
-            host,
-            &self.tab_labels,
-            &self.overflow_box,
-        );
+        let page = self.tab_view.append(&container);
+        page.set_title(title);
+        page.set_icon(Some(&gio::ThemedIcon::new("video-display-symbolic")));
+        let tooltip = if host.is_empty() {
+            title.to_string()
+        } else {
+            format!("{title}\n{host}")
+        };
+        page.set_tooltip(&tooltip);
 
-        let page_num = self.notebook.append_page(&container, Some(&tab_label));
-
-        self.sessions.borrow_mut().insert(session_id, page_num);
+        self.sessions.borrow_mut().insert(session_id, page.clone());
         self.session_widgets
             .borrow_mut()
             .insert(session_id, SessionWidgetStorage::Vnc(vnc_widget));
@@ -257,9 +399,7 @@ impl TerminalNotebook {
             },
         );
 
-        self.notebook.set_tab_reorderable(&container, true);
-        self.notebook.set_current_page(Some(page_num));
-
+        self.tab_view.set_selected_page(&page);
         session_id
     }
 
@@ -276,11 +416,7 @@ impl TerminalNotebook {
         host: &str,
     ) -> Uuid {
         let session_id = Uuid::new_v4();
-        let is_first_session = self.sessions.borrow().is_empty();
-
-        if is_first_session && self.notebook.n_pages() > 0 {
-            self.notebook.remove_page(Some(0));
-        }
+        self.remove_welcome_page();
 
         let spice_widget = Rc::new(EmbeddedSpiceWidget::new());
 
@@ -289,20 +425,17 @@ impl TerminalNotebook {
         container.set_vexpand(true);
         container.append(spice_widget.widget());
 
-        let tab_label = tabs::create_tab_label_with_protocol(
-            title,
-            session_id,
-            &self.notebook,
-            &self.sessions,
-            "spice",
-            host,
-            &self.tab_labels,
-            &self.overflow_box,
-        );
+        let page = self.tab_view.append(&container);
+        page.set_title(title);
+        page.set_icon(Some(&gio::ThemedIcon::new("video-x-generic-symbolic")));
+        let tooltip = if host.is_empty() {
+            title.to_string()
+        } else {
+            format!("{title}\n{host}")
+        };
+        page.set_tooltip(&tooltip);
 
-        let page_num = self.notebook.append_page(&container, Some(&tab_label));
-
-        self.sessions.borrow_mut().insert(session_id, page_num);
+        self.sessions.borrow_mut().insert(session_id, page.clone());
         self.session_widgets.borrow_mut().insert(
             session_id,
             SessionWidgetStorage::EmbeddedSpice(spice_widget),
@@ -321,10 +454,84 @@ impl TerminalNotebook {
             },
         );
 
-        self.notebook.set_tab_reorderable(&container, true);
-        self.notebook.set_current_page(Some(page_num));
-
+        self.tab_view.set_selected_page(&page);
         session_id
+    }
+
+    /// Adds an embedded RDP tab with the EmbeddedRdpWidget
+    pub fn add_embedded_rdp_tab(
+        &self,
+        session_id: Uuid,
+        connection_id: Uuid,
+        title: &str,
+        widget: Rc<EmbeddedRdpWidget>,
+    ) {
+        self.remove_welcome_page();
+
+        let container = GtkBox::new(Orientation::Vertical, 0);
+        container.set_hexpand(true);
+        container.set_vexpand(true);
+        container.append(widget.widget());
+
+        let page = self.tab_view.append(&container);
+        page.set_title(title);
+        page.set_icon(Some(&gio::ThemedIcon::new("computer-symbolic")));
+        page.set_tooltip(title);
+
+        self.sessions.borrow_mut().insert(session_id, page.clone());
+        self.session_widgets
+            .borrow_mut()
+            .insert(session_id, SessionWidgetStorage::EmbeddedRdp(widget));
+
+        self.session_info.borrow_mut().insert(
+            session_id,
+            TerminalSession {
+                id: session_id,
+                connection_id,
+                name: title.to_string(),
+                protocol: "rdp".to_string(),
+                is_embedded: true,
+                log_file: None,
+                history_entry_id: None,
+            },
+        );
+
+        self.tab_view.set_selected_page(&page);
+    }
+
+    /// Adds an embedded session tab (for RDP/VNC external processes)
+    pub fn add_embedded_session_tab(
+        &self,
+        session_id: Uuid,
+        title: &str,
+        protocol: &str,
+        widget: &GtkBox,
+    ) {
+        self.remove_welcome_page();
+
+        let page = self.tab_view.append(widget);
+        page.set_title(title);
+        page.set_icon(Some(&gio::ThemedIcon::new(Self::get_protocol_icon(
+            protocol,
+        ))));
+        page.set_tooltip(title);
+
+        self.sessions.borrow_mut().insert(session_id, page.clone());
+
+        self.session_info.borrow_mut().insert(
+            session_id,
+            TerminalSession {
+                id: session_id,
+                connection_id: session_id,
+                name: title.to_string(),
+                protocol: protocol.to_string(),
+                is_embedded: false,
+                log_file: None,
+                history_entry_id: None,
+            },
+        );
+
+        self.tab_view.set_selected_page(&page);
     }
 
     /// Gets the VNC session widget for a session
@@ -493,64 +700,117 @@ impl TerminalNotebook {
 
     /// Closes a terminal tab by session ID
     pub fn close_tab(&self, session_id: Uuid) {
-        let page_num = self.sessions.borrow_mut().remove(&session_id);
-
-        self.terminals.borrow_mut().remove(&session_id);
-
-        // Disconnect embedded widgets before removing to stop polling loops
-        if let Some(widget_storage) = self.session_widgets.borrow_mut().remove(&session_id) {
-            match widget_storage {
-                SessionWidgetStorage::EmbeddedRdp(widget) => {
-                    widget.disconnect();
-                }
-                SessionWidgetStorage::EmbeddedSpice(widget) => {
-                    widget.disconnect();
-                }
-                SessionWidgetStorage::Vnc(widget) => {
-                    widget.disconnect();
-                }
-            }
-        }
-
-        self.session_info.borrow_mut().remove(&session_id);
-
-        self.tab_labels.borrow_mut().remove(&session_id);
-        tabs::remove_from_overflow_menu(&self.overflow_box, session_id);
-
-        if let Some(page_num) = page_num {
-            self.notebook.remove_page(Some(page_num));
-
-            let mut sessions = self.sessions.borrow_mut();
-            for (_, num) in sessions.iter_mut() {
-                if *num > page_num {
-                    *num -= 1;
-                }
-            }
-            let is_empty = sessions.is_empty();
-            drop(sessions);
-
-            if is_empty {
-                let welcome = Self::create_welcome_tab();
-                let welcome_label = Label::new(Some("Welcome"));
-                self.notebook.append_page(&welcome, Some(&welcome_label));
-                self.notebook.set_current_page(Some(0));
-            }
+        if let Some(page) = self.sessions.borrow().get(&session_id).cloned() {
+            self.tab_view.close_page(&page);
         }
     }
 
-    /// Marks a tab as disconnected (changes label color to red)
+    /// Marks a tab as disconnected (changes indicator)
     pub fn mark_tab_disconnected(&self, session_id: Uuid) {
-        if let Some(widgets) = self.tab_labels.borrow().get(&session_id) {
-            widgets.label.remove_css_class("tab-label");
-            widgets.label.add_css_class("tab-label-disconnected");
+        if let Some(page) = self.sessions.borrow().get(&session_id) {
+            page.set_indicator_icon(Some(&gio::ThemedIcon::new("network-offline-symbolic")));
+            page.set_indicator_activatable(false);
         }
     }
 
-    /// Marks a tab as connected (restores normal label color)
+    /// Marks a tab as connected (removes indicator)
     pub fn mark_tab_connected(&self, session_id: Uuid) {
-        if let Some(widgets) = self.tab_labels.borrow().get(&session_id) {
-            widgets.label.remove_css_class("tab-label-disconnected");
-            widgets.label.add_css_class("tab-label");
+        if let Some(page) = self.sessions.borrow().get(&session_id) {
+            page.set_indicator_icon(gio::Icon::NONE);
+        }
+    }
+
+    /// Sets a color indicator on a tab to show it's in a split pane
+    /// Applies a colored left border to the tab's title in the TabBar
+    pub fn set_tab_split_color(&self, session_id: Uuid, color_index: usize) {
+        if let Some(page) = self.sessions.borrow().get(&session_id) {
+            // Remove any existing tab color classes from the page's child
+            for (_, tab_class) in crate::split_view::SPLIT_PANE_COLORS {
+                page.child().remove_css_class(tab_class);
+            }
+            // Remove old indicator classes
+            for i in 0..6 {
+                page.child()
+                    .remove_css_class(&format!("split-indicator-{}", i));
+            }
+
+            // Add the new tab color class to the page's child
+            let tab_class = crate::split_view::get_tab_color_class(color_index);
+            page.child().add_css_class(tab_class);
+
+            // Add indicator class for potential CSS styling
+            let indicator_class = format!("split-indicator-{}", color_index);
+            page.child().add_css_class(&indicator_class);
+
+            // Create a colored circle icon for the indicator
+            // This provides a visible colored indicator in the tab header
+            if let Some(icon) = crate::split_view::create_colored_circle_icon(color_index, 16) {
+                page.set_indicator_icon(Some(&icon));
+            } else {
+                // Fallback to symbolic icon if colored icon creation fails
+                let icon = gio::ThemedIcon::new("media-record-symbolic");
+                page.set_indicator_icon(Some(&icon));
+            }
+            page.set_indicator_activatable(false);
+        }
+    }
+
+    /// Sets a color indicator on a tab using the new ColorId system.
+    ///
+    /// This method is used by the new split view system to show color indicators
+    /// on tabs that contain split containers.
+    ///
+    /// # Requirements
+    /// - 6.2: Tab header shows color indicator when tab contains Split_Container
+    ///
+    /// # Arguments
+    ///
+    /// * `session_id` - The session UUID
+    /// * `color_id` - The ColorId from the split layout model
+    #[allow(dead_code)] // Will be used in window integration tasks
+    pub fn set_tab_split_color_id(
+        &self,
+        session_id: Uuid,
+        color_id: rustconn_core::split::ColorId,
+    ) {
+        self.set_tab_split_color(session_id, color_id.index() as usize);
+    }
+
+    /// Updates the tab color indicator based on the session's split state.
+    ///
+    /// This method checks if the session's tab has a split layout and updates
+    /// the color indicator accordingly. If the tab is split, it shows the
+    /// assigned color; otherwise, it clears the indicator.
+    ///
+    /// # Requirements
+    /// - 6.2: Tab header shows color indicator when tab contains Split_Container
+    ///
+    /// # Arguments
+    ///
+    /// * `session_id` - The session UUID
+    #[allow(dead_code)] // Will be used in window integration tasks
+    pub fn update_tab_color_indicator(&self, session_id: Uuid) {
+        if let Some(color_index) = self.get_session_split_color(session_id) {
+            self.set_tab_split_color(session_id, color_index);
+        } else {
+            self.clear_tab_split_color(session_id);
+        }
+    }
+
+    /// Removes the split color indicator from a tab
+    pub fn clear_tab_split_color(&self, session_id: Uuid) {
+        if let Some(page) = self.sessions.borrow().get(&session_id) {
+            page.set_indicator_icon(gio::Icon::NONE);
+
+            // Remove all tab color classes and indicator classes from the page's child
+            let child = page.child();
+            for (_, tab_class) in crate::split_view::SPLIT_PANE_COLORS {
+                child.remove_css_class(tab_class);
+            }
+            // Remove indicator classes
+            for i in 0..6 {
+                child.remove_css_class(&format!("split-indicator-{}", i));
+            }
         }
     }
 
@@ -572,8 +832,6 @@ impl TerminalNotebook {
     }
 
     /// Gets all active sessions
-    ///
-    /// Note: Part of session restore API - used to collect sessions for saving.
     #[must_use]
     #[allow(dead_code)]
     pub fn get_all_sessions(&self) -> Vec<TerminalSession> {
@@ -611,11 +869,11 @@ impl TerminalNotebook {
     /// Gets the terminal for the currently active tab
     #[must_use]
     pub fn get_active_terminal(&self) -> Option<Terminal> {
-        let current_page = self.notebook.current_page()?;
+        let selected_page = self.tab_view.selected_page()?;
         let sessions = self.sessions.borrow();
 
-        for (session_id, &page_num) in sessions.iter() {
-            if page_num == current_page {
+        for (session_id, page) in sessions.iter() {
+            if page == &selected_page {
                 return self.terminals.borrow().get(session_id).cloned();
             }
         }
@@ -625,16 +883,28 @@ impl TerminalNotebook {
     /// Gets the session ID for the currently active tab
     #[must_use]
     pub fn get_active_session_id(&self) -> Option<Uuid> {
-        let current_page = self.notebook.current_page()?;
-        self.get_session_id_for_page(current_page)
+        let selected_page = self.tab_view.selected_page()?;
+        let sessions = self.sessions.borrow();
+
+        for (session_id, page) in sessions.iter() {
+            if page == &selected_page {
+                return Some(*session_id);
+            }
+        }
+        None
     }
 
     /// Gets the session ID for a specific page number
     #[must_use]
     pub fn get_session_id_for_page(&self, page_num: u32) -> Option<Uuid> {
+        if page_num >= self.tab_view.n_pages() as u32 {
+            return None;
+        }
+        let page = self.tab_view.nth_page(page_num as i32);
         let sessions = self.sessions.borrow();
-        for (session_id, &stored_page) in sessions.iter() {
-            if stored_page == page_num {
+
+        for (session_id, stored_page) in sessions.iter() {
+            if stored_page == &page {
                 return Some(*session_id);
             }
         }
@@ -668,16 +938,17 @@ impl TerminalNotebook {
         &self.container
     }
 
-    /// Returns the notebook widget (for internal use)
+    /// Returns the TabView widget
     #[must_use]
-    pub fn notebook(&self) -> &Notebook {
-        &self.notebook
+    pub fn tab_view(&self) -> &adw::TabView {
+        &self.tab_view
     }
 
     /// Returns the number of open tabs
     #[must_use]
+    #[allow(dead_code)]
     pub fn tab_count(&self) -> u32 {
-        self.notebook.n_pages()
+        self.tab_view.n_pages() as u32
     }
 
     /// Returns the number of active sessions (excluding Welcome tab)
@@ -687,29 +958,10 @@ impl TerminalNotebook {
         self.sessions.borrow().len()
     }
 
-    /// Sets vexpand for all notebook page contents
-    #[allow(dead_code)]
-    pub fn set_pages_vexpand(&self, _expand: bool) {
-        // Don't modify individual page vexpand - it causes issues
-    }
-
-    /// Shows only the specified page content, hides all others
-    #[allow(dead_code)]
-    pub fn show_only_current_page(&self) {
-        // No-op - hiding pages causes RDP disconnection issues
-    }
-
-    /// Shows all page contents (for VNC/RDP/SPICE mode)
-    #[allow(dead_code)]
-    pub fn show_all_pages(&self) {
-        // No-op - all pages are always visible
-    }
-
     /// Switches to a specific tab by session ID
     pub fn switch_to_tab(&self, session_id: Uuid) {
-        let sessions = self.sessions.borrow();
-        if let Some(&page_num) = sessions.get(&session_id) {
-            self.notebook.set_current_page(Some(page_num));
+        if let Some(page) = self.sessions.borrow().get(&session_id).cloned() {
+            self.tab_view.set_selected_page(&page);
         }
     }
 
@@ -759,174 +1011,14 @@ impl TerminalNotebook {
     #[must_use]
     pub fn get_terminal_text(&self, session_id: Uuid) -> Option<String> {
         self.get_terminal(session_id).map(|terminal| {
-            // Get terminal dimensions for text range
             let row_count = terminal.row_count();
             let col_count = terminal.column_count();
-
-            // Use text_range_format to get all visible text
-            // Start from row 0, col 0 to end row, end col
             let (text, _len) =
                 terminal.text_range_format(vte4::Format::Text, 0, 0, row_count, col_count);
             text.map_or_else(String::new, |g| g.to_string())
         })
     }
 
-    /// Adds an embedded session tab (for RDP/VNC external processes)
-    pub fn add_embedded_session_tab(
-        &self,
-        session_id: Uuid,
-        title: &str,
-        protocol: &str,
-        widget: &GtkBox,
-    ) {
-        let is_first_session = self.sessions.borrow().is_empty();
-
-        if is_first_session && self.notebook.n_pages() > 0 {
-            self.notebook.remove_page(Some(0));
-        }
-
-        let tab_label = tabs::create_tab_label_with_protocol(
-            title,
-            session_id,
-            &self.notebook,
-            &self.sessions,
-            protocol,
-            "",
-            &self.tab_labels,
-            &self.overflow_box,
-        );
-
-        let page_num = self.notebook.append_page(widget, Some(&tab_label));
-
-        self.sessions.borrow_mut().insert(session_id, page_num);
-
-        self.session_info.borrow_mut().insert(
-            session_id,
-            TerminalSession {
-                id: session_id,
-                connection_id: session_id,
-                name: title.to_string(),
-                protocol: protocol.to_string(),
-                is_embedded: false,
-                log_file: None,
-                history_entry_id: None,
-            },
-        );
-
-        self.notebook.set_tab_reorderable(widget, true);
-        self.notebook.set_current_page(Some(page_num));
-    }
-
-    /// Adds an embedded RDP tab with the EmbeddedRdpWidget
-    pub fn add_embedded_rdp_tab(
-        &self,
-        session_id: Uuid,
-        connection_id: Uuid,
-        title: &str,
-        widget: Rc<EmbeddedRdpWidget>,
-    ) {
-        let is_first_session = self.sessions.borrow().is_empty();
-
-        if is_first_session && self.notebook.n_pages() > 0 {
-            self.notebook.remove_page(Some(0));
-        }
-
-        let container = GtkBox::new(Orientation::Vertical, 0);
-        container.set_hexpand(true);
-        container.set_vexpand(true);
-        container.append(widget.widget());
-
-        let tab_label = tabs::create_tab_label_with_protocol(
-            title,
-            session_id,
-            &self.notebook,
-            &self.sessions,
-            "rdp",
-            "",
-            &self.tab_labels,
-            &self.overflow_box,
-        );
-
-        let page_num = self.notebook.append_page(&container, Some(&tab_label));
-
-        self.sessions.borrow_mut().insert(session_id, page_num);
-
-        self.session_widgets
-            .borrow_mut()
-            .insert(session_id, SessionWidgetStorage::EmbeddedRdp(widget));
-
-        self.session_info.borrow_mut().insert(
-            session_id,
-            TerminalSession {
-                id: session_id,
-                connection_id,
-                name: title.to_string(),
-                protocol: "rdp".to_string(),
-                is_embedded: true,
-                log_file: None,
-                history_entry_id: None,
-            },
-        );
-
-        self.notebook.set_tab_reorderable(&container, true);
-        self.notebook.set_current_page(Some(page_num));
-    }
-
-    /// Hides content of all notebook pages except the specified one
-    pub fn hide_all_page_content_except(&self, except_page: Option<u32>) {
-        let n_pages = self.notebook.n_pages();
-        for page_num in 0..n_pages {
-            if let Some(page_widget) = self.notebook.nth_page(Some(page_num)) {
-                let should_show = except_page == Some(page_num);
-                if let Some(container) = page_widget.downcast_ref::<GtkBox>() {
-                    let mut child = container.first_child();
-                    while let Some(widget) = child {
-                        widget.set_visible(should_show);
-                        child = widget.next_sibling();
-                    }
-                }
-            }
-        }
-    }
-
-    /// Shows content of a specific notebook page
-    pub fn show_page_content(&self, page_num: u32) {
-        if let Some(page_widget) = self.notebook.nth_page(Some(page_num)) {
-            if let Some(container) = page_widget.downcast_ref::<GtkBox>() {
-                let mut child = container.first_child();
-                while let Some(widget) = child {
-                    widget.set_visible(true);
-                    child = widget.next_sibling();
-                }
-            }
-        }
-    }
-
-    /// Hides content of all notebook pages
-    #[allow(dead_code)]
-    pub fn hide_all_page_content(&self) {
-        let n_pages = self.notebook.n_pages();
-        for page_num in 0..n_pages {
-            if let Some(page_widget) = self.notebook.nth_page(Some(page_num)) {
-                if let Some(container) = page_widget.downcast_ref::<GtkBox>() {
-                    let mut child = container.first_child();
-                    while let Some(widget) = child {
-                        widget.set_visible(false);
-                        child = widget.next_sibling();
-                    }
-                }
-            }
-        }
-    }
-}
-
-impl Default for TerminalNotebook {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl TerminalNotebook {
     /// Applies terminal settings to all existing terminals
     pub fn apply_settings(&self, settings: &rustconn_core::config::TerminalSettings) {
         let terminals = self.terminals.borrow();
@@ -935,93 +1027,210 @@ impl TerminalNotebook {
         }
     }
 
-    /// Creates a new terminal tab with specific settings
-    pub fn create_terminal_tab_with_settings(
-        &self,
-        connection_id: Uuid,
-        title: &str,
-        protocol: &str,
-        automation: Option<&AutomationConfig>,
-        settings: &rustconn_core::config::TerminalSettings,
-    ) -> Uuid {
-        let session_id = Uuid::new_v4();
-        let is_first_session = self.sessions.borrow().is_empty();
+    // Legacy compatibility methods (no-op for TabView)
 
-        if is_first_session && self.notebook.n_pages() > 0 {
-            self.notebook.remove_page(Some(0));
-        }
+    /// Sets vexpand for all notebook page contents (no-op for TabView)
+    #[allow(dead_code)]
+    pub fn set_pages_vexpand(&self, _expand: bool) {
+        // TabView handles this automatically
+    }
 
-        let terminal = Terminal::new();
-        terminal.set_hexpand(true);
-        terminal.set_vexpand(true);
+    /// Shows only the specified page content (no-op for TabView)
+    #[allow(dead_code)]
+    pub fn show_only_current_page(&self) {
+        // TabView handles this automatically
+    }
 
-        // Setup automation if configured
-        if let Some(cfg) = automation {
-            if !cfg.expect_rules.is_empty() {
-                let mut triggers = Vec::new();
-                for rule in &cfg.expect_rules {
-                    if !rule.enabled {
-                        continue;
-                    }
-                    if let Ok(regex) = Regex::new(&rule.pattern) {
-                        triggers.push(Trigger {
-                            pattern: regex,
-                            response: rule.response.clone(),
-                            one_shot: true,
-                        });
-                    }
-                }
+    /// Shows all page contents (no-op for TabView)
+    #[allow(dead_code)]
+    pub fn show_all_pages(&self) {
+        // TabView handles this automatically
+    }
 
-                if !triggers.is_empty() {
-                    let session = AutomationSession::new(terminal.clone(), triggers);
-                    self.automation_sessions
-                        .borrow_mut()
-                        .insert(session_id, session);
+    /// Hides content of all notebook pages except the specified one (no-op)
+    #[allow(dead_code)]
+    pub fn hide_all_page_content_except(&self, _except_page: Option<u32>) {
+        // TabView handles visibility automatically
+    }
+
+    /// Shows content of a specific notebook page (no-op)
+    #[allow(dead_code)]
+    pub fn show_page_content(&self, _page_num: u32) {
+        // TabView handles visibility automatically
+    }
+
+    /// Hides content of all notebook pages (no-op)
+    #[allow(dead_code)]
+    pub fn hide_all_page_content(&self) {
+        // TabView handles visibility automatically
+    }
+
+    /// Moves terminal back to its TabView page container
+    /// Call this when session exits split view and returns to TabView display
+    pub fn reparent_terminal_to_tab(&self, session_id: Uuid) {
+        let Some(terminal) = self.terminals.borrow().get(&session_id).cloned() else {
+            return;
+        };
+        let Some(page) = self.sessions.borrow().get(&session_id).cloned() else {
+            return;
+        };
+
+        // Get the page's child (container box)
+        let child = page.child();
+        let Some(container) = child.downcast_ref::<GtkBox>() else {
+            return;
+        };
+
+        // Check if terminal is already in this container (via scrolled window)
+        if let Some(parent) = terminal.parent() {
+            if let Some(grandparent) = parent.parent() {
+                if grandparent == child {
+                    return; // Already in place
                 }
             }
         }
 
-        // Apply user settings instead of defaults
-        config::configure_terminal_with_settings(&terminal, settings);
+        // Remove terminal from current parent (if any)
+        if let Some(parent) = terminal.parent() {
+            if let Some(scrolled) = parent.downcast_ref::<gtk4::ScrolledWindow>() {
+                scrolled.set_child(None::<&Widget>);
+            } else if let Some(box_widget) = parent.downcast_ref::<GtkBox>() {
+                box_widget.remove(&terminal);
+            }
+        }
 
-        let placeholder = GtkBox::new(Orientation::Vertical, 0);
-        let spacer = gtk4::DrawingArea::new();
-        spacer.set_content_width(1);
-        spacer.set_content_height(1);
-        placeholder.append(&spacer);
+        // Create new scrolled window and add terminal
+        let scrolled = gtk4::ScrolledWindow::builder()
+            .hscrollbar_policy(gtk4::PolicyType::Never)
+            .vscrollbar_policy(gtk4::PolicyType::Automatic)
+            .hexpand(true)
+            .vexpand(true)
+            .child(&terminal)
+            .build();
 
-        let tab_label = tabs::create_tab_label_with_protocol(
-            title,
-            session_id,
-            &self.notebook,
-            &self.sessions,
-            protocol,
-            "",
-            &self.tab_labels,
-            &self.overflow_box,
-        );
+        // Clear container and add scrolled window
+        while let Some(existing) = container.first_child() {
+            container.remove(&existing);
+        }
+        container.append(&scrolled);
+        terminal.set_visible(true);
+    }
 
-        let page_num = self.notebook.append_page(&placeholder, Some(&tab_label));
+    /// Shows TabView content area (for RDP/VNC/SPICE sessions)
+    /// Call this when switching to a non-SSH session that displays in TabView
+    pub fn show_tab_view_content(&self) {
+        self.tab_view.set_visible(true);
+        self.tab_view.set_vexpand(true);
+    }
 
-        self.sessions.borrow_mut().insert(session_id, page_num);
-        self.terminals.borrow_mut().insert(session_id, terminal);
+    /// Hides TabView content area (for SSH sessions that display in split_view)
+    /// Call this when switching to an SSH session
+    pub fn hide_tab_view_content(&self) {
+        self.tab_view.set_visible(false);
+        self.tab_view.set_vexpand(false);
+    }
 
-        self.session_info.borrow_mut().insert(
-            session_id,
-            TerminalSession {
-                id: session_id,
-                connection_id,
-                name: title.to_string(),
-                protocol: protocol.to_string(),
-                is_embedded: true,
-                log_file: None,
-                history_entry_id: None,
-            },
-        );
+    /// Returns whether the TabView content is currently visible
+    #[must_use]
+    #[allow(dead_code)]
+    pub fn is_tab_view_content_visible(&self) -> bool {
+        self.tab_view.is_visible()
+    }
 
-        self.notebook.set_tab_reorderable(&placeholder, true);
-        self.notebook.set_current_page(Some(page_num));
+    // ========================================================================
+    // Split Layout Management
+    // ========================================================================
 
-        session_id
+    /// Returns a reference to the split manager.
+    ///
+    /// The split manager handles tab-scoped split layouts, allowing each tab
+    /// to have its own independent panel configuration.
+    ///
+    /// # Requirements
+    /// - 3.1: Each Root_Tab maintains its own Split_Container
+    #[must_use]
+    #[allow(dead_code)] // Will be used in window integration tasks
+    pub fn split_manager(&self) -> Rc<RefCell<TabSplitManager>> {
+        Rc::clone(&self.split_manager)
+    }
+
+    /// Gets or creates a TabId for a session.
+    ///
+    /// This associates a session with a TabId for split layout tracking.
+    /// If the session doesn't have a TabId yet, one is created.
+    ///
+    /// # Arguments
+    ///
+    /// * `session_id` - The session UUID
+    ///
+    /// # Returns
+    ///
+    /// The TabId associated with this session
+    #[allow(dead_code)] // Will be used in window integration tasks
+    pub fn get_or_create_tab_id(&self, session_id: Uuid) -> TabId {
+        let mut tab_ids = self.session_tab_ids.borrow_mut();
+        *tab_ids.entry(session_id).or_default()
+    }
+
+    /// Gets the TabId for a session if it exists.
+    ///
+    /// # Arguments
+    ///
+    /// * `session_id` - The session UUID
+    ///
+    /// # Returns
+    ///
+    /// The TabId if the session has one, None otherwise
+    #[must_use]
+    #[allow(dead_code)] // Will be used in window integration tasks
+    pub fn get_tab_id(&self, session_id: Uuid) -> Option<TabId> {
+        self.session_tab_ids.borrow().get(&session_id).copied()
+    }
+
+    /// Checks if a session's tab has a split layout.
+    ///
+    /// # Arguments
+    ///
+    /// * `session_id` - The session UUID
+    ///
+    /// # Returns
+    ///
+    /// `true` if the session's tab has splits, `false` otherwise
+    #[must_use]
+    #[allow(dead_code)] // Will be used in window integration tasks
+    pub fn is_session_split(&self, session_id: Uuid) -> bool {
+        if let Some(tab_id) = self.get_tab_id(session_id) {
+            self.split_manager.borrow().is_split(tab_id)
+        } else {
+            false
+        }
+    }
+
+    /// Gets the color for a session's split container.
+    ///
+    /// # Arguments
+    ///
+    /// * `session_id` - The session UUID
+    ///
+    /// # Returns
+    ///
+    /// The color index if the session has a split container with a color
+    #[must_use]
+    #[allow(dead_code)] // Will be used in window integration tasks
+    pub fn get_session_split_color(&self, session_id: Uuid) -> Option<usize> {
+        if let Some(tab_id) = self.get_tab_id(session_id) {
+            self.split_manager
+                .borrow()
+                .get_tab_color(tab_id)
+                .map(|c| c.index() as usize)
+        } else {
+            None
+        }
+    }
+}
+
+impl Default for TerminalNotebook {
+    fn default() -> Self {
+        Self::new()
     }
 }

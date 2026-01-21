@@ -68,9 +68,11 @@ mod window_types;
 
 fn main() -> gtk4::glib::ExitCode {
     // Initialize logging with environment filter (RUST_LOG)
-    tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-        .init();
+    // Filter out noisy zbus debug messages (ProvideXdgActivationToken errors from ksni)
+    let filter = tracing_subscriber::EnvFilter::from_default_env()
+        .add_directive("zbus=warn".parse().expect("valid directive"));
+
+    tracing_subscriber::fmt().with_env_filter(filter).init();
 
     app::run()
 }

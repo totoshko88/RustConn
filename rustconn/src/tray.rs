@@ -167,6 +167,11 @@ mod tray_impl {
             "io.github.totoshko88.RustConn".to_string()
         }
 
+        /// Handle left-click on the tray icon - toggle window visibility
+        fn activate(&mut self, _x: i32, _y: i32) {
+            let _ = self.sender.send(TrayMessage::ToggleWindow);
+        }
+
         fn menu(&self) -> Vec<MenuItem<Self>> {
             // Clone state data to avoid holding lock during menu construction
             let (window_visible, recent_connections, active_sessions) = {

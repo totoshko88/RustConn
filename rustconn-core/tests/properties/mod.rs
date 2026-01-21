@@ -78,7 +78,7 @@ mod session_restore_tests;
 mod session_tests;
 mod snippet_tests;
 mod spice_client_tests;
-mod split_view_tests;
+mod split_view;
 mod ssh_agent_tests;
 mod storage_backend_tests;
 mod task_tests;

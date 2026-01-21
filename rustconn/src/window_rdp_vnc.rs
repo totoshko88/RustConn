@@ -6,7 +6,7 @@
 use crate::dialogs::PasswordDialog;
 use crate::embedded::{EmbeddedSessionTab, RdpLauncher};
 use crate::sidebar::ConnectionSidebar;
-use crate::split_view::SplitTerminalView;
+use crate::split_view::SplitViewBridge;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
 use gtk4::prelude::*;
@@ -21,7 +21,7 @@ pub type SharedSidebar = Rc<ConnectionSidebar>;
 pub type SharedNotebook = Rc<TerminalNotebook>;
 
 /// Type alias for shared split view reference
-pub type SharedSplitView = Rc<SplitTerminalView>;
+pub type SharedSplitView = Rc<SplitViewBridge>;
 
 /// Starts an RDP connection with password dialog
 #[allow(clippy::too_many_arguments)]
@@ -347,7 +347,7 @@ fn start_embedded_rdp_session(
     split_view.widget().set_visible(false);
     split_view.widget().set_vexpand(false);
     notebook.widget().set_vexpand(true);
-    notebook.notebook().set_vexpand(true);
+    notebook.show_tab_view_content();
 
     // If Fullscreen mode, maximize the window
     if matches!(window_mode, rustconn_core::models::WindowMode::Fullscreen) {
@@ -553,12 +553,14 @@ pub fn start_vnc_with_password_dialog(
 
                 // Build lookup key with protocol for uniqueness
                 // Format: "name (vnc)" or "host (vnc)" if name is empty
+                // Replace '/' with '-' to match how passwords are saved
                 let base_name = if conn_name.trim().is_empty() {
                     conn_host.clone()
                 } else {
                     conn_name.clone()
                 };
-                let lookup_key = format!("{base_name} (vnc)");
+                let sanitized_name = base_name.replace('/', "-");
+                let lookup_key = format!("{sanitized_name} (vnc)");
 
                 // Get password entry for async callback
                 let password_entry = dialog.password_entry().clone();
@@ -725,7 +727,7 @@ fn start_vnc_session_internal(
     split_view.widget().set_visible(false);
     split_view.widget().set_vexpand(false);
     notebook.widget().set_vexpand(true);
-    notebook.notebook().set_vexpand(true);
+    notebook.show_tab_view_content();
 
     // Update last_connected timestamp
     if let Ok(mut state_mut) = state.try_borrow_mut() {

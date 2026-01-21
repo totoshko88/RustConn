@@ -460,6 +460,9 @@ proptest! {
     ) {
         prop_assume!(exact_name != other_name);
         prop_assume!(!other_name.contains(&exact_name));
+        // Case-insensitive check: ensure names are different even ignoring case
+        prop_assume!(exact_name.to_lowercase() != other_name.to_lowercase());
+        prop_assume!(!other_name.to_lowercase().contains(&exact_name.to_lowercase()));
 
         let engine = SearchEngine::new();
 

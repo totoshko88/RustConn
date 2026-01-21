@@ -50,12 +50,10 @@ pub fn show_new_connection_dialog_internal(
         dialog.set_connections(&connections);
     }
 
-    // Set KeePass enabled state from settings
-    {
-        let state_ref = state.borrow();
-        let keepass_enabled = state_ref.settings().secrets.kdbx_enabled;
-        dialog.set_keepass_enabled(keepass_enabled);
-    }
+    // Set up password visibility toggle and source visibility
+    dialog.connect_password_visibility_toggle();
+    dialog.connect_password_source_visibility();
+    dialog.update_password_row_visibility();
 
     // If template provided, pre-populate the dialog
     if let Some(ref tmpl) = template {
@@ -65,191 +63,6 @@ pub fn show_new_connection_dialog_internal(
             .window()
             .set_title(Some("New Connection from Template"));
     }
-
-    // Connect save to KeePass callback
-    let state_for_save = state.clone();
-    dialog.connect_save_to_keepass(
-        move |name, host, username, password, protocol, dialog_window| {
-            use crate::utils::spawn_blocking_with_callback;
-            use secrecy::ExposeSecret;
-
-            let state_ref = state_for_save.borrow();
-            let settings = state_ref.settings();
-
-            if !settings.secrets.kdbx_enabled {
-                alert::show_error(
-                    &dialog_window,
-                    "KeePass Not Enabled",
-                    "Please enable KeePass integration in Settings first.",
-                );
-                return;
-            }
-
-            let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
-                alert::show_error(
-                    &dialog_window,
-                    "KeePass Database Not Configured",
-                    "Please select a KeePass database file in Settings.",
-                );
-                return;
-            };
-
-            // Build lookup key with protocol suffix for uniqueness
-            // Format: "name (protocol)" or "host (protocol)" if name is empty
-            let base_name = if name.trim().is_empty() {
-                host.to_string()
-            } else {
-                name.to_string()
-            };
-            let lookup_key = format!("{base_name} ({protocol})");
-
-            // Get credentials - password and key file can be used together
-            let db_password = settings
-                .secrets
-                .kdbx_password
-                .as_ref()
-                .map(|p| p.expose_secret().to_string());
-
-            // Key file is optional additional authentication
-            let key_file = settings.secrets.kdbx_key_file.clone();
-
-            // Check if we have at least one credential
-            if db_password.is_none() && key_file.is_none() {
-                alert::show_error(
-                    &dialog_window,
-                    "KeePass Credentials Required",
-                    "Please enter the database password or select a key file in Settings.",
-                );
-                return;
-            }
-
-            // Build URL for the entry with correct protocol
-            let url = format!("{}://{}", protocol, host);
-
-            // Clone data for the background thread
-            let username = username.to_string();
-            let password = password.to_string();
-            let lookup_key_clone = lookup_key.clone();
-            let window = dialog_window.clone();
-
-            // Drop state borrow before spawning
-            drop(state_ref);
-
-            // Run KeePass operation in background thread using utility function
-            spawn_blocking_with_callback(
-                move || {
-                    rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
-                        &kdbx_path,
-                        db_password.as_deref(),
-                        key_file.as_deref(),
-                        &lookup_key_clone,
-                        &username,
-                        &password,
-                        Some(&url),
-                    )
-                },
-                move |result: Result<(), String>| match result {
-                    Ok(()) => {
-                        alert::show_success(
-                            &window,
-                            "Password Saved",
-                            &format!("Password for '{lookup_key}' saved to KeePass."),
-                        );
-                    }
-                    Err(e) => {
-                        alert::show_error(
-                            &window,
-                            "Failed to Save Password",
-                            &format!("Error: {e}"),
-                        );
-                    }
-                },
-            );
-        },
-    );
-
-    // Connect load from KeePass callback
-    let state_for_load = state.clone();
-    dialog.connect_load_from_keepass(move |name, host, protocol, password_entry, window| {
-        use crate::utils::spawn_blocking_with_callback;
-        use secrecy::ExposeSecret;
-
-        let state_ref = state_for_load.borrow();
-        let settings = state_ref.settings();
-
-        if !settings.secrets.kdbx_enabled {
-            crate::toast::show_toast_on_window(
-                &window,
-                "KeePass integration is not enabled",
-                crate::toast::ToastType::Warning,
-            );
-            return;
-        }
-
-        let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
-            crate::toast::show_toast_on_window(
-                &window,
-                "KeePass database not configured",
-                crate::toast::ToastType::Warning,
-            );
-            return;
-        };
-
-        // Build lookup key with protocol suffix for uniqueness
-        // Format: "name (protocol)" or "host (protocol)" if name is empty
-        let base_name = if name.trim().is_empty() {
-            host.to_string()
-        } else {
-            name.to_string()
-        };
-        let lookup_key = format!("{base_name} ({protocol})");
-
-        // Get credentials - password and key file can be used together
-        let db_password = settings
-            .secrets
-            .kdbx_password
-            .as_ref()
-            .map(|p| p.expose_secret().to_string());
-
-        // Key file is optional additional authentication
-        let key_file = settings.secrets.kdbx_key_file.clone();
-
-        // Drop state borrow before spawning
-        drop(state_ref);
-
-        // Run KeePass operation in background thread using utility function
-        spawn_blocking_with_callback(
-            move || {
-                rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
-                    &kdbx_path,
-                    db_password.as_deref(),
-                    key_file.as_deref(),
-                    &lookup_key,
-                    None, // Protocol already included in lookup_key
-                )
-            },
-            move |result: Result<Option<String>, String>| match result {
-                Ok(Some(password)) => {
-                    password_entry.set_text(&password);
-                }
-                Ok(None) => {
-                    crate::toast::show_toast_on_window(
-                        &window,
-                        "No password found in KeePass for this connection",
-                        crate::toast::ToastType::Info,
-                    );
-                }
-                Err(e) => {
-                    tracing::warn!("Failed to load password from KeePass: {e}");
-                    crate::toast::show_toast_on_window(
-                        &window,
-                        "Failed to load password from KeePass",
-                        crate::toast::ToastType::Error,
-                    );
-                }
-            },
-        );
-    });
 
     let window_clone = window.clone();
     dialog.run(move |result| {
@@ -408,8 +221,61 @@ pub fn show_new_group_dialog_with_parent(
     let username_row = adw::EntryRow::builder().title("Username").build();
     credentials_group.add(&username_row);
 
-    let password_row = adw::PasswordEntryRow::builder().title("Password").build();
-    credentials_group.add(&password_row);
+    // Password Source dropdown
+    let password_source_list =
+        gtk4::StringList::new(&["Prompt", "Stored", "KeePass", "Keyring", "Inherit", "None"]);
+    let password_source_dropdown = gtk4::DropDown::builder()
+        .model(&password_source_list)
+        .selected(5) // Default to None
+        .valign(gtk4::Align::Center)
+        .build();
+
+    let password_source_row = adw::ActionRow::builder().title("Password").build();
+    password_source_row.add_suffix(&password_source_dropdown);
+    credentials_group.add(&password_source_row);
+
+    // Password Value entry with visibility toggle
+    let password_entry = gtk4::Entry::builder()
+        .placeholder_text("Password value")
+        .visibility(false)
+        .hexpand(true)
+        .build();
+    let password_visibility_btn = gtk4::Button::builder()
+        .icon_name("view-reveal-symbolic")
+        .tooltip_text("Show/hide password")
+        .valign(gtk4::Align::Center)
+        .build();
+
+    let password_value_row = adw::ActionRow::builder().title("Value").build();
+    password_value_row.add_suffix(&password_entry);
+    password_value_row.add_suffix(&password_visibility_btn);
+    credentials_group.add(&password_value_row);
+
+    // Initially hidden (None selected)
+    password_value_row.set_visible(false);
+
+    // Connect password source dropdown to show/hide value row
+    let value_row_clone = password_value_row.clone();
+    password_source_dropdown.connect_selected_notify(move |dropdown| {
+        let selected = dropdown.selected();
+        let show = matches!(selected, 1..=3);
+        value_row_clone.set_visible(show);
+    });
+
+    // Connect password visibility toggle
+    let password_entry_clone = password_entry.clone();
+    let is_visible = std::rc::Rc::new(std::cell::Cell::new(false));
+    password_visibility_btn.connect_clicked(move |btn| {
+        let currently_visible = is_visible.get();
+        let new_visible = !currently_visible;
+        is_visible.set(new_visible);
+        password_entry_clone.set_visibility(new_visible);
+        if new_visible {
+            btn.set_icon_name("view-conceal-symbolic");
+        } else {
+            btn.set_icon_name("view-reveal-symbolic");
+        }
+    });
 
     let domain_row = adw::EntryRow::builder().title("Domain").build();
     credentials_group.add(&domain_row);
@@ -423,7 +289,8 @@ pub fn show_new_group_dialog_with_parent(
     let name_row_clone = name_row;
     let dropdown_clone = parent_dropdown;
     let username_row_clone = username_row;
-    let password_row_clone = password_row;
+    let password_entry_clone2 = password_entry.clone();
+    let password_source_clone = password_source_dropdown.clone();
     let domain_row_clone = domain_row;
 
     create_btn.connect_clicked(move |_| {
@@ -442,11 +309,23 @@ pub fn show_new_group_dialog_with_parent(
 
         // Capture credential values
         let username = username_row_clone.text().to_string();
-        let password = password_row_clone.text().to_string();
+        let password = password_entry_clone2.text().to_string();
         let domain = domain_row_clone.text().to_string();
 
+        // Get selected password source
+        let password_source_idx = password_source_clone.selected();
+        let new_password_source = match password_source_idx {
+            0 => PasswordSource::Prompt,
+            1 => PasswordSource::Stored,
+            2 => PasswordSource::KeePass,
+            3 => PasswordSource::Keyring,
+            4 => PasswordSource::Inherit,
+            _ => PasswordSource::None,
+        };
+
         let has_username = !username.trim().is_empty();
-        let has_password = !password.is_empty();
+        // Password is relevant only for Stored, KeePass, Keyring
+        let has_password = !password.is_empty() && matches!(password_source_idx, 1..=3);
         let has_domain = !domain.trim().is_empty();
 
         if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
@@ -459,7 +338,11 @@ pub fn show_new_group_dialog_with_parent(
             match result {
                 Ok(group_id) => {
                     // Update group with credentials if provided
-                    if has_username || has_domain || has_password {
+                    if has_username
+                        || has_domain
+                        || has_password
+                        || !matches!(new_password_source, PasswordSource::None)
+                    {
                         if let Some(existing) = state_mut.get_group(group_id).cloned() {
                             let mut updated = existing;
                             if has_username {
@@ -468,10 +351,8 @@ pub fn show_new_group_dialog_with_parent(
                             if has_domain {
                                 updated.domain = Some(domain.clone());
                             }
-                            if has_password {
-                                // We store password separately, but set source to Keyring
-                                updated.password_source = Some(PasswordSource::Keyring);
-                            }
+                            // Set the selected password source
+                            updated.password_source = Some(new_password_source);
 
                             if let Err(e) = state_mut
                                 .connection_manager()

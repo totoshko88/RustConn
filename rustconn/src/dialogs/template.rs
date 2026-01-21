@@ -37,13 +37,14 @@ pub struct TemplateDialog {
     window: adw::Window,
     save_button: Button,
     // Basic fields
-    name_entry: Entry,
-    description_entry: Entry,
+    name_entry: adw::EntryRow,
+    description_entry: adw::EntryRow,
     protocol_dropdown: DropDown,
-    host_entry: Entry,
+    host_entry: adw::EntryRow,
     port_spin: SpinButton,
-    username_entry: Entry,
-    tags_entry: Entry,
+    username_entry: adw::EntryRow,
+    domain_entry: adw::EntryRow,
+    tags_entry: adw::EntryRow,
     // Protocol stack
     protocol_stack: Stack,
     // SSH fields
@@ -174,6 +175,7 @@ impl TemplateDialog {
             host_entry,
             port_spin,
             username_entry,
+            domain_entry,
             tags_entry,
         ) = Self::create_basic_tab();
         view_stack
@@ -316,6 +318,7 @@ impl TemplateDialog {
             &host_entry,
             &port_spin,
             &username_entry,
+            &domain_entry,
             &tags_entry,
             &ssh_auth_dropdown,
             &ssh_key_source_dropdown,
@@ -381,6 +384,7 @@ impl TemplateDialog {
             host_entry,
             port_spin,
             username_entry,
+            domain_entry,
             tags_entry,
             protocol_stack,
             ssh_auth_dropdown,
@@ -444,13 +448,14 @@ impl TemplateDialog {
 
     fn create_basic_tab() -> (
         ScrolledWindow,
-        Entry,
-        Entry,
+        adw::EntryRow,
+        adw::EntryRow,
         DropDown,
-        Entry,
+        adw::EntryRow,
         SpinButton,
-        Entry,
-        Entry,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
     ) {
         let scrolled = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -474,33 +479,13 @@ impl TemplateDialog {
             .title("Template Info")
             .build();
 
-        // Name
-        let name_entry = Entry::builder()
-            .placeholder_text("Template name")
-            .hexpand(true)
-            .valign(gtk4::Align::Center)
-            .build();
+        // Name - use EntryRow for proper width
+        let name_entry = adw::EntryRow::builder().title("Name").build();
+        info_group.add(&name_entry);
 
-        let name_row = adw::ActionRow::builder()
-            .title("Name")
-            .subtitle("Required: unique template identifier")
-            .build();
-        name_row.add_suffix(&name_entry);
-        info_group.add(&name_row);
-
-        // Description
-        let description_entry = Entry::builder()
-            .placeholder_text("Optional description")
-            .hexpand(true)
-            .valign(gtk4::Align::Center)
-            .build();
-
-        let desc_row = adw::ActionRow::builder()
-            .title("Description")
-            .subtitle("Brief description of this template")
-            .build();
-        desc_row.add_suffix(&description_entry);
-        info_group.add(&desc_row);
+        // Description - use EntryRow for proper width
+        let description_entry = adw::EntryRow::builder().title("Description").build();
+        info_group.add(&description_entry);
 
         // Protocol
         let protocols = StringList::new(&["SSH", "RDP", "VNC", "SPICE", "ZeroTrust"]);
@@ -524,19 +509,9 @@ impl TemplateDialog {
             .description("Pre-filled when creating connections from this template")
             .build();
 
-        // Host
-        let host_entry = Entry::builder()
-            .placeholder_text("Leave empty for user to fill in")
-            .hexpand(true)
-            .valign(gtk4::Align::Center)
-            .build();
-
-        let host_row = adw::ActionRow::builder()
-            .title("Host")
-            .subtitle("Default hostname or IP address")
-            .build();
-        host_row.add_suffix(&host_entry);
-        defaults_group.add(&host_row);
+        // Host - use EntryRow for proper width
+        let host_entry = adw::EntryRow::builder().title("Host").build();
+        defaults_group.add(&host_entry);
 
         // Port
         let port_spin = SpinButton::with_range(1.0, 65535.0, 1.0);
@@ -550,33 +525,17 @@ impl TemplateDialog {
         port_row.add_suffix(&port_spin);
         defaults_group.add(&port_row);
 
-        // Username
-        let username_entry = Entry::builder()
-            .placeholder_text("Optional default username")
-            .hexpand(true)
-            .valign(gtk4::Align::Center)
-            .build();
+        // Username - use EntryRow for proper width
+        let username_entry = adw::EntryRow::builder().title("Username").build();
+        defaults_group.add(&username_entry);
 
-        let username_row = adw::ActionRow::builder()
-            .title("Username")
-            .subtitle("Default login username")
-            .build();
-        username_row.add_suffix(&username_entry);
-        defaults_group.add(&username_row);
+        // Domain - use EntryRow for proper width
+        let domain_entry = adw::EntryRow::builder().title("Domain").build();
+        defaults_group.add(&domain_entry);
 
-        // Tags
-        let tags_entry = Entry::builder()
-            .placeholder_text("tag1, tag2, ...")
-            .hexpand(true)
-            .valign(gtk4::Align::Center)
-            .build();
-
-        let tags_row = adw::ActionRow::builder()
-            .title("Tags")
-            .subtitle("Comma-separated tags for organization")
-            .build();
-        tags_row.add_suffix(&tags_entry);
-        defaults_group.add(&tags_row);
+        // Tags - use EntryRow for proper width
+        let tags_entry = adw::EntryRow::builder().title("Tags").build();
+        defaults_group.add(&tags_entry);
 
         content.append(&defaults_group);
 
@@ -591,6 +550,7 @@ impl TemplateDialog {
             host_entry,
             port_spin,
             username_entry,
+            domain_entry,
             tags_entry,
         )
     }
@@ -1848,13 +1808,14 @@ impl TemplateDialog {
         window: &adw::Window,
         on_save: &TemplateCallback,
         editing_id: &Rc<RefCell<Option<Uuid>>>,
-        name_entry: &Entry,
-        description_entry: &Entry,
+        name_entry: &adw::EntryRow,
+        description_entry: &adw::EntryRow,
         protocol_dropdown: &DropDown,
-        host_entry: &Entry,
+        host_entry: &adw::EntryRow,
         port_spin: &SpinButton,
-        username_entry: &Entry,
-        tags_entry: &Entry,
+        username_entry: &adw::EntryRow,
+        domain_entry: &adw::EntryRow,
+        tags_entry: &adw::EntryRow,
         ssh_auth_dropdown: &DropDown,
         ssh_key_source_dropdown: &DropDown,
         ssh_key_entry: &Entry,
@@ -1918,6 +1879,7 @@ impl TemplateDialog {
         let host_entry = host_entry.clone();
         let port_spin = port_spin.clone();
         let username_entry = username_entry.clone();
+        let domain_entry = domain_entry.clone();
         let tags_entry = tags_entry.clone();
         let ssh_auth_dropdown = ssh_auth_dropdown.clone();
         let ssh_key_source_dropdown = ssh_key_source_dropdown.clone();
@@ -2061,6 +2023,11 @@ impl TemplateDialog {
             let username = username_entry.text();
             if !username.trim().is_empty() {
                 template.username = Some(username.trim().to_string());
+            }
+
+            let domain = domain_entry.text();
+            if !domain.trim().is_empty() {
+                template.domain = Some(domain.trim().to_string());
             }
 
             let tags_text = tags_entry.text();
@@ -2577,6 +2544,10 @@ impl TemplateDialog {
 
         if let Some(ref username) = template.username {
             self.username_entry.set_text(username);
+        }
+
+        if let Some(ref domain) = template.domain {
+            self.domain_entry.set_text(domain);
         }
 
         self.tags_entry.set_text(&template.tags.join(", "));

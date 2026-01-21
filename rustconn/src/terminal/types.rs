@@ -12,6 +12,8 @@ use crate::embedded_spice::EmbeddedSpiceWidget;
 use crate::session::VncSessionWidget;
 
 /// Tab display mode based on available space
+/// Note: With adw::TabView, this is handled automatically by the TabBar
+#[allow(dead_code)] // Legacy type kept for tabs.rs compatibility
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TabDisplayMode {
     /// Full mode: icon + full name (default)
@@ -53,8 +55,9 @@ pub enum SessionWidgetStorage {
     EmbeddedSpice(Rc<EmbeddedSpiceWidget>),
 }
 
-/// Widgets that make up a tab label (for updating display mode)
-#[allow(dead_code)] // Fields kept for GTK widget lifecycle
+/// Widgets that make up a tab label (legacy, kept for compatibility)
+/// Note: With adw::TabView, tab labels are managed by TabPage properties
+#[allow(dead_code)] // Fields kept for GTK widget lifecycle and legacy compatibility
 pub struct TabLabelWidgets {
     pub container: GtkBox,
     pub icon: Image,

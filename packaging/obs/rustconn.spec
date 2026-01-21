@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.6.4
+Version:        0.6.5
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later
@@ -157,6 +157,9 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sat Jan 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.5-0
+- Version bump to 0.6.5
+
 * Fri Jan 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.4-0
 - Update to version 0.6.4
 - Snap Package - New distribution format for easy installation via Snapcraft

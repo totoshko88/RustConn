@@ -2,9 +2,12 @@
 
 use crate::external_window::ExternalWindowManager;
 use crate::sidebar::ConnectionSidebar;
-use crate::split_view::SplitTerminalView;
+use crate::split_view::{SplitViewBridge, TabSplitManager};
 use crate::terminal::TerminalNotebook;
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
+use uuid::Uuid;
 
 /// Shared sidebar type
 pub type SharedSidebar = Rc<ConnectionSidebar>;
@@ -12,8 +15,16 @@ pub type SharedSidebar = Rc<ConnectionSidebar>;
 /// Shared terminal notebook type
 pub type SharedNotebook = Rc<TerminalNotebook>;
 
-/// Shared split view type
-pub type SharedSplitView = Rc<SplitTerminalView>;
+/// Shared split view type (uses new SplitViewBridge implementation)
+pub type SharedSplitView = Rc<SplitViewBridge>;
+
+/// Shared tab split manager type (new implementation)
+pub type SharedTabSplitManager = Rc<RefCell<TabSplitManager>>;
+
+/// Map of session IDs to their split view bridges
+/// Each session that has been split gets its own independent SplitViewBridge
+/// Requirement 3: Each tab maintains its own independent split layout
+pub type SessionSplitBridges = Rc<RefCell<HashMap<Uuid, Rc<SplitViewBridge>>>>;
 
 /// Shared external window manager type
 pub type SharedExternalWindowManager = Rc<ExternalWindowManager>;

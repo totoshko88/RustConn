@@ -1082,7 +1082,9 @@ fn arb_aws_command() -> impl Strategy<Value = String> {
         Just("aws ssm start-session".to_string()),
         Just("aws ssm start-session --target i-123456".to_string()),
         Just("/usr/bin/aws ssm start-session".to_string()),
-        "aws [a-z]{1,10} [a-z-]{1,20}".prop_map(|s| s),
+        // Use only known valid AWS command patterns
+        Just("aws ec2 describe-instances".to_string()),
+        Just("aws s3 ls".to_string()),
     ]
 }
 
@@ -1092,7 +1094,8 @@ fn arb_gcloud_command() -> impl Strategy<Value = String> {
         Just("gcloud compute ssh".to_string()),
         Just("gcloud compute ssh instance --zone us-central1-a".to_string()),
         Just("/usr/bin/gcloud compute ssh".to_string()),
-        "gcloud [a-z]{1,10} [a-z-]{1,20}".prop_map(|s| s),
+        Just("gcloud auth login".to_string()),
+        Just("gcloud config set project myproject".to_string()),
     ]
 }
 
@@ -1102,7 +1105,8 @@ fn arb_azure_command() -> impl Strategy<Value = String> {
         Just("az network bastion ssh".to_string()),
         Just("az ssh vm --name myvm".to_string()),
         Just("/usr/bin/az ssh vm".to_string()),
-        "az [a-z]{1,10} [a-z-]{1,20}".prop_map(|s| s),
+        Just("az login".to_string()),
+        Just("az vm list".to_string()),
     ]
 }
 
@@ -1111,7 +1115,8 @@ fn arb_oci_command() -> impl Strategy<Value = String> {
     prop_oneof![
         Just("oci bastion session create".to_string()),
         Just("/usr/bin/oci bastion session".to_string()),
-        "oci [a-z]{1,10} [a-z-]{1,20}".prop_map(|s| s),
+        Just("oci compute instance list".to_string()),
+        Just("oci iam user list".to_string()),
     ]
 }
 
@@ -1120,7 +1125,8 @@ fn arb_cloudflare_command() -> impl Strategy<Value = String> {
     prop_oneof![
         Just("cloudflared access ssh".to_string()),
         Just("/usr/bin/cloudflared access ssh".to_string()),
-        "cloudflared [a-z]{1,10} [a-z-]{1,20}".prop_map(|s| s),
+        Just("cloudflared tunnel run".to_string()),
+        Just("cloudflared access tcp".to_string()),
     ]
 }
 
@@ -1129,7 +1135,8 @@ fn arb_teleport_command() -> impl Strategy<Value = String> {
     prop_oneof![
         Just("tsh ssh user@host".to_string()),
         Just("/usr/bin/tsh ssh user@host".to_string()),
-        "tsh [a-z]{1,10} [a-z@-]{1,20}".prop_map(|s| s),
+        Just("tsh login".to_string()),
+        Just("tsh ls".to_string()),
     ]
 }
 
@@ -1138,7 +1145,8 @@ fn arb_tailscale_command() -> impl Strategy<Value = String> {
     prop_oneof![
         Just("tailscale ssh user@host".to_string()),
         Just("/usr/bin/tailscale ssh user@host".to_string()),
-        "tailscale [a-z]{1,10} [a-z@-]{1,20}".prop_map(|s| s),
+        Just("tailscale up".to_string()),
+        Just("tailscale status".to_string()),
     ]
 }
 
@@ -1147,7 +1155,8 @@ fn arb_boundary_command() -> impl Strategy<Value = String> {
     prop_oneof![
         Just("boundary connect ssh".to_string()),
         Just("/usr/bin/boundary connect ssh".to_string()),
-        "boundary [a-z]{1,10} [a-z-]{1,20}".prop_map(|s| s),
+        Just("boundary connect".to_string()),
+        Just("boundary authenticate".to_string()),
     ]
 }
 

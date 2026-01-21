@@ -962,7 +962,9 @@ impl AppState {
                 } else {
                     connection.name.clone()
                 };
-                let lookup_key = format!("{base_name} ({protocol_str})");
+                // Replace '/' with '-' to match how passwords are saved
+                let sanitized_name = base_name.replace('/', "-");
+                let lookup_key = format!("{sanitized_name} ({protocol_str})");
 
                 // Get credentials - password and key file can be used together
                 let db_password = self
@@ -1308,7 +1310,9 @@ impl AppState {
                 } else {
                     connection.name.clone()
                 };
-                let lookup_key = format!("{base_name} ({protocol_str})");
+                // Replace '/' with '-' to match how passwords are saved
+                let sanitized_name = base_name.replace('/', "-");
+                let lookup_key = format!("{sanitized_name} ({protocol_str})");
 
                 // Get credentials - password and key file can be used together
                 let db_password = kdbx_password.as_ref().map(|p| p.expose_secret());

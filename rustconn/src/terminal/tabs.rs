@@ -1,6 +1,10 @@
 //! Tab management for terminal notebook
 //!
 //! This module handles tab creation, display modes, and overflow menu.
+//! NOTE: Most functions in this module are legacy code from gtk::Notebook era.
+//! They are kept for reference but not used with adw::TabView.
+
+#![allow(dead_code)]
 
 use gtk4::prelude::*;
 use gtk4::{gdk, Box as GtkBox, Button, Image, Label, MenuButton, Notebook, Orientation, Popover};
@@ -193,6 +197,8 @@ pub fn create_tab_label_with_protocol(
     tab_box.append(&close_button);
 
     // Add drag source for dragging sessions to split panes
+    // Requirement 7.1: Root_Tab can be dragged from tab bar
+    // Requirement 7.4: Visual feedback during drag
     let drag_source = gtk4::DragSource::new();
     drag_source.set_actions(gdk::DragAction::MOVE);
 
@@ -201,6 +207,18 @@ pub fn create_tab_label_with_protocol(
         let value = gtk4::glib::Value::from(&session_id_str);
         let content = gdk::ContentProvider::for_value(&value);
         Some(content)
+    });
+
+    // Visual feedback: add CSS class when drag starts
+    let tab_box_for_begin = tab_box.clone();
+    drag_source.connect_drag_begin(move |_source, _drag| {
+        tab_box_for_begin.add_css_class("dragging");
+    });
+
+    // Remove CSS class when drag ends
+    let tab_box_for_end = tab_box.clone();
+    drag_source.connect_drag_end(move |_source, _drag, _delete| {
+        tab_box_for_end.remove_css_class("dragging");
     });
 
     tab_box.add_controller(drag_source);
