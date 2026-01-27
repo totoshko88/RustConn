@@ -80,6 +80,8 @@ pub struct ConnectionDialog {
     ssh_identities_only: CheckButton,
     ssh_control_master: CheckButton,
     ssh_agent_forwarding: CheckButton,
+    ssh_x11_forwarding: CheckButton,
+    ssh_compression: CheckButton,
     ssh_startup_entry: Entry,
     ssh_options_entry: Entry,
     // RDP fields
@@ -320,6 +322,8 @@ impl ConnectionDialog {
             ssh_identities_only,
             ssh_control_master,
             ssh_agent_forwarding,
+            ssh_x11_forwarding,
+            ssh_compression,
             ssh_startup_entry,
             ssh_options_entry,
         ) = Self::create_ssh_options();
@@ -550,6 +554,8 @@ impl ConnectionDialog {
             &ssh_identities_only,
             &ssh_control_master,
             &ssh_agent_forwarding,
+            &ssh_x11_forwarding,
+            &ssh_compression,
             &ssh_startup_entry,
             &ssh_options_entry,
             &rdp_client_mode_dropdown,
@@ -657,6 +663,8 @@ impl ConnectionDialog {
             ssh_identities_only,
             ssh_control_master,
             ssh_agent_forwarding,
+            ssh_x11_forwarding,
+            ssh_compression,
             ssh_startup_entry,
             ssh_options_entry,
             rdp_client_mode_dropdown,
@@ -1154,6 +1162,8 @@ impl ConnectionDialog {
         ssh_identities_only: &CheckButton,
         ssh_control_master: &CheckButton,
         ssh_agent_forwarding: &CheckButton,
+        ssh_x11_forwarding: &CheckButton,
+        ssh_compression: &CheckButton,
         ssh_startup_entry: &Entry,
         ssh_options_entry: &Entry,
         rdp_client_mode_dropdown: &DropDown,
@@ -1253,6 +1263,8 @@ impl ConnectionDialog {
         let ssh_identities_only = ssh_identities_only.clone();
         let ssh_control_master = ssh_control_master.clone();
         let ssh_agent_forwarding = ssh_agent_forwarding.clone();
+        let ssh_x11_forwarding = ssh_x11_forwarding.clone();
+        let ssh_compression = ssh_compression.clone();
         let ssh_startup_entry = ssh_startup_entry.clone();
         let ssh_options_entry = ssh_options_entry.clone();
         let rdp_client_mode_dropdown = rdp_client_mode_dropdown.clone();
@@ -1357,6 +1369,8 @@ impl ConnectionDialog {
                 ssh_identities_only: &ssh_identities_only,
                 ssh_control_master: &ssh_control_master,
                 ssh_agent_forwarding: &ssh_agent_forwarding,
+                ssh_x11_forwarding: &ssh_x11_forwarding,
+                ssh_compression: &ssh_compression,
                 ssh_startup_entry: &ssh_startup_entry,
                 ssh_options_entry: &ssh_options_entry,
                 rdp_client_mode_dropdown: &rdp_client_mode_dropdown,
@@ -1753,7 +1767,7 @@ impl ConnectionDialog {
     /// Layout:
     /// - Authentication group: Auth Method, Key Source, Key File, Agent Key
     /// - Connection group: ProxyJump, IdentitiesOnly, ControlMaster
-    /// - Session group: Agent Forwarding, Startup Command, Custom Options
+    /// - Session group: Agent Forwarding, X11 Forwarding, Compression, Startup Command, Custom Options
     #[allow(clippy::type_complexity)]
     fn create_ssh_options() -> (
         GtkBox,
@@ -1767,6 +1781,8 @@ impl ConnectionDialog {
         CheckButton,
         CheckButton,
         CheckButton,
+        CheckButton, // X11 Forwarding
+        CheckButton, // Compression
         Entry,
         Entry,
     ) {
@@ -2001,6 +2017,26 @@ impl ConnectionDialog {
         agent_forwarding_row.add_suffix(&agent_forwarding);
         session_group.add(&agent_forwarding_row);
 
+        // X11 Forwarding switch
+        let x11_forwarding = CheckButton::new();
+        let x11_forwarding_row = adw::ActionRow::builder()
+            .title("X11 Forwarding")
+            .subtitle("Forward X11 display to local host (-X)")
+            .activatable_widget(&x11_forwarding)
+            .build();
+        x11_forwarding_row.add_suffix(&x11_forwarding);
+        session_group.add(&x11_forwarding_row);
+
+        // Compression switch
+        let compression = CheckButton::new();
+        let compression_row = adw::ActionRow::builder()
+            .title("Compression")
+            .subtitle("Enable compression for slow connections (-C)")
+            .activatable_widget(&compression)
+            .build();
+        compression_row.add_suffix(&compression);
+        session_group.add(&compression_row);
+
         // Startup command entry
         let startup_entry = Entry::builder()
             .hexpand(true)
@@ -2049,6 +2085,8 @@ impl ConnectionDialog {
             identities_only,
             control_master,
             agent_forwarding,
+            x11_forwarding,
+            compression,
             startup_entry,
             options_entry,
         )
@@ -5828,6 +5866,8 @@ impl ConnectionDialog {
         self.ssh_identities_only.set_active(ssh.identities_only);
         self.ssh_control_master.set_active(ssh.use_control_master);
         self.ssh_agent_forwarding.set_active(ssh.agent_forwarding);
+        self.ssh_x11_forwarding.set_active(ssh.x11_forwarding);
+        self.ssh_compression.set_active(ssh.compression);
         if let Some(ref cmd) = ssh.startup_command {
             self.ssh_startup_entry.set_text(cmd);
         }
@@ -6271,6 +6311,8 @@ struct ConnectionDialogData<'a> {
     ssh_identities_only: &'a CheckButton,
     ssh_control_master: &'a CheckButton,
     ssh_agent_forwarding: &'a CheckButton,
+    ssh_x11_forwarding: &'a CheckButton,
+    ssh_compression: &'a CheckButton,
     ssh_startup_entry: &'a Entry,
     ssh_options_entry: &'a Entry,
     rdp_client_mode_dropdown: &'a DropDown,
@@ -6888,6 +6930,8 @@ impl ConnectionDialogData<'_> {
             jump_host_id, // Add this field
             use_control_master: self.ssh_control_master.is_active(),
             agent_forwarding: self.ssh_agent_forwarding.is_active(),
+            x11_forwarding: self.ssh_x11_forwarding.is_active(),
+            compression: self.ssh_compression.is_active(),
             custom_options,
             startup_command,
         }

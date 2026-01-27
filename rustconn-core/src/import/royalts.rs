@@ -13,7 +13,8 @@ use uuid::Uuid;
 
 use crate::error::ImportError;
 use crate::models::{
-    Connection, ConnectionGroup, PasswordSource, ProtocolConfig, RdpConfig, SshConfig, VncConfig,
+    Connection, ConnectionGroup, PasswordSource, ProtocolConfig, RdpConfig, SshAuthMethod,
+    SshConfig, VncConfig,
 };
 
 use super::traits::{ImportResult, ImportSource, SkippedEntry};
@@ -27,6 +28,8 @@ struct SshConnectionData {
     port: Option<u16>,
     parent_id: Option<String>,
     credential_id: Option<String>,
+    /// Path to private key file
+    private_key_path: Option<String>,
 }
 
 /// Royal TS RDP connection data
@@ -299,6 +302,11 @@ impl RoyalTsImporter {
             "Port" => conn.port = value.parse().ok(),
             "ParentID" => conn.parent_id = Some(value.to_string()),
             "CredentialId" => conn.credential_id = Some(value.to_string()),
+            "PrivateKeyFile" | "KeyFilePath" | "PrivateKeyPath" => {
+                if !value.is_empty() {
+                    conn.private_key_path = Some(value.to_string());
+                }
+            }
             _ => {}
         }
     }
@@ -395,11 +403,30 @@ impl RoyalTsImporter {
         let host = conn.uri.as_ref().filter(|h| !h.is_empty())?;
         let port = conn.port.unwrap_or(22);
 
+        // Parse private key path if present
+        let key_path = conn
+            .private_key_path
+            .as_ref()
+            .filter(|p| !p.is_empty())
+            .map(|p| PathBuf::from(shellexpand::tilde(p).into_owned()));
+
+        let auth_method = if key_path.is_some() {
+            SshAuthMethod::PublicKey
+        } else {
+            SshAuthMethod::Password
+        };
+
+        let ssh_config = SshConfig {
+            auth_method,
+            key_path,
+            ..Default::default()
+        };
+
         let mut connection = Connection::new(
             conn.name.clone(),
             host.clone(),
             port,
-            ProtocolConfig::Ssh(SshConfig::default()),
+            ProtocolConfig::Ssh(ssh_config),
         );
 
         if let Some(cred_id) = &conn.credential_id {
@@ -718,5 +745,70 @@ mod tests {
         // Only the active server should be imported, trashed ones skipped
         assert_eq!(result.connections.len(), 1);
         assert_eq!(result.connections[0].name, "Active Server");
+    }
+
+    #[test]
+    fn test_parse_ssh_with_private_key() {
+        let importer = RoyalTsImporter::new();
+        let content = r#"<?xml version="1.0" encoding="utf-8"?>
+<RTSZDocument>
+  <RoyalSSHConnection>
+    <ID>conn1</ID>
+    <Name>Server with Key</Name>
+    <URI>server.example.com</URI>
+    <Port>22</Port>
+    <PrivateKeyFile>/home/user/.ssh/id_rsa</PrivateKeyFile>
+  </RoyalSSHConnection>
+  <RoyalSSHConnection>
+    <ID>conn2</ID>
+    <Name>Server with KeyFilePath</Name>
+    <URI>server2.example.com</URI>
+    <KeyFilePath>~/.ssh/id_ed25519</KeyFilePath>
+  </RoyalSSHConnection>
+  <RoyalSSHConnection>
+    <ID>conn3</ID>
+    <Name>Server without Key</Name>
+    <URI>server3.example.com</URI>
+  </RoyalSSHConnection>
+</RTSZDocument>"#;
+
+        let result = importer.parse_xml(content, "test.rtsz");
+        assert_eq!(result.connections.len(), 3);
+        assert!(result.errors.is_empty());
+
+        // First connection: has PrivateKeyFile
+        let conn1 = &result.connections[0];
+        assert_eq!(conn1.name, "Server with Key");
+        if let ProtocolConfig::Ssh(ref ssh) = conn1.protocol_config {
+            assert_eq!(ssh.auth_method, SshAuthMethod::PublicKey);
+            assert!(ssh.key_path.is_some());
+            let key_path = ssh.key_path.as_ref().unwrap();
+            assert!(key_path.to_string_lossy().contains(".ssh/id_rsa"));
+        } else {
+            panic!("Expected SSH config");
+        }
+
+        // Second connection: has KeyFilePath with tilde expansion
+        let conn2 = &result.connections[1];
+        assert_eq!(conn2.name, "Server with KeyFilePath");
+        if let ProtocolConfig::Ssh(ref ssh) = conn2.protocol_config {
+            assert_eq!(ssh.auth_method, SshAuthMethod::PublicKey);
+            assert!(ssh.key_path.is_some());
+            // Tilde should be expanded
+            let key_path = ssh.key_path.as_ref().unwrap();
+            assert!(!key_path.to_string_lossy().starts_with('~'));
+        } else {
+            panic!("Expected SSH config");
+        }
+
+        // Third connection: no key, should use password auth
+        let conn3 = &result.connections[2];
+        assert_eq!(conn3.name, "Server without Key");
+        if let ProtocolConfig::Ssh(ref ssh) = conn3.protocol_config {
+            assert_eq!(ssh.auth_method, SshAuthMethod::Password);
+            assert!(ssh.key_path.is_none());
+        } else {
+            panic!("Expected SSH config");
+        }
     }
 }

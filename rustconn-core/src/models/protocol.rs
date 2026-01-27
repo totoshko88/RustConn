@@ -105,6 +105,8 @@ pub enum SshAuthMethod {
 }
 
 /// SSH protocol configuration
+// Allow 6 bools - these are distinct SSH connection options that map directly to CLI flags
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SshConfig {
     /// Authentication method
@@ -133,6 +135,14 @@ pub struct SshConfig {
     /// Allows the remote host to use local SSH agent for authentication
     #[serde(default)]
     pub agent_forwarding: bool,
+    /// Enable X11 forwarding (`-X` flag)
+    /// Allows running graphical applications on the remote host
+    #[serde(default)]
+    pub x11_forwarding: bool,
+    /// Enable compression (`-C` flag)
+    /// Compresses all data for faster transfer over slow connections
+    #[serde(default)]
+    pub compression: bool,
     /// Custom SSH options (key-value pairs)
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub custom_options: HashMap<String, String>,
@@ -245,6 +255,16 @@ impl SshConfig {
         // Add agent forwarding if enabled
         if self.agent_forwarding {
             args.push("-A".to_string());
+        }
+
+        // Add X11 forwarding if enabled
+        if self.x11_forwarding {
+            args.push("-X".to_string());
+        }
+
+        // Add compression if enabled
+        if self.compression {
+            args.push("-C".to_string());
         }
 
         // Add custom options

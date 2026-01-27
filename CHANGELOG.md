@@ -7,7 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 0.6.6
 
+### Added
+- **SSH X11 Forwarding & Compression** - New SSH session options:
+  - X11 Forwarding (`-X` flag) for running graphical applications on remote hosts
+  - Compression (`-C` flag) for faster transfer over slow connections
+  - GUI controls in Connection dialog → SSH → Session group
+  - CLI support via `rustconn-cli connect` (reads from connection config)
+  - Import support: Asbru-CM (`-X`, `-C`, `-A` flags), SSH config (`ForwardX11`, `Compression`), Remmina (`ssh_tunnel_x11`, `ssh_compression`)
+- **Import Normalizer** - New `ImportNormalizer` module for post-import consistency:
+  - Group deduplication (merges groups with same name and parent)
+  - Port normalization to protocol defaults
+  - Auth method normalization based on key_path presence
+  - Key path validation and tilde expansion
+  - Import source/timestamp tags for tracking
+  - Helper functions: `parse_host_port()`, `is_valid_hostname()`, `looks_like_hostname()`
+
 ### Changed
+- **Remmina Importer** - Major refactor for proper group support:
+  - Changed from tags (`remmina:{group}`) to real `ConnectionGroup` objects
+  - Added nested group support (e.g., "Production/Web Servers" creates hierarchy)
+  - Added SPICE protocol support
+- **RDM Importer** - Added SSH key support:
+  - Parses `PrivateKeyPath` field from RDM JSON
+  - Sets `auth_method` to `PublicKey` when key present
+  - Added `view_only` support for VNC connections
+- **Royal TS Importer** - Added SSH key support:
+  - Parses `PrivateKeyFile`, `KeyFilePath`, `PrivateKeyPath` fields
+  - Sets `auth_method` based on key presence
+  - Tilde expansion for key paths
+- **SSH Config Importer** - Enhanced option parsing:
+  - Now preserves `ServerAliveInterval`, `ServerAliveCountMax`, `TCPKeepAlive`
+  - Preserves `Compression`, `ConnectTimeout`, `ConnectionAttempts`
+  - Preserves `StrictHostKeyChecking`, `UserKnownHostsFile`, `LogLevel`
 - **Dependencies** - Updated: aws-lc-rs 1.15.3→1.15.4, aws-lc-sys 0.36.0→0.37.0, cc 1.2.53→1.2.54, cfg-expr 0.20.5→0.20.6, hybrid-array 0.4.5→0.4.6, libm 0.2.15→0.2.16, moka 0.12.12→0.12.13, notify-types 2.0.0→2.1.0, num-conv 0.1.0→0.2.0, proc-macro2 1.0.105→1.0.106, quote 1.0.43→1.0.44, siphasher 1.0.1→1.0.2, socket2 0.6.1→0.6.2, time 0.3.45→0.3.46, time-core 0.1.7→0.1.8, time-macros 0.2.25→0.2.26, uuid 1.19.0→1.20.0, yuv 0.8.9→0.8.10, zerocopy 0.8.33→0.8.34, zmij 1.0.16→1.0.17
 
 ### Fixed

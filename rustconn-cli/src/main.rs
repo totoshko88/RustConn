@@ -958,6 +958,16 @@ fn build_ssh_command(connection: &Connection) -> ConnectionCommand {
             args.push("-A".to_string());
         }
 
+        // Add X11 forwarding if enabled
+        if ssh_config.x11_forwarding {
+            args.push("-X".to_string());
+        }
+
+        // Add compression if enabled
+        if ssh_config.compression {
+            args.push("-C".to_string());
+        }
+
         // Add custom options
         for (key, value) in &ssh_config.custom_options {
             args.push("-o".to_string());

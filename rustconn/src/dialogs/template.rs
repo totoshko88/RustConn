@@ -2228,6 +2228,8 @@ impl TemplateDialog {
             identities_only: identities_only.is_active(),
             use_control_master: control_master.is_active(),
             agent_forwarding: agent_forwarding.is_active(),
+            x11_forwarding: false,
+            compression: false,
             startup_command: if startup_command.is_empty() {
                 None
             } else {

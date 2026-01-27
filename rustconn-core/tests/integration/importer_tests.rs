@@ -206,6 +206,90 @@ fn test_rdm_import_skips_unsupported_protocols() {
     assert!(!connection_names.contains(&"Unsupported FTP"));
 }
 
+#[test]
+fn test_rdm_import_ssh_with_private_key() {
+    use rustconn_core::models::{ProtocolConfig, SshAuthMethod};
+
+    let rdm_json = r#"{
+        "Connections": [
+            {
+                "ID": "conn-1",
+                "Name": "SSH with Key",
+                "ConnectionType": "SSH",
+                "Host": "server1.example.com",
+                "PrivateKeyPath": "/home/user/.ssh/id_rsa"
+            },
+            {
+                "ID": "conn-2",
+                "Name": "SSH with Tilde Key",
+                "ConnectionType": "SSH",
+                "Host": "server2.example.com",
+                "PrivateKeyPath": "~/.ssh/id_ed25519"
+            },
+            {
+                "ID": "conn-3",
+                "Name": "SSH without Key",
+                "ConnectionType": "SSH",
+                "Host": "server3.example.com"
+            }
+        ]
+    }"#;
+
+    let importer = RdmImporter::new();
+    let result = importer
+        .import_from_content(rdm_json)
+        .expect("Import should succeed");
+
+    assert_eq!(result.connections.len(), 3);
+
+    // First connection: has PrivateKeyPath
+    let conn1 = result
+        .connections
+        .iter()
+        .find(|c| c.name == "SSH with Key")
+        .expect("SSH with Key should be imported");
+
+    if let ProtocolConfig::Ssh(ref ssh) = conn1.protocol_config {
+        assert_eq!(ssh.auth_method, SshAuthMethod::PublicKey);
+        assert!(ssh.key_path.is_some());
+        let key_path = ssh.key_path.as_ref().unwrap();
+        assert!(key_path.to_string_lossy().contains(".ssh/id_rsa"));
+    } else {
+        panic!("Expected SSH config");
+    }
+
+    // Second connection: has tilde path (should be expanded)
+    let conn2 = result
+        .connections
+        .iter()
+        .find(|c| c.name == "SSH with Tilde Key")
+        .expect("SSH with Tilde Key should be imported");
+
+    if let ProtocolConfig::Ssh(ref ssh) = conn2.protocol_config {
+        assert_eq!(ssh.auth_method, SshAuthMethod::PublicKey);
+        assert!(ssh.key_path.is_some());
+        // Tilde should be expanded
+        let key_path = ssh.key_path.as_ref().unwrap();
+        assert!(!key_path.to_string_lossy().starts_with('~'));
+    } else {
+        panic!("Expected SSH config");
+    }
+
+    // Third connection: no key, should use password auth
+    let conn3 = result
+        .connections
+        .iter()
+        .find(|c| c.name == "SSH without Key")
+        .expect("SSH without Key should be imported");
+
+    if let ProtocolConfig::Ssh(ref ssh) = conn3.protocol_config {
+        assert_eq!(ssh.auth_method, SshAuthMethod::Password);
+        assert!(ssh.key_path.is_none());
+    } else {
+        panic!("Expected SSH config");
+    }
+}
+
 // ============================================================================
 // Royal TS Import Integration Tests
 // ============================================================================
@@ -570,8 +654,12 @@ fn test_importers_handle_malformed_input() {
 
     // Remmina with missing required fields
     let remmina_importer = RemminaImporter::new();
-    let remmina_result =
-        remmina_importer.parse_remmina_file("[remmina]\nprotocol=SSH", "bad.remmina");
+    let mut group_map = std::collections::HashMap::new();
+    let remmina_result = remmina_importer.parse_remmina_file(
+        "[remmina]\nprotocol=SSH",
+        "bad.remmina",
+        &mut group_map,
+    );
     // Should handle missing server field gracefully
     assert!(remmina_result.connections.is_empty() || !remmina_result.skipped.is_empty());
 }
@@ -596,7 +684,8 @@ fn test_importers_handle_empty_input() {
     assert!(asbru_result.connections.is_empty());
 
     let remmina_importer = RemminaImporter::new();
-    let remmina_result = remmina_importer.parse_remmina_file("", "empty.remmina");
+    let mut group_map = std::collections::HashMap::new();
+    let remmina_result = remmina_importer.parse_remmina_file("", "empty.remmina", &mut group_map);
     assert!(remmina_result.connections.is_empty());
 }
 

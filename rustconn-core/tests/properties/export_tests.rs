@@ -682,7 +682,7 @@ proptest! {
         let exported = RemminaExporter::export_connection(&conn).unwrap();
 
         // Re-import the exported content
-        let result = importer.parse_remmina_file(&exported, "test.remmina");
+        let result = importer.parse_remmina_file(&exported, "test.remmina", &mut std::collections::HashMap::new());
 
         // Property: Connection should be re-imported
         prop_assert_eq!(
@@ -766,7 +766,7 @@ proptest! {
         let exported = RemminaExporter::export_connection(&conn).unwrap();
 
         // Re-import the exported content
-        let result = importer.parse_remmina_file(&exported, "test.remmina");
+        let result = importer.parse_remmina_file(&exported, "test.remmina", &mut std::collections::HashMap::new());
 
         // Property: Connection should be re-imported
         prop_assert_eq!(
@@ -836,7 +836,7 @@ proptest! {
         let exported = RemminaExporter::export_connection(&conn).unwrap();
 
         // Re-import the exported content
-        let result = importer.parse_remmina_file(&exported, "test.remmina");
+        let result = importer.parse_remmina_file(&exported, "test.remmina", &mut std::collections::HashMap::new());
 
         // Property: Connection should be re-imported
         prop_assert_eq!(

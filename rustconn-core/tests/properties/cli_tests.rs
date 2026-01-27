@@ -889,7 +889,7 @@ proptest! {
         let remmina_content = conn.to_remmina();
 
         // Parse the file
-        let result = importer.parse_remmina_file(&remmina_content, "test.remmina");
+        let result = importer.parse_remmina_file(&remmina_content, "test.remmina", &mut std::collections::HashMap::new());
 
         // Property: One connection should be imported
         prop_assert_eq!(
@@ -1051,7 +1051,7 @@ proptest! {
         let remmina_content = lines.join("\n");
 
         // Parse the file
-        let result = importer.parse_remmina_file(&remmina_content, "test.remmina");
+        let result = importer.parse_remmina_file(&remmina_content, "test.remmina", &mut std::collections::HashMap::new());
 
         // Property: One connection should be imported
         prop_assert_eq!(

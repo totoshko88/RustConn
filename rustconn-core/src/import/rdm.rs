@@ -13,10 +13,11 @@ use uuid::Uuid;
 use crate::error::ImportError;
 use crate::models::{
     AutomationConfig, Connection, ConnectionGroup, PasswordSource, ProtocolConfig, ProtocolType,
-    RdpConfig, SshConfig, VncConfig, WindowMode,
+    RdpConfig, SshAuthMethod, SshConfig, VncConfig, WindowMode,
 };
 use crate::progress::ProgressReporter;
 
+use super::normalize::parse_host_port;
 use super::traits::{ImportResult, ImportSource, SkippedEntry};
 
 /// RDM JSON connection entry
@@ -207,74 +208,84 @@ impl RdmImporter {
         }
     }
 
+    /// Parses protocol configuration from RDM connection type
+    fn parse_protocol(conn: &RdmConnection) -> Result<(ProtocolType, ProtocolConfig, u16), String> {
+        match conn.connection_type.to_lowercase().as_str() {
+            "ssh" | "ssh2" => {
+                let key_path = conn
+                    .private_key_path
+                    .as_ref()
+                    .filter(|p| !p.is_empty())
+                    .map(|p| std::path::PathBuf::from(shellexpand::tilde(p).into_owned()));
+                let auth_method = if key_path.is_some() {
+                    SshAuthMethod::PublicKey
+                } else {
+                    SshAuthMethod::Password
+                };
+                let ssh_config = SshConfig {
+                    auth_method,
+                    key_path,
+                    x11_forwarding: false,
+                    compression: false,
+                    ..Default::default()
+                };
+                Ok((ProtocolType::Ssh, ProtocolConfig::Ssh(ssh_config), 22))
+            }
+            "rdp" | "rdp2" => Ok((
+                ProtocolType::Rdp,
+                ProtocolConfig::Rdp(RdpConfig::default()),
+                3389,
+            )),
+            "vnc" => {
+                let vnc_config = VncConfig {
+                    view_only: conn.view_only.unwrap_or(false),
+                    ..Default::default()
+                };
+                Ok((ProtocolType::Vnc, ProtocolConfig::Vnc(vnc_config), 5900))
+            }
+            "telnet" => Ok((
+                ProtocolType::Ssh,
+                ProtocolConfig::Ssh(SshConfig::default()),
+                23,
+            )),
+            other => Err(format!("Unsupported connection type: {other}")),
+        }
+    }
+
     /// Creates a connection from RDM connection data
     fn create_connection_from_rdm(
         conn: &RdmConnection,
         group_map: &HashMap<String, Uuid>,
     ) -> Result<Connection, ImportError> {
-        let host = conn.host.as_ref().ok_or_else(|| ImportError::ParseError {
+        let host_raw = conn.host.as_ref().ok_or_else(|| ImportError::ParseError {
             source_name: "RDM JSON".to_string(),
             reason: format!("Connection '{}' missing host", conn.name),
         })?;
 
-        let (protocol, protocol_config, port) = match conn.connection_type.to_lowercase().as_str() {
-            "ssh" | "ssh2" => {
-                let ssh_config = SshConfig::default();
-                (
-                    ProtocolType::Ssh,
-                    ProtocolConfig::Ssh(ssh_config),
-                    conn.port.unwrap_or(22),
-                )
-            }
-            "rdp" | "rdp2" => {
-                let rdp_config = RdpConfig::default();
-                (
-                    ProtocolType::Rdp,
-                    ProtocolConfig::Rdp(rdp_config),
-                    conn.port.unwrap_or(3389),
-                )
-            }
-            "vnc" => {
-                let vnc_config = VncConfig::default();
-                (
-                    ProtocolType::Vnc,
-                    ProtocolConfig::Vnc(vnc_config),
-                    conn.port.unwrap_or(5900),
-                )
-            }
-            "telnet" => {
-                // Map telnet to SSH for now
-                let ssh_config = SshConfig::default();
-                (
-                    ProtocolType::Ssh,
-                    ProtocolConfig::Ssh(ssh_config),
-                    conn.port.unwrap_or(23),
-                )
-            }
-            _ => {
-                return Err(ImportError::ParseError {
-                    source_name: "RDM JSON".to_string(),
-                    reason: format!("Unsupported connection type: {}", conn.connection_type),
-                });
-            }
-        };
+        // Use shared utility for host:port parsing
+        let (host, parsed_port) = parse_host_port(host_raw);
 
-        let password_source = conn
-            .password
-            .as_ref()
-            .map_or(PasswordSource::None, |password| {
-                if password.is_empty() {
-                    PasswordSource::None
-                } else {
-                    PasswordSource::Stored
-                }
-            });
+        let (protocol, protocol_config, default_port) =
+            Self::parse_protocol(conn).map_err(|reason| ImportError::ParseError {
+                source_name: "RDM JSON".to_string(),
+                reason,
+            })?;
+
+        // Use parsed port from host string, or connection port, or default
+        let port = parsed_port.or(conn.port).unwrap_or(default_port);
+
+        let password_source = conn.password.as_ref().map_or(PasswordSource::None, |p| {
+            if p.is_empty() {
+                PasswordSource::None
+            } else {
+                PasswordSource::Stored
+            }
+        });
 
         let group_id = conn
             .parent_id
             .as_ref()
             .and_then(|pid| group_map.get(pid).copied());
-
         let now = chrono::Utc::now();
 
         Ok(Connection {
@@ -282,7 +293,7 @@ impl RdmImporter {
             name: conn.name.clone(),
             description: conn.description.clone(),
             protocol,
-            host: host.clone(),
+            host,
             port,
             username: conn.username.clone(),
             group_id,

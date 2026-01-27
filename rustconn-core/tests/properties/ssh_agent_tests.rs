@@ -390,6 +390,8 @@ proptest! {
             proxy_jump: None,
             use_control_master: false,
             agent_forwarding: false,
+            x11_forwarding: false,
+            compression: false,
             custom_options: std::collections::HashMap::new(),
             startup_command: None, jump_host_id: None,
         };
@@ -456,6 +458,8 @@ proptest! {
             proxy_jump: None,
             use_control_master: false,
             agent_forwarding: false,
+            x11_forwarding: false,
+            compression: false,
             custom_options: std::collections::HashMap::new(),
             startup_command: None, jump_host_id: None,
         };
