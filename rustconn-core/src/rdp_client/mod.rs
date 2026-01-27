@@ -52,20 +52,32 @@ mod config;
 pub mod dir_watcher;
 mod error;
 mod event;
+pub mod gateway;
+pub mod graphics;
 pub mod input;
+pub mod multimonitor;
 #[cfg(feature = "rdp-embedded")]
 pub mod rdpdr;
+pub mod reconnect;
 
 #[cfg(feature = "rdp-embedded")]
 pub use audio::AudioFormatInfo;
 #[cfg(feature = "rdp-embedded")]
 pub use client::{RdpClient, RdpClientState, RdpCommandSender, RdpEventReceiver};
-pub use config::{RdpClientConfig, RdpSecurityProtocol, SharedFolder};
+pub use config::{
+    ConfigValidationError, RdpClientConfig, RdpSecurityProtocol, RemoteAppConfig, SharedFolder,
+};
 pub use error::RdpClientError;
 pub use event::{
     convert_to_bgra, create_frame_update, create_frame_update_with_conversion, ClipboardFileInfo,
     ClipboardFormatInfo, PixelFormat, RdpClientCommand, RdpClientEvent, RdpRect,
 };
+pub use gateway::{GatewayAuthMethod, GatewayConfig, GatewayError, GatewayState};
+pub use graphics::{
+    FrameStatistics, GraphicsError, GraphicsMode, GraphicsQuality, ServerGraphicsCapabilities,
+};
+pub use multimonitor::{MonitorArrangement, MonitorDefinition, MonitorLayout};
+pub use reconnect::{ConnectionQuality, DisconnectReason, ReconnectPolicy, ReconnectState};
 
 /// Check if embedded RDP support is available
 ///
