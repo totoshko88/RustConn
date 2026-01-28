@@ -214,8 +214,11 @@ pub type ProtocolResult<T> = std::result::Result<T, ProtocolError>;
 /// Result type alias for secret operations
 pub type SecretResult<T> = std::result::Result<T, SecretError>;
 
-/// Result type alias for import operations
-pub type ImportResult<T> = std::result::Result<T, ImportError>;
+/// Result type alias for import error handling
+///
+/// Note: This is distinct from `crate::import::ImportResult` which is a struct
+/// containing the results of an import operation (connections, groups, etc.).
+pub type ImportOperationResult<T> = std::result::Result<T, ImportError>;
 
 /// Result type alias for session operations
 pub type SessionResult<T> = std::result::Result<T, SessionError>;

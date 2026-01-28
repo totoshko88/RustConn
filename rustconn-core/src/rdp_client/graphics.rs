@@ -166,23 +166,76 @@ impl ServerGraphicsCapabilities {
 }
 
 /// Graphics quality settings
+///
+/// Controls visual quality features for RDP sessions. Higher quality settings
+/// provide better visuals but require more bandwidth and processing power.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[allow(clippy::struct_excessive_bools)]
 pub struct GraphicsQuality {
     /// Color depth (8, 15, 16, 24, or 32)
     pub color_depth: u8,
-    /// Enable font smoothing
+    /// Visual experience flags controlling various quality features
+    pub features: GraphicsFeatures,
+}
+
+/// Visual experience feature flags for RDP sessions
+///
+/// These flags control various visual quality features. Each flag can be
+/// independently enabled or disabled to balance quality vs. performance.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct GraphicsFeatures {
+    /// Enable font smoothing (ClearType)
     pub font_smoothing: bool,
-    /// Enable desktop composition (Aero)
+    /// Enable desktop composition (Aero glass effects)
     pub desktop_composition: bool,
-    /// Enable full window drag
+    /// Enable full window drag (show window contents while dragging)
     pub full_window_drag: bool,
     /// Enable menu animations
     pub menu_animations: bool,
-    /// Enable themes
+    /// Enable visual themes
     pub themes: bool,
-    /// Enable wallpaper
+    /// Show desktop wallpaper
     pub wallpaper: bool,
+}
+
+impl GraphicsFeatures {
+    /// Creates features with all options enabled (highest quality)
+    #[must_use]
+    pub const fn all_enabled() -> Self {
+        Self {
+            font_smoothing: true,
+            desktop_composition: true,
+            full_window_drag: true,
+            menu_animations: true,
+            themes: true,
+            wallpaper: true,
+        }
+    }
+
+    /// Creates features with all options disabled (best performance)
+    #[must_use]
+    pub const fn all_disabled() -> Self {
+        Self {
+            font_smoothing: false,
+            desktop_composition: false,
+            full_window_drag: false,
+            menu_animations: false,
+            themes: false,
+            wallpaper: false,
+        }
+    }
+
+    /// Creates balanced features (good quality with reasonable performance)
+    #[must_use]
+    pub const fn balanced() -> Self {
+        Self {
+            font_smoothing: true,
+            desktop_composition: false,
+            full_window_drag: false,
+            menu_animations: false,
+            themes: true,
+            wallpaper: false,
+        }
+    }
 }
 
 impl Default for GraphicsQuality {
@@ -197,12 +250,7 @@ impl GraphicsQuality {
     pub const fn high_quality() -> Self {
         Self {
             color_depth: 32,
-            font_smoothing: true,
-            desktop_composition: true,
-            full_window_drag: true,
-            menu_animations: true,
-            themes: true,
-            wallpaper: true,
+            features: GraphicsFeatures::all_enabled(),
         }
     }
 
@@ -211,12 +259,7 @@ impl GraphicsQuality {
     pub const fn balanced() -> Self {
         Self {
             color_depth: 24,
-            font_smoothing: true,
-            desktop_composition: false,
-            full_window_drag: false,
-            menu_animations: false,
-            themes: true,
-            wallpaper: false,
+            features: GraphicsFeatures::balanced(),
         }
     }
 
@@ -225,12 +268,7 @@ impl GraphicsQuality {
     pub const fn performance() -> Self {
         Self {
             color_depth: 16,
-            font_smoothing: false,
-            desktop_composition: false,
-            full_window_drag: false,
-            menu_animations: false,
-            themes: false,
-            wallpaper: false,
+            features: GraphicsFeatures::all_disabled(),
         }
     }
 
@@ -239,12 +277,7 @@ impl GraphicsQuality {
     pub const fn low_bandwidth() -> Self {
         Self {
             color_depth: 15,
-            font_smoothing: false,
-            desktop_composition: false,
-            full_window_drag: false,
-            menu_animations: false,
-            themes: false,
-            wallpaper: false,
+            features: GraphicsFeatures::all_disabled(),
         }
     }
 
@@ -252,7 +285,8 @@ impl GraphicsQuality {
     ///
     /// # Errors
     ///
-    /// Returns an error if settings are invalid.
+    /// Returns an error if the color depth is not a valid RDP color depth
+    /// (must be 8, 15, 16, 24, or 32).
     pub fn validate(&self) -> Result<(), GraphicsError> {
         if !matches!(self.color_depth, 8 | 15 | 16 | 24 | 32) {
             return Err(GraphicsError::InvalidColorDepth(self.color_depth));
@@ -442,12 +476,12 @@ mod tests {
     fn test_graphics_quality_presets() {
         let high = GraphicsQuality::high_quality();
         assert_eq!(high.color_depth, 32);
-        assert!(high.font_smoothing);
-        assert!(high.desktop_composition);
+        assert!(high.features.font_smoothing);
+        assert!(high.features.desktop_composition);
 
         let perf = GraphicsQuality::performance();
         assert_eq!(perf.color_depth, 16);
-        assert!(!perf.font_smoothing);
+        assert!(!perf.features.font_smoothing);
     }
 
     #[test]
@@ -457,9 +491,27 @@ mod tests {
 
         let invalid = GraphicsQuality {
             color_depth: 12,
-            ..Default::default()
+            features: GraphicsFeatures::default(),
         };
         assert!(invalid.validate().is_err());
+    }
+
+    #[test]
+    fn test_graphics_features() {
+        let all = GraphicsFeatures::all_enabled();
+        assert!(all.font_smoothing);
+        assert!(all.desktop_composition);
+        assert!(all.themes);
+
+        let none = GraphicsFeatures::all_disabled();
+        assert!(!none.font_smoothing);
+        assert!(!none.desktop_composition);
+        assert!(!none.themes);
+
+        let balanced = GraphicsFeatures::balanced();
+        assert!(balanced.font_smoothing);
+        assert!(!balanced.desktop_composition);
+        assert!(balanced.themes);
     }
 
     #[test]

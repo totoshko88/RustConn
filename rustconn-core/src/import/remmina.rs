@@ -358,11 +358,21 @@ impl RemminaImporter {
     }
 
     /// Gets or creates a group from the group map, handling nested paths like "Folder/Subfolder"
+    ///
+    /// # Preconditions
+    ///
+    /// `group_path` must not be empty. The caller is responsible for checking this.
+    ///
+    /// # Panics
+    ///
+    /// Panics in debug builds if `group_path` is empty.
     fn get_or_create_group(
         group_path: &str,
         group_map: &mut HashMap<String, Uuid>,
         result: &mut ImportResult,
     ) -> Uuid {
+        debug_assert!(!group_path.is_empty(), "group_path must not be empty");
+
         // Check if already exists
         if let Some(&id) = group_map.get(group_path) {
             return id;
@@ -395,7 +405,11 @@ impl RemminaImporter {
             }
         }
 
-        parent_id.expect("Group path should not be empty")
+        // SAFETY: parent_id is always Some after the loop because:
+        // 1. group_path is non-empty (precondition)
+        // 2. split('/') on non-empty string always yields at least one part
+        // 3. Each part either finds an existing group or creates a new one
+        parent_id.expect("parent_id is always Some for non-empty group_path")
     }
 }
 

@@ -239,7 +239,7 @@ fn is_local_address(host: &str) -> bool {
         };
     }
 
-    // Check for .local domain (case-insensitive)
+    // Check for .local/.internal domain suffix (already case-insensitive via to_lowercase)
     let host_lower = host.to_lowercase();
     if host_lower.ends_with(".local") || host_lower.ends_with(".internal") {
         return true;

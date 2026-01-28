@@ -4,6 +4,7 @@
 //! updating, and deleting command snippets with persistence through `ConfigManager`.
 
 use std::collections::{HashMap, HashSet};
+use std::sync::LazyLock;
 
 use regex::Regex;
 use uuid::Uuid;
@@ -11,6 +12,11 @@ use uuid::Uuid;
 use crate::config::ConfigManager;
 use crate::error::{ConfigError, ConfigResult};
 use crate::models::{Snippet, SnippetVariable};
+
+/// Cached regex for variable extraction: matches `${var_name}` patterns
+static VARIABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}").expect("VARIABLE_REGEX is a valid regex pattern")
+});
 
 /// Manager for snippet CRUD operations
 ///
@@ -329,12 +335,9 @@ impl SnippetManager {
     /// Panics if the internal regex pattern is invalid (should never happen).
     #[must_use]
     pub fn extract_variables(command: &str) -> Vec<String> {
-        // Match ${var_name} pattern where var_name is alphanumeric with underscores
-        let re = Regex::new(r"\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}").expect("Invalid regex pattern");
-
         let mut variables: HashSet<String> = HashSet::new();
 
-        for cap in re.captures_iter(command) {
+        for cap in VARIABLE_REGEX.captures_iter(command) {
             if let Some(var_name) = cap.get(1) {
                 variables.insert(var_name.as_str().to_string());
             }
@@ -379,16 +382,15 @@ impl SnippetManager {
     /// Panics if the internal regex pattern is invalid (should never happen).
     #[must_use]
     pub fn substitute_variables(command: &str, values: &HashMap<String, String>) -> String {
-        let re = Regex::new(r"\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}").expect("Invalid regex pattern");
-
-        re.replace_all(command, |caps: &regex::Captures| {
-            let var_name = caps.get(1).map_or("", |m| m.as_str());
-            values
-                .get(var_name)
-                .cloned()
-                .unwrap_or_else(|| caps[0].to_string())
-        })
-        .to_string()
+        VARIABLE_REGEX
+            .replace_all(command, |caps: &regex::Captures| {
+                let var_name = caps.get(1).map_or("", |m| m.as_str());
+                values
+                    .get(var_name)
+                    .cloned()
+                    .unwrap_or_else(|| caps[0].to_string())
+            })
+            .to_string()
     }
 
     /// Substitutes variables using the snippet's defined variables with defaults

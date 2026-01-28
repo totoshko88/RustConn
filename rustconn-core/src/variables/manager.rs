@@ -4,11 +4,17 @@
 //! resolution across scopes, and substitution in strings.
 
 use std::collections::{HashMap, HashSet};
+use std::sync::LazyLock;
 
 use regex::Regex;
 use uuid::Uuid;
 
 use super::{Variable, VariableError, VariableResult, VariableScope, MAX_NESTING_DEPTH};
+
+/// Cached regex for variable extraction: matches `${var_name}` patterns
+static VARIABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}").expect("VARIABLE_REGEX is a valid regex pattern")
+});
 
 /// Variable manager for resolution and substitution
 ///
@@ -336,9 +342,8 @@ impl VariableManager {
     }
 
     /// Returns the regex for matching variable references
-    fn variable_regex() -> Regex {
-        // Match ${var_name} where var_name is alphanumeric with underscores
-        Regex::new(r"\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}").expect("Invalid regex pattern")
+    fn variable_regex() -> &'static Regex {
+        &VARIABLE_REGEX
     }
 
     // ========== Validation ==========

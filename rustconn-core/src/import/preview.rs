@@ -135,6 +135,11 @@ impl ImportPreview {
     /// * `existing_connections` - Existing connections to check for duplicates
     /// * `existing_groups` - Existing groups to check for duplicates
     /// * `strategy` - The merge strategy to use for determining actions
+    ///
+    /// # Performance Note
+    ///
+    /// This method clones connections for the preview. For very large imports (1000+),
+    /// consider using indices or implementing a streaming preview approach.
     #[must_use]
     pub fn from_result(
         result: &ImportResult,
@@ -146,20 +151,20 @@ impl ImportPreview {
     ) -> Self {
         let mut preview = Self::new(source_id, source_path);
 
-        // Build lookup maps for existing items
-        let conn_lookup: HashMap<(String, u16), &Connection> = existing_connections
+        // Build lookup maps for existing items using references to avoid cloning
+        let conn_lookup: HashMap<(&str, u16), &Connection> = existing_connections
             .iter()
-            .map(|c| ((c.host.clone(), c.port), c))
+            .map(|c| ((c.host.as_str(), c.port), c))
             .collect();
 
-        let group_lookup: HashMap<(String, Option<Uuid>), &ConnectionGroup> = existing_groups
+        let group_lookup: HashMap<(&str, Option<Uuid>), &ConnectionGroup> = existing_groups
             .iter()
-            .map(|g| ((g.name.clone(), g.parent_id), g))
+            .map(|g| ((g.name.as_str(), g.parent_id), g))
             .collect();
 
         // Process connections
         for conn in &result.connections {
-            let key = (conn.host.clone(), conn.port);
+            let key = (conn.host.as_str(), conn.port);
             let existing = conn_lookup.get(&key);
 
             let (is_duplicate, existing_id, suggested_action) =
@@ -193,7 +198,7 @@ impl ImportPreview {
 
         // Process groups
         for group in &result.groups {
-            let key = (group.name.clone(), group.parent_id);
+            let key = (group.name.as_str(), group.parent_id);
             let existing = group_lookup.get(&key);
 
             let (is_duplicate, existing_id) = if let Some(existing_group) = existing {

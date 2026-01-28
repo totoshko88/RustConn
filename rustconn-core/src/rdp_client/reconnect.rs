@@ -14,6 +14,48 @@
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
+/// Jitter factor for randomizing reconnection delays (0.0 to 1.0 range added)
+const JITTER_FACTOR: f64 = 0.25;
+
+/// RTT threshold for "excellent" connection quality (ms)
+const RTT_EXCELLENT_MS: u32 = 50;
+
+/// RTT threshold for "good" connection quality (ms)
+const RTT_GOOD_MS: u32 = 100;
+
+/// RTT threshold for "fair" connection quality (ms)
+const RTT_FAIR_MS: u32 = 200;
+
+/// FPS threshold for "poor" quality
+const FPS_POOR: f32 = 10.0;
+
+/// FPS threshold for "fair" quality
+const FPS_FAIR: f32 = 20.0;
+
+/// FPS threshold for "good" quality
+const FPS_GOOD: f32 = 30.0;
+
+/// Packet loss threshold for "severe" quality impact (%)
+const PACKET_LOSS_SEVERE: f32 = 5.0;
+
+/// Packet loss threshold for "moderate" quality impact (%)
+const PACKET_LOSS_MODERATE: f32 = 1.0;
+
+/// Packet loss threshold for "minor" quality impact (%)
+const PACKET_LOSS_MINOR: f32 = 0.1;
+
+/// Quality score threshold for "excellent" rating
+const QUALITY_EXCELLENT: u8 = 80;
+
+/// Quality score threshold for "good" rating
+const QUALITY_GOOD: u8 = 60;
+
+/// Quality score threshold for "fair" rating
+const QUALITY_FAIR: u8 = 40;
+
+/// Quality score threshold for "poor" rating
+const QUALITY_POOR: u8 = 20;
+
 /// Reconnection policy configuration
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ReconnectPolicy {
@@ -105,8 +147,8 @@ impl ReconnectPolicy {
         let delay_secs = base_delay.min(self.max_delay.as_secs_f64());
 
         let final_delay = if self.use_jitter {
-            // Add up to 25% jitter
-            let jitter = delay_secs * 0.25 * rand_jitter();
+            // Add jitter using the configured factor
+            let jitter = delay_secs * JITTER_FACTOR * rand_jitter();
             delay_secs + jitter
         } else {
             delay_secs
@@ -122,8 +164,15 @@ impl ReconnectPolicy {
     }
 }
 
-/// Simple pseudo-random jitter (0.0 to 1.0)
-/// Uses a basic LCG seeded from current time
+/// Simple pseudo-random jitter generator (0.0 to 1.0)
+///
+/// Uses a basic Linear Congruential Generator (LCG) seeded from current time.
+///
+/// # Security Note
+///
+/// This is NOT cryptographically secure and should ONLY be used for
+/// non-security-sensitive purposes like connection retry jitter.
+/// Do NOT use for generating secrets, tokens, or any security-related values.
 fn rand_jitter() -> f64 {
     use std::time::SystemTime;
     let seed = SystemTime::now()
@@ -131,7 +180,7 @@ fn rand_jitter() -> f64 {
         .map(|d| d.as_nanos() as u64)
         .unwrap_or(12345);
 
-    // Simple LCG
+    // Simple LCG - adequate for jitter, not for security
     let next = seed.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
     (next as f64) / (u64::MAX as f64)
 }
@@ -329,33 +378,33 @@ impl ConnectionQuality {
 
         // Penalize high RTT
         if let Some(rtt) = self.rtt_ms {
-            if rtt > 200 {
+            if rtt > RTT_FAIR_MS {
                 score = score.saturating_sub(30);
-            } else if rtt > 100 {
+            } else if rtt > RTT_GOOD_MS {
                 score = score.saturating_sub(15);
-            } else if rtt > 50 {
+            } else if rtt > RTT_EXCELLENT_MS {
                 score = score.saturating_sub(5);
             }
         }
 
         // Penalize low FPS
         if let Some(fps) = self.fps {
-            if fps < 10.0 {
+            if fps < FPS_POOR {
                 score = score.saturating_sub(40);
-            } else if fps < 20.0 {
+            } else if fps < FPS_FAIR {
                 score = score.saturating_sub(20);
-            } else if fps < 30.0 {
+            } else if fps < FPS_GOOD {
                 score = score.saturating_sub(10);
             }
         }
 
         // Penalize packet loss
         if let Some(loss) = self.packet_loss {
-            if loss > 5.0 {
+            if loss > PACKET_LOSS_SEVERE {
                 score = score.saturating_sub(30);
-            } else if loss > 1.0 {
+            } else if loss > PACKET_LOSS_MODERATE {
                 score = score.saturating_sub(15);
-            } else if loss > 0.1 {
+            } else if loss > PACKET_LOSS_MINOR {
                 score = score.saturating_sub(5);
             }
         }
@@ -367,10 +416,10 @@ impl ConnectionQuality {
     #[must_use]
     pub fn quality_description(&self) -> &'static str {
         match self.quality_score {
-            Some(score) if score >= 80 => "Excellent",
-            Some(score) if score >= 60 => "Good",
-            Some(score) if score >= 40 => "Fair",
-            Some(score) if score >= 20 => "Poor",
+            Some(score) if score >= QUALITY_EXCELLENT => "Excellent",
+            Some(score) if score >= QUALITY_GOOD => "Good",
+            Some(score) if score >= QUALITY_FAIR => "Fair",
+            Some(score) if score >= QUALITY_POOR => "Poor",
             Some(_) => "Very Poor",
             None => "Unknown",
         }

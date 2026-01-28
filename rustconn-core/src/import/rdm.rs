@@ -149,9 +149,23 @@ impl RdmImporter {
 
     /// Imports connections from RDM JSON content
     ///
+    /// Parses the provided JSON string as an RDM export file and converts
+    /// the connections and folders to RustConn format.
+    ///
+    /// # Arguments
+    ///
+    /// * `content` - The JSON content to parse
+    ///
+    /// # Returns
+    ///
+    /// An `ImportResult` containing the converted connections and groups.
+    ///
     /// # Errors
     ///
-    /// Returns `ImportError::ParseError` if the JSON is malformed or contains invalid data.
+    /// Returns `ImportError::ParseError` if:
+    /// - The JSON is malformed or cannot be parsed
+    /// - Required fields are missing from connection entries
+    /// - Connection types are not supported (only SSH, RDP, VNC, Telnet)
     pub fn import_from_content(&self, content: &str) -> Result<ImportResult, ImportError> {
         let rdm_data: RdmExport =
             serde_json::from_str(content).map_err(|e| ImportError::ParseError {
@@ -160,13 +174,21 @@ impl RdmImporter {
             })?;
 
         let mut result = ImportResult::new();
-        let mut group_map = HashMap::new();
+        // Maps RDM folder ID -> RustConn group UUID
+        let mut group_map: HashMap<String, Uuid> = HashMap::new();
 
-        // First pass: create groups/folders
+        // First pass: create groups/folders and build the ID mapping
+        // We need to process folders in order to handle parent references
         if let Some(folders) = &rdm_data.folders {
+            // First, create all groups without parent references
             for folder in folders {
-                let group = Self::create_group_from_folder(folder);
-                group_map.insert(folder.id.clone(), group.id);
+                let group_id = Uuid::new_v4();
+                group_map.insert(folder.id.clone(), group_id);
+            }
+
+            // Second, create the actual groups with resolved parent IDs
+            for folder in folders {
+                let group = Self::create_group_from_folder(folder, &group_map);
                 result.add_group(group);
             }
         }
@@ -189,16 +211,30 @@ impl RdmImporter {
         Ok(result)
     }
 
-    /// Creates a connection group from RDM folder
-    fn create_group_from_folder(folder: &RdmFolder) -> ConnectionGroup {
+    /// Creates a connection group from RDM folder with parent resolution
+    ///
+    /// # Arguments
+    ///
+    /// * `folder` - The RDM folder to convert
+    /// * `group_map` - Mapping from RDM folder IDs to RustConn group UUIDs
+    fn create_group_from_folder(
+        folder: &RdmFolder,
+        group_map: &HashMap<String, Uuid>,
+    ) -> ConnectionGroup {
+        // Resolve parent_id: look up the RDM parent ID in the group map
+        let parent_id = folder
+            .parent_id
+            .as_ref()
+            .and_then(|pid| group_map.get(pid).copied());
+
         ConnectionGroup {
-            id: Uuid::new_v4(),
+            // Use the pre-allocated UUID from the group_map
+            id: group_map
+                .get(&folder.id)
+                .copied()
+                .unwrap_or_else(Uuid::new_v4),
             name: folder.name.clone(),
-            parent_id: folder.parent_id.as_ref().and({
-                // Note: Parent resolution would need group_map lookup
-                // For now, create flat structure
-                None
-            }),
+            parent_id,
             expanded: true,
             created_at: chrono::Utc::now(),
             sort_order: 0,
