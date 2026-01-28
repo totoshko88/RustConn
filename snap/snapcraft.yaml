@@ -1,6 +1,6 @@
 name: rustconn
 base: core24
-version: '0.6.5'
+version: '0.6.6'
 summary: Modern connection manager for Linux
 description: |
   RustConn is a GTK4/libadwaita connection manager supporting SSH, RDP, VNC, 

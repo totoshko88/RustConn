@@ -35,7 +35,7 @@ resvg = { version = "0.46", optional = true }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Audio playback for RDP embedded mode
-cpal = { version = "0.17", optional = true }
+cpal = { version = "0.17.1", optional = true }
 
 [features]
 default = ["tray", "vnc-embedded", "rdp-embedded", "rdp-audio", "wayland-native"]

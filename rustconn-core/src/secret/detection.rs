@@ -4,7 +4,15 @@
 //! and their versions, useful for UI display and backend selection.
 
 use std::path::PathBuf;
+use std::sync::LazyLock;
+
+use regex::Regex;
 use tokio::process::Command;
+
+/// Cached regex for version parsing: matches patterns like "1.2.3" or "v1.2.3"
+static VERSION_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"v?(\d+\.\d+(?:\.\d+)?)").expect("VERSION_REGEX is a valid regex pattern")
+});
 
 /// Information about an installed password manager
 #[derive(Debug, Clone)]
@@ -358,9 +366,7 @@ pub async fn detect_keepass() -> PasswordManagerInfo {
 
 /// Parses version from a typical version output line
 fn parse_version_line(output: &str) -> Option<String> {
-    // Try to find version pattern like "1.2.3" or "v1.2.3"
-    let version_regex = regex::Regex::new(r"v?(\d+\.\d+(?:\.\d+)?)").ok()?;
-    version_regex
+    VERSION_REGEX
         .captures(output)
         .and_then(|c| c.get(1))
         .map(|m| m.as_str().to_string())

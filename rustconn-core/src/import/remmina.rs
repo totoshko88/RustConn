@@ -2,18 +2,22 @@
 //!
 //! Parses .remmina files from ~/.local/share/remmina/
 //! Supports importing passwords from GNOME Keyring via secret-tool.
+//! Creates proper group hierarchy from Remmina's group field.
 
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
+use uuid::Uuid;
+
 use crate::error::ImportError;
 use crate::models::{
-    Connection, PasswordSource, ProtocolConfig, RdpConfig, Resolution, SshAuthMethod, SshConfig,
-    SshKeySource, VncConfig,
+    Connection, ConnectionGroup, PasswordSource, ProtocolConfig, RdpConfig, Resolution,
+    SpiceConfig, SshAuthMethod, SshConfig, SshKeySource, VncConfig,
 };
 
+use super::normalize::parse_host_port;
 use super::traits::{ImportResult, ImportSource, SkippedEntry};
 
 /// Importer for Remmina connection files.
@@ -114,7 +118,12 @@ impl RemminaImporter {
 
     /// Parses a single .remmina file content
     #[must_use]
-    pub fn parse_remmina_file(&self, content: &str, source_path: &str) -> ImportResult {
+    pub fn parse_remmina_file(
+        &self,
+        content: &str,
+        source_path: &str,
+        group_map: &mut HashMap<String, Uuid>,
+    ) -> ImportResult {
         let mut result = ImportResult::new();
 
         // Parse INI-style format
@@ -131,9 +140,16 @@ impl RemminaImporter {
         };
 
         // Extract connection details
-        if let Some(connection) =
+        if let Some((mut connection, group_path)) =
             self.convert_to_connection(remmina_section, source_path, &mut result)
         {
+            // Assign group if present
+            if let Some(ref path) = group_path {
+                if !path.is_empty() {
+                    let group_id = Self::get_or_create_group(path, group_map, &mut result);
+                    connection.group_id = Some(group_id);
+                }
+            }
             result.add_connection(connection);
         }
 
@@ -179,23 +195,23 @@ impl RemminaImporter {
     }
 
     /// Converts Remmina config section to a Connection
-    #[allow(clippy::unused_self, clippy::too_many_lines)]
+    /// Returns (Connection, Option<group_path>) for group assignment
+    #[allow(clippy::too_many_lines)]
     fn convert_to_connection(
         &self,
         config: &HashMap<String, String>,
         source_path: &str,
         result: &mut ImportResult,
-    ) -> Option<Connection> {
+    ) -> Option<(Connection, Option<String>)> {
         // Get protocol
         let protocol = config.get("protocol").map(|s| s.to_uppercase());
 
         // Get server/host
         let server = config.get("server").or_else(|| config.get("ssh_server"));
-        let host = match server {
+        let (host, parsed_port) = match server {
             Some(s) if !s.is_empty() => {
-                // Server might include port (host:port)
-                s.rfind(':')
-                    .map_or_else(|| s.clone(), |colon_pos| s[..colon_pos].to_string())
+                // Use shared utility for host:port parsing
+                parse_host_port(s)
             }
             _ => {
                 result.add_skipped(SkippedEntry::with_location(
@@ -210,14 +226,11 @@ impl RemminaImporter {
         // Get name
         let name = config.get("name").cloned().unwrap_or_else(|| host.clone());
 
-        // Parse port from server string or dedicated field
+        // Parse port from dedicated field or use parsed port from server string
         let port = config
-            .get("server")
-            .and_then(|s| {
-                s.rfind(':')
-                    .and_then(|pos| s[pos + 1..].parse::<u16>().ok())
-            })
-            .or_else(|| config.get("ssh_server_port").and_then(|p| p.parse().ok()));
+            .get("ssh_server_port")
+            .and_then(|p| p.parse().ok())
+            .or(parsed_port);
 
         // Create protocol-specific config
         let (protocol_config, default_port) = match protocol.as_deref() {
@@ -233,6 +246,19 @@ impl RemminaImporter {
                     .filter(|s| !s.is_empty())
                     .map(|p| PathBuf::from(shellexpand::tilde(p).into_owned()));
 
+                // Check for SSH tunnel options
+                let x11_forwarding = config
+                    .get("ssh_tunnel_x11")
+                    .is_some_and(|v| v == "1" || v.to_lowercase() == "yes");
+
+                let compression = config
+                    .get("ssh_compression")
+                    .is_some_and(|v| v == "1" || v.to_lowercase() == "yes");
+
+                let agent_forwarding = config
+                    .get("ssh_tunnel_agent")
+                    .is_some_and(|v| v == "1" || v.to_lowercase() == "yes");
+
                 (
                     ProtocolConfig::Ssh(SshConfig {
                         auth_method,
@@ -243,7 +269,9 @@ impl RemminaImporter {
                         jump_host_id: None,
                         proxy_jump: None,
                         use_control_master: false,
-                        agent_forwarding: false,
+                        agent_forwarding,
+                        x11_forwarding,
+                        compression,
                         custom_options: HashMap::new(),
                         startup_command: None,
                     }),
@@ -275,6 +303,7 @@ impl RemminaImporter {
                 )
             }
             Some("VNC") => (ProtocolConfig::Vnc(VncConfig::default()), 5900u16),
+            Some("SPICE") => (ProtocolConfig::Spice(SpiceConfig::default()), 5900u16),
             Some(p) => {
                 result.add_skipped(SkippedEntry::with_location(
                     &name,
@@ -324,14 +353,63 @@ impl RemminaImporter {
             }
         }
 
-        // Add group as tag if present
-        if let Some(group) = config.get("group") {
-            if !group.is_empty() {
-                connection.tags.push(format!("remmina:{group}"));
+        // Return connection and group name for later processing
+        Some((connection, config.get("group").cloned()))
+    }
+
+    /// Gets or creates a group from the group map, handling nested paths like "Folder/Subfolder"
+    ///
+    /// # Preconditions
+    ///
+    /// `group_path` must not be empty. The caller is responsible for checking this.
+    ///
+    /// # Panics
+    ///
+    /// Panics in debug builds if `group_path` is empty.
+    fn get_or_create_group(
+        group_path: &str,
+        group_map: &mut HashMap<String, Uuid>,
+        result: &mut ImportResult,
+    ) -> Uuid {
+        debug_assert!(!group_path.is_empty(), "group_path must not be empty");
+
+        // Check if already exists
+        if let Some(&id) = group_map.get(group_path) {
+            return id;
+        }
+
+        // Handle nested paths (e.g., "Production/Web Servers")
+        let parts: Vec<&str> = group_path.split('/').collect();
+        let mut parent_id: Option<Uuid> = None;
+        let mut current_path = String::new();
+
+        for (idx, part) in parts.iter().enumerate() {
+            if idx > 0 {
+                current_path.push('/');
+            }
+            current_path.push_str(part);
+
+            if let Some(&existing_id) = group_map.get(&current_path) {
+                parent_id = Some(existing_id);
+            } else {
+                // Create new group
+                let group = if let Some(pid) = parent_id {
+                    ConnectionGroup::with_parent((*part).to_string(), pid)
+                } else {
+                    ConnectionGroup::new((*part).to_string())
+                };
+                let group_id = group.id;
+                group_map.insert(current_path.clone(), group_id);
+                result.add_group(group);
+                parent_id = Some(group_id);
             }
         }
 
-        Some(connection)
+        // SAFETY: parent_id is always Some after the loop because:
+        // 1. group_path is non-empty (precondition)
+        // 2. split('/') on non-empty string always yields at least one part
+        // 3. Each part either finds an existing group or creates a new one
+        parent_id.expect("parent_id is always Some for non-empty group_path")
     }
 }
 
@@ -388,9 +466,10 @@ impl ImportSource for RemminaImporter {
         }
 
         let mut combined_result = ImportResult::new();
+        let mut group_map: HashMap<String, Uuid> = HashMap::new();
 
         for path in paths {
-            match self.import_from_path(&path) {
+            match self.import_single_file(&path, &mut group_map) {
                 Ok(result) => combined_result.merge(result),
                 Err(e) => combined_result.add_error(e),
             }
@@ -404,12 +483,24 @@ impl ImportSource for RemminaImporter {
             return Err(ImportError::FileNotFound(path.to_path_buf()));
         }
 
+        let mut group_map: HashMap<String, Uuid> = HashMap::new();
+        self.import_single_file(path, &mut group_map)
+    }
+}
+
+impl RemminaImporter {
+    /// Imports a single .remmina file with shared group map
+    fn import_single_file(
+        &self,
+        path: &Path,
+        group_map: &mut HashMap<String, Uuid>,
+    ) -> Result<ImportResult, ImportError> {
         let content = fs::read_to_string(path).map_err(|e| ImportError::ParseError {
             source_name: "Remmina".to_string(),
             reason: format!("Failed to read {}: {}", path.display(), e),
         })?;
 
-        Ok(self.parse_remmina_file(&content, &path.display().to_string()))
+        Ok(self.parse_remmina_file(&content, &path.display().to_string(), group_map))
     }
 }
 
@@ -420,6 +511,7 @@ mod tests {
     #[test]
     fn test_parse_ssh_connection() {
         let importer = RemminaImporter::new();
+        let mut group_map = HashMap::new();
         let content = r"
 [remmina]
 name=My SSH Server
@@ -428,7 +520,7 @@ server=192.168.1.100:22
 username=admin
 ";
 
-        let result = importer.parse_remmina_file(content, "test.remmina");
+        let result = importer.parse_remmina_file(content, "test.remmina", &mut group_map);
         assert_eq!(result.connections.len(), 1);
 
         let conn = &result.connections[0];
@@ -441,6 +533,7 @@ username=admin
     #[test]
     fn test_parse_rdp_connection() {
         let importer = RemminaImporter::new();
+        let mut group_map = HashMap::new();
         let content = r"
 [remmina]
 name=Windows Server
@@ -451,7 +544,7 @@ resolution=1920x1080
 colordepth=32
 ";
 
-        let result = importer.parse_remmina_file(content, "test.remmina");
+        let result = importer.parse_remmina_file(content, "test.remmina", &mut group_map);
         assert_eq!(result.connections.len(), 1);
 
         let conn = &result.connections[0];
@@ -467,6 +560,7 @@ colordepth=32
     #[test]
     fn test_parse_vnc_connection() {
         let importer = RemminaImporter::new();
+        let mut group_map = HashMap::new();
         let content = r"
 [remmina]
 name=VNC Desktop
@@ -474,7 +568,7 @@ protocol=VNC
 server=192.168.1.75:5901
 ";
 
-        let result = importer.parse_remmina_file(content, "test.remmina");
+        let result = importer.parse_remmina_file(content, "test.remmina", &mut group_map);
         assert_eq!(result.connections.len(), 1);
 
         let conn = &result.connections[0];
@@ -483,16 +577,88 @@ server=192.168.1.75:5901
     }
 
     #[test]
+    fn test_parse_spice_connection() {
+        let importer = RemminaImporter::new();
+        let mut group_map = HashMap::new();
+        let content = r"
+[remmina]
+name=SPICE VM
+protocol=SPICE
+server=192.168.1.100:5900
+";
+
+        let result = importer.parse_remmina_file(content, "test.remmina", &mut group_map);
+        assert_eq!(result.connections.len(), 1);
+
+        let conn = &result.connections[0];
+        assert!(matches!(conn.protocol_config, ProtocolConfig::Spice(_)));
+        assert_eq!(conn.port, 5900);
+    }
+
+    #[test]
+    fn test_parse_with_group() {
+        let importer = RemminaImporter::new();
+        let mut group_map = HashMap::new();
+        let content = r"
+[remmina]
+name=Production Server
+protocol=SSH
+server=10.0.0.1
+group=Production
+";
+
+        let result = importer.parse_remmina_file(content, "test.remmina", &mut group_map);
+        assert_eq!(result.connections.len(), 1);
+        assert_eq!(result.groups.len(), 1);
+
+        let conn = &result.connections[0];
+        assert!(conn.group_id.is_some());
+        assert_eq!(result.groups[0].name, "Production");
+    }
+
+    #[test]
+    fn test_parse_with_nested_group() {
+        let importer = RemminaImporter::new();
+        let mut group_map = HashMap::new();
+        let content = r"
+[remmina]
+name=Web Server
+protocol=SSH
+server=10.0.0.1
+group=Production/Web Servers
+";
+
+        let result = importer.parse_remmina_file(content, "test.remmina", &mut group_map);
+        assert_eq!(result.connections.len(), 1);
+        assert_eq!(result.groups.len(), 2);
+
+        // Check hierarchy
+        let production = result.groups.iter().find(|g| g.name == "Production");
+        let web_servers = result.groups.iter().find(|g| g.name == "Web Servers");
+        assert!(production.is_some());
+        assert!(web_servers.is_some());
+        assert!(production
+            .as_ref()
+            .map(|g| g.parent_id.is_none())
+            .unwrap_or(false));
+        assert_eq!(
+            web_servers.as_ref().and_then(|g| g.parent_id),
+            production.map(|g| g.id)
+        );
+    }
+
+    #[test]
     fn test_skip_unsupported_protocol() {
         let importer = RemminaImporter::new();
+        let mut group_map = HashMap::new();
         let content = r"
 [remmina]
 name=Unknown
-protocol=SPICE
+protocol=TELNET
 server=192.168.1.100
 ";
 
-        let result = importer.parse_remmina_file(content, "test.remmina");
+        let result = importer.parse_remmina_file(content, "test.remmina", &mut group_map);
         assert_eq!(result.connections.len(), 0);
         assert_eq!(result.skipped.len(), 1);
     }
@@ -500,14 +666,49 @@ server=192.168.1.100
     #[test]
     fn test_skip_no_server() {
         let importer = RemminaImporter::new();
+        let mut group_map = HashMap::new();
         let content = r"
 [remmina]
 name=No Server
 protocol=SSH
 ";
 
-        let result = importer.parse_remmina_file(content, "test.remmina");
+        let result = importer.parse_remmina_file(content, "test.remmina", &mut group_map);
         assert_eq!(result.connections.len(), 0);
         assert_eq!(result.skipped.len(), 1);
+    }
+
+    #[test]
+    fn test_shared_group_map() {
+        let importer = RemminaImporter::new();
+        let mut group_map = HashMap::new();
+
+        // First file
+        let content1 = r"
+[remmina]
+name=Server 1
+protocol=SSH
+server=10.0.0.1
+group=Production
+";
+        let result1 = importer.parse_remmina_file(content1, "test1.remmina", &mut group_map);
+
+        // Second file with same group
+        let content2 = r"
+[remmina]
+name=Server 2
+protocol=SSH
+server=10.0.0.2
+group=Production
+";
+        let result2 = importer.parse_remmina_file(content2, "test2.remmina", &mut group_map);
+
+        // Group should be reused, not duplicated
+        assert_eq!(result1.groups.len(), 1);
+        assert_eq!(result2.groups.len(), 0); // No new group created
+        assert_eq!(
+            result1.connections[0].group_id,
+            result2.connections[0].group_id
+        );
     }
 }

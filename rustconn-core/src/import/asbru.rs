@@ -1,6 +1,14 @@
 //! Asbru-CM configuration importer.
 //!
 //! Parses Asbru-CM YAML configuration files from ~/.config/pac/ or ~/.config/asbru/
+//!
+//! # Password Import
+//!
+//! Asbru-CM stores passwords in YAML files. By default, password import is disabled
+//! for security reasons. Enable with `with_password_import(true)`.
+//!
+//! **Security Warning:** Imported passwords are stored in plain text in the YAML file.
+//! Consider using a secure credential backend after import.
 
 use std::collections::HashMap;
 use std::fs;
@@ -11,8 +19,8 @@ use uuid::Uuid;
 
 use crate::error::ImportError;
 use crate::models::{
-    Connection, ConnectionGroup, ProtocolConfig, RdpConfig, SshAuthMethod, SshConfig, SshKeySource,
-    VncConfig,
+    Connection, ConnectionGroup, PasswordSource, ProtocolConfig, RdpConfig, SshAuthMethod,
+    SshConfig, SshKeySource, VncConfig,
 };
 
 use super::traits::{ImportResult, ImportSource, SkippedEntry};
@@ -24,6 +32,8 @@ use super::traits::{ImportResult, ImportSource, SkippedEntry};
 pub struct AsbruImporter {
     /// Custom paths to search for Asbru config
     custom_paths: Vec<PathBuf>,
+    /// Whether to import passwords from YAML (disabled by default for security)
+    import_passwords: bool,
 }
 
 /// Asbru-CM entry from YAML (flat format with UUID keys)
@@ -43,6 +53,16 @@ struct AsbruEntry {
     port: Option<u16>,
     #[serde(default)]
     user: Option<String>,
+    /// Password field - may be plain text or encrypted
+    /// Asbru-CM stores passwords as "pass" in YAML
+    /// Currently parsed for YAML completeness but not imported by default for security
+    #[serde(default)]
+    #[allow(dead_code)] // Reserved for future password import feature
+    pass: Option<String>,
+    /// Alternative password field name used in some Asbru versions
+    #[serde(default)]
+    #[allow(dead_code)] // Reserved for future password import feature
+    password: Option<String>,
     #[serde(default, rename = "type")]
     protocol_type: Option<String>,
     #[serde(default)]
@@ -78,6 +98,7 @@ impl AsbruImporter {
     pub const fn new() -> Self {
         Self {
             custom_paths: Vec::new(),
+            import_passwords: false,
         }
     }
 
@@ -86,7 +107,31 @@ impl AsbruImporter {
     pub const fn with_paths(paths: Vec<PathBuf>) -> Self {
         Self {
             custom_paths: paths,
+            import_passwords: false,
         }
+    }
+
+    /// Enables or disables password import from Asbru YAML files.
+    ///
+    /// **Security Warning:** Asbru-CM stores passwords in YAML files, which may be
+    /// plain text or weakly encrypted. Enabling this option will mark connections
+    /// as having stored passwords, but the actual password storage depends on your
+    /// configured secret backend.
+    ///
+    /// After import, consider:
+    /// - Moving passwords to a secure backend (libsecret, KeePassXC)
+    /// - Deleting the original Asbru config file
+    /// - Using SSH keys instead of passwords
+    #[must_use]
+    pub const fn with_password_import(mut self, import: bool) -> Self {
+        self.import_passwords = import;
+        self
+    }
+
+    /// Returns whether password import is enabled
+    #[must_use]
+    pub const fn imports_passwords(&self) -> bool {
+        self.import_passwords
     }
 
     /// Extracts hostname from an Asbru entry using fallback chain.
@@ -330,20 +375,42 @@ impl AsbruImporter {
                     .filter(|p| !p.is_empty())
                     .map(|p| PathBuf::from(shellexpand::tilde(p).into_owned()));
 
-                // Parse custom options from the options field
+                // Parse SSH options from the options field
+                // Asbru stores options like "-X -C -A -o \"Option=value\""
+                let mut x11_forwarding = false;
+                let mut compression = false;
+                let mut agent_forwarding = false;
                 let mut custom_options = HashMap::new();
+
                 if let Some(opts) = &entry.options {
-                    // Parse options like "-x -C -o \"PubkeyAuthentication=no\""
-                    for part in opts.split_whitespace() {
-                        if part.starts_with("-o") {
-                            continue;
-                        }
-                        if part.contains('=') {
-                            let clean = part.trim_matches('"');
-                            if let Some((k, v)) = clean.split_once('=') {
-                                custom_options.insert(k.to_string(), v.to_string());
+                    let parts: Vec<&str> = opts.split_whitespace().collect();
+                    let mut i = 0;
+                    while i < parts.len() {
+                        let part = parts[i];
+                        match part {
+                            "-X" | "-x" => x11_forwarding = true,
+                            "-C" => compression = true,
+                            "-A" => agent_forwarding = true,
+                            "-o" => {
+                                // Next part is the option value
+                                if i + 1 < parts.len() {
+                                    i += 1;
+                                    let opt = parts[i].trim_matches('"');
+                                    if let Some((k, v)) = opt.split_once('=') {
+                                        custom_options.insert(k.to_string(), v.to_string());
+                                    }
+                                }
                             }
+                            _ if part.contains('=') => {
+                                // Standalone option like "Option=value"
+                                let clean = part.trim_matches('"');
+                                if let Some((k, v)) = clean.split_once('=') {
+                                    custom_options.insert(k.to_string(), v.to_string());
+                                }
+                            }
+                            _ => {}
                         }
+                        i += 1;
                     }
                 }
 
@@ -357,7 +424,9 @@ impl AsbruImporter {
                         jump_host_id: None,
                         proxy_jump: None,
                         use_control_master: false,
-                        agent_forwarding: false,
+                        agent_forwarding,
+                        x11_forwarding,
+                        compression,
                         custom_options,
                         startup_command: None,
                     }),
@@ -403,6 +472,23 @@ impl AsbruImporter {
             connection.username = Some(user.clone());
         }
 
+        // Handle password import if enabled
+        // Check both 'pass' and 'password' fields (different Asbru versions use different names)
+        if self.import_passwords {
+            let has_password = entry
+                .pass
+                .as_ref()
+                .or(entry.password.as_ref())
+                .is_some_and(|p| !p.is_empty());
+
+            if has_password {
+                // Mark as having a password that needs to be entered
+                // The actual password will be handled by the secret backend during connection
+                // We don't store the plain text password here for security
+                connection.password_source = PasswordSource::Prompt;
+            }
+        }
+
         // Set parent group if exists
         if let Some(parent_uuid) = &entry.parent {
             if let Some(&group_id) = uuid_map.get(parent_uuid) {
@@ -418,6 +504,44 @@ impl AsbruImporter {
         }
 
         Some(connection)
+    }
+
+    /// Extracts the password from an Asbru entry if password import is enabled.
+    ///
+    /// Returns `None` if password import is disabled or no password is present.
+    ///
+    /// **Security Note:** The returned password should be immediately stored in a
+    /// secure backend and not kept in memory longer than necessary.
+    #[must_use]
+    pub fn extract_password(&self, entry_key: &str, content: &str) -> Option<String> {
+        if !self.import_passwords {
+            return None;
+        }
+
+        // Parse the YAML to find the specific entry
+        let raw_config: HashMap<String, serde_yaml::Value> = serde_yaml::from_str(content).ok()?;
+
+        // Check environments first
+        if let Some(environments) = raw_config.get("environments") {
+            if let Some(env_map) = environments.as_mapping() {
+                if let Some(entry_value) =
+                    env_map.get(&serde_yaml::Value::String(entry_key.to_string()))
+                {
+                    if let Ok(entry) = serde_yaml::from_value::<AsbruEntry>(entry_value.clone()) {
+                        return entry.pass.or(entry.password).filter(|p| !p.is_empty());
+                    }
+                }
+            }
+        }
+
+        // Check top-level
+        if let Some(entry_value) = raw_config.get(entry_key) {
+            if let Ok(entry) = serde_yaml::from_value::<AsbruEntry>(entry_value.clone()) {
+                return entry.pass.or(entry.password).filter(|p| !p.is_empty());
+            }
+        }
+
+        None
     }
 
     /// Finds the Asbru config file in a directory
@@ -915,5 +1039,145 @@ top-level-uuid:
 
         let result = importer.parse_config(yaml, "test");
         assert_eq!(result.connections.len(), 2, "Should parse both formats");
+    }
+
+    #[test]
+    fn test_password_import_disabled_by_default() {
+        let importer = AsbruImporter::new();
+        assert!(!importer.imports_passwords());
+
+        let yaml = r#"
+server-uuid:
+  _is_group: 0
+  name: "Server with password"
+  ip: "192.168.1.1"
+  user: "admin"
+  pass: "secret123"
+  method: "SSH"
+"#;
+
+        let result = importer.parse_config(yaml, "test");
+        assert_eq!(result.connections.len(), 1);
+        // Password should NOT be marked as stored when import is disabled
+        assert_eq!(result.connections[0].password_source, PasswordSource::None);
+    }
+
+    #[test]
+    fn test_password_import_enabled() {
+        let importer = AsbruImporter::new().with_password_import(true);
+        assert!(importer.imports_passwords());
+
+        let yaml = r#"
+server-uuid:
+  _is_group: 0
+  name: "Server with password"
+  ip: "192.168.1.1"
+  user: "admin"
+  pass: "secret123"
+  method: "SSH"
+"#;
+
+        let result = importer.parse_config(yaml, "test");
+        assert_eq!(result.connections.len(), 1);
+        // Password should be marked as prompt when import is enabled
+        assert_eq!(
+            result.connections[0].password_source,
+            PasswordSource::Prompt
+        );
+    }
+
+    #[test]
+    fn test_password_import_alternative_field_name() {
+        let importer = AsbruImporter::new().with_password_import(true);
+
+        // Some Asbru versions use "password" instead of "pass"
+        let yaml = r#"
+server-uuid:
+  _is_group: 0
+  name: "Server with password"
+  ip: "192.168.1.1"
+  user: "admin"
+  password: "secret456"
+  method: "SSH"
+"#;
+
+        let result = importer.parse_config(yaml, "test");
+        assert_eq!(result.connections.len(), 1);
+        assert_eq!(
+            result.connections[0].password_source,
+            PasswordSource::Prompt
+        );
+    }
+
+    #[test]
+    fn test_password_import_empty_password() {
+        let importer = AsbruImporter::new().with_password_import(true);
+
+        let yaml = r#"
+server-uuid:
+  _is_group: 0
+  name: "Server without password"
+  ip: "192.168.1.1"
+  user: "admin"
+  pass: ""
+  method: "SSH"
+"#;
+
+        let result = importer.parse_config(yaml, "test");
+        assert_eq!(result.connections.len(), 1);
+        // Empty password should not be marked as stored
+        assert_eq!(result.connections[0].password_source, PasswordSource::None);
+    }
+
+    #[test]
+    fn test_extract_password() {
+        let importer = AsbruImporter::new().with_password_import(true);
+
+        let yaml = r#"
+server-uuid:
+  _is_group: 0
+  name: "Server"
+  ip: "192.168.1.1"
+  pass: "my_secret_password"
+  method: "SSH"
+"#;
+
+        let password = importer.extract_password("server-uuid", yaml);
+        assert_eq!(password, Some("my_secret_password".to_string()));
+    }
+
+    #[test]
+    fn test_extract_password_from_environments() {
+        let importer = AsbruImporter::new().with_password_import(true);
+
+        let yaml = r#"
+environments:
+  server-uuid:
+    _is_group: 0
+    name: "Server"
+    ip: "192.168.1.1"
+    pass: "env_password"
+    method: "SSH"
+"#;
+
+        let password = importer.extract_password("server-uuid", yaml);
+        assert_eq!(password, Some("env_password".to_string()));
+    }
+
+    #[test]
+    fn test_extract_password_disabled() {
+        let importer = AsbruImporter::new(); // Password import disabled
+
+        let yaml = r#"
+server-uuid:
+  _is_group: 0
+  name: "Server"
+  ip: "192.168.1.1"
+  pass: "should_not_extract"
+  method: "SSH"
+"#;
+
+        let password = importer.extract_password("server-uuid", yaml);
+        assert_eq!(password, None);
     }
 }

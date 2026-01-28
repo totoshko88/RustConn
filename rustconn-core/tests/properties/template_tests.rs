@@ -54,9 +54,9 @@ fn arb_protocol_config() -> impl Strategy<Value = ProtocolConfig> {
 fn arb_password_source() -> impl Strategy<Value = PasswordSource> {
     prop_oneof![
         Just(PasswordSource::None),
-        Just(PasswordSource::Stored),
         Just(PasswordSource::KeePass),
         Just(PasswordSource::Keyring),
+        Just(PasswordSource::Bitwarden),
         Just(PasswordSource::Prompt),
     ]
 }

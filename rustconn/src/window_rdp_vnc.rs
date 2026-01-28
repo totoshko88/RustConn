@@ -374,13 +374,20 @@ fn start_embedded_rdp_session(
     glib::timeout_add_local_once(std::time::Duration::from_millis(100), move || {
         // Get actual widget size from drawing area
         let drawing_area = widget_for_connect.drawing_area();
-        let actual_width = drawing_area.width().unsigned_abs().max(640);
-        let actual_height = drawing_area.height().unsigned_abs().max(480);
+        let raw_width = drawing_area.width().unsigned_abs();
+        let raw_height = drawing_area.height().unsigned_abs();
+
+        // Round down to multiple of 4 for RDP compatibility
+        // Many RDP servers and codecs require dimensions divisible by 4
+        let actual_width = ((raw_width / 4) * 4).max(640);
+        let actual_height = ((raw_height / 4) * 4).max(480);
 
         tracing::info!(
-            "[RDP Init] Actual widget size after layout: {}x{}",
+            "[RDP Init] Actual widget size after layout: {}x{} (raw: {}x{})",
             actual_width,
-            actual_height
+            actual_height,
+            raw_width,
+            raw_height
         );
 
         // Update config with actual resolution

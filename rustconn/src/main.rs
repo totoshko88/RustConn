@@ -19,6 +19,7 @@ pub mod audio;
 pub mod automation;
 pub mod dashboard;
 pub mod dialogs;
+pub mod display;
 pub mod embedded;
 pub mod embedded_rdp;
 pub mod embedded_rdp_buffer;
@@ -65,6 +66,7 @@ mod window_snippets;
 mod window_sorting;
 mod window_templates;
 mod window_types;
+mod window_ui;
 
 fn main() -> gtk4::glib::ExitCode {
     // Initialize logging with environment filter (RUST_LOG)

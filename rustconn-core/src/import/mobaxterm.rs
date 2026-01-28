@@ -297,6 +297,10 @@ impl MobaXtermImporter {
             SshAuthMethod::Password
         };
 
+        // Parse X11 forwarding and compression from MobaXterm params
+        let x11_forwarding = params.get(5).map(|s| *s == "-1").unwrap_or(false);
+        let compression = params.get(6).map(|s| *s == "-1").unwrap_or(false);
+
         let ssh_config = SshConfig {
             auth_method,
             key_path,
@@ -307,6 +311,8 @@ impl MobaXtermImporter {
             proxy_jump: None,
             use_control_master: false,
             agent_forwarding,
+            x11_forwarding,
+            compression,
             custom_options: HashMap::new(),
             startup_command,
         };

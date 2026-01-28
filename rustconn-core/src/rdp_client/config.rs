@@ -3,6 +3,10 @@
 // Allow struct with multiple bools - RDP has many boolean options
 #![allow(clippy::struct_excessive_bools)]
 
+use super::gateway::GatewayConfig;
+use super::graphics::{GraphicsMode, GraphicsQuality};
+use super::multimonitor::MonitorLayout;
+use super::reconnect::ReconnectPolicy;
 use crate::models::RdpPerformanceMode;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -38,7 +42,7 @@ impl SharedFolder {
 }
 
 /// Configuration for RDP client connection
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RdpClientConfig {
     /// Target hostname or IP address
     pub host: String,
@@ -98,6 +102,47 @@ pub struct RdpClientConfig {
     /// Performance mode (Quality/Balanced/Speed)
     #[serde(default)]
     pub performance_mode: RdpPerformanceMode,
+
+    // ========== New fields for enhanced functionality ==========
+    /// Graphics mode selection
+    #[serde(default)]
+    pub graphics_mode: GraphicsMode,
+
+    /// Graphics quality settings
+    #[serde(default)]
+    pub graphics_quality: GraphicsQuality,
+
+    /// RD Gateway configuration
+    #[serde(default)]
+    pub gateway: GatewayConfig,
+
+    /// Multi-monitor layout
+    #[serde(default)]
+    pub monitor_layout: MonitorLayout,
+
+    /// Reconnection policy
+    #[serde(default)]
+    pub reconnect_policy: ReconnectPolicy,
+
+    /// Enable printer redirection
+    #[serde(default)]
+    pub printer_enabled: bool,
+
+    /// Enable smart card redirection
+    #[serde(default)]
+    pub smartcard_enabled: bool,
+
+    /// Enable microphone redirection
+    #[serde(default)]
+    pub microphone_enabled: bool,
+
+    /// Remote application mode (RemoteApp)
+    #[serde(default)]
+    pub remote_app: Option<RemoteAppConfig>,
+
+    /// Connection name/label for display
+    #[serde(default)]
+    pub connection_name: Option<String>,
 }
 
 const fn default_true() -> bool {
@@ -106,6 +151,46 @@ const fn default_true() -> bool {
 
 const fn default_scale_factor() -> u32 {
     100
+}
+
+/// RemoteApp configuration for running individual applications
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RemoteAppConfig {
+    /// Application alias or path
+    pub program: String,
+    /// Working directory
+    pub working_dir: Option<String>,
+    /// Command line arguments
+    pub arguments: Option<String>,
+    /// Expand environment variables in arguments
+    pub expand_env: bool,
+}
+
+impl RemoteAppConfig {
+    /// Creates a new RemoteApp configuration
+    #[must_use]
+    pub fn new(program: impl Into<String>) -> Self {
+        Self {
+            program: program.into(),
+            working_dir: None,
+            arguments: None,
+            expand_env: false,
+        }
+    }
+
+    /// Sets the working directory
+    #[must_use]
+    pub fn with_working_dir(mut self, dir: impl Into<String>) -> Self {
+        self.working_dir = Some(dir.into());
+        self
+    }
+
+    /// Sets command line arguments
+    #[must_use]
+    pub fn with_arguments(mut self, args: impl Into<String>) -> Self {
+        self.arguments = Some(args.into());
+        self
+    }
 }
 
 /// RDP security protocol options
@@ -145,6 +230,17 @@ impl Default for RdpClientConfig {
             dynamic_resolution: true,
             scale_factor: 100,
             performance_mode: RdpPerformanceMode::default(),
+            // New fields
+            graphics_mode: GraphicsMode::default(),
+            graphics_quality: GraphicsQuality::default(),
+            gateway: GatewayConfig::default(),
+            monitor_layout: MonitorLayout::default(),
+            reconnect_policy: ReconnectPolicy::default(),
+            printer_enabled: false,
+            smartcard_enabled: false,
+            microphone_enabled: false,
+            remote_app: None,
+            connection_name: None,
         }
     }
 }
@@ -251,11 +347,152 @@ impl RdpClientConfig {
         self
     }
 
+    /// Sets the graphics mode
+    #[must_use]
+    pub const fn with_graphics_mode(mut self, mode: GraphicsMode) -> Self {
+        self.graphics_mode = mode;
+        self
+    }
+
+    /// Sets the graphics quality
+    #[must_use]
+    pub const fn with_graphics_quality(mut self, quality: GraphicsQuality) -> Self {
+        self.graphics_quality = quality;
+        self
+    }
+
+    /// Sets the RD Gateway configuration
+    #[must_use]
+    pub fn with_gateway(mut self, gateway: GatewayConfig) -> Self {
+        self.gateway = gateway;
+        self
+    }
+
+    /// Sets the monitor layout
+    #[must_use]
+    pub fn with_monitor_layout(mut self, layout: MonitorLayout) -> Self {
+        self.monitor_layout = layout;
+        self
+    }
+
+    /// Sets the reconnection policy
+    #[must_use]
+    pub const fn with_reconnect_policy(mut self, policy: ReconnectPolicy) -> Self {
+        self.reconnect_policy = policy;
+        self
+    }
+
+    /// Enables or disables audio
+    #[must_use]
+    pub const fn with_audio(mut self, enabled: bool) -> Self {
+        self.audio_enabled = enabled;
+        self
+    }
+
+    /// Enables or disables printer redirection
+    #[must_use]
+    pub const fn with_printer(mut self, enabled: bool) -> Self {
+        self.printer_enabled = enabled;
+        self
+    }
+
+    /// Enables or disables smart card redirection
+    #[must_use]
+    pub const fn with_smartcard(mut self, enabled: bool) -> Self {
+        self.smartcard_enabled = enabled;
+        self
+    }
+
+    /// Sets RemoteApp configuration
+    #[must_use]
+    pub fn with_remote_app(mut self, app: RemoteAppConfig) -> Self {
+        self.remote_app = Some(app);
+        self
+    }
+
+    /// Sets the connection name
+    #[must_use]
+    pub fn with_connection_name(mut self, name: impl Into<String>) -> Self {
+        self.connection_name = Some(name.into());
+        self
+    }
+
     /// Returns the server address as "host:port"
     #[must_use]
     pub fn server_address(&self) -> String {
         format!("{}:{}", self.host, self.port)
     }
+
+    /// Returns whether this connection uses a gateway
+    #[must_use]
+    pub fn uses_gateway(&self) -> bool {
+        self.gateway.enabled && !self.gateway.should_bypass(&self.host)
+    }
+
+    /// Returns whether this is a RemoteApp session
+    #[must_use]
+    pub const fn is_remote_app(&self) -> bool {
+        self.remote_app.is_some()
+    }
+
+    /// Returns whether multi-monitor is enabled
+    #[must_use]
+    pub fn is_multimonitor(&self) -> bool {
+        self.monitor_layout.is_multimonitor()
+    }
+
+    /// Validates the configuration
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the configuration is invalid.
+    pub fn validate(&self) -> Result<(), ConfigValidationError> {
+        if self.host.is_empty() {
+            return Err(ConfigValidationError::MissingHost);
+        }
+
+        if self.port == 0 {
+            return Err(ConfigValidationError::InvalidPort);
+        }
+
+        if !matches!(self.color_depth, 8 | 15 | 16 | 24 | 32) {
+            return Err(ConfigValidationError::InvalidColorDepth(self.color_depth));
+        }
+
+        if self.width == 0 || self.height == 0 {
+            return Err(ConfigValidationError::InvalidResolution);
+        }
+
+        self.gateway
+            .validate()
+            .map_err(|e| ConfigValidationError::GatewayError(e.to_string()))?;
+
+        Ok(())
+    }
+}
+
+/// Configuration validation errors
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum ConfigValidationError {
+    /// Host is missing
+    #[error("Host is required")]
+    MissingHost,
+
+    /// Invalid port
+    #[error("Port cannot be 0")]
+    InvalidPort,
+
+    /// Invalid color depth
+    #[error("Invalid color depth: {0}. Must be 8, 15, 16, 24, or 32")]
+    InvalidColorDepth(u8),
+
+    /// Invalid resolution
+    #[error("Resolution cannot be 0x0")]
+    InvalidResolution,
+
+    /// Gateway configuration error
+    #[error("Gateway configuration error: {0}")]
+    GatewayError(String),
 }
 
 #[cfg(test)]

@@ -332,7 +332,11 @@ fn test_remmina_ssh_roundtrip() {
     let exported = RemminaExporter::export_connection(&conn).expect("Export should succeed");
 
     // Re-import
-    let result = importer.parse_remmina_file(&exported, "test.remmina");
+    let result = importer.parse_remmina_file(
+        &exported,
+        "test.remmina",
+        &mut std::collections::HashMap::new(),
+    );
 
     assert_eq!(
         result.connections.len(),
@@ -368,7 +372,11 @@ fn test_remmina_rdp_roundtrip() {
     let exported = RemminaExporter::export_connection(&conn).expect("Export should succeed");
 
     // Re-import
-    let result = importer.parse_remmina_file(&exported, "test.remmina");
+    let result = importer.parse_remmina_file(
+        &exported,
+        "test.remmina",
+        &mut std::collections::HashMap::new(),
+    );
 
     assert_eq!(
         result.connections.len(),
@@ -401,7 +409,11 @@ fn test_remmina_vnc_roundtrip() {
     let exported = RemminaExporter::export_connection(&conn).expect("Export should succeed");
 
     // Re-import
-    let result = importer.parse_remmina_file(&exported, "test.remmina");
+    let result = importer.parse_remmina_file(
+        &exported,
+        "test.remmina",
+        &mut std::collections::HashMap::new(),
+    );
 
     assert_eq!(
         result.connections.len(),

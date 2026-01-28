@@ -175,6 +175,16 @@ impl SshConfigImporter {
             .get("forwardagent")
             .is_some_and(|v| v.to_lowercase() == "yes");
 
+        // Check for X11 forwarding option
+        let x11_forwarding = options
+            .get("forwardx11")
+            .is_some_and(|v| v.to_lowercase() == "yes");
+
+        // Check for compression option (also stored in custom_options for CLI args)
+        let compression = options
+            .get("compression")
+            .is_some_and(|v| v.to_lowercase() == "yes");
+
         // Build SSH config
         let ssh_config = SshConfig {
             auth_method,
@@ -188,7 +198,9 @@ impl SshConfigImporter {
                 .get("controlmaster")
                 .is_some_and(|v| v.to_lowercase() == "auto" || v.to_lowercase() == "yes"),
             agent_forwarding,
-            custom_options: self.extract_custom_options(options),
+            x11_forwarding,
+            compression,
+            custom_options: self.extract_recognized_options(options),
             startup_command: None,
         };
 
@@ -207,24 +219,26 @@ impl SshConfigImporter {
 
         result.add_connection(connection);
     }
-
-    /// Extracts custom SSH options that aren't handled specially
-    #[allow(clippy::unused_self)]
-    fn extract_custom_options(&self, options: &HashMap<String, String>) -> HashMap<String, String> {
-        let handled_keys = [
-            "hostname",
-            "port",
-            "user",
-            "identityfile",
-            "identitiesonly",
-            "proxyjump",
-            "controlmaster",
-            "forwardagent",
+    /// Extracts recognized SSH options as custom_options for the connection
+    fn extract_recognized_options(
+        &self,
+        options: &HashMap<String, String>,
+    ) -> HashMap<String, String> {
+        let recognized_keys = [
+            "serveraliveinterval",
+            "serveralivecountmax",
+            "compression",
+            "tcpkeepalive",
+            "stricthostkeychecking",
+            "userknownhostsfile",
+            "loglevel",
+            "connecttimeout",
+            "connectionattempts",
         ];
 
         options
             .iter()
-            .filter(|(k, _)| !handled_keys.contains(&k.as_str()))
+            .filter(|(k, _)| recognized_keys.contains(&k.as_str()))
             .map(|(k, v)| (k.clone(), v.clone()))
             .collect()
     }
@@ -452,6 +466,50 @@ Host bastion
         let conn = &result.connections[0];
         if let ProtocolConfig::Ssh(ssh_config) = &conn.protocol_config {
             assert!(ssh_config.agent_forwarding);
+        } else {
+            panic!("Expected SSH config");
+        }
+    }
+
+    #[test]
+    fn test_parse_keepalive_options() {
+        let importer = SshConfigImporter::new();
+        let config = r"
+Host keepalive-server
+    HostName server.example.com
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    TCPKeepAlive yes
+    Compression yes
+    ConnectTimeout 30
+";
+
+        let result = importer.parse_config(config, "test");
+        assert_eq!(result.connections.len(), 1);
+
+        let conn = &result.connections[0];
+        if let ProtocolConfig::Ssh(ssh_config) = &conn.protocol_config {
+            // These should be in custom_options
+            assert_eq!(
+                ssh_config.custom_options.get("serveraliveinterval"),
+                Some(&"60".to_string())
+            );
+            assert_eq!(
+                ssh_config.custom_options.get("serveralivecountmax"),
+                Some(&"3".to_string())
+            );
+            assert_eq!(
+                ssh_config.custom_options.get("tcpkeepalive"),
+                Some(&"yes".to_string())
+            );
+            assert_eq!(
+                ssh_config.custom_options.get("compression"),
+                Some(&"yes".to_string())
+            );
+            assert_eq!(
+                ssh_config.custom_options.get("connecttimeout"),
+                Some(&"30".to_string())
+            );
         } else {
             panic!("Expected SSH config");
         }

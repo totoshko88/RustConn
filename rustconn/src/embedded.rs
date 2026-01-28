@@ -11,58 +11,8 @@ use std::process::Child;
 use std::rc::Rc;
 use uuid::Uuid;
 
-/// Display server type detected at runtime
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DisplayServer {
-    /// X11 display server - supports embedding via `XEmbed` protocol
-    X11,
-    /// Wayland display server - no embedding support, uses external windows
-    Wayland,
-    /// Unknown display server
-    Unknown,
-}
-
-impl DisplayServer {
-    /// Detects the current display server
-    #[must_use]
-    pub fn detect() -> Self {
-        if let Ok(backend) = std::env::var("GDK_BACKEND") {
-            let backend_lower = backend.to_lowercase();
-            if backend_lower.contains("x11") {
-                return Self::X11;
-            }
-            if backend_lower.contains("wayland") {
-                return Self::Wayland;
-            }
-        }
-
-        if let Ok(session_type) = std::env::var("XDG_SESSION_TYPE") {
-            let session_lower = session_type.to_lowercase();
-            if session_lower == "x11" {
-                return Self::X11;
-            }
-            if session_lower == "wayland" {
-                return Self::Wayland;
-            }
-        }
-
-        if std::env::var("WAYLAND_DISPLAY").is_ok() {
-            return Self::Wayland;
-        }
-
-        if std::env::var("DISPLAY").is_ok() {
-            return Self::X11;
-        }
-
-        Self::Unknown
-    }
-
-    /// Returns whether embedding is supported on this display server
-    #[must_use]
-    pub const fn supports_embedding(&self) -> bool {
-        matches!(self, Self::X11)
-    }
-}
+// Re-export DisplayServer from the unified display module for backward compatibility
+pub use crate::display::DisplayServer;
 
 /// Error type for embedding operations
 #[derive(Debug, Clone)]

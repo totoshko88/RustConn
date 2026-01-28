@@ -859,7 +859,7 @@ proptest! {
         let remmina_content = entry.to_remmina_string();
 
         // Parse the file
-        let result = importer.parse_remmina_file(&remmina_content, "test.remmina");
+        let result = importer.parse_remmina_file(&remmina_content, "test.remmina", &mut std::collections::HashMap::new());
 
         // Property: One connection should be imported
         prop_assert_eq!(
@@ -937,11 +937,12 @@ proptest! {
     /// **Validates: Requirements 6.4**
     ///
     /// Unsupported protocols should be skipped during import.
+    /// Note: SPICE is now supported, so it's not in this list.
     #[test]
     fn prop_remmina_import_skips_unsupported_protocols(
         name in prop::string::string_regex("[A-Za-z][A-Za-z0-9 _-]{0,30}").unwrap(),
         server in arb_hostname(),
-        unsupported_protocol in prop::string::string_regex("(SPICE|NX|XDMCP|EXEC)").unwrap()
+        unsupported_protocol in prop::string::string_regex("(NX|XDMCP|EXEC)").unwrap()
     ) {
         prop_assume!(!name.is_empty());
 
@@ -952,7 +953,7 @@ proptest! {
             name, unsupported_protocol, server
         );
 
-        let result = importer.parse_remmina_file(&remmina_content, "test.remmina");
+        let result = importer.parse_remmina_file(&remmina_content, "test.remmina", &mut std::collections::HashMap::new());
 
         // Property: No connections should be imported
         prop_assert_eq!(

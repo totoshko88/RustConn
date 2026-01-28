@@ -31,6 +31,9 @@ use gtk4::prelude::*;
 use gtk4::DrawingArea;
 use thiserror::Error;
 
+// Re-export DisplayServer from the unified display module
+pub use crate::display::DisplayServer;
+
 /// Error type for Wayland surface operations
 #[derive(Debug, Error, Clone)]
 pub enum WaylandSurfaceError {
@@ -67,105 +70,11 @@ pub enum WaylandSurfaceError {
     BlitFailed(String),
 }
 
-/// Display server type detected at runtime
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum DisplayServerType {
-    /// Wayland display server - supports native subsurface integration
-    Wayland,
-    /// X11 display server - uses Cairo fallback rendering
-    X11,
-    /// Unknown display server
-    #[default]
-    Unknown,
-}
-
-impl DisplayServerType {
-    /// Detects the current display server
-    ///
-    /// Detection order:
-    /// 1. Check GDK display type (most reliable)
-    /// 2. Check GDK_BACKEND environment variable
-    /// 3. Check XDG_SESSION_TYPE environment variable
-    /// 4. Check for WAYLAND_DISPLAY environment variable
-    /// 5. Check for DISPLAY environment variable (X11)
-    #[must_use]
-    pub fn detect() -> Self {
-        // Try GDK display detection first (most reliable)
-        #[cfg(feature = "wayland-native")]
-        {
-            if let Some(display) = gtk4::gdk::Display::default() {
-                if display
-                    .downcast_ref::<gdk4_wayland::WaylandDisplay>()
-                    .is_some()
-                {
-                    return Self::Wayland;
-                }
-            }
-        }
-
-        // Check GDK_BACKEND first (explicit override)
-        if let Ok(backend) = std::env::var("GDK_BACKEND") {
-            let backend_lower = backend.to_lowercase();
-            if backend_lower.contains("wayland") {
-                return Self::Wayland;
-            }
-            if backend_lower.contains("x11") {
-                return Self::X11;
-            }
-        }
-
-        // Check XDG_SESSION_TYPE
-        if let Ok(session_type) = std::env::var("XDG_SESSION_TYPE") {
-            let session_lower = session_type.to_lowercase();
-            if session_lower == "wayland" {
-                return Self::Wayland;
-            }
-            if session_lower == "x11" {
-                return Self::X11;
-            }
-        }
-
-        // Check for Wayland display
-        if std::env::var("WAYLAND_DISPLAY").is_ok() {
-            return Self::Wayland;
-        }
-
-        // Check for X11 display
-        if std::env::var("DISPLAY").is_ok() {
-            return Self::X11;
-        }
-
-        Self::Unknown
-    }
-
-    /// Returns whether native Wayland subsurface integration is supported
-    #[must_use]
-    pub const fn supports_subsurface(&self) -> bool {
-        matches!(self, Self::Wayland)
-    }
-
-    /// Returns whether Cairo fallback rendering should be used
-    #[must_use]
-    pub const fn use_cairo_fallback(&self) -> bool {
-        matches!(self, Self::X11 | Self::Unknown)
-    }
-
-    /// Returns whether native Wayland feature is compiled in
-    #[must_use]
-    pub const fn has_native_wayland_support() -> bool {
-        cfg!(feature = "wayland-native")
-    }
-}
-
-impl std::fmt::Display for DisplayServerType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Wayland => write!(f, "Wayland"),
-            Self::X11 => write!(f, "X11"),
-            Self::Unknown => write!(f, "Unknown"),
-        }
-    }
-}
+/// Display server type - re-exported from display module with additional methods
+///
+/// This type alias provides backward compatibility while using the unified
+/// display server detection from `crate::display::DisplayServer`.
+pub type DisplayServerType = DisplayServer;
 
 /// Shared memory buffer for Wayland surface
 ///

@@ -122,6 +122,16 @@ fn arb_rdp_client_config() -> impl Strategy<Value = RdpClientConfig> {
                     dynamic_resolution,
                     scale_factor,
                     performance_mode: rustconn_core::models::RdpPerformanceMode::default(),
+                    graphics_mode: Default::default(),
+                    graphics_quality: Default::default(),
+                    gateway: Default::default(),
+                    monitor_layout: Default::default(),
+                    reconnect_policy: Default::default(),
+                    printer_enabled: false,
+                    smartcard_enabled: false,
+                    microphone_enabled: false,
+                    remote_app: None,
+                    connection_name: None,
                 }
             },
         )

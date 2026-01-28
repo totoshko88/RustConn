@@ -86,6 +86,48 @@ pub struct ConnectionSidebar {
 }
 
 impl ConnectionSidebar {
+    /// Creates a protocol filter button with icon and label
+    ///
+    /// # Arguments
+    /// * `protocol` - Protocol name (e.g., "SSH", "RDP")
+    /// * `icon_name` - GTK icon name for the button
+    /// * `tooltip` - Tooltip text for the button
+    fn create_filter_button(protocol: &str, icon_name: &str, tooltip: &str) -> Button {
+        let button = Button::new();
+        let content_box = GtkBox::new(Orientation::Horizontal, 4);
+        let icon = gtk4::Image::from_icon_name(icon_name);
+        icon.set_pixel_size(16);
+        let label = Label::new(Some(protocol));
+        content_box.append(&icon);
+        content_box.append(&label);
+        button.set_child(Some(&content_box));
+        button.set_tooltip_text(Some(tooltip));
+        button.add_css_class("flat");
+        button.add_css_class("filter-button");
+        button
+    }
+
+    /// Connects a filter button to the toggle handler
+    ///
+    /// This helper reduces code duplication when setting up filter button click handlers.
+    fn connect_filter_button(
+        protocol: &'static str,
+        button: &Button,
+        active_filters: &Rc<RefCell<HashSet<String>>>,
+        all_buttons: &Rc<RefCell<std::collections::HashMap<String, Button>>>,
+        search_entry: &SearchEntry,
+        programmatic_flag: &Rc<RefCell<bool>>,
+    ) {
+        let filters = active_filters.clone();
+        let buttons = all_buttons.clone();
+        let entry = search_entry.clone();
+        let flag = programmatic_flag.clone();
+
+        button.connect_clicked(move |btn| {
+            Self::toggle_protocol_filter(protocol, btn, &filters, &buttons, &entry, &flag);
+        });
+    }
+
     /// Creates a new connection sidebar
     #[must_use]
     pub fn new() -> Self {
@@ -139,65 +181,23 @@ impl ConnectionSidebar {
         filter_box.set_margin_bottom(4);
         filter_box.add_css_class("linked");
 
-        // Protocol filter buttons with icons
-        let ssh_filter = Button::new();
-        let ssh_box = GtkBox::new(Orientation::Horizontal, 4);
-        let ssh_icon = gtk4::Image::from_icon_name("network-server-symbolic");
-        ssh_icon.set_pixel_size(16);
-        let ssh_label = Label::new(Some("SSH"));
-        ssh_box.append(&ssh_icon);
-        ssh_box.append(&ssh_label);
-        ssh_filter.set_child(Some(&ssh_box));
-        ssh_filter.set_tooltip_text(Some("Filter SSH connections"));
-        ssh_filter.add_css_class("flat");
-        ssh_filter.add_css_class("filter-button");
-
-        let rdp_filter = Button::new();
-        let rdp_box = GtkBox::new(Orientation::Horizontal, 4);
-        let rdp_icon = gtk4::Image::from_icon_name("computer-symbolic");
-        rdp_icon.set_pixel_size(16);
-        let rdp_label = Label::new(Some("RDP"));
-        rdp_box.append(&rdp_icon);
-        rdp_box.append(&rdp_label);
-        rdp_filter.set_child(Some(&rdp_box));
-        rdp_filter.set_tooltip_text(Some("Filter RDP connections"));
-        rdp_filter.add_css_class("flat");
-        rdp_filter.add_css_class("filter-button");
-
-        let vnc_filter = Button::new();
-        let vnc_box = GtkBox::new(Orientation::Horizontal, 4);
-        let vnc_icon = gtk4::Image::from_icon_name("video-display-symbolic");
-        vnc_icon.set_pixel_size(16);
-        let vnc_label = Label::new(Some("VNC"));
-        vnc_box.append(&vnc_icon);
-        vnc_box.append(&vnc_label);
-        vnc_filter.set_child(Some(&vnc_box));
-        vnc_filter.set_tooltip_text(Some("Filter VNC connections"));
-        vnc_filter.add_css_class("flat");
-        vnc_filter.add_css_class("filter-button");
-
-        let spice_filter = Button::new();
-        let spice_box = GtkBox::new(Orientation::Horizontal, 4);
-        let spice_icon = gtk4::Image::from_icon_name("video-x-generic-symbolic");
-        spice_icon.set_pixel_size(16);
-        let spice_label = Label::new(Some("SPICE"));
-        spice_box.append(&spice_icon);
-        spice_box.append(&spice_label);
-        spice_filter.set_child(Some(&spice_box));
-        spice_filter.set_tooltip_text(Some("Filter SPICE connections"));
-        spice_filter.add_css_class("flat");
-        spice_filter.add_css_class("filter-button");
-
-        let zerotrust_filter = Button::new();
-        let zerotrust_box = GtkBox::new(Orientation::Horizontal, 4);
-        let zerotrust_icon = gtk4::Image::from_icon_name("folder-remote-symbolic");
-        zerotrust_icon.set_pixel_size(16);
-        let zerotrust_label = Label::new(Some("ZeroTrust"));
-        zerotrust_box.append(&zerotrust_icon);
-        zerotrust_box.append(&zerotrust_label);
-        zerotrust_filter.set_child(Some(&zerotrust_box));
-        zerotrust_filter.set_tooltip_text(Some("Filter ZeroTrust connections"));
-        zerotrust_filter.add_css_class("flat");
+        // Protocol filter buttons with icons - using helper function
+        let ssh_filter =
+            Self::create_filter_button("SSH", "network-server-symbolic", "Filter SSH connections");
+        let rdp_filter =
+            Self::create_filter_button("RDP", "computer-symbolic", "Filter RDP connections");
+        let vnc_filter =
+            Self::create_filter_button("VNC", "video-display-symbolic", "Filter VNC connections");
+        let spice_filter = Self::create_filter_button(
+            "SPICE",
+            "video-x-generic-symbolic",
+            "Filter SPICE connections",
+        );
+        let zerotrust_filter = Self::create_filter_button(
+            "ZeroTrust",
+            "folder-remote-symbolic",
+            "Filter ZeroTrust connections",
+        );
         zerotrust_filter.add_css_class("filter-button");
 
         // Local Shell button - distinct style (not a filter, opens local terminal)
@@ -244,83 +244,48 @@ impl ConnectionSidebar {
 
         // Create programmatic flag for preventing recursive updates
         let programmatic_flag = Rc::new(RefCell::new(false));
-        let programmatic_flag_clone = programmatic_flag.clone();
 
-        // Setup filter button handlers
-        let search_entry_for_filter = search_entry.clone();
-        let active_filters_ssh = active_protocol_filters.clone();
-        let buttons_ssh = protocol_filter_buttons.clone();
-        let programmatic_flag_ssh = programmatic_flag_clone.clone();
-        ssh_filter.connect_clicked(move |button| {
-            Self::toggle_protocol_filter(
-                "SSH",
-                button,
-                &active_filters_ssh,
-                &buttons_ssh,
-                &search_entry_for_filter,
-                &programmatic_flag_ssh,
-            );
-        });
-
-        let search_entry_for_filter = search_entry.clone();
-        let active_filters_rdp = active_protocol_filters.clone();
-        let buttons_rdp = protocol_filter_buttons.clone();
-        let programmatic_flag_rdp = programmatic_flag_clone.clone();
-        rdp_filter.connect_clicked(move |button| {
-            Self::toggle_protocol_filter(
-                "RDP",
-                button,
-                &active_filters_rdp,
-                &buttons_rdp,
-                &search_entry_for_filter,
-                &programmatic_flag_rdp,
-            );
-        });
-
-        let search_entry_for_filter = search_entry.clone();
-        let active_filters_vnc = active_protocol_filters.clone();
-        let buttons_vnc = protocol_filter_buttons.clone();
-        let programmatic_flag_vnc = programmatic_flag_clone.clone();
-        vnc_filter.connect_clicked(move |button| {
-            Self::toggle_protocol_filter(
-                "VNC",
-                button,
-                &active_filters_vnc,
-                &buttons_vnc,
-                &search_entry_for_filter,
-                &programmatic_flag_vnc,
-            );
-        });
-
-        let search_entry_for_filter = search_entry.clone();
-        let active_filters_spice = active_protocol_filters.clone();
-        let buttons_spice = protocol_filter_buttons.clone();
-        let programmatic_flag_spice = programmatic_flag_clone.clone();
-        spice_filter.connect_clicked(move |button| {
-            Self::toggle_protocol_filter(
-                "SPICE",
-                button,
-                &active_filters_spice,
-                &buttons_spice,
-                &search_entry_for_filter,
-                &programmatic_flag_spice,
-            );
-        });
-
-        let search_entry_for_filter = search_entry.clone();
-        let active_filters_zerotrust = active_protocol_filters.clone();
-        let buttons_zerotrust = protocol_filter_buttons.clone();
-        let programmatic_flag_zerotrust = programmatic_flag_clone.clone();
-        zerotrust_filter.connect_clicked(move |button| {
-            Self::toggle_protocol_filter(
-                "ZeroTrust",
-                button,
-                &active_filters_zerotrust,
-                &buttons_zerotrust,
-                &search_entry_for_filter,
-                &programmatic_flag_zerotrust,
-            );
-        });
+        // Setup filter button handlers using helper function
+        Self::connect_filter_button(
+            "SSH",
+            &ssh_filter,
+            &active_protocol_filters,
+            &protocol_filter_buttons,
+            &search_entry,
+            &programmatic_flag,
+        );
+        Self::connect_filter_button(
+            "RDP",
+            &rdp_filter,
+            &active_protocol_filters,
+            &protocol_filter_buttons,
+            &search_entry,
+            &programmatic_flag,
+        );
+        Self::connect_filter_button(
+            "VNC",
+            &vnc_filter,
+            &active_protocol_filters,
+            &protocol_filter_buttons,
+            &search_entry,
+            &programmatic_flag,
+        );
+        Self::connect_filter_button(
+            "SPICE",
+            &spice_filter,
+            &active_protocol_filters,
+            &protocol_filter_buttons,
+            &search_entry,
+            &programmatic_flag,
+        );
+        Self::connect_filter_button(
+            "ZeroTrust",
+            &zerotrust_filter,
+            &active_protocol_filters,
+            &protocol_filter_buttons,
+            &search_entry,
+            &programmatic_flag,
+        );
 
         container.append(&filter_box);
         container.append(&search_box);

@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 341cf0671c1a1dba2b87e9cba1ea1aec71118556dc40ec5df046251196f30744 # shrinks to name = "A", server = "a", unsupported_protocol = "SPICE"
+cc 759f37874bc317bd6095eaf0c8b47a19f68562044016cee841c1781b094bfa94 # shrinks to name = "a", server = "a", unsupported_protocol = "SPICE"

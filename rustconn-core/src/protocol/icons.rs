@@ -198,6 +198,18 @@ pub fn detect_provider(command: &str) -> CloudProvider {
             || cmd_lower.ends_with(&format!(" {tool}"))
     };
 
+    // Check for GCP commands FIRST - more specific patterns
+    // Patterns: "gcloud", "iap-tunnel", "compute ssh", "--tunnel-through-iap"
+    // Must be checked before AWS because GCP instance names may contain patterns
+    // that look like EC2 instance IDs (e.g., "ai-0000a00a" contains "i-0000a00a")
+    if contains_tool("gcloud")
+        || cmd_lower.contains("iap-tunnel")
+        || cmd_lower.contains("compute ssh")
+        || cmd_lower.contains("--tunnel-through-iap")
+    {
+        return CloudProvider::Gcloud;
+    }
+
     // Check for AWS commands - enhanced detection for SSM
     // Patterns: "aws ssm", "aws-ssm", "ssm start-session", instance IDs (i-*, mi-*)
     if contains_tool("aws")
@@ -209,16 +221,6 @@ pub fn detect_provider(command: &str) -> CloudProvider {
         || contains_managed_instance_id(command)
     {
         return CloudProvider::Aws;
-    }
-
-    // Check for GCP commands - enhanced detection
-    // Patterns: "gcloud", "iap-tunnel", "compute ssh"
-    if contains_tool("gcloud")
-        || cmd_lower.contains("iap-tunnel")
-        || cmd_lower.contains("compute ssh")
-        || cmd_lower.contains("--tunnel-through-iap")
-    {
-        return CloudProvider::Gcloud;
     }
 
     // Check for Tailscale commands BEFORE Azure
