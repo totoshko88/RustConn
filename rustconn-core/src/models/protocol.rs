@@ -366,12 +366,12 @@ const fn default_gateway_port() -> u16 {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum RdpPerformanceMode {
-    /// Best quality - 32-bit color, all visual effects
+    /// Best quality - RemoteFX codec, lossless compression, all visual effects
     Quality,
-    /// Balanced - 24-bit color, moderate compression
+    /// Balanced - RemoteFX codec, adaptive compression, font smoothing
     #[default]
     Balanced,
-    /// Best speed - 16-bit color, maximum compression, no effects
+    /// Best speed - Legacy bitmap, maximum compression, no visual effects
     Speed,
 }
 
@@ -386,9 +386,9 @@ impl RdpPerformanceMode {
     #[must_use]
     pub const fn display_name(self) -> &'static str {
         match self {
-            Self::Quality => "Quality (32-bit)",
-            Self::Balanced => "Balanced (24-bit)",
-            Self::Speed => "Speed (16-bit)",
+            Self::Quality => "Quality (RemoteFX)",
+            Self::Balanced => "Balanced (Adaptive)",
+            Self::Speed => "Speed (Legacy)",
         }
     }
 

@@ -66,7 +66,7 @@ impl CredentialResolver {
     /// Resolution order based on `password_source`:
     /// 1. If `PasswordSource::KeePass` and `KeePass` integration active -> `KeePass` lookup
     /// 2. If `PasswordSource::Keyring` -> libsecret lookup
-    /// 3. If `PasswordSource::Stored` -> return None (caller should use stored password)
+    /// 3. If `PasswordSource::Bitwarden` -> Bitwarden vault lookup
     /// 4. If `PasswordSource::Prompt` -> return None (caller should prompt user)
     /// 5. If `PasswordSource::None` -> try fallback chain if enabled
     ///
@@ -91,7 +91,8 @@ impl CredentialResolver {
         let result = match connection.password_source {
             PasswordSource::KeePass => self.resolve_from_keepass(connection).await,
             PasswordSource::Keyring => self.resolve_from_keyring(connection).await,
-            PasswordSource::Stored | PasswordSource::Prompt | PasswordSource::Inherit => {
+            PasswordSource::Bitwarden => self.resolve_from_bitwarden(connection).await,
+            PasswordSource::Prompt | PasswordSource::Inherit => {
                 // Caller handles these cases
                 debug!("Password source requires caller handling");
                 Ok(None)
@@ -150,6 +151,15 @@ impl CredentialResolver {
     ) -> SecretResult<Option<Credentials>> {
         let connection_id = connection.id.to_string();
         self.secret_manager.retrieve(&connection_id).await
+    }
+
+    /// Resolves credentials from Bitwarden vault
+    async fn resolve_from_bitwarden(
+        &self,
+        connection: &Connection,
+    ) -> SecretResult<Option<Credentials>> {
+        let lookup_key = Self::generate_lookup_key(connection);
+        self.secret_manager.retrieve(&lookup_key).await
     }
 
     /// Resolves credentials using the fallback chain
@@ -660,8 +670,9 @@ impl CredentialResolver {
                     .await
             }
             PasswordSource::Keyring => self.resolve_from_keyring(connection).await,
+            PasswordSource::Bitwarden => self.resolve_from_bitwarden(connection).await,
             PasswordSource::Inherit => self.resolve_inherited_credentials(connection, groups).await,
-            PasswordSource::Stored | PasswordSource::Prompt => {
+            PasswordSource::Prompt => {
                 // Caller handles these cases
                 Ok(None)
             }

@@ -482,10 +482,10 @@ impl AsbruImporter {
                 .is_some_and(|p| !p.is_empty());
 
             if has_password {
-                // Mark as having a stored password
+                // Mark as having a password that needs to be entered
                 // The actual password will be handled by the secret backend during connection
                 // We don't store the plain text password here for security
-                connection.password_source = PasswordSource::Stored;
+                connection.password_source = PasswordSource::Prompt;
             }
         }
 
@@ -1079,10 +1079,10 @@ server-uuid:
 
         let result = importer.parse_config(yaml, "test");
         assert_eq!(result.connections.len(), 1);
-        // Password should be marked as stored when import is enabled
+        // Password should be marked as prompt when import is enabled
         assert_eq!(
             result.connections[0].password_source,
-            PasswordSource::Stored
+            PasswordSource::Prompt
         );
     }
 
@@ -1105,7 +1105,7 @@ server-uuid:
         assert_eq!(result.connections.len(), 1);
         assert_eq!(
             result.connections[0].password_source,
-            PasswordSource::Stored
+            PasswordSource::Prompt
         );
     }
 

@@ -49,8 +49,17 @@ use rustconn_core::variables::Variable;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+/// Result from connection dialog containing connection and optional password
+#[derive(Debug, Clone)]
+pub struct ConnectionDialogResult {
+    /// The connection configuration
+    pub connection: Connection,
+    /// Password value if user entered one (for KeePass/Keyring/Stored sources)
+    pub password: Option<String>,
+}
+
 /// Type alias for connection dialog callback
-pub type ConnectionCallback = Rc<RefCell<Option<Box<dyn Fn(Option<Connection>)>>>>;
+pub type ConnectionCallback = Rc<RefCell<Option<Box<dyn Fn(Option<ConnectionDialogResult>)>>>>;
 
 /// Type alias for import dialog callback
 pub type ImportCallback = Rc<RefCell<Option<Box<dyn Fn(Option<ImportResult>)>>>>;

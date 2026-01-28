@@ -31,12 +31,12 @@ pub enum PasswordSource {
     /// No password stored
     #[default]
     None,
-    /// Password stored in connection config (encrypted)
-    Stored,
     /// Password retrieved from `KeePass` database
     KeePass,
     /// Password retrieved from system keyring (libsecret)
     Keyring,
+    /// Password retrieved from Bitwarden vault
+    Bitwarden,
     /// Prompt user for password on each connection
     Prompt,
     /// Inherit credentials from parent group

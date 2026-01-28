@@ -478,7 +478,8 @@ pub struct SplitViewBridge {
     /// Uuid to Panel ID mapping
     uuid_panel_map: Rc<RefCell<HashMap<Uuid, PanelId>>>,
     /// Focused pane UUID (legacy compatibility)
-    focused_pane_uuid: RefCell<Option<Uuid>>,
+    /// Wrapped in Rc for sharing with callbacks
+    focused_pane_uuid: Rc<RefCell<Option<Uuid>>>,
     /// Legacy panes for backward compatibility with panes_ref() API
     panes: Rc<RefCell<Vec<TerminalPane>>>,
 }
@@ -538,7 +539,7 @@ impl SplitViewBridge {
             container_color: Rc::new(RefCell::new(None)),
             panel_uuid_map: Rc::new(RefCell::new(panel_uuid_map)),
             uuid_panel_map: Rc::new(RefCell::new(uuid_panel_map)),
-            focused_pane_uuid: RefCell::new(focused_uuid),
+            focused_pane_uuid: Rc::new(RefCell::new(focused_uuid)),
             panes: Rc::new(RefCell::new(panes)),
         }
     }
@@ -1557,11 +1558,7 @@ impl SplitViewBridge {
     /// focused pane state in the bridge.
     #[must_use]
     pub fn focused_pane_ref(&self) -> Rc<RefCell<Option<Uuid>>> {
-        // Return a clone of the Rc to share the actual state
-        // Note: focused_pane_uuid is stored as RefCell, we need to wrap it in Rc
-        // For now, we create a new Rc but this should be refactored to store as Rc<RefCell<>>
-        // TODO: Refactor focused_pane_uuid to be Rc<RefCell<Option<Uuid>>> for proper sharing
-        Rc::new(RefCell::new(*self.focused_pane_uuid.borrow()))
+        Rc::clone(&self.focused_pane_uuid)
     }
 
     /// Updates the focused pane UUID and visual styling

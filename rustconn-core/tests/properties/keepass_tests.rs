@@ -553,28 +553,51 @@ mod resolution_chain_tests {
     /// For any connection with password_source set to Stored or Prompt,
     /// the resolver SHALL return None (caller handles these cases).
     #[test]
-    fn resolution_returns_none_for_stored_and_prompt_sources() {
+    fn resolution_returns_none_for_prompt_source() {
         let rt = tokio::runtime::Runtime::new().unwrap();
 
-        // Test with Stored source
-        let connection_stored = create_test_connection_with_source(
+        // Test with Prompt source
+        let connection_prompt = create_test_connection_with_source(
             "Test Server",
             "192.168.1.1",
-            PasswordSource::Stored,
+            PasswordSource::Prompt,
         );
 
         let secret_manager = Arc::new(SecretManager::empty());
         let settings = SecretSettings::default();
         let resolver = CredentialResolver::new(secret_manager.clone(), settings.clone());
 
-        let result = rt.block_on(resolver.resolve(&connection_stored));
+        let result = rt.block_on(resolver.resolve(&connection_prompt));
         assert!(
             result.is_ok(),
-            "Resolution should not error for Stored source"
+            "Resolution should not error for Prompt source"
         );
         assert!(
             result.unwrap().is_none(),
-            "Resolution should return None for Stored source"
+            "Resolution should return None for Prompt source"
+        );
+    }
+
+    #[test]
+    fn resolution_returns_none_for_bitwarden_without_backend() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+
+        // Test with Bitwarden source (no backend configured)
+        let connection_bitwarden = create_test_connection_with_source(
+            "Test Server",
+            "192.168.1.1",
+            PasswordSource::Bitwarden,
+        );
+
+        let secret_manager = Arc::new(SecretManager::empty());
+        let settings = SecretSettings::default();
+        let resolver = CredentialResolver::new(secret_manager.clone(), settings.clone());
+
+        let result = rt.block_on(resolver.resolve(&connection_bitwarden));
+        // Bitwarden without backend should return None (no credentials found)
+        assert!(
+            result.is_ok(),
+            "Resolution should not error for Bitwarden source"
         );
 
         // Test with Prompt source

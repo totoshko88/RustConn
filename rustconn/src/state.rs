@@ -929,13 +929,13 @@ impl AppState {
     /// `password_source` setting:
     /// - `PasswordSource::KeePass` - Try `KeePass` first, fallback if enabled
     /// - `PasswordSource::Keyring` - Try system keyring (libsecret)
-    /// - `PasswordSource::Stored` - Return None (caller uses stored password)
+    /// - `PasswordSource::Bitwarden` - Try Bitwarden vault
     /// - `PasswordSource::Prompt` - Return None (caller prompts user)
     /// - `PasswordSource::None` - Try fallback chain if enabled
     ///
     /// # Returns
     /// - `Ok(Some(Credentials))` - Credentials found from a backend
-    /// - `Ok(None)` - No credentials found, caller should prompt user or use stored
+    /// - `Ok(None)` - No credentials found, caller should prompt user
     /// - `Err(String)` - Error during resolution
     ///
     /// Note: This is a blocking method. Prefer `resolve_credentials_gtk` for GUI code.
@@ -1061,7 +1061,6 @@ impl AppState {
     pub fn should_prompt_for_credentials(&self, connection: &Connection) -> bool {
         match connection.password_source {
             PasswordSource::Prompt => true,
-            PasswordSource::Stored => false, // Use stored password
             PasswordSource::None => {
                 // Check if fallback is enabled and backends are available
                 !self.settings.secrets.enable_fallback || !self.has_secret_backend()
@@ -1073,6 +1072,10 @@ impl AppState {
             PasswordSource::Keyring => {
                 // Prompt if no backend available
                 !self.has_secret_backend()
+            }
+            PasswordSource::Bitwarden => {
+                // Bitwarden handles its own authentication
+                false
             }
             PasswordSource::Inherit => false, // Resolution will handle inheritance
         }

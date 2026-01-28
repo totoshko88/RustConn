@@ -8,8 +8,7 @@ use ironrdp::connector::{
 };
 use ironrdp::pdu::gcc::KeyboardType;
 use ironrdp::pdu::rdp::capability_sets::{
-    BitmapCodecs, CaptureFlags, Codec, CodecProperty, EntropyBits, MajorPlatformType,
-    RemoteFxContainer, RfxCaps, RfxCapset, RfxClientCapsContainer, RfxICap, RfxICapFlags,
+    client_codecs_capabilities, BitmapCodecs, MajorPlatformType,
 };
 use ironrdp::pdu::rdp::client_info::{PerformanceFlags, TimezoneInfo};
 use ironrdp::rdpdr::Rdpdr;
@@ -25,6 +24,7 @@ pub type UpgradedFramed = TokioFramed<ironrdp_tls::TlsStream<TcpStream>>;
 // The future is not Send because IronRDP's AsyncNetworkClient is not Send.
 // This is fine because we run on a single-threaded Tokio runtime.
 #[allow(clippy::future_not_send)]
+#[allow(clippy::too_many_lines)]
 pub async fn establish_connection(
     config: &RdpClientConfig,
     event_tx: std::sync::mpsc::Sender<RdpClientEvent>,
@@ -147,6 +147,15 @@ pub async fn establish_connection(
     // Create network client for Kerberos/AAD authentication
     let mut network_client = ReqwestNetworkClient::new();
 
+    // Log connection parameters for debugging
+    tracing::debug!(
+        "IronRDP connect_finalize: host={}, nla={}, has_username={}, has_password={}",
+        config.host,
+        config.nla_enabled,
+        config.username.is_some(),
+        config.password.is_some()
+    );
+
     // Complete connection (NLA, licensing, capabilities)
     // New API in ironrdp 0.14: connect_finalize(upgraded, connector, framed, network_client, server_name, server_public_key, kerberos_config)
     let connection_result = ironrdp_tokio::connect_finalize(
@@ -159,7 +168,15 @@ pub async fn establish_connection(
         None, // No Kerberos config
     )
     .await
-    .map_err(|e| RdpClientError::ConnectionFailed(format!("Connection finalize failed: {e}")))?;
+    .map_err(|e| {
+        // Log detailed error information for debugging
+        tracing::error!(
+            "IronRDP connect_finalize failed: {:?}, error_kind={:?}",
+            e,
+            e.kind()
+        );
+        RdpClientError::ConnectionFailed(format!("Connection finalize failed: {e}"))
+    })?;
 
     Ok((upgraded_framed, connection_result))
 }
@@ -174,13 +191,19 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
         password: config.password.clone().unwrap_or_default(),
     };
 
-    // Configure RemoteFX codec for better image quality
-    // Use color depth from config (derived from performance mode)
-    let bitmap_config = Some(BitmapConfig {
-        lossy_compression: true,
-        color_depth: u32::from(config.color_depth),
-        codecs: build_bitmap_codecs(),
-    });
+    // NOTE: BitmapConfig affects two things:
+    // 1. ClientGccBlocks.core.supported_color_depths in BasicSettingsExchange
+    // 2. BitmapCodecs capability in CapabilitiesExchange (ClientConfirmActive)
+    //
+    // Performance mode controls:
+    // - Quality: lossy_compression=false (lossless), RemoteFX codec, all visual effects
+    // - Balanced: lossy_compression=true (allows dynamic quality), RemoteFX codec
+    // - Speed: lossy_compression=true, no RemoteFX (legacy bitmap), minimal effects
+    //
+    // IMPORTANT: color_depth MUST be 32 for AWS EC2 compatibility!
+    // - color_depth=32 -> BPP32|BPP16 + WANT_32_BPP_SESSION (works)
+    // - color_depth=24 -> BPP24 only, no WANT_32_BPP_SESSION (fails on AWS EC2)
+    let bitmap_config = build_bitmap_config(config.performance_mode);
 
     // Build performance flags based on performance mode
     let performance_flags = build_performance_flags(config.performance_mode);
@@ -245,37 +268,47 @@ fn build_performance_flags(mode: crate::models::RdpPerformanceMode) -> Performan
     }
 }
 
-/// Builds bitmap codecs configuration with `RemoteFX` support
-fn build_bitmap_codecs() -> BitmapCodecs {
-    // RemoteFX codec for high-quality graphics
-    let remotefx_codec = Codec {
-        id: 3, // CODEC_ID_REMOTEFX
-        property: CodecProperty::RemoteFx(RemoteFxContainer::ClientContainer(
-            RfxClientCapsContainer {
-                capture_flags: CaptureFlags::empty(),
-                caps_data: RfxCaps(RfxCapset(vec![RfxICap {
-                    flags: RfxICapFlags::empty(),
-                    entropy_bits: EntropyBits::Rlgr3,
-                }])),
-            },
-        )),
-    };
+/// Builds bitmap configuration based on the performance mode
+///
+/// This controls:
+/// - `lossy_compression`: Whether server can use lossy compression for better bandwidth
+/// - `color_depth`: Always 32 for AWS EC2 compatibility
+/// - `codecs`: RemoteFX for Quality/Balanced, empty (legacy) for Speed
+fn build_bitmap_config(mode: crate::models::RdpPerformanceMode) -> Option<BitmapConfig> {
+    use crate::models::RdpPerformanceMode;
 
-    // ImageRemoteFx codec (required for GFX)
-    let image_remotefx_codec = Codec {
-        id: 0x4, // CODEC_ID_IMAGE_REMOTEFX
-        property: CodecProperty::ImageRemoteFx(RemoteFxContainer::ClientContainer(
-            RfxClientCapsContainer {
-                capture_flags: CaptureFlags::empty(),
-                caps_data: RfxCaps(RfxCapset(vec![RfxICap {
-                    flags: RfxICapFlags::empty(),
-                    entropy_bits: EntropyBits::Rlgr3,
-                }])),
-            },
-        )),
-    };
-
-    BitmapCodecs(vec![remotefx_codec, image_remotefx_codec])
+    match mode {
+        RdpPerformanceMode::Quality => {
+            // Best quality: lossless compression, RemoteFX codec
+            // drawing_flags = ALLOW_SKIP_ALPHA only (no color subsampling)
+            Some(BitmapConfig {
+                lossy_compression: false,
+                color_depth: 32,
+                codecs: client_codecs_capabilities(&[]).unwrap_or_else(|_| BitmapCodecs(vec![])),
+            })
+        }
+        RdpPerformanceMode::Balanced => {
+            // Balanced: lossy compression allowed, RemoteFX codec
+            // drawing_flags = ALLOW_SKIP_ALPHA | ALLOW_DYNAMIC_COLOR_FIDELITY | ALLOW_SUBSAMPLING
+            // Server can dynamically adjust quality based on bandwidth
+            Some(BitmapConfig {
+                lossy_compression: true,
+                color_depth: 32,
+                codecs: client_codecs_capabilities(&[]).unwrap_or_else(|_| BitmapCodecs(vec![])),
+            })
+        }
+        RdpPerformanceMode::Speed => {
+            // Best speed: lossy compression, no RemoteFX (legacy bitmap updates)
+            // Uses basic RLE compression which is faster but lower quality
+            // Good for slow/unreliable connections
+            Some(BitmapConfig {
+                lossy_compression: true,
+                color_depth: 32,
+                // Empty codecs = no RemoteFX, use legacy bitmap updates
+                codecs: BitmapCodecs(vec![]),
+            })
+        }
+    }
 }
 
 /// Gets the local timezone information

@@ -314,7 +314,8 @@ impl RdmImporter {
             if p.is_empty() {
                 PasswordSource::None
             } else {
-                PasswordSource::Stored
+                // Password exists but we can't store it directly - prompt user
+                PasswordSource::Prompt
             }
         });
 

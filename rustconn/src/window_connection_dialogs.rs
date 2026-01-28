@@ -50,10 +50,30 @@ pub fn show_new_connection_dialog_internal(
         dialog.set_connections(&connections);
     }
 
+    // Set preferred backend based on settings (filters password source dropdown)
+    {
+        let state_ref = state.borrow();
+        let preferred_backend = state_ref.settings().secrets.preferred_backend;
+        dialog.set_preferred_backend(preferred_backend);
+    }
+
     // Set up password visibility toggle and source visibility
     dialog.connect_password_visibility_toggle();
     dialog.connect_password_source_visibility();
     dialog.update_password_row_visibility();
+
+    // Set up password load button with KeePass settings
+    {
+        use secrecy::ExposeSecret;
+        let state_ref = state.borrow();
+        let settings = state_ref.settings();
+        dialog.connect_password_load_button(
+            settings.secrets.kdbx_enabled,
+            settings.secrets.kdbx_path.clone(),
+            settings.secrets.kdbx_password.as_ref().map(|p| p.expose_secret().to_string()),
+            settings.secrets.kdbx_key_file.clone(),
+        );
+    }
 
     // If template provided, pre-populate the dialog
     if let Some(ref tmpl) = template {
@@ -66,10 +86,169 @@ pub fn show_new_connection_dialog_internal(
 
     let window_clone = window.clone();
     dialog.run(move |result| {
-        if let Some(conn) = result {
+        if let Some(dialog_result) = result {
+            let conn = dialog_result.connection;
+            let password = dialog_result.password;
+
             if let Ok(mut state_mut) = state.try_borrow_mut() {
+                // Clone values needed for password saving before creating connection
+                let conn_name = conn.name.clone();
+                let conn_host = conn.host.clone();
+                let conn_username = conn.username.clone();
+                let password_source = conn.password_source;
+                let protocol = conn.protocol;
+
                 match state_mut.create_connection(conn) {
-                    Ok(_) => {
+                    Ok(conn_id) => {
+                        // Save password to KeePass if password source is KeePass and password
+                        // was provided
+                        if password_source == PasswordSource::KeePass {
+                            if let Some(pwd) = password.clone() {
+                                // Get KeePass settings
+                                let settings = state_mut.settings().clone();
+                                if settings.secrets.kdbx_enabled {
+                                    if let Some(kdbx_path) = settings.secrets.kdbx_path.clone() {
+                                        let key_file = settings.secrets.kdbx_key_file.clone();
+                                        let entry_name = format!(
+                                            "{} ({})",
+                                            conn_name,
+                                            protocol.as_str().to_lowercase()
+                                        );
+                                        let username = conn_username.clone().unwrap_or_default();
+                                        let url = format!(
+                                            "{}://{}",
+                                            protocol.as_str().to_lowercase(),
+                                            conn_host
+                                        );
+
+                                        // Save password in background
+                                        crate::utils::spawn_blocking_with_callback(
+                                            move || {
+                                                let kdbx = std::path::Path::new(&kdbx_path);
+                                                let key = key_file
+                                                    .as_ref()
+                                                    .map(|p| std::path::Path::new(p));
+                                                rustconn_core::secret::KeePassStatus
+                                                    ::save_password_to_kdbx(
+                                                        kdbx,
+                                                        None, // No db password (using key file)
+                                                        key,
+                                                        &entry_name,
+                                                        &username,
+                                                        &pwd,
+                                                        Some(&url),
+                                                    )
+                                            },
+                                            move |result| {
+                                                if let Err(e) = result {
+                                                    tracing::error!(
+                                                        "Failed to save password to KeePass: {}",
+                                                        e
+                                                    );
+                                                } else {
+                                                    tracing::info!(
+                                                        "Password saved to KeePass for \
+                                                         connection {}",
+                                                        conn_id
+                                                    );
+                                                }
+                                            },
+                                        );
+                                    }
+                                }
+                            }
+                        }
+
+                        // Save password to Keyring if password source is Keyring
+                        if password_source == PasswordSource::Keyring {
+                            if let Some(pwd) = password.clone() {
+                                let lookup_key = format!(
+                                    "{} ({})",
+                                    conn_name.replace('/', "-"),
+                                    protocol.as_str().to_lowercase()
+                                );
+                                let username = conn_username.clone().unwrap_or_default();
+
+                                // Save password in background
+                                crate::utils::spawn_blocking_with_callback(
+                                    move || {
+                                        use rustconn_core::secret::SecretBackend;
+                                        let backend =
+                                            rustconn_core::secret::LibSecretBackend::new(
+                                                "rustconn",
+                                            );
+                                        let creds = Credentials {
+                                            username: Some(username),
+                                            password: Some(secrecy::SecretString::from(pwd)),
+                                            key_passphrase: None,
+                                            domain: None,
+                                        };
+                                        let rt = tokio::runtime::Runtime::new()
+                                            .map_err(|e| format!("Runtime error: {e}"))?;
+                                        rt.block_on(backend.store(&lookup_key, &creds))
+                                            .map_err(|e| format!("{e}"))
+                                    },
+                                    move |result: Result<(), String>| {
+                                        if let Err(e) = result {
+                                            tracing::error!(
+                                                "Failed to save password to Keyring: {}",
+                                                e
+                                            );
+                                        } else {
+                                            tracing::info!(
+                                                "Password saved to Keyring for connection {}",
+                                                conn_id
+                                            );
+                                        }
+                                    },
+                                );
+                            }
+                        }
+
+                        // Save password to Bitwarden if password source is Bitwarden
+                        if password_source == PasswordSource::Bitwarden {
+                            if let Some(pwd) = password {
+                                let lookup_key = format!(
+                                    "{} ({})",
+                                    conn_name.replace('/', "-"),
+                                    protocol.as_str().to_lowercase()
+                                );
+                                let username = conn_username.unwrap_or_default();
+
+                                // Save password in background
+                                crate::utils::spawn_blocking_with_callback(
+                                    move || {
+                                        use rustconn_core::secret::SecretBackend;
+                                        let backend =
+                                            rustconn_core::secret::BitwardenBackend::new();
+                                        let creds = Credentials {
+                                            username: Some(username),
+                                            password: Some(secrecy::SecretString::from(pwd)),
+                                            key_passphrase: None,
+                                            domain: None,
+                                        };
+                                        let rt = tokio::runtime::Runtime::new()
+                                            .map_err(|e| format!("Runtime error: {e}"))?;
+                                        rt.block_on(backend.store(&lookup_key, &creds))
+                                            .map_err(|e| format!("{e}"))
+                                    },
+                                    move |result: Result<(), String>| {
+                                        if let Err(e) = result {
+                                            tracing::error!(
+                                                "Failed to save password to Bitwarden: {}",
+                                                e
+                                            );
+                                        } else {
+                                            tracing::info!(
+                                                "Password saved to Bitwarden for connection {}",
+                                                conn_id
+                                            );
+                                        }
+                                    },
+                                );
+                            }
+                        }
+
                         // Release borrow before scheduling reload
                         drop(state_mut);
                         // Defer sidebar reload to next main loop iteration
@@ -223,7 +402,7 @@ pub fn show_new_group_dialog_with_parent(
 
     // Password Source dropdown
     let password_source_list =
-        gtk4::StringList::new(&["Prompt", "Stored", "KeePass", "Keyring", "Inherit", "None"]);
+        gtk4::StringList::new(&["Prompt", "KeePass", "Keyring", "Bitwarden", "Inherit", "None"]);
     let password_source_dropdown = gtk4::DropDown::builder()
         .model(&password_source_list)
         .selected(5) // Default to None
@@ -316,15 +495,15 @@ pub fn show_new_group_dialog_with_parent(
         let password_source_idx = password_source_clone.selected();
         let new_password_source = match password_source_idx {
             0 => PasswordSource::Prompt,
-            1 => PasswordSource::Stored,
-            2 => PasswordSource::KeePass,
-            3 => PasswordSource::Keyring,
+            1 => PasswordSource::KeePass,
+            2 => PasswordSource::Keyring,
+            3 => PasswordSource::Bitwarden,
             4 => PasswordSource::Inherit,
             _ => PasswordSource::None,
         };
 
         let has_username = !username.trim().is_empty();
-        // Password is relevant only for Stored, KeePass, Keyring
+        // Password is relevant only for KeePass, Keyring, Bitwarden
         let has_password = !password.is_empty() && matches!(password_source_idx, 1..=3);
         let has_domain = !domain.trim().is_empty();
 

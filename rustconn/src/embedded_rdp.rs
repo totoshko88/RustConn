@@ -1175,10 +1175,17 @@ impl EmbeddedRdpWidget {
                         let h_diff = (new_height as i32 - current_rdp_h as i32).unsigned_abs();
 
                         if w_diff > 50 || h_diff > 50 {
+                            // Round down to multiple of 4 for RDP compatibility
+                            let rounded_width = (new_width / 4) * 4;
+                            let rounded_height = (new_height / 4) * 4;
+
                             tracing::info!(
-                                "[RDP Resize] Reconnecting with new resolution: {}x{} -> {}x{}",
+                                "[RDP Resize] Reconnecting with new resolution: {}x{} -> {}x{} \
+                                 (rounded from {}x{})",
                                 current_rdp_w,
                                 current_rdp_h,
+                                rounded_width,
+                                rounded_height,
                                 new_width,
                                 new_height
                             );
@@ -1187,7 +1194,7 @@ impl EmbeddedRdpWidget {
                             {
                                 let current_config = cfg.borrow().clone();
                                 if let Some(mut config) = current_config {
-                                    config = config.with_resolution(new_width, new_height);
+                                    config = config.with_resolution(rounded_width, rounded_height);
                                     *cfg.borrow_mut() = Some(config);
                                 }
                             }
@@ -1512,7 +1519,12 @@ impl EmbeddedRdpWidget {
             let w = self.drawing_area.width();
             let h = self.drawing_area.height();
             if w > 100 && h > 100 {
-                (w.unsigned_abs(), h.unsigned_abs())
+                // Round down to multiple of 4 for RDP compatibility
+                // Many RDP servers and codecs require dimensions divisible by 4
+                let width = (w.unsigned_abs() / 4) * 4;
+                let height = (h.unsigned_abs() / 4) * 4;
+                // Ensure minimum size
+                (width.max(640), height.max(480))
             } else {
                 // Widget not yet realized, use config values
                 (config.width, config.height)

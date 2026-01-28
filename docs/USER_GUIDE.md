@@ -105,7 +105,13 @@ Shows integration status in sidebar toolbar:
 
 **Authentication Tab:**
 - Username
-- Password (stored securely via libsecret/KeePass)
+- Password source selection:
+  - **Prompt** — Ask for password on each connection
+  - **KeePass** — Store/retrieve from KeePass database
+  - **Keyring** — Store/retrieve from system keyring (libsecret)
+  - **Bitwarden** — Store/retrieve from Bitwarden vault
+  - **Inherit** — Use credentials from parent group
+  - **None** — No password (key-based auth)
 - SSH key selection
 - Key passphrase
 
@@ -413,6 +419,12 @@ Access via **Ctrl+,** or Menu → **Settings**
 - **Bitwarden Settings** — Vault status, unlock, master password persistence
 - **Installed Password Managers** — Auto-detected managers with versions (GNOME Secrets, KeePassXC, KeePass2, Bitwarden CLI, 1Password CLI)
 
+**Password Source Defaults:**
+When creating a new connection, the password source dropdown defaults to match your configured backend:
+- KeePassXC/KDBX backend → "KeePass"
+- libsecret backend → "Keyring"
+- Bitwarden backend → "Bitwarden"
+
 ### SSH Agent
 
 - **Loaded Keys** — Currently loaded SSH keys
@@ -569,6 +581,7 @@ rustconn-cli wol "Server Name"
 3. Unlock vault: `bw unlock`
 4. Select Bitwarden backend in Settings → Secrets
 5. Check vault status indicator
+6. For password source, select "Bitwarden" in connection dialog
 
 ### KeePass Not Working
 
@@ -576,6 +589,7 @@ rustconn-cli wol "Server Name"
 2. Enable browser integration in KeePassXC
 3. Configure KDBX path in Settings → Secrets
 4. Provide password/key file
+5. For password source, select "KeePass" in connection dialog
 
 ### Embedded RDP/VNC Issues
 
