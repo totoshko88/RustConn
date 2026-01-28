@@ -4,7 +4,7 @@ inclusion: always
 
 # RustConn Tech Stack
 
-Rust 2021 edition, MSRV 1.87, three-crate Cargo workspace.
+Rust 2021 edition, MSRV 1.88, three-crate Cargo workspace.
 
 ## Crate Overview
 

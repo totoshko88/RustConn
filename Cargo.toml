@@ -11,7 +11,7 @@ version = "0.6.6"
 edition = "2021"
 authors = ["Anton Isaiev <totoshko88@gmail.com>"]
 license = "GPL-3.0-or-later"
-rust-version = "1.87"
+rust-version = "1.88"
 
 [workspace.dependencies]
 # Async runtime

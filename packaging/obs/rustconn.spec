@@ -14,12 +14,12 @@ URL:            https://github.com/totoshko88/RustConn
 Source0:        %{name}-%{version}.tar.xz
 Source1:        vendor.tar.zst
 
-# Rust 1.87+ required (MSRV)
-# openSUSE: use devel:languages:rust repo for Rust 1.87+
-# Fedora/Ubuntu/Debian: use rustup fallback since system Rust < 1.87
+# Rust 1.88+ required (MSRV)
+# openSUSE: use devel:languages:rust repo for Rust 1.88+
+# Fedora/Ubuntu/Debian: use rustup fallback since system Rust < 1.88
 %if 0%{?suse_version}
-BuildRequires:  cargo >= 1.87
-BuildRequires:  rust >= 1.87
+BuildRequires:  cargo >= 1.88
+BuildRequires:  rust >= 1.88
 BuildRequires:  cargo-packaging
 BuildRequires:  alsa-devel
 %endif
@@ -90,14 +90,14 @@ Features:
 %prep
 %autosetup -a1 -n %{name}-%{version}
 
-# Install rustup for Fedora/RHEL (system Rust < 1.87)
+# Install rustup for Fedora/RHEL (system Rust < 1.88)
 %if 0%{?fedora}
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.87.0 --profile minimal
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.88.0 --profile minimal
 export PATH="$HOME/.cargo/bin:$PATH"
 %endif
 
 %if 0%{?rhel}
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.87.0 --profile minimal
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.88.0 --profile minimal
 export PATH="$HOME/.cargo/bin:$PATH"
 %endif
 
