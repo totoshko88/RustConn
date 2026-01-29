@@ -3655,15 +3655,19 @@ fn cmd_secret(subcmd: SecretCommands) -> Result<(), CliError> {
             user,
             password,
             backend,
-        } => cmd_secret_set(&connection, user.as_deref(), password.as_deref(), backend.as_deref()),
+        } => cmd_secret_set(
+            &connection,
+            user.as_deref(),
+            password.as_deref(),
+            backend.as_deref(),
+        ),
         SecretCommands::Delete {
             connection,
             backend,
         } => cmd_secret_delete(&connection, backend.as_deref()),
-        SecretCommands::VerifyKeepass {
-            database,
-            key_file,
-        } => cmd_secret_verify_keepass(&database, key_file.as_deref()),
+        SecretCommands::VerifyKeepass { database, key_file } => {
+            cmd_secret_verify_keepass(&database, key_file.as_deref())
+        }
     }
 }
 
@@ -3708,7 +3712,10 @@ fn cmd_secret_status() -> Result<(), CliError> {
     if let Ok(output) = bw_output {
         if output.status.success() {
             let version = String::from_utf8_lossy(&output.stdout);
-            println!("Bitwarden CLI:        Available ✓ (version {})", version.trim());
+            println!(
+                "Bitwarden CLI:        Available ✓ (version {})",
+                version.trim()
+            );
         } else {
             println!("Bitwarden CLI:        Not installed");
         }
@@ -3807,7 +3814,9 @@ fn cmd_secret_get(connection_name: &str, backend: Option<&str>) -> Result<(), Cl
         }
         SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
             if !settings.secrets.kdbx_enabled {
-                return Err(CliError::Secret("KeePass is not enabled in settings".into()));
+                return Err(CliError::Secret(
+                    "KeePass is not enabled in settings".into(),
+                ));
             }
             let Some(ref kdbx_path) = settings.secrets.kdbx_path else {
                 return Err(CliError::Secret("KeePass database not configured".into()));
@@ -3957,7 +3966,9 @@ fn cmd_secret_set(
         }
         SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
             if !settings.secrets.kdbx_enabled {
-                return Err(CliError::Secret("KeePass is not enabled in settings".into()));
+                return Err(CliError::Secret(
+                    "KeePass is not enabled in settings".into(),
+                ));
             }
             let Some(ref kdbx_path) = settings.secrets.kdbx_path else {
                 return Err(CliError::Secret("KeePass database not configured".into()));
