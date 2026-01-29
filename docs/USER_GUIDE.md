@@ -181,16 +181,34 @@ For RDP, VNC, and SPICE connections, RustConn performs a fast TCP port check bef
 - **Move** — Drag-drop or right-click → Move to Group
 - **Delete** — Delete key (moves children to root)
 
-### Group Credentials (New in 0.6.1)
-Groups can now store default credentials (Username, Password, Domain) that are inherited by their children.
+### Group Credentials
 
-1. **Configure**:
-   - In "New Group" or "Edit Group" dialog, fill in the **Default Credentials** section.
-   - Passwords are stored securely in the system keyring.
+Groups can store default credentials (Username, Password, Domain) that are inherited by their children.
 
-2. **Inherit**:
-   - Create a connection inside the group.
-   - In **Authentication** tab, set **Password Source** to **Inherit from Group**.
+**Configure Group Credentials:**
+1. In "New Group" or "Edit Group" dialog, fill in the **Default Credentials** section
+2. Select **Password Source**:
+   - **KeePass** — Store in KeePass database (hierarchical: `RustConn/Groups/{path}`)
+   - **Keyring** — Store in system keyring (libsecret)
+   - **Bitwarden** — Store in Bitwarden vault
+3. Click the **folder icon** next to password field to load existing password from vault
+4. Password source auto-selects based on your preferred backend in Settings
+
+**Inherit Credentials:**
+1. Create a connection inside the group
+2. In **Authentication** tab, set **Password Source** to **Inherit from Group**
+3. Connection will use group's stored credentials
+
+**KeePass Hierarchy:**
+Group credentials are stored in KeePass with hierarchical paths:
+```
+RustConn/
+└── Groups/
+    ├── Production/           # Group password
+    │   └── Web Servers/      # Nested group password
+    └── Development/
+        └── Local/
+```
 
 ### Sorting
 
@@ -512,48 +530,84 @@ Press **Ctrl+?** or **F1** for searchable shortcuts dialog.
 ```bash
 # List connections
 rustconn-cli list
+rustconn-cli list --format json
 rustconn-cli list --group "Production" --tag "web"
+rustconn-cli list --protocol ssh
 
 # Connect
 rustconn-cli connect "My Server"
 
+# Add connection
+rustconn-cli add --name "New Server" --host "192.168.1.10" --protocol ssh --user admin
+
+# Show connection details
+rustconn-cli show "My Server"
+
+# Update connection
+rustconn-cli update "My Server" --host "192.168.1.20" --port 2222
+
 # Duplicate connection
-rustconn-cli duplicate "My Server" --name "My Server Copy"
+rustconn-cli duplicate "My Server" --new-name "My Server Copy"
+
+# Delete connection
+rustconn-cli delete "My Server"
+
+# Test connectivity
+rustconn-cli test "My Server"
+rustconn-cli test all --timeout 5
 
 # Import/Export
-rustconn-cli import ssh-config ~/.ssh/config
-rustconn-cli export native backup.rcn
+rustconn-cli import --format ssh-config ~/.ssh/config
+rustconn-cli import --format remmina ~/remmina/
+rustconn-cli export --format native --output backup.rcn
+rustconn-cli export --format ansible --output inventory.yml
 
 # Snippets
 rustconn-cli snippet list
-rustconn-cli snippet run "Deploy" --execute
+rustconn-cli snippet show "Deploy Script"
+rustconn-cli snippet add --name "Restart" --command "sudo systemctl restart \${service}"
+rustconn-cli snippet run "Deploy" --var service=nginx --execute
+rustconn-cli snippet delete "Old Snippet"
 
 # Groups
 rustconn-cli group list
-rustconn-cli group create "New Group"
-rustconn-cli group add-connection "Group Name" "Connection Name"
-rustconn-cli group remove-connection "Group Name" "Connection Name"
+rustconn-cli group show "Production"
+rustconn-cli group create --name "New Group" --parent "Production"
+rustconn-cli group add-connection --group "Production" --connection "Web-01"
+rustconn-cli group remove-connection --group "Production" --connection "Web-01"
+rustconn-cli group delete "Old Group"
 
 # Templates
 rustconn-cli template list
 rustconn-cli template show "SSH Template"
-rustconn-cli template create --name "New Template" --protocol ssh
+rustconn-cli template create --name "New Template" --protocol ssh --port 2222
 rustconn-cli template delete "Old Template"
 rustconn-cli template apply "SSH Template" --name "New Connection" --host "server.example.com"
 
 # Clusters
 rustconn-cli cluster list
 rustconn-cli cluster show "Web Servers"
-rustconn-cli cluster create --name "DB Cluster"
-rustconn-cli cluster add-connection "DB Cluster" "DB-01"
-rustconn-cli cluster remove-connection "DB Cluster" "DB-01"
+rustconn-cli cluster create --name "DB Cluster" --broadcast
+rustconn-cli cluster add-connection --cluster "DB Cluster" --connection "DB-01"
+rustconn-cli cluster remove-connection --cluster "DB Cluster" --connection "DB-01"
 rustconn-cli cluster delete "Old Cluster"
 
 # Global Variables
 rustconn-cli var list
 rustconn-cli var show "my_var"
-rustconn-cli var set "my_var" "my_value"
+rustconn-cli var set my_var "my_value"
+rustconn-cli var set api_key "secret123" --secret
 rustconn-cli var delete "my_var"
+
+# Secret Management (New in 0.6.7)
+rustconn-cli secret status                    # Show backend status
+rustconn-cli secret get "My Server"           # Get credentials
+rustconn-cli secret get "My Server" --backend keepass
+rustconn-cli secret set "My Server"           # Store (prompts for password)
+rustconn-cli secret set "My Server" --password "pass" --backend keyring
+rustconn-cli secret delete "My Server"        # Delete credentials
+rustconn-cli secret verify-keepass --database ~/passwords.kdbx
+rustconn-cli secret verify-keepass --database ~/passwords.kdbx --key-file ~/key.key
 
 # Statistics
 rustconn-cli stats
@@ -561,6 +615,39 @@ rustconn-cli stats
 # Wake-on-LAN
 rustconn-cli wol AA:BB:CC:DD:EE:FF
 rustconn-cli wol "Server Name"
+rustconn-cli wol AA:BB:CC:DD:EE:FF --broadcast 192.168.1.255 --port 9
+```
+
+### Secret Command Details
+
+The `secret` command manages credentials stored in secret backends:
+
+| Subcommand | Description |
+|------------|-------------|
+| `status` | Show available backends (Keyring, KeePass, Bitwarden) and configuration |
+| `get` | Retrieve credentials for a connection |
+| `set` | Store credentials (interactive password prompt if not provided) |
+| `delete` | Delete credentials from backend |
+| `verify-keepass` | Verify KeePass database can be unlocked |
+
+**Backend Options:**
+- `keyring` / `libsecret` — System keyring (GNOME Keyring, KDE Wallet)
+- `keepass` / `kdbx` — KeePass database (requires KDBX configured in settings)
+- `bitwarden` / `bw` — Bitwarden CLI
+
+**Examples:**
+```bash
+# Check which backends are available
+rustconn-cli secret status
+
+# Store password in system keyring
+rustconn-cli secret set "Production DB" --backend keyring
+
+# Store password in KeePass (uses configured KDBX)
+rustconn-cli secret set "Production DB" --backend keepass --user admin
+
+# Verify KeePass database with key file
+rustconn-cli secret verify-keepass -d ~/vault.kdbx -k ~/key.key
 ```
 
 ---
