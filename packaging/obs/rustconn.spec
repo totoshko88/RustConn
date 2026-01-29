@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.6.6
+Version:        0.6.7
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later
@@ -157,6 +157,9 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Thu Jan 29 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.7-0
+- Version bump to 0.6.7
+
 * Tue Jan 27 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.6-0
 - Version bump to 0.6.6
 

@@ -12,6 +12,9 @@ use crate::models::{Connection, ConnectionGroup};
 /// Root group name for all `RustConn` entries in `KeePass`
 pub const KEEPASS_ROOT_GROUP: &str = "RustConn";
 
+/// Subfolder for group credentials in `KeePass`
+pub const GROUPS_SUBFOLDER: &str = "Groups";
+
 /// Separator used in `KeePass` entry paths
 pub const PATH_SEPARATOR: char = '/';
 
@@ -115,6 +118,73 @@ impl KeePassHierarchy {
         path_parts.push(connection_identifier.clone());
 
         path_parts.join(&PATH_SEPARATOR.to_string())
+    }
+
+    /// Builds the full `KeePass` entry path for a group's credentials.
+    ///
+    /// The path format is: `RustConn/Groups/GroupA/SubGroup`
+    /// This stores group credentials separately from connection credentials.
+    ///
+    /// # Arguments
+    /// * `group` - The group to build a path for
+    /// * `groups` - All available connection groups for hierarchy resolution
+    ///
+    /// # Returns
+    /// A string representing the full hierarchical path for the group's credentials
+    ///
+    /// # Example
+    /// ```
+    /// use rustconn_core::secret::hierarchy::KeePassHierarchy;
+    /// use rustconn_core::models::ConnectionGroup;
+    ///
+    /// let production_group = ConnectionGroup::new("Production".to_string());
+    /// let web_group = ConnectionGroup::with_parent("Web Servers".to_string(), production_group.id);
+    ///
+    /// let groups = vec![production_group.clone(), web_group.clone()];
+    ///
+    /// let path = KeePassHierarchy::build_group_entry_path(&web_group, &groups);
+    /// assert!(path.starts_with("RustConn/Groups/"));
+    /// assert!(path.contains("Production"));
+    /// assert!(path.ends_with("Web Servers"));
+    /// ```
+    #[must_use]
+    pub fn build_group_entry_path(group: &ConnectionGroup, groups: &[ConnectionGroup]) -> String {
+        let mut path_parts = vec![KEEPASS_ROOT_GROUP.to_string(), GROUPS_SUBFOLDER.to_string()];
+
+        // Build path from group's hierarchy
+        let group_path = Self::resolve_group_path(group.id, groups);
+        path_parts.extend(group_path);
+
+        path_parts.join(&PATH_SEPARATOR.to_string())
+    }
+
+    /// Builds a simple lookup key for a group's credentials.
+    ///
+    /// This is used for backends that don't support hierarchical paths (like libsecret).
+    /// Format: `group:{group_id}` or `group:{path}` for human-readable keys.
+    ///
+    /// # Arguments
+    /// * `group` - The group to build a key for
+    /// * `groups` - All available connection groups for hierarchy resolution
+    /// * `use_path` - If true, use hierarchical path; if false, use UUID
+    ///
+    /// # Returns
+    /// A string key for storing/retrieving the group's credentials
+    #[must_use]
+    pub fn build_group_lookup_key(
+        group: &ConnectionGroup,
+        groups: &[ConnectionGroup],
+        use_path: bool,
+    ) -> String {
+        if use_path {
+            let group_path = Self::resolve_group_path(group.id, groups);
+            let path_str = group_path.join(&PATH_SEPARATOR.to_string());
+            // Sanitize path for use as lookup key (replace / with -)
+            let sanitized = path_str.replace(PATH_SEPARATOR, "-");
+            format!("group:{sanitized}")
+        } else {
+            format!("group:{}", group.id)
+        }
     }
 
     /// Resolves the full group path from a group ID by traversing parent groups.

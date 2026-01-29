@@ -5,7 +5,20 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 0.6.6
+## [Unreleased] - 0.6.7
+
+### Added
+- **Group-Level Secret Storage** - Groups can now store passwords in secret backends:
+  - Auto-select password backend based on application settings when creating groups
+  - "Load from vault" button to retrieve group passwords from KeePass/Keyring/Bitwarden
+  - Hierarchical storage in KeePass: `RustConn/Groups/{path}` mirrors group structure
+  - New `build_group_entry_path()` and `build_group_lookup_key()` functions in hierarchy module
+
+### Changed
+
+### Fixed
+
+## [0.6.6] - 2026-01-29
 
 ### Added
 - **KeePass Password Saving for RDP/VNC** - Fixed password saving when creating/editing connections with KeePass password source:

@@ -630,7 +630,7 @@ pub fn show_edit_group_dialog(
     password_source_row.add_suffix(&password_source_dropdown);
     credentials_group.add(&password_source_row);
 
-    // Password Value entry with visibility toggle
+    // Password Value entry with visibility toggle and load button
     let password_entry = gtk4::Entry::builder()
         .placeholder_text("Password value")
         .visibility(false)
@@ -641,10 +641,16 @@ pub fn show_edit_group_dialog(
         .tooltip_text("Show/hide password")
         .valign(gtk4::Align::Center)
         .build();
+    let password_load_btn = gtk4::Button::builder()
+        .icon_name("folder-symbolic")
+        .tooltip_text("Load password from vault")
+        .valign(gtk4::Align::Center)
+        .build();
 
     let password_value_row = adw::ActionRow::builder().title("Value").build();
     password_value_row.add_suffix(&password_entry);
     password_value_row.add_suffix(&password_visibility_btn);
+    password_value_row.add_suffix(&password_load_btn);
     credentials_group.add(&password_value_row);
 
     // Show/hide password value row based on source selection
@@ -672,6 +678,180 @@ pub fn show_edit_group_dialog(
             btn.set_icon_name("view-conceal-symbolic");
         } else {
             btn.set_icon_name("view-reveal-symbolic");
+        }
+    });
+
+    // Connect password load button - loads password from configured vault
+    let password_entry_for_load = password_entry.clone();
+    let password_source_for_load = password_source_dropdown.clone();
+    let state_for_load = state.clone();
+    let window_for_load = group_window.clone();
+    let group_name_for_load = group.name.clone();
+    let group_id_for_load = group_id;
+    password_load_btn.connect_clicked(move |btn| {
+        let password_source_idx = password_source_for_load.selected();
+
+        // Get settings and group path for vault access
+        let state_ref = state_for_load.borrow();
+        let settings = state_ref.settings().clone();
+        let groups: Vec<_> = state_ref.list_groups().into_iter().cloned().collect();
+        let grp = state_ref.get_group(group_id_for_load).cloned();
+        drop(state_ref);
+
+        let lookup_key = if let Some(ref g) = grp {
+            rustconn_core::secret::KeePassHierarchy::build_group_lookup_key(g, &groups, true)
+        } else {
+            format!("group:{}", group_name_for_load.replace('/', "-"))
+        };
+
+        let group_path = if let Some(ref g) = grp {
+            rustconn_core::secret::KeePassHierarchy::build_group_entry_path(g, &groups)
+        } else {
+            format!("RustConn/Groups/{}", group_name_for_load)
+        };
+
+        let password_entry_clone = password_entry_for_load.clone();
+        let window_clone = window_for_load.clone();
+        let btn_clone = btn.clone();
+
+        btn.set_sensitive(false);
+        btn.set_icon_name("content-loading-symbolic");
+
+        match password_source_idx {
+            1 => {
+                // KeePass
+                if !settings.secrets.kdbx_enabled {
+                    alert::show_validation_error(&window_clone, "KeePass is not enabled");
+                    btn_clone.set_sensitive(true);
+                    btn_clone.set_icon_name("folder-symbolic");
+                    return;
+                }
+                let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
+                    alert::show_validation_error(&window_clone, "KeePass database not configured");
+                    btn_clone.set_sensitive(true);
+                    btn_clone.set_icon_name("folder-symbolic");
+                    return;
+                };
+                let key_file = settings.secrets.kdbx_key_file.clone();
+
+                crate::utils::spawn_blocking_with_callback(
+                    move || {
+                        let key_file_path = key_file.as_ref().map(std::path::Path::new);
+                        rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
+                            std::path::Path::new(&kdbx_path),
+                            None,
+                            key_file_path,
+                            &group_path,
+                            None, // No protocol for groups
+                        )
+                    },
+                    move |result: Result<Option<String>, String>| {
+                        btn_clone.set_sensitive(true);
+                        btn_clone.set_icon_name("folder-symbolic");
+                        match result {
+                            Ok(Some(pwd)) => {
+                                password_entry_clone.set_text(&pwd);
+                            }
+                            Ok(None) => {
+                                alert::show_validation_error(
+                                    &window_clone,
+                                    "No password found for this group",
+                                );
+                            }
+                            Err(e) => {
+                                tracing::error!("Failed to load password: {}", e);
+                                alert::show_error(&window_clone, "Load Error", &e);
+                            }
+                        }
+                    },
+                );
+            }
+            2 => {
+                // Keyring
+                crate::utils::spawn_blocking_with_callback(
+                    move || {
+                        use rustconn_core::secret::SecretBackend;
+                        let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
+                        let rt = tokio::runtime::Runtime::new()
+                            .map_err(|e| format!("Runtime error: {e}"))?;
+                        rt.block_on(backend.retrieve(&lookup_key))
+                            .map_err(|e| format!("{e}"))
+                    },
+                    move |result: Result<Option<Credentials>, String>| {
+                        btn_clone.set_sensitive(true);
+                        btn_clone.set_icon_name("folder-symbolic");
+                        match result {
+                            Ok(Some(creds)) => {
+                                if let Some(pwd) = creds.expose_password() {
+                                    password_entry_clone.set_text(pwd);
+                                } else {
+                                    alert::show_validation_error(
+                                        &window_clone,
+                                        "No password found for this group",
+                                    );
+                                }
+                            }
+                            Ok(None) => {
+                                alert::show_validation_error(
+                                    &window_clone,
+                                    "No password found for this group",
+                                );
+                            }
+                            Err(e) => {
+                                tracing::error!("Failed to load password: {}", e);
+                                alert::show_error(&window_clone, "Load Error", &e);
+                            }
+                        }
+                    },
+                );
+            }
+            3 => {
+                // Bitwarden
+                crate::utils::spawn_blocking_with_callback(
+                    move || {
+                        use rustconn_core::secret::SecretBackend;
+                        let backend = rustconn_core::secret::BitwardenBackend::new();
+                        let rt = tokio::runtime::Runtime::new()
+                            .map_err(|e| format!("Runtime error: {e}"))?;
+                        rt.block_on(backend.retrieve(&lookup_key))
+                            .map_err(|e| format!("{e}"))
+                    },
+                    move |result: Result<Option<Credentials>, String>| {
+                        btn_clone.set_sensitive(true);
+                        btn_clone.set_icon_name("folder-symbolic");
+                        match result {
+                            Ok(Some(creds)) => {
+                                if let Some(pwd) = creds.expose_password() {
+                                    password_entry_clone.set_text(pwd);
+                                } else {
+                                    alert::show_validation_error(
+                                        &window_clone,
+                                        "No password found for this group",
+                                    );
+                                }
+                            }
+                            Ok(None) => {
+                                alert::show_validation_error(
+                                    &window_clone,
+                                    "No password found for this group",
+                                );
+                            }
+                            Err(e) => {
+                                tracing::error!("Failed to load password: {}", e);
+                                alert::show_error(&window_clone, "Load Error", &e);
+                            }
+                        }
+                    },
+                );
+            }
+            _ => {
+                btn.set_sensitive(true);
+                btn.set_icon_name("folder-symbolic");
+                alert::show_validation_error(
+                    &window_clone,
+                    "Select KeePass, Keyring, or Bitwarden to load password",
+                );
+            }
         }
     });
 
@@ -776,33 +956,139 @@ pub fn show_edit_group_dialog(
 
                 // Save password if provided and source requires it
                 if has_new_password {
-                    let secret_manager = state_mut.secret_manager().clone();
-                    let creds = Credentials::with_password(
-                        if username.trim().is_empty() {
-                            ""
-                        } else {
-                            &username
-                        },
-                        password,
-                    );
-                    let gid_str = group_id.to_string();
+                    // Get group path for hierarchical storage
+                    let groups: Vec<_> = state_mut.list_groups().into_iter().cloned().collect();
+                    let grp = state_mut.get_group(group_id).cloned();
+                    let settings = state_mut.settings().clone();
 
-                    crate::utils::spawn_blocking_with_callback(
-                        move || {
-                            let rt = tokio::runtime::Runtime::new().map_err(|e| e.to_string())?;
-                            rt.block_on(async {
-                                secret_manager
-                                    .store(&gid_str, &creds)
-                                    .await
-                                    .map_err(|e| e.to_string())
-                            })
-                        },
-                        move |result| {
-                            if let Err(e) = result {
-                                tracing::error!("Failed to save group password: {}", e);
+                    if let Some(g) = grp {
+                        let group_path =
+                            rustconn_core::secret::KeePassHierarchy::build_group_entry_path(
+                                &g, &groups,
+                            );
+                        let lookup_key =
+                            rustconn_core::secret::KeePassHierarchy::build_group_lookup_key(
+                                &g, &groups, true,
+                            );
+
+                        match new_password_source {
+                            PasswordSource::KeePass => {
+                                // Save to KeePass with hierarchical path
+                                if settings.secrets.kdbx_enabled {
+                                    if let Some(kdbx_path) = settings.secrets.kdbx_path.clone() {
+                                        let key_file = settings.secrets.kdbx_key_file.clone();
+                                        let entry_name = group_path;
+                                        let username_val = username.clone();
+                                        let password_val = password.clone();
+
+                                        crate::utils::spawn_blocking_with_callback(
+                                            move || {
+                                                let kdbx = std::path::Path::new(&kdbx_path);
+                                                let key = key_file
+                                                    .as_ref()
+                                                    .map(|p| std::path::Path::new(p));
+                                                rustconn_core::secret::KeePassStatus
+                                                    ::save_password_to_kdbx(
+                                                        kdbx,
+                                                        None,
+                                                        key,
+                                                        &entry_name,
+                                                        &username_val,
+                                                        &password_val,
+                                                        None,
+                                                    )
+                                            },
+                                            move |result| {
+                                                if let Err(e) = result {
+                                                    tracing::error!(
+                                                        "Failed to save group password to \
+                                                         KeePass: {}",
+                                                        e
+                                                    );
+                                                } else {
+                                                    tracing::info!(
+                                                        "Group password saved to KeePass"
+                                                    );
+                                                }
+                                            },
+                                        );
+                                    }
+                                }
                             }
-                        },
-                    );
+                            PasswordSource::Keyring => {
+                                // Save to Keyring
+                                let username_val = username.clone();
+                                let password_val = password.clone();
+
+                                crate::utils::spawn_blocking_with_callback(
+                                    move || {
+                                        use rustconn_core::secret::SecretBackend;
+                                        let backend = rustconn_core::secret::LibSecretBackend::new(
+                                            "rustconn",
+                                        );
+                                        let creds = Credentials {
+                                            username: Some(username_val),
+                                            password: Some(secrecy::SecretString::from(
+                                                password_val,
+                                            )),
+                                            key_passphrase: None,
+                                            domain: None,
+                                        };
+                                        let rt = tokio::runtime::Runtime::new()
+                                            .map_err(|e| format!("Runtime error: {e}"))?;
+                                        rt.block_on(backend.store(&lookup_key, &creds))
+                                            .map_err(|e| format!("{e}"))
+                                    },
+                                    move |result: Result<(), String>| {
+                                        if let Err(e) = result {
+                                            tracing::error!(
+                                                "Failed to save group password to Keyring: {}",
+                                                e
+                                            );
+                                        } else {
+                                            tracing::info!("Group password saved to Keyring");
+                                        }
+                                    },
+                                );
+                            }
+                            PasswordSource::Bitwarden => {
+                                // Save to Bitwarden
+                                let username_val = username.clone();
+                                let password_val = password.clone();
+
+                                crate::utils::spawn_blocking_with_callback(
+                                    move || {
+                                        use rustconn_core::secret::SecretBackend;
+                                        let backend =
+                                            rustconn_core::secret::BitwardenBackend::new();
+                                        let creds = Credentials {
+                                            username: Some(username_val),
+                                            password: Some(secrecy::SecretString::from(
+                                                password_val,
+                                            )),
+                                            key_passphrase: None,
+                                            domain: None,
+                                        };
+                                        let rt = tokio::runtime::Runtime::new()
+                                            .map_err(|e| format!("Runtime error: {e}"))?;
+                                        rt.block_on(backend.store(&lookup_key, &creds))
+                                            .map_err(|e| format!("{e}"))
+                                    },
+                                    move |result: Result<(), String>| {
+                                        if let Err(e) = result {
+                                            tracing::error!(
+                                                "Failed to save group password to Bitwarden: {}",
+                                                e
+                                            );
+                                        } else {
+                                            tracing::info!("Group password saved to Bitwarden");
+                                        }
+                                    },
+                                );
+                            }
+                            _ => {}
+                        }
+                    }
                 }
             }
             drop(state_mut);

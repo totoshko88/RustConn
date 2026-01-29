@@ -35,7 +35,9 @@ pub use detection::{
     detect_password_managers, get_password_manager_launch_command, open_password_manager,
     PasswordManagerInfo,
 };
-pub use hierarchy::{GroupCreationResult, KeePassHierarchy, KEEPASS_ROOT_GROUP, PATH_SEPARATOR};
+pub use hierarchy::{
+    GroupCreationResult, KeePassHierarchy, GROUPS_SUBFOLDER, KEEPASS_ROOT_GROUP, PATH_SEPARATOR,
+};
 pub use kdbx::KdbxExporter;
 pub use keepassxc::KeePassXcBackend;
 pub use libsecret::LibSecretBackend;
