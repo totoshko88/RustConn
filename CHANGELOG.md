@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - "Load from vault" button to retrieve group passwords from KeePass/Keyring/Bitwarden
   - Hierarchical storage in KeePass: `RustConn/Groups/{path}` mirrors group structure
   - New `build_group_entry_path()` and `build_group_lookup_key()` functions in hierarchy module
+- **CLI Secret Management** - New `secret` command for managing credentials from command line:
+  - `rustconn-cli secret status` - Show available backends and their status
+  - `rustconn-cli secret get <connection>` - Retrieve credentials for a connection
+  - `rustconn-cli secret set <connection>` - Store credentials (interactive password prompt)
+  - `rustconn-cli secret delete <connection>` - Delete credentials from backend
+  - `rustconn-cli secret verify-keepass` - Verify KeePass database credentials
+  - Supports `--backend` flag to specify keyring, keepass, or bitwarden
 
 ### Changed
 

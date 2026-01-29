@@ -291,6 +291,9 @@ impl KeePassStatus {
         // entry_name should already include protocol suffix if needed (e.g., "server (rdp)")
         let entry_path = format!("RustConn/{entry_name}");
 
+        // Ensure all parent groups in the path exist (e.g., RustConn/Groups for group passwords)
+        Self::ensure_parent_groups(kdbx_path, db_password, key_file, &cli_path, entry_name)?;
+
         // First, try to remove existing entry (ignore errors if it doesn't exist)
         let _ = Self::delete_kdbx_entry(kdbx_path, db_password, key_file, &entry_path);
 
@@ -531,6 +534,81 @@ impl KeePassStatus {
                 Ok(())
             }
         }
+    }
+
+    /// Ensures all parent groups in a path exist
+    ///
+    /// For path "Groups/Production/Web", creates:
+    /// - RustConn/Groups
+    /// - RustConn/Groups/Production
+    /// - RustConn/Groups/Production/Web
+    fn ensure_parent_groups(
+        kdbx_path: &Path,
+        db_password: Option<&str>,
+        key_file: Option<&Path>,
+        cli_path: &Path,
+        entry_path: &str,
+    ) -> Result<(), String> {
+        use std::io::Write as IoWrite;
+        use std::process::Stdio;
+
+        // Extract parent path (everything except the last component which is the entry name)
+        let parts: Vec<&str> = entry_path.split('/').collect();
+        if parts.len() <= 1 {
+            // No parent groups needed
+            return Ok(());
+        }
+
+        // Build cumulative paths for all parent groups
+        let mut current_path = String::from("RustConn");
+        for part in &parts[..parts.len() - 1] {
+            current_path = format!("{current_path}/{part}");
+
+            tracing::debug!("Ensuring group exists: {}", current_path);
+
+            // Try to create the group (ignore if already exists)
+            let mut args = vec!["mkdir".to_string(), "-q".to_string()];
+
+            if db_password.is_none() && key_file.is_some() {
+                args.push("--no-password".to_string());
+            }
+
+            if let Some(kf) = key_file {
+                args.push("--key-file".to_string());
+                args.push(kf.display().to_string());
+            }
+
+            args.push(kdbx_path.display().to_string());
+            args.push(current_path.clone());
+
+            let mut child = Command::new(cli_path)
+                .args(&args)
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
+                .map_err(|e| format!("Failed to run keepassxc-cli mkdir: {e}"))?;
+
+            if let Some(mut stdin) = child.stdin.take() {
+                if let Some(db_pwd) = db_password {
+                    stdin.write_all(db_pwd.as_bytes()).ok();
+                    stdin.write_all(b"\n").ok();
+                }
+            }
+
+            let output = child.wait_with_output().ok();
+
+            if let Some(ref o) = output {
+                let stderr = String::from_utf8_lossy(&o.stderr);
+                if o.status.success() || stderr.contains("already exists") {
+                    tracing::debug!("Group '{}' ready", current_path);
+                } else {
+                    tracing::debug!("mkdir '{}' result: {}", current_path, stderr);
+                }
+            }
+        }
+
+        Ok(())
     }
 
     /// Deletes an entry from KDBX database

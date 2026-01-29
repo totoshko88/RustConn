@@ -760,11 +760,15 @@ pub fn show_new_group_dialog_with_parent(
                             match new_password_source {
                                 PasswordSource::KeePass => {
                                     // Save to KeePass with hierarchical path
+                                    // Strip "RustConn/" prefix since save_password_to_kdbx adds it
                                     if settings.secrets.kdbx_enabled {
                                         if let Some(kdbx_path) = settings.secrets.kdbx_path.clone()
                                         {
                                             let key_file = settings.secrets.kdbx_key_file.clone();
-                                            let entry_name = group_path;
+                                            let entry_name = group_path
+                                                .strip_prefix("RustConn/")
+                                                .unwrap_or(&group_path)
+                                                .to_string();
                                             let username_val = username.clone();
                                             let password_val = password.clone();
 

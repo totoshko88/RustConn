@@ -297,6 +297,46 @@ pub trait SecretBackend: Send + Sync {
 - `KeePassXcBackend`: KeePassXC via CLI
 - `BitwardenBackend`: Bitwarden via CLI
 
+### KeePass Hierarchical Storage
+
+The `hierarchy` module (`rustconn-core/src/secret/hierarchy.rs`) manages hierarchical password storage in KeePass databases, mirroring RustConn's group structure:
+
+```
+KeePass Database
+└── RustConn/                          # Root group for all RustConn entries
+    ├── Groups/                        # Group-level credentials
+    │   ├── Production/                # Mirrors RustConn group hierarchy
+    │   │   └── Web Servers            # Group password entry
+    │   └── Development/
+    │       └── Local                  # Nested group password
+    ├── server-01 (ssh)                # Connection credentials
+    ├── Production/                    # Connections inherit group path
+    │   └── web-server (rdp)
+    └── Development/
+        └── db-server (ssh)
+```
+
+**Key Functions:**
+
+```rust
+// Build entry path for a connection
+let path = KeePassHierarchy::build_entry_path(&connection, &groups);
+// Returns: "RustConn/Production/Web Servers/nginx-01"
+
+// Build entry path for group credentials
+let path = KeePassHierarchy::build_group_entry_path(&group, &groups);
+// Returns: "RustConn/Groups/Production/Web Servers"
+
+// Build lookup key for non-hierarchical backends (libsecret)
+let key = KeePassHierarchy::build_group_lookup_key(&group, &groups, true);
+// Returns: "group:Production-Web Servers"
+```
+
+**Group Credentials:**
+- Groups can store shared credentials (username/password)
+- Stored in `RustConn/Groups/{path}` to separate from connection entries
+- Child connections can inherit group credentials via `PasswordSource::Group`
+
 ### Fallback Chain
 
 `SecretManager` tries backends in priority order:
@@ -417,6 +457,14 @@ rustconn-core/src/
 ├── connection/            # Connection management
 ├── protocol/              # Protocol implementations
 ├── secret/                # Credential backends
+│   ├── mod.rs             # Module exports
+│   ├── backend.rs         # SecretBackend trait
+│   ├── hierarchy.rs       # KeePass hierarchical paths
+│   ├── libsecret.rs       # GNOME Keyring backend
+│   ├── keepassxc.rs       # KeePassXC backend
+│   ├── bitwarden.rs       # Bitwarden backend
+│   ├── status.rs          # KeePass status detection
+│   └── ...
 ├── session/               # Session management
 ├── import/                # Format importers
 ├── export/                # Format exporters

@@ -195,6 +195,10 @@ pub enum Commands {
     #[command(subcommand, about = "Manage global variables")]
     Var(VariableCommands),
 
+    /// Manage secret backends and credentials
+    #[command(subcommand, about = "Manage secret backends and credentials")]
+    Secret(SecretCommands),
+
     /// Duplicate a connection
     #[command(about = "Duplicate an existing connection")]
     Duplicate {
@@ -590,6 +594,67 @@ pub enum VariableCommands {
     },
 }
 
+/// Secret backend subcommands
+#[derive(Subcommand)]
+pub enum SecretCommands {
+    /// Show available secret backends and their status
+    #[command(about = "Show available secret backends and their status")]
+    Status,
+
+    /// Get password for a connection from secret backend
+    #[command(about = "Get password for a connection from secret backend")]
+    Get {
+        /// Connection name or ID
+        connection: String,
+
+        /// Secret backend to use (keyring, keepass, bitwarden)
+        #[arg(short, long)]
+        backend: Option<String>,
+    },
+
+    /// Store password for a connection in secret backend
+    #[command(about = "Store password for a connection in secret backend")]
+    Set {
+        /// Connection name or ID
+        connection: String,
+
+        /// Username (optional, uses connection username if not specified)
+        #[arg(short, long)]
+        user: Option<String>,
+
+        /// Password (if not provided, will prompt interactively)
+        #[arg(short, long)]
+        password: Option<String>,
+
+        /// Secret backend to use (keyring, keepass, bitwarden)
+        #[arg(short, long)]
+        backend: Option<String>,
+    },
+
+    /// Delete password for a connection from secret backend
+    #[command(about = "Delete password for a connection from secret backend")]
+    Delete {
+        /// Connection name or ID
+        connection: String,
+
+        /// Secret backend to use (keyring, keepass, bitwarden)
+        #[arg(short, long)]
+        backend: Option<String>,
+    },
+
+    /// Verify KeePass database credentials
+    #[command(about = "Verify KeePass database credentials")]
+    VerifyKeepass {
+        /// Path to KDBX file
+        #[arg(short, long)]
+        database: PathBuf,
+
+        /// Path to key file (optional)
+        #[arg(short, long)]
+        key_file: Option<PathBuf>,
+    },
+}
+
 /// Parse a key=value pair for variable substitution
 fn parse_key_val(s: &str) -> Result<(String, String), String> {
     let pos = s
@@ -657,6 +722,7 @@ fn main() {
         Commands::Template(subcmd) => cmd_template(subcmd),
         Commands::Cluster(subcmd) => cmd_cluster(subcmd),
         Commands::Var(subcmd) => cmd_var(subcmd),
+        Commands::Secret(subcmd) => cmd_secret(subcmd),
         Commands::Duplicate { name, new_name } => cmd_duplicate(&name, new_name.as_deref()),
         Commands::Stats => cmd_stats(),
     };
@@ -2028,6 +2094,10 @@ pub enum CliError {
     #[error("Variable error: {0}")]
     Variable(String),
 
+    /// Secret backend error
+    #[error("Secret error: {0}")]
+    Secret(String),
+
     /// IO error
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
@@ -2055,7 +2125,8 @@ impl CliError {
             | Self::Group(_)
             | Self::Template(_)
             | Self::Cluster(_)
-            | Self::Variable(_) => exit_codes::GENERAL_ERROR,
+            | Self::Variable(_)
+            | Self::Secret(_) => exit_codes::GENERAL_ERROR,
         }
     }
 
@@ -3563,6 +3634,466 @@ fn cmd_var_delete(name: &str) -> Result<(), CliError> {
         .map_err(|e| CliError::Variable(format!("Failed to save variables: {e}")))?;
 
     println!("Deleted variable '{name}'");
+
+    Ok(())
+}
+
+// ============================================================================
+// Secret commands
+// ============================================================================
+
+/// Secret command handler
+fn cmd_secret(subcmd: SecretCommands) -> Result<(), CliError> {
+    match subcmd {
+        SecretCommands::Status => cmd_secret_status(),
+        SecretCommands::Get {
+            connection,
+            backend,
+        } => cmd_secret_get(&connection, backend.as_deref()),
+        SecretCommands::Set {
+            connection,
+            user,
+            password,
+            backend,
+        } => cmd_secret_set(&connection, user.as_deref(), password.as_deref(), backend.as_deref()),
+        SecretCommands::Delete {
+            connection,
+            backend,
+        } => cmd_secret_delete(&connection, backend.as_deref()),
+        SecretCommands::VerifyKeepass {
+            database,
+            key_file,
+        } => cmd_secret_verify_keepass(&database, key_file.as_deref()),
+    }
+}
+
+/// Show secret backend status
+fn cmd_secret_status() -> Result<(), CliError> {
+    use rustconn_core::secret::KeePassStatus;
+
+    println!("Secret Backend Status");
+    println!("=====================\n");
+
+    // Check libsecret (Keyring) - check if secret-tool is available
+    let libsecret_available = std::process::Command::new("which")
+        .arg("secret-tool")
+        .output()
+        .is_ok_and(|o| o.status.success());
+    println!(
+        "Keyring (libsecret):  {}",
+        if libsecret_available {
+            "Available ✓"
+        } else {
+            "Not available (secret-tool not found)"
+        }
+    );
+
+    // Check KeePassXC
+    let keepass_status = KeePassStatus::detect();
+    if keepass_status.keepassxc_installed {
+        let version = keepass_status
+            .keepassxc_version
+            .as_deref()
+            .unwrap_or("unknown");
+        println!("KeePassXC:            Available ✓ (version {version})");
+        if let Some(ref path) = keepass_status.keepassxc_path {
+            println!("  CLI path: {}", path.display());
+        }
+    } else {
+        println!("KeePassXC:            Not installed");
+    }
+
+    // Check Bitwarden - check if bw is available
+    let bw_output = std::process::Command::new("bw").arg("--version").output();
+    if let Ok(output) = bw_output {
+        if output.status.success() {
+            let version = String::from_utf8_lossy(&output.stdout);
+            println!("Bitwarden CLI:        Available ✓ (version {})", version.trim());
+        } else {
+            println!("Bitwarden CLI:        Not installed");
+        }
+    } else {
+        println!("Bitwarden CLI:        Not installed");
+    }
+
+    // Load settings to show configured backend
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    if let Ok(settings) = config_manager.load_settings() {
+        println!("\nConfiguration:");
+        println!(
+            "  Preferred backend: {:?}",
+            settings.secrets.preferred_backend
+        );
+        if settings.secrets.kdbx_enabled {
+            if let Some(ref path) = settings.secrets.kdbx_path {
+                println!("  KDBX database: {}", path.display());
+            }
+            if let Some(ref key) = settings.secrets.kdbx_key_file {
+                println!("  KDBX key file: {}", key.display());
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Get password for a connection
+#[allow(clippy::too_many_lines)]
+fn cmd_secret_get(connection_name: &str, backend: Option<&str>) -> Result<(), CliError> {
+    use rustconn_core::config::SecretBackendType;
+    use rustconn_core::models::Credentials;
+    use rustconn_core::secret::{KeePassStatus, LibSecretBackend, SecretBackend};
+
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
+    let connection = find_connection(&connections, connection_name)?;
+    let lookup_key = format!("{} ({})", connection.name, connection.protocol.as_str());
+
+    let settings = config_manager
+        .load_settings()
+        .map_err(|e| CliError::Config(format!("Failed to load settings: {e}")))?;
+
+    // Determine which backend to use
+    let backend_type = if let Some(b) = backend {
+        match b.to_lowercase().as_str() {
+            "keyring" | "libsecret" => SecretBackendType::LibSecret,
+            "keepass" | "kdbx" | "keepassxc" => SecretBackendType::KdbxFile,
+            "bitwarden" | "bw" => SecretBackendType::Bitwarden,
+            _ => {
+                return Err(CliError::Secret(format!(
+                    "Unknown backend: {b}. Use: keyring, keepass, or bitwarden"
+                )))
+            }
+        }
+    } else {
+        settings.secrets.preferred_backend
+    };
+
+    match backend_type {
+        SecretBackendType::LibSecret => {
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = LibSecretBackend::new("rustconn");
+            let result: Result<Option<Credentials>, _> = rt.block_on(backend.retrieve(&lookup_key));
+
+            match result {
+                Ok(Some(creds)) => {
+                    println!("Connection: {}", connection.name);
+                    if let Some(ref user) = creds.username {
+                        println!("Username:   {user}");
+                    }
+                    if creds.expose_password().is_some() {
+                        println!("Password:   ********");
+                        println!("\nUse 'secret-tool' to view actual value");
+                    } else {
+                        println!("Password:   (not set)");
+                    }
+                    Ok(())
+                }
+                Ok(None) => Err(CliError::Secret(format!(
+                    "No credentials found for '{}'",
+                    connection.name
+                ))),
+                Err(e) => Err(CliError::Secret(format!("Keyring error: {e}"))),
+            }
+        }
+        SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
+            if !settings.secrets.kdbx_enabled {
+                return Err(CliError::Secret("KeePass is not enabled in settings".into()));
+            }
+            let Some(ref kdbx_path) = settings.secrets.kdbx_path else {
+                return Err(CliError::Secret("KeePass database not configured".into()));
+            };
+
+            let key_file = settings
+                .secrets
+                .kdbx_key_file
+                .as_ref()
+                .map(std::path::Path::new);
+
+            let result = KeePassStatus::get_password_from_kdbx_with_key(
+                std::path::Path::new(kdbx_path),
+                None, // No password, using key file
+                key_file,
+                &lookup_key,
+                Some(connection.protocol.as_str()),
+            );
+
+            match result {
+                Ok(Some(_)) => {
+                    println!("Connection: {}", connection.name);
+                    println!(
+                        "Username:   {}",
+                        connection.username.as_deref().unwrap_or("-")
+                    );
+                    println!("Password:   ******** (stored in KeePass)");
+                    Ok(())
+                }
+                Ok(None) => Err(CliError::Secret(format!(
+                    "No password found in KeePass for '{}'",
+                    connection.name
+                ))),
+                Err(e) => Err(CliError::Secret(format!("KeePass error: {e}"))),
+            }
+        }
+        SecretBackendType::Bitwarden => {
+            use rustconn_core::secret::BitwardenBackend;
+
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = BitwardenBackend::new();
+            let result: Result<Option<Credentials>, _> = rt.block_on(backend.retrieve(&lookup_key));
+
+            match result {
+                Ok(Some(creds)) => {
+                    println!("Connection: {}", connection.name);
+                    if let Some(ref user) = creds.username {
+                        println!("Username:   {user}");
+                    }
+                    if creds.expose_password().is_some() {
+                        println!("Password:   ******** (stored in Bitwarden)");
+                    } else {
+                        println!("Password:   (not set)");
+                    }
+                    Ok(())
+                }
+                Ok(None) => Err(CliError::Secret(format!(
+                    "No credentials found in Bitwarden for '{}'",
+                    connection.name
+                ))),
+                Err(e) => Err(CliError::Secret(format!("Bitwarden error: {e}"))),
+            }
+        }
+    }
+}
+
+/// Store password for a connection
+fn cmd_secret_set(
+    connection_name: &str,
+    username: Option<&str>,
+    password: Option<&str>,
+    backend: Option<&str>,
+) -> Result<(), CliError> {
+    use rustconn_core::config::SecretBackendType;
+    use rustconn_core::secret::KeePassStatus;
+
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
+    let connection = find_connection(&connections, connection_name)?;
+    let lookup_key = format!("{} ({})", connection.name, connection.protocol.as_str());
+
+    let settings = config_manager
+        .load_settings()
+        .map_err(|e| CliError::Config(format!("Failed to load settings: {e}")))?;
+
+    // Determine which backend to use
+    let backend_type = if let Some(b) = backend {
+        match b.to_lowercase().as_str() {
+            "keyring" | "libsecret" => SecretBackendType::LibSecret,
+            "keepass" | "kdbx" | "keepassxc" => SecretBackendType::KdbxFile,
+            "bitwarden" | "bw" => SecretBackendType::Bitwarden,
+            _ => {
+                return Err(CliError::Secret(format!(
+                    "Unknown backend: {b}. Use: keyring, keepass, or bitwarden"
+                )))
+            }
+        }
+    } else {
+        settings.secrets.preferred_backend
+    };
+
+    // Get password interactively if not provided
+    let password_value = if let Some(pwd) = password {
+        pwd.to_string()
+    } else {
+        eprint!("Enter password for '{}': ", connection.name);
+        rpassword::read_password()
+            .map_err(|e| CliError::Secret(format!("Failed to read password: {e}")))?
+    };
+
+    let username_value = username
+        .map(String::from)
+        .or_else(|| connection.username.clone())
+        .unwrap_or_default();
+
+    match backend_type {
+        SecretBackendType::LibSecret => {
+            use rustconn_core::models::Credentials;
+            use rustconn_core::secret::{LibSecretBackend, SecretBackend};
+
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = LibSecretBackend::new("rustconn");
+            let creds = Credentials {
+                username: Some(username_value.clone()),
+                password: Some(secrecy::SecretString::from(password_value)),
+                key_passphrase: None,
+                domain: connection.domain.clone(),
+            };
+
+            rt.block_on(backend.store(&lookup_key, &creds))
+                .map_err(|e| CliError::Secret(format!("Keyring error: {e}")))?;
+
+            println!(
+                "Stored credentials for '{}' in Keyring (user: {})",
+                connection.name, username_value
+            );
+            Ok(())
+        }
+        SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
+            if !settings.secrets.kdbx_enabled {
+                return Err(CliError::Secret("KeePass is not enabled in settings".into()));
+            }
+            let Some(ref kdbx_path) = settings.secrets.kdbx_path else {
+                return Err(CliError::Secret("KeePass database not configured".into()));
+            };
+
+            let key_file = settings
+                .secrets
+                .kdbx_key_file
+                .as_ref()
+                .map(std::path::Path::new);
+
+            KeePassStatus::save_password_to_kdbx(
+                std::path::Path::new(kdbx_path),
+                None,
+                key_file,
+                &lookup_key,
+                &username_value,
+                &password_value,
+                Some(&format!("{}:{}", connection.host, connection.port)),
+            )
+            .map_err(|e| CliError::Secret(format!("KeePass error: {e}")))?;
+
+            println!(
+                "Stored credentials for '{}' in KeePass (user: {})",
+                connection.name, username_value
+            );
+            Ok(())
+        }
+        SecretBackendType::Bitwarden => Err(CliError::Secret(
+            "Bitwarden storage via CLI is not yet supported. Use 'bw' CLI directly.".into(),
+        )),
+    }
+}
+
+/// Delete password for a connection
+fn cmd_secret_delete(connection_name: &str, backend: Option<&str>) -> Result<(), CliError> {
+    use rustconn_core::config::SecretBackendType;
+    use rustconn_core::secret::{LibSecretBackend, SecretBackend};
+
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
+    let connection = find_connection(&connections, connection_name)?;
+    let lookup_key = format!("{} ({})", connection.name, connection.protocol.as_str());
+
+    let settings = config_manager
+        .load_settings()
+        .map_err(|e| CliError::Config(format!("Failed to load settings: {e}")))?;
+
+    // Determine which backend to use
+    let backend_type = if let Some(b) = backend {
+        match b.to_lowercase().as_str() {
+            "keyring" | "libsecret" => SecretBackendType::LibSecret,
+            "keepass" | "kdbx" | "keepassxc" => SecretBackendType::KdbxFile,
+            "bitwarden" | "bw" => SecretBackendType::Bitwarden,
+            _ => {
+                return Err(CliError::Secret(format!(
+                    "Unknown backend: {b}. Use: keyring, keepass, or bitwarden"
+                )))
+            }
+        }
+    } else {
+        settings.secrets.preferred_backend
+    };
+
+    match backend_type {
+        SecretBackendType::LibSecret => {
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = LibSecretBackend::new("rustconn");
+            rt.block_on(backend.delete(&lookup_key))
+                .map_err(|e| CliError::Secret(format!("Keyring error: {e}")))?;
+
+            println!("Deleted credentials for '{}' from Keyring", connection.name);
+            Ok(())
+        }
+        SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
+            // KeePass deletion would require implementing delete in KeePassStatus
+            Err(CliError::Secret(
+                "KeePass credential deletion via CLI is not yet supported. \
+                 Use KeePassXC application to delete entries."
+                    .into(),
+            ))
+        }
+        SecretBackendType::Bitwarden => Err(CliError::Secret(
+            "Bitwarden credential deletion via CLI is not yet supported. \
+             Use 'bw' CLI directly."
+                .into(),
+        )),
+    }
+}
+
+/// Verify KeePass database credentials
+fn cmd_secret_verify_keepass(
+    database: &std::path::Path,
+    key_file: Option<&std::path::Path>,
+) -> Result<(), CliError> {
+    use rustconn_core::secret::KeePassStatus;
+
+    // Validate database path
+    KeePassStatus::validate_kdbx_path(database)
+        .map_err(|e| CliError::Secret(format!("Invalid database: {e}")))?;
+
+    // If using key file only
+    if let Some(kf) = key_file {
+        if !kf.exists() {
+            return Err(CliError::Secret(format!(
+                "Key file not found: {}",
+                kf.display()
+            )));
+        }
+
+        // Verify with key file only
+        KeePassStatus::verify_kdbx_credentials(database, None, Some(kf))
+            .map_err(|e| CliError::Secret(format!("Verification failed: {e}")))?;
+
+        println!("✓ KeePass database verified successfully (using key file)");
+        println!("  Database: {}", database.display());
+        println!("  Key file: {}", kf.display());
+    } else {
+        // Prompt for password
+        eprint!("Enter database password: ");
+        let password = rpassword::read_password()
+            .map_err(|e| CliError::Secret(format!("Failed to read password: {e}")))?;
+
+        KeePassStatus::verify_kdbx_credentials(database, Some(&password), None)
+            .map_err(|e| CliError::Secret(format!("Verification failed: {e}")))?;
+
+        println!("✓ KeePass database verified successfully");
+        println!("  Database: {}", database.display());
+    }
 
     Ok(())
 }
