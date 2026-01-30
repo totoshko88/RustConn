@@ -43,6 +43,10 @@ pub struct SecretsPageWidgets {
     pub bitwarden_unlock_button: Button,
     pub bitwarden_password_entry: PasswordEntry,
     pub bitwarden_save_password_check: CheckButton,
+    pub bitwarden_save_to_keyring_check: CheckButton,
+    pub bitwarden_use_api_key_check: Switch,
+    pub bitwarden_client_id_entry: Entry,
+    pub bitwarden_client_secret_entry: PasswordEntry,
     // 1Password widgets
     pub onepassword_group: adw::PreferencesGroup,
     pub onepassword_status_label: Label,
@@ -193,7 +197,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     bw_password_row.set_activatable_widget(Some(&bitwarden_password_entry));
     bitwarden_group.add(&bw_password_row);
 
-    // Save password checkbox for Bitwarden
+    // Save password checkbox for Bitwarden (encrypted in settings file)
     let bitwarden_save_password_check = CheckButton::builder().valign(gtk4::Align::Center).build();
     let bw_save_password_row = adw::ActionRow::builder()
         .title("Save password")
@@ -202,6 +206,69 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .build();
     bw_save_password_row.add_prefix(&bitwarden_save_password_check);
     bitwarden_group.add(&bw_save_password_row);
+
+    // Save to system keyring checkbox (libsecret)
+    let bitwarden_save_to_keyring_check =
+        CheckButton::builder().valign(gtk4::Align::Center).build();
+    let bw_save_to_keyring_row = adw::ActionRow::builder()
+        .title("Save to system keyring")
+        .subtitle("Store in GNOME Keyring / KDE Wallet (recommended)")
+        .activatable_widget(&bitwarden_save_to_keyring_check)
+        .build();
+    bw_save_to_keyring_row.add_prefix(&bitwarden_save_to_keyring_check);
+    bitwarden_group.add(&bw_save_to_keyring_row);
+
+    // API Key authentication switch
+    let bitwarden_use_api_key_check = Switch::builder().valign(gtk4::Align::Center).build();
+    let bw_use_api_key_row = adw::ActionRow::builder()
+        .title("Use API key authentication")
+        .subtitle("For automation or 2FA methods not supported by CLI (FIDO2, Duo)")
+        .build();
+    bw_use_api_key_row.add_suffix(&bitwarden_use_api_key_check);
+    bw_use_api_key_row.set_activatable_widget(Some(&bitwarden_use_api_key_check));
+    bitwarden_group.add(&bw_use_api_key_row);
+
+    // API Client ID entry
+    let bitwarden_client_id_entry = Entry::builder()
+        .placeholder_text("client_id")
+        .hexpand(true)
+        .valign(gtk4::Align::Center)
+        .build();
+    let bw_client_id_row = adw::ActionRow::builder()
+        .title("Client ID")
+        .subtitle("From Bitwarden web vault → Settings → Security → Keys")
+        .build();
+    bw_client_id_row.add_suffix(&bitwarden_client_id_entry);
+    bw_client_id_row.set_activatable_widget(Some(&bitwarden_client_id_entry));
+    bitwarden_group.add(&bw_client_id_row);
+
+    // API Client Secret entry
+    let bitwarden_client_secret_entry = PasswordEntry::builder()
+        .placeholder_text("client_secret")
+        .hexpand(true)
+        .show_peek_icon(true)
+        .valign(gtk4::Align::Center)
+        .build();
+    let bw_client_secret_row = adw::ActionRow::builder()
+        .title("Client Secret")
+        .subtitle("Keep this secret safe")
+        .build();
+    bw_client_secret_row.add_suffix(&bitwarden_client_secret_entry);
+    bw_client_secret_row.set_activatable_widget(Some(&bitwarden_client_secret_entry));
+    bitwarden_group.add(&bw_client_secret_row);
+
+    // Setup visibility for API key fields
+    let bw_client_id_row_clone = bw_client_id_row.clone();
+    let bw_client_secret_row_clone = bw_client_secret_row.clone();
+    bitwarden_use_api_key_check.connect_state_set(move |_, state| {
+        bw_client_id_row_clone.set_visible(state);
+        bw_client_secret_row_clone.set_visible(state);
+        glib::Propagation::Proceed
+    });
+
+    // Initial visibility - hide API key fields by default
+    bw_client_id_row.set_visible(false);
+    bw_client_secret_row.set_visible(false);
 
     let bitwarden_status_label = Label::builder()
         .label(if bitwarden_installed {
@@ -831,6 +898,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         bitwarden_unlock_button,
         bitwarden_password_entry,
         bitwarden_save_password_check,
+        bitwarden_save_to_keyring_check,
+        bitwarden_use_api_key_check,
+        bitwarden_client_id_entry,
+        bitwarden_client_secret_entry,
         onepassword_group,
         onepassword_status_label,
         onepassword_signin_button,
@@ -992,6 +1063,28 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
         .bitwarden_save_password_check
         .set_active(settings.bitwarden_password_encrypted.is_some());
 
+    // Load Bitwarden keyring and API key settings
+    widgets
+        .bitwarden_save_to_keyring_check
+        .set_active(settings.bitwarden_save_to_keyring);
+    widgets
+        .bitwarden_use_api_key_check
+        .set_active(settings.bitwarden_use_api_key);
+
+    // Load Bitwarden API credentials if available (from encrypted storage)
+    if let Some(ref client_id) = settings.bitwarden_client_id {
+        use secrecy::ExposeSecret;
+        widgets
+            .bitwarden_client_id_entry
+            .set_text(client_id.expose_secret());
+    }
+    if let Some(ref client_secret) = settings.bitwarden_client_secret {
+        use secrecy::ExposeSecret;
+        widgets
+            .bitwarden_client_secret_entry
+            .set_text(client_secret.expose_secret());
+    }
+
     // Update visibility based on loaded settings
     // Show KDBX groups only when KeePassXC is selected (index 0)
     let show_kdbx = backend_index == 0;
@@ -1120,6 +1213,62 @@ pub fn collect_secret_settings(
             (None, None)
         };
 
+    // Collect Bitwarden API key settings
+    let bitwarden_use_api_key = widgets.bitwarden_use_api_key_check.is_active();
+    let bitwarden_save_to_keyring = widgets.bitwarden_save_to_keyring_check.is_active();
+
+    let (bitwarden_client_id, bitwarden_client_id_encrypted) = if bitwarden_use_api_key {
+        let client_id_text = widgets.bitwarden_client_id_entry.text();
+        if client_id_text.is_empty() {
+            // Keep existing encrypted value if field is empty
+            (
+                None,
+                settings
+                    .borrow()
+                    .secrets
+                    .bitwarden_client_id_encrypted
+                    .clone(),
+            )
+        } else {
+            let client_id = secrecy::SecretString::new(client_id_text.to_string().into());
+            let encrypted = settings
+                .borrow()
+                .secrets
+                .bitwarden_client_id_encrypted
+                .clone()
+                .or_else(|| Some("encrypted_client_id_placeholder".to_string()));
+            (Some(client_id), encrypted)
+        }
+    } else {
+        (None, None)
+    };
+
+    let (bitwarden_client_secret, bitwarden_client_secret_encrypted) = if bitwarden_use_api_key {
+        let client_secret_text = widgets.bitwarden_client_secret_entry.text();
+        if client_secret_text.is_empty() {
+            // Keep existing encrypted value if field is empty
+            (
+                None,
+                settings
+                    .borrow()
+                    .secrets
+                    .bitwarden_client_secret_encrypted
+                    .clone(),
+            )
+        } else {
+            let client_secret = secrecy::SecretString::new(client_secret_text.to_string().into());
+            let encrypted = settings
+                .borrow()
+                .secrets
+                .bitwarden_client_secret_encrypted
+                .clone()
+                .or_else(|| Some("encrypted_client_secret_placeholder".to_string()));
+            (Some(client_secret), encrypted)
+        }
+    } else {
+        (None, None)
+    };
+
     SecretSettings {
         preferred_backend,
         enable_fallback: widgets.enable_fallback.is_active(),
@@ -1132,5 +1281,11 @@ pub fn collect_secret_settings(
         kdbx_use_password: widgets.kdbx_use_password_check.is_active(),
         bitwarden_password,
         bitwarden_password_encrypted,
+        bitwarden_use_api_key,
+        bitwarden_client_id,
+        bitwarden_client_id_encrypted,
+        bitwarden_client_secret,
+        bitwarden_client_secret_encrypted,
+        bitwarden_save_to_keyring,
     }
 }

@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.6.7** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.6.8** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -90,6 +90,7 @@ Shows integration status in sidebar toolbar:
   - KeePassXC/GNOME Secrets for KeePassXC backend
   - Seahorse/GNOME Settings for libsecret backend
   - Bitwarden web vault for Bitwarden backend
+  - 1Password app for 1Password backend
 
 ---
 
@@ -110,6 +111,7 @@ Shows integration status in sidebar toolbar:
   - **KeePass** — Store/retrieve from KeePass database
   - **Keyring** — Store/retrieve from system keyring (libsecret)
   - **Bitwarden** — Store/retrieve from Bitwarden vault
+  - **1Password** — Store/retrieve from 1Password vault
   - **Inherit** — Use credentials from parent group
   - **None** — No password (key-based auth)
 - SSH key selection
@@ -430,11 +432,21 @@ Access via **Ctrl+,** or Menu → **Settings**
 
 ### Secrets
 
-- **Preferred Backend** — libsecret, KeePassXC, KDBX file, Bitwarden
+- **Preferred Backend** — libsecret, KeePassXC, KDBX file, Bitwarden, 1Password
 - **Enable Fallback** — Use libsecret if primary unavailable
 - **KDBX Path** — KeePass database file (for KDBX backend)
 - **KDBX Authentication** — Password and/or key file
-- **Bitwarden Settings** — Vault status, unlock, master password persistence
+- **Bitwarden Settings:**
+  - Vault status and unlock button
+  - Master password persistence (encrypted in settings)
+  - Save to system keyring option (recommended)
+  - API key authentication for automation/2FA (FIDO2, Duo)
+  - Client ID and Client Secret fields
+- **1Password Settings:**
+  - Account status indicator
+  - Sign-in button (opens terminal for interactive `op signin`)
+  - Supports biometric authentication via desktop app
+  - Service account support via `OP_SERVICE_ACCOUNT_TOKEN`
 - **Installed Password Managers** — Auto-detected managers with versions (GNOME Secrets, KeePassXC, KeePass2, Bitwarden CLI, 1Password CLI)
 
 **Password Source Defaults:**
@@ -442,6 +454,7 @@ When creating a new connection, the password source dropdown defaults to match y
 - KeePassXC/KDBX backend → "KeePass"
 - libsecret backend → "Keyring"
 - Bitwarden backend → "Bitwarden"
+- 1Password backend → "1Password"
 
 ### SSH Agent
 
@@ -661,6 +674,15 @@ rustconn-cli secret verify-keepass -d ~/vault.kdbx -k ~/key.key
 3. SSH key permissions: `chmod 600 ~/.ssh/id_rsa`
 4. Firewall settings
 
+### 1Password Not Working
+
+1. Install 1Password CLI: download from 1password.com/downloads/command-line
+2. Sign in: `op signin` (requires 1Password desktop app for biometric auth)
+3. Or use service account: set `OP_SERVICE_ACCOUNT_TOKEN` environment variable
+4. Select 1Password backend in Settings → Secrets
+5. Check account status indicator
+6. For password source, select "1Password" in connection dialog
+
 ### Bitwarden Not Working
 
 1. Install Bitwarden CLI: `npm install -g @bitwarden/cli` or download from bitwarden.com
@@ -668,7 +690,11 @@ rustconn-cli secret verify-keepass -d ~/vault.kdbx -k ~/key.key
 3. Unlock vault: `bw unlock`
 4. Select Bitwarden backend in Settings → Secrets
 5. Check vault status indicator
-6. For password source, select "Bitwarden" in connection dialog
+6. For 2FA methods not supported by CLI (FIDO2, Duo), use API key authentication:
+   - Get API key from Bitwarden web vault → Settings → Security → Keys
+   - Enable "Use API key authentication" in Settings → Secrets
+   - Enter Client ID and Client Secret
+7. For password source, select "Bitwarden" in connection dialog
 
 ### KeePass Not Working
 

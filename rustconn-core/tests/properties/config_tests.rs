@@ -367,6 +367,12 @@ fn arb_secret_settings() -> impl Strategy<Value = SecretSettings> {
                 kdbx_use_password: true,       // Use password for authentication
                 bitwarden_password: None,      // Bitwarden password is never serialized
                 bitwarden_password_encrypted: None, // Encrypted Bitwarden password
+                bitwarden_use_api_key: false,
+                bitwarden_client_id: None,
+                bitwarden_client_id_encrypted: None,
+                bitwarden_client_secret: None,
+                bitwarden_client_secret_encrypted: None,
+                bitwarden_save_to_keyring: false,
             },
         )
 }
@@ -435,6 +441,12 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         kdbx_use_password: true,
                         bitwarden_password: None,
                         bitwarden_password_encrypted: None,
+                        bitwarden_use_api_key: false,
+                        bitwarden_client_id: None,
+                        bitwarden_client_id_encrypted: None,
+                        bitwarden_client_secret: None,
+                        bitwarden_client_secret_encrypted: None,
+                        bitwarden_save_to_keyring: false,
                     },
                     ui: UiSettings {
                         color_scheme: ColorScheme::default(),

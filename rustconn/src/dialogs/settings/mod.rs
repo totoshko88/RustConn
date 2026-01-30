@@ -422,6 +422,14 @@ impl SettingsDialog {
         let bitwarden_password_entry_clone = self.secrets_widgets.bitwarden_password_entry.clone();
         let bitwarden_save_password_check_clone =
             self.secrets_widgets.bitwarden_save_password_check.clone();
+        let bitwarden_save_to_keyring_check_clone =
+            self.secrets_widgets.bitwarden_save_to_keyring_check.clone();
+        let bitwarden_use_api_key_check_clone =
+            self.secrets_widgets.bitwarden_use_api_key_check.clone();
+        let bitwarden_client_id_entry_clone =
+            self.secrets_widgets.bitwarden_client_id_entry.clone();
+        let bitwarden_client_secret_entry_clone =
+            self.secrets_widgets.bitwarden_client_secret_entry.clone();
 
         // UI controls
         let color_scheme_box_clone = self.color_scheme_box.clone();
@@ -490,6 +498,10 @@ impl SettingsDialog {
                 bitwarden_unlock_button: Button::new(),   // dummy
                 bitwarden_password_entry: bitwarden_password_entry_clone.clone(),
                 bitwarden_save_password_check: bitwarden_save_password_check_clone.clone(),
+                bitwarden_save_to_keyring_check: bitwarden_save_to_keyring_check_clone.clone(),
+                bitwarden_use_api_key_check: bitwarden_use_api_key_check_clone.clone(),
+                bitwarden_client_id_entry: bitwarden_client_id_entry_clone.clone(),
+                bitwarden_client_secret_entry: bitwarden_client_secret_entry_clone.clone(),
                 onepassword_group: adw::PreferencesGroup::new(), // dummy
                 onepassword_status_label: Label::new(None),      // dummy
                 onepassword_signin_button: Button::new(),        // dummy

@@ -219,6 +219,24 @@ pub struct SecretSettings {
     /// Uses machine-specific key derivation for security
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub bitwarden_password_encrypted: Option<String>,
+    /// Whether to use API key authentication for Bitwarden
+    #[serde(default)]
+    pub bitwarden_use_api_key: bool,
+    /// Bitwarden API client_id (NOT serialized - runtime only)
+    #[serde(skip)]
+    pub bitwarden_client_id: Option<SecretString>,
+    /// Encrypted Bitwarden client_id for persistence
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bitwarden_client_id_encrypted: Option<String>,
+    /// Bitwarden API client_secret (NOT serialized - runtime only)
+    #[serde(skip)]
+    pub bitwarden_client_secret: Option<SecretString>,
+    /// Encrypted Bitwarden client_secret for persistence
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bitwarden_client_secret_encrypted: Option<String>,
+    /// Whether to save Bitwarden master password to libsecret
+    #[serde(default)]
+    pub bitwarden_save_to_keyring: bool,
 }
 
 const fn default_true() -> bool {
@@ -239,6 +257,12 @@ impl Default for SecretSettings {
             kdbx_use_password: true,
             bitwarden_password: None,
             bitwarden_password_encrypted: None,
+            bitwarden_use_api_key: false,
+            bitwarden_client_id: None,
+            bitwarden_client_id_encrypted: None,
+            bitwarden_client_secret: None,
+            bitwarden_client_secret_encrypted: None,
+            bitwarden_save_to_keyring: false,
         }
     }
 }

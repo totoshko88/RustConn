@@ -5,7 +5,7 @@
 - **OS:** Linux (Wayland-first, X11 supported)
 - **GTK:** 4.14+
 - **libadwaita:** 1.6+
-- **Rust:** 1.87+ (for building from source)
+- **Rust:** 1.88+ (for building from source)
 
 ## Flatpak (Recommended)
 
@@ -18,6 +18,12 @@ flatpak install RustConn-*.flatpak
 
 # Run
 flatpak run io.github.totoshko88.RustConn
+```
+
+## Snap
+
+```bash
+sudo snap install rustconn --classic
 ```
 
 ## AppImage
@@ -115,6 +121,14 @@ This installs the desktop file and icon for application menu integration.
 | VNC | TigerVNC | `tigervnc-viewer` |
 | SPICE | remote-viewer | `virt-viewer` |
 
+### Optional Password Managers
+
+| Manager | CLI | Installation |
+|---------|-----|--------------|
+| Bitwarden | `bw` | `npm install -g @bitwarden/cli` or [bitwarden.com](https://bitwarden.com/help/cli/) |
+| 1Password | `op` | [1password.com/downloads/command-line](https://1password.com/downloads/command-line/) |
+| KeePassXC | `keepassxc-cli` | `keepassxc` package |
+
 ### Zero Trust CLI Tools
 
 | Provider | CLI | Installation |
@@ -130,7 +144,7 @@ This installs the desktop file and icon for application menu integration.
 
 ## Rust Installation
 
-RustConn requires Rust 1.87+ (MSRV). Install via [rustup](https://rustup.rs/):
+RustConn requires Rust 1.88+ (MSRV). Install via [rustup](https://rustup.rs/):
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
