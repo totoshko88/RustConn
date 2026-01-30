@@ -201,6 +201,7 @@ impl CredentialResolver {
     pub const fn select_storage_backend(&self) -> SecretBackendType {
         match self.settings.preferred_backend {
             SecretBackendType::Bitwarden => SecretBackendType::Bitwarden,
+            SecretBackendType::OnePassword => SecretBackendType::OnePassword,
             SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
                 if self.settings.kdbx_enabled && self.settings.kdbx_path.is_some() {
                     SecretBackendType::KdbxFile
@@ -420,8 +421,8 @@ impl CredentialResolver {
                 let connection_id = connection.id.to_string();
                 self.secret_manager.store(&connection_id, credentials).await
             }
-            SecretBackendType::Bitwarden => {
-                // For Bitwarden, use connection name as identifier
+            SecretBackendType::Bitwarden | SecretBackendType::OnePassword => {
+                // For Bitwarden/1Password, use connection name as identifier
                 let lookup_key = Self::generate_lookup_key(connection);
                 self.secret_manager.store(&lookup_key, credentials).await
             }
@@ -454,8 +455,8 @@ impl CredentialResolver {
                 let connection_id = connection.id.to_string();
                 self.secret_manager.store(&connection_id, credentials).await
             }
-            SecretBackendType::Bitwarden => {
-                // For Bitwarden, use hierarchical path as entry name
+            SecretBackendType::Bitwarden | SecretBackendType::OnePassword => {
+                // For Bitwarden/1Password, use hierarchical path as entry name
                 let lookup_key = Self::generate_hierarchical_lookup_key(connection, groups);
                 self.secret_manager.store(&lookup_key, credentials).await
             }

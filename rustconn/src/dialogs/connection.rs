@@ -6602,11 +6602,12 @@ impl ConnectionDialog {
         use rustconn_core::config::SecretBackendType;
 
         // Map backend type to dropdown index
-        // Dropdown order: Prompt(0), KeePass(1), Keyring(2), Bitwarden(3), Inherit(4), None(5)
+        // Dropdown order: Prompt(0), KeePass(1), Keyring(2), Bitwarden(3), 1Password(4), Inherit(5), None(6)
         let default_idx = match backend {
             SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => 1, // KeePass
             SecretBackendType::LibSecret => 2,                               // Keyring
             SecretBackendType::Bitwarden => 3,                               // Bitwarden
+            SecretBackendType::OnePassword => 4,                             // 1Password
         };
 
         self.password_source_dropdown.set_selected(default_idx);

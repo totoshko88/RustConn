@@ -34,6 +34,8 @@ pub enum PasswordSource {
     /// Password retrieved from `KeePass` database
     KeePass,
     /// Password retrieved from system keyring (libsecret)
+    /// Note: "stored" is a legacy alias for backward compatibility
+    #[serde(alias = "stored")]
     Keyring,
     /// Password retrieved from Bitwarden vault
     Bitwarden,

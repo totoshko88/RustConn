@@ -296,6 +296,7 @@ pub trait SecretBackend: Send + Sync {
 - `LibsecretBackend`: GNOME Keyring (default)
 - `KeePassXcBackend`: KeePassXC via CLI
 - `BitwardenBackend`: Bitwarden via CLI
+- `OnePasswordBackend`: 1Password via CLI
 
 ### KeePass Hierarchical Storage
 
@@ -462,7 +463,9 @@ rustconn-core/src/
 │   ├── hierarchy.rs       # KeePass hierarchical paths
 │   ├── libsecret.rs       # GNOME Keyring backend
 │   ├── keepassxc.rs       # KeePassXC backend
-│   ├── bitwarden.rs       # Bitwarden backend
+│   ├── bitwarden.rs       # Bitwarden backend (with keyring storage)
+│   ├── onepassword.rs     # 1Password backend
+│   ├── detection.rs       # Password manager detection
 │   ├── status.rs          # KeePass status detection
 │   └── ...
 ├── session/               # Session management

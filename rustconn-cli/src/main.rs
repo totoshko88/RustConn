@@ -3882,6 +3882,35 @@ fn cmd_secret_get(connection_name: &str, backend: Option<&str>) -> Result<(), Cl
                 Err(e) => Err(CliError::Secret(format!("Bitwarden error: {e}"))),
             }
         }
+        SecretBackendType::OnePassword => {
+            use rustconn_core::secret::OnePasswordBackend;
+
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = OnePasswordBackend::new();
+            let result: Result<Option<Credentials>, _> = rt.block_on(backend.retrieve(&lookup_key));
+
+            match result {
+                Ok(Some(creds)) => {
+                    println!("Connection: {}", connection.name);
+                    if let Some(ref user) = creds.username {
+                        println!("Username:   {user}");
+                    }
+                    if creds.expose_password().is_some() {
+                        println!("Password:   ******** (stored in 1Password)");
+                    } else {
+                        println!("Password:   (not set)");
+                    }
+                    Ok(())
+                }
+                Ok(None) => Err(CliError::Secret(format!(
+                    "No credentials found in 1Password for '{}'",
+                    connection.name
+                ))),
+                Err(e) => Err(CliError::Secret(format!("1Password error: {e}"))),
+            }
+        }
     }
 }
 
@@ -4000,6 +4029,9 @@ fn cmd_secret_set(
         SecretBackendType::Bitwarden => Err(CliError::Secret(
             "Bitwarden storage via CLI is not yet supported. Use 'bw' CLI directly.".into(),
         )),
+        SecretBackendType::OnePassword => Err(CliError::Secret(
+            "1Password storage via CLI is not yet supported. Use 'op' CLI directly.".into(),
+        )),
     }
 }
 
@@ -4061,6 +4093,11 @@ fn cmd_secret_delete(connection_name: &str, backend: Option<&str>) -> Result<(),
         SecretBackendType::Bitwarden => Err(CliError::Secret(
             "Bitwarden credential deletion via CLI is not yet supported. \
              Use 'bw' CLI directly."
+                .into(),
+        )),
+        SecretBackendType::OnePassword => Err(CliError::Secret(
+            "1Password credential deletion via CLI is not yet supported. \
+             Use 'op' CLI directly."
                 .into(),
         )),
     }

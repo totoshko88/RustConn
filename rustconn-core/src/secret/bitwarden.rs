@@ -2,12 +2,46 @@
 //!
 //! This module implements credential storage using the Bitwarden CLI (`bw`).
 //! It supports both cloud and self-hosted Bitwarden instances.
+//!
+//! # Authentication Methods
+//!
+//! The Bitwarden CLI supports several authentication methods:
+//!
+//! 1. **Email and Password** (interactive) - `bw login`
+//! 2. **API Key** (automated) - Using `BW_CLIENTID` and `BW_CLIENTSECRET` environment variables
+//! 3. **SSO** - `bw login --sso`
+//!
+//! After login, the vault must be unlocked with `bw unlock` to access credentials.
+//! The unlock command returns a session key that must be passed to subsequent commands.
+//!
+//! # Session Management
+//!
+//! Session keys are valid until:
+//! - `bw lock` is called
+//! - `bw logout` is called
+//! - A new terminal session is started (keys don't persist)
+//!
+//! # Usage Example
+//!
+//! ```ignore
+//! use rustconn_core::secret::{BitwardenBackend, unlock_vault};
+//! use secrecy::SecretString;
+//!
+//! // Unlock vault with master password
+//! let password = SecretString::from("master_password");
+//! let session_key = unlock_vault(&password).await?;
+//!
+//! // Create backend with session
+//! let backend = BitwardenBackend::with_session(session_key);
+//!
+//! // Store credentials
+//! backend.store("my-server", &credentials).await?;
+//! ```
 
 use async_trait::async_trait;
 use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 use std::process::Stdio;
-use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 
 use crate::error::{SecretError, SecretResult};
@@ -329,6 +363,10 @@ impl SecretBackend for BitwardenBackend {
             ));
         }
 
+        // Sync vault to get latest data from server
+        // This ensures we have the most recent credentials
+        let _ = self.sync().await; // Ignore sync errors, proceed with local data
+
         let item = match self.find_item(connection_id).await? {
             Some(item) => item,
             None => return Ok(None),
@@ -419,29 +457,22 @@ pub async fn get_bitwarden_version() -> Option<BitwardenVersion> {
 
 /// Unlocks Bitwarden vault with master password
 ///
+/// Uses `--passwordenv` option as recommended by Bitwarden documentation
+/// for secure password passing without exposing it in process arguments.
+///
 /// # Errors
 /// Returns `SecretError` if the unlock command fails or password is incorrect
 pub async fn unlock_vault(password: &SecretString) -> SecretResult<SecretString> {
-    let mut child = Command::new("bw")
-        .args(["unlock", "--raw"])
-        .stdin(Stdio::piped())
+    // Use --passwordenv as recommended by Bitwarden docs
+    // This is more secure than passing password via stdin or command line
+    let output = Command::new("bw")
+        .args(["unlock", "--passwordenv", "BW_PASSWORD", "--raw"])
+        .env("BW_PASSWORD", password.expose_secret())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| SecretError::ConnectionFailed(format!("Failed to spawn bw: {e}")))?;
-
-    // Write password to stdin
-    if let Some(mut stdin) = child.stdin.take() {
-        stdin
-            .write_all(password.expose_secret().as_bytes())
-            .await
-            .map_err(|e| SecretError::ConnectionFailed(format!("Failed to write password: {e}")))?;
-    }
-
-    let output = child
-        .wait_with_output()
+        .output()
         .await
-        .map_err(|e| SecretError::ConnectionFailed(format!("Failed to wait for bw: {e}")))?;
+        .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run bw unlock: {e}")))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -469,6 +500,262 @@ pub async fn lock_vault() -> SecretResult<()> {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(SecretError::ConnectionFailed(format!(
             "Failed to lock vault: {stderr}"
+        )));
+    }
+
+    Ok(())
+}
+
+/// Logs in to Bitwarden using API key credentials
+///
+/// This is the recommended method for automated workflows and CI/CD pipelines.
+/// Uses `BW_CLIENTID` and `BW_CLIENTSECRET` environment variables as documented.
+///
+/// After login, you must still call `unlock_vault()` to access vault data.
+///
+/// # Arguments
+/// * `client_id` - Personal API key client_id
+/// * `client_secret` - Personal API key client_secret
+///
+/// # Errors
+/// Returns `SecretError` if login fails
+pub async fn login_with_api_key(
+    client_id: &SecretString,
+    client_secret: &SecretString,
+) -> SecretResult<()> {
+    let output = Command::new("bw")
+        .args(["login", "--apikey"])
+        .env("BW_CLIENTID", client_id.expose_secret())
+        .env("BW_CLIENTSECRET", client_secret.expose_secret())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run bw login: {e}")))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(SecretError::ConnectionFailed(format!(
+            "Failed to login with API key: {stderr}"
+        )));
+    }
+
+    Ok(())
+}
+
+/// Logs out from Bitwarden
+///
+/// # Errors
+/// Returns `SecretError` if logout fails
+pub async fn logout() -> SecretResult<()> {
+    let output = Command::new("bw")
+        .arg("logout")
+        .output()
+        .await
+        .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run bw logout: {e}")))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        // Ignore "not logged in" error
+        if !stderr.contains("not logged in") {
+            return Err(SecretError::ConnectionFailed(format!(
+                "Failed to logout: {stderr}"
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+/// Configures Bitwarden CLI to use a self-hosted server
+///
+/// # Arguments
+/// * `server_url` - URL of the self-hosted Bitwarden server
+///
+/// # Errors
+/// Returns `SecretError` if configuration fails
+pub async fn configure_server(server_url: &str) -> SecretResult<()> {
+    let output = Command::new("bw")
+        .args(["config", "server", server_url])
+        .output()
+        .await
+        .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run bw config: {e}")))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(SecretError::ConnectionFailed(format!(
+            "Failed to configure server: {stderr}"
+        )));
+    }
+
+    Ok(())
+}
+
+// ============================================================================
+// Keyring storage for Bitwarden credentials
+// ============================================================================
+
+const KEYRING_APP_ID: &str = "rustconn";
+const KEYRING_BW_MASTER: &str = "bitwarden-master";
+const KEYRING_BW_CLIENT_ID: &str = "bitwarden-client-id";
+const KEYRING_BW_CLIENT_SECRET: &str = "bitwarden-client-secret";
+
+/// Stores Bitwarden master password in system keyring (libsecret)
+///
+/// # Errors
+/// Returns `SecretError` if storage fails
+pub async fn store_master_password_in_keyring(password: &SecretString) -> SecretResult<()> {
+    store_in_keyring(
+        KEYRING_BW_MASTER,
+        password.expose_secret(),
+        "Bitwarden Master Password",
+    )
+    .await
+}
+
+/// Retrieves Bitwarden master password from system keyring
+///
+/// # Errors
+/// Returns `SecretError` if retrieval fails
+pub async fn get_master_password_from_keyring() -> SecretResult<Option<SecretString>> {
+    get_from_keyring(KEYRING_BW_MASTER)
+        .await
+        .map(|opt| opt.map(SecretString::from))
+}
+
+/// Deletes Bitwarden master password from system keyring
+///
+/// # Errors
+/// Returns `SecretError` if deletion fails
+pub async fn delete_master_password_from_keyring() -> SecretResult<()> {
+    delete_from_keyring(KEYRING_BW_MASTER).await
+}
+
+/// Stores Bitwarden API credentials in system keyring
+///
+/// # Errors
+/// Returns `SecretError` if storage fails
+pub async fn store_api_credentials_in_keyring(
+    client_id: &SecretString,
+    client_secret: &SecretString,
+) -> SecretResult<()> {
+    store_in_keyring(
+        KEYRING_BW_CLIENT_ID,
+        client_id.expose_secret(),
+        "Bitwarden API Client ID",
+    )
+    .await?;
+    store_in_keyring(
+        KEYRING_BW_CLIENT_SECRET,
+        client_secret.expose_secret(),
+        "Bitwarden API Client Secret",
+    )
+    .await?;
+    Ok(())
+}
+
+/// Retrieves Bitwarden API credentials from system keyring
+///
+/// # Returns
+/// Tuple of (client_id, client_secret) if both exist
+///
+/// # Errors
+/// Returns `SecretError` if retrieval fails
+pub async fn get_api_credentials_from_keyring() -> SecretResult<Option<(SecretString, SecretString)>>
+{
+    let client_id = get_from_keyring(KEYRING_BW_CLIENT_ID).await?;
+    let client_secret = get_from_keyring(KEYRING_BW_CLIENT_SECRET).await?;
+
+    match (client_id, client_secret) {
+        (Some(id), Some(secret)) => Ok(Some((SecretString::from(id), SecretString::from(secret)))),
+        _ => Ok(None),
+    }
+}
+
+/// Deletes Bitwarden API credentials from system keyring
+///
+/// # Errors
+/// Returns `SecretError` if deletion fails
+pub async fn delete_api_credentials_from_keyring() -> SecretResult<()> {
+    let _ = delete_from_keyring(KEYRING_BW_CLIENT_ID).await;
+    let _ = delete_from_keyring(KEYRING_BW_CLIENT_SECRET).await;
+    Ok(())
+}
+
+/// Internal: Store value in keyring using secret-tool
+async fn store_in_keyring(key: &str, value: &str, label: &str) -> SecretResult<()> {
+    use tokio::io::AsyncWriteExt;
+
+    let mut child = Command::new("secret-tool")
+        .args([
+            "store",
+            "--label",
+            label,
+            "application",
+            KEYRING_APP_ID,
+            "key",
+            key,
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| SecretError::LibSecret(format!("Failed to spawn secret-tool: {e}")))?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin
+            .write_all(value.as_bytes())
+            .await
+            .map_err(|e| SecretError::LibSecret(format!("Failed to write secret: {e}")))?;
+    }
+
+    let output = child
+        .wait_with_output()
+        .await
+        .map_err(|e| SecretError::LibSecret(format!("Failed to wait for secret-tool: {e}")))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(SecretError::StoreFailed(format!(
+            "secret-tool store failed: {stderr}"
+        )));
+    }
+
+    Ok(())
+}
+
+/// Internal: Get value from keyring using secret-tool
+async fn get_from_keyring(key: &str) -> SecretResult<Option<String>> {
+    let output = Command::new("secret-tool")
+        .args(["lookup", "application", KEYRING_APP_ID, "key", key])
+        .output()
+        .await
+        .map_err(|e| SecretError::LibSecret(format!("Failed to run secret-tool: {e}")))?;
+
+    if !output.status.success() {
+        return Ok(None);
+    }
+
+    let value = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if value.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(value))
+    }
+}
+
+/// Internal: Delete value from keyring using secret-tool
+async fn delete_from_keyring(key: &str) -> SecretResult<()> {
+    let output = Command::new("secret-tool")
+        .args(["clear", "application", KEYRING_APP_ID, "key", key])
+        .output()
+        .await
+        .map_err(|e| SecretError::LibSecret(format!("Failed to run secret-tool: {e}")))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(SecretError::DeleteFailed(format!(
+            "secret-tool clear failed: {stderr}"
         )));
     }
 

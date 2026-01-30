@@ -1,3 +1,12 @@
+rustconn (0.6.8-1) unstable; urgency=medium
+
+  * Version bump to 0.6.8
+  * 1Password CLI Integration - New secret backend for 1Password password manager
+  * Bitwarden API Key Authentication - Support for automated workflows and 2FA
+  * Bitwarden Keyring Storage - Store master password in system keyring
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Thu, 30 Jan 2026 12:00:00 +0200
+
 rustconn (0.6.7-1) unstable; urgency=medium
 
   * Version bump to 0.6.7

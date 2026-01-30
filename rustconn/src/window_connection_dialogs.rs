@@ -426,6 +426,7 @@ pub fn show_new_group_dialog_with_parent(
             SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => 1, // KeePass
             SecretBackendType::LibSecret => 2,                               // Keyring
             SecretBackendType::Bitwarden => 3,                               // Bitwarden
+            SecretBackendType::OnePassword => 4,                             // 1Password
         }
     };
     password_source_dropdown.set_selected(default_source_idx);
