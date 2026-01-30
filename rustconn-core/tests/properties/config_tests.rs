@@ -333,6 +333,8 @@ fn arb_secret_backend_type() -> impl Strategy<Value = SecretBackendType> {
         Just(SecretBackendType::KeePassXc),
         Just(SecretBackendType::KdbxFile),
         Just(SecretBackendType::LibSecret),
+        Just(SecretBackendType::Bitwarden),
+        Just(SecretBackendType::OnePassword),
     ]
 }
 

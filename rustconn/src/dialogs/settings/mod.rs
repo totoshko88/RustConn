@@ -490,6 +490,9 @@ impl SettingsDialog {
                 bitwarden_unlock_button: Button::new(),   // dummy
                 bitwarden_password_entry: bitwarden_password_entry_clone.clone(),
                 bitwarden_save_password_check: bitwarden_save_password_check_clone.clone(),
+                onepassword_group: adw::PreferencesGroup::new(), // dummy
+                onepassword_status_label: Label::new(None),      // dummy
+                onepassword_signin_button: Button::new(),        // dummy
             };
             let secrets = collect_secret_settings(&secrets_widgets_for_collect, &settings_clone);
 

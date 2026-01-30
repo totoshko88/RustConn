@@ -43,6 +43,10 @@ pub struct SecretsPageWidgets {
     pub bitwarden_unlock_button: Button,
     pub bitwarden_password_entry: PasswordEntry,
     pub bitwarden_save_password_check: CheckButton,
+    // 1Password widgets
+    pub onepassword_group: adw::PreferencesGroup,
+    pub onepassword_status_label: Label,
+    pub onepassword_signin_button: Button,
 }
 
 /// Creates the secrets settings page using AdwPreferencesPage
@@ -59,8 +63,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .description("Choose how passwords are stored")
         .build();
 
-    // Simplified: KeePassXC, libsecret, Bitwarden
-    let backend_strings = StringList::new(&["KeePassXC", "libsecret", "Bitwarden"]);
+    // Simplified: KeePassXC, libsecret, Bitwarden, 1Password
+    let backend_strings = StringList::new(&["KeePassXC", "libsecret", "Bitwarden", "1Password"]);
     let secret_backend_dropdown = DropDown::builder()
         .model(&backend_strings)
         .selected(0)
@@ -134,6 +138,36 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     }
     let bitwarden_version = if bitwarden_installed {
         get_cli_version(&bitwarden_cmd, &["--version"])
+    } else {
+        None
+    };
+
+    // 1Password CLI status - check multiple paths
+    let op_paths = ["op", "/usr/local/bin/op"];
+    let mut onepassword_installed = false;
+    let mut onepassword_cmd = "op".to_string();
+    for path in &op_paths {
+        if std::process::Command::new(path)
+            .arg("--version")
+            .output()
+            .is_ok_and(|output| output.status.success())
+        {
+            onepassword_installed = true;
+            onepassword_cmd = (*path).to_string();
+            break;
+        }
+    }
+    // Also check via which
+    if !onepassword_installed {
+        if let Ok(output) = std::process::Command::new("which").arg("op").output() {
+            if output.status.success() {
+                onepassword_installed = true;
+                onepassword_cmd = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            }
+        }
+    }
+    let onepassword_version = if onepassword_installed {
+        get_cli_version(&onepassword_cmd, &["--version"])
     } else {
         None
     };
@@ -276,6 +310,105 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     }
 
     page.add(&bitwarden_group);
+
+    // === 1Password Configuration Group ===
+    let onepassword_group = adw::PreferencesGroup::builder()
+        .title("1Password")
+        .description("Configure 1Password CLI integration")
+        .build();
+
+    let onepassword_status_label = Label::builder()
+        .label(if onepassword_installed {
+            "Checking status..."
+        } else {
+            "Not installed"
+        })
+        .halign(gtk4::Align::End)
+        .valign(gtk4::Align::Center)
+        .css_classes(["dim-label"])
+        .build();
+
+    let onepassword_signin_button = Button::builder()
+        .label("Sign In")
+        .valign(gtk4::Align::Center)
+        .sensitive(onepassword_installed)
+        .tooltip_text("Sign in to 1Password (opens terminal)")
+        .build();
+
+    let op_status_box = GtkBox::builder()
+        .orientation(Orientation::Horizontal)
+        .spacing(12)
+        .valign(gtk4::Align::Center)
+        .build();
+    op_status_box.append(&onepassword_status_label);
+    op_status_box.append(&onepassword_signin_button);
+
+    let op_status_row = adw::ActionRow::builder()
+        .title("Account Status")
+        .subtitle("Sign in with 'op signin' in terminal or use biometric unlock")
+        .build();
+    op_status_row.add_suffix(&op_status_box);
+    onepassword_group.add(&op_status_row);
+
+    // Connect signin button - opens terminal for interactive signin
+    {
+        let status_label = onepassword_status_label.clone();
+        let op_cmd = onepassword_cmd.clone();
+        onepassword_signin_button.connect_clicked(move |button| {
+            button.set_sensitive(false);
+            update_status_label(&status_label, "Opening terminal...", "dim-label");
+
+            // Try to open a terminal with op signin
+            // This requires user interaction for biometric or password
+            let xfce_cmd = format!("{op_cmd} signin");
+            let terminal_cmds: [(&str, Vec<&str>); 4] = [
+                ("gnome-terminal", vec!["--", &op_cmd, "signin"]),
+                ("konsole", vec!["-e", &op_cmd, "signin"]),
+                ("xfce4-terminal", vec!["-e", &xfce_cmd]),
+                ("xterm", vec!["-e", &op_cmd, "signin"]),
+            ];
+
+            let mut launched = false;
+            for (term, args) in &terminal_cmds {
+                if std::process::Command::new("which")
+                    .arg(term)
+                    .output()
+                    .is_ok_and(|o| o.status.success())
+                    && std::process::Command::new(term)
+                        .args(args.iter().copied())
+                        .spawn()
+                        .is_ok()
+                {
+                    launched = true;
+                    update_status_label(&status_label, "Check terminal", "warning");
+                    break;
+                }
+            }
+
+            if !launched {
+                update_status_label(&status_label, "No terminal found", "error");
+            }
+
+            button.set_sensitive(true);
+        });
+    }
+
+    // Check 1Password status synchronously
+    if onepassword_installed {
+        let status_label = onepassword_status_label.clone();
+        let op_cmd_clone = onepassword_cmd.clone();
+        glib::idle_add_local_once(move || {
+            let status = check_onepassword_status_sync(&op_cmd_clone);
+            status_label.set_text(&status.0);
+            status_label.remove_css_class("dim-label");
+            status_label.remove_css_class("success");
+            status_label.remove_css_class("warning");
+            status_label.remove_css_class("error");
+            status_label.add_css_class(status.1);
+        });
+    }
+
+    page.add(&onepassword_group);
 
     // === KeePass Database Group ===
     let kdbx_group = adw::PreferencesGroup::builder()
@@ -445,9 +578,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         glib::Propagation::Proceed
     });
 
-    // Setup visibility for Bitwarden group based on backend selection
-    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden
+    // Setup visibility for Bitwarden and 1Password groups based on backend selection
+    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password
     let bitwarden_group_clone = bitwarden_group.clone();
+    let onepassword_group_clone = onepassword_group.clone();
     let kdbx_group_clone = kdbx_group.clone();
     let auth_group_clone2 = auth_group.clone();
     let status_group_clone2 = status_group.clone();
@@ -456,10 +590,13 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let version_row_clone = version_row.clone();
     let keepassxc_version_clone = keepassxc_version.clone();
     let bitwarden_version_clone = bitwarden_version.clone();
+    let onepassword_version_clone = onepassword_version.clone();
     secret_backend_dropdown.connect_selected_notify(move |dropdown| {
         let selected = dropdown.selected();
         // Show Bitwarden group only when Bitwarden is selected (index 2)
         bitwarden_group_clone.set_visible(selected == 2);
+        // Show 1Password group only when 1Password is selected (index 3)
+        onepassword_group_clone.set_visible(selected == 3);
         // Show KDBX groups only when KeePassXC is selected (index 0)
         let show_kdbx = selected == 0;
         kdbx_group_clone.set_visible(show_kdbx);
@@ -500,6 +637,19 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     version_label_clone.add_css_class("error");
                 }
             }
+            3 => {
+                // 1Password
+                version_row_clone.set_visible(true);
+                if let Some(ref ver) = onepassword_version_clone {
+                    version_label_clone.set_text(&format!("v{ver}"));
+                    version_label_clone.remove_css_class("error");
+                    version_label_clone.add_css_class("success");
+                } else {
+                    version_label_clone.set_text("Not installed");
+                    version_label_clone.remove_css_class("success");
+                    version_label_clone.add_css_class("error");
+                }
+            }
             _ => {
                 version_row_clone.set_visible(false);
             }
@@ -513,6 +663,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     auth_group.set_visible(false);
     status_group.set_visible(false);
     bitwarden_group.set_visible(false);
+    onepassword_group.set_visible(false);
 
     // Set initial version display for KeePassXC (default selection)
     if let Some(ref ver) = keepassxc_version {
@@ -680,6 +831,9 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         bitwarden_unlock_button,
         bitwarden_password_entry,
         bitwarden_save_password_check,
+        onepassword_group,
+        onepassword_status_label,
+        onepassword_signin_button,
     }
 }
 
@@ -728,6 +882,36 @@ fn check_bitwarden_status_sync(bw_cmd: &str) -> (String, &'static str) {
     }
 }
 
+/// Checks 1Password account status synchronously
+fn check_onepassword_status_sync(op_cmd: &str) -> (String, &'static str) {
+    let output = std::process::Command::new(op_cmd)
+        .args(["whoami", "--format", "json"])
+        .output();
+
+    match output {
+        Ok(o) if o.status.success() => {
+            let stdout = String::from_utf8_lossy(&o.stdout);
+            if let Ok(whoami) = serde_json::from_str::<serde_json::Value>(&stdout) {
+                if let Some(email) = whoami.get("email").and_then(|v| v.as_str()) {
+                    return (format!("Signed in: {email}"), "success");
+                }
+            }
+            ("Signed in".to_string(), "success")
+        }
+        Ok(o) => {
+            let stderr = String::from_utf8_lossy(&o.stderr);
+            if stderr.contains("not signed in") || stderr.contains("sign in") {
+                ("Not signed in".to_string(), "error")
+            } else if stderr.contains("session expired") {
+                ("Session expired".to_string(), "warning")
+            } else {
+                ("Not signed in".to_string(), "error")
+            }
+        }
+        Err(_) => ("Error checking status".to_string(), "error"),
+    }
+}
+
 /// Extracts session key from `bw unlock` output
 fn extract_session_key(output: &str) -> Option<String> {
     // Output format: export BW_SESSION="<session_key>"
@@ -768,11 +952,12 @@ fn update_status_label(label: &Label, text: &str, css_class: &str) {
 /// Loads secret settings into UI controls
 #[allow(clippy::too_many_arguments)]
 pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSettings) {
-    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden
+    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password
     let backend_index = match settings.preferred_backend {
         SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => 0,
         SecretBackendType::LibSecret => 1,
         SecretBackendType::Bitwarden => 2,
+        SecretBackendType::OnePassword => 3,
     };
     widgets.secret_backend_dropdown.set_selected(backend_index);
     widgets.enable_fallback.set_active(settings.enable_fallback);
@@ -819,6 +1004,8 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
         .set_visible(show_kdbx && settings.kdbx_enabled);
     // Show Bitwarden group only when Bitwarden is selected (index 2)
     widgets.bitwarden_group.set_visible(backend_index == 2);
+    // Show 1Password group only when 1Password is selected (index 3)
+    widgets.onepassword_group.set_visible(backend_index == 3);
     widgets.password_row.set_visible(settings.kdbx_use_password);
     widgets
         .save_password_row
@@ -859,11 +1046,12 @@ pub fn collect_secret_settings(
     widgets: &SecretsPageWidgets,
     settings: &Rc<RefCell<rustconn_core::config::AppSettings>>,
 ) -> SecretSettings {
-    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden
+    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password
     let preferred_backend = match widgets.secret_backend_dropdown.selected() {
         0 => SecretBackendType::KeePassXc,
         1 => SecretBackendType::LibSecret,
         2 => SecretBackendType::Bitwarden,
+        3 => SecretBackendType::OnePassword,
         _ => SecretBackendType::default(),
     };
 

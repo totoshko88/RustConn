@@ -340,12 +340,13 @@ impl MainWindow {
                 eprintln!("Failed to open password manager: {e}");
             }
         });
-        // Enable based on backend type - always enabled for libsecret/bitwarden,
+        // Enable based on backend type - always enabled for libsecret/bitwarden/1password,
         // for KeePassXC/KdbxFile requires kdbx_enabled and valid path
         let settings = state.borrow().settings().clone();
         let action_enabled = match settings.secrets.preferred_backend {
             rustconn_core::config::SecretBackendType::LibSecret
-            | rustconn_core::config::SecretBackendType::Bitwarden => true,
+            | rustconn_core::config::SecretBackendType::Bitwarden
+            | rustconn_core::config::SecretBackendType::OnePassword => true,
             rustconn_core::config::SecretBackendType::KeePassXc
             | rustconn_core::config::SecretBackendType::KdbxFile => {
                 settings.secrets.kdbx_enabled
@@ -2300,11 +2301,12 @@ impl MainWindow {
         let settings = state_ref.settings();
         let backend = settings.secrets.preferred_backend;
 
-        // For libsecret and Bitwarden, always enabled (no database file needed)
+        // For libsecret, Bitwarden, and 1Password, always enabled (no database file needed)
         // For KeePassXC/KdbxFile, check if enabled and database exists
         let (enabled, database_exists) = match backend {
             rustconn_core::config::SecretBackendType::LibSecret
-            | rustconn_core::config::SecretBackendType::Bitwarden => (true, true),
+            | rustconn_core::config::SecretBackendType::Bitwarden
+            | rustconn_core::config::SecretBackendType::OnePassword => (true, true),
             rustconn_core::config::SecretBackendType::KeePassXc
             | rustconn_core::config::SecretBackendType::KdbxFile => {
                 let kdbx_enabled = settings.secrets.kdbx_enabled;
@@ -3710,7 +3712,8 @@ impl MainWindow {
                             {
                                 let action_enabled = match backend {
                                     rustconn_core::config::SecretBackendType::LibSecret
-                                    | rustconn_core::config::SecretBackendType::Bitwarden => true,
+                                    | rustconn_core::config::SecretBackendType::Bitwarden
+                                    | rustconn_core::config::SecretBackendType::OnePassword => true,
                                     rustconn_core::config::SecretBackendType::KeePassXc
                                     | rustconn_core::config::SecretBackendType::KdbxFile => {
                                         keepass_enabled && kdbx_path_exists

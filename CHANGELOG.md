@@ -5,6 +5,38 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.8] - 2026-01-30
+
+### Added
+- **1Password CLI Integration** - New secret backend for 1Password password manager:
+  - Full `SecretBackend` trait implementation with async credential resolution
+  - Uses `op` CLI v2 with desktop app integration (biometric authentication)
+  - Service account support via `OP_SERVICE_ACCOUNT_TOKEN` environment variable
+  - Automatic vault creation ("RustConn" vault) for storing credentials
+  - Items tagged with "rustconn" for easy filtering
+  - Account status checking with `op whoami`
+  - Settings UI with version display and sign-in status indicator
+  - "Sign In" button opens terminal for interactive `op signin`
+- **1Password Detection** - `detect_onepassword()` function in detection module:
+  - Checks multiple paths for `op` CLI installation
+  - Reports version, sign-in status, and account email
+  - Integrated into `detect_password_managers()` for unified discovery
+- **Bitwarden API Key Authentication** - New `login_with_api_key()` function:
+  - Uses `BW_CLIENTID` and `BW_CLIENTSECRET` environment variables
+  - Recommended for automated workflows and CI/CD pipelines
+- **Bitwarden Self-Hosted Support** - New `configure_server()` function:
+  - Configure CLI to use self-hosted Bitwarden server
+- **Bitwarden Logout** - New `logout()` function for session cleanup
+
+### Changed
+- `SecretBackendType` enum extended with `OnePassword` variant
+- Connection dialog password source dropdown now includes 1Password (index 4)
+- Settings → Secrets tab shows 1Password configuration group when selected
+- Property test generators updated to include `Bitwarden` and `OnePassword` variants
+- **Bitwarden unlock** now uses `--passwordenv` option as recommended by official documentation (more secure than stdin)
+- **Bitwarden retrieve** now syncs vault before lookup to ensure latest credentials
+- **Dependencies** - Updated: cc 1.2.54→1.2.55, find-msvc-tools 0.1.8→0.1.9
+
 ## [Unreleased] - 0.6.7
 
 ### Added

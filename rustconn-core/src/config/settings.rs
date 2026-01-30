@@ -271,6 +271,8 @@ pub enum SecretBackendType {
     LibSecret,
     /// Bitwarden CLI
     Bitwarden,
+    /// 1Password CLI
+    OnePassword,
 }
 
 /// Color scheme preference

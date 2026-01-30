@@ -37,15 +37,23 @@ pub struct PasswordManagerInfo {
 
 /// Detects all available password managers on the system
 pub async fn detect_password_managers() -> Vec<PasswordManagerInfo> {
-    let (keepassxc, gnome_secrets, libsecret, bitwarden, keepass) = tokio::join!(
+    let (keepassxc, gnome_secrets, libsecret, bitwarden, onepassword, keepass) = tokio::join!(
         detect_keepassxc(),
         detect_gnome_secrets(),
         detect_libsecret(),
         detect_bitwarden(),
+        detect_onepassword(),
         detect_keepass(),
     );
 
-    vec![keepassxc, gnome_secrets, libsecret, bitwarden, keepass]
+    vec![
+        keepassxc,
+        gnome_secrets,
+        libsecret,
+        bitwarden,
+        onepassword,
+        keepass,
+    ]
 }
 
 /// Detects KeePassXC installation and status
@@ -364,6 +372,116 @@ pub async fn detect_keepass() -> PasswordManagerInfo {
     info
 }
 
+/// Detects 1Password CLI installation and status
+pub async fn detect_onepassword() -> PasswordManagerInfo {
+    let mut info = PasswordManagerInfo {
+        id: "onepassword",
+        name: "1Password CLI",
+        version: None,
+        installed: false,
+        running: false,
+        path: None,
+        status_message: None,
+        formats: vec!["Cloud or self-hosted vault"],
+    };
+
+    // Try common paths for op CLI
+    let op_paths = ["op", "/usr/bin/op", "/usr/local/bin/op"];
+
+    let home = std::env::var("HOME").unwrap_or_default();
+    let extra_paths = [format!("{home}/.local/bin/op"), format!("{home}/bin/op")];
+
+    let mut op_cmd: Option<String> = None;
+
+    // Try standard paths first
+    for path in &op_paths {
+        if let Ok(output) = Command::new(path).arg("--version").output().await {
+            if output.status.success() {
+                let version_str = String::from_utf8_lossy(&output.stdout);
+                info.version = Some(version_str.trim().to_string());
+                info.installed = true;
+                op_cmd = Some((*path).to_string());
+                break;
+            }
+        }
+    }
+
+    // Try home-relative paths
+    if !info.installed {
+        for path in &extra_paths {
+            if let Ok(output) = Command::new(path).arg("--version").output().await {
+                if output.status.success() {
+                    let version_str = String::from_utf8_lossy(&output.stdout);
+                    info.version = Some(version_str.trim().to_string());
+                    info.installed = true;
+                    op_cmd = Some(path.clone());
+                    break;
+                }
+            }
+        }
+    }
+
+    // Check signin status using whoami
+    if let Some(ref cmd) = op_cmd {
+        if let Ok(output) = Command::new(cmd)
+            .args(["whoami", "--format", "json"])
+            .output()
+            .await
+        {
+            if output.status.success() {
+                info.running = true;
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                if let Ok(whoami) = serde_json::from_str::<serde_json::Value>(&stdout) {
+                    if let Some(email) = whoami.get("email").and_then(|v| v.as_str()) {
+                        info.status_message = Some(format!("Signed in as {email}"));
+                    } else {
+                        info.status_message = Some("Signed in".to_string());
+                    }
+                } else {
+                    info.status_message = Some("Signed in".to_string());
+                }
+            } else {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                if stderr.contains("not signed in") || stderr.contains("sign in") {
+                    info.status_message = Some("Not signed in".to_string());
+                } else if stderr.contains("session expired") {
+                    info.status_message = Some("Session expired".to_string());
+                } else {
+                    info.status_message = Some("Not signed in".to_string());
+                }
+            }
+        }
+        info.path = Some(PathBuf::from(cmd));
+    }
+
+    // If still not found, try which command
+    if !info.installed {
+        if let Ok(output) = Command::new("which").arg("op").output().await {
+            if output.status.success() {
+                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !path.is_empty() {
+                    info.path = Some(PathBuf::from(&path));
+                    // Try to get version from found path
+                    if let Ok(ver_output) = Command::new(&path).arg("--version").output().await {
+                        if ver_output.status.success() {
+                            let version_str = String::from_utf8_lossy(&ver_output.stdout);
+                            info.version = Some(version_str.trim().to_string());
+                            info.installed = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if !info.installed {
+        info.status_message =
+            Some("Install from https://1password.com/downloads/command-line".to_string());
+    }
+
+    info
+}
+
 /// Parses version from a typical version output line
 fn parse_version_line(output: &str) -> Option<String> {
     VERSION_REGEX
@@ -467,6 +585,32 @@ pub fn get_password_manager_launch_command(
             Some((
                 "xdg-open".to_string(),
                 vec!["https://vault.bitwarden.com".to_string()],
+            ))
+        }
+        crate::config::SecretBackendType::OnePassword => {
+            // Try 1Password desktop app first
+            if std::process::Command::new("which")
+                .arg("1password")
+                .output()
+                .is_ok_and(|o| o.status.success())
+            {
+                return Some(("1password".to_string(), vec![]));
+            }
+            // Try flatpak version
+            if std::process::Command::new("flatpak")
+                .args(["info", "com.onepassword.OnePassword"])
+                .output()
+                .is_ok_and(|o| o.status.success())
+            {
+                return Some((
+                    "flatpak".to_string(),
+                    vec!["run".to_string(), "com.onepassword.OnePassword".to_string()],
+                ));
+            }
+            // Fallback to web vault
+            Some((
+                "xdg-open".to_string(),
+                vec!["https://my.1password.com".to_string()],
             ))
         }
     }
