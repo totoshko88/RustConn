@@ -25,7 +25,7 @@ impl HistoryDialog {
         let window = adw::Window::builder()
             .title("Connection History")
             .default_width(500)
-            .default_height(400)
+            .default_height(500)
             .modal(true)
             .build();
 

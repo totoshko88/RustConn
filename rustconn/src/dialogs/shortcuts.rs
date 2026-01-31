@@ -169,7 +169,7 @@ impl ShortcutsDialog {
             .title("Keyboard Shortcuts")
             .modal(true)
             .default_width(500)
-            .default_height(600)
+            .default_height(500)
             .build();
 
         if let Some(p) = parent {

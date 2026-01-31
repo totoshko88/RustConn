@@ -21,7 +21,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
         .title("Password Generator")
         .modal(true)
         .default_width(750)
-        .default_height(700)
+        .default_height(650)
         .resizable(true)
         .build();
 

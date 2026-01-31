@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.6.9
+Version:        0.7.0
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later
@@ -157,6 +157,15 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sun Feb 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.0-0
+- Version bump to 0.7.0
+- Fixed Asbru Import Nested Groups - two-pass algorithm preserves hierarchy
+- Fixed Asbru Export Description Field - exports connection and group descriptions
+- Added Group Description Field - New Group and Edit Group dialogs
+- Added Asbru Global Variable Conversion - <GV:VAR> to ${VAR} syntax
+- Added Variable Substitution at Connection Time
+- Dialog Size Unification - Export 750×650, Import 750×800, New Group 450×550
+
 * Sat Jan 31 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.9-0
 - Version bump to 0.6.9
 - Fixed Local Shell tabs not appearing in Split View "Select Tab" dialog

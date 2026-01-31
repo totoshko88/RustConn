@@ -444,16 +444,6 @@ impl MainWindow {
         });
         window.add_action(&move_to_group_action);
 
-        // View details action
-        let view_details_action = gio::SimpleAction::new("view-details", None);
-        let state_clone = state.clone();
-        let sidebar_clone = sidebar.clone();
-        let split_view_clone = self.split_view.clone();
-        view_details_action.connect_activate(move |_, _| {
-            Self::show_connection_details(&state_clone, &sidebar_clone, &split_view_clone);
-        });
-        window.add_action(&view_details_action);
-
         // Rename item action (works for both connections and groups)
         let rename_action = gio::SimpleAction::new("rename-item", None);
         let window_weak = window.downgrade();
@@ -3755,37 +3745,6 @@ impl MainWindow {
         sidebar: &SharedSidebar,
     ) {
         edit_dialogs::edit_selected_connection(window.upcast_ref(), state, sidebar);
-    }
-
-    /// Shows connection details in the main content area (Info view)
-    fn show_connection_details(
-        state: &SharedAppState,
-        sidebar: &SharedSidebar,
-        split_view: &SharedSplitView,
-    ) {
-        // Get selected item
-        let Some(conn_item) = sidebar.get_selected_item() else {
-            return;
-        };
-
-        // Only show details for connections, not groups
-        if conn_item.is_group() {
-            return;
-        }
-
-        let id_str = conn_item.id();
-        let Ok(id) = uuid::Uuid::parse_str(&id_str) else {
-            return;
-        };
-
-        let state_ref = state.borrow();
-        let Some(conn) = state_ref.get_connection(id).cloned() else {
-            return;
-        };
-        drop(state_ref);
-
-        // Show Info content in split_view (replaces Welcome)
-        split_view.show_info_content(&conn);
     }
 
     /// Renames the selected connection or group

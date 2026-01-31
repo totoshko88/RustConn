@@ -62,7 +62,7 @@ impl SnippetDialog {
             .title("New Snippet")
             .modal(true)
             .default_width(550)
-            .default_height(600)
+            .default_height(550)
             .build();
 
         if let Some(p) = parent {

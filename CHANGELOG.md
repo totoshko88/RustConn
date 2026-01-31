@@ -5,6 +5,47 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-02-01
+
+### Fixed
+- **Asbru Import Nested Groups** - Fixed group hierarchy being lost when importing from Asbru-CM:
+  - Groups with subgroups (e.g., Group1 containing Group11, Group12, etc.) now correctly preserve parent-child relationships
+  - Previously, HashMap iteration order caused child groups to be processed before their parents were added to the UUID map, resulting in orphaned root-level groups
+  - Now uses two-pass algorithm: first creates all groups and populates UUID map, then resolves parent references
+  - Special Asbru parent keys (`__PAC__EXPORTED__`, `__PAC__ROOT__`) are now properly skipped
+- **Asbru Export Description Field** - Fixed description not being exported for connections and groups:
+  - Connection description now exports from `connection.description` field directly
+  - Falls back to legacy `desc:` tags only if description field is empty
+  - Group description now exports when present
+
+### Added
+- **Group Description Field** - Groups can now have a description field for storing project info, contacts, notes:
+  - Added `description: Option<String>` to `ConnectionGroup` model
+  - Asbru importer now imports group descriptions
+  - Edit Group dialog now includes Description text area for viewing/editing
+  - New Group dialog now includes Description text area (unified with Edit Group)
+- **Asbru Global Variable Conversion** - Asbru-CM global variable syntax is now converted during import:
+  - `<GV:VAR_NAME>` is automatically converted to RustConn syntax `${VAR_NAME}`
+  - Applies to username field (e.g., `<GV:US_Parrallels_User>` → `${US_Parrallels_User}`)
+  - Plain usernames remain unchanged
+- **Variable Substitution at Connection Time** - Global variables are now resolved when connecting:
+  - `${VAR_NAME}` in host and username fields are replaced with variable values
+  - Works for SSH, RDP, VNC, and SPICE connections
+  - Variables are defined in Settings → Variables
+
+### Changed
+- **Export Dialog** - Added informational message about credential storage:
+  - New info row explains that passwords are stored in password manager and not exported by default
+  - Reminds users to export credential structure separately if needed for team sharing
+- **Dialog Size Unification** - Standardized dialog window sizes for visual consistency:
+  - New Group dialog: 450×550 (added Description field, unified with Edit Group)
+  - Export dialog: 750×650 (increased height for content)
+  - Import dialog: 750×800 (increased height for content)
+  - Medium forms (550×550): New Snippet, New Cluster, Statistics
+  - Info dialogs (500×500): Keyboard Shortcuts, Connection History
+  - Simple forms (450): Quick Connect, Edit Group, Rename
+  - Password Generator: 750×650 (unified with Connection/Template dialogs)
+
 ## [0.6.9] - 2026-01-31
 
 ### Added

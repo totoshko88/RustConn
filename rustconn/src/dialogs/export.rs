@@ -63,7 +63,7 @@ impl ExportDialog {
             .title("Export Connections")
             .modal(true)
             .default_width(750)
-            .default_height(500)
+            .default_height(650)
             .build();
 
         if let Some(p) = parent {
@@ -289,6 +289,16 @@ impl ExportDialog {
         warning_icon.add_css_class("warning");
         warning_row.add_prefix(&warning_icon);
         options_group.add(&warning_row);
+
+        // Credentials info row
+        let creds_info_row = adw::ActionRow::builder()
+            .title("ℹ Credentials Storage")
+            .subtitle("Passwords are stored in your password manager and not included in exports by default. Export your credential structure separately if needed.")
+            .build();
+        let info_icon = gtk4::Image::from_icon_name("dialog-information-symbolic");
+        info_icon.set_valign(gtk4::Align::Center);
+        creds_info_row.add_prefix(&info_icon);
+        options_group.add(&creds_info_row);
 
         main_vbox.append(&options_group);
 

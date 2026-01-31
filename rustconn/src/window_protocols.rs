@@ -10,6 +10,7 @@ use crate::utils::spawn_blocking_with_callback;
 use crate::window::MainWindow;
 use gtk4::prelude::*;
 use rustconn_core::check_port;
+use rustconn_core::variables::{Variable, VariableManager, VariableScope};
 use std::rc::Rc;
 use uuid::Uuid;
 
@@ -19,6 +20,24 @@ pub type SharedSidebar = Rc<ConnectionSidebar>;
 /// Type alias for shared notebook reference
 pub type SharedNotebook = Rc<TerminalNotebook>;
 
+/// Substitutes variables in a string using global variables from settings
+///
+/// Converts `${VAR_NAME}` references to their values from global variables.
+/// If a variable is not found, the reference is left unchanged.
+fn substitute_variables(input: &str, global_variables: &[Variable]) -> String {
+    if !input.contains("${") {
+        return input.to_string();
+    }
+
+    let mut manager = VariableManager::new();
+    for var in global_variables {
+        manager.set_global(var.clone());
+    }
+
+    manager
+        .substitute(input, VariableScope::Global)
+        .unwrap_or_else(|_| input.to_string())
+}
 /// Starts an SSH connection
 ///
 /// Creates a terminal tab and spawns the SSH process with the given configuration.
@@ -65,8 +84,20 @@ pub fn start_ssh_connection(
 
     // Build and spawn SSH command
     let port = conn.port;
-    let host = conn.host.clone();
-    let username = conn.username.clone();
+
+    // Get global variables for substitution
+    let global_variables = state
+        .try_borrow()
+        .ok()
+        .map(|s| s.settings().global_variables.clone())
+        .unwrap_or_default();
+
+    // Apply variable substitution to host and username (e.g., ${VAR_NAME} -> actual value)
+    let host = substitute_variables(&conn.host, &global_variables);
+    let username = conn
+        .username
+        .as_ref()
+        .map(|u| substitute_variables(u, &global_variables));
 
     // Get SSH-specific options
     let (identity_file, extra_args) =
@@ -292,8 +323,17 @@ fn start_vnc_connection_internal(
     conn: &rustconn_core::Connection,
 ) -> Option<Uuid> {
     let conn_name = conn.name.clone();
-    let host = conn.host.clone();
     let port = conn.port;
+
+    // Get global variables for substitution
+    let global_variables = state
+        .try_borrow()
+        .ok()
+        .map(|s| s.settings().global_variables.clone())
+        .unwrap_or_default();
+
+    // Apply variable substitution to host
+    let host = substitute_variables(&conn.host, &global_variables);
 
     // Get VNC-specific configuration
     let vnc_config = if let rustconn_core::ProtocolConfig::Vnc(config) = &conn.protocol_config {
@@ -457,8 +497,17 @@ fn start_spice_connection_internal(
     conn: &rustconn_core::Connection,
 ) -> Option<Uuid> {
     let conn_name = conn.name.clone();
-    let host = conn.host.clone();
     let port = conn.port;
+
+    // Get global variables for substitution
+    let global_variables = state
+        .try_borrow()
+        .ok()
+        .map(|s| s.settings().global_variables.clone())
+        .unwrap_or_default();
+
+    // Apply variable substitution to host
+    let host = substitute_variables(&conn.host, &global_variables);
 
     // Get SPICE-specific options from connection config
     let spice_opts = if let rustconn_core::ProtocolConfig::Spice(config) = &conn.protocol_config {

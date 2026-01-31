@@ -44,6 +44,7 @@ fn create_test_groups(count: usize) -> Vec<ConnectionGroup> {
             username: None,
             domain: None,
             password_source: None,
+            description: None,
         })
         .collect()
 }

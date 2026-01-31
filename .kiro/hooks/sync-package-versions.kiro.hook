@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Sync Package Versions",
+  "description": "When Cargo.toml version is updated, automatically sync the version to debian/changelog, rustconn.spec (RPM), AppImageBuilder.yml, flatpak manifests, snapcraft.yaml, and OBS packaging files",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "Cargo.toml"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "The Cargo.toml file was edited. Check if the version field in the workspace [package] section changed. If so, update the version in ALL of these packaging files to match:\n\n1. debian/changelog - Update the version in the first line (format: rustconn (X.Y.Z) ...)\n2. packaging/obs/rustconn.spec - Update Version: field\n3. packaging/obs/rustconn.changes - Add new version entry at top\n4. packaging/obs/debian.changelog - Update version\n5. packaging/obs/debian.dsc - Update Version: field\n6. packaging/obs/AppImageBuilder.yml - Update version field\n7. packaging/flatpak/io.github.totoshko88.RustConn.yml - Update any version references\n8. packaging/flathub/io.github.totoshko88.RustConn.yml - Update any version references\n9. snap/snapcraft.yaml - Update version field\n\nExtract the new version from the workspace Cargo.toml [package].version field and apply it consistently across all packaging formats."
+  }
+}

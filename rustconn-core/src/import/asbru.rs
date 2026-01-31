@@ -207,9 +207,30 @@ impl AsbruImporter {
         false
     }
 
+    /// Converts Asbru global variable syntax `<GV:VAR_NAME>` to RustConn syntax `${VAR_NAME}`
+    ///
+    /// Asbru-CM uses `<GV:variable_name>` for global variables.
+    /// RustConn uses `${variable_name}` syntax.
+    ///
+    /// # Examples
+    ///
+    /// - `<GV:US_Parrallels_User>` → `${US_Parrallels_User}`
+    /// - `<GV:dp_SSH_username>` → `${dp_SSH_username}`
+    /// - `admin` → `admin` (unchanged)
+    fn convert_asbru_variables(s: &str) -> String {
+        // Match <GV:variable_name> pattern and replace with ${variable_name}
+        // Variable names can contain letters, numbers, and underscores
+        let re = regex::Regex::new(r"<GV:([a-zA-Z_][a-zA-Z0-9_]*)>")
+            .expect("ASBRU_GV_REGEX is a valid regex pattern");
+        // Use $$ to escape the literal $ in the replacement string
+        re.replace_all(s, "$${$1}").into_owned()
+    }
+
     /// Checks if a string contains dynamic variable syntax (${VAR} or $VAR)
     fn contains_dynamic_variable(s: &str) -> bool {
-        s.contains("${") || (s.contains('$') && s.chars().any(|c| c.is_ascii_alphabetic()))
+        s.contains("${")
+            || s.contains("<GV:")
+            || (s.contains('$') && s.chars().any(|c| c.is_ascii_alphabetic()))
     }
 
     /// Parses Asbru YAML content and returns an import result
@@ -272,11 +293,11 @@ impl AsbruImporter {
         }
 
         // Build parent-child relationships
-        // First pass: create groups and map original UUIDs to new UUIDs
+        // First pass: create ALL groups and map original UUIDs to new UUIDs
+        // This ensures all groups exist in uuid_map before we try to resolve parent references
         let mut uuid_map: HashMap<String, Uuid> = HashMap::new();
-
-        // Process groups first - collect them to set parent_id after all are created
-        let mut groups_to_add: Vec<(String, ConnectionGroup, Option<String>)> = Vec::new();
+        let mut groups_data: HashMap<String, (ConnectionGroup, Option<String>, Option<String>)> =
+            HashMap::new();
 
         for (key, entry) in &config {
             if entry.is_group == Some(1) {
@@ -289,21 +310,34 @@ impl AsbruImporter {
 
                 let group = ConnectionGroup::new(group_name);
                 uuid_map.insert(key.clone(), group.id);
-                groups_to_add.push((key.clone(), group, entry.parent.clone()));
+                groups_data.insert(
+                    key.clone(),
+                    (group, entry.parent.clone(), entry.description.clone()),
+                );
             }
         }
 
-        // Second pass: set parent_id for groups and add them to result
-        for (_key, mut group, parent_key) in groups_to_add {
-            if let Some(parent_key) = parent_key {
-                if let Some(&parent_uuid) = uuid_map.get(&parent_key) {
-                    group.parent_id = Some(parent_uuid);
+        // Second pass: set parent_id and description for groups using the complete uuid_map
+        // Now all groups are in uuid_map, so parent lookups will succeed
+        for (_key, (mut group, parent_key, description)) in groups_data {
+            if let Some(ref parent_key) = parent_key {
+                // Skip special Asbru parent keys that don't map to real groups
+                if !parent_key.starts_with("__") {
+                    if let Some(&parent_uuid) = uuid_map.get(parent_key) {
+                        group.parent_id = Some(parent_uuid);
+                    }
+                }
+            }
+            // Set description if present and not empty
+            if let Some(desc) = description {
+                if !desc.is_empty() {
+                    group.description = Some(desc);
                 }
             }
             result.add_group(group);
         }
 
-        // Second pass: process connections
+        // Third pass: process connections
         for (key, entry) in &config {
             if entry.is_group != Some(1) {
                 if let Some(connection) =
@@ -469,7 +503,8 @@ impl AsbruImporter {
         let mut connection = Connection::new(name, host, port, protocol_config);
 
         if let Some(user) = &entry.user {
-            connection.username = Some(user.clone());
+            // Convert Asbru global variable syntax <GV:VAR> to RustConn syntax ${VAR}
+            connection.username = Some(Self::convert_asbru_variables(user));
         }
 
         // Handle password import if enabled
@@ -704,6 +739,162 @@ conn-uuid-9012:
         for conn in &result.connections {
             assert!(conn.group_id.is_some());
         }
+    }
+
+    #[test]
+    fn test_parse_nested_groups() {
+        let importer = AsbruImporter::new();
+        // Test nested group hierarchy like:
+        // Root Group
+        // └── Child Group
+        //     └── Grandchild Group
+        //         └── Connection
+        // Note: HashMap iteration order is not guaranteed, so this tests
+        // that parent_id is correctly set regardless of processing order
+        let yaml = r#"
+grandchild-group:
+  _is_group: 1
+  name: "Grandchild"
+  parent: "child-group"
+  children: {}
+
+child-group:
+  _is_group: 1
+  name: "Child"
+  parent: "root-group"
+  children:
+    grandchild-group: 1
+
+root-group:
+  _is_group: 1
+  name: "Root"
+  parent: "__PAC__EXPORTED__"
+  children:
+    child-group: 1
+
+connection-uuid:
+  _is_group: 0
+  name: "Server"
+  ip: "10.0.0.1"
+  method: "SSH"
+  parent: "grandchild-group"
+"#;
+
+        let result = importer.parse_config(yaml, "test");
+        assert_eq!(result.groups.len(), 3, "Should have 3 groups");
+        assert_eq!(result.connections.len(), 1, "Should have 1 connection");
+
+        // Find groups by name
+        let root = result.groups.iter().find(|g| g.name == "Root").unwrap();
+        let child = result.groups.iter().find(|g| g.name == "Child").unwrap();
+        let grandchild = result
+            .groups
+            .iter()
+            .find(|g| g.name == "Grandchild")
+            .unwrap();
+
+        // Root should have no parent (special __PAC__ keys are skipped)
+        assert!(root.parent_id.is_none(), "Root should have no parent");
+
+        // Child should have Root as parent
+        assert_eq!(
+            child.parent_id,
+            Some(root.id),
+            "Child should have Root as parent"
+        );
+
+        // Grandchild should have Child as parent
+        assert_eq!(
+            grandchild.parent_id,
+            Some(child.id),
+            "Grandchild should have Child as parent"
+        );
+
+        // Connection should be in Grandchild group
+        let conn = &result.connections[0];
+        assert_eq!(
+            conn.group_id,
+            Some(grandchild.id),
+            "Connection should be in Grandchild group"
+        );
+    }
+
+    #[test]
+    fn test_parse_group_description() {
+        let importer = AsbruImporter::new();
+        // Test that group description is imported from Asbru
+        let yaml = r#"
+group-with-desc:
+  _is_group: 1
+  name: "Project Group"
+  description: |-
+    Connection group 'Project'
+    
+    notify-project@example.com
+    
+    TimeReport: 24/7 cover
+    
+    AWS
+    US West (Oregon) - us-west-2
+  children: {}
+
+group-no-desc:
+  _is_group: 1
+  name: "Empty Description Group"
+  description: ""
+  children: {}
+
+group-missing-desc:
+  _is_group: 1
+  name: "No Description Field"
+  children: {}
+"#;
+
+        let result = importer.parse_config(yaml, "test");
+        assert_eq!(result.groups.len(), 3, "Should have 3 groups");
+
+        // Find groups by name
+        let with_desc = result
+            .groups
+            .iter()
+            .find(|g| g.name == "Project Group")
+            .unwrap();
+        let empty_desc = result
+            .groups
+            .iter()
+            .find(|g| g.name == "Empty Description Group")
+            .unwrap();
+        let no_desc = result
+            .groups
+            .iter()
+            .find(|g| g.name == "No Description Field")
+            .unwrap();
+
+        // Group with description should have it set
+        assert!(
+            with_desc.description.is_some(),
+            "Group should have description"
+        );
+        assert!(
+            with_desc
+                .description
+                .as_ref()
+                .unwrap()
+                .contains("notify-project@example.com"),
+            "Description should contain email"
+        );
+
+        // Empty description should be None
+        assert!(
+            empty_desc.description.is_none(),
+            "Empty description should be None"
+        );
+
+        // Missing description field should be None
+        assert!(
+            no_desc.description.is_none(),
+            "Missing description should be None"
+        );
     }
 
     #[test]
@@ -1179,5 +1370,74 @@ server-uuid:
 
         let password = importer.extract_password("server-uuid", yaml);
         assert_eq!(password, None);
+    }
+
+    #[test]
+    fn test_convert_asbru_global_variables() {
+        // Test the static conversion function
+        assert_eq!(
+            AsbruImporter::convert_asbru_variables("<GV:US_Parrallels_User>"),
+            "${US_Parrallels_User}"
+        );
+        assert_eq!(
+            AsbruImporter::convert_asbru_variables("<GV:dp_SSH_username>"),
+            "${dp_SSH_username}"
+        );
+        assert_eq!(
+            AsbruImporter::convert_asbru_variables("<GV:C2S_User>"),
+            "${C2S_User}"
+        );
+        // Plain text should remain unchanged
+        assert_eq!(AsbruImporter::convert_asbru_variables("admin"), "admin");
+        // Already RustConn syntax should remain unchanged
+        assert_eq!(
+            AsbruImporter::convert_asbru_variables("${MY_VAR}"),
+            "${MY_VAR}"
+        );
+        // Mixed content
+        assert_eq!(
+            AsbruImporter::convert_asbru_variables("prefix_<GV:VAR>_suffix"),
+            "prefix_${VAR}_suffix"
+        );
+    }
+
+    #[test]
+    fn test_import_converts_asbru_global_variables_in_username() {
+        let importer = AsbruImporter::new();
+        // Entry with Asbru global variable in user field
+        let yaml = r#"
+server-uuid:
+  _is_group: 0
+  name: "Server with GV"
+  ip: "192.168.1.1"
+  user: "<GV:US_Parrallels_User>"
+  method: "SSH"
+"#;
+
+        let result = importer.parse_config(yaml, "test");
+        assert_eq!(result.connections.len(), 1);
+        // Username should be converted from <GV:...> to ${...}
+        assert_eq!(
+            result.connections[0].username,
+            Some("${US_Parrallels_User}".to_string())
+        );
+    }
+
+    #[test]
+    fn test_import_preserves_plain_username() {
+        let importer = AsbruImporter::new();
+        let yaml = r#"
+server-uuid:
+  _is_group: 0
+  name: "Server"
+  ip: "192.168.1.1"
+  user: "admin"
+  method: "SSH"
+"#;
+
+        let result = importer.parse_config(yaml, "test");
+        assert_eq!(result.connections.len(), 1);
+        // Plain username should remain unchanged
+        assert_eq!(result.connections[0].username, Some("admin".to_string()));
     }
 }

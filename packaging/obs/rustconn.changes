@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Sun Feb 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.0
+
+- Version bump to 0.7.0
+  * Fixed Asbru Import Nested Groups - two-pass algorithm preserves hierarchy
+  * Fixed Asbru Export Description Field - exports connection and group descriptions
+  * Added Group Description Field - New Group and Edit Group dialogs
+  * Added Asbru Global Variable Conversion - <GV:VAR> to ${VAR} syntax
+  * Added Variable Substitution at Connection Time
+  * Dialog Size Unification - Export 750×650, Import 750×800, New Group 450×550
+
+-------------------------------------------------------------------
 Thu Jan 29 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.7
 
 - Version bump to 0.6.7

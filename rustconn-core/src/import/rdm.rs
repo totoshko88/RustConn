@@ -241,6 +241,7 @@ impl RdmImporter {
             username: None,
             domain: None,
             password_source: None,
+            description: None,
         }
     }
 

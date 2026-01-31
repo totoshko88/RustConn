@@ -170,15 +170,23 @@ impl AsbruExporter {
             }
         }
 
-        // description from tags
-        let desc_tags: Vec<&str> = connection
-            .tags
-            .iter()
-            .filter_map(|t| t.strip_prefix("desc:"))
-            .collect();
-        if !desc_tags.is_empty() {
-            let desc = escape_yaml_string(&desc_tags.join(", "));
-            lines.push(format!("  description: \"{desc}\""));
+        // description - prefer direct field, fall back to tags
+        if let Some(ref desc) = connection.description {
+            if !desc.is_empty() {
+                let desc = escape_yaml_string(desc);
+                lines.push(format!("  description: \"{desc}\""));
+            }
+        } else {
+            // Legacy: check for description in tags
+            let desc_tags: Vec<&str> = connection
+                .tags
+                .iter()
+                .filter_map(|t| t.strip_prefix("desc:"))
+                .collect();
+            if !desc_tags.is_empty() {
+                let desc = escape_yaml_string(&desc_tags.join(", "));
+                lines.push(format!("  description: \"{desc}\""));
+            }
         }
 
         // children (empty for connections)
@@ -215,6 +223,14 @@ impl AsbruExporter {
         if let Some(parent_id) = group.parent_id {
             if let Some(parent_uuid) = group_uuid_map.get(&parent_id) {
                 lines.push(format!("  parent: \"{parent_uuid}\""));
+            }
+        }
+
+        // description
+        if let Some(ref desc) = group.description {
+            if !desc.is_empty() {
+                let desc = escape_yaml_string(desc);
+                lines.push(format!("  description: \"{desc}\""));
             }
         }
 
@@ -466,5 +482,62 @@ mod tests {
         assert!(exporter.supports_protocol(&ProtocolType::Rdp));
         assert!(exporter.supports_protocol(&ProtocolType::Vnc));
         assert!(exporter.supports_protocol(&ProtocolType::Spice));
+    }
+
+    #[test]
+    fn test_connection_to_entry_with_description() {
+        let mut conn = create_ssh_connection("webserver", "192.168.1.100", 22);
+        conn.description = Some("Production web server for main site".to_string());
+        let group_map = HashMap::new();
+        let entry = AsbruExporter::connection_to_entry(&conn, &group_map);
+
+        assert!(entry.contains("description: \"Production web server for main site\""));
+    }
+
+    #[test]
+    fn test_connection_to_entry_description_from_tags_fallback() {
+        let mut conn = create_ssh_connection("webserver", "192.168.1.100", 22);
+        conn.tags
+            .push("desc:Legacy description from tags".to_string());
+        let group_map = HashMap::new();
+        let entry = AsbruExporter::connection_to_entry(&conn, &group_map);
+
+        assert!(entry.contains("description: \"Legacy description from tags\""));
+    }
+
+    #[test]
+    fn test_connection_to_entry_description_prefers_field_over_tags() {
+        let mut conn = create_ssh_connection("webserver", "192.168.1.100", 22);
+        conn.description = Some("Direct description field".to_string());
+        conn.tags.push("desc:Tag description".to_string());
+        let group_map = HashMap::new();
+        let entry = AsbruExporter::connection_to_entry(&conn, &group_map);
+
+        // Should use direct field, not tags
+        assert!(entry.contains("description: \"Direct description field\""));
+        assert!(!entry.contains("Tag description"));
+    }
+
+    #[test]
+    fn test_group_to_entry_with_description() {
+        let mut group = ConnectionGroup::new("Production".to_string());
+        group.description = Some("Production servers for main datacenter".to_string());
+        let group_map = HashMap::new();
+        let entry = AsbruExporter::group_to_entry(&group, &group_map);
+
+        assert!(entry.contains("_is_group: 1"));
+        assert!(entry.contains("name: \"Production\""));
+        assert!(entry.contains("description: \"Production servers for main datacenter\""));
+    }
+
+    #[test]
+    fn test_group_to_entry_empty_description_not_exported() {
+        let mut group = ConnectionGroup::new("Production".to_string());
+        group.description = Some(String::new());
+        let group_map = HashMap::new();
+        let entry = AsbruExporter::group_to_entry(&group, &group_map);
+
+        // Empty description should not be exported
+        assert!(!entry.contains("description:"));
     }
 }
