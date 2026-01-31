@@ -1115,8 +1115,13 @@ impl AppState {
             if let Some(ref kdbx_path) = self.settings.secrets.kdbx_path {
                 // Build hierarchical entry path using KeePassHierarchy
                 // This matches how passwords are saved with group structure
-                let groups: Vec<ConnectionGroup> =
-                    self.connection_manager.list_groups().iter().cloned().cloned().collect();
+                let groups: Vec<ConnectionGroup> = self
+                    .connection_manager
+                    .list_groups()
+                    .iter()
+                    .cloned()
+                    .cloned()
+                    .collect();
                 let entry_path = KeePassHierarchy::build_entry_path(connection, &groups);
 
                 // Add protocol suffix for uniqueness
@@ -1124,9 +1129,7 @@ impl AppState {
                 let protocol_str = protocol.as_str();
 
                 // Strip RustConn/ prefix since get_password_from_kdbx_with_key adds it back
-                let entry_name = entry_path
-                    .strip_prefix("RustConn/")
-                    .unwrap_or(&entry_path);
+                let entry_name = entry_path.strip_prefix("RustConn/").unwrap_or(&entry_path);
                 let lookup_key = format!("{entry_name} ({protocol_str})");
 
                 // Get credentials - password and key file can be used together
@@ -1433,8 +1436,13 @@ impl AppState {
         let secret_manager = self.secret_manager.clone();
 
         // Get groups for hierarchical path building
-        let groups: Vec<ConnectionGroup> =
-            self.connection_manager.list_groups().iter().cloned().cloned().collect();
+        let groups: Vec<ConnectionGroup> = self
+            .connection_manager
+            .list_groups()
+            .iter()
+            .cloned()
+            .cloned()
+            .collect();
 
         // Spawn blocking operation in background thread
         crate::utils::spawn_blocking_with_callback(
@@ -1484,9 +1492,7 @@ impl AppState {
                 let protocol_str = protocol.as_str();
 
                 // Strip RustConn/ prefix since get_password_from_kdbx_with_key adds it back
-                let entry_name = entry_path
-                    .strip_prefix("RustConn/")
-                    .unwrap_or(&entry_path);
+                let entry_name = entry_path.strip_prefix("RustConn/").unwrap_or(&entry_path);
                 let lookup_key = format!("{entry_name} ({protocol_str})");
 
                 // Get credentials - password and key file can be used together

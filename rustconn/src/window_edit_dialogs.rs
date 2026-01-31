@@ -134,8 +134,11 @@ pub fn edit_selected_connection(
                                         {
                                             // Build hierarchical entry path using connection's
                                             // group structure
-                                            let groups: Vec<_> =
-                                                state_mut.list_groups().into_iter().cloned().collect();
+                                            let groups: Vec<_> = state_mut
+                                                .list_groups()
+                                                .into_iter()
+                                                .cloned()
+                                                .collect();
                                             let conn_for_path =
                                                 state_mut.get_connection(id).cloned();
 

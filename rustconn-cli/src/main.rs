@@ -3771,7 +3771,9 @@ fn cmd_secret_get(connection_name: &str, backend: Option<&str>) -> Result<(), Cl
     let keepass_base = KeePassHierarchy::build_entry_path(connection, &groups);
     let keepass_key = format!(
         "{} ({})",
-        keepass_base.strip_prefix("RustConn/").unwrap_or(&keepass_base),
+        keepass_base
+            .strip_prefix("RustConn/")
+            .unwrap_or(&keepass_base),
         connection.protocol.as_str().to_lowercase()
     );
 
@@ -3957,7 +3959,9 @@ fn cmd_secret_set(
     let keepass_base = KeePassHierarchy::build_entry_path(connection, &groups);
     let keepass_key = format!(
         "{} ({})",
-        keepass_base.strip_prefix("RustConn/").unwrap_or(&keepass_base),
+        keepass_base
+            .strip_prefix("RustConn/")
+            .unwrap_or(&keepass_base),
         connection.protocol.as_str().to_lowercase()
     );
 
@@ -4199,10 +4203,7 @@ fn cmd_secret_delete(connection_name: &str, backend: Option<&str>) -> Result<(),
             )
             .map_err(|e| CliError::Secret(format!("KeePass error: {e}")))?;
 
-            println!(
-                "Deleted credentials for '{}' from KeePass",
-                connection.name
-            );
+            println!("Deleted credentials for '{}' from KeePass", connection.name);
             Ok(())
         }
         SecretBackendType::Bitwarden => {

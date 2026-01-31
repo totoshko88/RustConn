@@ -539,9 +539,7 @@ pub fn start_vnc_with_password_dialog(
                 rustconn_core::secret::KeePassHierarchy::build_entry_path(conn, &groups);
 
             // Strip RustConn/ prefix since get_password_from_kdbx_with_key adds it back
-            let entry_name = entry_path
-                .strip_prefix("RustConn/")
-                .unwrap_or(&entry_path);
+            let entry_name = entry_path.strip_prefix("RustConn/").unwrap_or(&entry_path);
             let key = format!("{entry_name} (vnc)");
 
             (conn.name.clone(), key)

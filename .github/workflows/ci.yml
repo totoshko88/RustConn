@@ -169,7 +169,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Rust 1.88
-        uses: dtolnay/rust-toolchain@1.88
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.88.0 --profile minimal
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
         run: |
@@ -191,4 +193,7 @@ jobs:
           key: ${{ runner.os }}-cargo-msrv-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Check MSRV
-        run: cargo check --all-targets --all-features
+        run: |
+          source $HOME/.cargo/env
+          rustc --version
+          cargo check --all-targets --all-features

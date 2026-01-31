@@ -154,12 +154,12 @@ impl CredentialResolver {
         let protocol = connection.protocol_config.protocol_type();
         let name = connection.name.replace('/', "-");
         let lookup_key = format!("{} ({})", name, protocol.as_str().to_lowercase());
-        
+
         // Try the new format first
         if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
             return Ok(Some(creds));
         }
-        
+
         // Fall back to legacy UUID-based key for backward compatibility
         let connection_id = connection.id.to_string();
         self.secret_manager.retrieve(&connection_id).await
@@ -174,12 +174,12 @@ impl CredentialResolver {
         let protocol = connection.protocol_config.protocol_type();
         let name = connection.name.replace('/', "-");
         let lookup_key = format!("{} ({})", name, protocol.as_str().to_lowercase());
-        
+
         // Try the new format first
         if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
             return Ok(Some(creds));
         }
-        
+
         // Fall back to legacy "rustconn/{name}" format for backward compatibility
         let legacy_key = Self::generate_lookup_key(connection);
         self.secret_manager.retrieve(&legacy_key).await
@@ -193,11 +193,11 @@ impl CredentialResolver {
         // 1Password uses "RustConn: {connection_id}" format via entry_title()
         // Try the connection ID format first (matches OnePasswordBackend::entry_title)
         let lookup_key = connection.id.to_string();
-        
+
         if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
             return Ok(Some(creds));
         }
-        
+
         // Also try "{name} ({protocol})" format for consistency with other backends
         let protocol = connection.protocol_config.protocol_type();
         let name = connection.name.replace('/', "-");
@@ -889,16 +889,8 @@ impl CredentialResolver {
             }
             PasswordSource::Keyring => {
                 // Keyring uses "{name} ({protocol})" format
-                let old_key = format!(
-                    "{} ({})",
-                    old_name.replace('/', "-"),
-                    protocol_str
-                );
-                let new_key = format!(
-                    "{} ({})",
-                    connection.name.replace('/', "-"),
-                    protocol_str
-                );
+                let old_key = format!("{} ({})", old_name.replace('/', "-"), protocol_str);
+                let new_key = format!("{} ({})", connection.name.replace('/', "-"), protocol_str);
 
                 if old_key != new_key {
                     if let Some(creds) = self.secret_manager.retrieve(&old_key).await? {
@@ -909,16 +901,8 @@ impl CredentialResolver {
             }
             PasswordSource::Bitwarden => {
                 // Bitwarden uses "{name} ({protocol})" format (same as Keyring)
-                let old_key = format!(
-                    "{} ({})",
-                    old_name.replace('/', "-"),
-                    protocol_str
-                );
-                let new_key = format!(
-                    "{} ({})",
-                    connection.name.replace('/', "-"),
-                    protocol_str
-                );
+                let old_key = format!("{} ({})", old_name.replace('/', "-"), protocol_str);
+                let new_key = format!("{} ({})", connection.name.replace('/', "-"), protocol_str);
 
                 if old_key != new_key {
                     if let Some(creds) = self.secret_manager.retrieve(&old_key).await? {

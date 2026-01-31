@@ -58,9 +58,12 @@ proptest! {
             .with_var("var3", "value3");
 
         prop_assert_eq!(context.custom_vars.len(), 3);
-        prop_assert_eq!(context.custom_vars.get("var1"), Some(&"value1".to_string()));
-        prop_assert_eq!(context.custom_vars.get("var2"), Some(&"value2".to_string()));
-        prop_assert_eq!(context.custom_vars.get("var3"), Some(&"value3".to_string()));
+        let expected1 = "value1".to_string();
+        let expected2 = "value2".to_string();
+        let expected3 = "value3".to_string();
+        prop_assert_eq!(context.custom_vars.get("var1"), Some(&expected1));
+        prop_assert_eq!(context.custom_vars.get("var2"), Some(&expected2));
+        prop_assert_eq!(context.custom_vars.get("var3"), Some(&expected3));
     }
 
     /// Property: Path template expansion substitutes connection_name

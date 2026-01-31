@@ -857,14 +857,12 @@ impl KeePassStatus {
         }
 
         // First validate the path
-        Self::validate_kdbx_path(kdbx_path)
-            .map_err(SecretError::KeePassXC)?;
+        Self::validate_kdbx_path(kdbx_path).map_err(SecretError::KeePassXC)?;
 
         // Find keepassxc-cli
-        let cli_path = Self::find_keepassxc_cli()
-            .ok_or_else(|| SecretError::KeePassXC(
-                "keepassxc-cli not found. Please install KeePassXC.".to_string()
-            ))?;
+        let cli_path = Self::find_keepassxc_cli().ok_or_else(|| {
+            SecretError::KeePassXC("keepassxc-cli not found. Please install KeePassXC.".to_string())
+        })?;
 
         // get_password_from_kdbx_with_key adds "RustConn/" prefix, so we need to strip it
         // from old_entry_path if present to avoid double prefix
@@ -879,7 +877,8 @@ impl KeePassStatus {
             key_file,
             old_entry_name,
             None,
-        ).map_err(SecretError::KeePassXC)?;
+        )
+        .map_err(SecretError::KeePassXC)?;
 
         // If no password found at old path, nothing to rename
         let Some(password) = password else {
@@ -894,16 +893,12 @@ impl KeePassStatus {
             key_file,
             &cli_path,
             old_entry_path,
-        ).unwrap_or_default();
+        )
+        .unwrap_or_default();
 
         // Get URL from old entry (use full path for direct CLI call)
-        let url = Self::get_url_from_kdbx(
-            kdbx_path,
-            db_password,
-            key_file,
-            &cli_path,
-            old_entry_path,
-        );
+        let url =
+            Self::get_url_from_kdbx(kdbx_path, db_password, key_file, &cli_path, old_entry_path);
 
         // Ensure parent groups exist for new path
         // Extract entry name from new path (everything after "RustConn/")
@@ -923,7 +918,8 @@ impl KeePassStatus {
             &username,
             &password,
             url.as_deref(),
-        ).map_err(SecretError::KeePassXC)?;
+        )
+        .map_err(SecretError::KeePassXC)?;
 
         // Delete old entry (use full path for direct CLI call)
         let _ = Self::delete_kdbx_entry(kdbx_path, db_password, key_file, old_entry_path);
