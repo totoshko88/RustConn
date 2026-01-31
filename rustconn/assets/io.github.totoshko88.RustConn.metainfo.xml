@@ -58,6 +58,109 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.7.0" date="2026-02-01">
+      <description>
+        <p>Version 0.7.0 - Asbru Import Fixes and Group Descriptions:</p>
+        <ul>
+          <li>Fixed Asbru Import nested groups - group hierarchy now preserved correctly</li>
+          <li>Fixed Asbru Export description field for connections and groups</li>
+          <li>Added Group Description field for storing project info and notes</li>
+          <li>Asbru global variable conversion during import</li>
+          <li>Variable substitution at connection time for host and username</li>
+          <li>Dialog size unification for visual consistency</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.6.9" date="2026-01-31">
+      <description>
+        <p>Version 0.6.9 - Password Caching, Retry Logic, and 1Password Support:</p>
+        <ul>
+          <li>Password Caching TTL - Cached credentials expire after configurable time</li>
+          <li>Connection Retry Logic - Automatic retry with exponential backoff</li>
+          <li>Loading States - Visual feedback for long-running operations</li>
+          <li>Session State Persistence - Split layouts preserved across restarts</li>
+          <li>Connection Health Check - Periodic monitoring of active sessions</li>
+          <li>1Password as PasswordSource - 1Password can now be selected per-connection</li>
+          <li>Credential Rename on Connection Rename - Credentials automatically renamed</li>
+          <li>Fixed KeePass password retrieval for subgroups</li>
+          <li>Fixed Keyring and Bitwarden password retrieval</li>
+          <li>370+ new property tests (total: 1241 tests)</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.6.8" date="2026-01-30">
+      <description>
+        <p>Version 0.6.8 - 1Password CLI Integration:</p>
+        <ul>
+          <li>1Password CLI Integration - New secret backend with biometric auth</li>
+          <li>Service account support via OP_SERVICE_ACCOUNT_TOKEN</li>
+          <li>Automatic vault creation for storing credentials</li>
+          <li>Bitwarden API Key Authentication for automated workflows</li>
+          <li>Bitwarden Self-Hosted Support</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.6.7" date="2026-01-29">
+      <description>
+        <p>Version 0.6.7 - Group-Level Secret Storage and CLI Secret Management:</p>
+        <ul>
+          <li>Group-Level Secret Storage - Groups can now store passwords in secret backends</li>
+          <li>CLI Secret Management - New secret command for managing credentials</li>
+          <li>Hierarchical storage in KeePass mirrors group structure</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.6.6" date="2026-01-29">
+      <description>
+        <p>Version 0.6.6 - KeePass Password Saving and SSH Options:</p>
+        <ul>
+          <li>KeePass Password Saving for RDP/VNC connections</li>
+          <li>Load Password from Vault button in connection dialog</li>
+          <li>Keyring Password Storage via libsecret</li>
+          <li>SSH X11 Forwarding and Compression options</li>
+          <li>Import Normalizer for post-import consistency</li>
+          <li>IronRDP Enhanced Features: reconnection, multi-monitor, RD Gateway, graphics modes</li>
+          <li>Fixed AWS EC2 RDP Compatibility with 32-bit color depth</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.6.5" date="2026-01-21">
+      <description>
+        <p>Version 0.6.5 - Split View Redesign and Terminal Tabs Migration:</p>
+        <ul>
+          <li>Split View Redesign - Tab-scoped layouts with tree-based panel structure</li>
+          <li>Color-coded panel borders to visually identify split containers</li>
+          <li>Terminal Tabs Migration from gtk::Notebook to adw::TabView</li>
+          <li>Fixed KeePass Password Saving for names with / character</li>
+          <li>Fixed Split View Loading panels and Context Menu Freeze</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.6.4" date="2026-01-17">
+      <description>
+        <p>Version 0.6.4 - Snap Package and RDP/VNC Performance Modes:</p>
+        <ul>
+          <li>Snap Package - New distribution format via Snapcraft</li>
+          <li>RDP/VNC Performance Modes - Quality, Balanced, Speed presets</li>
+          <li>Fixed RDP Initial Resolution matching actual widget size</li>
+          <li>Fixed RDP Dynamic Resolution with automatic reconnect</li>
+          <li>Fixed Sidebar Fixed Width - content area properly expands</li>
+          <li>Updated IronRDP to 0.14</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.6.3" date="2026-01-16">
+      <description>
+        <p>Version 0.6.3 - Bitwarden CLI Integration:</p>
+        <ul>
+          <li>Bitwarden CLI Integration - New secret backend with vault status checking</li>
+          <li>Password Manager Detection - Automatic detection of installed managers</li>
+          <li>Enhanced Secrets Settings UI with dynamic configuration</li>
+          <li>Universal Password Vault Button opens appropriate manager</li>
+          <li>Improved split view button icons</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.6.2" date="2026-01-15">
       <description>
         <p>Version 0.6.2 - MobaXterm Import/Export and UX Improvements:</p>
