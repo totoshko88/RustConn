@@ -34,6 +34,9 @@ pub struct ConnectionGroup {
     /// Password source and config for inheritance
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password_source: Option<PasswordSource>,
+    /// Optional description/notes for the group
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 impl ConnectionGroup {
@@ -50,6 +53,7 @@ impl ConnectionGroup {
             username: None,
             domain: None,
             password_source: None,
+            description: None,
         }
     }
 
@@ -66,6 +70,7 @@ impl ConnectionGroup {
             username: None,
             domain: None,
             password_source: None,
+            description: None,
         }
     }
 

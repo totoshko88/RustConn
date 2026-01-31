@@ -1706,7 +1706,7 @@ impl ConnectionDialog {
         let desc_scrolled = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
             .vscrollbar_policy(gtk4::PolicyType::Automatic)
-            .min_content_height(60)
+            .min_content_height(144)
             .hexpand(true)
             .child(&description_view)
             .build();

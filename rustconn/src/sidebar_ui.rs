@@ -267,22 +267,6 @@ pub fn show_context_menu_for_item(widget: &impl IsA<gtk4::Widget>, x: f64, y: f6
     });
     menu_box.append(&rename_btn);
 
-    // View Details option (only for connections, not groups)
-    if !is_group {
-        let details_btn = create_menu_button("View Details");
-        let win = window_clone.clone();
-        let popover_c = popover_ref.clone();
-        details_btn.connect_clicked(move |_| {
-            if let Some(p) = popover_c.upgrade() {
-                p.popdown();
-            }
-            if let Some(action) = win.lookup_action("view-details") {
-                action.activate(None);
-            }
-        });
-        menu_box.append(&details_btn);
-    }
-
     if !is_group {
         let duplicate_btn = create_menu_button("Duplicate");
         let win = window_clone.clone();

@@ -27,7 +27,7 @@ impl StatisticsDialog {
         let window = adw::Window::builder()
             .title("Connection Statistics")
             .default_width(550)
-            .default_height(600)
+            .default_height(550)
             .modal(true)
             .build();
 

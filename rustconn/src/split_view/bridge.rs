@@ -654,6 +654,12 @@ impl SplitViewBridge {
         *self.focused_pane_uuid.borrow()
     }
 
+    /// Returns true if there is a focused pane
+    #[must_use]
+    pub fn has_focused_pane(&self) -> bool {
+        self.focused_pane_uuid.borrow().is_some()
+    }
+
     /// Returns all session IDs
     #[must_use]
     pub fn session_ids(&self) -> Vec<Uuid> {

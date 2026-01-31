@@ -359,8 +359,8 @@ pub fn show_new_group_dialog_with_parent(
         .title("New Group")
         .transient_for(window)
         .modal(true)
-        .default_width(500)
-        .default_height(300)
+        .default_width(450)
+        .default_height(550)
         .build();
 
     // Create header bar with Close/Create buttons (GNOME HIG)
@@ -722,6 +722,33 @@ pub fn show_new_group_dialog_with_parent(
 
     content.append(&credentials_group);
 
+    // === Description Section ===
+    let description_group = adw::PreferencesGroup::builder()
+        .title("Description")
+        .description("Notes, contacts, project info")
+        .build();
+
+    let description_view = gtk4::TextView::builder()
+        .wrap_mode(gtk4::WrapMode::Word)
+        .accepts_tab(false)
+        .top_margin(8)
+        .bottom_margin(8)
+        .left_margin(8)
+        .right_margin(8)
+        .build();
+
+    let description_scroll = gtk4::ScrolledWindow::builder()
+        .hscrollbar_policy(gtk4::PolicyType::Never)
+        .vscrollbar_policy(gtk4::PolicyType::Automatic)
+        .min_content_height(144)
+        .hexpand(true)
+        .child(&description_view)
+        .build();
+    description_scroll.add_css_class("card");
+
+    description_group.add(&description_scroll);
+    content.append(&description_group);
+
     // Connect create button
     let state_clone = state.clone();
     let sidebar_clone = sidebar;
@@ -732,6 +759,7 @@ pub fn show_new_group_dialog_with_parent(
     let password_entry_clone2 = password_entry.clone();
     let password_source_clone = password_source_dropdown.clone();
     let domain_row_clone = domain_row;
+    let description_buffer = description_view.buffer();
 
     create_btn.connect_clicked(move |_| {
         let name = name_row_clone.text().to_string();
@@ -751,6 +779,14 @@ pub fn show_new_group_dialog_with_parent(
         let username = username_row_clone.text().to_string();
         let password = password_entry_clone2.text().to_string();
         let domain = domain_row_clone.text().to_string();
+
+        // Capture description
+        let description = {
+            let start = description_buffer.start_iter();
+            let end = description_buffer.end_iter();
+            description_buffer.text(&start, &end, false).to_string()
+        };
+        let has_description = !description.trim().is_empty();
 
         // Get selected password source
         let password_source_idx = password_source_clone.selected();
@@ -778,10 +814,11 @@ pub fn show_new_group_dialog_with_parent(
 
             match result {
                 Ok(group_id) => {
-                    // Update group with credentials if provided
+                    // Update group with credentials/description if provided
                     if has_username
                         || has_domain
                         || has_password
+                        || has_description
                         || !matches!(new_password_source, PasswordSource::None)
                     {
                         if let Some(existing) = state_mut.get_group(group_id).cloned() {
@@ -791,6 +828,9 @@ pub fn show_new_group_dialog_with_parent(
                             }
                             if has_domain {
                                 updated.domain = Some(domain.clone());
+                            }
+                            if has_description {
+                                updated.description = Some(description.clone());
                             }
                             // Set the selected password source
                             updated.password_source = Some(new_password_source);

@@ -149,6 +149,7 @@ fn start_rdp_session_internal(
     domain: &str,
 ) {
     use rustconn_core::models::RdpClientMode;
+    use rustconn_core::variables::{VariableManager, VariableScope};
 
     let state_ref = state.borrow();
 
@@ -157,9 +158,29 @@ fn start_rdp_session_internal(
     };
 
     let conn_name = conn.name.clone();
-    let host = conn.host.clone();
     let port = conn.port;
     let window_mode = conn.window_mode;
+
+    // Get global variables for substitution
+    let global_variables = state_ref.settings().global_variables.clone();
+
+    // Helper function to substitute variables
+    let substitute = |input: &str| -> String {
+        if !input.contains("${") {
+            return input.to_string();
+        }
+        let mut manager = VariableManager::new();
+        for var in &global_variables {
+            manager.set_global(var.clone());
+        }
+        manager
+            .substitute(input, VariableScope::Global)
+            .unwrap_or_else(|_| input.to_string())
+    };
+
+    // Apply variable substitution to host and username
+    let host = substitute(&conn.host);
+    let username = substitute(username);
 
     // Get RDP-specific options
     let rdp_config = if let rustconn_core::ProtocolConfig::Rdp(config) = &conn.protocol_config {
@@ -175,7 +196,7 @@ fn start_rdp_session_internal(
 
     // Record connection start in history
     let history_entry_id = if let Ok(mut state_mut) = state.try_borrow_mut() {
-        Some(state_mut.record_connection_start(&conn_for_history, Some(username)))
+        Some(state_mut.record_connection_start(&conn_for_history, Some(&username)))
     } else {
         None
     };
@@ -191,7 +212,7 @@ fn start_rdp_session_internal(
             &conn_name,
             &host,
             port,
-            username,
+            &username,
             password,
             domain,
             window_mode,
@@ -211,7 +232,7 @@ fn start_rdp_session_internal(
         &conn_name,
         &host,
         port,
-        username,
+        &username,
         password,
         domain,
         &rdp_config,
@@ -651,6 +672,8 @@ fn start_vnc_session_internal(
     connection_id: Uuid,
     password: &str,
 ) {
+    use rustconn_core::variables::{VariableManager, VariableScope};
+
     let state_ref = state.borrow();
 
     let Some(conn) = state_ref.get_connection(connection_id) else {
@@ -658,8 +681,23 @@ fn start_vnc_session_internal(
     };
 
     let conn_name = conn.name.clone();
-    let host = conn.host.clone();
     let port = conn.port;
+
+    // Get global variables for substitution
+    let global_variables = state_ref.settings().global_variables.clone();
+
+    // Apply variable substitution to host
+    let host = if conn.host.contains("${") {
+        let mut manager = VariableManager::new();
+        for var in &global_variables {
+            manager.set_global(var.clone());
+        }
+        manager
+            .substitute(&conn.host, VariableScope::Global)
+            .unwrap_or_else(|_| conn.host.clone())
+    } else {
+        conn.host.clone()
+    };
 
     // Get VNC-specific configuration
     let vnc_config = if let rustconn_core::ProtocolConfig::Vnc(config) = &conn.protocol_config {

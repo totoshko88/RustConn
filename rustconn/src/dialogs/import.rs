@@ -49,7 +49,7 @@ impl ImportDialog {
             .title("Import Connections")
             .modal(true)
             .default_width(750)
-            .default_height(750)
+            .default_height(800)
             .build();
 
         if let Some(p) = parent {

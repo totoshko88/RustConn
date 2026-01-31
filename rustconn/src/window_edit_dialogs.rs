@@ -382,7 +382,7 @@ pub fn rename_selected_item(
             "Rename Connection"
         })
         .modal(true)
-        .default_width(400)
+        .default_width(450)
         .resizable(false)
         .build();
     rename_window.set_transient_for(Some(window));
@@ -707,7 +707,7 @@ pub fn show_edit_group_dialog(
     let group_window = adw::Window::builder()
         .title("Edit Group")
         .modal(true)
-        .default_width(500)
+        .default_width(450)
         .resizable(false)
         .build();
     group_window.set_transient_for(Some(window));
@@ -759,7 +759,7 @@ pub fn show_edit_group_dialog(
     let state_ref = state.borrow();
 
     // Get all groups and filter out self and descendants to avoid cycles
-    let mut available_groups: Vec<(Uuid, String)> = Vec::new();
+    let mut available_groups: Vec<(Uuid, String, u32)> = Vec::new(); // (id, name, depth)
     let all_groups = state_ref.list_groups();
 
     // Helper to check if a group is a descendant of the current group
@@ -782,6 +782,21 @@ pub fn show_edit_group_dialog(
         false
     };
 
+    // Helper to calculate depth of a group
+    let get_depth = |gid: Uuid| -> u32 {
+        let mut depth = 0u32;
+        let mut current = gid;
+        while let Some(g) = state_ref.get_group(current) {
+            if let Some(p) = g.parent_id {
+                depth += 1;
+                current = p;
+            } else {
+                break;
+            }
+        }
+        depth
+    };
+
     for g in all_groups {
         if g.id == group_id {
             continue;
@@ -790,23 +805,30 @@ pub fn show_edit_group_dialog(
             continue;
         }
 
-        // Use full path for display and sorting
+        // Get full path for sorting, but store name and depth for display
         let path = state_ref
             .get_group_path(g.id)
             .unwrap_or_else(|| g.name.clone());
-        available_groups.push((g.id, path));
+        let depth = get_depth(g.id);
+        available_groups.push((g.id, path, depth));
     }
     drop(state_ref);
 
-    // Sort by the displayed path string
+    // Sort by the full path to maintain hierarchy order
     available_groups.sort_by(|a, b| a.1.to_lowercase().cmp(&b.1.to_lowercase()));
 
     let mut group_ids: Vec<Option<Uuid>> = vec![None];
     let mut strings: Vec<String> = vec!["(None - Root Level)".to_string()];
     let mut preselected_index = 0u32;
 
-    for (id, path) in available_groups {
-        strings.push(path);
+    for (id, path, depth) in available_groups {
+        // Extract just the group name (last segment of path)
+        let name = path.rsplit('/').next().unwrap_or(&path);
+        // Add indentation based on depth using Unicode box-drawing chars
+        let indent = "    ".repeat(depth as usize);
+        let prefix = if depth > 0 { "└ " } else { "" };
+        let display = format!("{indent}{prefix}{name}");
+        strings.push(display);
         group_ids.push(Some(id));
 
         if group.parent_id == Some(id) {
@@ -820,17 +842,14 @@ pub fn show_edit_group_dialog(
             .map(std::string::String::as_str)
             .collect::<Vec<_>>(),
     );
-    let parent_dropdown = gtk4::DropDown::builder()
-        .model(&string_list)
-        .selected(preselected_index)
-        .valign(gtk4::Align::Center)
-        .build();
 
-    let parent_row = adw::ActionRow::builder()
+    // Use ComboRow for better handling of long group paths
+    let parent_row = adw::ComboRow::builder()
         .title("Parent")
         .subtitle("Moving a group moves all its content")
+        .model(&string_list)
+        .selected(preselected_index)
         .build();
-    parent_row.add_suffix(&parent_dropdown);
     details_group.add(&parent_row);
 
     content.append(&details_group);
@@ -1110,6 +1129,36 @@ pub fn show_edit_group_dialog(
 
     content.append(&credentials_group);
 
+    // === Description Section ===
+    let description_group = adw::PreferencesGroup::builder()
+        .title("Description")
+        .description("Notes, contacts, project info")
+        .build();
+
+    let description_view = gtk4::TextView::builder()
+        .wrap_mode(gtk4::WrapMode::Word)
+        .accepts_tab(false)
+        .top_margin(8)
+        .bottom_margin(8)
+        .left_margin(8)
+        .right_margin(8)
+        .build();
+    description_view
+        .buffer()
+        .set_text(group.description.as_deref().unwrap_or_default());
+
+    let description_scroll = gtk4::ScrolledWindow::builder()
+        .hscrollbar_policy(gtk4::PolicyType::Never)
+        .vscrollbar_policy(gtk4::PolicyType::Automatic)
+        .min_content_height(144)
+        .hexpand(true)
+        .child(&description_view)
+        .build();
+    description_scroll.add_css_class("card");
+
+    description_group.add(&description_scroll);
+    content.append(&description_group);
+
     // Connect handlers
     let window_clone = group_window.clone();
     cancel_btn.connect_clicked(move |_| {
@@ -1124,7 +1173,8 @@ pub fn show_edit_group_dialog(
     let password_entry_clone = password_entry.clone();
     let password_source_clone = password_source_dropdown.clone();
     let domain_row_clone = domain_row;
-    let dropdown_clone = parent_dropdown;
+    let parent_row_clone = parent_row;
+    let description_buffer = description_view.buffer();
     let old_name = group.name;
 
     save_btn.connect_clicked(move |_| {
@@ -1134,7 +1184,7 @@ pub fn show_edit_group_dialog(
             return;
         }
 
-        let selected_idx = dropdown_clone.selected() as usize;
+        let selected_idx = parent_row_clone.selected() as usize;
         let new_parent_id = if selected_idx < group_ids.len() {
             group_ids[selected_idx]
         } else {
@@ -1179,6 +1229,15 @@ pub fn show_edit_group_dialog(
                 let mut updated = existing;
                 updated.name = new_name;
                 updated.parent_id = new_parent_id;
+
+                // Get description from text buffer
+                let (start, end) = description_buffer.bounds();
+                let desc_text = description_buffer.text(&start, &end, false).to_string();
+                updated.description = if desc_text.trim().is_empty() {
+                    None
+                } else {
+                    Some(desc_text)
+                };
 
                 updated.username = if username.trim().is_empty() {
                     None
@@ -1542,8 +1601,7 @@ pub fn show_quick_connect_dialog_with_state(
     let quick_window = adw::Window::builder()
         .title("Quick Connect")
         .modal(true)
-        .default_width(500)
-        .default_height(400)
+        .default_width(450)
         .build();
 
     if let Some(gtk_win) = window.downcast_ref::<gtk4::Window>() {
