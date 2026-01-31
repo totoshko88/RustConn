@@ -373,7 +373,9 @@ pub fn show_new_connection_from_template(
         use secrecy::ExposeSecret;
         let state_ref = state.borrow();
         let settings = state_ref.settings();
-        dialog.connect_password_load_button(
+        let groups: Vec<rustconn_core::models::ConnectionGroup> =
+            state_ref.list_groups().iter().cloned().cloned().collect();
+        dialog.connect_password_load_button_with_groups(
             settings.secrets.kdbx_enabled,
             settings.secrets.kdbx_path.clone(),
             settings
@@ -382,6 +384,7 @@ pub fn show_new_connection_from_template(
                 .as_ref()
                 .map(|p| p.expose_secret().to_string()),
             settings.secrets.kdbx_key_file.clone(),
+            groups,
         );
     }
 
@@ -414,12 +417,35 @@ pub fn show_new_connection_from_template(
                                 let settings = state_mut.settings().clone();
                                 if settings.secrets.kdbx_enabled {
                                     if let Some(kdbx_path) = settings.secrets.kdbx_path.clone() {
+                                        // Build hierarchical entry path using connection's
+                                        // group structure
+                                        let groups: Vec<_> =
+                                            state_mut.list_groups().into_iter().cloned().collect();
+                                        let conn_for_path =
+                                            state_mut.get_connection(conn_id).cloned();
+
                                         let key_file = settings.secrets.kdbx_key_file.clone();
-                                        let entry_name = format!(
-                                            "{} ({})",
-                                            conn_name,
-                                            protocol.as_str().to_lowercase()
-                                        );
+                                        let entry_name = if let Some(ref conn) = conn_for_path {
+                                            // Use hierarchical path matching resolve_credentials
+                                            let entry_path =
+                                                rustconn_core::secret::KeePassHierarchy
+                                                    ::build_entry_path(conn, &groups);
+                                            let base_path = entry_path
+                                                .strip_prefix("RustConn/")
+                                                .unwrap_or(&entry_path);
+                                            format!(
+                                                "{} ({})",
+                                                base_path,
+                                                protocol.as_str().to_lowercase()
+                                            )
+                                        } else {
+                                            // Fallback to flat path if connection not found
+                                            format!(
+                                                "{} ({})",
+                                                conn_name,
+                                                protocol.as_str().to_lowercase()
+                                            )
+                                        };
                                         let username = conn_username.clone().unwrap_or_default();
                                         let url = format!(
                                             "{}://{}",
@@ -510,13 +536,13 @@ pub fn show_new_connection_from_template(
 
                         // Save password to Bitwarden if needed
                         if password_source == PasswordSource::Bitwarden {
-                            if let Some(pwd) = password {
+                            if let Some(pwd) = password.clone() {
                                 let lookup_key = format!(
                                     "{} ({})",
                                     conn_name.replace('/', "-"),
                                     protocol.as_str().to_lowercase()
                                 );
-                                let username = conn_username.unwrap_or_default();
+                                let username = conn_username.clone().unwrap_or_default();
 
                                 crate::utils::spawn_blocking_with_callback(
                                     move || {
@@ -543,6 +569,45 @@ pub fn show_new_connection_from_template(
                                         } else {
                                             tracing::info!(
                                                 "Password saved to Bitwarden for connection {}",
+                                                conn_id
+                                            );
+                                        }
+                                    },
+                                );
+                            }
+                        }
+
+                        // Save password to 1Password if needed
+                        if password_source == PasswordSource::OnePassword {
+                            if let Some(pwd) = password {
+                                let lookup_key = conn_id.to_string();
+                                let username = conn_username.unwrap_or_default();
+
+                                crate::utils::spawn_blocking_with_callback(
+                                    move || {
+                                        use rustconn_core::secret::SecretBackend;
+                                        let backend =
+                                            rustconn_core::secret::OnePasswordBackend::new();
+                                        let creds = Credentials {
+                                            username: Some(username),
+                                            password: Some(secrecy::SecretString::from(pwd)),
+                                            key_passphrase: None,
+                                            domain: None,
+                                        };
+                                        let rt = tokio::runtime::Runtime::new()
+                                            .map_err(|e| format!("Runtime error: {e}"))?;
+                                        rt.block_on(backend.store(&lookup_key, &creds))
+                                            .map_err(|e| format!("{e}"))
+                                    },
+                                    move |result: Result<(), String>| {
+                                        if let Err(e) = result {
+                                            tracing::error!(
+                                                "Failed to save password to 1Password: {}",
+                                                e
+                                            );
+                                        } else {
+                                            tracing::info!(
+                                                "Password saved to 1Password for connection {}",
                                                 conn_id
                                             );
                                         }

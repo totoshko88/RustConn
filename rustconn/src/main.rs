@@ -14,6 +14,7 @@
 pub mod adaptive_tabs;
 pub mod alert;
 mod app;
+pub mod async_utils;
 #[cfg(feature = "rdp-audio")]
 pub mod audio;
 pub mod automation;
@@ -36,6 +37,7 @@ pub mod embedded_vnc_ui;
 pub mod empty_state;
 pub mod external_window;
 pub mod floating_controls;
+pub mod loading;
 pub mod session;
 mod sidebar;
 mod sidebar_types;

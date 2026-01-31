@@ -40,6 +40,10 @@ Three-crate Cargo workspace. Strict GUI/logic separation is enforced.
 | `dialogs/` | Modal dialogs |
 | `embedded_*.rs` | Embedded protocol viewers (RDP, VNC, SPICE) |
 | `terminal/` | VTE terminal notebook for SSH |
+| `split_view/` | Split view UI management |
+| `session/` | Session UI components |
+| `audio.rs` | RDP audio playback via cpal |
+| `tray.rs` | System tray icon (ksni) |
 
 ## Core Library (`rustconn-core/src/`)
 
@@ -47,14 +51,25 @@ Three-crate Cargo workspace. Strict GUI/logic separation is enforced.
 |-----------|---------|
 | `models/` | Connection, Group, Protocol, Snippet, Template |
 | `config/` | Settings persistence |
-| `connection/` | Connection CRUD, lazy loading, virtual scroll |
+| `connection/` | Connection CRUD, lazy loading, virtual scroll, retry logic |
 | `protocol/` | Protocol trait + implementations |
 | `import/` | Format importers |
 | `export/` | Format exporters |
-| `secret/` | Credential backends |
-| `session/` | Session state, logging |
+| `secret/` | Credential backends (libsecret, KeePassXC, Bitwarden, 1Password) |
+| `session/` | Session state, logging, restore |
 | `automation/` | Expect scripts, key sequences |
 | `search/` | Connection filtering with caching |
+| `rdp_client/` | IronRDP embedded client |
+| `vnc_client/` | vnc-rs embedded client |
+| `spice_client/` | SPICE embedded client |
+| `split/` | Split view layout model |
+| `variables/` | Variable substitution engine |
+| `tracing/` | Structured logging |
+| `wol/` | Wake-on-LAN |
+| `cluster/` | Cluster command broadcasting |
+| `dashboard/` | Dashboard statistics |
+| `document/` | Document encryption/decryption |
+| `ssh_agent/` | SSH agent integration |
 
 ## State Management Pattern
 

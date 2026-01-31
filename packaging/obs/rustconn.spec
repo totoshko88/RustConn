@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.6.8
+Version:        0.6.9
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later
@@ -157,6 +157,10 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sat Jan 31 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.9-0
+- Version bump to 0.6.9
+- Fixed Local Shell tabs not appearing in Split View "Select Tab" dialog
+
 * Thu Jan 30 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.8-0
 - Version bump to 0.6.8
 - 1Password CLI Integration - New secret backend for 1Password password manager

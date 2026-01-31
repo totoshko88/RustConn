@@ -659,6 +659,39 @@ impl KeePassStatus {
         Ok(())
     }
 
+    /// Deletes an entry from KDBX database (public API)
+    ///
+    /// # Arguments
+    /// * `kdbx_path` - Path to the KDBX database file
+    /// * `db_password` - Password to unlock the database (None if using key file)
+    /// * `key_file` - Optional path to key file for authentication
+    /// * `entry_path` - Full path of the entry to delete (e.g., "RustConn/Group/Name (rdp)")
+    ///
+    /// # Returns
+    /// * `Ok(())` if the entry is deleted or doesn't exist
+    /// * `Err(String)` if the operation fails
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - `keepassxc-cli` is not installed
+    /// - The KDBX file path is invalid
+    /// - The database password/key file is incorrect
+    pub fn delete_entry_from_kdbx(
+        kdbx_path: &Path,
+        db_password: Option<&str>,
+        key_file: Option<&Path>,
+        entry_path: &str,
+    ) -> Result<(), String> {
+        // First validate the path
+        Self::validate_kdbx_path(kdbx_path)?;
+
+        // Find keepassxc-cli
+        Self::find_keepassxc_cli()
+            .ok_or_else(|| "keepassxc-cli not found. Please install KeePassXC.".to_string())?;
+
+        Self::delete_kdbx_entry(kdbx_path, db_password, key_file, entry_path)
+    }
+
     /// Retrieves a password from KDBX database using `keepassxc-cli` with key file support
     ///
     /// # Arguments
@@ -786,6 +819,240 @@ impl KeePassStatus {
 
         tracing::debug!("get_password: password not found");
         Ok(None)
+    }
+
+    /// Renames an entry in KDBX database by moving it from old path to new path
+    ///
+    /// This method retrieves the entry from the old path, creates a new entry at the new path
+    /// with the same credentials, and deletes the old entry.
+    ///
+    /// # Arguments
+    /// * `kdbx_path` - Path to the KDBX database file
+    /// * `db_password` - Password to unlock the database (None if using key file)
+    /// * `key_file` - Optional path to key file for authentication
+    /// * `old_entry_path` - Current path of the entry (e.g., "RustConn/Group/OldName (rdp)")
+    /// * `new_entry_path` - New path for the entry (e.g., "RustConn/Group/NewName (rdp)")
+    ///
+    /// # Returns
+    /// * `Ok(())` if the rename is successful or entry doesn't exist
+    /// * `Err(SecretError)` if the operation fails
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - `keepassxc-cli` is not installed
+    /// - The KDBX file path is invalid
+    /// - The database password/key file is incorrect
+    pub fn rename_entry_in_kdbx(
+        kdbx_path: &Path,
+        db_password: Option<&str>,
+        key_file: Option<&Path>,
+        old_entry_path: &str,
+        new_entry_path: &str,
+    ) -> crate::error::SecretResult<()> {
+        use crate::error::SecretError;
+
+        // If paths are the same, nothing to do
+        if old_entry_path == new_entry_path {
+            return Ok(());
+        }
+
+        // First validate the path
+        Self::validate_kdbx_path(kdbx_path)
+            .map_err(SecretError::KeePassXC)?;
+
+        // Find keepassxc-cli
+        let cli_path = Self::find_keepassxc_cli()
+            .ok_or_else(|| SecretError::KeePassXC(
+                "keepassxc-cli not found. Please install KeePassXC.".to_string()
+            ))?;
+
+        // get_password_from_kdbx_with_key adds "RustConn/" prefix, so we need to strip it
+        // from old_entry_path if present to avoid double prefix
+        let old_entry_name = old_entry_path
+            .strip_prefix("RustConn/")
+            .unwrap_or(old_entry_path);
+
+        // First, try to get the password from the old entry
+        let password = Self::get_password_from_kdbx_with_key(
+            kdbx_path,
+            db_password,
+            key_file,
+            old_entry_name,
+            None,
+        ).map_err(SecretError::KeePassXC)?;
+
+        // If no password found at old path, nothing to rename
+        let Some(password) = password else {
+            tracing::debug!("No entry found at '{}', nothing to rename", old_entry_path);
+            return Ok(());
+        };
+
+        // Get username from old entry (use full path for direct CLI call)
+        let username = Self::get_username_from_kdbx(
+            kdbx_path,
+            db_password,
+            key_file,
+            &cli_path,
+            old_entry_path,
+        ).unwrap_or_default();
+
+        // Get URL from old entry (use full path for direct CLI call)
+        let url = Self::get_url_from_kdbx(
+            kdbx_path,
+            db_password,
+            key_file,
+            &cli_path,
+            old_entry_path,
+        );
+
+        // Ensure parent groups exist for new path
+        // Extract entry name from new path (everything after "RustConn/")
+        let new_entry_name = new_entry_path
+            .strip_prefix("RustConn/")
+            .unwrap_or(new_entry_path);
+
+        Self::ensure_parent_groups(kdbx_path, db_password, key_file, &cli_path, new_entry_name)
+            .map_err(SecretError::KeePassXC)?;
+
+        // Create new entry with the password
+        Self::save_password_to_kdbx(
+            kdbx_path,
+            db_password,
+            key_file,
+            new_entry_name,
+            &username,
+            &password,
+            url.as_deref(),
+        ).map_err(SecretError::KeePassXC)?;
+
+        // Delete old entry (use full path for direct CLI call)
+        let _ = Self::delete_kdbx_entry(kdbx_path, db_password, key_file, old_entry_path);
+
+        tracing::info!(
+            "Renamed KeePass entry from '{}' to '{}'",
+            old_entry_path,
+            new_entry_path
+        );
+
+        Ok(())
+    }
+
+    /// Gets username from a KDBX entry
+    fn get_username_from_kdbx(
+        kdbx_path: &Path,
+        db_password: Option<&str>,
+        key_file: Option<&Path>,
+        cli_path: &Path,
+        entry_path: &str,
+    ) -> Option<String> {
+        use std::io::Write as IoWrite;
+        use std::process::Stdio;
+
+        let mut args = vec![
+            "show".to_string(),
+            "-s".to_string(),
+            "-a".to_string(),
+            "UserName".to_string(),
+        ];
+
+        if db_password.is_none() && key_file.is_some() {
+            args.push("--no-password".to_string());
+        }
+
+        if let Some(kf) = key_file {
+            args.push("--key-file".to_string());
+            args.push(kf.display().to_string());
+        }
+
+        args.push(kdbx_path.display().to_string());
+        args.push(entry_path.to_string());
+
+        let mut child = Command::new(cli_path)
+            .args(&args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .ok()?;
+
+        if let Some(mut stdin) = child.stdin.take() {
+            if let Some(db_pwd) = db_password {
+                stdin.write_all(db_pwd.as_bytes()).ok()?;
+                stdin.write_all(b"\n").ok()?;
+            }
+        }
+
+        let output = child.wait_with_output().ok()?;
+
+        if output.status.success() {
+            let username = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if username.is_empty() {
+                None
+            } else {
+                Some(username)
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Gets URL from a KDBX entry
+    fn get_url_from_kdbx(
+        kdbx_path: &Path,
+        db_password: Option<&str>,
+        key_file: Option<&Path>,
+        cli_path: &Path,
+        entry_path: &str,
+    ) -> Option<String> {
+        use std::io::Write as IoWrite;
+        use std::process::Stdio;
+
+        let mut args = vec![
+            "show".to_string(),
+            "-s".to_string(),
+            "-a".to_string(),
+            "URL".to_string(),
+        ];
+
+        if db_password.is_none() && key_file.is_some() {
+            args.push("--no-password".to_string());
+        }
+
+        if let Some(kf) = key_file {
+            args.push("--key-file".to_string());
+            args.push(kf.display().to_string());
+        }
+
+        args.push(kdbx_path.display().to_string());
+        args.push(entry_path.to_string());
+
+        let mut child = Command::new(cli_path)
+            .args(&args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .ok()?;
+
+        if let Some(mut stdin) = child.stdin.take() {
+            if let Some(db_pwd) = db_password {
+                stdin.write_all(db_pwd.as_bytes()).ok()?;
+                stdin.write_all(b"\n").ok()?;
+            }
+        }
+
+        let output = child.wait_with_output().ok()?;
+
+        if output.status.success() {
+            let url = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if url.is_empty() {
+                None
+            } else {
+                Some(url)
+            }
+        } else {
+            None
+        }
     }
 
     /// Verifies a KDBX database password using `keepassxc-cli`

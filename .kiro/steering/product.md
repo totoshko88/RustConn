@@ -11,16 +11,18 @@ Linux connection manager for SSH, RDP, VNC, SPICE protocols. GTK4/libadwaita GUI
 | Protocol | Backend | Session Type |
 |----------|---------|--------------|
 | SSH | VTE terminal | Embedded tab (primary) |
-| RDP | FreeRDP (`xfreerdp`) | External window |
-| VNC | TigerVNC (`vncviewer`) | External window |
+| RDP | IronRDP (embedded) or FreeRDP (`xfreerdp`) | Embedded tab or external window |
+| VNC | vnc-rs (embedded) or TigerVNC (`vncviewer`) | Embedded tab or external window |
 | SPICE | `remote-viewer` | External window |
 
 ## Core Capabilities
 
 - Connection organization via groups and tags
 - Import/export: Remmina, Asbru-CM, SSH config, Ansible inventory, Royal TS, MobaXterm
-- Credential backends: libsecret (default), KeePassXC (optional)
+- Credential backends: libsecret (default), KeePassXC, Bitwarden, 1Password (optional)
 - Session logging, command snippets, cluster commands, Wake-on-LAN
+- Split view for multiple simultaneous sessions
+- Variables and templates for connection configuration
 
 ## Critical Rules
 

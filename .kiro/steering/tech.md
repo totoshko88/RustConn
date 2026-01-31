@@ -10,8 +10,8 @@ Rust 2021 edition, MSRV 1.88, three-crate Cargo workspace.
 
 | Crate | Purpose | Key Dependencies |
 |-------|---------|------------------|
-| `rustconn` | GTK4 GUI | `gtk4` 0.10 (`v4_14`), `vte4` 0.9, `adw` (libadwaita), optional `ksni`+`resvg` |
-| `rustconn-core` | Business logic (GUI-free) | `tokio` 1.48, `serde`/`serde_json`/`serde_yaml`/`toml`, `uuid`, `chrono`, `thiserror`, `secrecy`, `ring`+`argon2`, `regex` |
+| `rustconn` | GTK4 GUI | `gtk4` 0.10 (`v4_14`), `vte4` 0.9, `libadwaita` 0.8 (`v1_5`), optional `ksni`+`resvg`+`cpal` |
+| `rustconn-core` | Business logic (GUI-free) | `tokio` 1.49, `serde`/`serde_json`/`serde_yaml`/`toml`, `uuid`, `chrono`, `thiserror`, `secrecy`, `ring`+`argon2`, `regex`, `ironrdp` 0.14, `vnc-rs` 0.5 |
 | `rustconn-cli` | CLI interface | `clap` 4.5 (derive), depends on `rustconn-core` only |
 
 ## Enforced Code Style
@@ -80,6 +80,7 @@ impl MyTrait for MyStruct {
 - Property tests: `rustconn-core/tests/properties/` using `proptest`
 - Temp files: always use `tempfile` crate
 - New property test modules must be registered in `tests/properties/mod.rs`
+- Full test suite runs ~1 minute; wait for completion after code changes before next command
 
 ## Build & Test Commands
 

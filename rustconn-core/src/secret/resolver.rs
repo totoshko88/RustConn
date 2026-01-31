@@ -92,6 +92,7 @@ impl CredentialResolver {
             PasswordSource::KeePass => self.resolve_from_keepass(connection).await,
             PasswordSource::Keyring => self.resolve_from_keyring(connection).await,
             PasswordSource::Bitwarden => self.resolve_from_bitwarden(connection).await,
+            PasswordSource::OnePassword => self.resolve_from_onepassword(connection).await,
             PasswordSource::Prompt | PasswordSource::Inherit => {
                 // Caller handles these cases
                 debug!("Password source requires caller handling");
@@ -149,6 +150,17 @@ impl CredentialResolver {
         &self,
         connection: &Connection,
     ) -> SecretResult<Option<Credentials>> {
+        // Use the same key format as used when saving: "{name} ({protocol})"
+        let protocol = connection.protocol_config.protocol_type();
+        let name = connection.name.replace('/', "-");
+        let lookup_key = format!("{} ({})", name, protocol.as_str().to_lowercase());
+        
+        // Try the new format first
+        if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
+            return Ok(Some(creds));
+        }
+        
+        // Fall back to legacy UUID-based key for backward compatibility
         let connection_id = connection.id.to_string();
         self.secret_manager.retrieve(&connection_id).await
     }
@@ -158,8 +170,39 @@ impl CredentialResolver {
         &self,
         connection: &Connection,
     ) -> SecretResult<Option<Credentials>> {
-        let lookup_key = Self::generate_lookup_key(connection);
-        self.secret_manager.retrieve(&lookup_key).await
+        // Use the same key format as used when saving: "{name} ({protocol})"
+        let protocol = connection.protocol_config.protocol_type();
+        let name = connection.name.replace('/', "-");
+        let lookup_key = format!("{} ({})", name, protocol.as_str().to_lowercase());
+        
+        // Try the new format first
+        if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
+            return Ok(Some(creds));
+        }
+        
+        // Fall back to legacy "rustconn/{name}" format for backward compatibility
+        let legacy_key = Self::generate_lookup_key(connection);
+        self.secret_manager.retrieve(&legacy_key).await
+    }
+
+    /// Resolves credentials from 1Password vault
+    async fn resolve_from_onepassword(
+        &self,
+        connection: &Connection,
+    ) -> SecretResult<Option<Credentials>> {
+        // 1Password uses "RustConn: {connection_id}" format via entry_title()
+        // Try the connection ID format first (matches OnePasswordBackend::entry_title)
+        let lookup_key = connection.id.to_string();
+        
+        if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
+            return Ok(Some(creds));
+        }
+        
+        // Also try "{name} ({protocol})" format for consistency with other backends
+        let protocol = connection.protocol_config.protocol_type();
+        let name = connection.name.replace('/', "-");
+        let alt_key = format!("{} ({})", name, protocol.as_str().to_lowercase());
+        self.secret_manager.retrieve(&alt_key).await
     }
 
     /// Resolves credentials using the fallback chain
@@ -672,6 +715,7 @@ impl CredentialResolver {
             }
             PasswordSource::Keyring => self.resolve_from_keyring(connection).await,
             PasswordSource::Bitwarden => self.resolve_from_bitwarden(connection).await,
+            PasswordSource::OnePassword => self.resolve_from_onepassword(connection).await,
             PasswordSource::Inherit => self.resolve_inherited_credentials(connection, groups).await,
             PasswordSource::Prompt => {
                 // Caller handles these cases
@@ -800,6 +844,97 @@ impl CredentialResolver {
 
             // Delete from old location
             let _ = self.secret_manager.delete(&old_key).await;
+        }
+
+        Ok(())
+    }
+
+    /// Renames a credential entry when a connection is renamed.
+    ///
+    /// This retrieves the credential using the old name, stores it with the new name,
+    /// and deletes the old entry. Handles all backend types appropriately.
+    ///
+    /// # Arguments
+    /// * `connection` - The connection with the NEW name already set
+    /// * `old_name` - The previous connection name
+    /// * `groups` - All available connection groups
+    ///
+    /// # Errors
+    /// Returns `SecretError` if the rename operation fails
+    pub async fn rename_credential(
+        &self,
+        connection: &Connection,
+        old_name: &str,
+        groups: &[ConnectionGroup],
+    ) -> SecretResult<()> {
+        // Build old connection with old name for key generation
+        let mut old_connection = connection.clone();
+        old_connection.name = old_name.to_string();
+
+        let protocol = connection.protocol_config.protocol_type();
+        let protocol_str = protocol.as_str().to_lowercase();
+
+        match connection.password_source {
+            PasswordSource::KeePass => {
+                // KeePass uses hierarchical paths: RustConn/Group/ConnectionName
+                let old_key = Self::generate_hierarchical_lookup_key(&old_connection, groups);
+                let new_key = Self::generate_hierarchical_lookup_key(connection, groups);
+
+                if old_key != new_key {
+                    if let Some(creds) = self.secret_manager.retrieve(&old_key).await? {
+                        self.secret_manager.store(&new_key, &creds).await?;
+                        let _ = self.secret_manager.delete(&old_key).await;
+                    }
+                }
+            }
+            PasswordSource::Keyring => {
+                // Keyring uses "{name} ({protocol})" format
+                let old_key = format!(
+                    "{} ({})",
+                    old_name.replace('/', "-"),
+                    protocol_str
+                );
+                let new_key = format!(
+                    "{} ({})",
+                    connection.name.replace('/', "-"),
+                    protocol_str
+                );
+
+                if old_key != new_key {
+                    if let Some(creds) = self.secret_manager.retrieve(&old_key).await? {
+                        self.secret_manager.store(&new_key, &creds).await?;
+                        let _ = self.secret_manager.delete(&old_key).await;
+                    }
+                }
+            }
+            PasswordSource::Bitwarden => {
+                // Bitwarden uses "{name} ({protocol})" format (same as Keyring)
+                let old_key = format!(
+                    "{} ({})",
+                    old_name.replace('/', "-"),
+                    protocol_str
+                );
+                let new_key = format!(
+                    "{} ({})",
+                    connection.name.replace('/', "-"),
+                    protocol_str
+                );
+
+                if old_key != new_key {
+                    if let Some(creds) = self.secret_manager.retrieve(&old_key).await? {
+                        self.secret_manager.store(&new_key, &creds).await?;
+                        let _ = self.secret_manager.delete(&old_key).await;
+                    }
+                }
+            }
+            PasswordSource::OnePassword => {
+                // 1Password uses connection ID, so renaming doesn't affect the key
+                // The entry title "RustConn: {id}" stays the same
+                // No action needed
+            }
+            PasswordSource::Prompt | PasswordSource::Inherit | PasswordSource::None => {
+                // No credentials stored in these modes
+            }
         }
 
         Ok(())

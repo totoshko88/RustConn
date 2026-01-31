@@ -1,8 +1,16 @@
-//! Property tests for session restore models
+//! Property tests for session restore functionality
 
 use proptest::prelude::*;
-use rustconn_core::config::{SavedSession, SessionRestoreSettings};
+use rustconn_core::session::{
+    PanelRestoreData, SessionRestoreData, SessionRestoreState, SessionType, SplitLayoutRestoreData,
+    RESTORE_STATE_VERSION,
+};
 use uuid::Uuid;
+
+/// Strategy for generating valid session types
+fn session_type_strategy() -> impl Strategy<Value = SessionType> {
+    prop_oneof![Just(SessionType::Embedded), Just(SessionType::External),]
+}
 
 /// Strategy for generating valid protocol names
 fn protocol_strategy() -> impl Strategy<Value = String> {
@@ -14,196 +22,216 @@ fn protocol_strategy() -> impl Strategy<Value = String> {
     ]
 }
 
-/// Strategy for generating valid port numbers
-fn port_strategy() -> impl Strategy<Value = u16> {
-    prop_oneof![
-        Just(22_u16),
-        Just(3389_u16),
-        Just(5900_u16),
-        Just(5930_u16),
-        1..=65535_u16,
-    ]
-}
-
-/// Strategy for generating valid hostnames
-fn host_strategy() -> impl Strategy<Value = String> {
-    prop_oneof![
-        Just("localhost".to_string()),
-        Just("127.0.0.1".to_string()),
-        "[a-z]{3,10}\\.[a-z]{2,4}",
-    ]
-}
-
 /// Strategy for generating connection names
-fn name_strategy() -> impl Strategy<Value = String> {
-    "[A-Za-z][A-Za-z0-9 _-]{2,20}"
+fn connection_name_strategy() -> impl Strategy<Value = String> {
+    "[a-zA-Z][a-zA-Z0-9 _-]{0,49}".prop_map(|s| s.trim().to_string())
+}
+
+/// Strategy for generating panel IDs
+fn panel_id_strategy() -> impl Strategy<Value = String> {
+    "[a-z][a-z0-9-]{0,19}".prop_map(|s| s.to_string())
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(100))]
-
-    /// SavedSession creation produces valid session
+    /// Property: SessionRestoreData preserves all fields through builder pattern
     #[test]
-    fn prop_saved_session_valid(
-        name in name_strategy(),
-        host in host_strategy(),
-        port in port_strategy(),
+    fn session_restore_data_builder_preserves_fields(
+        name in connection_name_strategy(),
         protocol in protocol_strategy(),
+        session_type in session_type_strategy(),
+        panel_id in panel_id_strategy(),
+        tab_index in 0usize..100,
     ) {
-        let session = SavedSession {
-            connection_id: Uuid::new_v4(),
-            connection_name: name.clone(),
-            protocol: protocol.clone(),
-            host: host.clone(),
-            port,
-            saved_at: chrono::Utc::now(),
-        };
+        let conn_id = Uuid::new_v4();
+        let data = SessionRestoreData::new(
+            conn_id,
+            name.clone(),
+            protocol.clone(),
+            session_type.clone(),
+        )
+        .with_panel_id(panel_id.clone())
+        .with_tab_index(tab_index);
 
-        prop_assert_eq!(&session.connection_name, &name);
-        prop_assert_eq!(&session.host, &host);
-        prop_assert_eq!(session.port, port);
-        prop_assert_eq!(&session.protocol, &protocol);
+        prop_assert_eq!(data.connection_id, conn_id);
+        prop_assert_eq!(data.connection_name, name);
+        prop_assert_eq!(data.protocol, protocol);
+        prop_assert_eq!(data.panel_id, Some(panel_id));
+        prop_assert_eq!(data.tab_index, Some(tab_index));
     }
 
-    /// SavedSession serialization round-trip preserves data
+    /// Property: SplitLayoutRestoreData clamps ratio to valid range
     #[test]
-    fn prop_saved_session_serialization_roundtrip(
-        name in name_strategy(),
-        host in host_strategy(),
-        port in port_strategy(),
-        protocol in protocol_strategy(),
+    fn split_layout_clamps_ratio(
+        ratio in -1.0f64..2.0,
+        horizontal in any::<bool>(),
     ) {
-        let session = SavedSession {
-            connection_id: Uuid::new_v4(),
-            connection_name: name,
-            protocol,
-            host,
-            port,
-            saved_at: chrono::Utc::now(),
-        };
+        let layout = SplitLayoutRestoreData::split(horizontal, ratio);
 
-        let json = serde_json::to_string(&session).unwrap();
-        let restored: SavedSession = serde_json::from_str(&json).unwrap();
-
-        prop_assert_eq!(session.connection_id, restored.connection_id);
-        prop_assert_eq!(session.connection_name, restored.connection_name);
-        prop_assert_eq!(session.host, restored.host);
-        prop_assert_eq!(session.port, restored.port);
-        prop_assert_eq!(session.protocol, restored.protocol);
+        prop_assert!(layout.split_ratio >= 0.1);
+        prop_assert!(layout.split_ratio <= 0.9);
+        prop_assert!(layout.is_split);
+        prop_assert_eq!(layout.horizontal, horizontal);
     }
 
-    /// SessionRestoreSettings with various configurations
+    /// Property: SessionRestoreState serialization round-trip preserves data
     #[test]
-    fn prop_session_restore_settings_valid(
-        enabled in proptest::bool::ANY,
-        prompt_on_restore in proptest::bool::ANY,
-        max_age_hours in 0..168_u32,
+    fn session_restore_state_json_roundtrip(
+        session_count in 0usize..5,
+        maximized in any::<bool>(),
     ) {
-        let settings = SessionRestoreSettings {
-            enabled,
-            prompt_on_restore,
-            max_age_hours,
-            saved_sessions: Vec::new(),
-        };
+        let mut state = SessionRestoreState::new();
+        state.set_window_maximized(maximized);
 
-        prop_assert_eq!(settings.enabled, enabled);
-        prop_assert_eq!(settings.prompt_on_restore, prompt_on_restore);
-        prop_assert_eq!(settings.max_age_hours, max_age_hours);
-        prop_assert!(settings.saved_sessions.is_empty());
+        for i in 0..session_count {
+            let session = SessionRestoreData::new(
+                Uuid::new_v4(),
+                format!("Connection {i}"),
+                "ssh".to_string(),
+                SessionType::Embedded,
+            );
+            state.add_session(session);
+        }
+
+        let json = state.to_json().expect("serialization should succeed");
+        let restored = SessionRestoreState::from_json(&json)
+            .expect("deserialization should succeed");
+
+        prop_assert_eq!(restored.session_count(), session_count);
+        prop_assert_eq!(restored.window_maximized, maximized);
+        prop_assert_eq!(restored.version, RESTORE_STATE_VERSION);
     }
 
-    /// SessionRestoreSettings serialization round-trip
+    /// Property: SessionRestoreState clear removes all sessions
     #[test]
-    fn prop_session_restore_settings_serialization_roundtrip(
-        enabled in proptest::bool::ANY,
-        prompt_on_restore in proptest::bool::ANY,
-        max_age_hours in 0..168_u32,
+    fn session_restore_state_clear_removes_all(
+        session_count in 1usize..10,
     ) {
-        let settings = SessionRestoreSettings {
-            enabled,
-            prompt_on_restore,
-            max_age_hours,
-            saved_sessions: Vec::new(),
-        };
+        let mut state = SessionRestoreState::new();
 
-        let json = serde_json::to_string(&settings).unwrap();
-        let restored: SessionRestoreSettings = serde_json::from_str(&json).unwrap();
+        for i in 0..session_count {
+            let session = SessionRestoreData::new(
+                Uuid::new_v4(),
+                format!("Connection {i}"),
+                "rdp".to_string(),
+                SessionType::External,
+            );
+            state.add_session(session);
+        }
+        state.set_active_session(Uuid::new_v4());
+        state.set_split_layout(SplitLayoutRestoreData::split(true, 0.5));
 
-        prop_assert_eq!(settings.enabled, restored.enabled);
-        prop_assert_eq!(settings.prompt_on_restore, restored.prompt_on_restore);
-        prop_assert_eq!(settings.max_age_hours, restored.max_age_hours);
+        prop_assert!(state.has_sessions());
+
+        state.clear();
+
+        prop_assert!(!state.has_sessions());
+        prop_assert!(state.active_session_id.is_none());
+        prop_assert!(state.split_layout.is_none());
     }
 
-    /// SessionRestoreSettings with sessions serialization
+    /// Property: Window geometry is preserved correctly
     #[test]
-    fn prop_session_restore_with_sessions_roundtrip(
-        session_count in 0..5_usize,
+    fn window_geometry_preserved(
+        x in -10000i32..10000,
+        y in -10000i32..10000,
+        width in 100i32..5000,
+        height in 100i32..5000,
     ) {
-        let sessions: Vec<SavedSession> = (0..session_count)
-            .map(|i| SavedSession {
-                connection_id: Uuid::new_v4(),
-                connection_name: format!("Session {i}"),
-                protocol: "ssh".to_string(),
-                host: format!("host{i}.example.com"),
-                port: 22,
-                saved_at: chrono::Utc::now(),
-            })
+        let mut state = SessionRestoreState::new();
+        state.set_window_geometry(x, y, width, height);
+
+        prop_assert_eq!(state.window_geometry, Some((x, y, width, height)));
+
+        // Verify through JSON round-trip
+        let json = state.to_json().expect("serialization should succeed");
+        let restored = SessionRestoreState::from_json(&json)
+            .expect("deserialization should succeed");
+
+        prop_assert_eq!(restored.window_geometry, Some((x, y, width, height)));
+    }
+
+    /// Property: Panel restore data preserves session info
+    #[test]
+    fn panel_restore_data_preserves_session(
+        panel_id in panel_id_strategy(),
+        position in 0.0f64..1.0,
+        has_session in any::<bool>(),
+    ) {
+        let session = if has_session {
+            Some(SessionRestoreData::new(
+                Uuid::new_v4(),
+                "Test".to_string(),
+                "vnc".to_string(),
+                SessionType::Embedded,
+            ))
+        } else {
+            None
+        };
+
+        let panel = PanelRestoreData {
+            panel_id: panel_id.clone(),
+            session,
+            position,
+        };
+
+        prop_assert_eq!(panel.panel_id, panel_id);
+        prop_assert!((panel.position - position).abs() < f64::EPSILON);
+        prop_assert_eq!(panel.session.is_some(), has_session);
+    }
+
+    /// Property: Split layout with panels preserves order
+    #[test]
+    fn split_layout_preserves_panel_order(
+        panel_count in 0usize..5,
+        horizontal in any::<bool>(),
+    ) {
+        let mut layout = SplitLayoutRestoreData::split(horizontal, 0.5);
+
+        let panel_ids: Vec<String> = (0..panel_count)
+            .map(|i| format!("panel-{i}"))
             .collect();
 
-        let settings = SessionRestoreSettings {
-            enabled: true,
-            prompt_on_restore: false,
-            max_age_hours: 24,
-            saved_sessions: sessions.clone(),
-        };
+        for id in &panel_ids {
+            layout.add_panel(PanelRestoreData {
+                panel_id: id.clone(),
+                session: None,
+                position: 0.5,
+            });
+        }
 
-        let json = serde_json::to_string(&settings).unwrap();
-        let restored: SessionRestoreSettings = serde_json::from_str(&json).unwrap();
+        prop_assert_eq!(layout.panels.len(), panel_count);
 
-        prop_assert_eq!(settings.saved_sessions.len(), restored.saved_sessions.len());
-        for (orig, rest) in settings.saved_sessions.iter().zip(restored.saved_sessions.iter()) {
-            prop_assert_eq!(orig.connection_id, rest.connection_id);
-            prop_assert_eq!(&orig.connection_name, &rest.connection_name);
+        for (i, panel) in layout.panels.iter().enumerate() {
+            prop_assert_eq!(&panel.panel_id, &panel_ids[i]);
         }
     }
 }
 
-#[cfg(test)]
-mod unit_tests {
-    use super::*;
+#[test]
+fn test_session_restore_state_version() {
+    let state = SessionRestoreState::new();
+    assert_eq!(state.version, RESTORE_STATE_VERSION);
+}
 
-    #[test]
-    fn test_session_restore_settings_default() {
-        let settings = SessionRestoreSettings::default();
-        assert!(!settings.enabled);
-        assert!(settings.prompt_on_restore);
-        assert_eq!(settings.max_age_hours, 24);
-        assert!(settings.saved_sessions.is_empty());
-    }
+#[test]
+fn test_session_restore_data_touch_updates_timestamp() {
+    let mut data = SessionRestoreData::new(
+        Uuid::new_v4(),
+        "Test".to_string(),
+        "ssh".to_string(),
+        SessionType::Embedded,
+    );
 
-    #[test]
-    fn test_saved_session_equality() {
-        let id = Uuid::new_v4();
-        let now = chrono::Utc::now();
+    let original_saved_at = data.saved_at;
+    std::thread::sleep(std::time::Duration::from_millis(10));
+    data.touch();
 
-        let session1 = SavedSession {
-            connection_id: id,
-            connection_name: "Test".to_string(),
-            protocol: "ssh".to_string(),
-            host: "localhost".to_string(),
-            port: 22,
-            saved_at: now,
-        };
+    assert!(data.saved_at > original_saved_at);
+}
 
-        let session2 = SavedSession {
-            connection_id: id,
-            connection_name: "Test".to_string(),
-            protocol: "ssh".to_string(),
-            host: "localhost".to_string(),
-            port: 22,
-            saved_at: now,
-        };
-
-        assert_eq!(session1, session2);
-    }
+#[test]
+fn test_split_layout_default_is_not_split() {
+    let layout = SplitLayoutRestoreData::default();
+    assert!(!layout.is_split);
+    assert!(layout.panels.is_empty());
 }

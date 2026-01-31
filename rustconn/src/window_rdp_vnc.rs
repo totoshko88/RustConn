@@ -529,10 +529,22 @@ pub fn start_vnc_with_password_dialog(
     }
 
     // Get connection info for dialog
-    let (conn_name, conn_host) = {
+    let (conn_name, lookup_key) = {
         let state_ref = state.borrow();
         if let Some(conn) = state_ref.get_connection(connection_id) {
-            (conn.name.clone(), conn.host.clone())
+            // Build hierarchical entry path using KeePassHierarchy
+            let groups: Vec<rustconn_core::models::ConnectionGroup> =
+                state_ref.list_groups().iter().cloned().cloned().collect();
+            let entry_path =
+                rustconn_core::secret::KeePassHierarchy::build_entry_path(conn, &groups);
+
+            // Strip RustConn/ prefix since get_password_from_kdbx_with_key adds it back
+            let entry_name = entry_path
+                .strip_prefix("RustConn/")
+                .unwrap_or(&entry_path);
+            let key = format!("{entry_name} (vnc)");
+
+            (conn.name.clone(), key)
         } else {
             return;
         }
@@ -558,16 +570,8 @@ pub fn start_vnc_with_password_dialog(
                     .map(|p| p.expose_secret().to_string());
                 let key_file = settings.secrets.kdbx_key_file.clone();
 
-                // Build lookup key with protocol for uniqueness
-                // Format: "name (vnc)" or "host (vnc)" if name is empty
-                // Replace '/' with '-' to match how passwords are saved
-                let base_name = if conn_name.trim().is_empty() {
-                    conn_host.clone()
-                } else {
-                    conn_name.clone()
-                };
-                let sanitized_name = base_name.replace('/', "-");
-                let lookup_key = format!("{sanitized_name} (vnc)");
+                // Use pre-built lookup key with hierarchical path
+                let lookup_key_clone = lookup_key.clone();
 
                 // Get password entry for async callback
                 let password_entry = dialog.password_entry().clone();
@@ -582,7 +586,7 @@ pub fn start_vnc_with_password_dialog(
                             &kdbx_path,
                             db_password.as_deref(),
                             key_file.as_deref(),
-                            &lookup_key,
+                            &lookup_key_clone,
                             None, // Protocol already included in lookup_key
                         )
                     },

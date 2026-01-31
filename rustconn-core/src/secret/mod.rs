@@ -46,7 +46,7 @@ pub use hierarchy::{
 pub use kdbx::KdbxExporter;
 pub use keepassxc::KeePassXcBackend;
 pub use libsecret::LibSecretBackend;
-pub use manager::SecretManager;
+pub use manager::{BulkOperationResult, CredentialUpdate, SecretManager};
 pub use onepassword::{
     get_onepassword_status, get_onepassword_version, signout as onepassword_signout,
     OnePasswordBackend, OnePasswordStatus, OnePasswordVersion,

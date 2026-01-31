@@ -68,7 +68,9 @@ pub fn show_new_connection_dialog_internal(
         use secrecy::ExposeSecret;
         let state_ref = state.borrow();
         let settings = state_ref.settings();
-        dialog.connect_password_load_button(
+        let groups: Vec<rustconn_core::models::ConnectionGroup> =
+            state_ref.list_groups().iter().cloned().cloned().collect();
+        dialog.connect_password_load_button_with_groups(
             settings.secrets.kdbx_enabled,
             settings.secrets.kdbx_path.clone(),
             settings
@@ -77,6 +79,7 @@ pub fn show_new_connection_dialog_internal(
                 .as_ref()
                 .map(|p| p.expose_secret().to_string()),
             settings.secrets.kdbx_key_file.clone(),
+            groups,
         );
     }
 
@@ -113,12 +116,35 @@ pub fn show_new_connection_dialog_internal(
                                 let settings = state_mut.settings().clone();
                                 if settings.secrets.kdbx_enabled {
                                     if let Some(kdbx_path) = settings.secrets.kdbx_path.clone() {
+                                        // Build hierarchical entry path using connection's
+                                        // group structure
+                                        let groups: Vec<_> =
+                                            state_mut.list_groups().into_iter().cloned().collect();
+                                        let conn_for_path =
+                                            state_mut.get_connection(conn_id).cloned();
+
                                         let key_file = settings.secrets.kdbx_key_file.clone();
-                                        let entry_name = format!(
-                                            "{} ({})",
-                                            conn_name,
-                                            protocol.as_str().to_lowercase()
-                                        );
+                                        let entry_name = if let Some(ref conn) = conn_for_path {
+                                            // Use hierarchical path matching resolve_credentials
+                                            let entry_path =
+                                                rustconn_core::secret::KeePassHierarchy
+                                                    ::build_entry_path(conn, &groups);
+                                            let base_path = entry_path
+                                                .strip_prefix("RustConn/")
+                                                .unwrap_or(&entry_path);
+                                            format!(
+                                                "{} ({})",
+                                                base_path,
+                                                protocol.as_str().to_lowercase()
+                                            )
+                                        } else {
+                                            // Fallback to flat path if connection not found
+                                            format!(
+                                                "{} ({})",
+                                                conn_name,
+                                                protocol.as_str().to_lowercase()
+                                            )
+                                        };
                                         let username = conn_username.clone().unwrap_or_default();
                                         let url = format!(
                                             "{}://{}",
@@ -211,13 +237,13 @@ pub fn show_new_connection_dialog_internal(
 
                         // Save password to Bitwarden if password source is Bitwarden
                         if password_source == PasswordSource::Bitwarden {
-                            if let Some(pwd) = password {
+                            if let Some(pwd) = password.clone() {
                                 let lookup_key = format!(
                                     "{} ({})",
                                     conn_name.replace('/', "-"),
                                     protocol.as_str().to_lowercase()
                                 );
-                                let username = conn_username.unwrap_or_default();
+                                let username = conn_username.clone().unwrap_or_default();
 
                                 // Save password in background
                                 crate::utils::spawn_blocking_with_callback(
@@ -245,6 +271,46 @@ pub fn show_new_connection_dialog_internal(
                                         } else {
                                             tracing::info!(
                                                 "Password saved to Bitwarden for connection {}",
+                                                conn_id
+                                            );
+                                        }
+                                    },
+                                );
+                            }
+                        }
+
+                        // Save password to 1Password if password source is OnePassword
+                        if password_source == PasswordSource::OnePassword {
+                            if let Some(pwd) = password {
+                                let lookup_key = conn_id.to_string();
+                                let username = conn_username.unwrap_or_default();
+
+                                // Save password in background
+                                crate::utils::spawn_blocking_with_callback(
+                                    move || {
+                                        use rustconn_core::secret::SecretBackend;
+                                        let backend =
+                                            rustconn_core::secret::OnePasswordBackend::new();
+                                        let creds = Credentials {
+                                            username: Some(username),
+                                            password: Some(secrecy::SecretString::from(pwd)),
+                                            key_passphrase: None,
+                                            domain: None,
+                                        };
+                                        let rt = tokio::runtime::Runtime::new()
+                                            .map_err(|e| format!("Runtime error: {e}"))?;
+                                        rt.block_on(backend.store(&lookup_key, &creds))
+                                            .map_err(|e| format!("{e}"))
+                                    },
+                                    move |result: Result<(), String>| {
+                                        if let Err(e) = result {
+                                            tracing::error!(
+                                                "Failed to save password to 1Password: {}",
+                                                e
+                                            );
+                                        } else {
+                                            tracing::info!(
+                                                "Password saved to 1Password for connection {}",
                                                 conn_id
                                             );
                                         }
@@ -410,6 +476,7 @@ pub fn show_new_group_dialog_with_parent(
         "KeePass",
         "Keyring",
         "Bitwarden",
+        "1Password",
         "Inherit",
         "None",
     ]);
@@ -458,15 +525,15 @@ pub fn show_new_group_dialog_with_parent(
     password_value_row.add_suffix(&password_load_btn);
     credentials_group.add(&password_value_row);
 
-    // Show value row based on default selection (KeePass/Keyring/Bitwarden)
-    let show_value = matches!(default_source_idx, 1..=3);
+    // Show value row based on default selection (KeePass/Keyring/Bitwarden/1Password)
+    let show_value = matches!(default_source_idx, 1..=4);
     password_value_row.set_visible(show_value);
 
     // Connect password source dropdown to show/hide value row
     let value_row_clone = password_value_row.clone();
     password_source_dropdown.connect_selected_notify(move |dropdown| {
         let selected = dropdown.selected();
-        let show = matches!(selected, 1..=3);
+        let show = matches!(selected, 1..=4);
         value_row_clone.set_visible(show);
     });
 
@@ -692,13 +759,14 @@ pub fn show_new_group_dialog_with_parent(
             1 => PasswordSource::KeePass,
             2 => PasswordSource::Keyring,
             3 => PasswordSource::Bitwarden,
-            4 => PasswordSource::Inherit,
+            4 => PasswordSource::OnePassword,
+            5 => PasswordSource::Inherit,
             _ => PasswordSource::None,
         };
 
         let has_username = !username.trim().is_empty();
-        // Password is relevant only for KeePass, Keyring, Bitwarden
-        let has_password = !password.is_empty() && matches!(password_source_idx, 1..=3);
+        // Password is relevant only for KeePass, Keyring, Bitwarden, 1Password
+        let has_password = !password.is_empty() && matches!(password_source_idx, 1..=4);
         let has_domain = !domain.trim().is_empty();
 
         if let Ok(mut state_mut) = state_clone.try_borrow_mut() {

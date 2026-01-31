@@ -43,6 +43,7 @@
 
 #[cfg(feature = "rdp-embedded")]
 pub mod audio;
+pub mod backend;
 #[cfg(feature = "rdp-embedded")]
 mod client;
 #[cfg(feature = "rdp-embedded")]
@@ -62,6 +63,7 @@ pub mod reconnect;
 
 #[cfg(feature = "rdp-embedded")]
 pub use audio::AudioFormatInfo;
+pub use backend::{BackendDetectionResult, RdpBackend, RdpBackendSelector};
 #[cfg(feature = "rdp-embedded")]
 pub use client::{RdpClient, RdpClientState, RdpCommandSender, RdpEventReceiver};
 pub use config::{

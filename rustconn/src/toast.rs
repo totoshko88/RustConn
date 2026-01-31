@@ -218,10 +218,12 @@ impl ToastOverlay {
         // Show the toast
         self.revealer.set_reveal_child(true);
 
-        // Schedule hide
+        // Schedule hide - clone all needed components for the closure
         let revealer = self.revealer.clone();
         let is_showing = self.is_showing.clone();
         let queue = self.queue.clone();
+        let toast_label = self.toast_label.clone();
+        let toast_box = self.toast_box.clone();
 
         glib::timeout_add_local_once(
             std::time::Duration::from_millis(u64::from(toast.duration_ms)),
@@ -231,17 +233,101 @@ impl ToastOverlay {
                 // Wait for animation to complete before showing next
                 let is_showing_inner = is_showing.clone();
                 let queue_inner = queue.clone();
+                let revealer_inner = revealer.clone();
+                let toast_label_inner = toast_label.clone();
+                let toast_box_inner = toast_box.clone();
+
                 glib::timeout_add_local_once(std::time::Duration::from_millis(250), move || {
                     *is_showing_inner.borrow_mut() = false;
 
                     // Try to show next toast if any
-                    if !queue_inner.borrow().is_empty() {
-                        // Create a temporary overlay to call try_show_next
-                        // This is a workaround since we can't easily call self methods from closure
-                        let next_toast = queue_inner.borrow_mut().pop_front();
-                        if let Some(next) = next_toast {
-                            queue_inner.borrow_mut().push_front(next);
-                        }
+                    let next_toast = queue_inner.borrow_mut().pop_front();
+                    if let Some(next) = next_toast {
+                        // Mark as showing
+                        *is_showing_inner.borrow_mut() = true;
+
+                        // Update toast appearance
+                        toast_label_inner.set_text(&next.message);
+
+                        // Update CSS classes for toast type
+                        toast_box_inner.remove_css_class("toast-info");
+                        toast_box_inner.remove_css_class("toast-success");
+                        toast_box_inner.remove_css_class("toast-warning");
+                        toast_box_inner.remove_css_class("toast-error");
+                        toast_box_inner.add_css_class(next.toast_type.css_class());
+
+                        // Show the toast
+                        revealer_inner.set_reveal_child(true);
+
+                        // Schedule hide for this toast (recursive via another timeout)
+                        Self::schedule_toast_hide(
+                            revealer_inner,
+                            is_showing_inner,
+                            queue_inner,
+                            toast_label_inner,
+                            toast_box_inner,
+                            next.duration_ms,
+                        );
+                    }
+                });
+            },
+        );
+    }
+
+    /// Schedules hiding a toast and showing the next one from queue
+    ///
+    /// This is a helper to avoid code duplication in the recursive toast display logic.
+    fn schedule_toast_hide(
+        revealer: Revealer,
+        is_showing: Rc<RefCell<bool>>,
+        queue: Rc<RefCell<VecDeque<QueuedToast>>>,
+        toast_label: Label,
+        toast_box: GtkBox,
+        duration_ms: u32,
+    ) {
+        glib::timeout_add_local_once(
+            std::time::Duration::from_millis(u64::from(duration_ms)),
+            move || {
+                revealer.set_reveal_child(false);
+
+                // Wait for animation to complete before showing next
+                let is_showing_inner = is_showing.clone();
+                let queue_inner = queue.clone();
+                let revealer_inner = revealer.clone();
+                let toast_label_inner = toast_label.clone();
+                let toast_box_inner = toast_box.clone();
+
+                glib::timeout_add_local_once(std::time::Duration::from_millis(250), move || {
+                    *is_showing_inner.borrow_mut() = false;
+
+                    // Try to show next toast if any
+                    let next_toast = queue_inner.borrow_mut().pop_front();
+                    if let Some(next) = next_toast {
+                        // Mark as showing
+                        *is_showing_inner.borrow_mut() = true;
+
+                        // Update toast appearance
+                        toast_label_inner.set_text(&next.message);
+
+                        // Update CSS classes for toast type
+                        toast_box_inner.remove_css_class("toast-info");
+                        toast_box_inner.remove_css_class("toast-success");
+                        toast_box_inner.remove_css_class("toast-warning");
+                        toast_box_inner.remove_css_class("toast-error");
+                        toast_box_inner.add_css_class(next.toast_type.css_class());
+
+                        // Show the toast
+                        revealer_inner.set_reveal_child(true);
+
+                        // Schedule hide for this toast (recursive)
+                        Self::schedule_toast_hide(
+                            revealer_inner,
+                            is_showing_inner,
+                            queue_inner,
+                            toast_label_inner,
+                            toast_box_inner,
+                            next.duration_ms,
+                        );
                     }
                 });
             },

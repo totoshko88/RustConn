@@ -7,10 +7,88 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+use secrecy::SecretString;
+use uuid::Uuid;
+
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
 
 use super::backend::SecretBackend;
+
+/// Result of a bulk credential operation
+#[derive(Debug, Clone)]
+pub struct BulkOperationResult {
+    /// Number of successful operations
+    pub success_count: usize,
+    /// Number of failed operations
+    pub failure_count: usize,
+    /// IDs of connections that failed
+    pub failed_ids: Vec<Uuid>,
+    /// Error messages for failed operations
+    pub errors: Vec<String>,
+}
+
+impl BulkOperationResult {
+    /// Creates a new empty result
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            success_count: 0,
+            failure_count: 0,
+            failed_ids: Vec::new(),
+            errors: Vec::new(),
+        }
+    }
+
+    /// Returns true if all operations succeeded
+    #[must_use]
+    pub const fn is_success(&self) -> bool {
+        self.failure_count == 0
+    }
+
+    /// Returns true if any operations failed
+    #[must_use]
+    pub const fn has_failures(&self) -> bool {
+        self.failure_count > 0
+    }
+
+    /// Returns the total number of operations attempted
+    #[must_use]
+    pub const fn total(&self) -> usize {
+        self.success_count + self.failure_count
+    }
+
+    /// Records a successful operation
+    fn record_success(&mut self) {
+        self.success_count += 1;
+    }
+
+    /// Records a failed operation
+    fn record_failure(&mut self, id: Uuid, error: String) {
+        self.failure_count += 1;
+        self.failed_ids.push(id);
+        self.errors.push(error);
+    }
+}
+
+impl Default for BulkOperationResult {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Specification for updating credentials in bulk
+#[derive(Debug, Clone)]
+pub struct CredentialUpdate {
+    /// New username (None = keep existing)
+    pub username: Option<String>,
+    /// New password (None = keep existing)
+    pub password: Option<SecretString>,
+    /// New domain (None = keep existing)
+    pub domain: Option<String>,
+    /// Whether to clear the password
+    pub clear_password: bool,
+}
 
 /// Composite secret manager with fallback support
 ///
@@ -230,5 +308,246 @@ impl SecretManager {
 impl Default for SecretManager {
     fn default() -> Self {
         Self::empty()
+    }
+}
+
+impl CredentialUpdate {
+    /// Creates a new credential update with no changes
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            username: None,
+            password: None,
+            domain: None,
+            clear_password: false,
+        }
+    }
+
+    /// Sets the new username
+    #[must_use]
+    pub fn with_username(mut self, username: impl Into<String>) -> Self {
+        self.username = Some(username.into());
+        self
+    }
+
+    /// Sets the new password
+    #[must_use]
+    pub fn with_password(mut self, password: impl Into<String>) -> Self {
+        self.password = Some(SecretString::from(password.into()));
+        self
+    }
+
+    /// Sets the new domain
+    #[must_use]
+    pub fn with_domain(mut self, domain: impl Into<String>) -> Self {
+        self.domain = Some(domain.into());
+        self
+    }
+
+    /// Marks the password to be cleared
+    #[must_use]
+    pub const fn with_clear_password(mut self) -> Self {
+        self.clear_password = true;
+        self
+    }
+
+    /// Applies this update to existing credentials
+    #[must_use]
+    pub fn apply(&self, existing: &Credentials) -> Credentials {
+        Credentials {
+            username: self.username.clone().or_else(|| existing.username.clone()),
+            password: if self.clear_password {
+                None
+            } else {
+                self.password.clone().or_else(|| existing.password.clone())
+            },
+            key_passphrase: existing.key_passphrase.clone(),
+            domain: self.domain.clone().or_else(|| existing.domain.clone()),
+        }
+    }
+}
+
+impl Default for CredentialUpdate {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+// Bulk operations implementation
+impl SecretManager {
+    /// Store credentials for multiple connections
+    ///
+    /// # Arguments
+    /// * `credentials_map` - Map of connection IDs to credentials
+    ///
+    /// # Returns
+    /// Result with success/failure counts
+    pub async fn store_bulk(
+        &self,
+        credentials_map: &HashMap<Uuid, Credentials>,
+    ) -> BulkOperationResult {
+        let mut result = BulkOperationResult::new();
+
+        for (id, creds) in credentials_map {
+            match self.store(&id.to_string(), creds).await {
+                Ok(()) => result.record_success(),
+                Err(e) => result.record_failure(*id, e.to_string()),
+            }
+        }
+
+        result
+    }
+
+    /// Delete credentials for multiple connections
+    ///
+    /// # Arguments
+    /// * `connection_ids` - List of connection IDs to delete credentials for
+    ///
+    /// # Returns
+    /// Result with success/failure counts
+    pub async fn delete_bulk(&self, connection_ids: &[Uuid]) -> BulkOperationResult {
+        let mut result = BulkOperationResult::new();
+
+        for id in connection_ids {
+            match self.delete(&id.to_string()).await {
+                Ok(()) => result.record_success(),
+                Err(e) => result.record_failure(*id, e.to_string()),
+            }
+        }
+
+        result
+    }
+
+    /// Update credentials for multiple connections with the same update
+    ///
+    /// This is useful for updating username/password across a group of connections.
+    ///
+    /// # Arguments
+    /// * `connection_ids` - List of connection IDs to update
+    /// * `update` - The credential update to apply
+    ///
+    /// # Returns
+    /// Result with success/failure counts
+    pub async fn update_bulk(
+        &self,
+        connection_ids: &[Uuid],
+        update: &CredentialUpdate,
+    ) -> BulkOperationResult {
+        let mut result = BulkOperationResult::new();
+
+        for id in connection_ids {
+            let id_str = id.to_string();
+
+            // Retrieve existing credentials
+            let existing = match self.retrieve(&id_str).await {
+                Ok(Some(creds)) => creds,
+                Ok(None) => Credentials::empty(),
+                Err(e) => {
+                    result.record_failure(*id, format!("Failed to retrieve: {e}"));
+                    continue;
+                }
+            };
+
+            // Apply update
+            let updated = update.apply(&existing);
+
+            // Store updated credentials
+            match self.store(&id_str, &updated).await {
+                Ok(()) => result.record_success(),
+                Err(e) => result.record_failure(*id, format!("Failed to store: {e}")),
+            }
+        }
+
+        result
+    }
+
+    /// Update credentials for all connections in a group
+    ///
+    /// # Arguments
+    /// * `group_connection_ids` - List of connection IDs in the group
+    /// * `update` - The credential update to apply
+    ///
+    /// # Returns
+    /// Result with success/failure counts
+    pub async fn update_credentials_for_group(
+        &self,
+        group_connection_ids: &[Uuid],
+        update: &CredentialUpdate,
+    ) -> BulkOperationResult {
+        self.update_bulk(group_connection_ids, update).await
+    }
+
+    /// Retrieve credentials for multiple connections
+    ///
+    /// # Arguments
+    /// * `connection_ids` - List of connection IDs to retrieve
+    ///
+    /// # Returns
+    /// Map of connection IDs to credentials (only includes found credentials)
+    pub async fn retrieve_bulk(&self, connection_ids: &[Uuid]) -> HashMap<Uuid, Credentials> {
+        let mut result = HashMap::new();
+
+        for id in connection_ids {
+            if let Ok(Some(creds)) = self.retrieve(&id.to_string()).await {
+                result.insert(*id, creds);
+            }
+        }
+
+        result
+    }
+
+    /// Copy credentials from one connection to others
+    ///
+    /// # Arguments
+    /// * `source_id` - Connection ID to copy credentials from
+    /// * `target_ids` - Connection IDs to copy credentials to
+    ///
+    /// # Returns
+    /// Result with success/failure counts
+    ///
+    /// # Errors
+    /// Returns error if source credentials cannot be retrieved
+    pub async fn copy_credentials(
+        &self,
+        source_id: Uuid,
+        target_ids: &[Uuid],
+    ) -> SecretResult<BulkOperationResult> {
+        // Retrieve source credentials
+        let source_creds = self
+            .retrieve(&source_id.to_string())
+            .await?
+            .ok_or_else(|| {
+                SecretError::RetrieveFailed(format!("Source credentials not found: {source_id}"))
+            })?;
+
+        let mut result = BulkOperationResult::new();
+
+        for target_id in target_ids {
+            match self.store(&target_id.to_string(), &source_creds).await {
+                Ok(()) => result.record_success(),
+                Err(e) => result.record_failure(*target_id, e.to_string()),
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Check which connections have stored credentials
+    ///
+    /// # Arguments
+    /// * `connection_ids` - List of connection IDs to check
+    ///
+    /// # Returns
+    /// List of connection IDs that have stored credentials
+    pub async fn connections_with_credentials(&self, connection_ids: &[Uuid]) -> Vec<Uuid> {
+        let mut result = Vec::new();
+
+        for id in connection_ids {
+            if let Ok(Some(_)) = self.retrieve(&id.to_string()).await {
+                result.push(*id);
+            }
+        }
+
+        result
     }
 }

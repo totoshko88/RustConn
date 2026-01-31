@@ -1,3 +1,10 @@
+rustconn (0.6.9-1) unstable; urgency=medium
+
+  * Version bump to 0.6.9
+  * Fixed Local Shell tabs not appearing in Split View "Select Tab" dialog
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Sat, 31 Jan 2026 12:00:00 +0200
+
 rustconn (0.6.8-1) unstable; urgency=medium
 
   * Version bump to 0.6.8

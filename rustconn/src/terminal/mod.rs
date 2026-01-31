@@ -47,6 +47,8 @@ pub struct TerminalNotebook {
     tab_bar: adw::TabBar,
     /// Map of session IDs to their TabPage
     sessions: Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
+    /// Callback for when a page is closed (session_id, connection_id)
+    on_page_closed: Rc<RefCell<Option<Box<dyn Fn(Uuid, Uuid)>>>>,
     /// Map of session IDs to terminal widgets (for SSH sessions)
     terminals: Rc<RefCell<HashMap<Uuid, Terminal>>>,
     /// Map of session IDs to session widgets (for VNC/RDP/SPICE sessions)
@@ -102,6 +104,7 @@ impl TerminalNotebook {
             tab_view,
             tab_bar,
             sessions: Rc::new(RefCell::new(HashMap::new())),
+            on_page_closed: Rc::new(RefCell::new(None)),
             terminals: Rc::new(RefCell::new(HashMap::new())),
             session_widgets: Rc::new(RefCell::new(HashMap::new())),
             automation_sessions: Rc::new(RefCell::new(HashMap::new())),
@@ -123,6 +126,7 @@ impl TerminalNotebook {
         let tab_view = self.tab_view.clone();
         let split_manager = self.split_manager.clone();
         let session_tab_ids = self.session_tab_ids.clone();
+        let on_page_closed = self.on_page_closed.clone();
 
         // Handle create-window signal - we must connect this to prevent the default
         // behavior which causes CRITICAL warnings. Returning None cancels the tearoff.
@@ -139,15 +143,27 @@ impl TerminalNotebook {
         // Handle close-page signal
         self.tab_view.connect_close_page(move |view, page| {
             // Find session ID for this page
-            let session_id = {
+            let (session_id, connection_id) = {
                 let sessions_ref = sessions.borrow();
+                let info_ref = session_info.borrow();
                 sessions_ref
                     .iter()
                     .find(|(_, p)| *p == page)
-                    .map(|(id, _)| *id)
+                    .map(|(id, _)| {
+                        let conn_id = info_ref.get(id).map(|i| i.connection_id);
+                        (*id, conn_id)
+                    })
+                    .unwrap_or((Uuid::nil(), None))
             };
 
-            if let Some(session_id) = session_id {
+            if !session_id.is_nil() {
+                // Call the on_page_closed callback to update sidebar status
+                if let Some(conn_id) = connection_id {
+                    if let Some(ref callback) = *on_page_closed.borrow() {
+                        callback(session_id, conn_id);
+                    }
+                }
+
                 // Clean up split layout for this session's tab
                 // Requirement 3.4: Split_Container is destroyed when tab is closed
                 if let Some(tab_id) = session_tab_ids.borrow_mut().remove(&session_id) {
@@ -1226,6 +1242,21 @@ impl TerminalNotebook {
         } else {
             None
         }
+    }
+
+    /// Sets the callback to be invoked when a page is closed.
+    ///
+    /// The callback receives the session ID and connection ID of the closed page.
+    /// This is used to update the sidebar status when SSH tabs are closed via TabView.
+    ///
+    /// # Arguments
+    ///
+    /// * `callback` - A closure that takes (session_id, connection_id) as parameters
+    pub fn set_on_page_closed<F>(&self, callback: F)
+    where
+        F: Fn(Uuid, Uuid) + 'static,
+    {
+        *self.on_page_closed.borrow_mut() = Some(Box::new(callback));
     }
 }
 

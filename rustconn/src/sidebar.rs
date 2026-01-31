@@ -1293,36 +1293,54 @@ impl ConnectionSidebar {
 
     /// Decrements the session count for a connection
     ///
-    /// Call this when closing a session. Status changes to disconnected only
-    /// when the last session is closed (active_count reaches 0).
+    /// Call this when closing a session. Status is cleared when the last
+    /// session is closed (active_count reaches 0).
     ///
     /// Returns the new status after decrement.
-    pub fn decrement_session_count(&self, id: &str, failed: bool) -> String {
+    pub fn decrement_session_count(&self, id: &str, _failed: bool) -> String {
         let status = {
             let mut statuses = self.connection_statuses.borrow_mut();
             if let Some(info) = statuses.get_mut(id) {
                 info.active_count = info.active_count.saturating_sub(1);
                 tracing::debug!(
-                    "[Sidebar] decrement_session_count: id={}, count={}, failed={}",
+                    "[Sidebar] decrement_session_count: id={}, new_count={}",
                     id,
                     info.active_count,
-                    failed
                 );
                 if info.active_count == 0 {
-                    info.status = if failed {
-                        "failed".to_string()
-                    } else {
-                        "disconnected".to_string()
-                    };
+                    // Clear status when no active sessions - status icons are only
+                    // meaningful for open tabs
+                    info.status = String::new();
+                    tracing::debug!(
+                        "[Sidebar] decrement_session_count: clearing status for id={}",
+                        id
+                    );
                 }
                 // If still has active sessions, keep "connected" status
                 info.status.clone()
             } else {
-                "disconnected".to_string()
+                tracing::debug!(
+                    "[Sidebar] decrement_session_count: id={} not found in statuses",
+                    id
+                );
+                String::new()
             }
         };
 
-        Self::update_item_status_recursive(self.store.upcast_ref::<gio::ListModel>(), id, &status);
+        tracing::debug!(
+            "[Sidebar] decrement_session_count: calling update_item_status_recursive for id={}, status='{}'",
+            id,
+            status
+        );
+        let found = Self::update_item_status_recursive(
+            self.store.upcast_ref::<gio::ListModel>(),
+            id,
+            &status,
+        );
+        tracing::debug!(
+            "[Sidebar] decrement_session_count: update_item_status_recursive returned found={}",
+            found
+        );
         status
     }
 
