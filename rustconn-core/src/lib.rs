@@ -70,7 +70,7 @@ pub use connection::{
     check_interning_stats, check_port, check_port_async, get_interning_stats,
     intern_connection_strings, intern_hostname, intern_protocol_name, intern_username,
     log_interning_stats, log_interning_stats_with_warning, ConnectionManager, LazyGroupLoader,
-    PortCheckError, PortCheckResult, SelectionState, VirtualScrollConfig,
+    PortCheckError, PortCheckResult, RetryConfig, RetryState, SelectionState, VirtualScrollConfig,
 };
 pub use dashboard::{DashboardFilter, SessionStats};
 pub use document::{

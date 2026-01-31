@@ -3751,7 +3751,7 @@ fn cmd_secret_status() -> Result<(), CliError> {
 fn cmd_secret_get(connection_name: &str, backend: Option<&str>) -> Result<(), CliError> {
     use rustconn_core::config::SecretBackendType;
     use rustconn_core::models::Credentials;
-    use rustconn_core::secret::{KeePassStatus, LibSecretBackend, SecretBackend};
+    use rustconn_core::secret::{KeePassHierarchy, KeePassStatus, LibSecretBackend, SecretBackend};
 
     let config_manager = ConfigManager::new()
         .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
@@ -3760,8 +3760,20 @@ fn cmd_secret_get(connection_name: &str, backend: Option<&str>) -> Result<(), Cl
         .load_connections()
         .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
 
+    let groups = config_manager
+        .load_groups()
+        .map_err(|e| CliError::Config(format!("Failed to load groups: {e}")))?;
+
     let connection = find_connection(&connections, connection_name)?;
+    // Flat key for Keyring/Bitwarden
     let lookup_key = format!("{} ({})", connection.name, connection.protocol.as_str());
+    // Hierarchical key for KeePass (matches GUI format)
+    let keepass_base = KeePassHierarchy::build_entry_path(connection, &groups);
+    let keepass_key = format!(
+        "{} ({})",
+        keepass_base.strip_prefix("RustConn/").unwrap_or(&keepass_base),
+        connection.protocol.as_str().to_lowercase()
+    );
 
     let settings = config_manager
         .load_settings()
@@ -3773,9 +3785,10 @@ fn cmd_secret_get(connection_name: &str, backend: Option<&str>) -> Result<(), Cl
             "keyring" | "libsecret" => SecretBackendType::LibSecret,
             "keepass" | "kdbx" | "keepassxc" => SecretBackendType::KdbxFile,
             "bitwarden" | "bw" => SecretBackendType::Bitwarden,
+            "1password" | "onepassword" | "op" => SecretBackendType::OnePassword,
             _ => {
                 return Err(CliError::Secret(format!(
-                    "Unknown backend: {b}. Use: keyring, keepass, or bitwarden"
+                    "Unknown backend: {b}. Use: keyring, keepass, bitwarden, or 1password"
                 )))
             }
         }
@@ -3828,11 +3841,12 @@ fn cmd_secret_get(connection_name: &str, backend: Option<&str>) -> Result<(), Cl
                 .as_ref()
                 .map(std::path::Path::new);
 
+            // Use hierarchical key matching GUI format
             let result = KeePassStatus::get_password_from_kdbx_with_key(
                 std::path::Path::new(kdbx_path),
                 None, // No password, using key file
                 key_file,
-                &lookup_key,
+                &keepass_key,
                 Some(connection.protocol.as_str()),
             );
 
@@ -3915,6 +3929,7 @@ fn cmd_secret_get(connection_name: &str, backend: Option<&str>) -> Result<(), Cl
 }
 
 /// Store password for a connection
+#[allow(clippy::too_many_lines)]
 fn cmd_secret_set(
     connection_name: &str,
     username: Option<&str>,
@@ -3922,7 +3937,7 @@ fn cmd_secret_set(
     backend: Option<&str>,
 ) -> Result<(), CliError> {
     use rustconn_core::config::SecretBackendType;
-    use rustconn_core::secret::KeePassStatus;
+    use rustconn_core::secret::{KeePassHierarchy, KeePassStatus};
 
     let config_manager = ConfigManager::new()
         .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
@@ -3931,8 +3946,20 @@ fn cmd_secret_set(
         .load_connections()
         .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
 
+    let groups = config_manager
+        .load_groups()
+        .map_err(|e| CliError::Config(format!("Failed to load groups: {e}")))?;
+
     let connection = find_connection(&connections, connection_name)?;
+    // Flat key for Keyring/Bitwarden
     let lookup_key = format!("{} ({})", connection.name, connection.protocol.as_str());
+    // Hierarchical key for KeePass (matches GUI format)
+    let keepass_base = KeePassHierarchy::build_entry_path(connection, &groups);
+    let keepass_key = format!(
+        "{} ({})",
+        keepass_base.strip_prefix("RustConn/").unwrap_or(&keepass_base),
+        connection.protocol.as_str().to_lowercase()
+    );
 
     let settings = config_manager
         .load_settings()
@@ -3944,9 +3971,10 @@ fn cmd_secret_set(
             "keyring" | "libsecret" => SecretBackendType::LibSecret,
             "keepass" | "kdbx" | "keepassxc" => SecretBackendType::KdbxFile,
             "bitwarden" | "bw" => SecretBackendType::Bitwarden,
+            "1password" | "onepassword" | "op" => SecretBackendType::OnePassword,
             _ => {
                 return Err(CliError::Secret(format!(
-                    "Unknown backend: {b}. Use: keyring, keepass, or bitwarden"
+                    "Unknown backend: {b}. Use: keyring, keepass, bitwarden, or 1password"
                 )))
             }
         }
@@ -4009,14 +4037,20 @@ fn cmd_secret_set(
                 .as_ref()
                 .map(std::path::Path::new);
 
+            // Use hierarchical key matching GUI format
             KeePassStatus::save_password_to_kdbx(
                 std::path::Path::new(kdbx_path),
                 None,
                 key_file,
-                &lookup_key,
+                &keepass_key,
                 &username_value,
                 &password_value,
-                Some(&format!("{}:{}", connection.host, connection.port)),
+                Some(&format!(
+                    "{}://{}:{}",
+                    connection.protocol.as_str().to_lowercase(),
+                    connection.host,
+                    connection.port
+                )),
             )
             .map_err(|e| CliError::Secret(format!("KeePass error: {e}")))?;
 
@@ -4026,19 +4060,64 @@ fn cmd_secret_set(
             );
             Ok(())
         }
-        SecretBackendType::Bitwarden => Err(CliError::Secret(
-            "Bitwarden storage via CLI is not yet supported. Use 'bw' CLI directly.".into(),
-        )),
-        SecretBackendType::OnePassword => Err(CliError::Secret(
-            "1Password storage via CLI is not yet supported. Use 'op' CLI directly.".into(),
-        )),
+        SecretBackendType::Bitwarden => {
+            use rustconn_core::models::Credentials;
+            use rustconn_core::secret::{BitwardenBackend, SecretBackend};
+
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = BitwardenBackend::new();
+            let creds = Credentials {
+                username: Some(username_value.clone()),
+                password: Some(secrecy::SecretString::from(password_value)),
+                key_passphrase: None,
+                domain: connection.domain.clone(),
+            };
+
+            rt.block_on(backend.store(&lookup_key, &creds))
+                .map_err(|e| CliError::Secret(format!("Bitwarden error: {e}")))?;
+
+            println!(
+                "Stored credentials for '{}' in Bitwarden (user: {})",
+                connection.name, username_value
+            );
+            Ok(())
+        }
+        SecretBackendType::OnePassword => {
+            use rustconn_core::models::Credentials;
+            use rustconn_core::secret::{OnePasswordBackend, SecretBackend};
+
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = OnePasswordBackend::new();
+            let creds = Credentials {
+                username: Some(username_value.clone()),
+                password: Some(secrecy::SecretString::from(password_value)),
+                key_passphrase: None,
+                domain: connection.domain.clone(),
+            };
+
+            // 1Password uses connection ID as key
+            let op_key = connection.id.to_string();
+            rt.block_on(backend.store(&op_key, &creds))
+                .map_err(|e| CliError::Secret(format!("1Password error: {e}")))?;
+
+            println!(
+                "Stored credentials for '{}' in 1Password (user: {})",
+                connection.name, username_value
+            );
+            Ok(())
+        }
     }
 }
 
 /// Delete password for a connection
+#[allow(clippy::too_many_lines)]
 fn cmd_secret_delete(connection_name: &str, backend: Option<&str>) -> Result<(), CliError> {
     use rustconn_core::config::SecretBackendType;
-    use rustconn_core::secret::{LibSecretBackend, SecretBackend};
+    use rustconn_core::secret::{KeePassHierarchy, KeePassStatus, LibSecretBackend, SecretBackend};
 
     let config_manager = ConfigManager::new()
         .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
@@ -4047,8 +4126,20 @@ fn cmd_secret_delete(connection_name: &str, backend: Option<&str>) -> Result<(),
         .load_connections()
         .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
 
+    let groups = config_manager
+        .load_groups()
+        .map_err(|e| CliError::Config(format!("Failed to load groups: {e}")))?;
+
     let connection = find_connection(&connections, connection_name)?;
+    // Flat key for Keyring/Bitwarden
     let lookup_key = format!("{} ({})", connection.name, connection.protocol.as_str());
+    // Hierarchical key for KeePass (matches GUI format)
+    let keepass_base = KeePassHierarchy::build_entry_path(connection, &groups);
+    let keepass_entry_path = format!(
+        "{} ({})",
+        keepass_base,
+        connection.protocol.as_str().to_lowercase()
+    );
 
     let settings = config_manager
         .load_settings()
@@ -4060,9 +4151,10 @@ fn cmd_secret_delete(connection_name: &str, backend: Option<&str>) -> Result<(),
             "keyring" | "libsecret" => SecretBackendType::LibSecret,
             "keepass" | "kdbx" | "keepassxc" => SecretBackendType::KdbxFile,
             "bitwarden" | "bw" => SecretBackendType::Bitwarden,
+            "1password" | "onepassword" | "op" => SecretBackendType::OnePassword,
             _ => {
                 return Err(CliError::Secret(format!(
-                    "Unknown backend: {b}. Use: keyring, keepass, or bitwarden"
+                    "Unknown backend: {b}. Use: keyring, keepass, bitwarden, or 1password"
                 )))
             }
         }
@@ -4083,23 +4175,70 @@ fn cmd_secret_delete(connection_name: &str, backend: Option<&str>) -> Result<(),
             Ok(())
         }
         SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
-            // KeePass deletion would require implementing delete in KeePassStatus
-            Err(CliError::Secret(
-                "KeePass credential deletion via CLI is not yet supported. \
-                 Use KeePassXC application to delete entries."
-                    .into(),
-            ))
+            if !settings.secrets.kdbx_enabled {
+                return Err(CliError::Secret(
+                    "KeePass is not enabled in settings".into(),
+                ));
+            }
+            let Some(ref kdbx_path) = settings.secrets.kdbx_path else {
+                return Err(CliError::Secret("KeePass database not configured".into()));
+            };
+
+            let key_file = settings
+                .secrets
+                .kdbx_key_file
+                .as_ref()
+                .map(std::path::Path::new);
+
+            // Use delete_kdbx_entry via KeePassStatus
+            KeePassStatus::delete_entry_from_kdbx(
+                std::path::Path::new(kdbx_path),
+                None,
+                key_file,
+                &keepass_entry_path,
+            )
+            .map_err(|e| CliError::Secret(format!("KeePass error: {e}")))?;
+
+            println!(
+                "Deleted credentials for '{}' from KeePass",
+                connection.name
+            );
+            Ok(())
         }
-        SecretBackendType::Bitwarden => Err(CliError::Secret(
-            "Bitwarden credential deletion via CLI is not yet supported. \
-             Use 'bw' CLI directly."
-                .into(),
-        )),
-        SecretBackendType::OnePassword => Err(CliError::Secret(
-            "1Password credential deletion via CLI is not yet supported. \
-             Use 'op' CLI directly."
-                .into(),
-        )),
+        SecretBackendType::Bitwarden => {
+            use rustconn_core::secret::BitwardenBackend;
+
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = BitwardenBackend::new();
+            rt.block_on(backend.delete(&lookup_key))
+                .map_err(|e| CliError::Secret(format!("Bitwarden error: {e}")))?;
+
+            println!(
+                "Deleted credentials for '{}' from Bitwarden",
+                connection.name
+            );
+            Ok(())
+        }
+        SecretBackendType::OnePassword => {
+            use rustconn_core::secret::OnePasswordBackend;
+
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = OnePasswordBackend::new();
+            // 1Password uses connection ID as key
+            let op_key = connection.id.to_string();
+            rt.block_on(backend.delete(&op_key))
+                .map_err(|e| CliError::Secret(format!("1Password error: {e}")))?;
+
+            println!(
+                "Deleted credentials for '{}' from 1Password",
+                connection.name
+            );
+            Ok(())
+        }
     }
 }
 

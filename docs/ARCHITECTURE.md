@@ -80,10 +80,38 @@ fn update_something(state: &SharedAppState) {
 }
 ```
 
+**Safe State Access Helpers:**
+
+To reduce RefCell borrow panics, use the helper functions:
+
+```rust
+// Safe read access
+with_state(&state, |s| {
+    let connections = s.connection_manager().connections();
+    // Use data...
+});
+
+// Safe read with error handling
+let result = try_with_state(&state, |s| {
+    s.connection_manager().get_connection(id)
+});
+
+// Safe write access
+with_state_mut(&state, |s| {
+    s.connection_manager_mut().add_connection(conn);
+});
+
+// Safe write with error handling
+let result = try_with_state_mut(&state, |s| {
+    s.connection_manager_mut().update_connection(conn)
+});
+```
+
 **Rules:**
 - Never hold a borrow across an async boundary
 - Never hold a borrow when calling GTK methods that might trigger callbacks
 - Prefer short-lived borrows over storing references
+- Use `with_state`/`with_state_mut` helpers for safer access
 
 ### Manager Pattern
 
@@ -98,6 +126,84 @@ Each domain has a dedicated manager in `rustconn-core`:
 | `DocumentManager` | Multi-document support |
 | `SnippetManager` | Command snippets |
 | `ClusterManager` | Connection clusters |
+
+### Connection Retry
+
+The `retry` module (`rustconn-core/src/connection/retry.rs`) provides automatic retry with exponential backoff:
+
+```rust
+// Configure retry behavior
+let config = RetryConfig::default()
+    .with_max_attempts(5)
+    .with_base_delay(Duration::from_secs(1))
+    .with_max_delay(Duration::from_secs(30))
+    .with_jitter(true);
+
+// Or use presets
+let aggressive = RetryConfig::aggressive();   // 10 attempts, 500ms base
+let conservative = RetryConfig::conservative(); // 3 attempts, 2s base
+let no_retry = RetryConfig::no_retry();       // Single attempt
+
+// Track retry state
+let mut state = RetryState::new(&config);
+while state.should_retry() {
+    match attempt_connection().await {
+        Ok(conn) => return Ok(conn),
+        Err(e) if e.is_retryable() => {
+            let delay = state.next_delay();
+            tokio::time::sleep(delay).await;
+        }
+        Err(e) => return Err(e),
+    }
+}
+```
+
+### Session Health Monitoring
+
+The `SessionManager` includes health check capabilities:
+
+```rust
+// Configure health checks
+let config = HealthCheckConfig::default()
+    .with_interval(Duration::from_secs(30))
+    .with_auto_cleanup(true);
+
+// Check session health
+let status = session_manager.get_session_health(session_id);
+match status {
+    HealthStatus::Healthy => { /* Session is active */ }
+    HealthStatus::Unhealthy(reason) => { /* Connection issues */ }
+    HealthStatus::Unknown => { /* Status not determined */ }
+    HealthStatus::Terminated => { /* Session ended */ }
+}
+
+// Get all unhealthy sessions
+let problems = session_manager.unhealthy_sessions();
+```
+
+### Session State Persistence
+
+The `restore` module (`rustconn-core/src/session/restore.rs`) handles session persistence:
+
+```rust
+// Save session state
+let restore_data = SessionRestoreData {
+    connection_id: conn.id,
+    protocol: conn.protocol.clone(),
+    started_at: session.started_at,
+    split_layout: Some(SplitLayoutRestoreData { ... }),
+};
+
+let state = SessionRestoreState::new();
+state.add_session(restore_data);
+state.save_to_file(&config_dir.join("sessions.json"))?;
+
+// Restore on startup
+let state = SessionRestoreState::load_from_file(&path)?;
+for session in state.sessions_within_age(max_age) {
+    restore_session(session);
+}
+```
 
 Managers own their data and handle I/O. They don't know about GTK.
 
@@ -188,10 +294,43 @@ where
 }
 ```
 
+### Async Utilities Module
+
+The `async_utils` module (`rustconn/src/async_utils.rs`) provides helpers for async operations in GTK:
+
+```rust
+// Non-blocking async on GLib main context
+spawn_async(async move {
+    let result = fetch_data().await;
+    update_ui(result);
+});
+
+// Async with callback for result handling
+spawn_async_with_callback(
+    async move { expensive_operation().await },
+    |result| handle_result(result),
+);
+
+// Blocking async with timeout (for operations that must complete)
+let result = block_on_async_with_timeout(
+    async move { critical_operation().await },
+    Duration::from_secs(30),
+)?;
+
+// Thread safety checks
+if is_main_thread() {
+    update_widget();
+}
+ensure_main_thread(|| update_widget());
+```
+
 **When to Use What:**
 - `spawn_blocking_with_callback`: Simple blocking operations
 - `spawn_blocking_with_timeout`: Operations that might hang
 - `with_runtime`: When you need tokio features (async traits, channels)
+- `spawn_async`: Non-blocking async on GTK main thread
+- `spawn_async_with_callback`: Async with result callback
+- `block_on_async_with_timeout`: Bounded blocking for critical operations
 
 ## Error Handling
 
@@ -255,6 +394,36 @@ pub fn show_error_dialog(parent: &impl IsA<gtk4::Window>, error: &AppStateError)
     // Technical details in expandable section...
 }
 ```
+
+### Log Sanitization
+
+The `logger` module (`rustconn-core/src/session/logger.rs`) automatically removes sensitive data from logs:
+
+```rust
+// Configure sanitization
+let config = SanitizeConfig::default()
+    .with_password_patterns(true)
+    .with_api_key_patterns(true)
+    .with_aws_credentials(true)
+    .with_private_keys(true);
+
+// Sanitize output before logging
+let safe_output = sanitize_output(&raw_output, &config);
+// "password=secret123" → "password=[REDACTED]"
+// "AWS_SECRET_ACCESS_KEY=..." → "AWS_SECRET_ACCESS_KEY=[REDACTED]"
+
+// Check if output contains sensitive prompts
+if contains_sensitive_prompt(&output) {
+    // Don't log this line
+}
+```
+
+**Detected Patterns:**
+- Passwords: `password=`, `passwd:`, `Password:` prompts
+- API Keys: `api_key=`, `apikey=`, `api-key=`
+- Tokens: `Bearer `, `token=`, `auth_token=`
+- AWS: `AWS_SECRET_ACCESS_KEY`, `aws_secret_access_key`
+- Private Keys: `-----BEGIN.*PRIVATE KEY-----`
 
 ## Credential Security
 
@@ -388,6 +557,34 @@ pub trait Protocol: Send + Sync {
 4. Register in `ProtocolRegistry`
 5. Add UI fields in `rustconn/src/dialogs/connection.rs`
 
+### RDP Backend Selection
+
+The `backend` module (`rustconn-core/src/rdp_client/backend.rs`) centralizes RDP backend selection:
+
+```rust
+// Detect available backends
+let selector = RdpBackendSelector::new();
+let backends = selector.detect_all();
+
+// Select best backend for embedded mode (IronRDP > wlfreerdp)
+let embedded = selector.select_embedded();
+
+// Select best backend for external mode (xfreerdp3 > xfreerdp > freerdp)
+let external = selector.select_external();
+
+// Auto-select based on context
+let best = selector.select_best();
+
+// Check embedded support
+if selector.has_embedded_support() {
+    // Can use native RDP rendering
+}
+```
+
+**Backend Priority:**
+- **Embedded:** IronRDP (native Rust) → wlfreerdp (Wayland)
+- **External:** xfreerdp3 → xfreerdp → freerdp (legacy)
+
 ## GTK4/Libadwaita Patterns
 
 ### Widget Hierarchy
@@ -439,12 +636,15 @@ rustconn/src/
 ├── window.rs              # Main window layout
 ├── window_*.rs            # Window functionality by domain
 ├── state.rs               # SharedAppState
+├── async_utils.rs         # Async helpers (spawn_async, block_on_async_with_timeout)
+├── loading.rs             # LoadingOverlay, LoadingDialog components
 ├── sidebar.rs             # Connection tree
 ├── sidebar_types.rs       # Sidebar data types
 ├── sidebar_ui.rs          # Sidebar widget helpers
 ├── terminal/              # VTE terminal integration
 ├── dialogs/               # Modal dialogs
 │   ├── connection.rs      # Connection editor
+│   ├── keyboard.rs        # Keyboard navigation helpers
 │   ├── settings/          # Settings tabs
 │   └── ...
 ├── embedded_*.rs          # Embedded protocol viewers
@@ -456,10 +656,16 @@ rustconn-core/src/
 ├── models/                # Data models
 ├── config/                # Settings persistence
 ├── connection/            # Connection management
+│   ├── mod.rs             # Module exports
+│   ├── manager.rs         # ConnectionManager
+│   ├── retry.rs           # RetryConfig, RetryState, exponential backoff
+│   ├── port_check.rs      # TCP port reachability check
+│   └── ...
 ├── protocol/              # Protocol implementations
 ├── secret/                # Credential backends
 │   ├── mod.rs             # Module exports
 │   ├── backend.rs         # SecretBackend trait
+│   ├── manager.rs         # SecretManager with bulk operations
 │   ├── hierarchy.rs       # KeePass hierarchical paths
 │   ├── libsecret.rs       # GNOME Keyring backend
 │   ├── keepassxc.rs       # KeePassXC backend
@@ -469,8 +675,20 @@ rustconn-core/src/
 │   ├── status.rs          # KeePass status detection
 │   └── ...
 ├── session/               # Session management
+│   ├── mod.rs             # Module exports
+│   ├── manager.rs         # SessionManager with health checks
+│   ├── logger.rs          # Session logging with sanitization
+│   ├── restore.rs         # Session state persistence
+│   └── ...
 ├── import/                # Format importers
+│   ├── mod.rs             # Module exports
+│   ├── traits.rs          # ImportSource trait, ImportStatistics
+│   └── ...
 ├── export/                # Format exporters
+├── rdp_client/            # RDP client implementation
+│   ├── mod.rs             # Module exports
+│   ├── backend.rs         # RdpBackendSelector
+│   └── ...
 └── ...
 ```
 
@@ -478,7 +696,7 @@ rustconn-core/src/
 
 ### Property Tests
 
-Located in `rustconn-core/tests/properties/`:
+Located in `rustconn-core/tests/properties/` (1241 tests):
 
 ```rust
 proptest! {
@@ -490,6 +708,17 @@ proptest! {
     }
 }
 ```
+
+**Test Modules:**
+- `connection_tests.rs` — Connection CRUD operations
+- `retry_tests.rs` — Retry logic with exponential backoff
+- `session_restore_tests.rs` — Session persistence
+- `health_check_tests.rs` — Session health monitoring
+- `log_sanitization_tests.rs` — Sensitive data removal
+- `rdp_backend_tests.rs` — RDP backend selection
+- `vnc_client_tests.rs` — VNC client configuration
+- `bulk_credential_tests.rs` — Bulk credential operations
+- And 60+ more modules...
 
 ### Running Tests
 

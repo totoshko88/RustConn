@@ -92,7 +92,9 @@ pub fn edit_selected_connection(
             use secrecy::ExposeSecret;
             let state_ref = state.borrow();
             let settings = state_ref.settings();
-            dialog.connect_password_load_button(
+            let groups: Vec<rustconn_core::models::ConnectionGroup> =
+                state_ref.list_groups().iter().cloned().cloned().collect();
+            dialog.connect_password_load_button_with_groups(
                 settings.secrets.kdbx_enabled,
                 settings.secrets.kdbx_path.clone(),
                 settings
@@ -101,6 +103,7 @@ pub fn edit_selected_connection(
                     .as_ref()
                     .map(|p| p.expose_secret().to_string()),
                 settings.secrets.kdbx_key_file.clone(),
+                groups,
             );
         }
 
@@ -129,12 +132,35 @@ pub fn edit_selected_connection(
                                     if settings.secrets.kdbx_enabled {
                                         if let Some(kdbx_path) = settings.secrets.kdbx_path.clone()
                                         {
+                                            // Build hierarchical entry path using connection's
+                                            // group structure
+                                            let groups: Vec<_> =
+                                                state_mut.list_groups().into_iter().cloned().collect();
+                                            let conn_for_path =
+                                                state_mut.get_connection(id).cloned();
+
                                             let key_file = settings.secrets.kdbx_key_file.clone();
-                                            let entry_name = format!(
-                                                "{} ({})",
-                                                conn_name,
-                                                protocol.as_str().to_lowercase()
-                                            );
+                                            let entry_name = if let Some(ref conn) = conn_for_path {
+                                                // Use hierarchical path matching resolve_credentials
+                                                let entry_path =
+                                                    rustconn_core::secret::KeePassHierarchy
+                                                        ::build_entry_path(conn, &groups);
+                                                let base_path = entry_path
+                                                    .strip_prefix("RustConn/")
+                                                    .unwrap_or(&entry_path);
+                                                format!(
+                                                    "{} ({})",
+                                                    base_path,
+                                                    protocol.as_str().to_lowercase()
+                                                )
+                                            } else {
+                                                // Fallback to flat path if connection not found
+                                                format!(
+                                                    "{} ({})",
+                                                    conn_name,
+                                                    protocol.as_str().to_lowercase()
+                                                )
+                                            };
                                             let username =
                                                 conn_username.clone().unwrap_or_default();
                                             let url = format!(
@@ -228,13 +254,13 @@ pub fn edit_selected_connection(
 
                             // Save password to Bitwarden if needed
                             if password_source == PasswordSource::Bitwarden {
-                                if let Some(pwd) = password {
+                                if let Some(pwd) = password.clone() {
                                     let lookup_key = format!(
                                         "{} ({})",
                                         conn_name.replace('/', "-"),
                                         protocol.as_str().to_lowercase()
                                     );
-                                    let username = conn_username.unwrap_or_default();
+                                    let username = conn_username.clone().unwrap_or_default();
 
                                     crate::utils::spawn_blocking_with_callback(
                                         move || {
@@ -261,6 +287,45 @@ pub fn edit_selected_connection(
                                             } else {
                                                 tracing::info!(
                                                     "Password saved to Bitwarden for connection {}",
+                                                    id
+                                                );
+                                            }
+                                        },
+                                    );
+                                }
+                            }
+
+                            // Save password to 1Password if needed
+                            if password_source == PasswordSource::OnePassword {
+                                if let Some(pwd) = password {
+                                    let lookup_key = id.to_string();
+                                    let username = conn_username.unwrap_or_default();
+
+                                    crate::utils::spawn_blocking_with_callback(
+                                        move || {
+                                            use rustconn_core::secret::SecretBackend;
+                                            let backend =
+                                                rustconn_core::secret::OnePasswordBackend::new();
+                                            let creds = Credentials {
+                                                username: Some(username),
+                                                password: Some(secrecy::SecretString::from(pwd)),
+                                                key_passphrase: None,
+                                                domain: None,
+                                            };
+                                            let rt = tokio::runtime::Runtime::new()
+                                                .map_err(|e| format!("Runtime error: {e}"))?;
+                                            rt.block_on(backend.store(&lookup_key, &creds))
+                                                .map_err(|e| format!("{e}"))
+                                        },
+                                        move |result: Result<(), String>| {
+                                            if let Err(e) = result {
+                                                tracing::error!(
+                                                    "Failed to save password to 1Password: {}",
+                                                    e
+                                                );
+                                            } else {
+                                                tracing::info!(
+                                                    "Password saved to 1Password for connection {}",
                                                     id
                                                 );
                                             }
@@ -410,11 +475,188 @@ pub fn rename_selected_item(
             // Rename connection
             if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
                 if let Some(existing) = state_mut.get_connection(id).cloned() {
-                    let mut updated = existing;
-                    updated.name = new_name;
-                    match state_mut.update_connection(id, updated) {
+                    let old_name = existing.name.clone();
+                    let mut updated = existing.clone();
+                    updated.name = new_name.clone();
+
+                    // Get data needed for credential rename before updating
+                    let password_source = updated.password_source;
+                    let protocol = updated.protocol_config.protocol_type();
+                    let groups: Vec<rustconn_core::models::ConnectionGroup> =
+                        state_mut.list_groups().iter().cloned().cloned().collect();
+                    let settings = state_mut.settings().clone();
+
+                    match state_mut.update_connection(id, updated.clone()) {
                         Ok(()) => {
                             drop(state_mut);
+
+                            // Rename credentials in secret backend if needed
+                            match password_source {
+                                rustconn_core::models::PasswordSource::KeePass => {
+                                    // KeePass uses hierarchical paths with protocol suffix
+                                    let updated_conn = updated;
+                                    let groups_clone = groups;
+                                    let settings_clone = settings;
+                                    let protocol_str = protocol.as_str().to_lowercase();
+
+                                    crate::utils::spawn_blocking_with_callback(
+                                        move || {
+                                            // Build old and new keys with protocol suffix
+                                            // Entry format: RustConn/Group/Name (protocol)
+                                            let mut old_conn = updated_conn.clone();
+                                            old_conn.name = old_name;
+                                            let old_base =
+                                                rustconn_core::secret::KeePassHierarchy
+                                                    ::build_entry_path(&old_conn, &groups_clone);
+                                            let new_base =
+                                                rustconn_core::secret::KeePassHierarchy
+                                                    ::build_entry_path(&updated_conn, &groups_clone);
+                                            let old_key = format!("{} ({})", old_base, protocol_str);
+                                            let new_key = format!("{} ({})", new_base, protocol_str);
+
+                                            if old_key == new_key {
+                                                return Ok(());
+                                            }
+
+                                            // Use KeePass status to move entry
+                                            if let Some(kdbx_path) =
+                                                settings_clone.secrets.kdbx_path.as_ref()
+                                            {
+                                                let key_file =
+                                                    settings_clone.secrets.kdbx_key_file.clone();
+                                                rustconn_core::secret::KeePassStatus
+                                                    ::rename_entry_in_kdbx(
+                                                        std::path::Path::new(kdbx_path),
+                                                        None,
+                                                        key_file
+                                                            .as_ref()
+                                                            .map(|p| std::path::Path::new(p)),
+                                                        &old_key,
+                                                        &new_key,
+                                                    )
+                                            } else {
+                                                Ok(())
+                                            }
+                                        },
+                                        |result: Result<(), rustconn_core::error::SecretError>| {
+                                            if let Err(e) = result {
+                                                tracing::warn!(
+                                                    "Failed to rename KeePass entry: {}",
+                                                    e
+                                                );
+                                            }
+                                        },
+                                    );
+                                }
+                                rustconn_core::models::PasswordSource::Keyring => {
+                                    let protocol_str = protocol.as_str().to_lowercase();
+                                    let old_key = format!(
+                                        "{} ({})",
+                                        old_name.replace('/', "-"),
+                                        protocol_str
+                                    );
+                                    let new_key = format!(
+                                        "{} ({})",
+                                        new_name.replace('/', "-"),
+                                        protocol_str
+                                    );
+
+                                    if old_key != new_key {
+                                        crate::utils::spawn_blocking_with_callback(
+                                            move || {
+                                                use rustconn_core::secret::SecretBackend;
+                                                let backend =
+                                                    rustconn_core::secret::LibSecretBackend::new(
+                                                        "rustconn",
+                                                    );
+                                                let rt = tokio::runtime::Runtime::new()
+                                                    .map_err(|e| format!("Runtime error: {e}"))?;
+
+                                                // Retrieve from old key
+                                                let creds = rt
+                                                    .block_on(backend.retrieve(&old_key))
+                                                    .map_err(|e| format!("{e}"))?;
+
+                                                if let Some(creds) = creds {
+                                                    // Store with new key
+                                                    rt.block_on(backend.store(&new_key, &creds))
+                                                        .map_err(|e| format!("{e}"))?;
+                                                    // Delete old key
+                                                    let _ =
+                                                        rt.block_on(backend.delete(&old_key));
+                                                }
+                                                Ok(())
+                                            },
+                                            move |result: Result<(), String>| {
+                                                if let Err(e) = result {
+                                                    tracing::warn!(
+                                                        "Failed to rename Keyring entry: {}",
+                                                        e
+                                                    );
+                                                }
+                                            },
+                                        );
+                                    }
+                                }
+                                rustconn_core::models::PasswordSource::Bitwarden => {
+                                    let protocol_str = protocol.as_str().to_lowercase();
+                                    let old_key = format!(
+                                        "{} ({})",
+                                        old_name.replace('/', "-"),
+                                        protocol_str
+                                    );
+                                    let new_key = format!(
+                                        "{} ({})",
+                                        new_name.replace('/', "-"),
+                                        protocol_str
+                                    );
+
+                                    if old_key != new_key {
+                                        crate::utils::spawn_blocking_with_callback(
+                                            move || {
+                                                use rustconn_core::secret::SecretBackend;
+                                                let backend =
+                                                    rustconn_core::secret::BitwardenBackend::new();
+                                                let rt = tokio::runtime::Runtime::new()
+                                                    .map_err(|e| format!("Runtime error: {e}"))?;
+
+                                                // Retrieve from old key
+                                                let creds = rt
+                                                    .block_on(backend.retrieve(&old_key))
+                                                    .map_err(|e| format!("{e}"))?;
+
+                                                if let Some(creds) = creds {
+                                                    // Store with new key
+                                                    rt.block_on(backend.store(&new_key, &creds))
+                                                        .map_err(|e| format!("{e}"))?;
+                                                    // Delete old key
+                                                    let _ =
+                                                        rt.block_on(backend.delete(&old_key));
+                                                }
+                                                Ok(())
+                                            },
+                                            move |result: Result<(), String>| {
+                                                if let Err(e) = result {
+                                                    tracing::warn!(
+                                                        "Failed to rename Bitwarden entry: {}",
+                                                        e
+                                                    );
+                                                }
+                                            },
+                                        );
+                                    }
+                                }
+                                rustconn_core::models::PasswordSource::OnePassword => {
+                                    // 1Password uses connection ID as key, not name
+                                    // No rename needed
+                                }
+                                rustconn_core::models::PasswordSource::Prompt
+                                | rustconn_core::models::PasswordSource::Inherit
+                                | rustconn_core::models::PasswordSource::None => {
+                                    // No credentials stored
+                                }
+                            }
+
                             // Defer sidebar reload to prevent UI freeze
                             let state = state_clone.clone();
                             let sidebar = sidebar_clone.clone();
@@ -608,6 +850,7 @@ pub fn show_edit_group_dialog(
         "KeePass",
         "Keyring",
         "Bitwarden",
+        "1Password",
         "Inherit",
         "None",
     ]);
@@ -621,8 +864,9 @@ pub fn show_edit_group_dialog(
         Some(PasswordSource::KeePass) => 1,
         Some(PasswordSource::Keyring) => 2,
         Some(PasswordSource::Bitwarden) => 3,
-        Some(PasswordSource::Inherit) => 4,
-        Some(PasswordSource::None) | None => 5,
+        Some(PasswordSource::OnePassword) => 4,
+        Some(PasswordSource::Inherit) => 5,
+        Some(PasswordSource::None) | None => 6,
     };
     password_source_dropdown.set_selected(initial_source_idx);
 
@@ -654,15 +898,15 @@ pub fn show_edit_group_dialog(
     credentials_group.add(&password_value_row);
 
     // Show/hide password value row based on source selection
-    // Show for Stored(1), KeePass(2), Keyring(3)
-    let show_value = matches!(initial_source_idx, 1..=3);
+    // Show for KeePass(1), Keyring(2), Bitwarden(3), 1Password(4)
+    let show_value = matches!(initial_source_idx, 1..=4);
     password_value_row.set_visible(show_value);
 
     // Connect password source dropdown to show/hide value row
     let value_row_clone = password_value_row.clone();
     password_source_dropdown.connect_selected_notify(move |dropdown| {
         let selected = dropdown.selected();
-        let show = matches!(selected, 1..=3);
+        let show = matches!(selected, 1..=4);
         value_row_clone.set_visible(show);
     });
 
@@ -905,12 +1149,13 @@ pub fn show_edit_group_dialog(
             1 => PasswordSource::KeePass,
             2 => PasswordSource::Keyring,
             3 => PasswordSource::Bitwarden,
-            4 => PasswordSource::Inherit,
+            4 => PasswordSource::OnePassword,
+            5 => PasswordSource::Inherit,
             _ => PasswordSource::None,
         };
 
-        // Password is relevant only for KeePass, Keyring, Bitwarden
-        let has_new_password = !password.is_empty() && matches!(password_source_idx, 1..=3);
+        // Password is relevant only for KeePass, Keyring, Bitwarden, 1Password
+        let has_new_password = !password.is_empty() && matches!(password_source_idx, 1..=4);
 
         // Check for duplicate name (but allow keeping same name)
         if new_name != old_name {

@@ -64,4 +64,6 @@ pub use rdm::RdmImporter;
 pub use remmina::RemminaImporter;
 pub use royalts::RoyalTsImporter;
 pub use ssh_config::SshConfigImporter;
-pub use traits::{ImportResult, ImportSource, SkippedEntry};
+pub use traits::{
+    ImportResult, ImportSource, ImportStatistics, SkippedEntry, SkippedField, SkippedFieldReason,
+};

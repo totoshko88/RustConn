@@ -158,6 +158,13 @@ impl MainWindow {
         // Create terminal notebook for tab management (using adw::TabView)
         let terminal_notebook = Rc::new(TerminalNotebook::new());
 
+        // Set up callback for when SSH tabs are closed via TabView
+        // This ensures sidebar status is cleared when tabs are closed
+        let sidebar_for_close = sidebar.clone();
+        terminal_notebook.set_on_page_closed(move |_session_id, connection_id| {
+            sidebar_for_close.decrement_session_count(&connection_id.to_string(), false);
+        });
+
         // TabView/TabBar configuration is handled internally
         // Don't let notebook expand - it should only show tabs
         terminal_notebook.widget().set_vexpand(false);
@@ -1348,12 +1355,15 @@ impl MainWindow {
                 split_view.setup_select_tab_callback_with_provider(
                     move || {
                         // Get all sessions from the notebook, excluding those already in THIS split
-                        // Only show VTE-based sessions (SSH, ZeroTrust) - RDP/VNC/SPICE not supported
+                        // Only show VTE-based sessions (SSH, ZeroTrust, Local Shell)
+                        // RDP/VNC/SPICE not supported in split view
                         notebook_for_provider
                             .get_all_sessions()
                             .into_iter()
                             .filter(|s| {
-                                s.protocol == "ssh" || s.protocol.starts_with("zerotrust")
+                                s.protocol == "ssh"
+                                    || s.protocol == "local"
+                                    || s.protocol.starts_with("zerotrust")
                             })
                             .map(|s| (s.id, s.name))
                             .filter(|(id, _)| !split_view_for_provider.is_session_displayed(*id))
@@ -1591,12 +1601,15 @@ impl MainWindow {
                 split_view.setup_select_tab_callback_with_provider(
                     move || {
                         // Get all sessions from the notebook, excluding those already in THIS split
-                        // Only show VTE-based sessions (SSH, ZeroTrust) - RDP/VNC/SPICE not supported
+                        // Only show VTE-based sessions (SSH, ZeroTrust, Local Shell)
+                        // RDP/VNC/SPICE not supported in split view
                         notebook_for_provider
                             .get_all_sessions()
                             .into_iter()
                             .filter(|s| {
-                                s.protocol == "ssh" || s.protocol.starts_with("zerotrust")
+                                s.protocol == "ssh"
+                                    || s.protocol == "local"
+                                    || s.protocol.starts_with("zerotrust")
                             })
                             .map(|s| (s.id, s.name))
                             .filter(|(id, _)| !split_view_for_provider.is_session_displayed(*id))
@@ -1912,11 +1925,16 @@ impl MainWindow {
             split_view.setup_select_tab_callback_with_provider(
                 move || {
                     // Get all sessions from the notebook
-                    // Only show VTE-based sessions (SSH, ZeroTrust) - RDP/VNC/SPICE not supported
+                    // Only show VTE-based sessions (SSH, ZeroTrust, Local Shell)
+                    // RDP/VNC/SPICE not supported in split view
                     notebook_for_provider
                         .get_all_sessions()
                         .into_iter()
-                        .filter(|s| s.protocol == "ssh" || s.protocol.starts_with("zerotrust"))
+                        .filter(|s| {
+                            s.protocol == "ssh"
+                                || s.protocol == "local"
+                                || s.protocol.starts_with("zerotrust")
+                        })
                         .map(|s| (s.id, s.name))
                         .collect()
                 },

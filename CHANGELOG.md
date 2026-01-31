@@ -5,6 +5,104 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.9] - 2026-01-31
+
+### Added
+- **Password Caching TTL** - Cached credentials now expire after configurable time (default 5 minutes):
+  - `CachedCredentials` with `cached_at` timestamp and `is_expired()` method
+  - `cleanup_expired_credentials()` for automatic cleanup
+  - `refresh_cached_credentials()` to extend TTL on use
+- **Connection Retry Logic** - Automatic retry with exponential backoff for failed connections:
+  - `RetryConfig` with max_attempts, base_delay, max_delay, jitter settings
+  - `RetryState` for tracking retry progress
+  - Preset configurations: `aggressive()`, `conservative()`, `no_retry()`
+- **Loading States** - Visual feedback for long-running operations:
+  - `LoadingOverlay` component for inline loading indicators
+  - `LoadingDialog` for modal operations with cancel support
+  - `with_loading_dialog()` helper for async operations
+- **Keyboard Navigation Helpers** - Improved dialog keyboard support:
+  - `setup_dialog_shortcuts()` for Escape/Ctrl+S/Ctrl+W
+  - `setup_entry_activation()` for Enter key handling
+  - `make_default_button()` and `make_destructive_button()` styling helpers
+- **Session State Persistence** - Split layouts preserved across restarts:
+  - `SessionRestoreData` and `SplitLayoutRestoreData` structs
+  - JSON serialization for session state
+  - Automatic save/load from config directory
+- **Connection Health Check** - Periodic monitoring of active sessions:
+  - `HealthStatus` enum (Healthy, Unhealthy, Unknown, Terminated)
+  - `HealthCheckConfig` with interval and auto_cleanup settings
+  - `perform_health_check()` and `get_session_health()` methods
+- **Log Sanitization** - Automatic removal of sensitive data from logs:
+  - `SanitizeConfig` with patterns for passwords, API keys, tokens
+  - AWS credentials and private key detection
+  - `contains_sensitive_prompt()` helper
+- **Async Architecture Helpers** - Improved async handling in GUI:
+  - `spawn_async()` for non-blocking operations
+  - `spawn_async_with_callback()` for result handling
+  - `block_on_async_with_timeout()` for bounded blocking
+  - `is_main_thread()` and `ensure_main_thread()` utilities
+- **RDP Backend Selector** - Centralized RDP backend selection:
+  - `RdpBackend` enum (IronRdp, WlFreeRdp, XFreeRdp3, XFreeRdp, FreeRdp)
+  - `RdpBackendSelector` with detection caching
+  - `select_embedded()`, `select_external()`, `select_best()` methods
+- **Import/Export Enhancement** - Detailed import statistics:
+  - `SkippedField` and `SkippedFieldReason` for tracking skipped data
+  - `ImportStatistics` with detailed reporting
+  - `detailed_report()` for human-readable summaries
+- **Bulk Credential Operations** - Mass credential management:
+  - `store_bulk()`, `delete_bulk()`, `update_bulk()` methods
+  - `update_credentials_for_group()` for group-wide updates
+  - `copy_credentials()` between connections
+- **1Password as PasswordSource** - 1Password can now be selected per-connection:
+  - Added `OnePassword` variant to `PasswordSource` enum
+  - 1Password option in password source dropdown (index 4)
+  - Password save/load support for 1Password backend
+  - Default selection based on `preferred_backend` setting
+- **Credential Rename on Connection Rename** - Credentials are now automatically renamed in secret backends when connection is renamed:
+  - KeePass: Entry path updated to match new connection name
+  - Keyring: Entry key updated from old to new name format
+  - Bitwarden: Entry name updated to match new connection name
+  - 1Password: Uses connection ID, no rename needed
+
+### Changed
+- **Safe State Access** - New helpers to reduce RefCell borrow panics:
+  - `with_state()` and `try_with_state()` for read access
+  - `with_state_mut()` and `try_with_state_mut()` for write access
+- **Toast Queue** - Fixed toast message sequencing with `schedule_toast_hide()` helper
+
+### Fixed
+- **KeePass Password Retrieval for Subgroups** - Fixed password not being retrieved when connection is in nested groups:
+  - Save and read operations now both use hierarchical paths via `KeePassHierarchy::build_entry_path()`
+  - Paths like `RustConn/Group1/Group2/ConnectionName (protocol)` are now consistent
+- **Keyring Password Retrieval** - Fixed password never found after saving:
+  - Save used `"{name} ({protocol})"` format, read used UUID
+  - Now both use `"{name} ({protocol})"` with legacy UUID fallback
+- **Bitwarden Password Retrieval** - Fixed password never found after saving:
+  - Save used `"{name} ({protocol})"` format, read used `"rustconn/{name}"`
+  - Now both use `"{name} ({protocol})"` with legacy format fallback
+- **Status Icon on Tab Close** - Status icons now clear when closing RDP/SSH tabs:
+  - Previously showed red/green status for closed connections
+  - Now clears status (empty string) instead of setting "failed"/"disconnected"
+
+### Tests
+- Added 370+ new property tests (total: 1241 tests):
+  - `vnc_client_tests.rs` - VNC client configuration and events (28 tests)
+  - `terminal_theme_tests.rs` - Terminal theme parsing (26 tests)
+  - `error_tests.rs` - Error type coverage (45 tests)
+  - `retry_tests.rs` - Retry logic (14 tests)
+  - `session_restore_tests.rs` - Session persistence (10 tests)
+  - `rdp_backend_tests.rs` - RDP backend selection (13 tests)
+  - `log_sanitization_tests.rs` - Log sanitization (19 tests)
+  - `health_check_tests.rs` - Health monitoring (13 tests)
+  - `bulk_credential_tests.rs` - Bulk operations (25 tests)
+  - `import_statistics_tests.rs` - Import statistics (28 tests)
+  - And more...
+
+### Fixed
+- **Local Shell in Split View** - Local Shell tabs can now be added to split view panels:
+  - Fixed protocol filter that excluded "local" protocol from available sessions
+  - Multiple Local Shell tabs now appear in "Select Tab" dialog for split panels
+
 ## [0.6.8] - 2026-01-30
 
 ### Added

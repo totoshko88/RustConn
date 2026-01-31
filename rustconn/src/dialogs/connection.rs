@@ -1612,6 +1612,7 @@ impl ConnectionDialog {
             "KeePass",
             "Keyring",
             "Bitwarden",
+            "1Password",
             "Inherit",
             "None",
         ]);
@@ -5390,14 +5391,15 @@ impl ConnectionDialog {
         }
 
         // Password source - map enum to dropdown index
-        // Dropdown order: Prompt(0), KeePass(1), Keyring(2), Bitwarden(3), Inherit(4), None(5)
+        // Dropdown order: Prompt(0), KeePass(1), Keyring(2), Bitwarden(3), 1Password(4), Inherit(5), None(6)
         let password_source_idx = match conn.password_source {
             PasswordSource::Prompt => 0,
             PasswordSource::KeePass => 1,
             PasswordSource::Keyring => 2,
             PasswordSource::Bitwarden => 3,
-            PasswordSource::Inherit => 4,
-            PasswordSource::None => 5,
+            PasswordSource::OnePassword => 4,
+            PasswordSource::Inherit => 5,
+            PasswordSource::None => 6,
         };
         self.password_source_dropdown
             .set_selected(password_source_idx);
@@ -6164,12 +6166,12 @@ impl ConnectionDialog {
 
     /// Sets whether `KeePass` integration is enabled
     /// Updates password row visibility based on password source
-    /// Shows for: KeePass(1), Keyring(2), Bitwarden(3)
-    /// Hides for: Prompt(0), Inherit(4), None(5)
+    /// Shows for: KeePass(1), Keyring(2), Bitwarden(3), 1Password(4)
+    /// Hides for: Prompt(0), Inherit(5), None(6)
     pub fn update_password_row_visibility(&self) {
         let selected = self.password_source_dropdown.selected();
-        // Show for KeePass(1), Keyring(2), Bitwarden(3)
-        let show_password = matches!(selected, 1..=3);
+        // Show for KeePass(1), Keyring(2), Bitwarden(3), 1Password(4)
+        let show_password = matches!(selected, 1..=4);
         self.password_row.set_visible(show_password);
     }
 
@@ -6202,8 +6204,8 @@ impl ConnectionDialog {
         self.password_source_dropdown
             .connect_selected_notify(move |dropdown| {
                 let selected = dropdown.selected();
-                // Show for KeePass(1), Keyring(2), Bitwarden(3)
-                let show_password = matches!(selected, 1..=3);
+                // Show for KeePass(1), Keyring(2), Bitwarden(3), 1Password(4)
+                let show_password = matches!(selected, 1..=4);
                 password_row.set_visible(show_password);
             });
     }
@@ -6215,13 +6217,47 @@ impl ConnectionDialog {
     /// the selected password source (KeePass or Keyring).
     ///
     /// # Arguments
-    /// * `settings` - Application settings containing KeePass/Keyring configuration
+    /// * `kdbx_enabled` - Whether KeePass is enabled
+    /// * `kdbx_path` - Path to the KeePass database
+    /// * `kdbx_password` - Password for the KeePass database
+    /// * `kdbx_key_file` - Key file for the KeePass database
     pub fn connect_password_load_button(
         &self,
         kdbx_enabled: bool,
         kdbx_path: Option<std::path::PathBuf>,
         kdbx_password: Option<String>,
         kdbx_key_file: Option<std::path::PathBuf>,
+    ) {
+        // Call the extended version with empty groups (legacy behavior)
+        self.connect_password_load_button_with_groups(
+            kdbx_enabled,
+            kdbx_path,
+            kdbx_password,
+            kdbx_key_file,
+            Vec::new(),
+        );
+    }
+
+    /// Connects password load button with group hierarchy support
+    ///
+    /// This method sets up the click handler for the password load button.
+    /// When clicked, it loads the password from the appropriate backend based on
+    /// the selected password source (KeePass or Keyring).
+    ///
+    /// # Arguments
+    /// * `kdbx_enabled` - Whether KeePass is enabled
+    /// * `kdbx_path` - Path to the KeePass database
+    /// * `kdbx_password` - Password for the KeePass database
+    /// * `kdbx_key_file` - Key file for the KeePass database
+    /// * `groups` - List of connection groups for building hierarchical paths
+    #[allow(clippy::too_many_arguments)]
+    pub fn connect_password_load_button_with_groups(
+        &self,
+        kdbx_enabled: bool,
+        kdbx_path: Option<std::path::PathBuf>,
+        kdbx_password: Option<String>,
+        kdbx_key_file: Option<std::path::PathBuf>,
+        groups: Vec<rustconn_core::models::ConnectionGroup>,
     ) {
         use crate::utils::spawn_blocking_with_callback;
 
@@ -6230,7 +6266,12 @@ impl ConnectionDialog {
         let name_entry = self.name_entry.clone();
         let host_entry = self.host_entry.clone();
         let protocol_dropdown = self.protocol_dropdown.clone();
+        let group_dropdown = self.group_dropdown.clone();
+        let groups_data = self.groups_data.clone();
         let window = self.window.clone();
+
+        // Clone groups for use in closure
+        let groups = Rc::new(groups);
 
         self.password_load_button.connect_clicked(move |btn| {
             let selected = password_source_dropdown.selected();
@@ -6256,7 +6297,6 @@ impl ConnectionDialog {
                 return;
             }
 
-            let sanitized_name = base_name.replace('/', "-");
             let protocol_suffix = match protocol_index {
                 0 => "ssh",
                 1 => "rdp",
@@ -6265,7 +6305,37 @@ impl ConnectionDialog {
                 4 => "zerotrust",
                 _ => "ssh",
             };
-            let lookup_key = format!("{sanitized_name} ({protocol_suffix})");
+
+            // Build hierarchical lookup key if groups are available
+            let lookup_key = if groups.is_empty() {
+                // Legacy behavior: sanitize name and use flat path
+                let sanitized_name = base_name.replace('/', "-");
+                format!("{sanitized_name} ({protocol_suffix})")
+            } else {
+                // Build hierarchical path using selected group
+                let selected_group_idx = group_dropdown.selected() as usize;
+                let groups_data_ref = groups_data.borrow();
+                let group_id = if selected_group_idx < groups_data_ref.len() {
+                    groups_data_ref[selected_group_idx].0
+                } else {
+                    None
+                };
+                drop(groups_data_ref);
+
+                // Build path from group hierarchy
+                let group_path = if let Some(gid) = group_id {
+                    rustconn_core::secret::KeePassHierarchy::resolve_group_path(gid, &groups)
+                } else {
+                    Vec::new()
+                };
+
+                if group_path.is_empty() {
+                    format!("{base_name} ({protocol_suffix})")
+                } else {
+                    let path = group_path.join("/");
+                    format!("{path}/{base_name} ({protocol_suffix})")
+                }
+            };
 
             match selected {
                 1 => {
@@ -6830,13 +6900,14 @@ impl ConnectionDialogData<'_> {
         }
 
         // Password source - map dropdown index to enum
-        // Dropdown order: Prompt(0), KeePass(1), Keyring(2), Bitwarden(3), Inherit(4), None(5)
+        // Dropdown order: Prompt(0), KeePass(1), Keyring(2), Bitwarden(3), 1Password(4), Inherit(5), None(6)
         conn.password_source = match self.password_source_dropdown.selected() {
             1 => PasswordSource::KeePass,
             2 => PasswordSource::Keyring,
             3 => PasswordSource::Bitwarden,
-            4 => PasswordSource::Inherit,
-            5 => PasswordSource::None,
+            4 => PasswordSource::OnePassword,
+            5 => PasswordSource::Inherit,
+            6 => PasswordSource::None,
             _ => PasswordSource::Prompt, // 0 and any other value default to Prompt
         };
 
@@ -6886,10 +6957,10 @@ impl ConnectionDialogData<'_> {
             conn.id = id;
         }
 
-        // Extract password if user entered one (for KeePass/Keyring/Stored sources)
-        // Password source indices: 1=Stored, 2=KeePass, 3=Keyring
+        // Extract password if user entered one (for KeePass/Keyring/Bitwarden/1Password sources)
+        // Password source indices: 1=KeePass, 2=Keyring, 3=Bitwarden, 4=1Password
         let password_source_idx = self.password_source_dropdown.selected();
-        let password = if matches!(password_source_idx, 1..=3) {
+        let password = if matches!(password_source_idx, 1..=4) {
             let pwd = self.password_entry.text().to_string();
             if pwd.is_empty() {
                 None

@@ -697,6 +697,203 @@ fn sanitize_filename(name: &str) -> String {
         .collect()
 }
 
+/// Patterns that indicate sensitive data in terminal output
+#[allow(dead_code)]
+const SENSITIVE_PATTERNS: &[&str] = &[
+    "password:",
+    "Password:",
+    "PASSWORD:",
+    "pass:",
+    "Pass:",
+    "PASS:",
+    "secret:",
+    "Secret:",
+    "SECRET:",
+    "token:",
+    "Token:",
+    "TOKEN:",
+    "api_key:",
+    "API_KEY:",
+    "apikey:",
+    "APIKEY:",
+    "private_key:",
+    "PRIVATE_KEY:",
+    "ssh_pass:",
+    "SSH_PASS:",
+    "sudo password",
+    "Enter passphrase",
+    "Enter PIN",
+    "OTP:",
+    "otp:",
+    "2fa:",
+    "2FA:",
+    "mfa:",
+    "MFA:",
+];
+
+/// Regex patterns for detecting sensitive data values
+/// These match common password/key formats that follow a prompt
+#[allow(dead_code)]
+const SENSITIVE_VALUE_PATTERNS: &[&str] = &[
+    // Password prompts followed by input (masked in most terminals but may leak)
+    r"(?i)password[:\s]+\S+",
+    r"(?i)pass[:\s]+\S+",
+    // API keys and tokens (common formats)
+    r"(?i)api[_-]?key[:\s=]+[a-zA-Z0-9_\-]{16,}",
+    r"(?i)token[:\s=]+[a-zA-Z0-9_\-\.]{16,}",
+    r"(?i)bearer\s+[a-zA-Z0-9_\-\.]+",
+    // AWS credentials
+    r"AKIA[0-9A-Z]{16}",
+    r"(?i)aws[_-]?secret[_-]?access[_-]?key[:\s=]+\S+",
+    // Private keys (PEM format markers)
+    r"-----BEGIN\s+(RSA\s+)?PRIVATE\s+KEY-----",
+    r"-----BEGIN\s+OPENSSH\s+PRIVATE\s+KEY-----",
+    // SSH key fingerprints (not sensitive but may indicate key operations)
+    r"SHA256:[a-zA-Z0-9+/]{43}",
+];
+
+/// Configuration for log sanitization
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SanitizeConfig {
+    /// Whether sanitization is enabled
+    pub enabled: bool,
+    /// Replacement text for sensitive data
+    pub replacement: String,
+    /// Additional custom patterns to sanitize (regex strings)
+    pub custom_patterns: Vec<String>,
+    /// Whether to sanitize entire lines containing sensitive prompts
+    pub sanitize_full_lines: bool,
+}
+
+impl Default for SanitizeConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            replacement: String::from("[REDACTED]"),
+            custom_patterns: Vec::new(),
+            sanitize_full_lines: false,
+        }
+    }
+}
+
+impl SanitizeConfig {
+    /// Creates a new sanitize config with sanitization enabled
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Creates a disabled sanitize config
+    #[must_use]
+    pub fn disabled() -> Self {
+        Self {
+            enabled: false,
+            ..Default::default()
+        }
+    }
+
+    /// Sets the replacement text
+    #[must_use]
+    pub fn with_replacement(mut self, replacement: impl Into<String>) -> Self {
+        self.replacement = replacement.into();
+        self
+    }
+
+    /// Adds a custom pattern to sanitize
+    #[must_use]
+    pub fn with_custom_pattern(mut self, pattern: impl Into<String>) -> Self {
+        self.custom_patterns.push(pattern.into());
+        self
+    }
+
+    /// Sets whether to sanitize full lines containing sensitive prompts
+    #[must_use]
+    pub const fn with_full_line_sanitization(mut self, enabled: bool) -> Self {
+        self.sanitize_full_lines = enabled;
+        self
+    }
+}
+
+/// Sanitizes terminal output by removing or masking sensitive data
+///
+/// This function detects and redacts:
+/// - Password prompts and their values
+/// - API keys and tokens
+/// - Private key content
+/// - AWS credentials
+/// - Custom patterns specified in config
+///
+/// # Arguments
+///
+/// * `output` - The terminal output to sanitize
+/// * `config` - Sanitization configuration
+///
+/// # Returns
+///
+/// The sanitized output with sensitive data replaced
+#[must_use]
+pub fn sanitize_output(output: &str, config: &SanitizeConfig) -> String {
+    if !config.enabled {
+        return output.to_string();
+    }
+
+    let mut result = output.to_string();
+
+    // Check for sensitive prompt patterns and optionally sanitize full lines
+    if config.sanitize_full_lines {
+        let lines: Vec<&str> = result.lines().collect();
+        let sanitized_lines: Vec<String> = lines
+            .iter()
+            .map(|line| {
+                let line_lower = line.to_lowercase();
+                for pattern in SENSITIVE_PATTERNS {
+                    if line_lower.contains(&pattern.to_lowercase()) {
+                        return config.replacement.clone();
+                    }
+                }
+                (*line).to_string()
+            })
+            .collect();
+        result = sanitized_lines.join("\n");
+        // Preserve trailing newline if original had one
+        if output.ends_with('\n') && !result.ends_with('\n') {
+            result.push('\n');
+        }
+    }
+
+    // Apply regex patterns for sensitive values
+    for pattern_str in SENSITIVE_VALUE_PATTERNS {
+        if let Ok(re) = regex::Regex::new(pattern_str) {
+            result = re
+                .replace_all(&result, config.replacement.as_str())
+                .to_string();
+        }
+    }
+
+    // Apply custom patterns
+    for pattern_str in &config.custom_patterns {
+        if let Ok(re) = regex::Regex::new(pattern_str) {
+            result = re
+                .replace_all(&result, config.replacement.as_str())
+                .to_string();
+        }
+    }
+
+    result
+}
+
+/// Checks if a line contains sensitive data prompts
+///
+/// This is a quick check that doesn't perform full sanitization,
+/// useful for deciding whether to log a line at all.
+#[must_use]
+pub fn contains_sensitive_prompt(line: &str) -> bool {
+    let line_lower = line.to_lowercase();
+    SENSITIVE_PATTERNS
+        .iter()
+        .any(|pattern| line_lower.contains(&pattern.to_lowercase()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -879,5 +1076,103 @@ mod tests {
         assert_eq!(timestamp.len(), 10);
         assert!(timestamp.chars().nth(4) == Some('-'));
         assert!(timestamp.chars().nth(7) == Some('-'));
+    }
+
+    #[test]
+    fn test_sanitize_output_disabled() {
+        let config = SanitizeConfig::disabled();
+        let input = "password: secret123";
+        let result = sanitize_output(input, &config);
+        assert_eq!(result, input);
+    }
+
+    #[test]
+    fn test_sanitize_output_password_prompt() {
+        let config = SanitizeConfig::new();
+        let input = "password: mysecretpassword";
+        let result = sanitize_output(input, &config);
+        assert!(!result.contains("mysecretpassword"));
+        assert!(result.contains("[REDACTED]"));
+    }
+
+    #[test]
+    fn test_sanitize_output_api_key() {
+        let config = SanitizeConfig::new();
+        let input = "api_key: abcdef1234567890abcdef";
+        let result = sanitize_output(input, &config);
+        assert!(!result.contains("abcdef1234567890abcdef"));
+        assert!(result.contains("[REDACTED]"));
+    }
+
+    #[test]
+    fn test_sanitize_output_aws_key() {
+        let config = SanitizeConfig::new();
+        let input = "Found key: AKIAIOSFODNN7EXAMPLE";
+        let result = sanitize_output(input, &config);
+        assert!(!result.contains("AKIAIOSFODNN7EXAMPLE"));
+        assert!(result.contains("[REDACTED]"));
+    }
+
+    #[test]
+    fn test_sanitize_output_private_key() {
+        let config = SanitizeConfig::new();
+        let input = "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA...";
+        let result = sanitize_output(input, &config);
+        assert!(result.contains("[REDACTED]"));
+    }
+
+    #[test]
+    fn test_sanitize_output_bearer_token() {
+        let config = SanitizeConfig::new();
+        let input = "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test";
+        let result = sanitize_output(input, &config);
+        assert!(!result.contains("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"));
+        assert!(result.contains("[REDACTED]"));
+    }
+
+    #[test]
+    fn test_sanitize_output_full_line() {
+        let config = SanitizeConfig::new().with_full_line_sanitization(true);
+        let input = "Enter password: \nNext line";
+        let result = sanitize_output(input, &config);
+        assert!(result.contains("[REDACTED]"));
+        assert!(result.contains("Next line"));
+    }
+
+    #[test]
+    fn test_sanitize_output_custom_pattern() {
+        let config = SanitizeConfig::new().with_custom_pattern(r"secret_\d+");
+        let input = "Found secret_12345 in config";
+        let result = sanitize_output(input, &config);
+        assert!(!result.contains("secret_12345"));
+        assert!(result.contains("[REDACTED]"));
+    }
+
+    #[test]
+    fn test_sanitize_output_custom_replacement() {
+        let config = SanitizeConfig::new().with_replacement("***HIDDEN***");
+        let input = "password: test123";
+        let result = sanitize_output(input, &config);
+        assert!(result.contains("***HIDDEN***"));
+    }
+
+    #[test]
+    fn test_contains_sensitive_prompt() {
+        assert!(contains_sensitive_prompt("Enter password:"));
+        assert!(contains_sensitive_prompt("Password: "));
+        assert!(contains_sensitive_prompt("Enter passphrase for key"));
+        assert!(contains_sensitive_prompt("sudo password for root:"));
+        assert!(!contains_sensitive_prompt("Hello, world!"));
+        assert!(!contains_sensitive_prompt("Connection established"));
+    }
+
+    #[test]
+    fn test_sanitize_preserves_newlines() {
+        let config = SanitizeConfig::new();
+        let input = "line1\npassword: secret\nline3\n";
+        let result = sanitize_output(input, &config);
+        assert!(result.ends_with('\n'));
+        assert!(result.contains("line1"));
+        assert!(result.contains("line3"));
     }
 }

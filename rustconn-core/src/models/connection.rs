@@ -39,6 +39,8 @@ pub enum PasswordSource {
     Keyring,
     /// Password retrieved from Bitwarden vault
     Bitwarden,
+    /// Password retrieved from 1Password vault
+    OnePassword,
     /// Prompt user for password on each connection
     Prompt,
     /// Inherit credentials from parent group

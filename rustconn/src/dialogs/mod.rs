@@ -7,6 +7,7 @@ mod document;
 mod export;
 mod history;
 mod import;
+pub mod keyboard;
 mod log_viewer;
 mod password;
 mod password_generator;

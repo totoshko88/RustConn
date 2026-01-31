@@ -119,7 +119,13 @@ impl ConnectionClipboard {
     }
 }
 
+/// Default TTL for cached credentials in seconds (5 minutes)
+pub const DEFAULT_CREDENTIAL_TTL_SECONDS: u64 = 300;
+
 /// Cached credentials for a connection (session-only, not persisted)
+///
+/// Credentials are automatically expired after `ttl_seconds` to minimize
+/// the window of exposure for sensitive data in memory.
 #[derive(Clone)]
 pub struct CachedCredentials {
     /// Username
@@ -128,6 +134,64 @@ pub struct CachedCredentials {
     pub password: SecretString,
     /// Domain for Windows authentication
     pub domain: String,
+    /// Timestamp when credentials were cached
+    cached_at: chrono::DateTime<chrono::Utc>,
+    /// Time-to-live in seconds (credentials expire after this duration)
+    ttl_seconds: u64,
+}
+
+impl CachedCredentials {
+    /// Creates new cached credentials with default TTL
+    #[must_use]
+    pub fn new(username: String, password: SecretString, domain: String) -> Self {
+        Self {
+            username,
+            password,
+            domain,
+            cached_at: chrono::Utc::now(),
+            ttl_seconds: DEFAULT_CREDENTIAL_TTL_SECONDS,
+        }
+    }
+
+    /// Creates new cached credentials with custom TTL
+    #[must_use]
+    #[allow(dead_code)] // Part of credential caching API
+    pub fn with_ttl(
+        username: String,
+        password: SecretString,
+        domain: String,
+        ttl_seconds: u64,
+    ) -> Self {
+        Self {
+            username,
+            password,
+            domain,
+            cached_at: chrono::Utc::now(),
+            ttl_seconds,
+        }
+    }
+
+    /// Checks if the cached credentials have expired
+    #[must_use]
+    pub fn is_expired(&self) -> bool {
+        let elapsed = chrono::Utc::now() - self.cached_at;
+        // Handle negative durations gracefully (clock skew)
+        elapsed.num_seconds().max(0) as u64 > self.ttl_seconds
+    }
+
+    /// Returns the remaining TTL in seconds, or 0 if expired
+    #[must_use]
+    #[allow(dead_code)] // Part of credential caching API
+    pub fn remaining_ttl_seconds(&self) -> u64 {
+        let elapsed = chrono::Utc::now() - self.cached_at;
+        let elapsed_secs = elapsed.num_seconds().max(0) as u64;
+        self.ttl_seconds.saturating_sub(elapsed_secs)
+    }
+
+    /// Refreshes the cache timestamp (extends TTL)
+    pub fn refresh(&mut self) {
+        self.cached_at = chrono::Utc::now();
+    }
 }
 
 /// Application state holding all managers
@@ -273,6 +337,9 @@ impl AppState {
     // ========== Password Cache Operations ==========
 
     /// Caches credentials for a connection (session-only)
+    ///
+    /// Credentials are cached with a default TTL and will automatically expire.
+    /// Use `cache_credentials_with_ttl` for custom expiration times.
     pub fn cache_credentials(
         &mut self,
         connection_id: Uuid,
@@ -282,25 +349,82 @@ impl AppState {
     ) {
         self.password_cache.insert(
             connection_id,
-            CachedCredentials {
-                username: username.to_string(),
-                password: SecretString::from(password.to_string()),
-                domain: domain.to_string(),
-            },
+            CachedCredentials::new(
+                username.to_string(),
+                SecretString::from(password.to_string()),
+                domain.to_string(),
+            ),
         );
     }
 
-    /// Gets cached credentials for a connection
+    /// Caches credentials for a connection with custom TTL
+    ///
+    /// # Arguments
+    /// * `connection_id` - The connection UUID
+    /// * `username` - Username for authentication
+    /// * `password` - Password (will be stored as SecretString)
+    /// * `domain` - Domain for Windows authentication
+    /// * `ttl_seconds` - Time-to-live in seconds
+    #[allow(dead_code)] // Part of credential caching API
+    pub fn cache_credentials_with_ttl(
+        &mut self,
+        connection_id: Uuid,
+        username: &str,
+        password: &str,
+        domain: &str,
+        ttl_seconds: u64,
+    ) {
+        self.password_cache.insert(
+            connection_id,
+            CachedCredentials::with_ttl(
+                username.to_string(),
+                SecretString::from(password.to_string()),
+                domain.to_string(),
+                ttl_seconds,
+            ),
+        );
+    }
+
+    /// Gets cached credentials for a connection if not expired
+    ///
+    /// Returns `None` if credentials are not cached or have expired.
+    /// Note: This method does not remove expired credentials. Use
+    /// `get_cached_credentials_mut` or `cleanup_expired_credentials` for cleanup.
+    #[must_use]
     pub fn get_cached_credentials(&self, connection_id: Uuid) -> Option<&CachedCredentials> {
+        self.password_cache
+            .get(&connection_id)
+            .filter(|creds| !creds.is_expired())
+    }
+
+    /// Gets cached credentials for a connection, removing if expired
+    ///
+    /// Returns `None` if credentials are not cached or have expired.
+    /// Expired credentials are automatically removed from the cache.
+    #[allow(dead_code)] // Part of credential caching API
+    pub fn get_cached_credentials_mut(
+        &mut self,
+        connection_id: Uuid,
+    ) -> Option<&CachedCredentials> {
+        // Check if credentials exist and are expired
+        if let Some(creds) = self.password_cache.get(&connection_id) {
+            if creds.is_expired() {
+                // Remove expired credentials
+                self.password_cache.remove(&connection_id);
+                return None;
+            }
+        }
         self.password_cache.get(&connection_id)
     }
 
-    /// Checks if credentials are cached for a connection
+    /// Checks if valid (non-expired) credentials are cached for a connection
     ///
     /// Note: Part of credential caching API.
     #[allow(dead_code)]
     pub fn has_cached_credentials(&self, connection_id: Uuid) -> bool {
-        self.password_cache.contains_key(&connection_id)
+        self.password_cache
+            .get(&connection_id)
+            .is_some_and(|creds| !creds.is_expired())
     }
 
     /// Clears cached credentials for a connection
@@ -317,6 +441,40 @@ impl AppState {
     #[allow(dead_code)]
     pub fn clear_all_cached_credentials(&mut self) {
         self.password_cache.clear();
+    }
+
+    /// Removes all expired credentials from the cache
+    ///
+    /// Returns the number of expired credentials that were removed.
+    /// This is called automatically during credential access, but can be
+    /// invoked manually for periodic cleanup.
+    #[allow(dead_code)]
+    pub fn cleanup_expired_credentials(&mut self) -> usize {
+        let expired_ids: Vec<Uuid> = self
+            .password_cache
+            .iter()
+            .filter(|(_, creds)| creds.is_expired())
+            .map(|(id, _)| *id)
+            .collect();
+
+        let count = expired_ids.len();
+        for id in expired_ids {
+            self.password_cache.remove(&id);
+        }
+        count
+    }
+
+    /// Refreshes the TTL for cached credentials (extends expiration)
+    ///
+    /// Call this after successful authentication to keep credentials cached.
+    #[allow(dead_code)]
+    pub fn refresh_cached_credentials(&mut self, connection_id: Uuid) -> bool {
+        if let Some(creds) = self.password_cache.get_mut(&connection_id) {
+            creds.refresh();
+            true
+        } else {
+            false
+        }
     }
 
     // ========== Credential Verification Operations ==========
@@ -350,7 +508,7 @@ impl AppState {
     ///
     /// Returns true if:
     /// - Credentials are verified (previously successful auth)
-    /// - AND we have cached credentials
+    /// - AND we have valid (non-expired) cached credentials
     ///
     /// Note: This method only checks the in-memory cache to avoid blocking the UI.
     /// KeePass credential resolution is done asynchronously when needed.
@@ -362,8 +520,10 @@ impl AppState {
             return false;
         }
 
-        // Check if we have cached credentials (fast, non-blocking)
-        self.password_cache.contains_key(&connection_id)
+        // Check if we have valid (non-expired) cached credentials
+        self.password_cache
+            .get(&connection_id)
+            .is_some_and(|creds| !creds.is_expired())
     }
 
     // ========== Connection Operations ==========
@@ -944,7 +1104,7 @@ impl AppState {
         &self,
         connection: &Connection,
     ) -> Result<Option<Credentials>, String> {
-        use rustconn_core::secret::KeePassStatus;
+        use rustconn_core::secret::{KeePassHierarchy, KeePassStatus};
         use secrecy::ExposeSecret;
 
         // For KeePass password source, directly use KeePassStatus to retrieve password
@@ -953,18 +1113,21 @@ impl AppState {
             && self.settings.secrets.kdbx_enabled
         {
             if let Some(ref kdbx_path) = self.settings.secrets.kdbx_path {
-                // Get the lookup key with protocol for uniqueness
-                // Format: "name (protocol)" or "host (protocol)" if name is empty
+                // Build hierarchical entry path using KeePassHierarchy
+                // This matches how passwords are saved with group structure
+                let groups: Vec<ConnectionGroup> =
+                    self.connection_manager.list_groups().iter().cloned().cloned().collect();
+                let entry_path = KeePassHierarchy::build_entry_path(connection, &groups);
+
+                // Add protocol suffix for uniqueness
                 let protocol = connection.protocol_config.protocol_type();
                 let protocol_str = protocol.as_str();
-                let base_name = if connection.name.trim().is_empty() {
-                    connection.host.clone()
-                } else {
-                    connection.name.clone()
-                };
-                // Replace '/' with '-' to match how passwords are saved
-                let sanitized_name = base_name.replace('/', "-");
-                let lookup_key = format!("{sanitized_name} ({protocol_str})");
+
+                // Strip RustConn/ prefix since get_password_from_kdbx_with_key adds it back
+                let entry_name = entry_path
+                    .strip_prefix("RustConn/")
+                    .unwrap_or(&entry_path);
+                let lookup_key = format!("{entry_name} ({protocol_str})");
 
                 // Get credentials - password and key file can be used together
                 let db_password = self
@@ -1073,8 +1236,8 @@ impl AppState {
                 // Prompt if no backend available
                 !self.has_secret_backend()
             }
-            PasswordSource::Bitwarden => {
-                // Bitwarden handles its own authentication
+            PasswordSource::Bitwarden | PasswordSource::OnePassword => {
+                // Bitwarden/1Password handle their own authentication
                 false
             }
             PasswordSource::Inherit => false, // Resolution will handle inheritance
@@ -1269,11 +1432,16 @@ impl AppState {
         let secret_settings = self.settings.secrets.clone();
         let secret_manager = self.secret_manager.clone();
 
+        // Get groups for hierarchical path building
+        let groups: Vec<ConnectionGroup> =
+            self.connection_manager.list_groups().iter().cloned().cloned().collect();
+
         // Spawn blocking operation in background thread
         crate::utils::spawn_blocking_with_callback(
             move || {
                 Self::resolve_credentials_blocking(
                     &connection,
+                    &groups,
                     kdbx_enabled,
                     kdbx_path,
                     kdbx_password,
@@ -1290,8 +1458,10 @@ impl AppState {
     ///
     /// This is extracted from `resolve_credentials` to be callable from a background
     /// thread without needing `&self`.
+    #[allow(clippy::too_many_arguments)]
     fn resolve_credentials_blocking(
         connection: &Connection,
+        groups: &[ConnectionGroup],
         kdbx_enabled: bool,
         kdbx_path: Option<std::path::PathBuf>,
         kdbx_password: Option<SecretString>,
@@ -1299,23 +1469,25 @@ impl AppState {
         secret_settings: rustconn_core::config::SecretSettings,
         secret_manager: SecretManager,
     ) -> Result<Option<Credentials>, String> {
-        use rustconn_core::secret::KeePassStatus;
+        use rustconn_core::secret::{KeePassHierarchy, KeePassStatus};
         use secrecy::ExposeSecret;
 
         // For KeePass password source, directly use KeePassStatus to retrieve password
         if connection.password_source == PasswordSource::KeePass && kdbx_enabled {
             if let Some(ref kdbx_path) = kdbx_path {
-                // Get the lookup key with protocol for uniqueness
+                // Build hierarchical entry path using KeePassHierarchy
+                // This matches how passwords are saved with group structure
+                let entry_path = KeePassHierarchy::build_entry_path(connection, groups);
+
+                // Add protocol suffix for uniqueness
                 let protocol = connection.protocol_config.protocol_type();
                 let protocol_str = protocol.as_str();
-                let base_name = if connection.name.trim().is_empty() {
-                    connection.host.clone()
-                } else {
-                    connection.name.clone()
-                };
-                // Replace '/' with '-' to match how passwords are saved
-                let sanitized_name = base_name.replace('/', "-");
-                let lookup_key = format!("{sanitized_name} ({protocol_str})");
+
+                // Strip RustConn/ prefix since get_password_from_kdbx_with_key adds it back
+                let entry_name = entry_path
+                    .strip_prefix("RustConn/")
+                    .unwrap_or(&entry_path);
+                let lookup_key = format!("{entry_name} ({protocol_str})");
 
                 // Get credentials - password and key file can be used together
                 let db_password = kdbx_password.as_ref().map(|p| p.expose_secret());
@@ -2267,4 +2439,113 @@ pub type SharedAppState = Rc<RefCell<AppState>>;
 /// Creates a new shared application state
 pub fn create_shared_state() -> Result<SharedAppState, String> {
     AppState::new().map(|state| Rc::new(RefCell::new(state)))
+}
+
+// ========== Safe State Access Helpers ==========
+
+/// Error type for state access failures
+#[derive(Debug, Clone)]
+#[allow(dead_code)] // Part of safe state access API
+pub enum StateAccessError {
+    /// State is already borrowed mutably
+    AlreadyBorrowed,
+    /// State is already borrowed immutably (for mutable access)
+    AlreadyBorrowedImmutably,
+}
+
+impl std::fmt::Display for StateAccessError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AlreadyBorrowed => write!(f, "State is already borrowed"),
+            Self::AlreadyBorrowedImmutably => {
+                write!(f, "State is already borrowed immutably")
+            }
+        }
+    }
+}
+
+impl std::error::Error for StateAccessError {}
+
+/// Safely accesses the state for reading
+///
+/// Returns `None` if the state is already borrowed mutably.
+/// Use this instead of `state.borrow()` to avoid panics.
+///
+/// # Example
+/// ```ignore
+/// if let Some(state_ref) = with_state(&state, |s| s.list_connections().len()) {
+///     println!("Connection count: {}", state_ref);
+/// }
+/// ```
+#[must_use]
+#[allow(dead_code)] // Part of safe state access API
+pub fn with_state<F, R>(state: &SharedAppState, f: F) -> Option<R>
+where
+    F: FnOnce(&AppState) -> R,
+{
+    state.try_borrow().ok().map(|s| f(&s))
+}
+
+/// Safely accesses the state for reading, with error handling
+///
+/// Returns `Err(StateAccessError)` if the state is already borrowed mutably.
+///
+/// # Example
+/// ```ignore
+/// match try_with_state(&state, |s| s.get_connection(id).cloned()) {
+///     Ok(Some(conn)) => { /* use connection */ }
+///     Ok(None) => { /* connection not found */ }
+///     Err(e) => tracing::warn!("State access failed: {}", e),
+/// }
+/// ```
+#[allow(dead_code)] // Part of safe state access API
+pub fn try_with_state<F, R>(state: &SharedAppState, f: F) -> Result<R, StateAccessError>
+where
+    F: FnOnce(&AppState) -> R,
+{
+    state
+        .try_borrow()
+        .map(|s| f(&s))
+        .map_err(|_| StateAccessError::AlreadyBorrowed)
+}
+
+/// Safely accesses the state for mutation
+///
+/// Returns `None` if the state is already borrowed.
+/// Use this instead of `state.borrow_mut()` to avoid panics.
+///
+/// # Example
+/// ```ignore
+/// if with_state_mut(&state, |s| s.update_last_connected(conn_id)).is_none() {
+///     tracing::warn!("Could not update last connected - state busy");
+/// }
+/// ```
+#[must_use]
+#[allow(dead_code)] // Part of safe state access API
+pub fn with_state_mut<F, R>(state: &SharedAppState, f: F) -> Option<R>
+where
+    F: FnOnce(&mut AppState) -> R,
+{
+    state.try_borrow_mut().ok().map(|mut s| f(&mut s))
+}
+
+/// Safely accesses the state for mutation, with error handling
+///
+/// Returns `Err(StateAccessError)` if the state is already borrowed.
+///
+/// # Example
+/// ```ignore
+/// if let Err(e) = try_with_state_mut(&state, |s| s.cache_credentials(id, user, pass, domain)) {
+///     tracing::warn!("Could not cache credentials: {}", e);
+/// }
+/// ```
+#[allow(dead_code)] // Part of safe state access API
+pub fn try_with_state_mut<F, R>(state: &SharedAppState, f: F) -> Result<R, StateAccessError>
+where
+    F: FnOnce(&mut AppState) -> R,
+{
+    state
+        .try_borrow_mut()
+        .map(|mut s| f(&mut s))
+        .map_err(|_| StateAccessError::AlreadyBorrowedImmutably)
 }

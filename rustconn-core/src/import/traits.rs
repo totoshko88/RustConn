@@ -123,6 +123,228 @@ impl SkippedEntry {
     }
 }
 
+/// Information about a field that was not imported
+#[derive(Debug, Clone)]
+pub struct SkippedField {
+    /// Name of the connection this field belongs to
+    pub connection_name: String,
+    /// Name of the field that was skipped
+    pub field_name: String,
+    /// Original value that couldn't be imported
+    pub original_value: Option<String>,
+    /// Reason why the field was skipped
+    pub reason: SkippedFieldReason,
+}
+
+/// Reason why a field was skipped during import
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SkippedFieldReason {
+    /// Field is not supported by the target protocol
+    NotSupported,
+    /// Field value is invalid or malformed
+    InvalidValue,
+    /// Field is deprecated in the source format
+    Deprecated,
+    /// Field requires a feature that is not available
+    FeatureUnavailable,
+    /// Field is intentionally ignored (e.g., UI-only settings)
+    Ignored,
+    /// Unknown field in source format
+    Unknown,
+}
+
+impl SkippedFieldReason {
+    /// Returns a human-readable description of the reason
+    #[must_use]
+    pub const fn description(&self) -> &'static str {
+        match self {
+            Self::NotSupported => "Field not supported by target protocol",
+            Self::InvalidValue => "Invalid or malformed value",
+            Self::Deprecated => "Deprecated field in source format",
+            Self::FeatureUnavailable => "Required feature not available",
+            Self::Ignored => "Field intentionally ignored",
+            Self::Unknown => "Unknown field in source format",
+        }
+    }
+}
+
+impl SkippedField {
+    /// Creates a new skipped field entry
+    #[must_use]
+    pub fn new(
+        connection_name: impl Into<String>,
+        field_name: impl Into<String>,
+        reason: SkippedFieldReason,
+    ) -> Self {
+        Self {
+            connection_name: connection_name.into(),
+            field_name: field_name.into(),
+            original_value: None,
+            reason,
+        }
+    }
+
+    /// Creates a skipped field with the original value
+    #[must_use]
+    pub fn with_value(
+        connection_name: impl Into<String>,
+        field_name: impl Into<String>,
+        value: impl Into<String>,
+        reason: SkippedFieldReason,
+    ) -> Self {
+        Self {
+            connection_name: connection_name.into(),
+            field_name: field_name.into(),
+            original_value: Some(value.into()),
+            reason,
+        }
+    }
+}
+
+/// Detailed import statistics with field-level tracking
+#[derive(Debug, Clone, Default)]
+pub struct ImportStatistics {
+    /// Total connections processed
+    pub total_connections: usize,
+    /// Successfully imported connections
+    pub imported_connections: usize,
+    /// Connections that failed to import
+    pub failed_connections: usize,
+    /// Total groups processed
+    pub total_groups: usize,
+    /// Successfully imported groups
+    pub imported_groups: usize,
+    /// Fields that were skipped during import
+    pub skipped_fields: Vec<SkippedField>,
+    /// Warnings generated during import
+    pub warnings: Vec<String>,
+}
+
+impl ImportStatistics {
+    /// Creates new empty statistics
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            total_connections: 0,
+            imported_connections: 0,
+            failed_connections: 0,
+            total_groups: 0,
+            imported_groups: 0,
+            skipped_fields: Vec::new(),
+            warnings: Vec::new(),
+        }
+    }
+
+    /// Records a successful connection import
+    pub fn record_connection_success(&mut self) {
+        self.total_connections += 1;
+        self.imported_connections += 1;
+    }
+
+    /// Records a failed connection import
+    pub fn record_connection_failure(&mut self) {
+        self.total_connections += 1;
+        self.failed_connections += 1;
+    }
+
+    /// Records a successful group import
+    pub fn record_group_success(&mut self) {
+        self.total_groups += 1;
+        self.imported_groups += 1;
+    }
+
+    /// Records a skipped field
+    pub fn record_skipped_field(&mut self, field: SkippedField) {
+        self.skipped_fields.push(field);
+    }
+
+    /// Records a warning
+    pub fn record_warning(&mut self, warning: impl Into<String>) {
+        self.warnings.push(warning.into());
+    }
+
+    /// Returns true if any fields were skipped
+    #[must_use]
+    pub fn has_skipped_fields(&self) -> bool {
+        !self.skipped_fields.is_empty()
+    }
+
+    /// Returns true if any warnings were generated
+    #[must_use]
+    pub fn has_warnings(&self) -> bool {
+        !self.warnings.is_empty()
+    }
+
+    /// Returns the success rate as a percentage
+    #[must_use]
+    pub fn success_rate(&self) -> f64 {
+        if self.total_connections == 0 {
+            100.0
+        } else {
+            (self.imported_connections as f64 / self.total_connections as f64) * 100.0
+        }
+    }
+
+    /// Returns a summary of skipped fields grouped by reason
+    #[must_use]
+    pub fn skipped_fields_summary(&self) -> std::collections::HashMap<SkippedFieldReason, usize> {
+        let mut summary = std::collections::HashMap::new();
+        for field in &self.skipped_fields {
+            *summary.entry(field.reason).or_insert(0) += 1;
+        }
+        summary
+    }
+
+    /// Returns skipped fields for a specific connection
+    #[must_use]
+    pub fn skipped_fields_for_connection(&self, connection_name: &str) -> Vec<&SkippedField> {
+        self.skipped_fields
+            .iter()
+            .filter(|f| f.connection_name == connection_name)
+            .collect()
+    }
+
+    /// Generates a detailed report of the import
+    #[must_use]
+    pub fn detailed_report(&self) -> String {
+        use std::fmt::Write;
+
+        let mut report = String::new();
+
+        let _ = write!(
+            report,
+            "Import Statistics:\n\
+             - Connections: {}/{} imported ({:.1}% success)\n\
+             - Groups: {}/{} imported\n\
+             - Skipped fields: {}\n\
+             - Warnings: {}\n",
+            self.imported_connections,
+            self.total_connections,
+            self.success_rate(),
+            self.imported_groups,
+            self.total_groups,
+            self.skipped_fields.len(),
+            self.warnings.len()
+        );
+
+        if !self.skipped_fields.is_empty() {
+            report.push_str("\nSkipped Fields:\n");
+            for (reason, count) in self.skipped_fields_summary() {
+                let _ = writeln!(report, "  - {}: {count}", reason.description());
+            }
+        }
+
+        if !self.warnings.is_empty() {
+            report.push_str("\nWarnings:\n");
+            for warning in &self.warnings {
+                let _ = writeln!(report, "  - {warning}");
+            }
+        }
+
+        report
+    }
+}
+
 /// Trait for import source implementations.
 ///
 /// Each import source (SSH config, Asbru-CM, Remmina, Ansible) implements
