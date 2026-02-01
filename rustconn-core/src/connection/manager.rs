@@ -1726,8 +1726,8 @@ mod tests {
         (manager, temp_dir)
     }
 
-    #[test]
-    fn test_create_connection() {
+    #[tokio::test]
+    async fn test_create_connection() {
         let (mut manager, _temp) = create_test_manager();
 
         let id = manager
@@ -1746,8 +1746,8 @@ mod tests {
         assert_eq!(conn.port, 22);
     }
 
-    #[test]
-    fn test_update_connection() {
+    #[tokio::test]
+    async fn test_update_connection() {
         let (mut manager, _temp) = create_test_manager();
 
         let id = manager
@@ -1770,8 +1770,8 @@ mod tests {
         assert_eq!(conn.host, "new.example.com");
     }
 
-    #[test]
-    fn test_delete_connection() {
+    #[tokio::test]
+    async fn test_delete_connection() {
         let (mut manager, _temp) = create_test_manager();
 
         let id = manager
@@ -1789,8 +1789,8 @@ mod tests {
         assert!(manager.get_connection(id).is_none());
     }
 
-    #[test]
-    fn test_create_group() {
+    #[tokio::test]
+    async fn test_create_group() {
         let (mut manager, _temp) = create_test_manager();
 
         let id = manager.create_group("Production".to_string()).unwrap();
@@ -1801,8 +1801,8 @@ mod tests {
         assert!(group.parent_id.is_none());
     }
 
-    #[test]
-    fn test_create_group_with_parent() {
+    #[tokio::test]
+    async fn test_create_group_with_parent() {
         let (mut manager, _temp) = create_test_manager();
 
         let parent_id = manager.create_group("Production".to_string()).unwrap();
@@ -1814,8 +1814,8 @@ mod tests {
         assert_eq!(child.parent_id, Some(parent_id));
     }
 
-    #[test]
-    fn test_delete_group_moves_connections() {
+    #[tokio::test]
+    async fn test_delete_group_moves_connections() {
         let (mut manager, _temp) = create_test_manager();
 
         let group_id = manager.create_group("Production".to_string()).unwrap();
@@ -1840,8 +1840,8 @@ mod tests {
         assert!(manager.get_connection(conn_id).unwrap().group_id.is_none());
     }
 
-    #[test]
-    fn test_move_group_prevents_cycle() {
+    #[tokio::test]
+    async fn test_move_group_prevents_cycle() {
         let (mut manager, _temp) = create_test_manager();
 
         let parent_id = manager.create_group("Parent".to_string()).unwrap();
@@ -1854,8 +1854,8 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[test]
-    fn test_search_by_name() {
+    #[tokio::test]
+    async fn test_search_by_name() {
         let (mut manager, _temp) = create_test_manager();
 
         manager
@@ -1881,8 +1881,8 @@ mod tests {
         assert_eq!(results[0].name, "Production Server");
     }
 
-    #[test]
-    fn test_search_by_host() {
+    #[tokio::test]
+    async fn test_search_by_host() {
         let (mut manager, _temp) = create_test_manager();
 
         manager
@@ -1898,8 +1898,8 @@ mod tests {
         assert_eq!(results.len(), 1);
     }
 
-    #[test]
-    fn test_filter_by_tag() {
+    #[tokio::test]
+    async fn test_filter_by_tag() {
         let (mut manager, _temp) = create_test_manager();
 
         let id = manager
@@ -1923,8 +1923,8 @@ mod tests {
         assert_eq!(results.len(), 0);
     }
 
-    #[test]
-    fn test_get_group_path() {
+    #[tokio::test]
+    async fn test_get_group_path() {
         let (mut manager, _temp) = create_test_manager();
 
         let root_id = manager.create_group("Production".to_string()).unwrap();
@@ -1939,8 +1939,8 @@ mod tests {
         assert_eq!(path, "Production/Web Servers/Frontend");
     }
 
-    #[test]
-    fn test_validate_hierarchy() {
+    #[tokio::test]
+    async fn test_validate_hierarchy() {
         let (mut manager, _temp) = create_test_manager();
 
         manager.create_group("Root".to_string()).unwrap();
@@ -1949,16 +1949,16 @@ mod tests {
 
     // ========== Connection Naming Tests ==========
 
-    #[test]
-    fn test_generate_unique_name_no_conflict() {
+    #[tokio::test]
+    async fn test_generate_unique_name_no_conflict() {
         let (manager, _temp) = create_test_manager();
 
         let name = manager.generate_unique_name("server", crate::models::ProtocolType::Ssh);
         assert_eq!(name, "server");
     }
 
-    #[test]
-    fn test_generate_unique_name_with_protocol_suffix() {
+    #[tokio::test]
+    async fn test_generate_unique_name_with_protocol_suffix() {
         let (mut manager, _temp) = create_test_manager();
 
         // Create a connection with the base name
@@ -1976,8 +1976,8 @@ mod tests {
         assert_eq!(name, "server (RDP)");
     }
 
-    #[test]
-    fn test_generate_unique_name_with_numeric_suffix() {
+    #[tokio::test]
+    async fn test_generate_unique_name_with_numeric_suffix() {
         let (mut manager, _temp) = create_test_manager();
 
         // Create connections with base name and protocol suffix
@@ -2004,8 +2004,8 @@ mod tests {
         assert_eq!(name, "server (SSH) 2");
     }
 
-    #[test]
-    fn test_name_exists() {
+    #[tokio::test]
+    async fn test_name_exists() {
         let (mut manager, _temp) = create_test_manager();
 
         let id = manager
@@ -2027,8 +2027,8 @@ mod tests {
         assert!(!manager.name_exists("Test Server", Some(id)));
     }
 
-    #[test]
-    fn test_normalize_name_removes_protocol_suffix() {
+    #[tokio::test]
+    async fn test_normalize_name_removes_protocol_suffix() {
         let (mut manager, _temp) = create_test_manager();
 
         // Create a connection with protocol suffix
@@ -2046,8 +2046,8 @@ mod tests {
         assert_eq!(normalized, "server");
     }
 
-    #[test]
-    fn test_normalize_name_removes_numeric_suffix() {
+    #[tokio::test]
+    async fn test_normalize_name_removes_numeric_suffix() {
         let (mut manager, _temp) = create_test_manager();
 
         // Create a connection with numeric suffix
@@ -2065,8 +2065,8 @@ mod tests {
         assert_eq!(normalized, "server");
     }
 
-    #[test]
-    fn test_normalize_name_keeps_suffix_when_conflict() {
+    #[tokio::test]
+    async fn test_normalize_name_keeps_suffix_when_conflict() {
         let (mut manager, _temp) = create_test_manager();
 
         // Create two connections
