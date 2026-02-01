@@ -17,6 +17,18 @@ use rustconn_core::{
 use tempfile::TempDir;
 use uuid::Uuid;
 
+// Helper to create a test ConnectionManager with a Tokio runtime
+// Uses a Tokio runtime because ConnectionManager::new() spawns async persistence tasks
+fn create_test_manager() -> (ConnectionManager, TempDir, tokio::runtime::Runtime) {
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+    let temp_dir = TempDir::new().unwrap();
+    let config_manager = ConfigManager::with_config_dir(temp_dir.path().to_path_buf());
+    let manager = runtime.block_on(async {
+        ConnectionManager::new(config_manager).unwrap()
+    });
+    (manager, temp_dir, runtime)
+}
+
 // ========== Generators ==========
 
 /// Strategy for generating valid hostnames
@@ -112,11 +124,7 @@ proptest! {
         username in arb_username(),
         protocol in arb_protocol(),
     ) {
-        // Create a temporary directory for the connection manager
-        let temp_dir = TempDir::new().expect("Failed to create temp dir");
-        let config_manager = ConfigManager::with_config_dir(temp_dir.path().to_path_buf());
-        let manager = ConnectionManager::new(config_manager)
-            .expect("Failed to create connection manager");
+        let (manager, _temp, _runtime) = create_test_manager();
 
         // Record initial state
         let initial_count = manager.list_connections().len();
@@ -203,11 +211,7 @@ proptest! {
         existing_name in "[a-zA-Z][a-zA-Z0-9_-]{0,15}",
         existing_host in arb_host(),
     ) {
-        // Create a temporary directory for the connection manager
-        let temp_dir = TempDir::new().expect("Failed to create temp dir");
-        let config_manager = ConfigManager::with_config_dir(temp_dir.path().to_path_buf());
-        let mut manager = ConnectionManager::new(config_manager)
-            .expect("Failed to create connection manager");
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create and save an existing connection
         let existing_conn = Connection::new_ssh(
@@ -251,11 +255,7 @@ proptest! {
         hosts in prop::collection::vec(arb_host(), 1..10),
         ports in prop::collection::vec(arb_port(), 1..10),
     ) {
-        // Create a temporary directory for the connection manager
-        let temp_dir = TempDir::new().expect("Failed to create temp dir");
-        let config_manager = ConfigManager::with_config_dir(temp_dir.path().to_path_buf());
-        let manager = ConnectionManager::new(config_manager)
-            .expect("Failed to create connection manager");
+        let (manager, _temp, _runtime) = create_test_manager();
 
         // Record initial state
         let initial_count = manager.list_connections().len();
@@ -347,14 +347,11 @@ mod unit_tests {
 
     #[test]
     fn test_quick_connect_not_in_manager() {
-        let temp_dir = TempDir::new().expect("Failed to create temp dir");
-        let config_manager = ConfigManager::with_config_dir(temp_dir.path().to_path_buf());
-        let manager =
-            ConnectionManager::new(config_manager).expect("Failed to create connection manager");
+        let (manager, _temp, _runtime) = super::create_test_manager();
 
         // Create Quick Connect (not added to manager)
         let quick_conn =
-            create_quick_connect_connection("example.com", 22, None, ProtocolType::Ssh);
+            super::create_quick_connect_connection("example.com", 22, None, ProtocolType::Ssh);
 
         // Verify it's not in the manager
         assert!(manager.get_connection(quick_conn.id).is_none());

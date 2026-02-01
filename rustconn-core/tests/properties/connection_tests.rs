@@ -238,11 +238,15 @@ fn arb_connection() -> impl Strategy<Value = Connection> {
 }
 
 // Helper to create a test ConnectionManager
-fn create_test_manager() -> (ConnectionManager, TempDir) {
+// Uses a Tokio runtime because ConnectionManager::new() spawns async persistence tasks
+fn create_test_manager() -> (ConnectionManager, TempDir, tokio::runtime::Runtime) {
+    let runtime = tokio::runtime::Runtime::new().unwrap();
     let temp_dir = TempDir::new().unwrap();
     let config_manager = ConfigManager::with_config_dir(temp_dir.path().to_path_buf());
-    let manager = ConnectionManager::new(config_manager).unwrap();
-    (manager, temp_dir)
+    let manager = runtime.block_on(async {
+        ConnectionManager::new(config_manager).unwrap()
+    });
+    (manager, temp_dir, runtime)
 }
 
 proptest! {
@@ -261,7 +265,7 @@ proptest! {
         port in arb_port(),
         protocol_config in arb_protocol_config(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create connection
         let id = manager
@@ -297,7 +301,7 @@ proptest! {
         new_host in arb_host(),
         new_port in arb_port(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create original connection
         let id = manager
@@ -356,7 +360,7 @@ proptest! {
         port in arb_port(),
         protocol_config in arb_protocol_config(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create connection
         let id = manager
@@ -394,7 +398,7 @@ proptest! {
         conn1 in arb_connection(),
         conn2 in arb_connection(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create two connections
         let id1 = manager
@@ -432,7 +436,7 @@ proptest! {
     /// all fields including the original ID.
     #[test]
     fn create_from_preserves_all_fields(conn in arb_connection()) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         let original_id = conn.id;
 
@@ -478,7 +482,7 @@ proptest! {
     fn group_hierarchy_is_acyclic_after_creation(
         names in prop::collection::vec(arb_group_name(), 1..10),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create groups with random parent relationships
         let mut group_ids = Vec::new();
@@ -518,7 +522,7 @@ proptest! {
     fn move_group_prevents_cycles(
         names in prop::collection::vec(arb_group_name(), 3..6),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create a chain of groups: A -> B -> C -> ...
         let mut group_ids = Vec::new();
@@ -561,7 +565,7 @@ proptest! {
     fn all_parent_references_are_valid(
         names in prop::collection::vec(arb_group_name(), 1..8),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create groups with various parent relationships
         let mut group_ids = Vec::new();
@@ -603,7 +607,7 @@ proptest! {
         child_name in arb_group_name(),
         grandchild_name in arb_group_name(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create three-level hierarchy
         let parent_id = manager.create_group(parent_name).expect("Should create parent");
@@ -651,7 +655,7 @@ proptest! {
         parent_name in arb_group_name(),
         child_name in arb_group_name(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create parent-child relationship
         let parent_id = manager.create_group(parent_name).expect("Should create parent");
@@ -685,7 +689,7 @@ proptest! {
         group_names in prop::collection::vec(arb_group_name(), 2..8),
         move_attempts in prop::collection::vec((0usize..8usize, 0usize..8usize), 1..5),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create groups with various parent relationships
         let mut group_ids = Vec::new();
@@ -759,7 +763,7 @@ proptest! {
         child_name in arb_group_name(),
         grandchild_name in arb_group_name(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create three-level hierarchy
         let root_id = manager.create_group(root_name.clone()).expect("Should create root");
@@ -810,7 +814,7 @@ proptest! {
         conn in arb_connection(),
         group_name in arb_group_name(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create connection and group
         let conn_id = manager.create_connection_from(conn).expect("Should create connection");
@@ -862,7 +866,7 @@ proptest! {
         connections in prop::collection::vec(arb_connection(), 1..20),
         query in "[a-z]{1,5}",
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Add all connections
         for conn in &connections {
@@ -903,7 +907,7 @@ proptest! {
         port in arb_port(),
         protocol_config in arb_protocol_config(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create a connection
         let id = manager
@@ -945,7 +949,7 @@ proptest! {
         conn2 in arb_connection(),
         tag in "[a-z]{3,10}",
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create first connection with the tag
         let mut conn1_with_tag = conn1.clone();
@@ -990,7 +994,7 @@ proptest! {
         // Skip if tags are the same
         prop_assume!(tag1 != tag2);
 
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create connection with both tags
         let mut conn_both = conn.clone();
@@ -1038,7 +1042,7 @@ proptest! {
         port in arb_port(),
         protocol_config in arb_protocol_config(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create connection with mixed case name
         let id = manager
@@ -1072,7 +1076,7 @@ proptest! {
         port in arb_port(),
         protocol_config in arb_protocol_config(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create group
         let group_id = manager.create_group(group_name.clone()).expect("Should create group");
@@ -1106,7 +1110,7 @@ proptest! {
         connections in prop::collection::vec(arb_connection(), 2..10),
         delete_indices in prop::collection::hash_set(0usize..10usize, 1..5),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create all connections
         let mut created_ids = Vec::new();
@@ -1187,7 +1191,7 @@ proptest! {
     fn bulk_delete_continues_on_failure(
         connections in prop::collection::vec(arb_connection(), 3..8),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create connections
         let mut created_ids = Vec::new();
@@ -1274,7 +1278,7 @@ proptest! {
         group_names in prop::collection::vec(arb_group_name(), 2..5),
         conn in arb_connection(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create groups
         let mut group_ids = Vec::new();
@@ -1336,7 +1340,7 @@ proptest! {
     fn connection_duplication_preserves_fields_with_new_id(
         conn in arb_connection(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create original connection
         let original_id = manager
@@ -1429,7 +1433,7 @@ proptest! {
         group_name in arb_group_name(),
         connections in prop::collection::vec(arb_connection(), 1..5),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create a group
         let group_id = manager
@@ -1494,7 +1498,7 @@ proptest! {
         parent_conn in arb_connection(),
         child_conn in arb_connection(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create parent group
         let parent_id = manager
@@ -1570,7 +1574,7 @@ proptest! {
         conn_names_g1 in prop::collection::vec(arb_name(), 2..5),
         conn_names_g2 in prop::collection::vec(arb_name(), 2..5),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create two groups
         let group1_id = manager.create_group(group1_name).expect("Should create group 1");
@@ -1642,7 +1646,7 @@ proptest! {
         group_names in prop::collection::vec(arb_group_name(), 1..4),
         conn_names in prop::collection::vec(arb_name(), 3..8),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create groups
         let mut group_ids = Vec::new();
@@ -1731,6 +1735,7 @@ proptest! {
         group_name in arb_group_name(),
         conn_names in prop::collection::vec(arb_name(), 2..5),
     ) {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
         let temp_dir = TempDir::new().unwrap();
         let config_manager = ConfigManager::with_config_dir(temp_dir.path().to_path_buf());
 
@@ -1738,7 +1743,9 @@ proptest! {
         let group_id;
         let conn_ids: Vec<Uuid>;
         {
-            let mut manager = ConnectionManager::new(config_manager.clone()).unwrap();
+            let mut manager = runtime.block_on(async {
+                ConnectionManager::new(config_manager.clone()).unwrap()
+            });
 
             group_id = manager.create_group(group_name).expect("Should create group");
 
@@ -1753,10 +1760,17 @@ proptest! {
 
             // Sort the group
             manager.sort_group(group_id).expect("Should sort group");
+
+            // Flush persistence before dropping manager
+            runtime.block_on(async {
+                manager.flush_persistence().await.expect("Should flush persistence");
+            });
         }
 
         // Create a new manager to reload from disk
-        let manager2 = ConnectionManager::new(config_manager).unwrap();
+        let manager2 = runtime.block_on(async {
+            ConnectionManager::new(config_manager).unwrap()
+        });
 
         // Verify sort_order values were persisted
         for conn_id in &conn_ids {
@@ -1795,7 +1809,7 @@ proptest! {
         group_name in arb_group_name(),
         conn_names in prop::collection::vec(arb_name(), 3..6),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create a group
         let group_id = manager
@@ -1874,7 +1888,7 @@ proptest! {
         group2_name in arb_group_name(),
         conn in arb_connection(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create two groups
         let group1_id = manager
@@ -1930,7 +1944,7 @@ proptest! {
         group_name in arb_group_name(),
         conn in arb_connection(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create a group
         let group_id = manager
@@ -1981,6 +1995,7 @@ proptest! {
         group_name in arb_group_name(),
         conn_names in prop::collection::vec(arb_name(), 3..5),
     ) {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
         let temp_dir = TempDir::new().unwrap();
         let config_manager = ConfigManager::with_config_dir(temp_dir.path().to_path_buf());
 
@@ -1991,7 +2006,9 @@ proptest! {
 
         // Create and reorder in first manager instance
         {
-            let mut manager = ConnectionManager::new(config_manager.clone()).unwrap();
+            let mut manager = runtime.block_on(async {
+                ConnectionManager::new(config_manager.clone()).unwrap()
+            });
 
             group_id = manager.create_group(group_name).expect("Should create group");
 
@@ -2011,10 +2028,17 @@ proptest! {
             manager
                 .reorder_connection(source_id, target_id)
                 .expect("Should reorder connection");
+
+            // Flush persistence before dropping manager
+            runtime.block_on(async {
+                manager.flush_persistence().await.expect("Should flush persistence");
+            });
         }
 
         // Create a new manager to reload from disk
-        let manager2 = ConnectionManager::new(config_manager).unwrap();
+        let manager2 = runtime.block_on(async {
+            ConnectionManager::new(config_manager).unwrap()
+        });
 
         // Verify the reordering was persisted
         let source_order = manager2.get_connection(source_id).unwrap().sort_order;
@@ -2043,7 +2067,7 @@ proptest! {
     fn sort_by_recent_orders_by_timestamp(
         conn_names in prop::collection::vec(arb_name(), 3..8),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create connections
         let mut conn_ids = Vec::new();
@@ -2119,7 +2143,7 @@ proptest! {
     fn sort_by_recent_places_none_timestamps_last(
         conn_names in prop::collection::vec(arb_name(), 2..6),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create connections - first half with timestamps, second half without
         let mut conn_ids = Vec::new();
@@ -2184,7 +2208,7 @@ proptest! {
         host in arb_host(),
         port in arb_port(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create a connection
         let conn_id = manager
@@ -2242,7 +2266,7 @@ proptest! {
         host in arb_host(),
         port in arb_port(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create a connection
         let conn_id = manager
@@ -2316,7 +2340,7 @@ proptest! {
         protocols in prop::collection::vec(arb_protocol_type(), 1..5),
         hosts in prop::collection::vec(arb_host(), 1..5),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create multiple connections with the same base name
         let mut created_names = Vec::new();
@@ -2391,7 +2415,7 @@ proptest! {
         second_protocol in arb_protocol_type(),
         host in arb_host(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create first connection with base name
         let first_config = match first_protocol {
@@ -2441,7 +2465,7 @@ proptest! {
         protocol in arb_protocol_type(),
         host in arb_host(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create a connection with a suffixed name (simulating previous deduplication)
         let suffixed_name = format!("{} ({})", base_name, protocol);
@@ -2481,7 +2505,7 @@ proptest! {
         host1 in arb_host(),
         host2 in arb_host(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create first connection with base name
         let first_config = match protocol {
@@ -2524,7 +2548,7 @@ proptest! {
         suffix_number in 2u32..100u32,
         host in arb_host(),
     ) {
-        let (mut manager, _temp) = create_test_manager();
+        let (mut manager, _temp, _runtime) = create_test_manager();
 
         // Create a connection with a numeric suffixed name
         let suffixed_name = format!("{} ({}) {}", base_name, protocol, suffix_number);
