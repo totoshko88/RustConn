@@ -55,6 +55,7 @@
   </screenshots>
   <url type="homepage">https://github.com/totoshko88/RustConn</url>
   <url type="bugtracker">https://github.com/totoshko88/RustConn/issues</url>
+  <url type="vcs-browser">https://github.com/totoshko88/RustConn</url>
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
