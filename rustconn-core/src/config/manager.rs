@@ -6,6 +6,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use tokio::io::AsyncWriteExt;
+
 use crate::cluster::Cluster;
 use crate::error::{ConfigError, ConfigResult};
 use crate::models::{
@@ -21,6 +23,7 @@ const SNIPPETS_FILE: &str = "snippets.toml";
 const CLUSTERS_FILE: &str = "clusters.toml";
 const TEMPLATES_FILE: &str = "templates.toml";
 const HISTORY_FILE: &str = "history.toml";
+const TRASH_FILE: &str = "trash.toml";
 const CONFIG_FILE: &str = "config.toml";
 
 /// Wrapper for serializing a list of connections
@@ -63,6 +66,15 @@ struct TemplatesFile {
 struct HistoryFile {
     #[serde(default)]
     entries: Vec<ConnectionHistoryEntry>,
+}
+
+/// Wrapper for serializing trash (deleted items)
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+pub struct TrashFile {
+    #[serde(default)]
+    pub connections: Vec<(Connection, chrono::DateTime<chrono::Utc>)>,
+    #[serde(default)]
+    pub groups: Vec<(ConnectionGroup, chrono::DateTime<chrono::Utc>)>,
 }
 
 /// Configuration manager for `RustConn`
@@ -173,6 +185,22 @@ impl ConfigManager {
         Self::save_toml_file(&path, &file)
     }
 
+    /// Saves connections to the configuration file asynchronously
+    ///
+    /// Creates the configuration directory if it doesn't exist.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be written.
+    pub async fn save_connections_async(&self, connections: &[Connection]) -> ConfigResult<()> {
+        self.ensure_config_dir()?;
+        let path = self.config_dir.join(CONNECTIONS_FILE);
+        let file = ConnectionsFile {
+            connections: connections.to_vec(),
+        };
+        Self::save_toml_file_async(&path, &file).await
+    }
+
     // ========== Groups ==========
 
     /// Loads connection groups from the configuration file
@@ -201,6 +229,22 @@ impl ConfigManager {
             groups: groups.to_vec(),
         };
         Self::save_toml_file(&path, &file)
+    }
+
+    /// Saves connection groups to the configuration file asynchronously
+    ///
+    /// Creates the configuration directory if it doesn't exist.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be written.
+    pub async fn save_groups_async(&self, groups: &[ConnectionGroup]) -> ConfigResult<()> {
+        self.ensure_config_dir()?;
+        let path = self.config_dir.join(GROUPS_FILE);
+        let file = GroupsFile {
+            groups: groups.to_vec(),
+        };
+        Self::save_toml_file_async(&path, &file).await
     }
 
     // ========== Snippets ==========
@@ -323,6 +367,44 @@ impl ConfigManager {
         Self::save_toml_file(&path, &file)
     }
 
+    // ========== Trash ==========
+
+    /// Loads trash (deleted items) from the configuration file
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file exists but cannot be parsed.
+    #[allow(clippy::type_complexity)]
+    pub fn load_trash(
+        &self,
+    ) -> ConfigResult<(
+        Vec<(Connection, chrono::DateTime<chrono::Utc>)>,
+        Vec<(ConnectionGroup, chrono::DateTime<chrono::Utc>)>,
+    )> {
+        let path = self.config_dir.join(TRASH_FILE);
+        let file = Self::load_toml_file::<TrashFile>(&path)?;
+        Ok((file.connections, file.groups))
+    }
+
+    /// Saves trash items to the configuration file asynchronously
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be written.
+    pub async fn save_trash_async(
+        &self,
+        connections: &[(Connection, chrono::DateTime<chrono::Utc>)],
+        groups: &[(ConnectionGroup, chrono::DateTime<chrono::Utc>)],
+    ) -> ConfigResult<()> {
+        self.ensure_config_dir()?;
+        let path = self.config_dir.join(TRASH_FILE);
+        let file = TrashFile {
+            connections: connections.to_vec(),
+            groups: groups.to_vec(),
+        };
+        Self::save_toml_file_async(&path, &file).await
+    }
+
     // ========== Application Settings ==========
 
     /// Loads application settings from the configuration file
@@ -417,6 +499,30 @@ impl ConfigManager {
 
         fs::write(path, content)
             .map_err(|e| ConfigError::Write(format!("Failed to write {}: {}", path.display(), e)))
+    }
+
+    /// Saves data to a TOML file asynchronously
+    #[allow(clippy::future_not_send)] // Path is not Sync, effectively pinned to thread which is fine for our use case
+    async fn save_toml_file_async<T>(path: &Path, data: &T) -> ConfigResult<()>
+    where
+        T: serde::Serialize,
+    {
+        let content = toml::to_string_pretty(data)
+            .map_err(|e| ConfigError::Serialize(format!("Failed to serialize: {e}")))?;
+
+        let mut file = tokio::fs::File::create(path).await.map_err(|e| {
+            ConfigError::Write(format!("Failed to create {}: {}", path.display(), e))
+        })?;
+
+        file.write_all(content.as_bytes()).await.map_err(|e| {
+            ConfigError::Write(format!("Failed to write {}: {}", path.display(), e))
+        })?;
+
+        file.flush().await.map_err(|e| {
+            ConfigError::Write(format!("Failed to flush {}: {}", path.display(), e))
+        })?;
+
+        Ok(())
     }
 
     // ========== Validation ==========
@@ -625,6 +731,27 @@ mod tests {
         assert_eq!(loaded[0].name, conn.name);
         assert_eq!(loaded[0].host, conn.host);
         assert_eq!(loaded[0].port, conn.port);
+    }
+
+    #[tokio::test]
+    async fn test_save_connections_async() {
+        let (manager, _temp) = create_test_manager();
+
+        let conn = Connection::new(
+            "Test Async".to_string(),
+            "async.example.com".to_string(),
+            22,
+            ProtocolConfig::Ssh(SshConfig::default()),
+        );
+
+        manager
+            .save_connections_async(std::slice::from_ref(&conn))
+            .await
+            .unwrap();
+        let loaded = manager.load_connections().unwrap();
+
+        assert_eq!(loaded.len(), 1);
+        assert_eq!(loaded[0].name, "Test Async");
     }
 
     #[test]

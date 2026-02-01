@@ -4,6 +4,7 @@
 //! and provides thread-safe access to core functionality.
 
 use chrono::Utc;
+use rustconn_core::error::ConfigResult;
 use rustconn_core::models::PasswordSource;
 use rustconn_core::models::{ConnectionHistoryEntry, ConnectionStatistics};
 use rustconn_core::{
@@ -153,39 +154,12 @@ impl CachedCredentials {
         }
     }
 
-    /// Creates new cached credentials with custom TTL
-    #[must_use]
-    #[allow(dead_code)] // Part of credential caching API
-    pub fn with_ttl(
-        username: String,
-        password: SecretString,
-        domain: String,
-        ttl_seconds: u64,
-    ) -> Self {
-        Self {
-            username,
-            password,
-            domain,
-            cached_at: chrono::Utc::now(),
-            ttl_seconds,
-        }
-    }
-
     /// Checks if the cached credentials have expired
     #[must_use]
     pub fn is_expired(&self) -> bool {
         let elapsed = chrono::Utc::now() - self.cached_at;
         // Handle negative durations gracefully (clock skew)
         elapsed.num_seconds().max(0) as u64 > self.ttl_seconds
-    }
-
-    /// Returns the remaining TTL in seconds, or 0 if expired
-    #[must_use]
-    #[allow(dead_code)] // Part of credential caching API
-    pub fn remaining_ttl_seconds(&self) -> u64 {
-        let elapsed = chrono::Utc::now() - self.cached_at;
-        let elapsed_secs = elapsed.num_seconds().max(0) as u64;
-        self.ttl_seconds.saturating_sub(elapsed_secs)
     }
 
     /// Refreshes the cache timestamp (extends TTL)
@@ -357,34 +331,6 @@ impl AppState {
         );
     }
 
-    /// Caches credentials for a connection with custom TTL
-    ///
-    /// # Arguments
-    /// * `connection_id` - The connection UUID
-    /// * `username` - Username for authentication
-    /// * `password` - Password (will be stored as SecretString)
-    /// * `domain` - Domain for Windows authentication
-    /// * `ttl_seconds` - Time-to-live in seconds
-    #[allow(dead_code)] // Part of credential caching API
-    pub fn cache_credentials_with_ttl(
-        &mut self,
-        connection_id: Uuid,
-        username: &str,
-        password: &str,
-        domain: &str,
-        ttl_seconds: u64,
-    ) {
-        self.password_cache.insert(
-            connection_id,
-            CachedCredentials::with_ttl(
-                username.to_string(),
-                SecretString::from(password.to_string()),
-                domain.to_string(),
-                ttl_seconds,
-            ),
-        );
-    }
-
     /// Gets cached credentials for a connection if not expired
     ///
     /// Returns `None` if credentials are not cached or have expired.
@@ -395,26 +341,6 @@ impl AppState {
         self.password_cache
             .get(&connection_id)
             .filter(|creds| !creds.is_expired())
-    }
-
-    /// Gets cached credentials for a connection, removing if expired
-    ///
-    /// Returns `None` if credentials are not cached or have expired.
-    /// Expired credentials are automatically removed from the cache.
-    #[allow(dead_code)] // Part of credential caching API
-    pub fn get_cached_credentials_mut(
-        &mut self,
-        connection_id: Uuid,
-    ) -> Option<&CachedCredentials> {
-        // Check if credentials exist and are expired
-        if let Some(creds) = self.password_cache.get(&connection_id) {
-            if creds.is_expired() {
-                // Remove expired credentials
-                self.password_cache.remove(&connection_id);
-                return None;
-            }
-        }
-        self.password_cache.get(&connection_id)
     }
 
     /// Checks if valid (non-expired) credentials are cached for a connection
@@ -441,27 +367,6 @@ impl AppState {
     #[allow(dead_code)]
     pub fn clear_all_cached_credentials(&mut self) {
         self.password_cache.clear();
-    }
-
-    /// Removes all expired credentials from the cache
-    ///
-    /// Returns the number of expired credentials that were removed.
-    /// This is called automatically during credential access, but can be
-    /// invoked manually for periodic cleanup.
-    #[allow(dead_code)]
-    pub fn cleanup_expired_credentials(&mut self) -> usize {
-        let expired_ids: Vec<Uuid> = self
-            .password_cache
-            .iter()
-            .filter(|(_, creds)| creds.is_expired())
-            .map(|(id, _)| *id)
-            .collect();
-
-        let count = expired_ids.len();
-        for id in expired_ids {
-            self.password_cache.remove(&id);
-        }
-        count
     }
 
     /// Refreshes the TTL for cached credentials (extends expiration)
@@ -575,35 +480,20 @@ impl AppState {
             .generate_unique_name(base_name, protocol)
     }
 
-    /// Generates a unique name without protocol suffix (legacy method for backward compatibility)
-    ///
-    /// This method is kept for cases where protocol is not known or not relevant.
-    ///
-    /// Note: Part of connection naming API.
-    #[allow(dead_code)]
-    pub fn generate_unique_connection_name_simple(&self, base_name: &str) -> String {
-        if !self.connection_exists_by_name(base_name) {
-            return base_name.to_string();
-        }
-
-        let mut counter = 1;
-        loop {
-            let new_name = format!("{base_name} ({counter})");
-            if !self.connection_exists_by_name(&new_name) {
-                return new_name;
-            }
-            counter += 1;
-        }
+    /// Restores a deleted connection
+    pub fn restore_connection(&mut self, id: Uuid) -> ConfigResult<()> {
+        self.connection_manager.restore_connection(id)
     }
 
-    /// Normalizes a connection name by removing auto-generated suffixes if the base name is now unique
-    ///
-    /// This should be called when renaming a connection to potentially simplify the name.
-    ///
-    /// Note: Part of connection naming API.
+    /// Restores a deleted group
+    pub fn restore_group(&mut self, id: Uuid) -> ConfigResult<()> {
+        self.connection_manager.restore_group(id)
+    }
+
+    /// Permanently empties the trash
     #[allow(dead_code)]
-    pub fn normalize_connection_name(&self, name: &str, connection_id: Uuid) -> String {
-        self.connection_manager.normalize_name(name, connection_id)
+    pub fn empty_trash(&mut self) -> ConfigResult<()> {
+        self.connection_manager.empty_trash()
     }
 
     /// Generates a unique group name by appending a number if needed
@@ -644,14 +534,6 @@ impl AppState {
     /// Lists all connections
     pub fn list_connections(&self) -> Vec<&Connection> {
         self.connection_manager.list_connections()
-    }
-
-    /// Searches connections
-    ///
-    /// Note: Part of connection search API.
-    #[allow(dead_code)]
-    pub fn search_connections(&self, query: &str) -> Vec<&Connection> {
-        self.connection_manager.search(query)
     }
 
     /// Gets connections by group
@@ -755,58 +637,6 @@ impl AppState {
         self.connection_manager.get_group_path(group_id)
     }
 
-    /// Updates the sort order of a connection
-    ///
-    /// Note: Part of connection ordering API.
-    #[allow(dead_code)]
-    pub fn update_connection_sort_order(
-        &mut self,
-        connection_id: Uuid,
-        sort_order: i32,
-    ) -> Result<(), String> {
-        if let Some(conn) = self.connection_manager.get_connection(connection_id) {
-            let mut updated = conn.clone();
-            updated.sort_order = sort_order;
-            self.connection_manager
-                .update_connection(connection_id, updated)
-                .map_err(|e| format!("Failed to update sort order: {e}"))
-        } else {
-            Err(format!("Connection not found: {connection_id}"))
-        }
-    }
-
-    /// Updates the sort order of a group
-    ///
-    /// Note: Part of group ordering API.
-    #[allow(dead_code)]
-    pub fn update_group_sort_order(
-        &mut self,
-        group_id: Uuid,
-        sort_order: i32,
-    ) -> Result<(), String> {
-        if let Some(group) = self.connection_manager.get_group(group_id) {
-            let mut updated = group.clone();
-            updated.sort_order = sort_order;
-            self.connection_manager
-                .update_group(group_id, updated)
-                .map_err(|e| format!("Failed to update sort order: {e}"))
-        } else {
-            Err(format!("Group not found: {group_id}"))
-        }
-    }
-
-    /// Reorders connections by updating their `sort_order` values
-    ///
-    /// Note: Part of connection ordering API.
-    #[allow(dead_code)]
-    pub fn reorder_connections(&mut self, connection_ids: &[Uuid]) -> Result<(), String> {
-        for (index, &id) in connection_ids.iter().enumerate() {
-            #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
-            self.update_connection_sort_order(id, index as i32)?;
-        }
-        Ok(())
-    }
-
     /// Sorts connections within a specific group alphabetically
     pub fn sort_group(&mut self, group_id: Uuid) -> Result<(), String> {
         self.connection_manager
@@ -851,6 +681,16 @@ impl AppState {
         self.connection_manager
             .sort_by_recent()
             .map_err(|e| format!("Failed to sort by recent: {e}"))
+    }
+
+    /// Flushes any pending persistence operations immediately
+    ///
+    /// This ensures that debounced saves are written to disk before application exit.
+    pub fn flush_persistence(&self) -> Result<(), String> {
+        with_runtime(|rt| {
+            rt.block_on(self.connection_manager.flush_persistence())
+                .map_err(|e| format!("Failed to flush persistence: {e}"))
+        })?
     }
 
     // ========== Session Operations ==========
@@ -1107,6 +947,14 @@ impl AppState {
         use rustconn_core::secret::{KeePassHierarchy, KeePassStatus};
         use secrecy::ExposeSecret;
 
+        let groups: Vec<ConnectionGroup> = self
+            .connection_manager
+            .list_groups()
+            .iter()
+            .cloned()
+            .cloned()
+            .collect();
+
         // For KeePass password source, directly use KeePassStatus to retrieve password
         // This bypasses the SecretManager which requires registered backends
         if connection.password_source == PasswordSource::KeePass
@@ -1115,13 +963,6 @@ impl AppState {
             if let Some(ref kdbx_path) = self.settings.secrets.kdbx_path {
                 // Build hierarchical entry path using KeePassHierarchy
                 // This matches how passwords are saved with group structure
-                let groups: Vec<ConnectionGroup> = self
-                    .connection_manager
-                    .list_groups()
-                    .iter()
-                    .cloned()
-                    .cloned()
-                    .collect();
                 let entry_path = KeePassHierarchy::build_entry_path(connection, &groups);
 
                 // Add protocol suffix for uniqueness
@@ -1183,6 +1024,94 @@ impl AppState {
             }
         }
 
+        // For Inherit password source, traverse parent groups to find credentials
+        if connection.password_source == PasswordSource::Inherit
+            && self.settings.secrets.kdbx_enabled
+        {
+            if let Some(ref kdbx_path) = self.settings.secrets.kdbx_path {
+                let db_password = self
+                    .settings
+                    .secrets
+                    .kdbx_password
+                    .as_ref()
+                    .map(|p| p.expose_secret());
+                let key_file = self.settings.secrets.kdbx_key_file.as_deref();
+
+                // Traverse up the group hierarchy
+                let mut current_group_id = connection.group_id;
+                while let Some(group_id) = current_group_id {
+                    let Some(group) = groups.iter().find(|g| g.id == group_id) else {
+                        break;
+                    };
+
+                    // Check if this group has KeePass credentials configured
+                    if group.password_source == Some(PasswordSource::KeePass) {
+                        let group_path = KeePassHierarchy::build_group_entry_path(group, &groups);
+
+                        tracing::debug!(
+                            "[resolve_credentials] Inherit: checking group '{}' at path '{}'",
+                            group.name,
+                            group_path
+                        );
+
+                        match KeePassStatus::get_password_from_kdbx_with_key(
+                            kdbx_path,
+                            db_password,
+                            key_file,
+                            &group_path,
+                            None,
+                        ) {
+                            Ok(Some(password)) => {
+                                tracing::debug!(
+                                    "[resolve_credentials] Found inherited password from group '{}'",
+                                    group.name
+                                );
+                                let username = connection
+                                    .username
+                                    .clone()
+                                    .or_else(|| group.username.clone());
+                                let creds = if let Some(ref uname) = username {
+                                    Credentials::with_password(uname, &password)
+                                } else {
+                                    Credentials {
+                                        username: None,
+                                        password: Some(SecretString::from(password)),
+                                        key_passphrase: None,
+                                        domain: None,
+                                    }
+                                };
+                                return Ok(Some(creds));
+                            }
+                            Ok(None) => {
+                                tracing::debug!(
+                                    "[resolve_credentials] No password in group '{}'",
+                                    group.name
+                                );
+                            }
+                            Err(e) => {
+                                tracing::warn!(
+                                    "[resolve_credentials] KeePass error for group '{}': {}",
+                                    group.name,
+                                    e
+                                );
+                            }
+                        }
+                    } else if group.password_source == Some(PasswordSource::Inherit) {
+                        tracing::debug!(
+                            "[resolve_credentials] Group '{}' also inherits, continuing to parent",
+                            group.name
+                        );
+                    }
+
+                    current_group_id = group.parent_id;
+                }
+
+                tracing::debug!(
+                    "[resolve_credentials] No inherited credentials found in group hierarchy"
+                );
+            }
+        }
+
         // Fall back to the standard resolver for other password sources
         let secret_manager = self.secret_manager.clone();
         let resolver =
@@ -1192,7 +1121,7 @@ impl AppState {
         with_runtime(|rt| {
             rt.block_on(async {
                 resolver
-                    .resolve(&connection)
+                    .resolve_with_hierarchy(&connection, &groups)
                     .await
                     .map_err(|e| format!("Failed to resolve credentials: {e}"))
             })
@@ -1539,9 +1468,95 @@ impl AppState {
             }
         }
 
+        // For Inherit password source, traverse parent groups to find credentials
+        if connection.password_source == PasswordSource::Inherit && kdbx_enabled {
+            if let Some(ref kdbx_path) = kdbx_path {
+                let db_password = kdbx_password.as_ref().map(|p| p.expose_secret());
+                let key_file = kdbx_key_file.as_deref();
+
+                // Traverse up the group hierarchy
+                let mut current_group_id = connection.group_id;
+                while let Some(group_id) = current_group_id {
+                    let Some(group) = groups.iter().find(|g| g.id == group_id) else {
+                        break;
+                    };
+
+                    // Check if this group has KeePass credentials configured
+                    if group.password_source == Some(PasswordSource::KeePass) {
+                        // Build group entry path: RustConn/Groups/...
+                        let group_path = KeePassHierarchy::build_group_entry_path(group, groups);
+
+                        tracing::debug!(
+                            "[resolve_credentials_blocking] Inherit: checking group '{}' at path '{}'",
+                            group.name,
+                            group_path
+                        );
+
+                        match KeePassStatus::get_password_from_kdbx_with_key(
+                            kdbx_path,
+                            db_password,
+                            key_file,
+                            &group_path,
+                            None,
+                        ) {
+                            Ok(Some(password)) => {
+                                tracing::debug!(
+                                    "[resolve_credentials_blocking] Found inherited password from group '{}'",
+                                    group.name
+                                );
+                                // Use group's username if connection doesn't have one
+                                let username = connection
+                                    .username
+                                    .clone()
+                                    .or_else(|| group.username.clone());
+                                let creds = if let Some(ref uname) = username {
+                                    Credentials::with_password(uname, &password)
+                                } else {
+                                    Credentials {
+                                        username: None,
+                                        password: Some(SecretString::from(password)),
+                                        key_passphrase: None,
+                                        domain: None,
+                                    }
+                                };
+                                return Ok(Some(creds));
+                            }
+                            Ok(None) => {
+                                tracing::debug!(
+                                    "[resolve_credentials_blocking] No password in group '{}'",
+                                    group.name
+                                );
+                            }
+                            Err(e) => {
+                                tracing::warn!(
+                                    "[resolve_credentials_blocking] KeePass error for group '{}': {}",
+                                    group.name,
+                                    e
+                                );
+                            }
+                        }
+                    } else if group.password_source == Some(PasswordSource::Inherit) {
+                        // Continue to parent
+                        tracing::debug!(
+                            "[resolve_credentials_blocking] Group '{}' also inherits, continuing to parent",
+                            group.name
+                        );
+                    }
+
+                    // Move to parent group
+                    current_group_id = group.parent_id;
+                }
+
+                tracing::debug!(
+                    "[resolve_credentials_blocking] No inherited credentials found in group hierarchy"
+                );
+            }
+        }
+
         // Fall back to the standard resolver for other password sources
         let resolver = CredentialResolver::new(Arc::new(secret_manager), secret_settings);
         let connection = connection.clone();
+        let groups = groups.to_vec();
 
         // Create a new runtime for this thread (background thread doesn't have one)
         let rt =
@@ -1549,7 +1564,7 @@ impl AppState {
 
         rt.block_on(async {
             resolver
-                .resolve(&connection)
+                .resolve_with_hierarchy(&connection, &groups)
                 .await
                 .map_err(|e| format!("Failed to resolve credentials: {e}"))
         })

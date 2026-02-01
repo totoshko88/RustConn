@@ -149,7 +149,10 @@ impl HistoryDialog {
     }
 
     /// Sets the history entries to display
-    pub fn set_entries(&self, entries: Vec<ConnectionHistoryEntry>) {
+    pub fn set_entries(&self, mut entries: Vec<ConnectionHistoryEntry>) {
+        // Sort by started_at descending (newest first)
+        entries.sort_by(|a, b| b.started_at.cmp(&a.started_at));
+
         // Clear existing rows
         while let Some(row) = self.list_box.row_at_index(0) {
             self.list_box.remove(&row);

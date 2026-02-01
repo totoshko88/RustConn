@@ -1,5 +1,6 @@
 {
   "flathub-json-version": 1,
+  "automerge-flathubbot-prs": true,
   "linter-exceptions": {
     "finish-args": {
       "--filesystem=home/.ssh:ro": "SSH connection manager requires read access to SSH keys for authentication",

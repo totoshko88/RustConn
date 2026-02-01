@@ -479,6 +479,58 @@ impl MainWindow {
             }
         });
         window.add_action(&paste_connection_action);
+
+        // Undo delete action
+        let undo_delete_action =
+            gio::SimpleAction::new("undo-delete", Some(glib::VariantTy::STRING));
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let window_weak = window.downgrade();
+        undo_delete_action.connect_activate(move |_, param| {
+            if let Some(param) = param {
+                if let Some(param_str) = param.get::<String>() {
+                    // Format: "type:uuid"
+                    let parts: Vec<&str> = param_str.split(':').collect();
+                    if parts.len() != 2 {
+                        return;
+                    }
+
+                    let item_type = parts[0];
+                    let Ok(id) = Uuid::parse_str(parts[1]) else {
+                        return;
+                    };
+
+                    if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
+                        let result = match item_type {
+                            "connection" => state_mut.restore_connection(id),
+                            "group" => state_mut.restore_group(id),
+                            _ => return,
+                        };
+
+                        if result.is_ok() {
+                            drop(state_mut);
+                            let state = state_clone.clone();
+                            let sidebar = sidebar_clone.clone();
+
+                            // Reload sidebar
+                            glib::idle_add_local_once(move || {
+                                Self::reload_sidebar_preserving_state(&state, &sidebar);
+                            });
+
+                            // Show confirmation
+                            if let Some(win) = window_weak.upgrade() {
+                                crate::toast::show_toast_on_window(
+                                    &win,
+                                    "Item restored",
+                                    crate::toast::ToastType::Success,
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        window.add_action(&undo_delete_action);
     }
 
     /// Sets up terminal-related actions (copy, paste, close tab)
@@ -1108,11 +1160,11 @@ impl MainWindow {
                             entry.connection_name,
                             entry.connection_id
                         );
-                        Self::start_connection_with_split(
-                            &state_for_connect,
-                            &notebook_for_connect,
-                            &split_view_for_connect,
-                            &sidebar_for_connect,
+                        Self::start_connection_with_credential_resolution(
+                            state_for_connect.clone(),
+                            notebook_for_connect.clone(),
+                            split_view_for_connect.clone(),
+                            sidebar_for_connect.clone(),
                             entry.connection_id,
                         );
                     }

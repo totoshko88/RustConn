@@ -710,6 +710,10 @@ impl SplitViewAdapter {
             while let Some(child) = panel_widget.first_child() {
                 panel_widget.remove(&child);
             }
+            // Only unparent if the widget has a parent to avoid GTK-CRITICAL warning
+            if widget.parent().is_some() {
+                widget.unparent();
+            }
             widget.set_hexpand(true);
             widget.set_vexpand(true);
             panel_widget.append(widget);

@@ -203,6 +203,7 @@ pub struct ConnectionDialog {
     // Callback
     on_save: super::ConnectionCallback,
     connections_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
+    full_groups_data: Rc<RefCell<HashMap<Uuid, rustconn_core::models::ConnectionGroup>>>,
 }
 
 /// Represents a local variable row in the connection dialog
@@ -298,6 +299,8 @@ impl ConnectionDialog {
             password_load_button,
             password_row,
             group_dropdown,
+            username_load_button,
+            domain_load_button,
         ) = Self::create_basic_tab();
         // Wrap basic grid in ScrolledWindow for consistent styling
         let basic_scrolled = ScrolledWindow::builder()
@@ -657,6 +660,7 @@ impl ConnectionDialog {
             password_row,
             group_dropdown,
             groups_data: Rc::new(RefCell::new(vec![(None, "(Root)".to_string())])),
+            full_groups_data: Rc::new(RefCell::new(HashMap::new())),
             ssh_auth_dropdown,
             ssh_key_source_dropdown,
             ssh_key_entry,
@@ -764,6 +768,133 @@ impl ConnectionDialog {
 
         // Wire up inline validation for required fields
         Self::setup_inline_validation_for(&result);
+
+        // Wire up Group Inheritance
+        {
+            let group_dropdown = result.group_dropdown.clone();
+            let username_load_button = username_load_button.clone();
+            let domain_load_button = domain_load_button.clone();
+            let username_entry = result.username_entry.clone();
+            let domain_entry = result.domain_entry.clone();
+            let groups_data = Rc::clone(&result.groups_data);
+            let full_groups_data = Rc::clone(&result.full_groups_data);
+            let window = result.window.clone();
+
+            // Helper to update button sensitivity
+            let user_btn_for_update = username_load_button.clone();
+            let domain_btn_for_update = domain_load_button.clone();
+            let update_buttons = Rc::new(move |selected_idx: u32| {
+                let sensitive = selected_idx > 0; // 0 is Root
+                #[allow(clippy::cast_possible_truncation)]
+                {
+                    user_btn_for_update.set_sensitive(sensitive);
+                    domain_btn_for_update.set_sensitive(sensitive);
+                }
+            });
+
+            // Connect dropdown change
+            let update_buttons_clone = update_buttons.clone();
+            let groups_data_clone = groups_data.clone();
+            let full_groups_data_clone = full_groups_data.clone();
+            let username_entry_clone = username_entry.clone();
+            let domain_entry_clone = domain_entry.clone();
+
+            group_dropdown.connect_selected_notify(move |dropdown| {
+                let idx = dropdown.selected();
+                update_buttons_clone(idx);
+
+                // Auto-populate if fields are empty
+                if idx > 0 {
+                    let groups = groups_data_clone.borrow();
+                    if let Some((Some(group_id), _)) = groups.get(idx as usize) {
+                        if let Some(group) = full_groups_data_clone.borrow().get(group_id) {
+                            if username_entry_clone.text().is_empty() {
+                                if let Some(username) = &group.username {
+                                    if !username.is_empty() {
+                                        username_entry_clone.set_text(username);
+                                    }
+                                }
+                            }
+                            if domain_entry_clone.text().is_empty() {
+                                if let Some(domain) = &group.domain {
+                                    if !domain.is_empty() {
+                                        domain_entry_clone.set_text(domain);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Connect Username Load Button
+            let group_dropdown_clone = group_dropdown.clone();
+            let groups_data_clone = groups_data.clone();
+            let full_groups_data_clone = full_groups_data.clone();
+            let username_entry_clone = username_entry.clone();
+            let window_clone = window.clone();
+
+            username_load_button.connect_clicked(move |_| {
+                let idx = group_dropdown_clone.selected();
+                if idx > 0 {
+                    let groups = groups_data_clone.borrow();
+                    if let Some((Some(group_id), _)) = groups.get(idx as usize) {
+                        if let Some(group) = full_groups_data_clone.borrow().get(group_id) {
+                            if let Some(username) = &group.username {
+                                if !username.is_empty() {
+                                    username_entry_clone.set_text(username);
+                                    crate::toast::show_toast_on_window(
+                                        &window_clone,
+                                        "Username loaded from group",
+                                        crate::toast::ToastType::Success,
+                                    );
+                                    return;
+                                }
+                            }
+                            crate::toast::show_toast_on_window(
+                                &window_clone,
+                                "Group has no username defined",
+                                crate::toast::ToastType::Info,
+                            );
+                        }
+                    }
+                }
+            });
+
+            // Connect Domain Load Button
+            let group_dropdown_clone = group_dropdown.clone();
+            let groups_data_clone = groups_data.clone();
+            let full_groups_data_clone = full_groups_data.clone();
+            let domain_entry_clone = domain_entry.clone();
+            let window_clone = window.clone();
+
+            domain_load_button.connect_clicked(move |_| {
+                let idx = group_dropdown_clone.selected();
+                if idx > 0 {
+                    let groups = groups_data_clone.borrow();
+                    if let Some((Some(group_id), _)) = groups.get(idx as usize) {
+                        if let Some(group) = full_groups_data_clone.borrow().get(group_id) {
+                            if let Some(domain) = &group.domain {
+                                if !domain.is_empty() {
+                                    domain_entry_clone.set_text(domain);
+                                    crate::toast::show_toast_on_window(
+                                        &window_clone,
+                                        "Domain loaded from group",
+                                        crate::toast::ToastType::Success,
+                                    );
+                                    return;
+                                }
+                            }
+                            crate::toast::show_toast_on_window(
+                                &window_clone,
+                                "Group has no domain defined",
+                                crate::toast::ToastType::Info,
+                            );
+                        }
+                    }
+                }
+            });
+        }
 
         // Set up test button handler
         let test_button = result.test_button.clone();
@@ -1494,6 +1625,8 @@ impl ConnectionDialog {
         Button,
         GtkBox,
         DropDown,
+        Button,
+        Button,
     ) {
         let vbox = GtkBox::new(Orientation::Vertical, 8);
         vbox.set_margin_top(12);
@@ -1586,7 +1719,17 @@ impl ConnectionDialog {
             .hexpand(true)
             .build();
         grid.attach(&username_label, 0, row, 1, 1);
-        grid.attach(&username_entry, 1, row, 2, 1);
+
+        let username_load_button = Button::builder()
+            .icon_name("folder-download-symbolic")
+            .tooltip_text("Load from selected group")
+            .sensitive(false)
+            .build();
+        let username_box = GtkBox::new(Orientation::Horizontal, 4);
+        username_box.append(&username_entry);
+        username_box.append(&username_load_button);
+
+        grid.attach(&username_box, 1, row, 2, 1);
         row += 1;
 
         // Domain (for RDP/Windows authentication)
@@ -1599,7 +1742,17 @@ impl ConnectionDialog {
             .hexpand(true)
             .build();
         grid.attach(&domain_label, 0, row, 1, 1);
-        grid.attach(&domain_entry, 1, row, 2, 1);
+
+        let domain_load_button = Button::builder()
+            .icon_name("folder-download-symbolic")
+            .tooltip_text("Load from selected group")
+            .sensitive(false)
+            .build();
+        let domain_box = GtkBox::new(Orientation::Horizontal, 4);
+        domain_box.append(&domain_entry);
+        domain_box.append(&domain_load_button);
+
+        grid.attach(&domain_box, 1, row, 2, 1);
         row += 1;
 
         // Password Source
@@ -1736,6 +1889,8 @@ impl ConnectionDialog {
             password_load_button,
             password_row,
             group_dropdown,
+            username_load_button,
+            domain_load_button,
         )
     }
 
@@ -5469,6 +5624,15 @@ impl ConnectionDialog {
     #[allow(clippy::items_after_statements)]
     pub fn set_groups(&self, groups: &[rustconn_core::models::ConnectionGroup]) {
         use rustconn_core::models::ConnectionGroup;
+
+        // Populate full_groups_data
+        {
+            let mut full_map = self.full_groups_data.borrow_mut();
+            full_map.clear();
+            for group in groups {
+                full_map.insert(group.id, group.clone());
+            }
+        }
 
         // Build hierarchical group list
         let mut groups_data: Vec<(Option<Uuid>, String)> = vec![(None, "(Root)".to_string())];

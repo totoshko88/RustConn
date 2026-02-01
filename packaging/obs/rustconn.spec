@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.7.0
+Version:        0.7.1
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later
@@ -157,6 +157,13 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sun Feb 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.1-0
+- Version bump to 0.7.1
+- Refactored Sidebar - Split monolithic sidebar into modular components (TECH-03)
+- Refactored Drag & Drop - Strongly typed DragPayload (TECH-04)
+- Added Search Highlighting - Visual feedback for search matches (TECH-05)
+- Code Quality - Async persistence fixes and cleanup
+
 * Sun Feb 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.0-0
 - Version bump to 0.7.0
 - Fixed Asbru Import Nested Groups - two-pass algorithm preserves hierarchy

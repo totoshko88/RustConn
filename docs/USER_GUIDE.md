@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.6.9** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.7.1** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -153,8 +153,15 @@ Temporary connection without saving:
 | View Details | Right-click → View Details (opens Info tab) |
 | Duplicate | Ctrl+D or right-click → Duplicate |
 | Copy/Paste | Ctrl+C / Ctrl+V |
-| Delete | Delete key or right-click → Delete |
+| Delete | Delete key or right-click → Delete (moves to Trash) |
 | Move to Group | Drag-drop or right-click → Move to Group |
+
+### Undo/Trash Functionality
+
+Deleted items are moved to Trash and can be restored:
+- After deleting, an "Undo" notification appears
+- Click "Undo" to restore the deleted item
+- Trash is persisted across sessions for recovery
 
 ### Test Connection
 
@@ -200,6 +207,7 @@ Groups can store default credentials (Username, Password, Domain) that are inher
 1. Create a connection inside the group
 2. In **Authentication** tab, set **Password Source** to **Inherit from Group**
 3. Connection will use group's stored credentials
+4. Use **"Load from Group"** buttons to auto-fill Username and Domain from parent group
 
 **KeePass Hierarchy:**
 Group credentials are stored in KeePass with hierarchical paths:

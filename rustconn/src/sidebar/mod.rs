@@ -15,18 +15,24 @@
 
 // Re-export types for external use
 pub use crate::sidebar_types::{
-    DragDropData, DropIndicator, DropPosition, SelectionModelWrapper, SessionStatusInfo, TreeState,
+    DropIndicator, DropPosition, SelectionModelWrapper, SessionStatusInfo, TreeState,
     MAX_SEARCH_HISTORY,
 };
+
+// Submodules
+pub mod drag_drop;
+pub mod filter;
+pub mod search;
+pub mod view;
+
 use crate::sidebar_ui;
 
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::ObjectSubclassIsExt;
 use gtk4::{
-    gdk, gio, glib, Box as GtkBox, Button, DragSource, DropTarget, EventControllerKey,
-    GestureClick, Label, ListItem, ListView, MultiSelection, Orientation, PolicyType,
-    ScrolledWindow, SearchEntry, SignalListItemFactory, SingleSelection, TreeExpander,
-    TreeListModel, TreeListRow, Widget,
+    gdk, gio, glib, Box as GtkBox, Button, DropTarget, EventControllerKey, GestureClick, Label,
+    ListItem, ListView, Orientation, PolicyType, ScrolledWindow, SearchEntry,
+    SignalListItemFactory, TreeExpander, TreeListModel, TreeListRow, Widget,
 };
 use rustconn_core::{Debouncer, LazyGroupLoader, SelectionState as CoreSelectionState};
 use std::cell::RefCell;
@@ -50,11 +56,7 @@ pub struct ConnectionSidebar {
     bulk_actions_bar: GtkBox,
     /// Current mode
     group_ops_mode: Rc<RefCell<bool>>,
-    /// Callback for drag-drop operations
-    ///
-    /// Used by `set_drag_drop_callback()` and `invoke_drag_drop()` methods
-    /// to handle drag-drop events from the connection tree.
-    drag_drop_callback: Rc<RefCell<Option<Box<dyn Fn(DragDropData)>>>>,
+
     /// Search history
     search_history: Rc<RefCell<Vec<String>>>,
     /// Search history popover
@@ -86,48 +88,6 @@ pub struct ConnectionSidebar {
 }
 
 impl ConnectionSidebar {
-    /// Creates a protocol filter button with icon and label
-    ///
-    /// # Arguments
-    /// * `protocol` - Protocol name (e.g., "SSH", "RDP")
-    /// * `icon_name` - GTK icon name for the button
-    /// * `tooltip` - Tooltip text for the button
-    fn create_filter_button(protocol: &str, icon_name: &str, tooltip: &str) -> Button {
-        let button = Button::new();
-        let content_box = GtkBox::new(Orientation::Horizontal, 4);
-        let icon = gtk4::Image::from_icon_name(icon_name);
-        icon.set_pixel_size(16);
-        let label = Label::new(Some(protocol));
-        content_box.append(&icon);
-        content_box.append(&label);
-        button.set_child(Some(&content_box));
-        button.set_tooltip_text(Some(tooltip));
-        button.add_css_class("flat");
-        button.add_css_class("filter-button");
-        button
-    }
-
-    /// Connects a filter button to the toggle handler
-    ///
-    /// This helper reduces code duplication when setting up filter button click handlers.
-    fn connect_filter_button(
-        protocol: &'static str,
-        button: &Button,
-        active_filters: &Rc<RefCell<HashSet<String>>>,
-        all_buttons: &Rc<RefCell<std::collections::HashMap<String, Button>>>,
-        search_entry: &SearchEntry,
-        programmatic_flag: &Rc<RefCell<bool>>,
-    ) {
-        let filters = active_filters.clone();
-        let buttons = all_buttons.clone();
-        let entry = search_entry.clone();
-        let flag = programmatic_flag.clone();
-
-        button.connect_clicked(move |btn| {
-            Self::toggle_protocol_filter(protocol, btn, &filters, &buttons, &entry, &flag);
-        });
-    }
-
     /// Creates a new connection sidebar
     #[must_use]
     pub fn new() -> Self {
@@ -164,7 +124,7 @@ impl ConnectionSidebar {
         help_button.add_css_class("flat");
 
         // Create search help popover
-        let help_popover = Self::create_search_help_popover();
+        let help_popover = search::create_search_help_popover();
         help_popover.set_parent(&help_button);
 
         let help_popover_clone = help_popover.clone();
@@ -182,18 +142,21 @@ impl ConnectionSidebar {
         filter_box.add_css_class("linked");
 
         // Protocol filter buttons with icons - using helper function
-        let ssh_filter =
-            Self::create_filter_button("SSH", "network-server-symbolic", "Filter SSH connections");
+        let ssh_filter = filter::create_filter_button(
+            "SSH",
+            "network-server-symbolic",
+            "Filter SSH connections",
+        );
         let rdp_filter =
-            Self::create_filter_button("RDP", "computer-symbolic", "Filter RDP connections");
+            filter::create_filter_button("RDP", "computer-symbolic", "Filter RDP connections");
         let vnc_filter =
-            Self::create_filter_button("VNC", "video-display-symbolic", "Filter VNC connections");
-        let spice_filter = Self::create_filter_button(
+            filter::create_filter_button("VNC", "video-display-symbolic", "Filter VNC connections");
+        let spice_filter = filter::create_filter_button(
             "SPICE",
             "video-x-generic-symbolic",
             "Filter SPICE connections",
         );
-        let zerotrust_filter = Self::create_filter_button(
+        let zerotrust_filter = filter::create_filter_button(
             "ZeroTrust",
             "folder-remote-symbolic",
             "Filter ZeroTrust connections",
@@ -246,53 +209,58 @@ impl ConnectionSidebar {
         let programmatic_flag = Rc::new(RefCell::new(false));
 
         // Setup filter button handlers using helper function
-        Self::connect_filter_button(
-            "SSH",
-            &ssh_filter,
-            &active_protocol_filters,
-            &protocol_filter_buttons,
-            &search_entry,
-            &programmatic_flag,
-        );
-        Self::connect_filter_button(
-            "RDP",
-            &rdp_filter,
-            &active_protocol_filters,
-            &protocol_filter_buttons,
-            &search_entry,
-            &programmatic_flag,
-        );
-        Self::connect_filter_button(
-            "VNC",
-            &vnc_filter,
-            &active_protocol_filters,
-            &protocol_filter_buttons,
-            &search_entry,
-            &programmatic_flag,
-        );
-        Self::connect_filter_button(
-            "SPICE",
-            &spice_filter,
-            &active_protocol_filters,
-            &protocol_filter_buttons,
-            &search_entry,
-            &programmatic_flag,
-        );
-        Self::connect_filter_button(
-            "ZeroTrust",
-            &zerotrust_filter,
-            &active_protocol_filters,
-            &protocol_filter_buttons,
-            &search_entry,
-            &programmatic_flag,
-        );
+        {
+            let filters = active_protocol_filters.clone();
+            let buttons = protocol_filter_buttons.clone();
+            let entry = search_entry.clone();
+            let flag = programmatic_flag.clone();
+            filter::connect_filter_button(&ssh_filter, move |btn| {
+                search::toggle_protocol_filter("SSH", btn, &filters, &buttons, &entry, &flag);
+            });
+        }
+        {
+            let filters = active_protocol_filters.clone();
+            let buttons = protocol_filter_buttons.clone();
+            let entry = search_entry.clone();
+            let flag = programmatic_flag.clone();
+            filter::connect_filter_button(&rdp_filter, move |btn| {
+                search::toggle_protocol_filter("RDP", btn, &filters, &buttons, &entry, &flag);
+            });
+        }
+        {
+            let filters = active_protocol_filters.clone();
+            let buttons = protocol_filter_buttons.clone();
+            let entry = search_entry.clone();
+            let flag = programmatic_flag.clone();
+            filter::connect_filter_button(&vnc_filter, move |btn| {
+                search::toggle_protocol_filter("VNC", btn, &filters, &buttons, &entry, &flag);
+            });
+        }
+        {
+            let filters = active_protocol_filters.clone();
+            let buttons = protocol_filter_buttons.clone();
+            let entry = search_entry.clone();
+            let flag = programmatic_flag.clone();
+            filter::connect_filter_button(&spice_filter, move |btn| {
+                search::toggle_protocol_filter("SPICE", btn, &filters, &buttons, &entry, &flag);
+            });
+        }
+        {
+            let filters = active_protocol_filters.clone();
+            let buttons = protocol_filter_buttons.clone();
+            let entry = search_entry.clone();
+            let flag = programmatic_flag.clone();
+            filter::connect_filter_button(&zerotrust_filter, move |btn| {
+                search::toggle_protocol_filter("ZeroTrust", btn, &filters, &buttons, &entry, &flag);
+            });
+        }
 
         container.append(&filter_box);
         container.append(&search_box);
 
         // Create search history storage and popover
         let search_history: Rc<RefCell<Vec<String>>> = Rc::new(RefCell::new(Vec::new()));
-        let history_popover = Self::create_history_popover(&search_entry, search_history.clone());
+        let history_popover = search::create_history_popover(&search_entry, search_history.clone());
         history_popover.set_parent(&search_entry);
 
         // Show help popover when user types '?' and handle filter clearing
@@ -353,7 +321,7 @@ impl ConnectionSidebar {
         let search_entry_clone = search_entry.clone();
         let search_history_clone = search_history.clone();
         let history_popover_clone = history_popover.clone();
-        Self::setup_search_entry_hints(
+        search::setup_search_entry_hints(
             &search_entry,
             &search_entry_clone,
             &history_popover_clone,
@@ -361,7 +329,7 @@ impl ConnectionSidebar {
         );
 
         // Create bulk actions toolbar (hidden by default)
-        let bulk_actions_bar = Self::create_bulk_actions_bar();
+        let bulk_actions_bar = sidebar_ui::create_bulk_actions_bar();
         bulk_actions_bar.set_visible(false);
         container.append(&bulk_actions_bar);
 
@@ -391,19 +359,25 @@ impl ConnectionSidebar {
         let signal_handlers_bind = signal_handlers.clone();
         let signal_handlers_unbind = signal_handlers.clone();
 
+        let search_entry_bind = search_entry.clone();
         factory.connect_setup(move |factory, obj| {
             if let Some(list_item) = obj.downcast_ref::<ListItem>() {
-                Self::setup_list_item(factory, list_item, *group_ops_mode_clone.borrow());
+                view::setup_list_item(factory, list_item, *group_ops_mode_clone.borrow());
             }
         });
         factory.connect_bind(move |factory, obj| {
             if let Some(list_item) = obj.downcast_ref::<ListItem>() {
-                Self::bind_list_item(factory, list_item, &signal_handlers_bind);
+                view::bind_list_item(
+                    factory,
+                    list_item,
+                    &signal_handlers_bind,
+                    &search_entry_bind.text(),
+                );
             }
         });
         factory.connect_unbind(move |factory, obj| {
             if let Some(list_item) = obj.downcast_ref::<ListItem>() {
-                Self::unbind_list_item(factory, list_item, &signal_handlers_unbind);
+                view::unbind_list_item(factory, list_item, &signal_handlers_unbind);
             }
         });
 
@@ -525,18 +499,16 @@ impl ConnectionSidebar {
         let drop_indicator_drop = drop_indicator.clone();
         list_view_drop_target.connect_drop(move |target, value, _x, _y| {
             // Parse drag data
-            let drag_data = match value.get::<String>() {
-                Ok(data) => data,
-                Err(_) => return false,
+            // Parse drag data
+            let payload = match crate::sidebar::drag_drop::parse_drag_data(value) {
+                Some(p) => p,
+                None => return false,
             };
 
-            let parts: Vec<&str> = drag_data.split(':').collect();
-            if parts.len() != 2 {
-                return false;
-            }
-
-            let item_type = parts[0];
-            let item_id = parts[1];
+            let (item_type, item_id) = match &payload {
+                crate::sidebar::drag_drop::DragPayload::Group(id) => ("group", id),
+                crate::sidebar::drag_drop::DragPayload::Connection(id) => ("conn", id),
+            };
 
             // Get target info from indicator state
             let position = match drop_indicator_drop.position() {
@@ -558,7 +530,7 @@ impl ConnectionSidebar {
             let target_is_group = target_item.is_group();
 
             // Don't allow dropping on self
-            if item_id == target_id {
+            if *item_id == target_id {
                 return false;
             }
 
@@ -604,7 +576,7 @@ impl ConnectionSidebar {
             selection_model,
             bulk_actions_bar,
             group_ops_mode,
-            drag_drop_callback: Rc::new(RefCell::new(None)),
+
             search_history,
             history_popover,
             drop_indicator,
@@ -620,318 +592,6 @@ impl ConnectionSidebar {
             protocol_filter_buttons,
             keepass_button,
         }
-    }
-
-    /// Sets the callback for drag-drop operations
-    ///
-    /// Note: Part of drag-drop callback API for external handlers.
-    #[allow(dead_code)]
-    pub fn set_drag_drop_callback<F>(&self, callback: F)
-    where
-        F: Fn(DragDropData) + 'static,
-    {
-        *self.drag_drop_callback.borrow_mut() = Some(Box::new(callback));
-    }
-
-    /// Invokes the drag-drop callback if set
-    ///
-    /// Note: Part of drag-drop callback API for external handlers.
-    #[allow(dead_code)]
-    pub fn invoke_drag_drop(&self, data: DragDropData) {
-        if let Some(ref callback) = *self.drag_drop_callback.borrow() {
-            callback(data);
-        }
-    }
-
-    /// Creates the bulk actions toolbar for group operations mode
-    fn create_bulk_actions_bar() -> GtkBox {
-        sidebar_ui::create_bulk_actions_bar()
-    }
-
-    /// Sets up a list item widget
-    #[allow(clippy::too_many_lines)]
-    fn setup_list_item(
-        _factory: &SignalListItemFactory,
-        list_item: &ListItem,
-        _group_ops_mode: bool,
-    ) {
-        let expander = TreeExpander::new();
-
-        let content_box = GtkBox::new(Orientation::Horizontal, 8);
-        content_box.set_margin_start(4);
-        content_box.set_margin_end(4);
-        content_box.set_margin_top(4);
-        content_box.set_margin_bottom(4);
-
-        let icon = gtk4::Image::from_icon_name("network-server-symbolic");
-        content_box.append(&icon);
-
-        let status_icon = gtk4::Image::from_icon_name("emblem-default-symbolic");
-        status_icon.set_pixel_size(10);
-        status_icon.set_visible(false);
-        status_icon.add_css_class("status-icon");
-        content_box.append(&status_icon);
-
-        let label = Label::new(None);
-        label.set_halign(gtk4::Align::Start);
-        label.set_hexpand(true);
-        content_box.append(&label);
-
-        expander.set_child(Some(&content_box));
-        list_item.set_child(Some(&expander));
-
-        // Set up drag source for reorganization
-        let drag_source = DragSource::new();
-        drag_source.set_actions(gdk::DragAction::MOVE);
-
-        // Store list_item reference for drag prepare
-        let list_item_weak_drag = list_item.downgrade();
-        drag_source.connect_prepare(move |_source, _x, _y| {
-            // Get the item from the list item
-            let list_item = list_item_weak_drag.upgrade()?;
-            let row = list_item.item()?.downcast::<TreeListRow>().ok()?;
-            let item = row.item()?.downcast::<ConnectionItem>().ok()?;
-
-            // Encode item type and ID in drag data
-            // Format for sidebar reorganization: "type:id" (e.g., "group:uuid" or "conn:uuid")
-            // Format for split pane drops: "sidebar:uuid" for connections
-            // Requirement 7.3: Sidebar_Item can be dragged from sidebar
-            let item_type = if item.is_group() { "group" } else { "conn" };
-            let drag_data = format!("{}:{}", item_type, item.id());
-            let bytes = glib::Bytes::from(drag_data.as_bytes());
-
-            Some(gdk::ContentProvider::for_bytes("text/plain", &bytes))
-        });
-
-        // Visual feedback during drag
-        // Requirement 7.4: Visual feedback during drag
-        let list_item_weak_begin = list_item.downgrade();
-        drag_source.connect_drag_begin(move |_source, _drag| {
-            if let Some(list_item) = list_item_weak_begin.upgrade() {
-                if let Some(expander) = list_item.child() {
-                    expander.add_css_class("dragging");
-                }
-            }
-        });
-
-        // Clean up drop indicator when drag ends
-        let list_item_weak_end = list_item.downgrade();
-        drag_source.connect_drag_end(move |source, _drag, _delete_data| {
-            // Remove dragging CSS class
-            if let Some(list_item) = list_item_weak_end.upgrade() {
-                if let Some(expander) = list_item.child() {
-                    expander.remove_css_class("dragging");
-                }
-            }
-
-            // Find the sidebar and hide the drop indicator
-            if let Some(widget) = source.widget() {
-                if let Some(list_view) = widget.ancestor(ListView::static_type()) {
-                    // Remove all drop-related CSS classes
-                    list_view.remove_css_class("drop-active");
-                    list_view.remove_css_class("drop-into-group");
-                }
-            }
-        });
-
-        expander.add_controller(drag_source);
-
-        // Set up right-click context menu
-        // Note: is_group will be determined at bind time via list_item data
-        let gesture = GestureClick::new();
-        gesture.set_button(gdk::BUTTON_SECONDARY);
-        let list_item_weak = list_item.downgrade();
-        gesture.connect_pressed(move |gesture, _n_press, x, y| {
-            if let Some(widget) = gesture.widget() {
-                // First, select this item so context menu actions work on it
-                if let Some(list_item) = list_item_weak.upgrade() {
-                    // Get the position of this item and select it
-                    let position = list_item.position();
-                    if let Some(list_view) = widget.ancestor(ListView::static_type()) {
-                        if let Some(list_view) = list_view.downcast_ref::<ListView>() {
-                            if let Some(model) = list_view.model() {
-                                if let Some(selection) = model.downcast_ref::<SingleSelection>() {
-                                    selection.set_selected(position);
-                                } else if let Some(selection) =
-                                    model.downcast_ref::<MultiSelection>()
-                                {
-                                    // In multi-selection mode, select only this item for context menu
-                                    selection.unselect_all();
-                                    selection.select_item(position, false);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Check if this is a group by looking at the icon
-                let is_group = widget
-                    .first_child()
-                    .and_then(|c| c.first_child())
-                    .and_then(|c| c.downcast::<gtk4::Image>().ok())
-                    .is_some_and(|img| {
-                        img.icon_name()
-                            .is_some_and(|n| n.as_str() == "folder-symbolic")
-                    });
-                Self::show_context_menu_for_item(&widget, x, y, is_group);
-            }
-        });
-        expander.add_controller(gesture);
-    }
-
-    /// Binds data to a list item
-    fn bind_list_item(
-        _factory: &SignalListItemFactory,
-        list_item: &ListItem,
-        handlers: &Rc<RefCell<std::collections::HashMap<ListItem, glib::SignalHandlerId>>>,
-    ) {
-        let Some(expander) = list_item.child().and_downcast::<TreeExpander>() else {
-            return;
-        };
-
-        let Some(row) = list_item.item().and_downcast::<TreeListRow>() else {
-            return;
-        };
-
-        expander.set_list_row(Some(&row));
-
-        let Some(item) = row.item().and_downcast::<ConnectionItem>() else {
-            return;
-        };
-
-        let Some(content_box) = expander.child().and_downcast::<GtkBox>() else {
-            return;
-        };
-
-        // Set accessible properties for the item
-        let item_type = if item.is_document() {
-            "document"
-        } else if item.is_group() {
-            "group"
-        } else {
-            "connection"
-        };
-        let name = item.name();
-        let accessible_label = format!("{} {}", item_type, name);
-        let accessible_desc = if item.is_group() {
-            "Double-click to expand, right-click for options".to_string()
-        } else {
-            format!(
-                "Double-click to connect, right-click for options. Protocol: {}",
-                item.protocol()
-            )
-        };
-        crate::utils::set_accessible_properties(
-            &expander,
-            &accessible_label,
-            Some(&accessible_desc),
-        );
-
-        // Update icon based on item type
-        if let Some(icon) = content_box.first_child().and_downcast::<gtk4::Image>() {
-            if item.is_document() {
-                icon.set_icon_name(Some("x-office-document-symbolic"));
-            } else if item.is_group() {
-                icon.set_icon_name(Some("folder-symbolic"));
-            } else {
-                let protocol = item.protocol();
-                let icon_name = Self::get_protocol_icon(&protocol);
-                icon.set_icon_name(Some(icon_name));
-            }
-        }
-
-        // Update status icon
-        if let Some(status_icon) = content_box
-            .first_child()
-            .and_then(|c| c.next_sibling())
-            .and_downcast::<gtk4::Image>()
-        {
-            // Helper to update icon state
-            let update_icon = |icon: &gtk4::Image, status: &str| {
-                icon.remove_css_class("status-connected");
-                icon.remove_css_class("status-connecting");
-                icon.remove_css_class("status-failed");
-
-                if status == "connected" {
-                    icon.set_icon_name(Some("emblem-default-symbolic"));
-                    icon.set_visible(true);
-                    icon.add_css_class("status-connected");
-                } else if status == "connecting" {
-                    icon.set_icon_name(Some("network-transmit-receive-symbolic"));
-                    icon.set_visible(true);
-                    icon.add_css_class("status-connecting");
-                } else if status == "failed" {
-                    icon.set_icon_name(Some("dialog-error-symbolic"));
-                    icon.set_visible(true);
-                    icon.add_css_class("status-failed");
-                } else {
-                    icon.set_visible(false);
-                }
-            };
-
-            // Initial update
-            update_icon(&status_icon, &item.status());
-
-            // Connect to notify::status
-            let status_icon_clone = status_icon.clone();
-            let handler_id = item.connect_notify_local(Some("status"), move |item, _| {
-                update_icon(&status_icon_clone, &item.status());
-            });
-
-            // Store handler ID on list_item for cleanup
-            handlers.borrow_mut().insert(list_item.clone(), handler_id);
-        }
-
-        // Update label with dirty indicator for documents
-        if let Some(label) = content_box.last_child().and_downcast::<Label>() {
-            let name = item.name();
-            if item.is_document() && item.is_dirty() {
-                label.set_text(&format!("• {name}"));
-            } else {
-                label.set_text(&name);
-            }
-        }
-    }
-
-    /// Unbinds data from a list item
-    fn unbind_list_item(
-        _factory: &SignalListItemFactory,
-        list_item: &ListItem,
-        handlers: &Rc<RefCell<std::collections::HashMap<ListItem, glib::SignalHandlerId>>>,
-    ) {
-        let Some(row) = list_item.item().and_downcast::<TreeListRow>() else {
-            return;
-        };
-        let Some(item) = row.item().and_downcast::<ConnectionItem>() else {
-            return;
-        };
-
-        // Retrieve and disconnect handler
-        if let Some(handler_id) = handlers.borrow_mut().remove(list_item) {
-            item.disconnect(handler_id);
-        }
-    }
-
-    /// Returns the appropriate icon name for a protocol string
-    ///
-    /// For ZeroTrust connections, the protocol string may include provider info
-    /// in the format "zerotrust:provider" (e.g., "zerotrust:aws", "zerotrust:gcloud").
-    /// This allows showing provider-specific icons for cloud CLI connections.
-    fn get_protocol_icon(protocol: &str) -> &'static str {
-        sidebar_ui::get_protocol_icon(protocol)
-    }
-
-    /// Shows the context menu for a connection item
-    ///
-    /// Note: Context menu shown via `show_context_menu_for_item` with group awareness.
-    #[allow(dead_code)]
-    fn show_context_menu(widget: &impl IsA<Widget>, x: f64, y: f64) {
-        sidebar_ui::show_context_menu(widget, x, y);
-    }
-
-    /// Shows the context menu for a connection item with group awareness
-    fn show_context_menu_for_item(widget: &impl IsA<Widget>, x: f64, y: f64, is_group: bool) {
-        sidebar_ui::show_context_menu_for_item(widget, x, y, is_group);
     }
 
     /// Returns the main widget for this sidebar
@@ -1711,125 +1371,10 @@ impl ConnectionSidebar {
         self.drop_indicator.set_highlighted_group(None);
     }
 
-    /// Creates the search help popover with syntax documentation
-    fn create_search_help_popover() -> gtk4::Popover {
-        sidebar_ui::create_search_help_popover()
-    }
-
-    /// Sets up search entry hints for operator autocomplete and history navigation
-    #[allow(clippy::needless_pass_by_value)]
-    fn setup_search_entry_hints(
-        search_entry: &SearchEntry,
-        search_entry_clone: &SearchEntry,
-        history_popover: &gtk4::Popover,
-        search_history: &Rc<RefCell<Vec<String>>>,
-    ) {
-        sidebar_ui::setup_search_entry_hints(
-            search_entry,
-            search_entry_clone,
-            history_popover,
-            search_history,
-        );
-    }
-
-    /// Creates the search history popover
-    fn create_history_popover(
-        search_entry: &SearchEntry,
-        search_history: Rc<RefCell<Vec<String>>>,
-    ) -> gtk4::Popover {
-        sidebar_ui::create_history_popover(search_entry, search_history)
-    }
-
-    /// Adds a search query to the history
+    /// Adds a query to search history
+    #[allow(dead_code)]
     pub fn add_to_search_history(&self, query: &str) {
-        if query.trim().is_empty() {
-            return;
-        }
-
-        let mut history = self.search_history.borrow_mut();
-
-        // Remove if already exists (to move to front)
-        history.retain(|q| q != query);
-
-        // Add to front
-        history.insert(0, query.to_string());
-
-        // Trim to max size
-        history.truncate(MAX_SEARCH_HISTORY);
-    }
-
-    /// Toggles a protocol filter and updates the search
-    fn toggle_protocol_filter(
-        protocol: &str,
-        button: &Button,
-        active_filters: &Rc<RefCell<HashSet<String>>>,
-        buttons: &Rc<RefCell<std::collections::HashMap<String, Button>>>,
-        search_entry: &SearchEntry,
-        programmatic_flag: &Rc<RefCell<bool>>,
-    ) {
-        let mut filters = active_filters.borrow_mut();
-
-        if filters.contains(protocol) {
-            // Remove filter
-            filters.remove(protocol);
-            button.remove_css_class("suggested-action");
-        } else {
-            // Add filter
-            filters.insert(protocol.to_string());
-            button.add_css_class("suggested-action");
-        }
-
-        // Update visual feedback for all buttons when multiple filters are active
-        let filter_count = filters.len();
-        if filter_count > 1 {
-            // Multiple filters active - add special styling to show AND relationship
-            for (filter_name, filter_button) in buttons.borrow().iter() {
-                if filters.contains(filter_name) {
-                    filter_button.add_css_class("filter-active-multiple");
-                } else {
-                    filter_button.remove_css_class("filter-active-multiple");
-                }
-            }
-        } else {
-            // Single or no filters - remove multiple filter styling
-            for filter_button in buttons.borrow().values() {
-                filter_button.remove_css_class("filter-active-multiple");
-            }
-        }
-
-        // Update search with protocol filters
-        Self::update_search_with_filters(&filters, search_entry, programmatic_flag);
-    }
-
-    /// Updates search entry with current protocol filters
-    fn update_search_with_filters(
-        filters: &HashSet<String>,
-        search_entry: &SearchEntry,
-        programmatic_flag: &Rc<RefCell<bool>>,
-    ) {
-        // Set flag to prevent recursive clearing
-        *programmatic_flag.borrow_mut() = true;
-
-        if filters.is_empty() {
-            // Clear search if no filters
-            search_entry.set_text("");
-        } else if filters.len() == 1 {
-            // Single protocol filter - use standard search syntax
-            // Safe: we just checked filters.len() == 1, so next() will succeed
-            if let Some(protocol) = filters.iter().next() {
-                let query = format!("protocol:{}", protocol.to_lowercase());
-                search_entry.set_text(&query);
-            }
-        } else {
-            // Multiple protocol filters - use special syntax that filter_connections can recognize
-            let mut protocols: Vec<String> = filters.iter().cloned().collect();
-            protocols.sort();
-            let query = format!("protocols:{}", protocols.join(","));
-            search_entry.set_text(&query);
-        }
-
-        // Reset flag
-        *programmatic_flag.borrow_mut() = false;
+        search::add_to_history(&self.search_history, query);
     }
 
     /// Gets the search history

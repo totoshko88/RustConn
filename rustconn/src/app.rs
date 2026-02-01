@@ -100,7 +100,15 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     setup_app_actions(app, &window, &state, tray_manager.clone());
 
     // Set up tray message polling
-    setup_tray_polling(app, &window, state, tray_manager);
+    setup_tray_polling(app, &window, state.clone(), tray_manager);
+
+    // Connect shutdown signal to flush persistence
+    let state_shutdown = state.clone();
+    app.connect_shutdown(move |_| {
+        if let Err(e) = state_shutdown.borrow().flush_persistence() {
+            eprintln!("Failed to flush persistence on shutdown: {e}");
+        }
+    });
 
     window.present();
 }

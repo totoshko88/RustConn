@@ -1,5 +1,7 @@
 # RustConn Architecture Guide
 
+**Version 0.7.1** | Last updated: February 2026
+
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
 ## Crate Structure
@@ -206,6 +208,24 @@ for session in state.sessions_within_age(max_age) {
 ```
 
 Managers own their data and handle I/O. They don't know about GTK.
+
+### Debounced Persistence
+
+The `ConnectionManager` uses debounced persistence to reduce disk I/O during rapid modifications:
+
+```rust
+// Changes are batched and saved after 2 seconds of inactivity
+connection_manager.add_connection(conn);  // Triggers debounced save
+connection_manager.update_connection(conn);  // Resets debounce timer
+
+// Force immediate save (e.g., on application exit)
+connection_manager.flush_persistence();
+```
+
+This is particularly useful during:
+- Drag-and-drop reordering of multiple items
+- Bulk import operations
+- Rapid edits to connection properties
 
 ## Async Patterns
 
@@ -587,6 +607,34 @@ if selector.has_embedded_support() {
 
 ## GTK4/Libadwaita Patterns
 
+### Sidebar Module Structure
+
+The sidebar is decomposed into focused submodules for maintainability:
+
+```rust
+// rustconn/src/sidebar/mod.rs - Main Sidebar struct and initialization
+// rustconn/src/sidebar/search.rs - Search logic, predicates, history
+// rustconn/src/sidebar/filter.rs - Protocol filter buttons
+// rustconn/src/sidebar/view.rs - List item creation, binding, signals
+// rustconn/src/sidebar/drag_drop.rs - Drag-and-drop with DragPayload
+```
+
+**Drag-and-Drop Payload:**
+```rust
+// Strongly typed drag payload (replaces string-based parsing)
+#[derive(Serialize, Deserialize)]
+pub enum DragPayload {
+    Connection { id: Uuid },
+    Group { id: Uuid },
+}
+
+// Serialize for drag data
+let json = serde_json::to_string(&DragPayload::Connection { id })?;
+
+// Deserialize on drop
+let payload: DragPayload = serde_json::from_str(&data)?;
+```
+
 ### Widget Hierarchy
 
 ```rust
@@ -638,7 +686,12 @@ rustconn/src/
 ├── state.rs               # SharedAppState
 ├── async_utils.rs         # Async helpers (spawn_async, block_on_async_with_timeout)
 ├── loading.rs             # LoadingOverlay, LoadingDialog components
-├── sidebar.rs             # Connection tree
+├── sidebar/               # Connection tree (modular structure)
+│   ├── mod.rs             # Module exports, Sidebar struct
+│   ├── search.rs          # Search logic, predicates, history
+│   ├── filter.rs          # Protocol filter buttons
+│   ├── view.rs            # List item creation, binding, signals
+│   └── drag_drop.rs       # Drag-and-drop logic with DragPayload
 ├── sidebar_types.rs       # Sidebar data types
 ├── sidebar_ui.rs          # Sidebar widget helpers
 ├── terminal/              # VTE terminal integration
@@ -657,7 +710,7 @@ rustconn-core/src/
 ├── config/                # Settings persistence
 ├── connection/            # Connection management
 │   ├── mod.rs             # Module exports
-│   ├── manager.rs         # ConnectionManager
+│   ├── manager.rs         # ConnectionManager with debounced persistence
 │   ├── retry.rs           # RetryConfig, RetryState, exponential backoff
 │   ├── port_check.rs      # TCP port reachability check
 │   └── ...

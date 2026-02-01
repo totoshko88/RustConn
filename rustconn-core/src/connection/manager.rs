@@ -4,14 +4,29 @@
 //! updating, and deleting connections with persistence through `ConfigManager`.
 
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use chrono::Utc;
+use tokio::sync::Notify;
 use uuid::Uuid;
 
 use crate::config::ConfigManager;
 use crate::error::{ConfigError, ConfigResult};
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig};
 use crate::performance::memory_optimizer;
+
+/// Tuple containing validation/creation, timestamp
+type TrashEntry<T> = (T, chrono::DateTime<Utc>);
+/// Shared state for pending trash persistence
+type PendingTrash = Arc<
+    Mutex<
+        Option<(
+            Vec<TrashEntry<Connection>>,
+            Vec<TrashEntry<ConnectionGroup>>,
+        )>,
+    >,
+>;
 
 /// Manager for connection CRUD operations
 ///
@@ -25,9 +40,143 @@ pub struct ConnectionManager {
     groups: HashMap<Uuid, ConnectionGroup>,
     /// Configuration manager for persistence
     config_manager: ConfigManager,
+
+    // Debounced Persistence
+    pending_connections: Arc<Mutex<Option<Vec<Connection>>>>,
+    pending_groups: Arc<Mutex<Option<Vec<ConnectionGroup>>>>,
+    notify_connections: Arc<Notify>,
+    notify_groups: Arc<Notify>,
+
+    // Trash
+    trash_connections: HashMap<Uuid, TrashEntry<Connection>>,
+    trash_groups: HashMap<Uuid, TrashEntry<ConnectionGroup>>,
+    pending_trash: PendingTrash,
+    notify_trash: Arc<Notify>,
+
+    // Sort Optimization
+    is_sorted: bool,
 }
 
 impl ConnectionManager {
+    /// Initializes debouncing primitives and spawns background workers
+    #[allow(clippy::type_complexity)] // Internal initialization helper, complexity is expected
+    fn init_persistence(
+        config_manager: ConfigManager,
+    ) -> (
+        Arc<Mutex<Option<Vec<Connection>>>>,
+        Arc<Mutex<Option<Vec<ConnectionGroup>>>>,
+        PendingTrash,
+        Arc<Notify>,
+        Arc<Notify>,
+        Arc<Notify>,
+    ) {
+        let pending_connections: Arc<Mutex<Option<Vec<Connection>>>> = Arc::new(Mutex::new(None));
+        let pending_groups: Arc<Mutex<Option<Vec<ConnectionGroup>>>> = Arc::new(Mutex::new(None));
+        let pending_trash: PendingTrash = Arc::new(Mutex::new(None));
+        let notify_connections = Arc::new(Notify::new());
+        let notify_groups = Arc::new(Notify::new());
+        let notify_trash = Arc::new(Notify::new());
+
+        // Spawn connection persistence worker
+        let notify_c = notify_connections.clone();
+        let pending_c = pending_connections.clone();
+        let config_c = config_manager.clone();
+        tokio::spawn(async move {
+            loop {
+                notify_c.notified().await;
+                // Debounce loop
+                loop {
+                    tokio::select! {
+                        () = notify_c.notified() => {
+                            // Activity detected, restart debounce timer
+                        }
+                        () = tokio::time::sleep(Duration::from_secs(2)) => {
+                            // Silence detected, proceed to save
+                            break;
+                        }
+                    }
+                }
+
+                // Save
+                let data = pending_c.lock().unwrap().take();
+                if let Some(connections) = data {
+                    if let Err(e) = config_c.save_connections_async(&connections).await {
+                        tracing::error!("Failed to persist connections: {}", e);
+                    }
+                }
+            }
+        });
+
+        // Spawn group persistence worker
+        let notify_g = notify_groups.clone();
+        let pending_g = pending_groups.clone();
+        let config_g = config_manager.clone();
+        tokio::spawn(async move {
+            loop {
+                notify_g.notified().await;
+                // Debounce loop
+                loop {
+                    tokio::select! {
+                        () = notify_g.notified() => {
+                            // Activity detected, restart debounce timer
+                        }
+                        () = tokio::time::sleep(Duration::from_secs(2)) => {
+                            // Silence detected, proceed to save
+                            break;
+                        }
+                    }
+                }
+
+                // Save
+                let data = pending_g.lock().unwrap().take();
+                if let Some(groups) = data {
+                    if let Err(e) = config_g.save_groups_async(&groups).await {
+                        tracing::error!("Failed to persist groups: {}", e);
+                    }
+                }
+            }
+        });
+
+        // Spawn trash persistence worker
+        let notify_t = notify_trash.clone();
+        let pending_t = pending_trash.clone();
+        let config_t = config_manager.clone();
+        tokio::spawn(async move {
+            loop {
+                notify_t.notified().await;
+                // Debounce loop
+                loop {
+                    tokio::select! {
+                        () = notify_t.notified() => {
+                            // Activity detected, restart debounce timer
+                        }
+                        () = tokio::time::sleep(Duration::from_secs(2)) => {
+                            // Silence detected, proceed to save
+                            break;
+                        }
+                    }
+                }
+
+                // Save
+                let data = pending_t.lock().unwrap().take();
+                if let Some((connections, groups)) = data {
+                    if let Err(e) = config_t.save_trash_async(&connections, &groups).await {
+                        tracing::error!("Failed to persist trash: {}", e);
+                    }
+                }
+            }
+        });
+
+        (
+            pending_connections,
+            pending_groups,
+            pending_trash,
+            notify_connections,
+            notify_groups,
+            notify_trash,
+        )
+    }
+
     /// Creates a new `ConnectionManager` with the given `ConfigManager`
     ///
     /// Loads existing connections and groups from storage.
@@ -40,6 +189,7 @@ impl ConnectionManager {
     pub fn new(config_manager: ConfigManager) -> ConfigResult<Self> {
         let connections_vec = config_manager.load_connections()?;
         let groups_vec = config_manager.load_groups()?;
+        let (trash_connections_vec, trash_groups_vec) = config_manager.load_trash()?;
 
         // Intern strings for memory efficiency
         for conn in &connections_vec {
@@ -47,13 +197,41 @@ impl ConnectionManager {
         }
 
         let connections = connections_vec.into_iter().map(|c| (c.id, c)).collect();
-
         let groups = groups_vec.into_iter().map(|g| (g.id, g)).collect();
+
+        let mut trash_connections = HashMap::new();
+        for (conn, time) in trash_connections_vec {
+            trash_connections.insert(conn.id, (conn, time));
+        }
+
+        let mut trash_groups = HashMap::new();
+        for (group, time) in trash_groups_vec {
+            trash_groups.insert(group.id, (group, time));
+        }
+
+        let (
+            pending_connections,
+            pending_groups,
+            pending_trash,
+            notify_connections,
+            notify_groups,
+            notify_trash,
+        ) = Self::init_persistence(config_manager.clone());
 
         Ok(Self {
             connections,
             groups,
             config_manager,
+            pending_connections,
+            pending_groups,
+            notify_connections,
+            notify_groups,
+
+            trash_connections,
+            trash_groups,
+            pending_trash,
+            notify_trash,
+            is_sorted: false,
         })
     }
 
@@ -61,10 +239,29 @@ impl ConnectionManager {
     #[cfg(test)]
     #[must_use]
     pub fn new_empty(config_manager: ConfigManager) -> Self {
+        let (
+            pending_connections,
+            pending_groups,
+            pending_trash,
+            notify_connections,
+            notify_groups,
+            notify_trash,
+        ) = Self::init_persistence(config_manager.clone());
+
         Self {
             connections: HashMap::new(),
             groups: HashMap::new(),
             config_manager,
+            pending_connections,
+            pending_groups,
+            notify_connections,
+            notify_groups,
+
+            trash_connections: HashMap::new(),
+            trash_groups: HashMap::new(),
+            pending_trash,
+            notify_trash,
+            is_sorted: true,
         }
     }
 
@@ -101,6 +298,7 @@ impl ConnectionManager {
 
         let id = connection.id;
         self.connections.insert(id, connection);
+        self.is_sorted = false;
         self.persist_connections()?;
 
         Ok(id)
@@ -121,6 +319,7 @@ impl ConnectionManager {
 
         let id = connection.id;
         self.connections.insert(id, connection);
+        self.is_sorted = false;
         self.persist_connections()?;
 
         Ok(id)
@@ -158,26 +357,50 @@ impl ConnectionManager {
         Self::intern_connection_strings(&updated);
 
         self.connections.insert(id, updated);
+        self.is_sorted = false;
         self.persist_connections()?;
 
         Ok(())
     }
 
-    /// Deletes a connection by ID
+    /// Deletes a connection by ID (moves to trash)
     ///
     /// # Errors
     ///
     /// Returns an error if the connection doesn't exist or persistence fails.
     pub fn delete_connection(&mut self, id: Uuid) -> ConfigResult<()> {
-        if self.connections.remove(&id).is_none() {
-            return Err(ConfigError::Validation {
+        if let Some(conn) = self.connections.remove(&id) {
+            self.trash_connections.insert(id, (conn, Utc::now()));
+            self.is_sorted = false;
+            self.persist_connections()?;
+            self.persist_trash()?;
+            Ok(())
+        } else {
+            Err(ConfigError::Validation {
                 field: "id".to_string(),
                 reason: format!("Connection with ID {id} not found"),
-            });
+            })
         }
+    }
 
-        self.persist_connections()?;
-        Ok(())
+    /// Restores a connection from trash
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the connection is not in trash.
+    pub fn restore_connection(&mut self, id: Uuid) -> ConfigResult<()> {
+        if let Some((conn, _)) = self.trash_connections.remove(&id) {
+            self.connections.insert(id, conn);
+            self.is_sorted = false;
+            self.persist_connections()?;
+            self.persist_trash()?;
+            Ok(())
+        } else {
+            Err(ConfigError::Validation {
+                field: "id".to_string(),
+                reason: format!("Connection with ID {id} not found in trash"),
+            })
+        }
     }
 
     /// Gets a connection by ID
@@ -234,6 +457,7 @@ impl ConnectionManager {
 
         let id = group.id;
         self.groups.insert(id, group);
+        self.is_sorted = false;
         self.persist_groups()?;
 
         Ok(id)
@@ -263,6 +487,7 @@ impl ConnectionManager {
 
         let id = group.id;
         self.groups.insert(id, group);
+        self.is_sorted = false;
         self.persist_groups()?;
 
         Ok(id)
@@ -292,12 +517,21 @@ impl ConnectionManager {
         ConfigManager::validate_group(&updated)?;
 
         self.groups.insert(id, updated);
+        self.is_sorted = false;
         self.persist_groups()?;
 
         Ok(())
     }
 
     /// Deletes a group by ID
+    ///
+    /// Connections in the deleted group will have their `group_id` set to None.
+    /// Child groups will be moved to the deleted group's parent.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the group doesn't exist or persistence fails.
+    /// Deletes a group by ID (moves to trash)
     ///
     /// Connections in the deleted group will have their `group_id` set to None.
     /// Child groups will be moved to the deleted group's parent.
@@ -331,17 +565,18 @@ impl ConnectionManager {
             }
         }
 
+        self.trash_groups.insert(id, (group, Utc::now()));
+        self.is_sorted = false;
         self.persist_groups()?;
         self.persist_connections()?;
+        self.persist_trash()?;
 
         Ok(())
     }
 
     /// Deletes a group and all connections within it (cascade delete)
     ///
-    /// Unlike `delete_group`, this method removes all connections in the group
-    /// rather than moving them to ungrouped. Child groups are also deleted
-    /// along with their connections.
+    /// Moves all affected groups and connections to trash.
     ///
     /// # Errors
     ///
@@ -358,7 +593,7 @@ impl ConnectionManager {
         // Collect all groups to delete (this group and all descendants)
         let groups_to_delete = self.collect_descendant_groups(id);
 
-        // Delete all connections in these groups
+        // Collect connections to delete
         let connections_to_delete: Vec<Uuid> = self
             .connections
             .iter()
@@ -369,18 +604,67 @@ impl ConnectionManager {
             .map(|(id, _)| *id)
             .collect();
 
+        // Move connections to trash
         for conn_id in connections_to_delete {
-            self.connections.remove(&conn_id);
+            if let Some(conn) = self.connections.remove(&conn_id) {
+                self.trash_connections.insert(conn_id, (conn, Utc::now()));
+            }
         }
 
-        // Delete all the groups
+        // Move groups to trash
         for group_id in &groups_to_delete {
-            self.groups.remove(group_id);
+            if let Some(group) = self.groups.remove(group_id) {
+                self.trash_groups.insert(*group_id, (group, Utc::now()));
+            }
         }
 
+        self.is_sorted = false;
         self.persist_groups()?;
         self.persist_connections()?;
+        self.persist_trash()?;
 
+        Ok(())
+    }
+
+    /// Restores a group from trash
+    ///
+    /// If the parent group no longer exists, the group is restored at the root level.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the group is not in trash.
+    pub fn restore_group(&mut self, id: Uuid) -> ConfigResult<()> {
+        if let Some((mut group, _)) = self.trash_groups.remove(&id) {
+            // Check if parent still exists
+            if let Some(parent_id) = group.parent_id {
+                if !self.groups.contains_key(&parent_id) {
+                    // Parent deleted, promote to root
+                    group.parent_id = None;
+                }
+            }
+
+            self.groups.insert(id, group);
+            self.is_sorted = false;
+            self.persist_groups()?;
+            self.persist_trash()?;
+            Ok(())
+        } else {
+            Err(ConfigError::Validation {
+                field: "id".to_string(),
+                reason: format!("Group with ID {id} not found in trash"),
+            })
+        }
+    }
+
+    /// Permanently deletes all items in trash
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if persistence fails.
+    pub fn empty_trash(&mut self) -> ConfigResult<()> {
+        self.trash_connections.clear();
+        self.trash_groups.clear();
+        self.persist_trash()?;
         Ok(())
     }
 
@@ -711,16 +995,88 @@ impl ConnectionManager {
 
     // ========== Persistence ==========
 
-    /// Persists all connections to storage
+    /// Persists all connections to storage asynchronously
+    /// Persists all connections to storage asynchronously (debounced)
     fn persist_connections(&self) -> ConfigResult<()> {
         let connections: Vec<Connection> = self.connections.values().cloned().collect();
-        self.config_manager.save_connections(&connections)
+
+        // Update pending data
+        {
+            let mut pending = self.pending_connections.lock().unwrap();
+            *pending = Some(connections);
+        }
+
+        // Notify worker
+        self.notify_connections.notify_one();
+
+        Ok(())
     }
 
-    /// Persists all groups to storage
+    /// Persists all groups to storage asynchronously
+    /// Persists all groups to storage asynchronously (debounced)
     fn persist_groups(&self) -> ConfigResult<()> {
         let groups: Vec<ConnectionGroup> = self.groups.values().cloned().collect();
-        self.config_manager.save_groups(&groups)
+
+        // Update pending data
+        {
+            let mut pending = self.pending_groups.lock().unwrap();
+            *pending = Some(groups);
+        }
+
+        // Notify worker
+        self.notify_groups.notify_one();
+
+        Ok(())
+    }
+
+    /// Persists trash asynchronously (debounced)
+    fn persist_trash(&self) -> ConfigResult<()> {
+        let connections: Vec<_> = self.trash_connections.values().cloned().collect();
+        let groups: Vec<_> = self.trash_groups.values().cloned().collect();
+
+        // Update pending data
+        {
+            let mut pending = self.pending_trash.lock().unwrap();
+            *pending = Some((connections, groups));
+        }
+
+        // Notify worker
+        self.notify_trash.notify_one();
+
+        Ok(())
+    }
+
+    /// Flushes any pending persistence operations immediately
+    ///
+    /// This should be called before application exit to ensure all data is saved.
+    ///
+    /// # Errors
+    /// Returns a `ConfigError` if saving to disk fails
+    ///
+    /// # Panics
+    /// Panics if the internal mutex is poisoned
+    pub async fn flush_persistence(&self) -> ConfigResult<()> {
+        // Flush connections
+        let pending_conns = self.pending_connections.lock().unwrap().take();
+        if let Some(conns) = pending_conns {
+            self.config_manager.save_connections_async(&conns).await?;
+        }
+
+        // Flush groups
+        let pending_groups = self.pending_groups.lock().unwrap().take();
+        if let Some(groups) = pending_groups {
+            self.config_manager.save_groups_async(&groups).await?;
+        }
+
+        // Flush trash
+        let pending_trash = self.pending_trash.lock().unwrap().take();
+        if let Some((conns, groups)) = pending_trash {
+            self.config_manager
+                .save_trash_async(&conns, &groups)
+                .await?;
+        }
+
+        Ok(())
     }
 
     /// Reloads connections and groups from storage
@@ -836,6 +1192,10 @@ impl ConnectionManager {
     /// Returns an error if persistence fails.
     #[allow(clippy::too_many_lines)]
     pub fn sort_all(&mut self) -> ConfigResult<()> {
+        if self.is_sorted {
+            return Ok(());
+        }
+
         // Sort root groups
         let mut root_groups: Vec<_> = self
             .groups
@@ -967,6 +1327,7 @@ impl ConnectionManager {
             }
         }
 
+        self.is_sorted = true;
         self.persist_groups()?;
         self.persist_connections()?;
         Ok(())
@@ -1770,6 +2131,47 @@ mod tests {
         assert_eq!(
             ConnectionManager::extract_base_name("server (custom)"),
             None
+        );
+    }
+
+    #[tokio::test]
+    async fn test_debounced_persistence_and_flush() {
+        use tokio::time::Duration;
+        let (mut manager, temp_dir) = create_test_manager();
+
+        // Create a connection
+        let _id = manager
+            .create_connection(
+                "Debounced Connection".to_string(),
+                "192.168.1.100".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            )
+            .unwrap();
+
+        let file_path = temp_dir.path().join("connections.toml");
+
+        // Wait a bit (less than 2s)
+        tokio::time::sleep(Duration::from_millis(100)).await;
+
+        // Check file content - should NOT contain the new connection yet
+        if file_path.exists() {
+            let content = tokio::fs::read_to_string(&file_path).await.unwrap();
+            assert!(
+                !content.contains("Debounced Connection"),
+                "Should be debounced"
+            );
+        }
+
+        // Flush persistence
+        manager.flush_persistence().await.unwrap();
+
+        // Now it MUST ensure persistence
+        assert!(file_path.exists(), "File should exist after flush");
+        let content = tokio::fs::read_to_string(&file_path).await.unwrap();
+        assert!(
+            content.contains("Debounced Connection"),
+            "Should persist after flush"
         );
     }
 }

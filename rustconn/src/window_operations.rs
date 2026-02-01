@@ -82,8 +82,24 @@ pub fn delete_selected_connection(
                             // Defer sidebar reload to prevent UI freeze
                             let state = state_clone.clone();
                             let sidebar = sidebar_clone.clone();
+                            let window = window_clone.clone();
+                            // Capture name for closure
+                            let name = name.clone(); // name was &str from outer scope, need to ensure it's captured
+
                             glib::idle_add_local_once(move || {
                                 MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+
+                                // Show undo toast
+                                let action_target = format!(
+                                    "{}:{}",
+                                    if is_group { "group" } else { "connection" },
+                                    id
+                                );
+                                crate::toast::show_undo_toast_on_window(
+                                    &window,
+                                    &format!("Deleted '{}'", name),
+                                    &action_target,
+                                );
                             });
                         }
                         Err(e) => {
