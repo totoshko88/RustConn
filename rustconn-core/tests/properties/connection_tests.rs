@@ -243,9 +243,7 @@ fn create_test_manager() -> (ConnectionManager, TempDir, tokio::runtime::Runtime
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let temp_dir = TempDir::new().unwrap();
     let config_manager = ConfigManager::with_config_dir(temp_dir.path().to_path_buf());
-    let manager = runtime.block_on(async {
-        ConnectionManager::new(config_manager).unwrap()
-    });
+    let manager = runtime.block_on(async { ConnectionManager::new(config_manager).unwrap() });
     (manager, temp_dir, runtime)
 }
 
