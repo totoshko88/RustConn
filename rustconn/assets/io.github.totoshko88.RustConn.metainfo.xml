@@ -75,6 +75,14 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.7.1" date="2026-02-01">
+      <description>
+        <p>Version 0.7.1 - Dependency Updates:</p>
+        <ul>
+          <li>Updated bytemuck, portable-atomic, slab, zerocopy, zmij</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.7.0" date="2026-02-01">
       <description>
         <p>Version 0.7.0 - Asbru Import Fixes and Group Descriptions:</p>
