@@ -2,7 +2,7 @@
 <component type="desktop-application">
   <id>io.github.totoshko88.RustConn</id>
   <name>RustConn</name>
-  <summary>Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Zero Trust)</summary>
+  <summary>Manage remote connections easily</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0+</project_license>
   <developer id="io.github.totoshko88">
