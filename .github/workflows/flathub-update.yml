@@ -1,16 +1,18 @@
 name: Update Flathub
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g., v0.4.0)'
-        required: true
+        description: 'Version tag (e.g., v0.7.1)'
+        required: false
 
 jobs:
-  update-flathub:
+  generate-flathub-files:
+    name: Generate Flathub Files
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,10 +30,10 @@ jobs:
           fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "VERSION_NUM=${VERSION#v}" >> $GITHUB_OUTPUT
+          echo "Using version: $VERSION"
 
       - name: Install dependencies
-        run: |
-          pip install aiohttp tomlkit
+        run: pip install aiohttp tomlkit
 
       - name: Download flatpak-cargo-generator
         run: |
@@ -41,44 +43,71 @@ jobs:
       - name: Generate cargo-sources.json
         run: |
           python3 flatpak-cargo-generator.py Cargo.lock -o cargo-sources.json
+          echo "=== Generated cargo-sources.json ($(wc -l < cargo-sources.json) lines) ==="
 
       - name: Get commit SHA for tag
         id: commit
         run: |
-          COMMIT=$(git rev-list -n 1 ${{ steps.version.outputs.VERSION }})
+          COMMIT=$(git rev-list -n 1 ${{ steps.version.outputs.VERSION }} 2>/dev/null || git rev-parse HEAD)
           echo "SHA=$COMMIT" >> $GITHUB_OUTPUT
+          echo "Commit SHA: $COMMIT"
 
-      - name: Clone Flathub repo
-        env:
-          GH_TOKEN: ${{ secrets.FLATHUB_TOKEN }}
+      - name: Prepare Flathub PR files
         run: |
-          git clone https://x-access-token:${GH_TOKEN}@github.com/flathub/io.github.totoshko88.RustConn.git flathub-repo || \
-          echo "Flathub repo not yet created - manual submission required"
-
-      - name: Update Flathub manifest
-        if: ${{ hashFiles('flathub-repo/io.github.totoshko88.RustConn.yml') != '' }}
-        run: |
-          cd flathub-repo
+          mkdir -p flathub-pr
+          cp cargo-sources.json flathub-pr/
+          cp packaging/flathub/io.github.totoshko88.RustConn.yml flathub-pr/
+          
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          COMMIT="${{ steps.commit.outputs.SHA }}"
           
           # Update tag in manifest
-          sed -i "s/tag: v[0-9.]*/tag: ${{ steps.version.outputs.VERSION }}/" io.github.totoshko88.RustConn.yml
+          sed -i "s/tag: v[0-9.]*/tag: $VERSION/" flathub-pr/io.github.totoshko88.RustConn.yml
           
-          # Copy new cargo-sources.json
-          cp ../cargo-sources.json .
+          echo "=== Updated manifest ==="
+          grep -A5 "type: git" flathub-pr/io.github.totoshko88.RustConn.yml
           
-          # Configure git
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
+          # Create instructions
+          cat > flathub-pr/README.md << EOF
+          # Flathub Update for $VERSION
           
-          # Commit and push
-          git add -A
-          git commit -m "Update to ${{ steps.version.outputs.VERSION }}" || echo "No changes to commit"
-          git push origin master
+          ## Files to update in flathub/io.github.totoshko88.RustConn:
+          
+          1. \`io.github.totoshko88.RustConn.yml\` - Updated manifest with new tag
+          2. \`cargo-sources.json\` - Regenerated Cargo dependencies
+          
+          ## Manual steps:
+          
+          1. Fork https://github.com/flathub/io.github.totoshko88.RustConn
+          2. Replace the files with these updated versions
+          3. Create a Pull Request with title "Update to $VERSION"
+          
+          ## Or wait for Flathub Bot:
+          
+          The manifest includes \`x-checker-data\` which allows Flathub Bot
+          to automatically detect new releases and create PRs.
+          
+          With \`automerge-flathubbot-prs: true\` in flathub.json,
+          bot PRs will be auto-merged after CI passes.
+          
+          **Note:** cargo-sources.json still needs manual update as
+          Flathub Bot doesn't regenerate Cargo dependencies automatically.
+          EOF
 
-      - name: Upload cargo-sources.json artifact
+      - name: Upload Flathub PR files
         uses: actions/upload-artifact@v4
         with:
-          name: flathub-files
-          path: |
-            cargo-sources.json
-            packaging/flathub/io.github.totoshko88.RustConn.yml
+          name: flathub-update-${{ steps.version.outputs.VERSION }}
+          path: flathub-pr/
+
+      - name: Summary
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          echo "## Flathub Update Files Generated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download the artifact \`flathub-update-$VERSION\` and:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "1. Go to https://github.com/flathub/io.github.totoshko88.RustConn" >> $GITHUB_STEP_SUMMARY
+          echo "2. Create a new branch" >> $GITHUB_STEP_SUMMARY
+          echo "3. Upload \`io.github.totoshko88.RustConn.yml\` and \`cargo-sources.json\`" >> $GITHUB_STEP_SUMMARY
+          echo "4. Create PR with title \"Update to $VERSION\"" >> $GITHUB_STEP_SUMMARY

@@ -77,9 +77,19 @@
   <releases>
     <release version="0.7.1" date="2026-02-01">
       <description>
-        <p>Version 0.7.1 - Dependency Updates:</p>
+        <p>Version 0.7.1 - Undo/Trash, Group Inheritance, and Sidebar Refactoring:</p>
         <ul>
-          <li>Updated bytemuck, portable-atomic, slab, zerocopy, zmij</li>
+          <li>Undo/Trash Functionality - Deleted items can be restored via "Undo" notification</li>
+          <li>Group Inheritance - "Load from Group" buttons auto-fill credentials from parent group</li>
+          <li>Debounced Persistence - Changes batched and saved after 2 seconds of inactivity</li>
+          <li>Sort Optimization - Sorting skipped when data order unchanged</li>
+          <li>Connection History Sorting - Newest entries now shown first</li>
+          <li>Sidebar Module Refactoring - Decomposed into search.rs, filter.rs, view.rs, drag_drop.rs</li>
+          <li>Drag-and-Drop Refactoring - Strongly typed DragPayload enum replaces string parsing</li>
+          <li>Search Highlighting - Matched text highlighted in bold with Pango markup</li>
+          <li>Fixed credential inheritance from parent groups for KeePass</li>
+          <li>Fixed GTK widget parenting warning at startup</li>
+          <li>Fixed Connection History reconnect not opening tab</li>
         </ul>
       </description>
     </release>

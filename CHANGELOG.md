@@ -7,14 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.7.1] - 2026-02-01
 
+### Added
+- **Undo/Trash Functionality** - Safely recover deleted items (COMP-FUNC-01):
+  - Deleted items are moved to Trash and can be restored via "Undo" notification
+  - Implemented persisted Trash storage for recovery across sessions
+- **Group Inheritance** - Simplify connection configuration (COMP-FUNC-03):
+  - Added ability to inherit Username and Domain from parent Group
+  - "Load from Group" buttons auto-fill credential fields from group settings
+
 ### Changed
 - **Dependencies** - Updated: bytemuck 1.24.0→1.25.0, portable-atomic 1.13.0→1.13.1, slab 0.4.11→0.4.12, zerocopy 0.8.36→0.8.37, zerocopy-derive 0.8.36→0.8.37, zmij 1.0.17→1.0.18
 - **Persistence Optimization** - Implemented debounced persistence for connections and groups (TECH-02):
   - Changes are now batched and saved after 2 seconds of inactivity
   - Reduces disk I/O during rapid modifications (e.g., drag-and-drop reordering)
   - Added `flush_persistence` to ensure data safety on application exit
+- **Sort Optimization** - Improved rendering performance (COMP-FUNC-02):
+  - Sorting is now skipped when data order hasn't changed, reducing CPU usage
+  - Optimized `sort_all` calls during UI updates
+- **Connection History Sorting** - History entries now sorted by date descending (newest first)
 
 ### Fixed
+- **Credential Inheritance from Groups** - Fixed password inheritance not working for connections:
+  - Connections with `password_source=Inherit` now correctly resolve credentials from parent group's KeePass entry
+  - Added direct KeePass lookup for group credentials in `resolve_credentials_blocking`
+- **GTK Widget Parenting** - Fixed `gtk_widget_set_parent` assertion failure in split view:
+  - `set_panel_content` now checks if widget has parent before calling `unparent()`
+- **Connection History Reconnect** - Fixed reconnecting from Connection History not opening tab:
+  - History reconnect now uses `start_connection_with_credential_resolution` for proper credential handling
+  - Previously showed warning about missing credentials for RDP connections
 - **Blocking I/O** - Fixed UI freezing during save operations by moving persistence to background tasks (Async Persistence):
   - Added global Tokio runtime to main application
   - Implemented async save methods in `ConfigManager`

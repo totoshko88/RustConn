@@ -944,20 +944,14 @@ impl CredentialResolver {
                 match source {
                     PasswordSource::KeePass => {
                         if self.settings.kdbx_enabled {
-                            // Lookup in KeePass using Group path
-                            // We need to generate path for the GROUP, not the connection.
-                            // But generate_hierarchical_lookup_key expects a connection.
-                            // We might need a helper for group path.
-                            // For now, let's assume we can lookup by Group Name/Path.
-                            // Or use group.id.to_string() for simplicity if KeePass supports custom keys?
-                            // But usually KeePass structure mirrors UI.
-                            // For now, let's skip KeePass inheritance complexity and support Keyring/Stored(if we had it).
-                            // If source is KeePass, we try to finding it.
+                            // Lookup in KeePass using Group path: RustConn/Groups/...
+                            let group_path =
+                                KeePassHierarchy::build_group_entry_path(group, groups);
+                            if let Some(creds) = self.secret_manager.retrieve(&group_path).await? {
+                                return Ok(Some(self.merge_group_credentials(creds, group)));
+                            }
                         } else if self.settings.enable_fallback {
-                            // If KeePass is disabled but configured, try generic fallback/keyring?
-                            // Or just continue searching?
-                            // For consistency with connection logic, try fallback if allowed
-                            // Lookup using group ID in keyring
+                            // Fallback to keyring using group ID
                             let group_id_str = group.id.to_string();
                             if let Some(creds) = self.secret_manager.retrieve(&group_id_str).await?
                             {

@@ -80,11 +80,11 @@ pub fn setup_search_entry_hints(
 
 /// Creates the search history popover
 pub fn create_history_popover(
-    parent: &SearchEntry,
+    _parent: &SearchEntry,
     search_history: Rc<RefCell<Vec<String>>>,
 ) -> Popover {
     let popover = Popover::new();
-    popover.set_parent(parent);
+    // Note: Parent is set by the caller after this function returns
 
     // Note: The actual content population would happen on popup
     // For now returning the basic popover structure
@@ -278,34 +278,25 @@ mod tests {
     #[test]
     fn test_highlight_match() {
         // Simple match
-        assert_eq!(
-            highlight_match("Hello World", "ell"),
-            "H<b>ell</b>o World"
-        );
-        
+        assert_eq!(highlight_match("Hello World", "ell"), "H<b>ell</b>o World");
+
         // Case insensitive
         assert_eq!(
             highlight_match("Hello World", "world"),
             "Hello <b>World</b>"
         );
-        
+
         // No match
-        assert_eq!(
-            highlight_match("No match", "foo"),
-            "No match"
-        );
-        
+        assert_eq!(highlight_match("No match", "foo"), "No match");
+
         // Match at start
         assert_eq!(
             highlight_match("Start match", "start"),
             "<b>Start</b> match"
         );
-        
+
         // Match at end
-        assert_eq!(
-            highlight_match("End match", "match"),
-            "End <b>match</b>"
-        );
+        assert_eq!(highlight_match("End match", "match"), "End <b>match</b>");
 
         // Multiple matches
         assert_eq!(

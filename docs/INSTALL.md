@@ -9,15 +9,19 @@
 
 ## Flatpak (Recommended)
 
-```bash
-# Install from Flathub (when available)
-flatpak install flathub io.github.totoshko88.RustConn
+RustConn is available on Flathub:
 
-# Or install from bundle
-flatpak install RustConn-*.flatpak
+```bash
+# Install from Flathub
+flatpak install flathub io.github.totoshko88.RustConn
 
 # Run
 flatpak run io.github.totoshko88.RustConn
+```
+
+Or install from a local bundle:
+```bash
+flatpak install RustConn-*.flatpak
 ```
 
 ## Snap

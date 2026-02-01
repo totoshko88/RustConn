@@ -15,7 +15,7 @@
 
 // Re-export types for external use
 pub use crate::sidebar_types::{
-    DragDropData, DropIndicator, DropPosition, SelectionModelWrapper, SessionStatusInfo, TreeState,
+    DropIndicator, DropPosition, SelectionModelWrapper, SessionStatusInfo, TreeState,
     MAX_SEARCH_HISTORY,
 };
 
@@ -56,11 +56,7 @@ pub struct ConnectionSidebar {
     bulk_actions_bar: GtkBox,
     /// Current mode
     group_ops_mode: Rc<RefCell<bool>>,
-    /// Callback for drag-drop operations
-    ///
-    /// Used by `set_drag_drop_callback()` and `invoke_drag_drop()` methods
-    /// to handle drag-drop events from the connection tree.
-    drag_drop_callback: Rc<RefCell<Option<Box<dyn Fn(DragDropData)>>>>,
+
     /// Search history
     search_history: Rc<RefCell<Vec<String>>>,
     /// Search history popover
@@ -372,10 +368,10 @@ impl ConnectionSidebar {
         factory.connect_bind(move |factory, obj| {
             if let Some(list_item) = obj.downcast_ref::<ListItem>() {
                 view::bind_list_item(
-                    factory, 
-                    list_item, 
-                    &signal_handlers_bind, 
-                    &search_entry_bind.text()
+                    factory,
+                    list_item,
+                    &signal_handlers_bind,
+                    &search_entry_bind.text(),
                 );
             }
         });
@@ -580,7 +576,7 @@ impl ConnectionSidebar {
             selection_model,
             bulk_actions_bar,
             group_ops_mode,
-            drag_drop_callback: Rc::new(RefCell::new(None)),
+
             search_history,
             history_popover,
             drop_indicator,
@@ -595,27 +591,6 @@ impl ConnectionSidebar {
             active_protocol_filters,
             protocol_filter_buttons,
             keepass_button,
-        }
-    }
-
-    /// Sets the callback for drag-drop operations
-    ///
-    /// Note: Part of drag-drop callback API for external handlers.
-    #[allow(dead_code)]
-    pub fn set_drag_drop_callback<F>(&self, callback: F)
-    where
-        F: Fn(DragDropData) + 'static,
-    {
-        *self.drag_drop_callback.borrow_mut() = Some(Box::new(callback));
-    }
-
-    /// Invokes the drag-drop callback if set
-    ///
-    /// Note: Part of drag-drop callback API for external handlers.
-    #[allow(dead_code)]
-    pub fn invoke_drag_drop(&self, data: DragDropData) {
-        if let Some(ref callback) = *self.drag_drop_callback.borrow() {
-            callback(data);
         }
     }
 

@@ -1,4 +1,18 @@
 -------------------------------------------------------------------
+Sun Feb 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.1
+
+- Version bump to 0.7.1
+  * Fixed Credential Inheritance from Groups - connections with Inherit now resolve from parent group's KeePass entry
+  * Fixed GTK Widget Parenting - set_panel_content checks parent before unparent()
+  * Fixed Connection History Reconnect - now uses credential resolution for RDP connections
+  * Fixed Connection History Sorting - newest entries now appear at top
+  * Refactored Sidebar - Split monolithic sidebar into modular components (TECH-03)
+  * Refactored Drag & Drop - Strongly typed DragPayload (TECH-04)
+  * Added Undo/Trash Functionality - Safely recover deleted items
+  * Added Group Inheritance - Inherit Username and Domain from parent Group
+  * Code Quality - Async persistence fixes and cleanup
+
+-------------------------------------------------------------------
 Sun Feb 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.0
 
 - Version bump to 0.7.0

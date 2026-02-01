@@ -23,6 +23,7 @@ const SNIPPETS_FILE: &str = "snippets.toml";
 const CLUSTERS_FILE: &str = "clusters.toml";
 const TEMPLATES_FILE: &str = "templates.toml";
 const HISTORY_FILE: &str = "history.toml";
+const TRASH_FILE: &str = "trash.toml";
 const CONFIG_FILE: &str = "config.toml";
 
 /// Wrapper for serializing a list of connections
@@ -65,6 +66,15 @@ struct TemplatesFile {
 struct HistoryFile {
     #[serde(default)]
     entries: Vec<ConnectionHistoryEntry>,
+}
+
+/// Wrapper for serializing trash (deleted items)
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+pub struct TrashFile {
+    #[serde(default)]
+    pub connections: Vec<(Connection, chrono::DateTime<chrono::Utc>)>,
+    #[serde(default)]
+    pub groups: Vec<(ConnectionGroup, chrono::DateTime<chrono::Utc>)>,
 }
 
 /// Configuration manager for `RustConn`
@@ -355,6 +365,44 @@ impl ConfigManager {
             entries: entries.to_vec(),
         };
         Self::save_toml_file(&path, &file)
+    }
+
+    // ========== Trash ==========
+
+    /// Loads trash (deleted items) from the configuration file
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file exists but cannot be parsed.
+    #[allow(clippy::type_complexity)]
+    pub fn load_trash(
+        &self,
+    ) -> ConfigResult<(
+        Vec<(Connection, chrono::DateTime<chrono::Utc>)>,
+        Vec<(ConnectionGroup, chrono::DateTime<chrono::Utc>)>,
+    )> {
+        let path = self.config_dir.join(TRASH_FILE);
+        let file = Self::load_toml_file::<TrashFile>(&path)?;
+        Ok((file.connections, file.groups))
+    }
+
+    /// Saves trash items to the configuration file asynchronously
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be written.
+    pub async fn save_trash_async(
+        &self,
+        connections: &[(Connection, chrono::DateTime<chrono::Utc>)],
+        groups: &[(ConnectionGroup, chrono::DateTime<chrono::Utc>)],
+    ) -> ConfigResult<()> {
+        self.ensure_config_dir()?;
+        let path = self.config_dir.join(TRASH_FILE);
+        let file = TrashFile {
+            connections: connections.to_vec(),
+            groups: groups.to_vec(),
+        };
+        Self::save_toml_file_async(&path, &file).await
     }
 
     // ========== Application Settings ==========
