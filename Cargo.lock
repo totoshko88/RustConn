@@ -4381,6 +4381,7 @@ dependencies = [
  "resvg",
  "rustconn-core",
  "secrecy 0.10.3",
+ "serde",
  "serde_json",
  "thiserror 2.0.18",
  "tokio",

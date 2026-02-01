@@ -853,6 +853,16 @@ impl AppState {
             .map_err(|e| format!("Failed to sort by recent: {e}"))
     }
 
+    /// Flushes any pending persistence operations immediately
+    ///
+    /// This ensures that debounced saves are written to disk before application exit.
+    pub fn flush_persistence(&self) -> Result<(), String> {
+        with_runtime(|rt| {
+            rt.block_on(self.connection_manager.flush_persistence())
+                .map_err(|e| format!("Failed to flush persistence: {e}"))
+        })?
+    }
+
     // ========== Session Operations ==========
 
     /// Starts a session for a connection

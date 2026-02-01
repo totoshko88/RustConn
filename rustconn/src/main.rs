@@ -78,5 +78,9 @@ fn main() -> gtk4::glib::ExitCode {
 
     tracing_subscriber::fmt().with_env_filter(filter).init();
 
+    // Initialize Tokio runtime for async operations
+    let runtime = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
+    let _guard = runtime.enter();
+
     app::run()
 }

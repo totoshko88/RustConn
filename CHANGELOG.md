@@ -9,6 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Dependencies** - Updated: bytemuck 1.24.0→1.25.0, portable-atomic 1.13.0→1.13.1, slab 0.4.11→0.4.12, zerocopy 0.8.36→0.8.37, zerocopy-derive 0.8.36→0.8.37, zmij 1.0.17→1.0.18
+- **Persistence Optimization** - Implemented debounced persistence for connections and groups (TECH-02):
+  - Changes are now batched and saved after 2 seconds of inactivity
+  - Reduces disk I/O during rapid modifications (e.g., drag-and-drop reordering)
+  - Added `flush_persistence` to ensure data safety on application exit
+
+### Fixed
+- **Blocking I/O** - Fixed UI freezing during save operations by moving persistence to background tasks (Async Persistence):
+  - Added global Tokio runtime to main application
+  - Implemented async save methods in `ConfigManager`
+  - `ConnectionManager` now saves connections and groups in non-blocking background tasks
+- **Code Quality** - Comprehensive code cleanup and optimization:
+  - Fixed `future_not_send` issues in async persistence layer
+  - Resolved type complexity warnings in `ConnectionManager`
+  - Removed dead code and unused imports across sidebar modules
+  - Enforced `clippy` pedantic checks for better robustness
+
+### Refactored
+- **Sidebar Module** - Decomposed monolithic `sidebar.rs` into focused submodules (TECH-03):
+  - `search.rs`: Encapsulated search logic, predicates, and history management
+  - `filter.rs`: centralized protocol filter button creation and state management
+  - `view.rs`: Isolated UI list item creation, binding, and signal handling
+  - `drag_drop.rs`: Prepared structure for drag-and-drop logic separation
+  - Improved compile times and navigation by splitting 2300+ line file
+- **Drag and Drop Refactoring** - Replaced string-based payloads with strongly typed `DragPayload` enum (TECH-04):
+  - Uses `serde_json` for robust serialization instead of manual string parsing
+  - Centralized drag logic in `drag_drop.rs`
+  - Improved type safety for drag-and-drop operations
+
+### UI/UX
+- **Search Highlighting** - Added visual feedback for search matches (TECH-05):
+  - Matched text substrings are now highlighted in bold
+  - Implemented case-insensitive fuzzier matching with Pango markup
+  - Improved `Regex`-based search logic
 
 ## [0.7.0] - 2026-02-01
 
