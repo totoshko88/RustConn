@@ -11,25 +11,41 @@
   <update_contact>totoshko88@gmail.com</update_contact>
   <description>
     <p>
-      RustConn is a modern connection manager for Linux desktops built with GTK4.
-      It provides a unified interface for managing SSH, RDP, VNC, SPICE, and Zero Trust
-      remote connections with support for both embedded and external clients.
-      Supports custom console-based connections and integrates with secret managers.
+      RustConn is a modern connection manager for Linux with a GTK4/Wayland-native interface.
+      Manage SSH, RDP, VNC, SPICE, and Zero Trust connections from a single application
+      with support for both embedded and external clients.
     </p>
-    <p>Features:</p>
+    <p>Protocols:</p>
     <ul>
-      <li>SSH connections with embedded terminal and split view</li>
-      <li>RDP support via FreeRDP/IronRDP (embedded and external)</li>
-      <li>VNC support via TigerVNC (embedded and external)</li>
-      <li>SPICE support via virt-viewer (embedded and external)</li>
-      <li>Zero Trust providers: AWS SSM, GCP IAP, Azure Bastion, OCI Bastion, Cloudflare, Teleport, Tailscale, Boundary</li>
-      <li>Custom console-based connections</li>
-      <li>Connection groups, tags, and templates</li>
-      <li>Import/export (Remmina, Asbru-CM, SSH config, Ansible)</li>
-      <li>Secure credential storage (KeePassXC, libsecret)</li>
+      <li>SSH with embedded terminal and split view</li>
+      <li>RDP via IronRDP/FreeRDP (embedded and external)</li>
+      <li>VNC via vnc-rs/TigerVNC (embedded and external)</li>
+      <li>SPICE via virt-viewer</li>
+      <li>Zero Trust: AWS SSM, GCP IAP, Azure Bastion, OCI Bastion, Cloudflare, Teleport, Tailscale, Boundary</li>
+    </ul>
+    <p>Organization:</p>
+    <ul>
+      <li>Groups, tags, and templates</li>
       <li>Connection history and statistics</li>
       <li>Session logging</li>
-      <li>Command snippets and cluster commands</li>
+    </ul>
+    <p>Import/Export:</p>
+    <ul>
+      <li>Asbru-CM, Remmina, SSH config, Ansible inventory</li>
+      <li>Royal TS, MobaXterm, native format (.rcn)</li>
+    </ul>
+    <p>Security:</p>
+    <ul>
+      <li>KeePassXC (KDBX files and proxy)</li>
+      <li>libsecret (GNOME Keyring)</li>
+      <li>Bitwarden CLI</li>
+      <li>1Password CLI</li>
+    </ul>
+    <p>Productivity:</p>
+    <ul>
+      <li>Split terminals</li>
+      <li>Command snippets</li>
+      <li>Cluster commands</li>
       <li>Wake-on-LAN</li>
     </ul>
   </description>
