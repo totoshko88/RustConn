@@ -19,8 +19,6 @@ finish-args:
   - --filesystem=home/.ssh:ro
   # SSH agent
   - --socket=ssh-auth
-  # Config directory access for connections, groups, snippets, settings
-  - --filesystem=xdg-config/rustconn:create
   # Access to run host commands (xfreerdp, vncviewer, remote-viewer, aws, gcloud, etc.)
   - --talk-name=org.freedesktop.Flatpak
   # D-Bus access for secret service (GNOME Keyring, KWallet)
