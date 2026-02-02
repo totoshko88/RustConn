@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.7.1
+Version:        0.7.2
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later
@@ -157,6 +157,12 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Tue Feb 03 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.2-0
+- Version bump to 0.7.2
+- Flatpak Host Command Support - New flatpak module for running host commands
+- Fixed Flatpak Config Access - connections and settings now persist correctly
+- Fixed Split View Equal Proportions - panels now split 50/50 reliably
+
 * Sun Feb 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.1-0
 - Version bump to 0.7.1
 - Refactored Sidebar - Split monolithic sidebar into modular components (TECH-03)

@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Mon Feb 03 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.2
+
+- Version bump to 0.7.2
+  * Flatpak Host Command Support - New flatpak module for running host commands
+  * Fixed Flatpak Config Access - connections and settings now persist correctly
+  * Fixed Split View Equal Proportions - panels now split 50/50 reliably
+  * Extended Flatpak permissions for GNOME Keyring, KWallet, KeePassXC, system tray
+
+-------------------------------------------------------------------
 Sun Feb 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.1
 
 - Version bump to 0.7.1
@@ -24,9 +33,49 @@ Sun Feb 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.0
   * Dialog Size Unification - Export 750×650, Import 750×800, New Group 450×550
 
 -------------------------------------------------------------------
+Fri Jan 31 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.9
+
+- Version bump to 0.6.9
+  * Password Caching TTL - Cached credentials expire after configurable time
+  * Connection Retry Logic - Automatic retry with exponential backoff
+  * Loading States - Visual feedback for long-running operations
+  * Session State Persistence - Split layouts preserved across restarts
+  * Connection Health Check - Periodic monitoring of active sessions
+  * 1Password as PasswordSource - 1Password can now be selected per-connection
+  * Credential Rename on Connection Rename
+  * Fixed KeePass password retrieval for subgroups
+  * Fixed Keyring and Bitwarden password retrieval
+  * Fixed Local Shell tabs not appearing in Split View
+
+-------------------------------------------------------------------
+Thu Jan 30 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.8
+
+- Version bump to 0.6.8
+  * 1Password CLI Integration - New secret backend with biometric auth
+  * Service account support via OP_SERVICE_ACCOUNT_TOKEN
+  * Automatic vault creation for storing credentials
+  * Bitwarden API Key Authentication for automated workflows
+  * Bitwarden Self-Hosted Support
+
+-------------------------------------------------------------------
 Thu Jan 29 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.7
 
 - Version bump to 0.6.7
+  * Group-Level Secret Storage - Groups can now store passwords in secret backends
+  * CLI Secret Management - New secret command for managing credentials
+  * Hierarchical storage in KeePass mirrors group structure
+
+-------------------------------------------------------------------
+Wed Jan 29 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.6
+
+- Version bump to 0.6.6
+  * KeePass Password Saving for RDP/VNC connections
+  * Load Password from Vault button in connection dialog
+  * Keyring Password Storage via libsecret
+  * SSH X11 Forwarding and Compression options
+  * Import Normalizer for post-import consistency
+  * IronRDP Enhanced Features: reconnection, multi-monitor, RD Gateway, graphics modes
+  * Fixed AWS EC2 RDP Compatibility with 32-bit color depth
 
 -------------------------------------------------------------------
 Sat Jan 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.5

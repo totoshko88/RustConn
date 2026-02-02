@@ -806,6 +806,9 @@ impl SplitViewAdapter {
         // Set resize behavior for equal split
         paned.set_resize_start_child(true);
         paned.set_resize_end_child(true);
+        // Shrink both children equally when resizing
+        paned.set_shrink_start_child(true);
+        paned.set_shrink_end_child(true);
 
         let first_widget = self.build_node_widget(&split.first);
         let second_widget = self.build_node_widget(&split.second);
@@ -813,19 +816,24 @@ impl SplitViewAdapter {
         paned.set_start_child(Some(&first_widget));
         paned.set_end_child(Some(&second_widget));
 
-        // Set position to 50% after layout is complete
+        // Set position to 50% when the widget is mapped and has a valid size
+        // Using connect_map ensures the widget has been allocated space
         let paned_weak = paned.downgrade();
-        glib::timeout_add_local_once(std::time::Duration::from_millis(50), move || {
-            if let Some(p) = paned_weak.upgrade() {
-                let size = if p.orientation() == Orientation::Horizontal {
-                    p.width()
-                } else {
-                    p.height()
-                };
-                if size > 0 {
-                    p.set_position(size / 2);
+        paned.connect_map(move |_| {
+            let paned_weak_inner = paned_weak.clone();
+            // Use idle_add to ensure layout is complete after mapping
+            glib::idle_add_local_once(move || {
+                if let Some(p) = paned_weak_inner.upgrade() {
+                    let size = if p.orientation() == Orientation::Horizontal {
+                        p.width()
+                    } else {
+                        p.height()
+                    };
+                    if size > 0 {
+                        p.set_position(size / 2);
+                    }
                 }
-            }
+            });
         });
 
         self.paned_widgets.push(paned.clone());

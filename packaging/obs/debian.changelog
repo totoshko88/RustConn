@@ -1,3 +1,27 @@
+rustconn (0.7.2-1) unstable; urgency=medium
+
+  * Version bump to 0.7.2
+  * Flatpak Host Command Support - New flatpak module for running host commands
+  * Fixed Flatpak Config Access - connections and settings now persist correctly
+  * Fixed Split View Equal Proportions - panels now split 50/50 reliably
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Mon, 03 Feb 2026 12:00:00 +0200
+
+rustconn (0.7.1-1) unstable; urgency=medium
+
+  * Version bump to 0.7.1
+  * Undo/Trash Functionality - Safely recover deleted items
+  * Group Inheritance - Load Username and Domain from parent Group
+  * Debounced Persistence - Changes batched and saved after 2 seconds
+  * Refactored Sidebar - Split monolithic sidebar into modular components
+  * Refactored Drag & Drop - Strongly typed DragPayload
+  * Added Search Highlighting - Visual feedback for search matches
+  * Fixed Credential Inheritance from Groups
+  * Fixed GTK Widget Parenting warning
+  * Fixed Connection History Reconnect
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Sun, 01 Feb 2026 14:00:00 +0200
+
 rustconn (0.7.0-1) unstable; urgency=medium
 
   * Version bump to 0.7.0

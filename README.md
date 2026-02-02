@@ -16,7 +16,15 @@ Modern connection manager for Linux with GTK4/Wayland-native interface.
 
 ## Installation
 
-**Flatpak** / **AppImage** / **Debian** / **openSUSE (OBS)** — see [Installation Guide](docs/INSTALL.md)
+<a href="https://flathub.org/apps/io.github.totoshko88.RustConn">
+  <img width="200" alt="Download on Flathub" src="https://flathub.org/api/badge?locale=en"/>
+</a>
+
+```bash
+flatpak install flathub io.github.totoshko88.RustConn
+```
+
+**Snap** / **AppImage** / **Debian** / **openSUSE (OBS)** — see [Installation Guide](docs/INSTALL.md)
 
 ```bash
 # From source

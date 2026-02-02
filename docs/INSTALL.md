@@ -9,7 +9,11 @@
 
 ## Flatpak (Recommended)
 
-RustConn is available on Flathub:
+RustConn is available on [Flathub](https://flathub.org/apps/io.github.totoshko88.RustConn):
+
+<a href="https://flathub.org/apps/io.github.totoshko88.RustConn">
+  <img width="200" alt="Download on Flathub" src="https://flathub.org/api/badge?locale=en"/>
+</a>
 
 ```bash
 # Install from Flathub
@@ -18,6 +22,22 @@ flatpak install flathub io.github.totoshko88.RustConn
 # Run
 flatpak run io.github.totoshko88.RustConn
 ```
+
+### Flatpak Permissions
+
+RustConn requests the following permissions for full functionality:
+
+| Permission | Purpose |
+|------------|---------|
+| `--share=network` | SSH/RDP/VNC/SPICE connections |
+| `--filesystem=home/.ssh:ro` | Read SSH keys |
+| `--socket=ssh-auth` | SSH agent access |
+| `--filesystem=xdg-config/rustconn:create` | Store connections and settings |
+| `--talk-name=org.freedesktop.Flatpak` | Run host commands (xfreerdp, vncviewer, aws, gcloud) |
+| `--talk-name=org.freedesktop.secrets` | GNOME Keyring access |
+| `--talk-name=org.kde.kwalletd5/6` | KWallet access |
+| `--talk-name=org.keepassxc.KeePassXC.BrowserServer` | KeePassXC proxy |
+| `--talk-name=org.kde.StatusNotifierWatcher` | System tray support |
 
 Or install from a local bundle:
 ```bash
