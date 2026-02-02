@@ -5,6 +5,35 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2026-02-02
+
+### Added
+- **Flatpak Host Command Support** - New `flatpak` module for running host commands from sandbox:
+  - `is_flatpak()` - Detects if running inside Flatpak sandbox
+  - `host_command()` - Creates command that runs on host via `flatpak-spawn --host`
+  - `host_has_command()`, `host_which()` - Check for host binaries
+  - `host_exec()`, `host_spawn()` - Execute/spawn host commands
+  - Enables external clients (xfreerdp, vncviewer, aws, gcloud) to work in Flatpak
+
+### Changed
+- **Dependencies** - Updated: hyper-util 0.1.19→0.1.20, system-configuration 0.6.1→0.7.0, zmij 1.0.18→1.0.19
+- **Flatpak Permissions** - Extended sandbox permissions for full functionality:
+  - `xdg-config/rustconn:create` - Config directory access
+  - `org.freedesktop.Flatpak` - Host command execution (xfreerdp, vncviewer, aws, etc.)
+  - `org.freedesktop.secrets` - GNOME Keyring access
+  - `org.kde.kwalletd5/6` - KWallet access
+  - `org.keepassxc.KeePassXC.BrowserServer` - KeePassXC proxy
+  - `org.kde.StatusNotifierWatcher` - System tray support
+
+### Fixed
+- **Flatpak Config Access** - Added `xdg-config/rustconn:create` permission to Flatpak manifests:
+  - Connections, groups, snippets, and settings now persist correctly in Flatpak sandbox
+  - Previously, Flatpak sandbox blocked access to `~/.config/rustconn`
+- **Split View Equal Proportions** - Fixed split panels having unequal sizes:
+  - Changed from timeout-based to `connect_map` + `idle_add` for reliable size detection
+  - Panels now correctly split 50/50 regardless of timing or rendering delays
+  - Added `shrink_start_child` and `shrink_end_child` for balanced resizing
+
 ## [0.7.1] - 2026-02-01
 
 ### Added

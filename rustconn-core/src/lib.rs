@@ -35,6 +35,7 @@ pub mod drag_drop;
 pub mod error;
 pub mod export;
 pub mod ffi;
+pub mod flatpak;
 pub mod import;
 pub mod models;
 pub mod password_generator;
@@ -92,6 +93,7 @@ pub use export::{
 pub use ffi::{
     ConnectionState, FfiDisplay, FfiError, FfiResult, VncCredentialType, VncDisplay, VncError,
 };
+pub use flatpak::{host_command, host_exec, host_has_command, host_spawn, host_which, is_flatpak};
 pub use import::{
     AnsibleInventoryImporter, AsbruImporter, BatchCancelHandle, BatchImportResult, BatchImporter,
     ImportResult, ImportSource, RemminaImporter, RoyalTsImporter, SkippedEntry, SshConfigImporter,

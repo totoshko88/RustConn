@@ -75,6 +75,17 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.7.2" date="2026-02-02">
+      <description>
+        <p>Version 0.7.2 - Flatpak Improvements:</p>
+        <ul>
+          <li>Fixed Flatpak config access - connections and settings now persist correctly</li>
+          <li>Fixed split view equal proportions - panels now split 50/50 reliably</li>
+          <li>Added Flatpak host command support for external clients (xfreerdp, vncviewer, aws, gcloud)</li>
+          <li>Extended Flatpak permissions for GNOME Keyring, KWallet, KeePassXC, and system tray</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.7.1" date="2026-02-01">
       <description>
         <p>Version 0.7.1 - Undo/Trash, Group Inheritance, and Sidebar Refactoring:</p>
