@@ -1,21 +1,50 @@
 name: rustconn
 base: core24
 version: '0.7.3'
-summary: Modern connection manager for Linux
+summary: Manage remote connections easily
 description: |
-  RustConn is a GTK4/libadwaita connection manager supporting SSH, RDP, VNC, 
-  SPICE protocols and Zero Trust integrations (AWS SSM, GCP IAP, Azure, etc.)
-  
-  Features:
-  - Embedded SSH terminals with split view
-  - Connection organization via groups and tags
-  - Import/Export: Remmina, Asbru-CM, SSH config, Ansible, Royal TS, MobaXterm
-  - Credential backends: libsecret, KeePassXC, Bitwarden CLI
-  - Session logging, command snippets, cluster commands, Wake-on-LAN
+  RustConn is a modern connection manager for Linux with a GTK4/Wayland-native
+  interface. Manage SSH, RDP, VNC, SPICE, and Zero Trust connections from a
+  single application with support for both embedded and external clients.
+
+  Protocols:
+  - SSH with embedded terminal and split view
+  - RDP via IronRDP/FreeRDP (embedded and external)
+  - VNC via vnc-rs/TigerVNC (embedded and external)
+  - SPICE via virt-viewer
+  - Zero Trust: AWS SSM, GCP IAP, Azure Bastion, OCI Bastion, Cloudflare,
+    Teleport, Tailscale, Boundary
+
+  Organization:
+  - Groups, tags, and templates
+  - Connection history and statistics
+  - Session logging
+
+  Import/Export:
+  - Asbru-CM, Remmina, SSH config, Ansible inventory
+  - Royal TS, MobaXterm, native format (.rcn)
+
+  Security:
+  - KeePassXC (KDBX files and proxy)
+  - libsecret (GNOME Keyring)
+  - Bitwarden CLI
+  - 1Password CLI
+
+  Productivity:
+  - Split terminals
+  - Command snippets
+  - Cluster commands
+  - Wake-on-LAN
 
 grade: stable
 confinement: classic
 icon: rustconn/assets/icons/hicolor/256x256/apps/io.github.totoshko88.RustConn.png
+license: GPL-3.0+
+website: https://github.com/totoshko88/RustConn
+source-code: https://github.com/totoshko88/RustConn
+issues: https://github.com/totoshko88/RustConn/issues
+donation: https://ko-fi.com/totoshko88
+contact: totoshko88@gmail.com
 
 platforms:
   amd64:
@@ -27,13 +56,15 @@ apps:
     command: usr/bin/rustconn
     desktop: usr/share/applications/io.github.totoshko88.RustConn.desktop
     common-id: io.github.totoshko88.RustConn
+  rustconn-cli:
+    command: usr/bin/rustconn-cli
 
 parts:
   rustconn:
     plugin: rust
     source: .
     rust-channel: "1.88"
-    rust-path: [rustconn]
+    rust-path: [rustconn, rustconn-cli]
     rust-use-global-lto: true
     build-packages:
       - libgtk-4-dev
@@ -53,9 +84,12 @@ parts:
       - openssh-client
     organize:
       bin/rustconn: usr/bin/rustconn
+      bin/rustconn-cli: usr/bin/rustconn-cli
     override-build: |
       craftctl default
       mkdir -p $CRAFT_PART_INSTALL/usr/share/applications
       mkdir -p $CRAFT_PART_INSTALL/usr/share/icons
+      mkdir -p $CRAFT_PART_INSTALL/usr/share/metainfo
       cp rustconn/assets/io.github.totoshko88.RustConn.desktop $CRAFT_PART_INSTALL/usr/share/applications/
+      cp rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml $CRAFT_PART_INSTALL/usr/share/metainfo/
       cp -r rustconn/assets/icons/hicolor $CRAFT_PART_INSTALL/usr/share/icons/
