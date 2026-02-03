@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.7.2
+Version:        0.7.3
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later
@@ -157,6 +157,15 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Tue Feb 03 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.3-0
+- Version bump to 0.7.3
+- Fixed Azure CLI Version Parsing - version now correctly extracted from unique output format
+- Fixed Flatpak XDG Config - removed unnecessary xdg-config/rustconn:create permission
+- Fixed Teleport CLI Detection - changed binary from teleport to tsh
+- Improved RDP Client Detection - FreeRDP 3.x with Wayland support (wlfreerdp3/xfreerdp3)
+- Unified Client Install Hints - format: deb-package (rpm-package)
+- Updated dependencies: bytes, flate2, regex
+
 * Tue Feb 03 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.2-0
 - Version bump to 0.7.2
 - Flatpak Host Command Support - New flatpak module for running host commands

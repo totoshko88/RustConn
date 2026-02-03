@@ -1,3 +1,15 @@
+rustconn (0.7.3-1) unstable; urgency=medium
+
+  * Version bump to 0.7.3
+  * Fixed Azure CLI Version Parsing - version now correctly extracted from unique output format
+  * Fixed Flatpak XDG Config - removed unnecessary xdg-config/rustconn:create permission
+  * Fixed Teleport CLI Detection - changed binary from teleport to tsh
+  * Improved RDP Client Detection - FreeRDP 3.x with Wayland support (wlfreerdp3/xfreerdp3)
+  * Unified Client Install Hints - format: deb-package (rpm-package)
+  * Updated dependencies: bytes, flate2, regex
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Tue, 03 Feb 2026 12:00:00 +0200
+
 rustconn (0.7.2-1) unstable; urgency=medium
 
   * Version bump to 0.7.2

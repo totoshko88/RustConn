@@ -331,12 +331,7 @@ fn detect_all_clients() -> (Vec<ClientInfo>, Vec<ClientInfo>) {
             "--version",
             "Install cloudflared package",
         ),
-        (
-            "Teleport CLI",
-            "teleport",
-            "version",
-            "Install teleport package",
-        ),
+        ("Teleport CLI", "tsh", "version", "Install teleport package"),
         (
             "Tailscale CLI",
             "tailscale",
@@ -438,14 +433,24 @@ fn parse_version_output(command: &str, output: &str) -> Option<String> {
                 .map(|v| v.trim().to_string())
         }),
 
-        "az" => output.lines().find_map(|line| {
-            let trimmed = line.trim();
-            if trimmed.starts_with("azure-cli") {
-                trimmed.split_whitespace().last().map(String::from)
-            } else {
+        "az" => {
+            // Format: "azure-cli                         2.82.0 *"
+            // Find the version number (digit-starting word, not "*")
+            output.lines().find_map(|line| {
+                let trimmed = line.trim();
+                if trimmed.starts_with("azure-cli") {
+                    for part in trimmed.split_whitespace() {
+                        if part != "azure-cli"
+                            && part != "*"
+                            && part.chars().next().is_some_and(|c| c.is_ascii_digit())
+                        {
+                            return Some(part.to_string());
+                        }
+                    }
+                }
                 None
-            }
-        }),
+            })
+        }
 
         "cloudflared" => output.lines().next().and_then(|line| {
             line.split_whitespace()
@@ -453,11 +458,20 @@ fn parse_version_output(command: &str, output: &str) -> Option<String> {
                 .map(|v| v.trim_end_matches(['(', ' ']).to_string())
         }),
 
-        "teleport" => output.lines().next().and_then(|line| {
-            line.split_whitespace()
-                .nth(1)
-                .map(|v| v.trim_start_matches('v').to_string())
-        }),
+        "tsh" => {
+            // Format: "Teleport v18.6.5 git:v18.6.5-0-g4bc3277 go1.24.12"
+            // Extract version like "v18.6.5"
+            output.lines().next().and_then(|line| {
+                for part in line.split_whitespace() {
+                    if part.starts_with('v')
+                        && part.chars().nth(1).is_some_and(|c| c.is_ascii_digit())
+                    {
+                        return Some(part.to_string());
+                    }
+                }
+                None
+            })
+        }
 
         "boundary" => output.lines().find_map(|line| {
             let trimmed = line.trim();

@@ -76,6 +76,19 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.7.3" date="2026-02-03">
+      <description>
+        <p>Version 0.7.3 - Client Detection Improvements:</p>
+        <ul>
+          <li>Fixed Azure CLI version parsing - version now correctly extracted from unique output format</li>
+          <li>Fixed Flatpak XDG config - removed unnecessary xdg-config/rustconn:create permission</li>
+          <li>Fixed Teleport CLI detection - changed binary from teleport to tsh</li>
+          <li>Improved RDP client detection - FreeRDP 3.x with Wayland support (wlfreerdp3/xfreerdp3)</li>
+          <li>Unified client install hints - format: deb-package (rpm-package)</li>
+          <li>Updated dependencies: bytes, flate2, regex</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.7.2" date="2026-02-03">
       <description>
         <p>Version 0.7.2 - Flatpak Improvements:</p>

@@ -56,6 +56,8 @@ pub struct ClientDetectionResult {
     pub rdp: ClientInfo,
     /// VNC client information
     pub vnc: ClientInfo,
+    /// SPICE client information
+    pub spice: ClientInfo,
 }
 
 impl ClientDetectionResult {
@@ -66,7 +68,61 @@ impl ClientDetectionResult {
             ssh: detect_ssh_client(),
             rdp: detect_rdp_client(),
             vnc: detect_vnc_client(),
+            spice: detect_spice_client(),
         }
+    }
+}
+
+/// Result of detecting all Zero Trust CLI clients
+#[derive(Debug, Clone)]
+pub struct ZeroTrustDetectionResult {
+    /// AWS CLI (SSM)
+    pub aws: ClientInfo,
+    /// Google Cloud CLI
+    pub gcloud: ClientInfo,
+    /// Azure CLI
+    pub azure: ClientInfo,
+    /// OCI CLI
+    pub oci: ClientInfo,
+    /// Cloudflare CLI
+    pub cloudflared: ClientInfo,
+    /// Teleport CLI
+    pub teleport: ClientInfo,
+    /// Tailscale CLI
+    pub tailscale: ClientInfo,
+    /// Boundary CLI
+    pub boundary: ClientInfo,
+}
+
+impl ZeroTrustDetectionResult {
+    /// Detects all Zero Trust CLI clients
+    #[must_use]
+    pub fn detect_all() -> Self {
+        Self {
+            aws: detect_aws_cli(),
+            gcloud: detect_gcloud_cli(),
+            azure: detect_azure_cli(),
+            oci: detect_oci_cli(),
+            cloudflared: detect_cloudflared(),
+            teleport: detect_teleport(),
+            tailscale: detect_tailscale(),
+            boundary: detect_boundary(),
+        }
+    }
+
+    /// Returns all clients as a vector for iteration
+    #[must_use]
+    pub fn as_vec(&self) -> Vec<&ClientInfo> {
+        vec![
+            &self.aws,
+            &self.gcloud,
+            &self.azure,
+            &self.oci,
+            &self.cloudflared,
+            &self.teleport,
+            &self.tailscale,
+            &self.boundary,
+        ]
     }
 }
 
@@ -79,34 +135,40 @@ pub fn detect_ssh_client() -> ClientInfo {
         "OpenSSH",
         &["ssh"],
         &["-V"],
-        "Install OpenSSH: sudo apt install openssh-client (Debian/Ubuntu) or sudo dnf install openssh-clients (Fedora)",
+        "Install openssh-client (openssh-clients) package",
     )
 }
 
 /// Detects the RDP client on the system
 ///
-/// Checks for `xfreerdp3`, `xfreerdp`, or `rdesktop` binaries and extracts version information.
+/// Checks for FreeRDP 3.x, FreeRDP 2.x, or rdesktop binaries and extracts version information.
+/// Priority: xfreerdp3/wlfreerdp3 (FreeRDP 3.x) > xfreerdp/wlfreerdp (FreeRDP 2.x) > rdesktop
 #[must_use]
 pub fn detect_rdp_client() -> ClientInfo {
-    // Try xfreerdp3 first (FreeRDP 3.x)
-    if let Some(info) = try_detect_client("FreeRDP", "xfreerdp3", &["--version"]) {
+    // Try FreeRDP 3.x first (preferred)
+    // wlfreerdp3 for Wayland, xfreerdp3 for X11
+    if let Some(info) = try_detect_client("FreeRDP 3", "wlfreerdp3", &["--version"]) {
+        return info;
+    }
+    if let Some(info) = try_detect_client("FreeRDP 3", "xfreerdp3", &["--version"]) {
         return info;
     }
 
-    // Try xfreerdp (FreeRDP 2.x)
-    if let Some(info) = try_detect_client("FreeRDP", "xfreerdp", &["--version"]) {
+    // Try FreeRDP 2.x
+    // wlfreerdp for Wayland, xfreerdp for X11
+    if let Some(info) = try_detect_client("FreeRDP 2", "wlfreerdp", &["--version"]) {
+        return info;
+    }
+    if let Some(info) = try_detect_client("FreeRDP 2", "xfreerdp", &["--version"]) {
         return info;
     }
 
-    // Try rdesktop as fallback
+    // Try rdesktop as legacy fallback
     if let Some(info) = try_detect_client("rdesktop", "rdesktop", &["--version"]) {
         return info;
     }
 
-    ClientInfo::not_installed(
-        "RDP Client",
-        "Install FreeRDP: sudo apt install freerdp2-x11 (Debian/Ubuntu) or sudo dnf install freerdp (Fedora)",
-    )
+    ClientInfo::not_installed("RDP Client", "Install freerdp3-wayland (freerdp) package")
 }
 
 /// Detects the VNC client on the system
@@ -152,8 +214,19 @@ pub fn detect_vnc_client() -> ClientInfo {
 
     ClientInfo::not_installed(
         "VNC Client",
-        "Install TigerVNC: sudo apt install tigervnc-viewer (Debian/Ubuntu) or sudo dnf install tigervnc (Fedora). Alternatives: gvncviewer, remmina, krdc",
+        "Install tigervnc-viewer (tigervnc) package. Alternatives: gvncviewer, remmina, krdc",
     )
+}
+
+/// Detects the SPICE client on the system
+///
+/// Checks for `remote-viewer` binary (from virt-viewer package).
+#[must_use]
+pub fn detect_spice_client() -> ClientInfo {
+    if let Some(info) = try_detect_client("remote-viewer", "remote-viewer", &["--version"]) {
+        return info;
+    }
+    ClientInfo::not_installed("SPICE Client", "Install virt-viewer package")
 }
 
 /// Returns the path to the first available VNC viewer binary
@@ -221,13 +294,10 @@ pub fn detect_vnc_viewer_name() -> Option<String> {
 /// Detects AWS CLI v2 for SSM Session Manager
 #[must_use]
 pub fn detect_aws_cli() -> ClientInfo {
-    if let Some(info) = try_detect_client("AWS CLI", "aws", &["--version"]) {
+    if let Some(info) = try_detect_client("AWS CLI (SSM)", "aws", &["--version"]) {
         return info;
     }
-    ClientInfo::not_installed(
-        "AWS CLI",
-        "Install AWS CLI v2: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html",
-    )
+    ClientInfo::not_installed("AWS CLI (SSM)", "Install awscli package")
 }
 
 /// Detects Google Cloud CLI for IAP tunneling
@@ -236,10 +306,7 @@ pub fn detect_gcloud_cli() -> ClientInfo {
     if let Some(info) = try_detect_client("Google Cloud CLI", "gcloud", &["--version"]) {
         return info;
     }
-    ClientInfo::not_installed(
-        "Google Cloud CLI",
-        "Install gcloud: https://cloud.google.com/sdk/docs/install",
-    )
+    ClientInfo::not_installed("Google Cloud CLI", "Install google-cloud-cli package")
 }
 
 /// Detects Azure CLI for Bastion and SSH
@@ -248,10 +315,7 @@ pub fn detect_azure_cli() -> ClientInfo {
     if let Some(info) = try_detect_client("Azure CLI", "az", &["--version"]) {
         return info;
     }
-    ClientInfo::not_installed(
-        "Azure CLI",
-        "Install Azure CLI: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli",
-    )
+    ClientInfo::not_installed("Azure CLI", "Install azure-cli package")
 }
 
 /// Detects OCI CLI for Oracle Cloud Bastion
@@ -260,58 +324,43 @@ pub fn detect_oci_cli() -> ClientInfo {
     if let Some(info) = try_detect_client("OCI CLI", "oci", &["--version"]) {
         return info;
     }
-    ClientInfo::not_installed(
-        "OCI CLI",
-        "Install OCI CLI: https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm",
-    )
+    ClientInfo::not_installed("OCI CLI", "Install oci-cli package")
 }
 
 /// Detects Cloudflare Access tunnel client
 #[must_use]
 pub fn detect_cloudflared() -> ClientInfo {
-    if let Some(info) = try_detect_client("cloudflared", "cloudflared", &["--version"]) {
+    if let Some(info) = try_detect_client("Cloudflare CLI", "cloudflared", &["--version"]) {
         return info;
     }
-    ClientInfo::not_installed(
-        "cloudflared",
-        "Install cloudflared: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/",
-    )
+    ClientInfo::not_installed("Cloudflare CLI", "Install cloudflared package")
 }
 
 /// Detects Teleport SSH client
 #[must_use]
 pub fn detect_teleport() -> ClientInfo {
-    if let Some(info) = try_detect_client("Teleport", "tsh", &["version"]) {
+    if let Some(info) = try_detect_client("Teleport CLI", "tsh", &["version"]) {
         return info;
     }
-    ClientInfo::not_installed(
-        "Teleport",
-        "Install Teleport: https://goteleport.com/docs/installation/",
-    )
+    ClientInfo::not_installed("Teleport CLI", "Install teleport package")
 }
 
 /// Detects Tailscale CLI
 #[must_use]
 pub fn detect_tailscale() -> ClientInfo {
-    if let Some(info) = try_detect_client("Tailscale", "tailscale", &["--version"]) {
+    if let Some(info) = try_detect_client("Tailscale CLI", "tailscale", &["--version"]) {
         return info;
     }
-    ClientInfo::not_installed(
-        "Tailscale",
-        "Install Tailscale: https://tailscale.com/download/linux",
-    )
+    ClientInfo::not_installed("Tailscale CLI", "Install tailscale package")
 }
 
 /// Detects `HashiCorp` Boundary client
 #[must_use]
 pub fn detect_boundary() -> ClientInfo {
-    if let Some(info) = try_detect_client("Boundary", "boundary", &["version"]) {
+    if let Some(info) = try_detect_client("Boundary CLI", "boundary", &["version"]) {
         return info;
     }
-    ClientInfo::not_installed(
-        "Boundary",
-        "Install Boundary: https://developer.hashicorp.com/boundary/downloads",
-    )
+    ClientInfo::not_installed("Boundary CLI", "Install boundary package")
 }
 
 /// Attempts to detect a specific client binary
@@ -379,6 +428,18 @@ fn parse_version(output: &str) -> Option<String> {
             continue;
         }
 
+        // Check special formats first (before generic patterns)
+
+        // Azure CLI format: "azure-cli                         2.82.0 *"
+        if line.starts_with("azure-cli") {
+            return parse_azure_cli_version(line);
+        }
+
+        // Teleport format: "Teleport v18.6.5 git:v18.6.5-0-g4bc3277 go1.24.12"
+        if line.starts_with("Teleport v") {
+            return parse_teleport_version(line);
+        }
+
         // Look for common version patterns
         // SSH: "OpenSSH_8.9p1 Ubuntu-3ubuntu0.1, OpenSSL 3.0.2 15 Mar 2022"
         // FreeRDP: "This is FreeRDP version 2.10.0"
@@ -407,6 +468,38 @@ fn parse_version(output: &str) -> Option<String> {
         .map(str::trim)
         .find(|line| !line.is_empty())
         .map(extract_version_string)
+}
+
+/// Parses Azure CLI version from its specific output format
+/// Input: "azure-cli                         2.82.0 *"
+/// Output: "2.82.0"
+fn parse_azure_cli_version(line: &str) -> Option<String> {
+    // Split by whitespace and find the version number
+    for part in line.split_whitespace() {
+        // Skip "azure-cli" and "*" markers
+        if part == "azure-cli" || part == "*" {
+            continue;
+        }
+        // Check if it looks like a version number (starts with digit)
+        if part.chars().next().is_some_and(|c| c.is_ascii_digit()) {
+            return Some(part.to_string());
+        }
+    }
+    None
+}
+
+/// Parses Teleport version from its specific output format
+/// Input: "Teleport v18.6.5 git:v18.6.5-0-g4bc3277 go1.24.12"
+/// Output: "v18.6.5"
+fn parse_teleport_version(line: &str) -> Option<String> {
+    // Split by whitespace and find the version (second word starting with 'v')
+    for part in line.split_whitespace() {
+        // Look for version like "v18.6.5"
+        if part.starts_with('v') && part.chars().nth(1).is_some_and(|c| c.is_ascii_digit()) {
+            return Some(part.to_string());
+        }
+    }
+    None
 }
 
 /// Extracts a clean version string from a line
@@ -484,5 +577,40 @@ mod tests {
         let long_line = "a".repeat(200);
         let result = extract_version_string(&long_line);
         assert_eq!(result.len(), 100);
+    }
+
+    #[test]
+    fn test_parse_azure_cli_version() {
+        let line = "azure-cli                         2.82.0 *";
+        let version = parse_azure_cli_version(line);
+        assert_eq!(version, Some("2.82.0".to_string()));
+    }
+
+    #[test]
+    fn test_parse_azure_cli_version_no_star() {
+        let line = "azure-cli                         2.82.0";
+        let version = parse_azure_cli_version(line);
+        assert_eq!(version, Some("2.82.0".to_string()));
+    }
+
+    #[test]
+    fn test_parse_version_azure_cli_output() {
+        let output = "azure-cli                         2.82.0 *\ncore                              2.82.0 *\ntelemetry                          1.1.0";
+        let version = parse_version(output);
+        assert_eq!(version, Some("2.82.0".to_string()));
+    }
+
+    #[test]
+    fn test_parse_teleport_version() {
+        let line = "Teleport v18.6.5 git:v18.6.5-0-g4bc3277 go1.24.12";
+        let version = parse_teleport_version(line);
+        assert_eq!(version, Some("v18.6.5".to_string()));
+    }
+
+    #[test]
+    fn test_parse_version_teleport_output() {
+        let output = "Teleport v18.6.5 git:v18.6.5-0-g4bc3277 go1.24.12";
+        let version = parse_version(output);
+        assert_eq!(version, Some("v18.6.5".to_string()));
     }
 }
