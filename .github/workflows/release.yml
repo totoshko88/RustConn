@@ -315,14 +315,16 @@ jobs:
         id: changelog
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
-          # Extract changelog section for this version (handles ## [X.Y.Z] - DATE format)
+          # Extract changelog section for this version
+          # Start capturing after finding ## [VERSION], stop at next ## [
           awk -v ver="${VERSION}" '
+            BEGIN { found=0 }
             /^## \[/ {
               if (found) exit
-              if (index($0, "[" ver "]") > 0) found=1
-              next
+              if (index($0, "[" ver "]") > 0) { found=1; next }
             }
-            found {print}
+            found && !/^$/ { print }
+            found && /^$/ { print }
           ' CHANGELOG.md > version_changelog.md
           
           # Debug: show what was extracted

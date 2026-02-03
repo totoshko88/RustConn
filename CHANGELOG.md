@@ -5,7 +5,41 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.7.2] - 2026-02-02
+## [0.7.3] - 2026-02-03
+
+### Fixed
+- **Azure CLI Version Parsing** - Fixed version detection showing "-" instead of actual version:
+  - Added dedicated parser for Azure CLI's unique output format (`azure-cli  2.82.0 *`)
+  - Version now correctly extracted and displayed in Settings → Clients
+- **Teleport CLI Version Parsing** - Fixed version showing full output instead of clean version:
+  - Added dedicated parser for Teleport's output format (`Teleport v18.6.5 git:...`)
+  - Now displays clean version like `v18.6.5`
+- **Flatpak XDG Config** - Removed unnecessary `--filesystem=xdg-config/rustconn:create` permission:
+  - Flatpak sandbox automatically provides access to `$XDG_CONFIG_HOME`
+  - Configuration now stored in standard Flatpak location (`~/.var/app/io.github.totoshko88.RustConn/config/`)
+- **Teleport CLI Detection** - Fixed detection using wrong binary name (`teleport` → `tsh`)
+
+### Changed
+- **RDP Client Detection** - Improved FreeRDP detection with Wayland support:
+  - Priority order: FreeRDP 3.x (wlfreerdp3/xfreerdp3) → FreeRDP 2.x (wlfreerdp/xfreerdp) → rdesktop
+  - Wayland-native clients (wlfreerdp3/wlfreerdp) now checked before X11 variants
+  - Updated install hint to recommend freerdp3-wayland package
+- **Client Install Hints** - Unified and improved package installation messages:
+  - Format: `Install <deb-package> (<rpm-package>) package`
+  - SSH: `openssh-client (openssh-clients)`
+  - RDP: `freerdp3-wayland (freerdp)`
+  - VNC: `tigervnc-viewer (tigervnc)`
+  - Zero Trust CLIs: simplified to package names only
+- **Dependencies** - Updated: bytes 1.11.0→1.11.1, flate2 1.1.8→1.1.9, regex 1.12.2→1.12.3
+
+### Refactored
+- **Client Detection** - Unified detection logic in `rustconn-core`:
+  - Removed duplicate version parsing from `clients_tab.rs` (~200 lines)
+  - Added `detect_spice_client()` to core detection module
+  - Added `ZeroTrustDetectionResult` struct for all Zero Trust CLI clients
+  - GUI now uses `ClientDetectionResult` and `ZeroTrustDetectionResult` from core
+
+## [0.7.2] - 2026-02-03
 
 ### Added
 - **Flatpak Host Command Support** - New `flatpak` module for running host commands from sandbox:
