@@ -1,3 +1,14 @@
+rustconn (0.7.4-1) unstable; urgency=medium
+
+  * Version bump to 0.7.4
+  * Refactored Import File I/O - extracted common file reading pattern into read_import_file() helper
+  * Refactored Protocol Client Errors - consolidated duplicate error types into unified EmbeddedClientError
+  * Refactored Config Atomic Writes - improved reliability with temp file + atomic rename pattern
+  * Added GTK Lifecycle Documentation - module-level docs explaining #[allow(dead_code)] pattern
+  * Code Quality - removed legacy types, standardized error patterns, reduced unnecessary clones
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 04 Feb 2026 12:00:00 +0200
+
 rustconn (0.7.3-1) unstable; urgency=medium
 
   * Version bump to 0.7.3

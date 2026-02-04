@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.7.3
+Version:        0.7.4
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later
@@ -157,6 +157,14 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Wed Feb 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.4-0
+- Version bump to 0.7.4
+- Refactored Import File I/O - extracted common file reading pattern into read_import_file() helper
+- Refactored Protocol Client Errors - consolidated duplicate error types into unified EmbeddedClientError
+- Refactored Config Atomic Writes - improved reliability with temp file + atomic rename pattern
+- Added GTK Lifecycle Documentation - module-level docs explaining #[allow(dead_code)] pattern
+- Code Quality - removed legacy types, standardized error patterns, reduced unnecessary clones
+
 * Tue Feb 03 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.3-0
 - Version bump to 0.7.3
 - Fixed Azure CLI Version Parsing - version now correctly extracted from unique output format

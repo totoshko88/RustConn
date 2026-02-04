@@ -18,7 +18,7 @@ use crate::models::{
 };
 
 use super::normalize::parse_host_port;
-use super::traits::{ImportResult, ImportSource, SkippedEntry};
+use super::traits::{read_import_file, ImportResult, ImportSource, SkippedEntry};
 
 /// Importer for Remmina connection files.
 ///
@@ -495,10 +495,7 @@ impl RemminaImporter {
         path: &Path,
         group_map: &mut HashMap<String, Uuid>,
     ) -> Result<ImportResult, ImportError> {
-        let content = fs::read_to_string(path).map_err(|e| ImportError::ParseError {
-            source_name: "Remmina".to_string(),
-            reason: format!("Failed to read {}: {}", path.display(), e),
-        })?;
+        let content = read_import_file(path, "Remmina")?;
 
         Ok(self.parse_remmina_file(&content, &path.display().to_string(), group_map))
     }

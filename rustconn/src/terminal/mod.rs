@@ -49,6 +49,8 @@ pub struct TerminalNotebook {
     sessions: Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
     /// Callback for when a page is closed (session_id, connection_id)
     on_page_closed: Rc<RefCell<Option<Box<dyn Fn(Uuid, Uuid)>>>>,
+    /// Callback for split view cleanup when a page is about to close (session_id)
+    on_split_cleanup: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>,
     /// Map of session IDs to terminal widgets (for SSH sessions)
     terminals: Rc<RefCell<HashMap<Uuid, Terminal>>>,
     /// Map of session IDs to session widgets (for VNC/RDP/SPICE sessions)
@@ -105,6 +107,7 @@ impl TerminalNotebook {
             tab_bar,
             sessions: Rc::new(RefCell::new(HashMap::new())),
             on_page_closed: Rc::new(RefCell::new(None)),
+            on_split_cleanup: Rc::new(RefCell::new(None)),
             terminals: Rc::new(RefCell::new(HashMap::new())),
             session_widgets: Rc::new(RefCell::new(HashMap::new())),
             automation_sessions: Rc::new(RefCell::new(HashMap::new())),
@@ -127,6 +130,7 @@ impl TerminalNotebook {
         let split_manager = self.split_manager.clone();
         let session_tab_ids = self.session_tab_ids.clone();
         let on_page_closed = self.on_page_closed.clone();
+        let on_split_cleanup = self.on_split_cleanup.clone();
 
         // Handle create-window signal - we must connect this to prevent the default
         // behavior which causes CRITICAL warnings. Returning None cancels the tearoff.
@@ -157,6 +161,12 @@ impl TerminalNotebook {
             };
 
             if !session_id.is_nil() {
+                // Call the on_split_cleanup callback FIRST to clear split view panels
+                // This must happen before on_page_closed to ensure proper cleanup
+                if let Some(ref callback) = *on_split_cleanup.borrow() {
+                    callback(session_id);
+                }
+
                 // Call the on_page_closed callback to update sidebar status
                 if let Some(conn_id) = connection_id {
                     if let Some(ref callback) = *on_page_closed.borrow() {
@@ -1257,6 +1267,21 @@ impl TerminalNotebook {
         F: Fn(Uuid, Uuid) + 'static,
     {
         *self.on_page_closed.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// Sets the callback to be invoked for split view cleanup when a page is about to close.
+    ///
+    /// The callback receives the session ID of the page being closed.
+    /// This is used to clear the session from split view panels before the tab is closed.
+    ///
+    /// # Arguments
+    ///
+    /// * `callback` - A closure that takes session_id as parameter
+    pub fn set_on_split_cleanup<F>(&self, callback: F)
+    where
+        F: Fn(Uuid) + 'static,
+    {
+        *self.on_split_cleanup.borrow_mut() = Some(Box::new(callback));
     }
 }
 

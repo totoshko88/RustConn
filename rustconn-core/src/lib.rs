@@ -32,6 +32,7 @@ pub mod dashboard;
 pub mod dialog_utils;
 pub mod document;
 pub mod drag_drop;
+pub mod embedded_client_error;
 pub mod error;
 pub mod export;
 pub mod ffi;
@@ -81,6 +82,7 @@ pub use drag_drop::{
     calculate_drop_position, calculate_indicator_y, calculate_row_index, is_valid_drop_position,
     DropConfig, DropPosition, ItemType,
 };
+pub use embedded_client_error::EmbeddedClientError;
 pub use error::{
     ConfigError, ConfigResult, ImportError, ProtocolError, RustConnError, SecretError, SessionError,
 };

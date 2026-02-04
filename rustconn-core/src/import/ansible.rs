@@ -3,7 +3,6 @@
 //! Parses Ansible inventory files in INI and YAML formats.
 
 use std::collections::HashMap;
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use uuid::Uuid;
@@ -11,7 +10,7 @@ use uuid::Uuid;
 use crate::error::ImportError;
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig, SshConfig};
 
-use super::traits::{ImportResult, ImportSource, SkippedEntry};
+use super::traits::{read_import_file, ImportResult, ImportSource, SkippedEntry};
 
 /// Importer for Ansible inventory files.
 ///
@@ -486,10 +485,7 @@ impl ImportSource for AnsibleInventoryImporter {
             return Err(ImportError::FileNotFound(path.to_path_buf()));
         }
 
-        let content = fs::read_to_string(path).map_err(|e| ImportError::ParseError {
-            source_name: "Ansible inventory".to_string(),
-            reason: format!("Failed to read {}: {}", path.display(), e),
-        })?;
+        let content = read_import_file(path, "Ansible inventory")?;
 
         Ok(self.parse_inventory(&content, &path.display().to_string()))
     }
