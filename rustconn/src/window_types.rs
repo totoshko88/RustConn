@@ -1,4 +1,17 @@
 //! Type definitions and utilities for the main window
+//!
+//! # Type Aliases
+//!
+//! This module defines shared type aliases used throughout the GUI crate.
+//! These aliases use `Rc` (Reference Counted) instead of `Arc` (Atomic Reference Counted)
+//! because GTK4 is single-threaded and all GUI operations happen on the main thread.
+//!
+//! Using `Rc` provides:
+//! - Lower overhead (no atomic operations)
+//! - Simpler debugging (no Send/Sync bounds)
+//! - Explicit single-thread semantics matching GTK's model
+//!
+//! For interior mutability, `RefCell` is used instead of `Mutex` for the same reasons.
 
 use crate::external_window::ExternalWindowManager;
 use crate::sidebar::ConnectionSidebar;
@@ -10,23 +23,36 @@ use std::rc::Rc;
 use uuid::Uuid;
 
 /// Shared sidebar type
+///
+/// Uses `Rc` because GTK is single-threaded; no need for `Arc`.
 pub type SharedSidebar = Rc<ConnectionSidebar>;
 
 /// Shared terminal notebook type
+///
+/// Uses `Rc` because GTK is single-threaded; no need for `Arc`.
 pub type SharedNotebook = Rc<TerminalNotebook>;
 
 /// Shared split view type (uses new SplitViewBridge implementation)
+///
+/// Uses `Rc` because GTK is single-threaded; no need for `Arc`.
 pub type SharedSplitView = Rc<SplitViewBridge>;
 
 /// Shared tab split manager type (new implementation)
+///
+/// Uses `Rc<RefCell<_>>` for single-threaded interior mutability.
 pub type SharedTabSplitManager = Rc<RefCell<TabSplitManager>>;
 
 /// Map of session IDs to their split view bridges
-/// Each session that has been split gets its own independent SplitViewBridge
+///
+/// Each session that has been split gets its own independent `SplitViewBridge`.
+/// Uses `Rc<RefCell<_>>` for single-threaded interior mutability.
+///
 /// Requirement 3: Each tab maintains its own independent split layout
 pub type SessionSplitBridges = Rc<RefCell<HashMap<Uuid, Rc<SplitViewBridge>>>>;
 
 /// Shared external window manager type
+///
+/// Uses `Rc` because GTK is single-threaded; no need for `Arc`.
 pub type SharedExternalWindowManager = Rc<ExternalWindowManager>;
 
 /// Returns the protocol string for a connection, including provider info for ZeroTrust

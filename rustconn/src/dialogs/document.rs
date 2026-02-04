@@ -470,11 +470,24 @@ impl CloseDocumentDialog {
     }
 
     /// Shows the confirmation dialog
+    ///
+    /// # Panics
+    ///
+    /// Panics if `parent` is `None`. The parent window is required for modal dialogs.
     pub fn present(&self, parent: Option<&gtk4::Window>, doc_id: Uuid, doc_name: &str) {
+        let Some(parent_window) = parent else {
+            tracing::error!("CloseDocumentDialog::present called without parent window");
+            // Call callback with None to signal cancellation
+            if let Some(ref cb) = *self.on_complete.borrow() {
+                cb(None);
+            }
+            return;
+        };
+
         let on_complete = self.on_complete.clone();
 
         alert::show_save_changes(
-            parent.expect("Parent window required"),
+            parent_window,
             "Save changes?",
             &format!(
                 "Document \"{doc_name}\" has unsaved changes. Do you want to save before closing?"

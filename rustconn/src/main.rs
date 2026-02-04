@@ -98,13 +98,21 @@ mod window_ui;
 fn main() -> gtk4::glib::ExitCode {
     // Initialize logging with environment filter (RUST_LOG)
     // Filter out noisy zbus debug messages (ProvideXdgActivationToken errors from ksni)
-    let filter = tracing_subscriber::EnvFilter::from_default_env()
-        .add_directive("zbus=warn".parse().expect("valid directive"));
+    //
+    // Note: expect() is acceptable here because:
+    // 1. "zbus=warn" is a compile-time constant directive that is always valid
+    // 2. Runtime creation failure at startup is unrecoverable - the app cannot function
+    let filter = tracing_subscriber::EnvFilter::from_default_env().add_directive(
+        "zbus=warn"
+            .parse()
+            .expect("compile-time constant directive"),
+    );
 
     tracing_subscriber::fmt().with_env_filter(filter).init();
 
     // Initialize Tokio runtime for async operations
-    let runtime = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
+    // Note: Runtime creation failure at startup is unrecoverable
+    let runtime = tokio::runtime::Runtime::new().expect("tokio runtime required for async ops");
     let _guard = runtime.enter();
 
     app::run()

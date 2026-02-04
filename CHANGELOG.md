@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Works for both per-session split bridges and global split view
   - Added `on_split_cleanup` callback to `TerminalNotebook` for proper cleanup coordination
   - Fixes issue where terminal content remained visible after closing tab
+- **Document Close Dialog** - Fixed potential panic when closing document without parent window:
+  - `CloseDocumentDialog::present()` now gracefully handles missing parent window
+  - Logs error and calls callback with `None` instead of panicking
 
 ### Refactored
 - **Import File I/O** - Extracted common file reading pattern into `read_import_file()` helper:
@@ -36,12 +39,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **GTK Lifecycle Documentation** - Added module-level documentation explaining `#[allow(dead_code)]` pattern:
   - Documents why GTK widget fields must be kept alive for signal handlers
   - Prevents accidental removal of "unused" fields that would cause segfaults
+- **Type Alias Documentation** - Added documentation explaining why `Rc` is used instead of `Arc`:
+  - GTK4 is single-threaded, so atomic operations are unnecessary overhead
+  - `Rc<RefCell<_>>` pattern matches GTK's single-threaded model
+  - Documented in `window_types.rs` module header
 
 ### Changed
 - **Code Quality** - Comprehensive cleanup based on code audit:
   - Removed legacy `TabDisplayMode`, `SessionWidgetStorage`, `TabLabelWidgets` types
   - Standardized error type patterns with `#[from]` attribute
   - Reduced unnecessary `.clone()` calls in callback chains
+  - Improved `expect()` messages to clarify provably impossible states
+  - Added `# Panics` documentation for functions with justified `expect()` calls
 - **Dependencies** - Updated: clap 4.5.56→4.5.57, criterion 0.8.1→0.8.2, hybrid-array 0.4.6→0.4.7, zerocopy 0.8.37→0.8.38
 
 ### Tests
