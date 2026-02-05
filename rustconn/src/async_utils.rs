@@ -144,6 +144,42 @@ pub fn block_on_async<F, T>(future: F) -> Result<T, String>
 where
     F: Future<Output = T>,
 {
+    with_runtime(|rt| rt.block_on(future))
+}
+
+/// Gets or creates the thread-local tokio runtime and executes a closure with it.
+///
+/// This is the low-level primitive used by `block_on_async`. Use this when you
+/// need direct access to the runtime (e.g., for `block_on` with custom logic).
+///
+/// **Warning**: This blocks the current thread. Use `spawn_async` instead
+/// when possible to keep the UI responsive.
+///
+/// # Arguments
+/// * `f` - Closure that receives a reference to the tokio runtime
+///
+/// # Returns
+/// * `Ok(R)` - The result of the closure
+/// * `Err(String)` - If the runtime couldn't be created
+///
+/// # Panics
+///
+/// The internal `expect()` is safe because we check `is_none()` and initialize
+/// the runtime immediately before accessing it. This is a provably impossible
+/// panic state.
+///
+/// # Example
+/// ```ignore
+/// let result = with_runtime(|rt| {
+///     rt.block_on(async {
+///         secret_manager.store(&id, &creds).await
+///     })
+/// })?;
+/// ```
+pub fn with_runtime<F, R>(f: F) -> Result<R, String>
+where
+    F: FnOnce(&tokio::runtime::Runtime) -> R,
+{
     TOKIO_RUNTIME.with(|rt| {
         let mut rt_ref = rt.borrow_mut();
         if rt_ref.is_none() {
@@ -153,10 +189,7 @@ where
             );
         }
         // SAFETY: We just ensured rt_ref is Some above
-        Ok(rt_ref
-            .as_ref()
-            .expect("runtime initialized above")
-            .block_on(future))
+        Ok(f(rt_ref.as_ref().expect("runtime initialized above")))
     })
 }
 

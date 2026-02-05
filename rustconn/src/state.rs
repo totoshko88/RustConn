@@ -3,6 +3,7 @@
 //! This module provides the central application state that holds all managers
 //! and provides thread-safe access to core functionality.
 
+use crate::async_utils::with_runtime;
 use chrono::Utc;
 use rustconn_core::error::ConfigResult;
 use rustconn_core::models::PasswordSource;
@@ -21,36 +22,6 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Duration;
 use uuid::Uuid;
-
-// Thread-local tokio runtime for blocking async operations
-// This avoids creating a new runtime for each credential operation
-thread_local! {
-    static TOKIO_RUNTIME: RefCell<Option<tokio::runtime::Runtime>> = const { RefCell::new(None) };
-}
-
-/// Gets or creates the thread-local tokio runtime
-///
-/// # Panics
-///
-/// The `expect()` call is safe because we check `is_none()` and initialize
-/// the runtime immediately before accessing it. This is a provably impossible
-/// panic state.
-fn with_runtime<F, R>(f: F) -> Result<R, String>
-where
-    F: FnOnce(&tokio::runtime::Runtime) -> R,
-{
-    TOKIO_RUNTIME.with(|rt| {
-        let mut rt_ref = rt.borrow_mut();
-        if rt_ref.is_none() {
-            *rt_ref = Some(
-                tokio::runtime::Runtime::new()
-                    .map_err(|e| format!("Failed to create runtime: {e}"))?,
-            );
-        }
-        // SAFETY: We just ensured rt_ref is Some above
-        Ok(f(rt_ref.as_ref().expect("runtime initialized above")))
-    })
-}
 
 /// Internal clipboard for connection copy/paste operations
 ///

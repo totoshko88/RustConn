@@ -1,3 +1,17 @@
+rustconn (0.7.5-1) unstable; urgency=medium
+
+  * Version bump to 0.7.5
+  * Code Quality Audit - Comprehensive codebase analysis and cleanup:
+    - Removed duplicate SSH/VNC/SPICE/ZeroTrust/RDP options code from dialog.rs (~1850 lines)
+    - Extracted shared folders UI into reusable shared_folders.rs module
+    - Created protocol_layout.rs with ProtocolLayoutBuilder for consistent protocol UI
+    - Consolidated with_runtime() into async_utils.rs
+    - Changed FreeRDP launcher to Wayland-first (force_x11: false by default)
+    - Removed legacy no-op methods from terminal module
+  * Updated dependencies: proptest 1.9.0→1.10.0, time 0.3.46→0.3.47
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Thu, 06 Feb 2026 12:00:00 +0200
+
 rustconn (0.7.4-1) unstable; urgency=medium
 
   * Version bump to 0.7.4

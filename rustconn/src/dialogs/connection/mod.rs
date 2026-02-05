@@ -8,16 +8,21 @@
 //! - `rdp` - RDP protocol options
 //! - `vnc` - VNC protocol options
 //! - `spice` - SPICE protocol options
+//! - `shared_folders` - Shared folders UI (used by RDP and SPICE)
+//! - `protocol_layout` - Common layout builder for protocol options
 //! - `zerotrust` - Zero Trust provider options
 //!
 //! Updated for GTK 4.10+ compatibility using `DropDown` instead of `ComboBoxText`
 //! and Window instead of Dialog.
 
 mod dialog;
+mod protocol_layout;
 mod rdp;
+mod shared_folders;
 mod spice;
 mod ssh;
 mod vnc;
+pub mod zerotrust;
 
 // Re-export types from parent module for use in submodules
 pub use super::{ConnectionCallback, ConnectionDialogResult};
