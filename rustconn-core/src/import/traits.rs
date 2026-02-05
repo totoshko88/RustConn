@@ -3,9 +3,56 @@
 //! This module defines the core abstractions for the import engine,
 //! allowing different import sources to be implemented uniformly.
 
+use std::fs;
+use std::path::Path;
+
 use crate::error::ImportError;
 use crate::models::{Connection, ConnectionGroup};
 use crate::progress::ProgressReporter;
+
+/// Reads a file for import operations with consistent error handling.
+///
+/// This helper consolidates the duplicated file I/O pattern across all importers,
+/// providing uniform error messages and reducing code duplication.
+///
+/// # Arguments
+/// * `path` - Path to the file to read
+/// * `source_name` - Human-readable name of the import source (e.g., "SSH config")
+///
+/// # Errors
+/// Returns `ImportError::ParseError` if the file cannot be read.
+///
+/// # Example
+/// ```ignore
+/// let content = read_import_file(path, "SSH config")?;
+/// ```
+pub fn read_import_file(path: &Path, source_name: &str) -> Result<String, ImportError> {
+    fs::read_to_string(path).map_err(|e| ImportError::ParseError {
+        source_name: source_name.to_string(),
+        reason: format!("Failed to read {}: {}", path.display(), e),
+    })
+}
+
+/// Async variant of `read_import_file` for future use.
+///
+/// Uses tokio's async file I/O for non-blocking reads.
+/// Currently unused but prepared for async import migration.
+///
+/// # Arguments
+/// * `path` - Path to the file to read
+/// * `source_name` - Human-readable name of the import source
+///
+/// # Errors
+/// Returns `ImportError::ParseError` if the file cannot be read.
+#[allow(dead_code)] // Prepared for future async import implementation
+pub async fn read_import_file_async(path: &Path, source_name: &str) -> Result<String, ImportError> {
+    tokio::fs::read_to_string(path)
+        .await
+        .map_err(|e| ImportError::ParseError {
+            source_name: source_name.to_string(),
+            reason: format!("Failed to read {}: {}", path.display(), e),
+        })
+}
 
 /// Result of an import operation containing successful imports and any issues encountered.
 #[derive(Debug, Default)]

@@ -128,6 +128,12 @@ where
 /// * `Ok(T)` - The result of the async operation
 /// * `Err(String)` - If the runtime couldn't be created
 ///
+/// # Panics
+///
+/// The internal `expect()` is safe because we check `is_none()` and initialize
+/// the runtime immediately before accessing it. This is a provably impossible
+/// panic state.
+///
 /// # Example
 /// ```ignore
 /// let password = block_on_async(async {
@@ -146,9 +152,10 @@ where
                     .map_err(|e| format!("Failed to create runtime: {e}"))?,
             );
         }
+        // SAFETY: We just ensured rt_ref is Some above
         Ok(rt_ref
             .as_ref()
-            .expect("runtime should exist")
+            .expect("runtime initialized above")
             .block_on(future))
     })
 }

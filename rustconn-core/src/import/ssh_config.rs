@@ -12,7 +12,7 @@ use crate::error::ImportError;
 use crate::models::{Connection, ProtocolConfig, SshAuthMethod, SshConfig, SshKeySource};
 use crate::tracing::span_names;
 
-use super::traits::{ImportResult, ImportSource, SkippedEntry};
+use super::traits::{read_import_file, ImportResult, ImportSource, SkippedEntry};
 
 /// Importer for SSH config files.
 ///
@@ -245,10 +245,7 @@ impl SshConfigImporter {
 
     /// Reads and parses a single SSH config file
     fn import_file(&self, path: &Path) -> Result<ImportResult, ImportError> {
-        let content = fs::read_to_string(path).map_err(|e| ImportError::ParseError {
-            source_name: "SSH config".to_string(),
-            reason: format!("Failed to read {}: {}", path.display(), e),
-        })?;
+        let content = read_import_file(path, "SSH config")?;
 
         Ok(self.parse_config(&content, &path.display().to_string()))
     }

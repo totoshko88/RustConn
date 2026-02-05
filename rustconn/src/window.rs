@@ -160,6 +160,7 @@ impl MainWindow {
 
         // Set up callback for when SSH tabs are closed via TabView
         // This ensures sidebar status is cleared when tabs are closed
+        // Note: Split view cleanup is handled in connect_signals() where we have access to session_bridges
         let sidebar_for_close = sidebar.clone();
         terminal_notebook.set_on_page_closed(move |_session_id, connection_id| {
             sidebar_for_close.decrement_session_count(&connection_id.to_string(), false);
@@ -257,6 +258,7 @@ impl MainWindow {
         self.setup_template_actions(window, &state, &sidebar);
         self.setup_split_view_actions(window);
         self.setup_document_actions(window, &state, &sidebar);
+        self.setup_variables_actions(window, &state);
         self.setup_history_actions(window, &state);
         self.setup_misc_actions(window, &state, &sidebar, &terminal_notebook);
     }
@@ -599,6 +601,7 @@ impl MainWindow {
         let notebook_clone = terminal_notebook.clone();
         let split_view_clone = self.split_view.clone();
         let sidebar_clone = self.sidebar.clone();
+        let session_bridges_close_tab = self.session_split_bridges.clone();
         close_tab_action.connect_activate(move |_, _| {
             if let Some(session_id) = notebook_clone.get_active_session_id() {
                 // Get connection ID before closing
@@ -606,7 +609,21 @@ impl MainWindow {
                     .get_session_info(session_id)
                     .map(|info| info.connection_id);
 
-                // Clear from split view first
+                // Clear from ALL per-session split bridges first
+                {
+                    let bridges = session_bridges_close_tab.borrow();
+                    for (_owner_session_id, bridge) in bridges.iter() {
+                        if bridge.is_session_displayed(session_id) {
+                            tracing::debug!(
+                                "close-tab: clearing session {} from per-session bridge",
+                                session_id
+                            );
+                            bridge.clear_session_from_panes(session_id);
+                        }
+                    }
+                }
+
+                // Clear from global split view
                 split_view_clone.clear_session_from_panes(session_id);
                 // Then close the tab
                 notebook_clone.close_tab(session_id);
@@ -637,6 +654,8 @@ impl MainWindow {
         let notebook_clone = terminal_notebook.clone();
         let split_view_clone = self.split_view.clone();
         let sidebar_clone = self.sidebar.clone();
+        let session_bridges_close = self.session_split_bridges.clone();
+        let split_container_close = self.split_container.clone();
         close_tab_by_id_action.connect_activate(move |_, param| {
             if let Some(param) = param {
                 if let Some(session_id_str) = param.get::<String>() {
@@ -654,7 +673,22 @@ impl MainWindow {
                         // Clear tab color indicator
                         notebook_clone.clear_tab_split_color(session_id);
 
-                        // Close session from split view with auto-cleanup
+                        // Clear session from ALL per-session split bridges
+                        // This ensures the panel shows "Empty Panel" placeholder
+                        {
+                            let bridges = session_bridges_close.borrow();
+                            for (_owner_session_id, bridge) in bridges.iter() {
+                                if bridge.is_session_displayed(session_id) {
+                                    tracing::debug!(
+                                        "close-tab-by-id: clearing session {} from per-session bridge",
+                                        session_id
+                                    );
+                                    bridge.clear_session_from_panes(session_id);
+                                }
+                            }
+                        }
+
+                        // Close session from global split view with auto-cleanup
                         // Returns true if split view should be hidden
                         let should_hide_split =
                             split_view_clone.close_session_from_panes(session_id);
@@ -671,6 +705,7 @@ impl MainWindow {
                         if should_hide_split {
                             split_view_clone.widget().set_visible(false);
                             split_view_clone.widget().set_vexpand(false);
+                            split_container_close.set_visible(false);
                             notebook_clone.widget().set_vexpand(true);
                             notebook_clone.show_tab_view_content();
                         }
@@ -1126,6 +1161,42 @@ impl MainWindow {
         window.add_action(&manage_templates_action);
     }
 
+    /// Sets up variables-related actions
+    fn setup_variables_actions(&self, window: &adw::ApplicationWindow, state: &SharedAppState) {
+        use crate::dialogs::VariablesDialog;
+
+        // Manage variables action
+        let manage_variables_action = gio::SimpleAction::new("manage-variables", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        manage_variables_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                // Get current global variables from settings
+                let current_vars = state_clone.borrow().settings().global_variables.clone();
+
+                let dialog = VariablesDialog::new(Some(win.upcast_ref()));
+                dialog.set_variables(&current_vars);
+
+                let state_for_save = state_clone.clone();
+                dialog.run(move |result| {
+                    if let Some(variables) = result {
+                        // Save variables to settings
+                        let mut state_ref = state_for_save.borrow_mut();
+                        state_ref.settings_mut().global_variables = variables.clone();
+
+                        // Persist to disk
+                        if let Err(e) = state_ref.config_manager().save_variables(&variables) {
+                            tracing::error!("Failed to save variables: {e}");
+                        } else {
+                            tracing::info!("Saved {} global variables", variables.len());
+                        }
+                    }
+                });
+            }
+        });
+        window.add_action(&manage_variables_action);
+    }
+
     /// Sets up history and statistics actions
     fn setup_history_actions(&self, window: &adw::ApplicationWindow, state: &SharedAppState) {
         use crate::dialogs::{show_password_generator_dialog, HistoryDialog, StatisticsDialog};
@@ -1260,11 +1331,32 @@ impl MainWindow {
         let split_container_h = self.split_container.clone();
         let global_split_view_h = self.split_view.clone();
         let color_pool_h = self.global_color_pool.clone();
+        let window_weak_h = window.downgrade();
         split_horizontal_action.connect_activate(move |_, _| {
             // Get current active session before splitting
             let Some(current_session) = notebook_for_split_h.get_active_session_id() else {
                 return; // No active session to split
             };
+
+            // Check if protocol supports split view (only SSH, Local Shell, ZeroTrust)
+            // RDP, VNC, SPICE are not supported because they use embedded widgets, not VTE terminals
+            if let Some(info) = notebook_for_split_h.get_session_info(current_session) {
+                let protocol = &info.protocol;
+                if protocol != "ssh" && protocol != "local" && !protocol.starts_with("zerotrust") {
+                    tracing::debug!(
+                        "split-horizontal: protocol '{}' not supported for split view",
+                        protocol
+                    );
+                    if let Some(win) = window_weak_h.upgrade() {
+                        crate::toast::show_toast_on_window(
+                            &win,
+                            "Split view is only available for SSH and Local Shell tabs",
+                            crate::toast::ToastType::Warning,
+                        );
+                    }
+                    return;
+                }
+            }
 
             tracing::debug!("split-horizontal: splitting session {:?}", current_session);
 
@@ -1506,11 +1598,32 @@ impl MainWindow {
         let split_container_v = self.split_container.clone();
         let global_split_view_v = self.split_view.clone();
         let color_pool_v = self.global_color_pool.clone();
+        let window_weak_v = window.downgrade();
         split_vertical_action.connect_activate(move |_, _| {
             // Get current active session before splitting
             let Some(current_session) = notebook_for_split_v.get_active_session_id() else {
                 return; // No active session to split
             };
+
+            // Check if protocol supports split view (only SSH, Local Shell, ZeroTrust)
+            // RDP, VNC, SPICE are not supported because they use embedded widgets, not VTE terminals
+            if let Some(info) = notebook_for_split_v.get_session_info(current_session) {
+                let protocol = &info.protocol;
+                if protocol != "ssh" && protocol != "local" && !protocol.starts_with("zerotrust") {
+                    tracing::debug!(
+                        "split-vertical: protocol '{}' not supported for split view",
+                        protocol
+                    );
+                    if let Some(win) = window_weak_v.upgrade() {
+                        crate::toast::show_toast_on_window(
+                            &win,
+                            "Split view is only available for SSH and Local Shell tabs",
+                            crate::toast::ToastType::Warning,
+                        );
+                    }
+                    return;
+                }
+            }
 
             tracing::debug!("split-vertical: splitting session {:?}", current_session);
 
@@ -1956,6 +2069,30 @@ impl MainWindow {
         let split_view = self.split_view.clone();
         let paned = self.paned.clone();
         let window = self.window.clone();
+
+        // Set up split view cleanup callback for when tabs are closed via TabView
+        // This ensures panels show "Empty Panel" placeholder when their session is closed
+        {
+            let session_bridges_for_cleanup = self.session_split_bridges.clone();
+            let split_view_for_cleanup = split_view.clone();
+            terminal_notebook.set_on_split_cleanup(move |session_id| {
+                // Clear session from ALL per-session split bridges
+                {
+                    let bridges = session_bridges_for_cleanup.borrow();
+                    for (_owner_session_id, bridge) in bridges.iter() {
+                        if bridge.is_session_displayed(session_id) {
+                            tracing::debug!(
+                                "on_split_cleanup: clearing session {} from per-session bridge",
+                                session_id
+                            );
+                            bridge.clear_session_from_panes(session_id);
+                        }
+                    }
+                }
+                // Clear from global split view
+                split_view_for_cleanup.clear_session_from_panes(session_id);
+            });
+        }
 
         // Set up "Select Tab" callback for empty panel placeholders
         // This provides an alternative to drag-and-drop for moving sessions to split panels

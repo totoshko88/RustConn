@@ -11,7 +11,6 @@
 //! Consider using a secure credential backend after import.
 
 use std::collections::HashMap;
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
@@ -23,7 +22,7 @@ use crate::models::{
     SshConfig, SshKeySource, VncConfig,
 };
 
-use super::traits::{ImportResult, ImportSource, SkippedEntry};
+use super::traits::{read_import_file, ImportResult, ImportSource, SkippedEntry};
 
 /// Importer for Asbru-CM configuration files.
 ///
@@ -669,10 +668,7 @@ impl ImportSource for AsbruImporter {
             return Err(ImportError::FileNotFound(path.to_path_buf()));
         }
 
-        let content = fs::read_to_string(path).map_err(|e| ImportError::ParseError {
-            source_name: "Asbru-CM".to_string(),
-            reason: format!("Failed to read {}: {}", path.display(), e),
-        })?;
+        let content = read_import_file(path, "Asbru-CM")?;
 
         Ok(self.parse_config(&content, &path.display().to_string()))
     }

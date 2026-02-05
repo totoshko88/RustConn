@@ -5,6 +5,70 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.4] - 2026-02-05
+
+### Fixed
+- **Split View Protocol Restriction** - Split view is now disabled for RDP, VNC, and SPICE tabs:
+  - Only SSH, Local Shell, and ZeroTrust tabs support split view
+  - Attempting to split an embedded protocol tab shows a toast notification
+  - Prevents UI issues with embedded widgets that cannot be reparented
+- **Split View Tab Close Cleanup** - Closing a tab now properly clears its panel in split view:
+  - Panel shows "Empty Panel" placeholder with "Select Tab" button after tab is closed
+  - Works for both per-session split bridges and global split view
+  - Added `on_split_cleanup` callback to `TerminalNotebook` for proper cleanup coordination
+  - Fixes issue where terminal content remained visible after closing tab
+- **Document Close Dialog** - Fixed potential panic when closing document without parent window:
+  - `CloseDocumentDialog::present()` now gracefully handles missing parent window
+  - Logs error and calls callback with `None` instead of panicking
+- **Zero Trust Entry Field Alignment** - Fixed inconsistent width of input fields in Zero Trust provider panels:
+  - Converted all Zero Trust provider fields from `ActionRow` + `Entry` to `adw::EntryRow`
+  - All 10 provider panels (AWS SSM, GCP IAP, Azure Bastion, Azure SSH, OCI Bastion, Cloudflare, Teleport, Tailscale, Boundary, Generic) now have consistent field widths
+  - Follows GNOME HIG guidelines for proper libadwaita input field usage
+
+### Refactored
+- **Import File I/O** - Extracted common file reading pattern into `read_import_file()` helper:
+  - Reduces code duplication across 5 import sources (SSH config, Ansible, Remmina, Asbru, Royal TS)
+  - Consistent error handling with `ImportError::ParseError`
+  - Added async variant `read_import_file_async()` for future use
+- **Protocol Client Errors** - Consolidated duplicate error types into unified `EmbeddedClientError`:
+  - Merged `RdpClientError`, `VncClientError`, `SpiceClientError` (~60 lines reduced)
+  - Type aliases maintain backward compatibility
+  - Common variants: `ConnectionFailed`, `AuthenticationFailed`, `ProtocolError`, `IoError`, `Timeout`
+- **Config Atomic Writes** - Improved reliability of configuration file saves:
+  - Now uses temp file + atomic rename pattern
+  - Prevents config corruption on crash during write
+  - Applied to `save_toml_file_async()` in `ConfigManager`
+- **Connection Dialog Modularization** - Refactored monolithic `connection.rs` into modular structure:
+  - Created `rustconn/src/dialogs/connection/` directory with protocol-specific modules
+  - `dialog.rs` - Main `ConnectionDialog` implementation (~6,600 lines)
+  - `ssh.rs` - SSH options panel (~460 lines, prepared for future integration)
+  - `rdp.rs` - RDP options panel (~414 lines, prepared for future integration)
+  - `vnc.rs` - VNC options panel (~249 lines, prepared for future integration)
+  - `spice.rs` - SPICE options panel (~240 lines, reuses rdp:: folder functions)
+  - Improves code organization and maintainability
+
+### Added
+- **GTK Lifecycle Documentation** - Added module-level documentation explaining `#[allow(dead_code)]` pattern:
+  - Documents why GTK widget fields must be kept alive for signal handlers
+  - Prevents accidental removal of "unused" fields that would cause segfaults
+- **Type Alias Documentation** - Added documentation explaining why `Rc` is used instead of `Arc`:
+  - GTK4 is single-threaded, so atomic operations are unnecessary overhead
+  - `Rc<RefCell<_>>` pattern matches GTK's single-threaded model
+  - Documented in `window_types.rs` module header
+
+### Changed
+- **Code Quality** - Comprehensive cleanup based on code audit:
+  - Removed legacy `TabDisplayMode`, `SessionWidgetStorage`, `TabLabelWidgets` types
+  - Standardized error type patterns with `#[from]` attribute
+  - Reduced unnecessary `.clone()` calls in callback chains
+  - Improved `expect()` messages to clarify provably impossible states
+  - Added `# Panics` documentation for functions with justified `expect()` calls
+- **Dependencies** - Updated: clap 4.5.56→4.5.57, criterion 0.8.1→0.8.2, hybrid-array 0.4.6→0.4.7, zerocopy 0.8.37→0.8.38
+
+### Tests
+- Updated property tests for consolidated error types
+- Verified all changes pass `cargo clippy --all-targets` and `cargo fmt --check`
+
 ## [0.7.3] - 2026-02-03
 
 ### Fixed

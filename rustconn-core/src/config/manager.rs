@@ -501,7 +501,10 @@ impl ConfigManager {
             .map_err(|e| ConfigError::Write(format!("Failed to write {}: {}", path.display(), e)))
     }
 
-    /// Saves data to a TOML file asynchronously
+    /// Saves data to a TOML file asynchronously with atomic write.
+    ///
+    /// Uses a temp file + rename pattern to prevent data corruption
+    /// if the process crashes during write.
     #[allow(clippy::future_not_send)] // Path is not Sync, effectively pinned to thread which is fine for our use case
     async fn save_toml_file_async<T>(path: &Path, data: &T) -> ConfigResult<()>
     where
@@ -510,16 +513,53 @@ impl ConfigManager {
         let content = toml::to_string_pretty(data)
             .map_err(|e| ConfigError::Serialize(format!("Failed to serialize: {e}")))?;
 
-        let mut file = tokio::fs::File::create(path).await.map_err(|e| {
-            ConfigError::Write(format!("Failed to create {}: {}", path.display(), e))
+        // Use temp file for atomic write
+        let temp_path = path.with_extension("tmp");
+
+        // Write to temp file
+        let mut file = tokio::fs::File::create(&temp_path).await.map_err(|e| {
+            ConfigError::Write(format!(
+                "Failed to create temp file {}: {}",
+                temp_path.display(),
+                e
+            ))
         })?;
 
         file.write_all(content.as_bytes()).await.map_err(|e| {
-            ConfigError::Write(format!("Failed to write {}: {}", path.display(), e))
+            ConfigError::Write(format!(
+                "Failed to write temp file {}: {}",
+                temp_path.display(),
+                e
+            ))
         })?;
 
         file.flush().await.map_err(|e| {
-            ConfigError::Write(format!("Failed to flush {}: {}", path.display(), e))
+            ConfigError::Write(format!(
+                "Failed to flush temp file {}: {}",
+                temp_path.display(),
+                e
+            ))
+        })?;
+
+        // Ensure data is synced to disk before rename
+        file.sync_all().await.map_err(|e| {
+            ConfigError::Write(format!(
+                "Failed to sync temp file {}: {}",
+                temp_path.display(),
+                e
+            ))
+        })?;
+
+        // Drop the file handle before rename
+        drop(file);
+
+        // Atomic rename (on POSIX systems, rename is atomic)
+        tokio::fs::rename(&temp_path, path).await.map_err(|e| {
+            ConfigError::Write(format!(
+                "Failed to finalize config file {}: {}",
+                path.display(),
+                e
+            ))
         })?;
 
         Ok(())

@@ -1,3 +1,16 @@
+rustconn (0.7.4-1) unstable; urgency=medium
+
+  * Version bump to 0.7.4
+  * Fixed Zero Trust Entry Field Alignment - converted all Zero Trust provider fields to adw::EntryRow
+  * Refactored Connection Dialog Modularization - split into dialog.rs, ssh.rs, rdp.rs, vnc.rs, spice.rs
+  * Refactored Import File I/O - extracted common file reading pattern into read_import_file() helper
+  * Refactored Protocol Client Errors - consolidated duplicate error types into unified EmbeddedClientError
+  * Refactored Config Atomic Writes - improved reliability with temp file + atomic rename pattern
+  * Added GTK Lifecycle Documentation - module-level docs explaining #[allow(dead_code)] pattern
+  * Code Quality - removed legacy types, standardized error patterns, reduced unnecessary clones
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Thu, 05 Feb 2026 12:00:00 +0200
+
 rustconn (0.7.3-1) unstable; urgency=medium
 
   * Version bump to 0.7.3

@@ -4,7 +4,6 @@
 //! Supports importing SSH, RDP, and VNC connections with folder hierarchy.
 
 use std::collections::HashMap;
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use quick_xml::events::Event;
@@ -17,7 +16,7 @@ use crate::models::{
     SshConfig, VncConfig,
 };
 
-use super::traits::{ImportResult, ImportSource, SkippedEntry};
+use super::traits::{read_import_file, ImportResult, ImportSource, SkippedEntry};
 
 /// Royal TS SSH connection data
 #[derive(Debug, Clone, Default)]
@@ -557,10 +556,7 @@ impl ImportSource for RoyalTsImporter {
             return Err(ImportError::FileNotFound(path.to_path_buf()));
         }
 
-        let content = fs::read_to_string(path).map_err(|e| ImportError::ParseError {
-            source_name: "Royal TS".to_string(),
-            reason: format!("Failed to read {}: {e}", path.display()),
-        })?;
+        let content = read_import_file(path, "Royal TS")?;
 
         Ok(self.parse_xml(&content, &path.display().to_string()))
     }

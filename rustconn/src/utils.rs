@@ -98,8 +98,15 @@ pub fn set_accessible_label(widget: &impl gtk4::prelude::AccessibleExtManual, la
 /// Regex pattern for extracting variable names from templates
 ///
 /// Matches patterns like `${variable_name}` and captures the variable name.
+///
+/// # Panics
+///
+/// The `expect()` is safe because the regex pattern is a compile-time constant
+/// that has been validated. This is a provably correct pattern.
 pub static VARIABLE_PATTERN: LazyLock<regex::Regex> = LazyLock::new(|| {
-    regex::Regex::new(r"\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}").expect("Variable pattern regex is valid")
+    // Pattern is a compile-time constant, validated to be correct
+    regex::Regex::new(r"\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}")
+        .expect("compile-time constant regex pattern")
 });
 
 /// Extracts variable names from a template string

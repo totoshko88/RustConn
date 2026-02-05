@@ -2,6 +2,31 @@
 //!
 //! A GTK4-based connection manager supporting SSH, RDP, and VNC protocols
 //! with Wayland-native support and `KeePassXC` integration.
+//!
+//! # GTK Widget Lifecycle Pattern
+//!
+//! Throughout this crate, you'll see struct fields marked with `#[allow(dead_code)]`.
+//! These are **intentionally kept alive** for GTK widget lifecycle management:
+//!
+//! - **Signal handlers**: `connect_clicked()`, `connect_changed()`, etc. hold references
+//! - **Event controllers**: Motion, key, and scroll controllers need widget references
+//! - **Widget tree ownership**: Parent-child relationships require keeping references
+//!
+//! **⚠️ WARNING**: Removing these "unused" fields will cause **segmentation faults**
+//! when GTK signals fire, because the signal handler closures capture these references.
+//!
+//! ## Example
+//!
+//! ```ignore
+//! pub struct MyDialog {
+//!     window: adw::Window,
+//!     #[allow(dead_code)] // Kept alive for connect_clicked() handler
+//!     save_button: gtk4::Button,
+//! }
+//! ```
+//!
+//! The `save_button` field appears unused, but removing it would cause the button's
+//! click handler to crash when invoked.
 
 // Global clippy lint configuration for GUI code
 // Only truly necessary suppressions are kept globally; others should be applied per-function
@@ -73,13 +98,21 @@ mod window_ui;
 fn main() -> gtk4::glib::ExitCode {
     // Initialize logging with environment filter (RUST_LOG)
     // Filter out noisy zbus debug messages (ProvideXdgActivationToken errors from ksni)
-    let filter = tracing_subscriber::EnvFilter::from_default_env()
-        .add_directive("zbus=warn".parse().expect("valid directive"));
+    //
+    // Note: expect() is acceptable here because:
+    // 1. "zbus=warn" is a compile-time constant directive that is always valid
+    // 2. Runtime creation failure at startup is unrecoverable - the app cannot function
+    let filter = tracing_subscriber::EnvFilter::from_default_env().add_directive(
+        "zbus=warn"
+            .parse()
+            .expect("compile-time constant directive"),
+    );
 
     tracing_subscriber::fmt().with_env_filter(filter).init();
 
     // Initialize Tokio runtime for async operations
-    let runtime = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
+    // Note: Runtime creation failure at startup is unrecoverable
+    let runtime = tokio::runtime::Runtime::new().expect("tokio runtime required for async ops");
     let _guard = runtime.enter();
 
     app::run()

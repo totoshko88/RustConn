@@ -29,6 +29,12 @@ thread_local! {
 }
 
 /// Gets or creates the thread-local tokio runtime
+///
+/// # Panics
+///
+/// The `expect()` call is safe because we check `is_none()` and initialize
+/// the runtime immediately before accessing it. This is a provably impossible
+/// panic state.
 fn with_runtime<F, R>(f: F) -> Result<R, String>
 where
     F: FnOnce(&tokio::runtime::Runtime) -> R,
@@ -41,7 +47,8 @@ where
                     .map_err(|e| format!("Failed to create runtime: {e}"))?,
             );
         }
-        Ok(f(rt_ref.as_ref().expect("runtime should be initialized")))
+        // SAFETY: We just ensured rt_ref is Some above
+        Ok(f(rt_ref.as_ref().expect("runtime initialized above")))
     })
 }
 
