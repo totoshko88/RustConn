@@ -29,9 +29,23 @@ pub struct SafeFreeRdpLauncher {
 }
 
 impl SafeFreeRdpLauncher {
-    /// Creates a new launcher with default settings (warnings suppressed)
+    /// Creates a new launcher with Wayland-first defaults
+    ///
+    /// By default, uses native Wayland backend. Use `with_x11_fallback()`
+    /// if you need X11 compatibility for older FreeRDP versions.
     #[must_use]
     pub fn new() -> Self {
+        Self {
+            suppress_qt_warnings: true,
+            force_x11: false, // Wayland-first approach
+        }
+    }
+
+    /// Creates a launcher that forces X11 backend (for compatibility)
+    ///
+    /// Use this when Wayland backend causes issues with specific FreeRDP versions.
+    #[must_use]
+    pub fn with_x11_fallback() -> Self {
         Self {
             suppress_qt_warnings: true,
             force_x11: true,
@@ -190,8 +204,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_safe_freerdp_launcher_default() {
+    fn test_safe_freerdp_launcher_default_wayland_first() {
         let launcher = SafeFreeRdpLauncher::new();
+        assert!(launcher.suppress_qt_warnings);
+        assert!(!launcher.force_x11); // Wayland-first by default
+    }
+
+    #[test]
+    fn test_safe_freerdp_launcher_x11_fallback() {
+        let launcher = SafeFreeRdpLauncher::with_x11_fallback();
         assert!(launcher.suppress_qt_warnings);
         assert!(launcher.force_x11);
     }
@@ -200,14 +221,24 @@ mod tests {
     fn test_safe_freerdp_launcher_builder() {
         let launcher = SafeFreeRdpLauncher::new()
             .with_suppress_warnings(false)
-            .with_force_x11(false);
+            .with_force_x11(true);
         assert!(!launcher.suppress_qt_warnings);
-        assert!(!launcher.force_x11);
+        assert!(launcher.force_x11);
     }
 
     #[test]
-    fn test_safe_freerdp_launcher_env() {
+    fn test_safe_freerdp_launcher_env_wayland() {
         let launcher = SafeFreeRdpLauncher::new();
+        let env = launcher.build_env();
+
+        // Should have QT_LOGGING_RULES but NOT QT_QPA_PLATFORM (Wayland-first)
+        assert!(env.iter().any(|(k, _)| *k == "QT_LOGGING_RULES"));
+        assert!(!env.iter().any(|(k, _)| *k == "QT_QPA_PLATFORM"));
+    }
+
+    #[test]
+    fn test_safe_freerdp_launcher_env_x11_fallback() {
+        let launcher = SafeFreeRdpLauncher::with_x11_fallback();
         let env = launcher.build_env();
 
         // Should have both QT_LOGGING_RULES and QT_QPA_PLATFORM

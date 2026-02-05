@@ -10,12 +10,10 @@
 // These functions are prepared for future refactoring when dialog.rs is further modularized
 #![allow(dead_code)]
 
+use super::protocol_layout::ProtocolLayoutBuilder;
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{
-    Box as GtkBox, CheckButton, DropDown, Entry, Orientation, ScrolledWindow, SpinButton,
-    StringList,
-};
+use gtk4::{Box as GtkBox, CheckButton, DropDown, Entry, SpinButton, StringList};
 use libadwaita as adw;
 use rustconn_core::models::{VncClientMode, VncPerformanceMode};
 
@@ -37,22 +35,7 @@ pub type VncOptionsWidgets = (
 /// Creates the VNC options panel using libadwaita components following GNOME HIG.
 #[must_use]
 pub fn create_vnc_options() -> VncOptionsWidgets {
-    let scrolled = ScrolledWindow::builder()
-        .hscrollbar_policy(gtk4::PolicyType::Never)
-        .vscrollbar_policy(gtk4::PolicyType::Automatic)
-        .vexpand(true)
-        .build();
-
-    let clamp = adw::Clamp::builder()
-        .maximum_size(600)
-        .tightening_threshold(400)
-        .build();
-
-    let content = GtkBox::new(Orientation::Vertical, 12);
-    content.set_margin_top(12);
-    content.set_margin_bottom(12);
-    content.set_margin_start(12);
-    content.set_margin_end(12);
+    let (container, content) = ProtocolLayoutBuilder::new().build();
 
     // === Display Group ===
     let (display_group, client_mode_dropdown, performance_mode_dropdown, encoding_entry) =
@@ -71,14 +54,8 @@ pub fn create_vnc_options() -> VncOptionsWidgets {
     let (advanced_group, custom_args_entry) = create_advanced_group();
     content.append(&advanced_group);
 
-    clamp.set_child(Some(&content));
-    scrolled.set_child(Some(&clamp));
-
-    let vbox = GtkBox::new(Orientation::Vertical, 0);
-    vbox.append(&scrolled);
-
     (
-        vbox,
+        container,
         client_mode_dropdown,
         performance_mode_dropdown,
         encoding_entry,

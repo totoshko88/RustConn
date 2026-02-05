@@ -11,13 +11,11 @@
 // These functions are prepared for future refactoring when dialog.rs is further modularized
 #![allow(dead_code)]
 
-use super::rdp;
+use super::protocol_layout::ProtocolLayoutBuilder;
+use super::shared_folders;
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{
-    Box as GtkBox, Button, CheckButton, DropDown, Entry, Label, Orientation, ScrolledWindow,
-    StringList,
-};
+use gtk4::{Box as GtkBox, Button, CheckButton, DropDown, Entry, Orientation, StringList};
 use libadwaita as adw;
 use rustconn_core::models::SharedFolder;
 use std::cell::RefCell;
@@ -41,22 +39,7 @@ pub type SpiceOptionsWidgets = (
 /// Creates the SPICE options panel using libadwaita components following GNOME HIG.
 #[must_use]
 pub fn create_spice_options() -> SpiceOptionsWidgets {
-    let scrolled = ScrolledWindow::builder()
-        .hscrollbar_policy(gtk4::PolicyType::Never)
-        .vscrollbar_policy(gtk4::PolicyType::Automatic)
-        .vexpand(true)
-        .build();
-
-    let clamp = adw::Clamp::builder()
-        .maximum_size(600)
-        .tightening_threshold(400)
-        .build();
-
-    let content = GtkBox::new(Orientation::Vertical, 12);
-    content.set_margin_top(12);
-    content.set_margin_bottom(12);
-    content.set_margin_start(12);
-    content.set_margin_end(12);
+    let (container, content) = ProtocolLayoutBuilder::new().build();
 
     // === Security Group ===
     let (security_group, tls_check, ca_cert_entry, ca_cert_button, skip_verify_check) =
@@ -69,17 +52,12 @@ pub fn create_spice_options() -> SpiceOptionsWidgets {
     content.append(&features_group);
 
     // === Shared Folders Group ===
-    let (folders_group, shared_folders, folders_list) = create_shared_folders_group();
+    let (folders_group, shared_folders, folders_list) =
+        shared_folders::create_shared_folders_group();
     content.append(&folders_group);
 
-    clamp.set_child(Some(&content));
-    scrolled.set_child(Some(&clamp));
-
-    let vbox = GtkBox::new(Orientation::Vertical, 0);
-    vbox.append(&scrolled);
-
     (
-        vbox,
+        container,
         tls_check,
         ca_cert_entry,
         ca_cert_button,
@@ -196,59 +174,4 @@ fn create_features_group() -> (adw::PreferencesGroup, CheckButton, CheckButton, 
         clipboard_check,
         compression_dropdown,
     )
-}
-
-/// Creates the Shared Folders preferences group
-fn create_shared_folders_group() -> (
-    adw::PreferencesGroup,
-    Rc<RefCell<Vec<SharedFolder>>>,
-    gtk4::ListBox,
-) {
-    let folders_group = adw::PreferencesGroup::builder()
-        .title("Shared Folders")
-        .description("Local folders accessible from remote session")
-        .build();
-
-    let folders_list = gtk4::ListBox::builder()
-        .selection_mode(gtk4::SelectionMode::Single)
-        .css_classes(["boxed-list"])
-        .build();
-    folders_list.set_placeholder(Some(&Label::new(Some("No shared folders"))));
-
-    let folders_scrolled = ScrolledWindow::builder()
-        .hscrollbar_policy(gtk4::PolicyType::Never)
-        .vscrollbar_policy(gtk4::PolicyType::Automatic)
-        .min_content_height(80)
-        .max_content_height(120)
-        .child(&folders_list)
-        .build();
-    folders_group.add(&folders_scrolled);
-
-    let folders_buttons = GtkBox::new(Orientation::Horizontal, 8);
-    folders_buttons.set_halign(gtk4::Align::End);
-    folders_buttons.set_margin_top(8);
-    let add_folder_btn = Button::builder()
-        .label("Add")
-        .css_classes(["suggested-action"])
-        .build();
-    let remove_folder_btn = Button::builder().label("Remove").sensitive(false).build();
-    folders_buttons.append(&add_folder_btn);
-    folders_buttons.append(&remove_folder_btn);
-    folders_group.add(&folders_buttons);
-
-    let shared_folders: Rc<RefCell<Vec<SharedFolder>>> = Rc::new(RefCell::new(Vec::new()));
-
-    // Connect add folder button (reuse from rdp module)
-    rdp::connect_add_folder_button(&add_folder_btn, &folders_list, &shared_folders);
-
-    // Connect remove folder button (reuse from rdp module)
-    rdp::connect_remove_folder_button(&remove_folder_btn, &folders_list, &shared_folders);
-
-    // Enable/disable remove button based on selection
-    let remove_btn_for_selection = remove_folder_btn;
-    folders_list.connect_row_selected(move |_, row| {
-        remove_btn_for_selection.set_sensitive(row.is_some());
-    });
-
-    (folders_group, shared_folders, folders_list)
 }

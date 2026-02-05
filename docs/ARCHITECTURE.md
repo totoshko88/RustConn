@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.7.4** | Last updated: February 2026
+**Version 0.7.5** | Last updated: February 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -699,10 +699,13 @@ rustconn/src/
 │   ├── connection/        # Connection dialog (modular)
 │   │   ├── mod.rs         # Module exports
 │   │   ├── dialog.rs      # Main ConnectionDialog
-│   │   ├── ssh.rs         # SSH options (prepared)
-│   │   ├── rdp.rs         # RDP options (prepared)
-│   │   ├── vnc.rs         # VNC options (prepared)
-│   │   └── spice.rs       # SPICE options (prepared)
+│   │   ├── protocol_layout.rs # ProtocolLayoutBuilder for consistent UI
+│   │   ├── shared_folders.rs  # Shared folders UI (RDP/SPICE)
+│   │   ├── ssh.rs         # SSH options
+│   │   ├── rdp.rs         # RDP options
+│   │   ├── vnc.rs         # VNC options
+│   │   ├── spice.rs       # SPICE options
+│   │   └── zerotrust.rs   # Zero Trust provider options
 │   ├── keyboard.rs        # Keyboard navigation helpers
 │   ├── settings/          # Settings tabs
 │   └── ...

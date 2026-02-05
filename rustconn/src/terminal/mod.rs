@@ -1053,44 +1053,6 @@ impl TerminalNotebook {
         }
     }
 
-    // Legacy compatibility methods (no-op for TabView)
-
-    /// Sets vexpand for all notebook page contents (no-op for TabView)
-    #[allow(dead_code)]
-    pub fn set_pages_vexpand(&self, _expand: bool) {
-        // TabView handles this automatically
-    }
-
-    /// Shows only the specified page content (no-op for TabView)
-    #[allow(dead_code)]
-    pub fn show_only_current_page(&self) {
-        // TabView handles this automatically
-    }
-
-    /// Shows all page contents (no-op for TabView)
-    #[allow(dead_code)]
-    pub fn show_all_pages(&self) {
-        // TabView handles this automatically
-    }
-
-    /// Hides content of all notebook pages except the specified one (no-op)
-    #[allow(dead_code)]
-    pub fn hide_all_page_content_except(&self, _except_page: Option<u32>) {
-        // TabView handles visibility automatically
-    }
-
-    /// Shows content of a specific notebook page (no-op)
-    #[allow(dead_code)]
-    pub fn show_page_content(&self, _page_num: u32) {
-        // TabView handles visibility automatically
-    }
-
-    /// Hides content of all notebook pages (no-op)
-    #[allow(dead_code)]
-    pub fn hide_all_page_content(&self) {
-        // TabView handles visibility automatically
-    }
-
     /// Moves terminal back to its TabView page container
     /// Call this when session exits split view and returns to TabView display
     pub fn reparent_terminal_to_tab(&self, session_id: Uuid) {

@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.7.4
+Version:        0.7.5
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later
@@ -157,6 +157,17 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Thu Feb 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.5-0
+- Version bump to 0.7.5
+- Code Quality Audit - Comprehensive codebase analysis and cleanup
+- Removed duplicate SSH/VNC/SPICE/ZeroTrust/RDP options code (~1850 lines)
+- Extracted shared folders UI into reusable shared_folders.rs module
+- Created protocol_layout.rs with ProtocolLayoutBuilder for consistent protocol UI
+- Consolidated with_runtime() into async_utils.rs
+- Changed FreeRDP launcher to Wayland-first (force_x11: false by default)
+- Removed legacy no-op methods from terminal module
+- Updated dependencies: proptest 1.9.0→1.10.0, time 0.3.46→0.3.47
+
 * Thu Feb 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.4-0
 - Version bump to 0.7.4
 - Fixed Zero Trust Entry Field Alignment - converted all Zero Trust provider fields to adw::EntryRow

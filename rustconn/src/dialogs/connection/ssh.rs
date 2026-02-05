@@ -9,11 +9,10 @@
 // These functions are prepared for future refactoring when dialog.rs is further modularized
 #![allow(dead_code)]
 
+use super::protocol_layout::ProtocolLayoutBuilder;
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{
-    Box as GtkBox, Button, CheckButton, DropDown, Entry, Orientation, ScrolledWindow, StringList,
-};
+use gtk4::{Box as GtkBox, Button, CheckButton, DropDown, Entry, StringList};
 use libadwaita as adw;
 
 /// Return type for SSH options creation
@@ -55,22 +54,7 @@ pub type SshOptionsWidgets = (
 /// - Session: Agent Forwarding, X11 Forwarding, Compression, Startup Command, Custom Options
 #[must_use]
 pub fn create_ssh_options() -> SshOptionsWidgets {
-    let scrolled = ScrolledWindow::builder()
-        .hscrollbar_policy(gtk4::PolicyType::Never)
-        .vscrollbar_policy(gtk4::PolicyType::Automatic)
-        .vexpand(true)
-        .build();
-
-    let clamp = adw::Clamp::builder()
-        .maximum_size(600)
-        .tightening_threshold(400)
-        .build();
-
-    let content = GtkBox::new(Orientation::Vertical, 12);
-    content.set_margin_top(12);
-    content.set_margin_bottom(12);
-    content.set_margin_start(12);
-    content.set_margin_end(12);
+    let (container, content) = ProtocolLayoutBuilder::new().build();
 
     // === Authentication Group ===
     let (auth_group, auth_dropdown, key_source_dropdown, key_entry, key_button, agent_key_dropdown) =
@@ -93,14 +77,8 @@ pub fn create_ssh_options() -> SshOptionsWidgets {
     ) = create_session_group();
     content.append(&session_group);
 
-    clamp.set_child(Some(&content));
-    scrolled.set_child(Some(&clamp));
-
-    let vbox = GtkBox::new(Orientation::Vertical, 0);
-    vbox.append(&scrolled);
-
     (
-        vbox,
+        container,
         auth_dropdown,
         key_source_dropdown,
         key_entry,
