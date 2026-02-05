@@ -14,7 +14,10 @@
 //! and Window instead of Dialog.
 
 mod dialog;
+mod rdp;
+mod spice;
 mod ssh;
+mod vnc;
 
 // Re-export types from parent module for use in submodules
 pub use super::{ConnectionCallback, ConnectionDialogResult};

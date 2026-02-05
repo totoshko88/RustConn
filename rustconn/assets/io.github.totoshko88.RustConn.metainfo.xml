@@ -76,6 +76,20 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.7.4" date="2026-02-05">
+      <description>
+        <p>Version 0.7.4 - Zero Trust UI and Connection Dialog Modularization:</p>
+        <ul>
+          <li>Fixed Zero Trust Entry Field Alignment - converted all Zero Trust provider fields to adw::EntryRow for consistent widths</li>
+          <li>Refactored Connection Dialog - split monolithic connection.rs into modular structure (dialog.rs, ssh.rs, rdp.rs, vnc.rs, spice.rs)</li>
+          <li>Refactored Import File I/O - extracted common file reading pattern into read_import_file() helper</li>
+          <li>Refactored Protocol Client Errors - consolidated duplicate error types into unified EmbeddedClientError</li>
+          <li>Refactored Config Atomic Writes - improved reliability with temp file + atomic rename pattern</li>
+          <li>Added GTK Lifecycle Documentation - module-level docs explaining #[allow(dead_code)] pattern</li>
+          <li>Code Quality - removed legacy types, standardized error patterns, reduced unnecessary clones</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.7.3" date="2026-02-03">
       <description>
         <p>Version 0.7.3 - Client Detection Improvements:</p>

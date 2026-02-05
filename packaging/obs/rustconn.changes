@@ -1,7 +1,9 @@
 -------------------------------------------------------------------
-Wed Feb 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.4
+Thu Feb 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.4
 
 - Version bump to 0.7.4
+  * Fixed Zero Trust Entry Field Alignment - converted all Zero Trust provider fields to adw::EntryRow
+  * Refactored Connection Dialog Modularization - split into dialog.rs, ssh.rs, rdp.rs, vnc.rs, spice.rs
   * Refactored Import File I/O - extracted common file reading pattern into read_import_file() helper
   * Refactored Protocol Client Errors - consolidated duplicate error types into unified EmbeddedClientError
   * Refactored Config Atomic Writes - improved reliability with temp file + atomic rename pattern

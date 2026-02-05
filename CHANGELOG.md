@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Document Close Dialog** - Fixed potential panic when closing document without parent window:
   - `CloseDocumentDialog::present()` now gracefully handles missing parent window
   - Logs error and calls callback with `None` instead of panicking
+- **Zero Trust Entry Field Alignment** - Fixed inconsistent width of input fields in Zero Trust provider panels:
+  - Converted all Zero Trust provider fields from `ActionRow` + `Entry` to `adw::EntryRow`
+  - All 10 provider panels (AWS SSM, GCP IAP, Azure Bastion, Azure SSH, OCI Bastion, Cloudflare, Teleport, Tailscale, Boundary, Generic) now have consistent field widths
+  - Follows GNOME HIG guidelines for proper libadwaita input field usage
 
 ### Refactored
 - **Import File I/O** - Extracted common file reading pattern into `read_import_file()` helper:
@@ -34,6 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Now uses temp file + atomic rename pattern
   - Prevents config corruption on crash during write
   - Applied to `save_toml_file_async()` in `ConfigManager`
+- **Connection Dialog Modularization** - Refactored monolithic `connection.rs` into modular structure:
+  - Created `rustconn/src/dialogs/connection/` directory with protocol-specific modules
+  - `dialog.rs` - Main `ConnectionDialog` implementation (~6,600 lines)
+  - `ssh.rs` - SSH options panel (~460 lines, prepared for future integration)
+  - `rdp.rs` - RDP options panel (~414 lines, prepared for future integration)
+  - `vnc.rs` - VNC options panel (~249 lines, prepared for future integration)
+  - `spice.rs` - SPICE options panel (~240 lines, reuses rdp:: folder functions)
+  - Improves code organization and maintainability
 
 ### Added
 - **GTK Lifecycle Documentation** - Added module-level documentation explaining `#[allow(dead_code)]` pattern:

@@ -258,6 +258,7 @@ impl MainWindow {
         self.setup_template_actions(window, &state, &sidebar);
         self.setup_split_view_actions(window);
         self.setup_document_actions(window, &state, &sidebar);
+        self.setup_variables_actions(window, &state);
         self.setup_history_actions(window, &state);
         self.setup_misc_actions(window, &state, &sidebar, &terminal_notebook);
     }
@@ -1158,6 +1159,42 @@ impl MainWindow {
             }
         });
         window.add_action(&manage_templates_action);
+    }
+
+    /// Sets up variables-related actions
+    fn setup_variables_actions(&self, window: &adw::ApplicationWindow, state: &SharedAppState) {
+        use crate::dialogs::VariablesDialog;
+
+        // Manage variables action
+        let manage_variables_action = gio::SimpleAction::new("manage-variables", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        manage_variables_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                // Get current global variables from settings
+                let current_vars = state_clone.borrow().settings().global_variables.clone();
+
+                let dialog = VariablesDialog::new(Some(win.upcast_ref()));
+                dialog.set_variables(&current_vars);
+
+                let state_for_save = state_clone.clone();
+                dialog.run(move |result| {
+                    if let Some(variables) = result {
+                        // Save variables to settings
+                        let mut state_ref = state_for_save.borrow_mut();
+                        state_ref.settings_mut().global_variables = variables.clone();
+
+                        // Persist to disk
+                        if let Err(e) = state_ref.config_manager().save_variables(&variables) {
+                            tracing::error!("Failed to save variables: {e}");
+                        } else {
+                            tracing::info!("Saved {} global variables", variables.len());
+                        }
+                    }
+                });
+            }
+        });
+        window.add_action(&manage_variables_action);
     }
 
     /// Sets up history and statistics actions

@@ -24,7 +24,7 @@ impl HistoryDialog {
     pub fn new(parent: Option<&impl IsA<gtk4::Window>>) -> Self {
         let window = adw::Window::builder()
             .title("Connection History")
-            .default_width(500)
+            .default_width(750)
             .default_height(500)
             .modal(true)
             .build();

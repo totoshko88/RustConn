@@ -117,36 +117,36 @@ pub struct ConnectionDialog {
     zt_provider_dropdown: DropDown,
     zt_provider_stack: Stack,
     // AWS SSM fields
-    zt_aws_target_entry: Entry,
-    zt_aws_profile_entry: Entry,
-    zt_aws_region_entry: Entry,
+    zt_aws_target_entry: adw::EntryRow,
+    zt_aws_profile_entry: adw::EntryRow,
+    zt_aws_region_entry: adw::EntryRow,
     // GCP IAP fields
-    zt_gcp_instance_entry: Entry,
-    zt_gcp_zone_entry: Entry,
-    zt_gcp_project_entry: Entry,
+    zt_gcp_instance_entry: adw::EntryRow,
+    zt_gcp_zone_entry: adw::EntryRow,
+    zt_gcp_project_entry: adw::EntryRow,
     // Azure Bastion fields
-    zt_azure_bastion_resource_id_entry: Entry,
-    zt_azure_bastion_rg_entry: Entry,
-    zt_azure_bastion_name_entry: Entry,
+    zt_azure_bastion_resource_id_entry: adw::EntryRow,
+    zt_azure_bastion_rg_entry: adw::EntryRow,
+    zt_azure_bastion_name_entry: adw::EntryRow,
     // Azure SSH fields
-    zt_azure_ssh_vm_entry: Entry,
-    zt_azure_ssh_rg_entry: Entry,
+    zt_azure_ssh_vm_entry: adw::EntryRow,
+    zt_azure_ssh_rg_entry: adw::EntryRow,
     // OCI Bastion fields
-    zt_oci_bastion_id_entry: Entry,
-    zt_oci_target_id_entry: Entry,
-    zt_oci_target_ip_entry: Entry,
+    zt_oci_bastion_id_entry: adw::EntryRow,
+    zt_oci_target_id_entry: adw::EntryRow,
+    zt_oci_target_ip_entry: adw::EntryRow,
     // Cloudflare Access fields
-    zt_cf_hostname_entry: Entry,
+    zt_cf_hostname_entry: adw::EntryRow,
     // Teleport fields
-    zt_teleport_host_entry: Entry,
-    zt_teleport_cluster_entry: Entry,
+    zt_teleport_host_entry: adw::EntryRow,
+    zt_teleport_cluster_entry: adw::EntryRow,
     // Tailscale SSH fields
-    zt_tailscale_host_entry: Entry,
+    zt_tailscale_host_entry: adw::EntryRow,
     // Boundary fields
-    zt_boundary_target_entry: Entry,
-    zt_boundary_addr_entry: Entry,
+    zt_boundary_target_entry: adw::EntryRow,
+    zt_boundary_addr_entry: adw::EntryRow,
     // Generic fields
-    zt_generic_command_entry: Entry,
+    zt_generic_command_entry: adw::EntryRow,
     // Custom args for all providers
     zt_custom_args_entry: Entry,
     // Variables fields
@@ -1325,27 +1325,27 @@ impl ConnectionDialog {
         spice_compression_dropdown: &DropDown,
         spice_shared_folders: &Rc<RefCell<Vec<SharedFolder>>>,
         zt_provider_dropdown: &DropDown,
-        zt_aws_target_entry: &Entry,
-        zt_aws_profile_entry: &Entry,
-        zt_aws_region_entry: &Entry,
-        zt_gcp_instance_entry: &Entry,
-        zt_gcp_zone_entry: &Entry,
-        zt_gcp_project_entry: &Entry,
-        zt_azure_bastion_resource_id_entry: &Entry,
-        zt_azure_bastion_rg_entry: &Entry,
-        zt_azure_bastion_name_entry: &Entry,
-        zt_azure_ssh_vm_entry: &Entry,
-        zt_azure_ssh_rg_entry: &Entry,
-        zt_oci_bastion_id_entry: &Entry,
-        zt_oci_target_id_entry: &Entry,
-        zt_oci_target_ip_entry: &Entry,
-        zt_cf_hostname_entry: &Entry,
-        zt_teleport_host_entry: &Entry,
-        zt_teleport_cluster_entry: &Entry,
-        zt_tailscale_host_entry: &Entry,
-        zt_boundary_target_entry: &Entry,
-        zt_boundary_addr_entry: &Entry,
-        zt_generic_command_entry: &Entry,
+        zt_aws_target_entry: &adw::EntryRow,
+        zt_aws_profile_entry: &adw::EntryRow,
+        zt_aws_region_entry: &adw::EntryRow,
+        zt_gcp_instance_entry: &adw::EntryRow,
+        zt_gcp_zone_entry: &adw::EntryRow,
+        zt_gcp_project_entry: &adw::EntryRow,
+        zt_azure_bastion_resource_id_entry: &adw::EntryRow,
+        zt_azure_bastion_rg_entry: &adw::EntryRow,
+        zt_azure_bastion_name_entry: &adw::EntryRow,
+        zt_azure_ssh_vm_entry: &adw::EntryRow,
+        zt_azure_ssh_rg_entry: &adw::EntryRow,
+        zt_oci_bastion_id_entry: &adw::EntryRow,
+        zt_oci_target_id_entry: &adw::EntryRow,
+        zt_oci_target_ip_entry: &adw::EntryRow,
+        zt_cf_hostname_entry: &adw::EntryRow,
+        zt_teleport_host_entry: &adw::EntryRow,
+        zt_teleport_cluster_entry: &adw::EntryRow,
+        zt_tailscale_host_entry: &adw::EntryRow,
+        zt_boundary_target_entry: &adw::EntryRow,
+        zt_boundary_addr_entry: &adw::EntryRow,
+        zt_generic_command_entry: &adw::EntryRow,
         zt_custom_args_entry: &Entry,
         variables_rows: &Rc<RefCell<Vec<LocalVariableRow>>>,
         logging_enabled_check: &CheckButton,
@@ -2664,27 +2664,27 @@ impl ConnectionDialog {
         GtkBox,
         DropDown,
         Stack,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
-        Entry,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
+        adw::EntryRow,
         Entry,
     ) {
         let scrolled = ScrolledWindow::builder()
@@ -2858,386 +2858,197 @@ impl ConnectionDialog {
     }
 
     /// Creates AWS SSM provider fields using libadwaita
-    fn create_aws_ssm_fields_adw() -> (GtkBox, Entry, Entry, Entry) {
+    fn create_aws_ssm_fields_adw() -> (GtkBox, adw::EntryRow, adw::EntryRow, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
             .title("AWS Session Manager")
             .description("Connect via AWS Systems Manager")
             .build();
 
-        let target_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("i-0123456789abcdef0")
-            .valign(gtk4::Align::Center)
-            .build();
-        let target_row = adw::ActionRow::builder()
-            .title("Instance ID")
-            .subtitle("EC2 instance or managed instance ID")
-            .build();
-        target_row.add_suffix(&target_entry);
+        let target_row = adw::EntryRow::builder().title("Instance ID").build();
         group.add(&target_row);
 
-        let profile_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("default")
-            .text("default")
-            .valign(gtk4::Align::Center)
-            .build();
-        let profile_row = adw::ActionRow::builder()
-            .title("AWS Profile")
-            .subtitle("Named profile from ~/.aws/credentials")
-            .build();
-        profile_row.add_suffix(&profile_entry);
+        let profile_row = adw::EntryRow::builder().title("AWS Profile").build();
+        profile_row.set_text("default");
         group.add(&profile_row);
 
-        let region_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("us-east-1")
-            .valign(gtk4::Align::Center)
-            .build();
-        let region_row = adw::ActionRow::builder()
-            .title("Region")
-            .subtitle("AWS region (optional, uses profile default)")
-            .build();
-        region_row.add_suffix(&region_entry);
+        let region_row = adw::EntryRow::builder().title("Region").build();
         group.add(&region_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
         vbox.append(&group);
 
-        (vbox, target_entry, profile_entry, region_entry)
+        (vbox, target_row, profile_row, region_row)
     }
 
     /// Creates GCP IAP provider fields using libadwaita
-    fn create_gcp_iap_fields_adw() -> (GtkBox, Entry, Entry, Entry) {
+    fn create_gcp_iap_fields_adw() -> (GtkBox, adw::EntryRow, adw::EntryRow, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
             .title("GCP IAP Tunnel")
             .description("Connect via Identity-Aware Proxy")
             .build();
 
-        let instance_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("my-instance")
-            .valign(gtk4::Align::Center)
-            .build();
-        let instance_row = adw::ActionRow::builder()
-            .title("Instance Name")
-            .subtitle("Compute Engine instance name")
-            .build();
-        instance_row.add_suffix(&instance_entry);
+        let instance_row = adw::EntryRow::builder().title("Instance Name").build();
         group.add(&instance_row);
 
-        let zone_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("us-central1-a")
-            .valign(gtk4::Align::Center)
-            .build();
-        let zone_row = adw::ActionRow::builder()
-            .title("Zone")
-            .subtitle("Compute Engine zone")
-            .build();
-        zone_row.add_suffix(&zone_entry);
+        let zone_row = adw::EntryRow::builder().title("Zone").build();
         group.add(&zone_row);
 
-        let project_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("my-project")
-            .valign(gtk4::Align::Center)
-            .build();
-        let project_row = adw::ActionRow::builder()
-            .title("Project")
-            .subtitle("GCP project ID")
-            .build();
-        project_row.add_suffix(&project_entry);
+        let project_row = adw::EntryRow::builder().title("Project").build();
         group.add(&project_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
         vbox.append(&group);
 
-        (vbox, instance_entry, zone_entry, project_entry)
+        (vbox, instance_row, zone_row, project_row)
     }
 
     /// Creates Azure Bastion provider fields using libadwaita
-    fn create_azure_bastion_fields_adw() -> (GtkBox, Entry, Entry, Entry) {
+    fn create_azure_bastion_fields_adw() -> (GtkBox, adw::EntryRow, adw::EntryRow, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
             .title("Azure Bastion")
             .description("Connect via Azure Bastion service")
             .build();
 
-        let resource_id_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("/subscriptions/.../resourceGroups/.../providers/...")
-            .valign(gtk4::Align::Center)
-            .build();
-        let resource_id_row = adw::ActionRow::builder()
-            .title("Target Resource ID")
-            .subtitle("Full Azure resource ID of the target VM")
-            .build();
-        resource_id_row.add_suffix(&resource_id_entry);
+        let resource_id_row = adw::EntryRow::builder().title("Target Resource ID").build();
         group.add(&resource_id_row);
 
-        let rg_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("my-resource-group")
-            .valign(gtk4::Align::Center)
-            .build();
-        let rg_row = adw::ActionRow::builder()
-            .title("Resource Group")
-            .subtitle("Bastion host resource group")
-            .build();
-        rg_row.add_suffix(&rg_entry);
+        let rg_row = adw::EntryRow::builder().title("Resource Group").build();
         group.add(&rg_row);
 
-        let name_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("my-bastion")
-            .valign(gtk4::Align::Center)
-            .build();
-        let name_row = adw::ActionRow::builder()
-            .title("Bastion Name")
-            .subtitle("Azure Bastion host name")
-            .build();
-        name_row.add_suffix(&name_entry);
+        let name_row = adw::EntryRow::builder().title("Bastion Name").build();
         group.add(&name_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
         vbox.append(&group);
 
-        (vbox, resource_id_entry, rg_entry, name_entry)
+        (vbox, resource_id_row, rg_row, name_row)
     }
 
     /// Creates Azure SSH (AAD) provider fields using libadwaita
-    fn create_azure_ssh_fields_adw() -> (GtkBox, Entry, Entry) {
+    fn create_azure_ssh_fields_adw() -> (GtkBox, adw::EntryRow, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
             .title("Azure SSH (AAD)")
             .description("Connect via Azure AD authentication")
             .build();
 
-        let vm_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("my-vm")
-            .valign(gtk4::Align::Center)
-            .build();
-        let vm_row = adw::ActionRow::builder()
-            .title("VM Name")
-            .subtitle("Azure virtual machine name")
-            .build();
-        vm_row.add_suffix(&vm_entry);
+        let vm_row = adw::EntryRow::builder().title("VM Name").build();
         group.add(&vm_row);
 
-        let rg_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("my-resource-group")
-            .valign(gtk4::Align::Center)
-            .build();
-        let rg_row = adw::ActionRow::builder()
-            .title("Resource Group")
-            .subtitle("VM resource group")
-            .build();
-        rg_row.add_suffix(&rg_entry);
+        let rg_row = adw::EntryRow::builder().title("Resource Group").build();
         group.add(&rg_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
         vbox.append(&group);
 
-        (vbox, vm_entry, rg_entry)
+        (vbox, vm_row, rg_row)
     }
 
     /// Creates OCI Bastion provider fields using libadwaita
-    fn create_oci_bastion_fields_adw() -> (GtkBox, Entry, Entry, Entry) {
+    fn create_oci_bastion_fields_adw() -> (GtkBox, adw::EntryRow, adw::EntryRow, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
             .title("OCI Bastion")
             .description("Connect via Oracle Cloud Bastion")
             .build();
 
-        let bastion_id_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("ocid1.bastion.oc1...")
-            .valign(gtk4::Align::Center)
-            .build();
-        let bastion_id_row = adw::ActionRow::builder()
-            .title("Bastion OCID")
-            .subtitle("Oracle Cloud bastion identifier")
-            .build();
-        bastion_id_row.add_suffix(&bastion_id_entry);
+        let bastion_id_row = adw::EntryRow::builder().title("Bastion OCID").build();
         group.add(&bastion_id_row);
 
-        let target_id_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("ocid1.instance.oc1...")
-            .valign(gtk4::Align::Center)
-            .build();
-        let target_id_row = adw::ActionRow::builder()
-            .title("Target OCID")
-            .subtitle("Target instance identifier")
-            .build();
-        target_id_row.add_suffix(&target_id_entry);
+        let target_id_row = adw::EntryRow::builder().title("Target OCID").build();
         group.add(&target_id_row);
 
-        let target_ip_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("10.0.0.1")
-            .valign(gtk4::Align::Center)
-            .build();
-        let target_ip_row = adw::ActionRow::builder()
-            .title("Target IP")
-            .subtitle("Private IP address of target")
-            .build();
-        target_ip_row.add_suffix(&target_ip_entry);
+        let target_ip_row = adw::EntryRow::builder().title("Target IP").build();
         group.add(&target_ip_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
         vbox.append(&group);
 
-        (vbox, bastion_id_entry, target_id_entry, target_ip_entry)
+        (vbox, bastion_id_row, target_id_row, target_ip_row)
     }
 
     /// Creates Cloudflare Access provider fields using libadwaita
-    fn create_cloudflare_fields_adw() -> (GtkBox, Entry) {
+    fn create_cloudflare_fields_adw() -> (GtkBox, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
             .title("Cloudflare Access")
             .description("Connect via Cloudflare Zero Trust")
             .build();
 
-        let hostname_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("ssh.example.com")
-            .valign(gtk4::Align::Center)
-            .build();
-        let hostname_row = adw::ActionRow::builder()
-            .title("Hostname")
-            .subtitle("Cloudflare Access protected hostname")
-            .build();
-        hostname_row.add_suffix(&hostname_entry);
+        let hostname_row = adw::EntryRow::builder().title("Hostname").build();
         group.add(&hostname_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
         vbox.append(&group);
 
-        (vbox, hostname_entry)
+        (vbox, hostname_row)
     }
 
     /// Creates Teleport provider fields using libadwaita
-    fn create_teleport_fields_adw() -> (GtkBox, Entry, Entry) {
+    fn create_teleport_fields_adw() -> (GtkBox, adw::EntryRow, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
             .title("Teleport")
             .description("Connect via Gravitational Teleport")
             .build();
 
-        let host_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("node-name")
-            .valign(gtk4::Align::Center)
-            .build();
-        let host_row = adw::ActionRow::builder()
-            .title("Node Name")
-            .subtitle("Teleport node hostname")
-            .build();
-        host_row.add_suffix(&host_entry);
+        let host_row = adw::EntryRow::builder().title("Node Name").build();
         group.add(&host_row);
 
-        let cluster_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("teleport.example.com")
-            .valign(gtk4::Align::Center)
-            .build();
-        let cluster_row = adw::ActionRow::builder()
-            .title("Cluster")
-            .subtitle("Teleport cluster address (optional)")
-            .build();
-        cluster_row.add_suffix(&cluster_entry);
+        let cluster_row = adw::EntryRow::builder().title("Cluster").build();
         group.add(&cluster_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
         vbox.append(&group);
 
-        (vbox, host_entry, cluster_entry)
+        (vbox, host_row, cluster_row)
     }
 
     /// Creates Tailscale SSH provider fields using libadwaita
-    fn create_tailscale_fields_adw() -> (GtkBox, Entry) {
+    fn create_tailscale_fields_adw() -> (GtkBox, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
             .title("Tailscale SSH")
             .description("Connect via Tailscale network")
             .build();
 
-        let host_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("hostname or 100.x.x.x")
-            .valign(gtk4::Align::Center)
-            .build();
-        let host_row = adw::ActionRow::builder()
-            .title("Tailscale Host")
-            .subtitle("Machine name or Tailscale IP")
-            .build();
-        host_row.add_suffix(&host_entry);
+        let host_row = adw::EntryRow::builder().title("Tailscale Host").build();
         group.add(&host_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
         vbox.append(&group);
 
-        (vbox, host_entry)
+        (vbox, host_row)
     }
 
     /// Creates HashiCorp Boundary provider fields using libadwaita
-    fn create_boundary_fields_adw() -> (GtkBox, Entry, Entry) {
+    fn create_boundary_fields_adw() -> (GtkBox, adw::EntryRow, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
             .title("HashiCorp Boundary")
             .description("Connect via Boundary proxy")
             .build();
 
-        let target_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("ttcp_1234567890")
-            .valign(gtk4::Align::Center)
-            .build();
-        let target_row = adw::ActionRow::builder()
-            .title("Target ID")
-            .subtitle("Boundary target identifier")
-            .build();
-        target_row.add_suffix(&target_entry);
+        let target_row = adw::EntryRow::builder().title("Target ID").build();
         group.add(&target_row);
 
-        let addr_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("https://boundary.example.com")
-            .valign(gtk4::Align::Center)
-            .build();
-        let addr_row = adw::ActionRow::builder()
-            .title("Controller Address")
-            .subtitle("Boundary controller URL (optional)")
-            .build();
-        addr_row.add_suffix(&addr_entry);
+        let addr_row = adw::EntryRow::builder().title("Controller Address").build();
         group.add(&addr_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
         vbox.append(&group);
 
-        (vbox, target_entry, addr_entry)
+        (vbox, target_row, addr_row)
     }
 
     /// Creates Generic Zero Trust provider fields using libadwaita
-    fn create_generic_zt_fields_adw() -> (GtkBox, Entry) {
+    fn create_generic_zt_fields_adw() -> (GtkBox, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
             .title("Generic Command")
             .description("Custom command for unsupported providers")
             .build();
 
-        let command_entry = Entry::builder()
-            .hexpand(true)
-            .placeholder_text("ssh -o ProxyCommand='...' %h")
-            .valign(gtk4::Align::Center)
-            .build();
-        let command_row = adw::ActionRow::builder()
-            .title("Command Template")
-            .subtitle("Use %h for host, %p for port, %u for user")
-            .build();
-        command_row.add_suffix(&command_entry);
+        let command_row = adw::EntryRow::builder().title("Command Template").build();
         group.add(&command_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
         vbox.append(&group);
 
-        (vbox, command_entry)
+        (vbox, command_row)
     }
 
     /// Creates the Data tab combining Variables and Custom Properties
@@ -6569,27 +6380,27 @@ struct ConnectionDialogData<'a> {
     spice_shared_folders: &'a Rc<RefCell<Vec<SharedFolder>>>,
     // Zero Trust fields
     zt_provider_dropdown: &'a DropDown,
-    zt_aws_target_entry: &'a Entry,
-    zt_aws_profile_entry: &'a Entry,
-    zt_aws_region_entry: &'a Entry,
-    zt_gcp_instance_entry: &'a Entry,
-    zt_gcp_zone_entry: &'a Entry,
-    zt_gcp_project_entry: &'a Entry,
-    zt_azure_bastion_resource_id_entry: &'a Entry,
-    zt_azure_bastion_rg_entry: &'a Entry,
-    zt_azure_bastion_name_entry: &'a Entry,
-    zt_azure_ssh_vm_entry: &'a Entry,
-    zt_azure_ssh_rg_entry: &'a Entry,
-    zt_oci_bastion_id_entry: &'a Entry,
-    zt_oci_target_id_entry: &'a Entry,
-    zt_oci_target_ip_entry: &'a Entry,
-    zt_cf_hostname_entry: &'a Entry,
-    zt_teleport_host_entry: &'a Entry,
-    zt_teleport_cluster_entry: &'a Entry,
-    zt_tailscale_host_entry: &'a Entry,
-    zt_boundary_target_entry: &'a Entry,
-    zt_boundary_addr_entry: &'a Entry,
-    zt_generic_command_entry: &'a Entry,
+    zt_aws_target_entry: &'a adw::EntryRow,
+    zt_aws_profile_entry: &'a adw::EntryRow,
+    zt_aws_region_entry: &'a adw::EntryRow,
+    zt_gcp_instance_entry: &'a adw::EntryRow,
+    zt_gcp_zone_entry: &'a adw::EntryRow,
+    zt_gcp_project_entry: &'a adw::EntryRow,
+    zt_azure_bastion_resource_id_entry: &'a adw::EntryRow,
+    zt_azure_bastion_rg_entry: &'a adw::EntryRow,
+    zt_azure_bastion_name_entry: &'a adw::EntryRow,
+    zt_azure_ssh_vm_entry: &'a adw::EntryRow,
+    zt_azure_ssh_rg_entry: &'a adw::EntryRow,
+    zt_oci_bastion_id_entry: &'a adw::EntryRow,
+    zt_oci_target_id_entry: &'a adw::EntryRow,
+    zt_oci_target_ip_entry: &'a adw::EntryRow,
+    zt_cf_hostname_entry: &'a adw::EntryRow,
+    zt_teleport_host_entry: &'a adw::EntryRow,
+    zt_teleport_cluster_entry: &'a adw::EntryRow,
+    zt_tailscale_host_entry: &'a adw::EntryRow,
+    zt_boundary_target_entry: &'a adw::EntryRow,
+    zt_boundary_addr_entry: &'a adw::EntryRow,
+    zt_generic_command_entry: &'a adw::EntryRow,
     zt_custom_args_entry: &'a Entry,
     local_variables: &'a HashMap<String, Variable>,
     logging_enabled_check: &'a CheckButton,

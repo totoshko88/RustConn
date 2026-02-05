@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.7.1** | Last updated: February 2026
+**Version 0.7.4** | Last updated: February 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -575,7 +575,7 @@ pub trait Protocol: Send + Sync {
 2. Implement `Protocol` trait
 3. Add protocol config to `ProtocolConfig` enum
 4. Register in `ProtocolRegistry`
-5. Add UI fields in `rustconn/src/dialogs/connection.rs`
+5. Add UI fields in `rustconn/src/dialogs/connection/dialog.rs`
 
 ### RDP Backend Selection
 
@@ -696,7 +696,13 @@ rustconn/src/
 ├── sidebar_ui.rs          # Sidebar widget helpers
 ├── terminal/              # VTE terminal integration
 ├── dialogs/               # Modal dialogs
-│   ├── connection.rs      # Connection editor
+│   ├── connection/        # Connection dialog (modular)
+│   │   ├── mod.rs         # Module exports
+│   │   ├── dialog.rs      # Main ConnectionDialog
+│   │   ├── ssh.rs         # SSH options (prepared)
+│   │   ├── rdp.rs         # RDP options (prepared)
+│   │   ├── vnc.rs         # VNC options (prepared)
+│   │   └── spice.rs       # SPICE options (prepared)
 │   ├── keyboard.rs        # Keyboard navigation helpers
 │   ├── settings/          # Settings tabs
 │   └── ...

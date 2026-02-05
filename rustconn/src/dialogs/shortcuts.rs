@@ -168,7 +168,7 @@ impl ShortcutsDialog {
         let window = adw::Window::builder()
             .title("Keyboard Shortcuts")
             .modal(true)
-            .default_width(500)
+            .default_width(550)
             .default_height(500)
             .build();
 

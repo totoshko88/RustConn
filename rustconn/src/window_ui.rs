@@ -107,6 +107,7 @@ pub fn create_app_menu() -> gio::Menu {
     tools_section.append(Some("Snippets..."), Some("win.manage-snippets"));
     tools_section.append(Some("Clusters..."), Some("win.manage-clusters"));
     tools_section.append(Some("Templates..."), Some("win.manage-templates"));
+    tools_section.append(Some("Variables..."), Some("win.manage-variables"));
     tools_section.append(Some("Active Sessions"), Some("win.show-sessions"));
     tools_section.append(Some("Connection History..."), Some("win.show-history"));
     tools_section.append(Some("Statistics..."), Some("win.show-statistics"));
