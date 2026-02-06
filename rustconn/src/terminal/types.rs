@@ -1,8 +1,7 @@
 //! Terminal types and data structures
 //!
-//! This module contains type definitions for terminal sessions and tab management.
+//! This module contains type definitions for terminal sessions.
 
-use gtk4::{Box as GtkBox, Image, Label};
 use std::path::PathBuf;
 use std::rc::Rc;
 use uuid::Uuid;
@@ -10,20 +9,6 @@ use uuid::Uuid;
 use crate::embedded_rdp::EmbeddedRdpWidget;
 use crate::embedded_spice::EmbeddedSpiceWidget;
 use crate::session::VncSessionWidget;
-
-/// Tab display mode based on available space
-/// Note: With adw::TabView, this is handled automatically by the TabBar
-#[allow(dead_code)] // Legacy type kept for tabs.rs compatibility
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum TabDisplayMode {
-    /// Full mode: icon + full name (default)
-    #[default]
-    Full,
-    /// Compact mode: icon + truncated name (max 12 chars)
-    Compact,
-    /// Icon mode: icon only
-    IconOnly,
-}
 
 /// Terminal session information
 #[derive(Debug, Clone)]
@@ -53,14 +38,4 @@ pub enum SessionWidgetStorage {
     EmbeddedRdp(Rc<EmbeddedRdpWidget>),
     /// Embedded SPICE widget (native spice-client)
     EmbeddedSpice(Rc<EmbeddedSpiceWidget>),
-}
-
-/// Widgets that make up a tab label (legacy, kept for compatibility)
-/// Note: With adw::TabView, tab labels are managed by TabPage properties
-#[allow(dead_code)] // Fields kept for GTK widget lifecycle and legacy compatibility
-pub struct TabLabelWidgets {
-    pub container: GtkBox,
-    pub icon: Image,
-    pub label: Label,
-    pub full_name: String,
 }

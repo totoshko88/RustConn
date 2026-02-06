@@ -9,8 +9,7 @@
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
-    Box as GtkBox, Button, CheckButton, Entry, Label, ListBox, ListBoxRow, Orientation,
-    ScrolledWindow,
+    Box as GtkBox, Button, CheckButton, Label, ListBox, ListBoxRow, Orientation, ScrolledWindow,
 };
 use libadwaita as adw;
 use rustconn_core::cluster::Cluster;
@@ -25,7 +24,7 @@ pub type ClusterCallback = Rc<RefCell<Option<Box<dyn Fn(Option<Cluster>)>>>>;
 /// Cluster dialog for managing clusters
 pub struct ClusterDialog {
     window: adw::Window,
-    name_entry: Entry,
+    name_entry: gtk4::Entry,
     broadcast_row: adw::SwitchRow,
     connections_list: ListBox,
     connection_rows: Rc<RefCell<Vec<ConnectionSelectionRow>>>,
@@ -110,20 +109,15 @@ impl ClusterDialog {
             .title("Cluster Details")
             .build();
 
-        // Name entry row
-        let name_entry = Entry::builder()
-            .hexpand(true)
-            .valign(gtk4::Align::Center)
-            .placeholder_text("Enter cluster name")
+        // Name entry row using builder
+        let (name_row, name_entry) = super::widgets::EntryRowBuilder::new("Name")
+            .placeholder("Enter cluster name")
             .build();
-        let name_row = adw::ActionRow::builder().title("Name").build();
-        name_row.add_suffix(&name_entry);
         name_row.set_activatable_widget(Some(&name_entry));
         details_group.add(&name_row);
 
         // Broadcast mode switch row
-        let broadcast_row = adw::SwitchRow::builder()
-            .title("Broadcast mode")
+        let broadcast_row = super::widgets::SwitchRowBuilder::new("Broadcast mode")
             .subtitle("Send keyboard input to all cluster sessions simultaneously")
             .active(false)
             .build();

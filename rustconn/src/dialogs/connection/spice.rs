@@ -13,6 +13,7 @@
 
 use super::protocol_layout::ProtocolLayoutBuilder;
 use super::shared_folders;
+use super::widgets::CheckboxRowBuilder;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, CheckButton, DropDown, Entry, Orientation, StringList};
@@ -81,13 +82,9 @@ fn create_security_group() -> (
     let security_group = adw::PreferencesGroup::builder().title("Security").build();
 
     // TLS enabled
-    let tls_check = CheckButton::new();
-    let tls_row = adw::ActionRow::builder()
-        .title("TLS Encryption")
+    let (tls_row, tls_check) = CheckboxRowBuilder::new("TLS Encryption")
         .subtitle("Encrypt connection with TLS")
-        .activatable_widget(&tls_check)
         .build();
-    tls_row.add_suffix(&tls_check);
     security_group.add(&tls_row);
 
     // CA certificate path
@@ -112,13 +109,9 @@ fn create_security_group() -> (
     security_group.add(&ca_cert_row);
 
     // Skip certificate verification
-    let skip_verify_check = CheckButton::new();
-    let skip_verify_row = adw::ActionRow::builder()
-        .title("Skip Verification")
+    let (skip_verify_row, skip_verify_check) = CheckboxRowBuilder::new("Skip Verification")
         .subtitle("Disable certificate verification (insecure)")
-        .activatable_widget(&skip_verify_check)
         .build();
-    skip_verify_row.add_suffix(&skip_verify_check);
     security_group.add(&skip_verify_row);
 
     (
@@ -135,24 +128,16 @@ fn create_features_group() -> (adw::PreferencesGroup, CheckButton, CheckButton, 
     let features_group = adw::PreferencesGroup::builder().title("Features").build();
 
     // USB redirection
-    let usb_check = CheckButton::new();
-    let usb_row = adw::ActionRow::builder()
-        .title("USB Redirection")
+    let (usb_row, usb_check) = CheckboxRowBuilder::new("USB Redirection")
         .subtitle("Forward USB devices to remote")
-        .activatable_widget(&usb_check)
         .build();
-    usb_row.add_suffix(&usb_check);
     features_group.add(&usb_row);
 
     // Clipboard sharing
-    let clipboard_check = CheckButton::new();
-    clipboard_check.set_active(true);
-    let clipboard_row = adw::ActionRow::builder()
-        .title("Clipboard Sharing")
+    let (clipboard_row, clipboard_check) = CheckboxRowBuilder::new("Clipboard Sharing")
         .subtitle("Synchronize clipboard with remote")
-        .activatable_widget(&clipboard_check)
+        .active(true)
         .build();
-    clipboard_row.add_suffix(&clipboard_check);
     features_group.add(&clipboard_row);
 
     // Image compression

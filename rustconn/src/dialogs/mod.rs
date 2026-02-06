@@ -19,6 +19,7 @@ mod statistics;
 mod template;
 mod terminal_search;
 mod variables;
+pub mod widgets;
 
 pub use adw_dialogs::*;
 

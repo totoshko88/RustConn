@@ -157,54 +157,38 @@ impl SnippetDialog {
     }
 
     fn create_basic_section() -> (adw::PreferencesGroup, Entry, Entry, Entry, Entry) {
+        use super::widgets::EntryRowBuilder;
+
         let group = adw::PreferencesGroup::builder()
             .title("Snippet Info")
             .build();
 
         // Name
-        let name_entry = Entry::builder()
-            .hexpand(true)
-            .valign(gtk4::Align::Center)
-            .placeholder_text("Enter snippet name")
+        let (name_row, name_entry) = EntryRowBuilder::new("Name")
+            .placeholder("Enter snippet name")
             .build();
-        let name_row = adw::ActionRow::builder().title("Name").build();
-        name_row.add_suffix(&name_entry);
         name_row.set_activatable_widget(Some(&name_entry));
         group.add(&name_row);
 
         // Description
-        let description_entry = Entry::builder()
-            .hexpand(true)
-            .valign(gtk4::Align::Center)
-            .placeholder_text("Optional description")
+        let (desc_row, description_entry) = EntryRowBuilder::new("Description")
+            .placeholder("Optional description")
             .build();
-        let desc_row = adw::ActionRow::builder().title("Description").build();
-        desc_row.add_suffix(&description_entry);
         desc_row.set_activatable_widget(Some(&description_entry));
         group.add(&desc_row);
 
         // Category
-        let category_entry = Entry::builder()
-            .hexpand(true)
-            .valign(gtk4::Align::Center)
-            .placeholder_text("e.g., System, Network")
+        let (cat_row, category_entry) = EntryRowBuilder::new("Category")
+            .placeholder("e.g., System, Network")
             .build();
-        let cat_row = adw::ActionRow::builder().title("Category").build();
-        cat_row.add_suffix(&category_entry);
         cat_row.set_activatable_widget(Some(&category_entry));
         group.add(&cat_row);
 
         // Tags
-        let tags_entry = Entry::builder()
-            .hexpand(true)
-            .valign(gtk4::Align::Center)
-            .placeholder_text("tag1, tag2, ...")
-            .build();
-        let tags_row = adw::ActionRow::builder()
-            .title("Tags")
+        let (tags_row, tags_entry) = EntryRowBuilder::new("Tags")
             .subtitle("Comma-separated")
+            .placeholder("tag1, tag2, ...")
             .build();
-        tags_row.add_suffix(&tags_entry);
         tags_row.set_activatable_widget(Some(&tags_entry));
         group.add(&tags_row);
 

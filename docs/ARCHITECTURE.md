@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.7.5** | Last updated: February 2026
+**Version 0.7.6** | Last updated: February 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -696,11 +696,13 @@ rustconn/src/
 ├── sidebar_ui.rs          # Sidebar widget helpers
 ├── terminal/              # VTE terminal integration
 ├── dialogs/               # Modal dialogs
+│   ├── widgets.rs         # Shared widget builders (CheckboxRow, EntryRow, SwitchRow, etc.)
 │   ├── connection/        # Connection dialog (modular)
 │   │   ├── mod.rs         # Module exports
 │   │   ├── dialog.rs      # Main ConnectionDialog
 │   │   ├── protocol_layout.rs # ProtocolLayoutBuilder for consistent UI
 │   │   ├── shared_folders.rs  # Shared folders UI (RDP/SPICE)
+│   │   ├── widgets.rs     # Re-exports from parent dialogs/widgets.rs
 │   │   ├── ssh.rs         # SSH options
 │   │   ├── rdp.rs         # RDP options
 │   │   ├── vnc.rs         # VNC options

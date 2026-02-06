@@ -9,8 +9,8 @@
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
-    Box as GtkBox, Button, DropDown, Entry, FileDialog, Frame, Grid, Label, Orientation,
-    ProgressBar, ScrolledWindow, Separator, Spinner, Stack, StringList,
+    Box as GtkBox, Button, DropDown, Entry, FileDialog, Label, Orientation, ProgressBar,
+    ScrolledWindow, Separator, Spinner, Stack, StringList,
 };
 use libadwaita as adw;
 use rustconn_core::export::{
@@ -167,6 +167,11 @@ impl ExportDialog {
             .vscrollbar_policy(gtk4::PolicyType::Automatic)
             .build();
 
+        let clamp = adw::Clamp::builder()
+            .maximum_size(600)
+            .tightening_threshold(400)
+            .build();
+
         let main_vbox = GtkBox::new(Orientation::Vertical, 12);
         main_vbox.set_margin_top(12);
         main_vbox.set_margin_bottom(12);
@@ -174,19 +179,10 @@ impl ExportDialog {
         main_vbox.set_margin_end(12);
         main_vbox.set_valign(gtk4::Align::Start);
 
-        // Format selection section
-        let format_frame = Frame::builder().label("Export Format").build();
-        let format_vbox = GtkBox::new(Orientation::Vertical, 8);
-        format_vbox.set_margin_top(8);
-        format_vbox.set_margin_bottom(8);
-        format_vbox.set_margin_start(8);
-        format_vbox.set_margin_end(8);
-
-        let format_grid = Grid::builder().row_spacing(8).column_spacing(12).build();
-
-        let format_label = Label::builder()
-            .label("Format:")
-            .halign(gtk4::Align::End)
+        // Format selection section using PreferencesGroup
+        let format_group = adw::PreferencesGroup::builder()
+            .title("Export Format")
+            .description("Select the format to export your connections to")
             .build();
 
         // Create format dropdown with all available formats
@@ -201,66 +197,49 @@ impl ExportDialog {
         ]);
         let format_dropdown = DropDown::new(Some(format_list), gtk4::Expression::NONE);
         format_dropdown.set_selected(0);
-        format_dropdown.set_hexpand(true);
+        format_dropdown.set_valign(gtk4::Align::Center);
 
-        format_grid.attach(&format_label, 0, 0, 1, 1);
-        format_grid.attach(&format_dropdown, 1, 0, 1, 1);
-
-        // Format description
-        let format_desc = Label::builder()
-            .label("Select the format to export your connections to.")
-            .halign(gtk4::Align::Start)
-            .wrap(true)
-            .css_classes(["dim-label"])
-            .margin_top(4)
+        let format_row = adw::ActionRow::builder()
+            .title("Format")
+            .subtitle("Target export format")
             .build();
+        format_row.add_suffix(&format_dropdown);
+        format_group.add(&format_row);
 
-        format_vbox.append(&format_grid);
-        format_vbox.append(&format_desc);
-        format_frame.set_child(Some(&format_vbox));
-        main_vbox.append(&format_frame);
+        main_vbox.append(&format_group);
 
-        // Output path section
-        let output_frame = Frame::builder().label("Output Location").build();
-        let output_vbox = GtkBox::new(Orientation::Vertical, 8);
-        output_vbox.set_margin_top(8);
-        output_vbox.set_margin_bottom(8);
-        output_vbox.set_margin_start(8);
-        output_vbox.set_margin_end(8);
-
-        let output_grid = Grid::builder().row_spacing(8).column_spacing(8).build();
-
-        let output_label = Label::builder()
-            .label("Output:")
-            .halign(gtk4::Align::End)
+        // Output path section using PreferencesGroup
+        let output_group = adw::PreferencesGroup::builder()
+            .title("Output Location")
+            .description(
+                "Remmina exports to a directory (one file per connection).\n\
+                 Other formats export to a single file.",
+            )
             .build();
 
         let output_path_entry = Entry::builder()
             .hexpand(true)
             .placeholder_text("Select output file or directory...")
             .editable(false)
+            .valign(gtk4::Align::Center)
             .build();
 
-        let browse_button = Button::builder().label("Browse...").build();
-
-        output_grid.attach(&output_label, 0, 0, 1, 1);
-        output_grid.attach(&output_path_entry, 1, 0, 1, 1);
-        output_grid.attach(&browse_button, 2, 0, 1, 1);
-
-        let output_hint = Label::builder()
-            .label("Remmina exports to a directory (one file per connection).\nOther formats export to a single file.")
-            .halign(gtk4::Align::Start)
-            .wrap(true)
-            .css_classes(["dim-label"])
-            .margin_top(4)
+        let browse_button = Button::builder()
+            .label("Browse...")
+            .valign(gtk4::Align::Center)
             .build();
 
-        output_vbox.append(&output_grid);
-        output_vbox.append(&output_hint);
-        output_frame.set_child(Some(&output_vbox));
-        main_vbox.append(&output_frame);
+        let output_row = adw::ActionRow::builder()
+            .title("Output")
+            .subtitle("Destination path")
+            .build();
+        output_row.add_suffix(&output_path_entry);
+        output_row.add_suffix(&browse_button);
+        output_group.add(&output_row);
 
-        // Options section using AdwPreferencesGroup
+        main_vbox.append(&output_group);
+
+        // Options section using PreferencesGroup
         let options_group = adw::PreferencesGroup::builder().title("Options").build();
 
         // Include passwords switch row
@@ -302,7 +281,8 @@ impl ExportDialog {
 
         main_vbox.append(&options_group);
 
-        scrolled.set_child(Some(&main_vbox));
+        clamp.set_child(Some(&main_vbox));
+        scrolled.set_child(Some(&clamp));
 
         (
             scrolled,

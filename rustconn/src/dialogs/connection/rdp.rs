@@ -13,11 +13,10 @@
 
 use super::protocol_layout::ProtocolLayoutBuilder;
 use super::shared_folders;
+use super::widgets::{CheckboxRowBuilder, DropdownRowBuilder, EntryRowBuilder};
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{
-    Box as GtkBox, CheckButton, DropDown, Entry, Label, Orientation, SpinButton, StringList,
-};
+use gtk4::{Box as GtkBox, CheckButton, DropDown, Entry, Label, Orientation, SpinButton};
 use libadwaita as adw;
 use rustconn_core::models::{RdpClientMode, RdpPerformanceMode, SharedFolder};
 use std::cell::RefCell;
@@ -96,40 +95,26 @@ fn create_display_group() -> (
     let display_group = adw::PreferencesGroup::builder().title("Display").build();
 
     // Client mode dropdown
-    let client_mode_list = StringList::new(&[
-        RdpClientMode::Embedded.display_name(),
-        RdpClientMode::External.display_name(),
-    ]);
-    let client_mode_dropdown = DropDown::builder()
-        .model(&client_mode_list)
-        .valign(gtk4::Align::Center)
-        .build();
-
-    let client_mode_row = adw::ActionRow::builder()
-        .title("Client Mode")
+    let (client_mode_row, client_mode_dropdown) = DropdownRowBuilder::new("Client Mode")
         .subtitle("Embedded renders in tab, External opens separate window")
+        .items(&[
+            RdpClientMode::Embedded.display_name(),
+            RdpClientMode::External.display_name(),
+        ])
         .build();
-    client_mode_row.add_suffix(&client_mode_dropdown);
     display_group.add(&client_mode_row);
 
     // Performance mode dropdown
-    let performance_mode_list = StringList::new(&[
-        RdpPerformanceMode::Quality.display_name(),
-        RdpPerformanceMode::Balanced.display_name(),
-        RdpPerformanceMode::Speed.display_name(),
-    ]);
-    let performance_mode_dropdown = DropDown::builder()
-        .model(&performance_mode_list)
-        .valign(gtk4::Align::Center)
-        .build();
-    performance_mode_dropdown.set_selected(1); // Default to Balanced
-
-    let performance_mode_row = adw::ActionRow::builder()
-        .title("Performance Mode")
+    let (perf_row, performance_mode_dropdown) = DropdownRowBuilder::new("Performance Mode")
         .subtitle("Quality/speed tradeoff for image rendering")
+        .items(&[
+            RdpPerformanceMode::Quality.display_name(),
+            RdpPerformanceMode::Balanced.display_name(),
+            RdpPerformanceMode::Speed.display_name(),
+        ])
+        .selected(1) // Default to Balanced
         .build();
-    performance_mode_row.add_suffix(&performance_mode_dropdown);
-    display_group.add(&performance_mode_row);
+    display_group.add(&perf_row);
 
     // Resolution
     let res_box = GtkBox::new(Orientation::Horizontal, 4);
@@ -159,22 +144,16 @@ fn create_display_group() -> (
     display_group.add(&resolution_row);
 
     // Color depth
-    let color_list = StringList::new(&[
-        "32-bit (True Color)",
-        "24-bit",
-        "16-bit (High Color)",
-        "15-bit",
-        "8-bit",
-    ]);
-    let color_dropdown = DropDown::new(Some(color_list), gtk4::Expression::NONE);
-    color_dropdown.set_selected(0);
-    color_dropdown.set_valign(gtk4::Align::Center);
-
-    let color_row = adw::ActionRow::builder()
-        .title("Color Depth")
+    let (color_row, color_dropdown) = DropdownRowBuilder::new("Color Depth")
         .subtitle("Higher values provide better quality")
+        .items(&[
+            "32-bit (True Color)",
+            "24-bit",
+            "16-bit (High Color)",
+            "15-bit",
+            "8-bit",
+        ])
         .build();
-    color_row.add_suffix(&color_dropdown);
     display_group.add(&color_row);
 
     // Connect client mode dropdown to show/hide resolution/color rows
@@ -205,27 +184,16 @@ fn create_features_group() -> (adw::PreferencesGroup, CheckButton, Entry) {
     let features_group = adw::PreferencesGroup::builder().title("Features").build();
 
     // Audio redirect
-    let audio_check = CheckButton::new();
-    let audio_row = adw::ActionRow::builder()
-        .title("Audio Redirection")
+    let (audio_row, audio_check) = CheckboxRowBuilder::new("Audio Redirection")
         .subtitle("Play remote audio locally")
-        .activatable_widget(&audio_check)
         .build();
-    audio_row.add_suffix(&audio_check);
     features_group.add(&audio_row);
 
     // Gateway
-    let gateway_entry = Entry::builder()
-        .hexpand(true)
-        .placeholder_text("gateway.example.com")
-        .valign(gtk4::Align::Center)
-        .build();
-
-    let gateway_row = adw::ActionRow::builder()
-        .title("RDP Gateway")
+    let (gateway_row, gateway_entry) = EntryRowBuilder::new("RDP Gateway")
         .subtitle("Remote Desktop Gateway server")
+        .placeholder("gateway.example.com")
         .build();
-    gateway_row.add_suffix(&gateway_entry);
     features_group.add(&gateway_row);
 
     (features_group, audio_check, gateway_entry)
@@ -235,17 +203,10 @@ fn create_features_group() -> (adw::PreferencesGroup, CheckButton, Entry) {
 fn create_advanced_group() -> (adw::PreferencesGroup, Entry) {
     let advanced_group = adw::PreferencesGroup::builder().title("Advanced").build();
 
-    let args_entry = Entry::builder()
-        .hexpand(true)
-        .placeholder_text("Additional command-line arguments")
-        .valign(gtk4::Align::Center)
-        .build();
-
-    let args_row = adw::ActionRow::builder()
-        .title("Custom Arguments")
+    let (args_row, args_entry) = EntryRowBuilder::new("Custom Arguments")
         .subtitle("Extra FreeRDP command-line options")
+        .placeholder("Additional command-line arguments")
         .build();
-    args_row.add_suffix(&args_entry);
     advanced_group.add(&args_row);
 
     (advanced_group, args_entry)

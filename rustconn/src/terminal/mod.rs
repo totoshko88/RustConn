@@ -5,12 +5,10 @@
 //!
 //! # Module Structure
 //!
-//! - `types` - Data structures for sessions and tabs
+//! - `types` - Data structures for sessions
 //! - `config` - Terminal appearance and behavior configuration
-//! - `tabs` - Tab creation and management (legacy, kept for icon helpers)
 
 mod config;
-mod tabs;
 mod types;
 
 pub use types::{SessionWidgetStorage, TerminalSession};

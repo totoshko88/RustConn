@@ -22,6 +22,7 @@ mod shared_folders;
 mod spice;
 mod ssh;
 mod vnc;
+pub mod widgets;
 pub mod zerotrust;
 
 // Re-export types from parent module for use in submodules

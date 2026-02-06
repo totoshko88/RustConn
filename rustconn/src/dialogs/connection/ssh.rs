@@ -10,6 +10,7 @@
 #![allow(dead_code)]
 
 use super::protocol_layout::ProtocolLayoutBuilder;
+use super::widgets::{CheckboxRowBuilder, EntryRowBuilder};
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, CheckButton, DropDown, Entry, StringList};
@@ -318,37 +319,22 @@ fn create_connection_group() -> (
     connection_group.add(&jump_host_row);
 
     // ProxyJump entry
-    let proxy_entry = Entry::builder()
-        .hexpand(true)
-        .placeholder_text("user@jumphost")
-        .valign(gtk4::Align::Center)
-        .build();
-
-    let proxy_row = adw::ActionRow::builder()
-        .title("ProxyJump")
+    let (proxy_row, proxy_entry) = EntryRowBuilder::new("ProxyJump")
         .subtitle("Jump host for tunneling (-J)")
+        .placeholder("user@jumphost")
         .build();
-    proxy_row.add_suffix(&proxy_entry);
     connection_group.add(&proxy_row);
 
     // IdentitiesOnly switch
-    let identities_only = CheckButton::new();
-    let identities_row = adw::ActionRow::builder()
-        .title("Use Only Specified Key")
+    let (identities_row, identities_only) = CheckboxRowBuilder::new("Use Only Specified Key")
         .subtitle("Prevents trying other keys (IdentitiesOnly)")
-        .activatable_widget(&identities_only)
         .build();
-    identities_row.add_suffix(&identities_only);
     connection_group.add(&identities_row);
 
     // ControlMaster switch
-    let control_master = CheckButton::new();
-    let control_master_row = adw::ActionRow::builder()
-        .title("Connection Multiplexing")
+    let (control_master_row, control_master) = CheckboxRowBuilder::new("Connection Multiplexing")
         .subtitle("Reuse connections (ControlMaster)")
-        .activatable_widget(&control_master)
         .build();
-    control_master_row.add_suffix(&control_master);
     connection_group.add(&control_master_row);
 
     (
@@ -373,61 +359,35 @@ fn create_session_group() -> (
     let session_group = adw::PreferencesGroup::builder().title("Session").build();
 
     // Agent Forwarding switch
-    let agent_forwarding = CheckButton::new();
-    let agent_forwarding_row = adw::ActionRow::builder()
-        .title("Agent Forwarding")
+    let (agent_forwarding_row, agent_forwarding) = CheckboxRowBuilder::new("Agent Forwarding")
         .subtitle("Forward SSH agent to remote host (-A)")
-        .activatable_widget(&agent_forwarding)
         .build();
-    agent_forwarding_row.add_suffix(&agent_forwarding);
     session_group.add(&agent_forwarding_row);
 
     // X11 Forwarding switch
-    let x11_forwarding = CheckButton::new();
-    let x11_forwarding_row = adw::ActionRow::builder()
-        .title("X11 Forwarding")
+    let (x11_forwarding_row, x11_forwarding) = CheckboxRowBuilder::new("X11 Forwarding")
         .subtitle("Forward X11 display to local host (-X)")
-        .activatable_widget(&x11_forwarding)
         .build();
-    x11_forwarding_row.add_suffix(&x11_forwarding);
     session_group.add(&x11_forwarding_row);
 
     // Compression switch
-    let compression = CheckButton::new();
-    let compression_row = adw::ActionRow::builder()
-        .title("Compression")
+    let (compression_row, compression) = CheckboxRowBuilder::new("Compression")
         .subtitle("Enable compression for slow connections (-C)")
-        .activatable_widget(&compression)
         .build();
-    compression_row.add_suffix(&compression);
     session_group.add(&compression_row);
 
     // Startup command entry
-    let startup_entry = Entry::builder()
-        .hexpand(true)
-        .placeholder_text("Command to run on connect")
-        .valign(gtk4::Align::Center)
-        .build();
-
-    let startup_row = adw::ActionRow::builder()
-        .title("Startup Command")
+    let (startup_row, startup_entry) = EntryRowBuilder::new("Startup Command")
         .subtitle("Execute after connection established")
+        .placeholder("Command to run on connect")
         .build();
-    startup_row.add_suffix(&startup_entry);
     session_group.add(&startup_row);
 
     // Custom options entry
-    let options_entry = Entry::builder()
-        .hexpand(true)
-        .placeholder_text("-o Key=Value")
-        .valign(gtk4::Align::Center)
-        .build();
-
-    let options_row = adw::ActionRow::builder()
-        .title("Custom Options")
+    let (options_row, options_entry) = EntryRowBuilder::new("Custom Options")
         .subtitle("Additional SSH command-line options")
+        .placeholder("-o Key=Value")
         .build();
-    options_row.add_suffix(&options_entry);
     session_group.add(&options_row);
 
     (
