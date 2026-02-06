@@ -92,8 +92,8 @@ impl ConnectionSidebar {
     #[must_use]
     pub fn new() -> Self {
         let container = GtkBox::new(Orientation::Vertical, 0);
-        // GNOME HIG recommends 180-200px for sidebars
-        container.set_width_request(180);
+        // GNOME HIG recommends 200px for sidebars (increased from 180px for better readability)
+        container.set_width_request(200);
         container.add_css_class("sidebar");
 
         // Search box with entry and help button

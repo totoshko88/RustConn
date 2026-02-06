@@ -5,6 +5,78 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.6] - 2026-02-06
+
+### Improved
+- **UI/UX Enhancements** - GNOME HIG compliance improvements:
+  - Added accessible labels to connection status icons (Connected, Connecting, Connection failed)
+  - Added accessible labels to protocol filter buttons in sidebar
+  - Increased sidebar minimum width from 180px to 200px per GNOME HIG
+  - Added `adw::Clamp` to connection dialog for adaptive width on wide screens
+  - Added CSS status styles (`.status-connected`, `.status-connecting`, `.status-failed`)
+  - Toast notifications now use `adw::ToastPriority` (High for warnings/errors)
+  - Added `ToastType::icon_name()` and `ToastType::priority()` methods
+  - Connection dialog now uses adaptive `adw::ViewSwitcherTitle` in header bar with fallback `ViewSwitcherBar` for narrow windows
+
+### Refactored
+- **Legacy Code Cleanup** - Removed unused legacy types from terminal module:
+  - Removed `TabDisplayMode` enum (handled by `adw::TabView` automatically)
+  - Removed `TabLabelWidgets` struct (managed by `adw::TabPage` properties)
+  - Kept `SessionWidgetStorage` as it's actively used for VNC/RDP/SPICE widgets
+
+- **Dialog Widget Builders** - Created reusable UI components for dialogs:
+  - Moved `widgets.rs` from `dialogs/connection/` to `dialogs/` for shared access
+  - Added `SwitchRowBuilder` for `adw::SwitchRow` creation
+  - Builders: `CheckboxRowBuilder`, `EntryRowBuilder`, `SpinRowBuilder`, `DropdownRowBuilder`, `SwitchRowBuilder`
+  - Builder pattern with fluent API for consistent widget creation
+  - Static label constants: `ROOT_GROUP`, `NONE`, `NO_KEYS_LOADED`
+
+- **Protocol Dialogs Refactoring** - Applied widget builders across all protocol panels:
+  - **SSH (`ssh.rs`)**: Refactored `create_connection_group()` and `create_session_group()` using `CheckboxRowBuilder` and `EntryRowBuilder`
+  - **RDP (`rdp.rs`)**: Refactored `create_display_group()`, `create_features_group()`, `create_advanced_group()` using `DropdownRowBuilder`, `CheckboxRowBuilder`, `EntryRowBuilder`
+  - **VNC (`vnc.rs`)**: Refactored `create_display_group()`, `create_quality_group()`, `create_features_group()`, `create_advanced_group()` using all four builders
+  - **SPICE (`spice.rs`)**: Refactored `create_security_group()` and `create_features_group()` using `CheckboxRowBuilder`
+  - Reduces code duplication and ensures consistent GNOME HIG styling
+
+- **Other Dialogs Refactoring** - Extended widget builders to non-protocol dialogs:
+  - **Export (`export.rs`)**: Replaced `Frame` + `Grid` with `adw::PreferencesGroup`, added `adw::Clamp` for proper width
+  - **Snippet (`snippet.rs`)**: Refactored `create_basic_section()` to use `EntryRowBuilder`
+  - **Cluster (`cluster.rs`)**: Refactored to use `EntryRowBuilder` and `SwitchRowBuilder`
+
+### Changed
+- **Architecture Documentation** - Updated `docs/ARCHITECTURE.md`:
+  - Updated `widgets.rs` location from `dialogs/connection/` to `dialogs/`
+  - Documented widget helper pattern for all dialogs
+
+## [0.7.5] - 2026-02-06
+
+### Refactored
+- **Code Quality Audit** - Comprehensive codebase analysis and cleanup:
+  - Removed duplicate SSH options code from `dialog.rs` (uses `ssh::create_ssh_options()`)
+  - Removed duplicate VNC/SPICE/ZeroTrust options code from `dialog.rs` (~830 lines)
+  - Removed duplicate RDP options code from `dialog.rs` (~350 lines, uses `rdp::create_rdp_options()`)
+  - Removed legacy dialog functions (`create_automation_tab`, `create_tasks_tab`, `create_wol_tab`) (~250 lines)
+  - Extracted shared folders UI into reusable `shared_folders.rs` module
+  - Extracted Zero Trust UI into `zerotrust.rs` module (~450 lines)
+  - Created `protocol_layout.rs` with `ProtocolLayoutBuilder` for consistent protocol UI
+  - Consolidated `with_runtime()` into `async_utils.rs` (removed duplicate from `state.rs`)
+  - Changed FreeRDP launcher to Wayland-first (`force_x11: false` by default)
+  - Removed legacy no-op methods from terminal module (~40 lines)
+  - **Total dead/duplicate code removed: ~1850+ lines**
+
+### Fixed
+- **Wayland-First FreeRDP** - External RDP client now uses Wayland backend by default:
+  - Changed `SafeFreeRdpLauncher::default()` to set `force_x11: false`
+  - X11 fallback still available via `with_x11_fallback()` constructor
+
+### Changed
+- **Dependencies** - Updated: proptest 1.9.0→1.10.0, time 0.3.46→0.3.47, time-macros 0.2.26→0.2.27
+- **Architecture Documentation** - Updated `docs/ARCHITECTURE.md` with:
+  - Current architecture diagram
+  - Recommended layered architecture for future refactoring
+  - Module responsibility guidelines
+  - New modules: `protocol_layout.rs`, `shared_folders.rs`
+
 ## [0.7.4] - 2026-02-05
 
 ### Fixed
@@ -20,7 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Document Close Dialog** - Fixed potential panic when closing document without parent window:
   - `CloseDocumentDialog::present()` now gracefully handles missing parent window
   - Logs error and calls callback with `None` instead of panicking
-- **Zero Trust Entry Field Alignment** - Fixed inconsistent width of input fields in Zero Trust provider panels:
+- **Zero Trust Entry Field Alignment** -додай зміни в чендлог і онови architecture.md в doc Fixed inconsistent width of input fields in Zero Trust provider panels:
   - Converted all Zero Trust provider fields from `ActionRow` + `Entry` to `adw::EntryRow`
   - All 10 provider panels (AWS SSM, GCP IAP, Azure Bastion, Azure SSH, OCI Bastion, Cloudflare, Teleport, Tailscale, Boundary, Generic) now have consistent field widths
   - Follows GNOME HIG guidelines for proper libadwaita input field usage
@@ -48,6 +120,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improves code organization and maintainability
 
 ### Added
+- **Variables Menu Item** - Added "Variables..." menu item to Tools menu for managing global variables:
+  - Opens Variables dialog to view/edit global variables
+  - Variables are persisted to settings and substituted at connection time
+  - Accessible via Tools → Variables...
 - **GTK Lifecycle Documentation** - Added module-level documentation explaining `#[allow(dead_code)]` pattern:
   - Documents why GTK widget fields must be kept alive for signal handlers
   - Prevents accidental removal of "unused" fields that would cause segfaults
@@ -57,6 +133,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Documented in `window_types.rs` module header
 
 ### Changed
+- **Dialog Size Unification** - Standardized dialog window sizes for visual consistency:
+  - Connection History: 750×500 (increased from 550 for better content display)
+  - Keyboard Shortcuts: 550×500 (increased from 500 for consistency)
 - **Code Quality** - Comprehensive cleanup based on code audit:
   - Removed legacy `TabDisplayMode`, `SessionWidgetStorage`, `TabLabelWidgets` types
   - Standardized error type patterns with `#[from]` attribute

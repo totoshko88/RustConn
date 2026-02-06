@@ -11,6 +11,11 @@ use crate::sidebar::ConnectionItem;
 use crate::sidebar_ui;
 
 /// Sets up a list item widget
+///
+/// # Accessibility
+/// Each list item is set up with proper accessible properties:
+/// - Status icons have live region for dynamic updates
+/// - Labels are associated with their icons
 #[allow(clippy::too_many_lines)]
 pub fn setup_list_item(
     _factory: &SignalListItemFactory,
@@ -202,7 +207,7 @@ pub fn bind_list_item(
             .and_then(|c| c.next_sibling())
             .and_downcast::<gtk4::Image>()
         {
-            // Helper to update icon state
+            // Helper to update icon state with accessibility announcements
             let update_icon = |icon: &gtk4::Image, status: &str| {
                 icon.remove_css_class("status-connected");
                 icon.remove_css_class("status-connecting");
@@ -212,16 +217,25 @@ pub fn bind_list_item(
                     icon.set_icon_name(Some("emblem-default-symbolic"));
                     icon.set_visible(true);
                     icon.add_css_class("status-connected");
+                    // Accessibility: announce status change
+                    icon.update_property(&[gtk4::accessible::Property::Label("Connected")]);
                 } else if status == "connecting" {
                     icon.set_icon_name(Some("network-transmit-receive-symbolic"));
                     icon.set_visible(true);
                     icon.add_css_class("status-connecting");
+                    // Accessibility: announce status change
+                    icon.update_property(&[gtk4::accessible::Property::Label("Connecting")]);
                 } else if status == "failed" {
                     icon.set_icon_name(Some("dialog-error-symbolic"));
                     icon.set_visible(true);
                     icon.add_css_class("status-failed");
+                    // Accessibility: announce status change
+                    icon.update_property(&[gtk4::accessible::Property::Label(
+                        "Connection failed",
+                    )]);
                 } else {
                     icon.set_visible(false);
+                    icon.update_property(&[gtk4::accessible::Property::Label("")]);
                 }
             };
 

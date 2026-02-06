@@ -2,6 +2,18 @@
 Fri Feb 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.6
 
 - Version bump to 0.7.6
+  * UI/UX Enhancements - GNOME HIG compliance improvements:
+    - Added accessible labels to connection status icons
+    - Added accessible labels to protocol filter buttons in sidebar
+    - Increased sidebar minimum width from 180px to 200px per GNOME HIG
+    - Added adw::Clamp to connection dialog for adaptive width
+    - Added CSS status styles (.status-connected, .status-connecting, .status-failed)
+    - Toast notifications now use adw::ToastPriority (High for warnings/errors)
+    - Connection dialog uses adaptive adw::ViewSwitcherTitle with fallback ViewSwitcherBar
+  * Legacy Code Cleanup - Removed unused TabDisplayMode and TabLabelWidgets types
+  * Dialog Widget Builders - Created reusable UI components (SwitchRowBuilder, etc.)
+  * Protocol Dialogs Refactoring - Applied widget builders to SSH, RDP, VNC, SPICE
+  * Other Dialogs Refactoring - Export, Snippet, Cluster dialogs use widget builders
 
 -------------------------------------------------------------------
 Thu Feb 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.5

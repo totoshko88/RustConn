@@ -2,13 +2,18 @@
 //!
 //! Wraps `adw::ToastOverlay` to provide a simple interface for showing notifications.
 //! Supports standard toast types (info, success, warning, error) and actions.
+//!
+//! # Accessibility
+//!
+//! Toast notifications are automatically announced by screen readers via
+//! libadwaita's built-in accessibility support.
 
 use adw::prelude::*;
 use gtk4 as gui;
 use gui::glib;
 use libadwaita as adw;
 
-/// Toast message types for styling
+/// Toast message types for styling and semantic meaning
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ToastType {
     /// Informational message (default)
@@ -22,8 +27,7 @@ pub enum ToastType {
 }
 
 impl ToastType {
-    /// Returns the CSS class for this toast type - unused for adwaita standard toasts
-    /// but kept for API compatibility or custom styling if needed
+    /// Returns the CSS class for this toast type
     #[must_use]
     pub const fn css_class(&self) -> &'static str {
         match self {
@@ -31,6 +35,29 @@ impl ToastType {
             Self::Success => "toast-success",
             Self::Warning => "toast-warning",
             Self::Error => "toast-error",
+        }
+    }
+
+    /// Returns the icon name for this toast type
+    #[must_use]
+    pub const fn icon_name(&self) -> &'static str {
+        match self {
+            Self::Info => "dialog-information-symbolic",
+            Self::Success => "emblem-ok-symbolic",
+            Self::Warning => "dialog-warning-symbolic",
+            Self::Error => "dialog-error-symbolic",
+        }
+    }
+
+    /// Returns the priority for this toast type
+    /// Higher priority toasts are shown first
+    #[must_use]
+    pub const fn priority(&self) -> adw::ToastPriority {
+        match self {
+            Self::Info => adw::ToastPriority::Normal,
+            Self::Success => adw::ToastPriority::Normal,
+            Self::Warning => adw::ToastPriority::High,
+            Self::Error => adw::ToastPriority::High,
         }
     }
 }
@@ -67,14 +94,14 @@ impl ToastOverlay {
         self.overlay.add_toast(toast);
     }
 
-    /// Shows a toast type (helper for compatibility)
-    /// Note: libadwaita toasts are standard, but we can potentially use
-    /// `set_custom_title` or CSS classes if we really want distinct colors.
-    /// For now, we'll map them to standard toasts to adhere to GNOME HIG.
-    pub fn show_toast_with_type(&self, message: &str, _toast_type: ToastType) {
-        // In the future we could add custom styling classes to the toast widget
-        // if strictly required, but standard toasts are preferred.
-        self.show_toast(message);
+    /// Shows a toast type with appropriate priority
+    ///
+    /// Uses `adw::ToastPriority` to ensure important messages (warnings, errors)
+    /// are shown before less important ones.
+    pub fn show_toast_with_type(&self, message: &str, toast_type: ToastType) {
+        let toast = adw::Toast::new(message);
+        toast.set_priority(toast_type.priority());
+        self.overlay.add_toast(toast);
     }
 
     /// Shows a success toast message
@@ -82,12 +109,12 @@ impl ToastOverlay {
         self.show_toast_with_type(message, ToastType::Success);
     }
 
-    /// Shows a warning toast message
+    /// Shows a warning toast message (high priority)
     pub fn show_warning(&self, message: &str) {
         self.show_toast_with_type(message, ToastType::Warning);
     }
 
-    /// Shows an error toast message
+    /// Shows an error toast message (high priority)
     pub fn show_error(&self, message: &str) {
         self.show_toast_with_type(message, ToastType::Error);
     }

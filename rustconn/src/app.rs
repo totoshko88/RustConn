@@ -713,10 +713,32 @@ fn load_css_styles() {
             min-height: 32px;
         }
 
-        /* Connection status animations */
+        /* ============================================================
+         * Connection Status Styles
+         * ============================================================ */
+
+        /* Status icon base styles */
+        .status-icon {
+            transition: opacity 200ms ease-in-out;
+        }
+
+        /* Connected status - green checkmark */
+        .status-connected {
+            color: @success_color;
+            opacity: 1.0;
+        }
+
+        /* Connecting status - pulsing effect via opacity transition */
         /* Note: GTK4 CSS doesn't support @keyframes, using opacity for visual feedback */
         .status-connecting {
-            opacity: 0.6;
+            color: @accent_color;
+            opacity: 0.7;
+        }
+
+        /* Failed status - red error */
+        .status-failed {
+            color: @error_color;
+            opacity: 1.0;
         }
 
         /* Enhanced drag-drop visual feedback */
