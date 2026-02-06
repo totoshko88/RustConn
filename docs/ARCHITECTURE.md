@@ -227,6 +227,53 @@ This is particularly useful during:
 - Bulk import operations
 - Rapid edits to connection properties
 
+## Thread Safety Patterns
+
+### Mutex Poisoning Recovery
+
+When a thread panics while holding a mutex lock, the mutex becomes "poisoned" to signal that the protected data may be in an inconsistent state. By default, attempting to lock a poisoned mutex returns an error.
+
+For simple state flags and process handles (like in `FreeRdpThread`), we can safely recover from poisoning by extracting the inner value:
+
+```rust
+// rustconn/src/embedded_rdp_thread.rs
+
+/// Safely locks a mutex, recovering from poisoning by extracting the inner value.
+fn lock_or_recover<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+    match mutex.lock() {
+        Ok(guard) => guard,
+        Err(poisoned) => {
+            tracing::warn!("Mutex was poisoned, recovering inner value");
+            poisoned.into_inner()
+        }
+    }
+}
+
+// Helper functions for common operations
+fn set_state(mutex: &Mutex<FreeRdpThreadState>, state: FreeRdpThreadState) {
+    *lock_or_recover(mutex) = state;
+}
+
+fn get_state(mutex: &Mutex<FreeRdpThreadState>) -> FreeRdpThreadState {
+    *lock_or_recover(mutex)
+}
+```
+
+**When to Use Poisoning Recovery:**
+- Simple state flags (enums, booleans)
+- Process handles that can be safely reset
+- Data that doesn't have complex invariants
+
+**When NOT to Use:**
+- Complex data structures with invariants
+- Financial or security-critical data
+- Data where partial updates could cause corruption
+
+**Rules:**
+- Always log when recovering from poisoning
+- Set an error state after recovery when appropriate
+- Document why recovery is safe for the specific data type
+
 ## Async Patterns
 
 ### The Challenge

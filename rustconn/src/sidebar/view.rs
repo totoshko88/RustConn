@@ -230,9 +230,7 @@ pub fn bind_list_item(
                     icon.set_visible(true);
                     icon.add_css_class("status-failed");
                     // Accessibility: announce status change
-                    icon.update_property(&[gtk4::accessible::Property::Label(
-                        "Connection failed",
-                    )]);
+                    icon.update_property(&[gtk4::accessible::Property::Label("Connection failed")]);
                 } else {
                     icon.set_visible(false);
                     icon.update_property(&[gtk4::accessible::Property::Label("")]);

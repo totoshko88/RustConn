@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `ToastType::icon_name()` and `ToastType::priority()` methods
   - Connection dialog now uses adaptive `adw::ViewSwitcherTitle` in header bar with fallback `ViewSwitcherBar` for narrow windows
 
+- **Thread Safety** - Mutex poisoning recovery in FreeRDP thread:
+  - Added `lock_or_recover()` helper for graceful mutex poisoning recovery
+  - FreeRDP thread now recovers from poisoned mutexes instead of panicking
+  - Improved stability when background threads encounter errors
+  - Helper functions: `set_state()`, `set_flag()`, `get_state()`, `get_flag()`
+
 ### Refactored
 - **Legacy Code Cleanup** - Removed unused legacy types from terminal module:
   - Removed `TabDisplayMode` enum (handled by `adw::TabView` automatically)
