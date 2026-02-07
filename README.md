@@ -24,7 +24,13 @@ Modern connection manager for Linux with GTK4/Wayland-native interface.
 flatpak install flathub io.github.totoshko88.RustConn
 ```
 
-**Snap** / **AppImage** / **Debian** / **openSUSE (OBS)** — see [Installation Guide](docs/INSTALL.md)
+**Snap (strict confinement)** / **AppImage** / **Debian** / **openSUSE (OBS)** — see [Installation Guide](docs/INSTALL.md)
+
+```bash
+# Snap (requires interface connections - see docs/SNAP.md)
+sudo snap install rustconn
+sudo snap connect rustconn:ssh-keys
+```
 
 ```bash
 # From source

@@ -7,6 +7,8 @@ sdk-extensions:
 command: rustconn
 
 finish-args:
+  # Library path for VTE (installed to lib64)
+  - --env=LD_LIBRARY_PATH=/app/lib64:/app/lib
   # Wayland/X11 access
   - --socket=wayland
   - --socket=fallback-x11
@@ -19,8 +21,6 @@ finish-args:
   - --filesystem=home/.ssh:ro
   # SSH agent
   - --socket=ssh-auth
-  # Access to run host commands (xfreerdp, vncviewer, remote-viewer, aws, gcloud, etc.)
-  - --talk-name=org.freedesktop.Flatpak
   # D-Bus access for secret service (GNOME Keyring, KWallet)
   - --talk-name=org.freedesktop.secrets
   - --talk-name=org.kde.kwalletd5
@@ -49,14 +49,15 @@ modules:
       - -Ddocs=false
     sources:
       - type: archive
-        url: https://download.gnome.org/sources/vte/0.78/vte-0.78.4.tar.xz
-        sha256: 2dea4e412266592b6460a3fe4488f5e3d50712f139815790c0ecb44710f7e17e
+        url: https://download.gnome.org/sources/vte/0.78/vte-0.78.7.tar.xz
+        sha256: 6fd1edc332d9f9519ce4c0f07135fdf72d64dfd990dc4fabc6ce91b1b7e83dd0
 
   - name: rustconn
     buildsystem: simple
     build-options:
       env:
         CARGO_NET_OFFLINE: 'true'
+        PKG_CONFIG_PATH: /app/lib64/pkgconfig:/app/lib/pkgconfig:/app/share/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig
     build-commands:
       - cargo build --release -p rustconn -p rustconn-cli
       - install -Dm755 target/release/rustconn /app/bin/rustconn

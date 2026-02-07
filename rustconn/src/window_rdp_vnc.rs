@@ -33,6 +33,22 @@ pub fn start_rdp_with_password_dialog(
     connection_id: Uuid,
     window: &gtk4::Window,
 ) {
+    use rustconn_core::variables::{VariableManager, VariableScope};
+
+    // Helper function to substitute variables
+    let substitute_vars = |input: &str, global_variables: &[rustconn_core::Variable]| -> String {
+        if !input.contains("${") {
+            return input.to_string();
+        }
+        let mut manager = VariableManager::new();
+        for var in global_variables {
+            manager.set_global(var.clone());
+        }
+        manager
+            .substitute(input, VariableScope::Global)
+            .unwrap_or_else(|_| input.to_string())
+    };
+
     // Check if we have cached credentials (fast, non-blocking)
     let cached = {
         let state_ref = state.borrow();
@@ -61,14 +77,17 @@ pub fn start_rdp_with_password_dialog(
         return;
     }
 
-    // Get connection info for dialog
+    // Get connection info for dialog with variable substitution
     let (conn_name, username, domain) = {
         let state_ref = state.borrow();
         if let Some(conn) = state_ref.get_connection(connection_id) {
+            let global_variables = state_ref.settings().global_variables.clone();
+            let raw_username = conn.username.clone().unwrap_or_default();
+            let raw_domain = conn.domain.clone().unwrap_or_default();
             (
                 conn.name.clone(),
-                conn.username.clone().unwrap_or_default(),
-                conn.domain.clone().unwrap_or_default(),
+                substitute_vars(&raw_username, &global_variables),
+                substitute_vars(&raw_domain, &global_variables),
             )
         } else {
             return;

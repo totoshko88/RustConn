@@ -756,6 +756,7 @@ rustconn/src/
 │   │   ├── spice.rs       # SPICE options
 │   │   └── zerotrust.rs   # Zero Trust provider options
 │   ├── keyboard.rs        # Keyboard navigation helpers
+│   ├── flatpak_components.rs  # Flatpak CLI download dialog
 │   ├── settings/          # Settings tabs
 │   └── ...
 ├── embedded_*.rs          # Embedded protocol viewers
@@ -800,6 +801,8 @@ rustconn-core/src/
 │   ├── mod.rs             # Module exports
 │   ├── backend.rs         # RdpBackendSelector
 │   └── ...
+├── cli_download.rs        # Flatpak CLI download manager
+├── snap.rs                # Snap environment detection and paths
 └── ...
 ```
 

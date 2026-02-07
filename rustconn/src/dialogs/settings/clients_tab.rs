@@ -20,6 +20,10 @@ struct ClientInfo {
     version: Option<String>,
     path: Option<String>,
     install_hint: String,
+    /// For protocols with embedded support, show as available even without external client
+    has_embedded: bool,
+    /// Name of the embedded implementation
+    embedded_name: Option<String>,
 }
 
 /// Creates the clients detection page using AdwPreferencesPage
@@ -56,7 +60,8 @@ pub fn create_clients_page() -> adw::PreferencesPage {
         .build();
 
     let zerotrust_names = [
-        "AWS CLI (SSM)",
+        "AWS CLI",
+        "AWS SSM Plugin",
         "Google Cloud CLI",
         "Azure CLI",
         "OCI CLI",
@@ -140,8 +145,19 @@ fn update_client_row(group: &adw::PreferencesGroup, row: &adw::ActionRow, client
         }
     }
 
-    // Update subtitle
-    let subtitle = if client.installed {
+    // Determine subtitle based on embedded support and external client availability
+    let subtitle = if client.has_embedded {
+        if client.installed {
+            // External client found
+            client.path.clone().unwrap_or_else(|| client.name.clone())
+        } else {
+            // No external client, but embedded is available
+            format!(
+                "Using embedded {} (external not found)",
+                client.embedded_name.as_deref().unwrap_or("client")
+            )
+        }
+    } else if client.installed {
         client.path.clone().unwrap_or_else(|| client.name.clone())
     } else {
         client.install_hint.clone()
@@ -154,11 +170,24 @@ fn update_client_row(group: &adw::PreferencesGroup, row: &adw::ActionRow, client
         .subtitle(&subtitle)
         .build();
 
-    // Status icon
+    // Status icon - for embedded protocols, always show success
+    let (icon, css_class) = if client.has_embedded {
+        // Embedded support available - always show as available
+        if client.installed {
+            ("✓", "success") // External client found
+        } else {
+            ("●", "accent") // Using embedded (neutral/info indicator)
+        }
+    } else if client.installed {
+        ("✓", "success")
+    } else {
+        ("✗", "error")
+    };
+
     let status_label = Label::builder()
-        .label(if client.installed { "✓" } else { "✗" })
+        .label(icon)
         .valign(gtk4::Align::Center)
-        .css_classes([if client.installed { "success" } else { "error" }])
+        .css_classes([css_class])
         .build();
     new_row.add_prefix(&status_label);
 
@@ -172,6 +201,14 @@ fn update_client_row(group: &adw::PreferencesGroup, row: &adw::ActionRow, client
                 .build();
             new_row.add_suffix(&version_label);
         }
+    } else if client.has_embedded {
+        // Show embedded indicator
+        let embedded_label = Label::builder()
+            .label("Embedded")
+            .valign(gtk4::Align::Center)
+            .css_classes(["dim-label"])
+            .build();
+        new_row.add_suffix(&embedded_label);
     }
 
     // Replace old row with new one
@@ -225,7 +262,7 @@ fn detect_all_clients() -> (Vec<ClientInfo>, Vec<ClientInfo>) {
     // Detect core clients
     let detection_result = ClientDetectionResult::detect_all();
 
-    // SSH
+    // SSH - always embedded via VTE terminal
     core_clients.push(ClientInfo {
         title: "SSH Client".to_string(),
         name: detection_result.ssh.name.clone(),
@@ -241,9 +278,11 @@ fn detect_all_clients() -> (Vec<ClientInfo>, Vec<ClientInfo>) {
             .install_hint
             .clone()
             .unwrap_or_default(),
+        has_embedded: true,
+        embedded_name: Some("VTE Terminal".to_string()),
     });
 
-    // RDP
+    // RDP - embedded via IronRDP, external fallback to xfreerdp
     core_clients.push(ClientInfo {
         title: "RDP Client".to_string(),
         name: detection_result.rdp.name.clone(),
@@ -254,14 +293,12 @@ fn detect_all_clients() -> (Vec<ClientInfo>, Vec<ClientInfo>) {
             .path
             .as_ref()
             .map(|p| p.display().to_string()),
-        install_hint: detection_result
-            .rdp
-            .install_hint
-            .clone()
-            .unwrap_or_default(),
+        install_hint: "Optional: Install freerdp3-wayland (freerdp) package".to_string(),
+        has_embedded: true,
+        embedded_name: Some("IronRDP".to_string()),
     });
 
-    // VNC
+    // VNC - embedded via vnc-rs, external fallback to vncviewer
     core_clients.push(ClientInfo {
         title: "VNC Client".to_string(),
         name: detection_result.vnc.name.clone(),
@@ -272,14 +309,12 @@ fn detect_all_clients() -> (Vec<ClientInfo>, Vec<ClientInfo>) {
             .path
             .as_ref()
             .map(|p| p.display().to_string()),
-        install_hint: detection_result
-            .vnc
-            .install_hint
-            .clone()
-            .unwrap_or_default(),
+        install_hint: "Optional: Install tigervnc-viewer (tigervnc) package".to_string(),
+        has_embedded: true,
+        embedded_name: Some("vnc-rs".to_string()),
     });
 
-    // SPICE
+    // SPICE - external only via remote-viewer
     let spice_installed = std::process::Command::new("which")
         .arg("remote-viewer")
         .output()
@@ -306,16 +341,19 @@ fn detect_all_clients() -> (Vec<ClientInfo>, Vec<ClientInfo>) {
         installed: spice_installed,
         version: spice_version,
         path: spice_path,
-        install_hint: "Install virt-viewer package".to_string(),
+        install_hint: "Optional: Install virt-viewer package".to_string(),
+        has_embedded: true,
+        embedded_name: Some("spice-gtk".to_string()),
     });
 
     // Detect zero trust clients
     let zerotrust_configs = [
+        ("AWS CLI", "aws", "--version", "Install awscli package"),
         (
-            "AWS CLI (SSM)",
-            "aws",
+            "AWS SSM Plugin",
+            "session-manager-plugin",
             "--version",
-            "Install awscli package",
+            "Required for AWS SSM sessions",
         ),
         (
             "Google Cloud CLI",
@@ -346,7 +384,7 @@ fn detect_all_clients() -> (Vec<ClientInfo>, Vec<ClientInfo>) {
         let installed = command_path.is_some();
         let version = command_path
             .as_ref()
-            .and_then(|p| get_version(p, version_arg));
+            .and_then(|p| get_version_with_env(p, version_arg, command));
         let path_str = command_path.as_ref().map(|p| p.display().to_string());
 
         zerotrust_clients.push(ClientInfo {
@@ -356,15 +394,22 @@ fn detect_all_clients() -> (Vec<ClientInfo>, Vec<ClientInfo>) {
             version,
             path: path_str,
             install_hint: (*install_hint).to_string(),
+            has_embedded: false,
+            embedded_name: None,
         });
     }
 
     (core_clients, zerotrust_clients)
 }
 
-/// Finds a command in PATH or common user directories
+/// Finds a command in PATH, common user directories, or Flatpak CLI directory
 fn find_command(command: &str) -> Option<PathBuf> {
-    // First try standard which
+    // First check Flatpak CLI directory (for components installed via Flatpak Components dialog)
+    if let Some(path) = find_in_flatpak_cli_dir(command) {
+        return Some(path);
+    }
+
+    // Try standard which
     if let Ok(output) = std::process::Command::new("which").arg(command).output() {
         if output.status.success() {
             if let Ok(path_str) = String::from_utf8(output.stdout) {
@@ -394,10 +439,91 @@ fn find_command(command: &str) -> Option<PathBuf> {
     None
 }
 
+/// Finds a command in Flatpak CLI installation directory
+fn find_in_flatpak_cli_dir(command: &str) -> Option<PathBuf> {
+    // Get CLI install directory from rustconn_core
+    let cli_dir = rustconn_core::cli_download::get_cli_install_dir()?;
+
+    // Check if the component is registered and find its binary
+    if let Some(component) = rustconn_core::cli_download::get_component(command) {
+        if let Some(path) = component.find_installed_binary() {
+            return Some(path);
+        }
+    }
+
+    // Also search common subdirectories in CLI dir
+    // All pip-installed CLIs (aws, az, oci) are in python/bin
+    // SSM Plugin is in ssm-plugin/usr/local/sessionmanagerplugin/bin
+    let search_dirs = [
+        cli_dir.join("python/bin"),
+        cli_dir.join("ssm-plugin/usr/local/sessionmanagerplugin/bin"),
+        cli_dir.join("google-cloud-sdk/bin"),
+        cli_dir.join("teleport"),
+        cli_dir.join("tailscale"),
+        cli_dir.join("cloudflared"),
+        cli_dir.join("boundary"),
+        cli_dir.join("bitwarden"),
+        cli_dir.join("1password"),
+        cli_dir.join("tigervnc"),
+        cli_dir.join("tigervnc/usr/bin"),
+    ];
+
+    for dir in &search_dirs {
+        let path = dir.join(command);
+        if path.exists() {
+            return Some(path);
+        }
+    }
+
+    // Recursive search in CLI dir (limited depth)
+    find_binary_recursive(&cli_dir, command, 5)
+}
+
+/// Recursively search for a binary in a directory
+fn find_binary_recursive(
+    dir: &std::path::Path,
+    binary_name: &str,
+    max_depth: u32,
+) -> Option<PathBuf> {
+    if max_depth == 0 || !dir.exists() {
+        return None;
+    }
+
+    let entries = std::fs::read_dir(dir).ok()?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_file() {
+            if let Some(name) = path.file_name() {
+                if name == binary_name {
+                    return Some(path);
+                }
+            }
+        } else if path.is_dir() {
+            if let Some(found) = find_binary_recursive(&path, binary_name, max_depth - 1) {
+                return Some(found);
+            }
+        }
+    }
+    None
+}
+
 /// Gets version output from a command and parses it
 fn get_version(command_path: &std::path::Path, version_arg: &str) -> Option<String> {
+    get_version_with_env(command_path, version_arg, "")
+}
+
+/// Gets version output from a command with proper environment setup
+fn get_version_with_env(
+    command_path: &std::path::Path,
+    version_arg: &str,
+    command_name: &str,
+) -> Option<String> {
+    // Build command with extended PATH for Flatpak CLI tools
+    let extended_path = rustconn_core::cli_download::get_extended_path();
+
     let output = std::process::Command::new(command_path)
         .arg(version_arg)
+        .env("PATH", &extended_path)
         .output()
         .ok()?;
 
@@ -410,10 +536,15 @@ fn get_version(command_path: &std::path::Path, version_arg: &str) -> Option<Stri
         stdout.to_string()
     };
 
-    let cmd_name = command_path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("");
+    // Use command name if provided, otherwise extract from path
+    let cmd_name = if command_name.is_empty() {
+        command_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("")
+    } else {
+        command_name
+    };
 
     parse_version_output(cmd_name, &version_str)
 }
@@ -421,12 +552,18 @@ fn get_version(command_path: &std::path::Path, version_arg: &str) -> Option<Stri
 /// Parses version from command output based on command type
 fn parse_version_output(command: &str, output: &str) -> Option<String> {
     match command {
-        "aws" => output
-            .lines()
-            .next()
-            .and_then(|line| line.split_whitespace().next())
-            .and_then(|part| part.strip_prefix("aws-cli/"))
-            .map(String::from),
+        "aws" => {
+            // AWS CLI v2 format: "aws-cli/2.22.35 Python/3.13.1 Linux/6.12.10-200.fc41.x86_64 exe/x86_64.fedora.41"
+            // Extract version from "aws-cli/X.Y.Z"
+            output.lines().next().and_then(|line| {
+                for part in line.split_whitespace() {
+                    if let Some(version) = part.strip_prefix("aws-cli/") {
+                        return Some(version.to_string());
+                    }
+                }
+                None
+            })
+        }
 
         "gcloud" => output.lines().find_map(|line| {
             line.strip_prefix("Google Cloud SDK ")
@@ -493,6 +630,42 @@ fn parse_version_output(command: &str, output: &str) -> Option<String> {
             .next()
             .map(|line| line.trim().to_string())
             .filter(|s| !s.is_empty()),
+
+        "ssm-cli" => {
+            // ssm-session-client pip package
+            // Format: "ssm-cli X.Y.Z" or just version number
+            output.lines().next().map(|line| {
+                let trimmed = line.trim();
+                // If it starts with "ssm-cli", extract version after it
+                if let Some(rest) = trimmed.strip_prefix("ssm-cli") {
+                    rest.trim().to_string()
+                } else if trimmed.chars().next().is_some_and(|c| c.is_ascii_digit()) {
+                    // If it's a version number (starts with digit), return it
+                    trimmed.to_string()
+                } else {
+                    // Otherwise just indicate it's installed
+                    "installed".to_string()
+                }
+            })
+        }
+
+        "session-manager-plugin" => {
+            // AWS Session Manager Plugin
+            // Format: "The Session Manager plugin was installed successfully. Use the AWS CLI to start a session."
+            // or version output like "1.2.650.0"
+            output.lines().next().map(|line| {
+                let trimmed = line.trim();
+                // If it's a version number (starts with digit), return it
+                if trimmed.chars().next().is_some_and(|c| c.is_ascii_digit()) {
+                    trimmed.to_string()
+                } else if trimmed.contains("installed successfully") {
+                    "installed".to_string()
+                } else {
+                    // Otherwise just indicate it's installed
+                    "installed".to_string()
+                }
+            })
+        }
 
         "remote-viewer" => {
             // Format: "remote-viewer, version 11.0" or localized "remote-viewer, версія 11.0"

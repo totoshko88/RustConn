@@ -1,28 +1,33 @@
+rustconn (0.7.7-1) unstable; urgency=medium
+
+  * Version bump to 0.7.7
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Fri, 07 Feb 2026 12:00:00 +0200
+
 rustconn (0.7.6-1) unstable; urgency=medium
 
   * Version bump to 0.7.6
+  * Flatpak Components Manager - On-demand CLI download for Flatpak environment:
+    - Menu → Flatpak Components... (visible only in Flatpak)
+    - Download and install CLIs to ~/.var/app/io.github.totoshko88.RustConn/cli/
+    - Supports: AWS CLI, AWS SSM Plugin, Google Cloud CLI, Azure CLI, OCI CLI,
+      Teleport, Tailscale, Cloudflare Tunnel, Boundary, Bitwarden CLI, 1Password CLI, TigerVNC
+    - SHA256 checksum verification, progress indicators, cancel support
+  * Snap Strict Confinement - Migrated from classic to strict confinement:
+    - Snap-aware path resolution for data, config, and SSH directories
+    - Uses embedded clients (IronRDP, vnc-rs, spice-gtk)
+    - External CLIs accessed from host via system-files interface
   * UI/UX Enhancements - GNOME HIG compliance improvements:
-    - Added accessible labels to connection status icons (Connected, Connecting, Connection failed)
-    - Added accessible labels to protocol filter buttons in sidebar
-    - Increased sidebar minimum width from 180px to 200px per GNOME HIG
-    - Added adw::Clamp to connection dialog for adaptive width on wide screens
-    - Added CSS status styles (.status-connected, .status-connecting, .status-failed)
-    - Toast notifications now use adw::ToastPriority (High for warnings/errors)
-    - Added ToastType::icon_name() and ToastType::priority() methods
-    - Connection dialog now uses adaptive adw::ViewSwitcherTitle with fallback ViewSwitcherBar
-  * Legacy Code Cleanup - Removed unused legacy types from terminal module:
-    - Removed TabDisplayMode enum (handled by adw::TabView automatically)
-    - Removed TabLabelWidgets struct (managed by adw::TabPage properties)
-  * Dialog Widget Builders - Created reusable UI components for dialogs:
-    - Moved widgets.rs from dialogs/connection/ to dialogs/ for shared access
-    - Added SwitchRowBuilder for adw::SwitchRow creation
-    - Builders: CheckboxRowBuilder, EntryRowBuilder, SpinRowBuilder, DropdownRowBuilder, SwitchRowBuilder
-  * Protocol Dialogs Refactoring - Applied widget builders across all protocol panels:
-    - SSH, RDP, VNC, SPICE dialogs refactored using widget builders
-    - Reduces code duplication and ensures consistent GNOME HIG styling
-  * Other Dialogs Refactoring - Extended widget builders to non-protocol dialogs:
-    - Export dialog: Replaced Frame + Grid with adw::PreferencesGroup, added adw::Clamp
-    - Snippet and Cluster dialogs refactored to use widget builders
+    - Accessible labels for status icons and protocol filter buttons
+    - Sidebar minimum width increased to 200px
+    - Connection dialog uses adaptive adw::ViewSwitcherTitle
+    - Toast notifications with proper priority levels
+  * Settings → Clients - Improved client detection display:
+    - All protocols show embedded client status with blue indicator
+    - Fixed AWS SSM Plugin detection
+  * Dialog Widget Builders - Reusable UI components (CheckboxRowBuilder, EntryRowBuilder, etc.)
+  * Protocol Dialogs Refactoring - Applied widget builders to SSH, RDP, VNC, SPICE panels
+  * Legacy Code Cleanup - Removed unused TabDisplayMode, TabLabelWidgets types
 
  -- Anton Isaiev <totoshko88@gmail.com>  Fri, 06 Feb 2026 12:00:00 +0200
 

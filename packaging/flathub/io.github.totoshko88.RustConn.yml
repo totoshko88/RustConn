@@ -19,8 +19,6 @@ finish-args:
   - --filesystem=home/.ssh:ro
   # SSH agent socket
   - --socket=ssh-auth
-  # Access to run host commands (xfreerdp, vncviewer, remote-viewer, aws, gcloud, etc.)
-  - --talk-name=org.freedesktop.Flatpak
   # D-Bus access for secret service (GNOME Keyring, KWallet)
   - --talk-name=org.freedesktop.secrets
   - --talk-name=org.kde.kwalletd5
@@ -49,8 +47,8 @@ modules:
       - -Ddocs=false
     sources:
       - type: archive
-        url: https://download.gnome.org/sources/vte/0.78/vte-0.78.4.tar.xz
-        sha256: 2dea4e412266592b6460a3fe4488f5e3d50712f139815790c0ecb44710f7e17e
+        url: https://download.gnome.org/sources/vte/0.78/vte-0.78.7.tar.xz
+        sha256: 6fd1edc332d9f9519ce4c0f07135fdf72d64dfd990dc4fabc6ce91b1b7e83dd0
 
   - name: rustconn
     buildsystem: simple
@@ -67,7 +65,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/totoshko88/RustConn.git
-        tag: v0.7.6
+        tag: v0.7.7
         x-checker-data:
           type: git
           tag-pattern: ^v([\d.]+)$

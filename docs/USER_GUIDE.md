@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.7.1** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.7.6** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -16,6 +16,12 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 8. [Clusters](#clusters)
 9. [Import/Export](#importexport)
 10. [Tools](#tools)
+    - [Global Variables](#global-variables)
+    - [Password Generator](#password-generator)
+    - [Connection History](#connection-history)
+    - [Connection Statistics](#connection-statistics)
+    - [Wake-on-LAN](#wake-on-lan)
+    - [Flatpak Components](#flatpak-components)
 11. [Settings](#settings)
 12. [Keyboard Shortcuts](#keyboard-shortcuts)
 13. [CLI Usage](#cli-usage)
@@ -372,6 +378,50 @@ Options:
 
 ## Tools
 
+### Global Variables
+
+Global variables allow you to use placeholders in connection fields that are resolved at connection time.
+
+**Syntax:** `${VARIABLE_NAME}`
+
+**Supported Fields:**
+- Host
+- Username
+- Domain (RDP)
+
+**Define Variables:**
+1. Menu → Tools → **Variables...**
+2. Click **Add Variable**
+3. Enter name and value
+4. Click **Save**
+
+**Use in Connections:**
+1. Create or edit a connection
+2. In Host, Username, or Domain field, enter `${VARIABLE_NAME}`
+3. When connecting, the variable is replaced with its value
+
+**Example:**
+```
+Variable: PROD_USER = admin
+Variable: PROD_DOMAIN = corp.example.com
+
+Connection Username: ${PROD_USER}
+Connection Domain: ${PROD_DOMAIN}
+
+At connection time:
+  Username → admin
+  Domain → corp.example.com
+```
+
+**Asbru-CM Import:**
+When importing from Asbru-CM, the `<GV:VAR_NAME>` syntax is automatically converted to `${VAR_NAME}`. However, you must manually define the variable values in Tools → Variables.
+
+**Tips:**
+- Variable names are case-sensitive
+- Undefined variables remain as literal text (e.g., `${UNDEFINED}` stays unchanged)
+- Use variables for shared credentials across multiple connections
+- Combine with Group Credentials for hierarchical credential management
+
 ### Password Generator
 
 Menu → Tools → **Password Generator**
@@ -405,6 +455,42 @@ Menu → Tools → **Connection Statistics**
 Right-click connection → **Wake-on-LAN**
 
 Requires MAC address configured in connection WOL tab.
+
+### Flatpak Components
+
+**Available only in Flatpak environment**
+
+Menu → **Flatpak Components...**
+
+Download and install additional CLI tools directly within the Flatpak sandbox:
+
+**Zero Trust CLIs:**
+- AWS CLI, AWS SSM Plugin
+- Google Cloud CLI
+- Azure CLI
+- OCI CLI
+- Teleport, Tailscale
+- Cloudflare Tunnel
+- HashiCorp Boundary
+
+**Password Manager CLIs:**
+- Bitwarden CLI
+- 1Password CLI
+
+**Protocol Clients (optional):**
+- TigerVNC Viewer
+
+**Features:**
+- One-click Install/Remove/Update
+- Progress indicators with cancel support
+- SHA256 checksum verification
+- Automatic PATH configuration for Local Shell
+- Python-based CLIs installed via pip
+- .deb packages extracted automatically
+
+**Installation Location:** `~/.var/app/io.github.totoshko88.RustConn/cli/`
+
+**Note:** Installed CLIs are automatically detected in Settings → Clients.
 
 ---
 

@@ -335,6 +335,20 @@ impl MainWindow {
         });
         window.add_action(&settings_action);
 
+        // Flatpak Components action - only functional in Flatpak environment
+        let flatpak_components_action = gio::SimpleAction::new("flatpak-components", None);
+        let window_weak = window.downgrade();
+        flatpak_components_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                if let Some(dialog) = crate::dialogs::FlatpakComponentsDialog::new(Some(&win)) {
+                    dialog.present();
+                }
+            }
+        });
+        // Only enable in Flatpak environment
+        flatpak_components_action.set_enabled(rustconn_core::is_flatpak());
+        window.add_action(&flatpak_components_action);
+
         // Open password vault action - opens the configured password manager
         let open_keepass_action = gio::SimpleAction::new("open-keepass", None);
         let state_clone = state.clone();

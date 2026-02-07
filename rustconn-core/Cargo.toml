@@ -10,6 +10,7 @@ rust-version.workspace = true
 [dependencies]
 tokio = { workspace = true }
 futures = { workspace = true }
+futures-util = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
@@ -23,9 +24,16 @@ dirs = { workspace = true }
 shellexpand = { workspace = true }
 regex = { workspace = true }
 ring = { workspace = true }
+hex = { workspace = true }
 quick-xml = { version = "0.39", features = ["serialize"] }
 argon2 = { workspace = true }
 hostname = "0.4"
+# HTTP client and archive handling (for CLI download in Flatpak)
+reqwest = { workspace = true }
+zip = { workspace = true }
+flate2 = { workspace = true }
+tar = { workspace = true }
+ar = "0.9"  # For extracting .deb packages (AWS SSM Plugin)
 # File system notifications for RDPDR directory change monitoring
 # Linux-only application, no macOS features needed
 notify = { version = "8.2", default-features = false }

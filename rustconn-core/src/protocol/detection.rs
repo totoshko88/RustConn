@@ -392,7 +392,24 @@ fn detect_client(
 
 /// Finds a binary in PATH
 fn which_binary(binary: &str) -> Option<PathBuf> {
-    // Use `which` command to find the binary
+    // In snap environment, check SNAP directory first for bundled clients
+    if let Ok(snap_dir) = std::env::var("SNAP") {
+        // Check common snap binary locations
+        let snap_paths = [
+            format!("{snap_dir}/usr/bin/{binary}"),
+            format!("{snap_dir}/bin/{binary}"),
+            format!("{snap_dir}/usr/local/bin/{binary}"),
+        ];
+
+        for snap_path in &snap_paths {
+            let path = PathBuf::from(snap_path);
+            if path.exists() && path.is_file() {
+                return Some(path);
+            }
+        }
+    }
+
+    // Use `which` command to find the binary in PATH
     let output = Command::new("which").arg(binary).output().ok()?;
 
     if output.status.success() {

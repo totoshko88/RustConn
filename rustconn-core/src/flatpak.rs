@@ -3,9 +3,22 @@
 //! This module provides utilities for detecting if the application is running
 //! inside a Flatpak sandbox and executing host commands via `flatpak-spawn`.
 //!
-//! When running in Flatpak, external CLI tools (xfreerdp, vncviewer, aws, etc.)
-//! are not available inside the sandbox. To use them, we need to spawn them
-//! on the host system using `flatpak-spawn --host`.
+//! **IMPORTANT:** As of version 0.7.7, the `--talk-name=org.freedesktop.Flatpak`
+//! permission has been removed from the Flatpak manifest per Flathub reviewer feedback.
+//! This means `flatpak-spawn --host` will NOT work, and these functions will fail.
+//!
+//! **Current approach:**
+//! - SSH: Available in Flatpak runtime (no host access needed)
+//! - RDP/VNC: Use embedded clients (IronRDP, vnc-rs) - preferred
+//! - External clients: Should be installed on host, but cannot be launched from Flatpak
+//! - Cloud CLIs: Should be installed on host, but cannot be launched from Flatpak
+//!
+//! **Future options:**
+//! 1. Bundle external clients in Flatpak (increases size significantly)
+//! 2. Use Flatpak extensions for optional clients
+//! 3. Keep embedded-only approach (current recommendation)
+//!
+//! This module is kept for backward compatibility and potential future use.
 
 use std::process::{Command, Output, Stdio};
 use std::sync::OnceLock;

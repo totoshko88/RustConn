@@ -25,6 +25,7 @@
 #![warn(missing_docs)]
 
 pub mod automation;
+pub mod cli_download;
 pub mod cluster;
 pub mod config;
 pub mod connection;
@@ -47,6 +48,7 @@ pub mod rdp_client;
 pub mod search;
 pub mod secret;
 pub mod session;
+pub mod snap;
 pub mod snippet;
 pub mod spice_client;
 pub mod split;
@@ -62,6 +64,12 @@ pub use automation::{
     CompiledRule, ConnectionTask, ExpectEngine, ExpectError, ExpectResult, ExpectRule,
     FolderConnectionTracker, KeyElement, KeySequence, KeySequenceError, KeySequenceResult,
     SpecialKey, TaskCondition, TaskError, TaskExecutor, TaskResult, TaskTiming,
+};
+pub use cli_download::{
+    get_cli_install_dir, get_component, get_components_by_category, get_installation_status,
+    get_user_friendly_error, install_component, uninstall_component, CliDownloadError,
+    CliDownloadResult, ComponentCategory, DownloadCancellation, DownloadProgress,
+    DownloadableComponent, InstallMethod, DOWNLOADABLE_COMPONENTS,
 };
 pub use cluster::{
     Cluster, ClusterError, ClusterManager, ClusterMemberState, ClusterResult, ClusterSession,
@@ -175,6 +183,10 @@ pub use secret::{
 pub use session::{
     LogConfig, LogContext, LogError, LogResult, Session, SessionLogger, SessionManager,
     SessionState, SessionType,
+};
+pub use snap::{
+    get_config_dir, get_confinement_message, get_data_dir, get_known_hosts_path, get_ssh_dir,
+    is_interface_connected, is_snap,
 };
 pub use snippet::SnippetManager;
 pub use spice_client::{

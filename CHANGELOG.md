@@ -5,54 +5,62 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.7.6] - 2026-02-06
+## [Unreleased]
 
-### Improved
-- **UI/UX Enhancements** - GNOME HIG compliance improvements:
-  - Added accessible labels to connection status icons (Connected, Connecting, Connection failed)
-  - Added accessible labels to protocol filter buttons in sidebar
-  - Increased sidebar minimum width from 180px to 200px per GNOME HIG
-  - Added `adw::Clamp` to connection dialog for adaptive width on wide screens
-  - Added CSS status styles (`.status-connected`, `.status-connecting`, `.status-failed`)
-  - Toast notifications now use `adw::ToastPriority` (High for warnings/errors)
-  - Added `ToastType::icon_name()` and `ToastType::priority()` methods
-  - Connection dialog now uses adaptive `adw::ViewSwitcherTitle` in header bar with fallback `ViewSwitcherBar` for narrow windows
+## [0.7.6] - 2026-02-07
 
-- **Thread Safety** - Mutex poisoning recovery in FreeRDP thread:
-  - Added `lock_or_recover()` helper for graceful mutex poisoning recovery
-  - FreeRDP thread now recovers from poisoned mutexes instead of panicking
-  - Improved stability when background threads encounter errors
-  - Helper functions: `set_state()`, `set_flag()`, `get_state()`, `get_flag()`
+### Added
+- **Flatpak Components Manager** — On-demand CLI download for Flatpak environment:
+  - Menu → Flatpak Components... (visible only in Flatpak)
+  - Download and install CLIs to `~/.var/app/io.github.totoshko88.RustConn/cli/`
+  - Supports: AWS CLI, AWS SSM Plugin, Google Cloud CLI, Azure CLI, OCI CLI, Teleport, Tailscale, Cloudflare Tunnel, Boundary, Bitwarden CLI, 1Password CLI, TigerVNC
+  - Python-based CLIs installed via pip, .deb packages extracted automatically
+  - Install/Remove/Update with progress indicators and cancel support
+  - SHA256 checksum verification (except AWS SSM Plugin which uses "latest" URL)
+  - Settings → Clients detects CLIs installed via Flatpak Components
 
-### Refactored
-- **Legacy Code Cleanup** - Removed unused legacy types from terminal module:
-  - Removed `TabDisplayMode` enum (handled by `adw::TabView` automatically)
-  - Removed `TabLabelWidgets` struct (managed by `adw::TabPage` properties)
-  - Kept `SessionWidgetStorage` as it's actively used for VNC/RDP/SPICE widgets
-
-- **Dialog Widget Builders** - Created reusable UI components for dialogs:
-  - Moved `widgets.rs` from `dialogs/connection/` to `dialogs/` for shared access
-  - Added `SwitchRowBuilder` for `adw::SwitchRow` creation
-  - Builders: `CheckboxRowBuilder`, `EntryRowBuilder`, `SpinRowBuilder`, `DropdownRowBuilder`, `SwitchRowBuilder`
-  - Builder pattern with fluent API for consistent widget creation
-  - Static label constants: `ROOT_GROUP`, `NONE`, `NO_KEYS_LOADED`
-
-- **Protocol Dialogs Refactoring** - Applied widget builders across all protocol panels:
-  - **SSH (`ssh.rs`)**: Refactored `create_connection_group()` and `create_session_group()` using `CheckboxRowBuilder` and `EntryRowBuilder`
-  - **RDP (`rdp.rs`)**: Refactored `create_display_group()`, `create_features_group()`, `create_advanced_group()` using `DropdownRowBuilder`, `CheckboxRowBuilder`, `EntryRowBuilder`
-  - **VNC (`vnc.rs`)**: Refactored `create_display_group()`, `create_quality_group()`, `create_features_group()`, `create_advanced_group()` using all four builders
-  - **SPICE (`spice.rs`)**: Refactored `create_security_group()` and `create_features_group()` using `CheckboxRowBuilder`
-  - Reduces code duplication and ensures consistent GNOME HIG styling
-
-- **Other Dialogs Refactoring** - Extended widget builders to non-protocol dialogs:
-  - **Export (`export.rs`)**: Replaced `Frame` + `Grid` with `adw::PreferencesGroup`, added `adw::Clamp` for proper width
-  - **Snippet (`snippet.rs`)**: Refactored `create_basic_section()` to use `EntryRowBuilder`
-  - **Cluster (`cluster.rs`)**: Refactored to use `EntryRowBuilder` and `SwitchRowBuilder`
+- **Snap Strict Confinement** — Migrated from classic to strict confinement:
+  - Snap-aware path resolution for data, config, and SSH directories
+  - Interface connection detection with user-friendly messages
+  - Uses embedded clients (IronRDP, vnc-rs, spice-gtk) — no bundled external CLIs
+  - External CLIs accessed from host via `system-files` interface
 
 ### Changed
-- **Architecture Documentation** - Updated `docs/ARCHITECTURE.md`:
-  - Updated `widgets.rs` location from `dialogs/connection/` to `dialogs/`
-  - Documented widget helper pattern for all dialogs
+- **Flatpak Permissions** — Simplified security model:
+  - Removed `--talk-name=org.freedesktop.Flatpak` (no host command access)
+  - SSH available in runtime, embedded clients for RDP/VNC/SPICE
+  - Use Flatpak Components dialog to install additional CLIs
+
+- **Snap Package** — Strict confinement with host CLI access:
+  - Added plugs for ssh-keys, personal-files, system-files
+  - Data stored in `~/snap/rustconn/current/`
+  - Smaller package (~50 MB) using host-installed binaries
+
+- **Settings → Clients** — Improved client detection display:
+  - All protocols (SSH, RDP, VNC, SPICE) show embedded client status
+  - Blue indicator (●) for embedded clients, green (✓) for external
+  - Fixed AWS SSM Plugin detection (was looking for wrong binary name)
+
+### Improved
+- **UI/UX** — GNOME HIG compliance:
+  - Accessible labels for status icons and protocol filter buttons
+  - Sidebar minimum width increased to 200px
+  - Connection dialog uses adaptive `adw::ViewSwitcherTitle`
+  - Toast notifications with proper priority levels
+
+- **Thread Safety** — Mutex poisoning recovery in FreeRDP thread
+
+### Fixed
+- **RDP Variable Substitution** — Global variables now resolve in username/domain fields
+
+### Refactored
+- **Dialog Widget Builders** — Reusable UI components (`CheckboxRowBuilder`, `EntryRowBuilder`, `SpinRowBuilder`, `DropdownRowBuilder`, `SwitchRowBuilder`)
+- **Protocol Dialogs** — Applied widget builders to SSH, RDP, VNC, SPICE panels
+- **Legacy Cleanup** — Removed unused `TabDisplayMode`, `TabLabelWidgets` types
+
+### Documentation
+- **New**: `docs/SNAP.md` — Snap user guide with interface setup
+- **Updated**: `docs/INSTALL.md`, `docs/USER_GUIDE.md`
 
 ## [0.7.5] - 2026-02-06
 

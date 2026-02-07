@@ -5,6 +5,7 @@ mod cluster;
 mod connection;
 mod document;
 mod export;
+mod flatpak_components;
 mod history;
 mod import;
 pub mod keyboard;
@@ -30,6 +31,7 @@ pub use document::{
     NewDocumentDialog, OpenDocumentDialog, SaveDocumentDialog,
 };
 pub use export::{ExportCallback, ExportDialog};
+pub use flatpak_components::{should_show_flatpak_components_menu, FlatpakComponentsDialog};
 pub use history::HistoryDialog;
 pub use import::ImportDialog;
 pub use log_viewer::LogViewerDialog;

@@ -89,7 +89,7 @@ pub fn create_header_bar() -> adw::HeaderBar {
 /// 2. Tools: Snippets, Clusters, Templates, Sessions, History, Statistics, Password Generator
 /// 3. File: Import, Export
 /// 4. Edit: Copy Connection, Paste Connection
-/// 5. App: Settings, About, Quit
+/// 5. App: Settings, Flatpak Components (if Flatpak), About, Quit
 #[must_use]
 pub fn create_app_menu() -> gio::Menu {
     let menu = gio::Menu::new();
@@ -132,6 +132,14 @@ pub fn create_app_menu() -> gio::Menu {
     // App section
     let app_section = gio::Menu::new();
     app_section.append(Some("Settings"), Some("win.settings"));
+    // Flatpak Components menu item - only visible in Flatpak environment
+    // The action is always registered but does nothing outside Flatpak
+    if rustconn_core::is_flatpak() {
+        app_section.append(
+            Some("Flatpak Components..."),
+            Some("win.flatpak-components"),
+        );
+    }
     app_section.append(Some("About"), Some("app.about"));
     app_section.append(Some("Quit"), Some("app.quit"));
     menu.append_section(None, &app_section);

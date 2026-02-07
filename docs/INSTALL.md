@@ -32,23 +32,47 @@ RustConn requests the following permissions for full functionality:
 | `--share=network` | SSH/RDP/VNC/SPICE connections |
 | `--filesystem=home/.ssh:ro` | Read SSH keys |
 | `--socket=ssh-auth` | SSH agent access |
-| `--filesystem=xdg-config/rustconn:create` | Store connections and settings |
-| `--talk-name=org.freedesktop.Flatpak` | Run host commands (xfreerdp, vncviewer, aws, gcloud) |
 | `--talk-name=org.freedesktop.secrets` | GNOME Keyring access |
 | `--talk-name=org.kde.kwalletd5/6` | KWallet access |
 | `--talk-name=org.keepassxc.KeePassXC.BrowserServer` | KeePassXC proxy |
 | `--talk-name=org.kde.StatusNotifierWatcher` | System tray support |
+
+**Note:** SSH client is included in the Flatpak runtime. For RDP/VNC/SPICE connections, RustConn uses embedded clients (IronRDP, vnc-rs). External clients (xfreerdp, vncviewer, remote-viewer) and cloud CLIs (aws, gcloud, az) should be installed on the host system if needed for fallback.
 
 Or install from a local bundle:
 ```bash
 flatpak install RustConn-*.flatpak
 ```
 
-## Snap
+## Snap (Strict Confinement)
+
+**Important:** This snap uses strict confinement for security. Some features require manual interface connections.
 
 ```bash
-sudo snap install rustconn --classic
+# Install
+sudo snap install rustconn
+
+# Connect SSH interface (required for SSH connections)
+sudo snap connect rustconn:ssh-keys
+sudo snap connect rustconn:ssh-public-keys
+
+# Optional: Connect cloud credentials
+sudo snap connect rustconn:aws-credentials
+sudo snap connect rustconn:gcloud-credentials
+sudo snap connect rustconn:azure-credentials
+sudo snap connect rustconn:oci-credentials
+
+# Optional: Connect KeePass databases
+sudo snap connect rustconn:keepass-databases
+
+# Optional: Connect password manager CLIs
+sudo snap connect rustconn:bitwarden-session
+sudo snap connect rustconn:onepassword-session
 ```
+
+**All protocol clients and Zero Trust CLIs are bundled** — no separate installation needed!
+
+See [docs/SNAP.md](SNAP.md) for detailed snap documentation.
 
 ## AppImage
 

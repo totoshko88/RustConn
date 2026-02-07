@@ -17,6 +17,7 @@ rust-version = "1.88"
 # Async runtime
 tokio = { version = "1.49", features = ["full"] }
 futures = "0.3"
+futures-util = "0.3"
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -42,6 +43,13 @@ regex = "1.11"
 # Encryption
 ring = "0.17"
 argon2 = "0.5"
+hex = "0.4"
+
+# HTTP client and archive handling (for CLI download in Flatpak)
+reqwest = { version = "0.12", features = ["rustls-tls", "stream"], default-features = false }
+zip = "2.2"
+flate2 = "1.1"
+tar = "0.4"
 
 # Testing
 proptest = "1.6"

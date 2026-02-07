@@ -661,17 +661,32 @@ impl TerminalNotebook {
         let argv_gstr: Vec<glib::GString> = argv.iter().map(|s| glib::GString::from(*s)).collect();
         let argv_refs: Vec<&str> = argv_gstr.iter().map(gtk4::glib::GString::as_str).collect();
 
-        let envv_gstr: Option<Vec<glib::GString>> =
-            envv.map(|e| e.iter().map(|s| glib::GString::from(*s)).collect());
-        let envv_refs: Option<Vec<&str>> = envv_gstr
-            .as_ref()
-            .map(|e| e.iter().map(gtk4::glib::GString::as_str).collect());
+        // Build environment with extended PATH for Flatpak CLI tools
+        let extended_path = rustconn_core::cli_download::get_extended_path();
+        let path_env = format!("PATH={extended_path}");
+
+        // Combine user-provided env with our PATH extension
+        let mut env_vec: Vec<glib::GString> = Vec::new();
+
+        // Add extended PATH first
+        env_vec.push(glib::GString::from(path_env.as_str()));
+
+        // Add user-provided environment variables (except PATH which we already set)
+        if let Some(user_env) = envv {
+            for e in user_env {
+                if !e.starts_with("PATH=") {
+                    env_vec.push(glib::GString::from(*e));
+                }
+            }
+        }
+
+        let env_refs: Vec<&str> = env_vec.iter().map(gtk4::glib::GString::as_str).collect();
 
         terminal.spawn_async(
             PtyFlags::DEFAULT,
             working_directory,
             &argv_refs,
-            envv_refs.as_deref().unwrap_or(&[]),
+            &env_refs,
             glib::SpawnFlags::DEFAULT,
             || {},
             -1,
