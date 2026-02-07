@@ -1,0 +1,44 @@
+#!/bin/bash
+# Wrapper script for RustConn snap
+
+# Set up library paths
+export LD_LIBRARY_PATH="$SNAP/usr/lib/$SNAP_LAUNCHER_ARCH_TRIPLET:$SNAP/usr/lib:$LD_LIBRARY_PATH"
+
+# GTK/GDK settings
+export GTK_PATH="$SNAP/usr/lib/$SNAP_LAUNCHER_ARCH_TRIPLET/gtk-4.0"
+export GTK_DATA_PREFIX="$SNAP"
+export GTK_EXE_PREFIX="$SNAP/usr"
+
+# GIO modules
+export GIO_MODULE_DIR="$SNAP/usr/lib/$SNAP_LAUNCHER_ARCH_TRIPLET/gio/modules"
+
+# GDK Pixbuf
+export GDK_PIXBUF_MODULE_FILE="$SNAP/usr/lib/$SNAP_LAUNCHER_ARCH_TRIPLET/gdk-pixbuf-2.0/2.10.0/loaders.cache"
+export GDK_PIXBUF_MODULEDIR="$SNAP/usr/lib/$SNAP_LAUNCHER_ARCH_TRIPLET/gdk-pixbuf-2.0/2.10.0/loaders"
+
+# GSettings schemas
+export GSETTINGS_SCHEMA_DIR="$SNAP/usr/share/glib-2.0/schemas"
+
+# XDG directories
+export XDG_DATA_DIRS="$SNAP/usr/share:${XDG_DATA_DIRS:-/usr/share}"
+export XDG_CONFIG_DIRS="$SNAP/etc/xdg:${XDG_CONFIG_DIRS:-/etc/xdg}"
+
+# Fontconfig
+export FONTCONFIG_PATH="$SNAP/etc/fonts"
+export FONTCONFIG_FILE="$SNAP/etc/fonts/fonts.conf"
+
+# Icon theme
+export GTK_THEME="${GTK_THEME:-Adwaita}"
+export XCURSOR_PATH="$SNAP/usr/share/icons"
+
+# Locale
+export LOCPATH="$SNAP/usr/lib/locale"
+
+# Prefer Wayland, fall back to X11
+export GDK_BACKEND="${GDK_BACKEND:-wayland,x11}"
+
+# Portal integration for file dialogs
+export GTK_USE_PORTAL=1
+
+# Run the application
+exec "$SNAP/usr/bin/rustconn" "$@"

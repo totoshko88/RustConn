@@ -56,8 +56,20 @@ platforms:
     build-on: [amd64]
     build-for: [amd64]
 
+layout:
+  /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/webkit2gtk-4.1:
+    bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/webkit2gtk-4.1
+  /usr/share/xml/iso-codes:
+    bind: $SNAP/usr/share/xml/iso-codes
+  /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gdk-pixbuf-2.0:
+    bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gdk-pixbuf-2.0
+  /usr/share/icons:
+    bind: $SNAP/usr/share/icons
+  /usr/share/glib-2.0/schemas:
+    bind: $SNAP/usr/share/glib-2.0/schemas
+
 plugs:
-  # GTK/Desktop integration
+  # GTK/Desktop integration via content snaps
   gtk-3-themes:
     interface: content
     target: $SNAP/data-dir/themes
@@ -70,14 +82,12 @@ plugs:
     interface: content
     target: $SNAP/data-dir/sounds
     default-provider: gtk-common-themes
-  
-  # SSH access
+
+  # SSH keys access
   ssh-keys:
     interface: ssh-keys
-  ssh-public-keys:
-    interface: ssh-public-keys
-  
-  # Cloud credentials (requires manual connection)
+
+  # Cloud provider credentials
   aws-credentials:
     interface: personal-files
     read:
@@ -94,139 +104,73 @@ plugs:
     interface: personal-files
     read:
       - $HOME/.oci
-  
-  # KeePass databases (requires manual connection)
-  keepass-databases:
-    interface: personal-files
-    read:
-      - $HOME/Documents
-      - $HOME/Dropbox
-      - $HOME/OneDrive
-  
-  # Password manager configs (requires manual connection)
-  bitwarden-config:
-    interface: personal-files
-    read:
-      - $HOME/.config/Bitwarden CLI
-  onepassword-config:
-    interface: personal-files
-    read:
-      - $HOME/.config/op
-  
-  # Host-installed CLIs (requires manual connection)
-  # Zero Trust CLIs
-  host-aws-cli:
+
+  # Host CLI access for Zero Trust and password managers
+  host-usr-bin:
     interface: system-files
     read:
       - /usr/bin/aws
-      - /usr/local/bin/aws
-  host-gcloud-cli:
-    interface: system-files
-    read:
       - /usr/bin/gcloud
-      - /usr/local/bin/gcloud
-      - /snap/google-cloud-cli/current/bin/gcloud
-  host-az-cli:
-    interface: system-files
-    read:
       - /usr/bin/az
-      - /usr/local/bin/az
-  host-oci-cli:
-    interface: system-files
-    read:
       - /usr/bin/oci
-      - /usr/local/bin/oci
-  host-tsh-cli:
-    interface: system-files
-    read:
-      - /usr/bin/tsh
-      - /usr/local/bin/tsh
-  host-tailscale-cli:
-    interface: system-files
-    read:
-      - /usr/bin/tailscale
-      - /usr/local/bin/tailscale
-  host-cloudflared-cli:
-    interface: system-files
-    read:
       - /usr/bin/cloudflared
-      - /usr/local/bin/cloudflared
-  host-boundary-cli:
-    interface: system-files
-    read:
+      - /usr/bin/tsh
+      - /usr/bin/tailscale
       - /usr/bin/boundary
-      - /usr/local/bin/boundary
-  # Password manager CLIs
-  host-bw-cli:
-    interface: system-files
-    read:
       - /usr/bin/bw
-      - /usr/local/bin/bw
-  host-op-cli:
-    interface: system-files
-    read:
       - /usr/bin/op
-      - /usr/local/bin/op
-  # SPICE client (external only)
-  host-spice-client:
-    interface: system-files
-    read:
+      - /usr/bin/keepassxc-proxy
       - /usr/bin/remote-viewer
-      - /usr/local/bin/remote-viewer
+      - /usr/bin/xfreerdp
+      - /usr/bin/vncviewer
 
 apps:
   rustconn:
-    command: usr/bin/rustconn
+    command: usr/bin/rustconn-wrapper
     desktop: usr/share/applications/io.github.totoshko88.RustConn.desktop
     common-id: io.github.totoshko88.RustConn
-    extensions: [gnome]
     plugs:
-      - home
-      - network
-      - network-bind
-      - audio-playback
       - desktop
       - desktop-legacy
+      - gsettings
+      - opengl
       - wayland
       - x11
-      - unity7
-      - gsettings
+      - audio-playback
+      - network
+      - network-bind
+      - home
       - ssh-keys
-      - ssh-public-keys
+      - password-manager-service
+      - gtk-3-themes
+      - icon-themes
+      - sound-themes
       - aws-credentials
       - gcloud-credentials
       - azure-credentials
       - oci-credentials
-      - keepass-databases
-      - bitwarden-config
-      - onepassword-config
-      - host-aws-cli
-      - host-gcloud-cli
-      - host-az-cli
-      - host-oci-cli
-      - host-tsh-cli
-      - host-tailscale-cli
-      - host-cloudflared-cli
-      - host-boundary-cli
-      - host-bw-cli
-      - host-op-cli
-      - host-spice-client
+      - host-usr-bin
     environment:
-      PATH: $SNAP/usr/bin:$SNAP/bin:/usr/local/bin:/usr/bin:$PATH
-      SSH_CONFIG_DIR: $SNAP_USER_DATA/.ssh
-      RUSTCONN_DATA_DIR: $SNAP_USER_DATA
-  
+      GTK_USE_PORTAL: "1"
+      GDK_BACKEND: wayland,x11
+      GSETTINGS_SCHEMA_DIR: $SNAP/usr/share/glib-2.0/schemas
+      GIO_MODULE_DIR: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gio/modules
+      GDK_PIXBUF_MODULE_FILE: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gdk-pixbuf-2.0/2.10.0/loaders.cache
+      XDG_DATA_DIRS: $SNAP/usr/share:$XDG_DATA_DIRS
+      FONTCONFIG_PATH: $SNAP/etc/fonts
+      FONTCONFIG_FILE: $SNAP/etc/fonts/fonts.conf
+
   rustconn-cli:
     command: usr/bin/rustconn-cli
     plugs:
-      - home
       - network
+      - home
       - ssh-keys
-      - ssh-public-keys
-    environment:
-      PATH: $SNAP/usr/bin:$SNAP/bin:/usr/local/bin:/usr/bin:$PATH
-      SSH_CONFIG_DIR: $SNAP_USER_DATA/.ssh
-      RUSTCONN_DATA_DIR: $SNAP_USER_DATA
+      - aws-credentials
+      - gcloud-credentials
+      - azure-credentials
+      - oci-credentials
+      - host-usr-bin
 
 parts:
   rustconn:
@@ -235,7 +179,6 @@ parts:
     rust-channel: "1.88"
     rust-path: [rustconn, rustconn-cli]
     rust-use-global-lto: true
-    rust-features: [tray, vnc-embedded, rdp-embedded, rdp-audio]
     build-packages:
       - libgtk-4-dev
       - libadwaita-1-dev
@@ -252,6 +195,20 @@ parts:
       - libasound2t64
       - libssl3t64
       - openssh-client
+      - libgraphene-1.0-0
+      - libpango-1.0-0
+      - libpangocairo-1.0-0
+      - libharfbuzz0b
+      - libcairo2
+      - libcairo-gobject2
+      - libgdk-pixbuf-2.0-0
+      - librsvg2-2
+      - librsvg2-common
+      - shared-mime-info
+      - gsettings-desktop-schemas
+      - libglib2.0-bin
+      - fontconfig
+      - fonts-dejavu-core
     organize:
       bin/rustconn: usr/bin/rustconn
       bin/rustconn-cli: usr/bin/rustconn-cli
@@ -263,3 +220,19 @@ parts:
       cp rustconn/assets/io.github.totoshko88.RustConn.desktop $CRAFT_PART_INSTALL/usr/share/applications/
       cp rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml $CRAFT_PART_INSTALL/usr/share/metainfo/
       cp -r rustconn/assets/icons/hicolor $CRAFT_PART_INSTALL/usr/share/icons/
+    override-prime: |
+      craftctl default
+      # Update gdk-pixbuf loaders cache
+      if [ -d usr/lib/*/gdk-pixbuf-2.0 ]; then
+        /usr/lib/*/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders > usr/lib/*/gdk-pixbuf-2.0/2.10.0/loaders.cache 2>/dev/null || true
+      fi
+      # Compile GSettings schemas
+      if [ -d usr/share/glib-2.0/schemas ]; then
+        glib-compile-schemas usr/share/glib-2.0/schemas 2>/dev/null || true
+      fi
+
+  wrapper:
+    plugin: dump
+    source: snap/local
+    organize:
+      rustconn-wrapper: usr/bin/rustconn-wrapper
