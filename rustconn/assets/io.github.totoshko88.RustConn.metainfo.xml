@@ -12,15 +12,15 @@
   <description>
     <p>
       RustConn is a modern connection manager for Linux with a GTK4/Wayland-native interface.
-      Manage SSH, RDP, VNC, SPICE, and Zero Trust connections from a single application
-      with support for both embedded and external clients.
+      Manage SSH, RDP, VNC, SPICE, and Zero Trust connections from a single application.
+      All core protocols use embedded Rust implementations — no external dependencies required.
     </p>
-    <p>Protocols:</p>
+    <p>Protocols (embedded Rust implementations):</p>
     <ul>
-      <li>SSH with embedded terminal and split view</li>
-      <li>RDP via IronRDP/FreeRDP (embedded and external)</li>
-      <li>VNC via vnc-rs/TigerVNC (embedded and external)</li>
-      <li>SPICE via virt-viewer</li>
+      <li>SSH with embedded VTE terminal and split view</li>
+      <li>RDP via IronRDP (embedded, with FreeRDP fallback)</li>
+      <li>VNC via vnc-rs (embedded, with TigerVNC fallback)</li>
+      <li>SPICE via remote-viewer (external)</li>
       <li>Zero Trust: AWS SSM, GCP IAP, Azure Bastion, OCI Bastion, Cloudflare, Teleport, Tailscale, Boundary</li>
     </ul>
     <p>Organization:</p>
@@ -76,6 +76,27 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.7.6" date="2026-02-07">
+      <description>
+        <p>Version 0.7.6 - Flatpak Components and Snap Strict Confinement:</p>
+        <ul>
+          <li>Flatpak Components Dialog - View and manage Flatpak extensions (Settings → Clients)</li>
+          <li>CLI Download Support - Download external CLIs directly within Flatpak sandbox</li>
+          <li>Snap Strict Confinement - Migrated from classic to strict confinement</li>
+          <li>Snap permissions for SSH keys, cloud credentials, and host CLI access</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.7.5" date="2026-02-06">
+      <description>
+        <p>Version 0.7.5 - Snap Strict Confinement Preparation:</p>
+        <ul>
+          <li>Snap detection and permission checking</li>
+          <li>Snap-specific documentation and user guidance</li>
+          <li>Improved error messages for missing Snap interfaces</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.7.4" date="2026-02-05">
       <description>
         <p>Version 0.7.4 - Zero Trust UI and Connection Dialog Modularization:</p>
