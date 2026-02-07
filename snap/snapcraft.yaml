@@ -235,12 +235,11 @@ parts:
     rust-channel: "1.88"
     rust-path: [rustconn, rustconn-cli]
     rust-use-global-lto: true
-    rust-features: [default]
+    rust-features: [tray, vnc-embedded, rdp-embedded, rdp-audio]
     build-packages:
       - libgtk-4-dev
       - libadwaita-1-dev
       - libvte-2.91-gtk4-dev
-      - libpango1.0-dev
       - libssl-dev
       - libasound2-dev
       - pkg-config
@@ -250,8 +249,6 @@ parts:
       - libgtk-4-1
       - libadwaita-1-0
       - libvte-2.91-gtk4-0
-      - libpango-1.0-0
-      - libpangoft2-1.0-0
       - libasound2t64
       - libssl3t64
       - openssh-client
