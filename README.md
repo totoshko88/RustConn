@@ -2,19 +2,26 @@
 
 Modern connection manager for Linux with GTK4/Wayland-native interface.
 
-[![Demo](https://img.youtube.com/vi/BNFikAeEZY0/maxresdefault.jpg)](https://youtu.be/BNFikAeEZY0)
+[![Demo](https://img.youtube.com/vi/dsGZsfGurv0/maxresdefault.jpg)](https://youtu.be/dsGZsfGurv0)
 
 ## Features
 
 | Category | Details |
 |----------|---------|
-| **Protocols** | SSH (embedded), RDP, VNC, SPICE, Zero Trust (AWS SSM, GCP IAP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary) |
+| **Protocols** | SSH (embedded VTE), RDP (IronRDP), VNC (vnc-rs), SPICE, Zero Trust (AWS SSM, GCP IAP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary) |
 | **Organization** | Groups, tags, templates, connection history & statistics |
 | **Import/Export** | Asbru-CM, Remmina, SSH config, Ansible inventory, Royal TS, MobaXterm, native (.rcn) |
 | **Security** | KeePassXC (KDBX), libsecret, Bitwarden CLI, 1Password CLI integration |
 | **Productivity** | Split terminals, command snippets, cluster commands, Wake-on-LAN |
 
 ## Installation
+
+| Method | Notes |
+|--------|-------|
+| **Flatpak** | Recommended. Extensions mechanism built-in, sandboxed |
+| **Package manager** | Uses system dependencies (GTK4, VTE, libadwaita) |
+| **Snap** | Strict confinement, requires additional permissions |
+| **From source** | Requires Rust 1.88+, GTK4 dev libraries |
 
 <a href="https://flathub.org/apps/io.github.totoshko88.RustConn">
   <img width="200" alt="Download on Flathub" src="https://flathub.org/api/badge?locale=en"/>
@@ -24,12 +31,13 @@ Modern connection manager for Linux with GTK4/Wayland-native interface.
 flatpak install flathub io.github.totoshko88.RustConn
 ```
 
-**Snap (strict confinement)** / **AppImage** / **Debian** / **openSUSE (OBS)** — see [Installation Guide](docs/INSTALL.md)
+**Snap** / **AppImage** / **Debian** / **openSUSE (OBS)** — see [Installation Guide](docs/INSTALL.md)
 
 ```bash
-# Snap (requires interface connections - see docs/SNAP.md)
+# Snap (strict confinement - requires interface connections)
 sudo snap install rustconn
 sudo snap connect rustconn:ssh-keys
+# See docs/SNAP.md for all required permissions
 ```
 
 ```bash
@@ -40,15 +48,7 @@ cargo build --release
 ./target/release/rustconn
 ```
 
-### Installation from source
-
-You can install `rustconn` directly from the repository:
-
-```bash
-cargo install --git https://github.com/totoshko88/rustconn.git --locked
-```
-
-**Dependencies:** GTK4 4.14+, VTE4, libadwaita | **Optional:** FreeRDP, TigerVNC, virt-viewer
+**Build dependencies:** GTK4 4.14+, VTE4, libadwaita, Rust 1.88+ | **Optional:** FreeRDP, TigerVNC, virt-viewer
 
 
 ## Quick Start
