@@ -159,6 +159,17 @@ fi
 %changelog
 * Fri Feb 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.7-0
 - Version bump to 0.7.7
+- Fixed keyboard shortcuts intercepting VTE terminal input:
+  - Delete, Ctrl+E, Ctrl+D no longer fire when terminal has focus (#4)
+  - Shortcuts now scoped to sidebar only
+- Improved thread safety:
+  - Audio mutex locks use graceful fallback instead of unwrap()
+  - Search engine mutex locks use graceful recovery patterns
+- Security: VNC client logs warning when connecting without password
+- Refactored runtime consolidation:
+  - Replaced 23 redundant tokio runtime calls with shared with_runtime()
+- Collection optimization: snippet tags use flat_map and sort_unstable
+- Dead code removal: removed deprecated credential methods and unused menu builder
 
 * Fri Feb 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.6-0
 - Version bump to 0.7.6

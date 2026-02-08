@@ -785,111 +785,6 @@ impl AppState {
         &mut self.secret_manager
     }
 
-    /// Stores credentials for a connection (blocking wrapper for async operation)
-    ///
-    /// # Deprecation Warning
-    ///
-    /// This method blocks the calling thread and should NOT be used from GTK UI callbacks
-    /// as it will freeze the interface. Use the async pattern with `spawn_blocking_with_callback`
-    /// instead for GUI code.
-    ///
-    /// # Example (preferred async pattern)
-    ///
-    /// ```ignore
-    /// crate::utils::spawn_blocking_with_callback(
-    ///     move || {
-    ///         // blocking credential operation here
-    ///     },
-    ///     move |result| {
-    ///         // handle result on GTK main thread
-    ///     },
-    /// );
-    /// ```
-    ///
-    /// Note: This uses a cached tokio runtime to avoid creating a new one each time.
-    /// For better performance in async contexts, use `secret_manager()` directly.
-    #[deprecated(
-        since = "0.5.0",
-        note = "Blocks UI thread. Use spawn_blocking_with_callback pattern for GUI code."
-    )]
-    #[allow(dead_code)]
-    pub fn store_credentials(
-        &self,
-        connection_id: Uuid,
-        credentials: &Credentials,
-    ) -> Result<(), String> {
-        let secret_manager = self.secret_manager.clone();
-        let id_str = connection_id.to_string();
-        let creds = credentials.clone();
-
-        with_runtime(|rt| {
-            rt.block_on(async {
-                secret_manager
-                    .store(&id_str, &creds)
-                    .await
-                    .map_err(|e| format!("Failed to store credentials: {e}"))
-            })
-        })?
-    }
-
-    /// Retrieves credentials for a connection (blocking wrapper for async operation)
-    ///
-    /// # Deprecation Warning
-    ///
-    /// This method blocks the calling thread and should NOT be used from GTK UI callbacks
-    /// as it will freeze the interface. Use the async pattern with `spawn_blocking_with_callback`
-    /// instead for GUI code.
-    ///
-    /// Note: This uses a cached tokio runtime to avoid creating a new one each time.
-    /// For better performance in async contexts, use `secret_manager()` directly.
-    #[deprecated(
-        since = "0.5.0",
-        note = "Blocks UI thread. Use spawn_blocking_with_callback pattern for GUI code."
-    )]
-    #[allow(dead_code)]
-    pub fn retrieve_credentials(&self, connection_id: Uuid) -> Result<Option<Credentials>, String> {
-        let secret_manager = self.secret_manager.clone();
-        let id_str = connection_id.to_string();
-
-        with_runtime(|rt| {
-            rt.block_on(async {
-                secret_manager
-                    .retrieve(&id_str)
-                    .await
-                    .map_err(|e| format!("Failed to retrieve credentials: {e}"))
-            })
-        })?
-    }
-
-    /// Deletes credentials for a connection (blocking wrapper for async operation)
-    ///
-    /// # Deprecation Warning
-    ///
-    /// This method blocks the calling thread and should NOT be used from GTK UI callbacks
-    /// as it will freeze the interface. Use the async pattern with `spawn_blocking_with_callback`
-    /// instead for GUI code.
-    ///
-    /// Note: This uses a cached tokio runtime to avoid creating a new one each time.
-    /// For better performance in async contexts, use `secret_manager()` directly.
-    #[deprecated(
-        since = "0.5.0",
-        note = "Blocks UI thread. Use spawn_blocking_with_callback pattern for GUI code."
-    )]
-    #[allow(dead_code)]
-    pub fn delete_credentials(&self, connection_id: Uuid) -> Result<(), String> {
-        let secret_manager = self.secret_manager.clone();
-        let id_str = connection_id.to_string();
-
-        with_runtime(|rt| {
-            rt.block_on(async {
-                secret_manager
-                    .delete(&id_str)
-                    .await
-                    .map_err(|e| format!("Failed to delete credentials: {e}"))
-            })
-        })?
-    }
-
     /// Checks if any secret backend is available (blocking wrapper)
     ///
     /// Note: Used internally by resolve_credentials_blocking and should_prompt_for_credentials.
@@ -1536,16 +1431,15 @@ impl AppState {
         let connection = connection.clone();
         let groups = groups.to_vec();
 
-        // Create a new runtime for this thread (background thread doesn't have one)
-        let rt =
-            tokio::runtime::Runtime::new().map_err(|e| format!("Failed to create runtime: {e}"))?;
-
-        rt.block_on(async {
-            resolver
-                .resolve_with_hierarchy(&connection, &groups)
-                .await
-                .map_err(|e| format!("Failed to resolve credentials: {e}"))
-        })
+        // Use thread-local runtime (created lazily per thread)
+        crate::async_utils::with_runtime(|rt| {
+            rt.block_on(async {
+                resolver
+                    .resolve_with_hierarchy(&connection, &groups)
+                    .await
+                    .map_err(|e| format!("Failed to resolve credentials: {e}"))
+            })
+        })?
     }
 
     // ========== Settings Operations ==========

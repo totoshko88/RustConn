@@ -208,8 +208,13 @@ impl RdpAudioPlayer {
                     let vol_raw = volume.load(Ordering::Relaxed);
                     let vol = vol_raw as f32 / 65535.0;
 
-                    // Buffer lock - panics only if poisoned (unrecoverable state)
-                    let mut buf = buffer.lock().unwrap();
+                    // Graceful degradation on poisoned mutex — fill silence
+                    let Ok(mut buf) = buffer.lock() else {
+                        for sample in data.iter_mut() {
+                            *sample = 0;
+                        }
+                        return;
+                    };
                     let samples = buf.pop_samples(data.len());
 
                     for (i, sample) in data.iter_mut().enumerate() {
@@ -255,8 +260,13 @@ impl RdpAudioPlayer {
                     let vol_raw = volume.load(Ordering::Relaxed);
                     let vol = vol_raw as f32 / 65535.0;
 
-                    // Buffer lock - panics only if poisoned (unrecoverable state)
-                    let mut buf = buffer.lock().unwrap();
+                    // Graceful degradation on poisoned mutex — fill silence
+                    let Ok(mut buf) = buffer.lock() else {
+                        for sample in data.iter_mut() {
+                            *sample = 0;
+                        }
+                        return;
+                    };
                     let samples = buf.pop_samples(data.len());
 
                     for (i, sample) in data.iter_mut().enumerate() {

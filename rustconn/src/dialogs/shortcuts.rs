@@ -37,12 +37,12 @@ const SHORTCUTS: &[ShortcutEntry] = &[
     },
     ShortcutEntry {
         keys: "Ctrl+E",
-        description: "Export connections",
+        description: "Edit selected connection (sidebar)",
         category: "Connections",
     },
     ShortcutEntry {
         keys: "Delete",
-        description: "Delete selected connection/group",
+        description: "Delete selected connection/group (sidebar)",
         category: "Connections",
     },
     ShortcutEntry {
@@ -52,7 +52,7 @@ const SHORTCUTS: &[ShortcutEntry] = &[
     },
     ShortcutEntry {
         keys: "Ctrl+D",
-        description: "Duplicate connection",
+        description: "Duplicate connection (sidebar)",
         category: "Connections",
     },
     ShortcutEntry {

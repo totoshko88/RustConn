@@ -213,10 +213,10 @@ pub fn show_new_connection_dialog_internal(
                                             key_passphrase: None,
                                             domain: None,
                                         };
-                                        let rt = tokio::runtime::Runtime::new()
-                                            .map_err(|e| format!("Runtime error: {e}"))?;
-                                        rt.block_on(backend.store(&lookup_key, &creds))
-                                            .map_err(|e| format!("{e}"))
+                                        crate::async_utils::with_runtime(|rt| {
+                                            rt.block_on(backend.store(&lookup_key, &creds))
+                                                .map_err(|e| format!("{e}"))
+                                        })?
                                     },
                                     move |result: Result<(), String>| {
                                         if let Err(e) = result {
@@ -257,10 +257,10 @@ pub fn show_new_connection_dialog_internal(
                                             key_passphrase: None,
                                             domain: None,
                                         };
-                                        let rt = tokio::runtime::Runtime::new()
-                                            .map_err(|e| format!("Runtime error: {e}"))?;
-                                        rt.block_on(backend.store(&lookup_key, &creds))
-                                            .map_err(|e| format!("{e}"))
+                                        crate::async_utils::with_runtime(|rt| {
+                                            rt.block_on(backend.store(&lookup_key, &creds))
+                                                .map_err(|e| format!("{e}"))
+                                        })?
                                     },
                                     move |result: Result<(), String>| {
                                         if let Err(e) = result {
@@ -297,10 +297,10 @@ pub fn show_new_connection_dialog_internal(
                                             key_passphrase: None,
                                             domain: None,
                                         };
-                                        let rt = tokio::runtime::Runtime::new()
-                                            .map_err(|e| format!("Runtime error: {e}"))?;
-                                        rt.block_on(backend.store(&lookup_key, &creds))
-                                            .map_err(|e| format!("{e}"))
+                                        crate::async_utils::with_runtime(|rt| {
+                                            rt.block_on(backend.store(&lookup_key, &creds))
+                                                .map_err(|e| format!("{e}"))
+                                        })?
                                     },
                                     move |result: Result<(), String>| {
                                         if let Err(e) = result {
@@ -634,10 +634,10 @@ pub fn show_new_group_dialog_with_parent(
                     move || {
                         use rustconn_core::secret::SecretBackend;
                         let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
-                        let rt = tokio::runtime::Runtime::new()
-                            .map_err(|e| format!("Runtime error: {e}"))?;
-                        rt.block_on(backend.retrieve(&lookup_key))
-                            .map_err(|e| format!("{e}"))
+                        crate::async_utils::with_runtime(|rt| {
+                            rt.block_on(backend.retrieve(&lookup_key))
+                                .map_err(|e| format!("{e}"))
+                        })?
                     },
                     move |result: Result<Option<Credentials>, String>| {
                         btn_clone.set_sensitive(true);
@@ -673,10 +673,10 @@ pub fn show_new_group_dialog_with_parent(
                     move || {
                         use rustconn_core::secret::SecretBackend;
                         let backend = rustconn_core::secret::BitwardenBackend::new();
-                        let rt = tokio::runtime::Runtime::new()
-                            .map_err(|e| format!("Runtime error: {e}"))?;
-                        rt.block_on(backend.retrieve(&lookup_key))
-                            .map_err(|e| format!("{e}"))
+                        crate::async_utils::with_runtime(|rt| {
+                            rt.block_on(backend.retrieve(&lookup_key))
+                                .map_err(|e| format!("{e}"))
+                        })?
                     },
                     move |result: Result<Option<Credentials>, String>| {
                         btn_clone.set_sensitive(true);
@@ -935,10 +935,10 @@ pub fn show_new_group_dialog_with_parent(
                                                 key_passphrase: None,
                                                 domain: None,
                                             };
-                                            let rt = tokio::runtime::Runtime::new()
-                                                .map_err(|e| format!("Runtime error: {e}"))?;
-                                            rt.block_on(backend.store(&lookup_key, &creds))
-                                                .map_err(|e| format!("{e}"))
+                                            crate::async_utils::with_runtime(|rt| {
+                                                rt.block_on(backend.store(&lookup_key, &creds))
+                                                    .map_err(|e| format!("{e}"))
+                                            })?
                                         },
                                         move |result: Result<(), String>| {
                                             if let Err(e) = result {
@@ -970,10 +970,10 @@ pub fn show_new_group_dialog_with_parent(
                                                 key_passphrase: None,
                                                 domain: None,
                                             };
-                                            let rt = tokio::runtime::Runtime::new()
-                                                .map_err(|e| format!("Runtime error: {e}"))?;
-                                            rt.block_on(backend.store(&lookup_key, &creds))
-                                                .map_err(|e| format!("{e}"))
+                                            crate::async_utils::with_runtime(|rt| {
+                                                rt.block_on(backend.store(&lookup_key, &creds))
+                                                    .map_err(|e| format!("{e}"))
+                                            })?
                                         },
                                         move |result: Result<(), String>| {
                                             if let Err(e) = result {

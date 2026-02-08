@@ -926,9 +926,10 @@ fn setup_app_actions(
     app.set_accels_for_action("win.import", &["<Control>i"]);
     // Note: Enter key is NOT bound globally to avoid intercepting terminal input
     // Use double-click on sidebar items to connect instead
-    app.set_accels_for_action("win.edit-connection", &["<Control>e"]);
-    app.set_accels_for_action("win.delete-connection", &["Delete"]);
-    app.set_accels_for_action("win.duplicate-connection", &["<Control>d"]);
+    // Note: Delete, Ctrl+E, Ctrl+D are NOT registered globally to avoid
+    // intercepting keys when VTE terminal or embedded viewers have focus.
+    // These are handled by the sidebar's EventControllerKey instead.
+    // See: https://github.com/totoshko88/RustConn/issues/4
 
     // Navigation shortcuts
     app.set_accels_for_action("win.search", &["<Control>f", "<Control>k"]);

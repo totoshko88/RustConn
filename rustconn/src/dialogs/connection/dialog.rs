@@ -978,13 +978,6 @@ impl ConnectionDialog {
             // Use spawn_blocking_with_timeout utility for cleaner async handling
             crate::utils::spawn_blocking_with_timeout(
                 move || {
-                    let Ok(rt) = tokio::runtime::Runtime::new() else {
-                        return rustconn_core::testing::TestResult::failure(
-                            conn_id,
-                            conn_name.clone(),
-                            "Failed to create tokio runtime",
-                        );
-                    };
                     let tester = rustconn_core::testing::ConnectionTester::new();
 
                     // Create a minimal connection for testing
@@ -1016,14 +1009,23 @@ impl ConnectionDialog {
                         }
                     };
                     let mut test_conn = rustconn_core::models::Connection::new(
-                        conn_name,
+                        conn_name.clone(),
                         host,
                         port,
                         protocol_config,
                     );
                     test_conn.id = conn_id;
 
-                    rt.block_on(tester.test_connection(&test_conn))
+                    match crate::async_utils::with_runtime(|rt| {
+                        rt.block_on(tester.test_connection(&test_conn))
+                    }) {
+                        Ok(result) => result,
+                        Err(e) => rustconn_core::testing::TestResult::failure(
+                            conn_id,
+                            conn_name,
+                            &format!("Runtime error: {e}"),
+                        ),
+                    }
                 },
                 std::time::Duration::from_secs(15),
                 move |result: Option<rustconn_core::testing::TestResult>| {
@@ -6056,10 +6058,10 @@ impl ConnectionDialog {
                     spawn_blocking_with_callback(
                         move || {
                             let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
-                            let rt = tokio::runtime::Runtime::new()
-                                .map_err(|e| format!("Failed to create runtime: {e}"))?;
-                            rt.block_on(backend.retrieve(&lookup_key))
-                                .map_err(|e| format!("{e}"))
+                            crate::async_utils::with_runtime(|rt| {
+                                rt.block_on(backend.retrieve(&lookup_key))
+                                    .map_err(|e| format!("{e}"))
+                            })?
                         },
                         move |result: Result<
                             Option<rustconn_core::models::Credentials>,
@@ -6127,10 +6129,10 @@ impl ConnectionDialog {
                     spawn_blocking_with_callback(
                         move || {
                             let backend = rustconn_core::secret::BitwardenBackend::new();
-                            let rt = tokio::runtime::Runtime::new()
-                                .map_err(|e| format!("Failed to create runtime: {e}"))?;
-                            rt.block_on(backend.retrieve(&lookup_key))
-                                .map_err(|e| format!("{e}"))
+                            crate::async_utils::with_runtime(|rt| {
+                                rt.block_on(backend.retrieve(&lookup_key))
+                                    .map_err(|e| format!("{e}"))
+                            })?
                         },
                         move |result: Result<
                             Option<rustconn_core::models::Credentials>,
