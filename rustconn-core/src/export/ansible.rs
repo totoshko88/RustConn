@@ -4,7 +4,6 @@
 
 use std::collections::HashMap;
 use std::fmt::Write;
-use std::fs;
 
 use uuid::Uuid;
 
@@ -291,13 +290,7 @@ impl ExportTarget for AnsibleExporter {
         };
 
         // Write to file
-        fs::write(&options.output_path, &content).map_err(|e| {
-            ExportError::WriteError(format!(
-                "Failed to write to {}: {}",
-                options.output_path.display(),
-                e
-            ))
-        })?;
+        super::write_export_file(&options.output_path, &content)?;
 
         result.exported_count = ssh_connections.len();
         result.add_output_file(options.output_path.clone());

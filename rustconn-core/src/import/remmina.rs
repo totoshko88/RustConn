@@ -13,8 +13,8 @@ use uuid::Uuid;
 
 use crate::error::ImportError;
 use crate::models::{
-    Connection, ConnectionGroup, PasswordSource, ProtocolConfig, RdpConfig, Resolution,
-    SpiceConfig, SshAuthMethod, SshConfig, SshKeySource, VncConfig,
+    Connection, ConnectionGroup, Credentials, PasswordSource, ProtocolConfig, RdpConfig,
+    Resolution, SpiceConfig, SshAuthMethod, SshConfig, SshKeySource, VncConfig,
 };
 
 use super::normalize::parse_host_port;
@@ -59,12 +59,14 @@ impl RemminaImporter {
 
     /// Retrieves a password from GNOME Keyring for a Remmina connection
     ///
-    /// Remmina stores passwords in the keyring with specific attributes.
-    fn get_password_from_keyring(filename: &str, protocol: &str) -> Option<String> {
-        // Remmina uses the filename (without path) as the key
-        // Format: secret-tool lookup filename <filename> protocol <protocol>
+    /// Remmina stores passwords using the `org.remmina.Password` schema with
+    /// attributes: `filename` (full path to .remmina file) and `key` (field name,
+    /// e.g. "password"). We try the full path first, then fall back to just the
+    /// filename for compatibility with older Remmina versions.
+    fn get_password_from_keyring(file_path: &str) -> Option<String> {
+        // Primary lookup: full path + key="password" (matches Remmina's schema)
         let output = Command::new("secret-tool")
-            .args(["lookup", "filename", filename, "protocol", protocol])
+            .args(["lookup", "filename", file_path, "key", "password"])
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .output()
@@ -77,39 +79,25 @@ impl RemminaImporter {
             }
         }
 
-        // Try alternative lookup with just filename
-        let output = Command::new("secret-tool")
-            .args(["lookup", "filename", filename])
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .output()
-            .ok()?;
+        // Fallback: try with just the basename (older Remmina versions)
+        let basename = Path::new(file_path)
+            .file_name()
+            .and_then(|f| f.to_str())
+            .unwrap_or(file_path);
 
-        if output.status.success() {
-            let password = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            if !password.is_empty() {
-                return Some(password);
-            }
-        }
+        if basename != file_path {
+            let output = Command::new("secret-tool")
+                .args(["lookup", "filename", basename, "key", "password"])
+                .stdout(Stdio::piped())
+                .stderr(Stdio::null())
+                .output()
+                .ok()?;
 
-        // Try with Remmina-specific attributes
-        let output = Command::new("secret-tool")
-            .args([
-                "lookup",
-                "application",
-                "org.remmina.Remmina",
-                "filename",
-                filename,
-            ])
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .output()
-            .ok()?;
-
-        if output.status.success() {
-            let password = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            if !password.is_empty() {
-                return Some(password);
+            if output.status.success() {
+                let password = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !password.is_empty() {
+                    return Some(password);
+                }
             }
         }
 
@@ -180,7 +168,9 @@ impl RemminaImporter {
             // Parse key=value
             if let Some(eq_pos) = line.find('=') {
                 let key = line[..eq_pos].trim().to_lowercase();
-                let value = line[eq_pos + 1..].trim().to_string();
+                // Strip trailing literal escape sequences (\n, \r, \t)
+                // that Remmina INI files sometimes contain at end of values
+                let value = super::normalize::sanitize_imported_value(line[eq_pos + 1..].trim());
 
                 if let Some(ref section) = current_section {
                     sections
@@ -338,17 +328,13 @@ impl RemminaImporter {
 
         // Try to import password from GNOME Keyring if enabled
         if self.import_passwords {
-            // Extract filename from source_path for keyring lookup
-            let filename = Path::new(source_path)
-                .file_name()
-                .and_then(|f| f.to_str())
-                .unwrap_or(source_path);
-
-            let protocol_str = protocol.as_deref().unwrap_or("SSH");
-
-            if let Some(_password) = Self::get_password_from_keyring(filename, protocol_str) {
-                // Mark that password is available in keyring
-                // The actual password will be retrieved at connection time
+            if let Some(password) = Self::get_password_from_keyring(source_path) {
+                // Store credentials in the result for later persistence
+                let creds = Credentials::with_password(
+                    connection.username.clone().unwrap_or_default(),
+                    password,
+                );
+                result.add_credentials(connection.id, creds);
                 connection.password_source = PasswordSource::Keyring;
             }
         }
@@ -479,10 +465,6 @@ impl ImportSource for RemminaImporter {
     }
 
     fn import_from_path(&self, path: &Path) -> Result<ImportResult, ImportError> {
-        if !path.exists() {
-            return Err(ImportError::FileNotFound(path.to_path_buf()));
-        }
-
         let mut group_map: HashMap<String, Uuid> = HashMap::new();
         self.import_single_file(path, &mut group_map)
     }
@@ -673,6 +655,30 @@ protocol=SSH
         let result = importer.parse_remmina_file(content, "test.remmina", &mut group_map);
         assert_eq!(result.connections.len(), 0);
         assert_eq!(result.skipped.len(), 1);
+    }
+
+    #[test]
+    fn test_parse_name_with_trailing_escape() {
+        let importer = RemminaImporter::new();
+        let mut group_map = HashMap::new();
+        // Remmina files can have literal \n at end of name values
+        let content = r"
+[remmina]
+name=ec2-3-250-166-202.eu-west-1.compute.amazonaws.com\n
+protocol=RDP
+server=ec2-3-250-166-202.eu-west-1.compute.amazonaws.com
+username=Administrator
+";
+
+        let result = importer.parse_remmina_file(content, "test.remmina", &mut group_map);
+        assert_eq!(result.connections.len(), 1);
+
+        let conn = &result.connections[0];
+        // parse_ini now strips trailing \n at the source
+        assert_eq!(
+            conn.name,
+            "ec2-3-250-166-202.eu-west-1.compute.amazonaws.com"
+        );
     }
 
     #[test]

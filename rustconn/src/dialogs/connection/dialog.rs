@@ -5947,7 +5947,7 @@ impl ConnectionDialog {
                 _ => "ssh",
             };
 
-            // Build hierarchical lookup key if groups are available
+            // Build hierarchical lookup key for KeePass
             let lookup_key = if groups.is_empty() {
                 // Legacy behavior: sanitize name and use flat path
                 let sanitized_name = base_name.replace('/', "-");
@@ -5976,6 +5976,15 @@ impl ConnectionDialog {
                     let path = group_path.join("/");
                     format!("{path}/{base_name} ({protocol_suffix})")
                 }
+            };
+
+            // Flat lookup key for Keyring/Bitwarden — matches the format
+            // used by resolve_from_keyring and import credential storage:
+            // "{name} ({protocol})"
+            let flat_lookup_key = {
+                let sanitized = base_name.trim().replace('/', "-");
+                let sanitized = rustconn_core::import::sanitize_imported_value(&sanitized);
+                format!("{sanitized} ({protocol_suffix})")
             };
 
             match selected {
@@ -6047,7 +6056,8 @@ impl ConnectionDialog {
                     );
                 }
                 2 => {
-                    // Keyring (libsecret)
+                    // Keyring (libsecret) — use flat key to match
+                    // resolve_from_keyring / import store format
                     let password_entry = password_entry.clone();
                     let window = window.clone();
                     let btn = btn.clone();
@@ -6055,13 +6065,24 @@ impl ConnectionDialog {
                     btn.set_sensitive(false);
                     btn.set_icon_name("content-loading-symbolic");
 
+                    tracing::debug!(
+                        flat_lookup_key,
+                        "Show Password: looking up Keyring credential"
+                    );
+
                     spawn_blocking_with_callback(
                         move || {
                             let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
-                            crate::async_utils::with_runtime(|rt| {
-                                rt.block_on(backend.retrieve(&lookup_key))
+                            let result = crate::async_utils::with_runtime(|rt| {
+                                rt.block_on(backend.retrieve(&flat_lookup_key))
                                     .map_err(|e| format!("{e}"))
-                            })?
+                            })?;
+                            tracing::debug!(
+                                ?result,
+                                flat_lookup_key,
+                                "Show Password: Keyring lookup result"
+                            );
+                            result
                         },
                         move |result: Result<
                             Option<rustconn_core::models::Credentials>,
@@ -6118,7 +6139,9 @@ impl ConnectionDialog {
                     );
                 }
                 3 => {
-                    // Bitwarden
+                    // Bitwarden — use flat key to match
+                    // resolve_from_bitwarden format
+                    let flat_lookup_key = flat_lookup_key.clone();
                     let password_entry = password_entry.clone();
                     let window = window.clone();
                     let btn = btn.clone();
@@ -6130,7 +6153,7 @@ impl ConnectionDialog {
                         move || {
                             let backend = rustconn_core::secret::BitwardenBackend::new();
                             crate::async_utils::with_runtime(|rt| {
-                                rt.block_on(backend.retrieve(&lookup_key))
+                                rt.block_on(backend.retrieve(&flat_lookup_key))
                                     .map_err(|e| format!("{e}"))
                             })?
                         },
@@ -6190,7 +6213,7 @@ impl ConnectionDialog {
                     );
                 }
                 _ => {
-                    // Prompt(0), Inherit(4), None(5) - no external vault to load from
+                    // Prompt(0), 1Password(4), Inherit(5), None(6) — no handler yet
                     alert::show_error(
                         &window,
                         "Cannot Load Password",

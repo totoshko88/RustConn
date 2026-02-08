@@ -57,7 +57,8 @@ pub use batch::{
 };
 pub use mobaxterm::MobaXtermImporter;
 pub use normalize::{
-    is_valid_hostname, looks_like_hostname, parse_host_port, ImportNormalizer, NormalizeOptions,
+    is_valid_hostname, looks_like_hostname, parse_host_port, sanitize_imported_value,
+    ImportNormalizer, NormalizeOptions,
 };
 pub use preview::{DuplicateAction, ImportPreview, MergeStrategy, PreviewConnection, PreviewGroup};
 pub use rdm::RdmImporter;

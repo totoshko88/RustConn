@@ -151,8 +151,11 @@ impl CredentialResolver {
         connection: &Connection,
     ) -> SecretResult<Option<Credentials>> {
         // Use the same key format as used when saving: "{name} ({protocol})"
+        // Sanitize the name to strip any trailing escape sequences (e.g. \n
+        // from Remmina INI files) so the lookup key matches what was stored.
         let protocol = connection.protocol_config.protocol_type();
-        let name = connection.name.replace('/', "-");
+        let name =
+            crate::import::sanitize_imported_value(&connection.name.trim().replace('/', "-"));
         let lookup_key = format!("{} ({})", name, protocol.as_str().to_lowercase());
 
         // Try the new format first
@@ -171,8 +174,11 @@ impl CredentialResolver {
         connection: &Connection,
     ) -> SecretResult<Option<Credentials>> {
         // Use the same key format as used when saving: "{name} ({protocol})"
+        // Sanitize the name to strip any trailing escape sequences (e.g. \n
+        // from Remmina INI files) so the lookup key matches what was stored.
         let protocol = connection.protocol_config.protocol_type();
-        let name = connection.name.replace('/', "-");
+        let name =
+            crate::import::sanitize_imported_value(&connection.name.trim().replace('/', "-"));
         let lookup_key = format!("{} ({})", name, protocol.as_str().to_lowercase());
 
         // Try the new format first

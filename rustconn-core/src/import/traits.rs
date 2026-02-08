@@ -3,30 +3,56 @@
 //! This module defines the core abstractions for the import engine,
 //! allowing different import sources to be implemented uniformly.
 
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
+use uuid::Uuid;
+
 use crate::error::ImportError;
-use crate::models::{Connection, ConnectionGroup};
+use crate::models::{Connection, ConnectionGroup, Credentials};
 use crate::progress::ProgressReporter;
+
+/// Maximum allowed import file size (50 MB).
+const MAX_IMPORT_FILE_SIZE: u64 = 50 * 1024 * 1024;
 
 /// Reads a file for import operations with consistent error handling.
 ///
 /// This helper consolidates the duplicated file I/O pattern across all importers,
 /// providing uniform error messages and reducing code duplication.
 ///
+/// Includes a file size check (50 MB limit) to prevent out-of-memory conditions
+/// when a user accidentally selects a very large file.
+///
 /// # Arguments
 /// * `path` - Path to the file to read
 /// * `source_name` - Human-readable name of the import source (e.g., "SSH config")
 ///
 /// # Errors
-/// Returns `ImportError::ParseError` if the file cannot be read.
+/// Returns `ImportError::ParseError` if the file cannot be read or exceeds the
+/// size limit.
 ///
 /// # Example
 /// ```ignore
 /// let content = read_import_file(path, "SSH config")?;
 /// ```
 pub fn read_import_file(path: &Path, source_name: &str) -> Result<String, ImportError> {
+    let metadata = fs::metadata(path).map_err(|e| ImportError::ParseError {
+        source_name: source_name.to_string(),
+        reason: format!("Cannot read {}: {}", path.display(), e),
+    })?;
+
+    if metadata.len() > MAX_IMPORT_FILE_SIZE {
+        return Err(ImportError::ParseError {
+            source_name: source_name.to_string(),
+            reason: format!(
+                "File too large ({:.1} MB, max {} MB)",
+                metadata.len() as f64 / (1024.0 * 1024.0),
+                MAX_IMPORT_FILE_SIZE / (1024 * 1024),
+            ),
+        });
+    }
+
     fs::read_to_string(path).map_err(|e| ImportError::ParseError {
         source_name: source_name.to_string(),
         reason: format!("Failed to read {}: {}", path.display(), e),
@@ -65,6 +91,8 @@ pub struct ImportResult {
     pub skipped: Vec<SkippedEntry>,
     /// Errors encountered during import
     pub errors: Vec<ImportError>,
+    /// Credentials extracted during import, keyed by connection UUID
+    pub credentials: HashMap<Uuid, Credentials>,
 }
 
 impl ImportResult {
@@ -124,12 +152,24 @@ impl ImportResult {
         self.errors.push(error);
     }
 
+    /// Adds credentials for a connection
+    pub fn add_credentials(&mut self, connection_id: Uuid, creds: Credentials) {
+        self.credentials.insert(connection_id, creds);
+    }
+
+    /// Returns true if the import has any credentials to store
+    #[must_use]
+    pub fn has_credentials(&self) -> bool {
+        !self.credentials.is_empty()
+    }
+
     /// Merges another import result into this one
     pub fn merge(&mut self, other: Self) {
         self.connections.extend(other.connections);
         self.groups.extend(other.groups);
         self.skipped.extend(other.skipped);
         self.errors.extend(other.errors);
+        self.credentials.extend(other.credentials);
     }
 }
 

@@ -664,10 +664,6 @@ impl ImportSource for AsbruImporter {
     }
 
     fn import_from_path(&self, path: &Path) -> Result<ImportResult, ImportError> {
-        if !path.exists() {
-            return Err(ImportError::FileNotFound(path.to_path_buf()));
-        }
-
         let content = read_import_file(path, "Asbru-CM")?;
 
         Ok(self.parse_config(&content, &path.display().to_string()))

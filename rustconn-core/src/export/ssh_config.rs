@@ -3,7 +3,6 @@
 //! Exports `RustConn` connections to OpenSSH config format (~/.ssh/config).
 
 use std::fmt::Write;
-use std::fs;
 
 use tracing::{debug, info_span};
 
@@ -171,13 +170,7 @@ impl ExportTarget for SshConfigExporter {
         let content = Self::export(&ssh_connections.iter().copied().cloned().collect::<Vec<_>>());
 
         // Write to file
-        fs::write(&options.output_path, &content).map_err(|e| {
-            ExportError::WriteError(format!(
-                "Failed to write to {}: {}",
-                options.output_path.display(),
-                e
-            ))
-        })?;
+        super::write_export_file(&options.output_path, &content)?;
 
         result.exported_count = ssh_connections.len();
         result.add_output_file(options.output_path.clone());

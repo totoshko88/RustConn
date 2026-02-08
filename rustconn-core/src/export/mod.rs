@@ -16,7 +16,7 @@ pub mod remmina;
 pub mod royalts;
 pub mod ssh_config;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub use ansible::AnsibleExporter;
 pub use asbru::AsbruExporter;
@@ -256,6 +256,25 @@ pub enum ExportError {
 
 /// Result type alias for export operations
 pub type ExportResult2<T> = std::result::Result<T, ExportError>;
+
+/// Writes export content to a file using buffered I/O.
+///
+/// Centralizes the file-writing pattern used by all exporters, providing
+/// consistent error handling and `BufWriter` for reduced syscalls.
+///
+/// # Errors
+///
+/// Returns `ExportError::WriteError` if the file cannot be created or written.
+pub fn write_export_file(path: &Path, content: &str) -> Result<(), ExportError> {
+    use std::io::{BufWriter, Write};
+    let file = std::fs::File::create(path).map_err(|e| {
+        ExportError::WriteError(format!("Failed to create {}: {}", path.display(), e))
+    })?;
+    let mut writer = BufWriter::new(file);
+    writer.write_all(content.as_bytes()).map_err(|e| {
+        ExportError::WriteError(format!("Failed to write to {}: {}", path.display(), e))
+    })
+}
 
 /// Trait for export implementations.
 ///

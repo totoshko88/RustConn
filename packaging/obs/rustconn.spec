@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.7.7
+Version:        0.7.8
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later
@@ -157,6 +157,20 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sun Feb 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.8-0
+- Version bump to 0.7.8
+- Added Remmina password import to configured secret backend
+- Fixed import error swallowing: replaced 14 unwrap_or_default() with proper error propagation
+- Fixed MobaXterm import double allocation on UTF-8 conversion
+- Added 50 MB file size limit in read_import_file() to prevent OOM
+- Native export/import uses streaming I/O with BufWriter/BufReader
+- Native import version pre-check before full deserialization
+- Added centralized write_export_file() helper with BufWriter
+- Consolidated export write boilerplate across all exporters
+- Removed redundant TOCTOU path.exists() checks in importers
+- Removed unused imports in Asbru and MobaXterm exporters
+- Updated dependencies: memchr, ryu, zerocopy, zmij
+
 * Fri Feb 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.7-0
 - Version bump to 0.7.7
 - Fixed keyboard shortcuts intercepting VTE terminal input:

@@ -113,6 +113,15 @@ impl ImportNormalizer {
 
     /// Normalizes a single connection
     fn normalize_connection(&self, conn: &mut Connection) {
+        // Sanitize name and host — strip trailing escape sequences from
+        // INI-style sources (e.g. Remmina files with literal \n in values)
+        conn.name = sanitize_imported_value(&conn.name);
+        conn.host = sanitize_imported_value(&conn.host);
+        if let Some(ref username) = conn.username {
+            let clean = sanitize_imported_value(username);
+            conn.username = if clean.is_empty() { None } else { Some(clean) };
+        }
+
         // Add source tag
         if self.options.add_source_tag {
             let tag = format!("imported:{}", self.source_id);
@@ -228,6 +237,30 @@ pub fn parse_host_port(server: &str) -> (String, Option<u16>) {
     }
 
     (server.to_string(), None)
+}
+
+/// Strips trailing INI escape sequences and control characters from imported
+/// string values.
+///
+/// Some sources (e.g. Remmina `.remmina` files) store literal `\n`, `\r`, or
+/// `\t` escape sequences at the end of values. These are not real whitespace
+/// — they are the two-character sequences backslash + letter — and
+/// `str::trim()` does not remove them.
+#[must_use]
+pub fn sanitize_imported_value(value: &str) -> String {
+    let mut s = value.trim().to_string();
+    // Strip trailing literal escape sequences (\\n, \\r, \\t)
+    loop {
+        let trimmed = s
+            .strip_suffix("\\n")
+            .or_else(|| s.strip_suffix("\\r"))
+            .or_else(|| s.strip_suffix("\\t"));
+        match trimmed {
+            Some(rest) => s = rest.trim_end().to_string(),
+            None => break,
+        }
+    }
+    s
 }
 
 /// Checks if a string looks like a valid hostname or IP
@@ -405,5 +438,68 @@ mod tests {
         assert!(result.connections[0]
             .tags
             .contains(&"imported:ssh_config".to_string()));
+    }
+
+    #[test]
+    fn test_sanitize_imported_value_trailing_newline() {
+        assert_eq!(
+            sanitize_imported_value("hostname.example.com\\n"),
+            "hostname.example.com"
+        );
+    }
+
+    #[test]
+    fn test_sanitize_imported_value_trailing_return() {
+        assert_eq!(
+            sanitize_imported_value("hostname.example.com\\r"),
+            "hostname.example.com"
+        );
+    }
+
+    #[test]
+    fn test_sanitize_imported_value_trailing_tab() {
+        assert_eq!(
+            sanitize_imported_value("hostname.example.com\\t"),
+            "hostname.example.com"
+        );
+    }
+
+    #[test]
+    fn test_sanitize_imported_value_multiple_escapes() {
+        assert_eq!(sanitize_imported_value("hostname\\n\\r\\t"), "hostname");
+    }
+
+    #[test]
+    fn test_sanitize_imported_value_clean() {
+        assert_eq!(
+            sanitize_imported_value("hostname.example.com"),
+            "hostname.example.com"
+        );
+    }
+
+    #[test]
+    fn test_sanitize_imported_value_whitespace() {
+        assert_eq!(sanitize_imported_value("  hostname  "), "hostname");
+    }
+
+    #[test]
+    fn test_sanitize_imported_value_empty() {
+        assert_eq!(sanitize_imported_value(""), "");
+    }
+
+    #[test]
+    fn test_normalize_sanitizes_name() {
+        let mut result = ImportResult::new();
+        let conn = Connection::new_ssh(
+            "myhost.example.com\\n".to_string(),
+            "myhost.example.com".to_string(),
+            22,
+        );
+        result.add_connection(conn);
+
+        let normalizer = ImportNormalizer::new("test", NormalizeOptions::minimal());
+        normalizer.normalize(&mut result);
+
+        assert_eq!(result.connections[0].name, "myhost.example.com");
     }
 }

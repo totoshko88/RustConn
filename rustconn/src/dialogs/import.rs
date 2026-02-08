@@ -428,6 +428,26 @@ impl ImportDialog {
         }
     }
 
+    /// Converts an import result or error into an `ImportResult`.
+    ///
+    /// On success, returns the result as-is. On error, logs the technical
+    /// details via `tracing` and returns an `ImportResult` with the error
+    /// preserved in the `errors` vec so the UI can display it.
+    fn import_or_error(
+        result: Result<ImportResult, rustconn_core::error::ImportError>,
+        source_name: &str,
+    ) -> ImportResult {
+        match result {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::error!(?e, "Import failed for {}", source_name);
+                let mut failed = ImportResult::default();
+                failed.add_error(e);
+                failed
+            }
+        }
+    }
+
     /// Performs the import operation for the given source ID
     ///
     /// This method executes the appropriate importer based on the source ID
@@ -437,19 +457,19 @@ impl ImportDialog {
         match source_id {
             "ssh_config" => {
                 let importer = SshConfigImporter::new();
-                importer.import().unwrap_or_default()
+                Self::import_or_error(importer.import(), "SSH config")
             }
             "asbru" => {
                 let importer = AsbruImporter::new();
-                importer.import().unwrap_or_default()
+                Self::import_or_error(importer.import(), "Asbru-CM")
             }
             "remmina" => {
                 let importer = RemminaImporter::new();
-                importer.import().unwrap_or_default()
+                Self::import_or_error(importer.import(), "Remmina")
             }
             "ansible" => {
                 let importer = AnsibleInventoryImporter::new();
-                importer.import().unwrap_or_default()
+                Self::import_or_error(importer.import(), "Ansible inventory")
             }
             _ => ImportResult::default(),
         }
@@ -879,7 +899,10 @@ impl ImportDialog {
 
                         // Parse SSH config file using import_from_path (Requirement 1.2, 1.3)
                         let importer = SshConfigImporter::new();
-                        let result = importer.import_from_path(&path).unwrap_or_default();
+                        let result = Self::import_or_error(
+                            importer.import_from_path(&path),
+                            "SSH config",
+                        );
 
                         // Extract filename for display
                         let filename = path
@@ -964,7 +987,10 @@ impl ImportDialog {
                             .set_text(&format!("Importing from {}...", path.display()));
 
                         let importer = AsbruImporter::new();
-                        let result = importer.import_from_path(&path).unwrap_or_default();
+                        let result = Self::import_or_error(
+                            importer.import_from_path(&path),
+                            "Asbru-CM",
+                        );
 
                         // Extract filename for display
                         let filename = path
@@ -1053,7 +1079,10 @@ impl ImportDialog {
                             .set_text(&format!("Importing from {}...", path.display()));
 
                         let importer = AnsibleInventoryImporter::new();
-                        let result = importer.import_from_path(&path).unwrap_or_default();
+                        let result = Self::import_or_error(
+                            importer.import_from_path(&path),
+                            "Ansible inventory",
+                        );
 
                         // Extract filename for display
                         let filename = path
@@ -1177,7 +1206,7 @@ impl ImportDialog {
                     }
                 }
 
-                importer.import().unwrap_or_default()
+                Self::import_or_error(importer.import(), "SSH config")
             }
             "asbru" => {
                 let importer = AsbruImporter::new();
@@ -1191,7 +1220,7 @@ impl ImportDialog {
                     }
                 }
 
-                importer.import().unwrap_or_default()
+                Self::import_or_error(importer.import(), "Asbru-CM")
             }
             "remmina" => {
                 let importer = RemminaImporter::new();
@@ -1205,7 +1234,7 @@ impl ImportDialog {
                     }
                 }
 
-                importer.import().unwrap_or_default()
+                Self::import_or_error(importer.import(), "Remmina")
             }
             "ansible" => {
                 let importer = AnsibleInventoryImporter::new();
@@ -1219,7 +1248,7 @@ impl ImportDialog {
                     }
                 }
 
-                importer.import().unwrap_or_default()
+                Self::import_or_error(importer.import(), "Ansible inventory")
             }
             _ => ImportResult::default(),
         };
@@ -1292,6 +1321,7 @@ impl ImportDialog {
                                     groups: native_export.groups,
                                     skipped: Vec::new(),
                                     errors: Vec::new(),
+                                    credentials: std::collections::HashMap::new(),
                                 };
 
                                 // Extract filename for display
@@ -1389,7 +1419,10 @@ impl ImportDialog {
                             .set_text(&format!("Importing from {}...", path.display()));
 
                         let importer = RoyalTsImporter::new();
-                        let result = importer.import_from_path(&path).unwrap_or_default();
+                        let result = Self::import_or_error(
+                            importer.import_from_path(&path),
+                            "Royal TS",
+                        );
 
                         let filename = path.file_name().map_or_else(
                             || "Royal TS".to_string(),
@@ -1471,7 +1504,10 @@ impl ImportDialog {
                             .set_text(&format!("Importing from {}...", path.display()));
 
                         let importer = RdmImporter::new();
-                        let result = importer.import_from_path(&path).unwrap_or_default();
+                        let result = Self::import_or_error(
+                            importer.import_from_path(&path),
+                            "RDM",
+                        );
 
                         // Extract filename for display
                         let filename = path.file_name().map_or_else(
@@ -1555,7 +1591,10 @@ impl ImportDialog {
                             .set_text(&format!("Importing from {}...", path.display()));
 
                         let importer = MobaXtermImporter::with_path(path.clone());
-                        let result = importer.import_from_path(&path).unwrap_or_default();
+                        let result = Self::import_or_error(
+                            importer.import_from_path(&path),
+                            "MobaXterm",
+                        );
 
                         // Extract filename for display
                         let filename = path.file_name().map_or_else(

@@ -5,7 +5,6 @@
 
 use std::collections::HashMap;
 use std::fmt::Write;
-use std::fs;
 
 use tracing::{debug, info_span};
 use uuid::Uuid;
@@ -297,13 +296,7 @@ impl ExportTarget for RoyalTsExporter {
         );
 
         // Write to file
-        fs::write(&options.output_path, &content).map_err(|e| {
-            ExportError::WriteError(format!(
-                "Failed to write to {}: {}",
-                options.output_path.display(),
-                e
-            ))
-        })?;
+        super::write_export_file(&options.output_path, &content)?;
 
         result.exported_count = supported_connections.len();
         result.add_output_file(options.output_path.clone());

@@ -492,10 +492,6 @@ impl ImportSource for MobaXtermImporter {
     }
 
     fn import_from_path(&self, path: &Path) -> Result<ImportResult, ImportError> {
-        if !path.exists() {
-            return Err(ImportError::FileNotFound(path.to_path_buf()));
-        }
-
         // Read file as bytes first to handle Windows-1252 encoding
         let bytes = fs::read(path).map_err(|e| ImportError::ParseError {
             source_name: "MobaXterm".to_string(),
@@ -503,8 +499,13 @@ impl ImportSource for MobaXtermImporter {
         })?;
 
         // Try UTF-8 first, fall back to lossy conversion for Windows-1252
-        let content = String::from_utf8(bytes.clone())
-            .unwrap_or_else(|_| String::from_utf8_lossy(&bytes).into_owned());
+        let content = match String::from_utf8(bytes) {
+            Ok(s) => s,
+            Err(e) => {
+                let bytes = e.into_bytes();
+                String::from_utf8_lossy(&bytes).into_owned()
+            }
+        };
 
         Ok(self.parse_content(&content, &path.display().to_string()))
     }

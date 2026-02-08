@@ -76,6 +76,22 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.7.8" date="2026-02-08">
+      <description>
+        <p>Version 0.7.8 - Remmina Password Import and I/O Improvements:</p>
+        <ul>
+          <li>Remmina import now transfers saved passwords to the configured secret backend</li>
+          <li>Fixed silent import failures: errors now display user-friendly messages</li>
+          <li>Fixed MobaXterm import double memory allocation during UTF-8 conversion</li>
+          <li>Added 50 MB file size limit to prevent out-of-memory on large imports</li>
+          <li>Native export/import uses streaming I/O, reducing peak memory by ~50%</li>
+          <li>Native import validates format version before full deserialization</li>
+          <li>Centralized export file writing with buffered I/O across all exporters</li>
+          <li>Removed redundant file existence checks in importers</li>
+          <li>Updated dependencies: memchr, ryu, zerocopy, zmij</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.7.7" date="2026-02-08">
       <description>
         <p>Version 0.7.7 - Keyboard Shortcut Fix and Code Quality:</p>

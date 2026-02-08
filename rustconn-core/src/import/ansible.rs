@@ -481,10 +481,6 @@ impl ImportSource for AnsibleInventoryImporter {
     }
 
     fn import_from_path(&self, path: &Path) -> Result<ImportResult, ImportError> {
-        if !path.exists() {
-            return Err(ImportError::FileNotFound(path.to_path_buf()));
-        }
-
         let content = read_import_file(path, "Ansible inventory")?;
 
         Ok(self.parse_inventory(&content, &path.display().to_string()))

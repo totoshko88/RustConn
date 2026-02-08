@@ -3,13 +3,12 @@
 //! Exports `RustConn` connections to Asbru-CM YAML configuration format.
 
 use std::collections::HashMap;
-use std::fs;
 
 use uuid::Uuid;
 
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
 
-use super::{ExportError, ExportFormat, ExportOptions, ExportResult, ExportResult2, ExportTarget};
+use super::{ExportFormat, ExportOptions, ExportResult, ExportResult2, ExportTarget};
 
 /// Asbru-CM YAML exporter.
 ///
@@ -275,13 +274,7 @@ impl ExportTarget for AsbruExporter {
         let content = Self::export(connections, &filtered_groups);
 
         // Write to file
-        fs::write(&options.output_path, &content).map_err(|e| {
-            ExportError::WriteError(format!(
-                "Failed to write to {}: {}",
-                options.output_path.display(),
-                e
-            ))
-        })?;
+        super::write_export_file(&options.output_path, &content)?;
 
         result.exported_count = connections.len();
         result.add_output_file(options.output_path.clone());

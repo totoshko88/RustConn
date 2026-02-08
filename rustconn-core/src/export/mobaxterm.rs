@@ -7,7 +7,6 @@
 
 use std::collections::HashMap;
 use std::fmt::Write;
-use std::fs;
 use std::path::Path;
 
 use uuid::Uuid;
@@ -365,9 +364,7 @@ impl MobaXtermExporter {
         let output_crlf = output.replace('\n', "\r\n");
 
         // Write to file
-        fs::write(output_path, output_crlf).map_err(|e| {
-            ExportError::WriteError(format!("Failed to write {}: {}", output_path.display(), e))
-        })?;
+        super::write_export_file(output_path, &output_crlf)?;
 
         result.add_output_file(output_path.to_path_buf());
         Ok(result)
@@ -427,6 +424,7 @@ impl ExportTarget for MobaXtermExporter {
 mod tests {
     use super::*;
     use crate::models::Resolution;
+    use std::fs;
 
     fn create_ssh_connection(name: &str, host: &str, port: u16) -> Connection {
         Connection::new_ssh(name.to_string(), host.to_string(), port)

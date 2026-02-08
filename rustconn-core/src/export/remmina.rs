@@ -232,7 +232,7 @@ impl RemminaExporter {
                     let filename = Self::generate_filename(connection);
                     let file_path = output_dir.join(&filename);
 
-                    match fs::write(&file_path, &content) {
+                    match super::write_export_file(&file_path, &content) {
                         Ok(()) => {
                             result.increment_exported();
                             result.add_output_file(file_path);

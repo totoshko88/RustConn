@@ -1686,6 +1686,7 @@ fn import_connections(
                 groups: native.groups,
                 skipped: Vec::new(),
                 errors: Vec::new(),
+                credentials: std::collections::HashMap::new(),
             }
         }
         ImportFormatArg::RoyalTs => {

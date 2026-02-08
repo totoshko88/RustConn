@@ -1,3 +1,30 @@
+rustconn (0.7.8-1) unstable; urgency=medium
+
+  * Version bump to 0.7.8
+  * Added Remmina password import:
+    - Passwords from Remmina keyring are now transferred to the configured
+      secret backend (libsecret, KeePassXC, etc.) during import
+    - Imported connections use PasswordSource::Keyring for seamless auth
+  * Fixed import error swallowing:
+    - Replaced 14 unwrap_or_default() calls with proper error propagation
+    - Import failures now display user-friendly messages
+  * Fixed MobaXterm import double allocation:
+    - Removed unnecessary clone on byte buffer during UTF-8 conversion
+  * Improved import file size guard:
+    - Added 50 MB file size limit to prevent OOM on large files
+  * Improved native export/import streaming I/O:
+    - to_file() uses BufWriter with serde_json::to_writer_pretty()
+    - from_file() uses BufReader with serde_json::from_reader()
+    - Version pre-check before full deserialization
+  * Added centralized write_export_file() helper with BufWriter
+  * Refactored export write consolidation across all exporters
+  * Removed redundant TOCTOU path.exists() checks in importers
+  * Removed unused imports in Asbru and MobaXterm exporters
+  * Updated dependencies: memchr 2.7.6->2.8.0, ryu 1.0.22->1.0.23,
+    zerocopy 0.8.38->0.8.39, zmij 1.0.19->1.0.20
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Sun, 08 Feb 2026 12:00:00 +0200
+
 rustconn (0.7.7-1) unstable; urgency=medium
 
   * Version bump to 0.7.7
