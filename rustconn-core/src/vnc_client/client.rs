@@ -234,7 +234,14 @@ async fn run_vnc_client(
     // Build the VNC connector
     let password = config.password.clone();
     let mut connector = VncConnector::new(tcp)
-        .set_auth_method(async move { Ok(password.unwrap_or_default()) })
+        .set_auth_method(async move {
+            if let Some(p) = password {
+                Ok(p)
+            } else {
+                tracing::warn!("VNC connection attempted without password configured");
+                Ok(String::new())
+            }
+        })
         .allow_shared(config.shared)
         .set_pixel_format(PixelFormat::bgra());
 

@@ -834,16 +834,19 @@ impl DebouncedSearchEngine {
         groups: &[ConnectionGroup],
     ) -> Option<Vec<ConnectionSearchResult>> {
         // Store the query for potential deferred execution
-        *self.last_query.lock().unwrap() = Some(query.text.clone());
+        if let Ok(mut last) = self.last_query.lock() {
+            *last = Some(query.text.clone());
+        }
 
         // Check if we should proceed with the search
         if self.debouncer.should_proceed() {
             // Check cache first
             {
-                let cache = self.search_cache.lock().unwrap();
-                if let Some(cached_results) = cache.get(&query.text) {
-                    self.search_pending.store(false, Ordering::SeqCst);
-                    return Some(cached_results.to_vec());
+                if let Ok(cache) = self.search_cache.lock() {
+                    if let Some(cached_results) = cache.get(&query.text) {
+                        self.search_pending.store(false, Ordering::SeqCst);
+                        return Some(cached_results.to_vec());
+                    }
                 }
             }
 
@@ -852,8 +855,9 @@ impl DebouncedSearchEngine {
 
             // Cache the results
             {
-                let mut cache = self.search_cache.lock().unwrap();
-                cache.insert(query.text.clone(), results.clone());
+                if let Ok(mut cache) = self.search_cache.lock() {
+                    cache.insert(query.text.clone(), results.clone());
+                }
             }
 
             self.search_pending.store(false, Ordering::SeqCst);
@@ -883,7 +887,9 @@ impl DebouncedSearchEngine {
     /// and haven't exceeded the cache TTL.
     #[must_use]
     pub fn get_cached_results(&self, query_text: &str) -> Option<Vec<ConnectionSearchResult>> {
-        let cache = self.search_cache.lock().unwrap();
+        let Ok(cache) = self.search_cache.lock() else {
+            return None;
+        };
         cache
             .get(query_text)
             .map(<[ConnectionSearchResult]>::to_vec)
@@ -894,8 +900,9 @@ impl DebouncedSearchEngine {
     /// Should be called when the underlying data changes (connection
     /// added, modified, or deleted).
     pub fn invalidate_cache(&self) {
-        let mut cache = self.search_cache.lock().unwrap();
-        cache.invalidate_all();
+        if let Ok(mut cache) = self.search_cache.lock() {
+            cache.invalidate_all();
+        }
     }
 
     /// Checks if there's a pending search operation
@@ -926,7 +933,7 @@ impl DebouncedSearchEngine {
     /// Returns the number of cached search results
     #[must_use]
     pub fn cache_size(&self) -> usize {
-        self.search_cache.lock().unwrap().len()
+        self.search_cache.lock().map_or(0, |c| c.len())
     }
 }
 

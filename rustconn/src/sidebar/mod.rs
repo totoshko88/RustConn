@@ -398,24 +398,44 @@ impl ConnectionSidebar {
 
         // Set up keyboard navigation
         let selection_model_clone = selection_model.clone();
+        let list_view_weak = list_view.downgrade();
         let key_controller = EventControllerKey::new();
-        key_controller.connect_key_pressed(move |_controller, key, _code, state| {
+        key_controller.connect_key_pressed(move |_controller, key, _code, modifier| {
             // Use is_multi() to check if we're in multi-selection mode
             let is_multi_mode = selection_model_clone.borrow().is_multi();
+            let ctrl = modifier.contains(gdk::ModifierType::CONTROL_MASK);
 
             // Handle keyboard navigation
+            // Shortcuts like Delete, Ctrl+E, Ctrl+D are scoped to the sidebar
+            // so they don't intercept input in VTE terminals or embedded viewers.
+            // See: https://github.com/totoshko88/RustConn/issues/4
             match key {
                 gdk::Key::Return | gdk::Key::KP_Enter => {
                     // Activate selected item - handled by ListView's activate signal
                     glib::Propagation::Stop
                 }
                 gdk::Key::Delete => {
-                    // Delete selected item - will be handled by window action
-                    glib::Propagation::Proceed
+                    // Delete selected connection/group
+                    if let Some(lv) = list_view_weak.upgrade() {
+                        let _ = lv.activate_action("win.delete-connection", None);
+                    }
+                    glib::Propagation::Stop
                 }
-                gdk::Key::a | gdk::Key::A
-                    if state.contains(gdk::ModifierType::CONTROL_MASK) && is_multi_mode =>
-                {
+                gdk::Key::e | gdk::Key::E if ctrl => {
+                    // Ctrl+E: Edit selected connection
+                    if let Some(lv) = list_view_weak.upgrade() {
+                        let _ = lv.activate_action("win.edit-connection", None);
+                    }
+                    glib::Propagation::Stop
+                }
+                gdk::Key::d | gdk::Key::D if ctrl => {
+                    // Ctrl+D: Duplicate selected connection
+                    if let Some(lv) = list_view_weak.upgrade() {
+                        let _ = lv.activate_action("win.duplicate-connection", None);
+                    }
+                    glib::Propagation::Stop
+                }
+                gdk::Key::a | gdk::Key::A if ctrl && is_multi_mode => {
                     // Ctrl+A: Select all in multi-selection mode
                     selection_model_clone.borrow().select_all();
                     glib::Propagation::Stop

@@ -204,7 +204,7 @@ impl SnippetManager {
             .filter_map(|s| s.category.clone())
             .collect();
 
-        categories.sort();
+        categories.sort_unstable();
         categories.dedup();
         categories
     }
@@ -248,10 +248,10 @@ impl SnippetManager {
         let mut tags: Vec<String> = self
             .snippets
             .values()
-            .flat_map(|s| s.tags.clone())
+            .flat_map(|s| s.tags.iter().cloned())
             .collect();
 
-        tags.sort();
+        tags.sort_unstable();
         tags.dedup();
         tags
     }

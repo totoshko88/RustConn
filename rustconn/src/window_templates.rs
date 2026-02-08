@@ -512,10 +512,10 @@ pub fn show_new_connection_from_template(
                                             key_passphrase: None,
                                             domain: None,
                                         };
-                                        let rt = tokio::runtime::Runtime::new()
-                                            .map_err(|e| format!("Runtime error: {e}"))?;
-                                        rt.block_on(backend.store(&lookup_key, &creds))
-                                            .map_err(|e| format!("{e}"))
+                                        crate::async_utils::with_runtime(|rt| {
+                                            rt.block_on(backend.store(&lookup_key, &creds))
+                                                .map_err(|e| format!("{e}"))
+                                        })?
                                     },
                                     move |result: Result<(), String>| {
                                         if let Err(e) = result {
@@ -555,10 +555,10 @@ pub fn show_new_connection_from_template(
                                             key_passphrase: None,
                                             domain: None,
                                         };
-                                        let rt = tokio::runtime::Runtime::new()
-                                            .map_err(|e| format!("Runtime error: {e}"))?;
-                                        rt.block_on(backend.store(&lookup_key, &creds))
-                                            .map_err(|e| format!("{e}"))
+                                        crate::async_utils::with_runtime(|rt| {
+                                            rt.block_on(backend.store(&lookup_key, &creds))
+                                                .map_err(|e| format!("{e}"))
+                                        })?
                                     },
                                     move |result: Result<(), String>| {
                                         if let Err(e) = result {
@@ -594,10 +594,10 @@ pub fn show_new_connection_from_template(
                                             key_passphrase: None,
                                             domain: None,
                                         };
-                                        let rt = tokio::runtime::Runtime::new()
-                                            .map_err(|e| format!("Runtime error: {e}"))?;
-                                        rt.block_on(backend.store(&lookup_key, &creds))
-                                            .map_err(|e| format!("{e}"))
+                                        crate::async_utils::with_runtime(|rt| {
+                                            rt.block_on(backend.store(&lookup_key, &creds))
+                                                .map_err(|e| format!("{e}"))
+                                        })?
                                     },
                                     move |result: Result<(), String>| {
                                         if let Err(e) = result {
