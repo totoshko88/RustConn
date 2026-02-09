@@ -223,21 +223,9 @@ impl TerminalNotebook {
 
     /// Gets the icon name for a protocol
     fn get_protocol_icon(protocol: &str) -> &'static str {
-        // Handle zerotrust:provider format
-        if let Some(provider) = protocol.strip_prefix("zerotrust:") {
-            return match provider {
-                "aws" | "aws_ssm" => "network-workgroup-symbolic",
-                "gcloud" | "gcp_iap" => "weather-overcast-symbolic",
-                "azure" | "azure_bastion" => "weather-few-clouds-symbolic",
-                "azure_ssh" => "weather-showers-symbolic",
-                "oci" | "oci_bastion" => "drive-harddisk-symbolic",
-                "cloudflare" | "cloudflare_access" => "security-high-symbolic",
-                "teleport" => "emblem-system-symbolic",
-                "tailscale" | "tailscale_ssh" => "network-vpn-symbolic",
-                "boundary" => "dialog-password-symbolic",
-                "generic" => "system-run-symbolic",
-                _ => "folder-remote-symbolic",
-            };
+        // All ZeroTrust variants use the same icon (matches filter button)
+        if protocol.starts_with("zerotrust") {
+            return "folder-remote-symbolic";
         }
 
         match protocol.to_lowercase().as_str() {
@@ -245,8 +233,7 @@ impl TerminalNotebook {
             "rdp" => "computer-symbolic",
             "vnc" => "video-display-symbolic",
             "spice" => "video-x-generic-symbolic",
-            "telnet" => "network-wired-symbolic",
-            "zerotrust" => "folder-remote-symbolic",
+            "telnet" => "call-start-symbolic",
             _ => "network-server-symbolic",
         }
     }

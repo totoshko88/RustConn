@@ -3107,7 +3107,7 @@ impl TemplateManagerDialog {
             ProtocolType::Vnc => "video-display-symbolic",
             ProtocolType::Spice => "video-display-symbolic",
             ProtocolType::ZeroTrust => "cloud-symbolic",
-            ProtocolType::Telnet => "network-wired-symbolic",
+            ProtocolType::Telnet => "call-start-symbolic",
         };
         let icon = gtk4::Image::from_icon_name(icon_name);
         hbox.append(&icon);

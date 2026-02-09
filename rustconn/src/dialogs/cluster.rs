@@ -253,7 +253,7 @@ impl ClusterDialog {
             rustconn_core::models::ProtocolConfig::Vnc(_) => "video-display-symbolic",
             rustconn_core::models::ProtocolConfig::Spice(_) => "video-display-symbolic",
             rustconn_core::models::ProtocolConfig::ZeroTrust(_) => "cloud-symbolic",
-            rustconn_core::models::ProtocolConfig::Telnet(_) => "network-wired-symbolic",
+            rustconn_core::models::ProtocolConfig::Telnet(_) => "call-start-symbolic",
         };
         let icon = gtk4::Image::from_icon_name(icon_name);
 

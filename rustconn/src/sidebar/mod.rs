@@ -158,7 +158,7 @@ impl ConnectionSidebar {
         );
         let telnet_filter = filter::create_filter_button(
             "Telnet",
-            "network-wired-symbolic",
+            "call-start-symbolic",
             "Filter Telnet connections",
         );
         let zerotrust_filter = filter::create_filter_button(

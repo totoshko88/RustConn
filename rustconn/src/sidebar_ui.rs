@@ -168,30 +168,15 @@ pub fn show_context_menu_for_item(widget: &impl IsA<gtk4::Widget>, x: f64, y: f6
 ///
 /// For ZeroTrust connections, the protocol string may include provider info
 /// in the format "zerotrust:provider" (e.g., "zerotrust:aws", "zerotrust:gcloud").
-/// This allows showing provider-specific icons for cloud CLI connections.
+/// All ZeroTrust connections use the same icon regardless of provider.
 ///
 /// Note: We use standard GTK symbolic icons that are guaranteed to exist
-/// in all icon themes. Provider-specific icons (aws-symbolic, etc.) are not
-/// available in standard themes, so we use semantic alternatives.
+/// in all icon themes.
 #[must_use]
 pub fn get_protocol_icon(protocol: &str) -> &'static str {
-    // Check for ZeroTrust with provider info (format: "zerotrust:provider")
-    if let Some(provider) = protocol.strip_prefix("zerotrust:") {
-        // Use standard GTK/Adwaita icons that are guaranteed to exist
-        // Each provider has a unique icon - no duplicates with SSH or other protocols
-        return match provider {
-            "aws" | "aws_ssm" => "network-workgroup-symbolic", // AWS - workgroup
-            "gcloud" | "gcp_iap" => "weather-overcast-symbolic", // GCP - cloud
-            "azure" | "azure_bastion" => "weather-few-clouds-symbolic", // Azure - clouds
-            "azure_ssh" => "weather-showers-symbolic",         // Azure SSH - showers
-            "oci" | "oci_bastion" => "drive-harddisk-symbolic", // OCI - harddisk
-            "cloudflare" | "cloudflare_access" => "security-high-symbolic", // Cloudflare
-            "teleport" => "emblem-system-symbolic",            // Teleport - system/gear
-            "tailscale" | "tailscale_ssh" => "network-vpn-symbolic", // Tailscale - VPN
-            "boundary" => "dialog-password-symbolic",          // Boundary - password/lock
-            "generic" => "system-run-symbolic",                // Generic - run command
-            _ => "folder-remote-symbolic",                     // Unknown - remote folder
-        };
+    // All ZeroTrust variants use the same icon (matches filter button)
+    if protocol.starts_with("zerotrust") {
+        return "folder-remote-symbolic";
     }
 
     // Standard protocol icons - each protocol has a distinct icon
@@ -200,8 +185,7 @@ pub fn get_protocol_icon(protocol: &str) -> &'static str {
         "rdp" => "computer-symbolic",
         "vnc" => "video-display-symbolic",
         "spice" => "video-x-generic-symbolic",
-        "telnet" => "network-wired-symbolic",
-        "zerotrust" => "folder-remote-symbolic",
+        "telnet" => "call-start-symbolic",
         "info" => "dialog-information-symbolic",
         _ => "network-server-symbolic",
     }
