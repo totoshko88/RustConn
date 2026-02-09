@@ -285,11 +285,13 @@ impl SearchEngine {
             "rdp" => Ok(ProtocolType::Rdp),
             "vnc" => Ok(ProtocolType::Vnc),
             "spice" => Ok(ProtocolType::Spice),
+            "telnet" => Ok(ProtocolType::Telnet),
             "zerotrust" | "zt" => Ok(ProtocolType::ZeroTrust),
             _ => Err(SearchError::InvalidOperator {
                 operator: "protocol".to_string(),
                 reason: format!(
-                    "unknown protocol '{value}', expected ssh, rdp, vnc, spice, or zerotrust"
+                    "unknown protocol '{value}', expected ssh, rdp, vnc, \
+                     spice, telnet, or zerotrust"
                 ),
             }),
         }
@@ -1025,6 +1027,7 @@ mod tests {
             ProtocolType::Rdp => Connection::new_rdp(name.to_string(), host.to_string(), 3389),
             ProtocolType::Vnc => Connection::new_vnc(name.to_string(), host.to_string(), 5900),
             ProtocolType::Spice => Connection::new_spice(name.to_string(), host.to_string(), 5900),
+            ProtocolType::Telnet => Connection::new_telnet(name.to_string(), host.to_string(), 23),
         };
         conn.id = Uuid::new_v4();
         conn

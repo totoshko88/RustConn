@@ -608,6 +608,103 @@ fn start_spice_connection_internal(
     Some(session_id)
 }
 
+/// Starts a Telnet connection
+///
+/// Creates a terminal tab and spawns the telnet process.
+#[allow(clippy::too_many_arguments)]
+pub fn start_telnet_connection(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    connection_id: Uuid,
+    conn: &rustconn_core::Connection,
+    logging_enabled: bool,
+) -> Option<Uuid> {
+    use rustconn_core::protocol::{format_command_message, format_connection_message};
+
+    let conn_name = conn.name.clone();
+    let port = conn.port;
+
+    // Get terminal settings from state
+    let terminal_settings = state
+        .try_borrow()
+        .ok()
+        .map(|s| s.settings().terminal.clone())
+        .unwrap_or_default();
+
+    // Create terminal tab for Telnet
+    let session_id = notebook.create_terminal_tab_with_settings(
+        connection_id,
+        &conn.name,
+        "telnet",
+        Some(&conn.automation),
+        &terminal_settings,
+    );
+
+    // Record connection start in history
+    let history_entry_id = if let Ok(mut state_mut) = state.try_borrow_mut() {
+        Some(state_mut.record_connection_start(conn, conn.username.as_deref()))
+    } else {
+        None
+    };
+
+    if let Some(entry_id) = history_entry_id {
+        notebook.set_history_entry_id(session_id, entry_id);
+    }
+
+    // Get global variables for substitution
+    let global_variables = state
+        .try_borrow()
+        .ok()
+        .map(|s| s.settings().global_variables.clone())
+        .unwrap_or_default();
+
+    let host = substitute_variables(&conn.host, &global_variables);
+
+    // Get custom args from TelnetConfig
+    let extra_args = if let rustconn_core::ProtocolConfig::Telnet(ref config) = conn.protocol_config
+    {
+        config.custom_args.clone()
+    } else {
+        Vec::new()
+    };
+
+    // Update last_connected timestamp
+    if let Ok(mut state_mut) = state.try_borrow_mut() {
+        let _ = state_mut.update_last_connected(connection_id);
+    }
+
+    // Set up session logging if enabled
+    if logging_enabled {
+        MainWindow::setup_session_logging(state, notebook, session_id, connection_id, &conn_name);
+    }
+
+    // Wire up child exited callback
+    MainWindow::setup_child_exited_handler(state, notebook, sidebar, session_id, connection_id);
+
+    // Build telnet command string for display
+    let mut cmd_parts = vec!["telnet".to_string()];
+    cmd_parts.extend(extra_args.clone());
+    cmd_parts.push(host.clone());
+    cmd_parts.push(port.to_string());
+    let telnet_command = cmd_parts.join(" ");
+
+    // Display CLI output feedback
+    let conn_msg = format_connection_message("Telnet", &host);
+    let cmd_msg = format_command_message(&telnet_command);
+    let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
+    notebook.display_output(session_id, &feedback);
+
+    // Spawn telnet
+    let extra_refs: Vec<&str> = extra_args.iter().map(String::as_str).collect();
+    notebook.spawn_telnet(session_id, &host, port, &extra_refs);
+
+    // Wire up child exited callback (second call for terminal monitoring)
+    MainWindow::setup_child_exited_handler(state, notebook, sidebar, session_id, connection_id);
+
+    Some(session_id)
+}
+
 /// Starts a Zero Trust connection
 ///
 /// Creates a terminal tab and spawns the Zero Trust provider command.

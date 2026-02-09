@@ -303,6 +303,17 @@ impl Connection {
         )
     }
 
+    /// Creates a new Telnet connection with default settings
+    #[must_use]
+    pub fn new_telnet(name: String, host: String, port: u16) -> Self {
+        Self::new(
+            name,
+            host,
+            port,
+            ProtocolConfig::Telnet(super::protocol::TelnetConfig::default()),
+        )
+    }
+
     /// Sets the username for this connection
     #[must_use]
     pub fn with_username(mut self, username: impl Into<String>) -> Self {
@@ -343,6 +354,7 @@ impl Connection {
             ProtocolType::Ssh => 22,
             ProtocolType::Rdp => 3389,
             ProtocolType::Vnc | ProtocolType::Spice => 5900,
+            ProtocolType::Telnet => 23,
             ProtocolType::ZeroTrust => 0, // No default port for Zero Trust
         }
     }

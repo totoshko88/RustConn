@@ -426,6 +426,7 @@ proptest! {
             ProtocolConfig::Vnc(_) => 5900u16,
             ProtocolConfig::Spice(_) => 5900u16,
             ProtocolConfig::ZeroTrust(_) => 0u16, // No default port for Zero Trust
+            ProtocolConfig::Telnet(_) => 23u16,
         };
 
         prop_assert_eq!(

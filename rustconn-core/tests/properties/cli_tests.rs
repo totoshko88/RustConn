@@ -62,6 +62,9 @@ impl TestConnection {
             ProtocolType::Spice => {
                 Connection::new_spice(self.name.clone(), self.host.clone(), self.port)
             }
+            ProtocolType::Telnet => {
+                Connection::new_telnet(self.name.clone(), self.host.clone(), self.port)
+            }
         }
     }
 }
@@ -613,6 +616,7 @@ fn create_test_connection_for_add(
         ProtocolType::Rdp => Connection::new_rdp(name.to_string(), host.to_string(), port),
         ProtocolType::Vnc => Connection::new_vnc(name.to_string(), host.to_string(), port),
         ProtocolType::Spice => Connection::new_spice(name.to_string(), host.to_string(), port),
+        ProtocolType::Telnet => Connection::new_telnet(name.to_string(), host.to_string(), port),
     };
 
     if let Some(user) = username {

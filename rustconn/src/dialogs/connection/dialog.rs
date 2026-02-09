@@ -149,6 +149,8 @@ pub struct ConnectionDialog {
     zt_generic_command_entry: adw::EntryRow,
     // Custom args for all providers
     zt_custom_args_entry: Entry,
+    // Telnet fields
+    telnet_custom_args_entry: Entry,
     // Variables fields
     variables_list: ListBox,
     variables_rows: Rc<RefCell<Vec<LocalVariableRow>>>,
@@ -411,6 +413,10 @@ impl ConnectionDialog {
         ) = Self::create_zerotrust_options();
         protocol_stack.add_named(&zt_box, Some("zerotrust"));
 
+        // Telnet options
+        let (telnet_box, telnet_custom_args_entry) = super::telnet::create_telnet_options();
+        protocol_stack.add_named(&telnet_box, Some("telnet"));
+
         // Set initial protocol view
         protocol_stack.set_visible_child_name("ssh");
 
@@ -609,6 +615,7 @@ impl ConnectionDialog {
             &zt_boundary_addr_entry,
             &zt_generic_command_entry,
             &zt_custom_args_entry,
+            &telnet_custom_args_entry,
             &variables_rows,
             &logging_enabled_check,
             &logging_path_entry,
@@ -733,6 +740,7 @@ impl ConnectionDialog {
             zt_boundary_addr_entry,
             zt_generic_command_entry,
             zt_custom_args_entry,
+            telnet_custom_args_entry,
             expect_rules_list,
             expect_rules,
             add_expect_rule_button,
@@ -1007,6 +1015,11 @@ impl ConnectionDialog {
                                 rustconn_core::models::SshConfig::default(),
                             )
                         }
+                        rustconn_core::models::ProtocolType::Telnet => {
+                            rustconn_core::models::ProtocolConfig::Telnet(
+                                rustconn_core::models::TelnetConfig::default(),
+                            )
+                        }
                     };
                     let mut test_conn = rustconn_core::models::Connection::new(
                         conn_name.clone(),
@@ -1218,7 +1231,7 @@ impl ConnectionDialog {
         let password_row = password_row.clone();
 
         dropdown.connect_selected_notify(move |dropdown| {
-            let protocols = ["ssh", "rdp", "vnc", "spice", "zerotrust"];
+            let protocols = ["ssh", "rdp", "vnc", "spice", "zerotrust", "telnet"];
             let selected = dropdown.selected() as usize;
             if selected < protocols.len() {
                 let protocol_id = protocols[selected];
@@ -1255,6 +1268,7 @@ impl ConnectionDialog {
             "rdp" => 3389.0,
             "vnc" | "spice" => 5900.0,
             "zerotrust" => 0.0,
+            "telnet" => 23.0,
             _ => 22.0,
         }
     }
@@ -1263,6 +1277,7 @@ impl ConnectionDialog {
     fn is_default_port(port: f64) -> bool {
         const EPSILON: f64 = 0.5;
         (port - 22.0).abs() < EPSILON
+            || (port - 23.0).abs() < EPSILON
             || (port - 3389.0).abs() < EPSILON
             || (port - 5900.0).abs() < EPSILON
             || port.abs() < EPSILON
@@ -1349,6 +1364,7 @@ impl ConnectionDialog {
         zt_boundary_addr_entry: &adw::EntryRow,
         zt_generic_command_entry: &adw::EntryRow,
         zt_custom_args_entry: &Entry,
+        telnet_custom_args_entry: &Entry,
         variables_rows: &Rc<RefCell<Vec<LocalVariableRow>>>,
         logging_enabled_check: &CheckButton,
         logging_path_entry: &Entry,
@@ -1451,6 +1467,7 @@ impl ConnectionDialog {
         let zt_boundary_addr_entry = zt_boundary_addr_entry.clone();
         let zt_generic_command_entry = zt_generic_command_entry.clone();
         let zt_custom_args_entry = zt_custom_args_entry.clone();
+        let telnet_custom_args_entry = telnet_custom_args_entry.clone();
         let variables_rows = variables_rows.clone();
         let logging_enabled_check = logging_enabled_check.clone();
         let logging_path_entry = logging_path_entry.clone();
@@ -1556,6 +1573,7 @@ impl ConnectionDialog {
                 zt_boundary_addr_entry: &zt_boundary_addr_entry,
                 zt_generic_command_entry: &zt_generic_command_entry,
                 zt_custom_args_entry: &zt_custom_args_entry,
+                telnet_custom_args_entry: &telnet_custom_args_entry,
                 local_variables: &local_variables,
                 logging_enabled_check: &logging_enabled_check,
                 logging_path_entry: &logging_path_entry,
@@ -1655,7 +1673,8 @@ impl ConnectionDialog {
             .label("Protocol:")
             .halign(gtk4::Align::End)
             .build();
-        let protocol_list = StringList::new(&["SSH", "RDP", "VNC", "SPICE", "Zero Trust"]);
+        let protocol_list =
+            StringList::new(&["SSH", "RDP", "VNC", "SPICE", "Zero Trust", "Telnet"]);
         let protocol_dropdown = DropDown::builder().model(&protocol_list).build();
         protocol_dropdown.set_selected(0);
         grid.attach(&protocol_label_grid, 0, row, 1, 1);
@@ -5063,6 +5082,10 @@ impl ConnectionDialog {
                 self.protocol_stack.set_visible_child_name("zerotrust");
                 self.set_zerotrust_config(zt);
             }
+            ProtocolConfig::Telnet(_) => {
+                self.protocol_dropdown.set_selected(5); // Telnet
+                self.protocol_stack.set_visible_child_name("telnet");
+            }
         }
 
         // Set local variables
@@ -6427,6 +6450,8 @@ struct ConnectionDialogData<'a> {
     zt_boundary_addr_entry: &'a adw::EntryRow,
     zt_generic_command_entry: &'a adw::EntryRow,
     zt_custom_args_entry: &'a Entry,
+    // Telnet fields
+    telnet_custom_args_entry: &'a Entry,
     local_variables: &'a HashMap<String, Variable>,
     logging_enabled_check: &'a CheckButton,
     logging_path_entry: &'a Entry,
@@ -6792,6 +6817,7 @@ impl ConnectionDialogData<'_> {
             2 => Some(ProtocolConfig::Vnc(self.build_vnc_config())),
             3 => Some(ProtocolConfig::Spice(self.build_spice_config())),
             4 => Some(ProtocolConfig::ZeroTrust(self.build_zerotrust_config())),
+            5 => Some(ProtocolConfig::Telnet(self.build_telnet_config())),
             _ => None,
         }
     }
@@ -6926,6 +6952,19 @@ impl ConnectionDialogData<'_> {
         config.detected_provider = Some(detected.icon_name().to_string());
 
         config
+    }
+
+    fn build_telnet_config(&self) -> rustconn_core::models::TelnetConfig {
+        let custom_args_text = self.telnet_custom_args_entry.text();
+        let custom_args: Vec<String> = if custom_args_text.trim().is_empty() {
+            Vec::new()
+        } else {
+            custom_args_text
+                .split_whitespace()
+                .map(String::from)
+                .collect()
+        };
+        rustconn_core::models::TelnetConfig { custom_args }
     }
 
     fn build_ssh_config(&self) -> SshConfig {

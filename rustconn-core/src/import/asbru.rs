@@ -19,7 +19,7 @@ use uuid::Uuid;
 use crate::error::ImportError;
 use crate::models::{
     Connection, ConnectionGroup, PasswordSource, ProtocolConfig, RdpConfig, SshAuthMethod,
-    SshConfig, SshKeySource, VncConfig,
+    SshConfig, SshKeySource, TelnetConfig, VncConfig,
 };
 
 use super::traits::{read_import_file, ImportResult, ImportSource, SkippedEntry};
@@ -487,6 +487,7 @@ impl AsbruImporter {
             {
                 (ProtocolConfig::Vnc(VncConfig::default()), 5900u16)
             }
+            "telnet" => (ProtocolConfig::Telnet(TelnetConfig::default()), 23u16),
             _ => {
                 result.add_skipped(SkippedEntry::with_location(
                     &name,

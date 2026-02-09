@@ -12,7 +12,7 @@
 use proptest::prelude::*;
 use rustconn_core::{
     ConfigManager, Connection, ConnectionManager, ProtocolConfig, ProtocolType, RdpConfig,
-    SshConfig, VncConfig,
+    SshConfig, TelnetConfig, VncConfig,
 };
 use tempfile::TempDir;
 use uuid::Uuid;
@@ -63,6 +63,7 @@ fn arb_protocol() -> impl Strategy<Value = ProtocolType> {
         Just(ProtocolType::Ssh),
         Just(ProtocolType::Rdp),
         Just(ProtocolType::Vnc),
+        Just(ProtocolType::Telnet),
     ]
 }
 
@@ -81,6 +82,7 @@ fn create_quick_connect_connection(
         ProtocolType::Ssh => ProtocolConfig::Ssh(SshConfig::default()),
         ProtocolType::Rdp => ProtocolConfig::Rdp(RdpConfig::default()),
         ProtocolType::Vnc => ProtocolConfig::Vnc(VncConfig::default()),
+        ProtocolType::Telnet => ProtocolConfig::Telnet(TelnetConfig::default()),
         _ => ProtocolConfig::Ssh(SshConfig::default()),
     };
 
@@ -193,6 +195,9 @@ proptest! {
             }
             ProtocolType::Vnc => {
                 prop_assert!(matches!(quick_conn.protocol_config, ProtocolConfig::Vnc(_)));
+            }
+            ProtocolType::Telnet => {
+                prop_assert!(matches!(quick_conn.protocol_config, ProtocolConfig::Telnet(_)));
             }
             _ => {}
         }
@@ -319,6 +324,19 @@ mod unit_tests {
         assert_eq!(conn.username, None);
         assert_eq!(conn.protocol, ProtocolType::Vnc);
         assert!(matches!(conn.protocol_config, ProtocolConfig::Vnc(_)));
+    }
+
+    #[test]
+    fn test_quick_connect_telnet() {
+        let conn = create_quick_connect_connection("switch.local", 23, None, ProtocolType::Telnet);
+
+        assert_eq!(conn.id, Uuid::nil());
+        assert_eq!(conn.name, "Quick: switch.local");
+        assert_eq!(conn.host, "switch.local");
+        assert_eq!(conn.port, 23);
+        assert_eq!(conn.username, None);
+        assert_eq!(conn.protocol, ProtocolType::Telnet);
+        assert!(matches!(conn.protocol_config, ProtocolConfig::Telnet(_)));
     }
 
     #[test]

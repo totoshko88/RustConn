@@ -16,6 +16,8 @@ pub enum ProtocolType {
     Vnc,
     /// SPICE protocol
     Spice,
+    /// Telnet protocol
+    Telnet,
     /// Zero Trust connection (cloud-based secure access)
     ZeroTrust,
 }
@@ -31,6 +33,7 @@ impl ProtocolType {
             Self::Rdp => "rdp",
             Self::Vnc => "vnc",
             Self::Spice => "spice",
+            Self::Telnet => "telnet",
             Self::ZeroTrust => "zerotrust",
         }
     }
@@ -42,6 +45,7 @@ impl ProtocolType {
             Self::Ssh => 22,
             Self::Rdp => 3389,
             Self::Vnc | Self::Spice => 5900,
+            Self::Telnet => 23,
             Self::ZeroTrust => 0, // No default port for Zero Trust
         }
     }
@@ -54,6 +58,7 @@ impl std::fmt::Display for ProtocolType {
             Self::Rdp => write!(f, "RDP"),
             Self::Vnc => write!(f, "VNC"),
             Self::Spice => write!(f, "SPICE"),
+            Self::Telnet => write!(f, "Telnet"),
             Self::ZeroTrust => write!(f, "Zero Trust"),
         }
     }
@@ -71,6 +76,8 @@ pub enum ProtocolConfig {
     Vnc(VncConfig),
     /// SPICE protocol configuration
     Spice(SpiceConfig),
+    /// Telnet protocol configuration
+    Telnet(TelnetConfig),
     /// Zero Trust connection configuration
     ZeroTrust(ZeroTrustConfig),
 }
@@ -84,9 +91,21 @@ impl ProtocolConfig {
             Self::Rdp(_) => ProtocolType::Rdp,
             Self::Vnc(_) => ProtocolType::Vnc,
             Self::Spice(_) => ProtocolType::Spice,
+            Self::Telnet(_) => ProtocolType::Telnet,
             Self::ZeroTrust(_) => ProtocolType::ZeroTrust,
         }
     }
+}
+
+/// Telnet protocol configuration
+///
+/// Minimal configuration for Telnet connections.
+/// Telnet sessions are spawned via VTE terminal using an external `telnet` client.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TelnetConfig {
+    /// Custom command-line arguments for the telnet client
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub custom_args: Vec<String>,
 }
 
 /// SSH authentication method

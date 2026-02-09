@@ -976,6 +976,7 @@ fn build_connection_command(connection: &Connection) -> ConnectionCommand {
         ProtocolType::Vnc => build_vnc_command(connection),
         ProtocolType::Spice => build_spice_command(connection),
         ProtocolType::ZeroTrust => build_zerotrust_command(connection),
+        ProtocolType::Telnet => build_telnet_command(connection),
     }
 }
 
@@ -1240,6 +1241,25 @@ fn build_zerotrust_command(connection: &Connection) -> ConnectionCommand {
     }
 }
 
+/// Builds Telnet command arguments
+fn build_telnet_command(connection: &Connection) -> ConnectionCommand {
+    let mut args = Vec::new();
+
+    // Add custom args from TelnetConfig if available
+    if let rustconn_core::models::ProtocolConfig::Telnet(ref config) = connection.protocol_config {
+        args.extend(config.custom_args.clone());
+    }
+
+    // Add host and port
+    args.push(connection.host.clone());
+    args.push(connection.port.to_string());
+
+    ConnectionCommand {
+        program: "telnet".to_string(),
+        args,
+    }
+}
+
 /// Executes the connection command
 fn execute_connection_command(command: &ConnectionCommand) -> Result<(), CliError> {
     use std::process::Command;
@@ -1358,8 +1378,10 @@ fn parse_protocol(protocol: &str) -> Result<(ProtocolType, u16), CliError> {
         "rdp" => Ok((ProtocolType::Rdp, 3389)),
         "vnc" => Ok((ProtocolType::Vnc, 5900)),
         "spice" => Ok((ProtocolType::Spice, 5900)),
+        "telnet" => Ok((ProtocolType::Telnet, 23)),
         _ => Err(CliError::Config(format!(
-            "Unknown protocol '{protocol}'. Supported protocols: ssh, rdp, vnc, spice"
+            "Unknown protocol '{protocol}'. \
+             Supported protocols: ssh, rdp, vnc, spice, telnet"
         ))),
     }
 }
@@ -1409,6 +1431,12 @@ fn create_connection(
             eprintln!("Use the GUI to configure Zero Trust connections");
             // Return SSH as fallback
             Connection::new_ssh(name.to_string(), host.to_string(), port)
+        }
+        ProtocolType::Telnet => {
+            if key.is_some() {
+                eprintln!("Warning: --key option is ignored for Telnet connections");
+            }
+            Connection::new_telnet(name.to_string(), host.to_string(), port)
         }
     }
 }

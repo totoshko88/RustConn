@@ -119,6 +119,7 @@ pub const fn get_protocol_icon(protocol: ProtocolType) -> &'static str {
         ProtocolType::Rdp => "computer-symbolic",
         ProtocolType::Vnc => "video-display-symbolic",
         ProtocolType::Spice => "preferences-desktop-remote-desktop-symbolic",
+        ProtocolType::Telnet => "network-wired-symbolic",
         ProtocolType::ZeroTrust => "cloud-symbolic",
     }
 }
@@ -136,6 +137,7 @@ pub const fn all_protocol_icons() -> &'static [(ProtocolType, &'static str)] {
             ProtocolType::Spice,
             "preferences-desktop-remote-desktop-symbolic",
         ),
+        (ProtocolType::Telnet, "network-wired-symbolic"),
         (ProtocolType::ZeroTrust, "cloud-symbolic"),
     ]
 }

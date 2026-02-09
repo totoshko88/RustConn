@@ -13,7 +13,7 @@ use uuid::Uuid;
 use crate::error::ImportError;
 use crate::models::{
     AutomationConfig, Connection, ConnectionGroup, PasswordSource, ProtocolConfig, ProtocolType,
-    RdpConfig, SshAuthMethod, SshConfig, VncConfig, WindowMode,
+    RdpConfig, SshAuthMethod, SshConfig, TelnetConfig, VncConfig, WindowMode,
 };
 use crate::progress::ProgressReporter;
 
@@ -281,8 +281,8 @@ impl RdmImporter {
                 Ok((ProtocolType::Vnc, ProtocolConfig::Vnc(vnc_config), 5900))
             }
             "telnet" => Ok((
-                ProtocolType::Ssh,
-                ProtocolConfig::Ssh(SshConfig::default()),
+                ProtocolType::Telnet,
+                ProtocolConfig::Telnet(TelnetConfig::default()),
                 23,
             )),
             other => Err(format!("Unsupported connection type: {other}")),

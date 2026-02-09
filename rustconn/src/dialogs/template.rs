@@ -281,22 +281,37 @@ impl TemplateDialog {
         protocol_stack.set_visible_child_name("ssh");
 
         // Connect protocol dropdown to stack and port
+        // Telnet options (minimal — just a placeholder page)
+        let telnet_box = GtkBox::new(Orientation::Vertical, 12);
+        telnet_box.set_margin_top(12);
+        telnet_box.set_margin_bottom(12);
+        telnet_box.set_margin_start(12);
+        telnet_box.set_margin_end(12);
+        let telnet_label = Label::new(Some(
+            "Telnet uses an external client. No additional options.",
+        ));
+        telnet_label.add_css_class("dim-label");
+        telnet_box.append(&telnet_label);
+        protocol_stack.add_named(&telnet_box, Some("telnet"));
+
         let stack_clone = protocol_stack.clone();
         let port_clone = port_spin.clone();
         protocol_dropdown.connect_selected_notify(move |dropdown| {
-            let protocols = ["ssh", "rdp", "vnc", "spice", "zerotrust"];
+            let protocols = ["ssh", "rdp", "vnc", "spice", "zerotrust", "telnet"];
             let selected = dropdown.selected() as usize;
             if selected < protocols.len() {
                 stack_clone.set_visible_child_name(protocols[selected]);
                 let default_port = match selected {
                     1 => 3389.0,
                     2 | 3 => 5900.0,
+                    5 => 23.0,
                     _ => 22.0,
                 };
                 let current = port_clone.value();
                 if (current - 22.0).abs() < 0.5
                     || (current - 3389.0).abs() < 0.5
                     || (current - 5900.0).abs() < 0.5
+                    || (current - 23.0).abs() < 0.5
                 {
                     port_clone.set_value(default_port);
                 }
@@ -488,7 +503,7 @@ impl TemplateDialog {
         info_group.add(&description_entry);
 
         // Protocol
-        let protocols = StringList::new(&["SSH", "RDP", "VNC", "SPICE", "ZeroTrust"]);
+        let protocols = StringList::new(&["SSH", "RDP", "VNC", "SPICE", "ZeroTrust", "Telnet"]);
         let protocol_dropdown = DropDown::builder()
             .model(&protocols)
             .valign(gtk4::Align::Center)
@@ -2164,6 +2179,7 @@ impl TemplateDialog {
                 zt_generic_command,
                 zt_custom_args,
             ),
+            5 => ProtocolConfig::Telnet(rustconn_core::models::TelnetConfig::default()),
             _ => Self::build_ssh_config(
                 ssh_auth_dropdown,
                 ssh_key_source_dropdown,
@@ -2530,6 +2546,7 @@ impl TemplateDialog {
             ProtocolType::Vnc => 2,
             ProtocolType::Spice => 3,
             ProtocolType::ZeroTrust => 4,
+            ProtocolType::Telnet => 5,
         };
         self.protocol_dropdown.set_selected(protocol_idx);
         self.protocol_stack
@@ -2565,6 +2582,7 @@ impl TemplateDialog {
             ProtocolConfig::Vnc(vnc) => self.load_vnc_config(vnc),
             ProtocolConfig::Spice(spice) => self.load_spice_config(spice),
             ProtocolConfig::ZeroTrust(zt) => self.load_zerotrust_config(zt),
+            ProtocolConfig::Telnet(_) => {} // No Telnet-specific config to load
         }
     }
 
@@ -3021,7 +3039,9 @@ impl TemplateManagerDialog {
                 }
             }
             match template.protocol {
-                ProtocolType::Ssh | ProtocolType::ZeroTrust => ssh_templates.push(template),
+                ProtocolType::Ssh | ProtocolType::ZeroTrust | ProtocolType::Telnet => {
+                    ssh_templates.push(template);
+                }
                 ProtocolType::Rdp => rdp_templates.push(template),
                 ProtocolType::Vnc => vnc_templates.push(template),
                 ProtocolType::Spice => spice_templates.push(template),
@@ -3087,6 +3107,7 @@ impl TemplateManagerDialog {
             ProtocolType::Vnc => "video-display-symbolic",
             ProtocolType::Spice => "video-display-symbolic",
             ProtocolType::ZeroTrust => "cloud-symbolic",
+            ProtocolType::Telnet => "network-wired-symbolic",
         };
         let icon = gtk4::Image::from_icon_name(icon_name);
         hbox.append(&icon);
