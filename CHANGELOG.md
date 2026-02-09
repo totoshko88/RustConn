@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Telnet Protocol Support** — Full Telnet protocol implementation across all crates ([#5](https://github.com/totoshko88/RustConn/issues/5)):
+  - Core model: `TelnetConfig`, `ProtocolType::Telnet`, `ProtocolConfig::Telnet` with configurable host, port (default 23), and extra arguments
+  - Protocol trait implementation with external `telnet` client
+  - Import support: Remmina, Asbru, MobaXterm, RDM importers recognize Telnet connections
+  - Export support: Remmina, Asbru, MobaXterm exporters write Telnet connections
+  - CLI: `rustconn-cli telnet` subcommand with `--host`, `--port`, `--extra-args` options
+  - GUI: Connection dialog with Telnet-specific configuration tab
+  - Template dialog: Telnet protocol option with default port 23
+  - Sidebar: Telnet filter button with `network-wired-symbolic` icon
+  - Terminal: `spawn_telnet()` method for launching telnet sessions
+  - Quick Connect: Telnet protocol option in quick connect bar
+  - Cluster dialog: Telnet connections selectable for cluster membership
+  - Property tests: All existing property tests updated with Telnet coverage
+
+### Fixed
+- **Sidebar Icon Missing** — Added missing `"telnet"` mapping in sidebar `get_protocol_icon()` function; Telnet connections now display the correct icon in the connection tree
+
 ## [0.7.8] - 2026-02-08
 
 ### Added

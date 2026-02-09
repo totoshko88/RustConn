@@ -12,14 +12,15 @@ mod rdp;
 mod registry;
 mod spice;
 mod ssh;
+mod telnet;
 mod vnc;
 
 pub use cli::{format_command_message, format_connection_message};
 pub use detection::{
     detect_aws_cli, detect_azure_cli, detect_boundary, detect_cloudflared, detect_gcloud_cli,
     detect_oci_cli, detect_rdp_client, detect_spice_client, detect_ssh_client, detect_tailscale,
-    detect_teleport, detect_vnc_client, detect_vnc_viewer_name, detect_vnc_viewer_path,
-    ClientDetectionResult, ClientInfo, ZeroTrustDetectionResult,
+    detect_teleport, detect_telnet_client, detect_vnc_client, detect_vnc_viewer_name,
+    detect_vnc_viewer_path, ClientDetectionResult, ClientInfo, ZeroTrustDetectionResult,
 };
 pub use freerdp::{
     build_freerdp_args, extract_geometry_from_args, has_decorations_flag, FreeRdpConfig,
@@ -32,6 +33,7 @@ pub use rdp::RdpProtocol;
 pub use registry::ProtocolRegistry;
 pub use spice::SpiceProtocol;
 pub use ssh::SshProtocol;
+pub use telnet::TelnetProtocol;
 pub use vnc::VncProtocol;
 
 use crate::error::ProtocolError;

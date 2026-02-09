@@ -19,6 +19,7 @@ use super::{ExportError, ExportFormat, ExportOptions, ExportResult, ExportResult
 const ICON_SSH: u16 = 109;
 const ICON_RDP: u16 = 91;
 const ICON_VNC: u16 = 128;
+const ICON_TELNET: u16 = 98;
 const ICON_FOLDER: u16 = 41;
 const ICON_ROOT_FOLDER: u16 = 42;
 
@@ -171,6 +172,27 @@ impl MobaXtermExporter {
 
         Ok(format!(
             "#{ICON_RDP}#{conn_params}#{terminal_settings}#0# #-1"
+        ))
+    }
+
+    /// Exports a single Telnet connection to MobaXterm session line format.
+    fn export_telnet_session(connection: &Connection) -> Result<String, ExportError> {
+        let mut params = vec![String::new(); 18];
+
+        // Session type (1 = Telnet)
+        params[0] = "1".to_string();
+
+        // Host
+        params[1] = Self::encode_escapes(&connection.host);
+
+        // Port
+        params[2] = connection.port.to_string();
+
+        let conn_params = params.join("%");
+        let terminal_settings = Self::build_terminal_settings();
+
+        Ok(format!(
+            "#{ICON_TELNET}#{conn_params}#{terminal_settings}#0# #-1"
         ))
     }
 
@@ -376,6 +398,7 @@ impl MobaXtermExporter {
             ProtocolType::Ssh => Self::export_ssh_session(connection),
             ProtocolType::Rdp => Self::export_rdp_session(connection),
             ProtocolType::Vnc => Self::export_vnc_session(connection),
+            ProtocolType::Telnet => Self::export_telnet_session(connection),
             ProtocolType::Spice => Err(ExportError::UnsupportedProtocol("SPICE".to_string())),
             ProtocolType::ZeroTrust => {
                 Err(ExportError::UnsupportedProtocol("ZeroTrust".to_string()))
@@ -415,7 +438,7 @@ impl ExportTarget for MobaXtermExporter {
     fn supports_protocol(&self, protocol: &ProtocolType) -> bool {
         matches!(
             protocol,
-            ProtocolType::Ssh | ProtocolType::Rdp | ProtocolType::Vnc
+            ProtocolType::Ssh | ProtocolType::Rdp | ProtocolType::Vnc | ProtocolType::Telnet
         )
     }
 }

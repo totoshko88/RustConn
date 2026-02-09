@@ -2830,7 +2830,10 @@ impl MainWindow {
                     cached_credentials,
                 );
             }
-            ProtocolType::Ssh | ProtocolType::Spice | ProtocolType::ZeroTrust => {
+            ProtocolType::Ssh
+            | ProtocolType::Spice
+            | ProtocolType::ZeroTrust
+            | ProtocolType::Telnet => {
                 // For SSH/SPICE, cache credentials if available and start connection
                 if let Some(ref creds) = resolved_credentials {
                     if let (Some(username), Some(password)) =
@@ -3340,6 +3343,14 @@ impl MainWindow {
                 sidebar,
                 connection_id,
                 &conn_clone,
+            ),
+            "telnet" => protocols::start_telnet_connection(
+                state,
+                notebook,
+                sidebar,
+                connection_id,
+                &conn_clone,
+                logging_enabled,
             ),
             p if p == "zerotrust" || p.starts_with("zerotrust:") => {
                 protocols::start_zerotrust_connection(

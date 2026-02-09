@@ -14,7 +14,7 @@ use uuid::Uuid;
 use crate::error::ImportError;
 use crate::models::{
     Connection, ConnectionGroup, Credentials, PasswordSource, ProtocolConfig, RdpConfig,
-    Resolution, SpiceConfig, SshAuthMethod, SshConfig, SshKeySource, VncConfig,
+    Resolution, SpiceConfig, SshAuthMethod, SshConfig, SshKeySource, TelnetConfig, VncConfig,
 };
 
 use super::normalize::parse_host_port;
@@ -294,6 +294,7 @@ impl RemminaImporter {
             }
             Some("VNC") => (ProtocolConfig::Vnc(VncConfig::default()), 5900u16),
             Some("SPICE") => (ProtocolConfig::Spice(SpiceConfig::default()), 5900u16),
+            Some("TELNET") => (ProtocolConfig::Telnet(TelnetConfig::default()), 23u16),
             Some(p) => {
                 result.add_skipped(SkippedEntry::with_location(
                     &name,
@@ -633,7 +634,7 @@ group=Production/Web Servers
         let content = r"
 [remmina]
 name=Unknown
-protocol=TELNET
+protocol=X2GO
 server=192.168.1.100
 ";
 

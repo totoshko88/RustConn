@@ -156,6 +156,11 @@ impl ConnectionSidebar {
             "video-x-generic-symbolic",
             "Filter SPICE connections",
         );
+        let telnet_filter = filter::create_filter_button(
+            "Telnet",
+            "network-wired-symbolic",
+            "Filter Telnet connections",
+        );
         let zerotrust_filter = filter::create_filter_button(
             "ZeroTrust",
             "folder-remote-symbolic",
@@ -181,6 +186,7 @@ impl ConnectionSidebar {
         filter_box.append(&rdp_filter);
         filter_box.append(&vnc_filter);
         filter_box.append(&spice_filter);
+        filter_box.append(&telnet_filter);
         filter_box.append(&zerotrust_filter);
         filter_box.append(&local_shell_btn);
 
@@ -198,6 +204,9 @@ impl ConnectionSidebar {
         protocol_filter_buttons
             .borrow_mut()
             .insert("SPICE".to_string(), spice_filter.clone());
+        protocol_filter_buttons
+            .borrow_mut()
+            .insert("Telnet".to_string(), telnet_filter.clone());
         protocol_filter_buttons
             .borrow_mut()
             .insert("ZeroTrust".to_string(), zerotrust_filter.clone());
@@ -243,6 +252,15 @@ impl ConnectionSidebar {
             let flag = programmatic_flag.clone();
             filter::connect_filter_button(&spice_filter, move |btn| {
                 search::toggle_protocol_filter("SPICE", btn, &filters, &buttons, &entry, &flag);
+            });
+        }
+        {
+            let filters = active_protocol_filters.clone();
+            let buttons = protocol_filter_buttons.clone();
+            let entry = search_entry.clone();
+            let flag = programmatic_flag.clone();
+            filter::connect_filter_button(&telnet_filter, move |btn| {
+                search::toggle_protocol_filter("Telnet", btn, &filters, &buttons, &entry, &flag);
             });
         }
         {

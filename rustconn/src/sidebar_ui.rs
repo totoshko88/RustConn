@@ -200,6 +200,7 @@ pub fn get_protocol_icon(protocol: &str) -> &'static str {
         "rdp" => "computer-symbolic",
         "vnc" => "video-display-symbolic",
         "spice" => "video-x-generic-symbolic",
+        "telnet" => "network-wired-symbolic",
         "zerotrust" => "folder-remote-symbolic",
         "info" => "dialog-information-symbolic",
         _ => "network-server-symbolic",

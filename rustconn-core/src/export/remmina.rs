@@ -50,6 +50,11 @@ impl RemminaExporter {
             ProtocolType::Spice => {
                 return Err(ExportError::UnsupportedProtocol("SPICE".to_string()));
             }
+            ProtocolType::Telnet => {
+                // Remmina supports TELNET protocol natively
+                let _ = writeln!(output, "protocol=TELNET");
+                let _ = writeln!(output, "server={}:{}", connection.host, connection.port);
+            }
             ProtocolType::ZeroTrust => {
                 return Err(ExportError::UnsupportedProtocol("ZeroTrust".to_string()));
             }
@@ -295,7 +300,7 @@ impl ExportTarget for RemminaExporter {
     fn supports_protocol(&self, protocol: &ProtocolType) -> bool {
         matches!(
             protocol,
-            ProtocolType::Ssh | ProtocolType::Rdp | ProtocolType::Vnc
+            ProtocolType::Ssh | ProtocolType::Rdp | ProtocolType::Vnc | ProtocolType::Telnet
         )
     }
 }

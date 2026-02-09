@@ -58,6 +58,8 @@ pub struct ClientDetectionResult {
     pub vnc: ClientInfo,
     /// SPICE client information
     pub spice: ClientInfo,
+    /// Telnet client information
+    pub telnet: ClientInfo,
 }
 
 impl ClientDetectionResult {
@@ -69,6 +71,7 @@ impl ClientDetectionResult {
             rdp: detect_rdp_client(),
             vnc: detect_vnc_client(),
             spice: detect_spice_client(),
+            telnet: detect_telnet_client(),
         }
     }
 }
@@ -227,6 +230,14 @@ pub fn detect_spice_client() -> ClientInfo {
         return info;
     }
     ClientInfo::not_installed("SPICE Client", "Install virt-viewer package")
+}
+
+/// Detects the installed Telnet client
+pub fn detect_telnet_client() -> ClientInfo {
+    if let Some(info) = try_detect_client("Telnet", "telnet", &[]) {
+        return info;
+    }
+    ClientInfo::not_installed("Telnet", "Install telnet (inetutils-telnet) package")
 }
 
 /// Returns the path to the first available VNC viewer binary

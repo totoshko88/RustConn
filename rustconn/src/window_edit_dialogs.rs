@@ -1437,6 +1437,22 @@ struct QuickConnectParams {
     password: Option<String>,
 }
 
+/// Starts a quick Telnet connection
+fn start_quick_telnet(
+    notebook: &SharedNotebook,
+    params: &QuickConnectParams,
+    terminal_settings: &rustconn_core::config::TerminalSettings,
+) {
+    let session_id = notebook.create_terminal_tab_with_settings(
+        Uuid::nil(),
+        &format!("Quick: {}", params.host),
+        "telnet",
+        None,
+        terminal_settings,
+    );
+    notebook.spawn_telnet(session_id, &params.host, params.port, &[]);
+}
+
 /// Starts a quick SSH connection
 fn start_quick_ssh(
     notebook: &SharedNotebook,
@@ -1666,7 +1682,7 @@ pub fn show_quick_connect_dialog_with_state(
     };
 
     // Protocol dropdown
-    let protocol_list = gtk4::StringList::new(&["SSH", "RDP", "VNC"]);
+    let protocol_list = gtk4::StringList::new(&["SSH", "RDP", "VNC", "Telnet"]);
     let protocol_dropdown = gtk4::DropDown::builder()
         .model(&protocol_list)
         .valign(gtk4::Align::Center)
@@ -1759,6 +1775,7 @@ pub fn show_quick_connect_dialog_with_state(
                     rustconn_core::models::ProtocolType::Ssh => 0,
                     rustconn_core::models::ProtocolType::Rdp => 1,
                     rustconn_core::models::ProtocolType::Vnc => 2,
+                    rustconn_core::models::ProtocolType::Telnet => 3,
                     _ => 0,
                 };
                 protocol_dd.set_selected(protocol_idx);
@@ -1789,6 +1806,7 @@ pub fn show_quick_connect_dialog_with_state(
             let default_port = match dropdown.selected() {
                 1 => 3389.0, // RDP
                 2 => 5900.0, // VNC
+                3 => 23.0,   // Telnet
                 _ => 22.0,   // SSH (0) and any other value
             };
             port_spin_clone.set_value(default_port);
@@ -1849,6 +1867,7 @@ pub fn show_quick_connect_dialog_with_state(
             0 => start_quick_ssh(&notebook, &params, &terminal_settings),
             1 => start_quick_rdp(&notebook, &split_view, &sidebar, &params),
             2 => start_quick_vnc(&notebook, &split_view, &sidebar, &params),
+            3 => start_quick_telnet(&notebook, &params, &terminal_settings),
             _ => start_quick_ssh(&notebook, &params, &terminal_settings),
         }
 

@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 use crate::error::ImportError;
 use crate::models::{
     Connection, ConnectionGroup, ProtocolConfig, RdpConfig, Resolution, SshAuthMethod, SshConfig,
-    SshKeySource, VncConfig,
+    SshKeySource, TelnetConfig, VncConfig,
 };
 
 use super::traits::{ImportResult, ImportSource, SkippedEntry};
@@ -232,6 +232,7 @@ impl MobaXtermImporter {
             }
             MobaSessionType::Rdp => self.parse_rdp_session(&name, &conn_params, source_path),
             MobaSessionType::Vnc => self.parse_vnc_session(&name, &conn_params, source_path),
+            MobaSessionType::Telnet => self.parse_telnet_session(&name, &conn_params, source_path),
             _ => {
                 // Unsupported session type - return None without error
                 Ok(None)
@@ -408,6 +409,38 @@ impl MobaXtermImporter {
             ProtocolConfig::Rdp(rdp_config),
         );
         connection.username = username;
+
+        Ok(Some(connection))
+    }
+
+    /// Parses a Telnet session.
+    fn parse_telnet_session(
+        &self,
+        name: &str,
+        params: &[&str],
+        _source_path: &str,
+    ) -> Result<Option<Connection>, String> {
+        // Telnet params layout:
+        // [0] = session type (1)
+        // [1] = host
+        // [2] = port
+
+        let host = params
+            .get(1)
+            .map(|s| Self::decode_escapes(s))
+            .unwrap_or_default();
+        if host.is_empty() {
+            return Err("No host specified".to_string());
+        }
+
+        let port: u16 = params.get(2).and_then(|s| s.parse().ok()).unwrap_or(23);
+
+        let connection = Connection::new(
+            name.to_string(),
+            host,
+            port,
+            ProtocolConfig::Telnet(TelnetConfig::default()),
+        );
 
         Ok(Some(connection))
     }
@@ -642,11 +675,11 @@ Web Server=#109#0%10.0.1.2%22%www%%-1%-1%%%%%0%0%0%%%-1%0%0%0%%1080%%0%0%1%#Moba
     #[test]
     fn test_skip_unsupported_session_type() {
         let importer = MobaXtermImporter::new();
-        // Telnet session (type 1) - not supported
+        // Rsh session (type 2) - not supported
         let content = "[Bookmarks]
 SubRep=
 ImgNum=42
-Telnet Server=#98#1%192.168.1.100%23%%%#MobaFont%10#0# #-1";
+Rsh Server=#98#2%192.168.1.100%514%%%#MobaFont%10#0# #-1";
 
         let result = importer.parse_content(content, "test.mxtsessions");
         assert_eq!(result.connections.len(), 0);

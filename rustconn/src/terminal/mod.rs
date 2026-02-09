@@ -245,6 +245,7 @@ impl TerminalNotebook {
             "rdp" => "computer-symbolic",
             "vnc" => "video-display-symbolic",
             "spice" => "video-x-generic-symbolic",
+            "telnet" => "network-wired-symbolic",
             "zerotrust" => "folder-remote-symbolic",
             _ => "network-server-symbolic",
         }
@@ -733,6 +734,23 @@ impl TerminalNotebook {
             host.to_string()
         };
         argv.push(&destination);
+
+        self.spawn_command(session_id, &argv, None, None)
+    }
+
+    /// Spawns a Telnet command in the terminal
+    pub fn spawn_telnet(
+        &self,
+        session_id: Uuid,
+        host: &str,
+        port: u16,
+        extra_args: &[&str],
+    ) -> bool {
+        let mut argv = vec!["telnet"];
+        argv.extend(extra_args);
+        argv.push(host);
+        let port_str = port.to_string();
+        argv.push(&port_str);
 
         self.spawn_command(session_id, &argv, None, None)
     }

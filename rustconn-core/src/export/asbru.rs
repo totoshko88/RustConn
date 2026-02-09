@@ -113,6 +113,7 @@ impl AsbruExporter {
             ProtocolType::Rdp => "RDP",
             ProtocolType::Vnc => "VNC",
             ProtocolType::Spice => "SPICE",
+            ProtocolType::Telnet => "telnet",
         };
         lines.push(format!("  method: \"{method}\""));
 
@@ -157,8 +158,11 @@ impl AsbruExporter {
                     lines.push(format!("  resolution: \"{width}x{height}\""));
                 }
             }
-            ProtocolConfig::Vnc(_) | ProtocolConfig::Spice(_) | ProtocolConfig::ZeroTrust(_) => {
-                // VNC, SPICE, and ZeroTrust don't have additional fields in Asbru format
+            ProtocolConfig::Vnc(_)
+            | ProtocolConfig::Spice(_)
+            | ProtocolConfig::Telnet(_)
+            | ProtocolConfig::ZeroTrust(_) => {
+                // VNC, SPICE, Telnet, and ZeroTrust don't have additional fields
             }
         }
 

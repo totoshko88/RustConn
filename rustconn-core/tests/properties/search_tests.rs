@@ -61,6 +61,7 @@ fn arb_connection() -> impl Strategy<Value = Connection> {
                 ProtocolType::Rdp => Connection::new_rdp(name, host, 3389),
                 ProtocolType::Vnc => Connection::new_vnc(name, host, 5900),
                 ProtocolType::Spice => Connection::new_spice(name, host, 5900),
+                ProtocolType::Telnet => Connection::new_telnet(name, host, 23),
             };
             conn.tags = tags;
             conn

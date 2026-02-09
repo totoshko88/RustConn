@@ -21,6 +21,7 @@ mod rdp;
 mod shared_folders;
 mod spice;
 mod ssh;
+mod telnet;
 mod vnc;
 pub mod widgets;
 pub mod zerotrust;

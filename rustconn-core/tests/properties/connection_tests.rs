@@ -7,7 +7,7 @@ use chrono;
 use proptest::prelude::*;
 use rustconn_core::{
     ConfigManager, Connection, ConnectionManager, ProtocolConfig, RdpConfig, RdpGateway,
-    Resolution, SshAuthMethod, SshConfig, SshKeySource, VncConfig,
+    Resolution, SshAuthMethod, SshConfig, SshKeySource, TelnetConfig, VncConfig,
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -212,6 +212,8 @@ fn arb_protocol_config() -> impl Strategy<Value = ProtocolConfig> {
         arb_ssh_config().prop_map(ProtocolConfig::Ssh),
         arb_rdp_config().prop_map(ProtocolConfig::Rdp),
         arb_vnc_config().prop_map(ProtocolConfig::Vnc),
+        arb_custom_args()
+            .prop_map(|args| ProtocolConfig::Telnet(TelnetConfig { custom_args: args })),
     ]
 }
 
@@ -2363,6 +2365,7 @@ proptest! {
                 ProtocolType::Vnc => ProtocolConfig::Vnc(VncConfig::default()),
                 ProtocolType::Spice => ProtocolConfig::Spice(rustconn_core::SpiceConfig::default()),
                 ProtocolType::ZeroTrust => ProtocolConfig::Ssh(SshConfig::default()), // Fallback
+                ProtocolType::Telnet => ProtocolConfig::Telnet(TelnetConfig::default()),
             };
 
             manager
@@ -2422,6 +2425,7 @@ proptest! {
             ProtocolType::Vnc => ProtocolConfig::Vnc(VncConfig::default()),
             ProtocolType::Spice => ProtocolConfig::Spice(rustconn_core::SpiceConfig::default()),
             ProtocolType::ZeroTrust => ProtocolConfig::Ssh(SshConfig::default()),
+            ProtocolType::Telnet => ProtocolConfig::Telnet(TelnetConfig::default()),
         };
 
         manager
@@ -2474,6 +2478,7 @@ proptest! {
             ProtocolType::Vnc => ProtocolConfig::Vnc(VncConfig::default()),
             ProtocolType::Spice => ProtocolConfig::Spice(rustconn_core::SpiceConfig::default()),
             ProtocolType::ZeroTrust => ProtocolConfig::Ssh(SshConfig::default()),
+            ProtocolType::Telnet => ProtocolConfig::Telnet(TelnetConfig::default()),
         };
 
         let conn_id = manager
@@ -2512,6 +2517,7 @@ proptest! {
             ProtocolType::Vnc => ProtocolConfig::Vnc(VncConfig::default()),
             ProtocolType::Spice => ProtocolConfig::Spice(rustconn_core::SpiceConfig::default()),
             ProtocolType::ZeroTrust => ProtocolConfig::Ssh(SshConfig::default()),
+            ProtocolType::Telnet => ProtocolConfig::Telnet(TelnetConfig::default()),
         };
 
         manager
@@ -2557,6 +2563,7 @@ proptest! {
             ProtocolType::Vnc => ProtocolConfig::Vnc(VncConfig::default()),
             ProtocolType::Spice => ProtocolConfig::Spice(rustconn_core::SpiceConfig::default()),
             ProtocolType::ZeroTrust => ProtocolConfig::Ssh(SshConfig::default()),
+            ProtocolType::Telnet => ProtocolConfig::Telnet(TelnetConfig::default()),
         };
 
         let conn_id = manager

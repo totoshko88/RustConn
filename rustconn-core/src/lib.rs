@@ -114,7 +114,7 @@ pub use models::{
     ConnectionStatistics, ConnectionTemplate, Credentials, CustomProperty, HistorySettings,
     PasswordSource, PropertyType, ProtocolConfig, ProtocolType, RdpConfig, RdpGateway, Resolution,
     Snippet, SnippetVariable, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig,
-    SshKeySource, TemplateError, VncConfig, WindowGeometry, WindowMode,
+    SshKeySource, TelnetConfig, TemplateError, VncConfig, WindowGeometry, WindowMode,
 };
 pub use password_generator::{
     estimate_crack_time, CharacterSet, PasswordGenerator, PasswordGeneratorConfig,
@@ -134,10 +134,10 @@ pub use progress::{
 pub use protocol::{
     build_freerdp_args, detect_aws_cli, detect_azure_cli, detect_boundary, detect_cloudflared,
     detect_gcloud_cli, detect_oci_cli, detect_provider, detect_rdp_client, detect_ssh_client,
-    detect_tailscale, detect_teleport, detect_vnc_client, extract_geometry_from_args,
-    get_zero_trust_provider_icon, has_decorations_flag, ClientDetectionResult, ClientInfo,
-    CloudProvider, FreeRdpConfig, Protocol, ProtocolRegistry, ProviderIconCache, RdpProtocol,
-    SshProtocol, VncProtocol,
+    detect_tailscale, detect_teleport, detect_telnet_client, detect_vnc_client,
+    extract_geometry_from_args, get_zero_trust_provider_icon, has_decorations_flag,
+    ClientDetectionResult, ClientInfo, CloudProvider, FreeRdpConfig, Protocol, ProtocolRegistry,
+    ProviderIconCache, RdpProtocol, SshProtocol, TelnetProtocol, VncProtocol,
 };
 pub use rdp_client::{
     convert_to_bgra, create_frame_update, create_frame_update_with_conversion,
