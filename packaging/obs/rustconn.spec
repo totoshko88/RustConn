@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.7.8
+Version:        0.7.9
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
 License:        GPL-3.0-or-later
@@ -157,6 +157,23 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Mon Feb 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.9-0
+- Version bump to 0.7.9
+- Added Telnet Protocol Support (#5):
+  * Core model: TelnetConfig, ProtocolType::Telnet, ProtocolConfig::Telnet
+  * Protocol trait implementation with external telnet client
+  * Import support: Remmina, Asbru, MobaXterm, RDM importers
+  * Export support: Remmina, Asbru, MobaXterm exporters
+  * CLI: rustconn-cli telnet subcommand with --host, --port, --extra-args
+  * GUI: Connection dialog with Telnet-specific configuration tab
+  * Template dialog: Telnet protocol option with default port 23
+  * Sidebar: Telnet filter button with network-wired-symbolic icon
+  * Terminal: spawn_telnet() method for launching telnet sessions
+  * Quick Connect: Telnet protocol option in quick connect bar
+  * Cluster dialog: Telnet connections selectable for cluster membership
+  * Property tests: All existing property tests updated with Telnet coverage
+- Fixed Sidebar Icon Missing - added telnet mapping in get_protocol_icon()
+
 * Sun Feb 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.8-0
 - Version bump to 0.7.8
 - Added Remmina password import to configured secret backend

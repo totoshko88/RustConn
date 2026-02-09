@@ -1,4 +1,38 @@
 -------------------------------------------------------------------
+Mon Feb 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.9
+
+- Version bump to 0.7.9
+  * Added Telnet protocol support (#5):
+    - Full implementation across all three crates (core, CLI, GUI)
+    - TelnetConfig model with host, port (default 23), extra arguments
+    - Protocol trait implementation using external telnet client
+    - Import/export support: Remmina, Asbru, MobaXterm, RDM
+    - CLI: rustconn-cli telnet subcommand
+    - GUI: connection dialog, template dialog, sidebar filter, quick connect
+    - Terminal: spawn_telnet() for launching sessions
+    - All property tests updated with Telnet coverage
+  * Fixed missing Telnet icon mapping in sidebar get_protocol_icon()
+
+-------------------------------------------------------------------
+Mon Feb 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.9
+
+- Version bump to 0.7.9
+  * Added Telnet Protocol Support:
+    - Core model: TelnetConfig, ProtocolType::Telnet, ProtocolConfig::Telnet
+    - Protocol trait implementation with external telnet client
+    - Import support: Remmina, Asbru, MobaXterm, RDM importers
+    - Export support: Remmina, Asbru, MobaXterm exporters
+    - CLI: rustconn-cli telnet subcommand with --host, --port, --extra-args
+    - GUI: Connection dialog with Telnet-specific configuration tab
+    - Template dialog: Telnet protocol option with default port 23
+    - Sidebar: Telnet filter button with network-wired-symbolic icon
+    - Terminal: spawn_telnet() method for launching telnet sessions
+    - Quick Connect: Telnet protocol option in quick connect bar
+    - Cluster dialog: Telnet connections selectable for cluster membership
+    - Property tests: All existing property tests updated with Telnet coverage
+  * Fixed Sidebar Icon Missing - added telnet mapping in get_protocol_icon()
+
+-------------------------------------------------------------------
 Sun Feb 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.8
 
 - Version bump to 0.7.8
