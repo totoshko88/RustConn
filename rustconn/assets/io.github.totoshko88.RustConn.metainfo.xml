@@ -52,6 +52,7 @@
   </description>
   <launchable type="desktop-id">io.github.totoshko88.RustConn.desktop</launchable>
   <icon type="stock">io.github.totoshko88.RustConn</icon>
+  <icon type="remote" width="128" height="128">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/icons/hicolor/128x128/apps/io.github.totoshko88.RustConn.png</icon>
   <branding>
     <color type="primary" scheme_preference="light">#9141ac</color>
     <color type="primary" scheme_preference="dark">#613583</color>

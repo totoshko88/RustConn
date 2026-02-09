@@ -8,7 +8,7 @@
 Name:           rustconn
 Version:        0.7.9
 Release:        0
-Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE)
+Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Zero Trust)
 License:        GPL-3.0-or-later
 URL:            https://github.com/totoshko88/RustConn
 Source0:        %{name}-%{version}.tar.xz
@@ -69,23 +69,40 @@ Recommends:     tigervnc
 Recommends:     virt-viewer
 
 %description
-RustConn is a modern connection manager for Linux desktops built with GTK4.
-It provides a unified interface for managing SSH, RDP, VNC, and SPICE
-remote connections with support for both embedded and external clients.
+RustConn is a modern connection manager for Linux with a GTK4/Wayland-native
+interface. Manage SSH, RDP, VNC, SPICE, Telnet, and Zero Trust connections
+from a single application. All core protocols use embedded Rust
+implementations — no external dependencies required.
 
-Features:
-- SSH connections with embedded terminal and split view
-- RDP support via FreeRDP (embedded and external)
-- VNC support via TigerVNC (embedded and external)
-- SPICE support via virt-viewer (embedded and external)
-- Zero Trust providers: AWS SSM, GCP IAP, Azure Bastion, OCI Bastion
-- Connection groups and tags
-- Import/export (Remmina, Asbru-CM, SSH config, Ansible)
-- Secure credential storage (KeePassXC, libsecret)
+Protocols (embedded Rust implementations):
+- SSH with embedded VTE terminal and split view
+- RDP via IronRDP (embedded, with FreeRDP fallback)
+- VNC via vnc-rs (embedded, with TigerVNC fallback)
+- SPICE via remote-viewer (external)
+- Telnet via external telnet client (port 23)
+- Zero Trust: AWS SSM, GCP IAP, Azure Bastion, OCI Bastion,
+  Cloudflare, Teleport, Tailscale, Boundary
+
+Organization:
+- Groups, tags, and templates
+- Connection history and statistics
 - Session logging
-- Command snippets and cluster commands
+
+Import/Export:
+- Asbru-CM, Remmina, SSH config, Ansible inventory
+- Royal TS, MobaXterm, native format (.rcn)
+
+Security:
+- KeePassXC (KDBX files and proxy)
+- libsecret (GNOME Keyring)
+- Bitwarden CLI
+- 1Password CLI
+
+Productivity:
+- Split terminals
+- Command snippets
+- Cluster commands
 - Wake-on-LAN
-- RDP audio playback support
 
 %prep
 %autosetup -a1 -n %{name}-%{version}
