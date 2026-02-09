@@ -29,7 +29,7 @@ RustConn requests the following permissions for full functionality:
 
 | Permission | Purpose |
 |------------|---------|
-| `--share=network` | SSH/RDP/VNC/SPICE connections |
+| `--share=network` | SSH/RDP/VNC/SPICE/Telnet connections |
 | `--filesystem=home/.ssh:ro` | Read SSH keys |
 | `--socket=ssh-auth` | SSH agent access |
 | `--talk-name=org.freedesktop.secrets` | GNOME Keyring access |
@@ -37,7 +37,7 @@ RustConn requests the following permissions for full functionality:
 | `--talk-name=org.keepassxc.KeePassXC.BrowserServer` | KeePassXC proxy |
 | `--talk-name=org.kde.StatusNotifierWatcher` | System tray support |
 
-**Note:** SSH client is included in the Flatpak runtime. For RDP/VNC/SPICE connections, RustConn uses embedded clients (IronRDP, vnc-rs). External clients (xfreerdp, vncviewer, remote-viewer) and cloud CLIs (aws, gcloud, az) should be installed on the host system if needed for fallback.
+**Note:** SSH client is included in the Flatpak runtime. For RDP/VNC/SPICE connections, RustConn uses embedded clients (IronRDP, vnc-rs). Telnet requires the `telnet` client on the host. External clients (xfreerdp, vncviewer, remote-viewer) and cloud CLIs (aws, gcloud, az) should be installed on the host system if needed for fallback.
 
 Or install from a local bundle:
 ```bash
@@ -168,6 +168,7 @@ This installs the desktop file and icon for application menu integration.
 | RDP | FreeRDP | `freerdp2-x11` or `freerdp3` |
 | VNC | TigerVNC | `tigervnc-viewer` |
 | SPICE | remote-viewer | `virt-viewer` |
+| Telnet | telnet | `telnet` or `inetutils-telnet` |
 
 ### Optional Password Managers
 

@@ -2,7 +2,7 @@
 
 **Version 0.7.9** | GTK4/libadwaita Connection Manager for Linux
 
-RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
+RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, Telnet protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
 ## Table of Contents
 
@@ -42,7 +42,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 
 1. Press **Ctrl+N** or click **+** in header bar
 2. Enter connection name and host
-3. Select protocol (SSH, RDP, VNC, SPICE)
+3. Select protocol (SSH, RDP, VNC, SPICE, Telnet)
 4. Configure authentication (password or SSH key)
 5. Click **Create**
 6. Double-click the connection to connect
@@ -83,7 +83,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 ### Quick Filter
 
 Filter connections by protocol using the filter bar below search:
-- Click protocol buttons (SSH, RDP, VNC, SPICE, ZeroTrust)
+- Click protocol buttons (SSH, RDP, VNC, SPICE, Telnet, ZeroTrust)
 - Multiple protocols can be selected (OR logic)
 - Clear search field to reset filters
 
@@ -131,6 +131,7 @@ Shows integration status in sidebar toolbar:
 | RDP | Resolution, color depth, audio, gateway, shared folders |
 | VNC | Encoding, compression, quality, view-only, scaling |
 | SPICE | TLS, USB redirection, clipboard, image compression |
+| Telnet | Host, port (default 23), extra arguments |
 | ZeroTrust | Provider-specific (AWS SSM, GCP IAP, Azure, etc.) |
 
 **Advanced Tabs:**
@@ -145,7 +146,7 @@ Shows integration status in sidebar toolbar:
 ### Quick Connect (Ctrl+K)
 
 Temporary connection without saving:
-- Supports SSH, RDP, VNC
+- Supports SSH, RDP, VNC, Telnet
 - Optional template selection for pre-filling
 - Password field for RDP/VNC
 
@@ -244,6 +245,7 @@ RustConn/
 | RDP | Embedded IronRDP or external FreeRDP |
 | VNC | Embedded vnc-rs or external TigerVNC |
 | SPICE | Embedded spice-client or external remote-viewer |
+| Telnet | Embedded VTE terminal tab (external `telnet` client) |
 | ZeroTrust | Provider CLI in terminal |
 
 ### Tab Management
@@ -560,7 +562,7 @@ When creating a new connection, the password source dropdown defaults to match y
 
 Auto-detected CLI tools with versions:
 
-**Protocol Clients:** SSH, RDP (FreeRDP), VNC (TigerVNC), SPICE (remote-viewer)
+**Protocol Clients:** SSH, RDP (FreeRDP), VNC (TigerVNC), SPICE (remote-viewer), Telnet
 
 **Zero Trust:** AWS, GCP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary
 
@@ -643,6 +645,9 @@ rustconn-cli list --protocol ssh
 
 # Connect
 rustconn-cli connect "My Server"
+
+# Telnet connection
+rustconn-cli telnet --host 192.168.1.10 --port 23
 
 # Add connection
 rustconn-cli add --name "New Server" --host "192.168.1.10" --protocol ssh --user admin

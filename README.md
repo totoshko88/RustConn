@@ -8,7 +8,7 @@ Modern connection manager for Linux with GTK4/Wayland-native interface.
 
 | Category | Details |
 |----------|---------|
-| **Protocols** | SSH (embedded VTE), RDP (IronRDP), VNC (vnc-rs), SPICE, Zero Trust (AWS SSM, GCP IAP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary) |
+| **Protocols** | SSH (embedded VTE), RDP (IronRDP), VNC (vnc-rs), SPICE, Telnet, Zero Trust (AWS SSM, GCP IAP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary) |
 | **Organization** | Groups, tags, templates, connection history & statistics |
 | **Import/Export** | Asbru-CM, Remmina, SSH config, Ansible inventory, Royal TS, MobaXterm, native (.rcn) |
 | **Security** | KeePassXC (KDBX), libsecret, Bitwarden CLI, 1Password CLI integration |

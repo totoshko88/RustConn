@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.7.6** | Last updated: February 2026
+**Version 0.7.9** | Last updated: February 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -615,6 +615,7 @@ pub trait Protocol: Send + Sync {
 - `RdpProtocol`: RDP via FreeRDP
 - `VncProtocol`: VNC via TigerVNC
 - `SpiceProtocol`: SPICE via remote-viewer
+- `TelnetProtocol`: Telnet via external `telnet` client
 
 ### Adding a New Protocol
 
@@ -623,6 +624,8 @@ pub trait Protocol: Send + Sync {
 3. Add protocol config to `ProtocolConfig` enum
 4. Register in `ProtocolRegistry`
 5. Add UI fields in `rustconn/src/dialogs/connection/dialog.rs`
+
+See `TelnetProtocol` for a minimal reference implementation using an external client.
 
 ### RDP Backend Selection
 
@@ -754,6 +757,7 @@ rustconn/src/
 │   │   ├── rdp.rs         # RDP options
 │   │   ├── vnc.rs         # VNC options
 │   │   ├── spice.rs       # SPICE options
+│   │   ├── telnet.rs      # Telnet options
 │   │   └── zerotrust.rs   # Zero Trust provider options
 │   ├── keyboard.rs        # Keyboard navigation helpers
 │   ├── flatpak_components.rs  # Flatpak CLI download dialog
@@ -810,7 +814,7 @@ rustconn-core/src/
 
 ### Property Tests
 
-Located in `rustconn-core/tests/properties/` (1241 tests):
+Located in `rustconn-core/tests/properties/` (1250+ tests):
 
 ```rust
 proptest! {

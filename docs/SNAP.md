@@ -47,9 +47,10 @@ RustConn uses embedded Rust implementations for protocols:
 | SSH | VTE terminal | Always embedded |
 | RDP | IronRDP | Embedded Rust client |
 | VNC | vnc-rs | Embedded Rust client |
+| Telnet | External `telnet` | VTE terminal session |
 | SPICE | — | External only (see below) |
 
-No external protocol clients (xfreerdp, vncviewer) are needed for SSH, RDP, and VNC.
+No external protocol clients (xfreerdp, vncviewer) are needed for SSH, RDP, and VNC. Telnet requires the `telnet` client on the host.
 
 ## External CLIs (Host-Installed)
 
@@ -251,6 +252,7 @@ Due to snap confinement, RustConn stores data in snap-specific locations:
 | Security | High | High | Medium |
 | Setup | Manual interfaces | Automatic | None needed |
 | SSH/RDP/VNC | ✅ Embedded | ✅ Embedded | ✅ Embedded |
+| Telnet | Host CLI | Host CLI | ✅ Host CLI |
 | SPICE | Host CLI | ❌ | ✅ Host CLI |
 | Zero Trust | Host CLIs | ❌ | ✅ Host CLIs |
 | Package Size | ~50 MB | ~50 MB | ~30 MB |
