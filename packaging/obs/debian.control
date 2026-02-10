@@ -53,6 +53,7 @@ Description: Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, 
   - libsecret (GNOME Keyring)
   - Bitwarden CLI
   - 1Password CLI
+  - Passbolt CLI
  .
  Productivity:
   - Split terminals

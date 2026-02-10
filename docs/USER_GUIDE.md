@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.8.0** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.8.1** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, Telnet protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -114,10 +114,8 @@ Shows integration status in sidebar toolbar:
 - Username
 - Password source selection:
   - **Prompt** — Ask for password on each connection
-  - **KeePass** — Store/retrieve from KeePass database
-  - **Keyring** — Store/retrieve from system keyring (libsecret)
-  - **Bitwarden** — Store/retrieve from Bitwarden vault
-  - **1Password** — Store/retrieve from 1Password vault
+  - **Vault** — Store/retrieve from configured secret backend (KeePassXC, libsecret, Bitwarden, 1Password, Passbolt)
+  - **Variable** — Read credentials from a named secret global variable
   - **Inherit** — Use credentials from parent group
   - **None** — No password (key-based auth)
 - SSH key selection
@@ -395,7 +393,14 @@ Global variables allow you to use placeholders in connection fields that are res
 1. Menu → Tools → **Variables...**
 2. Click **Add Variable**
 3. Enter name and value
-4. Click **Save**
+4. Optionally mark as **Secret** (value hidden, stored in vault)
+5. Click **Save**
+
+**Secret Variables:**
+- Toggle visibility with the eye icon (Show/Hide)
+- Load secret value from vault with the vault icon
+- Secret variable values are auto-saved to the configured vault backend on dialog save
+- Secret values are cleared from the settings file (stored only in vault)
 
 **Use in Connections:**
 1. Create or edit a connection
@@ -530,7 +535,7 @@ Access via **Ctrl+,** or Menu → **Settings**
 
 ### Secrets
 
-- **Preferred Backend** — libsecret, KeePassXC, KDBX file, Bitwarden, 1Password
+- **Preferred Backend** — libsecret, KeePassXC, KDBX file, Bitwarden, 1Password, Passbolt
 - **Enable Fallback** — Use libsecret if primary unavailable
 - **KDBX Path** — KeePass database file (for KDBX backend)
 - **KDBX Authentication** — Password and/or key file
@@ -545,14 +550,19 @@ Access via **Ctrl+,** or Menu → **Settings**
   - Sign-in button (opens terminal for interactive `op signin`)
   - Supports biometric authentication via desktop app
   - Service account support via `OP_SERVICE_ACCOUNT_TOKEN`
-- **Installed Password Managers** — Auto-detected managers with versions (GNOME Secrets, KeePassXC, KeePass2, Bitwarden CLI, 1Password CLI)
+- **Passbolt Settings:**
+  - CLI detection and version display
+  - Server configuration status check (configured/not configured/auth failed)
+  - Requires `passbolt configure` CLI setup before use
+- **Installed Password Managers** — Auto-detected managers with versions (GNOME Secrets, KeePassXC, KeePass2, Bitwarden CLI, 1Password CLI, Passbolt CLI)
 
 **Password Source Defaults:**
-When creating a new connection, the password source dropdown defaults to match your configured backend:
-- KeePassXC/KDBX backend → "KeePass"
-- libsecret backend → "Keyring"
-- Bitwarden backend → "Bitwarden"
-- 1Password backend → "1Password"
+When creating a new connection, the password source dropdown shows:
+- **Prompt** — Ask for password on each connection
+- **Vault** — Store/retrieve from configured secret backend
+- **Variable** — Read from a named secret global variable
+- **Inherit** — Use credentials from parent group
+- **None** — No password (key-based auth)
 
 ### SSH Agent
 
@@ -796,6 +806,14 @@ rustconn-cli secret verify-keepass -d ~/vault.kdbx -k ~/key.key
    - Enable "Use API key authentication" in Settings → Secrets
    - Enter Client ID and Client Secret
 7. For password source, select "Bitwarden" in connection dialog
+
+### Passbolt Not Working
+
+1. Install Passbolt CLI (`go-passbolt-cli`): download from github.com/passbolt/go-passbolt-cli
+2. Configure: `passbolt configure --serverAddress https://your-server.com --userPrivateKeyFile key.asc --userPassword`
+3. Verify: `passbolt list resource`
+4. Select Passbolt backend in Settings → Secrets
+5. For password source, select "Vault" in connection dialog
 
 ### KeePass Not Working
 

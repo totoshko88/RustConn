@@ -405,6 +405,30 @@ impl PanelNode {
         }
     }
 
+    /// Updates the position of the split node whose first child contains
+    /// the given panel ID.
+    ///
+    /// This is used to persist user-dragged divider positions back to the
+    /// model. The `first_panel_id` identifies the split by matching the
+    /// leftmost/topmost panel in its first child subtree.
+    ///
+    /// Returns `true` if the split was found and updated.
+    pub fn update_split_position(&mut self, first_panel_id: PanelId, position: f64) -> bool {
+        let clamped = position.clamp(MIN_SPLIT_POSITION, MAX_SPLIT_POSITION);
+        match self {
+            Self::Leaf(_) => false,
+            Self::Split(split) => {
+                if split.first.first_panel().id == first_panel_id {
+                    split.position = clamped;
+                    true
+                } else {
+                    split.first.update_split_position(first_panel_id, clamped)
+                        || split.second.update_split_position(first_panel_id, clamped)
+                }
+            }
+        }
+    }
+
     /// Removes a panel from the tree.
     ///
     /// When a panel is removed:

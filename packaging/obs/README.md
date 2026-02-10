@@ -9,13 +9,15 @@
 | openSUSE Tumbleweed | Rolling | System (1.88+) | ✅ |
 | openSUSE Slowroll | Rolling (slow) | System (1.88+) | ✅ |
 | openSUSE Leap | 16.0 | devel:languages:rust | ✅ |
-| Fedora | 42+ | System (1.93) | ✅ |
+| Fedora | 42 | System (1.93) | ✅ |
+| Fedora | 43 | System (1.90) | ✅ |
 
 **Примітка:** MSRV (Minimum Supported Rust Version) = 1.88
 
 Ubuntu/Debian не підтримуються в OBS — системний Rust занадто старий:
 - Ubuntu 24.04: Rust 1.75, Ubuntu 25.04: Rust 1.84, Ubuntu 25.10: Rust 1.85
 - Ubuntu 26.04 (resolute) матиме Rust 1.88 — можна додати після релізу
+- Debian 13 (trixie): Rust 1.85 (system), 1.90 (backports) — OBS не може використовувати backports
 - Використовуйте GitHub releases для .deb та AppImage пакетів.
 
 ## Автоматичне оновлення
@@ -91,6 +93,7 @@ cd home:totoshko88:rustconn/rustconn
 - openSUSE_Slowroll
 - openSUSE_Leap_16.0
 - Fedora_42
+- Fedora_43
 
 **DEB:**
 - Debian 13+ (коли Rust >= 1.88 буде доступний)
@@ -137,6 +140,7 @@ sudo zypper in rustconn
 
 ### Fedora 42+
 ```bash
+# Replace 42 with your Fedora version (42, 43, etc.)
 sudo dnf config-manager --add-repo \
   https://download.opensuse.org/repositories/home:/totoshko88:/rustconn/Fedora_42/home:totoshko88:rustconn.repo
 sudo dnf install rustconn

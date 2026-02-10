@@ -23,13 +23,20 @@
     <arch>x86_64</arch>
   </repository>
   
-  <!-- Fedora 42+ has Rust 1.93 in system repos -->
+  <!-- Fedora 42 has Rust 1.93 in system repos -->
   <repository name="Fedora_42">
     <path project="Fedora:42" repository="standard"/>
     <arch>x86_64</arch>
   </repository>
   
+  <!-- Fedora 43 has Rust 1.90 in system repos -->
+  <repository name="Fedora_43">
+    <path project="Fedora:43" repository="standard"/>
+    <arch>x86_64</arch>
+  </repository>
+  
   <!-- Note: Ubuntu/Debian not supported in OBS - system Rust too old (1.75-1.85)
        Ubuntu 26.04 (resolute) will have Rust 1.88 - can add when released
+       Debian 13 (trixie) has Rust 1.90 in backports but OBS can't use backports as BuildRequires
        Use GitHub releases for .deb and AppImage packages -->
 </project>

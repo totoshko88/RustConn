@@ -48,6 +48,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Automatic` mode uses VTE defaults (termios for Backspace, VT220 `\e[3~` for Delete)
   - `Backspace (^H)` sends ASCII `0x08`, `Delete (^?)` sends ASCII `0x7F` as expected
   - Fixes Delete key showing `3~` escape artifacts on servers that don't support VT220 sequences
+- **Split View Panel Sizing** — Fixed left panel shrinking when splitting vertically then horizontally:
+  - Use model's fractional position (0.0–1.0) instead of hardcoded `size / 2` for divider placement
+  - Disable `shrink_start_child`/`shrink_end_child` to prevent panels from collapsing below minimum size
+  - One-shot position initialization via `connect_map` prevents repeated resets on widget remap
+  - Save user-dragged divider positions back to the model via `connect_notify_local("position")`
+  - Each split now correctly divides the current panel in half without affecting other panels
 
 ## [0.8.0] - 2026-02-10
 
