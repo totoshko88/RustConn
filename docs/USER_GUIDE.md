@@ -494,6 +494,8 @@ Download and install additional CLI tools directly within the Flatpak sandbox:
 
 **Note:** Installed CLIs are automatically detected in Settings → Clients.
 
+![Flatpak Components](../rustconn/assets/screenshots/flatpak_components.png)
+
 ---
 
 ## Settings
