@@ -3817,9 +3817,11 @@ fn cmd_secret_get(connection_name: &str, backend: Option<&str>) -> Result<(), Cl
             "keepass" | "kdbx" | "keepassxc" => SecretBackendType::KdbxFile,
             "bitwarden" | "bw" => SecretBackendType::Bitwarden,
             "1password" | "onepassword" | "op" => SecretBackendType::OnePassword,
+            "passbolt" => SecretBackendType::Passbolt,
             _ => {
                 return Err(CliError::Secret(format!(
-                    "Unknown backend: {b}. Use: keyring, keepass, bitwarden, or 1password"
+                    "Unknown backend: {b}. Use: keyring, keepass, bitwarden, \
+                     1password, or passbolt"
                 )))
             }
         }
@@ -3956,6 +3958,36 @@ fn cmd_secret_get(connection_name: &str, backend: Option<&str>) -> Result<(), Cl
                 Err(e) => Err(CliError::Secret(format!("1Password error: {e}"))),
             }
         }
+        SecretBackendType::Passbolt => {
+            use rustconn_core::secret::PassboltBackend;
+
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = PassboltBackend::new();
+            let pb_key = connection.id.to_string();
+            let result: Result<Option<Credentials>, _> = rt.block_on(backend.retrieve(&pb_key));
+
+            match result {
+                Ok(Some(creds)) => {
+                    println!("Connection: {}", connection.name);
+                    if let Some(ref user) = creds.username {
+                        println!("Username:   {user}");
+                    }
+                    if creds.expose_password().is_some() {
+                        println!("Password:   ******** (stored in Passbolt)");
+                    } else {
+                        println!("Password:   (not set)");
+                    }
+                    Ok(())
+                }
+                Ok(None) => Err(CliError::Secret(format!(
+                    "No credentials found in Passbolt for '{}'",
+                    connection.name
+                ))),
+                Err(e) => Err(CliError::Secret(format!("Passbolt error: {e}"))),
+            }
+        }
     }
 }
 
@@ -4005,9 +4037,11 @@ fn cmd_secret_set(
             "keepass" | "kdbx" | "keepassxc" => SecretBackendType::KdbxFile,
             "bitwarden" | "bw" => SecretBackendType::Bitwarden,
             "1password" | "onepassword" | "op" => SecretBackendType::OnePassword,
+            "passbolt" => SecretBackendType::Passbolt,
             _ => {
                 return Err(CliError::Secret(format!(
-                    "Unknown backend: {b}. Use: keyring, keepass, bitwarden, or 1password"
+                    "Unknown backend: {b}. Use: keyring, keepass, bitwarden, \
+                     1password, or passbolt"
                 )))
             }
         }
@@ -4143,6 +4177,31 @@ fn cmd_secret_set(
             );
             Ok(())
         }
+        SecretBackendType::Passbolt => {
+            use rustconn_core::models::Credentials;
+            use rustconn_core::secret::{PassboltBackend, SecretBackend};
+
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = PassboltBackend::new();
+            let creds = Credentials {
+                username: Some(username_value.clone()),
+                password: Some(secrecy::SecretString::from(password_value)),
+                key_passphrase: None,
+                domain: connection.domain.clone(),
+            };
+
+            let pb_key = connection.id.to_string();
+            rt.block_on(backend.store(&pb_key, &creds))
+                .map_err(|e| CliError::Secret(format!("Passbolt error: {e}")))?;
+
+            println!(
+                "Stored credentials for '{}' in Passbolt (user: {})",
+                connection.name, username_value
+            );
+            Ok(())
+        }
     }
 }
 
@@ -4185,9 +4244,11 @@ fn cmd_secret_delete(connection_name: &str, backend: Option<&str>) -> Result<(),
             "keepass" | "kdbx" | "keepassxc" => SecretBackendType::KdbxFile,
             "bitwarden" | "bw" => SecretBackendType::Bitwarden,
             "1password" | "onepassword" | "op" => SecretBackendType::OnePassword,
+            "passbolt" => SecretBackendType::Passbolt,
             _ => {
                 return Err(CliError::Secret(format!(
-                    "Unknown backend: {b}. Use: keyring, keepass, bitwarden, or 1password"
+                    "Unknown backend: {b}. Use: keyring, keepass, bitwarden, \
+                     1password, or passbolt"
                 )))
             }
         }
@@ -4265,6 +4326,23 @@ fn cmd_secret_delete(connection_name: &str, backend: Option<&str>) -> Result<(),
 
             println!(
                 "Deleted credentials for '{}' from 1Password",
+                connection.name
+            );
+            Ok(())
+        }
+        SecretBackendType::Passbolt => {
+            use rustconn_core::secret::PassboltBackend;
+
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = PassboltBackend::new();
+            let pb_key = connection.id.to_string();
+            rt.block_on(backend.delete(&pb_key))
+                .map_err(|e| CliError::Secret(format!("Passbolt error: {e}")))?;
+
+            println!(
+                "Deleted credentials for '{}' from Passbolt",
                 connection.name
             );
             Ok(())

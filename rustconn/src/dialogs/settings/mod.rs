@@ -505,6 +505,8 @@ impl SettingsDialog {
                 onepassword_group: adw::PreferencesGroup::new(), // dummy
                 onepassword_status_label: Label::new(None),      // dummy
                 onepassword_signin_button: Button::new(),        // dummy
+                passbolt_group: adw::PreferencesGroup::new(),    // dummy
+                passbolt_status_label: Label::new(None),         // dummy
             };
             let secrets = collect_secret_settings(&secrets_widgets_for_collect, &settings_clone);
 

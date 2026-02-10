@@ -87,6 +87,14 @@ impl Variable {
     }
 }
 
+/// Generates the secret backend lookup key for a secret variable.
+///
+/// Format: `rustconn/var/{name}`
+#[must_use]
+pub fn variable_secret_key(name: &str) -> String {
+    format!("rustconn/var/{name}")
+}
+
 /// Variable scope for resolution
 ///
 /// Variables are resolved in order from most specific to least specific:

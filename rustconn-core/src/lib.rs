@@ -215,7 +215,9 @@ pub use tracing::{
     field_names, get_tracing_config, init_tracing, is_tracing_initialized, span_names,
     TracingConfig, TracingError, TracingLevel, TracingOutput, TracingResult,
 };
-pub use variables::{Variable, VariableError, VariableManager, VariableResult, VariableScope};
+pub use variables::{
+    variable_secret_key, Variable, VariableError, VariableManager, VariableResult, VariableScope,
+};
 pub use vnc_client::is_embedded_vnc_available;
 #[cfg(feature = "vnc-embedded")]
 pub use vnc_client::{

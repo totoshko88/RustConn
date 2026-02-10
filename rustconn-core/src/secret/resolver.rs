@@ -63,15 +63,11 @@ impl CredentialResolver {
 
     /// Resolves credentials for a connection
     ///
-    /// Resolution order based on `password_source`:
-    /// 1. If `PasswordSource::KeePass` and `KeePass` integration active -> `KeePass` lookup
-    /// 2. If `PasswordSource::Keyring` -> libsecret lookup
-    /// 3. If `PasswordSource::Bitwarden` -> Bitwarden vault lookup
-    /// 4. If `PasswordSource::Prompt` -> return None (caller should prompt user)
-    /// 5. If `PasswordSource::None` -> try fallback chain if enabled
-    ///
-    /// When the primary source fails and fallback is enabled, tries the next
-    /// available source in the chain.
+    /// Resolution based on `password_source`:
+    /// - `Vault` → resolve from the configured secret backend
+    /// - `Variable(name)` → resolve from secret variable stored in vault
+    /// - `Prompt` / `Inherit` → caller handles
+    /// - `None` → try fallback chain if enabled
     ///
     /// # Arguments
     /// * `connection` - The connection to resolve credentials for
@@ -89,10 +85,8 @@ impl CredentialResolver {
         );
 
         let result = match connection.password_source {
-            PasswordSource::KeePass => self.resolve_from_keepass(connection).await,
-            PasswordSource::Keyring => self.resolve_from_keyring(connection).await,
-            PasswordSource::Bitwarden => self.resolve_from_bitwarden(connection).await,
-            PasswordSource::OnePassword => self.resolve_from_onepassword(connection).await,
+            PasswordSource::Vault => self.resolve_from_vault(connection).await,
+            PasswordSource::Variable(ref name) => self.resolve_from_variable(name).await,
             PasswordSource::Prompt | PasswordSource::Inherit => {
                 // Caller handles these cases
                 debug!("Password source requires caller handling");
@@ -115,6 +109,50 @@ impl CredentialResolver {
         }
 
         result
+    }
+
+    /// Resolves credentials from the configured vault backend
+    ///
+    /// Delegates to the appropriate backend based on `preferred_backend`
+    /// in settings. Tries KeePass first if enabled, then keyring, then
+    /// other backends. Falls back through the chain if enabled.
+    async fn resolve_from_vault(
+        &self,
+        connection: &Connection,
+    ) -> SecretResult<Option<Credentials>> {
+        let backend = self.select_storage_backend();
+        match backend {
+            SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
+                self.resolve_from_keepass(connection).await
+            }
+            SecretBackendType::LibSecret => self.resolve_from_keyring(connection).await,
+            SecretBackendType::Bitwarden => self.resolve_from_bitwarden(connection).await,
+            SecretBackendType::OnePassword => self.resolve_from_onepassword(connection).await,
+            SecretBackendType::Passbolt => self.resolve_from_passbolt(connection).await,
+        }
+    }
+
+    /// Resolves credentials from a secret global variable
+    ///
+    /// Looks up the variable value from the secret backend using the
+    /// key format `rustconn/var/{name}`.
+    async fn resolve_from_variable(
+        &self,
+        variable_name: &str,
+    ) -> SecretResult<Option<Credentials>> {
+        let lookup_key = crate::variables::variable_secret_key(variable_name);
+        debug!(
+            variable_name,
+            lookup_key = %lookup_key,
+            "Resolving from variable"
+        );
+
+        if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
+            return Ok(Some(creds));
+        }
+
+        debug!(variable_name, "No secret found in vault for variable");
+        Ok(None)
     }
 
     /// Resolves credentials from `KeePass`
@@ -211,6 +249,25 @@ impl CredentialResolver {
         self.secret_manager.retrieve(&alt_key).await
     }
 
+    /// Resolves credentials from Passbolt server
+    async fn resolve_from_passbolt(
+        &self,
+        connection: &Connection,
+    ) -> SecretResult<Option<Credentials>> {
+        // Passbolt uses "RustConn: {connection_id}" format via entry_name()
+        let lookup_key = connection.id.to_string();
+
+        if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
+            return Ok(Some(creds));
+        }
+
+        // Also try "{name} ({protocol})" format for consistency
+        let protocol = connection.protocol_config.protocol_type();
+        let name = connection.name.replace('/', "-");
+        let alt_key = format!("{} ({})", name, protocol.as_str().to_lowercase());
+        self.secret_manager.retrieve(&alt_key).await
+    }
+
     /// Resolves credentials using the fallback chain
     ///
     /// Tries sources in order: `KeePass` (if enabled) -> Keyring
@@ -251,6 +308,7 @@ impl CredentialResolver {
         match self.settings.preferred_backend {
             SecretBackendType::Bitwarden => SecretBackendType::Bitwarden,
             SecretBackendType::OnePassword => SecretBackendType::OnePassword,
+            SecretBackendType::Passbolt => SecretBackendType::Passbolt,
             SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
                 if self.settings.kdbx_enabled && self.settings.kdbx_path.is_some() {
                     SecretBackendType::KdbxFile
@@ -470,8 +528,10 @@ impl CredentialResolver {
                 let connection_id = connection.id.to_string();
                 self.secret_manager.store(&connection_id, credentials).await
             }
-            SecretBackendType::Bitwarden | SecretBackendType::OnePassword => {
-                // For Bitwarden/1Password, use connection name as identifier
+            SecretBackendType::Bitwarden
+            | SecretBackendType::OnePassword
+            | SecretBackendType::Passbolt => {
+                // For Bitwarden/1Password/Passbolt, use connection name as identifier
                 let lookup_key = Self::generate_lookup_key(connection);
                 self.secret_manager.store(&lookup_key, credentials).await
             }
@@ -504,8 +564,10 @@ impl CredentialResolver {
                 let connection_id = connection.id.to_string();
                 self.secret_manager.store(&connection_id, credentials).await
             }
-            SecretBackendType::Bitwarden | SecretBackendType::OnePassword => {
-                // For Bitwarden/1Password, use hierarchical path as entry name
+            SecretBackendType::Bitwarden
+            | SecretBackendType::OnePassword
+            | SecretBackendType::Passbolt => {
+                // For Bitwarden/1Password/Passbolt, use hierarchical path as entry name
                 let lookup_key = Self::generate_hierarchical_lookup_key(connection, groups);
                 self.secret_manager.store(&lookup_key, credentials).await
             }
@@ -715,13 +777,11 @@ impl CredentialResolver {
         groups: &[ConnectionGroup],
     ) -> SecretResult<Option<Credentials>> {
         match connection.password_source {
-            PasswordSource::KeePass => {
-                self.resolve_from_keepass_hierarchical(connection, groups)
+            PasswordSource::Vault => {
+                self.resolve_from_vault_hierarchical(connection, groups)
                     .await
             }
-            PasswordSource::Keyring => self.resolve_from_keyring(connection).await,
-            PasswordSource::Bitwarden => self.resolve_from_bitwarden(connection).await,
-            PasswordSource::OnePassword => self.resolve_from_onepassword(connection).await,
+            PasswordSource::Variable(ref name) => self.resolve_from_variable(name).await,
             PasswordSource::Inherit => self.resolve_inherited_credentials(connection, groups).await,
             PasswordSource::Prompt => {
                 // Caller handles these cases
@@ -736,6 +796,28 @@ impl CredentialResolver {
                     Ok(None)
                 }
             }
+        }
+    }
+
+    /// Resolves credentials from vault using hierarchical paths
+    ///
+    /// Delegates to the appropriate backend based on settings,
+    /// using hierarchical KeePass paths when applicable.
+    async fn resolve_from_vault_hierarchical(
+        &self,
+        connection: &Connection,
+        groups: &[ConnectionGroup],
+    ) -> SecretResult<Option<Credentials>> {
+        let backend = self.select_storage_backend();
+        match backend {
+            SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
+                self.resolve_from_keepass_hierarchical(connection, groups)
+                    .await
+            }
+            SecretBackendType::LibSecret => self.resolve_from_keyring(connection).await,
+            SecretBackendType::Bitwarden => self.resolve_from_bitwarden(connection).await,
+            SecretBackendType::OnePassword => self.resolve_from_onepassword(connection).await,
+            SecretBackendType::Passbolt => self.resolve_from_passbolt(connection).await,
         }
     }
 
@@ -881,48 +963,44 @@ impl CredentialResolver {
         let protocol_str = protocol.as_str().to_lowercase();
 
         match connection.password_source {
-            PasswordSource::KeePass => {
-                // KeePass uses hierarchical paths: RustConn/Group/ConnectionName
-                let old_key = Self::generate_hierarchical_lookup_key(&old_connection, groups);
-                let new_key = Self::generate_hierarchical_lookup_key(connection, groups);
-
-                if old_key != new_key {
-                    if let Some(creds) = self.secret_manager.retrieve(&old_key).await? {
-                        self.secret_manager.store(&new_key, &creds).await?;
-                        let _ = self.secret_manager.delete(&old_key).await;
+            PasswordSource::Vault => {
+                // Vault uses the configured backend — rename based on
+                // which backend is active
+                let backend = self.select_storage_backend();
+                match backend {
+                    SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
+                        // KeePass uses hierarchical paths
+                        let old_key =
+                            Self::generate_hierarchical_lookup_key(&old_connection, groups);
+                        let new_key = Self::generate_hierarchical_lookup_key(connection, groups);
+                        if old_key != new_key {
+                            if let Some(creds) = self.secret_manager.retrieve(&old_key).await? {
+                                self.secret_manager.store(&new_key, &creds).await?;
+                                let _ = self.secret_manager.delete(&old_key).await;
+                            }
+                        }
+                    }
+                    SecretBackendType::LibSecret | SecretBackendType::Bitwarden => {
+                        // Uses "{name} ({protocol})" format
+                        let old_key = format!("{} ({})", old_name.replace('/', "-"), protocol_str);
+                        let new_key =
+                            format!("{} ({})", connection.name.replace('/', "-"), protocol_str);
+                        if old_key != new_key {
+                            if let Some(creds) = self.secret_manager.retrieve(&old_key).await? {
+                                self.secret_manager.store(&new_key, &creds).await?;
+                                let _ = self.secret_manager.delete(&old_key).await;
+                            }
+                        }
+                    }
+                    SecretBackendType::OnePassword | SecretBackendType::Passbolt => {
+                        // Use connection ID — no rename needed
                     }
                 }
             }
-            PasswordSource::Keyring => {
-                // Keyring uses "{name} ({protocol})" format
-                let old_key = format!("{} ({})", old_name.replace('/', "-"), protocol_str);
-                let new_key = format!("{} ({})", connection.name.replace('/', "-"), protocol_str);
-
-                if old_key != new_key {
-                    if let Some(creds) = self.secret_manager.retrieve(&old_key).await? {
-                        self.secret_manager.store(&new_key, &creds).await?;
-                        let _ = self.secret_manager.delete(&old_key).await;
-                    }
-                }
-            }
-            PasswordSource::Bitwarden => {
-                // Bitwarden uses "{name} ({protocol})" format (same as Keyring)
-                let old_key = format!("{} ({})", old_name.replace('/', "-"), protocol_str);
-                let new_key = format!("{} ({})", connection.name.replace('/', "-"), protocol_str);
-
-                if old_key != new_key {
-                    if let Some(creds) = self.secret_manager.retrieve(&old_key).await? {
-                        self.secret_manager.store(&new_key, &creds).await?;
-                        let _ = self.secret_manager.delete(&old_key).await;
-                    }
-                }
-            }
-            PasswordSource::OnePassword => {
-                // 1Password uses connection ID, so renaming doesn't affect the key
-                // The entry title "RustConn: {id}" stays the same
-                // No action needed
-            }
-            PasswordSource::Prompt | PasswordSource::Inherit | PasswordSource::None => {
+            PasswordSource::Variable(_)
+            | PasswordSource::Prompt
+            | PasswordSource::Inherit
+            | PasswordSource::None => {
                 // No credentials stored in these modes
             }
         }
@@ -946,29 +1024,33 @@ impl CredentialResolver {
             };
 
             // Check if this group has credentials configured
-            if let Some(source) = group.password_source {
+            if let Some(source) = group.password_source.as_ref() {
                 match source {
-                    PasswordSource::KeePass => {
-                        if self.settings.kdbx_enabled {
-                            // Lookup in KeePass using Group path: RustConn/Groups/...
-                            let group_path =
-                                KeePassHierarchy::build_group_entry_path(group, groups);
-                            if let Some(creds) = self.secret_manager.retrieve(&group_path).await? {
-                                return Ok(Some(self.merge_group_credentials(creds, group)));
+                    PasswordSource::Vault => {
+                        // Use the configured backend to look up group creds
+                        let backend = self.select_storage_backend();
+                        match backend {
+                            SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
+                                if self.settings.kdbx_enabled {
+                                    let group_path =
+                                        KeePassHierarchy::build_group_entry_path(group, groups);
+                                    if let Some(creds) =
+                                        self.secret_manager.retrieve(&group_path).await?
+                                    {
+                                        return Ok(Some(
+                                            self.merge_group_credentials(creds, group),
+                                        ));
+                                    }
+                                }
                             }
-                        } else if self.settings.enable_fallback {
-                            // Fallback to keyring using group ID
-                            let group_id_str = group.id.to_string();
-                            if let Some(creds) = self.secret_manager.retrieve(&group_id_str).await?
-                            {
-                                return Ok(Some(self.merge_group_credentials(creds, group)));
+                            _ => {
+                                let group_id_str = group.id.to_string();
+                                if let Some(creds) =
+                                    self.secret_manager.retrieve(&group_id_str).await?
+                                {
+                                    return Ok(Some(self.merge_group_credentials(creds, group)));
+                                }
                             }
-                        }
-                    }
-                    PasswordSource::Keyring => {
-                        let group_id_str = group.id.to_string();
-                        if let Some(creds) = self.secret_manager.retrieve(&group_id_str).await? {
-                            return Ok(Some(self.merge_group_credentials(creds, group)));
                         }
                     }
                     PasswordSource::Inherit => {

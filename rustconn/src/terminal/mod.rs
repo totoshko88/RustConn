@@ -727,9 +727,9 @@ impl TerminalNotebook {
 
     /// Spawns a Telnet command in the terminal
     ///
-    /// Supports configurable backspace/delete key behavior via `stty`.
-    /// When non-automatic settings are used, wraps the telnet command
-    /// in a shell that first configures the terminal line discipline.
+    /// Supports configurable backspace/delete key behavior via VTE
+    /// `EraseBinding`. Settings are applied directly on the terminal
+    /// widget before spawning the telnet process.
     pub fn spawn_telnet(
         &self,
         session_id: Uuid,
@@ -740,44 +740,41 @@ impl TerminalNotebook {
         delete_sends: rustconn_core::TelnetDeleteSends,
     ) -> bool {
         use rustconn_core::{TelnetBackspaceSends, TelnetDeleteSends};
+        use vte4::EraseBinding;
 
-        // Build stty commands for non-automatic key settings
-        let mut stty_cmds = Vec::new();
-        match backspace_sends {
-            TelnetBackspaceSends::Backspace => stty_cmds.push("stty erase ^H"),
-            TelnetBackspaceSends::Delete => stty_cmds.push("stty erase ^?"),
-            TelnetBackspaceSends::Automatic => {}
-        }
-        match delete_sends {
-            TelnetDeleteSends::Backspace => stty_cmds.push("stty erase ^H"),
-            TelnetDeleteSends::Delete => stty_cmds.push("stty erase ^?"),
-            TelnetDeleteSends::Automatic => {}
-        }
-
-        if stty_cmds.is_empty() {
-            // No stty needed — spawn telnet directly
-            let mut argv = vec!["telnet"];
-            argv.extend(extra_args);
-            argv.push(host);
-            let port_str = port.to_string();
-            argv.push(&port_str);
-            self.spawn_command(session_id, &argv, None, None)
-        } else {
-            // Wrap in shell to run stty before telnet
-            let mut telnet_parts = vec!["telnet".to_string()];
-            for arg in extra_args {
-                telnet_parts.push((*arg).to_string());
+        // Apply keyboard bindings directly on the VTE terminal
+        if let Some(terminal) = self.terminals.borrow().get(&session_id) {
+            match backspace_sends {
+                TelnetBackspaceSends::Automatic => {
+                    terminal.set_backspace_binding(EraseBinding::Auto);
+                }
+                TelnetBackspaceSends::Backspace => {
+                    terminal.set_backspace_binding(EraseBinding::AsciiBackspace);
+                }
+                TelnetBackspaceSends::Delete => {
+                    terminal.set_backspace_binding(EraseBinding::AsciiDelete);
+                }
             }
-            telnet_parts.push(host.to_string());
-            telnet_parts.push(port.to_string());
-
-            let mut cmd_parts: Vec<String> = stty_cmds.iter().map(|s| (*s).to_string()).collect();
-            cmd_parts.push(telnet_parts.join(" "));
-            let shell_cmd = cmd_parts.join(" && ");
-
-            let argv = vec!["sh", "-c", &shell_cmd];
-            self.spawn_command(session_id, &argv, None, None)
+            match delete_sends {
+                TelnetDeleteSends::Automatic => {
+                    terminal.set_delete_binding(EraseBinding::Auto);
+                }
+                TelnetDeleteSends::Backspace => {
+                    terminal.set_delete_binding(EraseBinding::AsciiBackspace);
+                }
+                TelnetDeleteSends::Delete => {
+                    terminal.set_delete_binding(EraseBinding::AsciiDelete);
+                }
+            }
         }
+
+        // Spawn telnet directly — no shell wrapper needed
+        let mut argv = vec!["telnet"];
+        argv.extend(extra_args);
+        argv.push(host);
+        let port_str = port.to_string();
+        argv.push(&port_str);
+        self.spawn_command(session_id, &argv, None, None)
     }
 
     /// Closes a terminal tab by session ID

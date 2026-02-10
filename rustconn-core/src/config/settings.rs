@@ -297,6 +297,8 @@ pub enum SecretBackendType {
     Bitwarden,
     /// 1Password CLI
     OnePassword,
+    /// Passbolt CLI
+    Passbolt,
 }
 
 /// Color scheme preference

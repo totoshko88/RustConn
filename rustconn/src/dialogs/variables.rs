@@ -10,14 +10,18 @@ use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
     Box as GtkBox, Button, CheckButton, Entry, Grid, Label, ListBox, ListBoxRow, Orientation,
-    PasswordEntry, ScrolledWindow,
+    ScrolledWindow,
 };
 use libadwaita as adw;
+use rustconn_core::config::AppSettings;
 use rustconn_core::variables::Variable;
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::VariablesCallback;
+
+/// Shared settings reference for variable rows
+type SharedSettings = Rc<RefCell<Option<AppSettings>>>;
 
 /// Variables dialog for managing global variables
 pub struct VariablesDialog {
@@ -26,6 +30,7 @@ pub struct VariablesDialog {
     add_button: Button,
     variables: Rc<RefCell<Vec<VariableRow>>>,
     on_save: VariablesCallback,
+    settings: SharedSettings,
 }
 
 /// Represents a variable row in the dialog
@@ -34,10 +39,10 @@ struct VariableRow {
     row: ListBoxRow,
     /// Entry for variable name
     name_entry: Entry,
-    /// Entry for variable value (regular)
+    /// Entry for variable value (regular, visible)
     value_entry: Entry,
-    /// Entry for secret value (password)
-    secret_entry: PasswordEntry,
+    /// Entry for secret value (hidden text, with show/hide toggle)
+    secret_entry: Entry,
     /// Checkbox for secret flag
     is_secret_check: CheckButton,
     /// Entry for description
@@ -92,6 +97,7 @@ impl VariablesDialog {
 
         let on_save: VariablesCallback = Rc::new(RefCell::new(None));
         let variables: Rc<RefCell<Vec<VariableRow>>> = Rc::new(RefCell::new(Vec::new()));
+        let settings: SharedSettings = Rc::new(RefCell::new(None));
 
         // Connect cancel button
         let window_clone = window.clone();
@@ -121,6 +127,7 @@ impl VariablesDialog {
             add_button,
             variables,
             on_save,
+            settings,
         }
     }
 
@@ -129,7 +136,8 @@ impl VariablesDialog {
         let group = adw::PreferencesGroup::builder()
             .title("Variables")
             .description(
-                "Define variables that can be used in connections with ${variable_name} syntax",
+                "Define variables that can be used in connections \
+                 with ${variable_name} syntax",
             )
             .build();
 
@@ -164,7 +172,7 @@ impl VariablesDialog {
     }
 
     /// Creates a variable row widget
-    fn create_variable_row(variable: Option<&Variable>) -> VariableRow {
+    fn create_variable_row(variable: Option<&Variable>, settings: &SharedSettings) -> VariableRow {
         let main_box = GtkBox::new(Orientation::Vertical, 8);
         main_box.set_margin_top(8);
         main_box.set_margin_bottom(8);
@@ -196,41 +204,50 @@ impl VariablesDialog {
         grid.attach(&name_entry, 1, 0, 1, 1);
         grid.attach(&delete_button, 2, 0, 1, 1);
 
-        // Row 1: Value (regular entry)
+        // Row 1: Value — single row, switches between plain and secret mode
         let value_label = Label::builder()
             .label("Value:")
             .halign(gtk4::Align::End)
             .build();
+        // Plain value entry (visible when not secret)
         let value_entry = Entry::builder()
             .hexpand(true)
             .placeholder_text("Variable value")
             .build();
+        // Secret value entry (visible when secret, with masked input)
+        let secret_entry = Entry::builder()
+            .hexpand(true)
+            .placeholder_text("Password value")
+            .visibility(false)
+            .build();
+        // Show/Hide toggle button (secret mode only)
+        let show_hide_btn = Button::builder()
+            .icon_name("view-reveal-symbolic")
+            .tooltip_text("Show/hide password")
+            .build();
+        // Load from Vault button (secret mode only)
+        let load_vault_btn = Button::builder()
+            .icon_name("document-open-symbolic")
+            .tooltip_text("Load password from vault")
+            .build();
+        // Secret row: entry + show/hide + load buttons
+        let secret_buttons_box = GtkBox::new(Orientation::Horizontal, 4);
+        secret_buttons_box.append(&secret_entry);
+        secret_buttons_box.append(&show_hide_btn);
+        secret_buttons_box.append(&load_vault_btn);
+        secret_buttons_box.set_hexpand(true);
+        secret_buttons_box.set_visible(false);
 
         grid.attach(&value_label, 0, 1, 1, 1);
         grid.attach(&value_entry, 1, 1, 2, 1);
+        grid.attach(&secret_buttons_box, 1, 1, 2, 1);
 
-        // Row 2: Secret value (password entry, initially hidden)
-        let secret_label = Label::builder()
-            .label("Secret Value:")
-            .halign(gtk4::Align::End)
-            .visible(false)
-            .build();
-        let secret_entry = PasswordEntry::builder()
-            .hexpand(true)
-            .placeholder_text("Secret value (masked)")
-            .show_peek_icon(true)
-            .visible(false)
-            .build();
-
-        grid.attach(&secret_label, 0, 2, 1, 1);
-        grid.attach(&secret_entry, 1, 2, 2, 1);
-
-        // Row 3: Is Secret checkbox
+        // Row 2: Is Secret checkbox
         let is_secret_check = CheckButton::builder().label("Secret (mask value)").build();
 
-        grid.attach(&is_secret_check, 1, 3, 2, 1);
+        grid.attach(&is_secret_check, 1, 2, 2, 1);
 
-        // Row 4: Description
+        // Row 3: Description
         let desc_label = Label::builder()
             .label("Description:")
             .halign(gtk4::Align::End)
@@ -240,22 +257,104 @@ impl VariablesDialog {
             .placeholder_text("Optional description")
             .build();
 
-        grid.attach(&desc_label, 0, 4, 1, 1);
-        grid.attach(&description_entry, 1, 4, 2, 1);
+        grid.attach(&desc_label, 0, 3, 1, 1);
+        grid.attach(&description_entry, 1, 3, 2, 1);
 
         main_box.append(&grid);
 
-        // Connect is_secret checkbox to toggle value/secret entry visibility
+        // Wire Show/Hide toggle — track visibility state in Rc
+        let secret_visible = Rc::new(RefCell::new(false));
+        let secret_entry_for_toggle = secret_entry.clone();
+        let show_hide_btn_clone = show_hide_btn.clone();
+        let vis_state = secret_visible.clone();
+        show_hide_btn.connect_clicked(move |_| {
+            let mut is_vis = vis_state.borrow_mut();
+            *is_vis = !*is_vis;
+            secret_entry_for_toggle.set_visibility(*is_vis);
+            if *is_vis {
+                show_hide_btn_clone.set_icon_name("view-conceal-symbolic");
+            } else {
+                show_hide_btn_clone.set_icon_name("view-reveal-symbolic");
+            }
+        });
+
+        // Wire Load from Vault button
+        let secret_entry_for_load = secret_entry.clone();
+        let name_entry_for_load = name_entry.clone();
+        let settings_for_load = settings.clone();
+        load_vault_btn.connect_clicked(move |btn| {
+            let var_name = name_entry_for_load.text().to_string();
+            if var_name.trim().is_empty() {
+                return;
+            }
+            let entry_clone = secret_entry_for_load.clone();
+            let btn_clone = btn.clone();
+            let settings_snap = settings_for_load.borrow().clone();
+
+            btn.set_sensitive(false);
+            btn.set_icon_name("content-loading-symbolic");
+
+            crate::utils::spawn_blocking_with_callback(
+                move || {
+                    if let Some(ref s) = settings_snap {
+                        crate::state::load_variable_from_vault(s, &var_name)
+                    } else {
+                        // No settings — fall back to libsecret
+                        let lookup_key = rustconn_core::variable_secret_key(&var_name);
+                        let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
+                        crate::async_utils::with_runtime(|rt| {
+                            let creds = rt
+                                .block_on(rustconn_core::secret::SecretBackend::retrieve(
+                                    &backend,
+                                    &lookup_key,
+                                ))
+                                .map_err(|e| format!("{e}"))?;
+                            Ok(creds.and_then(|c| c.expose_password().map(String::from)))
+                        })?
+                    }
+                },
+                move |result: Result<Option<String>, String>| {
+                    btn_clone.set_sensitive(true);
+                    btn_clone.set_icon_name("document-open-symbolic");
+                    match result {
+                        Ok(Some(pwd)) => {
+                            entry_clone.set_text(&pwd);
+                        }
+                        Ok(None) => {
+                            tracing::warn!(
+                                "No secret found in vault \
+                                 for variable"
+                            );
+                        }
+                        Err(e) => {
+                            tracing::error!(
+                                "Failed to load secret \
+                                 from vault: {e}"
+                            );
+                            crate::toast::show_toast_on_window(
+                                &btn_clone.root().and_downcast::<gtk4::Window>().expect(
+                                    "Load vault button \
+                                         must be in a window",
+                                ),
+                                "Failed to load secret from \
+                                 vault. Check secret backend \
+                                 in Settings.",
+                                crate::toast::ToastType::Error,
+                            );
+                        }
+                    }
+                },
+            );
+        });
+
+        // Connect is_secret checkbox to toggle value/secret visibility
         let value_entry_clone = value_entry.clone();
         let secret_entry_clone = secret_entry.clone();
-        let value_label_clone = value_label.clone();
-        let secret_label_clone = secret_label.clone();
+        let secret_buttons_clone = secret_buttons_box.clone();
         is_secret_check.connect_toggled(move |check| {
             let is_secret = check.is_active();
-            value_label_clone.set_visible(!is_secret);
             value_entry_clone.set_visible(!is_secret);
-            secret_label_clone.set_visible(is_secret);
-            secret_entry_clone.set_visible(is_secret);
+            secret_buttons_clone.set_visible(is_secret);
 
             // Transfer value between entries when toggling
             if is_secret {
@@ -328,6 +427,11 @@ impl VariablesDialog {
             .collect()
     }
 
+    /// Sets the application settings for vault backend selection
+    pub fn set_settings(&self, settings: &AppSettings) {
+        *self.settings.borrow_mut() = Some(settings.clone());
+    }
+
     /// Sets the initial variables to display
     pub fn set_variables(&self, variables: &[Variable]) {
         // Clear existing rows
@@ -344,7 +448,7 @@ impl VariablesDialog {
 
     /// Adds a new variable row to the list
     fn add_variable_row(&self, variable: Option<&Variable>) {
-        let var_row = Self::create_variable_row(variable);
+        let var_row = Self::create_variable_row(variable, &self.settings);
 
         // Connect delete button
         let variables_list = self.variables_list.clone();
@@ -367,9 +471,10 @@ impl VariablesDialog {
     fn wire_add_button(&self) {
         let variables_list = self.variables_list.clone();
         let variables = self.variables.clone();
+        let settings = self.settings.clone();
 
         self.add_button.connect_clicked(move |_| {
-            let var_row = Self::create_variable_row(None);
+            let var_row = Self::create_variable_row(None, &settings);
 
             // Connect delete button
             let list_clone = variables_list.clone();

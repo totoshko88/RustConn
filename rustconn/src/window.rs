@@ -369,7 +369,8 @@ impl MainWindow {
         let action_enabled = match settings.secrets.preferred_backend {
             rustconn_core::config::SecretBackendType::LibSecret
             | rustconn_core::config::SecretBackendType::Bitwarden
-            | rustconn_core::config::SecretBackendType::OnePassword => true,
+            | rustconn_core::config::SecretBackendType::OnePassword
+            | rustconn_core::config::SecretBackendType::Passbolt => true,
             rustconn_core::config::SecretBackendType::KeePassXc
             | rustconn_core::config::SecretBackendType::KdbxFile => {
                 settings.secrets.kdbx_enabled
@@ -1183,26 +1184,83 @@ impl MainWindow {
         let manage_variables_action = gio::SimpleAction::new("manage-variables", None);
         let window_weak = window.downgrade();
         let state_clone = state.clone();
+        let toast = self.toast_overlay.clone();
         manage_variables_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
-                // Get current global variables from settings
-                let current_vars = state_clone.borrow().settings().global_variables.clone();
+                // Get current global variables and settings snapshot
+                let state_ref = state_clone.borrow();
+                let current_vars = state_ref.settings().global_variables.clone();
+                let settings_snapshot = state_ref.settings().clone();
+                drop(state_ref);
 
                 let dialog = VariablesDialog::new(Some(win.upcast_ref()));
                 dialog.set_variables(&current_vars);
+                dialog.set_settings(&settings_snapshot);
 
                 let state_for_save = state_clone.clone();
+                let toast_for_save = toast.clone();
                 dialog.run(move |result| {
                     if let Some(variables) = result {
+                        // Store secret variable values in vault,
+                        // then clear their value in settings
+                        let mut vars_to_save = variables.clone();
+                        let settings = state_for_save.borrow().settings().clone();
+                        for var in &vars_to_save {
+                            if var.is_secret && !var.value.is_empty() {
+                                let pwd = var.value.clone();
+                                let var_name = var.name.clone();
+                                let var_name_log = var_name.clone();
+                                let settings_c = settings.clone();
+                                let toast_c = toast_for_save.clone();
+                                crate::utils::spawn_blocking_with_callback(
+                                    move || {
+                                        crate::state::save_variable_to_vault(
+                                            &settings_c,
+                                            &var_name,
+                                            &pwd,
+                                        )
+                                    },
+                                    move |result: Result<(), String>| {
+                                        if let Err(e) = result {
+                                            tracing::error!(
+                                                "Failed to save secret \
+                                                 variable '{var_name_log}' \
+                                                 to vault: {e}"
+                                            );
+                                            toast_c.show_error(
+                                                "Failed to save secret \
+                                                 to vault. Check secret \
+                                                 backend in Settings.",
+                                            );
+                                        } else {
+                                            tracing::info!(
+                                                "Secret variable \
+                                                 '{var_name_log}' saved \
+                                                 to vault"
+                                            );
+                                        }
+                                    },
+                                );
+                            }
+                        }
+
+                        // Clear secret variable values before persisting
+                        // to disk — the actual values live in the vault
+                        for var in &mut vars_to_save {
+                            if var.is_secret {
+                                var.value.clear();
+                            }
+                        }
+
                         // Save variables to settings
                         let mut state_ref = state_for_save.borrow_mut();
-                        state_ref.settings_mut().global_variables = variables.clone();
+                        state_ref.settings_mut().global_variables = vars_to_save.clone();
 
                         // Persist to disk
-                        if let Err(e) = state_ref.config_manager().save_variables(&variables) {
+                        if let Err(e) = state_ref.config_manager().save_variables(&vars_to_save) {
                             tracing::error!("Failed to save variables: {e}");
                         } else {
-                            tracing::info!("Saved {} global variables", variables.len());
+                            tracing::info!("Saved {} global variables", vars_to_save.len());
                         }
                     }
                 });
@@ -2517,7 +2575,8 @@ impl MainWindow {
         let (enabled, database_exists) = match backend {
             rustconn_core::config::SecretBackendType::LibSecret
             | rustconn_core::config::SecretBackendType::Bitwarden
-            | rustconn_core::config::SecretBackendType::OnePassword => (true, true),
+            | rustconn_core::config::SecretBackendType::OnePassword
+            | rustconn_core::config::SecretBackendType::Passbolt => (true, true),
             rustconn_core::config::SecretBackendType::KeePassXc
             | rustconn_core::config::SecretBackendType::KdbxFile => {
                 let kdbx_enabled = settings.secrets.kdbx_enabled;
@@ -3858,7 +3917,8 @@ impl MainWindow {
                                 let action_enabled = match backend {
                                     rustconn_core::config::SecretBackendType::LibSecret
                                     | rustconn_core::config::SecretBackendType::Bitwarden
-                                    | rustconn_core::config::SecretBackendType::OnePassword => true,
+                                    | rustconn_core::config::SecretBackendType::OnePassword
+                                    | rustconn_core::config::SecretBackendType::Passbolt => true,
                                     rustconn_core::config::SecretBackendType::KeePassXc
                                     | rustconn_core::config::SecretBackendType::KdbxFile => {
                                         keepass_enabled && kdbx_path_exists

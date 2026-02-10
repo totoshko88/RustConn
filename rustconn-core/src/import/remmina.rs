@@ -336,7 +336,7 @@ impl RemminaImporter {
                     password,
                 );
                 result.add_credentials(connection.id, creds);
-                connection.password_source = PasswordSource::Keyring;
+                connection.password_source = PasswordSource::Vault;
             }
         }
 

@@ -12,8 +12,7 @@ use adw::prelude::*;
 use gtk4::glib;
 use gtk4::prelude::*;
 use libadwaita as adw;
-use rustconn_core::config::SecretBackendType;
-use rustconn_core::models::{Credentials, PasswordSource};
+use rustconn_core::models::PasswordSource;
 use std::rc::Rc;
 use uuid::Uuid;
 
@@ -56,6 +55,13 @@ pub fn show_new_connection_dialog_internal(
         let state_ref = state.borrow();
         let preferred_backend = state_ref.settings().secrets.preferred_backend;
         dialog.set_preferred_backend(preferred_backend);
+    }
+
+    // Populate variable dropdown with secret global variables
+    {
+        let state_ref = state.borrow();
+        let global_vars = state_ref.settings().global_variables.clone();
+        dialog.set_global_variables(&global_vars);
     }
 
     // Set up password visibility toggle and source visibility
@@ -103,218 +109,31 @@ pub fn show_new_connection_dialog_internal(
                 let conn_name = conn.name.clone();
                 let conn_host = conn.host.clone();
                 let conn_username = conn.username.clone();
-                let password_source = conn.password_source;
+                let password_source = conn.password_source.clone();
                 let protocol = conn.protocol;
 
                 match state_mut.create_connection(conn) {
                     Ok(conn_id) => {
-                        // Save password to KeePass if password source is KeePass and password
-                        // was provided
-                        if password_source == PasswordSource::KeePass {
-                            if let Some(pwd) = password.clone() {
-                                // Get KeePass settings
-                                let settings = state_mut.settings().clone();
-                                if settings.secrets.kdbx_enabled {
-                                    if let Some(kdbx_path) = settings.secrets.kdbx_path.clone() {
-                                        // Build hierarchical entry path using connection's
-                                        // group structure
-                                        let groups: Vec<_> =
-                                            state_mut.list_groups().into_iter().cloned().collect();
-                                        let conn_for_path =
-                                            state_mut.get_connection(conn_id).cloned();
-
-                                        let key_file = settings.secrets.kdbx_key_file.clone();
-                                        let entry_name = if let Some(ref conn) = conn_for_path {
-                                            // Use hierarchical path matching resolve_credentials
-                                            let entry_path =
-                                                rustconn_core::secret::KeePassHierarchy
-                                                    ::build_entry_path(conn, &groups);
-                                            let base_path = entry_path
-                                                .strip_prefix("RustConn/")
-                                                .unwrap_or(&entry_path);
-                                            format!(
-                                                "{} ({})",
-                                                base_path,
-                                                protocol.as_str().to_lowercase()
-                                            )
-                                        } else {
-                                            // Fallback to flat path if connection not found
-                                            format!(
-                                                "{} ({})",
-                                                conn_name,
-                                                protocol.as_str().to_lowercase()
-                                            )
-                                        };
-                                        let username = conn_username.clone().unwrap_or_default();
-                                        let url = format!(
-                                            "{}://{}",
-                                            protocol.as_str().to_lowercase(),
-                                            conn_host
-                                        );
-
-                                        // Save password in background
-                                        crate::utils::spawn_blocking_with_callback(
-                                            move || {
-                                                let kdbx = std::path::Path::new(&kdbx_path);
-                                                let key = key_file
-                                                    .as_ref()
-                                                    .map(|p| std::path::Path::new(p));
-                                                rustconn_core::secret::KeePassStatus
-                                                    ::save_password_to_kdbx(
-                                                        kdbx,
-                                                        None, // No db password (using key file)
-                                                        key,
-                                                        &entry_name,
-                                                        &username,
-                                                        &pwd,
-                                                        Some(&url),
-                                                    )
-                                            },
-                                            move |result| {
-                                                if let Err(e) = result {
-                                                    tracing::error!(
-                                                        "Failed to save password to KeePass: {}",
-                                                        e
-                                                    );
-                                                } else {
-                                                    tracing::info!(
-                                                        "Password saved to KeePass for \
-                                                         connection {}",
-                                                        conn_id
-                                                    );
-                                                }
-                                            },
-                                        );
-                                    }
-                                }
-                            }
-                        }
-
-                        // Save password to Keyring if password source is Keyring
-                        if password_source == PasswordSource::Keyring {
-                            if let Some(pwd) = password.clone() {
-                                let lookup_key = format!(
-                                    "{} ({})",
-                                    conn_name.replace('/', "-"),
-                                    protocol.as_str().to_lowercase()
-                                );
-                                let username = conn_username.clone().unwrap_or_default();
-
-                                // Save password in background
-                                crate::utils::spawn_blocking_with_callback(
-                                    move || {
-                                        use rustconn_core::secret::SecretBackend;
-                                        let backend = rustconn_core::secret::LibSecretBackend::new(
-                                            "rustconn",
-                                        );
-                                        let creds = Credentials {
-                                            username: Some(username),
-                                            password: Some(secrecy::SecretString::from(pwd)),
-                                            key_passphrase: None,
-                                            domain: None,
-                                        };
-                                        crate::async_utils::with_runtime(|rt| {
-                                            rt.block_on(backend.store(&lookup_key, &creds))
-                                                .map_err(|e| format!("{e}"))
-                                        })?
-                                    },
-                                    move |result: Result<(), String>| {
-                                        if let Err(e) = result {
-                                            tracing::error!(
-                                                "Failed to save password to Keyring: {}",
-                                                e
-                                            );
-                                        } else {
-                                            tracing::info!(
-                                                "Password saved to Keyring for connection {}",
-                                                conn_id
-                                            );
-                                        }
-                                    },
-                                );
-                            }
-                        }
-
-                        // Save password to Bitwarden if password source is Bitwarden
-                        if password_source == PasswordSource::Bitwarden {
-                            if let Some(pwd) = password.clone() {
-                                let lookup_key = format!(
-                                    "{} ({})",
-                                    conn_name.replace('/', "-"),
-                                    protocol.as_str().to_lowercase()
-                                );
-                                let username = conn_username.clone().unwrap_or_default();
-
-                                // Save password in background
-                                crate::utils::spawn_blocking_with_callback(
-                                    move || {
-                                        use rustconn_core::secret::SecretBackend;
-                                        let backend =
-                                            rustconn_core::secret::BitwardenBackend::new();
-                                        let creds = Credentials {
-                                            username: Some(username),
-                                            password: Some(secrecy::SecretString::from(pwd)),
-                                            key_passphrase: None,
-                                            domain: None,
-                                        };
-                                        crate::async_utils::with_runtime(|rt| {
-                                            rt.block_on(backend.store(&lookup_key, &creds))
-                                                .map_err(|e| format!("{e}"))
-                                        })?
-                                    },
-                                    move |result: Result<(), String>| {
-                                        if let Err(e) = result {
-                                            tracing::error!(
-                                                "Failed to save password to Bitwarden: {}",
-                                                e
-                                            );
-                                        } else {
-                                            tracing::info!(
-                                                "Password saved to Bitwarden for connection {}",
-                                                conn_id
-                                            );
-                                        }
-                                    },
-                                );
-                            }
-                        }
-
-                        // Save password to 1Password if password source is OnePassword
-                        if password_source == PasswordSource::OnePassword {
+                        // Save password to vault if password source is Vault
+                        // and password was provided
+                        if password_source == PasswordSource::Vault {
                             if let Some(pwd) = password {
-                                let lookup_key = conn_id.to_string();
+                                let settings = state_mut.settings().clone();
+                                let groups: Vec<_> =
+                                    state_mut.list_groups().into_iter().cloned().collect();
+                                let conn_for_path = state_mut.get_connection(conn_id).cloned();
                                 let username = conn_username.unwrap_or_default();
 
-                                // Save password in background
-                                crate::utils::spawn_blocking_with_callback(
-                                    move || {
-                                        use rustconn_core::secret::SecretBackend;
-                                        let backend =
-                                            rustconn_core::secret::OnePasswordBackend::new();
-                                        let creds = Credentials {
-                                            username: Some(username),
-                                            password: Some(secrecy::SecretString::from(pwd)),
-                                            key_passphrase: None,
-                                            domain: None,
-                                        };
-                                        crate::async_utils::with_runtime(|rt| {
-                                            rt.block_on(backend.store(&lookup_key, &creds))
-                                                .map_err(|e| format!("{e}"))
-                                        })?
-                                    },
-                                    move |result: Result<(), String>| {
-                                        if let Err(e) = result {
-                                            tracing::error!(
-                                                "Failed to save password to 1Password: {}",
-                                                e
-                                            );
-                                        } else {
-                                            tracing::info!(
-                                                "Password saved to 1Password for connection {}",
-                                                conn_id
-                                            );
-                                        }
-                                    },
+                                crate::state::save_password_to_vault(
+                                    &settings,
+                                    &groups,
+                                    conn_for_path.as_ref(),
+                                    &conn_name,
+                                    &conn_host,
+                                    protocol,
+                                    &username,
+                                    &pwd,
+                                    conn_id,
                                 );
                             }
                         }
@@ -471,32 +290,15 @@ pub fn show_new_group_dialog_with_parent(
     credentials_group.add(&username_row);
 
     // Password Source dropdown
-    let password_source_list = gtk4::StringList::new(&[
-        "Prompt",
-        "KeePass",
-        "Keyring",
-        "Bitwarden",
-        "1Password",
-        "Inherit",
-        "None",
-    ]);
+    let password_source_list =
+        gtk4::StringList::new(&["Prompt", "Vault", "Variable", "Inherit", "None"]);
     let password_source_dropdown = gtk4::DropDown::builder()
         .model(&password_source_list)
         .valign(gtk4::Align::Center)
         .build();
 
-    // Set default based on preferred backend from settings
-    let default_source_idx = {
-        let state_ref = state.borrow();
-        let preferred_backend = state_ref.settings().secrets.preferred_backend;
-        match preferred_backend {
-            SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => 1, // KeePass
-            SecretBackendType::LibSecret => 2,                               // Keyring
-            SecretBackendType::Bitwarden => 3,                               // Bitwarden
-            SecretBackendType::OnePassword => 4,                             // 1Password
-        }
-    };
-    password_source_dropdown.set_selected(default_source_idx);
+    // Set default to Vault (index 1) — uses whichever backend is configured
+    password_source_dropdown.set_selected(1);
 
     let password_source_row = adw::ActionRow::builder().title("Password").build();
     password_source_row.add_suffix(&password_source_dropdown);
@@ -525,15 +327,16 @@ pub fn show_new_group_dialog_with_parent(
     password_value_row.add_suffix(&password_load_btn);
     credentials_group.add(&password_value_row);
 
-    // Show value row based on default selection (KeePass/Keyring/Bitwarden/1Password)
-    let show_value = matches!(default_source_idx, 1..=4);
+    // Show value row based on default selection (Vault = index 1)
+    let show_value = password_source_dropdown.selected() == 1;
     password_value_row.set_visible(show_value);
 
     // Connect password source dropdown to show/hide value row
     let value_row_clone = password_value_row.clone();
     password_source_dropdown.connect_selected_notify(move |dropdown| {
         let selected = dropdown.selected();
-        let show = matches!(selected, 1..=4);
+        // Show for Vault(1) only
+        let show = selected == 1;
         value_row_clone.set_visible(show);
     });
 
@@ -578,23 +381,18 @@ pub fn show_new_group_dialog_with_parent(
         btn.set_sensitive(false);
         btn.set_icon_name("content-loading-symbolic");
 
-        match password_source_idx {
-            1 => {
-                // KeePass
-                if !settings.secrets.kdbx_enabled {
-                    alert::show_validation_error(&window_clone, "KeePass is not enabled");
-                    btn_clone.set_sensitive(true);
-                    btn_clone.set_icon_name("folder-symbolic");
-                    return;
-                }
+        if password_source_idx == 1 {
+            // Vault — load from configured backend
+            if settings.secrets.kdbx_enabled {
+                // KeePass backend
                 let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
-                    alert::show_validation_error(&window_clone, "KeePass database not configured");
+                    alert::show_validation_error(&window_clone, "Vault not configured");
                     btn_clone.set_sensitive(true);
                     btn_clone.set_icon_name("folder-symbolic");
                     return;
                 };
                 let key_file = settings.secrets.kdbx_key_file.clone();
-                let entry_name = format!("RustConn/Groups/{}", group_name);
+                let entry_name = format!("RustConn/Groups/{group_name}");
 
                 crate::utils::spawn_blocking_with_callback(
                     move || {
@@ -604,7 +402,7 @@ pub fn show_new_group_dialog_with_parent(
                             None,
                             key_file_path,
                             &entry_name,
-                            None, // No protocol for groups
+                            None,
                         )
                     },
                     move |result: Result<Option<String>, String>| {
@@ -621,15 +419,14 @@ pub fn show_new_group_dialog_with_parent(
                                 );
                             }
                             Err(e) => {
-                                tracing::error!("Failed to load password: {}", e);
+                                tracing::error!("Failed to load password: {e}");
                                 alert::show_error(&window_clone, "Load Error", &e);
                             }
                         }
                     },
                 );
-            }
-            2 => {
-                // Keyring
+            } else {
+                // Generic backend (libsecret)
                 crate::utils::spawn_blocking_with_callback(
                     move || {
                         use rustconn_core::secret::SecretBackend;
@@ -639,7 +436,7 @@ pub fn show_new_group_dialog_with_parent(
                                 .map_err(|e| format!("{e}"))
                         })?
                     },
-                    move |result: Result<Option<Credentials>, String>| {
+                    move |result: Result<Option<rustconn_core::models::Credentials>, String>| {
                         btn_clone.set_sensitive(true);
                         btn_clone.set_icon_name("folder-symbolic");
                         match result {
@@ -660,60 +457,17 @@ pub fn show_new_group_dialog_with_parent(
                                 );
                             }
                             Err(e) => {
-                                tracing::error!("Failed to load password: {}", e);
+                                tracing::error!("Failed to load password: {e}");
                                 alert::show_error(&window_clone, "Load Error", &e);
                             }
                         }
                     },
                 );
             }
-            3 => {
-                // Bitwarden
-                crate::utils::spawn_blocking_with_callback(
-                    move || {
-                        use rustconn_core::secret::SecretBackend;
-                        let backend = rustconn_core::secret::BitwardenBackend::new();
-                        crate::async_utils::with_runtime(|rt| {
-                            rt.block_on(backend.retrieve(&lookup_key))
-                                .map_err(|e| format!("{e}"))
-                        })?
-                    },
-                    move |result: Result<Option<Credentials>, String>| {
-                        btn_clone.set_sensitive(true);
-                        btn_clone.set_icon_name("folder-symbolic");
-                        match result {
-                            Ok(Some(creds)) => {
-                                if let Some(pwd) = creds.expose_password() {
-                                    password_entry_clone.set_text(pwd);
-                                } else {
-                                    alert::show_validation_error(
-                                        &window_clone,
-                                        "No password found for this group",
-                                    );
-                                }
-                            }
-                            Ok(None) => {
-                                alert::show_validation_error(
-                                    &window_clone,
-                                    "No password found for this group",
-                                );
-                            }
-                            Err(e) => {
-                                tracing::error!("Failed to load password: {}", e);
-                                alert::show_error(&window_clone, "Load Error", &e);
-                            }
-                        }
-                    },
-                );
-            }
-            _ => {
-                btn.set_sensitive(true);
-                btn.set_icon_name("folder-symbolic");
-                alert::show_validation_error(
-                    &window_clone,
-                    "Select KeePass, Keyring, or Bitwarden to load password",
-                );
-            }
+        } else {
+            btn.set_sensitive(true);
+            btn.set_icon_name("folder-symbolic");
+            alert::show_validation_error(&window_clone, "Select Vault to load password");
         }
     });
 
@@ -792,17 +546,15 @@ pub fn show_new_group_dialog_with_parent(
         let password_source_idx = password_source_clone.selected();
         let new_password_source = match password_source_idx {
             0 => PasswordSource::Prompt,
-            1 => PasswordSource::KeePass,
-            2 => PasswordSource::Keyring,
-            3 => PasswordSource::Bitwarden,
-            4 => PasswordSource::OnePassword,
-            5 => PasswordSource::Inherit,
+            1 => PasswordSource::Vault,
+            2 => PasswordSource::Variable(String::new()),
+            3 => PasswordSource::Inherit,
             _ => PasswordSource::None,
         };
 
         let has_username = !username.trim().is_empty();
-        // Password is relevant only for KeePass, Keyring, Bitwarden, 1Password
-        let has_password = !password.is_empty() && matches!(password_source_idx, 1..=4);
+        // Password is relevant for Vault only
+        let has_password = !password.is_empty() && password_source_idx == 1;
         let has_domain = !domain.trim().is_empty();
 
         if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
@@ -833,7 +585,7 @@ pub fn show_new_group_dialog_with_parent(
                                 updated.description = Some(description.clone());
                             }
                             // Set the selected password source
-                            updated.password_source = Some(new_password_source);
+                            updated.password_source = Some(new_password_source.clone());
 
                             if let Err(e) = state_mut
                                 .connection_manager()
@@ -866,129 +618,15 @@ pub fn show_new_group_dialog_with_parent(
                                     &grp, &groups, true,
                                 );
 
-                            match new_password_source {
-                                PasswordSource::KeePass => {
-                                    // Save to KeePass with hierarchical path
-                                    // Strip "RustConn/" prefix since save_password_to_kdbx adds it
-                                    if settings.secrets.kdbx_enabled {
-                                        if let Some(kdbx_path) = settings.secrets.kdbx_path.clone()
-                                        {
-                                            let key_file = settings.secrets.kdbx_key_file.clone();
-                                            let entry_name = group_path
-                                                .strip_prefix("RustConn/")
-                                                .unwrap_or(&group_path)
-                                                .to_string();
-                                            let username_val = username.clone();
-                                            let password_val = password.clone();
-
-                                            crate::utils::spawn_blocking_with_callback(
-                                                move || {
-                                                    let kdbx = std::path::Path::new(&kdbx_path);
-                                                    let key = key_file
-                                                        .as_ref()
-                                                        .map(|p| std::path::Path::new(p));
-                                                    rustconn_core::secret::KeePassStatus
-                                                        ::save_password_to_kdbx(
-                                                            kdbx,
-                                                            None,
-                                                            key,
-                                                            &entry_name,
-                                                            &username_val,
-                                                            &password_val,
-                                                            None,
-                                                        )
-                                                },
-                                                move |result| {
-                                                    if let Err(e) = result {
-                                                        tracing::error!(
-                                                            "Failed to save group password to \
-                                                             KeePass: {}",
-                                                            e
-                                                        );
-                                                    } else {
-                                                        tracing::info!(
-                                                            "Group password saved to KeePass"
-                                                        );
-                                                    }
-                                                },
-                                            );
-                                        }
-                                    }
-                                }
-                                PasswordSource::Keyring => {
-                                    // Save to Keyring
-                                    let username_val = username.clone();
-                                    let password_val = password.clone();
-
-                                    crate::utils::spawn_blocking_with_callback(
-                                        move || {
-                                            use rustconn_core::secret::SecretBackend;
-                                            let backend =
-                                                rustconn_core::secret::LibSecretBackend::new(
-                                                    "rustconn",
-                                                );
-                                            let creds = Credentials {
-                                                username: Some(username_val),
-                                                password: Some(secrecy::SecretString::from(
-                                                    password_val,
-                                                )),
-                                                key_passphrase: None,
-                                                domain: None,
-                                            };
-                                            crate::async_utils::with_runtime(|rt| {
-                                                rt.block_on(backend.store(&lookup_key, &creds))
-                                                    .map_err(|e| format!("{e}"))
-                                            })?
-                                        },
-                                        move |result: Result<(), String>| {
-                                            if let Err(e) = result {
-                                                tracing::error!(
-                                                    "Failed to save group password to Keyring: {}",
-                                                    e
-                                                );
-                                            } else {
-                                                tracing::info!("Group password saved to Keyring");
-                                            }
-                                        },
-                                    );
-                                }
-                                PasswordSource::Bitwarden => {
-                                    // Save to Bitwarden
-                                    let username_val = username.clone();
-                                    let password_val = password.clone();
-
-                                    crate::utils::spawn_blocking_with_callback(
-                                        move || {
-                                            use rustconn_core::secret::SecretBackend;
-                                            let backend =
-                                                rustconn_core::secret::BitwardenBackend::new();
-                                            let creds = Credentials {
-                                                username: Some(username_val),
-                                                password: Some(secrecy::SecretString::from(
-                                                    password_val,
-                                                )),
-                                                key_passphrase: None,
-                                                domain: None,
-                                            };
-                                            crate::async_utils::with_runtime(|rt| {
-                                                rt.block_on(backend.store(&lookup_key, &creds))
-                                                    .map_err(|e| format!("{e}"))
-                                            })?
-                                        },
-                                        move |result: Result<(), String>| {
-                                            if let Err(e) = result {
-                                                tracing::error!(
-                                                    "Failed to save group password to Bitwarden: \
-                                                     {}",
-                                                    e
-                                                );
-                                            } else {
-                                                tracing::info!("Group password saved to Bitwarden");
-                                            }
-                                        },
-                                    );
-                                }
-                                _ => {}
+                            if new_password_source == PasswordSource::Vault {
+                                // Save to vault using configured backend
+                                crate::state::save_group_password_to_vault(
+                                    &settings,
+                                    &group_path,
+                                    &lookup_key,
+                                    &username,
+                                    &password,
+                                );
                             }
                         }
                     }

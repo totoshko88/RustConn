@@ -828,10 +828,16 @@ impl AppState {
             .cloned()
             .collect();
 
-        // For KeePass password source, directly use KeePassStatus to retrieve password
-        // This bypasses the SecretManager which requires registered backends
-        if connection.password_source == PasswordSource::KeePass
+        // For Vault password source with KeePass backend, directly use
+        // KeePassStatus to retrieve password. This bypasses the
+        // SecretManager which requires registered backends.
+        if connection.password_source == PasswordSource::Vault
             && self.settings.secrets.kdbx_enabled
+            && matches!(
+                self.settings.secrets.preferred_backend,
+                rustconn_core::config::SecretBackendType::KeePassXc
+                    | rustconn_core::config::SecretBackendType::KdbxFile
+            )
         {
             if let Some(ref kdbx_path) = self.settings.secrets.kdbx_path {
                 // Build hierarchical entry path using KeePassHierarchy
@@ -917,8 +923,8 @@ impl AppState {
                         break;
                     };
 
-                    // Check if this group has KeePass credentials configured
-                    if group.password_source == Some(PasswordSource::KeePass) {
+                    // Check if this group has Vault credentials configured
+                    if group.password_source == Some(PasswordSource::Vault) {
                         let group_path = KeePassHierarchy::build_group_entry_path(group, &groups);
 
                         tracing::debug!(
@@ -970,10 +976,6 @@ impl AppState {
                             }
                         }
                     } else if group.password_source == Some(PasswordSource::Inherit) {
-                        tracing::debug!(
-                            "[resolve_credentials] Group '{}' also inherits, continuing to parent",
-                            group.name
-                        );
                     }
 
                     current_group_id = group.parent_id;
@@ -1033,19 +1035,21 @@ impl AppState {
                 // Check if fallback is enabled and backends are available
                 !self.settings.secrets.enable_fallback || !self.has_secret_backend()
             }
-            PasswordSource::KeePass => {
-                // Prompt if KeePass is not enabled
-                !self.settings.secrets.kdbx_enabled
+            PasswordSource::Vault => {
+                // Check if the configured backend is available
+                match self.settings.secrets.preferred_backend {
+                    rustconn_core::config::SecretBackendType::KeePassXc
+                    | rustconn_core::config::SecretBackendType::KdbxFile => {
+                        !self.settings.secrets.kdbx_enabled
+                    }
+                    rustconn_core::config::SecretBackendType::LibSecret => {
+                        !self.has_secret_backend()
+                    }
+                    _ => false, // Bitwarden/1Password/Passbolt handle auth
+                }
             }
-            PasswordSource::Keyring => {
-                // Prompt if no backend available
-                !self.has_secret_backend()
-            }
-            PasswordSource::Bitwarden | PasswordSource::OnePassword => {
-                // Bitwarden/1Password handle their own authentication
-                false
-            }
-            PasswordSource::Inherit => false, // Resolution will handle inheritance
+            PasswordSource::Variable(_) => false, // Resolved from vault
+            PasswordSource::Inherit => false,
         }
     }
 
@@ -1282,8 +1286,15 @@ impl AppState {
         use rustconn_core::secret::{KeePassHierarchy, KeePassStatus};
         use secrecy::ExposeSecret;
 
-        // For KeePass password source, directly use KeePassStatus to retrieve password
-        if connection.password_source == PasswordSource::KeePass && kdbx_enabled {
+        // For Vault password source with KeePass backend
+        if connection.password_source == PasswordSource::Vault
+            && kdbx_enabled
+            && matches!(
+                secret_settings.preferred_backend,
+                rustconn_core::config::SecretBackendType::KeePassXc
+                    | rustconn_core::config::SecretBackendType::KdbxFile
+            )
+        {
             if let Some(ref kdbx_path) = kdbx_path {
                 // Build hierarchical entry path using KeePassHierarchy
                 // This matches how passwords are saved with group structure
@@ -1354,9 +1365,8 @@ impl AppState {
                         break;
                     };
 
-                    // Check if this group has KeePass credentials configured
-                    if group.password_source == Some(PasswordSource::KeePass) {
-                        // Build group entry path: RustConn/Groups/...
+                    // Check if this group has Vault credentials configured
+                    if group.password_source == Some(PasswordSource::Vault) {
                         let group_path = KeePassHierarchy::build_group_entry_path(group, groups);
 
                         tracing::debug!(
@@ -2574,4 +2584,308 @@ where
         .try_borrow_mut()
         .map(|mut s| f(&mut s))
         .map_err(|_| StateAccessError::AlreadyBorrowedImmutably)
+}
+
+/// Saves a connection password to the configured vault backend.
+///
+/// Dispatches to KeePass (hierarchical) or generic backend (flat key)
+/// based on the current settings.
+#[allow(clippy::too_many_arguments)]
+pub fn save_password_to_vault(
+    settings: &rustconn_core::config::AppSettings,
+    groups: &[rustconn_core::models::ConnectionGroup],
+    conn: Option<&rustconn_core::models::Connection>,
+    conn_name: &str,
+    conn_host: &str,
+    protocol: rustconn_core::models::ProtocolType,
+    username: &str,
+    password: &str,
+    conn_id: uuid::Uuid,
+) {
+    let protocol_str = protocol.as_str().to_lowercase();
+
+    if settings.secrets.kdbx_enabled {
+        // KeePass backend — use hierarchical path
+        if let Some(kdbx_path) = settings.secrets.kdbx_path.clone() {
+            let key_file = settings.secrets.kdbx_key_file.clone();
+            let entry_name = if let Some(c) = conn {
+                let entry_path =
+                    rustconn_core::secret::KeePassHierarchy::build_entry_path(c, groups);
+                let base_path = entry_path.strip_prefix("RustConn/").unwrap_or(&entry_path);
+                format!("{base_path} ({protocol_str})")
+            } else {
+                format!("{conn_name} ({protocol_str})")
+            };
+            let username = username.to_string();
+            let url = format!("{}://{}", protocol_str, conn_host);
+            let pwd = password.to_string();
+
+            crate::utils::spawn_blocking_with_callback(
+                move || {
+                    let kdbx = std::path::Path::new(&kdbx_path);
+                    let key = key_file.as_ref().map(|p| std::path::Path::new(p));
+                    rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
+                        kdbx,
+                        None,
+                        key,
+                        &entry_name,
+                        &username,
+                        &pwd,
+                        Some(&url),
+                    )
+                },
+                move |result| {
+                    if let Err(e) = result {
+                        tracing::error!("Failed to save password to vault: {e}");
+                    } else {
+                        tracing::info!("Password saved to vault for connection {conn_id}");
+                    }
+                },
+            );
+        }
+    } else {
+        // Generic backend (libsecret, bitwarden, etc.) — flat key
+        let lookup_key = format!("{} ({protocol_str})", conn_name.replace('/', "-"),);
+        let username = username.to_string();
+        let pwd = password.to_string();
+
+        crate::utils::spawn_blocking_with_callback(
+            move || {
+                use rustconn_core::secret::SecretBackend;
+                let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
+                let creds = rustconn_core::models::Credentials {
+                    username: Some(username),
+                    password: Some(secrecy::SecretString::from(pwd)),
+                    key_passphrase: None,
+                    domain: None,
+                };
+                crate::async_utils::with_runtime(|rt| {
+                    rt.block_on(backend.store(&lookup_key, &creds))
+                        .map_err(|e| format!("{e}"))
+                })?
+            },
+            move |result: Result<(), String>| {
+                if let Err(e) = result {
+                    tracing::error!("Failed to save password to vault: {e}");
+                } else {
+                    tracing::info!("Password saved to vault for connection {conn_id}");
+                }
+            },
+        );
+    }
+}
+
+/// Saves a group password to the configured vault backend.
+pub fn save_group_password_to_vault(
+    settings: &rustconn_core::config::AppSettings,
+    group_path: &str,
+    lookup_key: &str,
+    username: &str,
+    password: &str,
+) {
+    if settings.secrets.kdbx_enabled {
+        if let Some(kdbx_path) = settings.secrets.kdbx_path.clone() {
+            let key_file = settings.secrets.kdbx_key_file.clone();
+            let entry_name = group_path
+                .strip_prefix("RustConn/")
+                .unwrap_or(group_path)
+                .to_string();
+            let username_val = username.to_string();
+            let password_val = password.to_string();
+
+            crate::utils::spawn_blocking_with_callback(
+                move || {
+                    let kdbx = std::path::Path::new(&kdbx_path);
+                    let key = key_file.as_ref().map(|p| std::path::Path::new(p));
+                    rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
+                        kdbx,
+                        None,
+                        key,
+                        &entry_name,
+                        &username_val,
+                        &password_val,
+                        None,
+                    )
+                },
+                move |result| {
+                    if let Err(e) = result {
+                        tracing::error!("Failed to save group password to vault: {e}");
+                    } else {
+                        tracing::info!("Group password saved to vault");
+                    }
+                },
+            );
+        }
+    } else {
+        let lookup_key = lookup_key.to_string();
+        let username_val = username.to_string();
+        let password_val = password.to_string();
+
+        crate::utils::spawn_blocking_with_callback(
+            move || {
+                use rustconn_core::secret::SecretBackend;
+                let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
+                let creds = rustconn_core::models::Credentials {
+                    username: Some(username_val),
+                    password: Some(secrecy::SecretString::from(password_val)),
+                    key_passphrase: None,
+                    domain: None,
+                };
+                crate::async_utils::with_runtime(|rt| {
+                    rt.block_on(backend.store(&lookup_key, &creds))
+                        .map_err(|e| format!("{e}"))
+                })?
+            },
+            move |result: Result<(), String>| {
+                if let Err(e) = result {
+                    tracing::error!("Failed to save group password to vault: {e}");
+                } else {
+                    tracing::info!("Group password saved to vault");
+                }
+            },
+        );
+    }
+}
+
+/// Renames a credential in the configured vault backend when a connection
+/// is renamed.
+pub fn rename_vault_credential(
+    settings: &rustconn_core::config::AppSettings,
+    groups: &[rustconn_core::models::ConnectionGroup],
+    updated_conn: &rustconn_core::models::Connection,
+    old_name: &str,
+    protocol_str: &str,
+) -> Result<(), String> {
+    if settings.secrets.kdbx_enabled {
+        // KeePass — rename hierarchical entry
+        let mut old_conn = updated_conn.clone();
+        old_conn.name = old_name.to_string();
+        let old_base = rustconn_core::secret::KeePassHierarchy::build_entry_path(&old_conn, groups);
+        let new_base =
+            rustconn_core::secret::KeePassHierarchy::build_entry_path(updated_conn, groups);
+        let old_key = format!("{old_base} ({protocol_str})");
+        let new_key = format!("{new_base} ({protocol_str})");
+
+        if old_key == new_key {
+            return Ok(());
+        }
+
+        if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
+            let key_file = settings.secrets.kdbx_key_file.clone();
+            rustconn_core::secret::KeePassStatus::rename_entry_in_kdbx(
+                std::path::Path::new(kdbx_path),
+                None,
+                key_file.as_ref().map(|p| std::path::Path::new(p)),
+                &old_key,
+                &new_key,
+            )
+            .map_err(|e| format!("{e}"))
+        } else {
+            Ok(())
+        }
+    } else {
+        // Generic backend — rename flat key
+        use rustconn_core::secret::SecretBackend;
+
+        let old_key = format!("{} ({protocol_str})", old_name.replace('/', "-"),);
+        let new_key = format!("{} ({protocol_str})", updated_conn.name.replace('/', "-"),);
+
+        if old_key == new_key {
+            return Ok(());
+        }
+
+        let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
+        crate::async_utils::with_runtime(|rt| {
+            let creds = rt
+                .block_on(backend.retrieve(&old_key))
+                .map_err(|e| format!("{e}"))?;
+            if let Some(creds) = creds {
+                rt.block_on(backend.store(&new_key, &creds))
+                    .map_err(|e| format!("{e}"))?;
+                let _ = rt.block_on(backend.delete(&old_key));
+            }
+            Ok(())
+        })?
+    }
+}
+
+/// Saves a secret variable value to the configured vault backend.
+///
+/// Uses the same backend selection logic as connection passwords:
+/// KeePass (kdbx) when enabled, otherwise libsecret.
+pub fn save_variable_to_vault(
+    settings: &rustconn_core::config::AppSettings,
+    var_name: &str,
+    password: &str,
+) -> Result<(), String> {
+    let lookup_key = rustconn_core::variable_secret_key(var_name);
+
+    if settings.secrets.kdbx_enabled {
+        if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
+            let key_file = settings.secrets.kdbx_key_file.clone();
+            let kdbx = std::path::Path::new(kdbx_path);
+            let key = key_file.as_ref().map(|p| std::path::Path::new(p));
+            rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
+                kdbx,
+                None,
+                key,
+                &lookup_key,
+                "",
+                password,
+                None,
+            )
+        } else {
+            Err("KeePass enabled but no database file configured".to_string())
+        }
+    } else {
+        use rustconn_core::secret::SecretBackend;
+        let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
+        let creds = rustconn_core::models::Credentials {
+            username: None,
+            password: Some(secrecy::SecretString::from(password.to_string())),
+            key_passphrase: None,
+            domain: None,
+        };
+        crate::async_utils::with_runtime(|rt| {
+            rt.block_on(backend.store(&lookup_key, &creds))
+                .map_err(|e| format!("{e}"))
+        })?
+    }
+}
+
+/// Loads a secret variable value from the configured vault backend.
+///
+/// Uses the same backend selection logic as connection passwords:
+/// KeePass (kdbx) when enabled, otherwise libsecret.
+pub fn load_variable_from_vault(
+    settings: &rustconn_core::config::AppSettings,
+    var_name: &str,
+) -> Result<Option<String>, String> {
+    let lookup_key = rustconn_core::variable_secret_key(var_name);
+
+    if settings.secrets.kdbx_enabled {
+        if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
+            let key_file = settings.secrets.kdbx_key_file.clone();
+            let kdbx = std::path::Path::new(kdbx_path);
+            let key = key_file.as_ref().map(|p| std::path::Path::new(p));
+            rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
+                kdbx,
+                None,
+                key,
+                &lookup_key,
+                None,
+            )
+        } else {
+            Err("KeePass enabled but no database file configured".to_string())
+        }
+    } else {
+        use rustconn_core::secret::SecretBackend;
+        let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
+        crate::async_utils::with_runtime(|rt| {
+            let creds = rt
+                .block_on(backend.retrieve(&lookup_key))
+                .map_err(|e| format!("{e}"))?;
+            Ok(creds.and_then(|c| c.expose_password().map(String::from)))
+        })?
+    }
 }

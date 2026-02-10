@@ -582,22 +582,19 @@ mod resolution_chain_tests {
     fn resolution_returns_none_for_bitwarden_without_backend() {
         let rt = tokio::runtime::Runtime::new().unwrap();
 
-        // Test with Bitwarden source (no backend configured)
-        let connection_bitwarden = create_test_connection_with_source(
-            "Test Server",
-            "192.168.1.1",
-            PasswordSource::Bitwarden,
-        );
+        // Test with Vault source (no backend configured)
+        let connection_vault =
+            create_test_connection_with_source("Test Server", "192.168.1.1", PasswordSource::Vault);
 
         let secret_manager = Arc::new(SecretManager::empty());
         let settings = SecretSettings::default();
         let resolver = CredentialResolver::new(secret_manager.clone(), settings.clone());
 
-        let result = rt.block_on(resolver.resolve(&connection_bitwarden));
-        // Bitwarden without backend should return None (no credentials found)
+        let result = rt.block_on(resolver.resolve(&connection_vault));
+        // Vault without backend should return None (no credentials found)
         assert!(
             result.is_ok(),
-            "Resolution should not error for Bitwarden source"
+            "Resolution should not error for Vault source"
         );
 
         // Test with Prompt source
@@ -627,11 +624,8 @@ mod resolution_chain_tests {
     fn resolution_handles_disabled_keepass() {
         let rt = tokio::runtime::Runtime::new().unwrap();
 
-        let connection = create_test_connection_with_source(
-            "Test Server",
-            "192.168.1.1",
-            PasswordSource::KeePass,
-        );
+        let connection =
+            create_test_connection_with_source("Test Server", "192.168.1.1", PasswordSource::Vault);
 
         let secret_manager = Arc::new(SecretManager::empty());
         let mut settings = SecretSettings::default();

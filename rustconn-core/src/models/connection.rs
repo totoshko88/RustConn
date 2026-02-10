@@ -25,26 +25,34 @@ pub struct AutomationConfig {
 }
 
 /// Source of password/credentials for a connection
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+///
+/// The `Vault` variant uses whichever secret backend is configured in
+/// Settings → Secrets (KeePass, libsecret, Bitwarden, 1Password, Passbolt).
+/// Legacy per-backend variants are deserialized as `Vault` for backward
+/// compatibility.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PasswordSource {
     /// No password stored
     #[default]
     None,
-    /// Password retrieved from `KeePass` database
-    KeePass,
-    /// Password retrieved from system keyring (libsecret)
-    /// Note: "stored" is a legacy alias for backward compatibility
-    #[serde(alias = "stored")]
-    Keyring,
-    /// Password retrieved from Bitwarden vault
-    Bitwarden,
-    /// Password retrieved from 1Password vault
-    OnePassword,
+    /// Password retrieved from the configured secret backend
+    /// (replaces KeePass, Keyring, Bitwarden, OnePassword, Passbolt)
+    #[serde(
+        alias = "kee_pass",
+        alias = "keyring",
+        alias = "stored",
+        alias = "bitwarden",
+        alias = "one_password",
+        alias = "passbolt"
+    )]
+    Vault,
     /// Prompt user for password on each connection
     Prompt,
     /// Inherit credentials from parent group
     Inherit,
+    /// Password value comes from a named global variable (must be secret)
+    Variable(String),
 }
 
 /// Window mode for connection display

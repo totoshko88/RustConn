@@ -51,6 +51,9 @@ pub struct SecretsPageWidgets {
     pub onepassword_group: adw::PreferencesGroup,
     pub onepassword_status_label: Label,
     pub onepassword_signin_button: Button,
+    // Passbolt widgets
+    pub passbolt_group: adw::PreferencesGroup,
+    pub passbolt_status_label: Label,
 }
 
 /// Creates the secrets settings page using AdwPreferencesPage
@@ -67,8 +70,14 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .description("Choose how passwords are stored")
         .build();
 
-    // Simplified: KeePassXC, libsecret, Bitwarden, 1Password
-    let backend_strings = StringList::new(&["KeePassXC", "libsecret", "Bitwarden", "1Password"]);
+    // Simplified: KeePassXC, libsecret, Bitwarden, 1Password, Passbolt
+    let backend_strings = StringList::new(&[
+        "KeePassXC",
+        "libsecret",
+        "Bitwarden",
+        "1Password",
+        "Passbolt",
+    ]);
     let secret_backend_dropdown = DropDown::builder()
         .model(&backend_strings)
         .selected(0)
@@ -172,6 +181,32 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     }
     let onepassword_version = if onepassword_installed {
         get_cli_version(&onepassword_cmd, &["--version"])
+    } else {
+        None
+    };
+
+    // Passbolt CLI status
+    let passbolt_paths = ["passbolt", "/usr/local/bin/passbolt"];
+    let mut passbolt_installed = false;
+    for path in &passbolt_paths {
+        if std::process::Command::new(path)
+            .arg("--version")
+            .output()
+            .is_ok_and(|output| output.status.success())
+        {
+            passbolt_installed = true;
+            break;
+        }
+    }
+    if !passbolt_installed {
+        if let Ok(output) = std::process::Command::new("which").arg("passbolt").output() {
+            if output.status.success() {
+                passbolt_installed = true;
+            }
+        }
+    }
+    let passbolt_version = if passbolt_installed {
+        get_cli_version("passbolt", &["--version"])
     } else {
         None
     };
@@ -477,6 +512,46 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     page.add(&onepassword_group);
 
+    // === Passbolt Configuration Group ===
+    let passbolt_group = adw::PreferencesGroup::builder()
+        .title("Passbolt")
+        .description("Configure Passbolt CLI integration")
+        .build();
+
+    let passbolt_status_label = Label::builder()
+        .label(if passbolt_installed {
+            "Checking status..."
+        } else {
+            "Not installed"
+        })
+        .halign(gtk4::Align::End)
+        .valign(gtk4::Align::Center)
+        .css_classes(["dim-label"])
+        .build();
+
+    let pb_status_row = adw::ActionRow::builder()
+        .title("Server Status")
+        .subtitle("Configure with 'passbolt configure' in terminal")
+        .build();
+    pb_status_row.add_suffix(&passbolt_status_label);
+    passbolt_group.add(&pb_status_row);
+
+    // Check Passbolt status synchronously
+    if passbolt_installed {
+        let status_label = passbolt_status_label.clone();
+        glib::idle_add_local_once(move || {
+            let status = check_passbolt_status_sync();
+            status_label.set_text(&status.0);
+            status_label.remove_css_class("dim-label");
+            status_label.remove_css_class("success");
+            status_label.remove_css_class("warning");
+            status_label.remove_css_class("error");
+            status_label.add_css_class(status.1);
+        });
+    }
+
+    page.add(&passbolt_group);
+
     // === KeePass Database Group ===
     let kdbx_group = adw::PreferencesGroup::builder()
         .title("KeePass Database")
@@ -645,10 +720,11 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         glib::Propagation::Proceed
     });
 
-    // Setup visibility for Bitwarden and 1Password groups based on backend selection
-    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password
+    // Setup visibility for Bitwarden, 1Password, and Passbolt groups based on backend
+    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password, 4=Passbolt
     let bitwarden_group_clone = bitwarden_group.clone();
     let onepassword_group_clone = onepassword_group.clone();
+    let passbolt_group_clone = passbolt_group.clone();
     let kdbx_group_clone = kdbx_group.clone();
     let auth_group_clone2 = auth_group.clone();
     let status_group_clone2 = status_group.clone();
@@ -658,12 +734,15 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let keepassxc_version_clone = keepassxc_version.clone();
     let bitwarden_version_clone = bitwarden_version.clone();
     let onepassword_version_clone = onepassword_version.clone();
+    let passbolt_version_clone = passbolt_version.clone();
     secret_backend_dropdown.connect_selected_notify(move |dropdown| {
         let selected = dropdown.selected();
         // Show Bitwarden group only when Bitwarden is selected (index 2)
         bitwarden_group_clone.set_visible(selected == 2);
         // Show 1Password group only when 1Password is selected (index 3)
         onepassword_group_clone.set_visible(selected == 3);
+        // Show Passbolt group only when Passbolt is selected (index 4)
+        passbolt_group_clone.set_visible(selected == 4);
         // Show KDBX groups only when KeePassXC is selected (index 0)
         let show_kdbx = selected == 0;
         kdbx_group_clone.set_visible(show_kdbx);
@@ -717,6 +796,19 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     version_label_clone.add_css_class("error");
                 }
             }
+            4 => {
+                // Passbolt
+                version_row_clone.set_visible(true);
+                if let Some(ref ver) = passbolt_version_clone {
+                    version_label_clone.set_text(&format!("v{ver}"));
+                    version_label_clone.remove_css_class("error");
+                    version_label_clone.add_css_class("success");
+                } else {
+                    version_label_clone.set_text("Not installed");
+                    version_label_clone.remove_css_class("success");
+                    version_label_clone.add_css_class("error");
+                }
+            }
             _ => {
                 version_row_clone.set_visible(false);
             }
@@ -731,6 +823,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     status_group.set_visible(false);
     bitwarden_group.set_visible(false);
     onepassword_group.set_visible(false);
+    passbolt_group.set_visible(false);
 
     // Set initial version display for KeePassXC (default selection)
     if let Some(ref ver) = keepassxc_version {
@@ -905,6 +998,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         onepassword_group,
         onepassword_status_label,
         onepassword_signin_button,
+        passbolt_group,
+        passbolt_status_label,
     }
 }
 
@@ -983,6 +1078,28 @@ fn check_onepassword_status_sync(op_cmd: &str) -> (String, &'static str) {
     }
 }
 
+/// Checks Passbolt CLI configuration status synchronously
+fn check_passbolt_status_sync() -> (String, &'static str) {
+    let output = std::process::Command::new("passbolt")
+        .args(["list", "user", "--json"])
+        .output();
+
+    match output {
+        Ok(o) if o.status.success() => ("Configured".to_string(), "success"),
+        Ok(o) => {
+            let stderr = String::from_utf8_lossy(&o.stderr);
+            if stderr.contains("no configuration") {
+                ("Not configured".to_string(), "error")
+            } else if stderr.contains("authentication") || stderr.contains("passphrase") {
+                ("Authentication failed".to_string(), "warning")
+            } else {
+                ("Not configured".to_string(), "error")
+            }
+        }
+        Err(_) => ("Error checking status".to_string(), "error"),
+    }
+}
+
 /// Extracts session key from `bw unlock` output
 fn extract_session_key(output: &str) -> Option<String> {
     // Output format: export BW_SESSION="<session_key>"
@@ -1023,12 +1140,13 @@ fn update_status_label(label: &Label, text: &str, css_class: &str) {
 /// Loads secret settings into UI controls
 #[allow(clippy::too_many_arguments)]
 pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSettings) {
-    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password
+    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password, 4=Passbolt
     let backend_index = match settings.preferred_backend {
         SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => 0,
         SecretBackendType::LibSecret => 1,
         SecretBackendType::Bitwarden => 2,
         SecretBackendType::OnePassword => 3,
+        SecretBackendType::Passbolt => 4,
     };
     widgets.secret_backend_dropdown.set_selected(backend_index);
     widgets.enable_fallback.set_active(settings.enable_fallback);
@@ -1099,6 +1217,8 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
     widgets.bitwarden_group.set_visible(backend_index == 2);
     // Show 1Password group only when 1Password is selected (index 3)
     widgets.onepassword_group.set_visible(backend_index == 3);
+    // Show Passbolt group only when Passbolt is selected (index 4)
+    widgets.passbolt_group.set_visible(backend_index == 4);
     widgets.password_row.set_visible(settings.kdbx_use_password);
     widgets
         .save_password_row
@@ -1139,12 +1259,13 @@ pub fn collect_secret_settings(
     widgets: &SecretsPageWidgets,
     settings: &Rc<RefCell<rustconn_core::config::AppSettings>>,
 ) -> SecretSettings {
-    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password
+    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password, 4=Passbolt
     let preferred_backend = match widgets.secret_backend_dropdown.selected() {
         0 => SecretBackendType::KeePassXc,
         1 => SecretBackendType::LibSecret,
         2 => SecretBackendType::Bitwarden,
         3 => SecretBackendType::OnePassword,
+        4 => SecretBackendType::Passbolt,
         _ => SecretBackendType::default(),
     };
 
