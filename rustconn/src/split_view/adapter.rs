@@ -4,7 +4,7 @@
 //! `SplitLayoutModel` from `rustconn-core` with GTK4/libadwaita widgets.
 //! It maintains synchronization between the data model and the widget tree.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -806,9 +806,9 @@ impl SplitViewAdapter {
         // Set resize behavior for equal split
         paned.set_resize_start_child(true);
         paned.set_resize_end_child(true);
-        // Shrink both children equally when resizing
-        paned.set_shrink_start_child(true);
-        paned.set_shrink_end_child(true);
+        // Prevent children from shrinking below their minimum size
+        paned.set_shrink_start_child(false);
+        paned.set_shrink_end_child(false);
 
         let first_widget = self.build_node_widget(&split.first);
         let second_widget = self.build_node_widget(&split.second);
@@ -816,13 +816,25 @@ impl SplitViewAdapter {
         paned.set_start_child(Some(&first_widget));
         paned.set_end_child(Some(&second_widget));
 
-        // Set position to 50% when the widget is mapped and has a valid size
-        // Using connect_map ensures the widget has been allocated space
+        // Use the model's fractional position (0.0-1.0) to set the
+        // initial divider position once the widget has a valid size.
+        // A one-shot flag ensures we only apply the initial position
+        // once, after which the user's manual adjustments take over.
+        let target_fraction = split.position;
+        let position_set = Rc::new(Cell::new(false));
+        let position_set_for_map = Rc::clone(&position_set);
         let paned_weak = paned.downgrade();
         paned.connect_map(move |_| {
+            if position_set_for_map.get() {
+                return;
+            }
             let paned_weak_inner = paned_weak.clone();
+            let flag = Rc::clone(&position_set_for_map);
             // Use idle_add to ensure layout is complete after mapping
             glib::idle_add_local_once(move || {
+                if flag.get() {
+                    return;
+                }
                 if let Some(p) = paned_weak_inner.upgrade() {
                     let size = if p.orientation() == Orientation::Horizontal {
                         p.width()
@@ -830,10 +842,37 @@ impl SplitViewAdapter {
                         p.height()
                     };
                     if size > 0 {
-                        p.set_position(size / 2);
+                        #[allow(clippy::cast_possible_truncation)]
+                        let pos = (f64::from(size) * target_fraction).round() as i32;
+                        p.set_position(pos);
+                        flag.set(true);
                     }
                 }
             });
+        });
+
+        // Save user-dragged divider positions back to the model.
+        // Identify this split by the first panel ID in its first
+        // child subtree.
+        let first_panel_id = split.first.first_panel().id;
+        let model_for_notify = Rc::clone(&self.model);
+        let position_set_for_notify = Rc::clone(&position_set);
+        paned.connect_notify_local(Some("position"), move |p, _| {
+            // Only save after the initial position has been applied
+            if !position_set_for_notify.get() {
+                return;
+            }
+            let size = if p.orientation() == Orientation::Horizontal {
+                p.width()
+            } else {
+                p.height()
+            };
+            if size > 0 {
+                let fraction = f64::from(p.position()) / f64::from(size);
+                model_for_notify
+                    .borrow_mut()
+                    .update_split_position(first_panel_id, fraction);
+            }
         });
 
         self.paned_widgets.push(paned.clone());

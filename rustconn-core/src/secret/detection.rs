@@ -37,13 +37,14 @@ pub struct PasswordManagerInfo {
 
 /// Detects all available password managers on the system
 pub async fn detect_password_managers() -> Vec<PasswordManagerInfo> {
-    let (keepassxc, gnome_secrets, libsecret, bitwarden, onepassword, keepass) = tokio::join!(
+    let (keepassxc, gnome_secrets, libsecret, bitwarden, onepassword, keepass, passbolt) = tokio::join!(
         detect_keepassxc(),
         detect_gnome_secrets(),
         detect_libsecret(),
         detect_bitwarden(),
         detect_onepassword(),
         detect_keepass(),
+        detect_passbolt(),
     );
 
     vec![
@@ -53,6 +54,7 @@ pub async fn detect_password_managers() -> Vec<PasswordManagerInfo> {
         bitwarden,
         onepassword,
         keepass,
+        passbolt,
     ]
 }
 
@@ -482,6 +484,110 @@ pub async fn detect_onepassword() -> PasswordManagerInfo {
     info
 }
 
+/// Detects Passbolt CLI installation and status
+pub async fn detect_passbolt() -> PasswordManagerInfo {
+    let mut info = PasswordManagerInfo {
+        id: "passbolt",
+        name: "Passbolt CLI",
+        version: None,
+        installed: false,
+        running: false,
+        path: None,
+        status_message: None,
+        formats: vec!["Server-based team vault"],
+    };
+
+    let passbolt_paths = ["passbolt", "/usr/bin/passbolt", "/usr/local/bin/passbolt"];
+
+    let home = std::env::var("HOME").unwrap_or_default();
+    let extra_paths = [
+        format!("{home}/.local/bin/passbolt"),
+        format!("{home}/go/bin/passbolt"),
+        format!("{home}/go/bin/go-passbolt-cli"),
+    ];
+
+    let mut pb_cmd: Option<String> = None;
+
+    for path in &passbolt_paths {
+        if let Ok(output) = Command::new(path).arg("--version").output().await {
+            if output.status.success() {
+                let version_str = String::from_utf8_lossy(&output.stdout);
+                info.version = Some(version_str.trim().to_string());
+                info.installed = true;
+                pb_cmd = Some((*path).to_string());
+                break;
+            }
+        }
+    }
+
+    if !info.installed {
+        for path in &extra_paths {
+            if let Ok(output) = Command::new(path).arg("--version").output().await {
+                if output.status.success() {
+                    let version_str = String::from_utf8_lossy(&output.stdout);
+                    info.version = Some(version_str.trim().to_string());
+                    info.installed = true;
+                    pb_cmd = Some(path.clone());
+                    break;
+                }
+            }
+        }
+    }
+
+    // Check if configured by listing users
+    if let Some(ref cmd) = pb_cmd {
+        if let Ok(output) = Command::new(cmd)
+            .args(["list", "user", "--json"])
+            .output()
+            .await
+        {
+            if output.status.success() {
+                info.running = true;
+                info.status_message = Some("Configured".to_string());
+            } else {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                if stderr.contains("no configuration") {
+                    info.status_message = Some("Not configured".to_string());
+                } else if stderr.contains("authentication") || stderr.contains("passphrase") {
+                    info.status_message = Some("Authentication failed".to_string());
+                } else {
+                    info.status_message = Some("Not configured".to_string());
+                }
+            }
+        }
+        info.path = Some(PathBuf::from(cmd));
+    }
+
+    // Try which as fallback
+    if !info.installed {
+        if let Ok(output) = Command::new("which").arg("passbolt").output().await {
+            if output.status.success() {
+                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !path.is_empty() {
+                    info.path = Some(PathBuf::from(&path));
+                    if let Ok(ver_output) = Command::new(&path).arg("--version").output().await {
+                        if ver_output.status.success() {
+                            let version_str = String::from_utf8_lossy(&ver_output.stdout);
+                            info.version = Some(version_str.trim().to_string());
+                            info.installed = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if !info.installed {
+        info.status_message = Some(
+            "Install from \
+             https://github.com/passbolt/go-passbolt-cli"
+                .to_string(),
+        );
+    }
+
+    info
+}
+
 /// Parses version from a typical version output line
 fn parse_version_line(output: &str) -> Option<String> {
     VERSION_REGEX
@@ -611,6 +717,13 @@ pub fn get_password_manager_launch_command(
             Some((
                 "xdg-open".to_string(),
                 vec!["https://my.1password.com".to_string()],
+            ))
+        }
+        crate::config::SecretBackendType::Passbolt => {
+            // Passbolt is web-based, open in browser
+            Some((
+                "xdg-open".to_string(),
+                vec!["https://passbolt.local".to_string()],
             ))
         }
     }

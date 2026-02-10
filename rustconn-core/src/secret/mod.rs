@@ -20,6 +20,7 @@ mod keepassxc;
 mod libsecret;
 mod manager;
 mod onepassword;
+mod passbolt;
 mod resolver;
 mod status;
 mod verification;
@@ -37,8 +38,8 @@ pub use bitwarden::{
 };
 pub use detection::{
     detect_bitwarden, detect_gnome_secrets, detect_keepass, detect_keepassxc, detect_libsecret,
-    detect_onepassword, detect_password_managers, get_password_manager_launch_command,
-    open_password_manager, PasswordManagerInfo,
+    detect_onepassword, detect_passbolt, detect_password_managers,
+    get_password_manager_launch_command, open_password_manager, PasswordManagerInfo,
 };
 pub use hierarchy::{
     GroupCreationResult, KeePassHierarchy, GROUPS_SUBFOLDER, KEEPASS_ROOT_GROUP, PATH_SEPARATOR,
@@ -50,6 +51,9 @@ pub use manager::{BulkOperationResult, CredentialUpdate, SecretManager};
 pub use onepassword::{
     get_onepassword_status, get_onepassword_version, signout as onepassword_signout,
     OnePasswordBackend, OnePasswordStatus, OnePasswordVersion,
+};
+pub use passbolt::{
+    get_passbolt_status, get_passbolt_version, PassboltBackend, PassboltStatus, PassboltVersion,
 };
 pub use resolver::CredentialResolver;
 pub use status::{parse_keepassxc_version, KeePassStatus};

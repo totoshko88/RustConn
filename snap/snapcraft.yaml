@@ -1,6 +1,6 @@
 name: rustconn
 base: core24
-version: '0.8.0'
+version: '0.8.1'
 summary: Manage remote connections easily
 description: |
   RustConn is a modern connection manager for Linux with a GTK4/Wayland-native
@@ -29,7 +29,7 @@ description: |
   Security:
   - KeePassXC (KDBX files)
   - libsecret (GNOME Keyring)
-  - Bitwarden CLI, 1Password CLI (install on host)
+  - Bitwarden CLI, 1Password CLI, Passbolt CLI (install on host)
 
   Productivity:
   - Split terminals
@@ -119,6 +119,7 @@ plugs:
       - /usr/bin/boundary
       - /usr/bin/bw
       - /usr/bin/op
+      - /usr/bin/passbolt
       - /usr/bin/keepassxc-proxy
       - /usr/bin/remote-viewer
       - /usr/bin/xfreerdp

@@ -355,6 +355,17 @@ impl SplitLayoutModel {
         self.root.as_ref()
     }
 
+    /// Updates the position of a split node identified by the first panel
+    /// in its first child subtree.
+    ///
+    /// Returns `true` if the split was found and updated.
+    pub fn update_split_position(&mut self, first_panel_id: PanelId, position: f64) -> bool {
+        match &mut self.root {
+            None => false,
+            Some(node) => node.update_split_position(first_panel_id, position),
+        }
+    }
+
     // ========================================================================
     // Private Helper Methods
     // ========================================================================

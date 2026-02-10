@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-02-10
+
+### Added
+- **Passbolt Secret Backend** — Passbolt password manager integration ([#6](https://github.com/totoshko88/RustConn/issues/6)):
+  - `PassboltBackend` implementing `SecretBackend` trait via `go-passbolt-cli`
+  - Store, retrieve, and delete credentials as Passbolt resources
+  - CLI detection and version display in Settings → Secrets
+  - Server configuration status check (configured/not configured/auth failed)
+  - `PasswordSource::Passbolt` option in connection dialog password source dropdown
+  - `SecretBackendType::Passbolt` option in settings backend selector
+  - Credential resolution and rename support in `CredentialResolver`
+  - Requires `passbolt configure` CLI setup before use
+
+### Changed
+- **Unified Secret Backends** — Replaced individual `PasswordSource` variants (KeePass, Keyring, Bitwarden, OnePassword, Passbolt) with single `Vault` variant:
+  - Connection dialog password source dropdown: Prompt, Vault, Variable, Inherit, None
+  - Serde aliases preserve backward compatibility with existing configs
+  - `PasswordSource` is now `Clone` only (no longer `Copy`) due to `Variable(String)`
+- **Variable Password Source** — New `PasswordSource::Variable(String)` reads credentials from a named secret global variable:
+  - Connection dialog shows variable dropdown when "Variable" is selected
+  - Dropdown populated with secret global variables only
+- **Variables Dialog Improvements** — Show/Hide and Load from Vault buttons for secret variables:
+  - Toggle password visibility with `view-reveal-symbolic`/`view-conceal-symbolic` icon
+  - Load secret value from vault with key `rustconn/var/{name}`
+  - Secret variable values auto-saved to vault on dialog save, cleared from settings file
+
+### Fixed
+- **Secret Variable Vault Backend** — Fixed secret variables always using libsecret instead of configured backend:
+  - Save/load secret variable values now respects Settings → Secrets backend (KeePassXC, libsecret)
+  - Added `save_variable_to_vault()` and `load_variable_from_vault()` functions using settings snapshot
+  - Toast notification on vault save/load failure with message to check Settings
+- **Variable Dropdown Empty in Connection Dialog** — Fixed Variable dropdown showing "(Немає)" when editing connections:
+  - `set_global_variables()` was never called when creating/editing connections
+  - Added call to all three `ConnectionDialog` creation sites (new, edit, template)
+  - Edit dialog: `set_global_variables()` called before `set_connection()` so variable selection works
+- **Telnet Backspace/Delete Key Handling** — Fixed keyboard settings not working correctly for Telnet connections ([#5](https://github.com/totoshko88/RustConn/issues/5)):
+  - Replaced `stty erase` shell wrapper approach with VTE native `EraseBinding` API
+  - Backspace/Delete settings now applied directly on the VTE terminal widget before process spawn
+  - `Automatic` mode uses VTE defaults (termios for Backspace, VT220 `\e[3~` for Delete)
+  - `Backspace (^H)` sends ASCII `0x08`, `Delete (^?)` sends ASCII `0x7F` as expected
+  - Fixes Delete key showing `3~` escape artifacts on servers that don't support VT220 sequences
+- **Split View Panel Sizing** — Fixed left panel shrinking when splitting vertically then horizontally:
+  - Use model's fractional position (0.0–1.0) instead of hardcoded `size / 2` for divider placement
+  - Disable `shrink_start_child`/`shrink_end_child` to prevent panels from collapsing below minimum size
+  - One-shot position initialization via `connect_map` prevents repeated resets on widget remap
+  - Save user-dragged divider positions back to the model via `connect_notify_local("position")`
+  - Each split now correctly divides the current panel in half without affecting other panels
+
 ## [0.8.0] - 2026-02-10
 
 ### Added

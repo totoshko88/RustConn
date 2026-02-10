@@ -54,10 +54,10 @@ fn arb_protocol_config() -> impl Strategy<Value = ProtocolConfig> {
 fn arb_password_source() -> impl Strategy<Value = PasswordSource> {
     prop_oneof![
         Just(PasswordSource::None),
-        Just(PasswordSource::KeePass),
-        Just(PasswordSource::Keyring),
-        Just(PasswordSource::Bitwarden),
+        Just(PasswordSource::Vault),
         Just(PasswordSource::Prompt),
+        Just(PasswordSource::Inherit),
+        "[a-z]{3,10}".prop_map(PasswordSource::Variable),
     ]
 }
 
@@ -252,7 +252,7 @@ proptest! {
         prop_assert_eq!(&template.username, &from_json.username, "Username should be preserved");
         prop_assert_eq!(&template.description, &from_json.description, "Description should be preserved");
         prop_assert_eq!(&template.tags, &from_json.tags, "Tags should be preserved");
-        prop_assert_eq!(template.password_source, from_json.password_source, "Password source should be preserved");
+        prop_assert_eq!(&template.password_source, &from_json.password_source, "Password source should be preserved");
         prop_assert_eq!(&template.domain, &from_json.domain, "Domain should be preserved");
         prop_assert_eq!(&template.custom_properties, &from_json.custom_properties, "Custom properties should be preserved");
         prop_assert_eq!(&template.protocol_config, &from_json.protocol_config, "Protocol config should be preserved");

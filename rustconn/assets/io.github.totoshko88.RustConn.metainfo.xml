@@ -41,6 +41,7 @@
       <li>libsecret (GNOME Keyring)</li>
       <li>Bitwarden CLI</li>
       <li>1Password CLI</li>
+      <li>Passbolt CLI</li>
     </ul>
     <p>Productivity:</p>
     <ul>
@@ -78,6 +79,22 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.8.1" date="2026-02-11">
+      <description>
+        <p>Version 0.8.1 - Passbolt Integration, Unified Vault, and Variable Passwords:</p>
+        <ul>
+          <li>Passbolt secret backend via go-passbolt-cli (#6)</li>
+          <li>Unified secret backends: single "Vault" password source replaces individual backends</li>
+          <li>Variable password source: read credentials from named secret global variables</li>
+          <li>Variables dialog: Show/Hide toggle and Load from Vault for secret variables</li>
+          <li>Secret variables auto-saved to vault, cleared from settings file</li>
+          <li>Fixed secret variables always using libsecret instead of configured backend</li>
+          <li>Fixed Variable dropdown showing empty when editing connections</li>
+          <li>Fixed Telnet backspace/delete: uses VTE native EraseBinding API instead of stty wrapper</li>
+          <li>Fixed split view left panel shrinking on nested splits</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.8.0" date="2026-02-10">
       <description>
         <p>Version 0.8.0 - Telnet Keyboard Configuration and Flatpak fixes:</p>

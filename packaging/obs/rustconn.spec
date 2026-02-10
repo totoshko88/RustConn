@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.8.0
+Version:        0.8.1
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Zero Trust)
 License:        GPL-3.0-or-later
@@ -104,6 +104,7 @@ Security:
 - libsecret (GNOME Keyring)
 - Bitwarden CLI
 - 1Password CLI
+- Passbolt CLI
 
 Productivity:
 - Split terminals
@@ -181,6 +182,29 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Wed Feb 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.1-0
+- Version bump to 0.8.1
+- Added Passbolt secret backend via go-passbolt-cli (#6):
+  * PassboltBackend implementing SecretBackend trait
+  * Store, retrieve, and delete credentials as Passbolt resources
+  * CLI detection and version display in Settings → Secrets
+  * Server configuration status check
+- Unified Secret Backends:
+  * Replaced individual PasswordSource variants with single Vault variant
+  * Connection dialog password source: Prompt, Vault, Variable, Inherit, None
+  * Serde aliases preserve backward compatibility with existing configs
+- Added Variable password source:
+  * PasswordSource::Variable(String) reads credentials from named secret variable
+  * Connection dialog shows variable dropdown when Variable is selected
+- Variables Dialog improvements:
+  * Show/Hide toggle for secret variable values
+  * Load from Vault button for secret variables
+  * Secret variable values auto-saved to vault on dialog save
+- Fixed secret variables always using libsecret instead of configured backend
+- Fixed Variable dropdown showing empty when editing connections
+- Fixed Telnet backspace/delete: uses VTE native EraseBinding API (#5)
+- Fixed split view left panel shrinking on nested splits
+
 * Tue Feb 10 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.0-0
 - Version bump to 0.8.0
 - Added Telnet backspace/delete key configuration (#5):

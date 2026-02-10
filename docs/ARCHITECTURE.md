@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.7.9** | Last updated: February 2026
+**Version 0.8.1** | Last updated: February 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -533,6 +533,7 @@ pub trait SecretBackend: Send + Sync {
 - `KeePassXcBackend`: KeePassXC via CLI
 - `BitwardenBackend`: Bitwarden via CLI
 - `OnePasswordBackend`: 1Password via CLI
+- `PassboltBackend`: Passbolt via CLI (`go-passbolt-cli`)
 
 ### KeePass Hierarchical Storage
 
@@ -782,11 +783,13 @@ rustconn-core/src/
 │   ├── mod.rs             # Module exports
 │   ├── backend.rs         # SecretBackend trait
 │   ├── manager.rs         # SecretManager with bulk operations
+│   ├── resolver.rs        # CredentialResolver (Vault/Variable/Inherit resolution)
 │   ├── hierarchy.rs       # KeePass hierarchical paths
 │   ├── libsecret.rs       # GNOME Keyring backend
 │   ├── keepassxc.rs       # KeePassXC backend
 │   ├── bitwarden.rs       # Bitwarden backend (with keyring storage)
 │   ├── onepassword.rs     # 1Password backend
+│   ├── passbolt.rs        # Passbolt backend (go-passbolt-cli)
 │   ├── detection.rs       # Password manager detection
 │   ├── status.rs          # KeePass status detection
 │   └── ...

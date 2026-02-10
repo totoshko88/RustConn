@@ -1,3 +1,29 @@
+rustconn (0.8.1-1) unstable; urgency=medium
+
+  * Version bump to 0.8.1
+  * Added Passbolt Secret Backend (#6):
+    - PassboltBackend implementing SecretBackend trait via go-passbolt-cli
+    - Store, retrieve, and delete credentials as Passbolt resources
+    - CLI detection and version display in Settings → Secrets
+    - Requires `passbolt configure` CLI setup before use
+  * Unified Secret Backends:
+    - Replaced individual PasswordSource variants with single Vault variant
+    - Connection dialog password source: Prompt, Vault, Variable, Inherit, None
+    - Serde aliases preserve backward compatibility with existing configs
+  * Added Variable Password Source:
+    - PasswordSource::Variable(String) reads credentials from named secret variable
+    - Connection dialog shows variable dropdown when Variable is selected
+  * Variables Dialog Improvements:
+    - Show/Hide toggle for secret variable values
+    - Load from Vault button to retrieve secret values from configured backend
+    - Secret variable values auto-saved to vault on dialog save
+  * Fixed secret variables always using libsecret instead of configured backend
+  * Fixed Variable dropdown showing empty when editing connections
+  * Fixed Telnet backspace/delete: replaced stty wrapper with VTE EraseBinding API
+  * Fixed split view left panel shrinking on nested splits
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 11 Feb 2026 12:00:00 +0200
+
 rustconn (0.8.0-1) unstable; urgency=medium
 
   * Version bump to 0.8.0

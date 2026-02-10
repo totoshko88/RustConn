@@ -167,7 +167,7 @@ impl ConnectionTemplate {
 
     /// Sets the default password source for this template
     #[must_use]
-    pub const fn with_password_source(mut self, source: PasswordSource) -> Self {
+    pub fn with_password_source(mut self, source: PasswordSource) -> Self {
         self.password_source = source;
         self
     }
@@ -241,7 +241,7 @@ impl ConnectionTemplate {
             automation: AutomationConfig::default(),
             sort_order: 0,
             last_connected: None,
-            password_source: self.password_source,
+            password_source: self.password_source.clone(),
             domain: self.domain.clone(),
             custom_properties: self.custom_properties.clone(),
             pre_connect_task: self.pre_connect_task.clone(),
@@ -274,7 +274,7 @@ impl ConnectionTemplate {
             username: connection.username.clone(),
             tags: connection.tags.clone(),
             protocol_config: connection.protocol_config.clone(),
-            password_source: connection.password_source,
+            password_source: connection.password_source.clone(),
             domain: connection.domain.clone(),
             custom_properties: connection.custom_properties.clone(),
             pre_connect_task: connection.pre_connect_task.clone(),

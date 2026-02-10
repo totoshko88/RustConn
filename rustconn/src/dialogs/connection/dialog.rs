@@ -63,6 +63,9 @@ pub struct ConnectionDialog {
     password_visibility_button: Button,
     password_load_button: Button,
     password_row: GtkBox,
+    // Variable name dropdown (for Variable password source)
+    variable_dropdown: DropDown,
+    variable_row: GtkBox,
     // Group selection
     group_dropdown: DropDown,
     groups_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
@@ -298,6 +301,8 @@ impl ConnectionDialog {
             password_visibility_button,
             password_load_button,
             password_row,
+            variable_dropdown,
+            variable_row,
             group_dropdown,
             username_load_button,
             domain_load_button,
@@ -558,6 +563,7 @@ impl ConnectionDialog {
             &protocol_dropdown,
             &password_source_dropdown,
             &password_entry,
+            &variable_dropdown,
             &group_dropdown,
             &groups_data,
             &ssh_auth_dropdown,
@@ -670,6 +676,8 @@ impl ConnectionDialog {
             password_visibility_button,
             password_load_button,
             password_row,
+            variable_dropdown,
+            variable_row,
             group_dropdown,
             groups_data: Rc::new(RefCell::new(vec![(None, "(Root)".to_string())])),
             full_groups_data: Rc::new(RefCell::new(HashMap::new())),
@@ -1311,6 +1319,7 @@ impl ConnectionDialog {
         protocol_dropdown: &DropDown,
         password_source_dropdown: &DropDown,
         password_entry: &Entry,
+        variable_dropdown: &DropDown,
         group_dropdown: &DropDown,
         groups_data: &Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
         ssh_auth_dropdown: &DropDown,
@@ -1416,6 +1425,7 @@ impl ConnectionDialog {
         let protocol_dropdown = protocol_dropdown.clone();
         let password_source_dropdown = password_source_dropdown.clone();
         let password_entry = password_entry.clone();
+        let variable_dropdown = variable_dropdown.clone();
         let group_dropdown = group_dropdown.clone();
         let groups_data = groups_data.clone();
         let ssh_auth_dropdown = ssh_auth_dropdown.clone();
@@ -1525,6 +1535,7 @@ impl ConnectionDialog {
                 protocol_dropdown: &protocol_dropdown,
                 password_source_dropdown: &password_source_dropdown,
                 password_entry: &password_entry,
+                variable_dropdown: &variable_dropdown,
                 group_dropdown: &group_dropdown,
                 groups_data: &groups_data,
                 connections_data: &connections_data,
@@ -1656,6 +1667,8 @@ impl ConnectionDialog {
         Label,
         Button,
         Button,
+        GtkBox,
+        DropDown,
         GtkBox,
         DropDown,
         Button,
@@ -1794,15 +1807,8 @@ impl ConnectionDialog {
             .label("Password:")
             .halign(gtk4::Align::End)
             .build();
-        let password_source_list = StringList::new(&[
-            "Prompt",
-            "KeePass",
-            "Keyring",
-            "Bitwarden",
-            "1Password",
-            "Inherit",
-            "None",
-        ]);
+        let password_source_list =
+            StringList::new(&["Prompt", "Vault", "Variable", "Inherit", "None"]);
         let password_source_dropdown = DropDown::builder().model(&password_source_list).build();
         password_source_dropdown.set_selected(0);
         grid.attach(&password_source_label, 0, row, 1, 1);
@@ -1846,6 +1852,27 @@ impl ConnectionDialog {
             .build();
         password_row
             .bind_property("visible", &password_box, "visible")
+            .sync_create()
+            .build();
+        row += 1;
+
+        // Variable name dropdown — shown when password source is Variable
+        let variable_label = Label::builder()
+            .label("Variable:")
+            .halign(gtk4::Align::End)
+            .build();
+        let variable_name_list = StringList::new(&[]);
+        let variable_dropdown = DropDown::builder().model(&variable_name_list).build();
+        let variable_row = GtkBox::new(Orientation::Horizontal, 0);
+        variable_row.set_visible(false);
+        grid.attach(&variable_label, 0, row, 1, 1);
+        grid.attach(&variable_dropdown, 1, row, 2, 1);
+        variable_row
+            .bind_property("visible", &variable_label, "visible")
+            .sync_create()
+            .build();
+        variable_row
+            .bind_property("visible", &variable_dropdown, "visible")
             .sync_create()
             .build();
         row += 1;
@@ -1922,6 +1949,8 @@ impl ConnectionDialog {
             password_visibility_button,
             password_load_button,
             password_row,
+            variable_dropdown,
+            variable_row,
             group_dropdown,
             username_load_button,
             domain_load_button,
@@ -5059,18 +5088,30 @@ impl ConnectionDialog {
         }
 
         // Password source - map enum to dropdown index
-        // Dropdown order: Prompt(0), KeePass(1), Keyring(2), Bitwarden(3), 1Password(4), Inherit(5), None(6)
+        // Dropdown order: Prompt(0), Vault(1), Variable(2), Inherit(3), None(4)
         let password_source_idx = match conn.password_source {
             PasswordSource::Prompt => 0,
-            PasswordSource::KeePass => 1,
-            PasswordSource::Keyring => 2,
-            PasswordSource::Bitwarden => 3,
-            PasswordSource::OnePassword => 4,
-            PasswordSource::Inherit => 5,
-            PasswordSource::None => 6,
+            PasswordSource::Vault => 1,
+            PasswordSource::Variable(_) => 2,
+            PasswordSource::Inherit => 3,
+            PasswordSource::None => 4,
         };
         self.password_source_dropdown
             .set_selected(password_source_idx);
+
+        // If Variable source, select the matching variable in dropdown
+        if let PasswordSource::Variable(ref var_name) = conn.password_source {
+            if let Some(model) = self.variable_dropdown.model() {
+                if let Some(sl) = model.downcast_ref::<gtk4::StringList>() {
+                    for i in 0..sl.n_items() {
+                        if sl.string(i).is_some_and(|s| s == *var_name) {
+                            self.variable_dropdown.set_selected(i);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
 
         // Protocol and protocol-specific fields
         match &conn.protocol_config {
@@ -5853,15 +5894,15 @@ impl ConnectionDialog {
         &self.window
     }
 
-    /// Sets whether `KeePass` integration is enabled
     /// Updates password row visibility based on password source
-    /// Shows for: KeePass(1), Keyring(2), Bitwarden(3), 1Password(4)
-    /// Hides for: Prompt(0), Inherit(5), None(6)
+    /// Shows for: Vault(1)
+    /// Hides for: Prompt(0), Variable(2), Inherit(3), None(4)
     pub fn update_password_row_visibility(&self) {
         let selected = self.password_source_dropdown.selected();
-        // Show for KeePass(1), Keyring(2), Bitwarden(3), 1Password(4)
-        let show_password = matches!(selected, 1..=4);
-        self.password_row.set_visible(show_password);
+        // Show password row for Vault(1) only
+        self.password_row.set_visible(selected == 1);
+        // Show variable row for Variable(2) only
+        self.variable_row.set_visible(selected == 2);
     }
 
     /// Connects password visibility toggle button
@@ -5889,13 +5930,15 @@ impl ConnectionDialog {
     /// Connects password source dropdown to update password row visibility
     pub fn connect_password_source_visibility(&self) {
         let password_row = self.password_row.clone();
+        let variable_row = self.variable_row.clone();
 
         self.password_source_dropdown
             .connect_selected_notify(move |dropdown| {
                 let selected = dropdown.selected();
-                // Show for KeePass(1), Keyring(2), Bitwarden(3), 1Password(4)
-                let show_password = matches!(selected, 1..=4);
-                password_row.set_visible(show_password);
+                // Show password row for Vault(1) only
+                password_row.set_visible(selected == 1);
+                // Show variable row for Variable(2) only
+                variable_row.set_visible(selected == 2);
             });
     }
 
@@ -6037,235 +6080,136 @@ impl ConnectionDialog {
 
             match selected {
                 1 => {
-                    // KeePass
-                    if !kdbx_enabled {
-                        alert::show_error(
-                            &window,
-                            "KeePass Not Configured",
-                            "Please configure KeePass database in Settings → Secrets.",
-                        );
-                        return;
-                    }
-
-                    let Some(ref kdbx_path) = kdbx_path else {
-                        alert::show_error(
-                            &window,
-                            "KeePass Not Configured",
-                            "Please set KeePass database path in Settings → Secrets.",
-                        );
-                        return;
-                    };
-
+                    // Vault — delegate to configured backend
+                    let password_entry = password_entry.clone();
+                    let window = window.clone();
+                    let btn = btn.clone();
+                    let kdbx_enabled = kdbx_enabled;
                     let kdbx_path = kdbx_path.clone();
-                    let db_password = kdbx_password.clone();
-                    let key_file = kdbx_key_file.clone();
-                    let password_entry = password_entry.clone();
-                    let window = window.clone();
-                    let btn = btn.clone();
-
-                    btn.set_sensitive(false);
-                    btn.set_icon_name("content-loading-symbolic");
-
-                    spawn_blocking_with_callback(
-                        move || {
-                            rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
-                                &kdbx_path,
-                                db_password.as_deref(),
-                                key_file.as_deref(),
-                                &lookup_key,
-                                None,
-                            )
-                        },
-                        move |result: Result<Option<String>, String>| {
-                            btn.set_sensitive(true);
-                            btn.set_icon_name("document-open-symbolic");
-
-                            match result {
-                                Ok(Some(password)) => {
-                                    password_entry.set_text(&password);
-                                }
-                                Ok(None) => {
-                                    alert::show_error(
-                                        &window,
-                                        "Password Not Found",
-                                        "No password found in KeePass for this connection.",
-                                    );
-                                }
-                                Err(e) => {
-                                    tracing::error!("Failed to load password from KeePass: {e}");
-                                    alert::show_error(
-                                        &window,
-                                        "Failed to Load Password",
-                                        "Could not load password from KeePass database.",
-                                    );
-                                }
-                            }
-                        },
-                    );
-                }
-                2 => {
-                    // Keyring (libsecret) — use flat key to match
-                    // resolve_from_keyring / import store format
-                    let password_entry = password_entry.clone();
-                    let window = window.clone();
-                    let btn = btn.clone();
-
-                    btn.set_sensitive(false);
-                    btn.set_icon_name("content-loading-symbolic");
-
-                    tracing::debug!(
-                        flat_lookup_key,
-                        "Show Password: looking up Keyring credential"
-                    );
-
-                    spawn_blocking_with_callback(
-                        move || {
-                            let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
-                            let result = crate::async_utils::with_runtime(|rt| {
-                                rt.block_on(backend.retrieve(&flat_lookup_key))
-                                    .map_err(|e| format!("{e}"))
-                            })?;
-                            tracing::debug!(
-                                ?result,
-                                flat_lookup_key,
-                                "Show Password: Keyring lookup result"
-                            );
-                            result
-                        },
-                        move |result: Result<
-                            Option<rustconn_core::models::Credentials>,
-                            String,
-                        >| {
-                            btn.set_sensitive(true);
-                            btn.set_icon_name("document-open-symbolic");
-
-                            match result {
-                                Ok(Some(creds)) => {
-                                    if let Some(password) = creds.expose_password() {
-                                        password_entry.set_text(password);
-                                    } else {
-                                        alert::show_error(
-                                            &window,
-                                            "Password Not Found",
-                                            "No password found in Keyring for this connection.",
-                                        );
-                                    }
-                                }
-                                Ok(None) => {
-                                    alert::show_error(
-                                        &window,
-                                        "Password Not Found",
-                                        "No password found in Keyring for this connection.",
-                                    );
-                                }
-                                Err(e) => {
-                                    tracing::error!("Failed to load password from Keyring: {e}");
-                                    // Check if secret-tool is not installed
-                                    let (title, message) = if e.contains("os error 2")
-                                        || e.contains("No such file")
-                                        || e.contains("not found")
-                                    {
-                                        (
-                                            "secret-tool Not Installed",
-                                            "The 'secret-tool' command is required for Keyring \
-                                             integration.\n\n\
-                                             Install it with:\n\
-                                             • Fedora/RHEL: sudo dnf install libsecret-tools\n\
-                                             • Ubuntu/Debian: sudo apt install libsecret-tools\n\
-                                             • Arch: sudo pacman -S libsecret",
-                                        )
-                                    } else {
-                                        (
-                                            "Failed to Load Password",
-                                            "Could not load password from system Keyring.",
-                                        )
-                                    };
-                                    alert::show_error(&window, title, message);
-                                }
-                            }
-                        },
-                    );
-                }
-                3 => {
-                    // Bitwarden — use flat key to match
-                    // resolve_from_bitwarden format
+                    let kdbx_password = kdbx_password.clone();
+                    let kdbx_key_file = kdbx_key_file.clone();
+                    let lookup_key = lookup_key.clone();
                     let flat_lookup_key = flat_lookup_key.clone();
-                    let password_entry = password_entry.clone();
-                    let window = window.clone();
-                    let btn = btn.clone();
 
                     btn.set_sensitive(false);
                     btn.set_icon_name("content-loading-symbolic");
 
-                    spawn_blocking_with_callback(
-                        move || {
-                            let backend = rustconn_core::secret::BitwardenBackend::new();
-                            crate::async_utils::with_runtime(|rt| {
-                                rt.block_on(backend.retrieve(&flat_lookup_key))
-                                    .map_err(|e| format!("{e}"))
-                            })?
-                        },
-                        move |result: Result<
-                            Option<rustconn_core::models::Credentials>,
-                            String,
-                        >| {
+                    // Try KeePass first if enabled, then fall back to
+                    // Keyring/Bitwarden/etc.
+                    if kdbx_enabled {
+                        if let Some(ref kdbx_path) = kdbx_path {
+                            let kdbx_path = kdbx_path.clone();
+                            let db_password = kdbx_password.clone();
+                            let key_file = kdbx_key_file.clone();
+
+                            spawn_blocking_with_callback(
+                                move || {
+                                    rustconn_core::secret::KeePassStatus
+                                        ::get_password_from_kdbx_with_key(
+                                            &kdbx_path,
+                                            db_password.as_deref(),
+                                            key_file.as_deref(),
+                                            &lookup_key,
+                                            None,
+                                        )
+                                },
+                                move |result: Result<Option<String>, String>| {
+                                    btn.set_sensitive(true);
+                                    btn.set_icon_name("document-open-symbolic");
+
+                                    match result {
+                                        Ok(Some(password)) => {
+                                            password_entry.set_text(&password);
+                                        }
+                                        Ok(None) => {
+                                            alert::show_error(
+                                                &window,
+                                                "Password Not Found",
+                                                "No password found in vault for this \
+                                                 connection.",
+                                            );
+                                        }
+                                        Err(e) => {
+                                            tracing::error!(
+                                                "Failed to load password from vault: {e}"
+                                            );
+                                            alert::show_error(
+                                                &window,
+                                                "Failed to Load Password",
+                                                "Could not load password from vault.",
+                                            );
+                                        }
+                                    }
+                                },
+                            );
+                        } else {
                             btn.set_sensitive(true);
                             btn.set_icon_name("document-open-symbolic");
+                            alert::show_error(
+                                &window,
+                                "Vault Not Configured",
+                                "Please configure a secret backend in Settings → Secrets.",
+                            );
+                        }
+                    } else {
+                        // Non-KeePass backend — use flat lookup key via
+                        // libsecret
+                        spawn_blocking_with_callback(
+                            move || {
+                                let backend =
+                                    rustconn_core::secret::LibSecretBackend::new("rustconn");
+                                crate::async_utils::with_runtime(|rt| {
+                                    rt.block_on(backend.retrieve(&flat_lookup_key))
+                                        .map_err(|e| format!("{e}"))
+                                })?
+                            },
+                            move |result: Result<
+                                Option<rustconn_core::models::Credentials>,
+                                String,
+                            >| {
+                                btn.set_sensitive(true);
+                                btn.set_icon_name("document-open-symbolic");
 
-                            match result {
-                                Ok(Some(creds)) => {
-                                    if let Some(password) = creds.expose_password() {
-                                        password_entry.set_text(password);
-                                    } else {
+                                match result {
+                                    Ok(Some(creds)) => {
+                                        if let Some(password) = creds.expose_password() {
+                                            password_entry.set_text(password);
+                                        } else {
+                                            alert::show_error(
+                                                &window,
+                                                "Password Not Found",
+                                                "No password found in vault for this \
+                                                 connection.",
+                                            );
+                                        }
+                                    }
+                                    Ok(None) => {
                                         alert::show_error(
                                             &window,
                                             "Password Not Found",
-                                            "No password found in Bitwarden for this connection.",
+                                            "No password found in vault for this \
+                                             connection.",
+                                        );
+                                    }
+                                    Err(e) => {
+                                        tracing::error!("Failed to load password from vault: {e}");
+                                        alert::show_error(
+                                            &window,
+                                            "Failed to Load Password",
+                                            "Could not load password from vault.",
                                         );
                                     }
                                 }
-                                Ok(None) => {
-                                    alert::show_error(
-                                        &window,
-                                        "Password Not Found",
-                                        "No password found in Bitwarden for this connection.",
-                                    );
-                                }
-                                Err(e) => {
-                                    tracing::error!("Failed to load password from Bitwarden: {e}");
-                                    let (title, message) = if e.contains("locked") {
-                                        (
-                                            "Bitwarden Vault Locked",
-                                            "Please unlock your Bitwarden vault first.\n\n\
-                                             Run 'bw unlock' in terminal or unlock via \
-                                             Settings → Secrets.",
-                                        )
-                                    } else if e.contains("unauthenticated")
-                                        || e.contains("not logged in")
-                                    {
-                                        (
-                                            "Bitwarden Not Logged In",
-                                            "Please log in to Bitwarden first.\n\n\
-                                             Run 'bw login' in terminal.",
-                                        )
-                                    } else {
-                                        (
-                                            "Failed to Load Password",
-                                            "Could not load password from Bitwarden vault.",
-                                        )
-                                    };
-                                    alert::show_error(&window, title, message);
-                                }
-                            }
-                        },
-                    );
+                            },
+                        );
+                    }
                 }
                 _ => {
-                    // Prompt(0), 1Password(4), Inherit(5), None(6) — no handler yet
+                    // Prompt(0), Variable(2), Inherit(3), None(4)
                     alert::show_error(
                         &window,
                         "Cannot Load Password",
-                        "Password loading is only available for KeePass, Keyring, and Bitwarden.",
+                        "Password loading is only available for Vault source.",
                     );
                 }
             }
@@ -6346,6 +6290,20 @@ impl ConnectionDialog {
     /// which variables are inherited from global scope.
     pub fn set_global_variables(&self, variables: &[Variable]) {
         *self.global_variables.borrow_mut() = variables.to_vec();
+
+        // Populate variable dropdown with secret global variables
+        if let Some(model) = self.variable_dropdown.model() {
+            if let Some(sl) = model.downcast_ref::<gtk4::StringList>() {
+                // Clear existing items
+                sl.splice(0, sl.n_items(), &[] as &[&str]);
+                // Add secret variables only
+                for var in variables {
+                    if var.is_secret {
+                        sl.append(&var.name);
+                    }
+                }
+            }
+        }
     }
 
     /// Populates the Variables tab with inherited global variables
@@ -6370,29 +6328,16 @@ impl ConnectionDialog {
         }
     }
 
-    /// Sets the preferred secret backend and updates the password source dropdown default
+    /// Sets the preferred secret backend and updates the password source dropdown
     ///
     /// This method sets the default selection in the password source dropdown
     /// based on the configured secret backend in Settings:
-    /// - For `KeePassXc`/`KdbxFile`: selects KeePass (index 1)
-    /// - For `LibSecret`: selects Keyring (index 2)
-    /// - For `Bitwarden`: selects Bitwarden (index 3)
+    /// - All backends map to Vault (index 1)
     ///
-    /// The dropdown still shows all options (Prompt, KeePass, Keyring, Bitwarden, Inherit, None)
-    /// but the default is set to the preferred backend.
-    pub fn set_preferred_backend(&self, backend: rustconn_core::config::SecretBackendType) {
-        use rustconn_core::config::SecretBackendType;
-
-        // Map backend type to dropdown index
-        // Dropdown order: Prompt(0), KeePass(1), Keyring(2), Bitwarden(3), 1Password(4), Inherit(5), None(6)
-        let default_idx = match backend {
-            SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => 1, // KeePass
-            SecretBackendType::LibSecret => 2,                               // Keyring
-            SecretBackendType::Bitwarden => 3,                               // Bitwarden
-            SecretBackendType::OnePassword => 4,                             // 1Password
-        };
-
-        self.password_source_dropdown.set_selected(default_idx);
+    /// The dropdown shows: Prompt(0), Vault(1), Variable(2), Inherit(3), None(4)
+    pub fn set_preferred_backend(&self, _backend: rustconn_core::config::SecretBackendType) {
+        // All backends map to Vault (index 1)
+        self.password_source_dropdown.set_selected(1);
 
         // Update password row visibility based on new selection
         self.update_password_row_visibility();
@@ -6411,6 +6356,7 @@ struct ConnectionDialogData<'a> {
     protocol_dropdown: &'a DropDown,
     password_source_dropdown: &'a DropDown,
     password_entry: &'a Entry,
+    variable_dropdown: &'a DropDown,
     group_dropdown: &'a DropDown,
     groups_data: &'a Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
     ssh_auth_dropdown: &'a DropDown,
@@ -6616,14 +6562,23 @@ impl ConnectionDialogData<'_> {
         }
 
         // Password source - map dropdown index to enum
-        // Dropdown order: Prompt(0), KeePass(1), Keyring(2), Bitwarden(3), 1Password(4), Inherit(5), None(6)
+        // Dropdown order: Prompt(0), Vault(1), Variable(2), Inherit(3), None(4)
         conn.password_source = match self.password_source_dropdown.selected() {
-            1 => PasswordSource::KeePass,
-            2 => PasswordSource::Keyring,
-            3 => PasswordSource::Bitwarden,
-            4 => PasswordSource::OnePassword,
-            5 => PasswordSource::Inherit,
-            6 => PasswordSource::None,
+            1 => PasswordSource::Vault,
+            2 => {
+                // Variable — get selected variable name from dropdown
+                let selected = self.variable_dropdown.selected();
+                let model = self.variable_dropdown.model();
+                let var_name = model
+                    .and_then(|m| {
+                        m.downcast_ref::<gtk4::StringList>()
+                            .and_then(|sl| sl.string(selected))
+                    })
+                    .map_or_else(String::new, |s| s.to_string());
+                PasswordSource::Variable(var_name)
+            }
+            3 => PasswordSource::Inherit,
+            4 => PasswordSource::None,
             _ => PasswordSource::Prompt, // 0 and any other value default to Prompt
         };
 
@@ -6673,10 +6628,9 @@ impl ConnectionDialogData<'_> {
             conn.id = id;
         }
 
-        // Extract password if user entered one (for KeePass/Keyring/Bitwarden/1Password sources)
-        // Password source indices: 1=KeePass, 2=Keyring, 3=Bitwarden, 4=1Password
+        // Extract password if user entered one (for Vault source only)
         let password_source_idx = self.password_source_dropdown.selected();
-        let password = if matches!(password_source_idx, 1..=4) {
+        let password = if password_source_idx == 1 {
             let pwd = self.password_entry.text().to_string();
             if pwd.is_empty() {
                 None

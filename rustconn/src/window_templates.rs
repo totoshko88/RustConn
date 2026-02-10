@@ -12,7 +12,7 @@ use crate::dialogs::{ConnectionDialog, TemplateDialog, TemplateManagerDialog};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 use crate::window::MainWindow;
-use rustconn_core::models::{Credentials, PasswordSource};
+use rustconn_core::models::PasswordSource;
 
 /// Type alias for shared sidebar
 pub type SharedSidebar = Rc<ConnectionSidebar>;
@@ -366,6 +366,13 @@ pub fn show_new_connection_from_template(
         dialog.set_preferred_backend(preferred_backend);
     }
 
+    // Populate variable dropdown with secret global variables
+    {
+        let state_ref = state.borrow();
+        let global_vars = state_ref.settings().global_variables.clone();
+        dialog.set_global_variables(&global_vars);
+    }
+
     // Set up password visibility toggle and source visibility
     dialog.connect_password_visibility_toggle();
     dialog.connect_password_source_visibility();
@@ -409,212 +416,30 @@ pub fn show_new_connection_from_template(
                 let conn_name = conn.name.clone();
                 let conn_host = conn.host.clone();
                 let conn_username = conn.username.clone();
-                let password_source = conn.password_source;
+                let password_source = conn.password_source.clone();
                 let protocol = conn.protocol;
 
                 match state_mut.create_connection(conn) {
                     Ok(conn_id) => {
-                        // Save password to KeePass if needed
-                        if password_source == PasswordSource::KeePass {
-                            if let Some(pwd) = password.clone() {
-                                let settings = state_mut.settings().clone();
-                                if settings.secrets.kdbx_enabled {
-                                    if let Some(kdbx_path) = settings.secrets.kdbx_path.clone() {
-                                        // Build hierarchical entry path using connection's
-                                        // group structure
-                                        let groups: Vec<_> =
-                                            state_mut.list_groups().into_iter().cloned().collect();
-                                        let conn_for_path =
-                                            state_mut.get_connection(conn_id).cloned();
-
-                                        let key_file = settings.secrets.kdbx_key_file.clone();
-                                        let entry_name = if let Some(ref conn) = conn_for_path {
-                                            // Use hierarchical path matching resolve_credentials
-                                            let entry_path =
-                                                rustconn_core::secret::KeePassHierarchy
-                                                    ::build_entry_path(conn, &groups);
-                                            let base_path = entry_path
-                                                .strip_prefix("RustConn/")
-                                                .unwrap_or(&entry_path);
-                                            format!(
-                                                "{} ({})",
-                                                base_path,
-                                                protocol.as_str().to_lowercase()
-                                            )
-                                        } else {
-                                            // Fallback to flat path if connection not found
-                                            format!(
-                                                "{} ({})",
-                                                conn_name,
-                                                protocol.as_str().to_lowercase()
-                                            )
-                                        };
-                                        let username = conn_username.clone().unwrap_or_default();
-                                        let url = format!(
-                                            "{}://{}",
-                                            protocol.as_str().to_lowercase(),
-                                            conn_host
-                                        );
-
-                                        crate::utils::spawn_blocking_with_callback(
-                                            move || {
-                                                let kdbx = std::path::Path::new(&kdbx_path);
-                                                let key = key_file
-                                                    .as_ref()
-                                                    .map(|p| std::path::Path::new(p));
-                                                rustconn_core::secret::KeePassStatus
-                                                    ::save_password_to_kdbx(
-                                                        kdbx,
-                                                        None,
-                                                        key,
-                                                        &entry_name,
-                                                        &username,
-                                                        &pwd,
-                                                        Some(&url),
-                                                    )
-                                            },
-                                            move |result| {
-                                                if let Err(e) = result {
-                                                    tracing::error!(
-                                                        "Failed to save password to KeePass: {}",
-                                                        e
-                                                    );
-                                                } else {
-                                                    tracing::info!(
-                                                        "Password saved to KeePass for \
-                                                         connection {}",
-                                                        conn_id
-                                                    );
-                                                }
-                                            },
-                                        );
-                                    }
-                                }
-                            }
-                        }
-
-                        // Save password to Keyring if needed
-                        if password_source == PasswordSource::Keyring {
-                            if let Some(pwd) = password.clone() {
-                                let lookup_key = format!(
-                                    "{} ({})",
-                                    conn_name.replace('/', "-"),
-                                    protocol.as_str().to_lowercase()
-                                );
-                                let username = conn_username.clone().unwrap_or_default();
-
-                                crate::utils::spawn_blocking_with_callback(
-                                    move || {
-                                        use rustconn_core::secret::SecretBackend;
-                                        let backend = rustconn_core::secret::LibSecretBackend::new(
-                                            "rustconn",
-                                        );
-                                        let creds = Credentials {
-                                            username: Some(username),
-                                            password: Some(secrecy::SecretString::from(pwd)),
-                                            key_passphrase: None,
-                                            domain: None,
-                                        };
-                                        crate::async_utils::with_runtime(|rt| {
-                                            rt.block_on(backend.store(&lookup_key, &creds))
-                                                .map_err(|e| format!("{e}"))
-                                        })?
-                                    },
-                                    move |result: Result<(), String>| {
-                                        if let Err(e) = result {
-                                            tracing::error!(
-                                                "Failed to save password to Keyring: {}",
-                                                e
-                                            );
-                                        } else {
-                                            tracing::info!(
-                                                "Password saved to Keyring for connection {}",
-                                                conn_id
-                                            );
-                                        }
-                                    },
-                                );
-                            }
-                        }
-
-                        // Save password to Bitwarden if needed
-                        if password_source == PasswordSource::Bitwarden {
-                            if let Some(pwd) = password.clone() {
-                                let lookup_key = format!(
-                                    "{} ({})",
-                                    conn_name.replace('/', "-"),
-                                    protocol.as_str().to_lowercase()
-                                );
-                                let username = conn_username.clone().unwrap_or_default();
-
-                                crate::utils::spawn_blocking_with_callback(
-                                    move || {
-                                        use rustconn_core::secret::SecretBackend;
-                                        let backend =
-                                            rustconn_core::secret::BitwardenBackend::new();
-                                        let creds = Credentials {
-                                            username: Some(username),
-                                            password: Some(secrecy::SecretString::from(pwd)),
-                                            key_passphrase: None,
-                                            domain: None,
-                                        };
-                                        crate::async_utils::with_runtime(|rt| {
-                                            rt.block_on(backend.store(&lookup_key, &creds))
-                                                .map_err(|e| format!("{e}"))
-                                        })?
-                                    },
-                                    move |result: Result<(), String>| {
-                                        if let Err(e) = result {
-                                            tracing::error!(
-                                                "Failed to save password to Bitwarden: {}",
-                                                e
-                                            );
-                                        } else {
-                                            tracing::info!(
-                                                "Password saved to Bitwarden for connection {}",
-                                                conn_id
-                                            );
-                                        }
-                                    },
-                                );
-                            }
-                        }
-
-                        // Save password to 1Password if needed
-                        if password_source == PasswordSource::OnePassword {
+                        // Save password to vault if needed
+                        if password_source == PasswordSource::Vault {
                             if let Some(pwd) = password {
-                                let lookup_key = conn_id.to_string();
+                                let settings = state_mut.settings().clone();
+                                let groups: Vec<_> =
+                                    state_mut.list_groups().into_iter().cloned().collect();
+                                let conn_for_path = state_mut.get_connection(conn_id).cloned();
                                 let username = conn_username.unwrap_or_default();
 
-                                crate::utils::spawn_blocking_with_callback(
-                                    move || {
-                                        use rustconn_core::secret::SecretBackend;
-                                        let backend =
-                                            rustconn_core::secret::OnePasswordBackend::new();
-                                        let creds = Credentials {
-                                            username: Some(username),
-                                            password: Some(secrecy::SecretString::from(pwd)),
-                                            key_passphrase: None,
-                                            domain: None,
-                                        };
-                                        crate::async_utils::with_runtime(|rt| {
-                                            rt.block_on(backend.store(&lookup_key, &creds))
-                                                .map_err(|e| format!("{e}"))
-                                        })?
-                                    },
-                                    move |result: Result<(), String>| {
-                                        if let Err(e) = result {
-                                            tracing::error!(
-                                                "Failed to save password to 1Password: {}",
-                                                e
-                                            );
-                                        } else {
-                                            tracing::info!(
-                                                "Password saved to 1Password for connection {}",
-                                                conn_id
-                                            );
-                                        }
-                                    },
+                                crate::state::save_password_to_vault(
+                                    &settings,
+                                    &groups,
+                                    conn_for_path.as_ref(),
+                                    &conn_name,
+                                    &conn_host,
+                                    protocol,
+                                    &username,
+                                    &pwd,
+                                    conn_id,
                                 );
                             }
                         }
