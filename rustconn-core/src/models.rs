@@ -23,8 +23,8 @@ pub use protocol::{
     GcpIapConfig, GenericZeroTrustConfig, OciBastionConfig, ProtocolConfig, RdpClientMode,
     RdpConfig, RdpGateway, RdpPerformanceMode, Resolution, SharedFolder, SpiceConfig,
     SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, TailscaleSshConfig,
-    TeleportConfig, TelnetConfig, VncClientMode, VncConfig, VncPerformanceMode, ZeroTrustConfig,
-    ZeroTrustProvider, ZeroTrustProviderConfig,
+    TeleportConfig, TelnetBackspaceSends, TelnetConfig, TelnetDeleteSends, VncClientMode,
+    VncConfig, VncPerformanceMode, ZeroTrustConfig, ZeroTrustProvider, ZeroTrustProviderConfig,
 };
 pub use snippet::{Snippet, SnippetVariable};
 pub use template::{group_templates_by_protocol, ConnectionTemplate, TemplateError};

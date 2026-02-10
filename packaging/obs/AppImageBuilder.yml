@@ -8,7 +8,7 @@ AppDir:
     id: io.github.totoshko88.RustConn
     name: RustConn
     icon: rustconn
-    version: 0.7.9
+    version: 0.8.0
     exec: usr/bin/rustconn
     exec_args: $@
     author: Anton Isaiev

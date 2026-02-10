@@ -97,15 +97,127 @@ impl ProtocolConfig {
     }
 }
 
+/// What the Backspace key sends in a Telnet session
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum TelnetBackspaceSends {
+    /// Automatic (use terminal default)
+    #[default]
+    Automatic,
+    /// Send Backspace (^H, 0x08)
+    Backspace,
+    /// Send Delete (^?, 0x7F)
+    Delete,
+}
+
+impl TelnetBackspaceSends {
+    /// Returns all available options
+    #[must_use]
+    pub const fn all() -> &'static [Self] {
+        &[Self::Automatic, Self::Backspace, Self::Delete]
+    }
+
+    /// Returns the display name for this option
+    #[must_use]
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::Automatic => "Automatic",
+            Self::Backspace => "Backspace (^H)",
+            Self::Delete => "Delete (^?)",
+        }
+    }
+
+    /// Returns the index of this option in the `all()` array
+    #[must_use]
+    pub const fn index(self) -> u32 {
+        match self {
+            Self::Automatic => 0,
+            Self::Backspace => 1,
+            Self::Delete => 2,
+        }
+    }
+
+    /// Creates an option from an index
+    #[must_use]
+    pub const fn from_index(index: u32) -> Self {
+        match index {
+            1 => Self::Backspace,
+            2 => Self::Delete,
+            _ => Self::Automatic,
+        }
+    }
+}
+
+/// What the Delete key sends in a Telnet session
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum TelnetDeleteSends {
+    /// Automatic (use terminal default)
+    #[default]
+    Automatic,
+    /// Send Backspace (^H, 0x08)
+    Backspace,
+    /// Send Delete (^?, 0x7F)
+    Delete,
+}
+
+impl TelnetDeleteSends {
+    /// Returns all available options
+    #[must_use]
+    pub const fn all() -> &'static [Self] {
+        &[Self::Automatic, Self::Backspace, Self::Delete]
+    }
+
+    /// Returns the display name for this option
+    #[must_use]
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::Automatic => "Automatic",
+            Self::Backspace => "Backspace (^H)",
+            Self::Delete => "Delete (^?)",
+        }
+    }
+
+    /// Returns the index of this option in the `all()` array
+    #[must_use]
+    pub const fn index(self) -> u32 {
+        match self {
+            Self::Automatic => 0,
+            Self::Backspace => 1,
+            Self::Delete => 2,
+        }
+    }
+
+    /// Creates an option from an index
+    #[must_use]
+    pub const fn from_index(index: u32) -> Self {
+        match index {
+            1 => Self::Backspace,
+            2 => Self::Delete,
+            _ => Self::Automatic,
+        }
+    }
+}
+
 /// Telnet protocol configuration
 ///
-/// Minimal configuration for Telnet connections.
+/// Configuration for Telnet connections including keyboard behavior.
 /// Telnet sessions are spawned via VTE terminal using an external `telnet` client.
+///
+/// The backspace/delete key settings address a common issue where these keys
+/// are inverted on some remote systems. Users can configure what each key sends
+/// to match the remote system's expectations.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TelnetConfig {
     /// Custom command-line arguments for the telnet client
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub custom_args: Vec<String>,
+    /// What the Backspace key sends
+    #[serde(default)]
+    pub backspace_sends: TelnetBackspaceSends,
+    /// What the Delete key sends
+    #[serde(default)]
+    pub delete_sends: TelnetDeleteSends,
 }
 
 /// SSH authentication method

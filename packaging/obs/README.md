@@ -6,13 +6,17 @@
 
 | Дистрибутив | Версія | Rust джерело | Статус |
 |-------------|--------|--------------|--------|
-| openSUSE Tumbleweed | Rolling | System (1.87+) | ✅ |
+| openSUSE Tumbleweed | Rolling | System (1.88+) | ✅ |
+| openSUSE Slowroll | Rolling (slow) | System (1.88+) | ✅ |
 | openSUSE Leap | 16.0 | devel:languages:rust | ✅ |
+| Fedora | 42+ | System (1.93) | ✅ |
 
-**Примітка:** MSRV (Minimum Supported Rust Version) = 1.87
+**Примітка:** MSRV (Minimum Supported Rust Version) = 1.88
 
-Fedora, Ubuntu, Debian не підтримуються в OBS через відсутність Rust 1.87.
-Використовуйте GitHub releases для .deb та AppImage пакетів.
+Ubuntu/Debian не підтримуються в OBS — системний Rust занадто старий:
+- Ubuntu 24.04: Rust 1.75, Ubuntu 25.04: Rust 1.84, Ubuntu 25.10: Rust 1.85
+- Ubuntu 26.04 (resolute) матиме Rust 1.88 — можна додати після релізу
+- Використовуйте GitHub releases для .deb та AppImage пакетів.
 
 ## Автоматичне оновлення
 
@@ -84,14 +88,13 @@ cd home:totoshko88:rustconn/rustconn
 
 **RPM:**
 - openSUSE_Tumbleweed
+- openSUSE_Slowroll
 - openSUSE_Leap_16.0
-- Fedora_41
-- Fedora_40 (з rustup)
+- Fedora_42
 
 **DEB:**
-- Debian_13
-- xUbuntu_24.04
-- xUbuntu_24.10
+- Debian 13+ (коли Rust >= 1.88 буде доступний)
+- xUbuntu_26.04 (коли вийде)
 
 ### 3. Оновлення версії
 
@@ -118,6 +121,13 @@ sudo zypper ref
 sudo zypper in rustconn
 ```
 
+### openSUSE Slowroll
+```bash
+sudo zypper ar https://download.opensuse.org/repositories/home:/totoshko88:/rustconn/openSUSE_Slowroll/ rustconn
+sudo zypper ref
+sudo zypper in rustconn
+```
+
 ### openSUSE Leap 16.0
 ```bash
 sudo zypper ar https://download.opensuse.org/repositories/home:/totoshko88:/rustconn/16.0/ rustconn
@@ -125,10 +135,10 @@ sudo zypper ref
 sudo zypper in rustconn
 ```
 
-### Fedora 41+
+### Fedora 42+
 ```bash
 sudo dnf config-manager --add-repo \
-  https://download.opensuse.org/repositories/home:/totoshko88:/rustconn/Fedora_41/home:totoshko88:rustconn.repo
+  https://download.opensuse.org/repositories/home:/totoshko88:/rustconn/Fedora_42/home:totoshko88:rustconn.repo
 sudo dnf install rustconn
 ```
 

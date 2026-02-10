@@ -1,4 +1,36 @@
 -------------------------------------------------------------------
+Tue Feb 10 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.0
+
+- Version bump to 0.8.0
+  * Added Telnet Backspace/Delete Configuration (#5):
+    - TelnetBackspaceSends and TelnetDeleteSends enums with Automatic/Backspace/Delete options
+    - Connection dialog Keyboard group with two dropdowns for Backspace and Delete key behavior
+    - stty erase shell wrapper in spawn_telnet() to apply key settings before connecting
+  * Added Flatpak Telnet Support - GNU inetutils built as Flatpak module
+  * Fixed OBS Screenshot Display - Updated _service revision to current version tag
+  * Fixed Flatpak AWS CLI - replaced Docker wrapper with official binary installer
+  * Fixed Flatpak Component Detection - SSM Plugin, Azure CLI, OCI CLI detection
+  * Fixed Flatpak Python Version - dynamic Python version in wrapper scripts
+  * Updated dependencies: libc, tempfile, unicode-ident
+
+-------------------------------------------------------------------
+Tue Feb 10 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.0
+
+- Version bump to 0.8.0
+  * Added Telnet backspace/delete key configuration (#5):
+    - TelnetBackspaceSends and TelnetDeleteSends enums (Automatic/Backspace/Delete)
+    - Connection dialog Keyboard group with two dropdowns
+    - stty erase shell wrapper in spawn_telnet() to apply key settings
+    - Addresses common backspace/delete inversion issue
+  * Added Flatpak Telnet support:
+    - GNU inetutils 2.7 built as Flatpak module
+    - telnet binary available at /app/bin/ in Flatpak sandbox
+    - Added to all three Flatpak manifests
+  * Updated OBS _service revision from v0.5.3 to current version tag
+  * Updated dependencies: libc 0.2.180->0.2.181, tempfile 3.24.0->3.25.0,
+    unicode-ident 1.0.22->1.0.23
+
+-------------------------------------------------------------------
 Mon Feb 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.9
 
 - Version bump to 0.7.9

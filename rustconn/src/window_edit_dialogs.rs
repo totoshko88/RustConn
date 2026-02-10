@@ -1450,7 +1450,14 @@ fn start_quick_telnet(
         None,
         terminal_settings,
     );
-    notebook.spawn_telnet(session_id, &params.host, params.port, &[]);
+    notebook.spawn_telnet(
+        session_id,
+        &params.host,
+        params.port,
+        &[],
+        rustconn_core::TelnetBackspaceSends::Automatic,
+        rustconn_core::TelnetDeleteSends::Automatic,
+    );
 }
 
 /// Starts a quick SSH connection

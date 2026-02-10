@@ -114,7 +114,8 @@ pub use models::{
     ConnectionStatistics, ConnectionTemplate, Credentials, CustomProperty, HistorySettings,
     PasswordSource, PropertyType, ProtocolConfig, ProtocolType, RdpConfig, RdpGateway, Resolution,
     Snippet, SnippetVariable, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig,
-    SshKeySource, TelnetConfig, TemplateError, VncConfig, WindowGeometry, WindowMode,
+    SshKeySource, TelnetBackspaceSends, TelnetConfig, TelnetDeleteSends, TemplateError, VncConfig,
+    WindowGeometry, WindowMode,
 };
 pub use password_generator::{
     estimate_crack_time, CharacterSet, PasswordGenerator, PasswordGeneratorConfig,

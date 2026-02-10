@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-02-10
+
+### Added
+- **Telnet Backspace/Delete Configuration** — Configurable keyboard behavior for Telnet connections ([#5](https://github.com/totoshko88/RustConn/issues/5)):
+  - `TelnetBackspaceSends` and `TelnetDeleteSends` enums with Automatic/Backspace/Delete options
+  - Connection dialog Keyboard group with two dropdowns for Backspace and Delete key behavior
+  - `stty erase` shell wrapper in `spawn_telnet()` to apply key settings before connecting
+  - Addresses common backspace/delete inversion issue reported by users
+- **Flatpak Telnet Support** — GNU inetutils built as Flatpak module:
+  - `telnet` binary available at `/app/bin/` in Flatpak sandbox
+  - Built from inetutils 2.7 source with `--disable-servers` (client tools only)
+  - Added to all three Flatpak manifests (flatpak, flatpak-local, flathub)
+
+### Changed
+- **Dependencies** — Updated: `libc` 0.2.180→0.2.181, `tempfile` 3.24.0→3.25.0, `unicode-ident` 1.0.22→1.0.23
+
+### Fixed
+- **OBS Screenshot Display** — Updated `_service` revision from `v0.5.3` to current version tag for proper AppStream metadata processing on software.opensuse.org
+- **Flatpak AWS CLI** — Replaced `awscliv2` pip package (Docker wrapper) with official AWS CLI v2 binary installer from `awscli.amazonaws.com`; `aws --version` now shows real AWS CLI instead of Docker error
+- **Flatpak Component Detection** — Fixed SSM Plugin, Azure CLI, and OCI CLI showing as "Not installed" after installation:
+  - Added explicit search paths for SSM Plugin (`usr/local/sessionmanagerplugin/bin`) and AWS CLI (`v2/current/bin`)
+  - Increased recursive binary search depth from 3 to 5/6 levels
+- **Flatpak Python Version** — Wrapper scripts for pip-installed CLIs (Azure CLI, OCI CLI) now dynamically detect Python version instead of hardcoding `python3.13`
+
 ## [0.7.9] - 2026-02-09
 
 ### Added

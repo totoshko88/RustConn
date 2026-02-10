@@ -661,13 +661,21 @@ pub fn start_telnet_connection(
 
     let host = substitute_variables(&conn.host, &global_variables);
 
-    // Get custom args from TelnetConfig
-    let extra_args = if let rustconn_core::ProtocolConfig::Telnet(ref config) = conn.protocol_config
-    {
-        config.custom_args.clone()
-    } else {
-        Vec::new()
-    };
+    // Get custom args and keyboard settings from TelnetConfig
+    let (extra_args, backspace_sends, delete_sends) =
+        if let rustconn_core::ProtocolConfig::Telnet(ref config) = conn.protocol_config {
+            (
+                config.custom_args.clone(),
+                config.backspace_sends,
+                config.delete_sends,
+            )
+        } else {
+            (
+                Vec::new(),
+                rustconn_core::TelnetBackspaceSends::Automatic,
+                rustconn_core::TelnetDeleteSends::Automatic,
+            )
+        };
 
     // Update last_connected timestamp
     if let Ok(mut state_mut) = state.try_borrow_mut() {
@@ -697,7 +705,14 @@ pub fn start_telnet_connection(
 
     // Spawn telnet
     let extra_refs: Vec<&str> = extra_args.iter().map(String::as_str).collect();
-    notebook.spawn_telnet(session_id, &host, port, &extra_refs);
+    notebook.spawn_telnet(
+        session_id,
+        &host,
+        port,
+        &extra_refs,
+        backspace_sends,
+        delete_sends,
+    );
 
     // Wire up child exited callback (second call for terminal monitoring)
     MainWindow::setup_child_exited_handler(state, notebook, sidebar, session_id, connection_id);

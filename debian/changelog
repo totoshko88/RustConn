@@ -1,3 +1,30 @@
+rustconn (0.8.0-1) unstable; urgency=medium
+
+  * Version bump to 0.8.0
+  * Added Telnet Backspace/Delete Configuration (#5):
+    - TelnetBackspaceSends and TelnetDeleteSends enums with Automatic/Backspace/Delete options
+    - Connection dialog Keyboard group with two dropdowns for Backspace and Delete key behavior
+    - stty erase shell wrapper in spawn_telnet() to apply key settings before connecting
+    - Addresses common backspace/delete inversion issue reported by users
+  * Added Flatpak Telnet Support:
+    - GNU inetutils built as Flatpak module
+    - telnet binary available at /app/bin/ in Flatpak sandbox
+    - Added to all three Flatpak manifests (flatpak, flatpak-local, flathub)
+  * Fixed OBS Screenshot Display:
+    - Updated _service revision from v0.5.3 to current version tag
+  * Fixed Flatpak AWS CLI:
+    - Replaced awscliv2 pip package (Docker wrapper) with official AWS CLI v2
+      binary installer from awscli.amazonaws.com
+  * Fixed Flatpak Component Detection:
+    - SSM Plugin, Azure CLI, OCI CLI now correctly detected after installation
+    - Added explicit search paths and increased recursive search depth
+  * Fixed Flatpak Python Version:
+    - Wrapper scripts dynamically detect Python version instead of hardcoding
+  * Updated dependencies: libc 0.2.180->0.2.181, tempfile 3.24.0->3.25.0,
+    unicode-ident 1.0.22->1.0.23
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Tue, 10 Feb 2026 12:00:00 +0200
+
 rustconn (0.7.9-1) unstable; urgency=medium
 
   * Version bump to 0.7.9

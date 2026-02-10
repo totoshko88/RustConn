@@ -151,6 +151,8 @@ pub struct ConnectionDialog {
     zt_custom_args_entry: Entry,
     // Telnet fields
     telnet_custom_args_entry: Entry,
+    telnet_backspace_dropdown: DropDown,
+    telnet_delete_dropdown: DropDown,
     // Variables fields
     variables_list: ListBox,
     variables_rows: Rc<RefCell<Vec<LocalVariableRow>>>,
@@ -414,7 +416,12 @@ impl ConnectionDialog {
         protocol_stack.add_named(&zt_box, Some("zerotrust"));
 
         // Telnet options
-        let (telnet_box, telnet_custom_args_entry) = super::telnet::create_telnet_options();
+        let (
+            telnet_box,
+            telnet_custom_args_entry,
+            telnet_backspace_dropdown,
+            telnet_delete_dropdown,
+        ) = super::telnet::create_telnet_options();
         protocol_stack.add_named(&telnet_box, Some("telnet"));
 
         // Set initial protocol view
@@ -616,6 +623,8 @@ impl ConnectionDialog {
             &zt_generic_command_entry,
             &zt_custom_args_entry,
             &telnet_custom_args_entry,
+            &telnet_backspace_dropdown,
+            &telnet_delete_dropdown,
             &variables_rows,
             &logging_enabled_check,
             &logging_path_entry,
@@ -741,6 +750,8 @@ impl ConnectionDialog {
             zt_generic_command_entry,
             zt_custom_args_entry,
             telnet_custom_args_entry,
+            telnet_backspace_dropdown,
+            telnet_delete_dropdown,
             expect_rules_list,
             expect_rules,
             add_expect_rule_button,
@@ -1365,6 +1376,8 @@ impl ConnectionDialog {
         zt_generic_command_entry: &adw::EntryRow,
         zt_custom_args_entry: &Entry,
         telnet_custom_args_entry: &Entry,
+        telnet_backspace_dropdown: &DropDown,
+        telnet_delete_dropdown: &DropDown,
         variables_rows: &Rc<RefCell<Vec<LocalVariableRow>>>,
         logging_enabled_check: &CheckButton,
         logging_path_entry: &Entry,
@@ -1468,6 +1481,8 @@ impl ConnectionDialog {
         let zt_generic_command_entry = zt_generic_command_entry.clone();
         let zt_custom_args_entry = zt_custom_args_entry.clone();
         let telnet_custom_args_entry = telnet_custom_args_entry.clone();
+        let telnet_backspace_dropdown = telnet_backspace_dropdown.clone();
+        let telnet_delete_dropdown = telnet_delete_dropdown.clone();
         let variables_rows = variables_rows.clone();
         let logging_enabled_check = logging_enabled_check.clone();
         let logging_path_entry = logging_path_entry.clone();
@@ -1574,6 +1589,8 @@ impl ConnectionDialog {
                 zt_generic_command_entry: &zt_generic_command_entry,
                 zt_custom_args_entry: &zt_custom_args_entry,
                 telnet_custom_args_entry: &telnet_custom_args_entry,
+                telnet_backspace_dropdown: &telnet_backspace_dropdown,
+                telnet_delete_dropdown: &telnet_delete_dropdown,
                 local_variables: &local_variables,
                 logging_enabled_check: &logging_enabled_check,
                 logging_path_entry: &logging_path_entry,
@@ -5082,9 +5099,17 @@ impl ConnectionDialog {
                 self.protocol_stack.set_visible_child_name("zerotrust");
                 self.set_zerotrust_config(zt);
             }
-            ProtocolConfig::Telnet(_) => {
+            ProtocolConfig::Telnet(ref telnet_config) => {
                 self.protocol_dropdown.set_selected(5); // Telnet
                 self.protocol_stack.set_visible_child_name("telnet");
+                // Load custom args
+                let args_text = telnet_config.custom_args.join(" ");
+                self.telnet_custom_args_entry.set_text(&args_text);
+                // Load keyboard settings
+                self.telnet_backspace_dropdown
+                    .set_selected(telnet_config.backspace_sends.index());
+                self.telnet_delete_dropdown
+                    .set_selected(telnet_config.delete_sends.index());
             }
         }
 
@@ -6452,6 +6477,8 @@ struct ConnectionDialogData<'a> {
     zt_custom_args_entry: &'a Entry,
     // Telnet fields
     telnet_custom_args_entry: &'a Entry,
+    telnet_backspace_dropdown: &'a DropDown,
+    telnet_delete_dropdown: &'a DropDown,
     local_variables: &'a HashMap<String, Variable>,
     logging_enabled_check: &'a CheckButton,
     logging_path_entry: &'a Entry,
@@ -6964,7 +6991,16 @@ impl ConnectionDialogData<'_> {
                 .map(String::from)
                 .collect()
         };
-        rustconn_core::models::TelnetConfig { custom_args }
+        let backspace_sends = rustconn_core::TelnetBackspaceSends::from_index(
+            self.telnet_backspace_dropdown.selected(),
+        );
+        let delete_sends =
+            rustconn_core::TelnetDeleteSends::from_index(self.telnet_delete_dropdown.selected());
+        rustconn_core::models::TelnetConfig {
+            custom_args,
+            backspace_sends,
+            delete_sends,
+        }
     }
 
     fn build_ssh_config(&self) -> SshConfig {

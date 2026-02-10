@@ -452,10 +452,13 @@ fn find_in_flatpak_cli_dir(command: &str) -> Option<PathBuf> {
     }
 
     // Also search common subdirectories in CLI dir
-    // All pip-installed CLIs (aws, az, oci) are in python/bin
+    // pip-installed CLIs (az, oci) are in python/bin
+    // AWS CLI v2 is in aws-cli/bin or aws-cli/v2/current/bin
     // SSM Plugin is in ssm-plugin/usr/local/sessionmanagerplugin/bin
     let search_dirs = [
         cli_dir.join("python/bin"),
+        cli_dir.join("aws-cli/bin"),
+        cli_dir.join("aws-cli/v2/current/bin"),
         cli_dir.join("ssm-plugin/usr/local/sessionmanagerplugin/bin"),
         cli_dir.join("google-cloud-sdk/bin"),
         cli_dir.join("teleport"),

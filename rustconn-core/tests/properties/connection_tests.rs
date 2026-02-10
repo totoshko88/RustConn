@@ -212,8 +212,13 @@ fn arb_protocol_config() -> impl Strategy<Value = ProtocolConfig> {
         arb_ssh_config().prop_map(ProtocolConfig::Ssh),
         arb_rdp_config().prop_map(ProtocolConfig::Rdp),
         arb_vnc_config().prop_map(ProtocolConfig::Vnc),
-        arb_custom_args()
-            .prop_map(|args| ProtocolConfig::Telnet(TelnetConfig { custom_args: args })),
+        arb_custom_args().prop_map(|args| {
+            ProtocolConfig::Telnet(TelnetConfig {
+                custom_args: args,
+                backspace_sends: Default::default(),
+                delete_sends: Default::default(),
+            })
+        }),
     ]
 }
 

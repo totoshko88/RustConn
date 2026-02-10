@@ -78,6 +78,19 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.8.0" date="2026-02-10">
+      <description>
+        <p>Version 0.8.0 - Telnet Keyboard Configuration and Flatpak fixes:</p>
+        <ul>
+          <li>Configurable Backspace/Delete key behavior for Telnet connections (#5)</li>
+          <li>Telnet available in Flatpak via bundled GNU inetutils 2.7</li>
+          <li>Fixed Flatpak AWS CLI: replaced Docker wrapper with official binary installer</li>
+          <li>Fixed Flatpak component detection for SSM Plugin, Azure CLI, OCI CLI</li>
+          <li>Fixed Python version detection in pip wrapper scripts</li>
+          <li>Fixed OBS screenshot display on software.opensuse.org</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.7.9" date="2026-02-09">
       <description>
         <p>Version 0.7.9 - Telnet protocol support and icon fixes:</p>

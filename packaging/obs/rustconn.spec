@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.7.9
+Version:        0.8.0
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Zero Trust)
 License:        GPL-3.0-or-later
@@ -16,7 +16,8 @@ Source1:        vendor.tar.zst
 
 # Rust 1.88+ required (MSRV)
 # openSUSE: use devel:languages:rust repo for Rust 1.88+
-# Fedora/Ubuntu/Debian: use rustup fallback since system Rust < 1.88
+# Fedora 42+: system Rust 1.93 is sufficient
+# Fedora <42/RHEL: use rustup fallback since system Rust < 1.88
 %if 0%{?suse_version}
 BuildRequires:  cargo >= 1.88
 BuildRequires:  rust >= 1.88
@@ -24,8 +25,14 @@ BuildRequires:  cargo-packaging
 BuildRequires:  alsa-devel
 %endif
 
-%if 0%{?fedora}
-# All Fedora versions: use rustup (even F42 has only 1.85)
+%if 0%{?fedora} >= 42
+BuildRequires:  cargo >= 1.88
+BuildRequires:  rust >= 1.88
+BuildRequires:  alsa-lib-devel
+%endif
+
+%if 0%{?fedora} && 0%{?fedora} < 42
+# Older Fedora: use rustup
 BuildRequires:  curl
 BuildRequires:  alsa-lib-devel
 %endif
@@ -107,8 +114,8 @@ Productivity:
 %prep
 %autosetup -a1 -n %{name}-%{version}
 
-# Install rustup for Fedora/RHEL (system Rust < 1.88)
-%if 0%{?fedora}
+# Install rustup for older Fedora/RHEL (system Rust < 1.88)
+%if 0%{?fedora} && 0%{?fedora} < 42
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.88.0 --profile minimal
 export PATH="$HOME/.cargo/bin:$PATH"
 %endif
@@ -132,8 +139,8 @@ directory = "vendor"
 EOF
 
 %build
-# Ensure rustup path is available for Fedora/RHEL
-%if 0%{?fedora} || 0%{?rhel}
+# Ensure rustup path is available for older Fedora/RHEL
+%if (0%{?fedora} && 0%{?fedora} < 42) || 0%{?rhel}
 export PATH="$HOME/.cargo/bin:$PATH"
 %endif
 
@@ -174,6 +181,24 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Tue Feb 10 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.0-0
+- Version bump to 0.8.0
+- Added Telnet backspace/delete key configuration (#5):
+  * TelnetBackspaceSends and TelnetDeleteSends enums (Automatic/Backspace/Delete)
+  * Connection dialog Keyboard group with two dropdowns
+  * stty erase shell wrapper in spawn_telnet() to apply key settings
+  * Addresses common backspace/delete inversion issue
+- Added Flatpak Telnet support:
+  * GNU inetutils 2.7 built as Flatpak module
+  * telnet binary available at /app/bin/ in Flatpak sandbox
+  * Added to all three Flatpak manifests
+- Fixed Flatpak AWS CLI: replaced awscliv2 Docker wrapper with official binary
+- Fixed Flatpak Component Detection: SSM Plugin, Azure CLI, OCI CLI detection
+- Fixed Flatpak Python Version: dynamic Python version in wrapper scripts
+- Updated OBS _service revision from v0.5.3 to current version tag
+- Updated dependencies: libc 0.2.180->0.2.181, tempfile 3.24.0->3.25.0,
+  unicode-ident 1.0.22->1.0.23
+
 * Mon Feb 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.9-0
 - Version bump to 0.7.9
 - Added Telnet protocol support (#5):
