@@ -252,15 +252,20 @@ Due to snap confinement, RustConn stores data in snap-specific locations:
 | Security | High | High | Medium |
 | Setup | Manual interfaces | Automatic | None needed |
 | SSH/RDP/VNC | ✅ Embedded | ✅ Embedded | ✅ Embedded |
-| Telnet | Host CLI | Host CLI | ✅ Host CLI |
-| SPICE | Host CLI | ❌ | ✅ Host CLI |
-| Zero Trust | Host CLIs | ❌ | ✅ Host CLIs |
+| Telnet | Host CLI | ✅ Bundled (inetutils) | ✅ Host CLI |
+| SPICE | Host CLI | ✅ Via Flatpak Components | ✅ Host CLI |
+| Zero Trust | Host CLIs | ✅ Via Flatpak Components | ✅ Host CLIs |
+| Password CLIs | Host CLIs | ✅ Via Flatpak Components | ✅ Host CLIs |
 | Package Size | ~50 MB | ~50 MB | ~30 MB |
 
+**Flatpak Components** — Flatpak users can download and install additional CLI tools (Zero Trust, password managers, TigerVNC) directly within the sandbox via Menu → Flatpak Components. See [User Guide — Flatpak Components](USER_GUIDE.md#flatpak-components) for details.
+
+![Flatpak Components](../rustconn/assets/screenshots/flatpak_components.png)
+
 **Recommendation:**
-- **Snap:** Best for users who want embedded clients with strict security
-- **Flatpak:** Best for embedded-only usage (no Zero Trust, no SPICE)
-- **Native:** Best for full functionality with all external CLIs
+- **Flatpak:** Recommended. Full functionality with embedded clients and on-demand CLI downloads via Flatpak Components
+- **Snap:** Good for users who prefer strict confinement; requires manual interface connections and host-installed CLIs
+- **Native:** Full functionality with all host CLIs, no sandboxing overhead
 
 ## Support
 
