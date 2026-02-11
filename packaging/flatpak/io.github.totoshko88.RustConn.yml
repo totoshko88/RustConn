@@ -77,6 +77,7 @@ modules:
       - -Dvapi=false
       - -Dmanpage=false
       - -Dcrypto=disabled
+      - -Dbash_completion=disabled
     sources:
       - type: archive
         url: https://download.gnome.org/sources/libsecret/0.21/libsecret-0.21.7.tar.xz
