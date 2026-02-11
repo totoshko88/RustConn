@@ -1679,9 +1679,7 @@ impl SplitViewBridge {
         }
 
         status_page.set_title("RustConn");
-        status_page.set_description(Some(
-            "Modern Connection Manager for Linux • SSH • RDP • VNC • SPICE • Zero Trust",
-        ));
+        status_page.set_description(Some("Manage remote connections easily"));
 
         // Create content box for additional elements
         let content = GtkBox::new(Orientation::Vertical, 12);

@@ -1,6 +1,10 @@
 # RustConn
 
-Modern connection manager for Linux with GTK4/Wayland-native interface.
+Manage remote connections easily.
+
+RustConn is a modern connection manager for Linux with a GTK4/Wayland-native interface.
+Manage SSH, RDP, VNC, SPICE, Telnet, and Zero Trust connections from a single application.
+All core protocols use embedded Rust implementations — no external dependencies required.
 
 [![Demo](https://img.youtube.com/vi/dsGZsfGurv0/maxresdefault.jpg)](https://youtu.be/dsGZsfGurv0)
 

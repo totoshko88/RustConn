@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - KeePassXC: loads KDBX password into entry field
   - Bitwarden: auto-unlocks vault (existing behavior)
 - **`secret-tool` Availability Check** — Toggling "Save to system keyring" for any backend now checks if `secret-tool` is installed; if missing, unchecks the checkbox and shows "Install libsecret-tools for keyring" warning
+- **Flatpak `secret-tool` Support** — Added `libsecret` 0.21.7 as a Flatpak build module in all manifests (flatpak, local, flathub), providing `secret-tool` binary inside the sandbox for system keyring integration
 - **Passbolt Server URL Setting** — New `passbolt_server_url` field in `SecretSettings` for configuring Passbolt server address
 - **Passbolt UI in Settings** — Secrets tab now includes Server URL entry and "Open Vault" button for Passbolt:
   - Server URL auto-fills from `go-passbolt-cli` config on startup
@@ -52,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 - **Workspace dependency consistency** — Moved `regex` in `rustconn` crate from inline `"1.11"` to `{ workspace = true }` for unified version management
+- **Description consistency** — Unified short description ("Manage remote connections easily") and long description across all packaging metadata, README, Welcome screen, About dialog, Cargo.toml, .desktop, metainfo.xml, and Snap manifest; added missing `telnet` and `zerotrust` keywords; fixed About dialog `developer_name` field to show author name instead of product description
 
 ## [0.8.1] - 2026-02-10
 

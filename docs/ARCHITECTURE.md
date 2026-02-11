@@ -563,6 +563,10 @@ Each backend wraps these generic functions with typed helpers:
 
 On settings load, backends with "Save to system keyring" enabled automatically restore credentials from the keyring (auto-unlock for Bitwarden, token/passphrase/password pre-fill for others).
 
+#### Flatpak Compatibility
+
+The `secret-tool` binary is not included in the GNOME Flatpak runtime (`org.gnome.Platform`). To ensure keyring operations work inside the Flatpak sandbox, `libsecret` 0.21.7 is built as a Flatpak module in all manifests. This provides the `secret-tool` binary at `/app/bin/secret-tool`. The D-Bus permission `--talk-name=org.freedesktop.secrets` is already present in `finish-args`, allowing `secret-tool` to communicate with GNOME Keyring / KDE Wallet from within the sandbox.
+
 ### KeePass Hierarchical Storage
 
 The `hierarchy` module (`rustconn-core/src/secret/hierarchy.rs`) manages hierarchical password storage in KeePass databases, mirroring RustConn's group structure:

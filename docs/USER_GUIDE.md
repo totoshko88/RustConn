@@ -833,6 +833,7 @@ rustconn-cli secret verify-keepass -d ~/vault.kdbx -k ~/key.key
 3. Ensure a Secret Service provider is running (GNOME Keyring, KDE Wallet)
 4. If "Install libsecret-tools for keyring" warning appears, install the package above
 5. "Save password" and "Save to system keyring" are mutually exclusive — only one can be active
+6. **Flatpak users:** `secret-tool` is bundled in the Flatpak package — no separate installation needed. Ensure your desktop has a Secret Service provider (GNOME Keyring or KDE Wallet)
 
 ### Passbolt Not Working
 

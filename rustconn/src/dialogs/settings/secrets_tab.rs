@@ -1532,7 +1532,7 @@ fn get_op_token_from_keyring() -> Option<String> {
             tracing::debug!("1Password token loaded from keyring");
             Some(secret.expose_secret().to_string())
         }
-        Ok(Ok(None)) | Ok(Err(_)) | Err(_) => None,
+        Ok(Ok(None) | Err(_)) | Err(_) => None,
     }
 }
 
@@ -1565,7 +1565,7 @@ fn get_pb_passphrase_from_keyring() -> Option<String> {
             tracing::debug!("Passbolt passphrase loaded from keyring");
             Some(secret.expose_secret().to_string())
         }
-        Ok(Ok(None)) | Ok(Err(_)) | Err(_) => None,
+        Ok(Ok(None) | Err(_)) | Err(_) => None,
     }
 }
 
@@ -1600,7 +1600,7 @@ fn get_kdbx_password_from_keyring() -> Option<String> {
             tracing::debug!("KDBX password loaded from keyring");
             Some(secret.expose_secret().to_string())
         }
-        Ok(Ok(None)) | Ok(Err(_)) | Err(_) => None,
+        Ok(Ok(None) | Err(_)) | Err(_) => None,
     }
 }
 

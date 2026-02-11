@@ -1,10 +1,10 @@
 [Desktop Entry]
 Name=RustConn
-Comment=Modern connection manager for SSH, RDP, and VNC
+Comment=Manage remote connections easily
 Exec=rustconn
 Icon=io.github.totoshko88.RustConn
 Terminal=false
 Type=Application
 Categories=Network;RemoteAccess;GTK;
-Keywords=ssh;rdp;vnc;connection;terminal;remote;
+Keywords=ssh;rdp;vnc;spice;telnet;zerotrust;connection;terminal;remote;
 StartupWMClass=io.github.totoshko88.RustConn

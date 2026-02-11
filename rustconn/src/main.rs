@@ -1,6 +1,7 @@
 //! `RustConn` - Modern Connection Manager for Linux
 //!
-//! A GTK4-based connection manager supporting SSH, RDP, and VNC protocols
+//! A GTK4/libadwaita connection manager supporting SSH, RDP, VNC, SPICE,
+//! Telnet, and Zero Trust protocols with embedded Rust implementations.
 //! with Wayland-native support and `KeePassXC` integration.
 //!
 //! # GTK Widget Lifecycle Pattern

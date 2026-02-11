@@ -1,6 +1,6 @@
 [package]
 name = "rustconn"
-description = "Modern connection manager for Linux with GTK4 GUI"
+description = "Manage remote connections easily"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

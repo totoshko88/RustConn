@@ -964,13 +964,14 @@ fn setup_app_actions(
 
 /// Shows the about dialog
 fn show_about_dialog(parent: &adw::ApplicationWindow) {
-    let description = "Modern GTK4/libadwaita connection manager for Linux, \
-designed with Wayland-first approach.\n\n\
+    let description = "RustConn is a modern connection manager for Linux \
+with a GTK4/Wayland-native interface. Manage SSH, RDP, VNC, SPICE, Telnet, \
+and Zero Trust connections from a single application.\n\n\
 Developed by Anton Isaiev, 2024-2026";
 
     let about = adw::AboutDialog::builder()
         .application_name("RustConn")
-        .developer_name("Modern connection manager for Linux")
+        .developer_name("Anton Isaiev")
         .version(env!("CARGO_PKG_VERSION"))
         .comments(description)
         .website("https://github.com/totoshko88/RustConn")

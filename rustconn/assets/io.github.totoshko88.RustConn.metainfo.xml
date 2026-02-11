@@ -79,6 +79,25 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.8.2" date="2026-02-11">
+      <description>
+        <p>Version 0.8.2 - Unified Keyring Integration and Secret Backend Fixes:</p>
+        <ul>
+          <li>Shared keyring module with generic store/lookup/clear for all backends</li>
+          <li>Keyring support for all secret backends (Bitwarden, 1Password, Passbolt, KeePassXC)</li>
+          <li>Auto-load credentials from keyring on settings load</li>
+          <li>secret-tool availability check when toggling keyring option</li>
+          <li>Passbolt Server URL setting and Open Vault button in Secrets tab</li>
+          <li>Unified credential save options with mutual exclusion across all backends</li>
+          <li>Fixed secret lookup key mismatch across all secret backends</li>
+          <li>Fixed Passbolt server address always showing None</li>
+          <li>Fixed variable secrets ignoring preferred backend setting</li>
+          <li>Fixed Bitwarden folder parsing crash on null folder IDs</li>
+          <li>Fixed Bitwarden vault auto-unlock for variable save/load</li>
+          <li>Removed unused picky version pin from rustconn-core</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.8.1" date="2026-02-11">
       <description>
         <p>Version 0.8.1 - Passbolt Integration, Unified Vault, and Variable Passwords:</p>
@@ -534,5 +553,7 @@
     <keyword>remote</keyword>
     <keyword>connection</keyword>
     <keyword>terminal</keyword>
+    <keyword>telnet</keyword>
+    <keyword>zerotrust</keyword>
   </keywords>
 </component>

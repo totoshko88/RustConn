@@ -4,14 +4,15 @@ version: '0.8.2'
 summary: Manage remote connections easily
 description: |
   RustConn is a modern connection manager for Linux with a GTK4/Wayland-native
-  interface. Manage SSH, RDP, VNC, SPICE, and Zero Trust connections from a
-  single application.
+  interface. Manage SSH, RDP, VNC, SPICE, Telnet, and Zero Trust connections
+  from a single application.
 
   Protocols (embedded Rust implementations):
   - SSH with embedded VTE terminal and split view
   - RDP via IronRDP (embedded)
   - VNC via vnc-rs (embedded)
   - SPICE via external remote-viewer (install on host)
+  - Telnet via external telnet client
 
   Zero Trust (install CLIs on host):
   - AWS SSM, GCP IAP, Azure Bastion, OCI Bastion

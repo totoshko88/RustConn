@@ -184,6 +184,26 @@ fi
 %changelog
 * Wed Feb 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.2-0
 - Version bump to 0.8.2
+- Added Shared Keyring Module with generic store(), lookup(), clear(),
+  and is_secret_tool_available() functions for all backends
+- Added Keyring Support for All Secret Backends:
+  * Bitwarden: refactored to use shared keyring module
+  * 1Password: store/get/delete token in keyring
+  * Passbolt: store/get/delete passphrase in keyring
+  * KeePassXC: store/get/delete KDBX password in keyring
+- Added Auto-Load Credentials from Keyring on settings load
+- Added secret-tool availability check when toggling keyring option
+- Added Passbolt Server URL Setting and UI in Secrets tab
+- Added Unified Credential Save Options with mutual exclusion
+- Fixed Secret Lookup Key Mismatch across all secret backends
+- Fixed Passbolt Server Address Always None
+- Fixed Passbolt "Open Password Vault" URL using configured server
+- Fixed Variable Secrets Ignoring Preferred Backend
+- Fixed Bitwarden Folder Parsing Crash on null folder IDs
+- Fixed Bitwarden Vault Auto-Unlock for variable save/load
+- Improved workspace dependency consistency (regex to workspace)
+- Removed unused picky pin from rustconn-core
+- Updated dependencies: clap, clap_builder, clap_lex, deranged
 
 * Wed Feb 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.1-0
 - Version bump to 0.8.1
