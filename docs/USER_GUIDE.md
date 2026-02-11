@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.8.1** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.8.2** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, Telnet protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -542,18 +542,36 @@ Access via **Ctrl+,** or Menu → **Settings**
 - **Bitwarden Settings:**
   - Vault status and unlock button
   - Master password persistence (encrypted in settings)
-  - Save to system keyring option (recommended)
+  - Save to system keyring option (recommended, requires `libsecret-tools`)
+  - Auto-unlock from keyring on startup when vault is locked
   - API key authentication for automation/2FA (FIDO2, Duo)
   - Client ID and Client Secret fields
 - **1Password Settings:**
   - Account status indicator
   - Sign-in button (opens terminal for interactive `op signin`)
   - Supports biometric authentication via desktop app
-  - Service account support via `OP_SERVICE_ACCOUNT_TOKEN`
+  - Service account token entry (`OP_SERVICE_ACCOUNT_TOKEN`)
+  - Save token to system keyring (auto-loads on startup)
+  - Save token encrypted in settings (machine-specific)
 - **Passbolt Settings:**
   - CLI detection and version display
+  - Server URL entry (auto-fills from `go-passbolt-cli` config)
+  - "Open Vault" button to open Passbolt web vault in browser
+  - GPG passphrase entry for decrypting credentials
+  - Save passphrase to system keyring (auto-loads on startup)
+  - Save passphrase encrypted in settings (machine-specific)
   - Server configuration status check (configured/not configured/auth failed)
   - Requires `passbolt configure` CLI setup before use
+- **KeePassXC KDBX Settings:**
+  - Database path and key file selection
+  - Password and/or key file authentication
+  - Save password to system keyring (auto-loads on startup)
+  - Save password encrypted in settings (machine-specific)
+- **System Keyring Requirements:**
+  - Requires `libsecret-tools` package (`secret-tool` binary)
+  - Works with GNOME Keyring, KDE Wallet, and other Secret Service providers
+  - "Save password" and "Save to system keyring" are mutually exclusive per backend
+  - If `secret-tool` is not installed, toggling keyring option shows a warning
 - **Installed Password Managers** — Auto-detected managers with versions (GNOME Secrets, KeePassXC, KeePass2, Bitwarden CLI, 1Password CLI, Passbolt CLI)
 
 **Password Source Defaults:**
@@ -805,7 +823,16 @@ rustconn-cli secret verify-keepass -d ~/vault.kdbx -k ~/key.key
    - Get API key from Bitwarden web vault → Settings → Security → Keys
    - Enable "Use API key authentication" in Settings → Secrets
    - Enter Client ID and Client Secret
-7. For password source, select "Bitwarden" in connection dialog
+7. Enable "Save to system keyring" for automatic vault unlock on startup
+8. For password source, select "Bitwarden" in connection dialog
+
+### System Keyring Not Working
+
+1. Install `libsecret-tools`: `sudo apt install libsecret-tools` (Debian/Ubuntu) or `sudo dnf install libsecret` (Fedora)
+2. Verify: `secret-tool --version`
+3. Ensure a Secret Service provider is running (GNOME Keyring, KDE Wallet)
+4. If "Install libsecret-tools for keyring" warning appears, install the package above
+5. "Save password" and "Save to system keyring" are mutually exclusive — only one can be active
 
 ### Passbolt Not Working
 

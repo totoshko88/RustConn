@@ -544,3 +544,40 @@ pub async fn signout() -> SecretResult<()> {
 
     Ok(())
 }
+
+// ============================================================================
+// Keyring storage for 1Password credentials
+// ============================================================================
+
+const KEY_OP_TOKEN: &str = "onepassword-token";
+
+/// Stores 1Password service account token in system keyring
+///
+/// # Errors
+/// Returns `SecretError` if storage fails
+pub async fn store_token_in_keyring(token: &SecretString) -> SecretResult<()> {
+    super::keyring::store(
+        KEY_OP_TOKEN,
+        token.expose_secret(),
+        "1Password Service Account Token",
+    )
+    .await
+}
+
+/// Retrieves 1Password service account token from system keyring
+///
+/// # Errors
+/// Returns `SecretError` if retrieval fails
+pub async fn get_token_from_keyring() -> SecretResult<Option<SecretString>> {
+    super::keyring::lookup(KEY_OP_TOKEN)
+        .await
+        .map(|opt| opt.map(SecretString::from))
+}
+
+/// Deletes 1Password service account token from system keyring
+///
+/// # Errors
+/// Returns `SecretError` if deletion fails
+pub async fn delete_token_from_keyring() -> SecretResult<()> {
+    super::keyring::clear(KEY_OP_TOKEN).await
+}

@@ -329,6 +329,26 @@ pub async fn get_passbolt_version() -> Option<PassboltVersion> {
     }
 }
 
+/// Reads the Passbolt server address from the CLI configuration file.
+///
+/// The `go-passbolt-cli` stores configuration in
+/// `~/.config/go-passbolt-cli/config.json` with a `serverAddress` field.
+fn read_passbolt_server_address() -> Option<String> {
+    let home = std::env::var("HOME").ok()?;
+    let config_path = std::path::PathBuf::from(home)
+        .join(".config")
+        .join("go-passbolt-cli")
+        .join("config.json");
+
+    let content = std::fs::read_to_string(config_path).ok()?;
+    let config: serde_json::Value = serde_json::from_str(&content).ok()?;
+    config
+        .get("serverAddress")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+}
+
 /// Gets comprehensive Passbolt status
 pub async fn get_passbolt_status() -> PassboltStatus {
     // Check if installed
@@ -352,6 +372,9 @@ pub async fn get_passbolt_status() -> PassboltStatus {
         };
     }
 
+    // Try to read server address from CLI config
+    let server_address = read_passbolt_server_address();
+
     // Check if configured by trying to list users
     let list_output = Command::new("passbolt")
         .args(["list", "user", "--json"])
@@ -363,7 +386,7 @@ pub async fn get_passbolt_status() -> PassboltStatus {
             installed: true,
             version,
             configured: true,
-            server_address: None,
+            server_address,
             status_message: "Configured".to_string(),
         },
         Ok(output) => {
@@ -379,7 +402,7 @@ pub async fn get_passbolt_status() -> PassboltStatus {
                 installed: true,
                 version,
                 configured: false,
-                server_address: None,
+                server_address,
                 status_message: message.to_string(),
             }
         }
@@ -387,8 +410,47 @@ pub async fn get_passbolt_status() -> PassboltStatus {
             installed: true,
             version,
             configured: false,
-            server_address: None,
+            server_address,
             status_message: "Error checking status".to_string(),
         },
     }
+}
+
+// ============================================================================
+// Keyring storage for Passbolt credentials
+// ============================================================================
+
+use secrecy::ExposeSecret;
+
+const KEY_PB_PASSPHRASE: &str = "passbolt-passphrase";
+
+/// Stores Passbolt GPG passphrase in system keyring
+///
+/// # Errors
+/// Returns `SecretError` if storage fails
+pub async fn store_passphrase_in_keyring(passphrase: &SecretString) -> SecretResult<()> {
+    super::keyring::store(
+        KEY_PB_PASSPHRASE,
+        passphrase.expose_secret(),
+        "Passbolt GPG Passphrase",
+    )
+    .await
+}
+
+/// Retrieves Passbolt GPG passphrase from system keyring
+///
+/// # Errors
+/// Returns `SecretError` if retrieval fails
+pub async fn get_passphrase_from_keyring() -> SecretResult<Option<SecretString>> {
+    super::keyring::lookup(KEY_PB_PASSPHRASE)
+        .await
+        .map(|opt| opt.map(SecretString::from))
+}
+
+/// Deletes Passbolt GPG passphrase from system keyring
+///
+/// # Errors
+/// Returns `SecretError` if deletion fails
+pub async fn delete_passphrase_from_keyring() -> SecretResult<()> {
+    super::keyring::clear(KEY_PB_PASSPHRASE).await
 }

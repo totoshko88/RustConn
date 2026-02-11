@@ -61,6 +61,24 @@ impl CredentialResolver {
         format!("rustconn/{identifier}")
     }
 
+    /// Generates a lookup key for libsecret/keyring storage
+    ///
+    /// The key format is: `{name} ({protocol})` matching the format used
+    /// by `resolve_from_keyring` for consistent store/retrieve behavior.
+    ///
+    /// # Arguments
+    /// * `connection` - The connection to generate a key for
+    ///
+    /// # Returns
+    /// A string key suitable for keyring entry lookup
+    #[must_use]
+    pub fn generate_keyring_key(connection: &Connection) -> String {
+        let protocol = connection.protocol_config.protocol_type();
+        let name =
+            crate::import::sanitize_imported_value(&connection.name.trim().replace('/', "-"));
+        format!("{} ({})", name, protocol.as_str().to_lowercase())
+    }
+
     /// Resolves credentials for a connection
     ///
     /// Resolution based on `password_source`:
@@ -211,22 +229,24 @@ impl CredentialResolver {
         &self,
         connection: &Connection,
     ) -> SecretResult<Option<Credentials>> {
-        // Use the same key format as used when saving: "{name} ({protocol})"
-        // Sanitize the name to strip any trailing escape sequences (e.g. \n
-        // from Remmina INI files) so the lookup key matches what was stored.
-        let protocol = connection.protocol_config.protocol_type();
-        let name =
-            crate::import::sanitize_imported_value(&connection.name.trim().replace('/', "-"));
-        let lookup_key = format!("{} ({})", name, protocol.as_str().to_lowercase());
-
-        // Try the new format first
+        // Primary: use the same key format as store_unified: "rustconn/{name}"
+        let lookup_key = Self::generate_lookup_key(connection);
         if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
             return Ok(Some(creds));
         }
 
-        // Fall back to legacy "rustconn/{name}" format for backward compatibility
-        let legacy_key = Self::generate_lookup_key(connection);
-        self.secret_manager.retrieve(&legacy_key).await
+        // Fallback: "{name} ({protocol})" format for backward compatibility
+        let protocol = connection.protocol_config.protocol_type();
+        let name =
+            crate::import::sanitize_imported_value(&connection.name.trim().replace('/', "-"));
+        let alt_key = format!("{} ({})", name, protocol.as_str().to_lowercase());
+        if let Some(creds) = self.secret_manager.retrieve(&alt_key).await? {
+            return Ok(Some(creds));
+        }
+
+        // Legacy: UUID-based key
+        let connection_id = connection.id.to_string();
+        self.secret_manager.retrieve(&connection_id).await
     }
 
     /// Resolves credentials from 1Password vault
@@ -234,15 +254,19 @@ impl CredentialResolver {
         &self,
         connection: &Connection,
     ) -> SecretResult<Option<Credentials>> {
-        // 1Password uses "RustConn: {connection_id}" format via entry_title()
-        // Try the connection ID format first (matches OnePasswordBackend::entry_title)
-        let lookup_key = connection.id.to_string();
-
+        // Primary: use the same key format as store_unified: "rustconn/{name}"
+        let lookup_key = Self::generate_lookup_key(connection);
         if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
             return Ok(Some(creds));
         }
 
-        // Also try "{name} ({protocol})" format for consistency with other backends
+        // Fallback: UUID-based key (matches OnePasswordBackend::entry_title)
+        let connection_id = connection.id.to_string();
+        if let Some(creds) = self.secret_manager.retrieve(&connection_id).await? {
+            return Ok(Some(creds));
+        }
+
+        // Legacy: "{name} ({protocol})" format
         let protocol = connection.protocol_config.protocol_type();
         let name = connection.name.replace('/', "-");
         let alt_key = format!("{} ({})", name, protocol.as_str().to_lowercase());
@@ -254,14 +278,19 @@ impl CredentialResolver {
         &self,
         connection: &Connection,
     ) -> SecretResult<Option<Credentials>> {
-        // Passbolt uses "RustConn: {connection_id}" format via entry_name()
-        let lookup_key = connection.id.to_string();
-
+        // Primary: use the same key format as store_unified: "rustconn/{name}"
+        let lookup_key = Self::generate_lookup_key(connection);
         if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
             return Ok(Some(creds));
         }
 
-        // Also try "{name} ({protocol})" format for consistency
+        // Fallback: UUID-based key (matches PassboltBackend::entry_name)
+        let connection_id = connection.id.to_string();
+        if let Some(creds) = self.secret_manager.retrieve(&connection_id).await? {
+            return Ok(Some(creds));
+        }
+
+        // Legacy: "{name} ({protocol})" format
         let protocol = connection.protocol_config.protocol_type();
         let name = connection.name.replace('/', "-");
         let alt_key = format!("{} ({})", name, protocol.as_str().to_lowercase());
@@ -525,8 +554,8 @@ impl CredentialResolver {
                 self.secret_manager.store(&lookup_key, credentials).await
             }
             SecretBackendType::LibSecret => {
-                let connection_id = connection.id.to_string();
-                self.secret_manager.store(&connection_id, credentials).await
+                let lookup_key = Self::generate_keyring_key(connection);
+                self.secret_manager.store(&lookup_key, credentials).await
             }
             SecretBackendType::Bitwarden
             | SecretBackendType::OnePassword
@@ -561,8 +590,8 @@ impl CredentialResolver {
                 self.secret_manager.store(&lookup_key, credentials).await
             }
             SecretBackendType::LibSecret => {
-                let connection_id = connection.id.to_string();
-                self.secret_manager.store(&connection_id, credentials).await
+                let lookup_key = Self::generate_keyring_key(connection);
+                self.secret_manager.store(&lookup_key, credentials).await
             }
             SecretBackendType::Bitwarden
             | SecretBackendType::OnePassword

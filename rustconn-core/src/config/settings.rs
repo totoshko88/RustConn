@@ -237,6 +237,30 @@ pub struct SecretSettings {
     /// Whether to save Bitwarden master password to libsecret
     #[serde(default)]
     pub bitwarden_save_to_keyring: bool,
+    /// Whether to save KeePass password to system keyring (libsecret/KWallet)
+    #[serde(default)]
+    pub kdbx_save_to_keyring: bool,
+    /// 1Password service account token (NOT serialized - runtime only)
+    #[serde(skip)]
+    pub onepassword_service_account_token: Option<SecretString>,
+    /// Encrypted 1Password service account token for persistence
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub onepassword_service_account_token_encrypted: Option<String>,
+    /// Whether to save 1Password token to system keyring
+    #[serde(default)]
+    pub onepassword_save_to_keyring: bool,
+    /// Passbolt GPG passphrase (NOT serialized - runtime only)
+    #[serde(skip)]
+    pub passbolt_passphrase: Option<SecretString>,
+    /// Encrypted Passbolt GPG passphrase for persistence
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub passbolt_passphrase_encrypted: Option<String>,
+    /// Whether to save Passbolt passphrase to system keyring
+    #[serde(default)]
+    pub passbolt_save_to_keyring: bool,
+    /// Passbolt server URL for web vault access
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub passbolt_server_url: Option<String>,
 }
 
 const fn default_true() -> bool {
@@ -263,6 +287,14 @@ impl Default for SecretSettings {
             bitwarden_client_secret: None,
             bitwarden_client_secret_encrypted: None,
             bitwarden_save_to_keyring: false,
+            kdbx_save_to_keyring: false,
+            onepassword_service_account_token: None,
+            onepassword_service_account_token_encrypted: None,
+            onepassword_save_to_keyring: false,
+            passbolt_passphrase: None,
+            passbolt_passphrase_encrypted: None,
+            passbolt_save_to_keyring: false,
+            passbolt_server_url: None,
         }
     }
 }
@@ -275,6 +307,11 @@ impl PartialEq for SecretSettings {
             && self.kdbx_enabled == other.kdbx_enabled
             && self.kdbx_key_file == other.kdbx_key_file
             && self.kdbx_use_key_file == other.kdbx_use_key_file
+            && self.kdbx_save_to_keyring == other.kdbx_save_to_keyring
+            && self.bitwarden_save_to_keyring == other.bitwarden_save_to_keyring
+            && self.onepassword_save_to_keyring == other.onepassword_save_to_keyring
+            && self.passbolt_save_to_keyring == other.passbolt_save_to_keyring
+            && self.passbolt_server_url == other.passbolt_server_url
         // Note: kdbx_password is intentionally excluded from equality comparison
         // as it's a runtime-only field that shouldn't affect settings equality
     }
@@ -534,6 +571,58 @@ impl SecretSettings {
     pub fn clear_bitwarden_password(&mut self) {
         self.bitwarden_password = None;
         self.bitwarden_password_encrypted = None;
+    }
+
+    /// Encrypts the 1Password service account token for storage
+    pub fn encrypt_onepassword_token(&mut self) {
+        if let Some(ref token) = self.onepassword_service_account_token {
+            use secrecy::ExposeSecret;
+            let key = Self::get_machine_key();
+            let encrypted = Self::xor_cipher(token.expose_secret().as_bytes(), &key);
+            self.onepassword_service_account_token_encrypted = Some(base64_encode(&encrypted));
+        }
+    }
+
+    /// Decrypts the stored 1Password service account token
+    /// Returns true if decryption was successful
+    pub fn decrypt_onepassword_token(&mut self) -> bool {
+        if let Some(ref encrypted) = self.onepassword_service_account_token_encrypted {
+            if let Some(decoded) = base64_decode(encrypted) {
+                let key = Self::get_machine_key();
+                let decrypted = Self::xor_cipher(&decoded, &key);
+                if let Ok(token_str) = String::from_utf8(decrypted) {
+                    self.onepassword_service_account_token = Some(SecretString::from(token_str));
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    /// Encrypts the Passbolt GPG passphrase for storage
+    pub fn encrypt_passbolt_passphrase(&mut self) {
+        if let Some(ref passphrase) = self.passbolt_passphrase {
+            use secrecy::ExposeSecret;
+            let key = Self::get_machine_key();
+            let encrypted = Self::xor_cipher(passphrase.expose_secret().as_bytes(), &key);
+            self.passbolt_passphrase_encrypted = Some(base64_encode(&encrypted));
+        }
+    }
+
+    /// Decrypts the stored Passbolt GPG passphrase
+    /// Returns true if decryption was successful
+    pub fn decrypt_passbolt_passphrase(&mut self) -> bool {
+        if let Some(ref encrypted) = self.passbolt_passphrase_encrypted {
+            if let Some(decoded) = base64_decode(encrypted) {
+                let key = Self::get_machine_key();
+                let decrypted = Self::xor_cipher(&decoded, &key);
+                if let Ok(pass_str) = String::from_utf8(decrypted) {
+                    self.passbolt_passphrase = Some(SecretString::from(pass_str));
+                    return true;
+                }
+            }
+        }
+        false
     }
 
     /// Gets a machine-specific key for encryption

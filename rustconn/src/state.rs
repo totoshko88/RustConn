@@ -2811,81 +2811,181 @@ pub fn rename_vault_credential(
 
 /// Saves a secret variable value to the configured vault backend.
 ///
-/// Uses the same backend selection logic as connection passwords:
-/// KeePass (kdbx) when enabled, otherwise libsecret.
+/// Respects `preferred_backend` from secret settings, using the same
+/// backend selection logic as connection passwords.
 pub fn save_variable_to_vault(
     settings: &rustconn_core::config::AppSettings,
     var_name: &str,
     password: &str,
 ) -> Result<(), String> {
-    let lookup_key = rustconn_core::variable_secret_key(var_name);
+    use rustconn_core::config::SecretBackendType;
+    use rustconn_core::secret::SecretBackend;
 
-    if settings.secrets.kdbx_enabled {
-        if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
-            let key_file = settings.secrets.kdbx_key_file.clone();
-            let kdbx = std::path::Path::new(kdbx_path);
-            let key = key_file.as_ref().map(|p| std::path::Path::new(p));
-            rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
-                kdbx,
-                None,
-                key,
-                &lookup_key,
-                "",
-                password,
-                None,
-            )
-        } else {
-            Err("KeePass enabled but no database file configured".to_string())
+    let lookup_key = rustconn_core::variable_secret_key(var_name);
+    let backend_type = select_variable_backend(&settings.secrets);
+
+    tracing::debug!(?backend_type, var_name, "Saving secret variable to vault");
+
+    let creds = rustconn_core::models::Credentials {
+        username: None,
+        password: Some(secrecy::SecretString::from(password.to_string())),
+        key_passphrase: None,
+        domain: None,
+    };
+
+    match backend_type {
+        SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
+            if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
+                let key_file = settings.secrets.kdbx_key_file.clone();
+                let kdbx = std::path::Path::new(kdbx_path);
+                let key = key_file.as_ref().map(|p| std::path::Path::new(p));
+                rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
+                    kdbx,
+                    None,
+                    key,
+                    &lookup_key,
+                    "",
+                    password,
+                    None,
+                )
+            } else {
+                Err("KeePass enabled but no database file configured".to_string())
+            }
         }
-    } else {
-        use rustconn_core::secret::SecretBackend;
-        let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
-        let creds = rustconn_core::models::Credentials {
-            username: None,
-            password: Some(secrecy::SecretString::from(password.to_string())),
-            key_passphrase: None,
-            domain: None,
-        };
-        crate::async_utils::with_runtime(|rt| {
-            rt.block_on(backend.store(&lookup_key, &creds))
-                .map_err(|e| format!("{e}"))
-        })?
+        SecretBackendType::Bitwarden => {
+            let secret_settings = settings.secrets.clone();
+            crate::async_utils::with_runtime(|rt| {
+                let backend = rt
+                    .block_on(rustconn_core::secret::auto_unlock(&secret_settings))
+                    .map_err(|e| format!("{e}"))?;
+                rt.block_on(backend.store(&lookup_key, &creds))
+                    .map_err(|e| format!("{e}"))
+            })?
+        }
+        SecretBackendType::OnePassword => {
+            let backend = rustconn_core::secret::OnePasswordBackend::new();
+            crate::async_utils::with_runtime(|rt| {
+                rt.block_on(backend.store(&lookup_key, &creds))
+                    .map_err(|e| format!("{e}"))
+            })?
+        }
+        SecretBackendType::Passbolt => {
+            let backend = rustconn_core::secret::PassboltBackend::new();
+            crate::async_utils::with_runtime(|rt| {
+                rt.block_on(backend.store(&lookup_key, &creds))
+                    .map_err(|e| format!("{e}"))
+            })?
+        }
+        SecretBackendType::LibSecret => {
+            let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
+            crate::async_utils::with_runtime(|rt| {
+                rt.block_on(backend.store(&lookup_key, &creds))
+                    .map_err(|e| format!("{e}"))
+            })?
+        }
     }
 }
 
 /// Loads a secret variable value from the configured vault backend.
 ///
-/// Uses the same backend selection logic as connection passwords:
-/// KeePass (kdbx) when enabled, otherwise libsecret.
+/// Respects `preferred_backend` from secret settings, using the same
+/// backend selection logic as connection passwords.
 pub fn load_variable_from_vault(
     settings: &rustconn_core::config::AppSettings,
     var_name: &str,
 ) -> Result<Option<String>, String> {
-    let lookup_key = rustconn_core::variable_secret_key(var_name);
+    use rustconn_core::config::SecretBackendType;
+    use rustconn_core::secret::SecretBackend;
 
-    if settings.secrets.kdbx_enabled {
-        if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
-            let key_file = settings.secrets.kdbx_key_file.clone();
-            let kdbx = std::path::Path::new(kdbx_path);
-            let key = key_file.as_ref().map(|p| std::path::Path::new(p));
-            rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
-                kdbx,
-                None,
-                key,
-                &lookup_key,
-                None,
-            )
-        } else {
-            Err("KeePass enabled but no database file configured".to_string())
+    let lookup_key = rustconn_core::variable_secret_key(var_name);
+    let backend_type = select_variable_backend(&settings.secrets);
+
+    tracing::debug!(
+        ?backend_type,
+        var_name,
+        "Loading secret variable from vault"
+    );
+
+    match backend_type {
+        SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
+            if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
+                let key_file = settings.secrets.kdbx_key_file.clone();
+                let kdbx = std::path::Path::new(kdbx_path);
+                let key = key_file.as_ref().map(|p| std::path::Path::new(p));
+                rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
+                    kdbx,
+                    None,
+                    key,
+                    &lookup_key,
+                    None,
+                )
+            } else {
+                Err("KeePass enabled but no database file configured".to_string())
+            }
         }
-    } else {
-        use rustconn_core::secret::SecretBackend;
-        let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
-        crate::async_utils::with_runtime(|rt| {
-            let creds = rt
-                .block_on(backend.retrieve(&lookup_key))
-                .map_err(|e| format!("{e}"))?;
-            Ok(creds.and_then(|c| c.expose_password().map(String::from)))
-        })?
+        SecretBackendType::Bitwarden => {
+            let secret_settings = settings.secrets.clone();
+            crate::async_utils::with_runtime(|rt| {
+                let backend = rt
+                    .block_on(rustconn_core::secret::auto_unlock(&secret_settings))
+                    .map_err(|e| format!("{e}"))?;
+                let creds = rt
+                    .block_on(backend.retrieve(&lookup_key))
+                    .map_err(|e| format!("{e}"))?;
+                Ok(creds.and_then(|c| c.expose_password().map(String::from)))
+            })?
+        }
+        SecretBackendType::OnePassword => {
+            let backend = rustconn_core::secret::OnePasswordBackend::new();
+            crate::async_utils::with_runtime(|rt| {
+                let creds = rt
+                    .block_on(backend.retrieve(&lookup_key))
+                    .map_err(|e| format!("{e}"))?;
+                Ok(creds.and_then(|c| c.expose_password().map(String::from)))
+            })?
+        }
+        SecretBackendType::Passbolt => {
+            let backend = rustconn_core::secret::PassboltBackend::new();
+            crate::async_utils::with_runtime(|rt| {
+                let creds = rt
+                    .block_on(backend.retrieve(&lookup_key))
+                    .map_err(|e| format!("{e}"))?;
+                Ok(creds.and_then(|c| c.expose_password().map(String::from)))
+            })?
+        }
+        SecretBackendType::LibSecret => {
+            let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
+            crate::async_utils::with_runtime(|rt| {
+                let creds = rt
+                    .block_on(backend.retrieve(&lookup_key))
+                    .map_err(|e| format!("{e}"))?;
+                Ok(creds.and_then(|c| c.expose_password().map(String::from)))
+            })?
+        }
+    }
+}
+
+/// Selects the appropriate storage backend for variable secrets.
+///
+/// Mirrors `CredentialResolver::select_storage_backend` logic.
+fn select_variable_backend(
+    secrets: &rustconn_core::config::SecretSettings,
+) -> rustconn_core::config::SecretBackendType {
+    use rustconn_core::config::SecretBackendType;
+
+    match secrets.preferred_backend {
+        SecretBackendType::Bitwarden => SecretBackendType::Bitwarden,
+        SecretBackendType::OnePassword => SecretBackendType::OnePassword,
+        SecretBackendType::Passbolt => SecretBackendType::Passbolt,
+        SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
+            if secrets.kdbx_enabled && secrets.kdbx_path.is_some() {
+                SecretBackendType::KdbxFile
+            } else if secrets.enable_fallback {
+                SecretBackendType::LibSecret
+            } else {
+                secrets.preferred_backend
+            }
+        }
+        SecretBackendType::LibSecret => SecretBackendType::LibSecret,
     }
 }

@@ -47,6 +47,8 @@ pub struct SecretsPageWidgets {
     pub bitwarden_use_api_key_check: Switch,
     pub bitwarden_client_id_entry: Entry,
     pub bitwarden_client_secret_entry: PasswordEntry,
+    /// Detected Bitwarden CLI command path
+    pub bitwarden_cmd: String,
     // 1Password widgets
     pub onepassword_group: adw::PreferencesGroup,
     pub onepassword_status_label: Label,
@@ -54,6 +56,17 @@ pub struct SecretsPageWidgets {
     // Passbolt widgets
     pub passbolt_group: adw::PreferencesGroup,
     pub passbolt_status_label: Label,
+    pub passbolt_server_url_entry: Entry,
+    pub passbolt_open_vault_button: Button,
+    pub passbolt_passphrase_entry: PasswordEntry,
+    pub passbolt_save_password_check: CheckButton,
+    pub passbolt_save_to_keyring_check: CheckButton,
+    // Unified credential save widgets for KeePassXC
+    pub kdbx_save_to_keyring_check: CheckButton,
+    // 1Password credential widgets
+    pub onepassword_token_entry: PasswordEntry,
+    pub onepassword_save_password_check: CheckButton,
+    pub onepassword_save_to_keyring_check: CheckButton,
 }
 
 /// Creates the secrets settings page using AdwPreferencesPage
@@ -253,6 +266,44 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     bw_save_to_keyring_row.add_prefix(&bitwarden_save_to_keyring_check);
     bitwarden_group.add(&bw_save_to_keyring_row);
 
+    let bitwarden_status_label = Label::builder()
+        .label(if bitwarden_installed {
+            "Checking status..."
+        } else {
+            "Not installed"
+        })
+        .halign(gtk4::Align::End)
+        .valign(gtk4::Align::Center)
+        .css_classes(["dim-label"])
+        .build();
+
+    // Mutual exclusion: save password <-> save to keyring (Bitwarden)
+    {
+        let keyring_check = bitwarden_save_to_keyring_check.clone();
+        bitwarden_save_password_check.connect_toggled(move |check| {
+            if check.is_active() {
+                keyring_check.set_active(false);
+            }
+        });
+        let save_check = bitwarden_save_password_check.clone();
+        let status_label = bitwarden_status_label.clone();
+        bitwarden_save_to_keyring_check.connect_toggled(move |check| {
+            if check.is_active() {
+                if !is_secret_tool_available_sync() {
+                    check.set_active(false);
+                    update_status_label(
+                        &status_label,
+                        "Install libsecret-tools for keyring",
+                        "warning",
+                    );
+                    tracing::warn!("secret-tool not found, cannot use system keyring");
+                    return;
+                }
+                save_check.set_active(false);
+            }
+        });
+    }
+
     // API Key authentication switch
     let bitwarden_use_api_key_check = Switch::builder().valign(gtk4::Align::Center).build();
     let bw_use_api_key_row = adw::ActionRow::builder()
@@ -305,17 +356,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     bw_client_id_row.set_visible(false);
     bw_client_secret_row.set_visible(false);
 
-    let bitwarden_status_label = Label::builder()
-        .label(if bitwarden_installed {
-            "Checking status..."
-        } else {
-            "Not installed"
-        })
-        .halign(gtk4::Align::End)
-        .valign(gtk4::Align::Center)
-        .css_classes(["dim-label"])
-        .build();
-
     let bitwarden_unlock_button = Button::builder()
         .label("Unlock")
         .valign(gtk4::Align::Center)
@@ -343,15 +383,27 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         let status_label = bitwarden_status_label.clone();
         let password_entry = bitwarden_password_entry.clone();
         let bw_cmd = bitwarden_cmd.clone();
+        let save_to_keyring_check = bitwarden_save_to_keyring_check.clone();
         bitwarden_unlock_button.connect_clicked(move |button| {
-            let password = password_entry.text();
-            if password.is_empty() {
+            let password_text = password_entry.text();
+            let save_to_keyring = save_to_keyring_check.is_active();
+
+            // If password field is empty, try loading from keyring
+            let password = if password_text.is_empty() && save_to_keyring {
+                if let Some(val) = get_bw_password_from_keyring() {
+                    val
+                } else {
+                    update_status_label(&status_label, "Enter password", "warning");
+                    return;
+                }
+            } else if password_text.is_empty() {
                 update_status_label(&status_label, "Enter password", "warning");
                 return;
-            }
+            } else {
+                password_text.to_string()
+            };
 
             button.set_sensitive(false);
-            status_label.set_text("Unlocking...");
             update_status_label(&status_label, "Unlocking...", "dim-label");
 
             // Run unlock with password via environment variable
@@ -359,19 +411,22 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 .arg("unlock")
                 .arg("--passwordenv")
                 .arg("BW_PASSWORD")
-                .env("BW_PASSWORD", password.as_str())
+                .env("BW_PASSWORD", &password)
                 .output();
 
             match result {
                 Ok(output) => {
                     if output.status.success() {
                         let stdout = String::from_utf8_lossy(&output.stdout);
-                        // Extract session key from output
                         if let Some(session_key) = extract_session_key(&stdout) {
-                            // Set session key in environment for future commands
                             std::env::set_var("BW_SESSION", &session_key);
                             update_status_label(&status_label, "Unlocked", "success");
                             password_entry.set_text("");
+
+                            // Save to keyring if checkbox is active
+                            if save_to_keyring {
+                                save_bw_password_to_keyring(&password);
+                            }
                         } else {
                             update_status_label(&status_label, "Unlocked", "success");
                         }
@@ -396,7 +451,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         });
     }
 
-    // Check Bitwarden status synchronously (runs in idle callback to not block UI)
+    // Check Bitwarden status and auto-unlock if keyring password available
     if bitwarden_installed {
         let status_label = bitwarden_status_label.clone();
         let bw_cmd_clone = bitwarden_cmd.clone();
@@ -419,6 +474,43 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .description("Configure 1Password CLI integration")
         .build();
 
+    // Service account token entry
+    let onepassword_token_entry = PasswordEntry::builder()
+        .placeholder_text("Service account token")
+        .hexpand(true)
+        .show_peek_icon(true)
+        .valign(gtk4::Align::Center)
+        .build();
+    let op_token_row = adw::ActionRow::builder()
+        .title("Service Account Token")
+        .subtitle("For headless/automated access (OP_SERVICE_ACCOUNT_TOKEN)")
+        .build();
+    op_token_row.add_suffix(&onepassword_token_entry);
+    op_token_row.set_activatable_widget(Some(&onepassword_token_entry));
+    onepassword_group.add(&op_token_row);
+
+    // Save password checkbox (encrypted in settings file)
+    let onepassword_save_password_check =
+        CheckButton::builder().valign(gtk4::Align::Center).build();
+    let op_save_password_row = adw::ActionRow::builder()
+        .title("Save token")
+        .subtitle("Encrypted storage (machine-specific)")
+        .activatable_widget(&onepassword_save_password_check)
+        .build();
+    op_save_password_row.add_prefix(&onepassword_save_password_check);
+    onepassword_group.add(&op_save_password_row);
+
+    // Save to system keyring checkbox
+    let onepassword_save_to_keyring_check =
+        CheckButton::builder().valign(gtk4::Align::Center).build();
+    let op_save_to_keyring_row = adw::ActionRow::builder()
+        .title("Save to system keyring")
+        .subtitle("Store in GNOME Keyring / KDE Wallet (recommended)")
+        .activatable_widget(&onepassword_save_to_keyring_check)
+        .build();
+    op_save_to_keyring_row.add_prefix(&onepassword_save_to_keyring_check);
+    onepassword_group.add(&op_save_to_keyring_row);
+
     let onepassword_status_label = Label::builder()
         .label(if onepassword_installed {
             "Checking status..."
@@ -429,6 +521,33 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
         .build();
+
+    // Mutual exclusion: save token <-> save to keyring (1Password)
+    {
+        let keyring_check = onepassword_save_to_keyring_check.clone();
+        onepassword_save_password_check.connect_toggled(move |check| {
+            if check.is_active() {
+                keyring_check.set_active(false);
+            }
+        });
+        let save_check = onepassword_save_password_check.clone();
+        let status_label = onepassword_status_label.clone();
+        onepassword_save_to_keyring_check.connect_toggled(move |check| {
+            if check.is_active() {
+                if !is_secret_tool_available_sync() {
+                    check.set_active(false);
+                    update_status_label(
+                        &status_label,
+                        "Install libsecret-tools for keyring",
+                        "warning",
+                    );
+                    tracing::warn!("secret-tool not found, cannot use system keyring");
+                    return;
+                }
+                save_check.set_active(false);
+            }
+        });
+    }
 
     let onepassword_signin_button = Button::builder()
         .label("Sign In")
@@ -518,6 +637,55 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .description("Configure Passbolt CLI integration")
         .build();
 
+    // Server URL entry
+    let passbolt_server_url_entry = Entry::builder()
+        .placeholder_text("https://passbolt.example.org")
+        .hexpand(true)
+        .valign(gtk4::Align::Center)
+        .build();
+    let pb_url_row = adw::ActionRow::builder()
+        .title("Server URL")
+        .subtitle("Passbolt web vault address")
+        .build();
+    pb_url_row.add_suffix(&passbolt_server_url_entry);
+    pb_url_row.set_activatable_widget(Some(&passbolt_server_url_entry));
+    passbolt_group.add(&pb_url_row);
+
+    // GPG Passphrase entry
+    let passbolt_passphrase_entry = PasswordEntry::builder()
+        .placeholder_text("GPG private key passphrase")
+        .hexpand(true)
+        .show_peek_icon(true)
+        .valign(gtk4::Align::Center)
+        .build();
+    let pb_passphrase_row = adw::ActionRow::builder()
+        .title("GPG Passphrase")
+        .subtitle("Required to decrypt credentials from Passbolt")
+        .build();
+    pb_passphrase_row.add_suffix(&passbolt_passphrase_entry);
+    pb_passphrase_row.set_activatable_widget(Some(&passbolt_passphrase_entry));
+    passbolt_group.add(&pb_passphrase_row);
+
+    // Save passphrase checkbox (encrypted in settings file)
+    let passbolt_save_password_check = CheckButton::builder().valign(gtk4::Align::Center).build();
+    let pb_save_password_row = adw::ActionRow::builder()
+        .title("Save passphrase")
+        .subtitle("Encrypted storage (machine-specific)")
+        .activatable_widget(&passbolt_save_password_check)
+        .build();
+    pb_save_password_row.add_prefix(&passbolt_save_password_check);
+    passbolt_group.add(&pb_save_password_row);
+
+    // Save to system keyring checkbox
+    let passbolt_save_to_keyring_check = CheckButton::builder().valign(gtk4::Align::Center).build();
+    let pb_save_to_keyring_row = adw::ActionRow::builder()
+        .title("Save to system keyring")
+        .subtitle("Store in GNOME Keyring / KDE Wallet (recommended)")
+        .activatable_widget(&passbolt_save_to_keyring_check)
+        .build();
+    pb_save_to_keyring_row.add_prefix(&passbolt_save_to_keyring_check);
+    passbolt_group.add(&pb_save_to_keyring_row);
+
     let passbolt_status_label = Label::builder()
         .label(if passbolt_installed {
             "Checking status..."
@@ -529,16 +697,89 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .css_classes(["dim-label"])
         .build();
 
+    // Mutual exclusion: save passphrase <-> save to keyring (Passbolt)
+    {
+        let keyring_check = passbolt_save_to_keyring_check.clone();
+        passbolt_save_password_check.connect_toggled(move |check| {
+            if check.is_active() {
+                keyring_check.set_active(false);
+            }
+        });
+        let save_check = passbolt_save_password_check.clone();
+        let status_label = passbolt_status_label.clone();
+        passbolt_save_to_keyring_check.connect_toggled(move |check| {
+            if check.is_active() {
+                if !is_secret_tool_available_sync() {
+                    check.set_active(false);
+                    update_status_label(
+                        &status_label,
+                        "Install libsecret-tools for keyring",
+                        "warning",
+                    );
+                    tracing::warn!("secret-tool not found, cannot use system keyring");
+                    return;
+                }
+                save_check.set_active(false);
+            }
+        });
+    }
+
+    let passbolt_open_vault_button = Button::builder()
+        .label("Open Vault")
+        .valign(gtk4::Align::Center)
+        .sensitive(passbolt_installed)
+        .tooltip_text("Open Passbolt web vault in browser")
+        .build();
+
+    let pb_status_box = GtkBox::builder()
+        .orientation(Orientation::Horizontal)
+        .spacing(12)
+        .valign(gtk4::Align::Center)
+        .build();
+    pb_status_box.append(&passbolt_status_label);
+    pb_status_box.append(&passbolt_open_vault_button);
+
     let pb_status_row = adw::ActionRow::builder()
         .title("Server Status")
         .subtitle("Configure with 'passbolt configure' in terminal")
         .build();
-    pb_status_row.add_suffix(&passbolt_status_label);
+    pb_status_row.add_suffix(&pb_status_box);
     passbolt_group.add(&pb_status_row);
 
-    // Check Passbolt status synchronously
+    // Connect Open Vault button
+    {
+        let url_entry = passbolt_server_url_entry.clone();
+        let status_label = passbolt_status_label.clone();
+        passbolt_open_vault_button.connect_clicked(move |_| {
+            let url_text = url_entry.text();
+            let url = if url_text.is_empty() {
+                // Try reading from CLI config as fallback
+                read_passbolt_server_url_sync()
+            } else {
+                Some(url_text.to_string())
+            };
+
+            if let Some(ref server_url) = url {
+                let result = std::process::Command::new("xdg-open")
+                    .arg(server_url)
+                    .spawn();
+                if result.is_err() {
+                    update_status_label(&status_label, "Failed to open browser", "error");
+                }
+            } else {
+                update_status_label(
+                    &status_label,
+                    "Enter server URL or run 'passbolt configure'",
+                    "warning",
+                );
+            }
+        });
+    }
+
+    // Check Passbolt status synchronously and auto-fill server URL
     if passbolt_installed {
         let status_label = passbolt_status_label.clone();
+        let url_entry = passbolt_server_url_entry.clone();
         glib::idle_add_local_once(move || {
             let status = check_passbolt_status_sync();
             status_label.set_text(&status.0);
@@ -547,6 +788,13 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             status_label.remove_css_class("warning");
             status_label.remove_css_class("error");
             status_label.add_css_class(status.1);
+
+            // Auto-fill server URL from CLI config if entry is empty
+            if url_entry.text().is_empty() {
+                if let Some(server_url) = read_passbolt_server_url_sync() {
+                    url_entry.set_text(&server_url);
+                }
+            }
         });
     }
 
@@ -624,11 +872,55 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let kdbx_save_password_check = CheckButton::builder().valign(gtk4::Align::Center).build();
     let save_password_row = adw::ActionRow::builder()
         .title("Save password")
-        .subtitle("Encrypted storage")
+        .subtitle("Encrypted storage (machine-specific)")
         .activatable_widget(&kdbx_save_password_check)
         .build();
     save_password_row.add_prefix(&kdbx_save_password_check);
     auth_group.add(&save_password_row);
+
+    // Save to system keyring checkbox (mutually exclusive with save password)
+    let kdbx_save_to_keyring_check = CheckButton::builder().valign(gtk4::Align::Center).build();
+    let kdbx_save_to_keyring_row = adw::ActionRow::builder()
+        .title("Save to system keyring")
+        .subtitle("Store in GNOME Keyring / KDE Wallet (recommended)")
+        .activatable_widget(&kdbx_save_to_keyring_check)
+        .build();
+    kdbx_save_to_keyring_row.add_prefix(&kdbx_save_to_keyring_check);
+    auth_group.add(&kdbx_save_to_keyring_row);
+
+    let kdbx_status_label = Label::builder()
+        .label("Not connected")
+        .halign(gtk4::Align::End)
+        .valign(gtk4::Align::Center)
+        .css_classes(["dim-label"])
+        .build();
+
+    // Mutual exclusion: save password <-> save to keyring (KeePassXC)
+    {
+        let keyring_check = kdbx_save_to_keyring_check.clone();
+        kdbx_save_password_check.connect_toggled(move |check| {
+            if check.is_active() {
+                keyring_check.set_active(false);
+            }
+        });
+        let save_check = kdbx_save_password_check.clone();
+        let status_label = kdbx_status_label.clone();
+        kdbx_save_to_keyring_check.connect_toggled(move |check| {
+            if check.is_active() {
+                if !is_secret_tool_available_sync() {
+                    check.set_active(false);
+                    update_status_label(
+                        &status_label,
+                        "Install libsecret-tools for keyring",
+                        "warning",
+                    );
+                    tracing::warn!("secret-tool not found, cannot use system keyring");
+                    return;
+                }
+                save_check.set_active(false);
+            }
+        });
+    }
 
     // Use key file switch
     let kdbx_use_key_file_check = Switch::builder().valign(gtk4::Align::Center).build();
@@ -672,13 +964,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .label("Check")
         .valign(gtk4::Align::Center)
         .tooltip_text("Test database connection")
-        .build();
-
-    let kdbx_status_label = Label::builder()
-        .label("Not connected")
-        .halign(gtk4::Align::End)
-        .valign(gtk4::Align::Center)
-        .css_classes(["dim-label"])
         .build();
 
     let status_box = GtkBox::builder()
@@ -995,11 +1280,21 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         bitwarden_use_api_key_check,
         bitwarden_client_id_entry,
         bitwarden_client_secret_entry,
+        bitwarden_cmd,
         onepassword_group,
         onepassword_status_label,
         onepassword_signin_button,
         passbolt_group,
         passbolt_status_label,
+        passbolt_server_url_entry,
+        passbolt_open_vault_button,
+        passbolt_passphrase_entry,
+        passbolt_save_password_check,
+        passbolt_save_to_keyring_check,
+        kdbx_save_to_keyring_check,
+        onepassword_token_entry,
+        onepassword_save_password_check,
+        onepassword_save_to_keyring_check,
     }
 }
 
@@ -1100,6 +1395,23 @@ fn check_passbolt_status_sync() -> (String, &'static str) {
     }
 }
 
+/// Reads the Passbolt server URL from the CLI configuration file (sync)
+fn read_passbolt_server_url_sync() -> Option<String> {
+    let home = std::env::var("HOME").ok()?;
+    let config_path = std::path::PathBuf::from(home)
+        .join(".config")
+        .join("go-passbolt-cli")
+        .join("config.json");
+
+    let content = std::fs::read_to_string(config_path).ok()?;
+    let config: serde_json::Value = serde_json::from_str(&content).ok()?;
+    config
+        .get("serverAddress")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+}
+
 /// Extracts session key from `bw unlock` output
 fn extract_session_key(output: &str) -> Option<String> {
     // Output format: export BW_SESSION="<session_key>"
@@ -1135,6 +1447,161 @@ fn update_status_label(label: &Label, text: &str, css_class: &str) {
     label.remove_css_class("error");
     label.remove_css_class("dim-label");
     label.add_css_class(css_class);
+}
+
+/// Saves Bitwarden master password to system keyring via rustconn-core
+fn save_bw_password_to_keyring(password: &str) {
+    let secret = secrecy::SecretString::from(password.to_owned());
+    match crate::async_utils::with_runtime(|rt| {
+        rt.block_on(rustconn_core::secret::store_master_password_in_keyring(
+            &secret,
+        ))
+    }) {
+        Ok(Ok(())) => {
+            tracing::info!("Bitwarden master password saved to keyring");
+        }
+        Ok(Err(e)) => {
+            tracing::warn!(%e, "Failed to save Bitwarden password to keyring");
+        }
+        Err(e) => {
+            tracing::warn!(%e, "Runtime error saving Bitwarden password to keyring");
+        }
+    }
+}
+
+/// Loads Bitwarden master password from system keyring via rustconn-core
+fn get_bw_password_from_keyring() -> Option<String> {
+    let result = crate::async_utils::with_runtime(|rt| {
+        rt.block_on(rustconn_core::secret::get_master_password_from_keyring())
+    });
+    match result {
+        Ok(Ok(Some(secret))) => {
+            use secrecy::ExposeSecret;
+            tracing::debug!("Bitwarden master password loaded from keyring");
+            Some(secret.expose_secret().to_string())
+        }
+        Ok(Ok(None)) => {
+            tracing::debug!("No Bitwarden password found in keyring");
+            None
+        }
+        Ok(Err(e)) => {
+            tracing::debug!(%e, "Failed to load Bitwarden password from keyring");
+            None
+        }
+        Err(e) => {
+            tracing::debug!(%e, "Runtime error loading Bitwarden password from keyring");
+            None
+        }
+    }
+}
+
+/// Checks whether `secret-tool` is available on the system (sync wrapper)
+fn is_secret_tool_available_sync() -> bool {
+    crate::async_utils::with_runtime(|rt| {
+        rt.block_on(rustconn_core::secret::keyring::is_secret_tool_available())
+    })
+    .unwrap_or(false)
+}
+
+/// Saves 1Password service account token to system keyring
+fn save_op_token_to_keyring(token: &str) {
+    let secret = secrecy::SecretString::from(token.to_owned());
+    match crate::async_utils::with_runtime(|rt| {
+        rt.block_on(rustconn_core::secret::store_token_in_keyring(&secret))
+    }) {
+        Ok(Ok(())) => {
+            tracing::info!("1Password token saved to keyring");
+        }
+        Ok(Err(e)) => {
+            tracing::warn!(%e, "Failed to save 1Password token to keyring");
+        }
+        Err(e) => {
+            tracing::warn!(%e, "Runtime error saving 1Password token");
+        }
+    }
+}
+
+/// Loads 1Password service account token from system keyring
+fn get_op_token_from_keyring() -> Option<String> {
+    let result = crate::async_utils::with_runtime(|rt| {
+        rt.block_on(rustconn_core::secret::get_token_from_keyring())
+    });
+    match result {
+        Ok(Ok(Some(secret))) => {
+            use secrecy::ExposeSecret;
+            tracing::debug!("1Password token loaded from keyring");
+            Some(secret.expose_secret().to_string())
+        }
+        Ok(Ok(None)) | Ok(Err(_)) | Err(_) => None,
+    }
+}
+
+/// Saves Passbolt GPG passphrase to system keyring
+fn save_pb_passphrase_to_keyring(passphrase: &str) {
+    let secret = secrecy::SecretString::from(passphrase.to_owned());
+    match crate::async_utils::with_runtime(|rt| {
+        rt.block_on(rustconn_core::secret::store_passphrase_in_keyring(&secret))
+    }) {
+        Ok(Ok(())) => {
+            tracing::info!("Passbolt passphrase saved to keyring");
+        }
+        Ok(Err(e)) => {
+            tracing::warn!(%e, "Failed to save Passbolt passphrase to keyring");
+        }
+        Err(e) => {
+            tracing::warn!(%e, "Runtime error saving Passbolt passphrase");
+        }
+    }
+}
+
+/// Loads Passbolt GPG passphrase from system keyring
+fn get_pb_passphrase_from_keyring() -> Option<String> {
+    let result = crate::async_utils::with_runtime(|rt| {
+        rt.block_on(rustconn_core::secret::get_passphrase_from_keyring())
+    });
+    match result {
+        Ok(Ok(Some(secret))) => {
+            use secrecy::ExposeSecret;
+            tracing::debug!("Passbolt passphrase loaded from keyring");
+            Some(secret.expose_secret().to_string())
+        }
+        Ok(Ok(None)) | Ok(Err(_)) | Err(_) => None,
+    }
+}
+
+/// Saves KDBX database password to system keyring
+fn save_kdbx_password_to_keyring(password: &str) {
+    let secret = secrecy::SecretString::from(password.to_owned());
+    match crate::async_utils::with_runtime(|rt| {
+        rt.block_on(rustconn_core::secret::store_kdbx_password_in_keyring(
+            &secret,
+        ))
+    }) {
+        Ok(Ok(())) => {
+            tracing::info!("KDBX password saved to keyring");
+        }
+        Ok(Err(e)) => {
+            tracing::warn!(%e, "Failed to save KDBX password to keyring");
+        }
+        Err(e) => {
+            tracing::warn!(%e, "Runtime error saving KDBX password");
+        }
+    }
+}
+
+/// Loads KDBX database password from system keyring
+fn get_kdbx_password_from_keyring() -> Option<String> {
+    let result = crate::async_utils::with_runtime(|rt| {
+        rt.block_on(rustconn_core::secret::get_kdbx_password_from_keyring())
+    });
+    match result {
+        Ok(Ok(Some(secret))) => {
+            use secrecy::ExposeSecret;
+            tracing::debug!("KDBX password loaded from keyring");
+            Some(secret.expose_secret().to_string())
+        }
+        Ok(Ok(None)) | Ok(Err(_)) | Err(_) => None,
+    }
 }
 
 /// Loads secret settings into UI controls
@@ -1203,6 +1670,44 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
             .set_text(client_secret.expose_secret());
     }
 
+    // Load Passbolt server URL
+    if let Some(ref url) = settings.passbolt_server_url {
+        widgets.passbolt_server_url_entry.set_text(url);
+    }
+
+    // Load KeePassXC save to keyring state
+    widgets
+        .kdbx_save_to_keyring_check
+        .set_active(settings.kdbx_save_to_keyring);
+    // If save_to_keyring is active, uncheck save_password (mutual exclusion)
+    if settings.kdbx_save_to_keyring {
+        widgets.kdbx_save_password_check.set_active(false);
+    }
+
+    // Load 1Password service account token if available
+    if let Some(ref token) = settings.onepassword_service_account_token {
+        use secrecy::ExposeSecret;
+        widgets
+            .onepassword_token_entry
+            .set_text(token.expose_secret());
+    }
+    widgets.onepassword_save_password_check.set_active(
+        settings
+            .onepassword_service_account_token_encrypted
+            .is_some(),
+    );
+    widgets
+        .onepassword_save_to_keyring_check
+        .set_active(settings.onepassword_save_to_keyring);
+
+    // Load Passbolt passphrase save state
+    widgets
+        .passbolt_save_password_check
+        .set_active(settings.passbolt_passphrase_encrypted.is_some());
+    widgets
+        .passbolt_save_to_keyring_check
+        .set_active(settings.passbolt_save_to_keyring);
+
     // Update visibility based on loaded settings
     // Show KDBX groups only when KeePassXC is selected (index 0)
     let show_kdbx = backend_index == 0;
@@ -1252,6 +1757,107 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
         "dim-label"
     };
     widgets.kdbx_status_label.add_css_class(status_css_class);
+
+    // Auto-unlock Bitwarden from keyring if configured
+    if settings.bitwarden_save_to_keyring {
+        let status_label = widgets.bitwarden_status_label.clone();
+        let bw_cmd = widgets.bitwarden_cmd.clone();
+        tracing::debug!(
+            bw_cmd = %bw_cmd,
+            "Scheduling Bitwarden auto-unlock from keyring"
+        );
+        glib::idle_add_local_once(move || {
+            tracing::debug!("Auto-unlock idle callback executing");
+            if let Some(password) = get_bw_password_from_keyring() {
+                tracing::debug!(
+                    bw_cmd = %bw_cmd,
+                    "Got keyring password, checking vault status"
+                );
+                let bw_status = check_bitwarden_status_sync(&bw_cmd);
+                if bw_status.0 != "Locked" {
+                    // Already unlocked or not logged in
+                    update_status_label(&status_label, &bw_status.0, bw_status.1);
+                    return;
+                }
+                update_status_label(&status_label, "Unlocking...", "dim-label");
+                let result = std::process::Command::new(&bw_cmd)
+                    .arg("unlock")
+                    .arg("--passwordenv")
+                    .arg("BW_PASSWORD")
+                    .env("BW_PASSWORD", &password)
+                    .output();
+                if let Ok(output) = result {
+                    if output.status.success() {
+                        let stdout = String::from_utf8_lossy(&output.stdout);
+                        if let Some(session_key) = extract_session_key(&stdout) {
+                            std::env::set_var("BW_SESSION", &session_key);
+                            update_status_label(&status_label, "Unlocked", "success");
+                            tracing::info!("Bitwarden auto-unlocked from keyring");
+                            return;
+                        }
+                        tracing::warn!("bw unlock succeeded but no session key found");
+                    } else {
+                        let stderr = String::from_utf8_lossy(&output.stderr);
+                        tracing::warn!(
+                            %stderr,
+                            "bw unlock from keyring failed"
+                        );
+                    }
+                }
+                update_status_label(&status_label, "Locked", "warning");
+            } else {
+                tracing::debug!("No keyring password found for auto-unlock");
+            }
+        });
+    }
+
+    // Auto-load 1Password token from keyring if configured
+    if settings.onepassword_save_to_keyring {
+        let token_entry = widgets.onepassword_token_entry.clone();
+        let status_label = widgets.onepassword_status_label.clone();
+        tracing::debug!("Scheduling 1Password token auto-load from keyring");
+        glib::idle_add_local_once(move || {
+            if let Some(token) = get_op_token_from_keyring() {
+                tracing::debug!("1Password token loaded from keyring");
+                token_entry.set_text(&token);
+                std::env::set_var("OP_SERVICE_ACCOUNT_TOKEN", &token);
+                update_status_label(&status_label, "Token loaded from keyring", "success");
+                tracing::info!("1Password token set from keyring");
+            } else {
+                tracing::debug!("No 1Password token found in keyring");
+            }
+        });
+    }
+
+    // Auto-load Passbolt passphrase from keyring if configured
+    if settings.passbolt_save_to_keyring {
+        let passphrase_entry = widgets.passbolt_passphrase_entry.clone();
+        tracing::debug!("Scheduling Passbolt passphrase auto-load from keyring");
+        glib::idle_add_local_once(move || {
+            if let Some(passphrase) = get_pb_passphrase_from_keyring() {
+                tracing::debug!("Passbolt passphrase loaded from keyring");
+                passphrase_entry.set_text(&passphrase);
+                tracing::info!("Passbolt passphrase restored from keyring");
+            } else {
+                tracing::debug!("No Passbolt passphrase found in keyring");
+            }
+        });
+    }
+
+    // Auto-load KeePassXC password from keyring if configured
+    if settings.kdbx_save_to_keyring {
+        let password_entry = widgets.kdbx_password_entry.clone();
+        tracing::debug!("Scheduling KDBX password auto-load from keyring");
+        glib::idle_add_local_once(move || {
+            if let Some(password) = get_kdbx_password_from_keyring() {
+                tracing::debug!("KDBX password loaded from keyring");
+                password_entry.set_text(&password);
+                tracing::info!("KDBX password restored from keyring");
+            } else {
+                tracing::debug!("No KDBX password found in keyring");
+            }
+        });
+    }
 }
 
 /// Collects secret settings from UI controls
@@ -1390,6 +1996,86 @@ pub fn collect_secret_settings(
         (None, None)
     };
 
+    // Collect 1Password service account token
+    let (onepassword_service_account_token, onepassword_service_account_token_encrypted) =
+        if widgets.onepassword_save_password_check.is_active() {
+            let token_text = widgets.onepassword_token_entry.text();
+            if token_text.is_empty() {
+                (
+                    None,
+                    settings
+                        .borrow()
+                        .secrets
+                        .onepassword_service_account_token_encrypted
+                        .clone(),
+                )
+            } else {
+                let token = secrecy::SecretString::new(token_text.to_string().into());
+                let encrypted = settings
+                    .borrow()
+                    .secrets
+                    .onepassword_service_account_token_encrypted
+                    .clone()
+                    .or_else(|| Some("encrypted_token_placeholder".to_string()));
+                (Some(token), encrypted)
+            }
+        } else {
+            (None, None)
+        };
+
+    // Collect Passbolt passphrase
+    let (passbolt_passphrase, passbolt_passphrase_encrypted) =
+        if widgets.passbolt_save_password_check.is_active() {
+            let passphrase_text = widgets.passbolt_passphrase_entry.text();
+            if passphrase_text.is_empty() {
+                (
+                    None,
+                    settings
+                        .borrow()
+                        .secrets
+                        .passbolt_passphrase_encrypted
+                        .clone(),
+                )
+            } else {
+                let passphrase = secrecy::SecretString::new(passphrase_text.to_string().into());
+                let encrypted = settings
+                    .borrow()
+                    .secrets
+                    .passbolt_passphrase_encrypted
+                    .clone()
+                    .or_else(|| Some("encrypted_passphrase_placeholder".to_string()));
+                (Some(passphrase), encrypted)
+            }
+        } else {
+            (None, None)
+        };
+
+    // Save credentials to keyring when save_to_keyring is active
+    if bitwarden_save_to_keyring {
+        let pw = widgets.bitwarden_password_entry.text();
+        if !pw.is_empty() {
+            save_bw_password_to_keyring(&pw);
+        }
+    }
+    if widgets.onepassword_save_to_keyring_check.is_active() {
+        let token = widgets.onepassword_token_entry.text();
+        if !token.is_empty() {
+            save_op_token_to_keyring(&token);
+        }
+    }
+    if widgets.passbolt_save_to_keyring_check.is_active() {
+        let pp = widgets.passbolt_passphrase_entry.text();
+        if !pp.is_empty() {
+            save_pb_passphrase_to_keyring(&pp);
+        }
+    }
+    if widgets.kdbx_save_to_keyring_check.is_active() {
+        let pw = widgets.kdbx_password_entry.text();
+        if !pw.is_empty() {
+            save_kdbx_password_to_keyring(&pw);
+        }
+    }
+
     SecretSettings {
         preferred_backend,
         enable_fallback: widgets.enable_fallback.is_active(),
@@ -1408,5 +2094,20 @@ pub fn collect_secret_settings(
         bitwarden_client_secret,
         bitwarden_client_secret_encrypted,
         bitwarden_save_to_keyring,
+        kdbx_save_to_keyring: widgets.kdbx_save_to_keyring_check.is_active(),
+        onepassword_service_account_token,
+        onepassword_service_account_token_encrypted,
+        onepassword_save_to_keyring: widgets.onepassword_save_to_keyring_check.is_active(),
+        passbolt_passphrase,
+        passbolt_passphrase_encrypted,
+        passbolt_save_to_keyring: widgets.passbolt_save_to_keyring_check.is_active(),
+        passbolt_server_url: {
+            let url_text = widgets.passbolt_server_url_entry.text();
+            if url_text.is_empty() {
+                None
+            } else {
+                Some(url_text.to_string())
+            }
+        },
     }
 }

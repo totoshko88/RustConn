@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-02-11
+
+### Added
+- **Shared Keyring Module** — New `rustconn-core::secret::keyring` module with generic `store()`, `lookup()`, `clear()`, and `is_secret_tool_available()` functions for all backends
+- **Keyring Support for All Secret Backends** — System keyring (GNOME Keyring / KDE Wallet) integration for all backends:
+  - Bitwarden: refactored to use shared keyring module
+  - 1Password: `store_token_in_keyring()` / `get_token_from_keyring()` / `delete_token_from_keyring()`
+  - Passbolt: `store_passphrase_in_keyring()` / `get_passphrase_from_keyring()` / `delete_passphrase_from_keyring()`
+  - KeePassXC: `store_kdbx_password_in_keyring()` / `get_kdbx_password_from_keyring()` / `delete_kdbx_password_from_keyring()`
+- **Auto-Load Credentials from Keyring** — On settings load, all backends with "Save to system keyring" enabled automatically restore credentials:
+  - 1Password: loads token and sets `OP_SERVICE_ACCOUNT_TOKEN` env var
+  - Passbolt: loads GPG passphrase into entry field
+  - KeePassXC: loads KDBX password into entry field
+  - Bitwarden: auto-unlocks vault (existing behavior)
+- **`secret-tool` Availability Check** — Toggling "Save to system keyring" for any backend now checks if `secret-tool` is installed; if missing, unchecks the checkbox and shows "Install libsecret-tools for keyring" warning
+- **Passbolt Server URL Setting** — New `passbolt_server_url` field in `SecretSettings` for configuring Passbolt server address
+- **Passbolt UI in Settings** — Secrets tab now includes Server URL entry and "Open Vault" button for Passbolt:
+  - Server URL auto-fills from `go-passbolt-cli` config on startup
+  - "Open Vault" button opens configured URL in browser
+- **Unified Credential Save Options** — All secret backends now offer consistent "Save password" (encrypted local) and "Save to system keyring" (libsecret/KWallet) options with mutual exclusion:
+  - KeePassXC: Added "Save to system keyring" checkbox alongside existing "Save password"
+  - Bitwarden: Added mutual exclusion between "Save password" and "Save to system keyring"
+  - 1Password: Added Service Account Token entry with "Save token" and "Save to system keyring"
+  - Passbolt: Added GPG Passphrase entry with "Save passphrase" and "Save to system keyring"
+- **New `SecretSettings` fields** — `kdbx_save_to_keyring`, `onepassword_service_account_token`, `onepassword_save_to_keyring`, `passbolt_passphrase`, `passbolt_save_to_keyring` for unified credential persistence
+
+### Fixed
+- **Secret Lookup Key Mismatch** — Fixed credential store/retrieve inconsistency across all secret backends:
+  - libsecret: `store_unified()` now uses `"{name} ({protocol})"` key format matching `resolve_from_keyring` lookup
+  - Bitwarden/1Password/Passbolt: resolve functions now try `rustconn/{name}` first (matching store), then UUID fallback, then `{name} ({protocol})`
+  - Previously stored credentials were unretrievable because store and retrieve used different lookup keys
+- **Passbolt Server Address Always None** — `get_passbolt_status()` now reads server address from `~/.config/go-passbolt-cli/config.json` via new `read_passbolt_server_address()` function
+- **Passbolt "Open Password Vault" URL** — Button now opens the configured Passbolt server URL instead of hardcoded `https://passbolt.local`; reads URL from Settings or falls back to CLI config
+- **Variable Secrets Ignoring Preferred Backend** — `save_variable_to_vault()` and `load_variable_from_vault()` now respect `preferred_backend` setting; previously they always used KeePass/libsecret regardless of configured backend (Bitwarden, 1Password, Passbolt)
+- **Bitwarden Folder Parsing Crash** — `BitwardenFolder.id` now accepts `null` values from Bitwarden CLI (e.g. "No Folder" system entry); previously caused `Failed to parse folders` error
+- **Bitwarden Vault Auto-Unlock** — Variable save/load now automatically unlocks Bitwarden vault using saved master password from keyring or encrypted settings; previously required manual `bw unlock` or `BW_SESSION` env var
+
+### Changed
+- **Dependencies** — Updated: `clap` 4.5.57→4.5.58, `clap_builder` 4.5.57→4.5.58, `clap_lex` 0.7.7→1.0.0, `deranged` 0.5.5→0.5.6
+
+### Removed
+- **Unused `picky` pin** — Removed `picky = "=7.0.0-rc.20"` version pin from `rustconn-core`; cargo resolves the correct version transitively via ironrdp/sspi without an explicit pin
+
+### Improved
+- **Workspace dependency consistency** — Moved `regex` in `rustconn` crate from inline `"1.11"` to `{ workspace = true }` for unified version management
+
 ## [0.8.1] - 2026-02-10
 
 ### Added

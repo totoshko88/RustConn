@@ -610,11 +610,13 @@ fn parse_flatpak_version(output: &str) -> Option<String> {
 ///
 /// # Arguments
 /// * `backend` - The secret backend type
+/// * `passbolt_server_url` - Optional Passbolt server URL from settings
 ///
 /// # Returns
-/// A tuple of (command, args) to launch the password manager, or None if not available
+/// A tuple of (command, args) to launch the password manager, or None
 pub fn get_password_manager_launch_command(
     backend: &crate::config::SecretBackendType,
+    passbolt_server_url: Option<&str>,
 ) -> Option<(String, Vec<String>)> {
     match backend {
         crate::config::SecretBackendType::KeePassXc
@@ -720,11 +722,11 @@ pub fn get_password_manager_launch_command(
             ))
         }
         crate::config::SecretBackendType::Passbolt => {
-            // Passbolt is web-based, open in browser
-            Some((
-                "xdg-open".to_string(),
-                vec!["https://passbolt.local".to_string()],
-            ))
+            // Passbolt is web-based, open configured server URL in browser
+            let url = passbolt_server_url
+                .filter(|u| !u.is_empty())
+                .unwrap_or("https://passbolt.local");
+            Some(("xdg-open".to_string(), vec![url.to_string()]))
         }
     }
 }
@@ -733,14 +735,19 @@ pub fn get_password_manager_launch_command(
 ///
 /// # Arguments
 /// * `backend` - The secret backend type
+/// * `passbolt_server_url` - Optional Passbolt server URL from settings
 ///
 /// # Returns
 /// Ok(()) if launched successfully
 ///
 /// # Errors
 /// Returns error message if no password manager is found or launch fails
-pub fn open_password_manager(backend: &crate::config::SecretBackendType) -> Result<(), String> {
-    let Some((cmd, args)) = get_password_manager_launch_command(backend) else {
+pub fn open_password_manager(
+    backend: &crate::config::SecretBackendType,
+    passbolt_server_url: Option<&str>,
+) -> Result<(), String> {
+    let Some((cmd, args)) = get_password_manager_launch_command(backend, passbolt_server_url)
+    else {
         return Err("No password manager application found".to_string());
     };
 

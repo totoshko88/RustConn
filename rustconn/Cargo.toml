@@ -19,7 +19,7 @@ libadwaita = { workspace = true }
 gdk4-wayland = { version = "0.10", optional = true }
 vte4 = { workspace = true, features = ["v0_72"] }
 uuid = { workspace = true }
-regex = "1.11"
+regex = { workspace = true }
 chrono = { workspace = true }
 serde_json = { workspace = true }
 secrecy = { workspace = true }

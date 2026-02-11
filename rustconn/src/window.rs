@@ -356,10 +356,13 @@ impl MainWindow {
             let state_ref = state_clone.borrow();
             let settings = state_ref.settings();
             let backend = settings.secrets.preferred_backend;
+            let passbolt_url = settings.secrets.passbolt_server_url.clone();
             drop(state_ref);
 
             // Open the password manager for the configured backend
-            if let Err(e) = rustconn_core::secret::open_password_manager(&backend) {
+            if let Err(e) =
+                rustconn_core::secret::open_password_manager(&backend, passbolt_url.as_deref())
+            {
                 eprintln!("Failed to open password manager: {e}");
             }
         });

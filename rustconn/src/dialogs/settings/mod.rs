@@ -22,7 +22,8 @@ pub use ui_tab::*;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
-    Box as GtkBox, Button, CheckButton, DropDown, Entry, Label, SpinButton, Spinner, Switch,
+    Box as GtkBox, Button, CheckButton, DropDown, Entry, Label, PasswordEntry, SpinButton, Spinner,
+    Switch,
 };
 use libadwaita as adw;
 use rustconn_core::config::AppSettings;
@@ -502,11 +503,21 @@ impl SettingsDialog {
                 bitwarden_use_api_key_check: bitwarden_use_api_key_check_clone.clone(),
                 bitwarden_client_id_entry: bitwarden_client_id_entry_clone.clone(),
                 bitwarden_client_secret_entry: bitwarden_client_secret_entry_clone.clone(),
+                bitwarden_cmd: String::new(), // dummy, not used in collect
                 onepassword_group: adw::PreferencesGroup::new(), // dummy
-                onepassword_status_label: Label::new(None),      // dummy
-                onepassword_signin_button: Button::new(),        // dummy
-                passbolt_group: adw::PreferencesGroup::new(),    // dummy
-                passbolt_status_label: Label::new(None),         // dummy
+                onepassword_status_label: Label::new(None), // dummy
+                onepassword_signin_button: Button::new(), // dummy
+                passbolt_group: adw::PreferencesGroup::new(), // dummy
+                passbolt_status_label: Label::new(None), // dummy
+                passbolt_server_url_entry: Entry::new(), // dummy
+                passbolt_open_vault_button: Button::new(), // dummy
+                passbolt_passphrase_entry: PasswordEntry::new(), // dummy
+                passbolt_save_password_check: CheckButton::new(), // dummy
+                passbolt_save_to_keyring_check: CheckButton::new(), // dummy
+                kdbx_save_to_keyring_check: CheckButton::new(), // dummy
+                onepassword_token_entry: PasswordEntry::new(), // dummy
+                onepassword_save_password_check: CheckButton::new(), // dummy
+                onepassword_save_to_keyring_check: CheckButton::new(), // dummy
             };
             let secrets = collect_secret_settings(&secrets_widgets_for_collect, &settings_clone);
 

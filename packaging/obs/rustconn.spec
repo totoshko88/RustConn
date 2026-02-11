@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.8.1
+Version:        0.8.2
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Zero Trust)
 License:        GPL-3.0-or-later
@@ -182,6 +182,9 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Wed Feb 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.2-0
+- Version bump to 0.8.2
+
 * Wed Feb 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.1-0
 - Version bump to 0.8.1
 - Added Passbolt secret backend via go-passbolt-cli (#6):

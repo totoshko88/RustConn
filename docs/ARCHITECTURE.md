@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.8.1** | Last updated: February 2026
+**Version 0.8.2** | Last updated: February 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -535,6 +535,34 @@ pub trait SecretBackend: Send + Sync {
 - `OnePasswordBackend`: 1Password via CLI
 - `PassboltBackend`: Passbolt via CLI (`go-passbolt-cli`)
 
+### System Keyring Integration
+
+The `keyring` module (`rustconn-core/src/secret/keyring.rs`) provides shared keyring storage via `secret-tool` (libsecret Secret Service API) for all backends that need system keyring integration:
+
+```rust
+// Check if secret-tool is available
+if keyring::is_secret_tool_available().await {
+    // Store a credential
+    keyring::store("bitwarden-master", &password, "Bitwarden Master Password").await?;
+
+    // Retrieve a credential
+    if let Some(value) = keyring::lookup("bitwarden-master").await? {
+        // Use value...
+    }
+
+    // Delete a credential
+    keyring::clear("bitwarden-master").await?;
+}
+```
+
+Each backend wraps these generic functions with typed helpers:
+- Bitwarden: `store_master_password_in_keyring()` / `get_master_password_from_keyring()`
+- 1Password: `store_token_in_keyring()` / `get_token_from_keyring()`
+- Passbolt: `store_passphrase_in_keyring()` / `get_passphrase_from_keyring()`
+- KeePassXC: `store_kdbx_password_in_keyring()` / `get_kdbx_password_from_keyring()`
+
+On settings load, backends with "Save to system keyring" enabled automatically restore credentials from the keyring (auto-unlock for Bitwarden, token/passphrase/password pre-fill for others).
+
 ### KeePass Hierarchical Storage
 
 The `hierarchy` module (`rustconn-core/src/secret/hierarchy.rs`) manages hierarchical password storage in KeePass databases, mirroring RustConn's group structure:
@@ -785,11 +813,12 @@ rustconn-core/src/
 │   ├── manager.rs         # SecretManager with bulk operations
 │   ├── resolver.rs        # CredentialResolver (Vault/Variable/Inherit resolution)
 │   ├── hierarchy.rs       # KeePass hierarchical paths
+│   ├── keyring.rs         # Shared system keyring via secret-tool
 │   ├── libsecret.rs       # GNOME Keyring backend
 │   ├── keepassxc.rs       # KeePassXC backend
 │   ├── bitwarden.rs       # Bitwarden backend (with keyring storage)
-│   ├── onepassword.rs     # 1Password backend
-│   ├── passbolt.rs        # Passbolt backend (go-passbolt-cli)
+│   ├── onepassword.rs     # 1Password backend (with keyring storage)
+│   ├── passbolt.rs        # Passbolt backend (with keyring storage)
 │   ├── detection.rs       # Password manager detection
 │   ├── status.rs          # KeePass status detection
 │   └── ...

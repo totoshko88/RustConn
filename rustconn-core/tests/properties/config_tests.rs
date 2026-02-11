@@ -361,19 +361,27 @@ fn arb_secret_settings() -> impl Strategy<Value = SecretSettings> {
                 enable_fallback,
                 kdbx_path,
                 kdbx_enabled,
-                kdbx_password: None,           // Password is never serialized
-                kdbx_password_encrypted: None, // Encrypted password for persistence
-                kdbx_key_file: None,           // Key file path
-                kdbx_use_key_file: false,      // Use key file instead of password
-                kdbx_use_password: true,       // Use password for authentication
-                bitwarden_password: None,      // Bitwarden password is never serialized
-                bitwarden_password_encrypted: None, // Encrypted Bitwarden password
+                kdbx_password: None,
+                kdbx_password_encrypted: None,
+                kdbx_key_file: None,
+                kdbx_use_key_file: false,
+                kdbx_use_password: true,
+                bitwarden_password: None,
+                bitwarden_password_encrypted: None,
                 bitwarden_use_api_key: false,
                 bitwarden_client_id: None,
                 bitwarden_client_id_encrypted: None,
                 bitwarden_client_secret: None,
                 bitwarden_client_secret_encrypted: None,
                 bitwarden_save_to_keyring: false,
+                kdbx_save_to_keyring: false,
+                onepassword_service_account_token: None,
+                onepassword_service_account_token_encrypted: None,
+                onepassword_save_to_keyring: false,
+                passbolt_passphrase: None,
+                passbolt_passphrase_encrypted: None,
+                passbolt_save_to_keyring: false,
+                passbolt_server_url: None,
             },
         )
 }
@@ -448,6 +456,14 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         bitwarden_client_secret: None,
                         bitwarden_client_secret_encrypted: None,
                         bitwarden_save_to_keyring: false,
+                        kdbx_save_to_keyring: false,
+                        onepassword_service_account_token: None,
+                        onepassword_service_account_token_encrypted: None,
+                        onepassword_save_to_keyring: false,
+                        passbolt_passphrase: None,
+                        passbolt_passphrase_encrypted: None,
+                        passbolt_save_to_keyring: false,
+                        passbolt_server_url: None,
                     },
                     ui: UiSettings {
                         color_scheme: ColorScheme::default(),
