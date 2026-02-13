@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Fri Feb 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.4
+
+- Version bump to 0.8.4
+  * Fixed WoL MAC Entry Disabled on Edit: WoL settings fields remained disabled
+    when editing existing connection and enabling WoL; removed per-widget
+    sensitivity calls conflicting with group-level sensitivity
+
+-------------------------------------------------------------------
 Fri Feb 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.3
 
 - Version bump to 0.8.3

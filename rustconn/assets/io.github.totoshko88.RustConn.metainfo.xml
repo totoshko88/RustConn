@@ -79,6 +79,14 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.8.4" date="2026-02-13">
+      <description>
+        <p>Version 0.8.4 - WoL Edit Fix:</p>
+        <ul>
+          <li>Fixed WoL settings fields remaining disabled when editing existing connection and enabling WoL</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.8.3" date="2026-02-13">
       <description>
         <p>Version 0.8.3 - Wake On LAN, Code Audit Fixes, and Settings Performance:</p>

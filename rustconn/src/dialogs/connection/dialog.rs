@@ -5270,27 +5270,23 @@ impl ConnectionDialog {
 
     /// Sets the WOL configuration fields
     fn set_wol_config(&self, config: Option<&WolConfig>) {
+        // Note: individual widget sensitivity is controlled by wol_settings_group
+        // via the connect_toggled handler on wol_enabled_check.
+        // Do NOT set_sensitive on individual widgets here — it conflicts with
+        // the group-level sensitivity and leaves widgets disabled after toggling.
         if let Some(wol) = config {
             self.wol_enabled_check.set_active(true);
             self.wol_mac_entry.set_text(&wol.mac_address.to_string());
-            self.wol_mac_entry.set_sensitive(true);
             self.wol_broadcast_entry.set_text(&wol.broadcast_address);
-            self.wol_broadcast_entry.set_sensitive(true);
             self.wol_port_spin.set_value(f64::from(wol.port));
-            self.wol_port_spin.set_sensitive(true);
             self.wol_wait_spin.set_value(f64::from(wol.wait_seconds));
-            self.wol_wait_spin.set_sensitive(true);
         } else {
             self.wol_enabled_check.set_active(false);
             self.wol_mac_entry.set_text("");
-            self.wol_mac_entry.set_sensitive(false);
             self.wol_broadcast_entry.set_text(DEFAULT_BROADCAST_ADDRESS);
-            self.wol_broadcast_entry.set_sensitive(false);
             self.wol_port_spin.set_value(f64::from(DEFAULT_WOL_PORT));
-            self.wol_port_spin.set_sensitive(false);
             self.wol_wait_spin
                 .set_value(f64::from(DEFAULT_WOL_WAIT_SECONDS));
-            self.wol_wait_spin.set_sensitive(false);
         }
     }
 

@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.8.3
+Version:        0.8.4
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Zero Trust)
 License:        GPL-3.0-or-later
@@ -182,6 +182,11 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Fri Feb 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.4-0
+- Version bump to 0.8.4
+- Fixed WoL MAC Entry Disabled on Edit: removed per-widget sensitivity calls
+  conflicting with group-level sensitivity from Enable WOL checkbox
+
 * Fri Feb 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.3-0
 - Version bump to 0.8.3
 - Added Wake On LAN from GUI (#8): context menu, auto-WoL, standalone dialog

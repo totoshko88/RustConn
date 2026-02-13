@@ -1,3 +1,14 @@
+rustconn (0.8.4-1) unstable; urgency=medium
+
+  * Version bump to 0.8.4
+  * Fixed WoL MAC Entry Disabled on Edit:
+    - WoL settings fields remained disabled when editing existing connection
+    - set_wol_config() was setting set_sensitive(false) on individual widgets
+      conflicting with group-level sensitivity from Enable WOL checkbox
+    - Removed per-widget sensitivity calls; wol_settings_group manages this
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Fri, 13 Feb 2026 18:00:00 +0200
+
 rustconn (0.8.3-1) unstable; urgency=medium
 
   * Version bump to 0.8.3

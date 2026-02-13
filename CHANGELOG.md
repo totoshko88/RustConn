@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-02-14
+
+### Fixed
+- **WoL MAC Entry Disabled on Edit** — Fixed WoL settings fields (MAC address, broadcast, port, wait time) remaining disabled when editing an existing connection and enabling WoL; `set_wol_config()` was setting `set_sensitive(false)` on individual widgets which conflicted with the group-level sensitivity controlled by the "Enable WOL" checkbox `connect_toggled` handler; removed per-widget sensitivity calls since `wol_settings_group` already manages this
+
 ## [0.8.3] - 2026-02-13
 
 ### Added
