@@ -1,4 +1,21 @@
 -------------------------------------------------------------------
+Fri Feb 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.3
+
+- Version bump to 0.8.3
+  * Added Wake On LAN from GUI (#8): context menu, auto-WoL, standalone dialog
+  * Fixed Flatpak libsecret build: disabled bash_completion (EROFS in sandbox)
+  * Fixed Flatpak libsecret 0.21.7 build: renamed gcrypt option to crypto
+  * Fixed Thread Safety: removed std::env::set_var from FreeRDP spawned thread
+  * Fixed Flatpak Machine Key: app-specific key in $XDG_DATA_HOME/rustconn/.machine-key
+  * Fixed Variables Dialog Panic: replaced expect() with if-let pattern
+  * Fixed Keyring secret-tool Check: store() validates secret-tool availability
+  * Fixed Flatpak CLI Paths: no hardcoded /snap/bin/ paths inside Flatpak
+  * Fixed Settings Dialog Performance: CLI detection moved to background threads
+  * Fixed Settings Clients Tab: 3s timeout, parallel detection (~15s to ~3s)
+  * Fixed Settings Dialog Instant Display: present() before load_settings()
+  * Fixed Settings Dialog Render Blocking: std::thread::spawn + mpsc + idle_add_local
+
+-------------------------------------------------------------------
 Wed Feb 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.2
 
 - Version bump to 0.8.2
@@ -62,23 +79,6 @@ Tue Feb 10 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.0
   * Fixed Flatpak Component Detection - SSM Plugin, Azure CLI, OCI CLI detection
   * Fixed Flatpak Python Version - dynamic Python version in wrapper scripts
   * Updated dependencies: libc, tempfile, unicode-ident
-
--------------------------------------------------------------------
-Tue Feb 10 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.0
-
-- Version bump to 0.8.0
-  * Added Telnet backspace/delete key configuration (#5):
-    - TelnetBackspaceSends and TelnetDeleteSends enums (Automatic/Backspace/Delete)
-    - Connection dialog Keyboard group with two dropdowns
-    - stty erase shell wrapper in spawn_telnet() to apply key settings
-    - Addresses common backspace/delete inversion issue
-  * Added Flatpak Telnet support:
-    - GNU inetutils 2.7 built as Flatpak module
-    - telnet binary available at /app/bin/ in Flatpak sandbox
-    - Added to all three Flatpak manifests
-  * Updated OBS _service revision from v0.5.3 to current version tag
-  * Updated dependencies: libc 0.2.180->0.2.181, tempfile 3.24.0->3.25.0,
-    unicode-ident 1.0.22->1.0.23
 
 -------------------------------------------------------------------
 Mon Feb 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.9

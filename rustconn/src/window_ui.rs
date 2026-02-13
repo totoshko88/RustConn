@@ -115,6 +115,7 @@ pub fn create_app_menu() -> gio::Menu {
         Some("Password Generator..."),
         Some("win.password-generator"),
     );
+    tools_section.append(Some("Wake On LAN..."), Some("win.wake-on-lan-dialog"));
     menu.append_section(None, &tools_section);
 
     // File section (import/export connections)

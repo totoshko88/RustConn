@@ -311,9 +311,9 @@ impl FreeRdpThread {
         fallback_triggered: Arc<Mutex<bool>>,
         initial_config: RdpConfig,
     ) {
-        // Set environment variables to suppress Qt/Wayland warnings
-        std::env::set_var("QT_LOGGING_RULES", "qt.qpa.wayland=false;qt.qpa.*=false");
-        std::env::set_var("QT_QPA_PLATFORM", "xcb");
+        // Note: Qt/Wayland env vars are set per-process via Command::env()
+        // in launch_freerdp() to avoid data races from std::env::set_var
+        // in multi-threaded context (unsafe since Rust 1.66+).
 
         let mut current_config = Some(initial_config);
 

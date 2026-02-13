@@ -30,10 +30,19 @@ pub async fn is_secret_tool_available() -> bool {
 /// Stores a value in the system keyring.
 ///
 /// # Errors
+/// Returns `SecretError::BackendUnavailable` if `secret-tool` is not installed.
 /// Returns `SecretError::LibSecret` if `secret-tool` cannot be spawned
 /// or the store command fails.
 pub async fn store(key: &str, value: &str, label: &str) -> SecretResult<()> {
     use tokio::io::AsyncWriteExt;
+
+    if !is_secret_tool_available().await {
+        return Err(SecretError::BackendUnavailable(
+            "secret-tool not found. Install libsecret-tools or use \
+             encrypted settings storage."
+                .into(),
+        ));
+    }
 
     let mut child = Command::new("secret-tool")
         .args(["store", "--label", label, "application", APP_ID, "key", key])

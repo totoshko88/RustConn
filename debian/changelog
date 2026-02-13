@@ -1,3 +1,44 @@
+rustconn (0.8.3-1) unstable; urgency=medium
+
+  * Version bump to 0.8.3
+  * Added Wake On LAN from GUI (#8):
+    - Right-click connection → "Wake On LAN" sends packet using configured MAC
+    - Auto-WoL before connecting (fire-and-forget, does not block connection)
+    - Standalone WoL dialog (Menu → Tools → "Wake On LAN...")
+    - Retry with 3 packets at 500 ms intervals for reliability
+    - Non-blocking: all sends run on background threads
+    - Toast notifications for success/failure
+  * Fixed Flatpak libsecret build:
+    - Disabled bash_completion in libsecret module (EROFS in sandbox)
+    - Renamed gcrypt option to crypto for libsecret 0.21.7
+  * Fixed Thread Safety:
+    - Removed std::env::set_var from FreeRDP spawned thread (data race since Rust 1.66+)
+    - Env vars already set per-process via Command::env() in launch_freerdp()
+  * Fixed Flatpak Machine Key:
+    - get_machine_key() generates app-specific key in $XDG_DATA_HOME/rustconn/.machine-key
+    - /etc/machine-id (inaccessible in Flatpak) is now a fallback
+  * Fixed Variables Dialog Panic:
+    - Replaced expect() with if-let pattern and tracing::warn! fallback
+  * Fixed Keyring secret-tool Check:
+    - keyring::store() checks is_secret_tool_available() before storing
+    - Returns BackendUnavailable with user-friendly message if missing
+  * Fixed Flatpak CLI Paths:
+    - Secret backend CLI detection no longer adds /snap/bin/ and /usr/local/bin/
+      paths inside Flatpak; checks get_cli_install_dir() instead
+  * Fixed Settings Dialog Performance:
+    - Moved CLI detection and keyring auto-load to background threads
+    - Dialog opens instantly with "Detecting..." placeholders (~10s → instant)
+  * Fixed Settings Clients Tab Performance:
+    - Added 3-second timeout to all CLI version checks
+    - Parallelized all CLI detections via std::thread::scope (~15s → ~3s)
+  * Fixed Settings Dialog Instant Display:
+    - Moved dialog.present() before load_settings() for immediate visibility
+  * Fixed Settings Dialog Visual Render Blocking:
+    - Replaced glib async pattern with std::thread::spawn + mpsc + idle_add_local
+    - Dialog renders instantly while CLI detection runs in parallel
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Fri, 13 Feb 2026 12:00:00 +0200
+
 rustconn (0.8.2-1) unstable; urgency=medium
 
   * Version bump to 0.8.2

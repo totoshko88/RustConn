@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.8.2** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.8.3** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, Telnet protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -459,9 +459,37 @@ Menu → Tools → **Connection Statistics**
 
 ### Wake-on-LAN
 
-Right-click connection → **Wake-on-LAN**
+Wake sleeping machines before connecting by sending WoL magic packets.
 
-Requires MAC address configured in connection WOL tab.
+**Configure WoL for a connection:**
+1. Edit connection → **WOL** tab
+2. Enter MAC address (e.g., `AA:BB:CC:DD:EE:FF`)
+3. Optionally set broadcast address and port
+4. Save
+
+**Send WoL from sidebar:**
+- Right-click connection → **Wake On LAN**
+- Toast notification confirms success or failure
+
+**Auto-WoL on connect:**
+- If a connection has WoL configured, a magic packet is sent automatically when you connect
+- The connection proceeds immediately (fire-and-forget, does not wait for the machine to boot)
+- Use the `wait_seconds` setting in WOL tab to add a delay if needed
+
+**Standalone WoL dialog:**
+- Menu → Tools → **Wake On LAN...**
+- Pick a connection with WoL configured from the dropdown, or enter MAC address manually
+- Set broadcast address and port
+- Click **Send** to send the magic packet
+
+**CLI:**
+```bash
+rustconn-cli wol AA:BB:CC:DD:EE:FF
+rustconn-cli wol "Server Name"
+rustconn-cli wol AA:BB:CC:DD:EE:FF --broadcast 192.168.1.255 --port 9
+```
+
+All GUI sends use 3 retries at 500 ms intervals for reliability.
 
 ### Flatpak Components
 

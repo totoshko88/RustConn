@@ -626,13 +626,35 @@ impl SecretSettings {
     }
 
     /// Gets a machine-specific key for encryption
-    /// Uses machine-id or falls back to a default
+    /// Uses app-specific key file, machine-id, or falls back to a default.
+    ///
+    /// In Flatpak sandbox `/etc/machine-id` is inaccessible, so we first
+    /// try an app-specific key file stored in the XDG data directory.
     fn get_machine_key() -> Vec<u8> {
-        // Try to read machine-id (Linux)
+        // 1. Try app-specific key file in XDG data dir (works in Flatpak)
+        if let Some(data_dir) = dirs::data_dir() {
+            let key_file = data_dir.join("rustconn").join(".machine-key");
+            if let Ok(key) = std::fs::read_to_string(&key_file) {
+                let trimmed = key.trim();
+                if !trimmed.is_empty() {
+                    return trimmed.as_bytes().to_vec();
+                }
+            }
+            // Generate and persist a random key if it doesn't exist
+            if std::fs::create_dir_all(data_dir.join("rustconn")).is_ok() {
+                let key = uuid::Uuid::new_v4().to_string();
+                if std::fs::write(&key_file, &key).is_ok() {
+                    return key.into_bytes();
+                }
+            }
+        }
+
+        // 2. Try /etc/machine-id (works outside Flatpak)
         if let Ok(machine_id) = std::fs::read_to_string("/etc/machine-id") {
             return machine_id.trim().as_bytes().to_vec();
         }
-        // Fallback to hostname + username
+
+        // 3. Fallback to hostname + username
         let hostname = hostname::get().map_or_else(
             |_| "rustconn".to_string(),
             |h| h.to_string_lossy().to_string(),

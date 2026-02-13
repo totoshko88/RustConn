@@ -121,6 +121,20 @@ pub fn show_context_menu_for_item(widget: &impl IsA<gtk4::Widget>, x: f64, y: f6
             }
         });
         menu_box.append(&snippet_btn);
+
+        // Wake On LAN option
+        let wol_btn = create_menu_button("Wake On LAN");
+        let win = window_clone.clone();
+        let popover_c = popover_ref.clone();
+        wol_btn.connect_clicked(move |_| {
+            if let Some(p) = popover_c.upgrade() {
+                p.popdown();
+            }
+            if let Some(action) = win.lookup_action("wake-on-lan") {
+                action.activate(None);
+            }
+        });
+        menu_box.append(&wol_btn);
     }
 
     let delete_btn = create_menu_button("Delete");

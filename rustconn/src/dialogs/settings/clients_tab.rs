@@ -90,27 +90,34 @@ pub fn create_clients_page() -> adw::PreferencesPage {
     let zerotrust_rows = Rc::new(zerotrust_rows);
     let zerotrust_rows_clone = zerotrust_rows.clone();
 
-    glib::spawn_future_local(async move {
-        // Run detection in a thread pool to avoid blocking
-        let (core_clients, zerotrust_clients) =
-            glib::spawn_future(async move { detect_all_clients() })
-                .await
-                .unwrap_or_else(|_| (Vec::new(), Vec::new()));
+    // Run detection on a real OS thread so the GTK main loop stays idle
+    // and can render frames while detection runs in the background.
+    // GTK widgets are not Send, so we use a channel to pass results back.
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let result = detect_all_clients();
+        let _ = tx.send(result);
+    });
 
-        // Update core clients
-        if core_clients.len() >= 4 {
-            update_client_row(&core_group_clone, &ssh_row_clone, &core_clients[0]);
-            update_client_row(&core_group_clone, &rdp_row_clone, &core_clients[1]);
-            update_client_row(&core_group_clone, &vnc_row_clone, &core_clients[2]);
-            update_client_row(&core_group_clone, &spice_row_clone, &core_clients[3]);
-        }
-
-        // Update zero trust clients
-        for (i, client) in zerotrust_clients.iter().enumerate() {
-            if i < zerotrust_rows_clone.len() {
-                update_client_row(&zerotrust_group_clone, &zerotrust_rows_clone[i], client);
+    // Poll the channel from the main thread; GTK widgets stay here.
+    glib::idle_add_local(move || match rx.try_recv() {
+        Ok((core_clients, zerotrust_clients)) => {
+            if core_clients.len() >= 4 {
+                update_client_row(&core_group_clone, &ssh_row_clone, &core_clients[0]);
+                update_client_row(&core_group_clone, &rdp_row_clone, &core_clients[1]);
+                update_client_row(&core_group_clone, &vnc_row_clone, &core_clients[2]);
+                update_client_row(&core_group_clone, &spice_row_clone, &core_clients[3]);
             }
+
+            for (i, client) in zerotrust_clients.iter().enumerate() {
+                if i < zerotrust_rows_clone.len() {
+                    update_client_row(&zerotrust_group_clone, &zerotrust_rows_clone[i], client);
+                }
+            }
+            glib::ControlFlow::Break
         }
+        Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
+        Err(std::sync::mpsc::TryRecvError::Disconnected) => glib::ControlFlow::Break,
     });
 
     page
@@ -254,13 +261,24 @@ fn insert_row_at_position(group: &adw::PreferencesGroup, row: &adw::ActionRow, _
     group.add(row);
 }
 
-/// Detects all clients in a background thread
+/// Detects all clients in a background thread with parallelized CLI checks
 fn detect_all_clients() -> (Vec<ClientInfo>, Vec<ClientInfo>) {
-    let mut core_clients = Vec::new();
-    let mut zerotrust_clients = Vec::new();
+    // Run core and zero trust detection in parallel
+    std::thread::scope(|s| {
+        let core_handle = s.spawn(|| detect_core_clients());
+        let zt_handle = s.spawn(|| detect_zerotrust_clients());
 
-    // Detect core clients
+        let core_clients = core_handle.join().unwrap_or_default();
+        let zerotrust_clients = zt_handle.join().unwrap_or_default();
+        (core_clients, zerotrust_clients)
+    })
+}
+
+/// Detects core protocol clients (SSH, RDP, VNC, SPICE)
+fn detect_core_clients() -> Vec<ClientInfo> {
     let detection_result = ClientDetectionResult::detect_all();
+
+    let mut core_clients = Vec::with_capacity(4);
 
     // SSH - always embedded via VTE terminal
     core_clients.push(ClientInfo {
@@ -346,8 +364,12 @@ fn detect_all_clients() -> (Vec<ClientInfo>, Vec<ClientInfo>) {
         embedded_name: Some("spice-gtk".to_string()),
     });
 
-    // Detect zero trust clients
-    let zerotrust_configs = [
+    core_clients
+}
+
+/// Detects zero trust CLI clients in parallel
+fn detect_zerotrust_clients() -> Vec<ClientInfo> {
+    let zerotrust_configs: &[(&str, &str, &str, &str)] = &[
         ("AWS CLI", "aws", "--version", "Install awscli package"),
         (
             "AWS SSM Plugin",
@@ -379,27 +401,51 @@ fn detect_all_clients() -> (Vec<ClientInfo>, Vec<ClientInfo>) {
         ("Boundary CLI", "boundary", "-v", "Install boundary package"),
     ];
 
-    for (title, command, version_arg, install_hint) in &zerotrust_configs {
-        let command_path = find_command(command);
-        let installed = command_path.is_some();
-        let version = command_path
-            .as_ref()
-            .and_then(|p| get_version_with_env(p, version_arg, command));
-        let path_str = command_path.as_ref().map(|p| p.display().to_string());
+    // Run all zero trust detections in parallel.
+    // We must collect handles first to spawn all threads before joining.
+    #[allow(clippy::needless_collect)]
+    std::thread::scope(|s| {
+        let handles: Vec<_> = zerotrust_configs
+            .iter()
+            .map(|(title, command, version_arg, install_hint)| {
+                s.spawn(move || {
+                    let command_path = find_command(command);
+                    let installed = command_path.is_some();
+                    let version = command_path
+                        .as_ref()
+                        .and_then(|p| get_version_with_env(p, version_arg, command));
+                    let path_str = command_path.as_ref().map(|p| p.display().to_string());
 
-        zerotrust_clients.push(ClientInfo {
-            title: (*title).to_string(),
-            name: (*command).to_string(),
-            installed,
-            version,
-            path: path_str,
-            install_hint: (*install_hint).to_string(),
-            has_embedded: false,
-            embedded_name: None,
-        });
-    }
+                    ClientInfo {
+                        title: (*title).to_string(),
+                        name: (*command).to_string(),
+                        installed,
+                        version,
+                        path: path_str,
+                        install_hint: (*install_hint).to_string(),
+                        has_embedded: false,
+                        embedded_name: None,
+                    }
+                })
+            })
+            .collect();
 
-    (core_clients, zerotrust_clients)
+        handles
+            .into_iter()
+            .map(|h| {
+                h.join().unwrap_or_else(|_| ClientInfo {
+                    title: String::new(),
+                    name: String::new(),
+                    installed: false,
+                    version: None,
+                    path: None,
+                    install_hint: String::new(),
+                    has_embedded: false,
+                    embedded_name: None,
+                })
+            })
+            .collect()
+    })
 }
 
 /// Finds a command in PATH, common user directories, or Flatpak CLI directory
@@ -515,7 +561,13 @@ fn get_version(command_path: &std::path::Path, version_arg: &str) -> Option<Stri
     get_version_with_env(command_path, version_arg, "")
 }
 
-/// Gets version output from a command with proper environment setup
+/// CLI version check timeout (3 seconds)
+///
+/// Some CLIs (gcloud, az, oci) load Python runtimes and can take 3-5 seconds.
+/// This timeout prevents a single slow CLI from blocking the entire detection.
+const VERSION_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
+
+/// Gets version output from a command with proper environment setup and timeout
 fn get_version_with_env(
     command_path: &std::path::Path,
     version_arg: &str,
@@ -524,11 +576,31 @@ fn get_version_with_env(
     // Build command with extended PATH for Flatpak CLI tools
     let extended_path = rustconn_core::cli_download::get_extended_path();
 
-    let output = std::process::Command::new(command_path)
+    let mut child = std::process::Command::new(command_path)
         .arg(version_arg)
         .env("PATH", &extended_path)
-        .output()
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
         .ok()?;
+
+    let start = std::time::Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(_status)) => break,
+            Ok(None) => {
+                if start.elapsed() >= VERSION_CHECK_TIMEOUT {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return Some("installed (timeout)".to_string());
+                }
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+            Err(_) => return None,
+        }
+    }
+
+    let output = child.wait_with_output().ok()?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);

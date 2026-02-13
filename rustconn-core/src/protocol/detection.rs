@@ -434,9 +434,38 @@ fn which_binary(binary: &str) -> Option<PathBuf> {
     None
 }
 
-/// Gets version information from a binary
+/// CLI version check timeout (3 seconds)
+///
+/// Some CLIs (gcloud, az, oci) load Python runtimes and can take 3-5 seconds.
+/// This timeout prevents a single slow CLI from blocking the entire detection.
+const VERSION_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
+
+/// Gets version information from a binary with a timeout
 fn get_version(binary: &str, args: &[&str]) -> Option<String> {
-    let output = Command::new(binary).args(args).output().ok()?;
+    let mut child = Command::new(binary)
+        .args(args)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .ok()?;
+
+    let start = std::time::Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(_status)) => break,
+            Ok(None) => {
+                if start.elapsed() >= VERSION_CHECK_TIMEOUT {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return Some("installed (timeout)".to_string());
+                }
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+            Err(_) => return None,
+        }
+    }
+
+    let output = child.wait_with_output().ok()?;
 
     // Version info might be in stdout or stderr depending on the tool
     let stdout = String::from_utf8_lossy(&output.stdout);

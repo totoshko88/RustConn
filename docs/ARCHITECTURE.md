@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.8.2** | Last updated: February 2026
+**Version 0.8.3** | Last updated: February 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -793,6 +793,7 @@ rustconn/src/
 │   │   ├── telnet.rs      # Telnet options
 │   │   └── zerotrust.rs   # Zero Trust provider options
 │   ├── keyboard.rs        # Keyboard navigation helpers
+│   ├── wol.rs             # Wake On LAN dialog (standalone + manual entry)
 │   ├── flatpak_components.rs  # Flatpak CLI download dialog
 │   ├── settings/          # Settings tabs
 │   └── ...

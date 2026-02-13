@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-02-13
+
+### Added
+- **Wake On LAN from GUI** — Send WoL magic packets directly from the GUI ([#8](https://github.com/totoshko88/RustConn/issues/8)):
+  - Right-click connection → "Wake On LAN" sends packet using configured MAC address
+  - Auto-WoL before connecting: if a connection has WoL configured, a magic packet is sent automatically on connect (fire-and-forget, does not block connection)
+  - Standalone WoL dialog (Menu → Tools → "Wake On LAN...") with connection picker and manual MAC entry
+  - Retry with 3 packets at 500 ms intervals for reliability
+  - Non-blocking: all sends run on background threads via `spawn_blocking_with_callback`
+  - Toast notifications for success/failure
+
+### Fixed
+- **Flatpak libsecret Build** — Fixed Flatpak build failure: disabled `bash_completion` in libsecret module (EROFS in sandbox)
+- **Flatpak libsecret Crypto Option** — Fixed libsecret 0.21.7 build: renamed `gcrypt` option to `crypto`
+- **Thread Safety** — Removed `std::env::set_var` calls from FreeRDP spawned thread (`embedded_rdp_thread.rs`); env vars (`QT_LOGGING_RULES`, `QT_QPA_PLATFORM`) are already set per-process via `Command::env()` in `launch_freerdp()`, eliminating a data race (unsafe since Rust 1.66+)
+- **Flatpak Machine Key** — `get_machine_key()` now generates and persists an app-specific key file in `$XDG_DATA_HOME/rustconn/.machine-key` as first priority; `/etc/machine-id` (inaccessible in Flatpak sandbox) is now a fallback, with hostname+username as last resort
+- **Variables Dialog Panic** — Replaced `expect()` on `btn.root().and_downcast::<Window>()` in vault load callback with `if let Some(window)` pattern and `tracing::warn!` fallback
+- **Keyring `secret-tool` Check** — `keyring::store()` now checks `is_secret_tool_available()` before attempting to store; returns `SecretError::BackendUnavailable` with user-friendly message if `secret-tool` is not installed
+- **Flatpak CLI Paths** — Secret backend CLI detection (`bw`, `op`, `passbolt`) no longer adds hardcoded `/snap/bin/` and `/usr/local/bin/` paths when running inside Flatpak; checks `get_cli_install_dir()` for Flatpak-installed tools instead
+- **Settings Dialog Performance** — Moved all secret backend CLI detection (`keepassxc-cli`, `bw`, `op`, `passbolt`) and keyring auto-load operations (Bitwarden auto-unlock, 1Password token, Passbolt passphrase, KeePassXC password) from synchronous main-thread execution to background threads via `glib::spawn_future`; Settings dialog now opens instantly with "Detecting..." placeholders, updating widgets asynchronously when detection and keyring lookups complete (~10 s → instant)
+- **Settings Clients Tab Performance** — Added 3-second timeout to all CLI version checks (`get_version` in `detection.rs`, `get_version_with_env` in `clients_tab.rs`) preventing slow CLIs (`gcloud`, `az`, `oci`) from blocking detection; parallelized all 9 zero trust CLI detections and core/zero trust groups via `std::thread::scope`; moved SSH agent `get_status()` (`ssh-add -l`) from GTK main thread to background thread via `glib::spawn_future` — total Clients tab detection time reduced from ~15 s sequential to ~3 s parallel
+- **Settings Dialog Instant Display** — Moved `dialog.present()` before `load_settings()` in `SettingsDialog::run()` so the window appears immediately; all widget population and async background operations (CLI detection, keyring lookups, SSH agent status) now run after the dialog is already visible
+- **Settings Dialog Visual Render Blocking** — Replaced `glib::spawn_future_local` + `glib::spawn_future` async pattern with `std::thread::spawn` + `std::sync::mpsc::channel` + `glib::idle_add_local` in all three Settings tabs (Clients, Secrets, SSH Agent); the previous pattern kept pending futures in the GTK main loop which prevented frame rendering until background tasks completed (~6 s delay); the new pattern fully decouples background work from the main loop so the dialog renders instantly while CLI detection runs in parallel
+
 ## [0.8.2] - 2026-02-11
 
 ### Added

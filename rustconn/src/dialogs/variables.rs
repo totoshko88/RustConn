@@ -331,16 +331,20 @@ impl VariablesDialog {
                                 "Failed to load secret \
                                  from vault: {e}"
                             );
-                            crate::toast::show_toast_on_window(
-                                &btn_clone.root().and_downcast::<gtk4::Window>().expect(
-                                    "Load vault button \
-                                         must be in a window",
-                                ),
-                                "Failed to load secret from \
-                                 vault. Check secret backend \
-                                 in Settings.",
-                                crate::toast::ToastType::Error,
-                            );
+                            if let Some(window) = btn_clone.root().and_downcast::<gtk4::Window>() {
+                                crate::toast::show_toast_on_window(
+                                    &window,
+                                    "Failed to load secret from \
+                                     vault. Check secret backend \
+                                     in Settings.",
+                                    crate::toast::ToastType::Error,
+                                );
+                            } else {
+                                tracing::warn!(
+                                    "Load vault button is not \
+                                     in a window hierarchy"
+                                );
+                            }
                         }
                     }
                 },

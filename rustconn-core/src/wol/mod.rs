@@ -294,6 +294,22 @@ pub fn send_magic_packet(mac: &MacAddress, broadcast: &str, port: u16) -> WolRes
 pub fn send_wol(config: &WolConfig) -> WolResult<()> {
     send_magic_packet(&config.mac_address, &config.broadcast_address, config.port)
 }
+/// Sends a Wake On LAN magic packet with retry for reliability
+///
+/// Sends the packet `count` times with `interval_ms` milliseconds between
+/// each attempt, similar to how Asbru-CM sends on multiple ports.
+///
+/// # Errors
+/// Returns an error if any packet send fails.
+pub fn send_wol_with_retry(config: &WolConfig, count: u8, interval_ms: u64) -> WolResult<()> {
+    for i in 0..count {
+        send_wol(config)?;
+        if i + 1 < count {
+            std::thread::sleep(std::time::Duration::from_millis(interval_ms));
+        }
+    }
+    Ok(())
+}
 
 #[cfg(test)]
 mod tests {

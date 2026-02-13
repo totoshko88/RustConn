@@ -221,13 +221,17 @@ impl SettingsDialog {
     where
         F: Fn(Option<AppSettings>) + 'static,
     {
-        // Load settings into UI
-        let settings = self.settings.borrow().clone();
-        self.load_settings(&settings);
+        // Present the dialog immediately so the window appears without delay.
+        // Settings loading and async operations populate widgets afterwards.
+        self.dialog.present(parent);
 
         // Setup close handler - auto-save on close for PreferencesDialog
         let callback_rc = Rc::new(callback);
         self.setup_close_handler(callback_rc);
+
+        // Load settings into UI (sync widget properties + async background tasks)
+        let settings = self.settings.borrow().clone();
+        self.load_settings(&settings);
 
         // Connect SSH Agent Add Key button handler
         {
@@ -318,9 +322,6 @@ impl SettingsDialog {
                 );
             });
         }
-
-        // Present the dialog - PreferencesDialog uses present() with parent widget
-        self.dialog.present(parent);
     }
 
     /// Loads settings into the UI controls
@@ -503,19 +504,19 @@ impl SettingsDialog {
                 bitwarden_use_api_key_check: bitwarden_use_api_key_check_clone.clone(),
                 bitwarden_client_id_entry: bitwarden_client_id_entry_clone.clone(),
                 bitwarden_client_secret_entry: bitwarden_client_secret_entry_clone.clone(),
-                bitwarden_cmd: String::new(), // dummy, not used in collect
-                onepassword_group: adw::PreferencesGroup::new(), // dummy
-                onepassword_status_label: Label::new(None), // dummy
-                onepassword_signin_button: Button::new(), // dummy
-                passbolt_group: adw::PreferencesGroup::new(), // dummy
-                passbolt_status_label: Label::new(None), // dummy
-                passbolt_server_url_entry: Entry::new(), // dummy
-                passbolt_open_vault_button: Button::new(), // dummy
-                passbolt_passphrase_entry: PasswordEntry::new(), // dummy
-                passbolt_save_password_check: CheckButton::new(), // dummy
-                passbolt_save_to_keyring_check: CheckButton::new(), // dummy
-                kdbx_save_to_keyring_check: CheckButton::new(), // dummy
-                onepassword_token_entry: PasswordEntry::new(), // dummy
+                bitwarden_cmd: Rc::new(RefCell::new(String::new())), // dummy, not used in collect
+                onepassword_group: adw::PreferencesGroup::new(),     // dummy
+                onepassword_status_label: Label::new(None),          // dummy
+                onepassword_signin_button: Button::new(),            // dummy
+                passbolt_group: adw::PreferencesGroup::new(),        // dummy
+                passbolt_status_label: Label::new(None),             // dummy
+                passbolt_server_url_entry: Entry::new(),             // dummy
+                passbolt_open_vault_button: Button::new(),           // dummy
+                passbolt_passphrase_entry: PasswordEntry::new(),     // dummy
+                passbolt_save_password_check: CheckButton::new(),    // dummy
+                passbolt_save_to_keyring_check: CheckButton::new(),  // dummy
+                kdbx_save_to_keyring_check: CheckButton::new(),      // dummy
+                onepassword_token_entry: PasswordEntry::new(),       // dummy
                 onepassword_save_password_check: CheckButton::new(), // dummy
                 onepassword_save_to_keyring_check: CheckButton::new(), // dummy
             };

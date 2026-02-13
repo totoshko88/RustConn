@@ -551,6 +551,63 @@ impl MainWindow {
             }
         });
         window.add_action(&undo_delete_action);
+
+        // Wake On LAN action — sends WoL packet for selected connection
+        let wol_action = gio::SimpleAction::new("wake-on-lan", None);
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let toast_clone = self.toast_overlay.clone();
+        wol_action.connect_activate(move |_, _| {
+            let Some(item) = sidebar_clone.get_selected_item() else {
+                return;
+            };
+            if item.is_group() {
+                return;
+            }
+            let id_str = item.id();
+            let Ok(conn_id) = Uuid::parse_str(&id_str) else {
+                return;
+            };
+            let state_ref = state_clone.borrow();
+            let Some(conn) = state_ref.get_connection(conn_id) else {
+                return;
+            };
+            let Some(wol_config) = conn.get_wol_config() else {
+                toast_clone.show_warning(
+                    "No Wake On LAN configured. Edit the connection \
+                     to set a MAC address.",
+                );
+                return;
+            };
+            let wol_config = wol_config.clone();
+            let mac_display = wol_config.mac_address.to_string();
+            drop(state_ref);
+
+            let mac_for_cb = mac_display.clone();
+            let id_for_cb = id_str.clone();
+            let toast_for_cb = toast_clone.clone();
+            crate::utils::spawn_blocking_with_callback(
+                move || rustconn_core::wol::send_wol_with_retry(&wol_config, 3, 500),
+                move |result| match result {
+                    Ok(()) => {
+                        tracing::info!(
+                            mac = %mac_for_cb,
+                            "WoL packet sent for connection {}",
+                            id_for_cb,
+                        );
+                        toast_for_cb.show_success(&format!("Wake On LAN sent to {mac_for_cb}"));
+                    }
+                    Err(e) => {
+                        tracing::error!(?e, "Failed to send WoL for connection {}", id_for_cb,);
+                        toast_for_cb.show_error(
+                            "Failed to send Wake On LAN packet. \
+                             Check network permissions.",
+                        );
+                    }
+                },
+            );
+        });
+        window.add_action(&wol_action);
     }
 
     /// Sets up terminal-related actions (copy, paste, close tab)
@@ -1357,6 +1414,24 @@ impl MainWindow {
             }
         });
         window.add_action(&password_generator_action);
+
+        // Wake On LAN dialog action
+        let wol_dialog_action = gio::SimpleAction::new("wake-on-lan-dialog", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        wol_dialog_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                let state_ref = state_clone.borrow();
+                let connections: Vec<rustconn_core::models::Connection> =
+                    state_ref.list_connections().into_iter().cloned().collect();
+                drop(state_ref);
+
+                let dialog = crate::dialogs::WolDialog::new(Some(win.upcast_ref()));
+                dialog.set_connections(&connections);
+                dialog.present();
+            }
+        });
+        window.add_action(&wol_dialog_action);
     }
 
     /// Sets up split view actions
@@ -3367,6 +3442,24 @@ impl MainWindow {
         let state_ref = state.borrow();
 
         let conn = state_ref.get_connection(connection_id)?;
+
+        // Auto-WoL: send magic packet before connecting if configured
+        // Fire-and-forget on background thread to avoid blocking GTK
+        if let Some(wol_config) = conn.get_wol_config() {
+            let wol_config = wol_config.clone();
+            let conn_name = conn.name.clone();
+            tracing::info!(
+                mac = %wol_config.mac_address,
+                "Sending auto-WoL before connecting to {}",
+                conn_name,
+            );
+            std::thread::spawn(move || {
+                if let Err(e) = rustconn_core::wol::send_wol_with_retry(&wol_config, 3, 500) {
+                    tracing::warn!(?e, "Auto-WoL failed for {}", conn_name,);
+                }
+            });
+        }
+
         let protocol = get_protocol_string(&conn.protocol_config);
         let logging_enabled = state_ref.settings().logging.enabled;
 

@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.8.2
+Version:        0.8.3
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Zero Trust)
 License:        GPL-3.0-or-later
@@ -182,6 +182,21 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Fri Feb 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.3-0
+- Version bump to 0.8.3
+- Added Wake On LAN from GUI (#8): context menu, auto-WoL, standalone dialog
+- Fixed Flatpak libsecret build: disabled bash_completion (EROFS in sandbox)
+- Fixed Flatpak libsecret 0.21.7 build: renamed gcrypt option to crypto
+- Fixed Thread Safety: removed std::env::set_var from FreeRDP spawned thread
+- Fixed Flatpak Machine Key: app-specific key in $XDG_DATA_HOME/rustconn/.machine-key
+- Fixed Variables Dialog Panic: replaced expect() with if-let pattern
+- Fixed Keyring secret-tool Check: store() validates secret-tool availability
+- Fixed Flatpak CLI Paths: no hardcoded /snap/bin/ paths inside Flatpak
+- Fixed Settings Dialog Performance: CLI detection moved to background threads
+- Fixed Settings Clients Tab: 3s timeout, parallel detection (~15s to ~3s)
+- Fixed Settings Dialog Instant Display: present() before load_settings()
+- Fixed Settings Dialog Render Blocking: std::thread::spawn + mpsc + idle_add_local
+
 * Wed Feb 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.2-0
 - Version bump to 0.8.2
 - Added Shared Keyring Module with generic store(), lookup(), clear(),

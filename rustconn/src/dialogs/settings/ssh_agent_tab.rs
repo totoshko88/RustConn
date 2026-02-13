@@ -175,80 +175,91 @@ pub fn load_ssh_agent_settings(
     let keys_list = ssh_agent_keys_list.clone();
     let manager = ssh_agent_manager.clone();
 
-    // Run status check asynchronously
-    glib::spawn_future_local(async move {
-        // Get status in background
-        let status_result = {
-            let mgr = manager.borrow();
-            let socket = mgr.socket_path().map(String::from);
-            let status = mgr.get_status();
-            (socket, status)
-        };
+    // Clone socket path before spawning thread (Rc<RefCell<_>> is not Send)
+    let socket_path_clone = {
+        let mgr = manager.borrow();
+        mgr.socket_path().map(String::from)
+    };
 
-        // Update UI on main thread
-        let (socket, status) = status_result;
+    // Run status check on a real OS thread so the GTK main loop stays idle
+    // and can render frames while the check runs in the background.
+    // GTK widgets are not Send, so we use a channel to pass results back.
+    let socket_for_bg = socket_path_clone.clone();
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let bg_mgr = SshAgentManager::new(socket_for_bg);
+        let status = bg_mgr.get_status();
+        let _ = tx.send(status);
+    });
 
-        if let Some(socket_path) = socket {
-            socket_label.set_text(&socket_path);
-        } else {
-            socket_label.set_text("Not available");
-        }
-
-        // Clear loading row
-        while let Some(child) = keys_list.first_child() {
-            keys_list.remove(&child);
-        }
-
-        if let Ok(agent_status) = status {
-            let status_text = if agent_status.running {
-                "Running"
+    // Poll the channel from the main thread; GTK widgets stay here.
+    glib::idle_add_local(move || match rx.try_recv() {
+        Ok(status) => {
+            if let Some(ref socket_path) = socket_path_clone {
+                socket_label.set_text(socket_path);
             } else {
-                "Not running"
-            };
-            status_label.set_text(status_text);
-            status_label.remove_css_class("error");
-            status_label.remove_css_class("dim-label");
+                socket_label.set_text("Not available");
+            }
 
-            if agent_status.running {
-                status_label.add_css_class("success");
+            // Clear loading row
+            while let Some(child) = keys_list.first_child() {
+                keys_list.remove(&child);
+            }
 
-                if agent_status.keys.is_empty() {
+            if let Ok(agent_status) = status {
+                let status_text = if agent_status.running {
+                    "Running"
+                } else {
+                    "Not running"
+                };
+                status_label.set_text(status_text);
+                status_label.remove_css_class("error");
+                status_label.remove_css_class("dim-label");
+
+                if agent_status.running {
+                    status_label.add_css_class("success");
+
+                    if agent_status.keys.is_empty() {
+                        let empty_row = adw::ActionRow::builder()
+                            .title("No keys loaded")
+                            .subtitle("Add keys using ssh-add or the button above")
+                            .build();
+                        keys_list.append(&empty_row);
+                    } else {
+                        for key in &agent_status.keys {
+                            let key_row = create_loaded_key_row(
+                                key,
+                                &manager,
+                                &keys_list,
+                                &status_label,
+                                &socket_label,
+                            );
+                            keys_list.append(&key_row);
+                        }
+                    }
+                } else {
+                    status_label.add_css_class("dim-label");
                     let empty_row = adw::ActionRow::builder()
-                        .title("No keys loaded")
-                        .subtitle("Add keys using ssh-add or the button above")
+                        .title("Agent not running")
+                        .subtitle("Start the agent to manage keys")
                         .build();
                     keys_list.append(&empty_row);
-                } else {
-                    for key in &agent_status.keys {
-                        let key_row = create_loaded_key_row(
-                            key,
-                            &manager,
-                            &keys_list,
-                            &status_label,
-                            &socket_label,
-                        );
-                        keys_list.append(&key_row);
-                    }
                 }
             } else {
-                status_label.add_css_class("dim-label");
+                status_label.set_text("Error");
+                status_label.remove_css_class("dim-label");
+                status_label.add_css_class("error");
+
                 let empty_row = adw::ActionRow::builder()
                     .title("Agent not running")
                     .subtitle("Start the agent to manage keys")
                     .build();
                 keys_list.append(&empty_row);
             }
-        } else {
-            status_label.set_text("Error");
-            status_label.remove_css_class("dim-label");
-            status_label.add_css_class("error");
-
-            let empty_row = adw::ActionRow::builder()
-                .title("Agent not running")
-                .subtitle("Start the agent to manage keys")
-                .build();
-            keys_list.append(&empty_row);
+            glib::ControlFlow::Break
         }
+        Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
+        Err(std::sync::mpsc::TryRecvError::Disconnected) => glib::ControlFlow::Break,
     });
 }
 

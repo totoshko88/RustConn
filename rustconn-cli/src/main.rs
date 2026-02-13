@@ -2206,9 +2206,10 @@ fn cmd_wol(target: &str, broadcast: &str, port: u16) -> Result<(), CliError> {
     println!("  MAC Address: {mac}");
     println!("  Broadcast:   {broadcast}:{port}");
 
-    rustconn_core::wol::send_wol(&config).map_err(|e| CliError::Wol(e.to_string()))?;
+    rustconn_core::wol::send_wol_with_retry(&config, 3, 500)
+        .map_err(|e| CliError::Wol(e.to_string()))?;
 
-    println!("Magic packet sent successfully!");
+    println!("Magic packet sent successfully (3 packets)!");
     println!(
         "Note: The target machine may take up to {} seconds to wake up.",
         config.wait_seconds

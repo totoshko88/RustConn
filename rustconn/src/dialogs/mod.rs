@@ -21,6 +21,7 @@ mod template;
 mod terminal_search;
 mod variables;
 pub mod widgets;
+mod wol;
 
 pub use adw_dialogs::*;
 
@@ -45,6 +46,7 @@ pub use statistics::{empty_statistics, StatisticsDialog};
 pub use template::{TemplateCallback, TemplateDialog, TemplateManagerDialog};
 pub use terminal_search::TerminalSearchDialog;
 pub use variables::VariablesDialog;
+pub use wol::WolDialog;
 
 use rustconn_core::config::AppSettings;
 use rustconn_core::import::ImportResult;

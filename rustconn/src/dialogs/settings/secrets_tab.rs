@@ -12,6 +12,181 @@ use rustconn_core::config::{SecretBackendType, SecretSettings};
 use std::cell::RefCell;
 use std::rc::Rc;
 
+/// Results of background CLI detection for all secret backends
+struct SecretCliDetection {
+    keepassxc_version: Option<String>,
+    bitwarden_installed: bool,
+    bitwarden_cmd: String,
+    bitwarden_version: Option<String>,
+    bitwarden_status: Option<(String, &'static str)>,
+    onepassword_installed: bool,
+    onepassword_cmd: String,
+    onepassword_version: Option<String>,
+    onepassword_status: Option<(String, &'static str)>,
+    passbolt_installed: bool,
+    passbolt_version: Option<String>,
+    passbolt_status: Option<(String, &'static str)>,
+    passbolt_server_url: Option<String>,
+}
+
+/// Runs all secret backend CLI detection on a background thread.
+/// This function is `Send` and performs no GTK calls.
+fn detect_secret_backends() -> SecretCliDetection {
+    // KeePassXC
+    let keepassxc_installed = std::process::Command::new("which")
+        .arg("keepassxc-cli")
+        .output()
+        .is_ok_and(|output| output.status.success());
+    let keepassxc_version = if keepassxc_installed {
+        get_cli_version("keepassxc-cli", &["--version"])
+    } else {
+        None
+    };
+
+    // Bitwarden
+    let mut bw_paths: Vec<String> = vec!["bw".to_string()];
+    if !rustconn_core::is_flatpak() {
+        bw_paths.extend(["/snap/bin/bw".to_string(), "/usr/local/bin/bw".to_string()]);
+    }
+    if let Some(cli_dir) = rustconn_core::cli_download::get_cli_install_dir() {
+        let flatpak_bw = cli_dir.join("bitwarden").join("bw");
+        if flatpak_bw.exists() {
+            bw_paths.push(flatpak_bw.to_string_lossy().to_string());
+        }
+    }
+    let mut bitwarden_installed = false;
+    let mut bitwarden_cmd = "bw".to_string();
+    for path in &bw_paths {
+        if std::process::Command::new(path)
+            .arg("--version")
+            .output()
+            .is_ok_and(|output| output.status.success())
+        {
+            bitwarden_installed = true;
+            bitwarden_cmd = path.clone();
+            break;
+        }
+    }
+    if !bitwarden_installed {
+        if let Ok(output) = std::process::Command::new("which").arg("bw").output() {
+            if output.status.success() {
+                bitwarden_installed = true;
+                bitwarden_cmd = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            }
+        }
+    }
+    let bitwarden_version = if bitwarden_installed {
+        get_cli_version(&bitwarden_cmd, &["--version"])
+    } else {
+        None
+    };
+    let bitwarden_status = if bitwarden_installed {
+        Some(check_bitwarden_status_sync(&bitwarden_cmd))
+    } else {
+        None
+    };
+
+    // 1Password
+    let mut op_paths: Vec<String> = vec!["op".to_string()];
+    if !rustconn_core::is_flatpak() {
+        op_paths.push("/usr/local/bin/op".to_string());
+    }
+    if let Some(cli_dir) = rustconn_core::cli_download::get_cli_install_dir() {
+        let flatpak_op = cli_dir.join("1password").join("op");
+        if flatpak_op.exists() {
+            op_paths.push(flatpak_op.to_string_lossy().to_string());
+        }
+    }
+    let mut onepassword_installed = false;
+    let mut onepassword_cmd = "op".to_string();
+    for path in &op_paths {
+        if std::process::Command::new(path)
+            .arg("--version")
+            .output()
+            .is_ok_and(|output| output.status.success())
+        {
+            onepassword_installed = true;
+            onepassword_cmd = path.clone();
+            break;
+        }
+    }
+    if !onepassword_installed {
+        if let Ok(output) = std::process::Command::new("which").arg("op").output() {
+            if output.status.success() {
+                onepassword_installed = true;
+                onepassword_cmd = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            }
+        }
+    }
+    let onepassword_version = if onepassword_installed {
+        get_cli_version(&onepassword_cmd, &["--version"])
+    } else {
+        None
+    };
+    let onepassword_status = if onepassword_installed {
+        Some(check_onepassword_status_sync(&onepassword_cmd))
+    } else {
+        None
+    };
+
+    // Passbolt
+    let mut passbolt_paths: Vec<String> = vec!["passbolt".to_string()];
+    if !rustconn_core::is_flatpak() {
+        passbolt_paths.push("/usr/local/bin/passbolt".to_string());
+    }
+    if let Some(cli_dir) = rustconn_core::cli_download::get_cli_install_dir() {
+        let flatpak_pb = cli_dir.join("passbolt").join("passbolt");
+        if flatpak_pb.exists() {
+            passbolt_paths.push(flatpak_pb.to_string_lossy().to_string());
+        }
+    }
+    let mut passbolt_installed = false;
+    for path in &passbolt_paths {
+        if std::process::Command::new(path)
+            .arg("--version")
+            .output()
+            .is_ok_and(|output| output.status.success())
+        {
+            passbolt_installed = true;
+            break;
+        }
+    }
+    if !passbolt_installed {
+        if let Ok(output) = std::process::Command::new("which").arg("passbolt").output() {
+            if output.status.success() {
+                passbolt_installed = true;
+            }
+        }
+    }
+    let passbolt_version = if passbolt_installed {
+        get_cli_version("passbolt", &["--version"])
+    } else {
+        None
+    };
+    let passbolt_status = if passbolt_installed {
+        Some(check_passbolt_status_sync())
+    } else {
+        None
+    };
+    let passbolt_server_url = read_passbolt_server_url_sync();
+
+    SecretCliDetection {
+        keepassxc_version,
+        bitwarden_installed,
+        bitwarden_cmd,
+        bitwarden_version,
+        bitwarden_status,
+        onepassword_installed,
+        onepassword_cmd,
+        onepassword_version,
+        onepassword_status,
+        passbolt_installed,
+        passbolt_version,
+        passbolt_status,
+        passbolt_server_url,
+    }
+}
+
 /// Return type for secrets page - contains all widgets needed for dynamic visibility
 #[allow(dead_code)] // Fields kept for GTK widget lifecycle
 pub struct SecretsPageWidgets {
@@ -47,8 +222,8 @@ pub struct SecretsPageWidgets {
     pub bitwarden_use_api_key_check: Switch,
     pub bitwarden_client_id_entry: Entry,
     pub bitwarden_client_secret_entry: PasswordEntry,
-    /// Detected Bitwarden CLI command path
-    pub bitwarden_cmd: String,
+    /// Detected Bitwarden CLI command path (updated async)
+    pub bitwarden_cmd: Rc<RefCell<String>>,
     // 1Password widgets
     pub onepassword_group: adw::PreferencesGroup,
     pub onepassword_status_label: Label,
@@ -127,102 +302,20 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     page.add(&backend_group);
 
-    // Detect installed tools
-    let keepassxc_installed = std::process::Command::new("which")
-        .arg("keepassxc-cli")
-        .output()
-        .is_ok_and(|output| output.status.success());
-    let keepassxc_version = if keepassxc_installed {
-        get_cli_version("keepassxc-cli", &["--version"])
-    } else {
-        None
-    };
+    // Version info label — will be populated by async detection
+    // Use placeholder defaults; real values arrive from background thread.
+    let keepassxc_version: Rc<RefCell<Option<String>>> = Rc::new(RefCell::new(None));
+    let bitwarden_version: Rc<RefCell<Option<String>>> = Rc::new(RefCell::new(None));
+    let onepassword_version: Rc<RefCell<Option<String>>> = Rc::new(RefCell::new(None));
+    let passbolt_version: Rc<RefCell<Option<String>>> = Rc::new(RefCell::new(None));
 
-    // Bitwarden CLI status - check multiple paths
-    let bw_paths = ["bw", "/snap/bin/bw", "/usr/local/bin/bw"];
-    let mut bitwarden_installed = false;
-    let mut bitwarden_cmd = "bw".to_string();
-    for path in &bw_paths {
-        if std::process::Command::new(path)
-            .arg("--version")
-            .output()
-            .is_ok_and(|output| output.status.success())
-        {
-            bitwarden_installed = true;
-            bitwarden_cmd = (*path).to_string();
-            break;
-        }
-    }
-    // Also check via which
-    if !bitwarden_installed {
-        if let Ok(output) = std::process::Command::new("which").arg("bw").output() {
-            if output.status.success() {
-                bitwarden_installed = true;
-                bitwarden_cmd = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            }
-        }
-    }
-    let bitwarden_version = if bitwarden_installed {
-        get_cli_version(&bitwarden_cmd, &["--version"])
-    } else {
-        None
-    };
+    // Shared mutable command paths for callbacks (updated by async detection)
+    let bitwarden_cmd: Rc<RefCell<String>> = Rc::new(RefCell::new("bw".to_string()));
+    let onepassword_cmd: Rc<RefCell<String>> = Rc::new(RefCell::new("op".to_string()));
 
-    // 1Password CLI status - check multiple paths
-    let op_paths = ["op", "/usr/local/bin/op"];
-    let mut onepassword_installed = false;
-    let mut onepassword_cmd = "op".to_string();
-    for path in &op_paths {
-        if std::process::Command::new(path)
-            .arg("--version")
-            .output()
-            .is_ok_and(|output| output.status.success())
-        {
-            onepassword_installed = true;
-            onepassword_cmd = (*path).to_string();
-            break;
-        }
-    }
-    // Also check via which
-    if !onepassword_installed {
-        if let Ok(output) = std::process::Command::new("which").arg("op").output() {
-            if output.status.success() {
-                onepassword_installed = true;
-                onepassword_cmd = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            }
-        }
-    }
-    let onepassword_version = if onepassword_installed {
-        get_cli_version(&onepassword_cmd, &["--version"])
-    } else {
-        None
-    };
-
-    // Passbolt CLI status
-    let passbolt_paths = ["passbolt", "/usr/local/bin/passbolt"];
-    let mut passbolt_installed = false;
-    for path in &passbolt_paths {
-        if std::process::Command::new(path)
-            .arg("--version")
-            .output()
-            .is_ok_and(|output| output.status.success())
-        {
-            passbolt_installed = true;
-            break;
-        }
-    }
-    if !passbolt_installed {
-        if let Ok(output) = std::process::Command::new("which").arg("passbolt").output() {
-            if output.status.success() {
-                passbolt_installed = true;
-            }
-        }
-    }
-    let passbolt_version = if passbolt_installed {
-        get_cli_version("passbolt", &["--version"])
-    } else {
-        None
-    };
+    // Initial version display — "Detecting..."
+    version_label.set_text("Detecting...");
+    version_label.add_css_class("dim-label");
 
     // === Bitwarden Configuration Group ===
     let bitwarden_group = adw::PreferencesGroup::builder()
@@ -267,11 +360,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     bitwarden_group.add(&bw_save_to_keyring_row);
 
     let bitwarden_status_label = Label::builder()
-        .label(if bitwarden_installed {
-            "Checking status..."
-        } else {
-            "Not installed"
-        })
+        .label("Detecting...")
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -359,7 +448,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let bitwarden_unlock_button = Button::builder()
         .label("Unlock")
         .valign(gtk4::Align::Center)
-        .sensitive(bitwarden_installed)
+        .sensitive(false)
         .tooltip_text("Unlock Bitwarden vault")
         .build();
 
@@ -406,8 +495,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             button.set_sensitive(false);
             update_status_label(&status_label, "Unlocking...", "dim-label");
 
+            let bw_cmd_str = bw_cmd.borrow().clone();
+
             // Run unlock with password via environment variable
-            let result = std::process::Command::new(&bw_cmd)
+            let result = std::process::Command::new(&bw_cmd_str)
                 .arg("unlock")
                 .arg("--passwordenv")
                 .arg("BW_PASSWORD")
@@ -448,21 +539,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             }
 
             button.set_sensitive(true);
-        });
-    }
-
-    // Check Bitwarden status and auto-unlock if keyring password available
-    if bitwarden_installed {
-        let status_label = bitwarden_status_label.clone();
-        let bw_cmd_clone = bitwarden_cmd.clone();
-        glib::idle_add_local_once(move || {
-            let status = check_bitwarden_status_sync(&bw_cmd_clone);
-            status_label.set_text(&status.0);
-            status_label.remove_css_class("dim-label");
-            status_label.remove_css_class("success");
-            status_label.remove_css_class("warning");
-            status_label.remove_css_class("error");
-            status_label.add_css_class(status.1);
         });
     }
 
@@ -512,11 +588,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     onepassword_group.add(&op_save_to_keyring_row);
 
     let onepassword_status_label = Label::builder()
-        .label(if onepassword_installed {
-            "Checking status..."
-        } else {
-            "Not installed"
-        })
+        .label("Detecting...")
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -552,7 +624,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let onepassword_signin_button = Button::builder()
         .label("Sign In")
         .valign(gtk4::Align::Center)
-        .sensitive(onepassword_installed)
+        .sensitive(false)
         .tooltip_text("Sign in to 1Password (opens terminal)")
         .build();
 
@@ -581,12 +653,13 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
             // Try to open a terminal with op signin
             // This requires user interaction for biometric or password
-            let xfce_cmd = format!("{op_cmd} signin");
+            let op_cmd_str = op_cmd.borrow().clone();
+            let xfce_cmd = format!("{op_cmd_str} signin");
             let terminal_cmds: [(&str, Vec<&str>); 4] = [
-                ("gnome-terminal", vec!["--", &op_cmd, "signin"]),
-                ("konsole", vec!["-e", &op_cmd, "signin"]),
+                ("gnome-terminal", vec!["--", &op_cmd_str, "signin"]),
+                ("konsole", vec!["-e", &op_cmd_str, "signin"]),
                 ("xfce4-terminal", vec!["-e", &xfce_cmd]),
-                ("xterm", vec!["-e", &op_cmd, "signin"]),
+                ("xterm", vec!["-e", &op_cmd_str, "signin"]),
             ];
 
             let mut launched = false;
@@ -611,21 +684,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             }
 
             button.set_sensitive(true);
-        });
-    }
-
-    // Check 1Password status synchronously
-    if onepassword_installed {
-        let status_label = onepassword_status_label.clone();
-        let op_cmd_clone = onepassword_cmd.clone();
-        glib::idle_add_local_once(move || {
-            let status = check_onepassword_status_sync(&op_cmd_clone);
-            status_label.set_text(&status.0);
-            status_label.remove_css_class("dim-label");
-            status_label.remove_css_class("success");
-            status_label.remove_css_class("warning");
-            status_label.remove_css_class("error");
-            status_label.add_css_class(status.1);
         });
     }
 
@@ -687,11 +745,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     passbolt_group.add(&pb_save_to_keyring_row);
 
     let passbolt_status_label = Label::builder()
-        .label(if passbolt_installed {
-            "Checking status..."
-        } else {
-            "Not installed"
-        })
+        .label("Detecting...")
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -727,7 +781,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let passbolt_open_vault_button = Button::builder()
         .label("Open Vault")
         .valign(gtk4::Align::Center)
-        .sensitive(passbolt_installed)
+        .sensitive(false)
         .tooltip_text("Open Passbolt web vault in browser")
         .build();
 
@@ -772,28 +826,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     "Enter server URL or run 'passbolt configure'",
                     "warning",
                 );
-            }
-        });
-    }
-
-    // Check Passbolt status synchronously and auto-fill server URL
-    if passbolt_installed {
-        let status_label = passbolt_status_label.clone();
-        let url_entry = passbolt_server_url_entry.clone();
-        glib::idle_add_local_once(move || {
-            let status = check_passbolt_status_sync();
-            status_label.set_text(&status.0);
-            status_label.remove_css_class("dim-label");
-            status_label.remove_css_class("success");
-            status_label.remove_css_class("warning");
-            status_label.remove_css_class("error");
-            status_label.add_css_class(status.1);
-
-            // Auto-fill server URL from CLI config if entry is empty
-            if url_entry.text().is_empty() {
-                if let Some(server_url) = read_passbolt_server_url_sync() {
-                    url_entry.set_text(&server_url);
-                }
             }
         });
     }
@@ -1036,67 +1068,29 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         auth_group_clone2.set_visible(show_kdbx && kdbx_enabled);
         status_group_clone2.set_visible(show_kdbx && kdbx_enabled);
 
+        // Helper to set version label text and style
+        let set_ver = |ver: &Option<String>| {
+            version_row_clone.set_visible(true);
+            version_label_clone.remove_css_class("error");
+            version_label_clone.remove_css_class("success");
+            version_label_clone.remove_css_class("dim-label");
+            if let Some(ref v) = *ver {
+                version_label_clone.set_text(&format!("v{v}"));
+                version_label_clone.add_css_class("success");
+            } else {
+                version_label_clone.set_text("Not installed");
+                version_label_clone.add_css_class("error");
+            }
+        };
+
         // Update version label based on selected backend
         match selected {
-            0 => {
-                // KeePassXC
-                version_row_clone.set_visible(true);
-                if let Some(ref ver) = keepassxc_version_clone {
-                    version_label_clone.set_text(&format!("v{ver}"));
-                    version_label_clone.remove_css_class("error");
-                    version_label_clone.add_css_class("success");
-                } else {
-                    version_label_clone.set_text("Not installed");
-                    version_label_clone.remove_css_class("success");
-                    version_label_clone.add_css_class("error");
-                }
-            }
-            1 => {
-                // libsecret - don't show version
-                version_row_clone.set_visible(false);
-            }
-            2 => {
-                // Bitwarden
-                version_row_clone.set_visible(true);
-                if let Some(ref ver) = bitwarden_version_clone {
-                    version_label_clone.set_text(&format!("v{ver}"));
-                    version_label_clone.remove_css_class("error");
-                    version_label_clone.add_css_class("success");
-                } else {
-                    version_label_clone.set_text("Not installed");
-                    version_label_clone.remove_css_class("success");
-                    version_label_clone.add_css_class("error");
-                }
-            }
-            3 => {
-                // 1Password
-                version_row_clone.set_visible(true);
-                if let Some(ref ver) = onepassword_version_clone {
-                    version_label_clone.set_text(&format!("v{ver}"));
-                    version_label_clone.remove_css_class("error");
-                    version_label_clone.add_css_class("success");
-                } else {
-                    version_label_clone.set_text("Not installed");
-                    version_label_clone.remove_css_class("success");
-                    version_label_clone.add_css_class("error");
-                }
-            }
-            4 => {
-                // Passbolt
-                version_row_clone.set_visible(true);
-                if let Some(ref ver) = passbolt_version_clone {
-                    version_label_clone.set_text(&format!("v{ver}"));
-                    version_label_clone.remove_css_class("error");
-                    version_label_clone.add_css_class("success");
-                } else {
-                    version_label_clone.set_text("Not installed");
-                    version_label_clone.remove_css_class("success");
-                    version_label_clone.add_css_class("error");
-                }
-            }
-            _ => {
-                version_row_clone.set_visible(false);
-            }
+            0 => set_ver(&keepassxc_version_clone.borrow()),
+            1 => version_row_clone.set_visible(false),
+            2 => set_ver(&bitwarden_version_clone.borrow()),
+            3 => set_ver(&onepassword_version_clone.borrow()),
+            4 => set_ver(&passbolt_version_clone.borrow()),
+            _ => version_row_clone.set_visible(false),
         }
     });
 
@@ -1110,14 +1104,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     onepassword_group.set_visible(false);
     passbolt_group.set_visible(false);
 
-    // Set initial version display for KeePassXC (default selection)
-    if let Some(ref ver) = keepassxc_version {
-        version_label.set_text(&format!("v{ver}"));
-        version_label.add_css_class("success");
-    } else {
-        version_label.set_text("Not installed");
-        version_label.add_css_class("error");
-    }
+    // Initial version display set above as "Detecting..."
 
     // Setup browse button for database file
     let kdbx_path_entry_clone = kdbx_path_entry.clone();
@@ -1248,6 +1235,104 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     });
 
     let keepassxc_status_container = GtkBox::new(Orientation::Vertical, 6);
+
+    // Schedule async CLI detection on background thread
+    {
+        let version_label = version_label.clone();
+        let version_row = version_row.clone();
+        let dropdown = secret_backend_dropdown.clone();
+        let bw_status_label = bitwarden_status_label.clone();
+        let bw_unlock_btn = bitwarden_unlock_button.clone();
+        let bw_cmd_rc = bitwarden_cmd.clone();
+        let op_status_label = onepassword_status_label.clone();
+        let op_signin_btn = onepassword_signin_button.clone();
+        let op_cmd_rc = onepassword_cmd.clone();
+        let pb_status_label = passbolt_status_label.clone();
+        let pb_vault_btn = passbolt_open_vault_button.clone();
+        let pb_url_entry = passbolt_server_url_entry.clone();
+        let kpxc_ver = keepassxc_version.clone();
+        let bw_ver = bitwarden_version.clone();
+        let op_ver = onepassword_version.clone();
+        let pb_ver = passbolt_version.clone();
+
+        // Run detection on a real OS thread so the GTK main loop stays idle
+        // and can render frames while detection runs in the background.
+        // GTK widgets are not Send, so we use a channel to pass results back.
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let det = detect_secret_backends();
+            let _ = tx.send(det);
+        });
+
+        // Poll the channel from the main thread; GTK widgets stay here.
+        glib::idle_add_local(move || match rx.try_recv() {
+            Ok(det) => {
+                // Store detected command paths
+                *bw_cmd_rc.borrow_mut() = det.bitwarden_cmd;
+                *op_cmd_rc.borrow_mut() = det.onepassword_cmd;
+
+                // Store versions for dropdown callback
+                *kpxc_ver.borrow_mut() = det.keepassxc_version.clone();
+                *bw_ver.borrow_mut() = det.bitwarden_version.clone();
+                *op_ver.borrow_mut() = det.onepassword_version.clone();
+                *pb_ver.borrow_mut() = det.passbolt_version.clone();
+
+                // Update version label for currently selected backend
+                let selected = dropdown.selected();
+                let cur_ver = match selected {
+                    0 => &det.keepassxc_version,
+                    2 => &det.bitwarden_version,
+                    3 => &det.onepassword_version,
+                    4 => &det.passbolt_version,
+                    _ => &None,
+                };
+                version_label.remove_css_class("dim-label");
+                version_label.remove_css_class("error");
+                version_label.remove_css_class("success");
+                if selected == 1 {
+                    version_row.set_visible(false);
+                } else if let Some(ref v) = cur_ver {
+                    version_label.set_text(&format!("v{v}"));
+                    version_label.add_css_class("success");
+                } else {
+                    version_label.set_text("Not installed");
+                    version_label.add_css_class("error");
+                }
+
+                // Update Bitwarden status
+                bw_unlock_btn.set_sensitive(det.bitwarden_installed);
+                if let Some((text, css)) = det.bitwarden_status {
+                    update_status_label(&bw_status_label, &text, css);
+                } else {
+                    update_status_label(&bw_status_label, "Not installed", "error");
+                }
+
+                // Update 1Password status
+                op_signin_btn.set_sensitive(det.onepassword_installed);
+                if let Some((text, css)) = det.onepassword_status {
+                    update_status_label(&op_status_label, &text, css);
+                } else {
+                    update_status_label(&op_status_label, "Not installed", "error");
+                }
+
+                // Update Passbolt status
+                pb_vault_btn.set_sensitive(det.passbolt_installed);
+                if let Some((text, css)) = det.passbolt_status {
+                    update_status_label(&pb_status_label, &text, css);
+                } else {
+                    update_status_label(&pb_status_label, "Not installed", "error");
+                }
+                if pb_url_entry.text().is_empty() {
+                    if let Some(ref url) = det.passbolt_server_url {
+                        pb_url_entry.set_text(url);
+                    }
+                }
+                glib::ControlFlow::Break
+            }
+            Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
+            Err(std::sync::mpsc::TryRecvError::Disconnected) => glib::ControlFlow::Break,
+        });
+    }
 
     SecretsPageWidgets {
         page,
@@ -1761,52 +1846,72 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
     // Auto-unlock Bitwarden from keyring if configured
     if settings.bitwarden_save_to_keyring {
         let status_label = widgets.bitwarden_status_label.clone();
-        let bw_cmd = widgets.bitwarden_cmd.clone();
-        tracing::debug!(
-            bw_cmd = %bw_cmd,
-            "Scheduling Bitwarden auto-unlock from keyring"
-        );
-        glib::idle_add_local_once(move || {
-            tracing::debug!("Auto-unlock idle callback executing");
-            if let Some(password) = get_bw_password_from_keyring() {
-                tracing::debug!(
-                    bw_cmd = %bw_cmd,
-                    "Got keyring password, checking vault status"
-                );
-                let bw_status = check_bitwarden_status_sync(&bw_cmd);
-                if bw_status.0 != "Locked" {
-                    // Already unlocked or not logged in
-                    update_status_label(&status_label, &bw_status.0, bw_status.1);
-                    return;
-                }
-                update_status_label(&status_label, "Unlocking...", "dim-label");
-                let result = std::process::Command::new(&bw_cmd)
-                    .arg("unlock")
-                    .arg("--passwordenv")
-                    .arg("BW_PASSWORD")
-                    .env("BW_PASSWORD", &password)
-                    .output();
-                if let Ok(output) = result {
-                    if output.status.success() {
-                        let stdout = String::from_utf8_lossy(&output.stdout);
-                        if let Some(session_key) = extract_session_key(&stdout) {
-                            std::env::set_var("BW_SESSION", &session_key);
-                            update_status_label(&status_label, "Unlocked", "success");
-                            tracing::info!("Bitwarden auto-unlocked from keyring");
-                            return;
-                        }
-                        tracing::warn!("bw unlock succeeded but no session key found");
+        let bw_cmd_rc = widgets.bitwarden_cmd.clone();
+        tracing::debug!("Scheduling Bitwarden auto-unlock from keyring (async)");
+        glib::spawn_future_local({
+            let status_label = status_label.clone();
+            let bw_cmd = bw_cmd_rc.borrow().clone();
+            async move {
+                let t_bw = std::time::Instant::now();
+                let result = glib::spawn_future(async move {
+                    let bw_cmd = bw_cmd;
+                    let password = get_bw_password_from_keyring();
+                    let password = if let Some(p) = password {
+                        p
                     } else {
-                        let stderr = String::from_utf8_lossy(&output.stderr);
-                        tracing::warn!(
-                            %stderr,
-                            "bw unlock from keyring failed"
-                        );
+                        tracing::debug!("No keyring password found for auto-unlock");
+                        return None;
+                    };
+                    tracing::debug!(
+                        bw_cmd = %bw_cmd,
+                        "Got keyring password, checking vault status"
+                    );
+                    let bw_status = check_bitwarden_status_sync(&bw_cmd);
+                    if bw_status.0 != "Locked" {
+                        return Some((bw_status.0, bw_status.1, None));
                     }
+                    let unlock_result = std::process::Command::new(&bw_cmd)
+                        .arg("unlock")
+                        .arg("--passwordenv")
+                        .arg("BW_PASSWORD")
+                        .env("BW_PASSWORD", &password)
+                        .output();
+                    if let Ok(output) = unlock_result {
+                        if output.status.success() {
+                            let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+                            if let Some(session_key) = extract_session_key(&stdout) {
+                                return Some((
+                                    "Unlocked".to_string(),
+                                    "success",
+                                    Some(session_key),
+                                ));
+                            }
+                            tracing::warn!("bw unlock succeeded but no session key");
+                        } else {
+                            let stderr = String::from_utf8_lossy(&output.stderr);
+                            tracing::warn!(
+                                %stderr,
+                                "bw unlock from keyring failed"
+                            );
+                        }
+                    }
+                    Some(("Locked".to_string(), "warning", None))
+                })
+                .await
+                .ok()
+                .flatten();
+                tracing::debug!(
+                    elapsed_ms = t_bw.elapsed().as_millis(),
+                    "load_secret_settings — Bitwarden auto-unlock COMPLETED"
+                );
+
+                if let Some((text, css, session_key)) = result {
+                    if let Some(key) = session_key {
+                        std::env::set_var("BW_SESSION", &key);
+                        tracing::info!("Bitwarden auto-unlocked from keyring");
+                    }
+                    update_status_label(&status_label, &text, css);
                 }
-                update_status_label(&status_label, "Locked", "warning");
-            } else {
-                tracing::debug!("No keyring password found for auto-unlock");
             }
         });
     }
@@ -1815,9 +1920,19 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
     if settings.onepassword_save_to_keyring {
         let token_entry = widgets.onepassword_token_entry.clone();
         let status_label = widgets.onepassword_status_label.clone();
-        tracing::debug!("Scheduling 1Password token auto-load from keyring");
-        glib::idle_add_local_once(move || {
-            if let Some(token) = get_op_token_from_keyring() {
+        tracing::debug!("Scheduling 1Password token auto-load from keyring (async)");
+        glib::spawn_future_local(async move {
+            let t_op = std::time::Instant::now();
+            let token = glib::spawn_future(async move { get_op_token_from_keyring() })
+                .await
+                .ok()
+                .flatten();
+            tracing::debug!(
+                elapsed_ms = t_op.elapsed().as_millis(),
+                "load_secret_settings — 1Password keyring COMPLETED"
+            );
+
+            if let Some(token) = token {
                 tracing::debug!("1Password token loaded from keyring");
                 token_entry.set_text(&token);
                 std::env::set_var("OP_SERVICE_ACCOUNT_TOKEN", &token);
@@ -1832,9 +1947,19 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
     // Auto-load Passbolt passphrase from keyring if configured
     if settings.passbolt_save_to_keyring {
         let passphrase_entry = widgets.passbolt_passphrase_entry.clone();
-        tracing::debug!("Scheduling Passbolt passphrase auto-load from keyring");
-        glib::idle_add_local_once(move || {
-            if let Some(passphrase) = get_pb_passphrase_from_keyring() {
+        tracing::debug!("Scheduling Passbolt passphrase auto-load (async)");
+        glib::spawn_future_local(async move {
+            let t_pb = std::time::Instant::now();
+            let passphrase = glib::spawn_future(async move { get_pb_passphrase_from_keyring() })
+                .await
+                .ok()
+                .flatten();
+            tracing::debug!(
+                elapsed_ms = t_pb.elapsed().as_millis(),
+                "load_secret_settings — Passbolt keyring COMPLETED"
+            );
+
+            if let Some(passphrase) = passphrase {
                 tracing::debug!("Passbolt passphrase loaded from keyring");
                 passphrase_entry.set_text(&passphrase);
                 tracing::info!("Passbolt passphrase restored from keyring");
@@ -1847,9 +1972,19 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
     // Auto-load KeePassXC password from keyring if configured
     if settings.kdbx_save_to_keyring {
         let password_entry = widgets.kdbx_password_entry.clone();
-        tracing::debug!("Scheduling KDBX password auto-load from keyring");
-        glib::idle_add_local_once(move || {
-            if let Some(password) = get_kdbx_password_from_keyring() {
+        tracing::debug!("Scheduling KDBX password auto-load (async)");
+        glib::spawn_future_local(async move {
+            let t_kdbx = std::time::Instant::now();
+            let password = glib::spawn_future(async move { get_kdbx_password_from_keyring() })
+                .await
+                .ok()
+                .flatten();
+            tracing::debug!(
+                elapsed_ms = t_kdbx.elapsed().as_millis(),
+                "load_secret_settings — KDBX keyring COMPLETED"
+            );
+
+            if let Some(password) = password {
                 tracing::debug!("KDBX password loaded from keyring");
                 password_entry.set_text(&password);
                 tracing::info!("KDBX password restored from keyring");

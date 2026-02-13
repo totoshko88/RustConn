@@ -79,6 +79,25 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.8.3" date="2026-02-13">
+      <description>
+        <p>Version 0.8.3 - Wake On LAN, Code Audit Fixes, and Settings Performance:</p>
+        <ul>
+          <li>Wake On LAN from GUI: context menu, auto-WoL before connect, standalone dialog (#8)</li>
+          <li>Fixed Flatpak libsecret build: disabled bash_completion (EROFS in sandbox)</li>
+          <li>Fixed libsecret 0.21.7 build: renamed gcrypt option to crypto</li>
+          <li>Fixed thread safety: removed std::env::set_var from FreeRDP spawned thread</li>
+          <li>Fixed Flatpak machine key: app-specific key file instead of /etc/machine-id</li>
+          <li>Fixed variables dialog panic: replaced expect() with safe pattern</li>
+          <li>Fixed keyring secret-tool check: validates availability before storing</li>
+          <li>Fixed Flatpak CLI paths: no hardcoded /snap/bin/ paths inside Flatpak</li>
+          <li>Fixed Settings dialog performance: CLI detection on background threads (~10s to instant)</li>
+          <li>Fixed Settings clients tab: parallel detection with 3s timeout (~15s to ~3s)</li>
+          <li>Fixed Settings dialog instant display: window appears before loading</li>
+          <li>Fixed Settings dialog render blocking: fully decoupled background work from GTK main loop</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.8.2" date="2026-02-11">
       <description>
         <p>Version 0.8.2 - Unified Keyring Integration and Secret Backend Fixes:</p>
