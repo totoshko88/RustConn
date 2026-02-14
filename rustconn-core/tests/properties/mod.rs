@@ -84,6 +84,7 @@ mod retry_tests;
 mod search_tests;
 mod security_tests;
 mod selection_tests;
+mod serial_tests;
 mod serialization_tests;
 mod session_restore_tests;
 mod session_tests;

@@ -20,6 +20,8 @@ pub enum ProtocolType {
     Telnet,
     /// Zero Trust connection (cloud-based secure access)
     ZeroTrust,
+    /// Serial console protocol
+    Serial,
 }
 
 impl ProtocolType {
@@ -35,6 +37,7 @@ impl ProtocolType {
             Self::Spice => "spice",
             Self::Telnet => "telnet",
             Self::ZeroTrust => "zerotrust",
+            Self::Serial => "serial",
         }
     }
 
@@ -46,7 +49,7 @@ impl ProtocolType {
             Self::Rdp => 3389,
             Self::Vnc | Self::Spice => 5900,
             Self::Telnet => 23,
-            Self::ZeroTrust => 0, // No default port for Zero Trust
+            Self::ZeroTrust | Self::Serial => 0,
         }
     }
 }
@@ -60,6 +63,7 @@ impl std::fmt::Display for ProtocolType {
             Self::Spice => write!(f, "SPICE"),
             Self::Telnet => write!(f, "Telnet"),
             Self::ZeroTrust => write!(f, "Zero Trust"),
+            Self::Serial => write!(f, "Serial"),
         }
     }
 }
@@ -80,6 +84,8 @@ pub enum ProtocolConfig {
     Telnet(TelnetConfig),
     /// Zero Trust connection configuration
     ZeroTrust(ZeroTrustConfig),
+    /// Serial console protocol configuration
+    Serial(SerialConfig),
 }
 
 impl ProtocolConfig {
@@ -93,6 +99,7 @@ impl ProtocolConfig {
             Self::Spice(_) => ProtocolType::Spice,
             Self::Telnet(_) => ProtocolType::Telnet,
             Self::ZeroTrust(_) => ProtocolType::ZeroTrust,
+            Self::Serial(_) => ProtocolType::Serial,
         }
     }
 }
@@ -220,6 +227,350 @@ pub struct TelnetConfig {
     pub delete_sends: TelnetDeleteSends,
 }
 
+/// Serial port baud rate
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SerialBaudRate {
+    /// 9600 baud
+    B9600,
+    /// 19200 baud
+    B19200,
+    /// 38400 baud
+    B38400,
+    /// 57600 baud
+    B57600,
+    /// 115200 baud (default)
+    #[default]
+    B115200,
+    /// 230400 baud
+    B230400,
+    /// 460800 baud
+    B460800,
+    /// 921600 baud
+    B921600,
+}
+
+impl SerialBaudRate {
+    /// Returns all available baud rates
+    #[must_use]
+    pub const fn all() -> &'static [Self] {
+        &[
+            Self::B9600,
+            Self::B19200,
+            Self::B38400,
+            Self::B57600,
+            Self::B115200,
+            Self::B230400,
+            Self::B460800,
+            Self::B921600,
+        ]
+    }
+
+    /// Returns the display name for this baud rate
+    #[must_use]
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::B9600 => "9600",
+            Self::B19200 => "19200",
+            Self::B38400 => "38400",
+            Self::B57600 => "57600",
+            Self::B115200 => "115200",
+            Self::B230400 => "230400",
+            Self::B460800 => "460800",
+            Self::B921600 => "921600",
+        }
+    }
+
+    /// Returns the index of this baud rate in the `all()` array
+    #[must_use]
+    pub const fn index(self) -> u32 {
+        match self {
+            Self::B9600 => 0,
+            Self::B19200 => 1,
+            Self::B38400 => 2,
+            Self::B57600 => 3,
+            Self::B115200 => 4,
+            Self::B230400 => 5,
+            Self::B460800 => 6,
+            Self::B921600 => 7,
+        }
+    }
+
+    /// Creates a baud rate from an index
+    #[must_use]
+    pub const fn from_index(index: u32) -> Self {
+        match index {
+            0 => Self::B9600,
+            1 => Self::B19200,
+            2 => Self::B38400,
+            3 => Self::B57600,
+            5 => Self::B230400,
+            6 => Self::B460800,
+            7 => Self::B921600,
+            _ => Self::B115200,
+        }
+    }
+
+    /// Returns the numeric baud rate value
+    #[must_use]
+    pub const fn value(self) -> u32 {
+        match self {
+            Self::B9600 => 9600,
+            Self::B19200 => 19_200,
+            Self::B38400 => 38_400,
+            Self::B57600 => 57_600,
+            Self::B115200 => 115_200,
+            Self::B230400 => 230_400,
+            Self::B460800 => 460_800,
+            Self::B921600 => 921_600,
+        }
+    }
+}
+
+/// Serial port data bits
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SerialDataBits {
+    /// 5 data bits
+    Five,
+    /// 6 data bits
+    Six,
+    /// 7 data bits
+    Seven,
+    /// 8 data bits (default)
+    #[default]
+    Eight,
+}
+
+impl SerialDataBits {
+    /// Returns all available data bit options
+    #[must_use]
+    pub const fn all() -> &'static [Self] {
+        &[Self::Five, Self::Six, Self::Seven, Self::Eight]
+    }
+
+    /// Returns the display name for this option
+    #[must_use]
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::Five => "5",
+            Self::Six => "6",
+            Self::Seven => "7",
+            Self::Eight => "8",
+        }
+    }
+
+    /// Returns the index of this option in the `all()` array
+    #[must_use]
+    pub const fn index(self) -> u32 {
+        match self {
+            Self::Five => 0,
+            Self::Six => 1,
+            Self::Seven => 2,
+            Self::Eight => 3,
+        }
+    }
+
+    /// Creates an option from an index
+    #[must_use]
+    pub const fn from_index(index: u32) -> Self {
+        match index {
+            0 => Self::Five,
+            1 => Self::Six,
+            2 => Self::Seven,
+            _ => Self::Eight,
+        }
+    }
+
+    /// Returns the numeric data bits value
+    #[must_use]
+    pub const fn value(self) -> u8 {
+        match self {
+            Self::Five => 5,
+            Self::Six => 6,
+            Self::Seven => 7,
+            Self::Eight => 8,
+        }
+    }
+}
+
+/// Serial port stop bits
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SerialStopBits {
+    /// 1 stop bit (default)
+    #[default]
+    One,
+    /// 2 stop bits
+    Two,
+}
+
+impl SerialStopBits {
+    /// Returns all available stop bit options
+    #[must_use]
+    pub const fn all() -> &'static [Self] {
+        &[Self::One, Self::Two]
+    }
+
+    /// Returns the display name for this option
+    #[must_use]
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::One => "1",
+            Self::Two => "2",
+        }
+    }
+
+    /// Returns the index of this option in the `all()` array
+    #[must_use]
+    pub const fn index(self) -> u32 {
+        match self {
+            Self::One => 0,
+            Self::Two => 1,
+        }
+    }
+
+    /// Creates an option from an index
+    #[must_use]
+    pub const fn from_index(index: u32) -> Self {
+        match index {
+            1 => Self::Two,
+            _ => Self::One,
+        }
+    }
+}
+
+/// Serial port parity
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SerialParity {
+    /// No parity (default)
+    #[default]
+    None,
+    /// Odd parity
+    Odd,
+    /// Even parity
+    Even,
+}
+
+impl SerialParity {
+    /// Returns all available parity options
+    #[must_use]
+    pub const fn all() -> &'static [Self] {
+        &[Self::None, Self::Odd, Self::Even]
+    }
+
+    /// Returns the display name for this option
+    #[must_use]
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::None => "None",
+            Self::Odd => "Odd",
+            Self::Even => "Even",
+        }
+    }
+
+    /// Returns the index of this option in the `all()` array
+    #[must_use]
+    pub const fn index(self) -> u32 {
+        match self {
+            Self::None => 0,
+            Self::Odd => 1,
+            Self::Even => 2,
+        }
+    }
+
+    /// Creates an option from an index
+    #[must_use]
+    pub const fn from_index(index: u32) -> Self {
+        match index {
+            1 => Self::Odd,
+            2 => Self::Even,
+            _ => Self::None,
+        }
+    }
+}
+
+/// Serial port flow control
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SerialFlowControl {
+    /// No flow control (default)
+    #[default]
+    None,
+    /// Hardware flow control (RTS/CTS)
+    Hardware,
+    /// Software flow control (XON/XOFF)
+    Software,
+}
+
+impl SerialFlowControl {
+    /// Returns all available flow control options
+    #[must_use]
+    pub const fn all() -> &'static [Self] {
+        &[Self::None, Self::Hardware, Self::Software]
+    }
+
+    /// Returns the display name for this option
+    #[must_use]
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::None => "None",
+            Self::Hardware => "Hardware (RTS/CTS)",
+            Self::Software => "Software (XON/XOFF)",
+        }
+    }
+
+    /// Returns the index of this option in the `all()` array
+    #[must_use]
+    pub const fn index(self) -> u32 {
+        match self {
+            Self::None => 0,
+            Self::Hardware => 1,
+            Self::Software => 2,
+        }
+    }
+
+    /// Creates an option from an index
+    #[must_use]
+    pub const fn from_index(index: u32) -> Self {
+        match index {
+            1 => Self::Hardware,
+            2 => Self::Software,
+            _ => Self::None,
+        }
+    }
+}
+
+/// Serial console protocol configuration
+///
+/// Configuration for serial port connections. Serial sessions are
+/// spawned via VTE terminal using an external serial client
+/// (`picocom`).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SerialConfig {
+    /// Serial device path (e.g., /dev/ttyUSB0, /dev/ttyACM0)
+    pub device: String,
+    /// Baud rate
+    #[serde(default)]
+    pub baud_rate: SerialBaudRate,
+    /// Data bits
+    #[serde(default)]
+    pub data_bits: SerialDataBits,
+    /// Stop bits
+    #[serde(default)]
+    pub stop_bits: SerialStopBits,
+    /// Parity
+    #[serde(default)]
+    pub parity: SerialParity,
+    /// Flow control
+    #[serde(default)]
+    pub flow_control: SerialFlowControl,
+    /// Custom command-line arguments for the serial client
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub custom_args: Vec<String>,
+}
+
 /// SSH authentication method
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
@@ -285,6 +636,9 @@ pub struct SshConfig {
     /// ID of another connection to use as a Jump Host
     #[serde(skip_serializing_if = "Option::is_none")]
     pub jump_host_id: Option<uuid::Uuid>,
+    /// Enable SFTP file browser for this SSH connection
+    #[serde(default)]
+    pub sftp_enabled: bool,
 }
 
 impl SshConfig {

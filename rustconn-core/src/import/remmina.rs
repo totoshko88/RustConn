@@ -264,6 +264,7 @@ impl RemminaImporter {
                         compression,
                         custom_options: HashMap::new(),
                         startup_command: None,
+                        sftp_enabled: false,
                     }),
                     22u16,
                 )

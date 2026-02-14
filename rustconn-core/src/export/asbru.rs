@@ -114,6 +114,7 @@ impl AsbruExporter {
             ProtocolType::Vnc => "VNC",
             ProtocolType::Spice => "SPICE",
             ProtocolType::Telnet => "telnet",
+            ProtocolType::Serial => "serial",
         };
         lines.push(format!("  method: \"{method}\""));
 
@@ -162,7 +163,8 @@ impl AsbruExporter {
             ProtocolConfig::Vnc(_)
             | ProtocolConfig::Spice(_)
             | ProtocolConfig::Telnet(_)
-            | ProtocolConfig::ZeroTrust(_) => {
+            | ProtocolConfig::ZeroTrust(_)
+            | ProtocolConfig::Serial(_) => {
                 // VNC, SPICE, Telnet, and ZeroTrust don't have additional fields
             }
         }

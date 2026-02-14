@@ -48,6 +48,7 @@ pub mod rdp_client;
 pub mod search;
 pub mod secret;
 pub mod session;
+pub mod sftp;
 pub mod snap;
 pub mod snippet;
 pub mod spice_client;
@@ -113,6 +114,7 @@ pub use models::{
     group_templates_by_protocol, Connection, ConnectionGroup, ConnectionHistoryEntry,
     ConnectionStatistics, ConnectionTemplate, Credentials, CustomProperty, HistorySettings,
     PasswordSource, PropertyType, ProtocolConfig, ProtocolType, RdpConfig, RdpGateway, Resolution,
+    SerialBaudRate, SerialConfig, SerialDataBits, SerialFlowControl, SerialParity, SerialStopBits,
     Snippet, SnippetVariable, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig,
     SshKeySource, TelnetBackspaceSends, TelnetConfig, TelnetDeleteSends, TemplateError, VncConfig,
     WindowGeometry, WindowMode,
@@ -138,8 +140,8 @@ pub use protocol::{
     detect_tailscale, detect_teleport, detect_telnet_client, detect_vnc_client,
     extract_geometry_from_args, get_zero_trust_provider_icon, has_decorations_flag,
     ClientDetectionResult, ClientInfo, CloudProvider, FreeRdpConfig, Protocol,
-    ProtocolCapabilities, ProtocolRegistry, ProviderIconCache, RdpProtocol, SshProtocol,
-    TelnetProtocol, VncProtocol,
+    ProtocolCapabilities, ProtocolRegistry, ProviderIconCache, RdpProtocol, SerialProtocol,
+    SshProtocol, TelnetProtocol, VncProtocol,
 };
 pub use rdp_client::{
     convert_to_bgra, create_frame_update, create_frame_update_with_conversion,
@@ -186,6 +188,7 @@ pub use session::{
     LogConfig, LogContext, LogError, LogResult, Session, SessionLogger, SessionManager,
     SessionState, SessionType,
 };
+pub use sftp::{build_sftp_command, build_sftp_uri, build_sftp_uri_from_connection};
 pub use snap::{
     get_config_dir, get_confinement_message, get_data_dir, get_known_hosts_path, get_ssh_dir,
     is_interface_connected, is_snap,

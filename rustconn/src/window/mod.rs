@@ -3005,7 +3005,8 @@ impl MainWindow {
             ProtocolType::Ssh
             | ProtocolType::Spice
             | ProtocolType::ZeroTrust
-            | ProtocolType::Telnet => {
+            | ProtocolType::Telnet
+            | ProtocolType::Serial => {
                 // For SSH/SPICE, cache credentials if available and start connection
                 if let Some(ref creds) = resolved_credentials {
                     if let (Some(username), Some(password)) =
@@ -3535,6 +3536,14 @@ impl MainWindow {
                 &conn_clone,
             ),
             "telnet" => protocols::start_telnet_connection(
+                state,
+                notebook,
+                sidebar,
+                connection_id,
+                &conn_clone,
+                logging_enabled,
+            ),
+            "serial" => protocols::start_serial_connection(
                 state,
                 notebook,
                 sidebar,

@@ -121,6 +121,7 @@ pub const fn get_protocol_icon(protocol: ProtocolType) -> &'static str {
         ProtocolType::Spice => "preferences-desktop-remote-desktop-symbolic",
         ProtocolType::Telnet => "call-start-symbolic",
         ProtocolType::ZeroTrust => "cloud-symbolic",
+        ProtocolType::Serial => "modem-symbolic",
     }
 }
 

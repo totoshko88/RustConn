@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.8.4
+Version:        0.8.5
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Zero Trust)
 License:        GPL-3.0-or-later
@@ -182,6 +182,9 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sat Feb 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.5-0
+- Version bump to 0.8.5
+
 * Sat Feb 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.4-0
 - Version bump to 0.8.4
 - Added FIDO2/SecurityKey SSH authentication with hardware key support

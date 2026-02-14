@@ -403,6 +403,7 @@ impl MobaXtermExporter {
             ProtocolType::ZeroTrust => {
                 Err(ExportError::UnsupportedProtocol("ZeroTrust".to_string()))
             }
+            ProtocolType::Serial => Err(ExportError::UnsupportedProtocol("Serial".to_string())),
         }
     }
 }

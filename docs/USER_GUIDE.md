@@ -1,8 +1,8 @@
 # RustConn User Guide
 
-**Version 0.8.4** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.8.5** | GTK4/libadwaita Connection Manager for Linux
 
-RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, Telnet protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
+RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, Telnet, Serial protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
 ## Table of Contents
 
@@ -42,7 +42,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 
 1. Press **Ctrl+N** or click **+** in header bar
 2. Enter connection name and host
-3. Select protocol (SSH, RDP, VNC, SPICE, Telnet)
+3. Select protocol (SSH, RDP, VNC, SPICE, Telnet, Serial)
 4. Configure authentication (password or SSH key)
 5. Click **Create**
 6. Double-click the connection to connect
@@ -130,6 +130,7 @@ Shows integration status in sidebar toolbar:
 | VNC | Encoding, compression, quality, view-only, scaling |
 | SPICE | TLS, USB redirection, clipboard, image compression |
 | Telnet | Host, port (default 23), extra arguments |
+| Serial | Device path, baud rate, data bits, stop bits, parity, flow control |
 | ZeroTrust | Provider-specific (AWS SSM, GCP IAP, Azure, etc.) |
 
 **Advanced Tabs:**
@@ -244,6 +245,7 @@ RustConn/
 | VNC | Embedded vnc-rs or external TigerVNC |
 | SPICE | Embedded spice-client or external remote-viewer |
 | Telnet | Embedded VTE terminal tab (external `telnet` client) |
+| Serial | Embedded VTE terminal tab (external `picocom` client) |
 | ZeroTrust | Provider CLI in terminal |
 
 ### Tab Management
@@ -279,6 +281,43 @@ Three logging modes (Settings → Logging):
 - **Activity** — Track session activity changes
 - **User Input** — Capture typed commands
 - **Terminal Output** — Full transcript
+
+### Serial Console
+
+Connect to serial devices (routers, switches, embedded boards) via `picocom`.
+
+**Create a Serial Connection:**
+1. Press **Ctrl+N** → select **Serial** protocol
+2. Enter device path (e.g., `/dev/ttyUSB0`)
+3. Configure baud rate (default: 115200), data bits, stop bits, parity, flow control
+4. Click **Create**
+5. Double-click to connect
+
+**Serial Parameters:**
+
+| Parameter | Options | Default |
+|-----------|---------|---------|
+| Baud Rate | 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600 | 115200 |
+| Data Bits | 5, 6, 7, 8 | 8 |
+| Stop Bits | 1, 2 | 1 |
+| Parity | None, Odd, Even | None |
+| Flow Control | None, Hardware (RTS/CTS), Software (XON/XOFF) | None |
+
+**Device Access (Linux):**
+Serial devices require `dialout` group membership:
+```bash
+sudo usermod -aG dialout $USER
+# Log out and back in for the change to take effect
+```
+
+**Flatpak:** Serial access works automatically (`--device=all` permission). `picocom` is bundled in the Flatpak package.
+
+**CLI:**
+```bash
+rustconn-cli add --name "Router" --protocol serial --device /dev/ttyUSB0 --baud-rate 9600
+rustconn-cli connect "Router"
+rustconn-cli serial --device /dev/ttyACM0 --baud-rate 115200
+```
 
 ---
 
@@ -620,7 +659,7 @@ When creating a new connection, the password source dropdown shows:
 
 Auto-detected CLI tools with versions:
 
-**Protocol Clients:** SSH, RDP (FreeRDP), VNC (TigerVNC), SPICE (remote-viewer), Telnet
+**Protocol Clients:** SSH, RDP (FreeRDP), VNC (TigerVNC), SPICE (remote-viewer), Telnet, Serial (picocom)
 
 **Zero Trust:** AWS, GCP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary
 
@@ -708,9 +747,14 @@ rustconn-cli connect "My Server"
 # Telnet connection
 rustconn-cli telnet --host 192.168.1.10 --port 23
 
+# Serial connection
+rustconn-cli serial --device /dev/ttyUSB0 --baud-rate 115200
+rustconn-cli serial --device /dev/ttyACM0 --baud-rate 9600 --data-bits 7 --parity even
+
 # Add connection
 rustconn-cli add --name "New Server" --host "192.168.1.10" --protocol ssh --user admin
 rustconn-cli add --name "FIDO2 Server" --host "10.0.0.5" --key ~/.ssh/id_ed25519_sk --auth-method security-key
+rustconn-cli add --name "Router Console" --protocol serial --device /dev/ttyUSB0 --baud-rate 9600
 
 # Show connection details
 rustconn-cli show "My Server"

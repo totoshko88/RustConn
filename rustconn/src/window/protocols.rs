@@ -823,3 +823,86 @@ pub fn start_zerotrust_connection(
 
     Some(session_id)
 }
+
+/// Starts a Serial connection
+///
+/// Creates a terminal tab and spawns picocom with the serial configuration.
+/// Shows user-friendly toasts when picocom is not found or device access fails.
+#[allow(clippy::too_many_arguments)]
+pub fn start_serial_connection(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    connection_id: Uuid,
+    conn: &rustconn_core::Connection,
+    logging_enabled: bool,
+) -> Option<Uuid> {
+    use rustconn_core::protocol::{
+        format_command_message, format_connection_message, Protocol, SerialProtocol,
+    };
+
+    let conn_name = conn.name.clone();
+
+    // Build picocom command via SerialProtocol
+    let serial = SerialProtocol::new();
+    let command = serial.build_command(conn)?;
+
+    // Get terminal settings from state
+    let terminal_settings = state
+        .try_borrow()
+        .ok()
+        .map(|s| s.settings().terminal.clone())
+        .unwrap_or_default();
+
+    // Create terminal tab for Serial
+    let session_id = notebook.create_terminal_tab_with_settings(
+        connection_id,
+        &conn_name,
+        "serial",
+        Some(&conn.automation),
+        &terminal_settings,
+    );
+
+    // Record connection start in history
+    let history_entry_id = if let Ok(mut state_mut) = state.try_borrow_mut() {
+        Some(state_mut.record_connection_start(conn, conn.username.as_deref()))
+    } else {
+        None
+    };
+
+    if let Some(entry_id) = history_entry_id {
+        notebook.set_history_entry_id(session_id, entry_id);
+    }
+
+    // Update last_connected timestamp
+    if let Ok(mut state_mut) = state.try_borrow_mut() {
+        let _ = state_mut.update_last_connected(connection_id);
+    }
+
+    // Set up session logging if enabled
+    if logging_enabled {
+        MainWindow::setup_session_logging(state, notebook, session_id, connection_id, &conn_name);
+    }
+
+    // Wire up child exited callback
+    MainWindow::setup_child_exited_handler(state, notebook, sidebar, session_id, connection_id);
+
+    // Get device name for display
+    let device = if let rustconn_core::ProtocolConfig::Serial(ref cfg) = conn.protocol_config {
+        cfg.device.clone()
+    } else {
+        String::new()
+    };
+
+    // Build command string for display
+    let serial_command = command.join(" ");
+    let conn_msg = format_connection_message("Serial", &device);
+    let cmd_msg = format_command_message(&serial_command);
+    let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
+    notebook.display_output(session_id, &feedback);
+
+    // Spawn picocom
+    notebook.spawn_serial(session_id, &command);
+
+    Some(session_id)
+}

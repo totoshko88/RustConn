@@ -322,6 +322,16 @@ impl Connection {
         )
     }
 
+    /// Creates a new Serial connection with default settings
+    #[must_use]
+    pub fn new_serial(name: String, device: String) -> Self {
+        let config = super::protocol::SerialConfig {
+            device,
+            ..Default::default()
+        };
+        Self::new(name, String::new(), 0, ProtocolConfig::Serial(config))
+    }
+
     /// Sets the username for this connection
     #[must_use]
     pub fn with_username(mut self, username: impl Into<String>) -> Self {
@@ -364,6 +374,7 @@ impl Connection {
             ProtocolType::Vnc | ProtocolType::Spice => 5900,
             ProtocolType::Telnet => 23,
             ProtocolType::ZeroTrust => 0, // No default port for Zero Trust
+            ProtocolType::Serial => 0,    // Serial uses device path, not port
         }
     }
 

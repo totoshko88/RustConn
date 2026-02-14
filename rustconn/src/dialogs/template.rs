@@ -2254,6 +2254,7 @@ impl TemplateDialog {
                 Some(startup_command.into())
             },
             custom_options: std::collections::HashMap::new(),
+            sftp_enabled: false,
         };
 
         if !custom_options_text.is_empty() {
@@ -2549,6 +2550,7 @@ impl TemplateDialog {
             ProtocolType::Spice => 3,
             ProtocolType::ZeroTrust => 4,
             ProtocolType::Telnet => 5,
+            ProtocolType::Serial => 6,
         };
         self.protocol_dropdown.set_selected(protocol_idx);
         self.protocol_stack
@@ -2557,6 +2559,7 @@ impl TemplateDialog {
                 2 => "vnc",
                 3 => "spice",
                 4 => "zerotrust",
+                6 => "serial",
                 _ => "ssh",
             });
 
@@ -2585,6 +2588,7 @@ impl TemplateDialog {
             ProtocolConfig::Spice(spice) => self.load_spice_config(spice),
             ProtocolConfig::ZeroTrust(zt) => self.load_zerotrust_config(zt),
             ProtocolConfig::Telnet(_) => {} // No Telnet-specific config to load
+            ProtocolConfig::Serial(_) => {} // No Serial-specific config to load
         }
     }
 
@@ -3048,6 +3052,7 @@ impl TemplateManagerDialog {
                 ProtocolType::Rdp => rdp_templates.push(template),
                 ProtocolType::Vnc => vnc_templates.push(template),
                 ProtocolType::Spice => spice_templates.push(template),
+                ProtocolType::Serial => ssh_templates.push(template),
             }
         }
 
@@ -3111,6 +3116,7 @@ impl TemplateManagerDialog {
             ProtocolType::Spice => "video-display-symbolic",
             ProtocolType::ZeroTrust => "cloud-symbolic",
             ProtocolType::Telnet => "call-start-symbolic",
+            ProtocolType::Serial => "modem-symbolic",
         };
         let icon = gtk4::Image::from_icon_name(icon_name);
         hbox.append(&icon);

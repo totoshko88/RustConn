@@ -65,6 +65,9 @@ impl TestConnection {
             ProtocolType::Telnet => {
                 Connection::new_telnet(self.name.clone(), self.host.clone(), self.port)
             }
+            ProtocolType::Serial => {
+                Connection::new_serial(self.name.clone(), "/dev/ttyUSB0".to_string())
+            }
         }
     }
 }
@@ -617,6 +620,9 @@ fn create_test_connection_for_add(
         ProtocolType::Vnc => Connection::new_vnc(name.to_string(), host.to_string(), port),
         ProtocolType::Spice => Connection::new_spice(name.to_string(), host.to_string(), port),
         ProtocolType::Telnet => Connection::new_telnet(name.to_string(), host.to_string(), port),
+        ProtocolType::Serial => {
+            Connection::new_serial(name.to_string(), "/dev/ttyUSB0".to_string())
+        }
     };
 
     if let Some(user) = username {
@@ -1109,6 +1115,8 @@ enum TestCliError {
     Import(String),
     TestFailed(String),
     Io(String),
+    Protocol(String),
+    Connection(String),
 }
 
 impl TestCliError {
@@ -1117,15 +1125,22 @@ impl TestCliError {
     fn expected_exit_code(&self) -> i32 {
         match self {
             // Connection-related failures use exit code 2
-            Self::TestFailed(_) | Self::ConnectionNotFound(_) => 2,
+            Self::TestFailed(_) | Self::ConnectionNotFound(_) | Self::Connection(_) => 2,
             // All other errors use exit code 1
-            Self::Config(_) | Self::Export(_) | Self::Import(_) | Self::Io(_) => 1,
+            Self::Config(_)
+            | Self::Export(_)
+            | Self::Import(_)
+            | Self::Io(_)
+            | Self::Protocol(_) => 1,
         }
     }
 
     /// Returns true if this is a connection-related failure
     fn is_connection_failure(&self) -> bool {
-        matches!(self, Self::TestFailed(_) | Self::ConnectionNotFound(_))
+        matches!(
+            self,
+            Self::TestFailed(_) | Self::ConnectionNotFound(_) | Self::Connection(_)
+        )
     }
 
     /// Returns the error category name for display
@@ -1137,6 +1152,8 @@ impl TestCliError {
             Self::Import(_) => "Import",
             Self::TestFailed(_) => "TestFailed",
             Self::Io(_) => "Io",
+            Self::Protocol(_) => "Protocol",
+            Self::Connection(_) => "Connection",
         }
     }
 }
@@ -1156,6 +1173,8 @@ fn arb_cli_error() -> impl Strategy<Value = TestCliError> {
         arb_error_message().prop_map(TestCliError::Import),
         arb_error_message().prop_map(TestCliError::TestFailed),
         arb_error_message().prop_map(TestCliError::Io),
+        arb_error_message().prop_map(TestCliError::Protocol),
+        arb_error_message().prop_map(TestCliError::Connection),
     ]
 }
 
@@ -1208,12 +1227,17 @@ proptest! {
     /// the exit code should be 2.
     #[test]
     fn prop_cli_connection_failure_exit_code(
-        error_type in prop_oneof![Just("test_failed"), Just("connection_not_found")],
+        error_type in prop_oneof![
+            Just("test_failed"),
+            Just("connection_not_found"),
+            Just("connection"),
+        ],
         message in "[a-zA-Z0-9 _-]{1,50}"
     ) {
         let error = match error_type {
             "test_failed" => TestCliError::TestFailed(message),
             "connection_not_found" => TestCliError::ConnectionNotFound(message),
+            "connection" => TestCliError::Connection(message),
             _ => unreachable!(),
         };
 
@@ -1240,7 +1264,13 @@ proptest! {
     /// the exit code should be 1.
     #[test]
     fn prop_cli_general_error_exit_code(
-        error_type in prop_oneof![Just("config"), Just("export"), Just("import"), Just("io")],
+        error_type in prop_oneof![
+            Just("config"),
+            Just("export"),
+            Just("import"),
+            Just("io"),
+            Just("protocol"),
+        ],
         message in "[a-zA-Z0-9 _-]{1,50}"
     ) {
         let error = match error_type {
@@ -1248,6 +1278,7 @@ proptest! {
             "export" => TestCliError::Export(message),
             "import" => TestCliError::Import(message),
             "io" => TestCliError::Io(message),
+            "protocol" => TestCliError::Protocol(message),
             _ => unreachable!(),
         };
 

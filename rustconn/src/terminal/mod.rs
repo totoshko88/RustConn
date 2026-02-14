@@ -234,6 +234,7 @@ impl TerminalNotebook {
             "vnc" => "video-display-symbolic",
             "spice" => "video-x-generic-symbolic",
             "telnet" => "call-start-symbolic",
+            "serial" => "phone-symbolic",
             _ => "network-server-symbolic",
         }
     }
@@ -774,6 +775,15 @@ impl TerminalNotebook {
         argv.push(host);
         let port_str = port.to_string();
         argv.push(&port_str);
+        self.spawn_command(session_id, &argv, None, None)
+    }
+
+    /// Spawns a serial connection using picocom in the terminal tab.
+    ///
+    /// Builds the picocom command from the `SerialConfig` and spawns it
+    /// directly in the VTE terminal (no shell wrapper).
+    pub fn spawn_serial(&self, session_id: Uuid, command: &[String]) -> bool {
+        let argv: Vec<&str> = command.iter().map(String::as_str).collect();
         self.spawn_command(session_id, &argv, None, None)
     }
 

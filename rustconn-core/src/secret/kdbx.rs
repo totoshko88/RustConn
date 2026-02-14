@@ -40,6 +40,7 @@ impl KdbxEntry {
             crate::models::ProtocolConfig::Spice(_) => "SPICE",
             crate::models::ProtocolConfig::ZeroTrust(_) => "ZeroTrust",
             crate::models::ProtocolConfig::Telnet(_) => "Telnet",
+            crate::models::ProtocolConfig::Serial(_) => "Serial",
         };
 
         let url = format!(

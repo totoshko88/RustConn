@@ -89,6 +89,7 @@ impl TabInfo {
             "rdp" => "computer-symbolic",
             "vnc" => "video-display-symbolic",
             "spice" => "video-x-generic-symbolic",
+            "serial" => "phone-symbolic",
             "zerotrust" => "folder-remote-symbolic",
             // ssh and unknown protocols use server icon
             _ => "network-server-symbolic",

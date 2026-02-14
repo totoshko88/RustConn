@@ -32,6 +32,7 @@ pub fn sample_ssh_connection_with_key() -> Connection {
         custom_options: std::collections::HashMap::new(),
         startup_command: None,
         jump_host_id: None,
+        sftp_enabled: false,
     };
 
     let mut conn = Connection::new(
@@ -65,6 +66,7 @@ pub fn sample_ssh_connection_custom_port() -> Connection {
         custom_options: std::collections::HashMap::new(),
         startup_command: None,
         jump_host_id: None,
+        sftp_enabled: false,
     };
 
     let mut conn = Connection::new(
@@ -96,6 +98,7 @@ pub fn sample_ssh_connection_with_proxy() -> Connection {
         custom_options: std::collections::HashMap::new(),
         startup_command: None,
         jump_host_id: None,
+        sftp_enabled: false,
     };
 
     let mut conn = Connection::new(

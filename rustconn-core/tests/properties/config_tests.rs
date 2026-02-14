@@ -107,6 +107,7 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
                     custom_options,
                     startup_command,
                     jump_host_id: None,
+                    sftp_enabled: false,
                 }
             },
         )

@@ -62,6 +62,7 @@ fn arb_connection() -> impl Strategy<Value = Connection> {
                 ProtocolType::Vnc => Connection::new_vnc(name, host, 5900),
                 ProtocolType::Spice => Connection::new_spice(name, host, 5900),
                 ProtocolType::Telnet => Connection::new_telnet(name, host, 23),
+                ProtocolType::Serial => Connection::new_serial(name, "/dev/ttyUSB0".to_string()),
             };
             conn.tags = tags;
             conn

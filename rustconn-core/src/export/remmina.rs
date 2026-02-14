@@ -58,6 +58,9 @@ impl RemminaExporter {
             ProtocolType::ZeroTrust => {
                 return Err(ExportError::UnsupportedProtocol("ZeroTrust".to_string()));
             }
+            ProtocolType::Serial => {
+                return Err(ExportError::UnsupportedProtocol("Serial".to_string()));
+            }
         }
 
         Ok(output)

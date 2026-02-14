@@ -161,6 +161,8 @@ impl ConnectionSidebar {
             "call-start-symbolic",
             "Filter Telnet connections",
         );
+        let serial_filter =
+            filter::create_filter_button("Serial", "phone-symbolic", "Filter Serial connections");
         let zerotrust_filter = filter::create_filter_button(
             "ZeroTrust",
             "folder-remote-symbolic",
@@ -187,6 +189,7 @@ impl ConnectionSidebar {
         filter_box.append(&vnc_filter);
         filter_box.append(&spice_filter);
         filter_box.append(&telnet_filter);
+        filter_box.append(&serial_filter);
         filter_box.append(&zerotrust_filter);
         filter_box.append(&local_shell_btn);
 
@@ -207,6 +210,9 @@ impl ConnectionSidebar {
         protocol_filter_buttons
             .borrow_mut()
             .insert("Telnet".to_string(), telnet_filter.clone());
+        protocol_filter_buttons
+            .borrow_mut()
+            .insert("Serial".to_string(), serial_filter.clone());
         protocol_filter_buttons
             .borrow_mut()
             .insert("ZeroTrust".to_string(), zerotrust_filter.clone());
@@ -261,6 +267,15 @@ impl ConnectionSidebar {
             let flag = programmatic_flag.clone();
             filter::connect_filter_button(&telnet_filter, move |btn| {
                 search::toggle_protocol_filter("Telnet", btn, &filters, &buttons, &entry, &flag);
+            });
+        }
+        {
+            let filters = active_protocol_filters.clone();
+            let buttons = protocol_filter_buttons.clone();
+            let entry = search_entry.clone();
+            let flag = programmatic_flag.clone();
+            filter::connect_filter_button(&serial_filter, move |btn| {
+                search::toggle_protocol_filter("Serial", btn, &filters, &buttons, &entry, &flag);
             });
         }
         {

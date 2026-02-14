@@ -79,6 +79,17 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.8.5" date="2026-02-14">
+      <description>
+        <p>Version 0.8.5 - Serial Console and SFTP Support:</p>
+        <ul>
+          <li>Serial Console protocol with picocom: device path, baud rate, data bits, stop bits, parity, flow control</li>
+          <li>Serial support in GUI connection dialog, CLI, and Flatpak (bundled picocom 3.1)</li>
+          <li>SFTP URI builder for SSH file transfer with sftp_enabled field and CLI sftp subcommand</li>
+          <li>13 serial-specific property tests</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.8.4" date="2026-02-14">
       <description>
         <p>Version 0.8.4 - FIDO2 Auth, CLI Enhancements, and Major Refactoring:</p>
@@ -592,5 +603,7 @@
     <keyword>terminal</keyword>
     <keyword>telnet</keyword>
     <keyword>zerotrust</keyword>
+    <keyword>serial</keyword>
+    <keyword>sftp</keyword>
   </keywords>
 </component>

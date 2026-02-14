@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-02-14
+
+### Added
+- **Serial Console Protocol** — Full serial console support across all crates ([#11](https://github.com/totoshko88/RustConn/issues/11)):
+  - Core model: `SerialConfig`, `ProtocolType::Serial`, `ProtocolConfig::Serial` with device path, baud rate (9600–921600), data bits (5–8), stop bits (1–2), parity (None/Odd/Even), flow control (None/Hardware/Software), and custom args
+  - `SerialProtocol` implementing `Protocol` trait with `picocom` command builder
+  - GUI: Connection dialog Serial tab with all parameters, protocol dropdown, validation (device path required)
+  - Terminal: `spawn_serial()` for VTE terminal sessions, `phone-symbolic` icon
+  - CLI: `serial` subcommand, `--device`/`--baud-rate`/`--data-bits`/`--stop-bits`/`--parity`/`--flow-control` flags in `add`/`update`
+  - Flatpak: `--device=all` permission and bundled `picocom` 3.1 in all manifests
+  - Property tests: 13 serial-specific tests in `serial_tests.rs`
+- **SFTP URI Builder** — `build_sftp_uri()` and `build_sftp_command()` in `rustconn-core/src/sftp.rs` for SSH file transfer; `sftp_enabled` field on `SshConfig`; CLI `sftp` subcommand and `--sftp` flag
+
 ## [0.8.4] - 2026-02-14
 
 ### Added

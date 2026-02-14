@@ -5,7 +5,9 @@ use std::sync::Arc;
 
 use crate::models::ProtocolType;
 
-use super::{Protocol, RdpProtocol, SpiceProtocol, SshProtocol, TelnetProtocol, VncProtocol};
+use super::{
+    Protocol, RdpProtocol, SerialProtocol, SpiceProtocol, SshProtocol, TelnetProtocol, VncProtocol,
+};
 
 /// Registry for protocol handlers
 ///
@@ -27,12 +29,14 @@ impl ProtocolRegistry {
         let vnc = Arc::new(VncProtocol::new());
         let spice = Arc::new(SpiceProtocol::new());
         let telnet = Arc::new(TelnetProtocol::new());
+        let serial = Arc::new(SerialProtocol::new());
 
         protocols.insert(ssh.protocol_id(), ssh);
         protocols.insert(rdp.protocol_id(), rdp);
         protocols.insert(vnc.protocol_id(), vnc);
         protocols.insert(spice.protocol_id(), spice);
         protocols.insert(telnet.protocol_id(), telnet);
+        protocols.insert(serial.protocol_id(), serial);
 
         Self { protocols }
     }
@@ -67,6 +71,7 @@ impl ProtocolRegistry {
             ProtocolType::Vnc => "vnc",
             ProtocolType::Spice => "spice",
             ProtocolType::Telnet => "telnet",
+            ProtocolType::Serial => "serial",
             ProtocolType::ZeroTrust => "zerotrust",
         };
         self.protocols.get(id).cloned()

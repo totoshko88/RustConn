@@ -68,7 +68,7 @@ pub enum Commands {
         #[arg(short, long)]
         name: String,
 
-        /// Host address (hostname or IP)
+        /// Host address (hostname or IP), or device path for serial
         #[arg(short = 'H', long)]
         host: String,
 
@@ -76,7 +76,7 @@ pub enum Commands {
         #[arg(short, long)]
         port: Option<u16>,
 
-        /// Protocol type (ssh, rdp, vnc)
+        /// Protocol type (ssh, rdp, vnc, spice, telnet, serial)
         #[arg(short = 'P', long, default_value = "ssh")]
         protocol: String,
 
@@ -92,6 +92,19 @@ pub enum Commands {
         /// agent, security-key)
         #[arg(long, value_name = "METHOD")]
         auth_method: Option<String>,
+
+        /// Serial device path (e.g., /dev/ttyUSB0). Alias for --host
+        /// with serial protocol
+        #[arg(long, value_name = "PATH")]
+        device: Option<String>,
+
+        /// Serial baud rate (default: 115200)
+        #[arg(long, default_value = "115200")]
+        baud_rate: Option<u32>,
+
+        /// Enable SFTP for SSH connections
+        #[arg(long)]
+        sftp: bool,
     },
 
     /// Export connections to external format
@@ -172,6 +185,18 @@ pub enum Commands {
         /// agent, security-key)
         #[arg(long, value_name = "METHOD")]
         auth_method: Option<String>,
+
+        /// Serial device path
+        #[arg(long, value_name = "PATH")]
+        device: Option<String>,
+
+        /// Serial baud rate
+        #[arg(long)]
+        baud_rate: Option<u32>,
+
+        /// Enable or disable SFTP for SSH connections
+        #[arg(long)]
+        sftp: Option<bool>,
     },
 
     /// Send Wake-on-LAN magic packet
@@ -222,6 +247,17 @@ pub enum Commands {
         /// New name for the duplicated connection
         #[arg(short, long)]
         new_name: Option<String>,
+    },
+
+    /// Open SFTP session for an SSH connection
+    #[command(about = "Open SFTP file browser or CLI session for an SSH connection")]
+    Sftp {
+        /// Connection name or UUID
+        name: String,
+
+        /// Use sftp CLI instead of file manager
+        #[arg(long)]
+        cli: bool,
     },
 
     /// Show connection statistics
@@ -701,15 +737,21 @@ fn main() {
             user,
             key,
             auth_method,
-        } => cmd_add(
-            &name,
-            &host,
+            device,
+            baud_rate,
+            sftp,
+        } => cmd_add(AddParams {
+            name: &name,
+            host: &host,
             port,
-            &protocol,
-            user.as_deref(),
-            key.as_deref(),
-            auth_method.as_deref(),
-        ),
+            protocol: &protocol,
+            user: user.as_deref(),
+            key: key.as_deref(),
+            auth_method: auth_method.as_deref(),
+            device: device.as_deref(),
+            baud_rate,
+            sftp,
+        }),
         Commands::Export { format, output } => cmd_export(format, &output),
         Commands::Import { format, file } => cmd_import(format, &file),
         Commands::Test { name, timeout } => cmd_test(&name, timeout),
@@ -723,15 +765,21 @@ fn main() {
             user,
             key,
             auth_method,
-        } => cmd_update(
-            &name,
-            new_name.as_deref(),
-            host.as_deref(),
+            device,
+            baud_rate,
+            sftp,
+        } => cmd_update(UpdateParams {
+            name: &name,
+            new_name: new_name.as_deref(),
+            host: host.as_deref(),
             port,
-            user.as_deref(),
-            key.as_deref(),
-            auth_method.as_deref(),
-        ),
+            user: user.as_deref(),
+            key: key.as_deref(),
+            auth_method: auth_method.as_deref(),
+            device: device.as_deref(),
+            baud_rate,
+            sftp,
+        }),
         Commands::Wol {
             target,
             broadcast,
@@ -744,6 +792,7 @@ fn main() {
         Commands::Var(subcmd) => cmd_var(subcmd),
         Commands::Secret(subcmd) => cmd_secret(subcmd),
         Commands::Duplicate { name, new_name } => cmd_duplicate(&name, new_name.as_deref()),
+        Commands::Sftp { name, cli } => cmd_sftp(&name, cli),
         Commands::Stats => cmd_stats(),
     };
 
@@ -946,6 +995,12 @@ pub struct ConnectionOutput {
     pub username: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub auth_method: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub device: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub baud_rate: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sftp_enabled: Option<bool>,
 }
 
 impl From<&Connection> for ConnectionOutput {
@@ -963,6 +1018,24 @@ impl From<&Connection> for ConnectionOutput {
             } else {
                 None
             };
+
+        let sftp_enabled =
+            if let rustconn_core::models::ProtocolConfig::Ssh(ref cfg) = conn.protocol_config {
+                Some(cfg.sftp_enabled)
+            } else {
+                None
+            };
+
+        let (device, baud_rate) =
+            if let rustconn_core::models::ProtocolConfig::Serial(ref cfg) = conn.protocol_config {
+                (
+                    Some(cfg.device.clone()),
+                    Some(cfg.baud_rate.display_name().to_string()),
+                )
+            } else {
+                (None, None)
+            };
+
         Self {
             id: conn.id.to_string(),
             name: conn.name.clone(),
@@ -971,6 +1044,9 @@ impl From<&Connection> for ConnectionOutput {
             protocol: conn.protocol.as_str().to_string(),
             username: conn.username.clone(),
             auth_method,
+            device,
+            baud_rate,
+            sftp_enabled,
         }
     }
 }
@@ -1013,6 +1089,7 @@ fn build_connection_command(connection: &Connection) -> ConnectionCommand {
         ProtocolType::Spice => build_spice_command(connection),
         ProtocolType::ZeroTrust => build_zerotrust_command(connection),
         ProtocolType::Telnet => build_telnet_command(connection),
+        ProtocolType::Serial => build_serial_command(connection),
     }
 }
 
@@ -1296,6 +1373,53 @@ fn build_telnet_command(connection: &Connection) -> ConnectionCommand {
     }
 }
 
+/// Builds Serial command arguments using picocom
+fn build_serial_command(connection: &Connection) -> ConnectionCommand {
+    use rustconn_core::models::{SerialFlowControl, SerialParity, SerialStopBits};
+
+    let mut args = Vec::new();
+
+    if let rustconn_core::models::ProtocolConfig::Serial(ref config) = connection.protocol_config {
+        args.push("--baud".to_string());
+        args.push(config.baud_rate.value().to_string());
+        args.push("--databits".to_string());
+        args.push(config.data_bits.value().to_string());
+        args.push("--stopbits".to_string());
+        args.push(
+            match config.stop_bits {
+                SerialStopBits::One => "1",
+                SerialStopBits::Two => "2",
+            }
+            .to_string(),
+        );
+        args.push("--parity".to_string());
+        args.push(
+            match config.parity {
+                SerialParity::None => "n",
+                SerialParity::Odd => "o",
+                SerialParity::Even => "e",
+            }
+            .to_string(),
+        );
+        args.push("--flow".to_string());
+        args.push(
+            match config.flow_control {
+                SerialFlowControl::None => "n",
+                SerialFlowControl::Hardware => "h",
+                SerialFlowControl::Software => "s",
+            }
+            .to_string(),
+        );
+        args.extend(config.custom_args.clone());
+        args.push(config.device.clone());
+    }
+
+    ConnectionCommand {
+        program: "picocom".to_string(),
+        args,
+    }
+}
+
 /// Executes the connection command
 fn execute_connection_command(command: &ConnectionCommand) -> Result<(), CliError> {
     use std::process::Command;
@@ -1358,29 +1482,79 @@ fn execute_connection_command(command: &ConnectionCommand) -> Result<(), CliErro
     }
 }
 
-/// Add connection command handler
-fn cmd_add(
-    name: &str,
-    host: &str,
+/// Parameters for the `add` command
+struct AddParams<'a> {
+    name: &'a str,
+    host: &'a str,
     port: Option<u16>,
-    protocol: &str,
-    user: Option<&str>,
-    key: Option<&std::path::Path>,
-    auth_method: Option<&str>,
-) -> Result<(), CliError> {
+    protocol: &'a str,
+    user: Option<&'a str>,
+    key: Option<&'a std::path::Path>,
+    auth_method: Option<&'a str>,
+    device: Option<&'a str>,
+    baud_rate: Option<u32>,
+    sftp: bool,
+}
+
+/// Add connection command handler
+fn cmd_add(params: AddParams<'_>) -> Result<(), CliError> {
     // Parse protocol and determine default port
-    let (protocol_type, default_port) = parse_protocol(protocol)?;
-    let port = port.unwrap_or(default_port);
+    let (protocol_type, default_port) = parse_protocol(params.protocol)?;
+    let port = params.port.unwrap_or(default_port);
 
     // Parse auth method if provided
-    let ssh_auth = auth_method.map(parse_auth_method).transpose()?;
+    let ssh_auth = params.auth_method.map(parse_auth_method).transpose()?;
+
+    // For serial, use --device if provided, otherwise use --host as device
+    let effective_host = if protocol_type == ProtocolType::Serial {
+        params.device.unwrap_or(params.host)
+    } else {
+        params.host
+    };
 
     // Create the connection based on protocol
-    let mut connection = create_connection(name, host, port, protocol_type, key, ssh_auth);
+    let mut connection = create_connection(
+        params.name,
+        effective_host,
+        port,
+        protocol_type,
+        params.key,
+        ssh_auth,
+    );
+
+    // Apply serial-specific settings
+    if protocol_type == ProtocolType::Serial {
+        if let rustconn_core::models::ProtocolConfig::Serial(ref mut config) =
+            connection.protocol_config
+        {
+            if let Some(baud) = params.baud_rate {
+                config.baud_rate = match baud {
+                    9600 => rustconn_core::models::SerialBaudRate::B9600,
+                    19_200 => rustconn_core::models::SerialBaudRate::B19200,
+                    38_400 => rustconn_core::models::SerialBaudRate::B38400,
+                    57_600 => rustconn_core::models::SerialBaudRate::B57600,
+                    230_400 => rustconn_core::models::SerialBaudRate::B230400,
+                    460_800 => rustconn_core::models::SerialBaudRate::B460800,
+                    921_600 => rustconn_core::models::SerialBaudRate::B921600,
+                    _ => rustconn_core::models::SerialBaudRate::B115200,
+                };
+            }
+        }
+    }
 
     // Set username if provided
-    if let Some(username) = user {
+    if let Some(username) = params.user {
         connection.username = Some(username.to_string());
+    }
+
+    // Apply SFTP setting for SSH connections
+    if params.sftp {
+        if let rustconn_core::models::ProtocolConfig::Ssh(ref mut cfg) = connection.protocol_config
+        {
+            cfg.sftp_enabled = true;
+        } else {
+            eprintln!("Warning: --sftp is only applicable to SSH connections");
+        }
     }
 
     // Load existing connections
@@ -1433,9 +1607,10 @@ fn parse_protocol(protocol: &str) -> Result<(ProtocolType, u16), CliError> {
         "vnc" => Ok((ProtocolType::Vnc, 5900)),
         "spice" => Ok((ProtocolType::Spice, 5900)),
         "telnet" => Ok((ProtocolType::Telnet, 23)),
+        "serial" => Ok((ProtocolType::Serial, 0)),
         _ => Err(CliError::Config(format!(
             "Unknown protocol '{protocol}'. \
-             Supported protocols: ssh, rdp, vnc, spice, telnet"
+             Supported protocols: ssh, rdp, vnc, spice, telnet, serial"
         ))),
     }
 }
@@ -1512,6 +1687,16 @@ fn create_connection(
                 eprintln!("Warning: --auth-method is ignored for Telnet connections");
             }
             Connection::new_telnet(name.to_string(), host.to_string(), port)
+        }
+        ProtocolType::Serial => {
+            if key.is_some() {
+                eprintln!("Warning: --key option is ignored for Serial connections");
+            }
+            if auth_method.is_some() {
+                eprintln!("Warning: --auth-method is ignored for Serial connections");
+            }
+            // For serial, host is used as device path
+            Connection::new_serial(name.to_string(), host.to_string())
         }
     }
 }
@@ -2077,6 +2262,9 @@ fn cmd_show(name: &str) -> Result<(), CliError> {
             if let Some(ref jump) = config.proxy_jump {
                 println!("  Proxy Jump: {jump}");
             }
+            if config.sftp_enabled {
+                println!("  SFTP:     Enabled");
+            }
         }
         rustconn_core::models::ProtocolConfig::Rdp(ref config) => {
             if let Some(ref domain) = connection.domain {
@@ -2086,6 +2274,24 @@ fn cmd_show(name: &str) -> Result<(), CliError> {
                 println!("  Resolution: {}x{}", res.width, res.height);
             }
         }
+        rustconn_core::models::ProtocolConfig::Serial(ref config) => {
+            println!("  Device:   {}", config.device);
+            println!("  Baud:     {}", config.baud_rate.display_name());
+            println!(
+                "  Config:   {}{}{} flow={}",
+                config.data_bits.display_name(),
+                match config.parity {
+                    rustconn_core::models::SerialParity::None => "N",
+                    rustconn_core::models::SerialParity::Odd => "O",
+                    rustconn_core::models::SerialParity::Even => "E",
+                },
+                match config.stop_bits {
+                    rustconn_core::models::SerialStopBits::One => "1",
+                    rustconn_core::models::SerialStopBits::Two => "2",
+                },
+                config.flow_control.display_name(),
+            );
+        }
         _ => {}
     }
 
@@ -2093,15 +2299,21 @@ fn cmd_show(name: &str) -> Result<(), CliError> {
 }
 
 /// Update connection command handler
-fn cmd_update(
-    name: &str,
-    new_name: Option<&str>,
-    host: Option<&str>,
+/// Parameters for the `update` command
+struct UpdateParams<'a> {
+    name: &'a str,
+    new_name: Option<&'a str>,
+    host: Option<&'a str>,
     port: Option<u16>,
-    user: Option<&str>,
-    key: Option<&std::path::Path>,
-    auth_method: Option<&str>,
-) -> Result<(), CliError> {
+    user: Option<&'a str>,
+    key: Option<&'a std::path::Path>,
+    auth_method: Option<&'a str>,
+    device: Option<&'a str>,
+    baud_rate: Option<u32>,
+    sftp: Option<bool>,
+}
+
+fn cmd_update(params: UpdateParams<'_>) -> Result<(), CliError> {
     // Load connections
     let config_manager = ConfigManager::new()
         .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
@@ -2113,42 +2325,81 @@ fn cmd_update(
     // Find the connection index
     let index = connections
         .iter()
-        .position(|c| c.name == name || c.id.to_string() == name)
-        .ok_or_else(|| CliError::ConnectionNotFound(name.to_string()))?;
+        .position(|c| c.name == params.name || c.id.to_string() == params.name)
+        .ok_or_else(|| CliError::ConnectionNotFound(params.name.to_string()))?;
 
     let connection = &mut connections[index];
 
     // Update fields
-    if let Some(new_name) = new_name {
+    if let Some(new_name) = params.new_name {
         connection.name = new_name.to_string();
     }
-    if let Some(host) = host {
+    if let Some(host) = params.host {
         connection.host = host.to_string();
     }
-    if let Some(port) = port {
+    if let Some(port) = params.port {
         connection.port = port;
     }
-    if let Some(user) = user {
+    if let Some(user) = params.user {
         connection.username = Some(user.to_string());
     }
 
     // Update SSH-specific fields
-    if key.is_some() || auth_method.is_some() {
+    if params.key.is_some() || params.auth_method.is_some() || params.sftp.is_some() {
         if let rustconn_core::models::ProtocolConfig::Ssh(ref mut cfg) = connection.protocol_config
         {
-            if let Some(key_path) = key {
+            if let Some(key_path) = params.key {
                 cfg.key_path = Some(key_path.to_path_buf());
             }
-            if let Some(method_str) = auth_method {
+            if let Some(method_str) = params.auth_method {
                 cfg.auth_method = parse_auth_method(method_str)?;
             }
+            if let Some(sftp_val) = params.sftp {
+                cfg.sftp_enabled = sftp_val;
+            }
         } else {
-            if key.is_some() {
+            if params.key.is_some() {
                 eprintln!("Warning: --key is only applicable to SSH connections");
             }
-            if auth_method.is_some() {
+            if params.auth_method.is_some() {
                 eprintln!(
                     "Warning: --auth-method is only applicable to SSH \
+                     connections"
+                );
+            }
+            if params.sftp.is_some() {
+                eprintln!("Warning: --sftp is only applicable to SSH connections");
+            }
+        }
+    }
+
+    // Update Serial-specific fields
+    if params.device.is_some() || params.baud_rate.is_some() {
+        if let rustconn_core::models::ProtocolConfig::Serial(ref mut cfg) =
+            connection.protocol_config
+        {
+            if let Some(dev) = params.device {
+                cfg.device = dev.to_string();
+            }
+            if let Some(baud) = params.baud_rate {
+                cfg.baud_rate = match baud {
+                    9600 => rustconn_core::models::SerialBaudRate::B9600,
+                    19_200 => rustconn_core::models::SerialBaudRate::B19200,
+                    38_400 => rustconn_core::models::SerialBaudRate::B38400,
+                    57_600 => rustconn_core::models::SerialBaudRate::B57600,
+                    230_400 => rustconn_core::models::SerialBaudRate::B230400,
+                    460_800 => rustconn_core::models::SerialBaudRate::B460800,
+                    921_600 => rustconn_core::models::SerialBaudRate::B921600,
+                    _ => rustconn_core::models::SerialBaudRate::B115200,
+                };
+            }
+        } else {
+            if params.device.is_some() {
+                eprintln!("Warning: --device is only applicable to Serial connections");
+            }
+            if params.baud_rate.is_some() {
+                eprintln!(
+                    "Warning: --baud-rate is only applicable to Serial \
                      connections"
                 );
             }
@@ -2235,6 +2486,14 @@ pub enum CliError {
     #[error("Secret error: {0}")]
     Secret(String),
 
+    /// Protocol error
+    #[error("Protocol error: {0}")]
+    Protocol(String),
+
+    /// Connection error
+    #[error("Connection error: {0}")]
+    Connection(String),
+
     /// IO error
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
@@ -2251,7 +2510,9 @@ impl CliError {
     pub const fn exit_code(&self) -> i32 {
         match self {
             // Connection-related failures use exit code 2
-            Self::TestFailed(_) | Self::ConnectionNotFound(_) => exit_codes::CONNECTION_FAILURE,
+            Self::TestFailed(_) | Self::ConnectionNotFound(_) | Self::Connection(_) => {
+                exit_codes::CONNECTION_FAILURE
+            }
             // All other errors use exit code 1
             Self::Config(_)
             | Self::Export(_)
@@ -2263,14 +2524,18 @@ impl CliError {
             | Self::Template(_)
             | Self::Cluster(_)
             | Self::Variable(_)
-            | Self::Secret(_) => exit_codes::GENERAL_ERROR,
+            | Self::Secret(_)
+            | Self::Protocol(_) => exit_codes::GENERAL_ERROR,
         }
     }
 
     /// Returns true if this is a connection-related failure.
     #[must_use]
     pub const fn is_connection_failure(&self) -> bool {
-        matches!(self, Self::TestFailed(_) | Self::ConnectionNotFound(_))
+        matches!(
+            self,
+            Self::TestFailed(_) | Self::ConnectionNotFound(_) | Self::Connection(_)
+        )
     }
 }
 
@@ -4575,6 +4840,81 @@ fn cmd_duplicate(name: &str, new_name: Option<&str>) -> Result<(), CliError> {
 }
 
 /// Show connection statistics
+fn cmd_sftp(name: &str, use_cli: bool) -> Result<(), CliError> {
+    let config_manager = ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+
+    let connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
+    let connection = find_connection(&connections, name)?;
+
+    if connection.protocol != ProtocolType::Ssh {
+        return Err(CliError::Protocol(format!(
+            "SFTP is only available for SSH connections, '{}' uses {}",
+            connection.name,
+            connection.protocol.as_str()
+        )));
+    }
+
+    if let rustconn_core::models::ProtocolConfig::Ssh(ref cfg) = connection.protocol_config {
+        if !cfg.sftp_enabled {
+            return Err(CliError::Protocol(format!(
+                "SFTP is not enabled for '{}'. Enable it with: \
+                 rustconn-cli update \"{}\" --sftp true",
+                connection.name, connection.name
+            )));
+        }
+    }
+
+    if use_cli {
+        // Use sftp CLI directly
+        let cmd = rustconn_core::sftp::build_sftp_command(connection)
+            .ok_or_else(|| CliError::Protocol("Failed to build SFTP command".to_string()))?;
+
+        println!("Connecting via sftp CLI to '{}'...", connection.name);
+
+        let status = std::process::Command::new(&cmd[0])
+            .args(&cmd[1..])
+            .status()
+            .map_err(|e| CliError::Connection(format!("Failed to launch sftp: {e}")))?;
+
+        if !status.success() {
+            return Err(CliError::Connection(
+                "SFTP session ended with error".to_string(),
+            ));
+        }
+    } else {
+        // Open file manager via xdg-open
+        let uri = rustconn_core::sftp::build_sftp_uri_from_connection(connection)
+            .ok_or_else(|| CliError::Protocol("Failed to build SFTP URI".to_string()))?;
+
+        println!("Opening SFTP file browser for '{}'...", connection.name);
+        println!("URI: {uri}");
+
+        let status = std::process::Command::new("xdg-open")
+            .arg(&uri)
+            .status()
+            .map_err(|e| {
+                CliError::Connection(format!(
+                    "Failed to open file manager: {e}. \
+                     Try --cli to use sftp directly"
+                ))
+            })?;
+
+        if !status.success() {
+            return Err(CliError::Connection(
+                "Failed to open file manager. Try --cli to use sftp \
+                 directly"
+                    .to_string(),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
 fn cmd_stats() -> Result<(), CliError> {
     let config_manager = ConfigManager::new()
         .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
