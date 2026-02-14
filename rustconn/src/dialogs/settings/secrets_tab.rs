@@ -13,6 +13,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 /// Results of background CLI detection for all secret backends
+#[allow(clippy::struct_excessive_bools)]
 struct SecretCliDetection {
     keepassxc_version: Option<String>,
     bitwarden_installed: bool,
