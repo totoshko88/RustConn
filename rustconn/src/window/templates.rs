@@ -8,10 +8,10 @@ use gtk4::prelude::*;
 use gtk4::{Label, Orientation};
 use std::rc::Rc;
 
+use super::MainWindow;
 use crate::dialogs::{ConnectionDialog, TemplateDialog, TemplateManagerDialog};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
-use crate::window::MainWindow;
 use rustconn_core::models::PasswordSource;
 
 /// Type alias for shared sidebar

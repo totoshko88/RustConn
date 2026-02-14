@@ -1,9 +1,9 @@
 //! Telnet protocol handler
 
 use crate::error::ProtocolError;
-use crate::models::Connection;
+use crate::models::{Connection, ProtocolConfig};
 
-use super::{Protocol, ProtocolResult};
+use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 
 /// Telnet protocol handler
 ///
@@ -50,6 +50,24 @@ impl Protocol for TelnetProtocol {
         }
 
         Ok(())
+    }
+
+    fn capabilities(&self) -> ProtocolCapabilities {
+        ProtocolCapabilities::terminal()
+    }
+
+    fn build_command(&self, connection: &Connection) -> Option<Vec<String>> {
+        let mut cmd = vec!["telnet".to_string()];
+
+        // Add custom args from TelnetConfig
+        if let ProtocolConfig::Telnet(ref config) = connection.protocol_config {
+            cmd.extend(config.custom_args.clone());
+        }
+
+        cmd.push(connection.host.clone());
+        cmd.push(connection.port.to_string());
+
+        Some(cmd)
     }
 }
 

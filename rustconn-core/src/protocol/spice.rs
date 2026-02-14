@@ -3,7 +3,7 @@
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, SpiceConfig};
 
-use super::{Protocol, ProtocolResult};
+use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 
 /// SPICE protocol handler
 ///
@@ -93,6 +93,10 @@ impl Protocol for SpiceProtocol {
         }
 
         Ok(())
+    }
+
+    fn capabilities(&self) -> ProtocolCapabilities {
+        ProtocolCapabilities::external_only(true)
     }
 }
 

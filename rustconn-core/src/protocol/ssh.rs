@@ -3,7 +3,7 @@
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, SshAuthMethod, SshConfig};
 
-use super::{Protocol, ProtocolResult};
+use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 
 /// SSH protocol handler
 ///
@@ -63,8 +63,11 @@ impl Protocol for SshProtocol {
             return Err(ProtocolError::InvalidConfig("Port cannot be 0".to_string()));
         }
 
-        // Validate key path exists if using public key auth
-        if matches!(ssh_config.auth_method, SshAuthMethod::PublicKey) {
+        // Validate key path exists if using public key or security key auth
+        if matches!(
+            ssh_config.auth_method,
+            SshAuthMethod::PublicKey | SshAuthMethod::SecurityKey
+        ) {
             if let Some(key_path) = &ssh_config.key_path {
                 if !key_path.as_os_str().is_empty() && !key_path.exists() {
                     return Err(ProtocolError::InvalidConfig(format!(
@@ -76,6 +79,35 @@ impl Protocol for SshProtocol {
         }
 
         Ok(())
+    }
+
+    fn capabilities(&self) -> ProtocolCapabilities {
+        ProtocolCapabilities::terminal()
+    }
+
+    fn build_command(&self, connection: &Connection) -> Option<Vec<String>> {
+        let ssh_config = Self::get_ssh_config(connection).ok()?;
+
+        let mut cmd = vec!["ssh".to_string()];
+
+        // Non-default port
+        if connection.port != 22 {
+            cmd.push("-p".to_string());
+            cmd.push(connection.port.to_string());
+        }
+
+        // Delegate SSH-specific args to SshConfig::build_command_args()
+        cmd.extend(ssh_config.build_command_args());
+
+        // user@host or just host
+        let destination = if let Some(ref user) = connection.username {
+            format!("{user}@{}", connection.host)
+        } else {
+            connection.host.clone()
+        };
+        cmd.push(destination);
+
+        Some(cmd)
     }
 }
 

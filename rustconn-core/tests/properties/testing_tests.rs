@@ -3,9 +3,6 @@
 //! These tests validate the correctness properties defined in the design document
 //! for the connection testing functionality.
 
-// Allow precision loss for percentage calculations in tests
-#![allow(clippy::cast_precision_loss)]
-
 use proptest::prelude::*;
 use rustconn_core::testing::{TestError, TestResult, TestSummary};
 use uuid::Uuid;

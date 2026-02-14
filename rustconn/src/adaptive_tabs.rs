@@ -341,7 +341,7 @@ impl AdaptiveTabBar {
 
                 let tabs_ref = tabs.borrow();
                 let order = tab_order.borrow();
-                #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+                #[allow(clippy::cast_possible_wrap)]
                 let tab_count = order.len() as i32;
 
                 if tab_count == 0 {
@@ -375,7 +375,6 @@ impl AdaptiveTabBar {
     }
 
     /// Adds a new tab
-    #[allow(clippy::needless_pass_by_value)] // TabInfo is small and used by value internally
     pub fn add_tab(&self, info: TabInfo) {
         let session_id = info.session_id;
 

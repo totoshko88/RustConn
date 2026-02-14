@@ -611,6 +611,7 @@ impl TemplateDialog {
             "Public Key",
             "Keyboard Interactive",
             "SSH Agent",
+            "Security Key (FIDO2)",
         ]);
         let auth_dropdown = DropDown::builder()
             .model(&auth_list)
@@ -2031,7 +2032,7 @@ impl TemplateDialog {
                 template.host = host.trim().to_string();
             }
 
-            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            #[allow(clippy::cast_sign_loss)]
             let port = port_spin.value() as u16;
             template.port = port;
 
@@ -2210,6 +2211,7 @@ impl TemplateDialog {
             1 => SshAuthMethod::PublicKey,
             2 => SshAuthMethod::KeyboardInteractive,
             3 => SshAuthMethod::Agent,
+            4 => SshAuthMethod::SecurityKey,
             _ => SshAuthMethod::Password,
         };
 
@@ -2282,7 +2284,7 @@ impl TemplateDialog {
             RdpClientMode::Embedded
         };
 
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[allow(clippy::cast_sign_loss)]
         let resolution = Resolution {
             width: width_spin.value() as u32,
             height: height_spin.value() as u32,
@@ -2357,7 +2359,7 @@ impl TemplateDialog {
                 .collect()
         };
 
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[allow(clippy::cast_sign_loss)]
         ProtocolConfig::Vnc(VncConfig {
             client_mode,
             performance_mode: VncPerformanceMode::default(),
@@ -2592,6 +2594,7 @@ impl TemplateDialog {
             SshAuthMethod::PublicKey => 1,
             SshAuthMethod::KeyboardInteractive => 2,
             SshAuthMethod::Agent => 3,
+            SshAuthMethod::SecurityKey => 4,
         };
         self.ssh_auth_dropdown.set_selected(auth_idx);
 

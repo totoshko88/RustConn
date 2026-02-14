@@ -75,7 +75,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 ### Components
 
 - **Header Bar** — Application menu, search, action buttons
-- **Sidebar** — Connection tree with groups (alphabetically sorted)
+- **Sidebar** — Connection tree with groups (alphabetically sorted, collapsible via F9 or on narrow windows)
 - **Sidebar Toolbar** — Delete, Add Group, Group Operations, Sort, Import, Export, KeePass status
 - **Session Area** — Active sessions in tabs
 - **Toast Overlay** — Non-blocking notifications
@@ -125,7 +125,7 @@ Shows integration status in sidebar toolbar:
 
 | Protocol | Options |
 |----------|---------|
-| SSH | Auth method, proxy jump (Jump Host), agent forwarding, X11 forwarding, compression, startup command |
+| SSH | Auth method (password, publickey, keyboard-interactive, agent, security-key/FIDO2), proxy jump (Jump Host), agent forwarding, X11 forwarding, compression, startup command |
 | RDP | Resolution, color depth, audio, gateway, shared folders |
 | VNC | Encoding, compression, quality, view-only, scaling |
 | SPICE | TLS, USB redirection, clipboard, image compression |
@@ -685,6 +685,7 @@ Press **Ctrl+?** or **F1** for searchable shortcuts dialog.
 | Ctrl+Shift+E | Export |
 | Ctrl+, | Settings |
 | F11 | Toggle Fullscreen |
+| F9 | Toggle Sidebar |
 | Ctrl+? / F1 | Keyboard Shortcuts |
 | Ctrl+Q | Quit |
 
@@ -709,12 +710,14 @@ rustconn-cli telnet --host 192.168.1.10 --port 23
 
 # Add connection
 rustconn-cli add --name "New Server" --host "192.168.1.10" --protocol ssh --user admin
+rustconn-cli add --name "FIDO2 Server" --host "10.0.0.5" --key ~/.ssh/id_ed25519_sk --auth-method security-key
 
 # Show connection details
 rustconn-cli show "My Server"
 
 # Update connection
 rustconn-cli update "My Server" --host "192.168.1.20" --port 2222
+rustconn-cli update "My Server" --auth-method security-key --key ~/.ssh/id_ed25519_sk
 
 # Duplicate connection
 rustconn-cli duplicate "My Server" --new-name "My Server Copy"

@@ -3,9 +3,9 @@
 //! This module contains functions for setting up document-related actions:
 //! new, open, save, close, export, and import documents.
 
+use super::groups;
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
-use crate::window_groups as groups;
 use gtk4::gio;
 use gtk4::prelude::*;
 use std::rc::Rc;

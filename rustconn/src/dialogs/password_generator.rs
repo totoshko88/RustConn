@@ -302,7 +302,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
         let ambiguous_row = ambiguous_row.clone();
 
         move || {
-            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            #[allow(clippy::cast_sign_loss)]
             let length = length_spin.value() as usize;
 
             PasswordGeneratorConfig::new()

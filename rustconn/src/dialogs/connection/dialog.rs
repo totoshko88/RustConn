@@ -6,6 +6,7 @@
 // OCI Bastion has target_id and target_ip fields which are semantically different
 #![allow(clippy::similar_names)]
 
+use super::logging_tab;
 use super::ssh;
 use crate::alert;
 use adw::prelude::*;
@@ -162,12 +163,8 @@ pub struct ConnectionDialog {
     /// Button to add new variables - wired up in `wire_add_variable_button()`
     add_variable_button: Button,
     global_variables: Rc<RefCell<Vec<Variable>>>,
-    // Logging fields
-    logging_enabled_check: CheckButton,
-    logging_path_entry: Entry,
-    logging_timestamp_dropdown: DropDown,
-    logging_max_size_spin: SpinButton,
-    logging_retention_spin: SpinButton,
+    // Logging tab
+    logging_tab: logging_tab::LoggingTab,
     // Expect rules fields
     expect_rules_list: ListBox,
     expect_rules: Rc<RefCell<Vec<ExpectRule>>>,
@@ -466,16 +463,9 @@ impl ConnectionDialog {
         let custom_properties: Rc<RefCell<Vec<CustomProperty>>> = Rc::new(RefCell::new(Vec::new()));
 
         // === Logging Tab ===
-        let (
-            logging_tab,
-            logging_enabled_check,
-            logging_path_entry,
-            logging_timestamp_dropdown,
-            logging_max_size_spin,
-            logging_retention_spin,
-        ) = Self::create_logging_tab();
+        let (logging_tab_box, logging_tab_struct) = logging_tab::LoggingTab::new();
         view_stack
-            .add_titled(&logging_tab, Some("logging"), "Logging")
+            .add_titled(&logging_tab_box, Some("logging"), "Logging")
             .set_icon_name(Some("document-save-symbolic"));
 
         // === Automation Tab (Expect Rules + Tasks) ===
@@ -632,11 +622,7 @@ impl ConnectionDialog {
             &telnet_backspace_dropdown,
             &telnet_delete_dropdown,
             &variables_rows,
-            &logging_enabled_check,
-            &logging_path_entry,
-            &logging_timestamp_dropdown,
-            &logging_max_size_spin,
-            &logging_retention_spin,
+            &logging_tab_struct,
             &expect_rules,
             &pre_connect_enabled_check,
             &pre_connect_command_entry,
@@ -720,11 +706,7 @@ impl ConnectionDialog {
             variables_rows,
             add_variable_button,
             global_variables,
-            logging_enabled_check,
-            logging_path_entry,
-            logging_timestamp_dropdown,
-            logging_max_size_spin,
-            logging_retention_spin,
+            logging_tab: logging_tab_struct,
             spice_ca_cert_entry,
             spice_ca_cert_button,
             spice_skip_verify_check,
@@ -1388,11 +1370,7 @@ impl ConnectionDialog {
         telnet_backspace_dropdown: &DropDown,
         telnet_delete_dropdown: &DropDown,
         variables_rows: &Rc<RefCell<Vec<LocalVariableRow>>>,
-        logging_enabled_check: &CheckButton,
-        logging_path_entry: &Entry,
-        logging_timestamp_dropdown: &DropDown,
-        logging_max_size_spin: &SpinButton,
-        logging_retention_spin: &SpinButton,
+        logging_tab: &logging_tab::LoggingTab,
         expect_rules: &Rc<RefCell<Vec<ExpectRule>>>,
         pre_connect_enabled_check: &CheckButton,
         pre_connect_command_entry: &Entry,
@@ -1494,11 +1472,11 @@ impl ConnectionDialog {
         let telnet_backspace_dropdown = telnet_backspace_dropdown.clone();
         let telnet_delete_dropdown = telnet_delete_dropdown.clone();
         let variables_rows = variables_rows.clone();
-        let logging_enabled_check = logging_enabled_check.clone();
-        let logging_path_entry = logging_path_entry.clone();
-        let logging_timestamp_dropdown = logging_timestamp_dropdown.clone();
-        let logging_max_size_spin = logging_max_size_spin.clone();
-        let logging_retention_spin = logging_retention_spin.clone();
+        let logging_enabled_check = logging_tab.enabled_check.clone();
+        let logging_path_entry = logging_tab.path_entry.clone();
+        let logging_timestamp_dropdown = logging_tab.timestamp_dropdown.clone();
+        let logging_max_size_spin = logging_tab.max_size_spin.clone();
+        let logging_retention_spin = logging_tab.retention_spin.clone();
         let expect_rules = expect_rules.clone();
         let pre_connect_enabled_check = pre_connect_enabled_check.clone();
         let pre_connect_command_entry = pre_connect_command_entry.clone();
@@ -1603,11 +1581,13 @@ impl ConnectionDialog {
                 telnet_backspace_dropdown: &telnet_backspace_dropdown,
                 telnet_delete_dropdown: &telnet_delete_dropdown,
                 local_variables: &local_variables,
-                logging_enabled_check: &logging_enabled_check,
-                logging_path_entry: &logging_path_entry,
-                logging_timestamp_dropdown: &logging_timestamp_dropdown,
-                logging_max_size_spin: &logging_max_size_spin,
-                logging_retention_spin: &logging_retention_spin,
+                logging_tab: &logging_tab::LoggingTab {
+                    enabled_check: logging_enabled_check.clone(),
+                    path_entry: logging_path_entry.clone(),
+                    timestamp_dropdown: logging_timestamp_dropdown.clone(),
+                    max_size_spin: logging_max_size_spin.clone(),
+                    retention_spin: logging_retention_spin.clone(),
+                },
                 expect_rules: &collected_expect_rules,
                 pre_connect_enabled_check: &pre_connect_enabled_check,
                 pre_connect_command_entry: &pre_connect_command_entry,
@@ -3223,154 +3203,6 @@ impl ConnectionDialog {
         )
     }
 
-    /// Creates the Logging tab for session logging configuration
-    #[allow(clippy::type_complexity, clippy::too_many_lines)]
-    fn create_logging_tab() -> (GtkBox, CheckButton, Entry, DropDown, SpinButton, SpinButton) {
-        let scrolled = ScrolledWindow::builder()
-            .hscrollbar_policy(gtk4::PolicyType::Never)
-            .vscrollbar_policy(gtk4::PolicyType::Automatic)
-            .vexpand(true)
-            .build();
-
-        let clamp = adw::Clamp::builder()
-            .maximum_size(600)
-            .tightening_threshold(400)
-            .build();
-
-        let content = GtkBox::new(Orientation::Vertical, 12);
-        content.set_margin_top(12);
-        content.set_margin_bottom(12);
-        content.set_margin_start(12);
-        content.set_margin_end(12);
-
-        // Enable logging group
-        let enable_group = adw::PreferencesGroup::builder()
-            .title("Session Logging")
-            .description("Record terminal output to files")
-            .build();
-
-        let enabled_check = CheckButton::builder().valign(gtk4::Align::Center).build();
-
-        let enable_row = adw::ActionRow::builder()
-            .title("Enable Logging")
-            .subtitle("Record session output to log files")
-            .activatable_widget(&enabled_check)
-            .build();
-        enable_row.add_suffix(&enabled_check);
-        enable_group.add(&enable_row);
-
-        content.append(&enable_group);
-
-        // Log settings group
-        let settings_group = adw::PreferencesGroup::builder()
-            .title("Log Settings")
-            .build();
-
-        // Path template
-        let path_entry = Entry::builder()
-            .hexpand(true)
-            .valign(gtk4::Align::Center)
-            .placeholder_text("${HOME}/.local/share/rustconn/logs/${connection_name}_${date}.log")
-            .sensitive(false)
-            .build();
-
-        let path_row = adw::ActionRow::builder()
-            .title("Log Path")
-            .subtitle("Variables: ${connection_name}, ${protocol}, ${date}, ${time}, ${datetime}, ${HOME}")
-            .build();
-        path_row.add_suffix(&path_entry);
-        settings_group.add(&path_row);
-
-        // Timestamp format
-        let timestamp_list = StringList::new(&[
-            "%Y-%m-%d %H:%M:%S",     // 2024-01-15 14:30:45
-            "%H:%M:%S",              // 14:30:45
-            "%Y-%m-%d %H:%M:%S%.3f", // 2024-01-15 14:30:45.123
-            "[%Y-%m-%d %H:%M:%S]",   // [2024-01-15 14:30:45]
-            "%d/%m/%Y %H:%M:%S",     // 15/01/2024 14:30:45
-        ]);
-        let timestamp_dropdown = DropDown::new(Some(timestamp_list), gtk4::Expression::NONE);
-        timestamp_dropdown.set_selected(0);
-        timestamp_dropdown.set_valign(gtk4::Align::Center);
-        timestamp_dropdown.set_sensitive(false);
-
-        let timestamp_row = adw::ActionRow::builder()
-            .title("Timestamp Format")
-            .subtitle("Format for timestamps in log entries")
-            .build();
-        timestamp_row.add_suffix(&timestamp_dropdown);
-        settings_group.add(&timestamp_row);
-
-        // Max size
-        let size_adj = gtk4::Adjustment::new(10.0, 0.0, 1000.0, 1.0, 10.0, 0.0);
-        let size_spin = SpinButton::builder()
-            .adjustment(&size_adj)
-            .climb_rate(1.0)
-            .digits(0)
-            .valign(gtk4::Align::Center)
-            .sensitive(false)
-            .build();
-
-        let size_row = adw::ActionRow::builder()
-            .title("Max Size (MB)")
-            .subtitle("Maximum log file size (0 = no limit)")
-            .build();
-        size_row.add_suffix(&size_spin);
-        settings_group.add(&size_row);
-
-        // Retention days
-        let retention_adj = gtk4::Adjustment::new(30.0, 0.0, 365.0, 1.0, 7.0, 0.0);
-        let retention_spin = SpinButton::builder()
-            .adjustment(&retention_adj)
-            .climb_rate(1.0)
-            .digits(0)
-            .valign(gtk4::Align::Center)
-            .sensitive(false)
-            .build();
-
-        let retention_row = adw::ActionRow::builder()
-            .title("Retention (days)")
-            .subtitle("Days to keep old log files (0 = keep forever)")
-            .build();
-        retention_row.add_suffix(&retention_spin);
-        settings_group.add(&retention_row);
-
-        content.append(&settings_group);
-
-        // Connect enabled checkbox to enable/disable other fields
-        let path_entry_clone = path_entry.clone();
-        let timestamp_dropdown_clone = timestamp_dropdown.clone();
-        let size_spin_clone = size_spin.clone();
-        let retention_spin_clone = retention_spin.clone();
-        let settings_group_clone = settings_group.clone();
-        enabled_check.connect_toggled(move |check| {
-            let enabled = check.is_active();
-            path_entry_clone.set_sensitive(enabled);
-            timestamp_dropdown_clone.set_sensitive(enabled);
-            size_spin_clone.set_sensitive(enabled);
-            retention_spin_clone.set_sensitive(enabled);
-            settings_group_clone.set_sensitive(enabled);
-        });
-
-        // Initially disable settings group since logging is off by default
-        settings_group.set_sensitive(false);
-
-        clamp.set_child(Some(&content));
-        scrolled.set_child(Some(&clamp));
-
-        let vbox = GtkBox::new(Orientation::Vertical, 0);
-        vbox.append(&scrolled);
-
-        (
-            vbox,
-            enabled_check,
-            path_entry,
-            timestamp_dropdown,
-            size_spin,
-            retention_spin,
-        )
-    }
-
     /// Creates the combined Automation tab (Expect Rules + Tasks)
     #[allow(clippy::type_complexity, clippy::too_many_lines)]
     fn create_automation_combined_tab() -> (
@@ -4223,154 +4055,6 @@ impl ConnectionDialog {
 
         // Suppress unused variable warning
         let _ = initial_index;
-    }
-
-    /// Creates the WOL (Wake On LAN) tab for configuring wake-on-lan settings (legacy)
-    ///
-    /// Uses libadwaita components following GNOME HIG.
-    #[allow(dead_code, clippy::type_complexity)]
-    fn create_wol_tab() -> (GtkBox, CheckButton, Entry, Entry, SpinButton, SpinButton) {
-        let scrolled = ScrolledWindow::builder()
-            .hscrollbar_policy(gtk4::PolicyType::Never)
-            .vscrollbar_policy(gtk4::PolicyType::Automatic)
-            .vexpand(true)
-            .build();
-
-        let clamp = adw::Clamp::builder()
-            .maximum_size(600)
-            .tightening_threshold(400)
-            .build();
-
-        let content = GtkBox::new(Orientation::Vertical, 12);
-        content.set_margin_top(12);
-        content.set_margin_bottom(12);
-        content.set_margin_start(12);
-        content.set_margin_end(12);
-
-        // Enable WOL group
-        let enable_group = adw::PreferencesGroup::builder()
-            .title("Wake On LAN")
-            .description("Send magic packet to wake sleeping machines before connecting")
-            .build();
-
-        let enabled_check = CheckButton::builder().valign(gtk4::Align::Center).build();
-
-        let enable_row = adw::ActionRow::builder()
-            .title("Enable Wake On LAN")
-            .subtitle("Send WOL packet before connecting")
-            .activatable_widget(&enabled_check)
-            .build();
-        enable_row.add_suffix(&enabled_check);
-        enable_group.add(&enable_row);
-
-        content.append(&enable_group);
-
-        // WOL Settings group
-        let settings_group = adw::PreferencesGroup::builder()
-            .title("WOL Settings")
-            .sensitive(false)
-            .build();
-
-        // MAC Address
-        let mac_entry = Entry::builder()
-            .hexpand(true)
-            .valign(gtk4::Align::Center)
-            .placeholder_text("AA:BB:CC:DD:EE:FF")
-            .build();
-
-        let mac_row = adw::ActionRow::builder()
-            .title("MAC Address")
-            .subtitle("Hardware address (format: AA:BB:CC:DD:EE:FF or AA-BB-CC-DD-EE-FF)")
-            .build();
-        mac_row.add_suffix(&mac_entry);
-        settings_group.add(&mac_row);
-
-        // Broadcast Address
-        let broadcast_entry = Entry::builder()
-            .hexpand(true)
-            .valign(gtk4::Align::Center)
-            .text(DEFAULT_BROADCAST_ADDRESS)
-            .placeholder_text("255.255.255.255")
-            .build();
-
-        let broadcast_row = adw::ActionRow::builder()
-            .title("Broadcast Address")
-            .subtitle("Network broadcast address for the magic packet")
-            .build();
-        broadcast_row.add_suffix(&broadcast_entry);
-        settings_group.add(&broadcast_row);
-
-        // UDP Port
-        let port_adjustment =
-            gtk4::Adjustment::new(f64::from(DEFAULT_WOL_PORT), 1.0, 65535.0, 1.0, 10.0, 0.0);
-        let port_spin = SpinButton::builder()
-            .adjustment(&port_adjustment)
-            .digits(0)
-            .valign(gtk4::Align::Center)
-            .build();
-
-        let port_row = adw::ActionRow::builder()
-            .title("UDP Port")
-            .subtitle("Default: 9 (discard protocol)")
-            .build();
-        port_row.add_suffix(&port_spin);
-        settings_group.add(&port_row);
-
-        // Wait Time
-        let wait_adjustment = gtk4::Adjustment::new(
-            f64::from(DEFAULT_WOL_WAIT_SECONDS),
-            0.0,
-            300.0,
-            1.0,
-            10.0,
-            0.0,
-        );
-        let wait_spin = SpinButton::builder()
-            .adjustment(&wait_adjustment)
-            .digits(0)
-            .valign(gtk4::Align::Center)
-            .build();
-
-        let wait_row = adw::ActionRow::builder()
-            .title("Wait Time (seconds)")
-            .subtitle("Time to wait for machine to boot before connecting")
-            .build();
-        wait_row.add_suffix(&wait_spin);
-        settings_group.add(&wait_row);
-
-        content.append(&settings_group);
-
-        // Status info group
-        let status_group = adw::PreferencesGroup::builder()
-            .title("Status")
-            .description(
-                "WOL packets will be sent automatically when connecting.\n\
-                 Status feedback will be shown in the connection progress dialog.",
-            )
-            .build();
-
-        content.append(&status_group);
-
-        // Connect enabled checkbox to enable/disable settings group
-        let settings_group_clone = settings_group.clone();
-        enabled_check.connect_toggled(move |check| {
-            settings_group_clone.set_sensitive(check.is_active());
-        });
-
-        clamp.set_child(Some(&content));
-        scrolled.set_child(Some(&clamp));
-
-        let vbox = GtkBox::new(Orientation::Vertical, 0);
-        vbox.append(&scrolled);
-
-        (
-            vbox,
-            enabled_check,
-            mac_entry,
-            broadcast_entry,
-            port_spin,
-            wait_spin,
-        )
     }
 
     /// Creates an expect rule row widget
@@ -5451,49 +5135,7 @@ impl ConnectionDialog {
 
     /// Sets the log configuration for this connection
     fn set_log_config(&self, log_config: Option<&LogConfig>) {
-        if let Some(config) = log_config {
-            self.logging_enabled_check.set_active(config.enabled);
-            self.logging_path_entry.set_text(&config.path_template);
-
-            // Map timestamp format to dropdown index
-            let timestamp_formats = [
-                "%Y-%m-%d %H:%M:%S",
-                "%H:%M:%S",
-                "%Y-%m-%d %H:%M:%S%.3f",
-                "[%Y-%m-%d %H:%M:%S]",
-                "%d/%m/%Y %H:%M:%S",
-            ];
-            let idx = timestamp_formats
-                .iter()
-                .position(|&f| f == config.timestamp_format)
-                .unwrap_or(0);
-            self.logging_timestamp_dropdown.set_selected(idx as u32);
-
-            self.logging_max_size_spin
-                .set_value(f64::from(config.max_size_mb));
-            self.logging_retention_spin
-                .set_value(f64::from(config.retention_days));
-
-            // Enable fields if logging is enabled
-            let enabled = config.enabled;
-            self.logging_path_entry.set_sensitive(enabled);
-            self.logging_timestamp_dropdown.set_sensitive(enabled);
-            self.logging_max_size_spin.set_sensitive(enabled);
-            self.logging_retention_spin.set_sensitive(enabled);
-        } else {
-            // Reset to defaults
-            self.logging_enabled_check.set_active(false);
-            self.logging_path_entry.set_text("");
-            self.logging_timestamp_dropdown.set_selected(0);
-            self.logging_max_size_spin.set_value(10.0);
-            self.logging_retention_spin.set_value(30.0);
-
-            // Disable fields
-            self.logging_path_entry.set_sensitive(false);
-            self.logging_timestamp_dropdown.set_sensitive(false);
-            self.logging_max_size_spin.set_sensitive(false);
-            self.logging_retention_spin.set_sensitive(false);
-        }
+        self.logging_tab.set(log_config);
     }
 
     /// Sets the local variables for this connection
@@ -5546,6 +5188,7 @@ impl ConnectionDialog {
             SshAuthMethod::PublicKey => 1,
             SshAuthMethod::KeyboardInteractive => 2,
             SshAuthMethod::Agent => 3,
+            SshAuthMethod::SecurityKey => 4,
         };
         self.ssh_auth_dropdown.set_selected(auth_idx);
 
@@ -6422,11 +6065,7 @@ struct ConnectionDialogData<'a> {
     telnet_backspace_dropdown: &'a DropDown,
     telnet_delete_dropdown: &'a DropDown,
     local_variables: &'a HashMap<String, Variable>,
-    logging_enabled_check: &'a CheckButton,
-    logging_path_entry: &'a Entry,
-    logging_timestamp_dropdown: &'a DropDown,
-    logging_max_size_spin: &'a SpinButton,
-    logging_retention_spin: &'a SpinButton,
+    logging_tab: &'a logging_tab::LoggingTab,
     expect_rules: &'a Vec<ExpectRule>,
     // Task fields
     pre_connect_enabled_check: &'a CheckButton,
@@ -6738,51 +6377,7 @@ impl ConnectionDialogData<'_> {
     }
 
     fn build_log_config(&self) -> Option<LogConfig> {
-        let enabled = self.logging_enabled_check.is_active();
-
-        // If not enabled, return None
-        if !enabled {
-            return None;
-        }
-
-        let path_template = self.logging_path_entry.text().trim().to_string();
-
-        // Use default path if empty
-        let path_template = if path_template.is_empty() {
-            "${HOME}/.local/share/rustconn/logs/${connection_name}_${date}.log".to_string()
-        } else {
-            path_template
-        };
-
-        // Map dropdown index to timestamp format
-        let timestamp_formats = [
-            "%Y-%m-%d %H:%M:%S",
-            "%H:%M:%S",
-            "%Y-%m-%d %H:%M:%S%.3f",
-            "[%Y-%m-%d %H:%M:%S]",
-            "%d/%m/%Y %H:%M:%S",
-        ];
-        let timestamp_idx = self.logging_timestamp_dropdown.selected() as usize;
-        let timestamp_format = timestamp_formats
-            .get(timestamp_idx)
-            .unwrap_or(&timestamp_formats[0])
-            .to_string();
-
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        let max_size_mb = self.logging_max_size_spin.value() as u32;
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        let retention_days = self.logging_retention_spin.value() as u32;
-
-        Some(LogConfig {
-            enabled,
-            path_template,
-            timestamp_format,
-            max_size_mb,
-            retention_days,
-            log_activity: true,
-            log_input: false,
-            log_output: false,
-        })
+        self.logging_tab.build()
     }
 
     fn build_protocol_config(&self) -> Option<ProtocolConfig> {
@@ -6958,6 +6553,7 @@ impl ConnectionDialogData<'_> {
             1 => SshAuthMethod::PublicKey,
             2 => SshAuthMethod::KeyboardInteractive,
             3 => SshAuthMethod::Agent,
+            4 => SshAuthMethod::SecurityKey,
             _ => SshAuthMethod::Password, // 0 and any other value default to Password
         };
 

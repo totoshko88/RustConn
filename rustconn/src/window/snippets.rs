@@ -469,7 +469,7 @@ pub fn show_variable_input_dialog(
             }
         }
 
-        #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+        #[allow(clippy::cast_possible_wrap)]
         let row_idx = i as i32;
         grid.attach(&label, 0, row_idx, 1, 1);
         grid.attach(&entry, 1, row_idx, 1, 1);

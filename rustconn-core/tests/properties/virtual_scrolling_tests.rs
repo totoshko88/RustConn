@@ -3,7 +3,6 @@
 //! These tests validate the correctness properties defined in the design document
 //! for the Virtual Scrolling system (Requirements 6.x).
 
-#![allow(clippy::cast_precision_loss)]
 #![allow(clippy::manual_clamp)]
 
 use proptest::prelude::*;

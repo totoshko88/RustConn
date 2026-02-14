@@ -143,7 +143,6 @@ impl RustConnAudioBackend {
 
     /// Creates a disabled (no-op) audio backend
     #[must_use]
-    #[allow(clippy::missing_const_for_fn)] // Vec::new() is not const in stable
     pub fn disabled(event_tx: Sender<RdpClientEvent>) -> Self {
         Self {
             supported_formats: Vec::new(),

@@ -89,7 +89,8 @@ impl RemminaExporter {
             // Auth method
             let auth_value = match ssh_config.auth_method {
                 crate::models::SshAuthMethod::Password => "0",
-                crate::models::SshAuthMethod::PublicKey => "2",
+                crate::models::SshAuthMethod::PublicKey
+                | crate::models::SshAuthMethod::SecurityKey => "2",
                 crate::models::SshAuthMethod::Agent => "3",
                 crate::models::SshAuthMethod::KeyboardInteractive => "4",
             };

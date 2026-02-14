@@ -3,11 +3,11 @@
 //! This module contains functions for starting connections for different protocols:
 //! SSH, VNC, SPICE, and Zero Trust.
 
+use super::MainWindow;
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
 use crate::utils::spawn_blocking_with_callback;
-use crate::window::MainWindow;
 use gtk4::prelude::*;
 use rustconn_core::check_port;
 use rustconn_core::variables::{Variable, VariableManager, VariableScope};

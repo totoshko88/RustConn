@@ -4,8 +4,8 @@
 //! - Coordinate transformation (widget ↔ RDP)
 //! - Status overlay drawing
 
-use crate::embedded_rdp_types::RdpConfig;
-use crate::embedded_rdp_types::RdpConnectionState;
+use super::types::RdpConfig;
+use super::types::RdpConnectionState;
 use std::cell::RefCell;
 use std::rc::Rc;
 

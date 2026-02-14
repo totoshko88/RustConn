@@ -96,7 +96,6 @@ impl SessionStats {
     /// Formats bytes as human-readable string
     /// **Validates: Requirements 13.2**
     #[must_use]
-    #[allow(clippy::cast_precision_loss)] // Precision loss acceptable for display formatting
     pub fn format_bytes(bytes: u64) -> String {
         const KB: u64 = 1024;
         const MB: u64 = KB * 1024;

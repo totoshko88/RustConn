@@ -29,10 +29,8 @@
 //! Both modes open FreeRDP in a separate window; the difference is in client selection
 //! and user expectations.
 
-// Allow cast warnings - graphics code uses various integer sizes for coordinates
-#![allow(clippy::cast_possible_truncation)]
+// cast_possible_truncation, cast_precision_loss allowed at workspace level
 #![allow(clippy::cast_sign_loss)]
-#![allow(clippy::cast_precision_loss)]
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::significant_drop_in_scrutinee)]
 //!
@@ -46,18 +44,26 @@
 //! - Requirement 6.3: FreeRDP threading isolation
 //! - Requirement 6.4: Automatic fallback to external mode
 
+pub mod buffer;
+pub mod detect;
+pub mod launcher;
+pub mod thread;
+pub mod types;
+pub mod ui;
+
 // Re-export types for external use
-pub use crate::embedded_rdp_buffer::{PixelBuffer, WaylandSurfaceHandle};
-pub use crate::embedded_rdp_launcher::SafeFreeRdpLauncher;
-pub use crate::embedded_rdp_thread::FreeRdpThread;
+pub use buffer::{PixelBuffer, WaylandSurfaceHandle};
+pub use launcher::SafeFreeRdpLauncher;
+pub use thread::FreeRdpThread;
 #[cfg(feature = "rdp-embedded")]
-pub use crate::embedded_rdp_thread::{ClipboardFileTransfer, FileDownloadState};
-pub use crate::embedded_rdp_types::{
+pub use thread::{ClipboardFileTransfer, FileDownloadState};
+pub use types::{
     EmbeddedRdpError, EmbeddedSharedFolder, FreeRdpThreadState, RdpCommand, RdpConfig,
     RdpConnectionState, RdpEvent,
 };
 
-use crate::embedded_rdp_types::{ErrorCallback, FallbackCallback, StateCallback};
+use types::{ErrorCallback, FallbackCallback, StateCallback};
+
 use gtk4::gdk;
 use gtk4::glib;
 use gtk4::glib::translate::IntoGlib;
@@ -766,7 +772,7 @@ impl EmbeddedRdpWidget {
         rdp_width: &Rc<RefCell<u32>>,
         rdp_height: &Rc<RefCell<u32>>,
     ) {
-        crate::embedded_rdp_ui::draw_status_overlay(
+        crate::embedded_rdp::ui::draw_status_overlay(
             cr,
             width,
             height,
@@ -901,7 +907,7 @@ impl EmbeddedRdpWidget {
                 let rdp_w = f64::from(*rdp_width_motion.borrow());
                 let rdp_h = f64::from(*rdp_height_motion.borrow());
 
-                let (rdp_x, rdp_y) = crate::embedded_rdp_ui::transform_widget_to_rdp(
+                let (rdp_x, rdp_y) = crate::embedded_rdp::ui::transform_widget_to_rdp(
                     x, y, widget_w, widget_h, rdp_w, rdp_h,
                 );
                 let buttons = *button_state_motion.borrow();
@@ -958,18 +964,18 @@ impl EmbeddedRdpWidget {
                 let rdp_w = f64::from(*rdp_width_press.borrow());
                 let rdp_h = f64::from(*rdp_height_press.borrow());
 
-                let (rdp_x, rdp_y) = crate::embedded_rdp_ui::transform_widget_to_rdp(
+                let (rdp_x, rdp_y) = crate::embedded_rdp::ui::transform_widget_to_rdp(
                     x, y, widget_w, widget_h, rdp_w, rdp_h,
                 );
 
                 // Convert GTK button to RDP button mask
-                let button_bit = crate::embedded_rdp_ui::gtk_button_to_rdp_mask(button);
+                let button_bit = crate::embedded_rdp::ui::gtk_button_to_rdp_mask(button);
                 let buttons = *button_state_press.borrow() | button_bit;
                 *button_state_press.borrow_mut() = buttons;
 
                 if using_ironrdp {
                     if let Some(ref tx) = *ironrdp_tx.borrow() {
-                        let rdp_button = crate::embedded_rdp_ui::gtk_button_to_rdp_button(button);
+                        let rdp_button = crate::embedded_rdp::ui::gtk_button_to_rdp_button(button);
                         let _ = tx.send(RdpClientCommand::MouseButtonPress {
                             x: crate::utils::coord_to_u16(rdp_x),
                             y: crate::utils::coord_to_u16(rdp_y),
@@ -1011,17 +1017,17 @@ impl EmbeddedRdpWidget {
                 let rdp_w = f64::from(*rdp_width_release.borrow());
                 let rdp_h = f64::from(*rdp_height_release.borrow());
 
-                let (rdp_x, rdp_y) = crate::embedded_rdp_ui::transform_widget_to_rdp(
+                let (rdp_x, rdp_y) = crate::embedded_rdp::ui::transform_widget_to_rdp(
                     x, y, widget_w, widget_h, rdp_w, rdp_h,
                 );
 
-                let button_bit = crate::embedded_rdp_ui::gtk_button_to_rdp_mask(button);
+                let button_bit = crate::embedded_rdp::ui::gtk_button_to_rdp_mask(button);
                 let buttons = *button_state_release.borrow() & !button_bit;
                 *button_state_release.borrow_mut() = buttons;
 
                 if using_ironrdp {
                     if let Some(ref tx) = *ironrdp_tx.borrow() {
-                        let rdp_button = crate::embedded_rdp_ui::gtk_button_to_rdp_button(button);
+                        let rdp_button = crate::embedded_rdp::ui::gtk_button_to_rdp_button(button);
                         let _ = tx.send(RdpClientCommand::MouseButtonRelease {
                             x: crate::utils::coord_to_u16(rdp_x),
                             y: crate::utils::coord_to_u16(rdp_y),
@@ -1055,7 +1061,6 @@ impl EmbeddedRdpWidget {
 
             if embedded && current_state == RdpConnectionState::Connected && using_ironrdp {
                 if let Some(ref tx) = *ironrdp_tx.borrow() {
-                    #[allow(clippy::cast_possible_truncation)]
                     let wheel_delta = (-dy * 120.0) as i16;
                     if wheel_delta != 0 {
                         let _ = tx.send(RdpClientCommand::WheelEvent {
@@ -1394,13 +1399,13 @@ impl EmbeddedRdpWidget {
     /// Detects if wlfreerdp is available for embedded mode
     #[must_use]
     pub fn detect_wlfreerdp() -> bool {
-        crate::embedded_rdp_detect::detect_wlfreerdp()
+        crate::embedded_rdp::detect::detect_wlfreerdp()
     }
 
     /// Detects if xfreerdp is available for external mode
     #[must_use]
     pub fn detect_xfreerdp() -> Option<String> {
-        crate::embedded_rdp_detect::detect_xfreerdp()
+        crate::embedded_rdp::detect::detect_xfreerdp()
     }
 
     /// Connects to an RDP server
@@ -1486,7 +1491,7 @@ impl EmbeddedRdpWidget {
     /// When IronRDP dependencies are resolved, this will return true.
     #[must_use]
     pub fn is_ironrdp_available() -> bool {
-        crate::embedded_rdp_detect::is_ironrdp_available()
+        crate::embedded_rdp::detect::is_ironrdp_available()
     }
 
     /// Connects using IronRDP native client
@@ -2701,4 +2706,4 @@ impl crate::embedded_trait::EmbeddedWidget for EmbeddedRdpWidget {
     }
 }
 
-// Tests moved to embedded_rdp_types.rs, embedded_rdp_buffer.rs, and embedded_rdp_launcher.rs
+// Tests moved to types.rs, buffer.rs, and launcher.rs submodules

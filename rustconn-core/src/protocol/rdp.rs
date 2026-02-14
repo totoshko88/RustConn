@@ -3,7 +3,7 @@
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, RdpConfig};
 
-use super::{Protocol, ProtocolResult};
+use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 
 /// RDP protocol handler
 ///
@@ -73,6 +73,10 @@ impl Protocol for RdpProtocol {
         }
 
         Ok(())
+    }
+
+    fn capabilities(&self) -> ProtocolCapabilities {
+        ProtocolCapabilities::graphical(true, true, true)
     }
 }
 

@@ -317,7 +317,7 @@ impl VncPixelBuffer {
     /// * `h` - Height of the region
     /// * `src_data` - Source pixel data
     /// * `src_stride` - Source stride
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
     pub fn update_region(
         &mut self,
         x: u32,
@@ -352,7 +352,6 @@ impl VncPixelBuffer {
     }
 
     /// Copies a rectangular region within the buffer (for CopyRect encoding)
-    #[allow(clippy::cast_possible_truncation)]
     pub fn copy_rect(&mut self, src_x: u32, src_y: u32, dst_x: u32, dst_y: u32, w: u32, h: u32) {
         let stride = self.stride as usize;
         let bytes_per_pixel = 4;

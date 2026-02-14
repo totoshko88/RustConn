@@ -3,6 +3,7 @@
 //! This module contains functions for editing connections and groups,
 //! showing connection details, and quick connect dialog.
 
+use super::MainWindow;
 use crate::alert;
 use crate::dialogs::ConnectionDialog;
 use crate::embedded_rdp::{EmbeddedRdpWidget, RdpConfig as EmbeddedRdpConfig};
@@ -10,7 +11,6 @@ use crate::sidebar::ConnectionSidebar;
 use crate::split_view::SplitViewBridge;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
-use crate::window::MainWindow;
 use adw::prelude::*;
 use gtk4::glib;
 use gtk4::prelude::*;
@@ -379,7 +379,6 @@ pub fn rename_selected_item(
 
 /// Shows dialog to edit a group name
 // SharedAppState is Rc<RefCell<...>> - cheap to clone and needed for closure ownership
-#[allow(clippy::needless_pass_by_value)]
 pub fn show_edit_group_dialog(
     window: &gtk4::Window,
     state: SharedAppState,
@@ -1409,7 +1408,7 @@ pub fn show_quick_connect_dialog_with_state(
             .map(|s| s.settings().terminal.clone())
             .unwrap_or_default();
 
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[allow(clippy::cast_sign_loss)]
         let port = port_clone.value() as u16;
         let username = {
             let text = user_clone.text();

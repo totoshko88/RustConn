@@ -561,11 +561,11 @@ fn get_version(command_path: &std::path::Path, version_arg: &str) -> Option<Stri
     get_version_with_env(command_path, version_arg, "")
 }
 
-/// CLI version check timeout (3 seconds)
+/// CLI version check timeout (6 seconds)
 ///
 /// Some CLIs (gcloud, az, oci) load Python runtimes and can take 3-5 seconds.
 /// This timeout prevents a single slow CLI from blocking the entire detection.
-const VERSION_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
+const VERSION_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(6);
 
 /// Gets version output from a command with proper environment setup and timeout
 fn get_version_with_env(

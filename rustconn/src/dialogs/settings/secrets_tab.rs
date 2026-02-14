@@ -27,6 +27,8 @@ struct SecretCliDetection {
     passbolt_version: Option<String>,
     passbolt_status: Option<(String, &'static str)>,
     passbolt_server_url: Option<String>,
+    /// Whether `secret-tool` binary is available (for keyring operations)
+    secret_tool_available: bool,
 }
 
 /// Runs all secret backend CLI detection on a background thread.
@@ -170,6 +172,14 @@ fn detect_secret_backends() -> SecretCliDetection {
     };
     let passbolt_server_url = read_passbolt_server_url_sync();
 
+    // Check secret-tool availability (for system keyring operations)
+    let secret_tool_available = std::process::Command::new("which")
+        .arg("secret-tool")
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .is_ok_and(|s| s.success());
+
     SecretCliDetection {
         keepassxc_version,
         bitwarden_installed,
@@ -184,6 +194,7 @@ fn detect_secret_backends() -> SecretCliDetection {
         passbolt_version,
         passbolt_status,
         passbolt_server_url,
+        secret_tool_available,
     }
 }
 
@@ -242,6 +253,8 @@ pub struct SecretsPageWidgets {
     pub onepassword_token_entry: PasswordEntry,
     pub onepassword_save_password_check: CheckButton,
     pub onepassword_save_to_keyring_check: CheckButton,
+    /// Cached result of `which secret-tool` (populated by background detection)
+    pub secret_tool_available: Rc<RefCell<Option<bool>>>,
 }
 
 /// Creates the secrets settings page using AdwPreferencesPage
@@ -308,6 +321,13 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let bitwarden_version: Rc<RefCell<Option<String>>> = Rc::new(RefCell::new(None));
     let onepassword_version: Rc<RefCell<Option<String>>> = Rc::new(RefCell::new(None));
     let passbolt_version: Rc<RefCell<Option<String>>> = Rc::new(RefCell::new(None));
+
+    // Cached secret-tool availability — populated by background detection thread.
+    // `None` = not yet checked, `Some(true/false)` = result known.
+    let secret_tool_available: Rc<RefCell<Option<bool>>> = Rc::new(RefCell::new(None));
+
+    // Track whether async detection has completed
+    let detection_complete: Rc<RefCell<bool>> = Rc::new(RefCell::new(false));
 
     // Shared mutable command paths for callbacks (updated by async detection)
     let bitwarden_cmd: Rc<RefCell<String>> = Rc::new(RefCell::new("bw".to_string()));
@@ -376,9 +396,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         });
         let save_check = bitwarden_save_password_check.clone();
         let status_label = bitwarden_status_label.clone();
+        let st_avail = secret_tool_available.clone();
         bitwarden_save_to_keyring_check.connect_toggled(move |check| {
             if check.is_active() {
-                if !is_secret_tool_available_sync() {
+                if !*st_avail.borrow().as_ref().unwrap_or(&false) {
                     check.set_active(false);
                     update_status_label(
                         &status_label,
@@ -604,9 +625,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         });
         let save_check = onepassword_save_password_check.clone();
         let status_label = onepassword_status_label.clone();
+        let st_avail = secret_tool_available.clone();
         onepassword_save_to_keyring_check.connect_toggled(move |check| {
             if check.is_active() {
-                if !is_secret_tool_available_sync() {
+                if !*st_avail.borrow().as_ref().unwrap_or(&false) {
                     check.set_active(false);
                     update_status_label(
                         &status_label,
@@ -761,9 +783,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         });
         let save_check = passbolt_save_password_check.clone();
         let status_label = passbolt_status_label.clone();
+        let st_avail = secret_tool_available.clone();
         passbolt_save_to_keyring_check.connect_toggled(move |check| {
             if check.is_active() {
-                if !is_secret_tool_available_sync() {
+                if !*st_avail.borrow().as_ref().unwrap_or(&false) {
                     check.set_active(false);
                     update_status_label(
                         &status_label,
@@ -937,9 +960,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         });
         let save_check = kdbx_save_password_check.clone();
         let status_label = kdbx_status_label.clone();
+        let st_avail = secret_tool_available.clone();
         kdbx_save_to_keyring_check.connect_toggled(move |check| {
             if check.is_active() {
-                if !is_secret_tool_available_sync() {
+                if !*st_avail.borrow().as_ref().unwrap_or(&false) {
                     check.set_active(false);
                     update_status_label(
                         &status_label,
@@ -1052,6 +1076,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let bitwarden_version_clone = bitwarden_version.clone();
     let onepassword_version_clone = onepassword_version.clone();
     let passbolt_version_clone = passbolt_version.clone();
+    let detection_complete_clone = detection_complete.clone();
     secret_backend_dropdown.connect_selected_notify(move |dropdown| {
         let selected = dropdown.selected();
         // Show Bitwarden group only when Bitwarden is selected (index 2)
@@ -1069,6 +1094,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         status_group_clone2.set_visible(show_kdbx && kdbx_enabled);
 
         // Helper to set version label text and style
+        let detected = *detection_complete_clone.borrow();
         let set_ver = |ver: &Option<String>| {
             version_row_clone.set_visible(true);
             version_label_clone.remove_css_class("error");
@@ -1077,9 +1103,12 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             if let Some(ref v) = *ver {
                 version_label_clone.set_text(&format!("v{v}"));
                 version_label_clone.add_css_class("success");
-            } else {
+            } else if detected {
                 version_label_clone.set_text("Not installed");
                 version_label_clone.add_css_class("error");
+            } else {
+                version_label_clone.set_text("Detecting...");
+                version_label_clone.add_css_class("dim-label");
             }
         };
 
@@ -1254,6 +1283,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         let bw_ver = bitwarden_version.clone();
         let op_ver = onepassword_version.clone();
         let pb_ver = passbolt_version.clone();
+        let det_complete = detection_complete.clone();
+        let st_avail = secret_tool_available.clone();
 
         // Run detection on a real OS thread so the GTK main loop stays idle
         // and can render frames while detection runs in the background.
@@ -1276,6 +1307,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 *bw_ver.borrow_mut() = det.bitwarden_version.clone();
                 *op_ver.borrow_mut() = det.onepassword_version.clone();
                 *pb_ver.borrow_mut() = det.passbolt_version.clone();
+                *det_complete.borrow_mut() = true;
+                *st_avail.borrow_mut() = Some(det.secret_tool_available);
 
                 // Update version label for currently selected backend
                 let selected = dropdown.selected();
@@ -1380,6 +1413,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         onepassword_token_entry,
         onepassword_save_password_check,
         onepassword_save_to_keyring_check,
+        secret_tool_available,
     }
 }
 
@@ -1578,14 +1612,6 @@ fn get_bw_password_from_keyring() -> Option<String> {
             None
         }
     }
-}
-
-/// Checks whether `secret-tool` is available on the system (sync wrapper)
-fn is_secret_tool_available_sync() -> bool {
-    crate::async_utils::with_runtime(|rt| {
-        rt.block_on(rustconn_core::secret::keyring::is_secret_tool_available())
-    })
-    .unwrap_or(false)
 }
 
 /// Saves 1Password service account token to system keyring

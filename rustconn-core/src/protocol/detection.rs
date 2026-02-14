@@ -434,11 +434,11 @@ fn which_binary(binary: &str) -> Option<PathBuf> {
     None
 }
 
-/// CLI version check timeout (3 seconds)
+/// CLI version check timeout (6 seconds)
 ///
 /// Some CLIs (gcloud, az, oci) load Python runtimes and can take 3-5 seconds.
 /// This timeout prevents a single slow CLI from blocking the entire detection.
-const VERSION_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
+const VERSION_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(6);
 
 /// Gets version information from a binary with a timeout
 fn get_version(binary: &str, args: &[&str]) -> Option<String> {

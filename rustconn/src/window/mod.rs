@@ -3,32 +3,37 @@
 //! This module provides the main window implementation for `RustConn`,
 //! including the header bar, sidebar, terminal area, and action handling.
 
+mod clusters;
+mod connection_dialogs;
+mod document_actions;
+mod edit_dialogs;
+mod groups;
+mod operations;
+mod protocols;
+mod rdp_vnc;
+mod sessions;
+mod snippets;
+mod sorting;
+mod templates;
+pub mod types;
+mod ui;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{gio, glib, Orientation, Paned};
+use gtk4::{gio, glib, Orientation};
 use libadwaita as adw;
 use std::cell::RefCell;
 use std::rc::Rc;
 use uuid::Uuid;
 use vte4::prelude::*;
 
-use crate::alert;
-use crate::toast::ToastOverlay;
-use crate::window_clusters as clusters;
-use crate::window_document_actions as doc_actions;
-use crate::window_edit_dialogs as edit_dialogs;
-use crate::window_groups as groups;
-use crate::window_operations as operations;
-use crate::window_protocols as protocols;
-use crate::window_rdp_vnc as rdp_vnc;
-use crate::window_sessions as sessions;
-use crate::window_snippets as snippets;
-use crate::window_templates as templates;
-use crate::window_types::{
+use self::document_actions as doc_actions;
+use self::types::{
     get_protocol_string, SessionSplitBridges, SharedExternalWindowManager, SharedNotebook,
     SharedSidebar, SharedSplitView, SharedTabSplitManager,
 };
-use crate::window_ui;
+use crate::alert;
+use crate::toast::ToastOverlay;
 
 use crate::dialogs::{ExportDialog, SettingsDialog};
 use crate::external_window::ExternalWindowManager;
@@ -64,7 +69,7 @@ pub struct MainWindow {
     /// Container for split views - we swap which bridge is visible based on active session
     split_container: gtk4::Box,
     state: SharedAppState,
-    paned: Paned,
+    overlay_split_view: adw::OverlaySplitView,
     external_window_manager: SharedExternalWindowManager,
     toast_overlay: SharedToastOverlay,
 }
@@ -82,6 +87,8 @@ impl MainWindow {
             .title("RustConn")
             .default_width(1200)
             .default_height(800)
+            .width_request(360)
+            .height_request(294)
             .icon_name("io.github.totoshko88.RustConn")
             .build();
 
@@ -101,28 +108,27 @@ impl MainWindow {
         }
 
         // Create header bar
-        let header_bar = window_ui::create_header_bar();
+        let header_bar = ui::create_header_bar();
 
-        // Create the main layout with paned container
-        let paned = Paned::new(Orientation::Horizontal);
+        // Create the main layout with OverlaySplitView (GNOME HIG)
+        let overlay_split_view = adw::OverlaySplitView::new();
 
-        // Apply saved sidebar width (with reasonable limits)
+        // Apply saved sidebar width as max-sidebar-width
         {
             let state_ref = state.borrow();
             let settings = state_ref.settings();
-            let sidebar_width = settings.ui.sidebar_width.unwrap_or(280).clamp(150, 500);
-            paned.set_position(sidebar_width);
+            let sidebar_width = settings.ui.sidebar_width.unwrap_or(280);
+            overlay_split_view.set_max_sidebar_width(f64::from(sidebar_width.clamp(150, 500)));
         }
-
-        // Sidebar should not resize when window resizes - only content area should
-        paned.set_resize_start_child(false);
-        paned.set_resize_end_child(true);
-        paned.set_shrink_start_child(false);
-        paned.set_shrink_end_child(false);
+        overlay_split_view.set_min_sidebar_width(150.0);
+        overlay_split_view.set_sidebar_width_fraction(0.25);
+        overlay_split_view.set_enable_show_gesture(true);
+        overlay_split_view.set_enable_hide_gesture(true);
+        overlay_split_view.set_pin_sidebar(true);
 
         // Create sidebar
         let sidebar = Rc::new(ConnectionSidebar::new());
-        paned.set_start_child(Some(sidebar.widget()));
+        overlay_split_view.set_sidebar(Some(sidebar.widget()));
 
         // Load persisted search history
         {
@@ -193,11 +199,11 @@ impl MainWindow {
 
         // Note: drag-and-drop is set up in connect_signals after we have access to notebook
 
-        paned.set_end_child(Some(&terminal_container));
+        overlay_split_view.set_content(Some(&terminal_container));
 
-        // Create toast overlay and wrap the paned container
+        // Create toast overlay and wrap the split view
         let toast_overlay = Rc::new(ToastOverlay::new());
-        toast_overlay.set_child(Some(&paned));
+        toast_overlay.set_child(Some(&overlay_split_view));
 
         // Create main layout using adw::ToolbarView for proper libadwaita integration
         // This provides better responsive behavior and follows GNOME HIG
@@ -206,6 +212,20 @@ impl MainWindow {
         toolbar_view.set_content(Some(toast_overlay.widget()));
 
         window.set_content(Some(&toolbar_view));
+
+        // Add responsive breakpoint: collapse sidebar to overlay when window is narrow
+        // Uses sp units to accommodate GNOME Large Text accessibility setting
+        let breakpoint_condition = adw::BreakpointCondition::new_length(
+            adw::BreakpointConditionLengthType::MaxWidth,
+            400.0,
+            adw::LengthUnit::Sp,
+        );
+        let breakpoint = adw::Breakpoint::new(breakpoint_condition);
+        let collapsed_val = true.to_value();
+        let unpin_val = false.to_value();
+        breakpoint.add_setter(&overlay_split_view, "collapsed", Some(&collapsed_val));
+        breakpoint.add_setter(&overlay_split_view, "pin-sidebar", Some(&unpin_val));
+        window.add_breakpoint(breakpoint);
 
         // Create external window manager
         let external_window_manager = Rc::new(ExternalWindowManager::new());
@@ -220,7 +240,7 @@ impl MainWindow {
             global_color_pool,
             split_container,
             state,
-            paned,
+            overlay_split_view,
             external_window_manager,
             toast_overlay,
         };
@@ -2208,6 +2228,21 @@ impl MainWindow {
             sidebar_clone.hide_drop_indicator();
         });
         window.add_action(&hide_drop_indicator_action);
+
+        // Toggle sidebar visibility
+        let toggle_sidebar_action = gio::SimpleAction::new("toggle-sidebar", None);
+        let split_view_clone = self.overlay_split_view.clone();
+        toggle_sidebar_action.connect_activate(move |_, _| {
+            let visible = split_view_clone.shows_sidebar();
+            split_view_clone.set_show_sidebar(!visible);
+        });
+        window.add_action(&toggle_sidebar_action);
+
+        // F9 keyboard shortcut for toggle-sidebar
+        let app = window.application().and_downcast::<adw::Application>();
+        if let Some(app) = app {
+            app.set_accels_for_action("win.toggle-sidebar", &["F9"]);
+        }
     }
 
     /// Connects UI signals
@@ -2217,7 +2252,7 @@ impl MainWindow {
         let sidebar = self.sidebar.clone();
         let terminal_notebook = self.terminal_notebook.clone();
         let split_view = self.split_view.clone();
-        let paned = self.paned.clone();
+        let split_view_for_close = self.overlay_split_view.clone();
         let window = self.window.clone();
 
         // Set up split view cleanup callback for when tabs are closed via TabView
@@ -2597,12 +2632,12 @@ impl MainWindow {
 
         // Save window state on close and handle minimize to tray
         let state_clone = state.clone();
-        let paned_clone = paned;
+        let split_view_clone = split_view_for_close;
         let sidebar_clone = sidebar.clone();
         window.connect_close_request(move |win| {
             // Save window geometry and expanded groups state
             let (width, height) = win.default_size();
-            let sidebar_width = paned_clone.position();
+            let sidebar_width = split_view_clone.max_sidebar_width() as i32;
 
             // Save expanded groups state
             let expanded = sidebar_clone.get_expanded_groups();
@@ -2636,7 +2671,7 @@ impl MainWindow {
         let expanded_groups = self.state.borrow().expanded_groups().clone();
 
         // Use sorted rebuild to ensure alphabetical order by default
-        crate::window_sorting::rebuild_sidebar_sorted(&self.state, &self.sidebar);
+        sorting::rebuild_sidebar_sorted(&self.state, &self.sidebar);
 
         // Apply expanded state after populating
         self.sidebar.apply_expanded_groups(&expanded_groups);
@@ -3944,11 +3979,7 @@ impl MainWindow {
         state: SharedAppState,
         sidebar: SharedSidebar,
     ) {
-        crate::window_connection_dialogs::show_new_connection_dialog(
-            window.upcast_ref(),
-            state,
-            sidebar,
-        );
+        connection_dialogs::show_new_connection_dialog(window.upcast_ref(), state, sidebar);
     }
 
     /// Shows the new group dialog with optional parent selection
@@ -3957,11 +3988,7 @@ impl MainWindow {
         state: SharedAppState,
         sidebar: SharedSidebar,
     ) {
-        crate::window_connection_dialogs::show_new_group_dialog(
-            window.upcast_ref(),
-            state,
-            sidebar,
-        );
+        connection_dialogs::show_new_group_dialog(window.upcast_ref(), state, sidebar);
     }
 
     /// Shows the import dialog
@@ -3970,7 +3997,7 @@ impl MainWindow {
         state: SharedAppState,
         sidebar: SharedSidebar,
     ) {
-        crate::window_connection_dialogs::show_import_dialog(window.upcast_ref(), state, sidebar);
+        connection_dialogs::show_import_dialog(window.upcast_ref(), state, sidebar);
     }
 
     /// Shows the settings dialog
@@ -4286,22 +4313,22 @@ impl MainWindow {
 
     /// Toggles group operations mode for multi-select
     fn toggle_group_operations_mode(sidebar: &SharedSidebar, enabled: bool) {
-        crate::window_sorting::toggle_group_operations_mode(sidebar, enabled);
+        sorting::toggle_group_operations_mode(sidebar, enabled);
     }
 
     /// Sorts connections alphabetically and updates `sort_order`
     fn sort_connections(state: &SharedAppState, sidebar: &SharedSidebar) {
-        crate::window_sorting::sort_connections(state, sidebar);
+        sorting::sort_connections(state, sidebar);
     }
 
     /// Sorts connections by recent usage (most recently used first)
     fn sort_recent(state: &SharedAppState, sidebar: &SharedSidebar) {
-        crate::window_sorting::sort_recent(state, sidebar);
+        sorting::sort_recent(state, sidebar);
     }
 
     /// Handles drag-drop operations for reordering connections
     fn handle_drag_drop(state: &SharedAppState, sidebar: &SharedSidebar, data: &str) {
-        crate::window_sorting::handle_drag_drop(state, sidebar, data);
+        sorting::handle_drag_drop(state, sidebar, data);
     }
 
     /// Shows the export dialog

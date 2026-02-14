@@ -2480,27 +2480,16 @@ pub fn create_shared_state() -> Result<SharedAppState, String> {
 // ========== Safe State Access Helpers ==========
 
 /// Error type for state access failures
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, thiserror::Error)]
 #[allow(dead_code)] // Part of safe state access API
 pub enum StateAccessError {
     /// State is already borrowed mutably
+    #[error("State is already borrowed")]
     AlreadyBorrowed,
     /// State is already borrowed immutably (for mutable access)
+    #[error("State is already borrowed immutably")]
     AlreadyBorrowedImmutably,
 }
-
-impl std::fmt::Display for StateAccessError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::AlreadyBorrowed => write!(f, "State is already borrowed"),
-            Self::AlreadyBorrowedImmutably => {
-                write!(f, "State is already borrowed immutably")
-            }
-        }
-    }
-}
-
-impl std::error::Error for StateAccessError {}
 
 /// Safely accesses the state for reading
 ///

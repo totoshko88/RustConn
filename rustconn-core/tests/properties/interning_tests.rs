@@ -5,7 +5,6 @@
 
 #![allow(clippy::overly_complex_bool_expr)]
 #![allow(clippy::manual_range_contains)]
-#![allow(clippy::cast_precision_loss)]
 
 use proptest::prelude::*;
 use rustconn_core::{

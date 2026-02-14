@@ -11,8 +11,6 @@
 //! - Requirement 6.3: Window geometry restoration (load on start)
 //! - Requirement 6.4: Respect `remember_window_position` setting
 
-#![allow(clippy::needless_collect)]
-
 use crate::models::WindowGeometry;
 use std::path::PathBuf;
 
@@ -418,7 +416,6 @@ mod tests {
         let args = build_freerdp_args(&config);
 
         // Non-existent paths should be skipped
-        let drive_args: Vec<_> = args.iter().filter(|a| a.starts_with("/drive:")).collect();
-        assert!(drive_args.is_empty());
+        assert!(!args.iter().any(|a| a.starts_with("/drive:")));
     }
 }

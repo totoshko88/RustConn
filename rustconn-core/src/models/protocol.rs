@@ -233,6 +233,8 @@ pub enum SshAuthMethod {
     KeyboardInteractive,
     /// SSH agent authentication
     Agent,
+    /// FIDO2/Security Key authentication (sk-ssh-ed25519, sk-ecdsa)
+    SecurityKey,
 }
 
 /// SSH protocol configuration

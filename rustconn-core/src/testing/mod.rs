@@ -3,10 +3,7 @@
 //! This module provides functionality to test connections by verifying
 //! port accessibility and protocol handshakes.
 
-// Allow precision loss for percentage calculations - acceptable for display purposes
-#![allow(clippy::cast_precision_loss)]
-// Allow truncation for millisecond conversion - latencies won't exceed u64::MAX
-#![allow(clippy::cast_possible_truncation)]
+// cast_precision_loss, cast_possible_truncation allowed at workspace level
 
 use std::collections::HashMap;
 use std::time::Duration;

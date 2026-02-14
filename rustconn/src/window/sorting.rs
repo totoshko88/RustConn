@@ -3,9 +3,9 @@
 //! This module contains functions for sorting connections and handling
 //! drag-drop reordering operations.
 
+use super::types::get_protocol_string;
 use crate::sidebar::{ConnectionItem, ConnectionSidebar};
 use crate::state::SharedAppState;
-use crate::window_types::get_protocol_string;
 use std::rc::Rc;
 use uuid::Uuid;
 

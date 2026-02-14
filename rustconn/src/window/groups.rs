@@ -12,9 +12,9 @@ use libadwaita as adw;
 use std::rc::Rc;
 use uuid::Uuid;
 
+use super::MainWindow;
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
-use crate::window::MainWindow;
 
 /// Type alias for shared sidebar
 pub type SharedSidebar = Rc<ConnectionSidebar>;
@@ -121,7 +121,6 @@ pub fn show_move_to_group_dialog(
         group_ids.push(Some(*id));
 
         if current_parent_id == Some(*id) {
-            #[allow(clippy::cast_possible_truncation)]
             {
                 current_index = (group_ids.len() - 1) as u32;
             }

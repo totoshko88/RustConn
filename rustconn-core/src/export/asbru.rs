@@ -122,7 +122,8 @@ impl AsbruExporter {
             ProtocolConfig::Ssh(ssh_config) => {
                 // auth_type
                 let auth_type = match ssh_config.auth_method {
-                    crate::models::SshAuthMethod::PublicKey => "publickey",
+                    crate::models::SshAuthMethod::PublicKey
+                    | crate::models::SshAuthMethod::SecurityKey => "publickey",
                     crate::models::SshAuthMethod::Agent => "agent",
                     crate::models::SshAuthMethod::KeyboardInteractive => "keyboard-interactive",
                     crate::models::SshAuthMethod::Password => "password",
