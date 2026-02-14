@@ -3,8 +3,7 @@
 //! This module provides event and command types for the RDP client,
 //! along with conversion functions for framebuffer data.
 
-// Allow clippy warnings for this file - RDP protocol uses various integer sizes
-#![allow(clippy::cast_possible_truncation)]
+// cast_possible_truncation allowed at workspace level
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::option_if_let_else)]

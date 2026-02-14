@@ -49,12 +49,6 @@ pub mod dialogs;
 pub mod display;
 pub mod embedded;
 pub mod embedded_rdp;
-pub mod embedded_rdp_buffer;
-pub mod embedded_rdp_detect;
-pub mod embedded_rdp_launcher;
-pub mod embedded_rdp_thread;
-pub mod embedded_rdp_types;
-pub mod embedded_rdp_ui;
 pub mod embedded_spice;
 pub mod embedded_trait;
 pub mod embedded_vnc;
@@ -81,20 +75,6 @@ mod window;
 // Error display utilities
 pub mod error;
 pub mod error_display;
-mod window_clusters;
-mod window_connection_dialogs;
-mod window_document_actions;
-mod window_edit_dialogs;
-mod window_groups;
-mod window_operations;
-mod window_protocols;
-mod window_rdp_vnc;
-mod window_sessions;
-mod window_snippets;
-mod window_sorting;
-mod window_templates;
-mod window_types;
-mod window_ui;
 
 fn main() -> gtk4::glib::ExitCode {
     // Initialize logging with environment filter (RUST_LOG)

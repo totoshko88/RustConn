@@ -403,12 +403,8 @@ impl PasswordGenerator {
             return 0.0;
         }
 
-        #[allow(clippy::cast_precision_loss)]
         let entropy_per_char = (pool_size as f64).log2();
-        #[allow(clippy::cast_precision_loss)]
-        let total_entropy = entropy_per_char * password.len() as f64;
-
-        total_entropy
+        entropy_per_char * password.len() as f64
     }
 
     /// Evaluates the strength of a password

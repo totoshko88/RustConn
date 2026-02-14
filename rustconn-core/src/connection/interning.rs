@@ -100,7 +100,6 @@ pub fn intern_connection_strings(
 ///
 /// `Some(warning_message)` if hit rate is below threshold, `None` otherwise
 #[must_use]
-#[allow(clippy::cast_precision_loss)] // Precision loss acceptable for statistics
 pub fn check_interning_stats(threshold: f64) -> Option<String> {
     let stats = memory_optimizer().interner().stats();
     let intern_count = stats
@@ -142,7 +141,6 @@ pub fn check_interning_stats(threshold: f64) -> Option<String> {
 ///
 /// A tuple of (`intern_count`, `hit_count`, `hit_rate`, `bytes_saved`)
 #[must_use]
-#[allow(clippy::cast_precision_loss)] // Precision loss acceptable for statistics
 pub fn get_interning_stats() -> (usize, usize, f64, usize) {
     let stats = memory_optimizer().interner().stats();
     let intern_count = stats

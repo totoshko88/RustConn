@@ -136,7 +136,6 @@ impl AnsibleInventoryImporter {
     }
 
     /// Parses a host line from INI inventory
-    #[allow(clippy::unused_self)]
     fn parse_host_line(
         &self,
         line: &str,
@@ -325,7 +324,6 @@ impl AnsibleInventoryImporter {
     }
 
     /// Processes YAML hosts section
-    #[allow(clippy::unused_self)]
     fn process_yaml_hosts(
         &self,
         hosts: &serde_yaml::Value,
@@ -353,7 +351,7 @@ impl AnsibleInventoryImporter {
                                 .and_then(|v| v.as_str())
                                 .map_or_else(|| name.clone(), String::from);
 
-                            #[allow(clippy::cast_possible_truncation)]
+                            #[allow(clippy::cast_possible_wrap)]
                             let port = vars
                                 .get(serde_yaml::Value::String("ansible_port".to_string()))
                                 .and_then(serde_yaml::Value::as_u64)

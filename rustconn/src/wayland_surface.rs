@@ -21,10 +21,8 @@
 //! - Requirement 8.3: Blit framebuffer to Wayland surface using shared memory
 //! - Requirement 8.4: Fall back to Cairo rendering on X11
 
-// Allow cast warnings - graphics code uses various integer sizes for coordinates
-#![allow(clippy::cast_possible_truncation)]
+// cast_possible_truncation, cast_precision_loss allowed at workspace level
 #![allow(clippy::cast_sign_loss)]
-#![allow(clippy::cast_precision_loss)]
 #![allow(clippy::missing_panics_doc)]
 
 use gtk4::prelude::*;

@@ -3,11 +3,11 @@
 //! This module contains dialog functions for creating new connections and groups,
 //! including template picker and parent group selection.
 
+use super::MainWindow;
 use crate::alert;
 use crate::dialogs::{ConnectionDialog, ImportDialog};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
-use crate::window::MainWindow;
 use adw::prelude::*;
 use gtk4::glib;
 use gtk4::prelude::*;

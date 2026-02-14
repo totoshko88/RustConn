@@ -16,10 +16,8 @@
 //! - Requirement 16.4: Frame buffer handling and blit to wl_buffer
 //! - Requirement 16.5: Keyboard and mouse input forwarding
 
-// Allow cast warnings - graphics code uses various integer sizes for coordinates
-#![allow(clippy::cast_possible_truncation)]
+// cast_possible_truncation, cast_precision_loss allowed at workspace level
 #![allow(clippy::cast_sign_loss)]
-#![allow(clippy::cast_precision_loss)]
 #![allow(clippy::missing_panics_doc)]
 
 // Re-export types for external use

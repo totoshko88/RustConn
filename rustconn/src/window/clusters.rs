@@ -8,11 +8,11 @@ use gtk4::prelude::*;
 use std::rc::Rc;
 use uuid::Uuid;
 
+use super::MainWindow;
 use crate::dialogs::{ClusterDialog, ClusterListDialog};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
-use crate::window::MainWindow;
 
 /// Type alias for shared terminal notebook
 pub type SharedNotebook = Rc<TerminalNotebook>;

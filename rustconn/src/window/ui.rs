@@ -24,7 +24,13 @@ pub fn create_header_bar() -> adw::HeaderBar {
     header_bar.set_title_widget(Some(&title));
 
     // === Left side (pack_start) - Primary connection actions ===
-    // Order: Quick Connect, Add, Remove, Add Group
+    // Order: Sidebar Toggle, Quick Connect, Add, Remove, Add Group
+
+    // Sidebar toggle button
+    let sidebar_toggle = Button::from_icon_name("sidebar-show-symbolic");
+    sidebar_toggle.set_tooltip_text(Some("Toggle Sidebar (F9)"));
+    sidebar_toggle.set_action_name(Some("win.toggle-sidebar"));
+    header_bar.pack_start(&sidebar_toggle);
 
     // Quick connect button
     let quick_connect_button = Button::from_icon_name("go-jump-symbolic");

@@ -117,6 +117,7 @@ fn create_authentication_group() -> (
         "Public Key",
         "Keyboard Interactive",
         "SSH Agent",
+        "Security Key (FIDO2)",
     ]);
     let auth_dropdown = DropDown::new(Some(auth_list), gtk4::Expression::NONE);
     auth_dropdown.set_selected(0);
@@ -286,6 +287,12 @@ fn connect_auth_method_visibility(
                 key_file_row_clone.set_visible(false);
                 agent_key_row_clone.set_visible(true);
                 agent_key_dropdown_clone.set_sensitive(true);
+            }
+            4 => {
+                // Security Key (FIDO2) - show key file row for sk key path
+                key_source_row_clone.set_visible(false);
+                key_file_row_clone.set_visible(true);
+                agent_key_row_clone.set_visible(false);
             }
             _ => {
                 // Public Key, Keyboard Interactive - show key source row

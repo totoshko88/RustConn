@@ -519,6 +519,7 @@ impl SettingsDialog {
                 onepassword_token_entry: PasswordEntry::new(),       // dummy
                 onepassword_save_password_check: CheckButton::new(), // dummy
                 onepassword_save_to_keyring_check: CheckButton::new(), // dummy
+                secret_tool_available: Rc::new(RefCell::new(None)),  // dummy
             };
             let secrets = collect_secret_settings(&secrets_widgets_for_collect, &settings_clone);
 

@@ -113,8 +113,6 @@ impl ProgressDialog {
     /// * `total` - Total number of items
     /// * `message` - Status message to display
     pub fn update_with_count(&self, current: usize, total: usize, message: &str) {
-        // Cast is safe: progress counts are small enough that f64 precision is sufficient
-        #[allow(clippy::cast_precision_loss)]
         let fraction = if total > 0 {
             current as f64 / total as f64
         } else {

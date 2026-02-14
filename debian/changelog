@@ -1,3 +1,40 @@
+rustconn (0.8.4-1) unstable; urgency=medium
+
+  * Version bump to 0.8.4
+  * Added FIDO2/SecurityKey SSH authentication:
+    - New SshAuthMethod::SecurityKey variant for FIDO2 hardware key auth
+    - "Security Key (FIDO2)" option in connection and template dialogs
+    - Exports map SecurityKey to publickey (Asbru) or ssh_auth=2 (Remmina)
+    - All property test strategies updated with SecurityKey coverage
+  * Added CLI auth-method support:
+    - --auth-method flag for add and update commands
+    - show command displays SSH auth method
+    - update command supports --key for SSH key path changes
+  * Fixed CLI version check timeout:
+    - Increased VERSION_CHECK_TIMEOUT from 3 to 6 seconds
+    - Azure CLI loads Python runtime and takes ~3.3s
+  * Fixed WoL MAC Entry Disabled on Edit:
+    - WoL settings fields remained disabled when editing existing connection
+    - Removed per-widget sensitivity calls; wol_settings_group manages this
+  * Refactored ConnectionManager watch channels:
+    - Replaced 3x Arc<Mutex<Option<Vec<T>>>> with tokio::sync::watch channels
+    - Extracted generic debounce_worker() async function
+    - Struct fields reduced from 8 persistence-related to 3
+  * Refactored EmbeddingError thiserror derive
+  * Refactored FreeRDP mutex consolidation into single shared state struct
+  * Refactored Embedded RDP module directory (7 flat files into module)
+  * Refactored ConnectionDialog LoggingTab extraction (~310 lines removed)
+  * Refactored OverlaySplitView sidebar with F9 toggle and gestures
+  * Refactored responsive sidebar breakpoint (400sp for narrow windows)
+  * Refactored Window module directory (14 flat files into module)
+  * Refactored State access error thiserror derive
+  * Refactored workspace clippy suppression audit (~80 redundant annotations removed)
+  * Refactored Protocol trait with capabilities() and build_command() methods
+  * Updated dependencies: resvg 0.46->0.47, usvg 0.46->0.47,
+    tiny-skia 0.11->0.12, tiny-skia-path 0.11->0.12
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Sat, 14 Feb 2026 12:00:00 +0200
+
 rustconn (0.8.3-1) unstable; urgency=medium
 
   * Version bump to 0.8.3

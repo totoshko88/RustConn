@@ -9,38 +9,34 @@ use gtk4::{Box as GtkBox, Button, DrawingArea, Label, Orientation};
 use std::cell::RefCell;
 use std::process::Child;
 use std::rc::Rc;
+use thiserror::Error;
 use uuid::Uuid;
 
 // Re-export DisplayServer from the unified display module for backward compatibility
 pub use crate::display::DisplayServer;
 
 /// Error type for embedding operations
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Error)]
 pub enum EmbeddingError {
     /// Embedding not supported on Wayland
-    WaylandNotSupported { protocol: String },
+    #[error("Embedding not supported on Wayland for {protocol}")]
+    WaylandNotSupported {
+        /// The protocol that doesn't support embedding
+        protocol: String,
+    },
     /// Failed to get window ID for embedding
+    #[error("Failed to get window ID for embedding")]
     WindowIdNotAvailable,
     /// Client process failed to start
+    #[error("Failed to start client process: {0}")]
     ProcessStartFailed(String),
     /// Client exited unexpectedly
-    ClientExited { code: i32 },
+    #[error("Client exited with code {code}")]
+    ClientExited {
+        /// The exit code
+        code: i32,
+    },
 }
-
-impl std::fmt::Display for EmbeddingError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::WaylandNotSupported { protocol } => {
-                write!(f, "Embedding not supported on Wayland for {protocol}")
-            }
-            Self::WindowIdNotAvailable => write!(f, "Failed to get window ID for embedding"),
-            Self::ProcessStartFailed(msg) => write!(f, "Failed to start client process: {msg}"),
-            Self::ClientExited { code } => write!(f, "Client exited with code {code}"),
-        }
-    }
-}
-
-impl std::error::Error for EmbeddingError {}
 
 /// Session controls for embedded sessions
 #[derive(Clone)]

@@ -18,10 +18,7 @@
 //! which is unrecoverable anyway. The `unwrap()` calls in audio callbacks are
 //! intentional and documented with function-level `#[allow]` attributes.
 
-// Audio processing requires numeric casts that are intentional and safe for audio data
-#![allow(clippy::cast_precision_loss)]
-#![allow(clippy::cast_possible_truncation)]
-#![allow(clippy::unused_self)]
+// cast_precision_loss, cast_possible_truncation, unused_self allowed at workspace level
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Stream, StreamConfig};

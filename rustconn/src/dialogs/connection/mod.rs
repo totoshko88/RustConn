@@ -16,6 +16,7 @@
 //! and Window instead of Dialog.
 
 mod dialog;
+mod logging_tab;
 mod protocol_layout;
 mod rdp;
 mod shared_folders;

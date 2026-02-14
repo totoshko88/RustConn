@@ -11,7 +11,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use rustconn_core::cluster::Cluster;
 use rustconn_core::config::ConfigManager;
 use rustconn_core::models::{
-    Connection, ConnectionGroup, ConnectionTemplate, ProtocolType, Snippet,
+    Connection, ConnectionGroup, ConnectionTemplate, ProtocolType, Snippet, SshAuthMethod,
 };
 use rustconn_core::snippet::SnippetManager;
 use rustconn_core::variables::Variable;
@@ -87,6 +87,11 @@ pub enum Commands {
         /// Path to SSH private key file
         #[arg(short, long)]
         key: Option<PathBuf>,
+
+        /// SSH authentication method (password, publickey, keyboard-interactive,
+        /// agent, security-key)
+        #[arg(long, value_name = "METHOD")]
+        auth_method: Option<String>,
     },
 
     /// Export connections to external format
@@ -158,6 +163,15 @@ pub enum Commands {
         /// New username
         #[arg(short, long)]
         user: Option<String>,
+
+        /// Path to SSH private key file
+        #[arg(short, long)]
+        key: Option<PathBuf>,
+
+        /// SSH authentication method (password, publickey, keyboard-interactive,
+        /// agent, security-key)
+        #[arg(long, value_name = "METHOD")]
+        auth_method: Option<String>,
     },
 
     /// Send Wake-on-LAN magic packet
@@ -686,6 +700,7 @@ fn main() {
             protocol,
             user,
             key,
+            auth_method,
         } => cmd_add(
             &name,
             &host,
@@ -693,6 +708,7 @@ fn main() {
             &protocol,
             user.as_deref(),
             key.as_deref(),
+            auth_method.as_deref(),
         ),
         Commands::Export { format, output } => cmd_export(format, &output),
         Commands::Import { format, file } => cmd_import(format, &file),
@@ -705,12 +721,16 @@ fn main() {
             host,
             port,
             user,
+            key,
+            auth_method,
         } => cmd_update(
             &name,
             new_name.as_deref(),
             host.as_deref(),
             port,
             user.as_deref(),
+            key.as_deref(),
+            auth_method.as_deref(),
         ),
         Commands::Wol {
             target,
@@ -924,10 +944,25 @@ pub struct ConnectionOutput {
     pub protocol: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub username: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auth_method: Option<String>,
 }
 
 impl From<&Connection> for ConnectionOutput {
     fn from(conn: &Connection) -> Self {
+        let auth_method =
+            if let rustconn_core::models::ProtocolConfig::Ssh(ref cfg) = conn.protocol_config {
+                let s = match cfg.auth_method {
+                    SshAuthMethod::Password => "password",
+                    SshAuthMethod::PublicKey => "publickey",
+                    SshAuthMethod::KeyboardInteractive => "keyboard-interactive",
+                    SshAuthMethod::Agent => "agent",
+                    SshAuthMethod::SecurityKey => "security-key",
+                };
+                Some(s.to_string())
+            } else {
+                None
+            };
         Self {
             id: conn.id.to_string(),
             name: conn.name.clone(),
@@ -935,6 +970,7 @@ impl From<&Connection> for ConnectionOutput {
             port: conn.port,
             protocol: conn.protocol.as_str().to_string(),
             username: conn.username.clone(),
+            auth_method,
         }
     }
 }
@@ -1330,13 +1366,17 @@ fn cmd_add(
     protocol: &str,
     user: Option<&str>,
     key: Option<&std::path::Path>,
+    auth_method: Option<&str>,
 ) -> Result<(), CliError> {
     // Parse protocol and determine default port
     let (protocol_type, default_port) = parse_protocol(protocol)?;
     let port = port.unwrap_or(default_port);
 
+    // Parse auth method if provided
+    let ssh_auth = auth_method.map(parse_auth_method).transpose()?;
+
     // Create the connection based on protocol
-    let mut connection = create_connection(name, host, port, protocol_type, key);
+    let mut connection = create_connection(name, host, port, protocol_type, key, ssh_auth);
 
     // Set username if provided
     if let Some(username) = user {
@@ -1372,6 +1412,20 @@ fn cmd_add(
 }
 
 /// Parse protocol string and return protocol type with default port
+fn parse_auth_method(s: &str) -> Result<SshAuthMethod, CliError> {
+    match s.to_lowercase().as_str() {
+        "password" => Ok(SshAuthMethod::Password),
+        "publickey" | "public-key" => Ok(SshAuthMethod::PublicKey),
+        "keyboard-interactive" | "keyboard_interactive" => Ok(SshAuthMethod::KeyboardInteractive),
+        "agent" => Ok(SshAuthMethod::Agent),
+        "security-key" | "security_key" | "securitykey" | "fido2" => Ok(SshAuthMethod::SecurityKey),
+        _ => Err(CliError::Config(format!(
+            "Unknown auth method '{s}'. Valid: password, publickey, \
+             keyboard-interactive, agent, security-key"
+        ))),
+    }
+}
+
 fn parse_protocol(protocol: &str) -> Result<(ProtocolType, u16), CliError> {
     match protocol.to_lowercase().as_str() {
         "ssh" => Ok((ProtocolType::Ssh, 22)),
@@ -1393,17 +1447,23 @@ fn create_connection(
     port: u16,
     protocol_type: ProtocolType,
     key: Option<&std::path::Path>,
+    auth_method: Option<SshAuthMethod>,
 ) -> Connection {
     match protocol_type {
         ProtocolType::Ssh => {
             let mut conn = Connection::new_ssh(name.to_string(), host.to_string(), port);
-            // Set key path if provided
-            if let Some(key_path) = key {
-                if let rustconn_core::models::ProtocolConfig::Ssh(ref mut ssh_config) =
-                    conn.protocol_config
-                {
+            if let rustconn_core::models::ProtocolConfig::Ssh(ref mut ssh_config) =
+                conn.protocol_config
+            {
+                if let Some(key_path) = key {
                     ssh_config.key_path = Some(key_path.to_path_buf());
-                    ssh_config.auth_method = rustconn_core::models::SshAuthMethod::PublicKey;
+                }
+                // Explicit auth method takes priority
+                if let Some(method) = auth_method {
+                    ssh_config.auth_method = method;
+                } else if key.is_some() {
+                    // Default to PublicKey when key is provided
+                    ssh_config.auth_method = SshAuthMethod::PublicKey;
                 }
             }
             conn
@@ -1412,11 +1472,17 @@ fn create_connection(
             if key.is_some() {
                 eprintln!("Warning: --key option is ignored for RDP connections");
             }
+            if auth_method.is_some() {
+                eprintln!("Warning: --auth-method is ignored for RDP connections");
+            }
             Connection::new_rdp(name.to_string(), host.to_string(), port)
         }
         ProtocolType::Vnc => {
             if key.is_some() {
                 eprintln!("Warning: --key option is ignored for VNC connections");
+            }
+            if auth_method.is_some() {
+                eprintln!("Warning: --auth-method is ignored for VNC connections");
             }
             Connection::new_vnc(name.to_string(), host.to_string(), port)
         }
@@ -1424,10 +1490,16 @@ fn create_connection(
             if key.is_some() {
                 eprintln!("Warning: --key option is ignored for SPICE connections");
             }
+            if auth_method.is_some() {
+                eprintln!("Warning: --auth-method is ignored for SPICE connections");
+            }
             Connection::new_spice(name.to_string(), host.to_string(), port)
         }
         ProtocolType::ZeroTrust => {
-            eprintln!("Error: Zero Trust connections cannot be created via CLI quick-connect");
+            eprintln!(
+                "Error: Zero Trust connections cannot be created via CLI \
+                 quick-connect"
+            );
             eprintln!("Use the GUI to configure Zero Trust connections");
             // Return SSH as fallback
             Connection::new_ssh(name.to_string(), host.to_string(), port)
@@ -1435,6 +1507,9 @@ fn create_connection(
         ProtocolType::Telnet => {
             if key.is_some() {
                 eprintln!("Warning: --key option is ignored for Telnet connections");
+            }
+            if auth_method.is_some() {
+                eprintln!("Warning: --auth-method is ignored for Telnet connections");
             }
             Connection::new_telnet(name.to_string(), host.to_string(), port)
         }
@@ -1988,6 +2063,14 @@ fn cmd_show(name: &str) -> Result<(), CliError> {
     // Protocol specific details
     match connection.protocol_config {
         rustconn_core::models::ProtocolConfig::Ssh(ref config) => {
+            let method = match config.auth_method {
+                SshAuthMethod::Password => "password",
+                SshAuthMethod::PublicKey => "publickey",
+                SshAuthMethod::KeyboardInteractive => "keyboard-interactive",
+                SshAuthMethod::Agent => "agent",
+                SshAuthMethod::SecurityKey => "security-key",
+            };
+            println!("  Auth:     {method}");
             if let Some(ref key) = config.key_path {
                 println!("  Key Path: {}", key.display());
             }
@@ -2016,6 +2099,8 @@ fn cmd_update(
     host: Option<&str>,
     port: Option<u16>,
     user: Option<&str>,
+    key: Option<&std::path::Path>,
+    auth_method: Option<&str>,
 ) -> Result<(), CliError> {
     // Load connections
     let config_manager = ConfigManager::new()
@@ -2045,6 +2130,29 @@ fn cmd_update(
     }
     if let Some(user) = user {
         connection.username = Some(user.to_string());
+    }
+
+    // Update SSH-specific fields
+    if key.is_some() || auth_method.is_some() {
+        if let rustconn_core::models::ProtocolConfig::Ssh(ref mut cfg) = connection.protocol_config
+        {
+            if let Some(key_path) = key {
+                cfg.key_path = Some(key_path.to_path_buf());
+            }
+            if let Some(method_str) = auth_method {
+                cfg.auth_method = parse_auth_method(method_str)?;
+            }
+        } else {
+            if key.is_some() {
+                eprintln!("Warning: --key is only applicable to SSH connections");
+            }
+            if auth_method.is_some() {
+                eprintln!(
+                    "Warning: --auth-method is only applicable to SSH \
+                     connections"
+                );
+            }
+        }
     }
 
     connection.updated_at = chrono::Utc::now();

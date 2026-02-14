@@ -52,6 +52,7 @@ fn arb_ssh_auth_method() -> impl Strategy<Value = SshAuthMethod> {
         Just(SshAuthMethod::PublicKey),
         Just(SshAuthMethod::KeyboardInteractive),
         Just(SshAuthMethod::Agent),
+        Just(SshAuthMethod::SecurityKey),
     ]
 }
 

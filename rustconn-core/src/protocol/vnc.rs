@@ -3,7 +3,7 @@
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, VncConfig};
 
-use super::{Protocol, ProtocolResult};
+use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 
 /// VNC protocol handler
 ///
@@ -82,6 +82,10 @@ impl Protocol for VncProtocol {
         }
 
         Ok(())
+    }
+
+    fn capabilities(&self) -> ProtocolCapabilities {
+        ProtocolCapabilities::graphical(false, false, true)
     }
 }
 

@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.8.3** | Last updated: February 2026
+**Version 0.8.4** | Last updated: February 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -211,16 +211,18 @@ Managers own their data and handle I/O. They don't know about GTK.
 
 ### Debounced Persistence
 
-The `ConnectionManager` uses debounced persistence to reduce disk I/O during rapid modifications:
+The `ConnectionManager` uses `tokio::sync::watch` channels for debounced persistence to reduce disk I/O during rapid modifications:
 
 ```rust
-// Changes are batched and saved after 2 seconds of inactivity
-connection_manager.add_connection(conn);  // Triggers debounced save
+// Changes are sent via watch channels and saved after 2 seconds of inactivity
+connection_manager.add_connection(conn);  // Sends via conn_tx
 connection_manager.update_connection(conn);  // Resets debounce timer
 
 // Force immediate save (e.g., on application exit)
-connection_manager.flush_persistence();
+connection_manager.flush_persistence();  // Uses send_replace(None) for atomic take-and-save
 ```
+
+A generic `debounce_worker()` async function handles all three channels (connections, groups, trash) with the same debounce logic, eliminating code duplication.
 
 This is particularly useful during:
 - Drag-and-drop reordering of multiple items
@@ -640,20 +642,33 @@ pub trait Protocol: Send + Sync {
     fn display_name(&self) -> &'static str;
     fn default_port(&self) -> u16;
     fn validate_connection(&self, connection: &Connection) -> ProtocolResult<()>;
+    fn capabilities(&self) -> ProtocolCapabilities { ProtocolCapabilities::default() }
+    fn build_command(&self, connection: &Connection) -> Option<Vec<String>> { None }
+}
+
+/// Describes what a protocol supports at runtime
+pub struct ProtocolCapabilities {
+    pub embedded: bool,
+    pub external_fallback: bool,
+    pub file_transfer: bool,
+    pub audio: bool,
+    pub clipboard: bool,
+    pub split_view: bool,
+    pub terminal_based: bool,
 }
 ```
 
 **Implementations:**
-- `SshProtocol`: SSH via VTE terminal
-- `RdpProtocol`: RDP via FreeRDP
-- `VncProtocol`: VNC via TigerVNC
-- `SpiceProtocol`: SPICE via remote-viewer
-- `TelnetProtocol`: Telnet via external `telnet` client
+- `SshProtocol`: SSH via VTE terminal (capabilities: embedded, terminal, split_view)
+- `RdpProtocol`: RDP via IronRDP/FreeRDP (capabilities: embedded, external_fallback, file_transfer, audio, clipboard)
+- `VncProtocol`: VNC via vnc-rs/TigerVNC (capabilities: embedded, external_fallback, clipboard)
+- `SpiceProtocol`: SPICE via remote-viewer (capabilities: external_fallback, clipboard)
+- `TelnetProtocol`: Telnet via external `telnet` client (capabilities: terminal, split_view)
 
 ### Adding a New Protocol
 
 1. Create `rustconn-core/src/protocol/myprotocol.rs`
-2. Implement `Protocol` trait
+2. Implement `Protocol` trait (including `capabilities()` and optionally `build_command()`)
 3. Add protocol config to `ProtocolConfig` enum
 4. Register in `ProtocolRegistry`
 5. Add UI fields in `rustconn/src/dialogs/connection/dialog.rs`
@@ -764,8 +779,9 @@ button.connect_clicked(glib::clone!(
 ```
 rustconn/src/
 ├── app.rs                 # Application setup, CSS, actions
-├── window.rs              # Main window layout
-├── window_*.rs            # Window functionality by domain
+├── window/                # Main window (modular structure)
+│   ├── mod.rs             # Module exports, MainWindow struct
+│   └── ...                # Domain-specific window functionality
 ├── state.rs               # SharedAppState
 ├── async_utils.rs         # Async helpers (spawn_async, block_on_async_with_timeout)
 ├── loading.rs             # LoadingOverlay, LoadingDialog components
@@ -783,6 +799,7 @@ rustconn/src/
 │   ├── connection/        # Connection dialog (modular)
 │   │   ├── mod.rs         # Module exports
 │   │   ├── dialog.rs      # Main ConnectionDialog
+│   │   ├── logging_tab.rs # LoggingTab struct (extracted from dialog)
 │   │   ├── protocol_layout.rs # ProtocolLayoutBuilder for consistent UI
 │   │   ├── shared_folders.rs  # Shared folders UI (RDP/SPICE)
 │   │   ├── widgets.rs     # Re-exports from parent dialogs/widgets.rs
@@ -797,7 +814,14 @@ rustconn/src/
 │   ├── flatpak_components.rs  # Flatpak CLI download dialog
 │   ├── settings/          # Settings tabs
 │   └── ...
-├── embedded_*.rs          # Embedded protocol viewers
+├── embedded_rdp/          # Embedded RDP viewer (modular structure)
+│   ├── mod.rs             # Module exports
+│   ├── buffer.rs          # Frame buffer management
+│   ├── detect.rs          # Backend detection
+│   ├── launcher.rs        # FreeRDP launcher
+│   ├── thread.rs          # FreeRDP thread with consolidated mutex
+│   ├── types.rs           # Shared types
+│   └── ui.rs              # RDP widget
 └── utils.rs               # Async helpers, utilities
 
 rustconn-core/src/

@@ -3,11 +3,11 @@
 //! This module contains functions for connection operations like delete,
 //! duplicate, copy, paste, and reload sidebar.
 
+use super::types::get_protocol_string;
+use super::MainWindow;
 use crate::alert;
 use crate::sidebar::{ConnectionItem, ConnectionSidebar};
 use crate::state::SharedAppState;
-use crate::window::MainWindow;
-use crate::window_types::get_protocol_string;
 use adw::prelude::*;
 use gtk4::glib;
 use gtk4::prelude::*;

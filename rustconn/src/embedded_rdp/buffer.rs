@@ -3,7 +3,7 @@
 //! This module contains the `PixelBuffer` struct for frame data storage
 //! and `WaylandSurfaceHandle` for Wayland subsurface integration.
 
-use crate::embedded_rdp_types::EmbeddedRdpError;
+use super::types::EmbeddedRdpError;
 
 /// Pixel buffer for frame data
 ///

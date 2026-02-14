@@ -806,9 +806,12 @@ impl SplitViewAdapter {
         // Set resize behavior for equal split
         paned.set_resize_start_child(true);
         paned.set_resize_end_child(true);
-        // Prevent children from shrinking below their minimum size
-        paned.set_shrink_start_child(false);
-        paned.set_shrink_end_child(false);
+        // Allow children to shrink below their natural minimum size so
+        // that the 50/50 split position is honoured even when one child
+        // (e.g. the empty placeholder StatusPage) requests a large
+        // minimum allocation.
+        paned.set_shrink_start_child(true);
+        paned.set_shrink_end_child(true);
 
         let first_widget = self.build_node_widget(&split.first);
         let second_widget = self.build_node_widget(&split.second);
@@ -830,10 +833,13 @@ impl SplitViewAdapter {
             }
             let paned_weak_inner = paned_weak.clone();
             let flag = Rc::clone(&position_set_for_map);
-            // Use idle_add to ensure layout is complete after mapping
-            glib::idle_add_local_once(move || {
+            // Poll until the Paned has a non-zero allocation.  The
+            // first idle callback often fires before nested Paned
+            // widgets receive their final size, so we retry a few
+            // times with a short interval.
+            glib::timeout_add_local(std::time::Duration::from_millis(10), move || {
                 if flag.get() {
-                    return;
+                    return glib::ControlFlow::Break;
                 }
                 if let Some(p) = paned_weak_inner.upgrade() {
                     let size = if p.orientation() == Orientation::Horizontal {
@@ -842,12 +848,16 @@ impl SplitViewAdapter {
                         p.height()
                     };
                     if size > 0 {
-                        #[allow(clippy::cast_possible_truncation)]
                         let pos = (f64::from(size) * target_fraction).round() as i32;
                         p.set_position(pos);
                         flag.set(true);
+                        return glib::ControlFlow::Break;
                     }
+                } else {
+                    // Widget was dropped — stop polling
+                    return glib::ControlFlow::Break;
                 }
+                glib::ControlFlow::Continue
             });
         });
 
@@ -906,6 +916,11 @@ impl SplitViewAdapter {
         // Set up proper expansion to fill available space
         container.set_hexpand(true);
         container.set_vexpand(true);
+
+        // Allow the panel to shrink to zero so that gtk::Paned can honour
+        // the 50 % split position even when one child (e.g. the empty
+        // placeholder StatusPage) has a large natural minimum size.
+        container.set_size_request(0, 0);
 
         // Apply base panel styling
         container.add_css_class("split-panel");
@@ -1194,6 +1209,9 @@ impl SplitViewAdapter {
         overlay.add_overlay(&close_button);
         overlay.set_hexpand(true);
         overlay.set_vexpand(true);
+        // Clip content so the placeholder doesn't force the Paned to
+        // allocate more than 50 % to this panel.
+        overlay.set_overflow(gtk4::Overflow::Hidden);
 
         // Connect close button to callback which will focus the panel and trigger close action
         // This ensures the correct panel is focused before the close-pane action runs

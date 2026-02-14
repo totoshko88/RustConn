@@ -7,14 +7,12 @@
 // and the panics documentation would be excessive for internal metrics code.
 // Cast warnings are acceptable here as we're dealing with metrics/statistics
 // where precision loss is not critical.
+// cast_possible_truncation, cast_precision_loss, unused_self allowed at workspace level
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::significant_drop_in_scrutinee)]
 #![allow(clippy::significant_drop_tightening)]
-#![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_sign_loss)]
-#![allow(clippy::cast_precision_loss)]
 #![allow(clippy::format_push_string)]
-#![allow(clippy::unused_self)]
 #![allow(clippy::incompatible_msrv)]
 #![allow(clippy::option_if_let_else)]
 #![allow(clippy::len_zero)]
@@ -591,7 +589,7 @@ impl VirtualScroller {
 
     /// Gets the range of visible items (`start_index`, `end_index`)
     #[must_use]
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[allow(clippy::cast_sign_loss)]
     pub fn visible_range(&self) -> (usize, usize) {
         if self.total_items == 0 || self.item_height <= 0.0 {
             return (0, 0);

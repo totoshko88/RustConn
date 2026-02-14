@@ -336,21 +336,18 @@ impl FloatingControls {
 
     /// Returns a reference to the disconnect button
     #[must_use]
-    #[allow(clippy::missing_const_for_fn)] // GTK objects can't be const
     pub fn disconnect_button(&self) -> &Button {
         &self.disconnect_btn
     }
 
     /// Returns a reference to the fullscreen button
     #[must_use]
-    #[allow(clippy::missing_const_for_fn)] // GTK objects can't be const
     pub fn fullscreen_button(&self) -> &Button {
         &self.fullscreen_btn
     }
 
     /// Returns a reference to the settings button
     #[must_use]
-    #[allow(clippy::missing_const_for_fn)] // GTK objects can't be const
     pub fn settings_button(&self) -> &Button {
         &self.settings_btn
     }

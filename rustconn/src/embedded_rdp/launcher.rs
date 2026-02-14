@@ -8,7 +8,7 @@
 //! - Requirement 6.1: QSocketNotifier error handling
 //! - Requirement 6.2: Wayland requestActivate warning suppression
 
-use crate::embedded_rdp_types::{EmbeddedRdpError, RdpConfig};
+use super::types::{EmbeddedRdpError, RdpConfig};
 use std::process::{Child, Command, Stdio};
 
 /// Safe FreeRDP launcher with Qt error suppression

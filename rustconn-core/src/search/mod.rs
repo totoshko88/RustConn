@@ -15,11 +15,8 @@
 //! - **Parallel Search**: For large datasets (100+ connections), consider using
 //!   `search_parallel` for multi-threaded search
 
-// Allow cast warnings - search scoring uses f64 for precision
-#![allow(clippy::cast_possible_truncation)]
+// cast_possible_truncation, cast_precision_loss, unused_self allowed at workspace level
 #![allow(clippy::cast_sign_loss)]
-#![allow(clippy::cast_precision_loss)]
-#![allow(clippy::unused_self)]
 #![allow(clippy::uninlined_format_args)]
 #![allow(clippy::missing_panics_doc)]
 
@@ -154,7 +151,6 @@ pub struct ConnectionSearchResult {
 impl ConnectionSearchResult {
     /// Creates a new search result
     #[must_use]
-    #[allow(clippy::missing_const_for_fn)]
     pub fn new(connection_id: Uuid, score: f32) -> Self {
         Self {
             connection_id,
@@ -301,7 +297,6 @@ impl SearchEngine {
     ///
     /// Returns a score between 0.0 (no match) and 1.0 (exact match)
     #[must_use]
-    #[allow(clippy::cast_precision_loss)]
     pub fn fuzzy_score(&self, query: &str, target: &str) -> f32 {
         if query.is_empty() || target.is_empty() {
             return 0.0;
@@ -316,7 +311,6 @@ impl SearchEngine {
     }
 
     /// Case-sensitive fuzzy score (no allocations)
-    #[allow(clippy::cast_precision_loss)]
     fn fuzzy_score_case_sensitive(&self, query: &str, target: &str) -> f32 {
         // Exact match
         if query == target {
@@ -335,7 +329,6 @@ impl SearchEngine {
     }
 
     /// Case-insensitive fuzzy score (minimized allocations)
-    #[allow(clippy::cast_precision_loss)]
     fn fuzzy_score_case_insensitive(&self, query: &str, target: &str) -> f32 {
         // Exact match (case-insensitive)
         if query.eq_ignore_ascii_case(target) {
@@ -546,7 +539,6 @@ impl SearchEngine {
     }
 
     /// Checks if a connection passes all filters in the query
-    #[allow(clippy::unused_self)]
     fn passes_filters(
         &self,
         query: &SearchQuery,
@@ -618,7 +610,6 @@ impl SearchEngine {
     ///
     /// Returns a score between 0.0 (no match) and 1.0 (exact match)
     #[must_use]
-    #[allow(clippy::cast_precision_loss)]
     pub fn fuzzy_score_optimized(&self, query: &str, target: &str) -> f32 {
         // Early termination for empty strings
         if query.is_empty() || target.is_empty() {
@@ -680,7 +671,6 @@ impl SearchEngine {
     }
 
     /// Fuzzy character matching for case-insensitive search
-    #[allow(clippy::cast_precision_loss)]
     fn fuzzy_score_chars_case_insensitive(&self, query: &str, target: &str) -> f32 {
         let query_lower: Vec<char> = query.chars().flat_map(char::to_lowercase).collect();
         let target_lower: Vec<char> = target.chars().flat_map(char::to_lowercase).collect();
@@ -693,7 +683,6 @@ impl SearchEngine {
     }
 
     /// Core fuzzy character matching algorithm
-    #[allow(clippy::cast_precision_loss)]
     fn fuzzy_score_chars(
         &self,
         query_chars: impl Iterator<Item = char>,

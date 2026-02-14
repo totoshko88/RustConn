@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.8.3
+Version:        0.8.4
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Zero Trust)
 License:        GPL-3.0-or-later
@@ -182,6 +182,24 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sat Feb 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.4-0
+- Version bump to 0.8.4
+- Added FIDO2/SecurityKey SSH authentication with hardware key support
+- Added CLI --auth-method flag for add/update commands, --key for SSH key path
+- Fixed CLI version check timeout: 3s to 6s for Azure CLI compatibility
+- Fixed WoL MAC Entry Disabled on Edit: removed per-widget sensitivity calls
+- Refactored ConnectionManager: watch channels replace Arc<Mutex> debounce
+- Refactored EmbeddingError, StateAccessError to thiserror derive
+- Refactored FreeRDP mutex consolidation into single shared state struct
+- Refactored Embedded RDP module directory (7 flat files into module)
+- Refactored ConnectionDialog LoggingTab extraction (~310 lines removed)
+- Refactored OverlaySplitView sidebar with F9 toggle and gestures
+- Refactored responsive sidebar breakpoint (400sp for narrow windows)
+- Refactored Window module directory (14 flat files into module)
+- Removed ~80 redundant clippy suppression annotations
+- Extended Protocol trait with capabilities() and build_command() methods
+- Updated dependencies: resvg 0.46->0.47, tiny-skia 0.11->0.12
+
 * Fri Feb 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.3-0
 - Version bump to 0.8.3
 - Added Wake On LAN from GUI (#8): context menu, auto-WoL, standalone dialog

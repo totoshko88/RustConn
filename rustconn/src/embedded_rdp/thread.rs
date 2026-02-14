@@ -10,10 +10,8 @@
 //! holding the lock), we recover gracefully by extracting the inner value and
 //! setting an error state rather than propagating the panic.
 
-use crate::embedded_rdp_buffer::PixelBuffer;
-use crate::embedded_rdp_types::{
-    EmbeddedRdpError, FreeRdpThreadState, RdpCommand, RdpConfig, RdpEvent,
-};
+use super::buffer::PixelBuffer;
+use super::types::{EmbeddedRdpError, FreeRdpThreadState, RdpCommand, RdpConfig, RdpEvent};
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::PathBuf;
@@ -209,29 +207,42 @@ fn lock_or_recover<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
     }
 }
 
-/// Safely sets a value in a mutex, recovering from poisoning.
-fn set_state(mutex: &Mutex<FreeRdpThreadState>, state: FreeRdpThreadState) {
-    *lock_or_recover(mutex) = state;
-}
-
-/// Safely sets a boolean flag in a mutex, recovering from poisoning.
-fn set_flag(mutex: &Mutex<bool>, value: bool) {
-    *lock_or_recover(mutex) = value;
-}
-
-/// Safely gets a value from a mutex, recovering from poisoning.
-fn get_state(mutex: &Mutex<FreeRdpThreadState>) -> FreeRdpThreadState {
-    *lock_or_recover(mutex)
-}
-
-/// Safely gets a boolean flag from a mutex, recovering from poisoning.
-fn get_flag(mutex: &Mutex<bool>) -> bool {
-    *lock_or_recover(mutex)
-}
-
 // ============================================================================
 // FreeRDP Thread Isolation (Requirement 6.3)
 // ============================================================================
+
+/// Consolidated shared state for the FreeRDP thread.
+///
+/// Groups process handle, thread state, and fallback flag into a single
+/// mutex-protected struct to reduce lock contention and simplify reasoning
+/// about concurrent access.
+struct FreeRdpSharedState {
+    /// Handle to the FreeRDP child process
+    process: Option<Child>,
+    /// Current thread state
+    state: FreeRdpThreadState,
+    /// Whether fallback to external client was triggered
+    fallback_triggered: bool,
+}
+
+impl FreeRdpSharedState {
+    /// Creates a new shared state with default values
+    fn new() -> Self {
+        Self {
+            process: None,
+            state: FreeRdpThreadState::NotStarted,
+            fallback_triggered: false,
+        }
+    }
+
+    /// Kills and waits for the child process if running
+    fn cleanup_process(&mut self) {
+        if let Some(mut child) = self.process.take() {
+            let _ = child.kill();
+            let _ = child.wait();
+        }
+    }
+}
 
 /// Thread-safe FreeRDP wrapper that isolates Qt from GTK main thread
 ///
@@ -240,9 +251,9 @@ fn get_flag(mutex: &Mutex<bool>) -> bool {
 /// requestActivate errors.
 #[allow(dead_code)]
 pub struct FreeRdpThread {
-    /// Handle to the FreeRDP process
-    process: Arc<Mutex<Option<Child>>>,
-    /// Shared memory buffer for frame data
+    /// Consolidated process, state, and fallback flag (single lock)
+    shared: Arc<Mutex<FreeRdpSharedState>>,
+    /// Shared memory buffer for frame data (separate lock for rendering)
     frame_buffer: Arc<Mutex<PixelBuffer>>,
     /// Channel for sending commands to FreeRDP thread
     command_tx: mpsc::Sender<RdpCommand>,
@@ -250,10 +261,6 @@ pub struct FreeRdpThread {
     event_rx: mpsc::Receiver<RdpEvent>,
     /// Thread handle
     thread_handle: Option<JoinHandle<()>>,
-    /// Current thread state
-    state: Arc<Mutex<FreeRdpThreadState>>,
-    /// Whether fallback was triggered
-    fallback_triggered: Arc<Mutex<bool>>,
 }
 
 impl FreeRdpThread {
@@ -263,14 +270,10 @@ impl FreeRdpThread {
         let (evt_tx, evt_rx) = mpsc::channel::<RdpEvent>();
 
         let frame_buffer = Arc::new(Mutex::new(PixelBuffer::new(config.width, config.height)));
-        let process = Arc::new(Mutex::new(None));
-        let state = Arc::new(Mutex::new(FreeRdpThreadState::NotStarted));
-        let fallback_triggered = Arc::new(Mutex::new(false));
+        let shared = Arc::new(Mutex::new(FreeRdpSharedState::new()));
 
         let frame_buffer_clone = Arc::clone(&frame_buffer);
-        let process_clone = Arc::clone(&process);
-        let state_clone = Arc::clone(&state);
-        let fallback_clone = Arc::clone(&fallback_triggered);
+        let shared_clone = Arc::clone(&shared);
         let config_clone = config.clone();
 
         let thread_handle = thread::spawn(move || {
@@ -278,24 +281,20 @@ impl FreeRdpThread {
                 cmd_rx,
                 evt_tx,
                 frame_buffer_clone,
-                process_clone,
-                state_clone,
-                fallback_clone,
+                shared_clone,
                 config_clone,
             );
         });
 
         // Initialize state - safe because thread just started and mutex is not poisoned
-        set_state(&state, FreeRdpThreadState::Idle);
+        lock_or_recover(&shared).state = FreeRdpThreadState::Idle;
 
         Ok(Self {
-            process,
+            shared,
             frame_buffer,
             command_tx: cmd_tx,
             event_rx: evt_rx,
             thread_handle: Some(thread_handle),
-            state,
-            fallback_triggered,
         })
     }
 
@@ -306,9 +305,7 @@ impl FreeRdpThread {
         cmd_rx: mpsc::Receiver<RdpCommand>,
         evt_tx: mpsc::Sender<RdpEvent>,
         _frame_buffer: Arc<Mutex<PixelBuffer>>,
-        process: Arc<Mutex<Option<Child>>>,
-        state: Arc<Mutex<FreeRdpThreadState>>,
-        fallback_triggered: Arc<Mutex<bool>>,
+        shared: Arc<Mutex<FreeRdpSharedState>>,
         initial_config: RdpConfig,
     ) {
         // Note: Qt/Wayland env vars are set per-process via Command::env()
@@ -320,24 +317,28 @@ impl FreeRdpThread {
         loop {
             match cmd_rx.recv() {
                 Ok(RdpCommand::Connect(config)) => {
-                    set_state(&state, FreeRdpThreadState::Connecting);
+                    lock_or_recover(&shared).state = FreeRdpThreadState::Connecting;
                     current_config = Some(config.clone());
 
-                    match Self::launch_freerdp(&config, &process) {
+                    match Self::launch_freerdp(&config, &shared) {
                         Ok(()) => {
-                            set_state(&state, FreeRdpThreadState::Connected);
+                            lock_or_recover(&shared).state = FreeRdpThreadState::Connected;
                             let _ = evt_tx.send(RdpEvent::Connected);
                         }
                         Err(e) => {
-                            set_flag(&fallback_triggered, true);
-                            set_state(&state, FreeRdpThreadState::Error);
+                            let mut s = lock_or_recover(&shared);
+                            s.fallback_triggered = true;
+                            s.state = FreeRdpThreadState::Error;
+                            drop(s);
                             let _ = evt_tx.send(RdpEvent::FallbackTriggered(e.to_string()));
                         }
                     }
                 }
                 Ok(RdpCommand::Disconnect) => {
-                    Self::cleanup_process(&process);
-                    set_state(&state, FreeRdpThreadState::Idle);
+                    let mut s = lock_or_recover(&shared);
+                    s.cleanup_process();
+                    s.state = FreeRdpThreadState::Idle;
+                    drop(s);
                     let _ = evt_tx.send(RdpEvent::Disconnected);
                 }
                 Ok(RdpCommand::KeyEvent {
@@ -364,12 +365,13 @@ impl FreeRdpThread {
                     tracing::debug!("[FreeRDP] Ctrl+Alt+Del requested");
                 }
                 Ok(RdpCommand::Shutdown) => {
-                    set_state(&state, FreeRdpThreadState::ShuttingDown);
-                    Self::cleanup_process(&process);
+                    let mut s = lock_or_recover(&shared);
+                    s.state = FreeRdpThreadState::ShuttingDown;
+                    s.cleanup_process();
                     break;
                 }
                 Err(_) => {
-                    Self::cleanup_process(&process);
+                    lock_or_recover(&shared).cleanup_process();
                     break;
                 }
             }
@@ -381,7 +383,7 @@ impl FreeRdpThread {
     /// Uses mutex poisoning recovery for safe process handle storage.
     fn launch_freerdp(
         config: &RdpConfig,
-        process: &Arc<Mutex<Option<Child>>>,
+        shared: &Arc<Mutex<FreeRdpSharedState>>,
     ) -> Result<(), EmbeddedRdpError> {
         // Try wlfreerdp first for embedded mode
         let binary = if Command::new("which")
@@ -443,21 +445,10 @@ impl FreeRdpThread {
 
         match cmd.spawn() {
             Ok(child) => {
-                *lock_or_recover(process) = Some(child);
+                lock_or_recover(shared).process = Some(child);
                 Ok(())
             }
             Err(e) => Err(EmbeddedRdpError::FreeRdpInit(e.to_string())),
-        }
-    }
-
-    /// Cleans up the FreeRDP process
-    ///
-    /// Uses mutex poisoning recovery for safe process handle access.
-    fn cleanup_process(process: &Arc<Mutex<Option<Child>>>) {
-        let child = lock_or_recover(process).take();
-        if let Some(mut child) = child {
-            let _ = child.kill();
-            let _ = child.wait();
         }
     }
 
@@ -477,14 +468,14 @@ impl FreeRdpThread {
     ///
     /// Uses mutex poisoning recovery for safe state access.
     pub fn state(&self) -> FreeRdpThreadState {
-        get_state(&self.state)
+        lock_or_recover(&self.shared).state
     }
 
     /// Returns whether fallback was triggered
     ///
     /// Uses mutex poisoning recovery for safe flag access.
     pub fn fallback_triggered(&self) -> bool {
-        get_flag(&self.fallback_triggered)
+        lock_or_recover(&self.shared).fallback_triggered
     }
 
     /// Returns a reference to the frame buffer

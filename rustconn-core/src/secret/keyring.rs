@@ -17,8 +17,11 @@ const APP_ID: &str = "rustconn";
 /// callers should fall back to encrypted-settings storage and
 /// inform the user to install `libsecret-tools`.
 pub async fn is_secret_tool_available() -> bool {
-    Command::new("secret-tool")
-        .arg("--version")
+    // secret-tool does not support --version; running it without valid
+    // arguments prints usage to stderr and exits with code 1.
+    // Use `which` / `command -v` to check binary presence instead.
+    Command::new("which")
+        .arg("secret-tool")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()

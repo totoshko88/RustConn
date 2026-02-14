@@ -4,11 +4,10 @@
 //! updating, and deleting connections with persistence through `ConfigManager`.
 
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use chrono::Utc;
-use tokio::sync::Notify;
+use tokio::sync::watch;
 use uuid::Uuid;
 
 use crate::config::ConfigManager;
@@ -18,15 +17,11 @@ use crate::performance::memory_optimizer;
 
 /// Tuple containing validation/creation, timestamp
 type TrashEntry<T> = (T, chrono::DateTime<Utc>);
-/// Shared state for pending trash persistence
-type PendingTrash = Arc<
-    Mutex<
-        Option<(
-            Vec<TrashEntry<Connection>>,
-            Vec<TrashEntry<ConnectionGroup>>,
-        )>,
-    >,
->;
+/// Trash data: connection trash entries + group trash entries
+type TrashData = (
+    Vec<TrashEntry<Connection>>,
+    Vec<TrashEntry<ConnectionGroup>>,
+);
 
 /// Manager for connection CRUD operations
 ///
@@ -41,17 +36,14 @@ pub struct ConnectionManager {
     /// Configuration manager for persistence
     config_manager: ConfigManager,
 
-    // Debounced Persistence
-    pending_connections: Arc<Mutex<Option<Vec<Connection>>>>,
-    pending_groups: Arc<Mutex<Option<Vec<ConnectionGroup>>>>,
-    notify_connections: Arc<Notify>,
-    notify_groups: Arc<Notify>,
+    // Debounced Persistence — watch channels replace Arc<Mutex<Option<Vec>>>+Notify
+    conn_tx: watch::Sender<Option<Vec<Connection>>>,
+    group_tx: watch::Sender<Option<Vec<ConnectionGroup>>>,
+    trash_tx: watch::Sender<Option<TrashData>>,
 
     // Trash
     trash_connections: HashMap<Uuid, TrashEntry<Connection>>,
     trash_groups: HashMap<Uuid, TrashEntry<ConnectionGroup>>,
-    pending_trash: PendingTrash,
-    notify_trash: Arc<Notify>,
 
     // Sort Optimization
     is_sorted: bool,
@@ -63,118 +55,93 @@ impl ConnectionManager {
     fn init_persistence(
         config_manager: ConfigManager,
     ) -> (
-        Arc<Mutex<Option<Vec<Connection>>>>,
-        Arc<Mutex<Option<Vec<ConnectionGroup>>>>,
-        PendingTrash,
-        Arc<Notify>,
-        Arc<Notify>,
-        Arc<Notify>,
+        watch::Sender<Option<Vec<Connection>>>,
+        watch::Sender<Option<Vec<ConnectionGroup>>>,
+        watch::Sender<Option<TrashData>>,
     ) {
-        let pending_connections: Arc<Mutex<Option<Vec<Connection>>>> = Arc::new(Mutex::new(None));
-        let pending_groups: Arc<Mutex<Option<Vec<ConnectionGroup>>>> = Arc::new(Mutex::new(None));
-        let pending_trash: PendingTrash = Arc::new(Mutex::new(None));
-        let notify_connections = Arc::new(Notify::new());
-        let notify_groups = Arc::new(Notify::new());
-        let notify_trash = Arc::new(Notify::new());
+        let (conn_tx, conn_rx) = watch::channel(None);
+        let (group_tx, group_rx) = watch::channel(None);
+        let (trash_tx, trash_rx) = watch::channel(None);
 
         // Spawn connection persistence worker
-        let notify_c = notify_connections.clone();
-        let pending_c = pending_connections.clone();
         let config_c = config_manager.clone();
-        tokio::spawn(async move {
-            loop {
-                notify_c.notified().await;
-                // Debounce loop
-                loop {
-                    tokio::select! {
-                        () = notify_c.notified() => {
-                            // Activity detected, restart debounce timer
-                        }
-                        () = tokio::time::sleep(Duration::from_secs(2)) => {
-                            // Silence detected, proceed to save
-                            break;
-                        }
-                    }
-                }
-
-                // Save
-                let data = pending_c.lock().unwrap().take();
-                if let Some(connections) = data {
-                    if let Err(e) = config_c.save_connections_async(&connections).await {
+        tokio::spawn(Self::debounce_worker(
+            conn_rx,
+            move |connections: Vec<Connection>| {
+                let cfg = config_c.clone();
+                async move {
+                    if let Err(e) = cfg.save_connections_async(&connections).await {
                         tracing::error!("Failed to persist connections: {}", e);
                     }
                 }
-            }
-        });
+            },
+        ));
 
         // Spawn group persistence worker
-        let notify_g = notify_groups.clone();
-        let pending_g = pending_groups.clone();
         let config_g = config_manager.clone();
-        tokio::spawn(async move {
-            loop {
-                notify_g.notified().await;
-                // Debounce loop
-                loop {
-                    tokio::select! {
-                        () = notify_g.notified() => {
-                            // Activity detected, restart debounce timer
-                        }
-                        () = tokio::time::sleep(Duration::from_secs(2)) => {
-                            // Silence detected, proceed to save
-                            break;
-                        }
-                    }
-                }
-
-                // Save
-                let data = pending_g.lock().unwrap().take();
-                if let Some(groups) = data {
-                    if let Err(e) = config_g.save_groups_async(&groups).await {
+        tokio::spawn(Self::debounce_worker(
+            group_rx,
+            move |groups: Vec<ConnectionGroup>| {
+                let cfg = config_g.clone();
+                async move {
+                    if let Err(e) = cfg.save_groups_async(&groups).await {
                         tracing::error!("Failed to persist groups: {}", e);
                     }
                 }
-            }
-        });
+            },
+        ));
 
         // Spawn trash persistence worker
-        let notify_t = notify_trash.clone();
-        let pending_t = pending_trash.clone();
-        let config_t = config_manager.clone();
-        tokio::spawn(async move {
-            loop {
-                notify_t.notified().await;
-                // Debounce loop
-                loop {
-                    tokio::select! {
-                        () = notify_t.notified() => {
-                            // Activity detected, restart debounce timer
-                        }
-                        () = tokio::time::sleep(Duration::from_secs(2)) => {
-                            // Silence detected, proceed to save
-                            break;
-                        }
-                    }
+        let config_t = config_manager;
+        tokio::spawn(Self::debounce_worker(trash_rx, move |data: TrashData| {
+            let cfg = config_t.clone();
+            async move {
+                if let Err(e) = cfg.save_trash_async(&data.0, &data.1).await {
+                    tracing::error!("Failed to persist trash: {}", e);
                 }
+            }
+        }));
 
-                // Save
-                let data = pending_t.lock().unwrap().take();
-                if let Some((connections, groups)) = data {
-                    if let Err(e) = config_t.save_trash_async(&connections, &groups).await {
-                        tracing::error!("Failed to persist trash: {}", e);
+        (conn_tx, group_tx, trash_tx)
+    }
+
+    /// Generic debounce worker: waits for watch channel changes, debounces
+    /// for 2 seconds of inactivity, then calls the save function.
+    async fn debounce_worker<T, F, Fut>(mut rx: watch::Receiver<Option<T>>, save_fn: F)
+    where
+        T: Clone + Send + Sync + 'static,
+        F: Fn(T) -> Fut + Send + 'static,
+        Fut: std::future::Future<Output = ()> + Send,
+    {
+        loop {
+            // Wait for a change
+            if rx.changed().await.is_err() {
+                // Sender dropped, exit worker
+                break;
+            }
+
+            // Debounce loop: keep waiting while new changes arrive
+            loop {
+                tokio::select! {
+                    result = rx.changed() => {
+                        if result.is_err() {
+                            return;
+                        }
+                        // New change arrived, restart debounce timer
+                    }
+                    () = tokio::time::sleep(Duration::from_secs(2)) => {
+                        // 2s of silence, proceed to save
+                        break;
                     }
                 }
             }
-        });
 
-        (
-            pending_connections,
-            pending_groups,
-            pending_trash,
-            notify_connections,
-            notify_groups,
-            notify_trash,
-        )
+            // Take the latest value
+            let data = rx.borrow_and_update().clone();
+            if let Some(payload) = data {
+                save_fn(payload).await;
+            }
+        }
     }
 
     /// Creates a new `ConnectionManager` with the given `ConfigManager`
@@ -209,28 +176,18 @@ impl ConnectionManager {
             trash_groups.insert(group.id, (group, time));
         }
 
-        let (
-            pending_connections,
-            pending_groups,
-            pending_trash,
-            notify_connections,
-            notify_groups,
-            notify_trash,
-        ) = Self::init_persistence(config_manager.clone());
+        let (conn_tx, group_tx, trash_tx) = Self::init_persistence(config_manager.clone());
 
         Ok(Self {
             connections,
             groups,
             config_manager,
-            pending_connections,
-            pending_groups,
-            notify_connections,
-            notify_groups,
+            conn_tx,
+            group_tx,
+            trash_tx,
 
             trash_connections,
             trash_groups,
-            pending_trash,
-            notify_trash,
             is_sorted: false,
         })
     }
@@ -239,28 +196,18 @@ impl ConnectionManager {
     #[cfg(test)]
     #[must_use]
     pub fn new_empty(config_manager: ConfigManager) -> Self {
-        let (
-            pending_connections,
-            pending_groups,
-            pending_trash,
-            notify_connections,
-            notify_groups,
-            notify_trash,
-        ) = Self::init_persistence(config_manager.clone());
+        let (conn_tx, group_tx, trash_tx) = Self::init_persistence(config_manager.clone());
 
         Self {
             connections: HashMap::new(),
             groups: HashMap::new(),
             config_manager,
-            pending_connections,
-            pending_groups,
-            notify_connections,
-            notify_groups,
+            conn_tx,
+            group_tx,
+            trash_tx,
 
             trash_connections: HashMap::new(),
             trash_groups: HashMap::new(),
-            pending_trash,
-            notify_trash,
             is_sorted: true,
         }
     }
@@ -1000,14 +947,8 @@ impl ConnectionManager {
     fn persist_connections(&self) -> ConfigResult<()> {
         let connections: Vec<Connection> = self.connections.values().cloned().collect();
 
-        // Update pending data
-        {
-            let mut pending = self.pending_connections.lock().unwrap();
-            *pending = Some(connections);
-        }
-
-        // Notify worker
-        self.notify_connections.notify_one();
+        // Send latest snapshot via watch channel; worker will debounce and save
+        self.conn_tx.send_replace(Some(connections));
 
         Ok(())
     }
@@ -1017,14 +958,8 @@ impl ConnectionManager {
     fn persist_groups(&self) -> ConfigResult<()> {
         let groups: Vec<ConnectionGroup> = self.groups.values().cloned().collect();
 
-        // Update pending data
-        {
-            let mut pending = self.pending_groups.lock().unwrap();
-            *pending = Some(groups);
-        }
-
-        // Notify worker
-        self.notify_groups.notify_one();
+        // Send latest snapshot via watch channel; worker will debounce and save
+        self.group_tx.send_replace(Some(groups));
 
         Ok(())
     }
@@ -1034,14 +969,8 @@ impl ConnectionManager {
         let connections: Vec<_> = self.trash_connections.values().cloned().collect();
         let groups: Vec<_> = self.trash_groups.values().cloned().collect();
 
-        // Update pending data
-        {
-            let mut pending = self.pending_trash.lock().unwrap();
-            *pending = Some((connections, groups));
-        }
-
-        // Notify worker
-        self.notify_trash.notify_one();
+        // Send latest snapshot via watch channel; worker will debounce and save
+        self.trash_tx.send_replace(Some((connections, groups)));
 
         Ok(())
     }
@@ -1052,24 +981,21 @@ impl ConnectionManager {
     ///
     /// # Errors
     /// Returns a `ConfigError` if saving to disk fails
-    ///
-    /// # Panics
-    /// Panics if the internal mutex is poisoned
     pub async fn flush_persistence(&self) -> ConfigResult<()> {
-        // Flush connections
-        let pending_conns = self.pending_connections.lock().unwrap().take();
+        // Flush connections — take current pending value and save directly
+        let pending_conns = self.conn_tx.send_replace(None);
         if let Some(conns) = pending_conns {
             self.config_manager.save_connections_async(&conns).await?;
         }
 
         // Flush groups
-        let pending_groups = self.pending_groups.lock().unwrap().take();
+        let pending_groups = self.group_tx.send_replace(None);
         if let Some(groups) = pending_groups {
             self.config_manager.save_groups_async(&groups).await?;
         }
 
         // Flush trash
-        let pending_trash = self.pending_trash.lock().unwrap().take();
+        let pending_trash = self.trash_tx.send_replace(None);
         if let Some((conns, groups)) = pending_trash {
             self.config_manager
                 .save_trash_async(&conns, &groups)
@@ -1168,7 +1094,7 @@ impl ConnectionManager {
         // Update sort_order for each connection
         for (idx, conn_id) in group_connections.iter().enumerate() {
             if let Some(conn) = self.connections.get_mut(conn_id) {
-                #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+                #[allow(clippy::cast_possible_wrap)]
                 {
                     conn.sort_order = idx as i32;
                 }
@@ -1221,7 +1147,7 @@ impl ConnectionManager {
         // Update sort_order for root groups
         for (idx, group_id) in root_groups.iter().enumerate() {
             if let Some(group) = self.groups.get_mut(group_id) {
-                #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+                #[allow(clippy::cast_possible_wrap)]
                 {
                     group.sort_order = idx as i32;
                 }
@@ -1255,7 +1181,7 @@ impl ConnectionManager {
 
             for (idx, child_id) in child_groups.iter().enumerate() {
                 if let Some(group) = self.groups.get_mut(child_id) {
-                    #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+                    #[allow(clippy::cast_possible_wrap)]
                     {
                         group.sort_order = idx as i32;
                     }
@@ -1286,7 +1212,7 @@ impl ConnectionManager {
 
             for (idx, conn_id) in group_connections.iter().enumerate() {
                 if let Some(conn) = self.connections.get_mut(conn_id) {
-                    #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+                    #[allow(clippy::cast_possible_wrap)]
                     {
                         conn.sort_order = idx as i32;
                     }
@@ -1319,7 +1245,7 @@ impl ConnectionManager {
 
         for (idx, conn_id) in ungrouped.iter().enumerate() {
             if let Some(conn) = self.connections.get_mut(conn_id) {
-                #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+                #[allow(clippy::cast_possible_wrap)]
                 {
                     conn.sort_order = idx as i32;
                 }
@@ -1401,7 +1327,7 @@ impl ConnectionManager {
         // Update sort_order for all connections
         for (idx, conn_id) in conn_ids.iter().enumerate() {
             if let Some(conn) = self.connections.get_mut(conn_id) {
-                #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+                #[allow(clippy::cast_possible_wrap)]
                 {
                     conn.sort_order = idx as i32;
                 }
@@ -1482,7 +1408,7 @@ impl ConnectionManager {
         // Update sort_order for all connections in the group
         for (idx, (conn_id, _)) in group_connections.iter().enumerate() {
             if let Some(conn) = self.connections.get_mut(conn_id) {
-                #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+                #[allow(clippy::cast_possible_wrap)]
                 {
                     conn.sort_order = idx as i32;
                 }
@@ -1561,7 +1487,7 @@ impl ConnectionManager {
         // Update sort_order for all sibling groups
         for (idx, (gid, _)) in sibling_groups.iter().enumerate() {
             if let Some(group) = self.groups.get_mut(gid) {
-                #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+                #[allow(clippy::cast_possible_wrap)]
                 {
                     group.sort_order = idx as i32;
                 }

@@ -139,7 +139,6 @@ impl AsbruImporter {
     /// Filters out "tmp", empty values, and placeholder names.
     /// For name/title fields, only extracts if they look like hostnames
     /// (contain dots, are IP addresses, or contain dynamic variables).
-    #[allow(clippy::unused_self)]
     fn extract_hostname(&self, entry: &AsbruEntry) -> Option<String> {
         // Try ip field first
         if let Some(ip) = &entry.ip {
@@ -580,7 +579,6 @@ impl AsbruImporter {
     }
 
     /// Finds the Asbru config file in a directory
-    #[allow(clippy::unused_self)]
     fn find_config_file(&self, dir: &Path) -> Option<PathBuf> {
         // Asbru stores connections in various files
         let possible_files = [

@@ -15,8 +15,7 @@
 //! - Requirement 1.3: Keyboard event forwarding to RDP server
 //! - Requirement 1.7: Dynamic resolution change on resize
 
-// Allow clippy warnings for this file - input handling uses various integer sizes
-#![allow(clippy::cast_possible_truncation)]
+// cast_possible_truncation allowed at workspace level
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::match_same_arms)]
 #![allow(clippy::float_cmp)]
@@ -220,9 +219,9 @@ impl CoordinateTransform {
         let (rdp_x, rdp_y) = self.transform_clamped(widget_x, widget_y);
 
         // Convert to u16, clamping to u16::MAX just in case
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[allow(clippy::cast_sign_loss)]
         let x = (rdp_x.round() as u32).min(u32::from(u16::MAX)) as u16;
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[allow(clippy::cast_sign_loss)]
         let y = (rdp_y.round() as u32).min(u32::from(u16::MAX)) as u16;
 
         (x, y)
@@ -372,7 +371,6 @@ pub fn generate_resize_request(
     let width = width.clamp(u32::from(MIN_RDP_WIDTH), u32::from(MAX_RDP_WIDTH));
     let height = height.clamp(u32::from(MIN_RDP_HEIGHT), u32::from(MAX_RDP_HEIGHT));
 
-    #[allow(clippy::cast_possible_truncation)]
     (width as u16, height as u16)
 }
 

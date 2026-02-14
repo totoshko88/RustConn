@@ -137,8 +137,9 @@ pub use protocol::{
     detect_gcloud_cli, detect_oci_cli, detect_provider, detect_rdp_client, detect_ssh_client,
     detect_tailscale, detect_teleport, detect_telnet_client, detect_vnc_client,
     extract_geometry_from_args, get_zero_trust_provider_icon, has_decorations_flag,
-    ClientDetectionResult, ClientInfo, CloudProvider, FreeRdpConfig, Protocol, ProtocolRegistry,
-    ProviderIconCache, RdpProtocol, SshProtocol, TelnetProtocol, VncProtocol,
+    ClientDetectionResult, ClientInfo, CloudProvider, FreeRdpConfig, Protocol,
+    ProtocolCapabilities, ProtocolRegistry, ProviderIconCache, RdpProtocol, SshProtocol,
+    TelnetProtocol, VncProtocol,
 };
 pub use rdp_client::{
     convert_to_bgra, create_frame_update, create_frame_update_with_conversion,

@@ -515,7 +515,6 @@ pub const fn dimension_diff(a: u32, b: u32) -> u32 {
 /// The `cast_precision_loss` warning is suppressed because precision loss
 /// is acceptable for progress display purposes.
 #[must_use]
-#[allow(clippy::cast_precision_loss)]
 pub fn progress_percentage(current: u64, total: u64) -> f64 {
     if total == 0 {
         return 0.0;
@@ -541,7 +540,6 @@ pub fn progress_percentage(current: u64, total: u64) -> f64 {
 /// The `cast_precision_loss` warning is suppressed because precision loss
 /// is acceptable for progress display purposes.
 #[must_use]
-#[allow(clippy::cast_precision_loss)]
 pub fn progress_fraction(current: u64, total: u64) -> f64 {
     if total == 0 {
         return 0.0;

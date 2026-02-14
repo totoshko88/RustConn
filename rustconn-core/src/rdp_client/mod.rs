@@ -35,10 +35,8 @@
 //! - Requirement 1.6: Resource cleanup on disconnect
 //! - Requirement 10.1: Follow VNC client architecture pattern
 
-// Allow cast warnings - RDP protocol uses various integer sizes
-#![allow(clippy::cast_possible_truncation)]
+// cast_possible_truncation, cast_precision_loss allowed at workspace level
 #![allow(clippy::cast_sign_loss)]
-#![allow(clippy::cast_precision_loss)]
 #![allow(clippy::missing_panics_doc)]
 
 #[cfg(feature = "rdp-embedded")]

@@ -79,6 +79,24 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.8.4" date="2026-02-14">
+      <description>
+        <p>Version 0.8.4 - FIDO2 Auth, CLI Enhancements, and Major Refactoring:</p>
+        <ul>
+          <li>FIDO2/SecurityKey SSH authentication with hardware key support in connection and template dialogs</li>
+          <li>CLI --auth-method flag for add/update commands; show displays SSH auth method; --key for key path changes</li>
+          <li>Fixed CLI version check timeout from 3s to 6s for Azure CLI compatibility</li>
+          <li>Fixed WoL settings fields remaining disabled when editing existing connection</li>
+          <li>Refactored ConnectionManager persistence with tokio watch channels (8 fields to 3)</li>
+          <li>Refactored OverlaySplitView sidebar with F9 toggle, gestures, and responsive breakpoint</li>
+          <li>Reorganized Window module (14 flat files into directory) and Embedded RDP module (7 files)</li>
+          <li>Extracted ConnectionDialog LoggingTab (~310 lines removed)</li>
+          <li>Removed ~80 redundant clippy suppression annotations in workspace audit</li>
+          <li>Extended Protocol trait with capabilities() and build_command() methods</li>
+          <li>Updated resvg 0.46 to 0.47, tiny-skia 0.11 to 0.12</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.8.3" date="2026-02-13">
       <description>
         <p>Version 0.8.3 - Wake On LAN, Code Audit Fixes, and Settings Performance:</p>
