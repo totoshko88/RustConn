@@ -91,6 +91,16 @@ fn main() -> gtk4::glib::ExitCode {
 
     tracing_subscriber::fmt().with_env_filter(filter).init();
 
+    // Ensure ssh-agent is running so that child processes (Dolphin,
+    // mc, ssh-add) inherit SSH_AUTH_SOCK. On some DEs (KDE on
+    // openSUSE Tumbleweed) ssh-agent is not started by default.
+    if !rustconn_core::sftp::ensure_ssh_agent() {
+        tracing::warn!(
+            "Could not ensure ssh-agent is running; \
+             SFTP via file managers may require manual setup"
+        );
+    }
+
     // Initialize Tokio runtime for async operations
     // Note: Runtime creation failure at startup is unrecoverable
     let runtime = tokio::runtime::Runtime::new().expect("tokio runtime required for async ops");

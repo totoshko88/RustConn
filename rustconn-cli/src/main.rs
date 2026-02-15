@@ -1081,6 +1081,7 @@ fn build_connection_command(connection: &Connection) -> ConnectionCommand {
                     .to_string()],
             }
         }
+        ProtocolType::Kubernetes => build_kubernetes_command(connection),
     }
 }
 
@@ -1411,6 +1412,74 @@ fn build_serial_command(connection: &Connection) -> ConnectionCommand {
     }
 }
 
+/// Builds Kubernetes command arguments (kubectl exec)
+fn build_kubernetes_command(connection: &Connection) -> ConnectionCommand {
+    if let rustconn_core::models::ProtocolConfig::Kubernetes(ref k8s) = connection.protocol_config {
+        let mut args = Vec::new();
+
+        // Global args: kubeconfig, context, namespace
+        if let Some(ref kubeconfig) = k8s.kubeconfig {
+            args.push("--kubeconfig".to_string());
+            args.push(kubeconfig.display().to_string());
+        }
+        if let Some(ref context) = k8s.context {
+            if !context.is_empty() {
+                args.push("--context".to_string());
+                args.push(context.clone());
+            }
+        }
+        if let Some(ref namespace) = k8s.namespace {
+            if !namespace.is_empty() {
+                args.push("--namespace".to_string());
+                args.push(namespace.clone());
+            }
+        }
+
+        if k8s.use_busybox {
+            // kubectl run -it --rm --restart=Never <name> --image <img> -- <shell>
+            args.push("run".to_string());
+            args.push("-it".to_string());
+            args.push("--rm".to_string());
+            args.push("--restart=Never".to_string());
+            args.push("rustconn-busybox".to_string());
+            args.push("--image".to_string());
+            args.push(k8s.busybox_image.clone());
+        } else {
+            // kubectl exec -it <pod> [-c <container>] -- <shell>
+            args.push("exec".to_string());
+            args.push("-it".to_string());
+            if let Some(ref pod) = k8s.pod {
+                args.push(pod.clone());
+            }
+            if let Some(ref container) = k8s.container {
+                if !container.is_empty() {
+                    args.push("-c".to_string());
+                    args.push(container.clone());
+                }
+            }
+        }
+
+        // Custom args
+        for arg in &k8s.custom_args {
+            args.push(arg.clone());
+        }
+
+        // Shell after --
+        args.push("--".to_string());
+        args.push(k8s.shell.clone());
+
+        ConnectionCommand {
+            program: "kubectl".to_string(),
+            args,
+        }
+    } else {
+        ConnectionCommand {
+            program: "echo".to_string(),
+            args: vec!["Error: not a Kubernetes connection".to_string()],
+        }
+    }
+}
+
 /// Executes the connection command
 fn execute_connection_command(command: &ConnectionCommand) -> Result<(), CliError> {
     use std::process::Command;
@@ -1589,9 +1658,10 @@ fn parse_protocol(protocol: &str) -> Result<(ProtocolType, u16), CliError> {
         "telnet" => Ok((ProtocolType::Telnet, 23)),
         "serial" => Ok((ProtocolType::Serial, 0)),
         "sftp" => Ok((ProtocolType::Sftp, 22)),
+        "kubernetes" | "k8s" => Ok((ProtocolType::Kubernetes, 0)),
         _ => Err(CliError::Config(format!(
             "Unknown protocol '{protocol}'. \
-             Supported protocols: ssh, rdp, vnc, spice, telnet, serial, sftp"
+             Supported protocols: ssh, rdp, vnc, spice, telnet, serial, sftp, kubernetes"
         ))),
     }
 }
@@ -1694,6 +1764,15 @@ fn create_connection(
                 }
             }
             conn
+        }
+        ProtocolType::Kubernetes => {
+            if key.is_some() {
+                eprintln!("Warning: --key option is ignored for Kubernetes connections");
+            }
+            if auth_method.is_some() {
+                eprintln!("Warning: --auth-method is ignored for Kubernetes connections");
+            }
+            Connection::new_kubernetes(name.to_string())
         }
     }
 }
@@ -4845,6 +4924,15 @@ fn cmd_sftp(name: &str, use_cli: bool, use_mc: bool) -> Result<(), CliError> {
         )));
     }
 
+    // Ensure ssh-agent is running (KDE on Tumbleweed may not
+    // start it by default).
+    if !rustconn_core::sftp::ensure_ssh_agent() {
+        eprintln!(
+            "Warning: ssh-agent is not running. \
+             SFTP may require manual setup."
+        );
+    }
+
     // Ensure SSH key is in agent (mc/nautilus can't pass -i)
     if !rustconn_core::sftp::ensure_key_in_agent(connection) {
         eprintln!(
@@ -4899,24 +4987,36 @@ fn cmd_sftp(name: &str, use_cli: bool, use_mc: bool) -> Result<(), CliError> {
         println!("Opening SFTP file browser for '{}'...", connection.name);
         println!("URI: {uri}");
 
-        // Try xdg-open first (DE-agnostic, works on KDE/COSMIC/GNOME)
-        let xdg_ok = std::process::Command::new("xdg-open")
-            .arg(&uri)
+        // Launch file manager as a direct subprocess so it
+        // inherits SSH_AUTH_SOCK. On KDE, xdg-open routes
+        // through D-Bus to an already-running Dolphin that
+        // won't have our env, so try dolphin directly first.
+        let dolphin_ok = std::process::Command::new("dolphin")
+            .args(["--new-window", &uri])
             .spawn()
             .is_ok();
 
-        if xdg_ok {
+        if dolphin_ok {
             return Ok(());
         }
 
-        // Fallback: nautilus (GNOME Files — handles GVFS mount + auth)
-        eprintln!("xdg-open not found, trying nautilus...");
+        // Fallback: nautilus (GNOME Files)
         let nautilus_ok = std::process::Command::new("nautilus")
             .args(["--new-window", &uri])
             .spawn()
             .is_ok();
 
         if nautilus_ok {
+            return Ok(());
+        }
+
+        // Last resort: xdg-open (may go through D-Bus)
+        let xdg_ok = std::process::Command::new("xdg-open")
+            .arg(&uri)
+            .spawn()
+            .is_ok();
+
+        if xdg_ok {
             return Ok(());
         }
 

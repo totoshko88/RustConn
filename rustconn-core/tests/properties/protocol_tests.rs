@@ -431,6 +431,7 @@ proptest! {
             ProtocolConfig::Telnet(_) => 23u16,
             ProtocolConfig::Serial(_) => 0u16,
             ProtocolConfig::Sftp(_) => 22u16,
+            ProtocolConfig::Kubernetes(_) => 0u16,
         };
 
         prop_assert_eq!(

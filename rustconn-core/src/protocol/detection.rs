@@ -374,6 +374,16 @@ pub fn detect_boundary() -> ClientInfo {
     ClientInfo::not_installed("Boundary CLI", "Install boundary package")
 }
 
+/// Detects kubectl (Kubernetes CLI)
+#[must_use]
+pub fn detect_kubectl() -> ClientInfo {
+    if let Some(info) = try_detect_client("kubectl", "kubectl", &["version", "--client", "--short"])
+    {
+        return info;
+    }
+    ClientInfo::not_installed("kubectl", "Install kubectl package")
+}
+
 /// Attempts to detect a specific client binary
 fn try_detect_client(name: &str, binary: &str, version_args: &[&str]) -> Option<ClientInfo> {
     // First check if the binary exists in PATH

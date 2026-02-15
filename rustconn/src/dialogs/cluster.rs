@@ -258,6 +258,9 @@ impl ClusterDialog {
             rustconn_core::models::ProtocolConfig::Telnet(_) => "call-start-symbolic",
             rustconn_core::models::ProtocolConfig::Serial(_) => "modem-symbolic",
             rustconn_core::models::ProtocolConfig::Sftp(_) => "folder-remote-symbolic",
+            rustconn_core::models::ProtocolConfig::Kubernetes(_) => {
+                "application-x-executable-symbolic"
+            }
         };
         let icon = gtk4::Image::from_icon_name(icon_name);
 

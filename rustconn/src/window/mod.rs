@@ -671,7 +671,6 @@ impl MainWindow {
         let toast_clone = self.toast_overlay.clone();
         let notebook_clone = self.terminal_notebook.clone();
         let split_view_clone = self.split_view.clone();
-        let window_weak = window.downgrade();
         sftp_action.connect_activate(move |_, _| {
             let Some(item) = sidebar_clone.get_selected_item() else {
                 return;
@@ -729,13 +728,34 @@ impl MainWindow {
 
                 // Add SSH key to agent if configured
                 if let Some(ref kp) = key_path {
+                    if !rustconn_core::sftp::is_ssh_agent_available() {
+                        toast_clone.show_warning(
+                            "SSH agent not running. Run \
+                             'eval $(ssh-agent)' and retry.",
+                        );
+                    }
                     tracing::info!(?kp, "Adding SSH key to agent for mc");
-                    let _ = std::process::Command::new("ssh-add")
+                    match std::process::Command::new("ssh-add")
                         .arg(kp)
                         .stdin(std::process::Stdio::null())
                         .stdout(std::process::Stdio::null())
-                        .stderr(std::process::Stdio::null())
-                        .status();
+                        .stderr(std::process::Stdio::piped())
+                        .output()
+                    {
+                        Ok(output) if output.status.success() => {
+                            tracing::info!("SSH key added to agent for mc");
+                        }
+                        Ok(output) => {
+                            let stderr = String::from_utf8_lossy(&output.stderr);
+                            tracing::warn!(
+                                %stderr,
+                                "ssh-add failed — mc FISH may not authenticate"
+                            );
+                        }
+                        Err(e) => {
+                            tracing::error!(?e, "Failed to run ssh-add");
+                        }
+                    }
                 }
 
                 // Check mc availability
@@ -784,51 +804,61 @@ impl MainWindow {
                 toast_clone.show_toast("Opening SFTP...");
 
                 // Add SSH key to agent in background, then open URI
-                // via gtk::UriLauncher (portal-aware — works in
-                // Flatpak, Snap, KDE, COSMIC, GNOME).
                 let toast_cb = toast_clone.clone();
                 let key_for_add = key_path.clone();
 
-                // ssh-add in background thread, then launch URI
-                // on the main thread via UriLauncher.
+                // ssh-add in background thread, then launch file
+                // manager as a direct subprocess (not via
+                // UriLauncher/D-Bus) so it inherits SSH_AUTH_SOCK.
                 let uri_clone = uri.clone();
-                let win_weak = window_weak.clone();
                 crate::utils::spawn_blocking_with_callback(
                     move || {
                         // Add SSH key to agent if configured
                         if let Some(ref kp) = key_for_add {
+                            if !rustconn_core::sftp::is_ssh_agent_available() {
+                                tracing::warn!(
+                                    "SSH agent not available; \
+                                     file manager may fail to authenticate"
+                                );
+                            }
                             tracing::info!(?kp, "Adding SSH key to agent for SFTP");
-                            let _ = std::process::Command::new("ssh-add")
+                            match std::process::Command::new("ssh-add")
                                 .arg(kp)
                                 .stdin(std::process::Stdio::null())
                                 .stdout(std::process::Stdio::null())
-                                .stderr(std::process::Stdio::null())
-                                .status();
-                        }
-                        true
-                    },
-                    move |_| {
-                        // Use gtk::UriLauncher — portal-aware, works
-                        // in Flatpak/Snap and all DEs (GNOME, KDE,
-                        // COSMIC). Falls back to xdg-open internally.
-                        let launcher = gtk4::UriLauncher::new(&uri_clone);
-                        let parent = win_weak.upgrade();
-                        let toast_err = toast_cb.clone();
-                        let uri_fallback = uri_clone.clone();
-                        launcher.launch(
-                            parent.as_ref().map(|w| w.upcast_ref::<gtk4::Window>()),
-                            gio::Cancellable::NONE,
-                            move |result| {
-                                if let Err(e) = result {
-                                    tracing::warn!(
-                                        ?e,
-                                        "UriLauncher failed, \
-                                         trying subprocess fallback"
-                                    );
-                                    Self::sftp_subprocess_fallback(&uri_fallback, &toast_err);
+                                .stderr(std::process::Stdio::piped())
+                                .output()
+                            {
+                                Ok(output) if output.status.success() => {
+                                    tracing::info!("SSH key added to agent");
                                 }
-                            },
-                        );
+                                Ok(output) => {
+                                    let stderr = String::from_utf8_lossy(&output.stderr);
+                                    tracing::warn!(
+                                        %stderr,
+                                        "ssh-add failed — file manager \
+                                         may not authenticate"
+                                    );
+                                }
+                                Err(e) => {
+                                    tracing::error!(?e, "Failed to run ssh-add");
+                                }
+                            }
+                        }
+                        rustconn_core::sftp::is_ssh_agent_available()
+                    },
+                    move |agent_ok| {
+                        // Launch file manager as a direct subprocess
+                        // so it inherits SSH_AUTH_SOCK. UriLauncher
+                        // goes through D-Bus/portal which may not
+                        // pass our env to an already-running Dolphin.
+                        Self::sftp_launch_file_manager(&uri_clone);
+                        if !agent_ok {
+                            toast_cb.show_warning(
+                                "SSH agent not running — file manager \
+                                 may not authenticate.",
+                            );
+                        }
                     },
                 );
             }
@@ -836,31 +866,50 @@ impl MainWindow {
         window.add_action(&sftp_action);
     }
 
-    /// Subprocess fallback for SFTP file manager when `UriLauncher` fails.
+    /// Launches a file manager for an `sftp://` URI as a direct
+    /// subprocess so it inherits `SSH_AUTH_SOCK`.
     ///
-    /// Tries `xdg-open` first (DE-agnostic), then `nautilus` (GNOME).
-    fn sftp_subprocess_fallback(uri: &str, toast: &SharedToastOverlay) {
-        // xdg-open delegates to the DE's default file manager
-        let xdg_ok = std::process::Command::new("xdg-open")
+    /// On KDE, `xdg-open` may route through D-Bus to an
+    /// already-running Dolphin that doesn't have our env.
+    /// Launching `dolphin` directly as a child process ensures
+    /// the KIO sftp worker sees the ssh-agent socket.
+    ///
+    /// Tries: `dolphin` → `nautilus` → `xdg-open` (last resort).
+    fn sftp_launch_file_manager(uri: &str) {
+        // Try dolphin first (KDE) — direct child inherits env
+        let dolphin_ok = std::process::Command::new("dolphin")
+            .arg("--new-window")
             .arg(uri)
             .spawn()
             .is_ok();
-        if xdg_ok {
+        if dolphin_ok {
+            tracing::info!(%uri, "Launched dolphin for SFTP");
             return;
         }
 
-        tracing::debug!("xdg-open failed, trying nautilus");
+        // Try nautilus (GNOME)
         let nautilus_ok = std::process::Command::new("nautilus")
             .args(["--new-window", uri])
             .spawn()
             .is_ok();
         if nautilus_ok {
+            tracing::info!(%uri, "Launched nautilus for SFTP");
             return;
         }
 
-        toast.show_error(
-            "Could not open SFTP. Install gvfs-backends \
-             for sftp:// support.",
+        // Last resort — xdg-open (may go through D-Bus)
+        let xdg_ok = std::process::Command::new("xdg-open")
+            .arg(uri)
+            .spawn()
+            .is_ok();
+        if xdg_ok {
+            tracing::info!(%uri, "Launched xdg-open for SFTP");
+            return;
+        }
+
+        tracing::warn!(
+            %uri,
+            "No file manager found for SFTP URI"
         );
     }
 
@@ -894,12 +943,24 @@ impl MainWindow {
             tracing::info!(?mc_args, "SFTP connect: opening mc");
 
             if let Some(ref kp) = key_path {
-                let _ = std::process::Command::new("ssh-add")
+                match std::process::Command::new("ssh-add")
                     .arg(kp)
                     .stdin(std::process::Stdio::null())
                     .stdout(std::process::Stdio::null())
-                    .stderr(std::process::Stdio::null())
-                    .status();
+                    .stderr(std::process::Stdio::piped())
+                    .output()
+                {
+                    Ok(output) if output.status.success() => {
+                        tracing::info!(?kp, "SSH key added to agent");
+                    }
+                    Ok(output) => {
+                        let stderr = String::from_utf8_lossy(&output.stderr);
+                        tracing::warn!(?kp, %stderr, "ssh-add failed");
+                    }
+                    Err(e) => {
+                        tracing::error!(?e, "Failed to run ssh-add");
+                    }
+                }
             }
 
             let tab_name = format!("mc: {conn_name}");
@@ -937,34 +998,34 @@ impl MainWindow {
             crate::utils::spawn_blocking_with_callback(
                 move || {
                     if let Some(ref kp) = key_for_add {
-                        let _ = std::process::Command::new("ssh-add")
+                        match std::process::Command::new("ssh-add")
                             .arg(kp)
                             .stdin(std::process::Stdio::null())
                             .stdout(std::process::Stdio::null())
-                            .stderr(std::process::Stdio::null())
-                            .status();
+                            .stderr(std::process::Stdio::piped())
+                            .output()
+                        {
+                            Ok(output) if output.status.success() => {
+                                tracing::info!(?kp, "SSH key added to agent");
+                            }
+                            Ok(output) => {
+                                let stderr = String::from_utf8_lossy(&output.stderr);
+                                tracing::warn!(
+                                    ?kp, %stderr, "ssh-add failed"
+                                );
+                            }
+                            Err(e) => {
+                                tracing::error!(?e, "Failed to run ssh-add");
+                            }
+                        }
                     }
                     true
                 },
                 move |_| {
-                    let launcher = gtk4::UriLauncher::new(&uri_clone);
-                    let uri_fallback = uri_clone.clone();
-                    launcher.launch(gtk4::Window::NONE, gio::Cancellable::NONE, move |result| {
-                        if let Err(e) = result {
-                            tracing::warn!(?e, "UriLauncher failed for SFTP connect");
-                            // Use a no-toast fallback — just try
-                            // subprocess
-                            let xdg_ok = std::process::Command::new("xdg-open")
-                                .arg(&uri_fallback)
-                                .spawn()
-                                .is_ok();
-                            if !xdg_ok {
-                                let _ = std::process::Command::new("nautilus")
-                                    .args(["--new-window", &uri_fallback])
-                                    .spawn();
-                            }
-                        }
-                    });
+                    // Launch file manager as a direct subprocess
+                    // so it inherits SSH_AUTH_SOCK. UriLauncher
+                    // goes through D-Bus which may not pass env.
+                    Self::sftp_launch_file_manager(&uri_clone);
                 },
             );
         }
@@ -3346,7 +3407,8 @@ impl MainWindow {
             | ProtocolType::Spice
             | ProtocolType::ZeroTrust
             | ProtocolType::Telnet
-            | ProtocolType::Serial => {
+            | ProtocolType::Serial
+            | ProtocolType::Kubernetes => {
                 // For SSH/SPICE, cache credentials if available and start connection
                 if let Some(ref creds) = resolved_credentials {
                     if let (Some(username), Some(password)) =

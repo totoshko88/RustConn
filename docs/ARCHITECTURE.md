@@ -665,6 +665,7 @@ pub struct ProtocolCapabilities {
 - `SpiceProtocol`: SPICE via remote-viewer (capabilities: external_fallback, clipboard)
 - `TelnetProtocol`: Telnet via external `telnet` client (capabilities: terminal, split_view)
 - `SerialProtocol`: Serial via external `picocom` client (capabilities: terminal, split_view)
+- `KubernetesProtocol`: Kubernetes via external `kubectl exec` (capabilities: terminal, split_view)
 - `SftpProtocol`: SFTP file transfer via file manager/mc (capabilities: file_transfer, external_fallback)
 
 ### Adding a New Protocol
@@ -675,7 +676,7 @@ pub struct ProtocolCapabilities {
 4. Register in `ProtocolRegistry`
 5. Add UI fields in `rustconn/src/dialogs/connection/dialog.rs`
 
-See `TelnetProtocol` or `SerialProtocol` for minimal reference implementations using external clients.
+See `TelnetProtocol`, `SerialProtocol`, or `KubernetesProtocol` for minimal reference implementations using external clients.
 
 ### RDP Backend Selection
 
@@ -811,6 +812,7 @@ rustconn/src/
 │   │   ├── spice.rs       # SPICE options
 │   │   ├── telnet.rs      # Telnet options
 │   │   ├── serial.rs      # Serial options
+│   │   ├── kubernetes.rs  # Kubernetes options
 │   │   └── zerotrust.rs   # Zero Trust provider options
 │   ├── keyboard.rs        # Keyboard navigation helpers
 │   ├── wol.rs             # Wake On LAN dialog (standalone + manual entry)

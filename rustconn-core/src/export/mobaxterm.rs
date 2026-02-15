@@ -405,6 +405,9 @@ impl MobaXtermExporter {
             }
             ProtocolType::Serial => Err(ExportError::UnsupportedProtocol("Serial".to_string())),
             ProtocolType::Sftp => Err(ExportError::UnsupportedProtocol("SFTP".to_string())),
+            ProtocolType::Kubernetes => {
+                Err(ExportError::UnsupportedProtocol("Kubernetes".to_string()))
+            }
         }
     }
 }

@@ -79,7 +79,7 @@ pub struct ConnectionSidebar {
     pending_search_query: Rc<RefCell<Option<String>>>,
     /// Saved tree state before search (for restoration when search is cleared)
     pre_search_state: Rc<RefCell<Option<TreeState>>>,
-    /// Active protocol filters (SSH, RDP, VNC, SPICE)
+    /// Active protocol filters (SSH, RDP, VNC, SPICE, Telnet, Serial, ZeroTrust, Kubernetes)
     active_protocol_filters: Rc<RefCell<HashSet<String>>>,
     /// Quick filter buttons for protocol filtering
     protocol_filter_buttons: Rc<RefCell<std::collections::HashMap<String, Button>>>,
@@ -169,6 +169,11 @@ impl ConnectionSidebar {
             "Filter ZeroTrust connections",
         );
         zerotrust_filter.add_css_class("filter-button");
+        let kubernetes_filter = filter::create_filter_button(
+            "K8s",
+            "application-x-executable-symbolic",
+            "Filter Kubernetes connections",
+        );
 
         // Local Shell button - distinct style (not a filter, opens local terminal)
         let local_shell_btn = Button::new();
@@ -191,6 +196,7 @@ impl ConnectionSidebar {
         filter_box.append(&telnet_filter);
         filter_box.append(&serial_filter);
         filter_box.append(&zerotrust_filter);
+        filter_box.append(&kubernetes_filter);
         filter_box.append(&local_shell_btn);
 
         // Store filter buttons for later reference
@@ -216,6 +222,9 @@ impl ConnectionSidebar {
         protocol_filter_buttons
             .borrow_mut()
             .insert("ZeroTrust".to_string(), zerotrust_filter.clone());
+        protocol_filter_buttons
+            .borrow_mut()
+            .insert("Kubernetes".to_string(), kubernetes_filter.clone());
 
         // Active protocol filters state
         let active_protocol_filters = Rc::new(RefCell::new(HashSet::new()));
@@ -285,6 +294,22 @@ impl ConnectionSidebar {
             let flag = programmatic_flag.clone();
             filter::connect_filter_button(&zerotrust_filter, move |btn| {
                 search::toggle_protocol_filter("ZeroTrust", btn, &filters, &buttons, &entry, &flag);
+            });
+        }
+        {
+            let filters = active_protocol_filters.clone();
+            let buttons = protocol_filter_buttons.clone();
+            let entry = search_entry.clone();
+            let flag = programmatic_flag.clone();
+            filter::connect_filter_button(&kubernetes_filter, move |btn| {
+                search::toggle_protocol_filter(
+                    "Kubernetes",
+                    btn,
+                    &filters,
+                    &buttons,
+                    &entry,
+                    &flag,
+                );
             });
         }
 

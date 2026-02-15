@@ -2,6 +2,9 @@
 Sun Feb 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.5
 
 - Version bump to 0.8.5
+  * Added Kubernetes Protocol (#14): kubectl exec shell access to pods
+    with exec and busybox modes, GUI Kubernetes tab, K8s sidebar filter,
+    CLI kubernetes subcommand, Flatpak kubectl component
   * Added Serial Console Protocol (#11): picocom-based serial console
     in GUI, CLI, Flatpak, and Snap with 13 property tests
   * Added SFTP File Browser (#10): portal-aware file manager launch,

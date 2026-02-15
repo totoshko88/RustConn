@@ -139,6 +139,8 @@ pub enum ComponentCategory {
     ZeroTrust,
     /// Password manager CLI
     PasswordManager,
+    /// Container orchestration CLI (kubectl)
+    ContainerOrchestration,
 }
 
 /// Downloadable CLI component
@@ -468,6 +470,21 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~15 MB",
         binary_name: "op",
         install_subdir: "1password",
+    },
+    // Container orchestration CLIs
+    DownloadableComponent {
+        id: "kubectl",
+        name: "kubectl",
+        description: "Kubernetes CLI for pod shell connections",
+        category: ComponentCategory::ContainerOrchestration,
+        install_method: InstallMethod::Download,
+        download_url: Some("https://dl.k8s.io/release/v1.32.0/bin/linux/amd64/kubectl"),
+        // kubectl is a single binary — checksum changes per release
+        sha256: Some("kubectl-latest-no-checksum"),
+        pip_package: None,
+        size_hint: "~50 MB",
+        binary_name: "kubectl",
+        install_subdir: "kubectl",
     },
 ];
 

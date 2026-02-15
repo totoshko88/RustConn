@@ -6,8 +6,8 @@ use std::sync::Arc;
 use crate::models::ProtocolType;
 
 use super::{
-    Protocol, RdpProtocol, SerialProtocol, SftpProtocol, SpiceProtocol, SshProtocol,
-    TelnetProtocol, VncProtocol,
+    KubernetesProtocol, Protocol, RdpProtocol, SerialProtocol, SftpProtocol, SpiceProtocol,
+    SshProtocol, TelnetProtocol, VncProtocol,
 };
 
 /// Registry for protocol handlers
@@ -32,6 +32,7 @@ impl ProtocolRegistry {
         let telnet = Arc::new(TelnetProtocol::new());
         let serial = Arc::new(SerialProtocol::new());
         let sftp = Arc::new(SftpProtocol::new());
+        let kubernetes = Arc::new(KubernetesProtocol::new());
 
         protocols.insert(ssh.protocol_id(), ssh);
         protocols.insert(rdp.protocol_id(), rdp);
@@ -40,6 +41,7 @@ impl ProtocolRegistry {
         protocols.insert(telnet.protocol_id(), telnet);
         protocols.insert(serial.protocol_id(), serial);
         protocols.insert(sftp.protocol_id(), sftp);
+        protocols.insert(kubernetes.protocol_id(), kubernetes);
 
         Self { protocols }
     }
@@ -77,6 +79,7 @@ impl ProtocolRegistry {
             ProtocolType::Serial => "serial",
             ProtocolType::ZeroTrust => "zerotrust",
             ProtocolType::Sftp => "sftp",
+            ProtocolType::Kubernetes => "kubernetes",
         };
         self.protocols.get(id).cloned()
     }

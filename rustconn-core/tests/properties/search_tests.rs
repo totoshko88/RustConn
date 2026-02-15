@@ -64,6 +64,7 @@ fn arb_connection() -> impl Strategy<Value = Connection> {
                 ProtocolType::Telnet => Connection::new_telnet(name, host, 23),
                 ProtocolType::Serial => Connection::new_serial(name, "/dev/ttyUSB0".to_string()),
                 ProtocolType::Sftp => Connection::new_sftp(name, host, 22),
+                ProtocolType::Kubernetes => Connection::new_kubernetes(name),
             };
             conn.tags = tags;
             conn

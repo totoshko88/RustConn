@@ -2554,6 +2554,7 @@ impl TemplateDialog {
             ProtocolType::Telnet => 5,
             ProtocolType::Serial => 6,
             ProtocolType::Sftp => 7,
+            ProtocolType::Kubernetes => 8,
         };
         self.protocol_dropdown.set_selected(protocol_idx);
         self.protocol_stack
@@ -2593,6 +2594,7 @@ impl TemplateDialog {
             ProtocolConfig::Telnet(_) => {} // No Telnet-specific config to load
             ProtocolConfig::Serial(_) => {} // No Serial-specific config to load
             ProtocolConfig::Sftp(ssh) => self.load_ssh_config(ssh),
+            ProtocolConfig::Kubernetes(_) => {} // No Kubernetes-specific template config
         }
     }
 
@@ -3068,6 +3070,9 @@ impl TemplateManagerDialog {
                 ProtocolType::Serial | ProtocolType::Sftp => {
                     ssh_templates.push(template);
                 }
+                ProtocolType::Kubernetes => {
+                    ssh_templates.push(template);
+                }
             }
         }
 
@@ -3133,6 +3138,7 @@ impl TemplateManagerDialog {
             ProtocolType::Telnet => "call-start-symbolic",
             ProtocolType::Serial => "modem-symbolic",
             ProtocolType::Sftp => "folder-remote-symbolic",
+            ProtocolType::Kubernetes => "application-x-executable-symbolic",
         };
         let icon = gtk4::Image::from_icon_name(icon_name);
         hbox.append(&icon);

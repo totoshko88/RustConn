@@ -162,6 +162,15 @@ impl FlatpakComponentsDialog {
         );
         inner.append(&password_group);
 
+        // Container orchestration section
+        let k8s_group = Self::build_category_group(
+            "Container Orchestration",
+            "Required for Kubernetes pod shell connections",
+            ComponentCategory::ContainerOrchestration,
+            component_rows,
+        );
+        inner.append(&k8s_group);
+
         clamp.set_child(Some(&inner));
         scrolled.set_child(Some(&clamp));
         content.append(&scrolled);

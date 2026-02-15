@@ -108,16 +108,16 @@ pub use flatpak::{host_command, host_exec, host_has_command, host_spawn, host_wh
 pub use import::{
     AnsibleInventoryImporter, AsbruImporter, BatchCancelHandle, BatchImportResult, BatchImporter,
     ImportResult, ImportSource, RemminaImporter, RoyalTsImporter, SkippedEntry, SshConfigImporter,
-    BATCH_IMPORT_THRESHOLD, DEFAULT_IMPORT_BATCH_SIZE,
+    VirtViewerImporter, BATCH_IMPORT_THRESHOLD, DEFAULT_IMPORT_BATCH_SIZE,
 };
 pub use models::{
     group_templates_by_protocol, Connection, ConnectionGroup, ConnectionHistoryEntry,
     ConnectionStatistics, ConnectionTemplate, Credentials, CustomProperty, HistorySettings,
-    PasswordSource, PropertyType, ProtocolConfig, ProtocolType, RdpConfig, RdpGateway, Resolution,
-    SerialBaudRate, SerialConfig, SerialDataBits, SerialFlowControl, SerialParity, SerialStopBits,
-    Snippet, SnippetVariable, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig,
-    SshKeySource, TelnetBackspaceSends, TelnetConfig, TelnetDeleteSends, TemplateError, VncConfig,
-    WindowGeometry, WindowMode,
+    KubernetesConfig, PasswordSource, PropertyType, ProtocolConfig, ProtocolType, RdpConfig,
+    RdpGateway, Resolution, SerialBaudRate, SerialConfig, SerialDataBits, SerialFlowControl,
+    SerialParity, SerialStopBits, Snippet, SnippetVariable, SpiceConfig, SpiceImageCompression,
+    SshAuthMethod, SshConfig, SshKeySource, TelnetBackspaceSends, TelnetConfig, TelnetDeleteSends,
+    TemplateError, VncConfig, WindowGeometry, WindowMode,
 };
 pub use password_generator::{
     estimate_crack_time, CharacterSet, PasswordGenerator, PasswordGeneratorConfig,
@@ -136,10 +136,10 @@ pub use progress::{
 };
 pub use protocol::{
     build_freerdp_args, detect_aws_cli, detect_azure_cli, detect_boundary, detect_cloudflared,
-    detect_gcloud_cli, detect_oci_cli, detect_provider, detect_rdp_client, detect_ssh_client,
-    detect_tailscale, detect_teleport, detect_telnet_client, detect_vnc_client,
+    detect_gcloud_cli, detect_kubectl, detect_oci_cli, detect_provider, detect_rdp_client,
+    detect_ssh_client, detect_tailscale, detect_teleport, detect_telnet_client, detect_vnc_client,
     extract_geometry_from_args, get_zero_trust_provider_icon, has_decorations_flag,
-    ClientDetectionResult, ClientInfo, CloudProvider, FreeRdpConfig, Protocol,
+    ClientDetectionResult, ClientInfo, CloudProvider, FreeRdpConfig, KubernetesProtocol, Protocol,
     ProtocolCapabilities, ProtocolRegistry, ProviderIconCache, RdpProtocol, SerialProtocol,
     SshProtocol, TelnetProtocol, VncProtocol,
 };

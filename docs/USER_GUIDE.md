@@ -2,7 +2,7 @@
 
 **Version 0.8.5** | GTK4/libadwaita Connection Manager for Linux
 
-RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, SFTP, Telnet, Serial protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
+RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, SFTP, Telnet, Serial, Kubernetes protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
 ## Table of Contents
 
@@ -42,7 +42,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 
 1. Press **Ctrl+N** or click **+** in header bar
 2. Enter connection name and host
-3. Select protocol (SSH, RDP, VNC, SPICE, Telnet, Serial)
+3. Select protocol (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes)
 4. Configure authentication (password or SSH key)
 5. Click **Create**
 6. Double-click the connection to connect
@@ -83,7 +83,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 ### Quick Filter
 
 Filter connections by protocol using the filter bar below search:
-- Click protocol buttons (SSH, RDP, VNC, SPICE, Telnet, ZeroTrust)
+- Click protocol buttons (SSH, RDP, VNC, SPICE, Telnet, K8s, ZeroTrust)
 - Multiple protocols can be selected (OR logic)
 - Clear search field to reset filters
 
@@ -131,6 +131,7 @@ Shows integration status in sidebar toolbar:
 | SPICE | TLS, USB redirection, clipboard, image compression |
 | Telnet | Host, port (default 23), extra arguments |
 | Serial | Device path, baud rate, data bits, stop bits, parity, flow control |
+| Kubernetes | Kubeconfig, context, namespace, pod, container, shell, busybox mode |
 | ZeroTrust | Provider-specific (AWS SSM, GCP IAP, Azure, etc.) |
 
 **Advanced Tabs:**
@@ -246,6 +247,7 @@ RustConn/
 | SPICE | Embedded spice-client or external remote-viewer |
 | Telnet | Embedded VTE terminal tab (external `telnet` client) |
 | Serial | Embedded VTE terminal tab (external `picocom` client) |
+| Kubernetes | Embedded VTE terminal tab (external `kubectl exec`) |
 | ZeroTrust | Provider CLI in terminal |
 
 ### Tab Management
@@ -339,6 +341,42 @@ sudo snap connect rustconn:serial-port
 rustconn-cli add --name "Router" --protocol serial --device /dev/ttyUSB0 --baud-rate 9600
 rustconn-cli connect "Router"
 rustconn-cli serial --device /dev/ttyACM0 --baud-rate 115200
+```
+
+### Kubernetes Shell
+
+Connect to Kubernetes pods via `kubectl exec -it`. Two modes: exec into an existing pod, or launch a temporary busybox pod.
+
+**Create a Kubernetes Connection:**
+1. Press **Ctrl+N** → select **Kubernetes** protocol
+2. Configure kubeconfig path (optional, defaults to `~/.kube/config`)
+3. Set context, namespace, pod name, container (optional), and shell (default: `/bin/sh`)
+4. Optionally enable **Busybox mode** to launch a temporary pod instead
+5. Click **Create**
+6. Double-click to connect
+
+**Kubernetes Parameters:**
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| Kubeconfig | Path to kubeconfig file | `~/.kube/config` |
+| Context | Kubernetes context | Current context |
+| Namespace | Target namespace | `default` |
+| Pod | Pod name to exec into | Required (exec mode) |
+| Container | Container name (multi-container pods) | Optional |
+| Shell | Shell to use | `/bin/sh` |
+| Busybox | Launch temporary busybox pod | Off |
+
+**Requirements:** `kubectl` must be installed and configured.
+
+**Flatpak:** kubectl is available as a downloadable component in Flatpak Components dialog.
+
+**CLI:**
+```bash
+rustconn-cli add --name "K8s Pod" --protocol kubernetes --namespace production --pod web-app-1
+rustconn-cli connect "K8s Pod"
+rustconn-cli kubernetes --namespace default --pod nginx-abc123 --shell /bin/bash
+rustconn-cli kubernetes --namespace dev --busybox --shell /bin/sh
 ```
 
 ### SFTP File Browser
@@ -740,7 +778,7 @@ When creating a new connection, the password source dropdown shows:
 
 Auto-detected CLI tools with versions:
 
-**Protocol Clients:** SSH, RDP (FreeRDP), VNC (TigerVNC), SPICE (remote-viewer), Telnet, Serial (picocom)
+**Protocol Clients:** SSH, RDP (FreeRDP), VNC (TigerVNC), SPICE (remote-viewer), Telnet, Serial (picocom), Kubernetes (kubectl)
 
 **Zero Trust:** AWS, GCP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary
 
@@ -843,6 +881,11 @@ rustconn-cli telnet --host 192.168.1.10 --port 23
 # Serial connection
 rustconn-cli serial --device /dev/ttyUSB0 --baud-rate 115200
 rustconn-cli serial --device /dev/ttyACM0 --baud-rate 9600 --data-bits 7 --parity even
+
+# Kubernetes connection
+rustconn-cli kubernetes --namespace default --pod nginx-abc123 --shell /bin/bash
+rustconn-cli kubernetes --namespace dev --busybox
+rustconn-cli kubernetes --kubeconfig ~/.kube/prod.yaml --context prod-cluster --namespace app --pod web-1
 
 # Add connection
 rustconn-cli add --name "New Server" --host "192.168.1.10" --protocol ssh --user admin

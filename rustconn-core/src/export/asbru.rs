@@ -116,6 +116,7 @@ impl AsbruExporter {
             ProtocolType::Telnet => "telnet",
             ProtocolType::Serial => "serial",
             ProtocolType::Sftp => "SFTP",
+            ProtocolType::Kubernetes => "kubernetes",
         };
         lines.push(format!("  method: \"{method}\""));
 
@@ -165,8 +166,9 @@ impl AsbruExporter {
             | ProtocolConfig::Spice(_)
             | ProtocolConfig::Telnet(_)
             | ProtocolConfig::ZeroTrust(_)
-            | ProtocolConfig::Serial(_) => {
-                // VNC, SPICE, Telnet, and ZeroTrust don't have additional fields
+            | ProtocolConfig::Serial(_)
+            | ProtocolConfig::Kubernetes(_) => {
+                // VNC, SPICE, Telnet, ZeroTrust, Kubernetes don't have additional fields
             }
             ProtocolConfig::Sftp(ssh_config) => {
                 // SFTP reuses SSH config — export SSH auth fields

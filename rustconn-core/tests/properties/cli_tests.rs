@@ -71,6 +71,7 @@ impl TestConnection {
             ProtocolType::Sftp => {
                 Connection::new_sftp(self.name.clone(), self.host.clone(), self.port)
             }
+            ProtocolType::Kubernetes => Connection::new_kubernetes(self.name.clone()),
         }
     }
 }
@@ -627,6 +628,7 @@ fn create_test_connection_for_add(
             Connection::new_serial(name.to_string(), "/dev/ttyUSB0".to_string())
         }
         ProtocolType::Sftp => Connection::new_sftp(name.to_string(), host.to_string(), port),
+        ProtocolType::Kubernetes => Connection::new_kubernetes(name.to_string()),
     };
 
     if let Some(user) = username {

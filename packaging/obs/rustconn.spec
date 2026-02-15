@@ -8,7 +8,7 @@
 Name:           rustconn
 Version:        0.8.5
 Release:        0
-Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Zero Trust)
+Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
 URL:            https://github.com/totoshko88/RustConn
 Source0:        %{name}-%{version}.tar.xz
@@ -75,10 +75,11 @@ Recommends:     freerdp
 Recommends:     tigervnc
 Recommends:     virt-viewer
 Recommends:     picocom
+Recommends:     kubectl
 
 %description
 RustConn is a modern connection manager for Linux with a GTK4/Wayland-native
-interface. Manage SSH, RDP, VNC, SPICE, Telnet, Serial, and Zero Trust
+interface. Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust
 connections from a single application. All core protocols use embedded Rust
 implementations — no external dependencies required.
 
@@ -89,6 +90,7 @@ Protocols (embedded Rust implementations):
 - SPICE via remote-viewer (external)
 - Telnet via external telnet client (port 23)
 - Serial via picocom (RS-232/USB serial consoles)
+- Kubernetes via kubectl exec (shell access to pods)
 - Zero Trust: AWS SSM, GCP IAP, Azure Bastion, OCI Bastion,
   Cloudflare, Teleport, Tailscale, Boundary
 
@@ -189,6 +191,9 @@ fi
 %changelog
 * Sun Feb 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.5-0
 - Version bump to 0.8.5
+- Added Kubernetes Protocol (#14): kubectl exec shell access to pods
+  with exec and busybox modes, GUI Kubernetes tab, K8s sidebar filter,
+  CLI kubernetes subcommand, Flatpak kubectl component
 - Added Serial Console Protocol (#11): picocom-based serial console
   in GUI, CLI, Flatpak, and Snap with 13 property tests
 - Added SFTP File Browser (#10): portal-aware file manager launch,

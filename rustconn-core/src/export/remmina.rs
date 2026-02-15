@@ -65,6 +65,9 @@ impl RemminaExporter {
                 // Export SFTP as SSH with SFTP protocol marker
                 Self::write_ssh_fields(&mut output, connection);
             }
+            ProtocolType::Kubernetes => {
+                return Err(ExportError::UnsupportedProtocol("Kubernetes".to_string()));
+            }
         }
 
         Ok(output)

@@ -343,6 +343,17 @@ impl Connection {
         )
     }
 
+    /// Creates a new Kubernetes connection with default config
+    #[must_use]
+    pub fn new_kubernetes(name: String) -> Self {
+        Self::new(
+            name,
+            String::new(),
+            0,
+            ProtocolConfig::Kubernetes(super::protocol::KubernetesConfig::default()),
+        )
+    }
+
     /// Sets the username for this connection
     #[must_use]
     pub fn with_username(mut self, username: impl Into<String>) -> Self {
@@ -387,6 +398,7 @@ impl Connection {
             ProtocolType::ZeroTrust => 0, // No default port for Zero Trust
             ProtocolType::Serial => 0,    // Serial uses device path, not port
             ProtocolType::Sftp => 22,
+            ProtocolType::Kubernetes => 0, // Kubernetes uses kubectl, not port
         }
     }
 

@@ -3,7 +3,7 @@
 Manage remote connections easily.
 
 RustConn is a modern connection manager for Linux with a GTK4/Wayland-native interface.
-Manage SSH, RDP, VNC, SPICE, Telnet, Serial, and Zero Trust connections from a single application.
+Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust connections from a single application.
 All core protocols use embedded Rust implementations — no external dependencies required.
 
 [![Demo](https://img.youtube.com/vi/jYcCPAUShI0/maxresdefault.jpg)](https://youtu.be/jYcCPAUShI0)
@@ -12,7 +12,7 @@ All core protocols use embedded Rust implementations — no external dependencie
 
 | Category | Details |
 |----------|---------|
-| **Protocols** | SSH (embedded VTE), RDP (IronRDP), VNC (vnc-rs), SPICE, Telnet, Serial (picocom), Zero Trust (AWS SSM, GCP IAP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary) |
+| **Protocols** | SSH (embedded VTE), RDP (IronRDP), VNC (vnc-rs), SPICE, Telnet, Serial (picocom), Kubernetes (kubectl exec), Zero Trust (AWS SSM, GCP IAP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary) |
 | **File Transfer** | SFTP file browser via system file manager (sftp:// URI, D-Bus portal) |
 | **Organization** | Groups, tags, templates, connection history & statistics |
 | **Import/Export** | Asbru-CM, Remmina, SSH config, Ansible inventory, Royal TS, MobaXterm, native (.rcn) |
@@ -53,7 +53,7 @@ cargo build --release
 ./target/release/rustconn
 ```
 
-**Build dependencies:** GTK4 4.14+, VTE4, libadwaita, Rust 1.88+ | **Optional:** FreeRDP, TigerVNC, virt-viewer, picocom
+**Build dependencies:** GTK4 4.14+, VTE4, libadwaita, Rust 1.88+ | **Optional:** FreeRDP, TigerVNC, virt-viewer, picocom, kubectl
 
 
 ## Quick Start

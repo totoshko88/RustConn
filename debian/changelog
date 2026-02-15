@@ -1,6 +1,14 @@
 rustconn (0.8.5-1) unstable; urgency=medium
 
   * Version bump to 0.8.5
+  * Added Kubernetes Protocol (#14):
+    - Shell access to Kubernetes pods via kubectl exec -it
+    - Two modes: exec into existing pod, or launch temporary busybox pod
+    - KubernetesConfig: kubeconfig, context, namespace, pod, container, shell
+    - GUI: Connection dialog Kubernetes tab, sidebar K8s quick filter
+    - CLI: kubernetes subcommand with full parameter support
+    - kubectl available as Flatpak downloadable component
+    - Property tests updated with Kubernetes coverage
   * Added Serial Console Protocol (#11):
     - Full serial console support via picocom (GUI, CLI, Flatpak, Snap)
     - SerialConfig: device path, baud rate (9600-921600), data/stop bits,

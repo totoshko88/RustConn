@@ -2,58 +2,56 @@
 inclusion: always
 ---
 
-# RustConn Product Guidelines
+# RustConn Product Rules
 
-Linux connection manager for SSH, RDP, VNC, SPICE. GTK4/libadwaita GUI, Wayland-first.
+Linux connection manager for SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes. GTK4/libadwaita GUI, Wayland-first.
 
-## Protocol Behavior
+## Protocol Strategy
 
-| Protocol | Embedded | External Fallback | Notes |
-|----------|----------|-------------------|-------|
-| SSH | VTE terminal | — | Always embedded |
-| RDP | IronRDP | `xfreerdp` | Fall back if IronRDP fails |
-| VNC | vnc-rs | `vncviewer` | Fall back if vnc-rs fails |
-| SPICE | — | `remote-viewer` | External only |
+Embedded clients are always preferred. External clients are fallbacks only.
 
-When implementing protocol features:
-- Embedded clients are preferred; external fallback is for compatibility
-- Check client availability at runtime before attempting connection
-- Log connection attempts and failures via `tracing`
+| Protocol | Embedded Client | External Fallback |
+|----------|----------------|-------------------|
+| SSH | VTE terminal (always) | — |
+| RDP | IronRDP | `xfreerdp` |
+| VNC | vnc-rs | `vncviewer` |
+| SPICE | — (external only) | `remote-viewer` |
+| Telnet | VTE terminal | — |
+| Serial | VTE terminal | — |
+| Kubernetes | VTE terminal (kubectl exec) | — |
 
-## User-Facing Error Handling
+Rules for protocol code:
+- Check external client availability at runtime before launching
+- Always attempt embedded first, fall back to external on failure
+- Log every connection attempt and failure via `tracing`
 
-GUI errors must be user-friendly:
-- Show `adw::Toast` for transient errors (connection timeout, auth failure)
-- Show modal `adw::Dialog` for blocking errors requiring user action
-- Never display raw error messages, stack traces, or internal paths
-- Log full technical details via `tracing` for debugging
+## Error Handling
 
-Example toast pattern:
+Two-layer pattern: friendly message to user, full details to log.
+
+`adw::Toast` for recoverable/transient errors (connection timeout, auth failure, missing client). Keep under ~60 characters, make actionable.
+
+`adw::Dialog` (modal) for errors requiring user action (missing config, incompatible settings, destructive confirmations).
+
+Never expose to the user: raw error variants, stack traces, internal file paths, debug output.
+
 ```rust
+// Always pair user message with structured log
 toast_overlay.add_toast(adw::Toast::new("Connection failed. Check your credentials."));
 tracing::error!(?error, "SSH connection failed to {}", host);
 ```
 
-## UI Conventions (GNOME HIG)
-
-- Prefer `adw::` widgets over `gtk::` equivalents
-- Dialogs: `adw::Dialog` or `gtk::Window` with `set_modal(true)`
-- Notifications: `adw::ToastOverlay` (not system notifications)
-- Spacing: 12px margins, 6px between related elements
-- Wayland-first: avoid X11-specific APIs (`gdk_x11_*`)
-
 ## Graceful Degradation
 
-Optional features must not break core functionality:
+Optional features must never break core functionality. Degrade silently or show a single toast.
 
-| Feature | Check | Fallback |
-|---------|-------|----------|
-| System tray | `ksni` feature enabled | Hide tray menu items |
-| KeePassXC | `keepassxc-proxy` available | Use libsecret |
+| Feature | Runtime Check | Fallback |
+|---------|--------------|----------|
+| System tray | `ksni` feature flag | Hide tray menu items |
+| KeePassXC | `keepassxc-proxy` on PATH | Use libsecret |
 | Embedded RDP | IronRDP connection succeeds | Launch `xfreerdp` |
-| Audio playback | `cpal` feature + device available | Silent mode |
+| Audio playback | `cpal` feature + audio device | Silent mode |
 
-Pattern:
 ```rust
 if feature_available() {
     use_feature();
@@ -63,23 +61,20 @@ if feature_available() {
 }
 ```
 
-## Extensibility Traits
+## UI Rules (GNOME HIG)
 
-New features should implement existing traits when applicable:
-
-| Adding | Implement | Example |
-|--------|-----------|---------|
-| New protocol | `Protocol` | Telnet support |
-| Import format | `ImportSource` | PuTTY sessions |
-| Export format | `ExportTarget` | CSV export |
-| Secret backend | `SecretBackend` | HashiCorp Vault |
+- Dialogs: `adw::Dialog` or `gtk::Window` with `set_modal(true)`
+- Notifications: `adw::ToastOverlay` only (never system notifications)
+- Spacing: 12px margins, 6px between related elements
+- All new UI must be fully keyboard-navigable
+- Wayland-first: never use X11-specific APIs (`gdk_x11_*`)
 
 ## Pre-Implementation Checklist
 
-Before writing code:
+Before writing any user-facing feature, verify all five:
 
-1. **User impact** — How does this affect the user experience?
-2. **Fallback behavior** — What happens if the feature is unavailable?
-3. **Error messages** — Are they user-friendly and actionable?
-4. **Accessibility** — Can keyboard-only users access this feature?
-5. **Wayland compatibility** — Does this work without X11?
+1. What is the fallback if the feature or dependency is unavailable?
+2. Are all error messages user-friendly and actionable (no raw errors)?
+3. Is the feature fully keyboard-accessible?
+4. Does it work on Wayland without X11?
+5. Are connection attempts and failures logged via `tracing`?

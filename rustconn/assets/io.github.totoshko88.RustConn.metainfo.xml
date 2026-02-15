@@ -12,7 +12,7 @@
   <description>
     <p>
       RustConn is a modern connection manager for Linux with a GTK4/Wayland-native interface.
-      Manage SSH, RDP, VNC, SPICE, Telnet, and Zero Trust connections from a single application.
+      Manage SSH, RDP, VNC, SPICE, Telnet, Kubernetes, and Zero Trust connections from a single application.
       All core protocols use embedded Rust implementations — no external dependencies required.
     </p>
     <p>Protocols (embedded Rust implementations):</p>
@@ -22,6 +22,7 @@
       <li>VNC via vnc-rs (embedded, with TigerVNC fallback)</li>
       <li>SPICE via remote-viewer (external)</li>
       <li>Telnet via external telnet client (port 23)</li>
+      <li>Kubernetes via kubectl exec (shell access to pods)</li>
       <li>Zero Trust: AWS SSM, GCP IAP, Azure Bastion, OCI Bastion, Cloudflare, Teleport, Tailscale, Boundary</li>
     </ul>
     <p>Organization:</p>
@@ -81,8 +82,12 @@
   <releases>
     <release version="0.8.5" date="2026-02-15">
       <description>
-        <p>Version 0.8.5 - Serial Console, SFTP, Adaptive UI, Terminal Search:</p>
+        <p>Version 0.8.5 - Kubernetes, Serial Console, SFTP, Adaptive UI, Terminal Search:</p>
         <ul>
+          <li>Kubernetes protocol support via kubectl exec with shell access to pods (#14)</li>
+          <li>Two modes: exec into existing pod, or launch temporary busybox pod</li>
+          <li>GUI: Connection dialog Kubernetes tab, sidebar K8s quick filter</li>
+          <li>CLI: kubernetes subcommand with full parameter support</li>
           <li>Serial Console protocol via picocom with full GUI, CLI, Flatpak, and Snap support (#11)</li>
           <li>SFTP file browser for SSH connections via system file manager and Midnight Commander (#10)</li>
           <li>Standalone SFTP connection type reusing SSH configuration</li>

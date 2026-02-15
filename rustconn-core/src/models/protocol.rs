@@ -24,6 +24,8 @@ pub enum ProtocolType {
     Serial,
     /// SFTP file transfer protocol (SSH-based)
     Sftp,
+    /// Kubernetes pod shell (kubectl exec)
+    Kubernetes,
 }
 
 impl ProtocolType {
@@ -41,6 +43,7 @@ impl ProtocolType {
             Self::ZeroTrust => "zerotrust",
             Self::Serial => "serial",
             Self::Sftp => "sftp",
+            Self::Kubernetes => "kubernetes",
         }
     }
 
@@ -54,6 +57,7 @@ impl ProtocolType {
             Self::Telnet => 23,
             Self::ZeroTrust | Self::Serial => 0,
             Self::Sftp => 22,
+            Self::Kubernetes => 0,
         }
     }
 }
@@ -69,6 +73,7 @@ impl std::fmt::Display for ProtocolType {
             Self::ZeroTrust => write!(f, "Zero Trust"),
             Self::Serial => write!(f, "Serial"),
             Self::Sftp => write!(f, "SFTP"),
+            Self::Kubernetes => write!(f, "Kubernetes"),
         }
     }
 }
@@ -93,6 +98,8 @@ pub enum ProtocolConfig {
     Serial(SerialConfig),
     /// SFTP file transfer configuration (reuses SSH config)
     Sftp(SshConfig),
+    /// Kubernetes pod shell configuration
+    Kubernetes(KubernetesConfig),
 }
 
 impl ProtocolConfig {
@@ -108,6 +115,7 @@ impl ProtocolConfig {
             Self::ZeroTrust(_) => ProtocolType::ZeroTrust,
             Self::Serial(_) => ProtocolType::Serial,
             Self::Sftp(_) => ProtocolType::Sftp,
+            Self::Kubernetes(_) => ProtocolType::Kubernetes,
         }
     }
 }
@@ -1676,6 +1684,67 @@ pub struct GenericZeroTrustConfig {
     /// Full command template with placeholders
     /// Supported placeholders: {host}, {user}, {port}
     pub command_template: String,
+}
+
+/// Default shell for Kubernetes connections
+fn default_shell() -> String {
+    "/bin/sh".to_string()
+}
+
+/// Default busybox image for temporary pods
+fn default_busybox_image() -> String {
+    "busybox:latest".to_string()
+}
+
+/// Kubernetes pod shell configuration (kubectl exec)
+///
+/// Each connection stores its own kubeconfig, context, namespace,
+/// pod, container, shell, and busybox settings.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct KubernetesConfig {
+    /// Path to kubeconfig file (uses default if None)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kubeconfig: Option<PathBuf>,
+    /// Kubernetes context to use (uses current-context if None)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context: Option<String>,
+    /// Namespace (uses default namespace if None)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+    /// Pod name to exec into
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pod: Option<String>,
+    /// Container name within the pod (optional for single-container pods)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub container: Option<String>,
+    /// Shell to use inside the container
+    #[serde(default = "default_shell")]
+    pub shell: String,
+    /// Whether to use a temporary busybox pod instead of exec
+    #[serde(default)]
+    pub use_busybox: bool,
+    /// Busybox image to use for temporary pods
+    #[serde(default = "default_busybox_image")]
+    pub busybox_image: String,
+    /// Additional kubectl arguments
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub custom_args: Vec<String>,
+}
+
+impl Default for KubernetesConfig {
+    fn default() -> Self {
+        Self {
+            kubeconfig: None,
+            context: None,
+            namespace: None,
+            pod: None,
+            container: None,
+            shell: default_shell(),
+            use_busybox: false,
+            busybox_image: default_busybox_image(),
+            custom_args: Vec::new(),
+        }
+    }
 }
 
 #[cfg(test)]

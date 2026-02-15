@@ -10,6 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.8.5] - 2026-02-15
 
 ### Added
+- **Kubernetes Protocol** — Shell access to Kubernetes pods via `kubectl exec -it` ([#14](https://github.com/totoshko88/RustConn/issues/14)):
+  - `KubernetesConfig` model with kubeconfig, context, namespace, pod, container, shell, busybox toggle
+  - `KubernetesProtocol` implementing `Protocol` trait in `rustconn-core`
+  - Two modes: exec into existing pod, or launch temporary busybox pod
+  - GUI: Connection dialog Kubernetes tab, sidebar K8s quick filter, `application-x-executable-symbolic` icon
+  - CLI: `kubernetes` subcommand with `--kubeconfig`/`--context`/`--namespace`/`--pod`/`--container`/`--shell`/`--busybox`
+  - Sandbox: kubectl as Flatpak downloadable component
+  - Property tests updated with Kubernetes coverage
+- **Virt-Viewer (.vv) Import** — Import SPICE/VNC connections from virt-viewer files ([#13](https://github.com/totoshko88/RustConn/issues/13)):
+  - `VirtViewerImporter` implementing `ImportSource` trait in `rustconn-core`
+  - Parses `[virt-viewer]` INI sections: host, port, tls-port, password, proxy, CA cert, title
+  - Supports `type=spice` (with TLS detection) and `type=vnc`
+  - Passwords stored as `SecretString` via `Credentials`, proxy/host-subject preserved as tags
+  - GUI: "Virt-Viewer (.vv)" option in Import dialog with `.vv` file filter
+  - Compatible with libvirt, Proxmox VE, and oVirt generated `.vv` files
 - **Serial Console Protocol** — Full serial console support via `picocom` ([#11](https://github.com/totoshko88/RustConn/issues/11)):
   - `SerialConfig` model with device path, baud rate (9600–921600), data bits, stop bits, parity, flow control
   - GUI: Connection dialog Serial tab, VTE terminal sessions, `phone-symbolic` icon
