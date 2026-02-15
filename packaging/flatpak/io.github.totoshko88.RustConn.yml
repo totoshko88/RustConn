@@ -29,8 +29,8 @@ finish-args:
   - --talk-name=org.kde.StatusNotifierWatcher
   # Serial device access for picocom
   - --device=all
-  # Home directory access for mc local panel
-  - --filesystem=home
+  # Downloads directory for SFTP file transfers via mc
+  - --filesystem=xdg-download:create
 
 build-options:
   append-path: /usr/lib/sdk/rust-stable/bin

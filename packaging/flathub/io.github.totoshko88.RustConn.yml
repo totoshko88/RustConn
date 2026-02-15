@@ -29,8 +29,8 @@ finish-args:
   - --talk-name=org.kde.StatusNotifierWatcher
   # Serial device access for picocom
   - --device=all
-  # Home directory access for mc local panel
-  - --filesystem=home
+  # Downloads directory for SFTP file transfers via mc
+  - --filesystem=xdg-download:create
 
 build-options:
   append-path: /usr/lib/sdk/rust-stable/bin
@@ -124,6 +124,7 @@ modules:
       - type: git
         url: https://github.com/totoshko88/RustConn.git
         tag: v0.8.5
+        commit: 53ed989c48f11e5d6bdbe9a76b2fe8a0ddece5ce
         x-checker-data:
           type: git
           tag-pattern: ^v([\d.]+)$

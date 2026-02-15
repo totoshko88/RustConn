@@ -191,7 +191,7 @@ pub use session::{
 };
 pub use sftp::{
     build_mc_sftp_command, build_sftp_command, build_sftp_uri, build_sftp_uri_from_connection,
-    ensure_key_in_agent, get_ssh_key_path,
+    ensure_key_in_agent, get_downloads_dir, get_ssh_key_path,
 };
 pub use snap::{
     get_config_dir, get_confinement_message, get_data_dir, get_known_hosts_path, get_ssh_dir,

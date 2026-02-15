@@ -782,7 +782,8 @@ impl MainWindow {
                 );
 
                 let argv: Vec<&str> = mc_args.iter().map(String::as_str).collect();
-                notebook_clone.spawn_command(session_id, &argv, None, None);
+                let downloads = rustconn_core::sftp::get_downloads_dir();
+                notebook_clone.spawn_command(session_id, &argv, None, Some(&downloads));
 
                 if let Some(info) = notebook_clone.get_session_info(session_id) {
                     split_view_clone.add_session(info, None);
@@ -979,7 +980,8 @@ impl MainWindow {
             );
 
             let argv: Vec<&str> = mc_args.iter().map(String::as_str).collect();
-            notebook.spawn_command(session_id, &argv, None, None);
+            let downloads = rustconn_core::sftp::get_downloads_dir();
+            notebook.spawn_command(session_id, &argv, None, Some(&downloads));
 
             // Mark as connected and increment session count
             if let Some(sb) = sidebar {

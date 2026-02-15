@@ -280,13 +280,32 @@ pub fn ensure_key_in_agent(connection: &Connection) -> bool {
     }
 }
 
+/// Returns the XDG Downloads directory path as a string.
+///
+/// Uses `$XDG_DOWNLOAD_DIR` (via `dirs::download_dir()`) with
+/// fallback to `~/Downloads`. Creates the directory if it does
+/// not exist.
+#[must_use]
+pub fn get_downloads_dir() -> String {
+    let path = dirs::download_dir().unwrap_or_else(|| {
+        dirs::home_dir()
+            .unwrap_or_else(|| PathBuf::from("/tmp"))
+            .join("Downloads")
+    });
+    if !path.exists() {
+        let _ = std::fs::create_dir_all(&path);
+    }
+    path.to_string_lossy().into_owned()
+}
+
 /// Builds a Midnight Commander command to open an SFTP panel.
 ///
 /// Returns `None` if the connection is not SSH.
 ///
-/// Uses mc's FISH VFS: `["mc", ".", "sh://user@host:port"]`.
-/// Left panel shows local directory, right panel shows remote via FISH.
-/// Requires the SSH key to be loaded in ssh-agent beforehand.
+/// Uses mc's FISH VFS: `["mc", "<downloads>", "sh://user@host:port"]`.
+/// Left panel shows XDG Downloads directory, right panel shows
+/// remote via FISH. Requires the SSH key to be loaded in
+/// ssh-agent beforehand.
 #[must_use]
 pub fn build_mc_sftp_command(connection: &Connection) -> Option<Vec<String>> {
     if !matches!(
@@ -308,7 +327,8 @@ pub fn build_mc_sftp_command(connection: &Connection) -> Option<Vec<String>> {
         format!("sh://{}:{}", connection.host, connection.port)
     };
 
-    Some(vec!["mc".to_string(), ".".to_string(), target])
+    let local_dir = get_downloads_dir();
+    Some(vec!["mc".to_string(), local_dir, target])
 }
 
 #[cfg(test)]
@@ -381,7 +401,11 @@ mod tests {
         conn.username = Some("admin".to_string());
 
         let cmd = build_mc_sftp_command(&conn).unwrap();
-        assert_eq!(cmd, vec!["mc", ".", "sh://admin@server.example.com"]);
+        assert_eq!(cmd.len(), 3);
+        assert_eq!(cmd[0], "mc");
+        // Second arg is the XDG Downloads directory (varies per system)
+        assert!(!cmd[1].is_empty(), "local dir should not be empty");
+        assert_eq!(cmd[2], "sh://admin@server.example.com");
     }
 
     #[test]
@@ -390,7 +414,10 @@ mod tests {
         conn.username = Some("root".to_string());
 
         let cmd = build_mc_sftp_command(&conn).unwrap();
-        assert_eq!(cmd, vec!["mc", ".", "sh://root@host.local:2222"]);
+        assert_eq!(cmd.len(), 3);
+        assert_eq!(cmd[0], "mc");
+        assert!(!cmd[1].is_empty(), "local dir should not be empty");
+        assert_eq!(cmd[2], "sh://root@host.local:2222");
     }
 
     #[test]

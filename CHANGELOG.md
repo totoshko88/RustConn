@@ -52,6 +52,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Session Logging moved to Logging tab** — Timestamps toggle relocated from Settings → Terminal to Settings → Logging for better discoverability
 - **CLI component versions updated** — Bumped bundled CLI download URLs to latest releases ([#14](https://github.com/totoshko88/RustConn/issues/14)): Bitwarden CLI 2024.12.0→2026.1.0, Teleport 17.1.2→18.6.8, Boundary 0.18.1→0.21.0, 1Password CLI 2.30.0→2.32.1, kubectl 1.32.0→1.35.0
 
+### Fixed
+- **Flathub linter `finish-args-home-filesystem-access`** — Replaced `--filesystem=home` with `--filesystem=xdg-download:create` in all Flatpak manifests; mc SFTP now opens XDG Downloads as local panel instead of current directory
+- **Flathub linter `module-rustconn-source-git-no-commit-with-tag`** — Added explicit `commit` hash to Flathub manifest git source
+- **ZeroTrust icon inconsistency** — Changed ZeroTrust icon from `folder-remote-symbolic` (same as SFTP) to `security-high-symbolic` across all UI components (sidebar, tabs, adaptive tabs, filter buttons, templates, cluster dialog)
+- **SFTP tab icon** — SFTP mc tabs now show correct `folder-remote-symbolic` icon instead of generic terminal icon
+- **SFTP sidebar status** — SFTP connections via mc now show connecting/connected status in sidebar and increment session count
+
 ## [0.8.4] - 2026-02-14
 
 ### Added
