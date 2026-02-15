@@ -2,9 +2,8 @@
 
 Manage remote connections easily.
 
-RustConn is a modern connection manager for Linux with a GTK4/Wayland-native interface.
-Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust connections from a single application.
-All core protocols use embedded Rust implementations — no external dependencies required.
+RustConn is a connection orchestrator for Linux with a GTK4/Wayland-native interface.
+It brings SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust connections under one roof — with embedded Rust clients where possible and seamless integration with external tools where needed.
 
 [![Demo](https://img.youtube.com/vi/jYcCPAUShI0/maxresdefault.jpg)](https://youtu.be/jYcCPAUShI0)
 
@@ -12,12 +11,23 @@ All core protocols use embedded Rust implementations — no external dependencie
 
 | Category | Details |
 |----------|---------|
-| **Protocols** | SSH (embedded VTE), RDP (IronRDP), VNC (vnc-rs), SPICE, Telnet, Serial (picocom), Kubernetes (kubectl exec), Zero Trust (AWS SSM, GCP IAP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary) |
+| **Protocols** | SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust |
 | **File Transfer** | SFTP file browser via system file manager (sftp:// URI, D-Bus portal) |
 | **Organization** | Groups, tags, templates, connection history & statistics |
-| **Import/Export** | Asbru-CM, Remmina, SSH config, Ansible inventory, Royal TS, MobaXterm, native (.rcn) |
+| **Import/Export** | Asbru-CM, Remmina, SSH config, Ansible inventory, Royal TS, MobaXterm, virt-viewer (.vv), native (.rcn) |
 | **Security** | KeePassXC (KDBX), libsecret, Bitwarden CLI, 1Password CLI, Passbolt CLI integration |
 | **Productivity** | Split terminals, command snippets, cluster commands, Wake-on-LAN |
+
+| Protocol | Client | Type |
+|----------|--------|------|
+| SSH | VTE terminal | Embedded |
+| RDP | IronRDP / FreeRDP fallback | Embedded + external |
+| VNC | vnc-rs / vncviewer fallback | Embedded + external |
+| SPICE | remote-viewer | External |
+| Telnet | VTE terminal | Embedded |
+| Serial | picocom via VTE | External (bundled in Flatpak) |
+| Kubernetes | kubectl exec via VTE | External |
+| Zero Trust | AWS SSM, GCP IAP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary | External |
 
 ## Installation
 
