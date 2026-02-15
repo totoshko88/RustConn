@@ -107,8 +107,8 @@ modules:
       - --disable-vfs-sftp
     sources:
       - type: archive
-        url: https://ftp.midnight-commander.org/mc-4.8.32.tar.xz
-        sha256: 4ddc83d1ede9af2363b3eab987f5abf8ef967c3e0c8b4b24eee2bc1b9f9b76e0
+        url: http://ftp.midnight-commander.org/mc-4.8.33.tar.xz
+        sha256: cae149d42f844e5185d8c81d7db3913a8fa214c65f852200a9d896b468af164c
 
   - name: rustconn
     buildsystem: simple
