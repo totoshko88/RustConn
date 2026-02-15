@@ -388,8 +388,8 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         description: "For Teleport access",
         category: ComponentCategory::ZeroTrust,
         install_method: InstallMethod::Download,
-        download_url: Some("https://cdn.teleport.dev/teleport-v17.1.2-linux-amd64-bin.tar.gz"),
-        sha256: Some("77cb4d067e8c8963f9d015464e33412fb6186aaf4391151a7e2e6a78c01cc374"),
+        download_url: Some("https://cdn.teleport.dev/teleport-v18.6.8-linux-amd64-bin.tar.gz"),
+        sha256: Some("teleport-v18-no-checksum"),
         pip_package: None,
         size_hint: "~100 MB",
         binary_name: "tsh",
@@ -431,7 +431,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::ZeroTrust,
         install_method: InstallMethod::Download,
         download_url: Some(
-            "https://releases.hashicorp.com/boundary/0.18.1/boundary_0.18.1_linux_amd64.zip",
+            "https://releases.hashicorp.com/boundary/0.21.0/boundary_0.21.0_linux_amd64.zip",
         ),
         sha256: Some("041420f39f08bee06925d36ed7d2ded252a9ba4a1a1dc7b0dd418f855785a1e4"),
         pip_package: None,
@@ -447,8 +447,8 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::PasswordManager,
         install_method: InstallMethod::Download,
         download_url: Some(
-            "https://github.com/bitwarden/clients/releases/download/cli-v2024.12.0/\
-             bw-linux-2024.12.0.zip",
+            "https://github.com/bitwarden/clients/releases/download/cli-v2026.1.0/\
+             bw-linux-2026.1.0.zip",
         ),
         sha256: Some("b7c8d9e0f1a2...placeholder..."), // TODO: Get real checksum
         pip_package: None,
@@ -463,7 +463,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::PasswordManager,
         install_method: InstallMethod::Download,
         download_url: Some(
-            "https://cache.agilebits.com/dist/1P/op2/pkg/v2.30.0/op_linux_amd64_v2.30.0.zip",
+            "https://cache.agilebits.com/dist/1P/op2/pkg/v2.32.1/op_linux_amd64_v2.32.1.zip",
         ),
         sha256: Some("c8d9e0f1a2b3...placeholder..."), // TODO: Get real checksum
         pip_package: None,
@@ -478,7 +478,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         description: "Kubernetes CLI for pod shell connections",
         category: ComponentCategory::ContainerOrchestration,
         install_method: InstallMethod::Download,
-        download_url: Some("https://dl.k8s.io/release/v1.32.0/bin/linux/amd64/kubectl"),
+        download_url: Some("https://dl.k8s.io/release/v1.35.0/bin/linux/amd64/kubectl"),
         // kubectl is a single binary — checksum changes per release
         sha256: Some("kubectl-latest-no-checksum"),
         pip_package: None,

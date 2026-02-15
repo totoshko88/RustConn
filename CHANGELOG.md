@@ -50,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Session Logging moved to Logging tab** — Timestamps toggle relocated from Settings → Terminal to Settings → Logging for better discoverability
+- **CLI component versions updated** — Bumped bundled CLI download URLs to latest releases ([#14](https://github.com/totoshko88/RustConn/issues/14)): Bitwarden CLI 2024.12.0→2026.1.0, Teleport 17.1.2→18.6.8, Boundary 0.18.1→0.21.0, 1Password CLI 2.30.0→2.32.1, kubectl 1.32.0→1.35.0
 
 ## [0.8.4] - 2026-02-14
 
