@@ -146,10 +146,10 @@ impl ConnectionSidebar {
         protocol_group.set_hexpand(true);
         protocol_group.set_halign(gtk4::Align::Fill);
 
-        // Protocol filter buttons with icons - using helper function
+        // Protocol filter buttons with icons — aligned with icons.rs
         let ssh_filter = filter::create_filter_button(
             "SSH",
-            "network-server-symbolic",
+            "utilities-terminal-symbolic",
             "Filter SSH connections",
         );
         ssh_filter.set_hexpand(true);
@@ -161,7 +161,7 @@ impl ConnectionSidebar {
         vnc_filter.set_hexpand(true);
         let spice_filter = filter::create_filter_button(
             "SPICE",
-            "video-x-generic-symbolic",
+            "preferences-desktop-remote-desktop-symbolic",
             "Filter SPICE connections",
         );
         spice_filter.set_hexpand(true);
@@ -172,11 +172,11 @@ impl ConnectionSidebar {
         );
         telnet_filter.set_hexpand(true);
         let serial_filter =
-            filter::create_filter_button("Serial", "phone-symbolic", "Filter Serial connections");
+            filter::create_filter_button("Serial", "modem-symbolic", "Filter Serial connections");
         serial_filter.set_hexpand(true);
         let zerotrust_filter = filter::create_filter_button(
             "ZeroTrust",
-            "folder-remote-symbolic",
+            "security-high-symbolic",
             "Filter ZeroTrust connections",
         );
         zerotrust_filter.add_css_class("filter-button");

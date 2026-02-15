@@ -206,24 +206,24 @@ pub fn show_context_menu_for_item(
 /// in the format "zerotrust:provider" (e.g., "zerotrust:aws", "zerotrust:gcloud").
 /// All ZeroTrust connections use the same icon regardless of provider.
 ///
-/// Note: We use standard GTK symbolic icons that are guaranteed to exist
-/// in all icon themes.
+/// Icons are aligned with `rustconn_core::protocol::icons::get_protocol_icon()`.
 #[must_use]
 pub fn get_protocol_icon(protocol: &str) -> &'static str {
     // All ZeroTrust variants use the same icon (matches filter button)
     if protocol.starts_with("zerotrust") {
-        return "folder-remote-symbolic";
+        return "security-high-symbolic";
     }
 
-    // Standard protocol icons - each protocol has a distinct icon
+    // Standard protocol icons — aligned with rustconn-core icons.rs
     match protocol {
-        "ssh" => "network-server-symbolic",
+        "ssh" => "utilities-terminal-symbolic",
         "rdp" => "computer-symbolic",
         "vnc" => "video-display-symbolic",
-        "spice" => "video-x-generic-symbolic",
+        "spice" => "preferences-desktop-remote-desktop-symbolic",
         "telnet" => "call-start-symbolic",
         "serial" => "modem-symbolic",
         "sftp" => "folder-remote-symbolic",
+        "kubernetes" => "application-x-executable-symbolic",
         "info" => "dialog-information-symbolic",
         _ => "network-server-symbolic",
     }

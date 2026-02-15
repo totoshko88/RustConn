@@ -882,7 +882,7 @@ mod provider_persistence_unit_tests {
         // Generic is the fallback, so it's okay if it's not unique
         let non_generic: Vec<&str> = icon_names
             .iter()
-            .filter(|&&name| name != "cloud-symbolic")
+            .filter(|&&name| name != "system-run-symbolic")
             .copied()
             .collect();
 

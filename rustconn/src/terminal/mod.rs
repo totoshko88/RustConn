@@ -225,16 +225,18 @@ impl TerminalNotebook {
     fn get_protocol_icon(protocol: &str) -> &'static str {
         // All ZeroTrust variants use the same icon (matches filter button)
         if protocol.starts_with("zerotrust") {
-            return "folder-remote-symbolic";
+            return "security-high-symbolic";
         }
 
         match protocol.to_lowercase().as_str() {
-            "ssh" => "network-server-symbolic",
+            "ssh" => "utilities-terminal-symbolic",
             "rdp" => "computer-symbolic",
             "vnc" => "video-display-symbolic",
-            "spice" => "video-x-generic-symbolic",
+            "spice" => "preferences-desktop-remote-desktop-symbolic",
             "telnet" => "call-start-symbolic",
-            "serial" => "phone-symbolic",
+            "serial" => "modem-symbolic",
+            "sftp" => "folder-remote-symbolic",
+            "kubernetes" => "application-x-executable-symbolic",
             _ => "network-server-symbolic",
         }
     }
@@ -440,7 +442,9 @@ impl TerminalNotebook {
 
         let page = self.tab_view.append(&container);
         page.set_title(title);
-        page.set_icon(Some(&gio::ThemedIcon::new("video-x-generic-symbolic")));
+        page.set_icon(Some(&gio::ThemedIcon::new(
+            "preferences-desktop-remote-desktop-symbolic",
+        )));
         let tooltip = if host.is_empty() {
             title.to_string()
         } else {

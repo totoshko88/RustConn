@@ -774,9 +774,9 @@ impl MainWindow {
 
                 let tab_name = format!("mc: {conn_name}");
                 let session_id = notebook_clone.create_terminal_tab_with_settings(
-                    Uuid::nil(),
+                    conn_id,
                     &tab_name,
-                    "local",
+                    "sftp",
                     None,
                     &terminal_settings,
                 );
@@ -920,6 +920,7 @@ impl MainWindow {
     fn handle_sftp_connect(
         state: &SharedAppState,
         notebook: &SharedNotebook,
+        sidebar: Option<&SharedSidebar>,
         split_view: Option<&SharedSplitView>,
         connection_id: Uuid,
     ) {
@@ -963,17 +964,28 @@ impl MainWindow {
                 }
             }
 
+            // Update sidebar status for SFTP connection
+            if let Some(sb) = sidebar {
+                sb.update_connection_status(&connection_id.to_string(), "connecting");
+            }
+
             let tab_name = format!("mc: {conn_name}");
             let session_id = notebook.create_terminal_tab_with_settings(
-                Uuid::nil(),
+                connection_id,
                 &tab_name,
-                "local",
+                "sftp",
                 None,
                 &terminal_settings,
             );
 
             let argv: Vec<&str> = mc_args.iter().map(String::as_str).collect();
             notebook.spawn_command(session_id, &argv, None, None);
+
+            // Mark as connected and increment session count
+            if let Some(sb) = sidebar {
+                sb.update_connection_status(&connection_id.to_string(), "connected");
+                sb.increment_session_count(&connection_id.to_string());
+            }
 
             if let Some(sv) = split_view {
                 if let Some(info) = notebook.get_session_info(session_id) {
@@ -3429,7 +3441,13 @@ impl MainWindow {
             }
             ProtocolType::Sftp => {
                 // SFTP connections open the file manager directly
-                Self::handle_sftp_connect(&state, &notebook, Some(&split_view), connection_id);
+                Self::handle_sftp_connect(
+                    &state,
+                    &notebook,
+                    Some(&sidebar),
+                    Some(&split_view),
+                    connection_id,
+                );
             }
         }
     }
@@ -3977,7 +3995,7 @@ impl MainWindow {
             }
             "sftp" => {
                 // SFTP opens file manager — no terminal session
-                Self::handle_sftp_connect(state, notebook, None, connection_id);
+                Self::handle_sftp_connect(state, notebook, Some(sidebar), None, connection_id);
                 None
             }
             _ => {

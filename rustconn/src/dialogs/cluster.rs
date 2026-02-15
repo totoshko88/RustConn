@@ -254,7 +254,7 @@ impl ClusterDialog {
             rustconn_core::models::ProtocolConfig::Rdp(_) => "computer-symbolic",
             rustconn_core::models::ProtocolConfig::Vnc(_) => "video-display-symbolic",
             rustconn_core::models::ProtocolConfig::Spice(_) => "video-display-symbolic",
-            rustconn_core::models::ProtocolConfig::ZeroTrust(_) => "cloud-symbolic",
+            rustconn_core::models::ProtocolConfig::ZeroTrust(_) => "security-high-symbolic",
             rustconn_core::models::ProtocolConfig::Telnet(_) => "call-start-symbolic",
             rustconn_core::models::ProtocolConfig::Serial(_) => "modem-symbolic",
             rustconn_core::models::ProtocolConfig::Sftp(_) => "folder-remote-symbolic",

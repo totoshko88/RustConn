@@ -120,7 +120,7 @@ pub const fn get_protocol_icon(protocol: ProtocolType) -> &'static str {
         ProtocolType::Vnc => "video-display-symbolic",
         ProtocolType::Spice => "preferences-desktop-remote-desktop-symbolic",
         ProtocolType::Telnet => "call-start-symbolic",
-        ProtocolType::ZeroTrust => "cloud-symbolic",
+        ProtocolType::ZeroTrust => "security-high-symbolic",
         ProtocolType::Serial => "modem-symbolic",
         ProtocolType::Sftp => "folder-remote-symbolic",
         ProtocolType::Kubernetes => "application-x-executable-symbolic",
@@ -141,7 +141,7 @@ pub const fn all_protocol_icons() -> &'static [(ProtocolType, &'static str)] {
             "preferences-desktop-remote-desktop-symbolic",
         ),
         (ProtocolType::Telnet, "call-start-symbolic"),
-        (ProtocolType::ZeroTrust, "cloud-symbolic"),
+        (ProtocolType::ZeroTrust, "security-high-symbolic"),
         (ProtocolType::Sftp, "folder-remote-symbolic"),
         (
             ProtocolType::Kubernetes,
@@ -405,7 +405,7 @@ impl ProviderIconCache {
     /// Get the GTK icon name for a provider
     ///
     /// Returns the symbolic icon name that can be used with GTK icon themes.
-    /// Falls back to "cloud-symbolic" if no specific icon is available.
+    /// Falls back to "security-high-symbolic" if no specific icon is available.
     #[must_use]
     pub const fn get_gtk_icon_name(&self, provider: CloudProvider) -> &'static str {
         // For now, we use the symbolic icon names

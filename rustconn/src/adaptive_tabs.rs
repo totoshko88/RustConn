@@ -66,6 +66,9 @@ impl TabInfo {
     }
 
     /// Gets the icon name for a protocol
+    ///
+    /// Icons are aligned with `rustconn_core::protocol::icons::get_protocol_icon()`.
+    /// ZeroTrust provider-specific icons use the `CloudProvider` mapping from icons.rs.
     fn get_protocol_icon(protocol: &str) -> String {
         // Check for ZeroTrust with provider info (format: "zerotrust:provider")
         if let Some(provider) = protocol.strip_prefix("zerotrust:") {
@@ -80,18 +83,25 @@ impl TabInfo {
                 "tailscale" | "tailscale_ssh" => "network-vpn-symbolic",
                 "boundary" => "dialog-password-symbolic",
                 "generic" => "system-run-symbolic",
-                _ => "folder-remote-symbolic",
+                _ => "security-high-symbolic",
             }
             .to_string();
         }
 
+        // Base ZeroTrust without provider
+        if protocol.starts_with("zerotrust") {
+            return "security-high-symbolic".to_string();
+        }
+
         match protocol.to_lowercase().as_str() {
+            "ssh" => "utilities-terminal-symbolic",
             "rdp" => "computer-symbolic",
             "vnc" => "video-display-symbolic",
-            "spice" => "video-x-generic-symbolic",
-            "serial" => "phone-symbolic",
-            "zerotrust" => "folder-remote-symbolic",
-            // ssh and unknown protocols use server icon
+            "spice" => "preferences-desktop-remote-desktop-symbolic",
+            "telnet" => "call-start-symbolic",
+            "serial" => "modem-symbolic",
+            "sftp" => "folder-remote-symbolic",
+            "kubernetes" => "application-x-executable-symbolic",
             _ => "network-server-symbolic",
         }
         .to_string()
