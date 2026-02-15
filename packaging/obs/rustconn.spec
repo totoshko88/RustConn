@@ -6,9 +6,9 @@
 #
 
 Name:           rustconn
-Version:        0.8.4
+Version:        0.8.5
 Release:        0
-Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Zero Trust)
+Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
 URL:            https://github.com/totoshko88/RustConn
 Source0:        %{name}-%{version}.tar.xz
@@ -74,11 +74,13 @@ Requires:       alsa-lib
 Recommends:     freerdp
 Recommends:     tigervnc
 Recommends:     virt-viewer
+Recommends:     picocom
+Recommends:     kubectl
 
 %description
 RustConn is a modern connection manager for Linux with a GTK4/Wayland-native
-interface. Manage SSH, RDP, VNC, SPICE, Telnet, and Zero Trust connections
-from a single application. All core protocols use embedded Rust
+interface. Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust
+connections from a single application. All core protocols use embedded Rust
 implementations — no external dependencies required.
 
 Protocols (embedded Rust implementations):
@@ -87,8 +89,13 @@ Protocols (embedded Rust implementations):
 - VNC via vnc-rs (embedded, with TigerVNC fallback)
 - SPICE via remote-viewer (external)
 - Telnet via external telnet client (port 23)
+- Serial via picocom (RS-232/USB serial consoles)
+- Kubernetes via kubectl exec (shell access to pods)
 - Zero Trust: AWS SSM, GCP IAP, Azure Bastion, OCI Bastion,
   Cloudflare, Teleport, Tailscale, Boundary
+
+File Transfer:
+- SFTP file browser via system file manager (sftp:// URI, D-Bus portal)
 
 Organization:
 - Groups, tags, and templates
@@ -182,6 +189,23 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sun Feb 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.5-0
+- Version bump to 0.8.5
+- Added Kubernetes Protocol (#14): kubectl exec shell access to pods
+  with exec and busybox modes, GUI Kubernetes tab, K8s sidebar filter,
+  CLI kubernetes subcommand, Flatpak kubectl component
+- Added Serial Console Protocol (#11): picocom-based serial console
+  in GUI, CLI, Flatpak, and Snap with 13 property tests
+- Added SFTP File Browser (#10): portal-aware file manager launch,
+  Midnight Commander FISH VFS, standalone SFTP connection type,
+  CLI sftp subcommand
+- Added Responsive / Adaptive UI (#9): reduced dialog sizes,
+  adw::Clamp on list dialogs, adw::Window for Dashboard/Sessions,
+  600sp breakpoint for split view
+- Added Terminal Rich Search (#7): regex, highlight all,
+  case-sensitive toggles, Ctrl+Shift+F, session log timestamps
+- Changed: Session Logging moved to Logging settings tab
+
 * Sat Feb 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.4-0
 - Version bump to 0.8.4
 - Added FIDO2/SecurityKey SSH authentication with hardware key support

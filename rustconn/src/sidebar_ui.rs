@@ -8,7 +8,13 @@ use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, Orientation};
 
 /// Shows the context menu for a connection item with group awareness
-pub fn show_context_menu_for_item(widget: &impl IsA<gtk4::Widget>, x: f64, y: f64, is_group: bool) {
+pub fn show_context_menu_for_item(
+    widget: &impl IsA<gtk4::Widget>,
+    x: f64,
+    y: f64,
+    is_group: bool,
+    is_ssh: bool,
+) {
     // Get the root window to access actions
     let Some(root) = widget.root() else { return };
     let Some(window) = root.downcast_ref::<gtk4::ApplicationWindow>() else {
@@ -135,6 +141,22 @@ pub fn show_context_menu_for_item(widget: &impl IsA<gtk4::Widget>, x: f64, y: f6
             }
         });
         menu_box.append(&wol_btn);
+
+        // Open SFTP option (SSH connections only)
+        if is_ssh {
+            let sftp_btn = create_menu_button("Open SFTP");
+            let win = window_clone.clone();
+            let popover_c = popover_ref.clone();
+            sftp_btn.connect_clicked(move |_| {
+                if let Some(p) = popover_c.upgrade() {
+                    p.popdown();
+                }
+                if let Some(action) = win.lookup_action("open-sftp") {
+                    action.activate(None);
+                }
+            });
+            menu_box.append(&sftp_btn);
+        }
     }
 
     let delete_btn = create_menu_button("Delete");
@@ -200,6 +222,8 @@ pub fn get_protocol_icon(protocol: &str) -> &'static str {
         "vnc" => "video-display-symbolic",
         "spice" => "video-x-generic-symbolic",
         "telnet" => "call-start-symbolic",
+        "serial" => "modem-symbolic",
+        "sftp" => "folder-remote-symbolic",
         "info" => "dialog-information-symbolic",
         _ => "network-server-symbolic",
     }

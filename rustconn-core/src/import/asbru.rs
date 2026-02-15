@@ -461,6 +461,7 @@ impl AsbruImporter {
                         compression,
                         custom_options,
                         startup_command: None,
+                        sftp_enabled: false,
                     }),
                     22u16,
                 )

@@ -55,6 +55,7 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
                     custom_options,
                     startup_command,
                     jump_host_id: None,
+                    sftp_enabled: false,
                 }
             },
         )
@@ -428,6 +429,9 @@ proptest! {
             ProtocolConfig::Spice(_) => 5900u16,
             ProtocolConfig::ZeroTrust(_) => 0u16, // No default port for Zero Trust
             ProtocolConfig::Telnet(_) => 23u16,
+            ProtocolConfig::Serial(_) => 0u16,
+            ProtocolConfig::Sftp(_) => 22u16,
+            ProtocolConfig::Kubernetes(_) => 0u16,
         };
 
         prop_assert_eq!(
@@ -791,6 +795,7 @@ fn arb_ssh_config_with_identities_only() -> impl Strategy<Value = SshConfig> {
                     custom_options,
                     startup_command: None,
                     jump_host_id: None,
+                    sftp_enabled: false,
                 }
             },
         )
@@ -825,6 +830,7 @@ fn arb_ssh_config_with_agent_fingerprint() -> impl Strategy<Value = SshConfig> {
                 custom_options: HashMap::new(),
                 startup_command: None,
                 jump_host_id: None,
+                sftp_enabled: false,
             }
         })
 }
@@ -980,6 +986,7 @@ fn arb_ssh_config_with_file_key_source() -> impl Strategy<Value = SshConfig> {
                     custom_options,
                     startup_command: None,
                     jump_host_id: None,
+                    sftp_enabled: false,
                 }
             },
         )
@@ -1013,6 +1020,7 @@ fn arb_ssh_config_with_agent_key_source() -> impl Strategy<Value = SshConfig> {
                     custom_options,
                     startup_command: None,
                     jump_host_id: None,
+                    sftp_enabled: false,
                 }
             },
         )

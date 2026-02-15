@@ -393,6 +393,8 @@ fn add_key_with_passphrase_dialog(
         .default_height(180)
         .build();
 
+    dialog.set_size_request(280, -1);
+
     let toolbar_view = adw::ToolbarView::new();
 
     let header = adw::HeaderBar::builder()

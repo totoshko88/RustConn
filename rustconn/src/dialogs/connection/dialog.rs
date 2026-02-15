@@ -157,6 +157,24 @@ pub struct ConnectionDialog {
     telnet_custom_args_entry: Entry,
     telnet_backspace_dropdown: DropDown,
     telnet_delete_dropdown: DropDown,
+    // Serial fields
+    serial_device_entry: Entry,
+    serial_baud_dropdown: DropDown,
+    serial_data_bits_dropdown: DropDown,
+    serial_stop_bits_dropdown: DropDown,
+    serial_parity_dropdown: DropDown,
+    serial_flow_control_dropdown: DropDown,
+    serial_custom_args_entry: Entry,
+    // Kubernetes fields
+    k8s_kubeconfig_entry: Entry,
+    k8s_context_entry: Entry,
+    k8s_namespace_entry: Entry,
+    k8s_pod_entry: Entry,
+    k8s_container_entry: Entry,
+    k8s_shell_dropdown: DropDown,
+    k8s_busybox_check: CheckButton,
+    k8s_busybox_image_entry: Entry,
+    k8s_custom_args_entry: Entry,
     // Variables fields
     variables_list: ListBox,
     variables_rows: Rc<RefCell<Vec<LocalVariableRow>>>,
@@ -426,6 +444,34 @@ impl ConnectionDialog {
         ) = super::telnet::create_telnet_options();
         protocol_stack.add_named(&telnet_box, Some("telnet"));
 
+        // Serial options
+        let (
+            serial_box,
+            serial_device_entry,
+            serial_baud_dropdown,
+            serial_data_bits_dropdown,
+            serial_stop_bits_dropdown,
+            serial_parity_dropdown,
+            serial_flow_control_dropdown,
+            serial_custom_args_entry,
+        ) = super::serial::create_serial_options();
+        protocol_stack.add_named(&serial_box, Some("serial"));
+
+        // Kubernetes options
+        let (
+            k8s_box,
+            k8s_kubeconfig_entry,
+            k8s_context_entry,
+            k8s_namespace_entry,
+            k8s_pod_entry,
+            k8s_container_entry,
+            k8s_shell_dropdown,
+            k8s_busybox_check,
+            k8s_busybox_image_entry,
+            k8s_custom_args_entry,
+        ) = super::kubernetes::create_kubernetes_options();
+        protocol_stack.add_named(&k8s_box, Some("kubernetes"));
+
         // Set initial protocol view
         protocol_stack.set_visible_child_name("ssh");
 
@@ -621,6 +667,22 @@ impl ConnectionDialog {
             &telnet_custom_args_entry,
             &telnet_backspace_dropdown,
             &telnet_delete_dropdown,
+            &serial_device_entry,
+            &serial_baud_dropdown,
+            &serial_data_bits_dropdown,
+            &serial_stop_bits_dropdown,
+            &serial_parity_dropdown,
+            &serial_flow_control_dropdown,
+            &serial_custom_args_entry,
+            &k8s_kubeconfig_entry,
+            &k8s_context_entry,
+            &k8s_namespace_entry,
+            &k8s_pod_entry,
+            &k8s_container_entry,
+            &k8s_shell_dropdown,
+            &k8s_busybox_check,
+            &k8s_busybox_image_entry,
+            &k8s_custom_args_entry,
             &variables_rows,
             &logging_tab_struct,
             &expect_rules,
@@ -742,6 +804,22 @@ impl ConnectionDialog {
             telnet_custom_args_entry,
             telnet_backspace_dropdown,
             telnet_delete_dropdown,
+            serial_device_entry,
+            serial_baud_dropdown,
+            serial_data_bits_dropdown,
+            serial_stop_bits_dropdown,
+            serial_parity_dropdown,
+            serial_flow_control_dropdown,
+            serial_custom_args_entry,
+            k8s_kubeconfig_entry,
+            k8s_context_entry,
+            k8s_namespace_entry,
+            k8s_pod_entry,
+            k8s_container_entry,
+            k8s_shell_dropdown,
+            k8s_busybox_check,
+            k8s_busybox_image_entry,
+            k8s_custom_args_entry,
             expect_rules_list,
             expect_rules,
             add_expect_rule_button,
@@ -957,6 +1035,9 @@ impl ConnectionDialog {
                 3 => rustconn_core::models::ProtocolConfig::Spice(
                     rustconn_core::models::SpiceConfig::default(),
                 ),
+                8 => rustconn_core::models::ProtocolConfig::Kubernetes(
+                    rustconn_core::models::KubernetesConfig::default(),
+                ),
                 _ => rustconn_core::models::ProtocolConfig::Ssh(
                     rustconn_core::models::SshConfig::default(),
                 ),
@@ -1019,6 +1100,21 @@ impl ConnectionDialog {
                         rustconn_core::models::ProtocolType::Telnet => {
                             rustconn_core::models::ProtocolConfig::Telnet(
                                 rustconn_core::models::TelnetConfig::default(),
+                            )
+                        }
+                        rustconn_core::models::ProtocolType::Serial => {
+                            rustconn_core::models::ProtocolConfig::Serial(
+                                rustconn_core::models::SerialConfig::default(),
+                            )
+                        }
+                        rustconn_core::models::ProtocolType::Sftp => {
+                            rustconn_core::models::ProtocolConfig::Sftp(
+                                rustconn_core::models::SshConfig::default(),
+                            )
+                        }
+                        rustconn_core::models::ProtocolType::Kubernetes => {
+                            rustconn_core::models::ProtocolConfig::Kubernetes(
+                                rustconn_core::models::KubernetesConfig::default(),
                             )
                         }
                     };
@@ -1125,9 +1221,10 @@ impl ConnectionDialog {
         let window = adw::Window::builder()
             .title("New Connection")
             .modal(true)
-            .default_width(750)
-            .default_height(650)
+            .default_width(600)
+            .default_height(500)
             .build();
+        window.set_size_request(350, 300);
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
@@ -1232,18 +1329,37 @@ impl ConnectionDialog {
         let password_row = password_row.clone();
 
         dropdown.connect_selected_notify(move |dropdown| {
-            let protocols = ["ssh", "rdp", "vnc", "spice", "zerotrust", "telnet"];
+            let protocols = [
+                "ssh",
+                "rdp",
+                "vnc",
+                "spice",
+                "zerotrust",
+                "telnet",
+                "serial",
+                "sftp",
+                "kubernetes",
+            ];
             let selected = dropdown.selected() as usize;
             if selected < protocols.len() {
                 let protocol_id = protocols[selected];
-                stack_clone.set_visible_child_name(protocol_id);
+                // SFTP reuses SSH config tab
+                let stack_name = if protocol_id == "sftp" {
+                    "ssh"
+                } else {
+                    protocol_id
+                };
+                stack_clone.set_visible_child_name(stack_name);
                 let default_port = Self::get_default_port(protocol_id);
                 if Self::is_default_port(port_clone.value()) {
                     port_clone.set_value(default_port);
                 }
 
                 let is_zerotrust = protocol_id == "zerotrust";
-                let visible = !is_zerotrust;
+                let is_serial = protocol_id == "serial";
+                let is_kubernetes = protocol_id == "kubernetes";
+                let hide_network = is_zerotrust || is_serial || is_kubernetes;
+                let visible = !hide_network;
 
                 host_entry.set_visible(visible);
                 host_label.set_visible(visible);
@@ -1251,12 +1367,12 @@ impl ConnectionDialog {
                 port_label.set_visible(visible);
                 username_entry.set_visible(visible);
                 username_label.set_visible(visible);
-                tags_entry.set_visible(visible);
-                tags_label.set_visible(visible);
+                tags_entry.set_visible(!is_zerotrust);
+                tags_label.set_visible(!is_zerotrust);
                 password_source_dropdown.set_visible(visible);
                 password_source_label.set_visible(visible);
                 // Password row visibility controlled by password_source_dropdown
-                if !visible {
+                if hide_network {
                     password_row.set_visible(false);
                 }
             }
@@ -1268,9 +1384,9 @@ impl ConnectionDialog {
         match protocol_id {
             "rdp" => 3389.0,
             "vnc" | "spice" => 5900.0,
-            "zerotrust" => 0.0,
+            "zerotrust" | "serial" | "kubernetes" => 0.0,
             "telnet" => 23.0,
-            _ => 22.0,
+            _ => 22.0, // ssh, sftp
         }
     }
 
@@ -1369,6 +1485,22 @@ impl ConnectionDialog {
         telnet_custom_args_entry: &Entry,
         telnet_backspace_dropdown: &DropDown,
         telnet_delete_dropdown: &DropDown,
+        serial_device_entry: &Entry,
+        serial_baud_dropdown: &DropDown,
+        serial_data_bits_dropdown: &DropDown,
+        serial_stop_bits_dropdown: &DropDown,
+        serial_parity_dropdown: &DropDown,
+        serial_flow_control_dropdown: &DropDown,
+        serial_custom_args_entry: &Entry,
+        k8s_kubeconfig_entry: &Entry,
+        k8s_context_entry: &Entry,
+        k8s_namespace_entry: &Entry,
+        k8s_pod_entry: &Entry,
+        k8s_container_entry: &Entry,
+        k8s_shell_dropdown: &DropDown,
+        k8s_busybox_check: &CheckButton,
+        k8s_busybox_image_entry: &Entry,
+        k8s_custom_args_entry: &Entry,
         variables_rows: &Rc<RefCell<Vec<LocalVariableRow>>>,
         logging_tab: &logging_tab::LoggingTab,
         expect_rules: &Rc<RefCell<Vec<ExpectRule>>>,
@@ -1471,6 +1603,22 @@ impl ConnectionDialog {
         let telnet_custom_args_entry = telnet_custom_args_entry.clone();
         let telnet_backspace_dropdown = telnet_backspace_dropdown.clone();
         let telnet_delete_dropdown = telnet_delete_dropdown.clone();
+        let serial_device_entry = serial_device_entry.clone();
+        let serial_baud_dropdown = serial_baud_dropdown.clone();
+        let serial_data_bits_dropdown = serial_data_bits_dropdown.clone();
+        let serial_stop_bits_dropdown = serial_stop_bits_dropdown.clone();
+        let serial_parity_dropdown = serial_parity_dropdown.clone();
+        let serial_flow_control_dropdown = serial_flow_control_dropdown.clone();
+        let serial_custom_args_entry = serial_custom_args_entry.clone();
+        let k8s_kubeconfig_entry = k8s_kubeconfig_entry.clone();
+        let k8s_context_entry = k8s_context_entry.clone();
+        let k8s_namespace_entry = k8s_namespace_entry.clone();
+        let k8s_pod_entry = k8s_pod_entry.clone();
+        let k8s_container_entry = k8s_container_entry.clone();
+        let k8s_shell_dropdown = k8s_shell_dropdown.clone();
+        let k8s_busybox_check = k8s_busybox_check.clone();
+        let k8s_busybox_image_entry = k8s_busybox_image_entry.clone();
+        let k8s_custom_args_entry = k8s_custom_args_entry.clone();
         let variables_rows = variables_rows.clone();
         let logging_enabled_check = logging_tab.enabled_check.clone();
         let logging_path_entry = logging_tab.path_entry.clone();
@@ -1580,6 +1728,22 @@ impl ConnectionDialog {
                 telnet_custom_args_entry: &telnet_custom_args_entry,
                 telnet_backspace_dropdown: &telnet_backspace_dropdown,
                 telnet_delete_dropdown: &telnet_delete_dropdown,
+                serial_device_entry: &serial_device_entry,
+                serial_baud_dropdown: &serial_baud_dropdown,
+                serial_data_bits_dropdown: &serial_data_bits_dropdown,
+                serial_stop_bits_dropdown: &serial_stop_bits_dropdown,
+                serial_parity_dropdown: &serial_parity_dropdown,
+                serial_flow_control_dropdown: &serial_flow_control_dropdown,
+                serial_custom_args_entry: &serial_custom_args_entry,
+                k8s_kubeconfig_entry: &k8s_kubeconfig_entry,
+                k8s_context_entry: &k8s_context_entry,
+                k8s_namespace_entry: &k8s_namespace_entry,
+                k8s_pod_entry: &k8s_pod_entry,
+                k8s_container_entry: &k8s_container_entry,
+                k8s_shell_dropdown: &k8s_shell_dropdown,
+                k8s_busybox_check: &k8s_busybox_check,
+                k8s_busybox_image_entry: &k8s_busybox_image_entry,
+                k8s_custom_args_entry: &k8s_custom_args_entry,
                 local_variables: &local_variables,
                 logging_tab: &logging_tab::LoggingTab {
                     enabled_check: logging_enabled_check.clone(),
@@ -1683,8 +1847,17 @@ impl ConnectionDialog {
             .label("Protocol:")
             .halign(gtk4::Align::End)
             .build();
-        let protocol_list =
-            StringList::new(&["SSH", "RDP", "VNC", "SPICE", "Zero Trust", "Telnet"]);
+        let protocol_list = StringList::new(&[
+            "SSH",
+            "RDP",
+            "VNC",
+            "SPICE",
+            "Zero Trust",
+            "Telnet",
+            "Serial",
+            "SFTP",
+            "Kubernetes",
+        ]);
         let protocol_dropdown = DropDown::builder().model(&protocol_list).build();
         protocol_dropdown.set_selected(0);
         grid.attach(&protocol_label_grid, 0, row, 1, 1);
@@ -4836,6 +5009,33 @@ impl ConnectionDialog {
                 self.telnet_delete_dropdown
                     .set_selected(telnet_config.delete_sends.index());
             }
+            ProtocolConfig::Serial(ref serial_config) => {
+                self.protocol_dropdown.set_selected(6); // Serial
+                self.protocol_stack.set_visible_child_name("serial");
+                self.serial_device_entry.set_text(&serial_config.device);
+                self.serial_baud_dropdown
+                    .set_selected(serial_config.baud_rate.index());
+                self.serial_data_bits_dropdown
+                    .set_selected(serial_config.data_bits.index());
+                self.serial_stop_bits_dropdown
+                    .set_selected(serial_config.stop_bits.index());
+                self.serial_parity_dropdown
+                    .set_selected(serial_config.parity.index());
+                self.serial_flow_control_dropdown
+                    .set_selected(serial_config.flow_control.index());
+                let args_text = serial_config.custom_args.join(" ");
+                self.serial_custom_args_entry.set_text(&args_text);
+            }
+            ProtocolConfig::Sftp(ref ssh) => {
+                self.protocol_dropdown.set_selected(7); // SFTP
+                self.protocol_stack.set_visible_child_name("ssh");
+                self.set_ssh_config(ssh);
+            }
+            ProtocolConfig::Kubernetes(ref k8s) => {
+                self.protocol_dropdown.set_selected(8); // Kubernetes
+                self.protocol_stack.set_visible_child_name("kubernetes");
+                self.set_kubernetes_config(k8s);
+            }
         }
 
         // Set local variables
@@ -5515,6 +5715,38 @@ impl ConnectionDialog {
         }
     }
 
+    fn set_kubernetes_config(&self, k8s: &rustconn_core::models::KubernetesConfig) {
+        if let Some(ref path) = k8s.kubeconfig {
+            self.k8s_kubeconfig_entry.set_text(&path.to_string_lossy());
+        }
+        if let Some(ref ctx) = k8s.context {
+            self.k8s_context_entry.set_text(ctx);
+        }
+        if let Some(ref ns) = k8s.namespace {
+            self.k8s_namespace_entry.set_text(ns);
+        }
+        if let Some(ref pod) = k8s.pod {
+            self.k8s_pod_entry.set_text(pod);
+        }
+        if let Some(ref container) = k8s.container {
+            self.k8s_container_entry.set_text(container);
+        }
+        let shell_idx = match k8s.shell.as_str() {
+            "/bin/sh" => 0,
+            "/bin/bash" => 1,
+            "/bin/ash" => 2,
+            "/bin/zsh" => 3,
+            _ => 0,
+        };
+        self.k8s_shell_dropdown.set_selected(shell_idx);
+        self.k8s_busybox_check.set_active(k8s.use_busybox);
+        self.k8s_busybox_image_entry.set_text(&k8s.busybox_image);
+        if !k8s.custom_args.is_empty() {
+            self.k8s_custom_args_entry
+                .set_text(&k8s.custom_args.join(" "));
+        }
+    }
+
     /// Runs the dialog and calls the callback with the result
     pub fn run<F: Fn(Option<super::ConnectionDialogResult>) + 'static>(&self, cb: F) {
         // Store callback - the save button handler was connected in the constructor
@@ -6064,6 +6296,24 @@ struct ConnectionDialogData<'a> {
     telnet_custom_args_entry: &'a Entry,
     telnet_backspace_dropdown: &'a DropDown,
     telnet_delete_dropdown: &'a DropDown,
+    // Serial fields
+    serial_device_entry: &'a Entry,
+    serial_baud_dropdown: &'a DropDown,
+    serial_data_bits_dropdown: &'a DropDown,
+    serial_stop_bits_dropdown: &'a DropDown,
+    serial_parity_dropdown: &'a DropDown,
+    serial_flow_control_dropdown: &'a DropDown,
+    serial_custom_args_entry: &'a Entry,
+    // Kubernetes fields
+    k8s_kubeconfig_entry: &'a Entry,
+    k8s_context_entry: &'a Entry,
+    k8s_namespace_entry: &'a Entry,
+    k8s_pod_entry: &'a Entry,
+    k8s_container_entry: &'a Entry,
+    k8s_shell_dropdown: &'a DropDown,
+    k8s_busybox_check: &'a CheckButton,
+    k8s_busybox_image_entry: &'a Entry,
+    k8s_custom_args_entry: &'a Entry,
     local_variables: &'a HashMap<String, Variable>,
     logging_tab: &'a logging_tab::LoggingTab,
     expect_rules: &'a Vec<ExpectRule>,
@@ -6102,12 +6352,14 @@ impl ConnectionDialogData<'_> {
         }
 
         // Protocol-specific validation using dropdown indices
-        // 0=SSH, 1=RDP, 2=VNC, 3=SPICE, 4=Zero Trust
+        // 0=SSH, 1=RDP, 2=VNC, 3=SPICE, 4=Zero Trust, 5=Telnet, 6=Serial
         let protocol_idx = self.protocol_dropdown.selected();
         let is_zerotrust = protocol_idx == 4;
+        let is_serial = protocol_idx == 6;
+        let is_kubernetes = protocol_idx == 8;
 
-        // Host and port are optional for Zero Trust (defined in provider config)
-        if !is_zerotrust {
+        // Host and port are optional for Zero Trust, Serial, and Kubernetes
+        if !is_zerotrust && !is_serial && !is_kubernetes {
             let host = self.host_entry.text();
             if host.trim().is_empty() {
                 return Err("Host is required".to_string());
@@ -6122,6 +6374,14 @@ impl ConnectionDialogData<'_> {
             let port = self.port_spin.value() as u16;
             if port == 0 {
                 return Err("Port must be greater than 0".to_string());
+            }
+        }
+
+        // Serial requires a device path
+        if is_serial {
+            let device = self.serial_device_entry.text();
+            if device.trim().is_empty() {
+                return Err("Device path is required for serial connections".to_string());
             }
         }
         if protocol_idx == 0 {
@@ -6390,6 +6650,9 @@ impl ConnectionDialogData<'_> {
             3 => Some(ProtocolConfig::Spice(self.build_spice_config())),
             4 => Some(ProtocolConfig::ZeroTrust(self.build_zerotrust_config())),
             5 => Some(ProtocolConfig::Telnet(self.build_telnet_config())),
+            6 => Some(ProtocolConfig::Serial(self.build_serial_config())),
+            7 => Some(ProtocolConfig::Sftp(self.build_ssh_config())),
+            8 => Some(ProtocolConfig::Kubernetes(self.build_kubernetes_config())),
             _ => None,
         }
     }
@@ -6548,6 +6811,102 @@ impl ConnectionDialogData<'_> {
         }
     }
 
+    fn build_serial_config(&self) -> rustconn_core::models::SerialConfig {
+        let device = self.serial_device_entry.text().trim().to_string();
+        let custom_args_text = self.serial_custom_args_entry.text();
+        let custom_args: Vec<String> = if custom_args_text.trim().is_empty() {
+            Vec::new()
+        } else {
+            custom_args_text
+                .split_whitespace()
+                .map(String::from)
+                .collect()
+        };
+        rustconn_core::models::SerialConfig {
+            device,
+            baud_rate: rustconn_core::SerialBaudRate::from_index(
+                self.serial_baud_dropdown.selected(),
+            ),
+            data_bits: rustconn_core::SerialDataBits::from_index(
+                self.serial_data_bits_dropdown.selected(),
+            ),
+            stop_bits: rustconn_core::SerialStopBits::from_index(
+                self.serial_stop_bits_dropdown.selected(),
+            ),
+            parity: rustconn_core::SerialParity::from_index(self.serial_parity_dropdown.selected()),
+            flow_control: rustconn_core::SerialFlowControl::from_index(
+                self.serial_flow_control_dropdown.selected(),
+            ),
+            custom_args,
+        }
+    }
+
+    fn build_kubernetes_config(&self) -> rustconn_core::models::KubernetesConfig {
+        let kubeconfig = {
+            let text = self.k8s_kubeconfig_entry.text();
+            if text.trim().is_empty() {
+                None
+            } else {
+                Some(PathBuf::from(text.trim().to_string()))
+            }
+        };
+        let context = {
+            let text = self.k8s_context_entry.text();
+            if text.trim().is_empty() {
+                None
+            } else {
+                Some(text.trim().to_string())
+            }
+        };
+        let namespace = {
+            let text = self.k8s_namespace_entry.text();
+            if text.trim().is_empty() {
+                None
+            } else {
+                Some(text.trim().to_string())
+            }
+        };
+        let pod = {
+            let text = self.k8s_pod_entry.text();
+            if text.trim().is_empty() {
+                None
+            } else {
+                Some(text.trim().to_string())
+            }
+        };
+        let container = {
+            let text = self.k8s_container_entry.text();
+            if text.trim().is_empty() {
+                None
+            } else {
+                Some(text.trim().to_string())
+            }
+        };
+        let shells = ["/bin/sh", "/bin/bash", "/bin/ash", "/bin/zsh"];
+        let shell_idx = self.k8s_shell_dropdown.selected() as usize;
+        let shell = shells.get(shell_idx).unwrap_or(&"/bin/sh").to_string();
+        let busybox_image = {
+            let text = self.k8s_busybox_image_entry.text();
+            if text.trim().is_empty() {
+                "busybox:latest".to_string()
+            } else {
+                text.trim().to_string()
+            }
+        };
+        let custom_args = Self::parse_args(&self.k8s_custom_args_entry.text());
+        rustconn_core::models::KubernetesConfig {
+            kubeconfig,
+            context,
+            namespace,
+            pod,
+            container,
+            shell,
+            use_busybox: self.k8s_busybox_check.is_active(),
+            busybox_image,
+            custom_args,
+        }
+    }
+
     fn build_ssh_config(&self) -> SshConfig {
         let auth_method = match self.ssh_auth_dropdown.selected() {
             1 => SshAuthMethod::PublicKey,
@@ -6636,6 +6995,7 @@ impl ConnectionDialogData<'_> {
             compression: self.ssh_compression.is_active(),
             custom_options,
             startup_command,
+            sftp_enabled: true,
         }
     }
 

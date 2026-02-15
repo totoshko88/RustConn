@@ -24,6 +24,7 @@ pub fn create_terminal_page() -> (
     CheckButton,
     CheckButton,
     CheckButton,
+    CheckButton, // sftp_use_mc
 ) {
     let page = adw::PreferencesPage::builder()
         .title("Terminal")
@@ -230,6 +231,16 @@ pub fn create_terminal_page() -> (
     audible_bell_row.add_prefix(&audible_bell_check);
     behavior_group.add(&audible_bell_row);
 
+    // SFTP via Midnight Commander
+    let sftp_use_mc_check = CheckButton::builder().valign(gtk4::Align::Center).build();
+    let sftp_use_mc_row = adw::ActionRow::builder()
+        .title("SFTP via mc")
+        .subtitle("Open SFTP in Midnight Commander (local shell tab)")
+        .activatable_widget(&sftp_use_mc_check)
+        .build();
+    sftp_use_mc_row.add_prefix(&sftp_use_mc_check);
+    behavior_group.add(&sftp_use_mc_row);
+
     page.add(&behavior_group);
 
     (
@@ -245,6 +256,7 @@ pub fn create_terminal_page() -> (
         allow_hyperlinks_check,
         mouse_autohide_check,
         audible_bell_check,
+        sftp_use_mc_check,
     )
 }
 
@@ -262,6 +274,7 @@ pub fn load_terminal_settings(
     allow_hyperlinks_check: &CheckButton,
     mouse_autohide_check: &CheckButton,
     audible_bell_check: &CheckButton,
+    sftp_use_mc_check: &CheckButton,
     settings: &TerminalSettings,
 ) {
     font_family_entry.set_text(&settings.font_family);
@@ -304,6 +317,7 @@ pub fn load_terminal_settings(
     allow_hyperlinks_check.set_active(settings.allow_hyperlinks);
     mouse_autohide_check.set_active(settings.mouse_autohide);
     audible_bell_check.set_active(settings.audible_bell);
+    sftp_use_mc_check.set_active(settings.sftp_use_mc);
 }
 
 /// Gets the toggle button at a specific index in a button box
@@ -350,6 +364,8 @@ pub fn collect_terminal_settings(
     allow_hyperlinks_check: &CheckButton,
     mouse_autohide_check: &CheckButton,
     audible_bell_check: &CheckButton,
+    sftp_use_mc_check: &CheckButton,
+    log_timestamps: bool,
 ) -> TerminalSettings {
     let theme_names = TerminalTheme::theme_names();
     let color_theme = theme_names
@@ -382,5 +398,7 @@ pub fn collect_terminal_settings(
         allow_hyperlinks: allow_hyperlinks_check.is_active(),
         mouse_autohide: mouse_autohide_check.is_active(),
         audible_bell: audible_bell_check.is_active(),
+        log_timestamps,
+        sftp_use_mc: sftp_use_mc_check.is_active(),
     }
 }

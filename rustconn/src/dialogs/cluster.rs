@@ -52,13 +52,15 @@ impl ClusterDialog {
         let window = adw::Window::builder()
             .title("New Cluster")
             .modal(true)
-            .default_width(550)
-            .default_height(550)
+            .default_width(500)
+            .default_height(400)
             .build();
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
         }
+
+        window.set_size_request(320, 280);
 
         // Create header bar with Close/Create buttons (GNOME HIG)
         let header = adw::HeaderBar::new();
@@ -254,6 +256,11 @@ impl ClusterDialog {
             rustconn_core::models::ProtocolConfig::Spice(_) => "video-display-symbolic",
             rustconn_core::models::ProtocolConfig::ZeroTrust(_) => "cloud-symbolic",
             rustconn_core::models::ProtocolConfig::Telnet(_) => "call-start-symbolic",
+            rustconn_core::models::ProtocolConfig::Serial(_) => "modem-symbolic",
+            rustconn_core::models::ProtocolConfig::Sftp(_) => "folder-remote-symbolic",
+            rustconn_core::models::ProtocolConfig::Kubernetes(_) => {
+                "application-x-executable-symbolic"
+            }
         };
         let icon = gtk4::Image::from_icon_name(icon_name);
 
@@ -395,13 +402,15 @@ impl ClusterListDialog {
         let window = adw::Window::builder()
             .title("Manage Clusters")
             .modal(true)
-            .default_width(750)
-            .default_height(500)
+            .default_width(500)
+            .default_height(400)
             .build();
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
         }
+
+        window.set_size_request(320, 280);
 
         // Create header bar with Close/Create buttons (GNOME HIG)
         let header = adw::HeaderBar::new();
@@ -421,17 +430,24 @@ impl ClusterListDialog {
             window_clone.close();
         });
 
-        // Create main content area
+        // Create main content area with clamp
+        let clamp = adw::Clamp::builder()
+            .maximum_size(600)
+            .tightening_threshold(400)
+            .build();
+
         let content = GtkBox::new(Orientation::Vertical, 12);
         content.set_margin_top(12);
         content.set_margin_bottom(12);
         content.set_margin_start(12);
         content.set_margin_end(12);
 
+        clamp.set_child(Some(&content));
+
         // Use ToolbarView for adw::Window
         let main_box = GtkBox::new(Orientation::Vertical, 0);
         main_box.append(&header);
-        main_box.append(&content);
+        main_box.append(&clamp);
         window.set_content(Some(&main_box));
 
         // Info label

@@ -8,7 +8,7 @@
 //! - [`models`] - Core data structures (Connection, Group, Protocol configs)
 //! - [`config`] - Application settings and persistence
 //! - [`connection`] - Connection CRUD operations and managers
-//! - [`protocol`] - Protocol trait and implementations (SSH, RDP, VNC, SPICE)
+//! - [`protocol`] - Protocol trait and implementations (SSH, RDP, VNC, SPICE, Telnet, Serial, SFTP, Kubernetes)
 //! - [`import`] / [`export`] - Format converters (Remmina, Asbru-CM, SSH config, Ansible, MobaXterm)
 //! - [`secret`] - Credential backends (`KeePassXC`, libsecret)
 //! - [`search`] - Fuzzy search with caching and debouncing
@@ -48,6 +48,7 @@ pub mod rdp_client;
 pub mod search;
 pub mod secret;
 pub mod session;
+pub mod sftp;
 pub mod snap;
 pub mod snippet;
 pub mod spice_client;
@@ -107,15 +108,16 @@ pub use flatpak::{host_command, host_exec, host_has_command, host_spawn, host_wh
 pub use import::{
     AnsibleInventoryImporter, AsbruImporter, BatchCancelHandle, BatchImportResult, BatchImporter,
     ImportResult, ImportSource, RemminaImporter, RoyalTsImporter, SkippedEntry, SshConfigImporter,
-    BATCH_IMPORT_THRESHOLD, DEFAULT_IMPORT_BATCH_SIZE,
+    VirtViewerImporter, BATCH_IMPORT_THRESHOLD, DEFAULT_IMPORT_BATCH_SIZE,
 };
 pub use models::{
     group_templates_by_protocol, Connection, ConnectionGroup, ConnectionHistoryEntry,
     ConnectionStatistics, ConnectionTemplate, Credentials, CustomProperty, HistorySettings,
-    PasswordSource, PropertyType, ProtocolConfig, ProtocolType, RdpConfig, RdpGateway, Resolution,
-    Snippet, SnippetVariable, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig,
-    SshKeySource, TelnetBackspaceSends, TelnetConfig, TelnetDeleteSends, TemplateError, VncConfig,
-    WindowGeometry, WindowMode,
+    KubernetesConfig, PasswordSource, PropertyType, ProtocolConfig, ProtocolType, RdpConfig,
+    RdpGateway, Resolution, SerialBaudRate, SerialConfig, SerialDataBits, SerialFlowControl,
+    SerialParity, SerialStopBits, Snippet, SnippetVariable, SpiceConfig, SpiceImageCompression,
+    SshAuthMethod, SshConfig, SshKeySource, TelnetBackspaceSends, TelnetConfig, TelnetDeleteSends,
+    TemplateError, VncConfig, WindowGeometry, WindowMode,
 };
 pub use password_generator::{
     estimate_crack_time, CharacterSet, PasswordGenerator, PasswordGeneratorConfig,
@@ -134,12 +136,13 @@ pub use progress::{
 };
 pub use protocol::{
     build_freerdp_args, detect_aws_cli, detect_azure_cli, detect_boundary, detect_cloudflared,
-    detect_gcloud_cli, detect_oci_cli, detect_provider, detect_rdp_client, detect_ssh_client,
-    detect_tailscale, detect_teleport, detect_telnet_client, detect_vnc_client,
-    extract_geometry_from_args, get_zero_trust_provider_icon, has_decorations_flag,
-    ClientDetectionResult, ClientInfo, CloudProvider, FreeRdpConfig, Protocol,
-    ProtocolCapabilities, ProtocolRegistry, ProviderIconCache, RdpProtocol, SshProtocol,
-    TelnetProtocol, VncProtocol,
+    detect_gcloud_cli, detect_kubectl, detect_oci_cli, detect_picocom, detect_provider,
+    detect_rdp_client, detect_ssh_client, detect_tailscale, detect_teleport, detect_telnet_client,
+    detect_vnc_client, extract_geometry_from_args, get_zero_trust_provider_icon,
+    has_decorations_flag, ClientDetectionResult, ClientInfo, CloudProvider, FreeRdpConfig,
+    KubernetesProtocol, Protocol, ProtocolCapabilities, ProtocolRegistry, ProviderIconCache,
+    RdpProtocol, SerialProtocol, SftpProtocol, SpiceProtocol, SshProtocol, TelnetProtocol,
+    VncProtocol,
 };
 pub use rdp_client::{
     convert_to_bgra, create_frame_update, create_frame_update_with_conversion,
@@ -185,6 +188,10 @@ pub use secret::{
 pub use session::{
     LogConfig, LogContext, LogError, LogResult, Session, SessionLogger, SessionManager,
     SessionState, SessionType,
+};
+pub use sftp::{
+    build_mc_sftp_command, build_sftp_command, build_sftp_uri, build_sftp_uri_from_connection,
+    ensure_key_in_agent, get_ssh_key_path,
 };
 pub use snap::{
     get_config_dir, get_confinement_message, get_data_dir, get_known_hosts_path, get_ssh_dir,

@@ -16,7 +16,7 @@ use libadwaita as adw;
 use rustconn_core::export::NativeExport;
 use rustconn_core::import::{
     AnsibleInventoryImporter, AsbruImporter, ImportResult, ImportSource, MobaXtermImporter,
-    RdmImporter, RemminaImporter, RoyalTsImporter, SshConfigImporter,
+    RdmImporter, RemminaImporter, RoyalTsImporter, SshConfigImporter, VirtViewerImporter,
 };
 use rustconn_core::progress::LocalProgressReporter;
 use std::cell::{Cell, RefCell};
@@ -48,9 +48,10 @@ impl ImportDialog {
         let window = adw::Window::builder()
             .title("Import Connections")
             .modal(true)
-            .default_width(750)
-            .default_height(800)
+            .default_width(600)
+            .default_height(500)
             .build();
+        window.set_size_request(350, 300);
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
@@ -78,7 +79,12 @@ impl ImportDialog {
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
 
-        // Create main content area
+        // Create main content area with clamp
+        let clamp = adw::Clamp::builder()
+            .maximum_size(600)
+            .tightening_threshold(400)
+            .build();
+
         let content = GtkBox::new(Orientation::Vertical, 12);
         content.set_margin_top(12);
         content.set_margin_bottom(12);
@@ -90,7 +96,8 @@ impl ImportDialog {
         stack.set_vexpand(true);
         content.append(&stack);
 
-        toolbar_view.set_content(Some(&content));
+        clamp.set_child(Some(&content));
+        toolbar_view.set_content(Some(&clamp));
         window.set_content(Some(&toolbar_view));
 
         // === Source Selection Page ===
@@ -248,6 +255,12 @@ impl ImportDialog {
                 "mobaxterm_file",
                 "MobaXterm (.mxtsessions)",
                 "Import from a MobaXterm session export file",
+                true,
+            ),
+            (
+                "vv_file",
+                "Virt-Viewer (.vv)",
+                "Import SPICE/VNC connection from a virt-viewer file",
                 true,
             ),
         ];
@@ -424,6 +437,7 @@ impl ImportDialog {
             "royalts_file" => "Royal TS",
             "rdm_file" => "Remote Desktop Manager",
             "mobaxterm_file" => "MobaXterm",
+            "vv_file" => "Virt-Viewer",
             _ => "Unknown",
         }
     }
@@ -775,6 +789,21 @@ impl ImportDialog {
 
                 if source_id == "mobaxterm_file" {
                     Self::handle_mobaxterm_file_import(
+                        &window,
+                        &stack,
+                        &progress_bar,
+                        &progress_label,
+                        &result_label,
+                        &result_details,
+                        &result_cell,
+                        &source_name_cell,
+                        btn,
+                    );
+                    return;
+                }
+
+                if source_id == "vv_file" {
+                    Self::handle_vv_file_import(
                         &window,
                         &stack,
                         &progress_bar,
@@ -1622,6 +1651,91 @@ impl ImportDialog {
                     }
                 } else {
                     // User cancelled file selection - return to source page
+                    stack_clone.set_visible_child_name("source");
+                    btn_clone.set_sensitive(true);
+                }
+            },
+        );
+    }
+
+    /// Handles importing from a virt-viewer (.vv) file
+    #[allow(clippy::too_many_arguments)]
+    fn handle_vv_file_import(
+        window: &adw::Window,
+        stack: &Stack,
+        progress_bar: &ProgressBar,
+        progress_label: &Label,
+        result_label: &Label,
+        result_details: &Label,
+        result_cell: &Rc<RefCell<Option<ImportResult>>>,
+        source_name_cell: &Rc<RefCell<String>>,
+        btn: &Button,
+    ) {
+        let file_dialog = gtk4::FileDialog::builder()
+            .title("Select Virt-Viewer File")
+            .modal(true)
+            .build();
+
+        let filter = gtk4::FileFilter::new();
+        filter.add_pattern("*.vv");
+        filter.set_name(Some("Virt-Viewer files (*.vv)"));
+        let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
+        filters.append(&filter);
+        file_dialog.set_filters(Some(&filters));
+
+        let stack_clone = stack.clone();
+        let progress_bar_clone = progress_bar.clone();
+        let progress_label_clone = progress_label.clone();
+        let result_label_clone = result_label.clone();
+        let result_details_clone = result_details.clone();
+        let result_cell_clone = result_cell.clone();
+        let source_name_cell_clone = source_name_cell.clone();
+        let btn_clone = btn.clone();
+
+        file_dialog.open(
+            Some(window),
+            gtk4::gio::Cancellable::NONE,
+            move |file_result| {
+                if let Ok(file) = file_result {
+                    if let Some(path) = file.path() {
+                        stack_clone.set_visible_child_name("progress");
+                        btn_clone.set_sensitive(false);
+                        progress_bar_clone.set_fraction(0.5);
+                        progress_label_clone
+                            .set_text(&format!("Importing from {}...", path.display()));
+
+                        let importer = VirtViewerImporter::new();
+                        let result =
+                            Self::import_or_error(importer.import_from_path(&path), "Virt-Viewer");
+
+                        let filename = path.file_name().map_or_else(
+                            || "Virt-Viewer".to_string(),
+                            |n| n.to_string_lossy().to_string(),
+                        );
+
+                        source_name_cell_clone.borrow_mut().clone_from(&filename);
+
+                        progress_bar_clone.set_fraction(1.0);
+
+                        let conn_count = result.connections.len();
+                        let group_count = result.groups.len();
+                        let summary = format!(
+                            "Successfully imported {conn_count} connection(s) \
+                             and {group_count} group(s).\n\
+                             Connections will be added to \
+                             '{filename} Import' group."
+                        );
+                        result_label_clone.set_text(&summary);
+
+                        let details = Self::format_import_details(&result);
+                        result_details_clone.set_text(&details);
+
+                        *result_cell_clone.borrow_mut() = Some(result);
+                        stack_clone.set_visible_child_name("result");
+                        btn_clone.set_label("Done");
+                        btn_clone.set_sensitive(true);
+                    }
+                } else {
                     stack_clone.set_visible_child_name("source");
                     btn_clone.set_sensitive(true);
                 }

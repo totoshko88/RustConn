@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 use uuid::Uuid;
 
-use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
+use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType, SshAuthMethod};
 
 use super::{ExportFormat, ExportOptions, ExportResult, ExportResult2, ExportTarget};
 
@@ -114,6 +114,9 @@ impl AsbruExporter {
             ProtocolType::Vnc => "VNC",
             ProtocolType::Spice => "SPICE",
             ProtocolType::Telnet => "telnet",
+            ProtocolType::Serial => "serial",
+            ProtocolType::Sftp => "SFTP",
+            ProtocolType::Kubernetes => "kubernetes",
         };
         lines.push(format!("  method: \"{method}\""));
 
@@ -162,8 +165,20 @@ impl AsbruExporter {
             ProtocolConfig::Vnc(_)
             | ProtocolConfig::Spice(_)
             | ProtocolConfig::Telnet(_)
-            | ProtocolConfig::ZeroTrust(_) => {
-                // VNC, SPICE, Telnet, and ZeroTrust don't have additional fields
+            | ProtocolConfig::ZeroTrust(_)
+            | ProtocolConfig::Serial(_)
+            | ProtocolConfig::Kubernetes(_) => {
+                // VNC, SPICE, Telnet, ZeroTrust, Kubernetes don't have additional fields
+            }
+            ProtocolConfig::Sftp(ssh_config) => {
+                // SFTP reuses SSH config — export SSH auth fields
+                let auth_type = match ssh_config.auth_method {
+                    SshAuthMethod::Password => "userpassword",
+                    SshAuthMethod::PublicKey | SshAuthMethod::SecurityKey => "publickey",
+                    SshAuthMethod::Agent => "agent",
+                    SshAuthMethod::KeyboardInteractive => "keyboard-interactive",
+                };
+                lines.push(format!("  auth_type: \"{auth_type}\""));
             }
         }
 

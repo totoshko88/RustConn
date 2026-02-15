@@ -283,11 +283,14 @@ impl SearchEngine {
             "spice" => Ok(ProtocolType::Spice),
             "telnet" => Ok(ProtocolType::Telnet),
             "zerotrust" | "zt" => Ok(ProtocolType::ZeroTrust),
+            "serial" => Ok(ProtocolType::Serial),
+            "sftp" => Ok(ProtocolType::Sftp),
+            "kubernetes" | "k8s" => Ok(ProtocolType::Kubernetes),
             _ => Err(SearchError::InvalidOperator {
                 operator: "protocol".to_string(),
                 reason: format!(
                     "unknown protocol '{value}', expected ssh, rdp, vnc, \
-                     spice, telnet, or zerotrust"
+                     spice, telnet, zerotrust, serial, sftp, or kubernetes"
                 ),
             }),
         }
@@ -1017,6 +1020,11 @@ mod tests {
             ProtocolType::Vnc => Connection::new_vnc(name.to_string(), host.to_string(), 5900),
             ProtocolType::Spice => Connection::new_spice(name.to_string(), host.to_string(), 5900),
             ProtocolType::Telnet => Connection::new_telnet(name.to_string(), host.to_string(), 23),
+            ProtocolType::Serial => {
+                Connection::new_serial(name.to_string(), "/dev/ttyUSB0".to_string())
+            }
+            ProtocolType::Sftp => Connection::new_sftp(name.to_string(), host.to_string(), 22),
+            ProtocolType::Kubernetes => Connection::new_kubernetes(name.to_string()),
         };
         conn.id = Uuid::new_v4();
         conn

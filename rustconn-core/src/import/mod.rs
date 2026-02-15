@@ -7,6 +7,7 @@
 //! - Ansible inventory files
 //! - Royal TS rJSON files
 //! - MobaXterm session files
+//! - Virt-viewer (.vv) files (SPICE/VNC from libvirt, Proxmox VE)
 //!
 //! For large imports (more than 10 connections), use `BatchImporter` for
 //! efficient batch processing with progress reporting and cancellation support.
@@ -48,6 +49,7 @@ mod remmina;
 mod royalts;
 mod ssh_config;
 mod traits;
+mod vv;
 
 pub use ansible::AnsibleInventoryImporter;
 pub use asbru::AsbruImporter;
@@ -68,3 +70,4 @@ pub use ssh_config::SshConfigImporter;
 pub use traits::{
     ImportResult, ImportSource, ImportStatistics, SkippedEntry, SkippedField, SkippedFieldReason,
 };
+pub use vv::VirtViewerImporter;

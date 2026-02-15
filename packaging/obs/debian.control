@@ -23,11 +23,11 @@ Depends: ${shlibs:Depends}, ${misc:Depends},
          libvte-2.91-gtk4-0,
          libadwaita-1-0,
          openssh-client
-Recommends: freerdp2-x11, tigervnc-viewer, virt-viewer
-Description: Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Zero Trust)
+Recommends: freerdp2-x11, tigervnc-viewer, virt-viewer, picocom
+Description: Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Zero Trust)
  RustConn is a modern connection manager for Linux with a GTK4/Wayland-native
- interface. Manage SSH, RDP, VNC, SPICE, Telnet, and Zero Trust connections
- from a single application. All core protocols use embedded Rust
+ interface. Manage SSH, RDP, VNC, SPICE, Telnet, Serial, and Zero Trust
+ connections from a single application. All core protocols use embedded Rust
  implementations — no external dependencies required.
  .
  Protocols (embedded Rust implementations):
@@ -36,8 +36,12 @@ Description: Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, 
   - VNC via vnc-rs (embedded, with TigerVNC fallback)
   - SPICE via remote-viewer (external)
   - Telnet via external telnet client (port 23)
+  - Serial via picocom (RS-232/USB serial consoles)
   - Zero Trust: AWS SSM, GCP IAP, Azure Bastion, OCI Bastion,
     Cloudflare, Teleport, Tailscale, Boundary
+ .
+ File Transfer:
+  - SFTP file browser via system file manager (sftp:// URI, D-Bus portal)
  .
  Organization:
   - Groups, tags, and templates

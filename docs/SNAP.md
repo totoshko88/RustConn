@@ -48,9 +48,24 @@ RustConn uses embedded Rust implementations for protocols:
 | RDP | IronRDP | Embedded Rust client |
 | VNC | vnc-rs | Embedded Rust client |
 | Telnet | External `telnet` | VTE terminal session |
+| Serial | External `picocom` | VTE terminal session, requires `serial-port` interface |
 | SPICE | — | External only (see below) |
 
-No external protocol clients (xfreerdp, vncviewer) are needed for SSH, RDP, and VNC. Telnet requires the `telnet` client on the host.
+No external protocol clients (xfreerdp, vncviewer) are needed for SSH, RDP, and VNC. Telnet requires the `telnet` client on the host. Serial requires the `serial-port` interface to be connected.
+
+### Serial Console
+
+Serial connections use the bundled `picocom` client. Connect the `serial-port` interface to grant access to serial devices:
+
+```bash
+sudo snap connect rustconn:serial-port
+```
+
+Note: Your user must also be in the `dialout` group for serial device access:
+```bash
+sudo usermod -aG dialout $USER
+# Log out and back in for the change to take effect
+```
 
 ## External CLIs (Host-Installed)
 
@@ -203,6 +218,9 @@ Connect all commonly used interfaces at once:
 sudo snap connect rustconn:ssh-keys
 sudo snap connect rustconn:ssh-public-keys
 
+# Serial console
+sudo snap connect rustconn:serial-port
+
 # Zero Trust (connect only what you use)
 sudo snap connect rustconn:host-aws-cli
 sudo snap connect rustconn:aws-credentials
@@ -253,6 +271,7 @@ Due to snap confinement, RustConn stores data in snap-specific locations:
 | Setup | Manual interfaces | Automatic | None needed |
 | SSH/RDP/VNC | ✅ Embedded | ✅ Embedded | ✅ Embedded |
 | Telnet | Host CLI | ✅ Bundled (inetutils) | ✅ Host CLI |
+| Serial | ✅ Bundled (picocom) | ✅ Bundled (picocom) | ✅ Host CLI |
 | SPICE | Host CLI | ✅ Via Flatpak Components | ✅ Host CLI |
 | Zero Trust | Host CLIs | ✅ Via Flatpak Components | ✅ Host CLIs |
 | Password CLIs | Host CLIs | ✅ Via Flatpak Components | ✅ Host CLIs |

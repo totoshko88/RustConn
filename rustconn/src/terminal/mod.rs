@@ -234,6 +234,7 @@ impl TerminalNotebook {
             "vnc" => "video-display-symbolic",
             "spice" => "video-x-generic-symbolic",
             "telnet" => "call-start-symbolic",
+            "serial" => "phone-symbolic",
             _ => "network-server-symbolic",
         }
     }
@@ -649,22 +650,38 @@ impl TerminalNotebook {
         let argv_gstr: Vec<glib::GString> = argv.iter().map(|s| glib::GString::from(*s)).collect();
         let argv_refs: Vec<&str> = argv_gstr.iter().map(gtk4::glib::GString::as_str).collect();
 
-        // Build environment with extended PATH for Flatpak CLI tools
+        // Inherit the current process environment so that child
+        // processes see SSH_AUTH_SOCK, HOME, TERM, DISPLAY, etc.
+        // Then override PATH with our extended version (Flatpak CLI
+        // tools) and layer any caller-provided variables on top.
         let extended_path = rustconn_core::cli_download::get_extended_path();
-        let path_env = format!("PATH={extended_path}");
 
-        // Combine user-provided env with our PATH extension
         let mut env_vec: Vec<glib::GString> = Vec::new();
 
-        // Add extended PATH first
-        env_vec.push(glib::GString::from(path_env.as_str()));
+        // Start with the full parent environment
+        for (key, value) in std::env::vars() {
+            if key == "PATH" {
+                // Replace PATH with our extended version
+                env_vec.push(glib::GString::from(format!("PATH={extended_path}")));
+            } else {
+                env_vec.push(glib::GString::from(format!("{key}={value}")));
+            }
+        }
 
-        // Add user-provided environment variables (except PATH which we already set)
+        // If PATH wasn't in the parent env, add it explicitly
+        if std::env::var("PATH").is_err() {
+            env_vec.push(glib::GString::from(format!("PATH={extended_path}")));
+        }
+
+        // Layer caller-provided variables (override parent values)
         if let Some(user_env) = envv {
             for e in user_env {
-                if !e.starts_with("PATH=") {
-                    env_vec.push(glib::GString::from(*e));
+                // Remove any existing entry with the same key
+                if let Some(eq_pos) = e.find('=') {
+                    let key_prefix = &e[..=eq_pos];
+                    env_vec.retain(|existing| !existing.starts_with(key_prefix));
                 }
+                env_vec.push(glib::GString::from(*e));
             }
         }
 
@@ -774,6 +791,15 @@ impl TerminalNotebook {
         argv.push(host);
         let port_str = port.to_string();
         argv.push(&port_str);
+        self.spawn_command(session_id, &argv, None, None)
+    }
+
+    /// Spawns a serial connection using picocom in the terminal tab.
+    ///
+    /// Builds the picocom command from the `SerialConfig` and spawns it
+    /// directly in the VTE terminal (no shell wrapper).
+    pub fn spawn_serial(&self, session_id: Uuid, command: &[String]) -> bool {
+        let argv: Vec<&str> = command.iter().map(String::as_str).collect();
         self.spawn_command(session_id, &argv, None, None)
     }
 

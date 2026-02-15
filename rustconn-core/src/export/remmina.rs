@@ -58,6 +58,16 @@ impl RemminaExporter {
             ProtocolType::ZeroTrust => {
                 return Err(ExportError::UnsupportedProtocol("ZeroTrust".to_string()));
             }
+            ProtocolType::Serial => {
+                return Err(ExportError::UnsupportedProtocol("Serial".to_string()));
+            }
+            ProtocolType::Sftp => {
+                // Export SFTP as SSH with SFTP protocol marker
+                Self::write_ssh_fields(&mut output, connection);
+            }
+            ProtocolType::Kubernetes => {
+                return Err(ExportError::UnsupportedProtocol("Kubernetes".to_string()));
+            }
         }
 
         Ok(output)

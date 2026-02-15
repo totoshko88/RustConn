@@ -120,13 +120,15 @@ impl TemplateDialog {
         let window = adw::Window::builder()
             .title("New Template")
             .modal(true)
-            .default_width(750)
-            .default_height(650)
+            .default_width(600)
+            .default_height(500)
             .build();
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
         }
+
+        window.set_size_request(350, 300);
 
         // Create header bar with Close/Create buttons (GNOME HIG)
         let header = adw::HeaderBar::new();
@@ -2254,6 +2256,7 @@ impl TemplateDialog {
                 Some(startup_command.into())
             },
             custom_options: std::collections::HashMap::new(),
+            sftp_enabled: true,
         };
 
         if !custom_options_text.is_empty() {
@@ -2549,6 +2552,9 @@ impl TemplateDialog {
             ProtocolType::Spice => 3,
             ProtocolType::ZeroTrust => 4,
             ProtocolType::Telnet => 5,
+            ProtocolType::Serial => 6,
+            ProtocolType::Sftp => 7,
+            ProtocolType::Kubernetes => 8,
         };
         self.protocol_dropdown.set_selected(protocol_idx);
         self.protocol_stack
@@ -2557,6 +2563,7 @@ impl TemplateDialog {
                 2 => "vnc",
                 3 => "spice",
                 4 => "zerotrust",
+                6 => "serial",
                 _ => "ssh",
             });
 
@@ -2585,6 +2592,9 @@ impl TemplateDialog {
             ProtocolConfig::Spice(spice) => self.load_spice_config(spice),
             ProtocolConfig::ZeroTrust(zt) => self.load_zerotrust_config(zt),
             ProtocolConfig::Telnet(_) => {} // No Telnet-specific config to load
+            ProtocolConfig::Serial(_) => {} // No Serial-specific config to load
+            ProtocolConfig::Sftp(ssh) => self.load_ssh_config(ssh),
+            ProtocolConfig::Kubernetes(_) => {} // No Kubernetes-specific template config
         }
     }
 
@@ -2822,13 +2832,15 @@ impl TemplateManagerDialog {
         let window = adw::Window::builder()
             .title("Manage Templates")
             .modal(true)
-            .default_width(750)
-            .default_height(500)
+            .default_width(500)
+            .default_height(400)
             .build();
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
         }
+
+        window.set_size_request(320, 280);
 
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
@@ -2848,11 +2860,18 @@ impl TemplateManagerDialog {
             window_clone.close();
         });
 
+        let clamp = adw::Clamp::builder()
+            .maximum_size(600)
+            .tightening_threshold(400)
+            .build();
+
         let content = GtkBox::new(Orientation::Vertical, 8);
         content.set_margin_top(12);
         content.set_margin_bottom(12);
         content.set_margin_start(12);
         content.set_margin_end(12);
+
+        clamp.set_child(Some(&content));
 
         let filter_box = GtkBox::new(Orientation::Horizontal, 8);
         let filter_label = Label::new(Some("Filter by protocol:"));
@@ -2894,7 +2913,7 @@ impl TemplateManagerDialog {
         // Use ToolbarView for adw::Window
         let main_box = GtkBox::new(Orientation::Vertical, 0);
         main_box.append(&header);
-        main_box.append(&content);
+        main_box.append(&clamp);
         window.set_content(Some(&main_box));
 
         let state_templates: Rc<RefCell<Vec<ConnectionTemplate>>> =
@@ -3048,6 +3067,12 @@ impl TemplateManagerDialog {
                 ProtocolType::Rdp => rdp_templates.push(template),
                 ProtocolType::Vnc => vnc_templates.push(template),
                 ProtocolType::Spice => spice_templates.push(template),
+                ProtocolType::Serial | ProtocolType::Sftp => {
+                    ssh_templates.push(template);
+                }
+                ProtocolType::Kubernetes => {
+                    ssh_templates.push(template);
+                }
             }
         }
 
@@ -3111,6 +3136,9 @@ impl TemplateManagerDialog {
             ProtocolType::Spice => "video-display-symbolic",
             ProtocolType::ZeroTrust => "cloud-symbolic",
             ProtocolType::Telnet => "call-start-symbolic",
+            ProtocolType::Serial => "modem-symbolic",
+            ProtocolType::Sftp => "folder-remote-symbolic",
+            ProtocolType::Kubernetes => "application-x-executable-symbolic",
         };
         let icon = gtk4::Image::from_icon_name(icon_name);
         hbox.append(&icon);

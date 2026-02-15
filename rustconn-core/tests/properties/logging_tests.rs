@@ -278,6 +278,7 @@ proptest! {
 
         let config = LogConfig::new(log_path.to_string_lossy().to_string())
             .with_enabled(true)
+            .with_log_timestamps(true)
             .with_timestamp_format(format.clone());
 
         let context = LogContext::new(&connection_name, &protocol);
@@ -411,6 +412,7 @@ fn test_timestamp_in_log_output() {
 
     let config = LogConfig::new(log_path.to_string_lossy().to_string())
         .with_enabled(true)
+        .with_log_timestamps(true)
         .with_timestamp_format("%Y-%m-%d");
 
     let context = LogContext::new("test", "ssh");

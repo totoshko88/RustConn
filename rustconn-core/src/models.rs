@@ -20,9 +20,10 @@ pub use history::{ConnectionHistoryEntry, ConnectionStatistics, HistorySettings}
 pub use protocol::ProtocolType;
 pub use protocol::{
     AwsSsmConfig, AzureBastionConfig, AzureSshConfig, BoundaryConfig, CloudflareAccessConfig,
-    GcpIapConfig, GenericZeroTrustConfig, OciBastionConfig, ProtocolConfig, RdpClientMode,
-    RdpConfig, RdpGateway, RdpPerformanceMode, Resolution, SharedFolder, SpiceConfig,
-    SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, TailscaleSshConfig,
+    GcpIapConfig, GenericZeroTrustConfig, KubernetesConfig, OciBastionConfig, ProtocolConfig,
+    RdpClientMode, RdpConfig, RdpGateway, RdpPerformanceMode, Resolution, SerialBaudRate,
+    SerialConfig, SerialDataBits, SerialFlowControl, SerialParity, SerialStopBits, SharedFolder,
+    SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, TailscaleSshConfig,
     TeleportConfig, TelnetBackspaceSends, TelnetConfig, TelnetDeleteSends, VncClientMode,
     VncConfig, VncPerformanceMode, ZeroTrustConfig, ZeroTrustProvider, ZeroTrustProviderConfig,
 };

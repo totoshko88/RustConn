@@ -79,7 +79,7 @@ pub struct ConnectionSidebar {
     pending_search_query: Rc<RefCell<Option<String>>>,
     /// Saved tree state before search (for restoration when search is cleared)
     pre_search_state: Rc<RefCell<Option<TreeState>>>,
-    /// Active protocol filters (SSH, RDP, VNC, SPICE)
+    /// Active protocol filters (SSH, RDP, VNC, SPICE, Telnet, Serial, ZeroTrust, Kubernetes)
     active_protocol_filters: Rc<RefCell<HashSet<String>>>,
     /// Quick filter buttons for protocol filtering
     protocol_filter_buttons: Rc<RefCell<std::collections::HashMap<String, Button>>>,
@@ -134,12 +134,17 @@ impl ConnectionSidebar {
 
         search_box.append(&help_button);
 
-        // Quick Filter buttons - compact spacing per GNOME HIG
-        let filter_box = GtkBox::new(Orientation::Horizontal, 2);
-        filter_box.set_margin_start(6);
-        filter_box.set_margin_end(6);
-        filter_box.set_margin_bottom(4);
-        filter_box.add_css_class("linked");
+        // Quick Filter bar: filters left (expand to fill), Shell pinned right
+        let filter_box = GtkBox::new(Orientation::Horizontal, 4);
+        filter_box.set_margin_start(4);
+        filter_box.set_margin_end(4);
+        filter_box.set_margin_bottom(2);
+
+        // Protocol filter group — linked buttons that expand evenly
+        let protocol_group = GtkBox::new(Orientation::Horizontal, 0);
+        protocol_group.add_css_class("linked");
+        protocol_group.set_hexpand(true);
+        protocol_group.set_halign(gtk4::Align::Fill);
 
         // Protocol filter buttons with icons - using helper function
         let ssh_filter = filter::create_filter_button(
@@ -147,30 +152,54 @@ impl ConnectionSidebar {
             "network-server-symbolic",
             "Filter SSH connections",
         );
+        ssh_filter.set_hexpand(true);
         let rdp_filter =
             filter::create_filter_button("RDP", "computer-symbolic", "Filter RDP connections");
+        rdp_filter.set_hexpand(true);
         let vnc_filter =
             filter::create_filter_button("VNC", "video-display-symbolic", "Filter VNC connections");
+        vnc_filter.set_hexpand(true);
         let spice_filter = filter::create_filter_button(
             "SPICE",
             "video-x-generic-symbolic",
             "Filter SPICE connections",
         );
+        spice_filter.set_hexpand(true);
         let telnet_filter = filter::create_filter_button(
             "Telnet",
             "call-start-symbolic",
             "Filter Telnet connections",
         );
+        telnet_filter.set_hexpand(true);
+        let serial_filter =
+            filter::create_filter_button("Serial", "phone-symbolic", "Filter Serial connections");
+        serial_filter.set_hexpand(true);
         let zerotrust_filter = filter::create_filter_button(
             "ZeroTrust",
             "folder-remote-symbolic",
             "Filter ZeroTrust connections",
         );
         zerotrust_filter.add_css_class("filter-button");
+        zerotrust_filter.set_hexpand(true);
+        let kubernetes_filter = filter::create_filter_button(
+            "K8s",
+            "application-x-executable-symbolic",
+            "Filter Kubernetes connections",
+        );
+        kubernetes_filter.set_hexpand(true);
 
-        // Local Shell button - distinct style (not a filter, opens local terminal)
+        protocol_group.append(&ssh_filter);
+        protocol_group.append(&rdp_filter);
+        protocol_group.append(&vnc_filter);
+        protocol_group.append(&spice_filter);
+        protocol_group.append(&telnet_filter);
+        protocol_group.append(&serial_filter);
+        protocol_group.append(&zerotrust_filter);
+        protocol_group.append(&kubernetes_filter);
+
+        // Local Shell button — pinned to the right, icon + label, pill style
         let local_shell_btn = Button::new();
-        let shell_box = GtkBox::new(Orientation::Horizontal, 6);
+        let shell_box = GtkBox::new(Orientation::Horizontal, 4);
         let shell_icon = gtk4::Image::from_icon_name("utilities-terminal-symbolic");
         shell_icon.set_pixel_size(16);
         let shell_label = Label::new(Some("Shell"));
@@ -181,13 +210,9 @@ impl ConnectionSidebar {
         local_shell_btn.set_action_name(Some("win.local-shell"));
         local_shell_btn.add_css_class("suggested-action");
         local_shell_btn.add_css_class("pill");
+        local_shell_btn.set_halign(gtk4::Align::End);
 
-        filter_box.append(&ssh_filter);
-        filter_box.append(&rdp_filter);
-        filter_box.append(&vnc_filter);
-        filter_box.append(&spice_filter);
-        filter_box.append(&telnet_filter);
-        filter_box.append(&zerotrust_filter);
+        filter_box.append(&protocol_group);
         filter_box.append(&local_shell_btn);
 
         // Store filter buttons for later reference
@@ -209,7 +234,13 @@ impl ConnectionSidebar {
             .insert("Telnet".to_string(), telnet_filter.clone());
         protocol_filter_buttons
             .borrow_mut()
+            .insert("Serial".to_string(), serial_filter.clone());
+        protocol_filter_buttons
+            .borrow_mut()
             .insert("ZeroTrust".to_string(), zerotrust_filter.clone());
+        protocol_filter_buttons
+            .borrow_mut()
+            .insert("Kubernetes".to_string(), kubernetes_filter.clone());
 
         // Active protocol filters state
         let active_protocol_filters = Rc::new(RefCell::new(HashSet::new()));
@@ -218,12 +249,16 @@ impl ConnectionSidebar {
         let programmatic_flag = Rc::new(RefCell::new(false));
 
         // Setup filter button handlers using helper function
+        // Each handler pins the sidebar width before toggling so the panel
+        // does not shrink/grow when the filtered item count changes.
         {
             let filters = active_protocol_filters.clone();
             let buttons = protocol_filter_buttons.clone();
             let entry = search_entry.clone();
             let flag = programmatic_flag.clone();
+            let ctr = container.clone();
             filter::connect_filter_button(&ssh_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
                 search::toggle_protocol_filter("SSH", btn, &filters, &buttons, &entry, &flag);
             });
         }
@@ -232,7 +267,9 @@ impl ConnectionSidebar {
             let buttons = protocol_filter_buttons.clone();
             let entry = search_entry.clone();
             let flag = programmatic_flag.clone();
+            let ctr = container.clone();
             filter::connect_filter_button(&rdp_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
                 search::toggle_protocol_filter("RDP", btn, &filters, &buttons, &entry, &flag);
             });
         }
@@ -241,7 +278,9 @@ impl ConnectionSidebar {
             let buttons = protocol_filter_buttons.clone();
             let entry = search_entry.clone();
             let flag = programmatic_flag.clone();
+            let ctr = container.clone();
             filter::connect_filter_button(&vnc_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
                 search::toggle_protocol_filter("VNC", btn, &filters, &buttons, &entry, &flag);
             });
         }
@@ -250,7 +289,9 @@ impl ConnectionSidebar {
             let buttons = protocol_filter_buttons.clone();
             let entry = search_entry.clone();
             let flag = programmatic_flag.clone();
+            let ctr = container.clone();
             filter::connect_filter_button(&spice_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
                 search::toggle_protocol_filter("SPICE", btn, &filters, &buttons, &entry, &flag);
             });
         }
@@ -259,7 +300,9 @@ impl ConnectionSidebar {
             let buttons = protocol_filter_buttons.clone();
             let entry = search_entry.clone();
             let flag = programmatic_flag.clone();
+            let ctr = container.clone();
             filter::connect_filter_button(&telnet_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
                 search::toggle_protocol_filter("Telnet", btn, &filters, &buttons, &entry, &flag);
             });
         }
@@ -268,8 +311,39 @@ impl ConnectionSidebar {
             let buttons = protocol_filter_buttons.clone();
             let entry = search_entry.clone();
             let flag = programmatic_flag.clone();
+            let ctr = container.clone();
+            filter::connect_filter_button(&serial_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
+                search::toggle_protocol_filter("Serial", btn, &filters, &buttons, &entry, &flag);
+            });
+        }
+        {
+            let filters = active_protocol_filters.clone();
+            let buttons = protocol_filter_buttons.clone();
+            let entry = search_entry.clone();
+            let flag = programmatic_flag.clone();
+            let ctr = container.clone();
             filter::connect_filter_button(&zerotrust_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
                 search::toggle_protocol_filter("ZeroTrust", btn, &filters, &buttons, &entry, &flag);
+            });
+        }
+        {
+            let filters = active_protocol_filters.clone();
+            let buttons = protocol_filter_buttons.clone();
+            let entry = search_entry.clone();
+            let flag = programmatic_flag.clone();
+            let ctr = container.clone();
+            filter::connect_filter_button(&kubernetes_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
+                search::toggle_protocol_filter(
+                    "Kubernetes",
+                    btn,
+                    &filters,
+                    &buttons,
+                    &entry,
+                    &flag,
+                );
             });
         }
 

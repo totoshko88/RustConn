@@ -74,6 +74,8 @@ pub struct LogConfig {
     pub log_input: bool,
     /// Log full terminal output (transcript)
     pub log_output: bool,
+    /// Prepend `[HH:MM:SS]` timestamps to each log line
+    pub log_timestamps: bool,
 }
 
 impl Default for LogConfig {
@@ -89,6 +91,7 @@ impl Default for LogConfig {
             log_activity: true,
             log_input: false,
             log_output: false,
+            log_timestamps: false,
         }
     }
 }
@@ -153,6 +156,13 @@ impl LogConfig {
         self
     }
 
+    /// Sets whether to prepend timestamps to each log line
+    #[must_use]
+    pub const fn with_log_timestamps(mut self, enabled: bool) -> Self {
+        self.log_timestamps = enabled;
+        self
+    }
+
     /// Validates the configuration
     ///
     /// # Errors
@@ -175,7 +185,7 @@ impl serde::Serialize for LogConfig {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut state = serializer.serialize_struct("LogConfig", 8)?;
+        let mut state = serializer.serialize_struct("LogConfig", 9)?;
         state.serialize_field("enabled", &self.enabled)?;
         state.serialize_field("path_template", &self.path_template)?;
         state.serialize_field("timestamp_format", &self.timestamp_format)?;
@@ -184,6 +194,7 @@ impl serde::Serialize for LogConfig {
         state.serialize_field("log_activity", &self.log_activity)?;
         state.serialize_field("log_input", &self.log_input)?;
         state.serialize_field("log_output", &self.log_output)?;
+        state.serialize_field("log_timestamps", &self.log_timestamps)?;
         state.end()
     }
 }
@@ -207,6 +218,8 @@ impl<'de> serde::Deserialize<'de> for LogConfig {
             log_input: bool,
             #[serde(default)]
             log_output: bool,
+            #[serde(default)]
+            log_timestamps: bool,
         }
 
         fn default_log_activity() -> bool {
@@ -223,6 +236,7 @@ impl<'de> serde::Deserialize<'de> for LogConfig {
             log_activity: helper.log_activity,
             log_input: helper.log_input,
             log_output: helper.log_output,
+            log_timestamps: helper.log_timestamps,
         })
     }
 }
@@ -468,12 +482,16 @@ impl SessionLogger {
         // Check if rotation is needed before writing
         self.rotate_if_needed()?;
 
-        // Write timestamp prefix for each line
-        let timestamp = self.current_timestamp();
+        // Write lines, optionally with timestamp prefix
         let data_str = String::from_utf8_lossy(data);
 
         for line in data_str.lines() {
-            let formatted = format!("[{timestamp}] {line}\n");
+            let formatted = if self.config.log_timestamps {
+                let timestamp = self.current_timestamp();
+                format!("[{timestamp}] {line}\n")
+            } else {
+                format!("{line}\n")
+            };
             let bytes = formatted.as_bytes();
 
             // Get writer (may have changed after rotation)
@@ -1017,7 +1035,9 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let log_path = temp_dir.path().join("test.log");
 
-        let config = LogConfig::new(log_path.to_string_lossy().to_string()).with_enabled(true);
+        let config = LogConfig::new(log_path.to_string_lossy().to_string())
+            .with_enabled(true)
+            .with_log_timestamps(true);
         let log_ctx = LogContext::new("test", "ssh");
 
         let mut logger = SessionLogger::new(config, &log_ctx, None).unwrap();

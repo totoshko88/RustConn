@@ -62,14 +62,16 @@ impl FlatpakComponentsDialog {
 
         let window = adw::Window::builder()
             .title("Flatpak Components")
-            .default_width(600)
-            .default_height(700)
+            .default_width(500)
+            .default_height(500)
             .modal(true)
             .build();
 
         if let Some(parent) = parent {
             window.set_transient_for(Some(parent));
         }
+
+        window.set_size_request(320, 280);
 
         let toast_overlay = adw::ToastOverlay::new();
         let component_rows = Rc::new(RefCell::new(Vec::new()));
@@ -159,6 +161,15 @@ impl FlatpakComponentsDialog {
             component_rows,
         );
         inner.append(&password_group);
+
+        // Container orchestration section
+        let k8s_group = Self::build_category_group(
+            "Container Orchestration",
+            "Required for Kubernetes pod shell connections",
+            ComponentCategory::ContainerOrchestration,
+            component_rows,
+        );
+        inner.append(&k8s_group);
 
         clamp.set_child(Some(&inner));
         scrolled.set_child(Some(&clamp));

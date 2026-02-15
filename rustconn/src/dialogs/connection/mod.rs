@@ -16,9 +16,11 @@
 //! and Window instead of Dialog.
 
 mod dialog;
+pub mod kubernetes;
 mod logging_tab;
 mod protocol_layout;
 mod rdp;
+pub mod serial;
 mod shared_folders;
 mod spice;
 mod ssh;

@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-02-15
+
+### Added
+- **Kubernetes Protocol** — Shell access to Kubernetes pods via `kubectl exec -it` ([#14](https://github.com/totoshko88/RustConn/issues/14)):
+  - `KubernetesConfig` model with kubeconfig, context, namespace, pod, container, shell, busybox toggle
+  - `KubernetesProtocol` implementing `Protocol` trait in `rustconn-core`
+  - Two modes: exec into existing pod, or launch temporary busybox pod
+  - GUI: Connection dialog Kubernetes tab, sidebar K8s quick filter, `application-x-executable-symbolic` icon
+  - CLI: `kubernetes` subcommand with `--kubeconfig`/`--context`/`--namespace`/`--pod`/`--container`/`--shell`/`--busybox`
+  - Sandbox: kubectl as Flatpak downloadable component
+  - Property tests updated with Kubernetes coverage
+- **Virt-Viewer (.vv) Import** — Import SPICE/VNC connections from virt-viewer files ([#13](https://github.com/totoshko88/RustConn/issues/13)):
+  - `VirtViewerImporter` implementing `ImportSource` trait in `rustconn-core`
+  - Parses `[virt-viewer]` INI sections: host, port, tls-port, password, proxy, CA cert, title
+  - Supports `type=spice` (with TLS detection) and `type=vnc`
+  - Passwords stored as `SecretString` via `Credentials`, proxy/host-subject preserved as tags
+  - GUI: "Virt-Viewer (.vv)" option in Import dialog with `.vv` file filter
+  - Compatible with libvirt, Proxmox VE, and oVirt generated `.vv` files
+- **Serial Console Protocol** — Full serial console support via `picocom` ([#11](https://github.com/totoshko88/RustConn/issues/11)):
+  - `SerialConfig` model with device path, baud rate (9600–921600), data bits, stop bits, parity, flow control
+  - GUI: Connection dialog Serial tab, VTE terminal sessions, `phone-symbolic` icon
+  - CLI: `serial` subcommand with `--device`/`--baud-rate`/`--data-bits`/`--stop-bits`/`--parity`/`--flow-control`
+  - Sandbox: Flatpak `--device=all` + bundled `picocom`; Snap `serial-port` plug + bundled `picocom`
+  - Property tests: 13 serial-specific tests
+- **SFTP File Browser** — SFTP integration for SSH and standalone SFTP connections ([#10](https://github.com/totoshko88/RustConn/issues/10)):
+  - "Open SFTP" action in sidebar context menu and SSH session toolbar — opens system file manager via `gtk::UriLauncher` (portal-aware, works in Flatpak/Snap/native)
+  - "SFTP via mc" option — opens Midnight Commander with FISH VFS panel
+  - Automatic `ssh-add` before SFTP launch for key-based auth
+  - Standalone `ProtocolType::Sftp` — dedicated SFTP connection type reusing SSH config
+  - CLI: `sftp` subcommand (`--cli`, `--mc`, default opens file manager)
+  - Sandbox: Flatpak/Snap bundle Midnight Commander
+- **Responsive / Adaptive UI** — Improved dialog sizing and window breakpoints ([#9](https://github.com/totoshko88/RustConn/issues/9)):
+  - All 17+ dialogs: reduced default sizes, added minimum sizes via `set_size_request()`, all resizable
+  - `adw::Clamp` (max 600px) added to 7 list-style dialogs for consistent content width
+  - Dashboard and Active Sessions upgraded to `adw::Window` with `adw::ToolbarView`
+  - Main window breakpoint 600sp: hides split view buttons on narrow windows
+- **Terminal Rich Search** — Enhanced terminal search with regex and highlights ([#7](https://github.com/totoshko88/RustConn/issues/7)):
+  - Regex toggle, "Highlight All" toggle, case-sensitive toggle, wrap-around navigation
+  - Keyboard shortcut: Ctrl+Shift+F
+  - Session log timestamps: `log_timestamps` setting prepends `[HH:MM:SS]` to each log line
+
+### Changed
+- **Session Logging moved to Logging tab** — Timestamps toggle relocated from Settings → Terminal to Settings → Logging for better discoverability
+
 ## [0.8.4] - 2026-02-14
 
 ### Added

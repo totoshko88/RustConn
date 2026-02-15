@@ -59,12 +59,13 @@ impl NewDocumentDialog {
             .title("New Document")
             .modal(true)
             .default_width(400)
-            .resizable(false)
             .build();
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
         }
+
+        window.set_size_request(280, -1);
 
         // Header bar with Cancel/Create buttons (GNOME HIG)
         let header = adw::HeaderBar::new();
@@ -310,12 +311,13 @@ impl OpenDocumentDialog {
             .title("Enter Password")
             .modal(true)
             .default_width(350)
-            .resizable(false)
             .build();
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
         }
+
+        window.set_size_request(280, -1);
 
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
@@ -543,12 +545,13 @@ impl DocumentProtectionDialog {
             .title("Document Protection")
             .modal(true)
             .default_width(400)
-            .resizable(false)
             .build();
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
         }
+
+        window.set_size_request(280, -1);
 
         // Header bar with Cancel/Apply buttons (GNOME HIG)
         let header = adw::HeaderBar::new();

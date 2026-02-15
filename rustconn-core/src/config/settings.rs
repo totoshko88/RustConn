@@ -71,6 +71,12 @@ pub struct TerminalSettings {
     /// Audible bell
     #[serde(default = "default_audible_bell")]
     pub audible_bell: bool,
+    /// Prepend timestamps to session log lines
+    #[serde(default)]
+    pub log_timestamps: bool,
+    /// Open SFTP via Midnight Commander in local shell
+    #[serde(default)]
+    pub sftp_use_mc: bool,
 }
 
 fn default_font_family() -> String {
@@ -131,6 +137,8 @@ impl Default for TerminalSettings {
             allow_hyperlinks: default_allow_hyperlinks(),
             mouse_autohide: default_mouse_autohide(),
             audible_bell: default_audible_bell(),
+            log_timestamps: false,
+            sftp_use_mc: false,
         }
     }
 }

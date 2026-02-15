@@ -20,14 +20,16 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
     let window = adw::Window::builder()
         .title("Password Generator")
         .modal(true)
-        .default_width(750)
-        .default_height(650)
+        .default_width(600)
+        .default_height(500)
         .resizable(true)
         .build();
 
     if let Some(p) = parent {
         window.set_transient_for(Some(p));
     }
+
+    window.set_size_request(350, 300);
 
     // Header bar with Close/Copy buttons (GNOME HIG)
     let header = adw::HeaderBar::new();

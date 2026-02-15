@@ -202,6 +202,7 @@ impl SshConfigImporter {
             compression,
             custom_options: self.extract_recognized_options(options),
             startup_command: None,
+            sftp_enabled: false,
         };
 
         // Create connection

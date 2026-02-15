@@ -11,6 +11,8 @@ use gtk4::{
     Box as GtkBox, Button, DropDown, FlowBox, Frame, Label, Orientation, PolicyType,
     ScrolledWindow, SelectionMode, StringList,
 };
+use libadwaita as adw;
+use libadwaita::prelude::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 use uuid::Uuid;
@@ -623,13 +625,15 @@ pub fn show_dashboard_dialog(
     focus_callback: impl Fn(Uuid) + 'static,
     disconnect_callback: impl Fn(Uuid) + 'static,
 ) {
-    let dialog = gtk4::Window::builder()
+    let dialog = adw::Window::builder()
         .title("Connection Dashboard")
         .transient_for(parent)
         .modal(false)
         .default_width(800)
         .default_height(600)
         .build();
+
+    dialog.set_size_request(350, 300);
 
     let dashboard = ConnectionDashboard::new();
     dashboard.set_focus_callback(move |id| {
@@ -638,6 +642,6 @@ pub fn show_dashboard_dialog(
     dashboard.set_disconnect_callback(disconnect_callback);
     dashboard.update_sessions(sessions);
 
-    dialog.set_child(Some(dashboard.widget()));
+    dialog.set_content(Some(dashboard.widget()));
     dialog.present();
 }

@@ -28,12 +28,14 @@ impl WolDialog {
             .title("Wake On LAN")
             .modal(true)
             .default_width(500)
-            .default_height(420)
+            .default_height(400)
             .build();
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
         }
+
+        window.set_size_request(320, 280);
 
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
@@ -47,11 +49,18 @@ impl WolDialog {
         header.pack_start(&cancel_btn);
         header.pack_end(&send_btn);
 
+        let clamp = adw::Clamp::builder()
+            .maximum_size(600)
+            .tightening_threshold(400)
+            .build();
+
         let content = GtkBox::new(Orientation::Vertical, 12);
         content.set_margin_top(12);
         content.set_margin_bottom(12);
         content.set_margin_start(12);
         content.set_margin_end(12);
+
+        clamp.set_child(Some(&content));
 
         // Connection picker
         let conn_group = adw::PreferencesGroup::builder()
@@ -95,7 +104,7 @@ impl WolDialog {
 
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
-        toolbar_view.set_content(Some(&content));
+        toolbar_view.set_content(Some(&clamp));
         window.set_content(Some(&toolbar_view));
 
         let connections: Rc<RefCell<Vec<Connection>>> = Rc::new(RefCell::new(Vec::new()));

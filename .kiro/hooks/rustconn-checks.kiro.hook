@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "RustConn Quality Checks",
+  "description": "Після завершення роботи агента автоматично запускає cargo fmt, clippy та тести через сабагент. Виправляє помилки якщо знайдені.",
+  "version": "1",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Делегуй перевірки в general-task-execution сабагент з наступним промптом: \"Виконай послідовно в workspace root: 1) cargo fmt --check — якщо є помилки, запусти cargo fmt і повідом. 2) cargo clippy --all-targets — має бути 0 warnings, якщо є — покажи їх. 3) cargo test --workspace (timeout 90s) — покажи summary. Поверни короткий звіт: pass/fail для кожного кроку + помилки якщо є.\" Після отримання результату: якщо є помилки clippy — виправ їх і перезапусти перевірку. Якщо тести падають — повідом користувача."
+  }
+}

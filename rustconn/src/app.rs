@@ -535,8 +535,9 @@ fn load_css_styles() {
 
         /* Quick Filter button styles */
         .filter-button {
-            min-width: 48px;
-            padding: 4px 8px;
+            min-width: 24px;
+            min-height: 24px;
+            padding: 2px 4px;
             font-size: 0.9em;
             font-weight: 500;
         }
@@ -964,10 +965,27 @@ fn setup_app_actions(
 
 /// Shows the about dialog
 fn show_about_dialog(parent: &adw::ApplicationWindow) {
-    let description = "RustConn is a modern connection manager for Linux \
-with a GTK4/Wayland-native interface. Manage SSH, RDP, VNC, SPICE, Telnet, \
-and Zero Trust connections from a single application.\n\n\
-Developed by Anton Isaiev, 2024-2026";
+    let description = "Modern connection manager for Linux with a \
+GTK4/Wayland-native interface. Manage SSH, RDP, VNC, SPICE, Telnet, \
+Serial, Kubernetes, and Zero Trust connections from a single application.";
+
+    // Build debug info for troubleshooting
+    let debug_info = format!(
+        "RustConn {version}\n\
+         GTK {gtk_major}.{gtk_minor}.{gtk_micro}\n\
+         libadwaita {adw_major}.{adw_minor}.{adw_micro}\n\
+         Rust {rust_version}\n\
+         OS: {os}",
+        version = env!("CARGO_PKG_VERSION"),
+        gtk_major = gtk4::major_version(),
+        gtk_minor = gtk4::minor_version(),
+        gtk_micro = gtk4::micro_version(),
+        adw_major = adw::major_version(),
+        adw_minor = adw::minor_version(),
+        adw_micro = adw::micro_version(),
+        rust_version = env!("CARGO_PKG_RUST_VERSION"),
+        os = std::env::consts::OS,
+    );
 
     let about = adw::AboutDialog::builder()
         .application_name("RustConn")
@@ -976,53 +994,61 @@ Developed by Anton Isaiev, 2024-2026";
         .comments(description)
         .website("https://github.com/totoshko88/RustConn")
         .issue_url("https://github.com/totoshko88/rustconn/issues")
+        .support_url("https://ko-fi.com/totoshko88")
         .license_type(gtk4::License::Gpl30)
         .developers(vec!["Anton Isaiev <totoshko88@gmail.com>"])
         .copyright("© 2024-2026 Anton Isaiev")
         .application_icon("io.github.totoshko88.RustConn")
+        .translator_credits("Anton Isaiev (Ukrainian)")
+        .debug_info(&debug_info)
+        .debug_info_filename("rustconn-debug-info.txt")
         .build();
 
-    // Add documentation links
+    // Documentation & resources links
     about.add_link(
-        "📖 User Guide",
+        "User Guide",
         "https://github.com/totoshko88/RustConn/blob/main/docs/USER_GUIDE.md",
     );
     about.add_link(
-        "📦 Installation",
+        "Installation",
         "https://github.com/totoshko88/RustConn/blob/main/docs/INSTALL.md",
     );
     about.add_link(
-        "🚀 Releases",
+        "Releases",
         "https://github.com/totoshko88/RustConn/releases",
     );
     about.add_link(
-        "📜 License (GPL v3.0)",
-        "https://www.gnu.org/licenses/gpl-3.0.html",
+        "Changelog",
+        "https://github.com/totoshko88/RustConn/blob/main/CHANGELOG.md",
     );
 
-    // Add support/sponsorship information
-    about.add_credit_section(
-        Some("Support the Project"),
+    // Support/sponsorship links
+    about.add_link("Ko-Fi", "https://ko-fi.com/totoshko88");
+    about.add_link("PayPal", "https://www.paypal.com/paypalme/totoshko88");
+    about.add_link("Monobank", "https://send.monobank.ua/jar/2UgaGcQ3JC");
+
+    // Acknowledgments
+    about.add_acknowledgement_section(
+        Some("Special Thanks"),
         &[
-            "☕ Ko-Fi: https://ko-fi.com/totoshko88",
-            "💳 PayPal: https://www.paypal.com/paypalme/totoshko88",
-            "🇺🇦 Monobank: https://send.monobank.ua/jar/2UgaGcQ3JC",
+            "GTK4 and the GNOME project https://www.gtk.org",
+            "The Rust community https://www.rust-lang.org",
+            "IronRDP project https://github.com/Devolutions/IronRDP",
+            "FreeRDP project https://www.freerdp.com",
+            "Midnight Commander https://midnight-commander.org",
+            "virt-manager / virt-viewer https://virt-manager.org",
+            "TigerVNC project https://tigervnc.org",
+            "vnc-rs project https://github.com/niclas3640/vnc-rs",
+            "KeePassXC project https://keepassxc.org",
+            "VTE terminal library https://wiki.gnome.org/Apps/Terminal/VTE",
         ],
     );
-
-    about.add_credit_section(
-        Some("Acknowledgments"),
-        &[
-            "GTK4 and the GNOME project",
-            "The Rust community",
-            "IronRDP project",
-            "FreeRDP project",
-            "All contributors and supporters",
-            "Made with ❤️ in Ukraine 🇺🇦",
-        ],
+    about.add_acknowledgement_section(
+        Some("Made in Ukraine"),
+        &["All contributors and supporters"],
     );
 
-    // Add legal sections for key dependencies
+    // Legal sections for key dependencies
     about.add_legal_section(
         "GTK4, libadwaita & VTE",
         Some("© The GNOME Project"),

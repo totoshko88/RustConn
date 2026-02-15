@@ -227,6 +227,41 @@ impl MainWindow {
         breakpoint.add_setter(&overlay_split_view, "pin-sidebar", Some(&unpin_val));
         window.add_breakpoint(breakpoint);
 
+        // Breakpoint 600sp: hide split view buttons on medium-width windows
+        let bp_600_condition = adw::BreakpointCondition::new_length(
+            adw::BreakpointConditionLengthType::MaxWidth,
+            600.0,
+            adw::LengthUnit::Sp,
+        );
+        let bp_600 = adw::Breakpoint::new(bp_600_condition);
+        // Find split buttons in header bar and hide them at narrow widths
+        // The split buttons are the last two pack_end children
+        // We hide them via visible property
+        if let Some(split_h) = header_bar
+            .observe_children()
+            .into_iter()
+            .filter_map(|obj| obj.ok())
+            .filter_map(|obj| obj.downcast::<gtk4::Button>().ok())
+            .find(|btn| {
+                btn.action_name()
+                    .is_some_and(|a| a == "win.split-horizontal")
+            })
+        {
+            let hidden = false.to_value();
+            bp_600.add_setter(&split_h, "visible", Some(&hidden));
+        }
+        if let Some(split_v) = header_bar
+            .observe_children()
+            .into_iter()
+            .filter_map(|obj| obj.ok())
+            .filter_map(|obj| obj.downcast::<gtk4::Button>().ok())
+            .find(|btn| btn.action_name().is_some_and(|a| a == "win.split-vertical"))
+        {
+            let hidden = false.to_value();
+            bp_600.add_setter(&split_v, "visible", Some(&hidden));
+        }
+        window.add_breakpoint(bp_600);
+
         // Create external window manager
         let external_window_manager = Rc::new(ExternalWindowManager::new());
 
@@ -628,6 +663,372 @@ impl MainWindow {
             );
         });
         window.add_action(&wol_action);
+
+        // Open SFTP action — opens file manager or mc in local shell
+        let sftp_action = gio::SimpleAction::new("open-sftp", None);
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let toast_clone = self.toast_overlay.clone();
+        let notebook_clone = self.terminal_notebook.clone();
+        let split_view_clone = self.split_view.clone();
+        sftp_action.connect_activate(move |_, _| {
+            let Some(item) = sidebar_clone.get_selected_item() else {
+                return;
+            };
+            if item.is_group() {
+                return;
+            }
+            let id_str = item.id();
+            let Ok(conn_id) = Uuid::parse_str(&id_str) else {
+                return;
+            };
+            let state_ref = state_clone.borrow();
+            let Some(conn) = state_ref.get_connection(conn_id) else {
+                return;
+            };
+            let use_mc = state_ref.settings().terminal.sftp_use_mc;
+
+            // Ensure SSH key is in agent before SFTP (mc and
+            // file managers cannot pass identity files directly).
+            let key_path = rustconn_core::sftp::get_ssh_key_path(conn);
+
+            // Check if password auth — mc FISH doesn't support it
+            let uses_password = matches!(
+                &conn.protocol_config,
+                rustconn_core::models::ProtocolConfig::Ssh(cfg)
+                | rustconn_core::models::ProtocolConfig::Sftp(cfg)
+                    if matches!(
+                        cfg.auth_method,
+                        rustconn_core::models::SshAuthMethod::Password
+                            | rustconn_core::models::SshAuthMethod::KeyboardInteractive
+                    )
+            );
+
+            if use_mc {
+                // Open mc in a local shell tab with SFTP panel
+                let mc_cmd = rustconn_core::sftp::build_mc_sftp_command(conn);
+                let conn_name = conn.name.clone();
+                let terminal_settings = state_ref.settings().terminal.clone();
+                drop(state_ref);
+
+                let Some(mc_args) = mc_cmd else {
+                    toast_clone.show_warning("SFTP is only available for SSH connections.");
+                    return;
+                };
+
+                tracing::info!(?mc_args, "Opening SFTP via mc");
+
+                // Warn about password auth — mc FISH can't prompt
+                if uses_password && key_path.is_none() {
+                    toast_clone.show_warning(
+                        "mc requires SSH key in agent. \
+                         Password auth is not supported.",
+                    );
+                }
+
+                // Add SSH key to agent if configured
+                if let Some(ref kp) = key_path {
+                    if !rustconn_core::sftp::is_ssh_agent_available() {
+                        toast_clone.show_warning(
+                            "SSH agent not running. Run \
+                             'eval $(ssh-agent)' and retry.",
+                        );
+                    }
+                    tracing::info!(?kp, "Adding SSH key to agent for mc");
+                    match std::process::Command::new("ssh-add")
+                        .arg(kp)
+                        .stdin(std::process::Stdio::null())
+                        .stdout(std::process::Stdio::null())
+                        .stderr(std::process::Stdio::piped())
+                        .output()
+                    {
+                        Ok(output) if output.status.success() => {
+                            tracing::info!("SSH key added to agent for mc");
+                        }
+                        Ok(output) => {
+                            let stderr = String::from_utf8_lossy(&output.stderr);
+                            tracing::warn!(
+                                %stderr,
+                                "ssh-add failed — mc FISH may not authenticate"
+                            );
+                        }
+                        Err(e) => {
+                            tracing::error!(?e, "Failed to run ssh-add");
+                        }
+                    }
+                }
+
+                // Check mc availability
+                if std::process::Command::new("which")
+                    .arg("mc")
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .status()
+                    .map_or(true, |s| !s.success())
+                {
+                    toast_clone.show_error("Midnight Commander (mc) is not installed.");
+                    return;
+                }
+
+                toast_clone.show_toast("Opening mc SFTP...");
+
+                let tab_name = format!("mc: {conn_name}");
+                let session_id = notebook_clone.create_terminal_tab_with_settings(
+                    Uuid::nil(),
+                    &tab_name,
+                    "local",
+                    None,
+                    &terminal_settings,
+                );
+
+                let argv: Vec<&str> = mc_args.iter().map(String::as_str).collect();
+                notebook_clone.spawn_command(session_id, &argv, None, None);
+
+                if let Some(info) = notebook_clone.get_session_info(session_id) {
+                    split_view_clone.add_session(info, None);
+                }
+                split_view_clone.widget().set_visible(false);
+                split_view_clone.widget().set_vexpand(false);
+                notebook_clone.widget().set_vexpand(true);
+                notebook_clone.show_tab_view_content();
+            } else {
+                // Open file manager with sftp:// URI
+                let Some(uri) = rustconn_core::sftp::build_sftp_uri_from_connection(conn) else {
+                    toast_clone.show_warning("SFTP is only available for SSH connections.");
+                    drop(state_ref);
+                    return;
+                };
+                drop(state_ref);
+
+                tracing::info!(%uri, "Opening SFTP file browser");
+                toast_clone.show_toast("Opening SFTP...");
+
+                // Add SSH key to agent in background, then open URI
+                let toast_cb = toast_clone.clone();
+                let key_for_add = key_path.clone();
+
+                // ssh-add in background thread, then launch file
+                // manager as a direct subprocess (not via
+                // UriLauncher/D-Bus) so it inherits SSH_AUTH_SOCK.
+                let uri_clone = uri.clone();
+                crate::utils::spawn_blocking_with_callback(
+                    move || {
+                        // Add SSH key to agent if configured
+                        if let Some(ref kp) = key_for_add {
+                            if !rustconn_core::sftp::is_ssh_agent_available() {
+                                tracing::warn!(
+                                    "SSH agent not available; \
+                                     file manager may fail to authenticate"
+                                );
+                            }
+                            tracing::info!(?kp, "Adding SSH key to agent for SFTP");
+                            match std::process::Command::new("ssh-add")
+                                .arg(kp)
+                                .stdin(std::process::Stdio::null())
+                                .stdout(std::process::Stdio::null())
+                                .stderr(std::process::Stdio::piped())
+                                .output()
+                            {
+                                Ok(output) if output.status.success() => {
+                                    tracing::info!("SSH key added to agent");
+                                }
+                                Ok(output) => {
+                                    let stderr = String::from_utf8_lossy(&output.stderr);
+                                    tracing::warn!(
+                                        %stderr,
+                                        "ssh-add failed — file manager \
+                                         may not authenticate"
+                                    );
+                                }
+                                Err(e) => {
+                                    tracing::error!(?e, "Failed to run ssh-add");
+                                }
+                            }
+                        }
+                        rustconn_core::sftp::is_ssh_agent_available()
+                    },
+                    move |agent_ok| {
+                        // Launch file manager as a direct subprocess
+                        // so it inherits SSH_AUTH_SOCK. UriLauncher
+                        // goes through D-Bus/portal which may not
+                        // pass our env to an already-running Dolphin.
+                        Self::sftp_launch_file_manager(&uri_clone);
+                        if !agent_ok {
+                            toast_cb.show_warning(
+                                "SSH agent not running — file manager \
+                                 may not authenticate.",
+                            );
+                        }
+                    },
+                );
+            }
+        });
+        window.add_action(&sftp_action);
+    }
+
+    /// Launches a file manager for an `sftp://` URI as a direct
+    /// subprocess so it inherits `SSH_AUTH_SOCK`.
+    ///
+    /// On KDE, `xdg-open` may route through D-Bus to an
+    /// already-running Dolphin that doesn't have our env.
+    /// Launching `dolphin` directly as a child process ensures
+    /// the KIO sftp worker sees the ssh-agent socket.
+    ///
+    /// Tries: `dolphin` → `nautilus` → `xdg-open` (last resort).
+    fn sftp_launch_file_manager(uri: &str) {
+        // Try dolphin first (KDE) — direct child inherits env
+        let dolphin_ok = std::process::Command::new("dolphin")
+            .arg("--new-window")
+            .arg(uri)
+            .spawn()
+            .is_ok();
+        if dolphin_ok {
+            tracing::info!(%uri, "Launched dolphin for SFTP");
+            return;
+        }
+
+        // Try nautilus (GNOME)
+        let nautilus_ok = std::process::Command::new("nautilus")
+            .args(["--new-window", uri])
+            .spawn()
+            .is_ok();
+        if nautilus_ok {
+            tracing::info!(%uri, "Launched nautilus for SFTP");
+            return;
+        }
+
+        // Last resort — xdg-open (may go through D-Bus)
+        let xdg_ok = std::process::Command::new("xdg-open")
+            .arg(uri)
+            .spawn()
+            .is_ok();
+        if xdg_ok {
+            tracing::info!(%uri, "Launched xdg-open for SFTP");
+            return;
+        }
+
+        tracing::warn!(
+            %uri,
+            "No file manager found for SFTP URI"
+        );
+    }
+
+    /// Handles SFTP connection — opens file manager or mc
+    ///
+    /// Called when user clicks "Connect" on an SFTP-type connection.
+    /// Reuses the same logic as the `open-sftp` sidebar action.
+    fn handle_sftp_connect(
+        state: &SharedAppState,
+        notebook: &SharedNotebook,
+        split_view: Option<&SharedSplitView>,
+        connection_id: Uuid,
+    ) {
+        let state_ref = state.borrow();
+        let Some(conn) = state_ref.get_connection(connection_id) else {
+            return;
+        };
+        let use_mc = state_ref.settings().terminal.sftp_use_mc;
+        let key_path = rustconn_core::sftp::get_ssh_key_path(conn);
+
+        if use_mc {
+            let mc_cmd = rustconn_core::sftp::build_mc_sftp_command(conn);
+            let conn_name = conn.name.clone();
+            let terminal_settings = state_ref.settings().terminal.clone();
+            drop(state_ref);
+
+            let Some(mc_args) = mc_cmd else {
+                return;
+            };
+
+            tracing::info!(?mc_args, "SFTP connect: opening mc");
+
+            if let Some(ref kp) = key_path {
+                match std::process::Command::new("ssh-add")
+                    .arg(kp)
+                    .stdin(std::process::Stdio::null())
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::piped())
+                    .output()
+                {
+                    Ok(output) if output.status.success() => {
+                        tracing::info!(?kp, "SSH key added to agent");
+                    }
+                    Ok(output) => {
+                        let stderr = String::from_utf8_lossy(&output.stderr);
+                        tracing::warn!(?kp, %stderr, "ssh-add failed");
+                    }
+                    Err(e) => {
+                        tracing::error!(?e, "Failed to run ssh-add");
+                    }
+                }
+            }
+
+            let tab_name = format!("mc: {conn_name}");
+            let session_id = notebook.create_terminal_tab_with_settings(
+                Uuid::nil(),
+                &tab_name,
+                "local",
+                None,
+                &terminal_settings,
+            );
+
+            let argv: Vec<&str> = mc_args.iter().map(String::as_str).collect();
+            notebook.spawn_command(session_id, &argv, None, None);
+
+            if let Some(sv) = split_view {
+                if let Some(info) = notebook.get_session_info(session_id) {
+                    sv.add_session(info, None);
+                }
+                sv.widget().set_visible(false);
+                sv.widget().set_vexpand(false);
+            }
+            notebook.widget().set_vexpand(true);
+            notebook.show_tab_view_content();
+        } else {
+            let Some(uri) = rustconn_core::sftp::build_sftp_uri_from_connection(conn) else {
+                drop(state_ref);
+                return;
+            };
+            drop(state_ref);
+
+            tracing::info!(%uri, "SFTP connect: opening file browser");
+
+            let key_for_add = key_path.clone();
+            let uri_clone = uri.clone();
+            crate::utils::spawn_blocking_with_callback(
+                move || {
+                    if let Some(ref kp) = key_for_add {
+                        match std::process::Command::new("ssh-add")
+                            .arg(kp)
+                            .stdin(std::process::Stdio::null())
+                            .stdout(std::process::Stdio::null())
+                            .stderr(std::process::Stdio::piped())
+                            .output()
+                        {
+                            Ok(output) if output.status.success() => {
+                                tracing::info!(?kp, "SSH key added to agent");
+                            }
+                            Ok(output) => {
+                                let stderr = String::from_utf8_lossy(&output.stderr);
+                                tracing::warn!(
+                                    ?kp, %stderr, "ssh-add failed"
+                                );
+                            }
+                            Err(e) => {
+                                tracing::error!(?e, "Failed to run ssh-add");
+                            }
+                        }
+                    }
+                    true
+                },
+                move |_| {
+                    // Launch file manager as a direct subprocess
+                    // so it inherits SSH_AUTH_SOCK. UriLauncher
+                    // goes through D-Bus which may not pass env.
+                    Self::sftp_launch_file_manager(&uri_clone);
+                },
+            );
+        }
     }
 
     /// Sets up terminal-related actions (copy, paste, close tab)
@@ -3005,7 +3406,9 @@ impl MainWindow {
             ProtocolType::Ssh
             | ProtocolType::Spice
             | ProtocolType::ZeroTrust
-            | ProtocolType::Telnet => {
+            | ProtocolType::Telnet
+            | ProtocolType::Serial
+            | ProtocolType::Kubernetes => {
                 // For SSH/SPICE, cache credentials if available and start connection
                 if let Some(ref creds) = resolved_credentials {
                     if let (Some(username), Some(password)) =
@@ -3023,6 +3426,10 @@ impl MainWindow {
                     &sidebar,
                     connection_id,
                 );
+            }
+            ProtocolType::Sftp => {
+                // SFTP connections open the file manager directly
+                Self::handle_sftp_connect(&state, &notebook, Some(&split_view), connection_id);
             }
         }
     }
@@ -3542,6 +3949,22 @@ impl MainWindow {
                 &conn_clone,
                 logging_enabled,
             ),
+            "serial" => protocols::start_serial_connection(
+                state,
+                notebook,
+                sidebar,
+                connection_id,
+                &conn_clone,
+                logging_enabled,
+            ),
+            "kubernetes" => protocols::start_kubernetes_connection(
+                state,
+                notebook,
+                sidebar,
+                connection_id,
+                &conn_clone,
+                logging_enabled,
+            ),
             p if p == "zerotrust" || p.starts_with("zerotrust:") => {
                 protocols::start_zerotrust_connection(
                     state,
@@ -3551,6 +3974,11 @@ impl MainWindow {
                     &conn_clone,
                     logging_enabled,
                 )
+            }
+            "sftp" => {
+                // SFTP opens file manager — no terminal session
+                Self::handle_sftp_connect(state, notebook, None, connection_id);
+                None
             }
             _ => {
                 // Unknown protocol

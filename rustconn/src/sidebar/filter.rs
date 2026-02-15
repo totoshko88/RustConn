@@ -14,7 +14,7 @@ use gtk4::Button;
 pub fn create_filter_button(protocol: &str, icon_name: &str, tooltip: &str) -> Button {
     let button = Button::new();
     let icon = gtk4::Image::from_icon_name(icon_name);
-    icon.set_pixel_size(16);
+    icon.set_pixel_size(14);
     button.set_child(Some(&icon));
     button.set_tooltip_text(Some(tooltip));
     button.add_css_class("flat");

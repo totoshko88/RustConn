@@ -5,7 +5,10 @@ use std::sync::Arc;
 
 use crate::models::ProtocolType;
 
-use super::{Protocol, RdpProtocol, SpiceProtocol, SshProtocol, TelnetProtocol, VncProtocol};
+use super::{
+    KubernetesProtocol, Protocol, RdpProtocol, SerialProtocol, SftpProtocol, SpiceProtocol,
+    SshProtocol, TelnetProtocol, VncProtocol,
+};
 
 /// Registry for protocol handlers
 ///
@@ -27,12 +30,18 @@ impl ProtocolRegistry {
         let vnc = Arc::new(VncProtocol::new());
         let spice = Arc::new(SpiceProtocol::new());
         let telnet = Arc::new(TelnetProtocol::new());
+        let serial = Arc::new(SerialProtocol::new());
+        let sftp = Arc::new(SftpProtocol::new());
+        let kubernetes = Arc::new(KubernetesProtocol::new());
 
         protocols.insert(ssh.protocol_id(), ssh);
         protocols.insert(rdp.protocol_id(), rdp);
         protocols.insert(vnc.protocol_id(), vnc);
         protocols.insert(spice.protocol_id(), spice);
         protocols.insert(telnet.protocol_id(), telnet);
+        protocols.insert(serial.protocol_id(), serial);
+        protocols.insert(sftp.protocol_id(), sftp);
+        protocols.insert(kubernetes.protocol_id(), kubernetes);
 
         Self { protocols }
     }
@@ -67,7 +76,10 @@ impl ProtocolRegistry {
             ProtocolType::Vnc => "vnc",
             ProtocolType::Spice => "spice",
             ProtocolType::Telnet => "telnet",
+            ProtocolType::Serial => "serial",
             ProtocolType::ZeroTrust => "zerotrust",
+            ProtocolType::Sftp => "sftp",
+            ProtocolType::Kubernetes => "kubernetes",
         };
         self.protocols.get(id).cloned()
     }

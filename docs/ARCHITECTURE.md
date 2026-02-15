@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.8.4** | Last updated: February 2026
+**Version 0.8.5** | Last updated: February 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -664,6 +664,9 @@ pub struct ProtocolCapabilities {
 - `VncProtocol`: VNC via vnc-rs/TigerVNC (capabilities: embedded, external_fallback, clipboard)
 - `SpiceProtocol`: SPICE via remote-viewer (capabilities: external_fallback, clipboard)
 - `TelnetProtocol`: Telnet via external `telnet` client (capabilities: terminal, split_view)
+- `SerialProtocol`: Serial via external `picocom` client (capabilities: terminal, split_view)
+- `KubernetesProtocol`: Kubernetes via external `kubectl exec` (capabilities: terminal, split_view)
+- `SftpProtocol`: SFTP file transfer via file manager/mc (capabilities: file_transfer, external_fallback)
 
 ### Adding a New Protocol
 
@@ -673,7 +676,7 @@ pub struct ProtocolCapabilities {
 4. Register in `ProtocolRegistry`
 5. Add UI fields in `rustconn/src/dialogs/connection/dialog.rs`
 
-See `TelnetProtocol` for a minimal reference implementation using an external client.
+See `TelnetProtocol`, `SerialProtocol`, or `KubernetesProtocol` for minimal reference implementations using external clients.
 
 ### RDP Backend Selection
 
@@ -808,6 +811,8 @@ rustconn/src/
 │   │   ├── vnc.rs         # VNC options
 │   │   ├── spice.rs       # SPICE options
 │   │   ├── telnet.rs      # Telnet options
+│   │   ├── serial.rs      # Serial options
+│   │   ├── kubernetes.rs  # Kubernetes options
 │   │   └── zerotrust.rs   # Zero Trust provider options
 │   ├── keyboard.rs        # Keyboard navigation helpers
 │   ├── wol.rs             # Wake On LAN dialog (standalone + manual entry)
@@ -867,6 +872,7 @@ rustconn-core/src/
 │   ├── backend.rs         # RdpBackendSelector
 │   └── ...
 ├── cli_download.rs        # Flatpak CLI download manager
+├── sftp.rs                # SFTP URI/command builders, ssh-add, mc FISH VFS
 ├── snap.rs                # Snap environment detection and paths
 └── ...
 ```

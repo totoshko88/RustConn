@@ -103,6 +103,7 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
                     custom_options,
                     startup_command,
                     jump_host_id: None,
+                    sftp_enabled: false,
                 }
             },
         )
@@ -2372,6 +2373,13 @@ proptest! {
                 ProtocolType::Spice => ProtocolConfig::Spice(rustconn_core::SpiceConfig::default()),
                 ProtocolType::ZeroTrust => ProtocolConfig::Ssh(SshConfig::default()), // Fallback
                 ProtocolType::Telnet => ProtocolConfig::Telnet(TelnetConfig::default()),
+                ProtocolType::Serial => ProtocolConfig::Serial(
+                    rustconn_core::SerialConfig::default(),
+                ),
+                ProtocolType::Sftp => ProtocolConfig::Sftp(SshConfig::default()),
+                ProtocolType::Kubernetes => ProtocolConfig::Kubernetes(
+                    rustconn_core::KubernetesConfig::default(),
+                ),
             };
 
             manager
@@ -2432,6 +2440,13 @@ proptest! {
             ProtocolType::Spice => ProtocolConfig::Spice(rustconn_core::SpiceConfig::default()),
             ProtocolType::ZeroTrust => ProtocolConfig::Ssh(SshConfig::default()),
             ProtocolType::Telnet => ProtocolConfig::Telnet(TelnetConfig::default()),
+            ProtocolType::Serial => ProtocolConfig::Serial(
+                rustconn_core::SerialConfig::default(),
+            ),
+            ProtocolType::Sftp => ProtocolConfig::Sftp(SshConfig::default()),
+            ProtocolType::Kubernetes => ProtocolConfig::Kubernetes(
+                rustconn_core::KubernetesConfig::default(),
+            ),
         };
 
         manager
@@ -2485,6 +2500,13 @@ proptest! {
             ProtocolType::Spice => ProtocolConfig::Spice(rustconn_core::SpiceConfig::default()),
             ProtocolType::ZeroTrust => ProtocolConfig::Ssh(SshConfig::default()),
             ProtocolType::Telnet => ProtocolConfig::Telnet(TelnetConfig::default()),
+            ProtocolType::Serial => ProtocolConfig::Serial(
+                rustconn_core::SerialConfig::default(),
+            ),
+            ProtocolType::Sftp => ProtocolConfig::Sftp(SshConfig::default()),
+            ProtocolType::Kubernetes => ProtocolConfig::Kubernetes(
+                rustconn_core::KubernetesConfig::default(),
+            ),
         };
 
         let conn_id = manager
@@ -2524,6 +2546,13 @@ proptest! {
             ProtocolType::Spice => ProtocolConfig::Spice(rustconn_core::SpiceConfig::default()),
             ProtocolType::ZeroTrust => ProtocolConfig::Ssh(SshConfig::default()),
             ProtocolType::Telnet => ProtocolConfig::Telnet(TelnetConfig::default()),
+            ProtocolType::Serial => ProtocolConfig::Serial(
+                rustconn_core::SerialConfig::default(),
+            ),
+            ProtocolType::Sftp => ProtocolConfig::Sftp(SshConfig::default()),
+            ProtocolType::Kubernetes => ProtocolConfig::Kubernetes(
+                rustconn_core::KubernetesConfig::default(),
+            ),
         };
 
         manager
@@ -2570,6 +2599,13 @@ proptest! {
             ProtocolType::Spice => ProtocolConfig::Spice(rustconn_core::SpiceConfig::default()),
             ProtocolType::ZeroTrust => ProtocolConfig::Ssh(SshConfig::default()),
             ProtocolType::Telnet => ProtocolConfig::Telnet(TelnetConfig::default()),
+            ProtocolType::Serial => ProtocolConfig::Serial(
+                rustconn_core::SerialConfig::default(),
+            ),
+            ProtocolType::Sftp => ProtocolConfig::Sftp(SshConfig::default()),
+            ProtocolType::Kubernetes => ProtocolConfig::Kubernetes(
+                rustconn_core::KubernetesConfig::default(),
+            ),
         };
 
         let conn_id = manager
