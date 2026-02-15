@@ -7,18 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.8.5] - 2026-02-14
+## [0.8.5] - 2026-02-15
 
 ### Added
-- **Serial Console Protocol** — Full serial console support across all crates ([#11](https://github.com/totoshko88/RustConn/issues/11)):
-  - Core model: `SerialConfig`, `ProtocolType::Serial`, `ProtocolConfig::Serial` with device path, baud rate (9600–921600), data bits (5–8), stop bits (1–2), parity (None/Odd/Even), flow control (None/Hardware/Software), and custom args
-  - `SerialProtocol` implementing `Protocol` trait with `picocom` command builder
-  - GUI: Connection dialog Serial tab with all parameters, protocol dropdown, validation (device path required)
-  - Terminal: `spawn_serial()` for VTE terminal sessions, `phone-symbolic` icon
-  - CLI: `serial` subcommand, `--device`/`--baud-rate`/`--data-bits`/`--stop-bits`/`--parity`/`--flow-control` flags in `add`/`update`
-  - Flatpak: `--device=all` permission and bundled `picocom` 3.1 in all manifests
-  - Property tests: 13 serial-specific tests in `serial_tests.rs`
-- **SFTP URI Builder** — `build_sftp_uri()` and `build_sftp_command()` in `rustconn-core/src/sftp.rs` for SSH file transfer; `sftp_enabled` field on `SshConfig`; CLI `sftp` subcommand and `--sftp` flag
+- **Serial Console Protocol** — Full serial console support via `picocom` ([#11](https://github.com/totoshko88/RustConn/issues/11)):
+  - `SerialConfig` model with device path, baud rate (9600–921600), data bits, stop bits, parity, flow control
+  - GUI: Connection dialog Serial tab, VTE terminal sessions, `phone-symbolic` icon
+  - CLI: `serial` subcommand with `--device`/`--baud-rate`/`--data-bits`/`--stop-bits`/`--parity`/`--flow-control`
+  - Sandbox: Flatpak `--device=all` + bundled `picocom`; Snap `serial-port` plug + bundled `picocom`
+  - Property tests: 13 serial-specific tests
+- **SFTP File Browser** — SFTP integration for SSH and standalone SFTP connections ([#10](https://github.com/totoshko88/RustConn/issues/10)):
+  - "Open SFTP" action in sidebar context menu and SSH session toolbar — opens system file manager via `gtk::UriLauncher` (portal-aware, works in Flatpak/Snap/native)
+  - "SFTP via mc" option — opens Midnight Commander with FISH VFS panel
+  - Automatic `ssh-add` before SFTP launch for key-based auth
+  - Standalone `ProtocolType::Sftp` — dedicated SFTP connection type reusing SSH config
+  - CLI: `sftp` subcommand (`--cli`, `--mc`, default opens file manager)
+  - Sandbox: Flatpak/Snap bundle Midnight Commander
+- **Responsive / Adaptive UI** — Improved dialog sizing and window breakpoints ([#9](https://github.com/totoshko88/RustConn/issues/9)):
+  - All 17+ dialogs: reduced default sizes, added minimum sizes via `set_size_request()`, all resizable
+  - `adw::Clamp` (max 600px) added to 7 list-style dialogs for consistent content width
+  - Dashboard and Active Sessions upgraded to `adw::Window` with `adw::ToolbarView`
+  - Main window breakpoint 600sp: hides split view buttons on narrow windows
+- **Terminal Rich Search** — Enhanced terminal search with regex and highlights ([#7](https://github.com/totoshko88/RustConn/issues/7)):
+  - Regex toggle, "Highlight All" toggle, case-sensitive toggle, wrap-around navigation
+  - Keyboard shortcut: Ctrl+Shift+F
+  - Session log timestamps: `log_timestamps` setting prepends `[HH:MM:SS]` to each log line
+
+### Changed
+- **Session Logging moved to Logging tab** — Timestamps toggle relocated from Settings → Terminal to Settings → Logging for better discoverability
 
 ## [0.8.4] - 2026-02-14
 

@@ -665,6 +665,7 @@ pub struct ProtocolCapabilities {
 - `SpiceProtocol`: SPICE via remote-viewer (capabilities: external_fallback, clipboard)
 - `TelnetProtocol`: Telnet via external `telnet` client (capabilities: terminal, split_view)
 - `SerialProtocol`: Serial via external `picocom` client (capabilities: terminal, split_view)
+- `SftpProtocol`: SFTP file transfer via file manager/mc (capabilities: file_transfer, external_fallback)
 
 ### Adding a New Protocol
 
@@ -869,6 +870,7 @@ rustconn-core/src/
 │   ├── backend.rs         # RdpBackendSelector
 │   └── ...
 ├── cli_download.rs        # Flatpak CLI download manager
+├── sftp.rs                # SFTP URI/command builders, ssh-add, mc FISH VFS
 ├── snap.rs                # Snap environment detection and paths
 └── ...
 ```

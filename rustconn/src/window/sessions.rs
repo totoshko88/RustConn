@@ -4,8 +4,10 @@
 //! including the sessions manager dialog and related functionality.
 
 use crate::alert;
+use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Button, HeaderBar, Label, Orientation};
+use libadwaita as adw;
 use std::rc::Rc;
 use uuid::Uuid;
 
@@ -27,17 +29,20 @@ pub fn show_sessions_manager(
     notebook: SharedNotebook,
     sidebar: SharedSidebar,
 ) {
-    let manager_window = gtk4::Window::builder()
+    let manager_window = adw::Window::builder()
         .title("Active Sessions")
         .transient_for(window)
         .modal(true)
-        .default_width(750)
-        .default_height(500)
+        .default_width(500)
+        .default_height(400)
         .build();
 
+    manager_window.set_size_request(320, 280);
+
     // Create header bar with Close/Refresh buttons (GNOME HIG)
-    let header = HeaderBar::new();
-    header.set_show_title_buttons(false);
+    let header = adw::HeaderBar::new();
+    header.set_show_end_title_buttons(false);
+    header.set_show_start_title_buttons(false);
     let close_btn = Button::builder().label("Close").build();
     let refresh_btn = Button::builder()
         .icon_name("view-refresh-symbolic")
@@ -45,7 +50,6 @@ pub fn show_sessions_manager(
         .build();
     header.pack_start(&close_btn);
     header.pack_end(&refresh_btn);
-    manager_window.set_titlebar(Some(&header));
 
     // Close button handler
     let window_clone = manager_window.clone();
@@ -104,7 +108,10 @@ pub fn show_sessions_manager(
     button_box.append(&terminate_btn);
     content.append(&button_box);
 
-    manager_window.set_child(Some(&content));
+    let toolbar_view = adw::ToolbarView::new();
+    toolbar_view.add_top_bar(&header);
+    toolbar_view.set_content(Some(&content));
+    manager_window.set_content(Some(&toolbar_view));
 
     // Populate sessions list
     populate_sessions_list(&state, &notebook, &sessions_list, &count_label);
@@ -152,7 +159,11 @@ pub fn show_sessions_manager(
         if let Some(row) = list_clone.selected_row() {
             if let Some(id_str) = row.widget_name().as_str().strip_prefix("session-") {
                 if let Ok(session_id) = Uuid::parse_str(id_str) {
-                    show_send_text_dialog(&manager_clone, &notebook_clone, session_id);
+                    show_send_text_dialog(
+                        manager_clone.upcast_ref::<gtk4::Window>(),
+                        &notebook_clone,
+                        session_id,
+                    );
                 }
             }
         }

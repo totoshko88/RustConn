@@ -2376,6 +2376,7 @@ proptest! {
                 ProtocolType::Serial => ProtocolConfig::Serial(
                     rustconn_core::SerialConfig::default(),
                 ),
+                ProtocolType::Sftp => ProtocolConfig::Sftp(SshConfig::default()),
             };
 
             manager
@@ -2439,6 +2440,7 @@ proptest! {
             ProtocolType::Serial => ProtocolConfig::Serial(
                 rustconn_core::SerialConfig::default(),
             ),
+            ProtocolType::Sftp => ProtocolConfig::Sftp(SshConfig::default()),
         };
 
         manager
@@ -2495,6 +2497,7 @@ proptest! {
             ProtocolType::Serial => ProtocolConfig::Serial(
                 rustconn_core::SerialConfig::default(),
             ),
+            ProtocolType::Sftp => ProtocolConfig::Sftp(SshConfig::default()),
         };
 
         let conn_id = manager
@@ -2537,6 +2540,7 @@ proptest! {
             ProtocolType::Serial => ProtocolConfig::Serial(
                 rustconn_core::SerialConfig::default(),
             ),
+            ProtocolType::Sftp => ProtocolConfig::Sftp(SshConfig::default()),
         };
 
         manager
@@ -2586,6 +2590,7 @@ proptest! {
             ProtocolType::Serial => ProtocolConfig::Serial(
                 rustconn_core::SerialConfig::default(),
             ),
+            ProtocolType::Sftp => ProtocolConfig::Sftp(SshConfig::default()),
         };
 
         let conn_id = manager

@@ -2,7 +2,7 @@
 
 **Version 0.8.5** | GTK4/libadwaita Connection Manager for Linux
 
-RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, Telnet, Serial protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
+RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, SFTP, Telnet, Serial protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
 ## Table of Contents
 
@@ -282,6 +282,22 @@ Three logging modes (Settings → Logging):
 - **User Input** — Capture typed commands
 - **Terminal Output** — Full transcript
 
+Optional timestamps (Settings → Logging → Session Logging):
+- Enable "Timestamps" to prepend `[HH:MM:SS]` to each line in log files
+
+### Terminal Search
+
+Open with **Ctrl+Shift+F** in any terminal session.
+
+- **Text search** — Plain text matching (default)
+- **Regex** — Toggle "Regex" checkbox for regular expression patterns; invalid patterns show an error message
+- **Case sensitive** — Toggle case sensitivity
+- **Highlight All** — Highlights all matches in the terminal (enabled by default)
+- **Navigation** — Up/Down buttons or Enter to jump between matches; search wraps around
+- Highlights are cleared automatically when closing the dialog (Close button or Escape)
+
+Note: Terminal search is a GUI-only feature (VTE widget). Not available in CLI mode.
+
 ### Serial Console
 
 Connect to serial devices (routers, switches, embedded boards) via `picocom`.
@@ -312,11 +328,75 @@ sudo usermod -aG dialout $USER
 
 **Flatpak:** Serial access works automatically (`--device=all` permission). `picocom` is bundled in the Flatpak package.
 
+**Snap:** Connect the serial-port interface after installation:
+```bash
+sudo snap connect rustconn:serial-port
+```
+`picocom` is bundled in the Snap package.
+
 **CLI:**
 ```bash
 rustconn-cli add --name "Router" --protocol serial --device /dev/ttyUSB0 --baud-rate 9600
 rustconn-cli connect "Router"
 rustconn-cli serial --device /dev/ttyACM0 --baud-rate 115200
+```
+
+### SFTP File Browser
+
+Browse remote files on SSH connections via your system file manager or Midnight Commander.
+
+SFTP is always available for SSH connections — no checkbox or flag needed. The "Open SFTP" option only appears in the sidebar context menu for SSH connections (not RDP, VNC, SPICE, or Serial).
+
+**SSH Key Handling:**
+Before opening SFTP, RustConn automatically runs `ssh-add` with your configured SSH key. This is required because neither file managers nor mc can pass identity files directly — the key must be in the SSH agent.
+
+**Open SFTP (File Manager):**
+- Right-click an SSH connection in sidebar → "Open SFTP"
+- Or use the `win.open-sftp` action while a connection is selected
+
+RustConn uses `gtk::UriLauncher` to open `sftp://user@host:port` — this is portal-aware and works across all desktop environments and sandboxes:
+- GNOME, KDE Plasma, COSMIC, Cinnamon, MATE, XFCE
+- Flatpak and Snap (uses XDG Desktop Portal)
+
+If `UriLauncher` fails, RustConn falls back to `xdg-open`, then `nautilus --new-window`.
+
+**SFTP via Midnight Commander:**
+
+Settings → Terminal → Behavior → enable "SFTP via mc". When enabled, "Open SFTP" opens a local shell tab with Midnight Commander connected to the remote server via `sh://user@host:port` FISH VFS panel.
+
+Requirements for mc mode:
+- Midnight Commander must be installed (`mc` in PATH). RustConn checks availability before launch.
+- mc FISH VFS requires SSH key authentication — password and keyboard-interactive auth are not supported. A warning toast is shown if password auth is configured.
+- In Flatpak builds, mc 4.8.32 is bundled automatically.
+
+**CLI:**
+```bash
+# Open file manager with sftp:// URI (uses xdg-open, falls back to nautilus)
+rustconn-cli sftp "My Server"
+
+# Use terminal sftp client instead
+rustconn-cli sftp "My Server" --cli
+
+# Open via Midnight Commander
+rustconn-cli sftp "My Server" --mc
+```
+
+### SFTP as Connection Type
+
+SFTP can also be created as a standalone connection type. This is useful when you primarily need file transfer access to a server (e.g., transferring files between Windows and Linux systems).
+
+**Create an SFTP Connection:**
+1. Press **Ctrl+N** → select **SFTP** protocol
+2. Configure SSH settings (host, port, username, key) — SFTP reuses the SSH options tab
+3. Click **Create**
+4. Double-click to connect — opens file manager (or mc) directly instead of a terminal
+
+SFTP connections use the `folder-remote-symbolic` icon in the sidebar and behave identically to the "Open SFTP" action on SSH connections, but the file manager opens automatically on Connect.
+
+**CLI:**
+```bash
+rustconn-cli add --name "File Server" --host files.example.com --protocol sftp --username admin
+rustconn-cli connect "File Server"
 ```
 
 ---
@@ -585,7 +665,7 @@ Access via **Ctrl+,** or Menu → **Settings**
 - **Scrollback** — History buffer lines
 - **Color Theme** — Dark, Light, Solarized, Monokai, Dracula
 - **Cursor** — Shape (Block/IBeam/Underline) and blink mode
-- **Behavior** — Scroll on output/keystroke, hyperlinks, mouse autohide, bell
+- **Behavior** — Scroll on output/keystroke, hyperlinks, mouse autohide, bell, SFTP via mc
 
 ### Session
 
@@ -599,6 +679,7 @@ Access via **Ctrl+,** or Menu → **Settings**
 - **Log Directory**
 - **Retention Days**
 - **Logging Modes** — Activity, user input, terminal output
+- **Session Logging** — Timestamps toggle: prepend `[HH:MM:SS]` to each line in session log files
 
 ### Secrets
 
@@ -675,6 +756,18 @@ Searches PATH and user directories (`~/bin/`, `~/.local/bin/`, `~/.cargo/bin/`).
 
 - **Pre-connect Port Check** — Enable/disable TCP port check before RDP/VNC/SPICE
 - **Port Check Timeout** — Timeout in seconds (default: 3)
+
+---
+
+## Adaptive UI
+
+RustConn adapts to different window sizes using `adw::Breakpoint` and responsive dialog sizing.
+
+**Main window breakpoints:**
+- Below 600sp: split view buttons hidden from header bar (still accessible via keyboard shortcuts or menu)
+- Below 400sp: sidebar collapses to overlay mode (toggle with F9 or swipe gesture)
+
+**Dialogs:** All dialogs have minimum size constraints and scroll their content. They can be resized down to ~350px width without clipping.
 
 ---
 

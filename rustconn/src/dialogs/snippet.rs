@@ -61,13 +61,15 @@ impl SnippetDialog {
         let window = adw::Window::builder()
             .title("New Snippet")
             .modal(true)
-            .default_width(550)
-            .default_height(550)
+            .default_width(500)
+            .default_height(400)
             .build();
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
         }
+
+        window.set_size_request(320, 280);
 
         // Create header bar with Close/Create buttons (GNOME HIG)
         let header = adw::HeaderBar::new();

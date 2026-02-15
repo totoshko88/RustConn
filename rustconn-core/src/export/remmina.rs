@@ -61,6 +61,10 @@ impl RemminaExporter {
             ProtocolType::Serial => {
                 return Err(ExportError::UnsupportedProtocol("Serial".to_string()));
             }
+            ProtocolType::Sftp => {
+                // Export SFTP as SSH with SFTP protocol marker
+                Self::write_ssh_fields(&mut output, connection);
+            }
         }
 
         Ok(output)

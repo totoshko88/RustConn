@@ -131,7 +131,20 @@ pub fn setup_list_item(
                     img.icon_name()
                         .is_some_and(|n| n.as_str() == "folder-symbolic")
                 });
-            sidebar_ui::show_context_menu_for_item(&widget, x, y, is_group);
+
+            // Detect SSH protocol from the ConnectionItem data
+            let is_ssh = list_item_weak
+                .upgrade()
+                .and_then(|li| li.item())
+                .and_then(|obj| obj.downcast::<gtk4::TreeListRow>().ok())
+                .and_then(|row| row.item())
+                .and_then(|obj| obj.downcast::<ConnectionItem>().ok())
+                .is_some_and(|item| {
+                    let p = item.protocol();
+                    p == "ssh" || p == "sftp"
+                });
+
+            sidebar_ui::show_context_menu_for_item(&widget, x, y, is_group, is_ssh);
         }
     });
     expander.add_controller(gesture);

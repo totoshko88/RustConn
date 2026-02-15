@@ -332,6 +332,17 @@ impl Connection {
         Self::new(name, String::new(), 0, ProtocolConfig::Serial(config))
     }
 
+    /// Creates a new SFTP connection with default SSH config
+    #[must_use]
+    pub fn new_sftp(name: String, host: String, port: u16) -> Self {
+        Self::new(
+            name,
+            host,
+            port,
+            ProtocolConfig::Sftp(super::protocol::SshConfig::default()),
+        )
+    }
+
     /// Sets the username for this connection
     #[must_use]
     pub fn with_username(mut self, username: impl Into<String>) -> Self {
@@ -375,6 +386,7 @@ impl Connection {
             ProtocolType::Telnet => 23,
             ProtocolType::ZeroTrust => 0, // No default port for Zero Trust
             ProtocolType::Serial => 0,    // Serial uses device path, not port
+            ProtocolType::Sftp => 22,
         }
     }
 

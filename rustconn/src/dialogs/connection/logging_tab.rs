@@ -242,6 +242,7 @@ impl LoggingTab {
             log_activity: true,
             log_input: false,
             log_output: false,
+            log_timestamps: false,
         })
     }
 }

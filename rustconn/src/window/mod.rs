@@ -227,6 +227,41 @@ impl MainWindow {
         breakpoint.add_setter(&overlay_split_view, "pin-sidebar", Some(&unpin_val));
         window.add_breakpoint(breakpoint);
 
+        // Breakpoint 600sp: hide split view buttons on medium-width windows
+        let bp_600_condition = adw::BreakpointCondition::new_length(
+            adw::BreakpointConditionLengthType::MaxWidth,
+            600.0,
+            adw::LengthUnit::Sp,
+        );
+        let bp_600 = adw::Breakpoint::new(bp_600_condition);
+        // Find split buttons in header bar and hide them at narrow widths
+        // The split buttons are the last two pack_end children
+        // We hide them via visible property
+        if let Some(split_h) = header_bar
+            .observe_children()
+            .into_iter()
+            .filter_map(|obj| obj.ok())
+            .filter_map(|obj| obj.downcast::<gtk4::Button>().ok())
+            .find(|btn| {
+                btn.action_name()
+                    .is_some_and(|a| a == "win.split-horizontal")
+            })
+        {
+            let hidden = false.to_value();
+            bp_600.add_setter(&split_h, "visible", Some(&hidden));
+        }
+        if let Some(split_v) = header_bar
+            .observe_children()
+            .into_iter()
+            .filter_map(|obj| obj.ok())
+            .filter_map(|obj| obj.downcast::<gtk4::Button>().ok())
+            .find(|btn| btn.action_name().is_some_and(|a| a == "win.split-vertical"))
+        {
+            let hidden = false.to_value();
+            bp_600.add_setter(&split_v, "visible", Some(&hidden));
+        }
+        window.add_breakpoint(bp_600);
+
         // Create external window manager
         let external_window_manager = Rc::new(ExternalWindowManager::new());
 
@@ -628,6 +663,311 @@ impl MainWindow {
             );
         });
         window.add_action(&wol_action);
+
+        // Open SFTP action — opens file manager or mc in local shell
+        let sftp_action = gio::SimpleAction::new("open-sftp", None);
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let toast_clone = self.toast_overlay.clone();
+        let notebook_clone = self.terminal_notebook.clone();
+        let split_view_clone = self.split_view.clone();
+        let window_weak = window.downgrade();
+        sftp_action.connect_activate(move |_, _| {
+            let Some(item) = sidebar_clone.get_selected_item() else {
+                return;
+            };
+            if item.is_group() {
+                return;
+            }
+            let id_str = item.id();
+            let Ok(conn_id) = Uuid::parse_str(&id_str) else {
+                return;
+            };
+            let state_ref = state_clone.borrow();
+            let Some(conn) = state_ref.get_connection(conn_id) else {
+                return;
+            };
+            let use_mc = state_ref.settings().terminal.sftp_use_mc;
+
+            // Ensure SSH key is in agent before SFTP (mc and
+            // file managers cannot pass identity files directly).
+            let key_path = rustconn_core::sftp::get_ssh_key_path(conn);
+
+            // Check if password auth — mc FISH doesn't support it
+            let uses_password = matches!(
+                &conn.protocol_config,
+                rustconn_core::models::ProtocolConfig::Ssh(cfg)
+                | rustconn_core::models::ProtocolConfig::Sftp(cfg)
+                    if matches!(
+                        cfg.auth_method,
+                        rustconn_core::models::SshAuthMethod::Password
+                            | rustconn_core::models::SshAuthMethod::KeyboardInteractive
+                    )
+            );
+
+            if use_mc {
+                // Open mc in a local shell tab with SFTP panel
+                let mc_cmd = rustconn_core::sftp::build_mc_sftp_command(conn);
+                let conn_name = conn.name.clone();
+                let terminal_settings = state_ref.settings().terminal.clone();
+                drop(state_ref);
+
+                let Some(mc_args) = mc_cmd else {
+                    toast_clone.show_warning("SFTP is only available for SSH connections.");
+                    return;
+                };
+
+                tracing::info!(?mc_args, "Opening SFTP via mc");
+
+                // Warn about password auth — mc FISH can't prompt
+                if uses_password && key_path.is_none() {
+                    toast_clone.show_warning(
+                        "mc requires SSH key in agent. \
+                         Password auth is not supported.",
+                    );
+                }
+
+                // Add SSH key to agent if configured
+                if let Some(ref kp) = key_path {
+                    tracing::info!(?kp, "Adding SSH key to agent for mc");
+                    let _ = std::process::Command::new("ssh-add")
+                        .arg(kp)
+                        .stdin(std::process::Stdio::null())
+                        .stdout(std::process::Stdio::null())
+                        .stderr(std::process::Stdio::null())
+                        .status();
+                }
+
+                // Check mc availability
+                if std::process::Command::new("which")
+                    .arg("mc")
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .status()
+                    .map_or(true, |s| !s.success())
+                {
+                    toast_clone.show_error("Midnight Commander (mc) is not installed.");
+                    return;
+                }
+
+                toast_clone.show_toast("Opening mc SFTP...");
+
+                let tab_name = format!("mc: {conn_name}");
+                let session_id = notebook_clone.create_terminal_tab_with_settings(
+                    Uuid::nil(),
+                    &tab_name,
+                    "local",
+                    None,
+                    &terminal_settings,
+                );
+
+                let argv: Vec<&str> = mc_args.iter().map(String::as_str).collect();
+                notebook_clone.spawn_command(session_id, &argv, None, None);
+
+                if let Some(info) = notebook_clone.get_session_info(session_id) {
+                    split_view_clone.add_session(info, None);
+                }
+                split_view_clone.widget().set_visible(false);
+                split_view_clone.widget().set_vexpand(false);
+                notebook_clone.widget().set_vexpand(true);
+                notebook_clone.show_tab_view_content();
+            } else {
+                // Open file manager with sftp:// URI
+                let Some(uri) = rustconn_core::sftp::build_sftp_uri_from_connection(conn) else {
+                    toast_clone.show_warning("SFTP is only available for SSH connections.");
+                    drop(state_ref);
+                    return;
+                };
+                drop(state_ref);
+
+                tracing::info!(%uri, "Opening SFTP file browser");
+                toast_clone.show_toast("Opening SFTP...");
+
+                // Add SSH key to agent in background, then open URI
+                // via gtk::UriLauncher (portal-aware — works in
+                // Flatpak, Snap, KDE, COSMIC, GNOME).
+                let toast_cb = toast_clone.clone();
+                let key_for_add = key_path.clone();
+
+                // ssh-add in background thread, then launch URI
+                // on the main thread via UriLauncher.
+                let uri_clone = uri.clone();
+                let win_weak = window_weak.clone();
+                crate::utils::spawn_blocking_with_callback(
+                    move || {
+                        // Add SSH key to agent if configured
+                        if let Some(ref kp) = key_for_add {
+                            tracing::info!(?kp, "Adding SSH key to agent for SFTP");
+                            let _ = std::process::Command::new("ssh-add")
+                                .arg(kp)
+                                .stdin(std::process::Stdio::null())
+                                .stdout(std::process::Stdio::null())
+                                .stderr(std::process::Stdio::null())
+                                .status();
+                        }
+                        true
+                    },
+                    move |_| {
+                        // Use gtk::UriLauncher — portal-aware, works
+                        // in Flatpak/Snap and all DEs (GNOME, KDE,
+                        // COSMIC). Falls back to xdg-open internally.
+                        let launcher = gtk4::UriLauncher::new(&uri_clone);
+                        let parent = win_weak.upgrade();
+                        let toast_err = toast_cb.clone();
+                        let uri_fallback = uri_clone.clone();
+                        launcher.launch(
+                            parent.as_ref().map(|w| w.upcast_ref::<gtk4::Window>()),
+                            gio::Cancellable::NONE,
+                            move |result| {
+                                if let Err(e) = result {
+                                    tracing::warn!(
+                                        ?e,
+                                        "UriLauncher failed, \
+                                         trying subprocess fallback"
+                                    );
+                                    Self::sftp_subprocess_fallback(&uri_fallback, &toast_err);
+                                }
+                            },
+                        );
+                    },
+                );
+            }
+        });
+        window.add_action(&sftp_action);
+    }
+
+    /// Subprocess fallback for SFTP file manager when `UriLauncher` fails.
+    ///
+    /// Tries `xdg-open` first (DE-agnostic), then `nautilus` (GNOME).
+    fn sftp_subprocess_fallback(uri: &str, toast: &SharedToastOverlay) {
+        // xdg-open delegates to the DE's default file manager
+        let xdg_ok = std::process::Command::new("xdg-open")
+            .arg(uri)
+            .spawn()
+            .is_ok();
+        if xdg_ok {
+            return;
+        }
+
+        tracing::debug!("xdg-open failed, trying nautilus");
+        let nautilus_ok = std::process::Command::new("nautilus")
+            .args(["--new-window", uri])
+            .spawn()
+            .is_ok();
+        if nautilus_ok {
+            return;
+        }
+
+        toast.show_error(
+            "Could not open SFTP. Install gvfs-backends \
+             for sftp:// support.",
+        );
+    }
+
+    /// Handles SFTP connection — opens file manager or mc
+    ///
+    /// Called when user clicks "Connect" on an SFTP-type connection.
+    /// Reuses the same logic as the `open-sftp` sidebar action.
+    fn handle_sftp_connect(
+        state: &SharedAppState,
+        notebook: &SharedNotebook,
+        split_view: Option<&SharedSplitView>,
+        connection_id: Uuid,
+    ) {
+        let state_ref = state.borrow();
+        let Some(conn) = state_ref.get_connection(connection_id) else {
+            return;
+        };
+        let use_mc = state_ref.settings().terminal.sftp_use_mc;
+        let key_path = rustconn_core::sftp::get_ssh_key_path(conn);
+
+        if use_mc {
+            let mc_cmd = rustconn_core::sftp::build_mc_sftp_command(conn);
+            let conn_name = conn.name.clone();
+            let terminal_settings = state_ref.settings().terminal.clone();
+            drop(state_ref);
+
+            let Some(mc_args) = mc_cmd else {
+                return;
+            };
+
+            tracing::info!(?mc_args, "SFTP connect: opening mc");
+
+            if let Some(ref kp) = key_path {
+                let _ = std::process::Command::new("ssh-add")
+                    .arg(kp)
+                    .stdin(std::process::Stdio::null())
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .status();
+            }
+
+            let tab_name = format!("mc: {conn_name}");
+            let session_id = notebook.create_terminal_tab_with_settings(
+                Uuid::nil(),
+                &tab_name,
+                "local",
+                None,
+                &terminal_settings,
+            );
+
+            let argv: Vec<&str> = mc_args.iter().map(String::as_str).collect();
+            notebook.spawn_command(session_id, &argv, None, None);
+
+            if let Some(sv) = split_view {
+                if let Some(info) = notebook.get_session_info(session_id) {
+                    sv.add_session(info, None);
+                }
+                sv.widget().set_visible(false);
+                sv.widget().set_vexpand(false);
+            }
+            notebook.widget().set_vexpand(true);
+            notebook.show_tab_view_content();
+        } else {
+            let Some(uri) = rustconn_core::sftp::build_sftp_uri_from_connection(conn) else {
+                drop(state_ref);
+                return;
+            };
+            drop(state_ref);
+
+            tracing::info!(%uri, "SFTP connect: opening file browser");
+
+            let key_for_add = key_path.clone();
+            let uri_clone = uri.clone();
+            crate::utils::spawn_blocking_with_callback(
+                move || {
+                    if let Some(ref kp) = key_for_add {
+                        let _ = std::process::Command::new("ssh-add")
+                            .arg(kp)
+                            .stdin(std::process::Stdio::null())
+                            .stdout(std::process::Stdio::null())
+                            .stderr(std::process::Stdio::null())
+                            .status();
+                    }
+                    true
+                },
+                move |_| {
+                    let launcher = gtk4::UriLauncher::new(&uri_clone);
+                    let uri_fallback = uri_clone.clone();
+                    launcher.launch(gtk4::Window::NONE, gio::Cancellable::NONE, move |result| {
+                        if let Err(e) = result {
+                            tracing::warn!(?e, "UriLauncher failed for SFTP connect");
+                            // Use a no-toast fallback — just try
+                            // subprocess
+                            let xdg_ok = std::process::Command::new("xdg-open")
+                                .arg(&uri_fallback)
+                                .spawn()
+                                .is_ok();
+                            if !xdg_ok {
+                                let _ = std::process::Command::new("nautilus")
+                                    .args(["--new-window", &uri_fallback])
+                                    .spawn();
+                            }
+                        }
+                    });
+                },
+            );
+        }
     }
 
     /// Sets up terminal-related actions (copy, paste, close tab)
@@ -3025,6 +3365,10 @@ impl MainWindow {
                     connection_id,
                 );
             }
+            ProtocolType::Sftp => {
+                // SFTP connections open the file manager directly
+                Self::handle_sftp_connect(&state, &notebook, Some(&split_view), connection_id);
+            }
         }
     }
 
@@ -3560,6 +3904,11 @@ impl MainWindow {
                     &conn_clone,
                     logging_enabled,
                 )
+            }
+            "sftp" => {
+                // SFTP opens file manager — no terminal session
+                Self::handle_sftp_connect(state, notebook, None, connection_id);
+                None
             }
             _ => {
                 // Unknown protocol

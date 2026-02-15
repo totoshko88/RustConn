@@ -22,6 +22,8 @@ pub enum ProtocolType {
     ZeroTrust,
     /// Serial console protocol
     Serial,
+    /// SFTP file transfer protocol (SSH-based)
+    Sftp,
 }
 
 impl ProtocolType {
@@ -38,6 +40,7 @@ impl ProtocolType {
             Self::Telnet => "telnet",
             Self::ZeroTrust => "zerotrust",
             Self::Serial => "serial",
+            Self::Sftp => "sftp",
         }
     }
 
@@ -50,6 +53,7 @@ impl ProtocolType {
             Self::Vnc | Self::Spice => 5900,
             Self::Telnet => 23,
             Self::ZeroTrust | Self::Serial => 0,
+            Self::Sftp => 22,
         }
     }
 }
@@ -64,6 +68,7 @@ impl std::fmt::Display for ProtocolType {
             Self::Telnet => write!(f, "Telnet"),
             Self::ZeroTrust => write!(f, "Zero Trust"),
             Self::Serial => write!(f, "Serial"),
+            Self::Sftp => write!(f, "SFTP"),
         }
     }
 }
@@ -86,6 +91,8 @@ pub enum ProtocolConfig {
     ZeroTrust(ZeroTrustConfig),
     /// Serial console protocol configuration
     Serial(SerialConfig),
+    /// SFTP file transfer configuration (reuses SSH config)
+    Sftp(SshConfig),
 }
 
 impl ProtocolConfig {
@@ -100,6 +107,7 @@ impl ProtocolConfig {
             Self::Telnet(_) => ProtocolType::Telnet,
             Self::ZeroTrust(_) => ProtocolType::ZeroTrust,
             Self::Serial(_) => ProtocolType::Serial,
+            Self::Sftp(_) => ProtocolType::Sftp,
         }
     }
 }
@@ -637,8 +645,13 @@ pub struct SshConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub jump_host_id: Option<uuid::Uuid>,
     /// Enable SFTP file browser for this SSH connection
-    #[serde(default)]
+    /// (always true — SFTP is available for all SSH connections)
+    #[serde(default = "default_true")]
     pub sftp_enabled: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl SshConfig {
@@ -1191,11 +1204,6 @@ pub enum SpiceImageCompression {
     Lz,
     /// QUIC compression
     Quic,
-}
-
-/// Helper function for serde default true values
-const fn default_true() -> bool {
-    true
 }
 
 /// SPICE protocol configuration

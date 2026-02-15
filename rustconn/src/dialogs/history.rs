@@ -24,14 +24,16 @@ impl HistoryDialog {
     pub fn new(parent: Option<&impl IsA<gtk4::Window>>) -> Self {
         let window = adw::Window::builder()
             .title("Connection History")
-            .default_width(750)
-            .default_height(500)
+            .default_width(500)
+            .default_height(400)
             .modal(true)
             .build();
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
         }
+
+        window.set_size_request(320, 280);
 
         // Header bar with Close/Connect buttons (GNOME HIG)
         let header = adw::HeaderBar::new();
@@ -55,11 +57,16 @@ impl HistoryDialog {
         // Main content
         let content = GtkBox::new(Orientation::Vertical, 0);
 
-        // History list in scrolled window
+        // History list in scrolled window with clamp
         let scrolled = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
             .vscrollbar_policy(gtk4::PolicyType::Automatic)
             .vexpand(true)
+            .build();
+
+        let clamp = adw::Clamp::builder()
+            .maximum_size(600)
+            .tightening_threshold(400)
             .build();
 
         let list_box = ListBox::builder()
@@ -80,7 +87,8 @@ impl HistoryDialog {
                 .build(),
         ));
 
-        scrolled.set_child(Some(&list_box));
+        clamp.set_child(Some(&list_box));
+        scrolled.set_child(Some(&clamp));
         content.append(&scrolled);
 
         // Clear history button at bottom
@@ -198,6 +206,7 @@ impl HistoryDialog {
         let name_label = Label::builder()
             .label(&entry.connection_name)
             .halign(gtk4::Align::Start)
+            .ellipsize(gtk4::pango::EllipsizeMode::End)
             .css_classes(["heading"])
             .build();
         info_box.append(&name_label);
@@ -212,6 +221,7 @@ impl HistoryDialog {
         let details_label = Label::builder()
             .label(&details)
             .halign(gtk4::Align::Start)
+            .ellipsize(gtk4::pango::EllipsizeMode::End)
             .css_classes(["dim-label", "caption"])
             .build();
         info_box.append(&details_label);

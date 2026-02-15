@@ -70,6 +70,7 @@ pub fn get_protocol_string(config: &rustconn_core::ProtocolConfig) -> String {
         rustconn_core::ProtocolConfig::Spice(_) => "spice".to_string(),
         rustconn_core::ProtocolConfig::Telnet(_) => "telnet".to_string(),
         rustconn_core::ProtocolConfig::Serial(_) => "serial".to_string(),
+        rustconn_core::ProtocolConfig::Sftp(_) => "sftp".to_string(),
         rustconn_core::ProtocolConfig::ZeroTrust(zt) => {
             // Use provider enum to determine the provider type
             let provider = match zt.provider {

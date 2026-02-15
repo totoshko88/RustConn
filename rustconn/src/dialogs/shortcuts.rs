@@ -168,28 +168,37 @@ impl ShortcutsDialog {
         let window = adw::Window::builder()
             .title("Keyboard Shortcuts")
             .modal(true)
-            .default_width(550)
-            .default_height(500)
+            .default_width(500)
+            .default_height(400)
             .build();
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
         }
 
+        window.set_size_request(320, 280);
+
         // Header bar
         let header = adw::HeaderBar::new();
 
-        // Main content
+        // Main content with clamp
+        let clamp = adw::Clamp::builder()
+            .maximum_size(600)
+            .tightening_threshold(400)
+            .build();
+
         let content = GtkBox::new(Orientation::Vertical, 12);
         content.set_margin_top(12);
         content.set_margin_bottom(12);
         content.set_margin_start(12);
         content.set_margin_end(12);
 
+        clamp.set_child(Some(&content));
+
         // Use ToolbarView for adw::Window
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
-        toolbar_view.set_content(Some(&content));
+        toolbar_view.set_content(Some(&clamp));
         window.set_content(Some(&toolbar_view));
 
         // Search entry

@@ -68,6 +68,9 @@ impl TestConnection {
             ProtocolType::Serial => {
                 Connection::new_serial(self.name.clone(), "/dev/ttyUSB0".to_string())
             }
+            ProtocolType::Sftp => {
+                Connection::new_sftp(self.name.clone(), self.host.clone(), self.port)
+            }
         }
     }
 }
@@ -623,6 +626,7 @@ fn create_test_connection_for_add(
         ProtocolType::Serial => {
             Connection::new_serial(name.to_string(), "/dev/ttyUSB0".to_string())
         }
+        ProtocolType::Sftp => Connection::new_sftp(name.to_string(), host.to_string(), port),
     };
 
     if let Some(user) = username {

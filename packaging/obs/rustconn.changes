@@ -1,7 +1,18 @@
 -------------------------------------------------------------------
-Sat Feb 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.5
+Sun Feb 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.5
 
 - Version bump to 0.8.5
+  * Added Serial Console Protocol (#11): picocom-based serial console
+    in GUI, CLI, Flatpak, and Snap with 13 property tests
+  * Added SFTP File Browser (#10): portal-aware file manager launch,
+    Midnight Commander FISH VFS, standalone SFTP connection type,
+    CLI sftp subcommand
+  * Added Responsive / Adaptive UI (#9): reduced dialog sizes,
+    adw::Clamp on list dialogs, adw::Window for Dashboard/Sessions,
+    600sp breakpoint for split view
+  * Added Terminal Rich Search (#7): regex, highlight all,
+    case-sensitive toggles, Ctrl+Shift+F, session log timestamps
+  * Changed: Session Logging moved to Logging settings tab
 
 -------------------------------------------------------------------
 Sat Feb 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.4

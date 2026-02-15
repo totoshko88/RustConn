@@ -62,14 +62,16 @@ impl FlatpakComponentsDialog {
 
         let window = adw::Window::builder()
             .title("Flatpak Components")
-            .default_width(600)
-            .default_height(700)
+            .default_width(500)
+            .default_height(500)
             .modal(true)
             .build();
 
         if let Some(parent) = parent {
             window.set_transient_for(Some(parent));
         }
+
+        window.set_size_request(320, 280);
 
         let toast_overlay = adw::ToastOverlay::new();
         let component_rows = Rc::new(RefCell::new(Vec::new()));

@@ -1061,6 +1061,11 @@ impl ConnectionDialog {
                                 rustconn_core::models::SerialConfig::default(),
                             )
                         }
+                        rustconn_core::models::ProtocolType::Sftp => {
+                            rustconn_core::models::ProtocolConfig::Sftp(
+                                rustconn_core::models::SshConfig::default(),
+                            )
+                        }
                     };
                     let mut test_conn = rustconn_core::models::Connection::new(
                         conn_name.clone(),
@@ -1165,9 +1170,10 @@ impl ConnectionDialog {
         let window = adw::Window::builder()
             .title("New Connection")
             .modal(true)
-            .default_width(750)
-            .default_height(650)
+            .default_width(600)
+            .default_height(500)
             .build();
+        window.set_size_request(350, 300);
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
@@ -1280,11 +1286,18 @@ impl ConnectionDialog {
                 "zerotrust",
                 "telnet",
                 "serial",
+                "sftp",
             ];
             let selected = dropdown.selected() as usize;
             if selected < protocols.len() {
                 let protocol_id = protocols[selected];
-                stack_clone.set_visible_child_name(protocol_id);
+                // SFTP reuses SSH config tab
+                let stack_name = if protocol_id == "sftp" {
+                    "ssh"
+                } else {
+                    protocol_id
+                };
+                stack_clone.set_visible_child_name(stack_name);
                 let default_port = Self::get_default_port(protocol_id);
                 if Self::is_default_port(port_clone.value()) {
                     port_clone.set_value(default_port);
@@ -1320,7 +1333,7 @@ impl ConnectionDialog {
             "vnc" | "spice" => 5900.0,
             "zerotrust" | "serial" => 0.0,
             "telnet" => 23.0,
-            _ => 22.0,
+            _ => 22.0, // ssh, sftp
         }
     }
 
@@ -1762,6 +1775,7 @@ impl ConnectionDialog {
             "Zero Trust",
             "Telnet",
             "Serial",
+            "SFTP",
         ]);
         let protocol_dropdown = DropDown::builder().model(&protocol_list).build();
         protocol_dropdown.set_selected(0);
@@ -4931,6 +4945,11 @@ impl ConnectionDialog {
                 let args_text = serial_config.custom_args.join(" ");
                 self.serial_custom_args_entry.set_text(&args_text);
             }
+            ProtocolConfig::Sftp(ref ssh) => {
+                self.protocol_dropdown.set_selected(7); // SFTP
+                self.protocol_stack.set_visible_child_name("ssh");
+                self.set_ssh_config(ssh);
+            }
         }
 
         // Set local variables
@@ -6503,6 +6522,7 @@ impl ConnectionDialogData<'_> {
             4 => Some(ProtocolConfig::ZeroTrust(self.build_zerotrust_config())),
             5 => Some(ProtocolConfig::Telnet(self.build_telnet_config())),
             6 => Some(ProtocolConfig::Serial(self.build_serial_config())),
+            7 => Some(ProtocolConfig::Sftp(self.build_ssh_config())),
             _ => None,
         }
     }
@@ -6779,7 +6799,7 @@ impl ConnectionDialogData<'_> {
             compression: self.ssh_compression.is_active(),
             custom_options,
             startup_command,
-            sftp_enabled: false, // TODO: wire to SSH tab SFTP checkbox
+            sftp_enabled: true,
         }
     }
 

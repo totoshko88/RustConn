@@ -1,8 +1,29 @@
 rustconn (0.8.5-1) unstable; urgency=medium
 
   * Version bump to 0.8.5
+  * Added Serial Console Protocol (#11):
+    - Full serial console support via picocom (GUI, CLI, Flatpak, Snap)
+    - SerialConfig: device path, baud rate (9600-921600), data/stop bits,
+      parity, flow control
+    - 13 serial-specific property tests
+  * Added SFTP File Browser (#10):
+    - "Open SFTP" in sidebar context menu and SSH session toolbar
+    - Opens system file manager via portal (Flatpak/Snap/native)
+    - "SFTP via mc" option with Midnight Commander FISH VFS
+    - Standalone SFTP connection type reusing SSH config
+    - CLI: sftp subcommand (--cli, --mc, default opens file manager)
+  * Added Responsive / Adaptive UI (#9):
+    - All 17+ dialogs: reduced sizes, minimum sizes, all resizable
+    - adw::Clamp (max 600px) on 7 list-style dialogs
+    - Dashboard and Active Sessions upgraded to adw::Window
+    - Main window breakpoint 600sp: hides split view buttons
+  * Added Terminal Rich Search (#7):
+    - Regex, Highlight All, case-sensitive toggles, wrap-around navigation
+    - Keyboard shortcut: Ctrl+Shift+F
+    - Session log timestamps: [HH:MM:SS] prepended to log lines
+  * Changed: Session Logging moved from Terminal to Logging settings tab
 
- -- Anton Isaiev <totoshko88@gmail.com>  Sat, 14 Feb 2026 12:00:00 +0200
+ -- Anton Isaiev <totoshko88@gmail.com>  Sun, 15 Feb 2026 12:00:00 +0200
 
 rustconn (0.8.4-1) unstable; urgency=medium
 

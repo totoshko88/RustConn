@@ -50,6 +50,7 @@ pub struct SettingsDialog {
     allow_hyperlinks_check: CheckButton,
     mouse_autohide_check: CheckButton,
     audible_bell_check: CheckButton,
+    sftp_use_mc_check: CheckButton,
     // Logging settings
     logging_enabled_switch: Switch,
     log_dir_entry: Entry,
@@ -57,6 +58,7 @@ pub struct SettingsDialog {
     log_activity_check: CheckButton,
     log_input_check: CheckButton,
     log_output_check: CheckButton,
+    log_timestamps_check: CheckButton,
     // Secret settings - now using SecretsPageWidgets struct
     secrets_widgets: SecretsPageWidgets,
     // UI settings
@@ -107,6 +109,7 @@ impl SettingsDialog {
             allow_hyperlinks_check,
             mouse_autohide_check,
             audible_bell_check,
+            sftp_use_mc_check,
         ) = create_terminal_page();
 
         let (
@@ -117,6 +120,7 @@ impl SettingsDialog {
             log_activity_check,
             log_input_check,
             log_output_check,
+            log_timestamps_check,
         ) = create_logging_page();
 
         let secrets_widgets = create_secrets_page();
@@ -174,12 +178,14 @@ impl SettingsDialog {
             allow_hyperlinks_check,
             mouse_autohide_check,
             audible_bell_check,
+            sftp_use_mc_check,
             logging_enabled_switch,
             log_dir_entry,
             retention_spin,
             log_activity_check,
             log_input_check,
             log_output_check,
+            log_timestamps_check,
             secrets_widgets,
             color_scheme_box,
             remember_geometry,
@@ -339,6 +345,7 @@ impl SettingsDialog {
             &self.allow_hyperlinks_check,
             &self.mouse_autohide_check,
             &self.audible_bell_check,
+            &self.sftp_use_mc_check,
             &settings.terminal,
         );
 
@@ -350,7 +357,9 @@ impl SettingsDialog {
             &self.log_activity_check,
             &self.log_input_check,
             &self.log_output_check,
+            &self.log_timestamps_check,
             &settings.logging,
+            settings.terminal.log_timestamps,
         );
 
         // Load secret settings
@@ -402,6 +411,7 @@ impl SettingsDialog {
         let allow_hyperlinks_check_clone = self.allow_hyperlinks_check.clone();
         let mouse_autohide_check_clone = self.mouse_autohide_check.clone();
         let audible_bell_check_clone = self.audible_bell_check.clone();
+        let sftp_use_mc_check_clone = self.sftp_use_mc_check.clone();
 
         // Logging controls
         let logging_enabled_switch_clone = self.logging_enabled_switch.clone();
@@ -410,6 +420,7 @@ impl SettingsDialog {
         let log_activity_check_clone = self.log_activity_check.clone();
         let log_input_check_clone = self.log_input_check.clone();
         let log_output_check_clone = self.log_output_check.clone();
+        let log_timestamps_check_clone = self.log_timestamps_check.clone();
 
         // Secret controls - clone individual widgets from secrets_widgets
         let secret_backend_dropdown_clone = self.secrets_widgets.secret_backend_dropdown.clone();
@@ -460,6 +471,8 @@ impl SettingsDialog {
                 &allow_hyperlinks_check_clone,
                 &mouse_autohide_check_clone,
                 &audible_bell_check_clone,
+                &sftp_use_mc_check_clone,
+                log_timestamps_check_clone.is_active(),
             );
 
             // Collect logging settings

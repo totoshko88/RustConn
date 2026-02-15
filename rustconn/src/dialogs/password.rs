@@ -54,12 +54,13 @@ impl PasswordDialog {
             .title("Authentication Required")
             .modal(true)
             .default_width(400)
-            .resizable(false)
             .build();
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
         }
+
+        window.set_size_request(280, -1);
 
         // Header bar with Cancel/Connect buttons (GNOME HIG)
         let header = adw::HeaderBar::new();

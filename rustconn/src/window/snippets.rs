@@ -53,9 +53,11 @@ pub fn show_snippets_manager(
         .title("Manage Snippets")
         .transient_for(window)
         .modal(true)
-        .default_width(750)
-        .default_height(500)
+        .default_width(500)
+        .default_height(400)
         .build();
+
+    manager_window.set_size_request(320, 280);
 
     // Create header bar with Close/Create buttons (GNOME HIG)
     let header = adw::HeaderBar::new();

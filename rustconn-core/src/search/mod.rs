@@ -1020,6 +1020,7 @@ mod tests {
             ProtocolType::Serial => {
                 Connection::new_serial(name.to_string(), "/dev/ttyUSB0".to_string())
             }
+            ProtocolType::Sftp => Connection::new_sftp(name.to_string(), host.to_string(), 22),
         };
         conn.id = Uuid::new_v4();
         conn

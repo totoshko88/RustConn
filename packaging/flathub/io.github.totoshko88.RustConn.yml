@@ -29,6 +29,8 @@ finish-args:
   - --talk-name=org.kde.StatusNotifierWatcher
   # Serial device access for picocom
   - --device=all
+  # Home directory access for mc local panel
+  - --filesystem=home
 
 build-options:
   append-path: /usr/lib/sdk/rust-stable/bin
@@ -94,6 +96,17 @@ modules:
       - type: archive
         url: https://download.gnome.org/sources/libsecret/0.21/libsecret-0.21.7.tar.xz
         sha256: 6b452e4750590a2b5617adc40026f28d2f4903de15f1250e1d1c40bfd68ed55e
+
+  - name: mc
+    buildsystem: autotools
+    config-opts:
+      - --without-x
+      - --with-screen=ncurses
+      - --disable-vfs-sftp
+    sources:
+      - type: archive
+        url: https://ftp.midnight-commander.org/mc-4.8.32.tar.xz
+        sha256: 4ddc83d1ede9af2363b3eab987f5abf8ef967c3e0c8b4b24eee2bc1b9f9b76e0
 
   - name: rustconn
     buildsystem: simple

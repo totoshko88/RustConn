@@ -101,10 +101,6 @@ pub enum Commands {
         /// Serial baud rate (default: 115200)
         #[arg(long, default_value = "115200")]
         baud_rate: Option<u32>,
-
-        /// Enable SFTP for SSH connections
-        #[arg(long)]
-        sftp: bool,
     },
 
     /// Export connections to external format
@@ -193,10 +189,6 @@ pub enum Commands {
         /// Serial baud rate
         #[arg(long)]
         baud_rate: Option<u32>,
-
-        /// Enable or disable SFTP for SSH connections
-        #[arg(long)]
-        sftp: Option<bool>,
     },
 
     /// Send Wake-on-LAN magic packet
@@ -258,6 +250,10 @@ pub enum Commands {
         /// Use sftp CLI instead of file manager
         #[arg(long)]
         cli: bool,
+
+        /// Open SFTP via Midnight Commander (mc) in terminal
+        #[arg(long)]
+        mc: bool,
     },
 
     /// Show connection statistics
@@ -739,7 +735,6 @@ fn main() {
             auth_method,
             device,
             baud_rate,
-            sftp,
         } => cmd_add(AddParams {
             name: &name,
             host: &host,
@@ -750,7 +745,6 @@ fn main() {
             auth_method: auth_method.as_deref(),
             device: device.as_deref(),
             baud_rate,
-            sftp,
         }),
         Commands::Export { format, output } => cmd_export(format, &output),
         Commands::Import { format, file } => cmd_import(format, &file),
@@ -767,7 +761,6 @@ fn main() {
             auth_method,
             device,
             baud_rate,
-            sftp,
         } => cmd_update(UpdateParams {
             name: &name,
             new_name: new_name.as_deref(),
@@ -778,7 +771,6 @@ fn main() {
             auth_method: auth_method.as_deref(),
             device: device.as_deref(),
             baud_rate,
-            sftp,
         }),
         Commands::Wol {
             target,
@@ -792,7 +784,7 @@ fn main() {
         Commands::Var(subcmd) => cmd_var(subcmd),
         Commands::Secret(subcmd) => cmd_secret(subcmd),
         Commands::Duplicate { name, new_name } => cmd_duplicate(&name, new_name.as_deref()),
-        Commands::Sftp { name, cli } => cmd_sftp(&name, cli),
+        Commands::Sftp { name, cli, mc } => cmd_sftp(&name, cli, mc),
         Commands::Stats => cmd_stats(),
     };
 
@@ -999,8 +991,6 @@ pub struct ConnectionOutput {
     pub device: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub baud_rate: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sftp_enabled: Option<bool>,
 }
 
 impl From<&Connection> for ConnectionOutput {
@@ -1015,13 +1005,6 @@ impl From<&Connection> for ConnectionOutput {
                     SshAuthMethod::SecurityKey => "security-key",
                 };
                 Some(s.to_string())
-            } else {
-                None
-            };
-
-        let sftp_enabled =
-            if let rustconn_core::models::ProtocolConfig::Ssh(ref cfg) = conn.protocol_config {
-                Some(cfg.sftp_enabled)
             } else {
                 None
             };
@@ -1046,7 +1029,6 @@ impl From<&Connection> for ConnectionOutput {
             auth_method,
             device,
             baud_rate,
-            sftp_enabled,
         }
     }
 }
@@ -1090,6 +1072,15 @@ fn build_connection_command(connection: &Connection) -> ConnectionCommand {
         ProtocolType::ZeroTrust => build_zerotrust_command(connection),
         ProtocolType::Telnet => build_telnet_command(connection),
         ProtocolType::Serial => build_serial_command(connection),
+        ProtocolType::Sftp => {
+            // SFTP connections open file manager — use sftp command flow
+            ConnectionCommand {
+                program: "echo".to_string(),
+                args: vec!["SFTP connections open a file manager. \
+                     Use 'rustconn-cli sftp' instead."
+                    .to_string()],
+            }
+        }
     }
 }
 
@@ -1493,7 +1484,6 @@ struct AddParams<'a> {
     auth_method: Option<&'a str>,
     device: Option<&'a str>,
     baud_rate: Option<u32>,
-    sftp: bool,
 }
 
 /// Add connection command handler
@@ -1547,16 +1537,6 @@ fn cmd_add(params: AddParams<'_>) -> Result<(), CliError> {
         connection.username = Some(username.to_string());
     }
 
-    // Apply SFTP setting for SSH connections
-    if params.sftp {
-        if let rustconn_core::models::ProtocolConfig::Ssh(ref mut cfg) = connection.protocol_config
-        {
-            cfg.sftp_enabled = true;
-        } else {
-            eprintln!("Warning: --sftp is only applicable to SSH connections");
-        }
-    }
-
     // Load existing connections
     let config_manager = ConfigManager::new()
         .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
@@ -1608,9 +1588,10 @@ fn parse_protocol(protocol: &str) -> Result<(ProtocolType, u16), CliError> {
         "spice" => Ok((ProtocolType::Spice, 5900)),
         "telnet" => Ok((ProtocolType::Telnet, 23)),
         "serial" => Ok((ProtocolType::Serial, 0)),
+        "sftp" => Ok((ProtocolType::Sftp, 22)),
         _ => Err(CliError::Config(format!(
             "Unknown protocol '{protocol}'. \
-             Supported protocols: ssh, rdp, vnc, spice, telnet, serial"
+             Supported protocols: ssh, rdp, vnc, spice, telnet, serial, sftp"
         ))),
     }
 }
@@ -1697,6 +1678,22 @@ fn create_connection(
             }
             // For serial, host is used as device path
             Connection::new_serial(name.to_string(), host.to_string())
+        }
+        ProtocolType::Sftp => {
+            let mut conn = Connection::new_sftp(name.to_string(), host.to_string(), port);
+            if let rustconn_core::models::ProtocolConfig::Sftp(ref mut ssh_config) =
+                conn.protocol_config
+            {
+                if let Some(key_path) = key {
+                    ssh_config.key_path = Some(key_path.to_path_buf());
+                }
+                if let Some(method) = auth_method {
+                    ssh_config.auth_method = method;
+                } else if key.is_some() {
+                    ssh_config.auth_method = SshAuthMethod::PublicKey;
+                }
+            }
+            conn
         }
     }
 }
@@ -2262,9 +2259,6 @@ fn cmd_show(name: &str) -> Result<(), CliError> {
             if let Some(ref jump) = config.proxy_jump {
                 println!("  Proxy Jump: {jump}");
             }
-            if config.sftp_enabled {
-                println!("  SFTP:     Enabled");
-            }
         }
         rustconn_core::models::ProtocolConfig::Rdp(ref config) => {
             if let Some(ref domain) = connection.domain {
@@ -2310,7 +2304,6 @@ struct UpdateParams<'a> {
     auth_method: Option<&'a str>,
     device: Option<&'a str>,
     baud_rate: Option<u32>,
-    sftp: Option<bool>,
 }
 
 fn cmd_update(params: UpdateParams<'_>) -> Result<(), CliError> {
@@ -2345,7 +2338,7 @@ fn cmd_update(params: UpdateParams<'_>) -> Result<(), CliError> {
     }
 
     // Update SSH-specific fields
-    if params.key.is_some() || params.auth_method.is_some() || params.sftp.is_some() {
+    if params.key.is_some() || params.auth_method.is_some() {
         if let rustconn_core::models::ProtocolConfig::Ssh(ref mut cfg) = connection.protocol_config
         {
             if let Some(key_path) = params.key {
@@ -2353,9 +2346,6 @@ fn cmd_update(params: UpdateParams<'_>) -> Result<(), CliError> {
             }
             if let Some(method_str) = params.auth_method {
                 cfg.auth_method = parse_auth_method(method_str)?;
-            }
-            if let Some(sftp_val) = params.sftp {
-                cfg.sftp_enabled = sftp_val;
             }
         } else {
             if params.key.is_some() {
@@ -2366,9 +2356,6 @@ fn cmd_update(params: UpdateParams<'_>) -> Result<(), CliError> {
                     "Warning: --auth-method is only applicable to SSH \
                      connections"
                 );
-            }
-            if params.sftp.is_some() {
-                eprintln!("Warning: --sftp is only applicable to SSH connections");
             }
         }
     }
@@ -4840,7 +4827,7 @@ fn cmd_duplicate(name: &str, new_name: Option<&str>) -> Result<(), CliError> {
 }
 
 /// Show connection statistics
-fn cmd_sftp(name: &str, use_cli: bool) -> Result<(), CliError> {
+fn cmd_sftp(name: &str, use_cli: bool, use_mc: bool) -> Result<(), CliError> {
     let config_manager = ConfigManager::new()
         .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
 
@@ -4858,17 +4845,36 @@ fn cmd_sftp(name: &str, use_cli: bool) -> Result<(), CliError> {
         )));
     }
 
-    if let rustconn_core::models::ProtocolConfig::Ssh(ref cfg) = connection.protocol_config {
-        if !cfg.sftp_enabled {
-            return Err(CliError::Protocol(format!(
-                "SFTP is not enabled for '{}'. Enable it with: \
-                 rustconn-cli update \"{}\" --sftp true",
-                connection.name, connection.name
-            )));
-        }
+    // Ensure SSH key is in agent (mc/nautilus can't pass -i)
+    if !rustconn_core::sftp::ensure_key_in_agent(connection) {
+        eprintln!(
+            "Warning: could not add SSH key to agent. \
+             You may need to run ssh-add manually."
+        );
     }
 
-    if use_cli {
+    if use_mc {
+        // Open Midnight Commander with SFTP panel
+        let cmd = rustconn_core::sftp::build_mc_sftp_command(connection)
+            .ok_or_else(|| CliError::Protocol("Failed to build mc command".to_string()))?;
+
+        println!("Opening mc SFTP for '{}'...", connection.name);
+
+        let status = std::process::Command::new(&cmd[0])
+            .args(&cmd[1..])
+            .status()
+            .map_err(|e| {
+                CliError::Connection(format!(
+                    "Failed to launch mc: {e}. Is midnight-commander installed?"
+                ))
+            })?;
+
+        if !status.success() {
+            return Err(CliError::Connection(
+                "mc session ended with error".to_string(),
+            ));
+        }
+    } else if use_cli {
         // Use sftp CLI directly
         let cmd = rustconn_core::sftp::build_sftp_command(connection)
             .ok_or_else(|| CliError::Protocol("Failed to build SFTP command".to_string()))?;
@@ -4886,30 +4892,39 @@ fn cmd_sftp(name: &str, use_cli: bool) -> Result<(), CliError> {
             ));
         }
     } else {
-        // Open file manager via xdg-open
+        // Open file manager with sftp:// URI
         let uri = rustconn_core::sftp::build_sftp_uri_from_connection(connection)
             .ok_or_else(|| CliError::Protocol("Failed to build SFTP URI".to_string()))?;
 
         println!("Opening SFTP file browser for '{}'...", connection.name);
         println!("URI: {uri}");
 
-        let status = std::process::Command::new("xdg-open")
+        // Try xdg-open first (DE-agnostic, works on KDE/COSMIC/GNOME)
+        let xdg_ok = std::process::Command::new("xdg-open")
             .arg(&uri)
-            .status()
-            .map_err(|e| {
-                CliError::Connection(format!(
-                    "Failed to open file manager: {e}. \
-                     Try --cli to use sftp directly"
-                ))
-            })?;
+            .spawn()
+            .is_ok();
 
-        if !status.success() {
-            return Err(CliError::Connection(
-                "Failed to open file manager. Try --cli to use sftp \
-                 directly"
-                    .to_string(),
-            ));
+        if xdg_ok {
+            return Ok(());
         }
+
+        // Fallback: nautilus (GNOME Files — handles GVFS mount + auth)
+        eprintln!("xdg-open not found, trying nautilus...");
+        let nautilus_ok = std::process::Command::new("nautilus")
+            .args(["--new-window", &uri])
+            .spawn()
+            .is_ok();
+
+        if nautilus_ok {
+            return Ok(());
+        }
+
+        return Err(CliError::Connection(
+            "Failed to open file manager. Try --cli to use sftp \
+             directly"
+                .to_string(),
+        ));
     }
 
     Ok(())

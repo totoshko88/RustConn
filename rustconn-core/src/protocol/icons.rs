@@ -122,6 +122,7 @@ pub const fn get_protocol_icon(protocol: ProtocolType) -> &'static str {
         ProtocolType::Telnet => "call-start-symbolic",
         ProtocolType::ZeroTrust => "cloud-symbolic",
         ProtocolType::Serial => "modem-symbolic",
+        ProtocolType::Sftp => "folder-remote-symbolic",
     }
 }
 
@@ -140,6 +141,7 @@ pub const fn all_protocol_icons() -> &'static [(ProtocolType, &'static str)] {
         ),
         (ProtocolType::Telnet, "call-start-symbolic"),
         (ProtocolType::ZeroTrust, "cloud-symbolic"),
+        (ProtocolType::Sftp, "folder-remote-symbolic"),
     ]
 }
 

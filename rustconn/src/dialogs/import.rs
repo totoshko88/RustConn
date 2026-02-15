@@ -48,9 +48,10 @@ impl ImportDialog {
         let window = adw::Window::builder()
             .title("Import Connections")
             .modal(true)
-            .default_width(750)
-            .default_height(800)
+            .default_width(600)
+            .default_height(500)
             .build();
+        window.set_size_request(350, 300);
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
@@ -78,7 +79,12 @@ impl ImportDialog {
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
 
-        // Create main content area
+        // Create main content area with clamp
+        let clamp = adw::Clamp::builder()
+            .maximum_size(600)
+            .tightening_threshold(400)
+            .build();
+
         let content = GtkBox::new(Orientation::Vertical, 12);
         content.set_margin_top(12);
         content.set_margin_bottom(12);
@@ -90,7 +96,8 @@ impl ImportDialog {
         stack.set_vexpand(true);
         content.append(&stack);
 
-        toolbar_view.set_content(Some(&content));
+        clamp.set_child(Some(&content));
+        toolbar_view.set_content(Some(&clamp));
         window.set_content(Some(&toolbar_view));
 
         // === Source Selection Page ===

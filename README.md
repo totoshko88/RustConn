@@ -13,6 +13,7 @@ All core protocols use embedded Rust implementations — no external dependencie
 | Category | Details |
 |----------|---------|
 | **Protocols** | SSH (embedded VTE), RDP (IronRDP), VNC (vnc-rs), SPICE, Telnet, Serial (picocom), Zero Trust (AWS SSM, GCP IAP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary) |
+| **File Transfer** | SFTP file browser via system file manager (sftp:// URI, D-Bus portal) |
 | **Organization** | Groups, tags, templates, connection history & statistics |
 | **Import/Export** | Asbru-CM, Remmina, SSH config, Ansible inventory, Royal TS, MobaXterm, native (.rcn) |
 | **Security** | KeePassXC (KDBX), libsecret, Bitwarden CLI, 1Password CLI, Passbolt CLI integration |

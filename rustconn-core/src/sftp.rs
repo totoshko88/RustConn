@@ -4,12 +4,14 @@
 //! for SSH connections with SFTP enabled.
 
 use crate::models::Connection;
+use crate::models::SshKeySource;
+use std::path::PathBuf;
 
 /// Builds an SFTP URI for the given connection.
 ///
 /// Format: `sftp://[user@]host[:port]`
 ///
-/// Used by GUI (`gtk4::UriLauncher`) and CLI (`xdg-open`) to open
+/// Used by GUI (`nautilus`) and CLI (`xdg-open`) to open
 /// the host file manager's SFTP browser.
 #[must_use]
 pub fn build_sftp_uri(username: Option<&str>, host: &str, port: u16) -> String {
@@ -23,14 +25,13 @@ pub fn build_sftp_uri(username: Option<&str>, host: &str, port: u16) -> String {
 
 /// Builds an SFTP URI from a `Connection`.
 ///
-/// Returns `None` if the connection is not SSH or SFTP is not enabled.
+/// Returns `None` if the connection is not SSH.
 #[must_use]
 pub fn build_sftp_uri_from_connection(connection: &Connection) -> Option<String> {
-    if let crate::models::ProtocolConfig::Ssh(ref config) = connection.protocol_config {
-        if !config.sftp_enabled {
-            return None;
-        }
-    } else {
+    if !matches!(
+        connection.protocol_config,
+        crate::models::ProtocolConfig::Ssh(_) | crate::models::ProtocolConfig::Sftp(_)
+    ) {
         return None;
     }
 
@@ -43,17 +44,16 @@ pub fn build_sftp_uri_from_connection(connection: &Connection) -> Option<String>
 
 /// Builds an `sftp` CLI command for the given connection.
 ///
-/// Returns `None` if the connection is not SSH or SFTP is not enabled.
+/// Returns `None` if the connection is not SSH.
 ///
 /// The returned `Vec` has the program name as the first element,
 /// followed by arguments: `["sftp", "-P", "port", "user@host"]`.
 #[must_use]
 pub fn build_sftp_command(connection: &Connection) -> Option<Vec<String>> {
-    if let crate::models::ProtocolConfig::Ssh(ref config) = connection.protocol_config {
-        if !config.sftp_enabled {
-            return None;
-        }
-    } else {
+    if !matches!(
+        connection.protocol_config,
+        crate::models::ProtocolConfig::Ssh(_) | crate::models::ProtocolConfig::Sftp(_)
+    ) {
         return None;
     }
 
@@ -72,6 +72,105 @@ pub fn build_sftp_command(connection: &Connection) -> Option<Vec<String>> {
     cmd.push(target);
 
     Some(cmd)
+}
+
+/// Extracts the SSH key file path from a connection's config.
+///
+/// Checks `key_source` (preferred) then falls back to legacy `key_path`.
+/// Returns `None` if no key is configured or the connection is not SSH.
+#[must_use]
+pub fn get_ssh_key_path(connection: &Connection) -> Option<PathBuf> {
+    let ssh = match &connection.protocol_config {
+        crate::models::ProtocolConfig::Ssh(cfg) | crate::models::ProtocolConfig::Sftp(cfg) => cfg,
+        _ => return None,
+    };
+
+    match &ssh.key_source {
+        SshKeySource::File { path } if !path.as_os_str().is_empty() => Some(path.clone()),
+        SshKeySource::Agent { comment, .. } => {
+            // Agent key identified by comment — if comment looks like
+            // a file path, return it so we can ssh-add it.
+            let p = std::path::Path::new(comment);
+            if comment.starts_with('/') || comment.starts_with('~') {
+                if comment.starts_with('~') {
+                    dirs::home_dir()
+                        .map(|home| home.join(comment.strip_prefix("~/").unwrap_or(comment)))
+                } else {
+                    Some(p.to_path_buf())
+                }
+            } else {
+                None
+            }
+        }
+        _ => {
+            // Legacy key_path fallback
+            ssh.key_path
+                .as_ref()
+                .filter(|p| !p.as_os_str().is_empty())
+                .cloned()
+        }
+    }
+}
+
+/// Ensures the connection's SSH key is loaded in ssh-agent.
+///
+/// Runs `ssh-add <key_path>` if a key file is configured.
+/// This is needed before opening SFTP via mc or nautilus,
+/// because neither can pass an identity file directly.
+///
+/// Returns `true` if the key was added (or no key is needed),
+/// `false` if `ssh-add` failed.
+pub fn ensure_key_in_agent(connection: &Connection) -> bool {
+    let Some(key_path) = get_ssh_key_path(connection) else {
+        // No key configured — ssh-agent may already have the
+        // right key, or password auth is used. Proceed anyway.
+        return true;
+    };
+
+    if !key_path.exists() {
+        tracing::warn!(?key_path, "SSH key file not found, skipping ssh-add");
+        return true; // Don't block SFTP — agent may have it
+    }
+
+    tracing::info!(?key_path, "Adding SSH key to agent for SFTP");
+    std::process::Command::new("ssh-add")
+        .arg(&key_path)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::piped())
+        .status()
+        .is_ok_and(|s| s.success())
+}
+
+/// Builds a Midnight Commander command to open an SFTP panel.
+///
+/// Returns `None` if the connection is not SSH.
+///
+/// Uses mc's FISH VFS: `["mc", ".", "sh://user@host:port"]`.
+/// Left panel shows local directory, right panel shows remote via FISH.
+/// Requires the SSH key to be loaded in ssh-agent beforehand.
+#[must_use]
+pub fn build_mc_sftp_command(connection: &Connection) -> Option<Vec<String>> {
+    if !matches!(
+        connection.protocol_config,
+        crate::models::ProtocolConfig::Ssh(_) | crate::models::ProtocolConfig::Sftp(_)
+    ) {
+        return None;
+    }
+
+    let target = if let Some(ref user) = connection.username {
+        if connection.port == 22 {
+            format!("sh://{user}@{}", connection.host)
+        } else {
+            format!("sh://{user}@{}:{}", connection.host, connection.port)
+        }
+    } else if connection.port == 22 {
+        format!("sh://{}", connection.host)
+    } else {
+        format!("sh://{}:{}", connection.host, connection.port)
+    };
+
+    Some(vec!["mc".to_string(), ".".to_string(), target])
 }
 
 #[cfg(test)]
@@ -101,9 +200,6 @@ mod tests {
         let mut conn =
             Connection::new_ssh("Test".to_string(), "server.example.com".to_string(), 22);
         conn.username = Some("admin".to_string());
-        if let crate::models::ProtocolConfig::Ssh(ref mut cfg) = conn.protocol_config {
-            cfg.sftp_enabled = true;
-        }
 
         let cmd = build_sftp_command(&conn).unwrap();
         assert_eq!(cmd, vec!["sftp", "admin@server.example.com"]);
@@ -113,29 +209,22 @@ mod tests {
     fn test_build_sftp_command_custom_port() {
         let mut conn = Connection::new_ssh("Test".to_string(), "host.local".to_string(), 2222);
         conn.username = Some("root".to_string());
-        if let crate::models::ProtocolConfig::Ssh(ref mut cfg) = conn.protocol_config {
-            cfg.sftp_enabled = true;
-        }
 
         let cmd = build_sftp_command(&conn).unwrap();
         assert_eq!(cmd, vec!["sftp", "-P", "2222", "root@host.local"]);
     }
 
     #[test]
-    fn test_build_sftp_command_disabled() {
-        let conn = Connection::new_ssh("Test".to_string(), "server.example.com".to_string(), 22);
-        // sftp_enabled defaults to false
+    fn test_build_sftp_command_non_ssh() {
+        let conn = Connection::new_rdp("Test".to_string(), "server.example.com".to_string(), 3389);
         assert!(build_sftp_command(&conn).is_none());
     }
 
     #[test]
-    fn test_build_sftp_uri_from_connection_enabled() {
+    fn test_build_sftp_uri_from_ssh_connection() {
         let mut conn =
             Connection::new_ssh("Test".to_string(), "server.example.com".to_string(), 22);
         conn.username = Some("admin".to_string());
-        if let crate::models::ProtocolConfig::Ssh(ref mut cfg) = conn.protocol_config {
-            cfg.sftp_enabled = true;
-        }
 
         let uri = build_sftp_uri_from_connection(&conn).unwrap();
         assert_eq!(uri, "sftp://admin@server.example.com");
@@ -145,5 +234,30 @@ mod tests {
     fn test_build_sftp_uri_from_non_ssh() {
         let conn = Connection::new_rdp("Test".to_string(), "server.example.com".to_string(), 3389);
         assert!(build_sftp_uri_from_connection(&conn).is_none());
+    }
+
+    #[test]
+    fn test_build_mc_sftp_command_default_port() {
+        let mut conn =
+            Connection::new_ssh("Test".to_string(), "server.example.com".to_string(), 22);
+        conn.username = Some("admin".to_string());
+
+        let cmd = build_mc_sftp_command(&conn).unwrap();
+        assert_eq!(cmd, vec!["mc", ".", "sh://admin@server.example.com"]);
+    }
+
+    #[test]
+    fn test_build_mc_sftp_command_custom_port() {
+        let mut conn = Connection::new_ssh("Test".to_string(), "host.local".to_string(), 2222);
+        conn.username = Some("root".to_string());
+
+        let cmd = build_mc_sftp_command(&conn).unwrap();
+        assert_eq!(cmd, vec!["mc", ".", "sh://root@host.local:2222"]);
+    }
+
+    #[test]
+    fn test_build_mc_sftp_command_non_ssh() {
+        let conn = Connection::new_rdp("Test".to_string(), "server.example.com".to_string(), 3389);
+        assert!(build_mc_sftp_command(&conn).is_none());
     }
 }

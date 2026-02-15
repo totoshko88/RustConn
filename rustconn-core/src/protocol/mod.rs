@@ -11,6 +11,7 @@ pub mod icons;
 mod rdp;
 mod registry;
 mod serial;
+mod sftp;
 mod spice;
 mod ssh;
 mod telnet;
@@ -33,6 +34,7 @@ pub use icons::{
 pub use rdp::RdpProtocol;
 pub use registry::ProtocolRegistry;
 pub use serial::SerialProtocol;
+pub use sftp::SftpProtocol;
 pub use spice::SpiceProtocol;
 pub use ssh::SshProtocol;
 pub use telnet::TelnetProtocol;

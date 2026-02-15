@@ -31,9 +31,10 @@ impl LogViewerDialog {
         let window = adw::Window::builder()
             .title("Session Logs")
             .modal(true)
-            .default_width(900)
-            .default_height(600)
+            .default_width(600)
+            .default_height(500)
             .build();
+        window.set_size_request(350, 300);
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));

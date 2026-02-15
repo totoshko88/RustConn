@@ -17,6 +17,7 @@ pub fn create_logging_page() -> (
     CheckButton,
     CheckButton,
     CheckButton,
+    CheckButton, // log_timestamps
 ) {
     let page = adw::PreferencesPage::builder()
         .title("Logging")
@@ -143,6 +144,23 @@ pub fn create_logging_page() -> (
 
     page.add(&content_group);
 
+    // === Session Logging Group ===
+    let session_group = adw::PreferencesGroup::builder()
+        .title("Session Logging")
+        .description("Format options for session logs")
+        .build();
+
+    let log_timestamps_check = CheckButton::builder().valign(gtk4::Align::Center).build();
+    let log_timestamps_row = adw::ActionRow::builder()
+        .title("Timestamps")
+        .subtitle("Prepend [HH:MM:SS] to each line in session logs")
+        .activatable_widget(&log_timestamps_check)
+        .build();
+    log_timestamps_row.add_prefix(&log_timestamps_check);
+    session_group.add(&log_timestamps_row);
+
+    page.add(&session_group);
+
     // Connect switch to enable/disable other controls
     let log_dir_entry_clone = log_dir_entry.clone();
     let retention_clone = retention_spin.clone();
@@ -168,10 +186,12 @@ pub fn create_logging_page() -> (
         log_activity_check,
         log_input_check,
         log_output_check,
+        log_timestamps_check,
     )
 }
 
 /// Loads logging settings into UI controls
+#[allow(clippy::too_many_arguments)]
 pub fn load_logging_settings(
     logging_enabled_switch: &Switch,
     log_dir_entry: &Entry,
@@ -179,7 +199,9 @@ pub fn load_logging_settings(
     log_activity_check: &CheckButton,
     log_input_check: &CheckButton,
     log_output_check: &CheckButton,
+    log_timestamps_check: &CheckButton,
     settings: &LoggingSettings,
+    log_timestamps: bool,
 ) {
     logging_enabled_switch.set_active(settings.enabled);
     log_dir_entry.set_text(&settings.log_directory.display().to_string());
@@ -187,6 +209,7 @@ pub fn load_logging_settings(
     log_activity_check.set_active(settings.log_activity);
     log_input_check.set_active(settings.log_input);
     log_output_check.set_active(settings.log_output);
+    log_timestamps_check.set_active(log_timestamps);
 
     // Update sensitivity based on enabled state
     let enabled = settings.enabled;

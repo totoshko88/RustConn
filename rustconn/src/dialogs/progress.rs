@@ -31,7 +31,6 @@ impl ProgressDialog {
         let window = adw::Window::builder()
             .title(title)
             .modal(true)
-            .resizable(false)
             .default_width(400)
             .deletable(false)
             .build();
@@ -39,6 +38,8 @@ impl ProgressDialog {
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
         }
+
+        window.set_size_request(280, -1);
 
         // Create main content area
         let content = GtkBox::new(Orientation::Vertical, 12);

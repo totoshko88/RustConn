@@ -225,7 +225,7 @@ pub fn refresh_templates_list(
             ProtocolType::Rdp => rdp_templates.push(template),
             ProtocolType::Vnc => vnc_templates.push(template),
             ProtocolType::Spice => spice_templates.push(template),
-            ProtocolType::Serial => ssh_templates.push(template),
+            ProtocolType::Serial | ProtocolType::Sftp => ssh_templates.push(template),
         }
     }
 
@@ -265,6 +265,7 @@ pub fn refresh_templates_list(
                 ProtocolType::ZeroTrust => "cloud-symbolic",
                 ProtocolType::Telnet => "call-start-symbolic",
                 ProtocolType::Serial => "modem-symbolic",
+                ProtocolType::Sftp => "folder-remote-symbolic",
             };
             let icon = gtk4::Image::from_icon_name(icon_name);
             hbox.append(&icon);

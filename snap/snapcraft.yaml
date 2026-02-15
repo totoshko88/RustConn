@@ -88,6 +88,10 @@ plugs:
   ssh-keys:
     interface: ssh-keys
 
+  # Serial port access for serial console connections
+  serial-port:
+    interface: serial-port
+
   # Cloud provider credentials
   aws-credentials:
     interface: personal-files
@@ -143,6 +147,7 @@ apps:
       - network-bind
       - home
       - ssh-keys
+      - serial-port
       - password-manager-service
       - gtk-3-themes
       - icon-themes
@@ -168,6 +173,7 @@ apps:
       - network
       - home
       - ssh-keys
+      - serial-port
       - aws-credentials
       - gcloud-credentials
       - azure-credentials
@@ -211,6 +217,8 @@ parts:
       - libglib2.0-bin
       - fontconfig
       - fonts-dejavu-core
+      - mc
+      - picocom
     organize:
       bin/rustconn: usr/bin/rustconn
       bin/rustconn-cli: usr/bin/rustconn-cli

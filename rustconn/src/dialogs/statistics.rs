@@ -26,14 +26,16 @@ impl StatisticsDialog {
     pub fn new(parent: Option<&impl IsA<gtk4::Window>>) -> Self {
         let window = adw::Window::builder()
             .title("Connection Statistics")
-            .default_width(550)
-            .default_height(550)
+            .default_width(500)
+            .default_height(400)
             .modal(true)
             .build();
 
         if let Some(p) = parent {
             window.set_transient_for(Some(p));
         }
+
+        window.set_size_request(320, 280);
 
         // Header bar with Close/Reset buttons (GNOME HIG)
         let header = adw::HeaderBar::new();
