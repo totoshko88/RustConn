@@ -384,6 +384,15 @@ pub fn detect_kubectl() -> ClientInfo {
     ClientInfo::not_installed("kubectl", "Install kubectl package")
 }
 
+/// Detects picocom (serial terminal client)
+#[must_use]
+pub fn detect_picocom() -> ClientInfo {
+    if let Some(info) = try_detect_client("picocom", "picocom", &["--help"]) {
+        return info;
+    }
+    ClientInfo::not_installed("picocom", "Install picocom package")
+}
+
 /// Attempts to detect a specific client binary
 fn try_detect_client(name: &str, binary: &str, version_args: &[&str]) -> Option<ClientInfo> {
     // First check if the binary exists in PATH

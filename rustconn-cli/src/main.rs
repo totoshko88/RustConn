@@ -1365,113 +1365,34 @@ fn build_telnet_command(connection: &Connection) -> ConnectionCommand {
     }
 }
 
-/// Builds Serial command arguments using picocom
+/// Builds Serial command arguments using `SerialProtocol::build_command()`
 fn build_serial_command(connection: &Connection) -> ConnectionCommand {
-    use rustconn_core::models::{SerialFlowControl, SerialParity, SerialStopBits};
+    use rustconn_core::protocol::{Protocol, SerialProtocol};
 
-    let mut args = Vec::new();
-
-    if let rustconn_core::models::ProtocolConfig::Serial(ref config) = connection.protocol_config {
-        args.push("--baud".to_string());
-        args.push(config.baud_rate.value().to_string());
-        args.push("--databits".to_string());
-        args.push(config.data_bits.value().to_string());
-        args.push("--stopbits".to_string());
-        args.push(
-            match config.stop_bits {
-                SerialStopBits::One => "1",
-                SerialStopBits::Two => "2",
-            }
-            .to_string(),
+    if let Some(cmd) = SerialProtocol::new().build_command(connection) {
+        let (program, args) = cmd.split_first().map_or_else(
+            || ("picocom".to_string(), Vec::new()),
+            |(p, a)| (p.clone(), a.to_vec()),
         );
-        args.push("--parity".to_string());
-        args.push(
-            match config.parity {
-                SerialParity::None => "n",
-                SerialParity::Odd => "o",
-                SerialParity::Even => "e",
-            }
-            .to_string(),
-        );
-        args.push("--flow".to_string());
-        args.push(
-            match config.flow_control {
-                SerialFlowControl::None => "n",
-                SerialFlowControl::Hardware => "h",
-                SerialFlowControl::Software => "s",
-            }
-            .to_string(),
-        );
-        args.extend(config.custom_args.clone());
-        args.push(config.device.clone());
-    }
-
-    ConnectionCommand {
-        program: "picocom".to_string(),
-        args,
+        ConnectionCommand { program, args }
+    } else {
+        ConnectionCommand {
+            program: "echo".to_string(),
+            args: vec!["Error: failed to build Serial command".to_string()],
+        }
     }
 }
 
-/// Builds Kubernetes command arguments (kubectl exec)
+/// Builds Kubernetes command arguments using `KubernetesProtocol::build_command()`
 fn build_kubernetes_command(connection: &Connection) -> ConnectionCommand {
-    if let rustconn_core::models::ProtocolConfig::Kubernetes(ref k8s) = connection.protocol_config {
-        let mut args = Vec::new();
+    use rustconn_core::protocol::{KubernetesProtocol, Protocol};
 
-        // Global args: kubeconfig, context, namespace
-        if let Some(ref kubeconfig) = k8s.kubeconfig {
-            args.push("--kubeconfig".to_string());
-            args.push(kubeconfig.display().to_string());
-        }
-        if let Some(ref context) = k8s.context {
-            if !context.is_empty() {
-                args.push("--context".to_string());
-                args.push(context.clone());
-            }
-        }
-        if let Some(ref namespace) = k8s.namespace {
-            if !namespace.is_empty() {
-                args.push("--namespace".to_string());
-                args.push(namespace.clone());
-            }
-        }
-
-        if k8s.use_busybox {
-            // kubectl run -it --rm --restart=Never <name> --image <img> -- <shell>
-            args.push("run".to_string());
-            args.push("-it".to_string());
-            args.push("--rm".to_string());
-            args.push("--restart=Never".to_string());
-            args.push("rustconn-busybox".to_string());
-            args.push("--image".to_string());
-            args.push(k8s.busybox_image.clone());
-        } else {
-            // kubectl exec -it <pod> [-c <container>] -- <shell>
-            args.push("exec".to_string());
-            args.push("-it".to_string());
-            if let Some(ref pod) = k8s.pod {
-                args.push(pod.clone());
-            }
-            if let Some(ref container) = k8s.container {
-                if !container.is_empty() {
-                    args.push("-c".to_string());
-                    args.push(container.clone());
-                }
-            }
-        }
-
-        // Custom args
-        for arg in &k8s.custom_args {
-            args.push(arg.clone());
-        }
-
-        // Shell after --
-        args.push("--".to_string());
-        args.push(k8s.shell.clone());
-
-        ConnectionCommand {
-            program: "kubectl".to_string(),
-            args,
-        }
+    if let Some(cmd) = KubernetesProtocol::new().build_command(connection) {
+        let (program, args) = cmd.split_first().map_or_else(
+            || ("kubectl".to_string(), Vec::new()),
+            |(p, a)| (p.clone(), a.to_vec()),
+        );
+        ConnectionCommand { program, args }
     } else {
         ConnectionCommand {
             program: "echo".to_string(),

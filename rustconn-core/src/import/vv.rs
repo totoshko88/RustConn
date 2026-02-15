@@ -98,8 +98,14 @@ impl VirtViewerImporter {
 
                 let ca_cert_path = fields.get("ca").and_then(|ca| {
                     // The CA is inline PEM — we cannot map it to a file path
-                    // directly. Skip if it looks like inline PEM data.
+                    // directly. Warn the user so they know TLS may fail.
                     if ca.starts_with("-----BEGIN") {
+                        result.add_skipped(SkippedEntry::with_location(
+                            source_path,
+                            "Inline PEM CA certificate cannot be imported automatically. \
+                             Save it to a file and set the CA path in connection settings.",
+                            source_path,
+                        ));
                         None
                     } else {
                         Some(PathBuf::from(ca))
@@ -293,6 +299,14 @@ ca=-----BEGIN CERTIFICATE-----\\nMIIFake...
         assert!(result.credentials.contains_key(&conn.id));
         assert!(conn.tags.iter().any(|t| t.starts_with("proxy:")));
         assert!(conn.tags.iter().any(|t| t.starts_with("host-subject:")));
+        // Inline PEM CA should produce a skipped entry warning
+        assert!(
+            result
+                .skipped
+                .iter()
+                .any(|s| s.reason.contains("Inline PEM")),
+            "Expected skipped entry for inline PEM CA certificate"
+        );
     }
 
     #[test]

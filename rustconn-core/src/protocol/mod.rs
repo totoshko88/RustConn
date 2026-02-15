@@ -1,8 +1,8 @@
 //! Protocol layer for `RustConn`
 //!
-//! This module provides the Protocol trait and implementations for SSH, RDP, VNC, and SPICE protocols.
+//! This module provides the Protocol trait and implementations for
+//! SSH, RDP, VNC, SPICE, Telnet, Serial, SFTP, and Kubernetes protocols.
 //! Each protocol handler is responsible for validation and protocol metadata.
-//! Native session widgets will be implemented in later phases.
 
 mod cli;
 mod detection;
@@ -21,8 +21,8 @@ mod vnc;
 pub use cli::{format_command_message, format_connection_message};
 pub use detection::{
     detect_aws_cli, detect_azure_cli, detect_boundary, detect_cloudflared, detect_gcloud_cli,
-    detect_kubectl, detect_oci_cli, detect_rdp_client, detect_spice_client, detect_ssh_client,
-    detect_tailscale, detect_teleport, detect_telnet_client, detect_vnc_client,
+    detect_kubectl, detect_oci_cli, detect_picocom, detect_rdp_client, detect_spice_client,
+    detect_ssh_client, detect_tailscale, detect_teleport, detect_telnet_client, detect_vnc_client,
     detect_vnc_viewer_name, detect_vnc_viewer_path, ClientDetectionResult, ClientInfo,
     ZeroTrustDetectionResult,
 };

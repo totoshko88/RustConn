@@ -1035,6 +1035,12 @@ Serial, Kubernetes, and Zero Trust connections from a single application.";
             "The Rust community https://www.rust-lang.org",
             "IronRDP project https://github.com/Devolutions/IronRDP",
             "FreeRDP project https://www.freerdp.com",
+            "Midnight Commander https://midnight-commander.org",
+            "virt-manager / virt-viewer https://virt-manager.org",
+            "TigerVNC project https://tigervnc.org",
+            "vnc-rs project https://github.com/niclas3640/vnc-rs",
+            "KeePassXC project https://keepassxc.org",
+            "VTE terminal library https://wiki.gnome.org/Apps/Terminal/VTE",
         ],
     );
     about.add_acknowledgement_section(

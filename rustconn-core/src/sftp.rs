@@ -132,7 +132,11 @@ pub fn is_ssh_agent_available() -> bool {
 ///    environment so all child processes (Dolphin, mc, ssh-add)
 ///    inherit them
 ///
-/// Call this early in `main()` before any GUI or async code.
+/// # Thread Safety
+///
+/// This function calls `std::env::set_var()` which is not thread-safe.
+/// It must be called from `main()` before spawning any threads or
+/// starting the async runtime.
 ///
 /// # Returns
 ///

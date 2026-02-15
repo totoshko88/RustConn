@@ -1,7 +1,7 @@
 //! Protocol-specific connection handlers for main window
 //!
 //! This module contains functions for starting connections for different protocols:
-//! SSH, VNC, SPICE, and Zero Trust.
+//! SSH, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust.
 
 use super::MainWindow;
 use crate::sidebar::ConnectionSidebar;
@@ -838,14 +838,36 @@ pub fn start_serial_connection(
     logging_enabled: bool,
 ) -> Option<Uuid> {
     use rustconn_core::protocol::{
-        format_command_message, format_connection_message, Protocol, SerialProtocol,
+        detect_picocom, format_command_message, format_connection_message, Protocol, SerialProtocol,
     };
 
     let conn_name = conn.name.clone();
 
+    // Check picocom availability before attempting to launch
+    let picocom_info = detect_picocom();
+    if !picocom_info.installed {
+        tracing::warn!(
+            connection = %conn_name,
+            "picocom not found for Serial connection"
+        );
+        return None;
+    }
+
     // Build picocom command via SerialProtocol
     let serial = SerialProtocol::new();
-    let command = serial.build_command(conn)?;
+    let Some(command) = serial.build_command(conn) else {
+        tracing::error!(
+            connection = %conn_name,
+            "Failed to build picocom command for Serial connection"
+        );
+        return None;
+    };
+
+    tracing::info!(
+        connection = %conn_name,
+        connection_id = %connection_id,
+        "Starting Serial connection"
+    );
 
     // Get terminal settings from state
     let terminal_settings = state
@@ -903,6 +925,107 @@ pub fn start_serial_connection(
 
     // Spawn picocom
     notebook.spawn_serial(session_id, &command);
+
+    Some(session_id)
+}
+
+/// Starts a Kubernetes connection
+///
+/// Creates a terminal tab and spawns `kubectl exec` or `kubectl run`
+/// with the Kubernetes configuration. Uses `Protocol::build_command()`
+/// from `KubernetesProtocol` to generate the command.
+#[allow(clippy::too_many_arguments)]
+pub fn start_kubernetes_connection(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    connection_id: Uuid,
+    conn: &rustconn_core::Connection,
+    logging_enabled: bool,
+) -> Option<Uuid> {
+    use rustconn_core::protocol::{
+        format_command_message, format_connection_message, KubernetesProtocol, Protocol,
+    };
+
+    let conn_name = conn.name.clone();
+
+    // Build kubectl command via KubernetesProtocol
+    let k8s = KubernetesProtocol::new();
+    let Some(command) = k8s.build_command(conn) else {
+        tracing::error!(
+            connection = %conn_name,
+            "Failed to build kubectl command for Kubernetes connection"
+        );
+        return None;
+    };
+
+    tracing::info!(
+        connection = %conn_name,
+        connection_id = %connection_id,
+        "Starting Kubernetes connection"
+    );
+
+    // Get terminal settings from state
+    let terminal_settings = state
+        .try_borrow()
+        .ok()
+        .map(|s| s.settings().terminal.clone())
+        .unwrap_or_default();
+
+    // Create terminal tab for Kubernetes
+    let session_id = notebook.create_terminal_tab_with_settings(
+        connection_id,
+        &conn_name,
+        "kubernetes",
+        Some(&conn.automation),
+        &terminal_settings,
+    );
+
+    // Record connection start in history
+    let history_entry_id = if let Ok(mut state_mut) = state.try_borrow_mut() {
+        Some(state_mut.record_connection_start(conn, conn.username.as_deref()))
+    } else {
+        None
+    };
+
+    if let Some(entry_id) = history_entry_id {
+        notebook.set_history_entry_id(session_id, entry_id);
+    }
+
+    // Update last_connected timestamp
+    if let Ok(mut state_mut) = state.try_borrow_mut() {
+        let _ = state_mut.update_last_connected(connection_id);
+    }
+
+    // Set up session logging if enabled
+    if logging_enabled {
+        MainWindow::setup_session_logging(state, notebook, session_id, connection_id, &conn_name);
+    }
+
+    // Wire up child exited callback
+    MainWindow::setup_child_exited_handler(state, notebook, sidebar, session_id, connection_id);
+
+    // Get pod/busybox info for display
+    let target = if let rustconn_core::ProtocolConfig::Kubernetes(ref cfg) = conn.protocol_config {
+        if cfg.use_busybox {
+            format!("busybox ({})", cfg.busybox_image)
+        } else {
+            cfg.pod.clone().unwrap_or_default()
+        }
+    } else {
+        String::new()
+    };
+
+    // Build command string for display
+    let kubectl_command = command.join(" ");
+    let conn_msg = format_connection_message("Kubernetes", &target);
+    let cmd_msg = format_command_message(&kubectl_command);
+    let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
+    notebook.display_output(session_id, &feedback);
+
+    // Spawn kubectl — use shell to ensure PATH includes snap/flatpak paths
+    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
+    notebook.spawn_command(session_id, &[&shell, "-c", &kubectl_command], None, None);
 
     Some(session_id)
 }

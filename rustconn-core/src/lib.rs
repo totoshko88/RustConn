@@ -8,7 +8,7 @@
 //! - [`models`] - Core data structures (Connection, Group, Protocol configs)
 //! - [`config`] - Application settings and persistence
 //! - [`connection`] - Connection CRUD operations and managers
-//! - [`protocol`] - Protocol trait and implementations (SSH, RDP, VNC, SPICE)
+//! - [`protocol`] - Protocol trait and implementations (SSH, RDP, VNC, SPICE, Telnet, Serial, SFTP, Kubernetes)
 //! - [`import`] / [`export`] - Format converters (Remmina, Asbru-CM, SSH config, Ansible, MobaXterm)
 //! - [`secret`] - Credential backends (`KeePassXC`, libsecret)
 //! - [`search`] - Fuzzy search with caching and debouncing
@@ -136,12 +136,13 @@ pub use progress::{
 };
 pub use protocol::{
     build_freerdp_args, detect_aws_cli, detect_azure_cli, detect_boundary, detect_cloudflared,
-    detect_gcloud_cli, detect_kubectl, detect_oci_cli, detect_provider, detect_rdp_client,
-    detect_ssh_client, detect_tailscale, detect_teleport, detect_telnet_client, detect_vnc_client,
-    extract_geometry_from_args, get_zero_trust_provider_icon, has_decorations_flag,
-    ClientDetectionResult, ClientInfo, CloudProvider, FreeRdpConfig, KubernetesProtocol, Protocol,
-    ProtocolCapabilities, ProtocolRegistry, ProviderIconCache, RdpProtocol, SerialProtocol,
-    SshProtocol, TelnetProtocol, VncProtocol,
+    detect_gcloud_cli, detect_kubectl, detect_oci_cli, detect_picocom, detect_provider,
+    detect_rdp_client, detect_ssh_client, detect_tailscale, detect_teleport, detect_telnet_client,
+    detect_vnc_client, extract_geometry_from_args, get_zero_trust_provider_icon,
+    has_decorations_flag, ClientDetectionResult, ClientInfo, CloudProvider, FreeRdpConfig,
+    KubernetesProtocol, Protocol, ProtocolCapabilities, ProtocolRegistry, ProviderIconCache,
+    RdpProtocol, SerialProtocol, SftpProtocol, SpiceProtocol, SshProtocol, TelnetProtocol,
+    VncProtocol,
 };
 pub use rdp_client::{
     convert_to_bgra, create_frame_update, create_frame_update_with_conversion,

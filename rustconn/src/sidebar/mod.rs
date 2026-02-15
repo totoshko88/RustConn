@@ -249,12 +249,16 @@ impl ConnectionSidebar {
         let programmatic_flag = Rc::new(RefCell::new(false));
 
         // Setup filter button handlers using helper function
+        // Each handler pins the sidebar width before toggling so the panel
+        // does not shrink/grow when the filtered item count changes.
         {
             let filters = active_protocol_filters.clone();
             let buttons = protocol_filter_buttons.clone();
             let entry = search_entry.clone();
             let flag = programmatic_flag.clone();
+            let ctr = container.clone();
             filter::connect_filter_button(&ssh_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
                 search::toggle_protocol_filter("SSH", btn, &filters, &buttons, &entry, &flag);
             });
         }
@@ -263,7 +267,9 @@ impl ConnectionSidebar {
             let buttons = protocol_filter_buttons.clone();
             let entry = search_entry.clone();
             let flag = programmatic_flag.clone();
+            let ctr = container.clone();
             filter::connect_filter_button(&rdp_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
                 search::toggle_protocol_filter("RDP", btn, &filters, &buttons, &entry, &flag);
             });
         }
@@ -272,7 +278,9 @@ impl ConnectionSidebar {
             let buttons = protocol_filter_buttons.clone();
             let entry = search_entry.clone();
             let flag = programmatic_flag.clone();
+            let ctr = container.clone();
             filter::connect_filter_button(&vnc_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
                 search::toggle_protocol_filter("VNC", btn, &filters, &buttons, &entry, &flag);
             });
         }
@@ -281,7 +289,9 @@ impl ConnectionSidebar {
             let buttons = protocol_filter_buttons.clone();
             let entry = search_entry.clone();
             let flag = programmatic_flag.clone();
+            let ctr = container.clone();
             filter::connect_filter_button(&spice_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
                 search::toggle_protocol_filter("SPICE", btn, &filters, &buttons, &entry, &flag);
             });
         }
@@ -290,7 +300,9 @@ impl ConnectionSidebar {
             let buttons = protocol_filter_buttons.clone();
             let entry = search_entry.clone();
             let flag = programmatic_flag.clone();
+            let ctr = container.clone();
             filter::connect_filter_button(&telnet_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
                 search::toggle_protocol_filter("Telnet", btn, &filters, &buttons, &entry, &flag);
             });
         }
@@ -299,7 +311,9 @@ impl ConnectionSidebar {
             let buttons = protocol_filter_buttons.clone();
             let entry = search_entry.clone();
             let flag = programmatic_flag.clone();
+            let ctr = container.clone();
             filter::connect_filter_button(&serial_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
                 search::toggle_protocol_filter("Serial", btn, &filters, &buttons, &entry, &flag);
             });
         }
@@ -308,7 +322,9 @@ impl ConnectionSidebar {
             let buttons = protocol_filter_buttons.clone();
             let entry = search_entry.clone();
             let flag = programmatic_flag.clone();
+            let ctr = container.clone();
             filter::connect_filter_button(&zerotrust_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
                 search::toggle_protocol_filter("ZeroTrust", btn, &filters, &buttons, &entry, &flag);
             });
         }
@@ -317,7 +333,9 @@ impl ConnectionSidebar {
             let buttons = protocol_filter_buttons.clone();
             let entry = search_entry.clone();
             let flag = programmatic_flag.clone();
+            let ctr = container.clone();
             filter::connect_filter_button(&kubernetes_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
                 search::toggle_protocol_filter(
                     "Kubernetes",
                     btn,
