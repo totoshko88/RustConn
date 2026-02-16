@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Variable injection prevention (SEC-02)** — `substitute_for_command()` validates all resolved variable values, rejecting null bytes, newlines, and control characters to prevent command injection via crafted variable content; applied to all command-building paths: RDP/VNC host/username substitution, connection task commands, expect-style responses, and key sequence text
 
 ### Fixed
+- **CLI `--config` flag now works (CLI-01)** — The `--config` flag was declared but never used; now threads the custom config directory path through all 43 `ConfigManager` call sites via `create_config_manager()` helper
 
 ### Changed
 

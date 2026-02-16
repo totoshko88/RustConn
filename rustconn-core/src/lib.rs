@@ -67,9 +67,9 @@ pub use automation::{
     SpecialKey, TaskCondition, TaskError, TaskExecutor, TaskResult, TaskTiming,
 };
 pub use cli_download::{
-    get_cli_install_dir, get_component, get_components_by_category, get_installation_status,
-    get_user_friendly_error, install_component, uninstall_component, CliDownloadError,
-    CliDownloadResult, ComponentCategory, DownloadCancellation, DownloadProgress,
+    get_available_components, get_cli_install_dir, get_component, get_components_by_category,
+    get_installation_status, get_user_friendly_error, install_component, uninstall_component,
+    CliDownloadError, CliDownloadResult, ComponentCategory, DownloadCancellation, DownloadProgress,
     DownloadableComponent, InstallMethod, DOWNLOADABLE_COMPONENTS,
 };
 pub use cluster::{

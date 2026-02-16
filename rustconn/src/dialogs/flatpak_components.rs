@@ -128,13 +128,14 @@ impl FlatpakComponentsDialog {
 
         // Info banner
         let info_banner = adw::Banner::new(
-            "Install external components to enable additional features. \
+            "Showing sandbox-compatible components only. \
              Downloads are verified with SHA256 checksums.",
         );
         info_banner.set_revealed(true);
         inner.append(&info_banner);
 
-        // Protocol clients section
+        // Protocol clients section — may be empty in Flatpak
+        // since xfreerdp/vncviewer need host display access
         let protocol_group = Self::build_category_group(
             "Protocol Clients",
             "Optional for external RDP/VNC/SPICE connections. \
@@ -142,7 +143,9 @@ impl FlatpakComponentsDialog {
             ComponentCategory::ProtocolClient,
             component_rows,
         );
-        inner.append(&protocol_group);
+        if Self::category_has_visible_components(ComponentCategory::ProtocolClient) {
+            inner.append(&protocol_group);
+        }
 
         // Zero Trust section
         let zerotrust_group = Self::build_category_group(
@@ -151,7 +154,9 @@ impl FlatpakComponentsDialog {
             ComponentCategory::ZeroTrust,
             component_rows,
         );
-        inner.append(&zerotrust_group);
+        if Self::category_has_visible_components(ComponentCategory::ZeroTrust) {
+            inner.append(&zerotrust_group);
+        }
 
         // Password managers section
         let password_group = Self::build_category_group(
@@ -160,7 +165,9 @@ impl FlatpakComponentsDialog {
             ComponentCategory::PasswordManager,
             component_rows,
         );
-        inner.append(&password_group);
+        if Self::category_has_visible_components(ComponentCategory::PasswordManager) {
+            inner.append(&password_group);
+        }
 
         // Container orchestration section
         let k8s_group = Self::build_category_group(
@@ -169,13 +176,23 @@ impl FlatpakComponentsDialog {
             ComponentCategory::ContainerOrchestration,
             component_rows,
         );
-        inner.append(&k8s_group);
+        if Self::category_has_visible_components(ComponentCategory::ContainerOrchestration) {
+            inner.append(&k8s_group);
+        }
 
         clamp.set_child(Some(&inner));
         scrolled.set_child(Some(&clamp));
         content.append(&scrolled);
 
         content
+    }
+
+    /// Returns `true` if a category has any sandbox-compatible,
+    /// downloadable components to display.
+    fn category_has_visible_components(category: ComponentCategory) -> bool {
+        get_components_by_category(category)
+            .into_iter()
+            .any(|c| c.works_in_sandbox && c.is_downloadable())
     }
 
     fn build_category_group(
@@ -189,7 +206,10 @@ impl FlatpakComponentsDialog {
             .description(description)
             .build();
 
-        let components = get_components_by_category(category);
+        let components: Vec<_> = get_components_by_category(category)
+            .into_iter()
+            .filter(|c| c.works_in_sandbox)
+            .collect();
         let status = get_installation_status();
 
         for component in components {

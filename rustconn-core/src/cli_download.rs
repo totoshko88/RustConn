@@ -168,6 +168,12 @@ pub struct DownloadableComponent {
     pub binary_name: &'static str,
     /// Subdirectory in cli folder
     pub install_subdir: &'static str,
+    /// Whether this component works inside a Flatpak sandbox.
+    ///
+    /// Network-only tools (cloud CLIs, password managers, kubectl) work
+    /// fine in the sandbox. Tools that need host display access
+    /// (xfreerdp, vncviewer) do not.
+    pub works_in_sandbox: bool,
 }
 
 impl DownloadableComponent {
@@ -304,6 +310,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "N/A",
         binary_name: "xfreerdp3",
         install_subdir: "freerdp",
+        works_in_sandbox: false,
     },
     DownloadableComponent {
         id: "vncviewer",
@@ -321,6 +328,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~5 MB",
         binary_name: "vncviewer",
         install_subdir: "tigervnc",
+        works_in_sandbox: false,
     },
     // Zero Trust CLIs
     DownloadableComponent {
@@ -336,6 +344,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~50 MB",
         binary_name: "aws",
         install_subdir: "aws-cli",
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "session-manager-plugin",
@@ -354,6 +363,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~5 MB",
         binary_name: "session-manager-plugin",
         install_subdir: "ssm-plugin",
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "gcloud",
@@ -370,6 +380,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~500 MB",
         binary_name: "gcloud",
         install_subdir: "google-cloud-sdk/bin",
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "az",
@@ -383,6 +394,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~200 MB",
         binary_name: "az",
         install_subdir: "python/bin",
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "oci",
@@ -396,6 +408,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~50 MB",
         binary_name: "oci",
         install_subdir: "python/bin",
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "tsh",
@@ -409,6 +422,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~100 MB",
         binary_name: "tsh",
         install_subdir: "teleport",
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "tailscale",
@@ -422,6 +436,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~25 MB",
         binary_name: "tailscale",
         install_subdir: "tailscale",
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "cloudflared",
@@ -438,6 +453,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~30 MB",
         binary_name: "cloudflared",
         install_subdir: "cloudflared",
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "boundary",
@@ -453,6 +469,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~50 MB",
         binary_name: "boundary",
         install_subdir: "boundary",
+        works_in_sandbox: true,
     },
     // Password manager CLIs
     DownloadableComponent {
@@ -470,6 +487,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~50 MB",
         binary_name: "bw",
         install_subdir: "bitwarden",
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "op",
@@ -485,6 +503,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~15 MB",
         binary_name: "op",
         install_subdir: "1password",
+        works_in_sandbox: true,
     },
     // Container orchestration CLIs
     DownloadableComponent {
@@ -500,6 +519,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~50 MB",
         binary_name: "kubectl",
         install_subdir: "kubectl",
+        works_in_sandbox: true,
     },
 ];
 
@@ -620,6 +640,22 @@ pub fn get_components_by_category(
         .iter()
         .filter(|c| c.category == category)
         .collect()
+}
+
+/// Returns components filtered for the current environment.
+///
+/// In Flatpak, excludes components that require host display access
+/// (e.g. xfreerdp, vncviewer). Outside Flatpak, returns all components.
+#[must_use]
+pub fn get_available_components() -> Vec<&'static DownloadableComponent> {
+    if crate::flatpak::is_flatpak() {
+        DOWNLOADABLE_COMPONENTS
+            .iter()
+            .filter(|c| c.works_in_sandbox)
+            .collect()
+    } else {
+        DOWNLOADABLE_COMPONENTS.iter().collect()
+    }
 }
 
 /// Check installation status of all components
@@ -1994,6 +2030,56 @@ mod tests {
         assert!(zero_trust
             .iter()
             .all(|c| c.category == ComponentCategory::ZeroTrust));
+    }
+
+    #[test]
+    fn test_sandbox_compatibility_flags() {
+        // Protocol clients that need host display should NOT work in sandbox
+        let protocol = get_components_by_category(ComponentCategory::ProtocolClient);
+        for c in &protocol {
+            assert!(
+                !c.works_in_sandbox,
+                "Protocol client {} should not work in sandbox",
+                c.id,
+            );
+        }
+
+        // Network-only tools should work in sandbox
+        let zero_trust = get_components_by_category(ComponentCategory::ZeroTrust);
+        for c in &zero_trust {
+            assert!(
+                c.works_in_sandbox,
+                "Zero Trust CLI {} should work in sandbox",
+                c.id,
+            );
+        }
+
+        let pw_managers = get_components_by_category(ComponentCategory::PasswordManager);
+        for c in &pw_managers {
+            assert!(
+                c.works_in_sandbox,
+                "Password manager {} should work in sandbox",
+                c.id,
+            );
+        }
+
+        let k8s = get_components_by_category(ComponentCategory::ContainerOrchestration);
+        for c in &k8s {
+            assert!(
+                c.works_in_sandbox,
+                "Container CLI {} should work in sandbox",
+                c.id,
+            );
+        }
+    }
+
+    #[test]
+    fn test_get_available_components_outside_flatpak() {
+        // Outside Flatpak, get_available_components returns all
+        if !crate::flatpak::is_flatpak() {
+            let all = get_available_components();
+            assert_eq!(all.len(), DOWNLOADABLE_COMPONENTS.len());
+        }
     }
 
     #[test]
