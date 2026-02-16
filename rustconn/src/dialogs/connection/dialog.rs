@@ -26,7 +26,6 @@ use rustconn_core::models::{
     SshKeySource, TailscaleSshConfig, TeleportConfig, VncClientMode, VncConfig, VncPerformanceMode,
     WindowMode, ZeroTrustConfig, ZeroTrustProvider, ZeroTrustProviderConfig,
 };
-use rustconn_core::secret::SecretBackend;
 use rustconn_core::session::LogConfig;
 use rustconn_core::variables::Variable;
 use rustconn_core::wol::{
@@ -38,6 +37,60 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use uuid::Uuid;
 
+/// Keyboard layout KLID values matching the dropdown order.
+/// Index 0 = Auto (None), rest map to specific Windows KLIDs.
+const KEYBOARD_LAYOUT_KLIDS: &[u32] = &[
+    0x0000, // Auto (placeholder, not used)
+    0x0409, // US English
+    0x0407, // German
+    0x040C, // French
+    0x040A, // Spanish
+    0x0410, // Italian
+    0x0816, // Portuguese
+    0x0416, // Brazilian
+    0x0809, // UK English
+    0x0807, // Swiss German
+    0x0C07, // Austrian
+    0x080C, // Belgian
+    0x0413, // Dutch
+    0x041D, // Swedish
+    0x0414, // Norwegian
+    0x0406, // Danish
+    0x040B, // Finnish
+    0x0415, // Polish
+    0x0405, // Czech
+    0x041B, // Slovak
+    0x040E, // Hungarian
+    0x0418, // Romanian
+    0x041A, // Croatian
+    0x0424, // Slovenian
+    0x081A, // Serbian
+    0x0402, // Bulgarian
+    0x0419, // Russian
+    0x0422, // Ukrainian
+    0x041F, // Turkish
+    0x0408, // Greek
+    0x0411, // Japanese
+    0x0412, // Korean
+];
+
+/// Converts a dropdown index to an `Option<u32>` KLID.
+/// Index 0 = Auto (returns `None`).
+fn dropdown_index_to_klid(index: u32) -> Option<u32> {
+    if index == 0 {
+        return None;
+    }
+    KEYBOARD_LAYOUT_KLIDS.get(index as usize).copied()
+}
+
+/// Converts a KLID to a dropdown index. Returns 0 (Auto) if not found.
+fn klid_to_dropdown_index(klid: u32) -> u32 {
+    KEYBOARD_LAYOUT_KLIDS
+        .iter()
+        .position(|&k| k == klid)
+        .map_or(0, |i| i as u32)
+}
+
 /// Connection dialog for creating/editing connections
 #[allow(dead_code)] // Many fields kept for GTK widget lifecycle and signal handlers
 pub struct ConnectionDialog {
@@ -47,6 +100,8 @@ pub struct ConnectionDialog {
     save_button: Button,
     /// Test connection button
     test_button: Button,
+    /// Shared application state for vault operations
+    state: crate::state::SharedAppState,
     // Basic fields
     name_entry: Entry,
     description_view: TextView,
@@ -97,6 +152,7 @@ pub struct ConnectionDialog {
     rdp_shared_folders: Rc<RefCell<Vec<SharedFolder>>>,
     rdp_shared_folders_list: gtk4::ListBox,
     rdp_custom_args_entry: Entry,
+    rdp_keyboard_layout_dropdown: DropDown,
     // VNC fields
     vnc_client_mode_dropdown: DropDown,
     vnc_performance_mode_dropdown: DropDown,
@@ -289,7 +345,7 @@ impl ConnectionDialog {
     /// Creates a new connection dialog
     #[must_use]
     #[allow(clippy::too_many_lines)]
-    pub fn new(parent: Option<&gtk4::Window>) -> Self {
+    pub fn new(parent: Option<&gtk4::Window>, state: crate::state::SharedAppState) -> Self {
         let (window, header, save_btn, test_btn) = Self::create_window_with_header(parent);
         let view_stack = Self::create_view_stack(&window, &header);
 
@@ -372,6 +428,7 @@ impl ConnectionDialog {
             rdp_shared_folders,
             rdp_shared_folders_list,
             rdp_custom_args_entry,
+            rdp_keyboard_layout_dropdown,
         ) = Self::create_rdp_options();
         protocol_stack.add_named(&rdp_box, Some("rdp"));
 
@@ -588,6 +645,7 @@ impl ConnectionDialog {
             &save_btn,
             &window,
             &on_save,
+            &state,
             &editing_id,
             &name_entry,
             &description_view,
@@ -625,6 +683,7 @@ impl ConnectionDialog {
             &rdp_gateway_entry,
             &rdp_shared_folders,
             &rdp_custom_args_entry,
+            &rdp_keyboard_layout_dropdown,
             &vnc_client_mode_dropdown,
             &vnc_performance_mode_dropdown,
             &vnc_encoding_entry,
@@ -710,6 +769,7 @@ impl ConnectionDialog {
             window,
             save_button: save_btn,
             test_button: test_btn,
+            state,
             name_entry,
             description_view,
             host_entry,
@@ -754,6 +814,7 @@ impl ConnectionDialog {
             rdp_shared_folders,
             rdp_shared_folders_list,
             rdp_custom_args_entry,
+            rdp_keyboard_layout_dropdown,
             vnc_client_mode_dropdown,
             vnc_performance_mode_dropdown,
             vnc_encoding_entry,
@@ -1406,6 +1467,7 @@ impl ConnectionDialog {
         save_btn: &Button,
         window: &adw::Window,
         on_save: &super::ConnectionCallback,
+        state: &crate::state::SharedAppState,
         editing_id: &Rc<RefCell<Option<Uuid>>>,
         name_entry: &Entry,
         description_view: &TextView,
@@ -1443,6 +1505,7 @@ impl ConnectionDialog {
         rdp_gateway_entry: &Entry,
         rdp_shared_folders: &Rc<RefCell<Vec<SharedFolder>>>,
         rdp_custom_args_entry: &Entry,
+        rdp_keyboard_layout_dropdown: &DropDown,
         vnc_client_mode_dropdown: &DropDown,
         vnc_performance_mode_dropdown: &DropDown,
         vnc_encoding_entry: &Entry,
@@ -1525,6 +1588,7 @@ impl ConnectionDialog {
     ) {
         let window = window.clone();
         let on_save = on_save.clone();
+        let state = state.clone();
         let name_entry = name_entry.clone();
         let description_view = description_view.clone();
         let host_entry = host_entry.clone();
@@ -1560,6 +1624,7 @@ impl ConnectionDialog {
         let rdp_gateway_entry = rdp_gateway_entry.clone();
         let rdp_shared_folders = rdp_shared_folders.clone();
         let rdp_custom_args_entry = rdp_custom_args_entry.clone();
+        let rdp_keyboard_layout_dropdown = rdp_keyboard_layout_dropdown.clone();
         let rdp_performance_mode_dropdown = rdp_performance_mode_dropdown.clone();
         let vnc_client_mode_dropdown = vnc_client_mode_dropdown.clone();
         let vnc_encoding_entry = vnc_encoding_entry.clone();
@@ -1687,6 +1752,7 @@ impl ConnectionDialog {
                 rdp_gateway_entry: &rdp_gateway_entry,
                 rdp_shared_folders: &rdp_shared_folders,
                 rdp_custom_args_entry: &rdp_custom_args_entry,
+                rdp_keyboard_layout_dropdown: &rdp_keyboard_layout_dropdown,
                 vnc_client_mode_dropdown: &vnc_client_mode_dropdown,
                 vnc_encoding_entry: &vnc_encoding_entry,
                 vnc_compression_spin: &vnc_compression_spin,
@@ -1781,6 +1847,37 @@ impl ConnectionDialog {
             }
 
             if let Some(result) = data.build_connection() {
+                // Save password to vault if password_source is Vault and password is not empty
+                let password_text = password_entry.text().to_string();
+                let password_source_idx = password_source_dropdown.selected();
+
+                if password_source_idx == 1 && !password_text.is_empty() {
+                    // 1 = Vault
+                    let conn_id = result.connection.id;
+                    let conn_name = result.connection.name.clone();
+                    let conn_host = result.connection.host.clone();
+                    let protocol = result.connection.protocol_config.protocol_type();
+                    let username = username_entry.text().to_string();
+
+                    // Get settings and groups for save_password_to_vault
+                    if let Ok(state_ref) = state.try_borrow() {
+                        let settings = state_ref.settings().clone();
+                        let groups: Vec<_> = state_ref.list_groups().into_iter().cloned().collect();
+
+                        crate::state::save_password_to_vault(
+                            &settings,
+                            &groups,
+                            Some(&result.connection),
+                            &conn_name,
+                            &conn_host,
+                            protocol,
+                            &username,
+                            &password_text,
+                            conn_id,
+                        );
+                    }
+                }
+
                 if let Some(ref cb) = *on_save.borrow() {
                     cb(Some(result));
                 }
@@ -2167,6 +2264,7 @@ impl ConnectionDialog {
         Rc<RefCell<Vec<SharedFolder>>>,
         gtk4::ListBox,
         Entry,
+        DropDown,
     ) {
         let scrolled = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -2368,6 +2466,52 @@ impl ConnectionDialog {
         // === Advanced Group ===
         let advanced_group = adw::PreferencesGroup::builder().title("Advanced").build();
 
+        // Keyboard layout dropdown
+        let kb_layout_list = StringList::new(&[
+            "Auto (detect)",
+            "US English",
+            "German (de)",
+            "French (fr)",
+            "Spanish (es)",
+            "Italian (it)",
+            "Portuguese (pt)",
+            "Brazilian (br)",
+            "UK English (gb)",
+            "Swiss German (ch)",
+            "Austrian (at)",
+            "Belgian (be)",
+            "Dutch (nl)",
+            "Swedish (se)",
+            "Norwegian (no)",
+            "Danish (dk)",
+            "Finnish (fi)",
+            "Polish (pl)",
+            "Czech (cz)",
+            "Slovak (sk)",
+            "Hungarian (hu)",
+            "Romanian (ro)",
+            "Croatian (hr)",
+            "Slovenian (si)",
+            "Serbian (rs)",
+            "Bulgarian (bg)",
+            "Russian (ru)",
+            "Ukrainian (ua)",
+            "Turkish (tr)",
+            "Greek (gr)",
+            "Japanese (jp)",
+            "Korean (kr)",
+        ]);
+        let kb_layout_dropdown = DropDown::builder()
+            .model(&kb_layout_list)
+            .valign(gtk4::Align::Center)
+            .build();
+        let kb_layout_row = adw::ActionRow::builder()
+            .title("Keyboard Layout")
+            .subtitle("Layout sent to RDP server (Auto uses system setting)")
+            .build();
+        kb_layout_row.add_suffix(&kb_layout_dropdown);
+        advanced_group.add(&kb_layout_row);
+
         let args_entry = Entry::builder()
             .hexpand(true)
             .placeholder_text("Additional command-line arguments")
@@ -2401,6 +2545,7 @@ impl ConnectionDialog {
             shared_folders,
             folders_list,
             args_entry,
+            kb_layout_dropdown,
         )
     }
 
@@ -5553,6 +5698,14 @@ impl ConnectionDialog {
             self.rdp_custom_args_entry
                 .set_text(&rdp.custom_args.join(" "));
         }
+
+        // Set keyboard layout dropdown
+        if let Some(klid) = rdp.keyboard_layout {
+            let index = klid_to_dropdown_index(klid);
+            self.rdp_keyboard_layout_dropdown.set_selected(index);
+        } else {
+            self.rdp_keyboard_layout_dropdown.set_selected(0); // Auto
+        }
     }
 
     fn set_vnc_config(&self, vnc: &VncConfig) {
@@ -5830,6 +5983,7 @@ impl ConnectionDialog {
         kdbx_path: Option<std::path::PathBuf>,
         kdbx_password: Option<String>,
         kdbx_key_file: Option<std::path::PathBuf>,
+        secret_settings: rustconn_core::config::SecretSettings,
     ) {
         // Call the extended version with empty groups (legacy behavior)
         self.connect_password_load_button_with_groups(
@@ -5838,6 +5992,7 @@ impl ConnectionDialog {
             kdbx_password,
             kdbx_key_file,
             Vec::new(),
+            secret_settings,
         );
     }
 
@@ -5853,6 +6008,7 @@ impl ConnectionDialog {
     /// * `kdbx_password` - Password for the KeePass database
     /// * `kdbx_key_file` - Key file for the KeePass database
     /// * `groups` - List of connection groups for building hierarchical paths
+    /// * `secret_settings` - Secret backend settings for backend dispatch
     #[allow(clippy::too_many_arguments)]
     pub fn connect_password_load_button_with_groups(
         &self,
@@ -5861,6 +6017,7 @@ impl ConnectionDialog {
         kdbx_password: Option<String>,
         kdbx_key_file: Option<std::path::PathBuf>,
         groups: Vec<rustconn_core::models::ConnectionGroup>,
+        secret_settings: rustconn_core::config::SecretSettings,
     ) {
         use crate::utils::spawn_blocking_with_callback;
 
@@ -6023,16 +6180,54 @@ impl ConnectionDialog {
                             );
                         }
                     } else {
-                        // Non-KeePass backend — use flat lookup key via
-                        // libsecret
+                        // Non-KeePass backend — dispatch based on
+                        // preferred_backend
+                        let secret_settings = secret_settings.clone();
                         spawn_blocking_with_callback(
                             move || {
-                                let backend =
-                                    rustconn_core::secret::LibSecretBackend::new("rustconn");
-                                crate::async_utils::with_runtime(|rt| {
-                                    rt.block_on(backend.retrieve(&flat_lookup_key))
-                                        .map_err(|e| format!("{e}"))
-                                })?
+                                use rustconn_core::config::SecretBackendType;
+                                use rustconn_core::secret::SecretBackend;
+
+                                let backend_type =
+                                    crate::state::select_backend_for_load(&secret_settings);
+
+                                match backend_type {
+                                    SecretBackendType::Bitwarden => {
+                                        crate::async_utils::with_runtime(|rt| {
+                                            let backend = rt
+                                                .block_on(rustconn_core::secret::auto_unlock(
+                                                    &secret_settings,
+                                                ))
+                                                .map_err(|e| format!("{e}"))?;
+                                            rt.block_on(backend.retrieve(&flat_lookup_key))
+                                                .map_err(|e| format!("{e}"))
+                                        })?
+                                    }
+                                    SecretBackendType::OnePassword => {
+                                        let backend =
+                                            rustconn_core::secret::OnePasswordBackend::new();
+                                        crate::async_utils::with_runtime(|rt| {
+                                            rt.block_on(backend.retrieve(&flat_lookup_key))
+                                                .map_err(|e| format!("{e}"))
+                                        })?
+                                    }
+                                    SecretBackendType::Passbolt => {
+                                        let backend = rustconn_core::secret::PassboltBackend::new();
+                                        crate::async_utils::with_runtime(|rt| {
+                                            rt.block_on(backend.retrieve(&flat_lookup_key))
+                                                .map_err(|e| format!("{e}"))
+                                        })?
+                                    }
+                                    _ => {
+                                        let backend = rustconn_core::secret::LibSecretBackend::new(
+                                            "rustconn",
+                                        );
+                                        crate::async_utils::with_runtime(|rt| {
+                                            rt.block_on(backend.retrieve(&flat_lookup_key))
+                                                .map_err(|e| format!("{e}"))
+                                        })?
+                                    }
+                                }
                             },
                             move |result: Result<
                                 Option<rustconn_core::models::Credentials>,
@@ -6252,6 +6447,7 @@ struct ConnectionDialogData<'a> {
     rdp_gateway_entry: &'a Entry,
     rdp_shared_folders: &'a Rc<RefCell<Vec<SharedFolder>>>,
     rdp_custom_args_entry: &'a Entry,
+    rdp_keyboard_layout_dropdown: &'a DropDown,
     vnc_client_mode_dropdown: &'a DropDown,
     vnc_performance_mode_dropdown: &'a DropDown,
     vnc_encoding_entry: &'a Entry,
@@ -7045,6 +7241,7 @@ impl ConnectionDialogData<'_> {
             gateway,
             shared_folders,
             custom_args,
+            keyboard_layout: dropdown_index_to_klid(self.rdp_keyboard_layout_dropdown.selected()),
         }
     }
 

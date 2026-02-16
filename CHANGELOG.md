@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.6] - 2026-02-16
+
+### Fixed
+- **Embedded RDP keyboard layout** — Fixed incorrect key mapping for non-US keyboard layouts (e.g. German QWERTZ) in IronRDP embedded client ([#15](https://github.com/totoshko88/RustConn/issues/15))
+- **Password persistence** — Passwords are now correctly saved to configured secret backend (libsecret/KeePassXC/Bitwarden) when saving connection through Connection Dialog with password field filled and "Vault" source selected, or entering password through connection prompt with "Save credentials" checkbox enabled. Previously passwords were only cached in memory and lost after app restart ([#14](https://github.com/totoshko88/RustConn/issues/14))
+- **Secret backend dispatch** — `save_password_to_vault`, `save_group_password_to_vault`, `rename_vault_credential`, and "Load from Vault" in connection dialog now respect `Settings → Secrets → preferred_backend` (Bitwarden, 1Password, Passbolt). Previously all functions were hardcoded to libsecret regardless of user preference ([#14](https://github.com/totoshko88/RustConn/issues/14))
+- **Bitwarden unlock session** — Fixed Settings → Secrets → Unlock button not persisting session key correctly. Now uses `--raw` flag for reliable session key extraction, ensuring `auto_unlock` can reuse the session for subsequent save/load operations ([#14](https://github.com/totoshko88/RustConn/issues/14))
+- **Flatpak component checksums** — Fixed kubectl installation failing with `ChecksumMismatch` by generalizing no-checksum skip for all `*-no-checksum` patterns; updated boundary v0.21.0 checksum to match current upstream binary
+- **Flatpak component uninstall/reinstall** — Fixed `AlreadyInstalled` error when reinstalling AWS CLI and Google Cloud CLI after removal. `uninstall_component` now cleans up custom install paths (`aws-cli/`, `google-cloud-sdk/`), and `find_installed_binary` no longer searches the entire CLI directory as fallback
+- **Terminal search Highlight All** — Fixed "Highlight All" checkbox toggling to next match instead of highlighting. Now correctly adds hover-highlight via VTE regex matching without navigating; cleans up highlights on dialog close
+
+### Changed
+- **Dependencies** — Updated: `futures` 0.3.31→0.3.32, `libc` 0.2.181→0.2.182, `uuid` 1.20.0→1.21.0, `bitflags` 2.10.0→2.11.0, `syn` 2.0.114→2.0.116, `native-tls` 0.2.14→0.2.16, `png` 0.18.0→0.18.1, `cc` 1.2.55→1.2.56
+
 ## [0.8.5] - 2026-02-15
 
 ### Added

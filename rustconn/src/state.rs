@@ -2633,25 +2633,55 @@ pub fn save_password_to_vault(
             );
         }
     } else {
-        // Generic backend (libsecret, bitwarden, etc.) — flat key
+        // Generic backend — dispatch based on preferred_backend
         let lookup_key = format!("{} ({protocol_str})", conn_name.replace('/', "-"),);
         let username = username.to_string();
         let pwd = password.to_string();
+        let backend_type = select_backend_for_load(&settings.secrets);
+        let secret_settings = settings.secrets.clone();
 
         crate::utils::spawn_blocking_with_callback(
             move || {
+                use rustconn_core::config::SecretBackendType;
                 use rustconn_core::secret::SecretBackend;
-                let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
+
                 let creds = rustconn_core::models::Credentials {
                     username: Some(username),
                     password: Some(secrecy::SecretString::from(pwd)),
                     key_passphrase: None,
                     domain: None,
                 };
-                crate::async_utils::with_runtime(|rt| {
-                    rt.block_on(backend.store(&lookup_key, &creds))
-                        .map_err(|e| format!("{e}"))
-                })?
+
+                match backend_type {
+                    SecretBackendType::Bitwarden => crate::async_utils::with_runtime(|rt| {
+                        let backend = rt
+                            .block_on(rustconn_core::secret::auto_unlock(&secret_settings))
+                            .map_err(|e| format!("{e}"))?;
+                        rt.block_on(backend.store(&lookup_key, &creds))
+                            .map_err(|e| format!("{e}"))
+                    })?,
+                    SecretBackendType::OnePassword => {
+                        let backend = rustconn_core::secret::OnePasswordBackend::new();
+                        crate::async_utils::with_runtime(|rt| {
+                            rt.block_on(backend.store(&lookup_key, &creds))
+                                .map_err(|e| format!("{e}"))
+                        })?
+                    }
+                    SecretBackendType::Passbolt => {
+                        let backend = rustconn_core::secret::PassboltBackend::new();
+                        crate::async_utils::with_runtime(|rt| {
+                            rt.block_on(backend.store(&lookup_key, &creds))
+                                .map_err(|e| format!("{e}"))
+                        })?
+                    }
+                    _ => {
+                        let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
+                        crate::async_utils::with_runtime(|rt| {
+                            rt.block_on(backend.store(&lookup_key, &creds))
+                                .map_err(|e| format!("{e}"))
+                        })?
+                    }
+                }
             },
             move |result: Result<(), String>| {
                 if let Err(e) = result {
@@ -2709,21 +2739,51 @@ pub fn save_group_password_to_vault(
         let lookup_key = lookup_key.to_string();
         let username_val = username.to_string();
         let password_val = password.to_string();
+        let backend_type = select_backend_for_load(&settings.secrets);
+        let secret_settings = settings.secrets.clone();
 
         crate::utils::spawn_blocking_with_callback(
             move || {
+                use rustconn_core::config::SecretBackendType;
                 use rustconn_core::secret::SecretBackend;
-                let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
+
                 let creds = rustconn_core::models::Credentials {
                     username: Some(username_val),
                     password: Some(secrecy::SecretString::from(password_val)),
                     key_passphrase: None,
                     domain: None,
                 };
-                crate::async_utils::with_runtime(|rt| {
-                    rt.block_on(backend.store(&lookup_key, &creds))
-                        .map_err(|e| format!("{e}"))
-                })?
+
+                match backend_type {
+                    SecretBackendType::Bitwarden => crate::async_utils::with_runtime(|rt| {
+                        let backend = rt
+                            .block_on(rustconn_core::secret::auto_unlock(&secret_settings))
+                            .map_err(|e| format!("{e}"))?;
+                        rt.block_on(backend.store(&lookup_key, &creds))
+                            .map_err(|e| format!("{e}"))
+                    })?,
+                    SecretBackendType::OnePassword => {
+                        let backend = rustconn_core::secret::OnePasswordBackend::new();
+                        crate::async_utils::with_runtime(|rt| {
+                            rt.block_on(backend.store(&lookup_key, &creds))
+                                .map_err(|e| format!("{e}"))
+                        })?
+                    }
+                    SecretBackendType::Passbolt => {
+                        let backend = rustconn_core::secret::PassboltBackend::new();
+                        crate::async_utils::with_runtime(|rt| {
+                            rt.block_on(backend.store(&lookup_key, &creds))
+                                .map_err(|e| format!("{e}"))
+                        })?
+                    }
+                    _ => {
+                        let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
+                        crate::async_utils::with_runtime(|rt| {
+                            rt.block_on(backend.store(&lookup_key, &creds))
+                                .map_err(|e| format!("{e}"))
+                        })?
+                    }
+                }
             },
             move |result: Result<(), String>| {
                 if let Err(e) = result {
@@ -2773,7 +2833,8 @@ pub fn rename_vault_credential(
             Ok(())
         }
     } else {
-        // Generic backend — rename flat key
+        // Generic backend — rename flat key based on preferred_backend
+        use rustconn_core::config::SecretBackendType;
         use rustconn_core::secret::SecretBackend;
 
         let old_key = format!("{} ({protocol_str})", old_name.replace('/', "-"),);
@@ -2783,18 +2844,67 @@ pub fn rename_vault_credential(
             return Ok(());
         }
 
-        let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
-        crate::async_utils::with_runtime(|rt| {
-            let creds = rt
-                .block_on(backend.retrieve(&old_key))
-                .map_err(|e| format!("{e}"))?;
-            if let Some(creds) = creds {
-                rt.block_on(backend.store(&new_key, &creds))
+        let backend_type = select_backend_for_load(&settings.secrets);
+        let secret_settings = settings.secrets.clone();
+
+        match backend_type {
+            SecretBackendType::Bitwarden => crate::async_utils::with_runtime(|rt| {
+                let backend = rt
+                    .block_on(rustconn_core::secret::auto_unlock(&secret_settings))
                     .map_err(|e| format!("{e}"))?;
-                let _ = rt.block_on(backend.delete(&old_key));
+                let creds = rt
+                    .block_on(backend.retrieve(&old_key))
+                    .map_err(|e| format!("{e}"))?;
+                if let Some(creds) = creds {
+                    rt.block_on(backend.store(&new_key, &creds))
+                        .map_err(|e| format!("{e}"))?;
+                    let _ = rt.block_on(backend.delete(&old_key));
+                }
+                Ok(())
+            })?,
+            SecretBackendType::OnePassword => {
+                let backend = rustconn_core::secret::OnePasswordBackend::new();
+                crate::async_utils::with_runtime(|rt| {
+                    let creds = rt
+                        .block_on(backend.retrieve(&old_key))
+                        .map_err(|e| format!("{e}"))?;
+                    if let Some(creds) = creds {
+                        rt.block_on(backend.store(&new_key, &creds))
+                            .map_err(|e| format!("{e}"))?;
+                        let _ = rt.block_on(backend.delete(&old_key));
+                    }
+                    Ok(())
+                })?
             }
-            Ok(())
-        })?
+            SecretBackendType::Passbolt => {
+                let backend = rustconn_core::secret::PassboltBackend::new();
+                crate::async_utils::with_runtime(|rt| {
+                    let creds = rt
+                        .block_on(backend.retrieve(&old_key))
+                        .map_err(|e| format!("{e}"))?;
+                    if let Some(creds) = creds {
+                        rt.block_on(backend.store(&new_key, &creds))
+                            .map_err(|e| format!("{e}"))?;
+                        let _ = rt.block_on(backend.delete(&old_key));
+                    }
+                    Ok(())
+                })?
+            }
+            _ => {
+                let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
+                crate::async_utils::with_runtime(|rt| {
+                    let creds = rt
+                        .block_on(backend.retrieve(&old_key))
+                        .map_err(|e| format!("{e}"))?;
+                    if let Some(creds) = creds {
+                        rt.block_on(backend.store(&new_key, &creds))
+                            .map_err(|e| format!("{e}"))?;
+                        let _ = rt.block_on(backend.delete(&old_key));
+                    }
+                    Ok(())
+                })?
+            }
+        }
     }
 }
 
@@ -2811,7 +2921,7 @@ pub fn save_variable_to_vault(
     use rustconn_core::secret::SecretBackend;
 
     let lookup_key = rustconn_core::variable_secret_key(var_name);
-    let backend_type = select_variable_backend(&settings.secrets);
+    let backend_type = select_backend_for_load(&settings.secrets);
 
     tracing::debug!(?backend_type, var_name, "Saving secret variable to vault");
 
@@ -2887,7 +2997,7 @@ pub fn load_variable_from_vault(
     use rustconn_core::secret::SecretBackend;
 
     let lookup_key = rustconn_core::variable_secret_key(var_name);
-    let backend_type = select_variable_backend(&settings.secrets);
+    let backend_type = select_backend_for_load(&settings.secrets);
 
     tracing::debug!(
         ?backend_type,
@@ -2957,7 +3067,8 @@ pub fn load_variable_from_vault(
 /// Selects the appropriate storage backend for variable secrets.
 ///
 /// Mirrors `CredentialResolver::select_storage_backend` logic.
-fn select_variable_backend(
+/// Also used by connection password load/save and variable vault operations.
+pub fn select_backend_for_load(
     secrets: &rustconn_core::config::SecretSettings,
 ) -> rustconn_core::config::SecretBackendType {
     use rustconn_core::config::SecretBackendType;

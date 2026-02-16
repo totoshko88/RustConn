@@ -132,6 +132,7 @@ fn arb_rdp_client_config() -> impl Strategy<Value = RdpClientConfig> {
                     microphone_enabled: false,
                     remote_app: None,
                     connection_name: None,
+                    keyboard_layout: None,
                 }
             },
         )

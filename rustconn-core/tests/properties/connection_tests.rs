@@ -165,6 +165,7 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                 custom_args,
                 client_mode: Default::default(),
                 performance_mode: Default::default(),
+                keyboard_layout: None,
             },
         )
 }

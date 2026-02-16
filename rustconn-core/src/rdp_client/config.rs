@@ -143,6 +143,12 @@ pub struct RdpClientConfig {
     /// Connection name/label for display
     #[serde(default)]
     pub connection_name: Option<String>,
+
+    /// Windows keyboard layout identifier (KLID).
+    /// `None` means auto-detect from system settings.
+    /// Example: `0x0407` for German, `0x040C` for French.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub keyboard_layout: Option<u32>,
 }
 
 const fn default_true() -> bool {
@@ -241,6 +247,7 @@ impl Default for RdpClientConfig {
             microphone_enabled: false,
             remote_app: None,
             connection_name: None,
+            keyboard_layout: None,
         }
     }
 }
@@ -414,6 +421,14 @@ impl RdpClientConfig {
     #[must_use]
     pub fn with_connection_name(mut self, name: impl Into<String>) -> Self {
         self.connection_name = Some(name.into());
+        self
+    }
+
+    /// Sets the keyboard layout (Windows KLID).
+    /// If not set, the layout is auto-detected at connection time.
+    #[must_use]
+    pub const fn with_keyboard_layout(mut self, klid: u32) -> Self {
+        self.keyboard_layout = Some(klid);
         self
     }
 

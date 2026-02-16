@@ -57,7 +57,7 @@ pub fn edit_selected_connection(
         };
         drop(state_ref);
 
-        let dialog = ConnectionDialog::new(Some(&window.clone().upcast()));
+        let dialog = ConnectionDialog::new(Some(&window.clone().upcast()), state.clone());
         dialog.setup_key_file_chooser(Some(&window.clone().upcast()));
 
         // Set available groups
@@ -112,6 +112,7 @@ pub fn edit_selected_connection(
                     .map(|p| p.expose_secret().to_string()),
                 settings.secrets.kdbx_key_file.clone(),
                 groups,
+                settings.secrets.clone(),
             );
         }
 

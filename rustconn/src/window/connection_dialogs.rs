@@ -37,7 +37,7 @@ pub fn show_new_connection_dialog_internal(
     sidebar: SharedSidebar,
     template: Option<rustconn_core::models::ConnectionTemplate>,
 ) {
-    let dialog = ConnectionDialog::new(Some(&window.clone().upcast()));
+    let dialog = ConnectionDialog::new(Some(&window.clone().upcast()), state.clone());
     dialog.setup_key_file_chooser(Some(&window.clone().upcast()));
 
     // Set available groups
@@ -86,6 +86,7 @@ pub fn show_new_connection_dialog_internal(
                 .map(|p| p.expose_secret().to_string()),
             settings.secrets.kdbx_key_file.clone(),
             groups,
+            settings.secrets.clone(),
         );
     }
 

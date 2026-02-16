@@ -354,7 +354,7 @@ pub fn show_new_connection_from_template(
     // Create connection from template
     let connection = template.apply(None);
 
-    let dialog = ConnectionDialog::new(Some(window));
+    let dialog = ConnectionDialog::new(Some(window), state.clone());
     dialog.setup_key_file_chooser(Some(window));
 
     // Set available groups
@@ -400,6 +400,7 @@ pub fn show_new_connection_from_template(
                 .map(|p| p.expose_secret().to_string()),
             settings.secrets.kdbx_key_file.clone(),
             groups,
+            settings.secrets.clone(),
         );
     }
 

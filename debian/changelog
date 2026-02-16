@@ -1,3 +1,12 @@
+rustconn (0.8.6-1) unstable; urgency=medium
+
+  * Version bump to 0.8.6
+  * Fixed Embedded RDP keyboard layout:
+    - Fixed incorrect key mapping for non-US keyboard layouts (e.g. German QWERTZ)
+      in IronRDP embedded client (#15)
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Mon, 16 Feb 2026 12:00:00 +0200
+
 rustconn (0.8.5-1) unstable; urgency=medium
 
   * Version bump to 0.8.5

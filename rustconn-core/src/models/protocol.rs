@@ -1004,6 +1004,9 @@ pub struct RdpConfig {
     /// Custom command-line arguments
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub custom_args: Vec<String>,
+    /// Keyboard layout override (Windows KLID). None = auto-detect.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub keyboard_layout: Option<u32>,
 }
 
 impl RdpConfig {

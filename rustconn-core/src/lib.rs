@@ -144,6 +144,9 @@ pub use protocol::{
     RdpProtocol, SerialProtocol, SftpProtocol, SpiceProtocol, SshProtocol, TelnetProtocol,
     VncProtocol,
 };
+pub use rdp_client::keyboard_layout::{
+    detect_keyboard_layout, xkb_name_to_klid, LAYOUT_US_ENGLISH,
+};
 pub use rdp_client::{
     convert_to_bgra, create_frame_update, create_frame_update_with_conversion,
     input::{

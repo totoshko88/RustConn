@@ -524,6 +524,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 .arg("unlock")
                 .arg("--passwordenv")
                 .arg("BW_PASSWORD")
+                .arg("--raw")
                 .env("BW_PASSWORD", &password)
                 .output();
 
@@ -531,8 +532,16 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 Ok(output) => {
                     if output.status.success() {
                         let stdout = String::from_utf8_lossy(&output.stdout);
-                        if let Some(session_key) = extract_session_key(&stdout) {
-                            std::env::set_var("BW_SESSION", &session_key);
+                        let session_key = stdout.trim();
+                        if session_key.is_empty() {
+                            // --raw returned empty — try parsing verbose output
+                            update_status_label(
+                                &status_label,
+                                "Unlocked (no session key)",
+                                "warning",
+                            );
+                        } else {
+                            std::env::set_var("BW_SESSION", session_key);
                             update_status_label(&status_label, "Unlocked", "success");
                             password_entry.set_text("");
 
@@ -540,8 +549,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                             if save_to_keyring {
                                 save_bw_password_to_keyring(&password);
                             }
-                        } else {
-                            update_status_label(&status_label, "Unlocked", "success");
                         }
                     } else {
                         let stderr = String::from_utf8_lossy(&output.stderr);
