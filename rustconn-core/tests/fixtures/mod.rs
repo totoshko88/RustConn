@@ -128,6 +128,7 @@ pub fn sample_rdp_connection_with_domain() -> Connection {
         custom_args: Vec::new(),
         client_mode: Default::default(),
         performance_mode: Default::default(),
+        keyboard_layout: None,
     };
 
     let mut conn = Connection::new(

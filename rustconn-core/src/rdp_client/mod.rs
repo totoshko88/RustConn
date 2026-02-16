@@ -54,6 +54,7 @@ mod event;
 pub mod gateway;
 pub mod graphics;
 pub mod input;
+pub mod keyboard_layout;
 pub mod multimonitor;
 #[cfg(feature = "rdp-embedded")]
 pub mod rdpdr;
@@ -78,6 +79,8 @@ pub use graphics::{
 };
 pub use multimonitor::{MonitorArrangement, MonitorDefinition, MonitorLayout};
 pub use reconnect::{ConnectionQuality, DisconnectReason, ReconnectPolicy, ReconnectState};
+
+pub use keyboard_layout::{detect_keyboard_layout, xkb_name_to_klid, LAYOUT_US_ENGLISH};
 
 /// Check if embedded RDP support is available
 ///

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.6] - 2026-02-16
+
+### Fixed
+- **Embedded RDP keyboard layout** — Fixed incorrect key mapping for non-US keyboard layouts (e.g. German QWERTZ) in IronRDP embedded client ([#15](https://github.com/totoshko88/RustConn/issues/15))
+- **Secrets management** — Comprehensive fixes to vault credential storage, backend dispatch, and Bitwarden integration ([#14](https://github.com/totoshko88/RustConn/issues/14)):
+  - All vault operations (`save_password_to_vault`, `save_group_password_to_vault`, `rename_vault_credential`, "Load from Vault") now respect `Settings → Secrets → preferred_backend` instead of being hardcoded to libsecret
+  - Bitwarden encrypted password is decrypted and vault auto-unlocked at startup when preferred backend is Bitwarden; Unlock button now uses `--raw` flag for reliable session key extraction
+  - `PasswordSource::Inherit` resolves group passwords through non-KeePass backends (Bitwarden, 1Password, Passbolt) with correct hierarchy traversal and consistent `group.id` lookup keys
+  - RDP and VNC password prompts auto-save entered passwords to vault when `password_source == Vault`, even without the "Save credentials" checkbox
+  - Toast notifications ("Failed to save password to vault") shown on all vault save error paths; previously errors were only logged
+- **Flatpak component checksums** — Fixed kubectl installation failing with `ChecksumMismatch` by generalizing no-checksum skip for all `*-no-checksum` patterns; updated boundary v0.21.0 checksum to match current upstream binary
+- **Flatpak component uninstall/reinstall** — Fixed `AlreadyInstalled` error when reinstalling AWS CLI and Google Cloud CLI after removal. `uninstall_component` now cleans up custom install paths (`aws-cli/`, `google-cloud-sdk/`), and `find_installed_binary` no longer searches the entire CLI directory as fallback
+- **Terminal search Highlight All** — Fixed "Highlight All" checkbox toggling to next match instead of highlighting. Now correctly adds hover-highlight via VTE regex matching without navigating; cleans up highlights on dialog close
+
+### Changed
+- **Dependencies** — Updated: `futures` 0.3.31→0.3.32, `libc` 0.2.181→0.2.182, `uuid` 1.20.0→1.21.0, `bitflags` 2.10.0→2.11.0, `syn` 2.0.114→2.0.116, `native-tls` 0.2.14→0.2.16, `png` 0.18.0→0.18.1, `cc` 1.2.55→1.2.56
+
 ## [0.8.5] - 2026-02-15
 
 ### Added

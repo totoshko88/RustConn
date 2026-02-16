@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.8.5
+Version:        0.8.6
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -189,6 +189,11 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Mon Feb 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.6-0
+- Version bump to 0.8.6
+- Fixed Embedded RDP keyboard layout: incorrect key mapping for non-US
+  keyboard layouts (e.g. German QWERTZ) in IronRDP embedded client (#15)
+
 * Sun Feb 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.5-0
 - Version bump to 0.8.5
 - Added Kubernetes Protocol (#14): kubectl exec shell access to pods

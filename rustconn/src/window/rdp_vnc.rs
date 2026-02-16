@@ -10,6 +10,7 @@ use crate::split_view::SplitViewBridge;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
 use gtk4::prelude::*;
+use rustconn_core::models::PasswordSource;
 
 use std::rc::Rc;
 use uuid::Uuid;
@@ -103,8 +104,45 @@ pub fn start_rdp_with_password_dialog(
     let sidebar_clone = sidebar.clone();
     dialog.show(move |result| {
         if let Some(creds) = result {
-            // Cache credentials if requested
-            if creds.save_credentials {
+            // Determine if we should save: explicit request OR password_source == Vault
+            let should_save = creds.save_credentials || {
+                let state_ref = state.borrow();
+                state_ref
+                    .get_connection(connection_id)
+                    .map(|c| c.password_source == PasswordSource::Vault)
+                    .unwrap_or(false)
+            };
+
+            if should_save {
+                // Get connection details for vault save
+                let conn_host = {
+                    let state_ref = state.borrow();
+                    state_ref
+                        .get_connection(connection_id)
+                        .map(|c| c.host.clone())
+                        .unwrap_or_default()
+                };
+
+                if let Ok(state_ref) = state.try_borrow() {
+                    let settings = state_ref.settings().clone();
+                    let groups: Vec<_> = state_ref.list_groups().into_iter().cloned().collect();
+                    let conn = state_ref.get_connection(connection_id);
+                    let protocol = rustconn_core::models::ProtocolType::Rdp;
+
+                    crate::state::save_password_to_vault(
+                        &settings,
+                        &groups,
+                        conn,
+                        &conn_name,
+                        &conn_host,
+                        protocol,
+                        &creds.username,
+                        &creds.password,
+                        connection_id,
+                    );
+                }
+
+                // Also cache for immediate use
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
                     state_mut.cache_credentials(
                         connection_id,
@@ -319,6 +357,9 @@ fn start_embedded_rdp_session(
             .collect();
         embedded_config = embedded_config.with_shared_folders(folders);
     }
+
+    // Pass keyboard layout override if configured
+    embedded_config.keyboard_layout = rdp_config.keyboard_layout;
 
     // Wrap in Rc to keep widget alive in notebook
     let embedded_widget = Rc::new(embedded_widget);
@@ -599,7 +640,13 @@ pub fn start_vnc_with_password_dialog(
         let state_ref = state.borrow();
         let settings = state_ref.settings();
 
-        if settings.secrets.kdbx_enabled {
+        if settings.secrets.kdbx_enabled
+            && matches!(
+                settings.secrets.preferred_backend,
+                rustconn_core::config::SecretBackendType::KeePassXc
+                    | rustconn_core::config::SecretBackendType::KdbxFile
+            )
+        {
             if let Some(kdbx_path) = settings.secrets.kdbx_path.clone() {
                 let db_password = settings
                     .secrets
@@ -642,8 +689,45 @@ pub fn start_vnc_with_password_dialog(
     let sidebar_clone = sidebar.clone();
     dialog.show(move |result| {
         if let Some(creds) = result {
-            // Cache credentials if requested
-            if creds.save_credentials {
+            // Determine if we should save: explicit request OR password_source == Vault
+            let should_save = creds.save_credentials || {
+                let state_ref = state.borrow();
+                state_ref
+                    .get_connection(connection_id)
+                    .map(|c| c.password_source == PasswordSource::Vault)
+                    .unwrap_or(false)
+            };
+
+            if should_save {
+                // Get connection details for vault save
+                let conn_host = {
+                    let state_ref = state.borrow();
+                    state_ref
+                        .get_connection(connection_id)
+                        .map(|c| c.host.clone())
+                        .unwrap_or_default()
+                };
+
+                if let Ok(state_ref) = state.try_borrow() {
+                    let settings = state_ref.settings().clone();
+                    let groups: Vec<_> = state_ref.list_groups().into_iter().cloned().collect();
+                    let conn = state_ref.get_connection(connection_id);
+                    let protocol = rustconn_core::models::ProtocolType::Vnc;
+
+                    crate::state::save_password_to_vault(
+                        &settings,
+                        &groups,
+                        conn,
+                        &conn_name,
+                        &conn_host,
+                        protocol,
+                        "", // VNC doesn't use username
+                        &creds.password,
+                        connection_id,
+                    );
+                }
+
+                // Also cache for immediate use
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
                     state_mut.cache_credentials(connection_id, "", &creds.password, "");
                 }

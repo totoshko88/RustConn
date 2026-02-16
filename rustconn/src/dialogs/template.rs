@@ -2330,6 +2330,7 @@ impl TemplateDialog {
             },
             shared_folders: Vec::new(),
             custom_args,
+            keyboard_layout: None,
         })
     }
 

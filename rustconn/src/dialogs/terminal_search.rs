@@ -143,6 +143,7 @@ impl TerminalSearchDialog {
         let window = self.window.clone();
         let terminal_close = self.terminal.clone();
         self.close_btn.connect_clicked(move |_| {
+            terminal_close.match_remove_all();
             terminal_close.search_set_regex(None, 0);
             window.close();
         });
@@ -160,6 +161,7 @@ impl TerminalSearchDialog {
             if text.is_empty() {
                 match_label.set_text("Enter text to search");
                 *current_search.borrow_mut() = String::new();
+                terminal.match_remove_all();
                 terminal.search_set_regex(None, 0);
                 return;
             }
@@ -215,14 +217,40 @@ impl TerminalSearchDialog {
             self.match_label.clone(),
         ));
 
-        self.highlight_all.connect_toggled(make_toggle_handler(
-            self.terminal.clone(),
-            self.search_entry.clone(),
-            self.case_sensitive.clone(),
-            self.regex_toggle.clone(),
-            self.highlight_all.clone(),
-            self.match_label.clone(),
-        ));
+        self.highlight_all.connect_toggled({
+            let terminal = self.terminal.clone();
+            let search_entry = self.search_entry.clone();
+            let case_sensitive = self.case_sensitive.clone();
+            let regex_toggle = self.regex_toggle.clone();
+            move |btn| {
+                let text = search_entry.text();
+                if text.is_empty() {
+                    return;
+                }
+
+                // Only toggle hover-highlight without navigating
+                terminal.match_remove_all();
+                if btn.is_active() {
+                    let pattern = if regex_toggle.is_active() {
+                        if case_sensitive.is_active() {
+                            text.to_string()
+                        } else {
+                            format!("(?i){text}")
+                        }
+                    } else {
+                        let escaped = regex::escape(&text);
+                        if case_sensitive.is_active() {
+                            escaped
+                        } else {
+                            format!("(?i){escaped}")
+                        }
+                    };
+                    if let Ok(hl_regex) = vte4::Regex::for_search(&pattern, 0) {
+                        terminal.match_add_regex(&hl_regex, 0);
+                    }
+                }
+            }
+        });
 
         // Navigation buttons
         let terminal_prev = self.terminal.clone();
@@ -247,6 +275,7 @@ impl TerminalSearchDialog {
         let key_controller = gtk4::EventControllerKey::new();
         key_controller.connect_key_pressed(move |_, key, _, _| {
             if key == gtk4::gdk::Key::Escape {
+                terminal_escape.match_remove_all();
                 terminal_escape.search_set_regex(None, 0);
                 window_escape.close();
                 return gtk4::glib::Propagation::Stop;
@@ -283,11 +312,15 @@ impl TerminalSearchDialog {
 
         let regex_result = vte4::Regex::for_search(&pattern, 0);
 
+        // Always clear previous match highlights first
+        terminal.match_remove_all();
+
         if let Ok(regex) = regex_result {
             terminal.search_set_regex(Some(&regex), 0);
             terminal.search_set_wrap_around(true);
 
-            // Highlight all matches if enabled
+            // Add hover-highlight for all matches when enabled
+            // VTE4 match_add_regex highlights text on mouse hover
             if highlight_all {
                 if let Ok(hl_regex) = vte4::Regex::for_search(&pattern, 0) {
                     terminal.match_add_regex(&hl_regex, 0);

@@ -787,7 +787,7 @@ impl EmbeddedRdpWidget {
     /// Sets up keyboard and mouse input handlers with coordinate transformation
     #[cfg(feature = "rdp-embedded")]
     fn setup_input_handlers(&self) {
-        use rustconn_core::{keyval_to_scancode, keyval_to_unicode};
+        use rustconn_core::{keycode_to_scancode, keyval_to_scancode, keyval_to_unicode};
 
         // Keyboard input handler
         let key_controller = EventControllerKey::new();
@@ -797,17 +797,30 @@ impl EmbeddedRdpWidget {
         let freerdp_thread = self.freerdp_thread.clone();
         let ironrdp_tx = self.ironrdp_command_tx.clone();
 
-        key_controller.connect_key_pressed(move |_controller, keyval, _keycode, _modifier| {
+        key_controller.connect_key_pressed(move |_controller, keyval, keycode, _modifier| {
             let current_state = *state.borrow();
             let embedded = *is_embedded.borrow();
             let using_ironrdp = *is_ironrdp.borrow();
 
             if embedded && current_state == RdpConnectionState::Connected {
                 if using_ironrdp {
-                    // Convert GTK keyval to RDP scancode and send via IronRDP
+                    // Use hardware keycode for layout-independent scancode mapping.
+                    // This fixes keyboard layout issues (e.g. German QWERTZ) where
+                    // keyval-based mapping produces wrong characters (#15).
+                    // Fallback chain: keycode → keyval → Unicode
+                    let hw_keycode = keycode;
                     let gdk_keyval = keyval.into_glib();
-                    if let Some(scancode) = keyval_to_scancode(gdk_keyval) {
-                        // Known scancode - send as keyboard event
+
+                    if let Some(scancode) = keycode_to_scancode(hw_keycode) {
+                        if let Some(ref tx) = *ironrdp_tx.borrow() {
+                            let _ = tx.send(RdpClientCommand::KeyEvent {
+                                scancode: scancode.code,
+                                pressed: true,
+                                extended: scancode.extended,
+                            });
+                        }
+                    } else if let Some(scancode) = keyval_to_scancode(gdk_keyval) {
+                        // Fallback to keyval for keys not in keycode table
                         if let Some(ref tx) = *ironrdp_tx.borrow() {
                             let _ = tx.send(RdpClientCommand::KeyEvent {
                                 scancode: scancode.code,
@@ -816,8 +829,7 @@ impl EmbeddedRdpWidget {
                             });
                         }
                     } else if let Some(ch) = keyval_to_unicode(gdk_keyval) {
-                        // Unknown scancode but valid Unicode character - send as Unicode event
-                        // This handles non-Latin characters (Cyrillic, etc.)
+                        // Non-Latin characters (Cyrillic, etc.) — send as Unicode event
                         if let Some(ref tx) = *ironrdp_tx.borrow() {
                             let _ = tx.send(RdpClientCommand::UnicodeEvent {
                                 character: ch,
@@ -825,7 +837,11 @@ impl EmbeddedRdpWidget {
                             });
                         }
                     } else {
-                        tracing::warn!("[IronRDP] Unknown keyval: 0x{:X}", gdk_keyval);
+                        tracing::warn!(
+                            "[IronRDP] Unknown key: keycode={}, keyval=0x{:X}",
+                            hw_keycode,
+                            gdk_keyval
+                        );
                     }
                 } else if let Some(ref thread) = *freerdp_thread.borrow() {
                     let _ = thread.send_command(RdpCommand::KeyEvent {
@@ -844,15 +860,25 @@ impl EmbeddedRdpWidget {
         let freerdp_thread = self.freerdp_thread.clone();
         let ironrdp_tx = self.ironrdp_command_tx.clone();
 
-        key_controller.connect_key_released(move |_controller, keyval, _keycode, _modifier| {
+        key_controller.connect_key_released(move |_controller, keyval, keycode, _modifier| {
             let current_state = *state.borrow();
             let embedded = *is_embedded.borrow();
             let using_ironrdp = *is_ironrdp.borrow();
 
             if embedded && current_state == RdpConnectionState::Connected {
                 if using_ironrdp {
+                    let hw_keycode = keycode;
                     let gdk_keyval = keyval.into_glib();
-                    if let Some(scancode) = keyval_to_scancode(gdk_keyval) {
+
+                    if let Some(scancode) = keycode_to_scancode(hw_keycode) {
+                        if let Some(ref tx) = *ironrdp_tx.borrow() {
+                            let _ = tx.send(RdpClientCommand::KeyEvent {
+                                scancode: scancode.code,
+                                pressed: false,
+                                extended: scancode.extended,
+                            });
+                        }
+                    } else if let Some(scancode) = keyval_to_scancode(gdk_keyval) {
                         if let Some(ref tx) = *ironrdp_tx.borrow() {
                             let _ = tx.send(RdpClientCommand::KeyEvent {
                                 scancode: scancode.code,
@@ -861,7 +887,6 @@ impl EmbeddedRdpWidget {
                             });
                         }
                     } else if let Some(ch) = keyval_to_unicode(gdk_keyval) {
-                        // Unicode character release
                         if let Some(ref tx) = *ironrdp_tx.borrow() {
                             let _ = tx.send(RdpClientCommand::UnicodeEvent {
                                 character: ch,
@@ -1601,6 +1626,10 @@ impl EmbeddedRdpWidget {
 
         if let Some(ref domain) = config.domain {
             client_config = client_config.with_domain(domain);
+        }
+
+        if let Some(klid) = config.keyboard_layout {
+            client_config = client_config.with_keyboard_layout(klid);
         }
 
         // Create and connect the IronRDP client

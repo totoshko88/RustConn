@@ -80,6 +80,22 @@
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.8.6" date="2026-02-16">
+      <description>
+        <p>Version 0.8.6 - Secrets Management, Keyboard Layout, Flatpak Fixes:</p>
+        <ul>
+          <li>Fixed embedded RDP keyboard layout for non-US layouts (e.g. German QWERTZ)</li>
+          <li>Secrets management: all vault operations now respect preferred backend setting (Bitwarden, 1Password, Passbolt) instead of defaulting to libsecret</li>
+          <li>Bitwarden auto-unlock at startup with encrypted password restore</li>
+          <li>Inherit credential resolution for non-KeePass backends with correct hierarchy traversal</li>
+          <li>Auto-save passwords to vault on RDP/VNC connections when password source is Vault</li>
+          <li>Toast notifications for vault save errors</li>
+          <li>Bitwarden auto-sync and retry on out-of-date cipher conflicts</li>
+          <li>Fixed Flatpak component checksum and uninstall/reinstall issues</li>
+          <li>Fixed terminal search Highlight All toggle behavior</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.8.5" date="2026-02-15">
       <description>
         <p>Version 0.8.5 - Kubernetes, Serial Console, SFTP, Adaptive UI, Terminal Search:</p>

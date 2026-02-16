@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Feb 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.6
+
+- Version bump to 0.8.6
+  * Fixed Embedded RDP keyboard layout: incorrect key mapping for non-US
+    keyboard layouts (e.g. German QWERTZ) in IronRDP embedded client (#15)
+
+-------------------------------------------------------------------
 Sun Feb 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.5
 
 - Version bump to 0.8.5

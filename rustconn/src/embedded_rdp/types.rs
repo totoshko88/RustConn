@@ -118,6 +118,8 @@ pub struct RdpConfig {
     /// Lower values = smoother but more CPU usage
     /// Higher values = less CPU but choppier display
     pub polling_interval_ms: u32,
+    /// Keyboard layout override (Windows KLID). None = auto-detect.
+    pub keyboard_layout: Option<u32>,
 }
 
 impl Default for RdpConfig {
@@ -137,6 +139,7 @@ impl Default for RdpConfig {
             window_geometry: None,
             remember_window_position: true,
             polling_interval_ms: 16, // ~60 FPS
+            keyboard_layout: None,
         }
     }
 }

@@ -212,13 +212,28 @@ impl DownloadableComponent {
             }
         }
 
-        // Search recursively in install_dir (limited depth)
-        if let Some(found) = find_binary_in_dir_recursive(&install_dir, self.binary_name, 5) {
-            return Some(found);
+        // Check known custom install paths for specific components
+        match self.id {
+            "aws" => {
+                let aws_bin = cli_dir.join("aws-cli").join("bin").join(self.binary_name);
+                if aws_bin.exists() {
+                    return Some(aws_bin);
+                }
+            }
+            "gcloud" => {
+                let gcloud_bin = cli_dir
+                    .join("google-cloud-sdk")
+                    .join("bin")
+                    .join(self.binary_name);
+                if gcloud_bin.exists() {
+                    return Some(gcloud_bin);
+                }
+            }
+            _ => {}
         }
 
-        // Search recursively in cli_dir as last resort (limited depth)
-        find_binary_in_dir_recursive(&cli_dir, self.binary_name, 6)
+        // Search recursively in install_dir only (limited depth)
+        find_binary_in_dir_recursive(&install_dir, self.binary_name, 5)
     }
 
     /// Get the path to the installed binary (may not exist)
@@ -433,7 +448,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         download_url: Some(
             "https://releases.hashicorp.com/boundary/0.21.0/boundary_0.21.0_linux_amd64.zip",
         ),
-        sha256: Some("041420f39f08bee06925d36ed7d2ded252a9ba4a1a1dc7b0dd418f855785a1e4"),
+        sha256: Some("434d569818622b77b2849f20fe64992240df7d3cffba97e65d6913560a0c960a"),
         pip_package: None,
         size_hint: "~50 MB",
         binary_name: "boundary",
@@ -788,9 +803,12 @@ async fn install_download_component(
         });
     }
 
-    // Verify checksum (skip for AWS SSM Plugin which uses "latest" URL without stable checksum)
-    if expected_checksum == "aws-ssm-latest-no-checksum" {
-        tracing::info!("Skipping checksum verification for AWS SSM Plugin (latest URL)");
+    // Verify checksum (skip for components using "latest" URL without stable checksum)
+    if expected_checksum.ends_with("-no-checksum") {
+        tracing::info!(
+            "Skipping checksum verification for {} (latest URL)",
+            component.name
+        );
     } else {
         verify_checksum(&bytes, expected_checksum)?;
     }
@@ -1733,6 +1751,40 @@ pub async fn uninstall_component(component: &DownloadableComponent) -> CliDownlo
 
     if install_dir.exists() {
         tokio::fs::remove_dir_all(&install_dir).await?;
+    }
+
+    // Custom components may install to additional directories
+    match component.id {
+        "aws" => {
+            // AWS CLI installer creates aws-cli/ and aws-cli-temp/ directories
+            let aws_cli_dir = cli_dir.join("aws-cli");
+            if aws_cli_dir.exists() {
+                tokio::fs::remove_dir_all(&aws_cli_dir).await?;
+            }
+            let aws_temp_dir = cli_dir.join("aws-cli-temp");
+            if aws_temp_dir.exists() {
+                tokio::fs::remove_dir_all(&aws_temp_dir).await?;
+            }
+        }
+        "gcloud" => {
+            // gcloud extracts to google-cloud-sdk/ directory
+            let gcloud_dir = cli_dir.join("google-cloud-sdk");
+            if gcloud_dir.exists() {
+                tokio::fs::remove_dir_all(&gcloud_dir).await?;
+            }
+        }
+        _ => {}
+    }
+
+    // Also clean up pip/python directory for pip-based components
+    if component.install_method == InstallMethod::Pip {
+        let python_bin = cli_dir
+            .join("python")
+            .join("bin")
+            .join(component.binary_name);
+        if python_bin.exists() {
+            let _ = tokio::fs::remove_file(&python_bin).await;
+        }
     }
 
     Ok(())

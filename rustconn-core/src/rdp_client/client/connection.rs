@@ -216,7 +216,9 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
         keyboard_type: KeyboardType::IbmEnhanced,
         keyboard_subtype: 0,
         keyboard_functional_keys_count: 12,
-        keyboard_layout: 0x0409, // US English
+        keyboard_layout: config
+            .keyboard_layout
+            .unwrap_or_else(super::super::keyboard_layout::detect_keyboard_layout),
         ime_file_name: String::new(),
         dig_product_id: String::new(),
         desktop_size: DesktopSize {

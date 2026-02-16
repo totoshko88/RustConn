@@ -57,7 +57,7 @@ pub fn edit_selected_connection(
         };
         drop(state_ref);
 
-        let dialog = ConnectionDialog::new(Some(&window.clone().upcast()));
+        let dialog = ConnectionDialog::new(Some(&window.clone().upcast()), state.clone());
         dialog.setup_key_file_chooser(Some(&window.clone().upcast()));
 
         // Set available groups
@@ -112,6 +112,7 @@ pub fn edit_selected_connection(
                     .map(|p| p.expose_secret().to_string()),
                 settings.secrets.kdbx_key_file.clone(),
                 groups,
+                settings.secrets.clone(),
             );
         }
 
@@ -644,7 +645,7 @@ pub fn show_edit_group_dialog(
         drop(state_ref);
 
         let lookup_key = if let Some(ref g) = grp {
-            rustconn_core::secret::KeePassHierarchy::build_group_lookup_key(g, &groups, true)
+            g.id.to_string()
         } else {
             format!("group:{}", group_name_for_load.replace('/', "-"))
         };
@@ -950,10 +951,7 @@ pub fn show_edit_group_dialog(
                             rustconn_core::secret::KeePassHierarchy::build_group_entry_path(
                                 &g, &groups,
                             );
-                        let lookup_key =
-                            rustconn_core::secret::KeePassHierarchy::build_group_lookup_key(
-                                &g, &groups, true,
-                            );
+                        let lookup_key = g.id.to_string();
 
                         if new_password_source == PasswordSource::Vault {
                             // Save to vault using configured backend
