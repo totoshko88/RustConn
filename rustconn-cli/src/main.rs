@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 use std::fmt::Write as _;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use clap::{Parser, Subcommand, ValueEnum};
 use rustconn_core::cluster::Cluster;
@@ -23,7 +23,7 @@ use rustconn_core::wol::{MacAddress, WolConfig};
 #[command(author, version, about = "RustConn command-line interface")]
 #[command(propagate_version = true)]
 pub struct Cli {
-    /// Path to the configuration file
+    /// Path to the configuration directory
     #[arg(short, long, global = true)]
     pub config: Option<PathBuf>,
 
@@ -709,8 +709,20 @@ fn parse_key_val(s: &str) -> Result<(String, String), String> {
     Ok((s[..pos].to_string(), s[pos + 1..].to_string()))
 }
 
+/// Creates a `ConfigManager` using the optional custom config directory
+/// from CLI args.
+fn create_config_manager(config_path: Option<&Path>) -> Result<ConfigManager, CliError> {
+    match config_path {
+        Some(path) => Ok(ConfigManager::with_config_dir(path.to_path_buf())),
+        None => ConfigManager::new()
+            .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}"))),
+    }
+}
+
+#[allow(clippy::too_many_lines)]
 fn main() {
     let cli = Cli::parse();
+    let config_path = cli.config.as_deref();
 
     let result = match cli.command {
         Commands::List {
@@ -719,12 +731,13 @@ fn main() {
             group,
             tag,
         } => cmd_list(
+            config_path,
             format,
             protocol.as_deref(),
             group.as_deref(),
             tag.as_deref(),
         ),
-        Commands::Connect { name } => cmd_connect(&name),
+        Commands::Connect { name } => cmd_connect(config_path, &name),
         Commands::Add {
             name,
             host,
@@ -735,22 +748,25 @@ fn main() {
             auth_method,
             device,
             baud_rate,
-        } => cmd_add(AddParams {
-            name: &name,
-            host: &host,
-            port,
-            protocol: &protocol,
-            user: user.as_deref(),
-            key: key.as_deref(),
-            auth_method: auth_method.as_deref(),
-            device: device.as_deref(),
-            baud_rate,
-        }),
-        Commands::Export { format, output } => cmd_export(format, &output),
-        Commands::Import { format, file } => cmd_import(format, &file),
-        Commands::Test { name, timeout } => cmd_test(&name, timeout),
-        Commands::Delete { name } => cmd_delete(&name),
-        Commands::Show { name } => cmd_show(&name),
+        } => cmd_add(
+            config_path,
+            AddParams {
+                name: &name,
+                host: &host,
+                port,
+                protocol: &protocol,
+                user: user.as_deref(),
+                key: key.as_deref(),
+                auth_method: auth_method.as_deref(),
+                device: device.as_deref(),
+                baud_rate,
+            },
+        ),
+        Commands::Export { format, output } => cmd_export(config_path, format, &output),
+        Commands::Import { format, file } => cmd_import(config_path, format, &file),
+        Commands::Test { name, timeout } => cmd_test(config_path, &name, timeout),
+        Commands::Delete { name } => cmd_delete(config_path, &name),
+        Commands::Show { name } => cmd_show(config_path, &name),
         Commands::Update {
             name,
             new_name,
@@ -761,31 +777,36 @@ fn main() {
             auth_method,
             device,
             baud_rate,
-        } => cmd_update(UpdateParams {
-            name: &name,
-            new_name: new_name.as_deref(),
-            host: host.as_deref(),
-            port,
-            user: user.as_deref(),
-            key: key.as_deref(),
-            auth_method: auth_method.as_deref(),
-            device: device.as_deref(),
-            baud_rate,
-        }),
+        } => cmd_update(
+            config_path,
+            UpdateParams {
+                name: &name,
+                new_name: new_name.as_deref(),
+                host: host.as_deref(),
+                port,
+                user: user.as_deref(),
+                key: key.as_deref(),
+                auth_method: auth_method.as_deref(),
+                device: device.as_deref(),
+                baud_rate,
+            },
+        ),
         Commands::Wol {
             target,
             broadcast,
             port,
-        } => cmd_wol(&target, &broadcast, port),
-        Commands::Snippet(subcmd) => cmd_snippet(subcmd),
-        Commands::Group(subcmd) => cmd_group(subcmd),
-        Commands::Template(subcmd) => cmd_template(subcmd),
-        Commands::Cluster(subcmd) => cmd_cluster(subcmd),
-        Commands::Var(subcmd) => cmd_var(subcmd),
-        Commands::Secret(subcmd) => cmd_secret(subcmd),
-        Commands::Duplicate { name, new_name } => cmd_duplicate(&name, new_name.as_deref()),
-        Commands::Sftp { name, cli, mc } => cmd_sftp(&name, cli, mc),
-        Commands::Stats => cmd_stats(),
+        } => cmd_wol(config_path, &target, &broadcast, port),
+        Commands::Snippet(subcmd) => cmd_snippet(config_path, subcmd),
+        Commands::Group(subcmd) => cmd_group(config_path, subcmd),
+        Commands::Template(subcmd) => cmd_template(config_path, subcmd),
+        Commands::Cluster(subcmd) => cmd_cluster(config_path, subcmd),
+        Commands::Var(subcmd) => cmd_var(config_path, subcmd),
+        Commands::Secret(subcmd) => cmd_secret(config_path, subcmd),
+        Commands::Duplicate { name, new_name } => {
+            cmd_duplicate(config_path, &name, new_name.as_deref())
+        }
+        Commands::Sftp { name, cli, mc } => cmd_sftp(config_path, &name, cli, mc),
+        Commands::Stats => cmd_stats(config_path),
     };
 
     if let Err(e) = result {
@@ -796,13 +817,13 @@ fn main() {
 
 /// List connections command handler
 fn cmd_list(
+    config_path: Option<&Path>,
     format: OutputFormat,
     protocol: Option<&str>,
     group: Option<&str>,
     tag: Option<&str>,
 ) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let connections = config_manager
         .load_connections()
@@ -1034,10 +1055,9 @@ impl From<&Connection> for ConnectionOutput {
 }
 
 /// Connect command handler
-fn cmd_connect(name: &str) -> Result<(), CliError> {
+fn cmd_connect(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
     // Load connections
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let connections = config_manager
         .load_connections()
@@ -1477,7 +1497,7 @@ struct AddParams<'a> {
 }
 
 /// Add connection command handler
-fn cmd_add(params: AddParams<'_>) -> Result<(), CliError> {
+fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Result<(), CliError> {
     // Parse protocol and determine default port
     let (protocol_type, default_port) = parse_protocol(params.protocol)?;
     let port = params.port.unwrap_or(default_port);
@@ -1528,8 +1548,7 @@ fn cmd_add(params: AddParams<'_>) -> Result<(), CliError> {
     }
 
     // Load existing connections
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let mut connections = config_manager
         .load_connections()
@@ -1699,9 +1718,12 @@ fn create_connection(
 }
 
 /// Export connections command handler
-fn cmd_export(format: ExportFormatArg, output: &std::path::Path) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_export(
+    config_path: Option<&Path>,
+    format: ExportFormatArg,
+    output: &std::path::Path,
+) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let connections = config_manager
         .load_connections()
@@ -1826,7 +1848,11 @@ fn export_connections(
 }
 
 /// Import connections command handler
-fn cmd_import(format: ImportFormatArg, file: &std::path::Path) -> Result<(), CliError> {
+fn cmd_import(
+    config_path: Option<&Path>,
+    format: ImportFormatArg,
+    file: &std::path::Path,
+) -> Result<(), CliError> {
     // Check if file exists
     if !file.exists() {
         return Err(CliError::Import(format!(
@@ -1836,8 +1862,7 @@ fn cmd_import(format: ImportFormatArg, file: &std::path::Path) -> Result<(), Cli
     }
 
     // Load existing connections
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let mut existing_connections = config_manager
         .load_connections()
@@ -1992,10 +2017,9 @@ fn import_connections(
 }
 
 /// Test connection command handler
-fn cmd_test(name: &str, timeout: u64) -> Result<(), CliError> {
+fn cmd_test(config_path: Option<&Path>, name: &str, timeout: u64) -> Result<(), CliError> {
     // Load connections
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let connections = config_manager
         .load_connections()
@@ -2190,10 +2214,9 @@ fn print_test_summary(summary: &rustconn_core::testing::TestSummary) {
 }
 
 /// Delete connection command handler
-fn cmd_delete(name: &str) -> Result<(), CliError> {
+fn cmd_delete(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
     // Load connections
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let connections = config_manager
         .load_connections()
@@ -2219,10 +2242,9 @@ fn cmd_delete(name: &str) -> Result<(), CliError> {
 }
 
 /// Show connection details command handler
-fn cmd_show(name: &str) -> Result<(), CliError> {
+fn cmd_show(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
     // Load connections
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let connections = config_manager
         .load_connections()
@@ -2306,10 +2328,9 @@ struct UpdateParams<'a> {
     baud_rate: Option<u32>,
 }
 
-fn cmd_update(params: UpdateParams<'_>) -> Result<(), CliError> {
+fn cmd_update(config_path: Option<&Path>, params: UpdateParams<'_>) -> Result<(), CliError> {
     // Load connections
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let mut connections = config_manager
         .load_connections()
@@ -2531,14 +2552,18 @@ impl CliError {
 // ============================================================================
 
 /// Wake-on-LAN command handler
-fn cmd_wol(target: &str, broadcast: &str, port: u16) -> Result<(), CliError> {
+fn cmd_wol(
+    config_path: Option<&Path>,
+    target: &str,
+    broadcast: &str,
+    port: u16,
+) -> Result<(), CliError> {
     // Try to parse target as MAC address first
     let mac = if let Ok(mac) = target.parse::<MacAddress>() {
         mac
     } else {
         // Try to find connection by name and get its WOL config
-        let config_manager = ConfigManager::new()
-            .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+        let config_manager = create_config_manager(config_path)?;
 
         let connections = config_manager
             .load_connections()
@@ -2583,34 +2608,43 @@ fn cmd_wol(target: &str, broadcast: &str, port: u16) -> Result<(), CliError> {
 // ============================================================================
 
 /// Snippet command handler
-fn cmd_snippet(subcmd: SnippetCommands) -> Result<(), CliError> {
+fn cmd_snippet(config_path: Option<&Path>, subcmd: SnippetCommands) -> Result<(), CliError> {
     match subcmd {
         SnippetCommands::List {
             format,
             category,
             tag,
-        } => cmd_snippet_list(format, category.as_deref(), tag.as_deref()),
-        SnippetCommands::Show { name } => cmd_snippet_show(&name),
+        } => cmd_snippet_list(config_path, format, category.as_deref(), tag.as_deref()),
+        SnippetCommands::Show { name } => cmd_snippet_show(config_path, &name),
         SnippetCommands::Add {
             name,
             command,
             description,
             category,
             tags,
-        } => cmd_snippet_add(&name, &command, description.as_deref(), category, tags),
-        SnippetCommands::Delete { name } => cmd_snippet_delete(&name),
-        SnippetCommands::Run { name, var, execute } => cmd_snippet_run(&name, &var, execute),
+        } => cmd_snippet_add(
+            config_path,
+            &name,
+            &command,
+            description.as_deref(),
+            category,
+            tags,
+        ),
+        SnippetCommands::Delete { name } => cmd_snippet_delete(config_path, &name),
+        SnippetCommands::Run { name, var, execute } => {
+            cmd_snippet_run(config_path, &name, &var, execute)
+        }
     }
 }
 
 /// List snippets command
 fn cmd_snippet_list(
+    config_path: Option<&Path>,
     format: OutputFormat,
     category: Option<&str>,
     tag: Option<&str>,
 ) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let snippet_manager = SnippetManager::new(config_manager)
         .map_err(|e| CliError::Snippet(format!("Failed to load snippets: {e}")))?;
@@ -2692,9 +2726,8 @@ fn print_snippet_csv(snippets: &[&Snippet]) {
 }
 
 /// Show snippet details
-fn cmd_snippet_show(name: &str) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_snippet_show(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let snippet_manager = SnippetManager::new(config_manager)
         .map_err(|e| CliError::Snippet(format!("Failed to load snippets: {e}")))?;
@@ -2739,14 +2772,14 @@ fn cmd_snippet_show(name: &str) -> Result<(), CliError> {
 
 /// Add a new snippet
 fn cmd_snippet_add(
+    config_path: Option<&Path>,
     name: &str,
     command: &str,
     description: Option<&str>,
     category: Option<String>,
     tags: Option<String>,
 ) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let mut snippet_manager = SnippetManager::new(config_manager)
         .map_err(|e| CliError::Snippet(format!("Failed to load snippets: {e}")))?;
@@ -2784,9 +2817,8 @@ fn cmd_snippet_add(
 }
 
 /// Delete a snippet
-fn cmd_snippet_delete(name: &str) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_snippet_delete(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let mut snippet_manager = SnippetManager::new(config_manager)
         .map_err(|e| CliError::Snippet(format!("Failed to load snippets: {e}")))?;
@@ -2805,9 +2837,13 @@ fn cmd_snippet_delete(name: &str) -> Result<(), CliError> {
 }
 
 /// Run a snippet with variable substitution
-fn cmd_snippet_run(name: &str, vars: &[(String, String)], execute: bool) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_snippet_run(
+    config_path: Option<&Path>,
+    name: &str,
+    vars: &[(String, String)],
+    execute: bool,
+) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let snippet_manager = SnippetManager::new(config_manager)
         .map_err(|e| CliError::Snippet(format!("Failed to load snippets: {e}")))?;
@@ -2885,29 +2921,33 @@ fn find_snippet<'a>(
 // ============================================================================
 
 /// Group command handler
-fn cmd_group(subcmd: GroupCommands) -> Result<(), CliError> {
+fn cmd_group(config_path: Option<&Path>, subcmd: GroupCommands) -> Result<(), CliError> {
     match subcmd {
-        GroupCommands::List { format } => cmd_group_list(format),
-        GroupCommands::Show { name } => cmd_group_show(&name),
+        GroupCommands::List { format } => cmd_group_list(config_path, format),
+        GroupCommands::Show { name } => cmd_group_show(config_path, &name),
         GroupCommands::Create {
             name,
             parent,
             description,
-        } => cmd_group_create(&name, parent.as_deref(), description.as_deref()),
-        GroupCommands::Delete { name } => cmd_group_delete(&name),
+        } => cmd_group_create(
+            config_path,
+            &name,
+            parent.as_deref(),
+            description.as_deref(),
+        ),
+        GroupCommands::Delete { name } => cmd_group_delete(config_path, &name),
         GroupCommands::AddConnection { group, connection } => {
-            cmd_group_add_connection(&group, &connection)
+            cmd_group_add_connection(config_path, &group, &connection)
         }
         GroupCommands::RemoveConnection { group, connection } => {
-            cmd_group_remove_connection(&group, &connection)
+            cmd_group_remove_connection(config_path, &group, &connection)
         }
     }
 }
 
 /// List groups command
-fn cmd_group_list(format: OutputFormat) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_group_list(config_path: Option<&Path>, format: OutputFormat) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let groups = config_manager
         .load_groups()
@@ -2977,9 +3017,8 @@ fn print_group_csv(groups: &[ConnectionGroup]) {
 }
 
 /// Show group details
-fn cmd_group_show(name: &str) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_group_show(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let groups = config_manager
         .load_groups()
@@ -3019,12 +3058,12 @@ fn cmd_group_show(name: &str) -> Result<(), CliError> {
 
 /// Create a new group
 fn cmd_group_create(
+    config_path: Option<&Path>,
     name: &str,
     parent: Option<&str>,
     _description: Option<&str>,
 ) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let mut groups = config_manager
         .load_groups()
@@ -3057,9 +3096,8 @@ fn cmd_group_create(
 }
 
 /// Delete a group
-fn cmd_group_delete(name: &str) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_group_delete(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let mut groups = config_manager
         .load_groups()
@@ -3081,9 +3119,12 @@ fn cmd_group_delete(name: &str) -> Result<(), CliError> {
 }
 
 /// Add a connection to a group
-fn cmd_group_add_connection(group_name: &str, connection_name: &str) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_group_add_connection(
+    config_path: Option<&Path>,
+    group_name: &str,
+    connection_name: &str,
+) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let groups = config_manager
         .load_groups()
@@ -3125,9 +3166,12 @@ fn cmd_group_add_connection(group_name: &str, connection_name: &str) -> Result<(
 }
 
 /// Remove a connection from a group
-fn cmd_group_remove_connection(group_name: &str, connection_name: &str) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_group_remove_connection(
+    config_path: Option<&Path>,
+    group_name: &str,
+    connection_name: &str,
+) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let groups = config_manager
         .load_groups()
@@ -3200,12 +3244,12 @@ fn find_group<'a>(
 // ============================================================================
 
 /// Template command handler
-fn cmd_template(subcmd: TemplateCommands) -> Result<(), CliError> {
+fn cmd_template(config_path: Option<&Path>, subcmd: TemplateCommands) -> Result<(), CliError> {
     match subcmd {
         TemplateCommands::List { format, protocol } => {
-            cmd_template_list(format, protocol.as_deref())
+            cmd_template_list(config_path, format, protocol.as_deref())
         }
-        TemplateCommands::Show { name } => cmd_template_show(&name),
+        TemplateCommands::Show { name } => cmd_template_show(config_path, &name),
         TemplateCommands::Create {
             name,
             protocol,
@@ -3214,6 +3258,7 @@ fn cmd_template(subcmd: TemplateCommands) -> Result<(), CliError> {
             user,
             description,
         } => cmd_template_create(
+            config_path,
             &name,
             &protocol,
             host.as_deref(),
@@ -3221,7 +3266,7 @@ fn cmd_template(subcmd: TemplateCommands) -> Result<(), CliError> {
             user.as_deref(),
             description.as_deref(),
         ),
-        TemplateCommands::Delete { name } => cmd_template_delete(&name),
+        TemplateCommands::Delete { name } => cmd_template_delete(config_path, &name),
         TemplateCommands::Apply {
             template,
             name,
@@ -3229,6 +3274,7 @@ fn cmd_template(subcmd: TemplateCommands) -> Result<(), CliError> {
             port,
             user,
         } => cmd_template_apply(
+            config_path,
             &template,
             name.as_deref(),
             host.as_deref(),
@@ -3239,9 +3285,12 @@ fn cmd_template(subcmd: TemplateCommands) -> Result<(), CliError> {
 }
 
 /// List templates command
-fn cmd_template_list(format: OutputFormat, protocol: Option<&str>) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_template_list(
+    config_path: Option<&Path>,
+    format: OutputFormat,
+    protocol: Option<&str>,
+) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let templates = config_manager
         .load_templates()
@@ -3325,9 +3374,8 @@ fn print_template_csv(templates: &[&ConnectionTemplate]) {
 }
 
 /// Show template details
-fn cmd_template_show(name: &str) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_template_show(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let templates = config_manager
         .load_templates()
@@ -3359,6 +3407,7 @@ fn cmd_template_show(name: &str) -> Result<(), CliError> {
 
 /// Create a new template
 fn cmd_template_create(
+    config_path: Option<&Path>,
     name: &str,
     protocol: &str,
     host: Option<&str>,
@@ -3366,8 +3415,7 @@ fn cmd_template_create(
     user: Option<&str>,
     description: Option<&str>,
 ) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let mut templates = config_manager
         .load_templates()
@@ -3413,9 +3461,8 @@ fn cmd_template_create(
 }
 
 /// Delete a template
-fn cmd_template_delete(name: &str) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_template_delete(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let mut templates = config_manager
         .load_templates()
@@ -3438,14 +3485,14 @@ fn cmd_template_delete(name: &str) -> Result<(), CliError> {
 
 /// Apply a template to create a new connection
 fn cmd_template_apply(
+    config_path: Option<&Path>,
     template_name: &str,
     conn_name: Option<&str>,
     host: Option<&str>,
     port: Option<u16>,
     user: Option<&str>,
 ) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let templates = config_manager
         .load_templates()
@@ -3519,31 +3566,30 @@ fn find_template<'a>(
 // ============================================================================
 
 /// Cluster command handler
-fn cmd_cluster(subcmd: ClusterCommands) -> Result<(), CliError> {
+fn cmd_cluster(config_path: Option<&Path>, subcmd: ClusterCommands) -> Result<(), CliError> {
     match subcmd {
-        ClusterCommands::List { format } => cmd_cluster_list(format),
-        ClusterCommands::Show { name } => cmd_cluster_show(&name),
+        ClusterCommands::List { format } => cmd_cluster_list(config_path, format),
+        ClusterCommands::Show { name } => cmd_cluster_show(config_path, &name),
         ClusterCommands::Create {
             name,
             connections,
             broadcast,
-        } => cmd_cluster_create(&name, connections.as_deref(), broadcast),
-        ClusterCommands::Delete { name } => cmd_cluster_delete(&name),
+        } => cmd_cluster_create(config_path, &name, connections.as_deref(), broadcast),
+        ClusterCommands::Delete { name } => cmd_cluster_delete(config_path, &name),
         ClusterCommands::AddConnection {
             cluster,
             connection,
-        } => cmd_cluster_add_connection(&cluster, &connection),
+        } => cmd_cluster_add_connection(config_path, &cluster, &connection),
         ClusterCommands::RemoveConnection {
             cluster,
             connection,
-        } => cmd_cluster_remove_connection(&cluster, &connection),
+        } => cmd_cluster_remove_connection(config_path, &cluster, &connection),
     }
 }
 
 /// List clusters command
-fn cmd_cluster_list(format: OutputFormat) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_cluster_list(config_path: Option<&Path>, format: OutputFormat) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let clusters = config_manager
         .load_clusters()
@@ -3611,9 +3657,8 @@ fn print_cluster_csv(clusters: &[Cluster]) {
 }
 
 /// Show cluster details
-fn cmd_cluster_show(name: &str) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_cluster_show(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let clusters = config_manager
         .load_clusters()
@@ -3654,12 +3699,12 @@ fn cmd_cluster_show(name: &str) -> Result<(), CliError> {
 
 /// Create a new cluster
 fn cmd_cluster_create(
+    config_path: Option<&Path>,
     name: &str,
     connections: Option<&str>,
     broadcast: bool,
 ) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let mut clusters = config_manager
         .load_clusters()
@@ -3693,9 +3738,8 @@ fn cmd_cluster_create(
 }
 
 /// Delete a cluster
-fn cmd_cluster_delete(name: &str) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_cluster_delete(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let mut clusters = config_manager
         .load_clusters()
@@ -3717,9 +3761,12 @@ fn cmd_cluster_delete(name: &str) -> Result<(), CliError> {
 }
 
 /// Add a connection to a cluster
-fn cmd_cluster_add_connection(cluster_name: &str, connection_name: &str) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_cluster_add_connection(
+    config_path: Option<&Path>,
+    cluster_name: &str,
+    connection_name: &str,
+) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let mut clusters = config_manager
         .load_clusters()
@@ -3760,11 +3807,11 @@ fn cmd_cluster_add_connection(cluster_name: &str, connection_name: &str) -> Resu
 
 /// Remove a connection from a cluster
 fn cmd_cluster_remove_connection(
+    config_path: Option<&Path>,
     cluster_name: &str,
     connection_name: &str,
 ) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let mut clusters = config_manager
         .load_clusters()
@@ -3834,24 +3881,23 @@ fn find_cluster<'a>(clusters: &'a [Cluster], name_or_id: &str) -> Result<&'a Clu
 // ============================================================================
 
 /// Variable command handler
-fn cmd_var(subcmd: VariableCommands) -> Result<(), CliError> {
+fn cmd_var(config_path: Option<&Path>, subcmd: VariableCommands) -> Result<(), CliError> {
     match subcmd {
-        VariableCommands::List { format } => cmd_var_list(format),
-        VariableCommands::Show { name } => cmd_var_show(&name),
+        VariableCommands::List { format } => cmd_var_list(config_path, format),
+        VariableCommands::Show { name } => cmd_var_show(config_path, &name),
         VariableCommands::Set {
             name,
             value,
             secret,
             description,
-        } => cmd_var_set(&name, &value, secret, description.as_deref()),
-        VariableCommands::Delete { name } => cmd_var_delete(&name),
+        } => cmd_var_set(config_path, &name, &value, secret, description.as_deref()),
+        VariableCommands::Delete { name } => cmd_var_delete(config_path, &name),
     }
 }
 
 /// List variables command
-fn cmd_var_list(format: OutputFormat) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_var_list(config_path: Option<&Path>, format: OutputFormat) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let variables = config_manager
         .load_variables()
@@ -3932,9 +3978,8 @@ fn print_var_csv(variables: &[Variable]) {
 }
 
 /// Show variable details
-fn cmd_var_show(name: &str) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_var_show(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let variables = config_manager
         .load_variables()
@@ -3959,13 +4004,13 @@ fn cmd_var_show(name: &str) -> Result<(), CliError> {
 
 /// Set a variable
 fn cmd_var_set(
+    config_path: Option<&Path>,
     name: &str,
     value: &str,
     secret: bool,
     description: Option<&str>,
 ) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let mut variables = config_manager
         .load_variables()
@@ -4004,9 +4049,8 @@ fn cmd_var_set(
 }
 
 /// Delete a variable
-fn cmd_var_delete(name: &str) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_var_delete(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let mut variables = config_manager
         .load_variables()
@@ -4033,19 +4077,20 @@ fn cmd_var_delete(name: &str) -> Result<(), CliError> {
 // ============================================================================
 
 /// Secret command handler
-fn cmd_secret(subcmd: SecretCommands) -> Result<(), CliError> {
+fn cmd_secret(config_path: Option<&Path>, subcmd: SecretCommands) -> Result<(), CliError> {
     match subcmd {
-        SecretCommands::Status => cmd_secret_status(),
+        SecretCommands::Status => cmd_secret_status(config_path),
         SecretCommands::Get {
             connection,
             backend,
-        } => cmd_secret_get(&connection, backend.as_deref()),
+        } => cmd_secret_get(config_path, &connection, backend.as_deref()),
         SecretCommands::Set {
             connection,
             user,
             password,
             backend,
         } => cmd_secret_set(
+            config_path,
             &connection,
             user.as_deref(),
             password.as_deref(),
@@ -4054,15 +4099,15 @@ fn cmd_secret(subcmd: SecretCommands) -> Result<(), CliError> {
         SecretCommands::Delete {
             connection,
             backend,
-        } => cmd_secret_delete(&connection, backend.as_deref()),
+        } => cmd_secret_delete(config_path, &connection, backend.as_deref()),
         SecretCommands::VerifyKeepass { database, key_file } => {
-            cmd_secret_verify_keepass(&database, key_file.as_deref())
+            cmd_secret_verify_keepass(config_path, &database, key_file.as_deref())
         }
     }
 }
 
 /// Show secret backend status
-fn cmd_secret_status() -> Result<(), CliError> {
+fn cmd_secret_status(config_path: Option<&Path>) -> Result<(), CliError> {
     use rustconn_core::secret::KeePassStatus;
 
     println!("Secret Backend Status");
@@ -4148,8 +4193,7 @@ fn cmd_secret_status() -> Result<(), CliError> {
     }
 
     // Load settings to show configured backend
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     if let Ok(settings) = config_manager.load_settings() {
         println!("\nConfiguration:");
@@ -4172,13 +4216,16 @@ fn cmd_secret_status() -> Result<(), CliError> {
 
 /// Get password for a connection
 #[allow(clippy::too_many_lines)]
-fn cmd_secret_get(connection_name: &str, backend: Option<&str>) -> Result<(), CliError> {
+fn cmd_secret_get(
+    config_path: Option<&Path>,
+    connection_name: &str,
+    backend: Option<&str>,
+) -> Result<(), CliError> {
     use rustconn_core::config::SecretBackendType;
     use rustconn_core::models::Credentials;
     use rustconn_core::secret::{KeePassHierarchy, KeePassStatus, LibSecretBackend, SecretBackend};
 
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let connections = config_manager
         .load_connections()
@@ -4389,6 +4436,7 @@ fn cmd_secret_get(connection_name: &str, backend: Option<&str>) -> Result<(), Cl
 /// Store password for a connection
 #[allow(clippy::too_many_lines)]
 fn cmd_secret_set(
+    config_path: Option<&Path>,
     connection_name: &str,
     username: Option<&str>,
     password: Option<&str>,
@@ -4397,8 +4445,7 @@ fn cmd_secret_set(
     use rustconn_core::config::SecretBackendType;
     use rustconn_core::secret::{KeePassHierarchy, KeePassStatus};
 
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let connections = config_manager
         .load_connections()
@@ -4602,12 +4649,15 @@ fn cmd_secret_set(
 
 /// Delete password for a connection
 #[allow(clippy::too_many_lines)]
-fn cmd_secret_delete(connection_name: &str, backend: Option<&str>) -> Result<(), CliError> {
+fn cmd_secret_delete(
+    config_path: Option<&Path>,
+    connection_name: &str,
+    backend: Option<&str>,
+) -> Result<(), CliError> {
     use rustconn_core::config::SecretBackendType;
     use rustconn_core::secret::{KeePassHierarchy, KeePassStatus, LibSecretBackend, SecretBackend};
 
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+    let config_manager = create_config_manager(config_path)?;
 
     let connections = config_manager
         .load_connections()
@@ -4747,6 +4797,7 @@ fn cmd_secret_delete(connection_name: &str, backend: Option<&str>) -> Result<(),
 
 /// Verify KeePass database credentials
 fn cmd_secret_verify_keepass(
+    _config_path: Option<&Path>,
     database: &std::path::Path,
     key_file: Option<&std::path::Path>,
 ) -> Result<(), CliError> {
@@ -4793,9 +4844,12 @@ fn cmd_secret_verify_keepass(
 // ============================================================================
 
 /// Duplicate a connection
-fn cmd_duplicate(name: &str, new_name: Option<&str>) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_duplicate(
+    config_path: Option<&Path>,
+    name: &str,
+    new_name: Option<&str>,
+) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let mut connections = config_manager
         .load_connections()
@@ -4827,9 +4881,13 @@ fn cmd_duplicate(name: &str, new_name: Option<&str>) -> Result<(), CliError> {
 }
 
 /// Show connection statistics
-fn cmd_sftp(name: &str, use_cli: bool, use_mc: bool) -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_sftp(
+    config_path: Option<&Path>,
+    name: &str,
+    use_cli: bool,
+    use_mc: bool,
+) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let connections = config_manager
         .load_connections()
@@ -4951,9 +5009,8 @@ fn cmd_sftp(name: &str, use_cli: bool, use_mc: bool) -> Result<(), CliError> {
     Ok(())
 }
 
-fn cmd_stats() -> Result<(), CliError> {
-    let config_manager = ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))?;
+fn cmd_stats(config_path: Option<&Path>) -> Result<(), CliError> {
+    let config_manager = create_config_manager(config_path)?;
 
     let connections = config_manager
         .load_connections()
