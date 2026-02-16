@@ -143,6 +143,22 @@ pub enum ComponentCategory {
     ContainerOrchestration,
 }
 
+/// Policy for verifying download integrity.
+///
+/// Components with stable release URLs should use `Static` checksums.
+/// Components using "latest" URLs where the binary changes frequently
+/// should use `SkipLatest` — the UI will warn the user.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChecksumPolicy {
+    /// Verified against a known SHA256 hash.
+    Static(&'static str),
+    /// No stable checksum available (e.g. "latest" URL that changes).
+    /// Installation proceeds with a warning to the user.
+    SkipLatest,
+    /// Not available for download at all.
+    None,
+}
+
 /// Downloadable CLI component
 #[derive(Debug, Clone)]
 pub struct DownloadableComponent {
@@ -158,8 +174,8 @@ pub struct DownloadableComponent {
     pub install_method: InstallMethod,
     /// Download URL (for Download method)
     pub download_url: Option<&'static str>,
-    /// SHA256 checksum of the download (required for security)
-    pub sha256: Option<&'static str>,
+    /// Checksum verification policy for downloads
+    pub checksum: ChecksumPolicy,
     /// pip package name (for Pip method)
     pub pip_package: Option<&'static str>,
     /// Approximate size for display
@@ -259,7 +275,7 @@ impl DownloadableComponent {
     pub fn is_downloadable(&self) -> bool {
         match self.install_method {
             InstallMethod::Download | InstallMethod::CustomScript => {
-                self.download_url.is_some() && self.sha256.is_some()
+                self.download_url.is_some() && !matches!(self.checksum, ChecksumPolicy::None)
             }
             InstallMethod::Pip => self.pip_package.is_some(),
         }
@@ -305,7 +321,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         install_method: InstallMethod::Download,
         // FreeRDP does not provide pre-built Linux binaries
         download_url: None,
-        sha256: None,
+        checksum: ChecksumPolicy::None,
         pip_package: None,
         size_hint: "N/A",
         binary_name: "xfreerdp3",
@@ -323,7 +339,9 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
             "https://sourceforge.net/projects/tigervnc/files/stable/1.16.0/\
              tigervnc-1.16.0.x86_64.tar.gz/download",
         ),
-        sha256: Some("e27114dcd7e23896094e654dc21fc6e4eb313e6e346598aa389ff95fd765c6c4"),
+        checksum: ChecksumPolicy::Static(
+            "e27114dcd7e23896094e654dc21fc6e4eb313e6e346598aa389ff95fd765c6c4",
+        ),
         pip_package: None,
         size_hint: "~5 MB",
         binary_name: "vncviewer",
@@ -339,7 +357,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         install_method: InstallMethod::CustomScript,
         download_url: Some("https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"),
         // AWS CLI "latest" URL — checksum changes with each release
-        sha256: Some("aws-cli-latest-no-checksum"),
+        checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~50 MB",
         binary_name: "aws",
@@ -357,8 +375,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
              ubuntu_64bit/session-manager-plugin.deb",
         ),
         // Note: AWS doesn't provide stable checksums for "latest" URL
-        // We use placeholder and skip verification for this component
-        sha256: Some("aws-ssm-latest-no-checksum"),
+        checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~5 MB",
         binary_name: "session-manager-plugin",
@@ -375,7 +392,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
             "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/\
              google-cloud-cli-linux-x86_64.tar.gz",
         ),
-        sha256: Some("c2d3e4f5a6b7...placeholder..."), // TODO: Get real checksum
+        checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~500 MB",
         binary_name: "gcloud",
@@ -389,7 +406,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::ZeroTrust,
         install_method: InstallMethod::Pip,
         download_url: None,
-        sha256: None,
+        checksum: ChecksumPolicy::None,
         pip_package: Some("azure-cli"),
         size_hint: "~200 MB",
         binary_name: "az",
@@ -403,7 +420,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::ZeroTrust,
         install_method: InstallMethod::Pip,
         download_url: None,
-        sha256: None,
+        checksum: ChecksumPolicy::None,
         pip_package: Some("oci-cli"),
         size_hint: "~50 MB",
         binary_name: "oci",
@@ -417,7 +434,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::ZeroTrust,
         install_method: InstallMethod::Download,
         download_url: Some("https://cdn.teleport.dev/teleport-v18.6.8-linux-amd64-bin.tar.gz"),
-        sha256: Some("teleport-v18-no-checksum"),
+        checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~100 MB",
         binary_name: "tsh",
@@ -431,7 +448,9 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::ZeroTrust,
         install_method: InstallMethod::Download,
         download_url: Some("https://pkgs.tailscale.com/stable/tailscale_1.94.1_amd64.tgz"),
-        sha256: Some("84d907bcd6d22f94647aae810ff4383d607c50642c3d744674063b2a76d2461c"),
+        checksum: ChecksumPolicy::Static(
+            "84d907bcd6d22f94647aae810ff4383d607c50642c3d744674063b2a76d2461c",
+        ),
         pip_package: None,
         size_hint: "~25 MB",
         binary_name: "tailscale",
@@ -448,7 +467,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
             "https://github.com/cloudflare/cloudflared/releases/latest/download/\
              cloudflared-linux-amd64",
         ),
-        sha256: Some("f5a6b7c8d9e0...placeholder..."), // TODO: Get real checksum
+        checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~30 MB",
         binary_name: "cloudflared",
@@ -464,7 +483,9 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         download_url: Some(
             "https://releases.hashicorp.com/boundary/0.21.0/boundary_0.21.0_linux_amd64.zip",
         ),
-        sha256: Some("434d569818622b77b2849f20fe64992240df7d3cffba97e65d6913560a0c960a"),
+        checksum: ChecksumPolicy::Static(
+            "434d569818622b77b2849f20fe64992240df7d3cffba97e65d6913560a0c960a",
+        ),
         pip_package: None,
         size_hint: "~50 MB",
         binary_name: "boundary",
@@ -482,7 +503,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
             "https://github.com/bitwarden/clients/releases/download/cli-v2026.1.0/\
              bw-linux-2026.1.0.zip",
         ),
-        sha256: Some("b7c8d9e0f1a2...placeholder..."), // TODO: Get real checksum
+        checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~50 MB",
         binary_name: "bw",
@@ -498,7 +519,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         download_url: Some(
             "https://cache.agilebits.com/dist/1P/op2/pkg/v2.32.1/op_linux_amd64_v2.32.1.zip",
         ),
-        sha256: Some("c8d9e0f1a2b3...placeholder..."), // TODO: Get real checksum
+        checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~15 MB",
         binary_name: "op",
@@ -514,7 +535,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         install_method: InstallMethod::Download,
         download_url: Some("https://dl.k8s.io/release/v1.35.0/bin/linux/amd64/kubectl"),
         // kubectl is a single binary — checksum changes per release
-        sha256: Some("kubectl-latest-no-checksum"),
+        checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~50 MB",
         binary_name: "kubectl",
@@ -676,25 +697,6 @@ fn verify_checksum(data: &[u8], expected: &str) -> CliDownloadResult<()> {
     let digest = context.finish();
     let actual = hex::encode(digest.as_ref());
 
-    // Handle placeholder checksums during development
-    if expected.contains("placeholder") {
-        tracing::warn!(
-            "Skipping checksum verification (placeholder): expected={}, actual={}",
-            expected,
-            actual
-        );
-        return Ok(());
-    }
-
-    // Handle SourceForge redirects - skip verification but log actual checksum
-    if expected.starts_with("sf-redirect") {
-        tracing::info!(
-            "SourceForge download - checksum for future reference: {}",
-            actual
-        );
-        return Ok(());
-    }
-
     if actual != expected {
         return Err(CliDownloadError::ChecksumMismatch {
             expected: expected.to_string(),
@@ -813,8 +815,6 @@ async fn install_download_component(
         .download_url
         .ok_or_else(|| CliDownloadError::NotAvailable("No download URL".to_string()))?;
 
-    let expected_checksum = component.sha256.ok_or(CliDownloadError::NoChecksum)?;
-
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {
             downloaded: 0,
@@ -839,14 +839,20 @@ async fn install_download_component(
         });
     }
 
-    // Verify checksum (skip for components using "latest" URL without stable checksum)
-    if expected_checksum.ends_with("-no-checksum") {
-        tracing::info!(
-            "Skipping checksum verification for {} (latest URL)",
-            component.name
-        );
-    } else {
-        verify_checksum(&bytes, expected_checksum)?;
+    // Verify checksum based on policy
+    match component.checksum {
+        ChecksumPolicy::Static(expected) => {
+            verify_checksum(&bytes, expected)?;
+        }
+        ChecksumPolicy::SkipLatest => {
+            tracing::warn!(
+                "Skipping checksum for {} (latest URL, no stable hash)",
+                component.name
+            );
+        }
+        ChecksumPolicy::None => {
+            return Err(CliDownloadError::NoChecksum);
+        }
     }
 
     if let Some(ref cb) = progress_callback {
@@ -1253,8 +1259,6 @@ async fn install_gcloud(
         .download_url
         .ok_or_else(|| CliDownloadError::NotAvailable("No download URL".to_string()))?;
 
-    let expected_checksum = component.sha256.ok_or(CliDownloadError::NoChecksum)?;
-
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {
             downloaded: 0,
@@ -1269,8 +1273,21 @@ async fn install_gcloud(
         return Err(CliDownloadError::Cancelled);
     }
 
-    // Verify checksum
-    verify_checksum(&bytes, expected_checksum)?;
+    // Verify checksum based on policy
+    match component.checksum {
+        ChecksumPolicy::Static(expected) => {
+            verify_checksum(&bytes, expected)?;
+        }
+        ChecksumPolicy::SkipLatest => {
+            tracing::warn!(
+                "Skipping checksum for {} (latest URL, no stable hash)",
+                component.name
+            );
+        }
+        ChecksumPolicy::None => {
+            return Err(CliDownloadError::NoChecksum);
+        }
+    }
 
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {
@@ -1368,8 +1385,6 @@ async fn install_aws_cli(
         .download_url
         .ok_or_else(|| CliDownloadError::NotAvailable("No download URL".to_string()))?;
 
-    let expected_checksum = component.sha256.ok_or(CliDownloadError::NoChecksum)?;
-
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {
             downloaded: 0,
@@ -1384,11 +1399,20 @@ async fn install_aws_cli(
         return Err(CliDownloadError::Cancelled);
     }
 
-    // Verify checksum (skip for "latest" URL without stable checksum)
-    if expected_checksum == "aws-cli-latest-no-checksum" {
-        tracing::info!("Skipping checksum verification for AWS CLI (latest URL)");
-    } else {
-        verify_checksum(&bytes, expected_checksum)?;
+    // Verify checksum based on policy
+    match component.checksum {
+        ChecksumPolicy::Static(expected) => {
+            verify_checksum(&bytes, expected)?;
+        }
+        ChecksumPolicy::SkipLatest => {
+            tracing::warn!(
+                "Skipping checksum for {} (latest URL, no stable hash)",
+                component.name
+            );
+        }
+        ChecksumPolicy::None => {
+            return Err(CliDownloadError::NoChecksum);
+        }
     }
 
     if let Some(ref cb) = progress_callback {
@@ -2121,7 +2145,8 @@ mod tests {
         for component in DOWNLOADABLE_COMPONENTS {
             match component.install_method {
                 InstallMethod::Download | InstallMethod::CustomScript => {
-                    let expected = component.download_url.is_some() && component.sha256.is_some();
+                    let expected = component.download_url.is_some()
+                        && !matches!(component.checksum, ChecksumPolicy::None);
                     assert_eq!(
                         component.is_downloadable(),
                         expected,

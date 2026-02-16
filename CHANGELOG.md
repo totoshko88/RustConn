@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **CLI `--config` flag now works (CLI-01)** — The `--config` flag was declared but never used; now threads the custom config directory path through all 43 `ConfigManager` call sites via `create_config_manager()` helper
+- **Flatpak components dialog hides unusable CLIs (EXT-01)** — Protocol clients (xfreerdp, vncviewer) hidden in Flatpak sandbox since `flatpak-spawn --host` is disabled; only network-compatible tools (cloud CLIs, password managers, kubectl) are shown
 
 ### Changed
 
