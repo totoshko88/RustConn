@@ -508,7 +508,7 @@ impl KeySequence {
                 }
                 KeyElement::Text(text) => {
                     // Also substitute any ${var} patterns in text
-                    match manager.substitute(text, scope) {
+                    match manager.substitute_for_command(text, scope) {
                         Ok(substituted) => {
                             if !substituted.is_empty() {
                                 new_elements.push(KeyElement::Text(substituted));

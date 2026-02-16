@@ -346,7 +346,7 @@ impl ExpectEngine {
     ) -> ExpectResult<Option<String>> {
         if let Some(rule) = self.match_output(output) {
             let response = variable_manager
-                .substitute(&rule.response, scope)
+                .substitute_for_command(&rule.response, scope)
                 .map_err(|e| ExpectError::VariableError(e.to_string()))?;
             Ok(Some(response))
         } else {

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.7] - 2026-02-16
+
+### Security
+- **Variable injection prevention (SEC-02)** — `substitute_for_command()` validates all resolved variable values, rejecting null bytes, newlines, and control characters to prevent command injection via crafted variable content; applied to all command-building paths: RDP/VNC host/username substitution, connection task commands, expect-style responses, and key sequence text
+
+### Fixed
+
+### Changed
+
 ## [0.8.6] - 2026-02-16
 
 ### Fixed

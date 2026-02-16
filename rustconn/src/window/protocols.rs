@@ -35,7 +35,7 @@ fn substitute_variables(input: &str, global_variables: &[Variable]) -> String {
     }
 
     manager
-        .substitute(input, VariableScope::Global)
+        .substitute_for_command(input, VariableScope::Global)
         .unwrap_or_else(|_| input.to_string())
 }
 /// Starts an SSH connection

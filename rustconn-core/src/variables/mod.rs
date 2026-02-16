@@ -145,6 +145,15 @@ pub enum VariableError {
     /// Empty variable name
     #[error("Empty variable name")]
     EmptyName,
+
+    /// Resolved value contains characters unsafe for command arguments
+    #[error("Variable '{name}' contains unsafe characters for command use: {reason}")]
+    UnsafeValue {
+        /// Variable name
+        name: String,
+        /// Reason the value is unsafe
+        reason: String,
+    },
 }
 
 /// Result type for variable operations

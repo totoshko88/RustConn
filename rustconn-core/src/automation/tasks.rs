@@ -278,7 +278,7 @@ impl ConnectionTask {
         scope: VariableScope,
     ) -> TaskResult<String> {
         manager
-            .substitute(&self.command, scope)
+            .substitute_for_command(&self.command, scope)
             .map_err(|e| TaskError::VariableError(e.to_string()))
     }
 

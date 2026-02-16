@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.8.6
+Version:        0.8.7
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -189,6 +189,9 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Mon Feb 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.7-0
+- Version bump to 0.8.7
+
 * Mon Feb 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.6-0
 - Version bump to 0.8.6
 - Fixed Embedded RDP keyboard layout: incorrect key mapping for non-US
