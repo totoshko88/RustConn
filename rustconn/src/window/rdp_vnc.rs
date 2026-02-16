@@ -10,6 +10,7 @@ use crate::split_view::SplitViewBridge;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
 use gtk4::prelude::*;
+use rustconn_core::models::PasswordSource;
 
 use std::rc::Rc;
 use uuid::Uuid;
@@ -103,8 +104,16 @@ pub fn start_rdp_with_password_dialog(
     let sidebar_clone = sidebar.clone();
     dialog.show(move |result| {
         if let Some(creds) = result {
-            // Save credentials to vault if requested
-            if creds.save_credentials {
+            // Determine if we should save: explicit request OR password_source == Vault
+            let should_save = creds.save_credentials || {
+                let state_ref = state.borrow();
+                state_ref
+                    .get_connection(connection_id)
+                    .map(|c| c.password_source == PasswordSource::Vault)
+                    .unwrap_or(false)
+            };
+
+            if should_save {
                 // Get connection details for vault save
                 let conn_host = {
                     let state_ref = state.borrow();
@@ -631,7 +640,13 @@ pub fn start_vnc_with_password_dialog(
         let state_ref = state.borrow();
         let settings = state_ref.settings();
 
-        if settings.secrets.kdbx_enabled {
+        if settings.secrets.kdbx_enabled
+            && matches!(
+                settings.secrets.preferred_backend,
+                rustconn_core::config::SecretBackendType::KeePassXc
+                    | rustconn_core::config::SecretBackendType::KdbxFile
+            )
+        {
             if let Some(kdbx_path) = settings.secrets.kdbx_path.clone() {
                 let db_password = settings
                     .secrets
@@ -674,8 +689,16 @@ pub fn start_vnc_with_password_dialog(
     let sidebar_clone = sidebar.clone();
     dialog.show(move |result| {
         if let Some(creds) = result {
-            // Save credentials to vault if requested
-            if creds.save_credentials {
+            // Determine if we should save: explicit request OR password_source == Vault
+            let should_save = creds.save_credentials || {
+                let state_ref = state.borrow();
+                state_ref
+                    .get_connection(connection_id)
+                    .map(|c| c.password_source == PasswordSource::Vault)
+                    .unwrap_or(false)
+            };
+
+            if should_save {
                 // Get connection details for vault save
                 let conn_host = {
                     let state_ref = state.borrow();

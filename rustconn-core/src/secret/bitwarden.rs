@@ -329,8 +329,29 @@ impl SecretBackend for BitwardenBackend {
                 .map_err(|e| SecretError::StoreFailed(format!("Failed to serialize: {e}")))?;
             let encoded = base64_encode(json.as_bytes());
 
-            self.run_command(&["edit", "item", &existing.id, &encoded])
-                .await?;
+            let edit_result = self
+                .run_command(&["edit", "item", &existing.id, &encoded])
+                .await;
+
+            if let Err(ref e) = edit_result {
+                let err_msg = format!("{e}");
+                if err_msg.contains("out of date") || err_msg.contains("out-of-date") {
+                    tracing::info!("Bitwarden cipher out of date, syncing and retrying...");
+                    let _ = self.run_command(&["sync"]).await;
+
+                    // Re-fetch the item to get updated revision
+                    if let Some(refreshed) = self.find_item(connection_id).await? {
+                        let refreshed_encoded = base64_encode(json.as_bytes());
+                        self.run_command(&["edit", "item", &refreshed.id, &refreshed_encoded])
+                            .await?;
+                    } else {
+                        // Item was deleted remotely — create instead
+                        self.run_command(&["create", "item", &encoded]).await?;
+                    }
+                } else {
+                    edit_result?;
+                }
+            }
         } else {
             // Create new item
             let item_template = BitwardenItemTemplate {

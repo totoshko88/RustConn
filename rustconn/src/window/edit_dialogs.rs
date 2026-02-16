@@ -645,7 +645,7 @@ pub fn show_edit_group_dialog(
         drop(state_ref);
 
         let lookup_key = if let Some(ref g) = grp {
-            rustconn_core::secret::KeePassHierarchy::build_group_lookup_key(g, &groups, true)
+            g.id.to_string()
         } else {
             format!("group:{}", group_name_for_load.replace('/', "-"))
         };
@@ -951,10 +951,7 @@ pub fn show_edit_group_dialog(
                             rustconn_core::secret::KeePassHierarchy::build_group_entry_path(
                                 &g, &groups,
                             );
-                        let lookup_key =
-                            rustconn_core::secret::KeePassHierarchy::build_group_lookup_key(
-                                &g, &groups, true,
-                            );
+                        let lookup_key = g.id.to_string();
 
                         if new_password_source == PasswordSource::Vault {
                             // Save to vault using configured backend

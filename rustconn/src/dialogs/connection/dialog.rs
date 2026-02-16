@@ -6124,7 +6124,13 @@ impl ConnectionDialog {
 
                     // Try KeePass first if enabled, then fall back to
                     // Keyring/Bitwarden/etc.
-                    if kdbx_enabled {
+                    if kdbx_enabled
+                        && matches!(
+                            secret_settings.preferred_backend,
+                            rustconn_core::config::SecretBackendType::KeePassXc
+                                | rustconn_core::config::SecretBackendType::KdbxFile
+                        )
+                    {
                         if let Some(ref kdbx_path) = kdbx_path {
                             let kdbx_path = kdbx_path.clone();
                             let db_password = kdbx_password.clone();

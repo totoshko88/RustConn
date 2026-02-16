@@ -384,7 +384,13 @@ pub fn show_new_group_dialog_with_parent(
 
         if password_source_idx == 1 {
             // Vault — load from configured backend
-            if settings.secrets.kdbx_enabled {
+            if settings.secrets.kdbx_enabled
+                && matches!(
+                    settings.secrets.preferred_backend,
+                    rustconn_core::config::SecretBackendType::KeePassXc
+                        | rustconn_core::config::SecretBackendType::KdbxFile
+                )
+            {
                 // KeePass backend
                 let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
                     alert::show_validation_error(&window_clone, "Vault not configured");
@@ -427,15 +433,49 @@ pub fn show_new_group_dialog_with_parent(
                     },
                 );
             } else {
-                // Generic backend (libsecret)
+                // Generic backend — dispatch based on preferred_backend
+                let secret_settings = settings.secrets.clone();
                 crate::utils::spawn_blocking_with_callback(
                     move || {
+                        use rustconn_core::config::SecretBackendType;
                         use rustconn_core::secret::SecretBackend;
-                        let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
-                        crate::async_utils::with_runtime(|rt| {
-                            rt.block_on(backend.retrieve(&lookup_key))
-                                .map_err(|e| format!("{e}"))
-                        })?
+
+                        let backend_type = crate::state::select_backend_for_load(&secret_settings);
+                        match backend_type {
+                            SecretBackendType::Bitwarden => {
+                                crate::async_utils::with_runtime(|rt| {
+                                    let backend = rt
+                                        .block_on(rustconn_core::secret::auto_unlock(
+                                            &secret_settings,
+                                        ))
+                                        .map_err(|e| format!("{e}"))?;
+                                    rt.block_on(backend.retrieve(&lookup_key))
+                                        .map_err(|e| format!("{e}"))
+                                })?
+                            }
+                            SecretBackendType::OnePassword => {
+                                let backend = rustconn_core::secret::OnePasswordBackend::new();
+                                crate::async_utils::with_runtime(|rt| {
+                                    rt.block_on(backend.retrieve(&lookup_key))
+                                        .map_err(|e| format!("{e}"))
+                                })?
+                            }
+                            SecretBackendType::Passbolt => {
+                                let backend = rustconn_core::secret::PassboltBackend::new();
+                                crate::async_utils::with_runtime(|rt| {
+                                    rt.block_on(backend.retrieve(&lookup_key))
+                                        .map_err(|e| format!("{e}"))
+                                })?
+                            }
+                            _ => {
+                                let backend =
+                                    rustconn_core::secret::LibSecretBackend::new("rustconn");
+                                crate::async_utils::with_runtime(|rt| {
+                                    rt.block_on(backend.retrieve(&lookup_key))
+                                        .map_err(|e| format!("{e}"))
+                                })?
+                            }
+                        }
                     },
                     move |result: Result<Option<rustconn_core::models::Credentials>, String>| {
                         btn_clone.set_sensitive(true);
@@ -614,10 +654,7 @@ pub fn show_new_group_dialog_with_parent(
                                 rustconn_core::secret::KeePassHierarchy::build_group_entry_path(
                                     &grp, &groups,
                                 );
-                            let lookup_key =
-                                rustconn_core::secret::KeePassHierarchy::build_group_lookup_key(
-                                    &grp, &groups, true,
-                                );
+                            let lookup_key = grp.id.to_string();
 
                             if new_password_source == PasswordSource::Vault {
                                 // Save to vault using configured backend

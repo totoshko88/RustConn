@@ -83,6 +83,7 @@ mod rdp_backend_tests;
 mod rdp_client_tests;
 mod retry_tests;
 mod search_tests;
+mod secret_fixes_tests;
 mod security_tests;
 mod selection_tests;
 mod serial_tests;
