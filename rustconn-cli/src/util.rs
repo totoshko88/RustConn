@@ -8,13 +8,23 @@ use rustconn_core::models::Connection;
 use crate::error::CliError;
 
 /// Creates a `ConfigManager` using the optional custom config directory
-/// from CLI args.
+/// from CLI args, falling back to the `RUSTCONN_CONFIG_DIR` environment
+/// variable when no explicit path is provided.
 pub fn create_config_manager(config_path: Option<&Path>) -> Result<ConfigManager, CliError> {
-    match config_path {
-        Some(path) => Ok(ConfigManager::with_config_dir(path.to_path_buf())),
-        None => ConfigManager::new()
-            .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}"))),
+    if let Some(path) = config_path {
+        return Ok(ConfigManager::with_config_dir(path.to_path_buf()));
     }
+
+    if let Ok(env_dir) = std::env::var("RUSTCONN_CONFIG_DIR") {
+        if !env_dir.is_empty() {
+            return Ok(ConfigManager::with_config_dir(
+                std::path::PathBuf::from(env_dir),
+            ));
+        }
+    }
+
+    ConfigManager::new()
+        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))
 }
 
 /// Parse a key=value pair for variable substitution

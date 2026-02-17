@@ -150,8 +150,13 @@ fn test_list_empty() {
     );
 
     let stdout = stdout_str(&output);
+    // When stdout is not a terminal, effective format falls back to JSON,
+    // so an empty list may render as "[]".
     assert!(
-        stdout.contains("No connections found") || stdout.is_empty() || stdout.contains("NAME"),
+        stdout.contains("No connections found")
+            || stdout.is_empty()
+            || stdout.contains("NAME")
+            || stdout.trim() == "[]",
         "Should show empty message or header. Got: {stdout}"
     );
 }

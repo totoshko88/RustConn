@@ -83,6 +83,9 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     // Apply saved color scheme from settings
     apply_saved_color_scheme(&state);
 
+    // Apply saved language from settings
+    apply_saved_language(&state);
+
     // Create main window with state
     let window = MainWindow::new(app, state.clone());
 
@@ -1113,4 +1116,14 @@ fn apply_saved_color_scheme(state: &SharedAppState) {
     };
 
     apply_color_scheme(color_scheme);
+}
+
+/// Applies the saved language from settings to gettext
+fn apply_saved_language(state: &SharedAppState) {
+    let language = {
+        let state_ref = state.borrow();
+        state_ref.settings().ui.language.clone()
+    };
+
+    crate::i18n::apply_language(&language);
 }

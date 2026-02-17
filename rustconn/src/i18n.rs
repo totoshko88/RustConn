@@ -107,3 +107,55 @@ pub fn ni18n_f(singular: &str, plural: &str, n: u32, args: &[&str]) -> String {
     }
     result
 }
+
+/// Available languages with their display names.
+///
+/// Returns a list of `(locale_code, display_name)` pairs.
+/// The first entry is always `("system", "System")` for auto-detection.
+#[must_use]
+pub fn available_languages() -> Vec<(&'static str, &'static str)> {
+    vec![
+        ("system", "System"),
+        ("be", "Беларуская"),
+        ("cs", "Čeština"),
+        ("da", "Dansk"),
+        ("de", "Deutsch"),
+        ("en", "English"),
+        ("es", "Español"),
+        ("fr", "Français"),
+        ("it", "Italiano"),
+        ("kk", "Қазақша"),
+        ("nl", "Nederlands"),
+        ("pl", "Polski"),
+        ("pt", "Português"),
+        ("sk", "Slovenčina"),
+        ("sv", "Svenska"),
+        ("uk", "Українська"),
+    ]
+}
+
+/// Applies a language override by re-initializing gettext with the given locale.
+///
+/// Pass `"system"` to revert to system locale auto-detection.
+/// This takes effect for all subsequent `i18n()` / `ni18n()` calls.
+/// Note: already-rendered GTK labels are not updated — a restart is needed
+/// for full UI translation.
+pub fn apply_language(lang: &str) {
+    if lang == "system" || lang.is_empty() {
+        // Revert to system locale
+        gettextrs::setlocale(gettextrs::LocaleCategory::LcMessages, "");
+    } else {
+        // Try lang.UTF-8 first, then plain lang
+        let locale_utf8 = format!("{lang}.UTF-8");
+        let result = gettextrs::setlocale(gettextrs::LocaleCategory::LcMessages, &*locale_utf8);
+        if result.is_none() {
+            gettextrs::setlocale(gettextrs::LocaleCategory::LcMessages, lang);
+        }
+    }
+
+    // Re-bind domain so gettext picks up the new locale
+    let locale_dir = locale_dir();
+    let _ = gettextrs::bindtextdomain(GETTEXT_DOMAIN, locale_dir);
+    let _ = gettextrs::bind_textdomain_codeset(GETTEXT_DOMAIN, "UTF-8");
+    let _ = gettextrs::textdomain(GETTEXT_DOMAIN);
+}

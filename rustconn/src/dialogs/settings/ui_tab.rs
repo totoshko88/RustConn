@@ -2,7 +2,7 @@
 
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, CheckButton, ToggleButton};
+use gtk4::{Box as GtkBox, CheckButton, DropDown, StringList, ToggleButton};
 use libadwaita as adw;
 use rustconn_core::config::{ColorScheme, SessionRestoreSettings, UiSettings};
 
@@ -11,6 +11,7 @@ use rustconn_core::config::{ColorScheme, SessionRestoreSettings, UiSettings};
 pub fn create_ui_page() -> (
     adw::PreferencesPage,
     GtkBox,
+    DropDown,
     CheckButton,
     CheckButton,
     CheckButton,
@@ -71,6 +72,22 @@ pub fn create_ui_page() -> (
     let color_scheme_row = adw::ActionRow::builder().title("Theme").build();
     color_scheme_row.add_suffix(&color_scheme_box);
     appearance_group.add(&color_scheme_row);
+
+    // Language selector dropdown
+    let languages = crate::i18n::available_languages();
+    let display_names: Vec<&str> = languages.iter().map(|(_, name)| *name).collect();
+    let string_list = StringList::new(&display_names);
+    let language_dropdown = DropDown::builder()
+        .model(&string_list)
+        .valign(gtk4::Align::Center)
+        .build();
+
+    let language_row = adw::ActionRow::builder()
+        .title("Language")
+        .subtitle("Restart required to apply")
+        .build();
+    language_row.add_suffix(&language_dropdown);
+    appearance_group.add(&language_row);
 
     page.add(&appearance_group);
 
@@ -165,6 +182,7 @@ pub fn create_ui_page() -> (
     (
         page,
         color_scheme_box,
+        language_dropdown,
         remember_geometry,
         enable_tray_icon,
         minimize_to_tray,
@@ -178,6 +196,7 @@ pub fn create_ui_page() -> (
 #[allow(clippy::too_many_arguments)]
 pub fn load_ui_settings(
     color_scheme_box: &GtkBox,
+    language_dropdown: &DropDown,
     remember_geometry: &CheckButton,
     enable_tray_icon: &CheckButton,
     minimize_to_tray: &CheckButton,
@@ -206,6 +225,14 @@ pub fn load_ui_settings(
         index += 1;
     }
 
+    // Set language dropdown to saved language
+    let languages = crate::i18n::available_languages();
+    let lang_index = languages
+        .iter()
+        .position(|(code, _)| *code == settings.language)
+        .unwrap_or(0); // Default to "System" if not found
+    language_dropdown.set_selected(lang_index as u32);
+
     remember_geometry.set_active(settings.remember_window_geometry);
     enable_tray_icon.set_active(settings.enable_tray_icon);
     minimize_to_tray.set_active(settings.minimize_to_tray);
@@ -223,6 +250,7 @@ pub fn load_ui_settings(
 #[allow(clippy::too_many_arguments)]
 pub fn collect_ui_settings(
     color_scheme_box: &GtkBox,
+    language_dropdown: &DropDown,
     remember_geometry: &CheckButton,
     enable_tray_icon: &CheckButton,
     minimize_to_tray: &CheckButton,
@@ -249,8 +277,16 @@ pub fn collect_ui_settings(
         index += 1;
     }
 
+    // Get selected language code
+    let languages = crate::i18n::available_languages();
+    let lang_idx = language_dropdown.selected() as usize;
+    let language = languages
+        .get(lang_idx)
+        .map_or_else(|| "system".to_string(), |(code, _)| (*code).to_string());
+
     UiSettings {
         color_scheme: selected_scheme,
+        language,
         remember_window_geometry: remember_geometry.is_active(),
         window_width: None,
         window_height: None,
