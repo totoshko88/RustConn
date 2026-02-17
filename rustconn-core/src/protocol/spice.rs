@@ -98,6 +98,43 @@ impl Protocol for SpiceProtocol {
     fn capabilities(&self) -> ProtocolCapabilities {
         ProtocolCapabilities::external_only(true)
     }
+
+    fn build_command(&self, connection: &Connection) -> Option<Vec<String>> {
+        let scheme = if let ProtocolConfig::Spice(ref spice_config) = connection.protocol_config {
+            if spice_config.tls_enabled {
+                "spice+tls"
+            } else {
+                "spice"
+            }
+        } else {
+            "spice"
+        };
+
+        let uri = format!("{scheme}://{}:{}", connection.host, connection.port);
+        let mut args = vec![uri];
+
+        if let ProtocolConfig::Spice(ref spice_config) = connection.protocol_config {
+            if let Some(ref ca_cert) = spice_config.ca_cert_path {
+                args.push(format!("--spice-ca-file={}", ca_cert.display()));
+            }
+            if spice_config.usb_redirection {
+                args.push("--spice-usbredir-redirect-on-connect=auto".to_string());
+            }
+            for folder in &spice_config.shared_folders {
+                args.push(format!(
+                    "--spice-shared-dir={}",
+                    folder.local_path.display()
+                ));
+            }
+            if let Some(ref proxy) = spice_config.proxy {
+                args.push(format!("--spice-proxy={proxy}"));
+            }
+        }
+
+        let mut cmd = vec!["remote-viewer".to_string()];
+        cmd.extend(args);
+        Some(cmd)
+    }
 }
 
 #[cfg(test)]

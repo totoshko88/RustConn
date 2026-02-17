@@ -9,6 +9,7 @@
 use super::logging_tab;
 use super::ssh;
 use crate::alert;
+use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -1113,7 +1114,7 @@ impl ConnectionDialog {
 
             // Show testing status
             btn.set_sensitive(false);
-            btn.set_label("Testing...");
+            btn.set_label(&i18n("Testing..."));
 
             // Clone data needed for the test (not GTK widgets)
             let host = connection.host.clone();
@@ -1202,7 +1203,7 @@ impl ConnectionDialog {
                 move |result: Option<rustconn_core::testing::TestResult>| {
                     // Update UI
                     test_button_clone.set_sensitive(true);
-                    test_button_clone.set_label("Test");
+                    test_button_clone.set_label(&i18n("Test"));
 
                     match result {
                         Some(test_result) if test_result.is_success() => {
@@ -1280,7 +1281,7 @@ impl ConnectionDialog {
         parent: Option<&gtk4::Window>,
     ) -> (adw::Window, adw::HeaderBar, Button, Button) {
         let window = adw::Window::builder()
-            .title("New Connection")
+            .title(i18n("New Connection"))
             .modal(true)
             .default_width(600)
             .default_height(500)
@@ -1295,13 +1296,13 @@ impl ConnectionDialog {
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label("Close").build();
+        let close_btn = Button::builder().label(i18n("Close")).build();
         let test_btn = Button::builder()
-            .label("Test")
+            .label(i18n("Test"))
             .tooltip_text("Test connection")
             .build();
         let save_btn = Button::builder()
-            .label("Create")
+            .label(i18n("Create"))
             .css_classes(["suggested-action"])
             .build();
         header.pack_start(&close_btn);
@@ -1928,7 +1929,7 @@ impl ConnectionDialog {
 
         // Name
         let name_label = Label::builder()
-            .label("Name:")
+            .label(i18n("Name:"))
             .halign(gtk4::Align::End)
             .build();
         let name_entry = Entry::builder()
@@ -1941,7 +1942,7 @@ impl ConnectionDialog {
 
         // Protocol
         let protocol_label_grid = Label::builder()
-            .label("Protocol:")
+            .label(i18n("Protocol:"))
             .halign(gtk4::Align::End)
             .build();
         let protocol_list = StringList::new(&[
@@ -1963,7 +1964,7 @@ impl ConnectionDialog {
 
         // Host
         let host_label = Label::builder()
-            .label("Host:")
+            .label(i18n("Host:"))
             .halign(gtk4::Align::End)
             .build();
         let host_entry = Entry::builder()
@@ -1976,7 +1977,7 @@ impl ConnectionDialog {
 
         // Port with description
         let port_label = Label::builder()
-            .label("Port:")
+            .label(i18n("Port:"))
             .halign(gtk4::Align::End)
             .build();
         let port_adj = gtk4::Adjustment::new(22.0, 1.0, 65535.0, 1.0, 10.0, 0.0);
@@ -2007,7 +2008,7 @@ impl ConnectionDialog {
 
         // Username
         let username_label = Label::builder()
-            .label("Username:")
+            .label(i18n("Username:"))
             .halign(gtk4::Align::End)
             .build();
         let current_user = std::env::var("USER").unwrap_or_default();
@@ -2031,7 +2032,7 @@ impl ConnectionDialog {
 
         // Domain (for RDP/Windows authentication)
         let domain_label = Label::builder()
-            .label("Domain:")
+            .label(i18n("Domain:"))
             .halign(gtk4::Align::End)
             .build();
         let domain_entry = Entry::builder()
@@ -2054,7 +2055,7 @@ impl ConnectionDialog {
 
         // Password Source
         let password_source_label = Label::builder()
-            .label("Password:")
+            .label(i18n("Password:"))
             .halign(gtk4::Align::End)
             .build();
         let password_source_list =
@@ -2129,7 +2130,7 @@ impl ConnectionDialog {
 
         // Tags
         let tags_label = Label::builder()
-            .label("Tags:")
+            .label(i18n("Tags:"))
             .halign(gtk4::Align::End)
             .build();
         let tags_entry = Entry::builder()
@@ -2142,7 +2143,7 @@ impl ConnectionDialog {
 
         // Group
         let group_label = Label::builder()
-            .label("Group:")
+            .label(i18n("Group:"))
             .halign(gtk4::Align::End)
             .build();
         let group_list = StringList::new(&["(Root)"]);
@@ -2416,15 +2417,15 @@ impl ConnectionDialog {
 
         // === Shared Folders Group ===
         let folders_group = adw::PreferencesGroup::builder()
-            .title("Shared Folders")
-            .description("Local folders accessible from remote session")
+            .title(i18n("Shared Folders"))
+            .description(i18n("Local folders accessible from remote session"))
             .build();
 
         let folders_list = gtk4::ListBox::builder()
             .selection_mode(gtk4::SelectionMode::Single)
             .css_classes(["boxed-list"])
             .build();
-        folders_list.set_placeholder(Some(&Label::new(Some("No shared folders"))));
+        folders_list.set_placeholder(Some(&Label::new(Some(&i18n("No shared folders")))));
 
         let folders_scrolled = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -2956,15 +2957,15 @@ impl ConnectionDialog {
 
         // === Shared Folders Group ===
         let folders_group = adw::PreferencesGroup::builder()
-            .title("Shared Folders")
-            .description("Local folders accessible from remote session")
+            .title(i18n("Shared Folders"))
+            .description(i18n("Local folders accessible from remote session"))
             .build();
 
         let folders_list = gtk4::ListBox::builder()
             .selection_mode(gtk4::SelectionMode::Single)
             .css_classes(["boxed-list"])
             .build();
-        folders_list.set_placeholder(Some(&Label::new(Some("No shared folders"))));
+        folders_list.set_placeholder(Some(&Label::new(Some(&i18n("No shared folders")))));
 
         let folders_scrolled = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -3454,7 +3455,7 @@ impl ConnectionDialog {
             .selection_mode(gtk4::SelectionMode::None)
             .css_classes(["boxed-list"])
             .build();
-        variables_list.set_placeholder(Some(&Label::new(Some("No variables defined"))));
+        variables_list.set_placeholder(Some(&Label::new(Some(&i18n("No variables defined")))));
         variables_scrolled.set_child(Some(&variables_list));
 
         variables_group.add(&variables_scrolled);
@@ -3488,7 +3489,7 @@ impl ConnectionDialog {
             .selection_mode(gtk4::SelectionMode::None)
             .css_classes(["boxed-list"])
             .build();
-        properties_list.set_placeholder(Some(&Label::new(Some("No custom properties"))));
+        properties_list.set_placeholder(Some(&Label::new(Some(&i18n("No custom properties")))));
         properties_scrolled.set_child(Some(&properties_list));
 
         properties_group.add(&properties_scrolled);
@@ -3572,7 +3573,7 @@ impl ConnectionDialog {
             .selection_mode(gtk4::SelectionMode::None)
             .css_classes(["boxed-list"])
             .build();
-        expect_rules_list.set_placeholder(Some(&Label::new(Some("No expect rules"))));
+        expect_rules_list.set_placeholder(Some(&Label::new(Some(&i18n("No expect rules")))));
         rules_scrolled.set_child(Some(&expect_rules_list));
 
         rules_group.add(&rules_scrolled);
@@ -5042,8 +5043,8 @@ impl ConnectionDialog {
 
     /// Populates the dialog with an existing connection for editing
     pub fn set_connection(&self, conn: &Connection) {
-        self.window.set_title(Some("Edit Connection"));
-        self.save_button.set_label("Save");
+        self.window.set_title(Some(&i18n("Edit Connection")));
+        self.save_button.set_label(&i18n("Save"));
         *self.editing_id.borrow_mut() = Some(conn.id);
 
         // Basic fields
@@ -7312,6 +7313,7 @@ impl ConnectionDialogData<'_> {
             shared_folders: self.spice_shared_folders.borrow().clone(),
             clipboard_enabled: self.spice_clipboard_check.is_active(),
             image_compression,
+            proxy: None,
         }
     }
 

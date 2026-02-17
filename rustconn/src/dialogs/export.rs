@@ -22,6 +22,8 @@ use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+use crate::i18n::i18n;
+
 /// Callback type for export dialog completion
 pub type ExportCallback = Rc<RefCell<Option<Box<dyn Fn(Option<ExportResult>)>>>>;
 
@@ -60,7 +62,7 @@ impl ExportDialog {
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
         // Create window
         let window = adw::Window::builder()
-            .title("Export Connections")
+            .title(i18n("Export Connections"))
             .modal(true)
             .default_width(600)
             .default_height(500)
@@ -75,9 +77,9 @@ impl ExportDialog {
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label("Close").build();
+        let close_btn = Button::builder().label(i18n("Close")).build();
         let export_button = Button::builder()
-            .label("Export")
+            .label(i18n("Export"))
             .css_classes(["suggested-action"])
             .build();
         header.pack_start(&close_btn);
@@ -182,8 +184,8 @@ impl ExportDialog {
 
         // Format selection section using PreferencesGroup
         let format_group = adw::PreferencesGroup::builder()
-            .title("Export Format")
-            .description("Select the format to export your connections to")
+            .title(i18n("Export Format"))
+            .description(i18n("Select the format to export your connections to"))
             .build();
 
         // Create format dropdown with all available formats
@@ -201,8 +203,8 @@ impl ExportDialog {
         format_dropdown.set_valign(gtk4::Align::Center);
 
         let format_row = adw::ActionRow::builder()
-            .title("Format")
-            .subtitle("Target export format")
+            .title(i18n("Format"))
+            .subtitle(i18n("Target export format"))
             .build();
         format_row.add_suffix(&format_dropdown);
         format_group.add(&format_row);
@@ -211,28 +213,28 @@ impl ExportDialog {
 
         // Output path section using PreferencesGroup
         let output_group = adw::PreferencesGroup::builder()
-            .title("Output Location")
-            .description(
+            .title(i18n("Output Location"))
+            .description(i18n(
                 "Remmina exports to a directory (one file per connection).\n\
                  Other formats export to a single file.",
-            )
+            ))
             .build();
 
         let output_path_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Select output file or directory...")
+            .placeholder_text(i18n("Select output file or directory..."))
             .editable(false)
             .valign(gtk4::Align::Center)
             .build();
 
         let browse_button = Button::builder()
-            .label("Browse...")
+            .label(i18n("Browse..."))
             .valign(gtk4::Align::Center)
             .build();
 
         let output_row = adw::ActionRow::builder()
-            .title("Output")
-            .subtitle("Destination path")
+            .title(i18n("Output"))
+            .subtitle(i18n("Destination path"))
             .build();
         output_row.add_suffix(&output_path_entry);
         output_row.add_suffix(&browse_button);
@@ -241,28 +243,30 @@ impl ExportDialog {
         main_vbox.append(&output_group);
 
         // Options section using PreferencesGroup
-        let options_group = adw::PreferencesGroup::builder().title("Options").build();
+        let options_group = adw::PreferencesGroup::builder()
+            .title(i18n("Options"))
+            .build();
 
         // Include passwords switch row
         let include_passwords_row = adw::SwitchRow::builder()
-            .title("Include passwords")
-            .subtitle("If supported by format")
+            .title(i18n("Include passwords"))
+            .subtitle(i18n("If supported by format"))
             .active(false)
             .build();
         options_group.add(&include_passwords_row);
 
         // Include groups switch row
         let include_groups_row = adw::SwitchRow::builder()
-            .title("Include group hierarchy")
-            .subtitle("Preserve folder structure")
+            .title(i18n("Include group hierarchy"))
+            .subtitle(i18n("Preserve folder structure"))
             .active(true)
             .build();
         options_group.add(&include_groups_row);
 
         // Security warning row
         let warning_row = adw::ActionRow::builder()
-            .title("⚠ Security Warning")
-            .subtitle("Including passwords may expose sensitive data. Only enable if you trust the destination.")
+            .title(i18n("⚠ Security Warning"))
+            .subtitle(i18n("Including passwords may expose sensitive data. Only enable if you trust the destination."))
             .build();
         let warning_icon = gtk4::Image::from_icon_name("dialog-warning-symbolic");
         warning_icon.set_valign(gtk4::Align::Center);
@@ -272,8 +276,8 @@ impl ExportDialog {
 
         // Credentials info row
         let creds_info_row = adw::ActionRow::builder()
-            .title("ℹ Credentials Storage")
-            .subtitle("Passwords are stored in your password manager and not included in exports by default. Export your credential structure separately if needed.")
+            .title(i18n("ℹ Credentials Storage"))
+            .subtitle(i18n("Passwords are stored in your password manager and not included in exports by default. Export your credential structure separately if needed."))
             .build();
         let info_icon = gtk4::Image::from_icon_name("dialog-information-symbolic");
         info_icon.set_valign(gtk4::Align::Center);
@@ -309,7 +313,7 @@ impl ExportDialog {
         vbox.append(&spinner);
 
         let header = Label::builder()
-            .label("Exporting...")
+            .label(i18n("Exporting..."))
             .css_classes(["title-3"])
             .build();
         vbox.append(&header);
@@ -323,7 +327,7 @@ impl ExportDialog {
         vbox.append(&progress_bar);
 
         let progress_label = Label::builder()
-            .label("Preparing export...")
+            .label(i18n("Preparing export..."))
             .css_classes(["dim-label"])
             .build();
         vbox.append(&progress_label);
@@ -336,7 +340,7 @@ impl ExportDialog {
         let vbox = GtkBox::new(Orientation::Vertical, 12);
 
         let header = Label::builder()
-            .label("Export Complete")
+            .label(i18n("Export Complete"))
             .css_classes(["title-3"])
             .halign(gtk4::Align::Start)
             .build();
@@ -351,7 +355,7 @@ impl ExportDialog {
         vbox.append(&Separator::new(Orientation::Horizontal));
 
         let details_header = Label::builder()
-            .label("Details")
+            .label(i18n("Details"))
             .css_classes(["heading"])
             .halign(gtk4::Align::Start)
             .margin_top(8)
@@ -581,7 +585,7 @@ impl ExportDialog {
             if format.exports_to_directory() {
                 // Use folder dialog for Remmina
                 let dialog = FileDialog::builder()
-                    .title("Select Export Directory")
+                    .title(i18n("Select Export Directory"))
                     .modal(true)
                     .build();
 
@@ -595,7 +599,7 @@ impl ExportDialog {
             } else {
                 // Use file dialog for other formats
                 let dialog = FileDialog::builder()
-                    .title("Select Export File")
+                    .title(i18n("Select Export File"))
                     .modal(true)
                     .build();
 
@@ -674,9 +678,10 @@ impl ExportDialog {
 
                 // Update placeholder text based on format
                 if format.exports_to_directory() {
-                    output_path_entry.set_placeholder_text(Some("Select output directory..."));
+                    output_path_entry
+                        .set_placeholder_text(Some(&i18n("Select output directory...")));
                 } else {
-                    output_path_entry.set_placeholder_text(Some("Select output file..."));
+                    output_path_entry.set_placeholder_text(Some(&i18n("Select output file...")));
                 }
 
                 // Clear current path when format changes
@@ -721,7 +726,7 @@ impl ExportDialog {
                 // Show error using toast instead of AlertDialog
                 crate::toast::show_toast_on_window(
                     &window,
-                    "Please select an output file or directory",
+                    &i18n("Please select an output file or directory"),
                     crate::toast::ToastType::Warning,
                 );
                 return;
@@ -764,7 +769,7 @@ impl ExportDialog {
 
             match export_result {
                 Ok(result) => {
-                    progress_label.set_text("Export complete");
+                    progress_label.set_text(&i18n("Export complete"));
 
                     // Show results using helper method
                     let summary = Self::format_result_summary(&result, format);
@@ -775,17 +780,17 @@ impl ExportDialog {
 
                     *result_cell.borrow_mut() = Some(result);
                     stack.set_visible_child_name("result");
-                    btn.set_label("Done");
+                    btn.set_label(&i18n("Done"));
                     btn.set_sensitive(true);
                 }
                 Err(e) => {
                     // Show error
-                    progress_label.set_text("Export failed");
-                    result_label.set_text("Export Failed");
+                    progress_label.set_text(&i18n("Export failed"));
+                    result_label.set_text(&i18n("Export Failed"));
                     result_details.set_text(&format!("Error: {e}"));
 
                     stack.set_visible_child_name("result");
-                    btn.set_label("Close");
+                    btn.set_label(&i18n("Close"));
                     btn.set_sensitive(true);
                 }
             }

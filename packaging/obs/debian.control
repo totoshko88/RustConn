@@ -22,7 +22,8 @@ Depends: ${shlibs:Depends}, ${misc:Depends},
          libgtk-4-1 (>= 4.14),
          libvte-2.91-gtk4-0,
          libadwaita-1-0,
-         openssh-client
+         openssh-client,
+         sshpass
 Recommends: freerdp2-x11, tigervnc-viewer, virt-viewer, picocom
 Description: Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Zero Trust)
  RustConn is a modern connection manager for Linux with a GTK4/Wayland-native

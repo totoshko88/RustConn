@@ -57,6 +57,7 @@ pub mod embedded_vnc_ui;
 pub mod empty_state;
 pub mod external_window;
 pub mod floating_controls;
+pub mod i18n;
 pub mod loading;
 pub mod session;
 mod sidebar;
@@ -77,6 +78,15 @@ pub mod error;
 pub mod error_display;
 
 fn main() -> gtk4::glib::ExitCode {
+    // Initialize internationalization (gettext)
+    i18n::init();
+
+    // Apply saved language from config BEFORE GTK starts.
+    // This must happen early so that all gettext() calls during UI construction
+    // use the correct locale. The LANGUAGE env var must be set before any
+    // translatable string is evaluated.
+    i18n::apply_language_from_config();
+
     // Initialize logging with environment filter (RUST_LOG)
     // Filter out noisy zbus debug messages (ProvideXdgActivationToken errors from ksni)
     //

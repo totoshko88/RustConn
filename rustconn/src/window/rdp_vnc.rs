@@ -46,7 +46,7 @@ pub fn start_rdp_with_password_dialog(
             manager.set_global(var.clone());
         }
         manager
-            .substitute(input, VariableScope::Global)
+            .substitute_for_command(input, VariableScope::Global)
             .unwrap_or_else(|_| input.to_string())
     };
 
@@ -231,7 +231,7 @@ fn start_rdp_session_internal(
             manager.set_global(var.clone());
         }
         manager
-            .substitute(input, VariableScope::Global)
+            .substitute_for_command(input, VariableScope::Global)
             .unwrap_or_else(|_| input.to_string())
     };
 
@@ -796,7 +796,7 @@ fn start_vnc_session_internal(
             manager.set_global(var.clone());
         }
         manager
-            .substitute(&conn.host, VariableScope::Global)
+            .substitute_for_command(&conn.host, VariableScope::Global)
             .unwrap_or_else(|_| conn.host.clone())
     } else {
         conn.host.clone()

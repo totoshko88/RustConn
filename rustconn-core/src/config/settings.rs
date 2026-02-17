@@ -368,6 +368,9 @@ pub struct UiSettings {
     /// Color scheme preference
     #[serde(default)]
     pub color_scheme: ColorScheme,
+    /// Language override (locale code like "uk", "de", "fr", or "system" for auto-detect)
+    #[serde(default = "default_language")]
+    pub language: String,
     /// Remember window geometry
     #[serde(default = "default_true")]
     pub remember_window_geometry: bool,
@@ -472,10 +475,16 @@ pub struct SavedSession {
     pub saved_at: chrono::DateTime<chrono::Utc>,
 }
 
+/// Default language value (system auto-detect)
+fn default_language() -> String {
+    "system".to_string()
+}
+
 impl Default for UiSettings {
     fn default() -> Self {
         Self {
             color_scheme: ColorScheme::default(),
+            language: default_language(),
             remember_window_geometry: true,
             window_width: None,
             window_height: None,

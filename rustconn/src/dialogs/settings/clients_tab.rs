@@ -11,6 +11,8 @@ use rustconn_core::protocol::ClientDetectionResult;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+use crate::i18n::i18n;
+
 /// Client detection info for async loading
 #[derive(Clone)]
 struct ClientInfo {
@@ -30,14 +32,14 @@ struct ClientInfo {
 /// Client detection is performed asynchronously after the page is shown.
 pub fn create_clients_page() -> adw::PreferencesPage {
     let page = adw::PreferencesPage::builder()
-        .title("Clients")
+        .title(i18n("Clients"))
         .icon_name("preferences-system-symbolic")
         .build();
 
     // === Core Clients Group ===
     let core_group = adw::PreferencesGroup::builder()
-        .title("Core Clients")
-        .description("Essential connection clients")
+        .title(i18n("Core Clients"))
+        .description(i18n("Essential connection clients"))
         .build();
 
     // Add placeholder rows with spinners
@@ -55,8 +57,8 @@ pub fn create_clients_page() -> adw::PreferencesPage {
 
     // === Zero Trust Clients Group ===
     let zerotrust_group = adw::PreferencesGroup::builder()
-        .title("Zero Trust Clients")
-        .description("Cloud provider CLI tools")
+        .title(i18n("Zero Trust Clients"))
+        .description(i18n("Cloud provider CLI tools"))
         .build();
 
     let zerotrust_names = [
@@ -211,7 +213,7 @@ fn update_client_row(group: &adw::PreferencesGroup, row: &adw::ActionRow, client
     } else if client.has_embedded {
         // Show embedded indicator
         let embedded_label = Label::builder()
-            .label("Embedded")
+            .label(i18n("Embedded"))
             .valign(gtk4::Align::Center)
             .css_classes(["dim-label"])
             .build();

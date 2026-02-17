@@ -13,6 +13,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
+use crate::i18n::i18n;
+
 /// Log viewer dialog for browsing and viewing session logs
 pub struct LogViewerDialog {
     window: adw::Window,
@@ -29,7 +31,7 @@ impl LogViewerDialog {
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
         let window = adw::Window::builder()
-            .title("Session Logs")
+            .title(i18n("Session Logs"))
             .modal(true)
             .default_width(600)
             .default_height(500)
@@ -108,10 +110,10 @@ impl LogViewerDialog {
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
 
-        let close_btn = Button::builder().label("Close").build();
+        let close_btn = Button::builder().label(i18n("Close")).build();
         let refresh_btn = Button::builder()
             .icon_name("view-refresh-symbolic")
-            .tooltip_text("Refresh log list")
+            .tooltip_text(&i18n("Refresh log list"))
             .build();
         header.pack_start(&close_btn);
         header.pack_end(&refresh_btn);
@@ -142,7 +144,7 @@ impl LogViewerDialog {
             .selection_mode(gtk4::SelectionMode::Single)
             .css_classes(["boxed-list"])
             .build();
-        log_list.set_placeholder(Some(&Label::new(Some("No log files found"))));
+        log_list.set_placeholder(Some(&Label::new(Some(&i18n("No log files found")))));
         list_scrolled.set_child(Some(&log_list));
 
         (log_list, list_scrolled)
@@ -176,7 +178,7 @@ impl LogViewerDialog {
         // Left side: Log file list
         let left_box = GtkBox::new(Orientation::Vertical, 8);
         let list_label = Label::builder()
-            .label("Log Files")
+            .label(i18n("Log Files"))
             .halign(gtk4::Align::Start)
             .css_classes(["heading"])
             .build();
@@ -187,7 +189,7 @@ impl LogViewerDialog {
         // Right side: Log content viewer
         let right_box = GtkBox::new(Orientation::Vertical, 8);
         let content_label = Label::builder()
-            .label("Log Content")
+            .label(i18n("Log Content"))
             .halign(gtk4::Align::Start)
             .css_classes(["heading"])
             .build();
@@ -311,7 +313,7 @@ impl LogViewerDialog {
         let buffer = text_view.buffer();
 
         // Show loading indicator
-        buffer.set_text("Loading...");
+        buffer.set_text(&i18n("Loading..."));
 
         // Clone path for the background thread
         let path_clone = path.to_path_buf();

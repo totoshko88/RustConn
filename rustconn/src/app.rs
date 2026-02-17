@@ -14,6 +14,7 @@ use std::rc::Rc;
 use crate::state::{create_shared_state, SharedAppState};
 use crate::tray::{TrayManager, TrayMessage};
 use crate::window::MainWindow;
+use gettextrs::gettext;
 use rustconn_core::config::ColorScheme;
 
 /// Applies a color scheme to GTK/libadwaita settings
@@ -74,13 +75,16 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
         Ok(state) => state,
         Err(e) => {
             eprintln!("Failed to initialize application state: {e}");
-            show_error_dialog(app, "Initialization Error", &e);
+            show_error_dialog(app, &gettext("Initialization Error"), &e);
             return;
         }
     };
 
     // Apply saved color scheme from settings
     apply_saved_color_scheme(&state);
+
+    // Apply saved language from settings
+    apply_saved_language(&state);
 
     // Create main window with state
     let window = MainWindow::new(app, state.clone());
@@ -163,10 +167,11 @@ struct TrayStateCache {
     connections_hash: i64,
 }
 
-/// Sets up polling for tray messages
+/// Sets up event-driven tray message handling and periodic state sync.
 ///
-/// Uses a 250ms interval (reduced from 100ms) with dirty-flag tracking
-/// to minimize CPU usage when idle.
+/// Tray messages (user clicks) are checked every 50ms via lightweight
+/// `try_recv()`. Tray state (session count, recent connections) is synced
+/// every 2 seconds with dirty-flag tracking to minimize D-Bus calls.
 fn setup_tray_polling(
     app: &adw::Application,
     window: &MainWindow,
@@ -175,41 +180,38 @@ fn setup_tray_polling(
 ) {
     let app_weak = app.downgrade();
     let window_weak = window.gtk_window().downgrade();
-    let state_clone = state;
-    let tray_manager_clone = tray_manager;
 
-    // State cache to track changes and avoid unnecessary updates
-    let state_cache = std::rc::Rc::new(std::cell::RefCell::new(TrayStateCache::default()));
-
-    // Poll for tray messages every 250ms (increased from 100ms for better efficiency)
-    // Message handling is still responsive enough for user interactions
-    glib::timeout_add_local(std::time::Duration::from_millis(250), move || {
-        let Some(app) = app_weak.upgrade() else {
+    // --- Fast message polling (50ms) ---
+    // Only checks try_recv() which is non-blocking and very cheap.
+    let tray_for_msgs = tray_manager.clone();
+    let app_for_msgs = app_weak;
+    let window_for_msgs = window_weak;
+    glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+        let Some(app) = app_for_msgs.upgrade() else {
             return glib::ControlFlow::Break;
         };
 
-        let tray_ref = tray_manager_clone.borrow();
+        let tray_ref = tray_for_msgs.borrow();
         let Some(tray) = tray_ref.as_ref() else {
             return glib::ControlFlow::Continue;
         };
 
-        // Process any pending tray messages
         while let Some(msg) = tray.try_recv() {
             match msg {
                 TrayMessage::ShowWindow => {
-                    if let Some(win) = window_weak.upgrade() {
+                    if let Some(win) = window_for_msgs.upgrade() {
                         win.present();
                     }
                     tray.set_window_visible(true);
                 }
                 TrayMessage::HideWindow => {
-                    if let Some(win) = window_weak.upgrade() {
+                    if let Some(win) = window_for_msgs.upgrade() {
                         win.set_visible(false);
                     }
                     tray.set_window_visible(false);
                 }
                 TrayMessage::ToggleWindow => {
-                    if let Some(win) = window_weak.upgrade() {
+                    if let Some(win) = window_for_msgs.upgrade() {
                         if win.is_visible() {
                             win.set_visible(false);
                             tray.set_window_visible(false);
@@ -220,11 +222,9 @@ fn setup_tray_polling(
                     }
                 }
                 TrayMessage::Connect(conn_id) => {
-                    // Show window first
-                    if let Some(win) = window_weak.upgrade() {
+                    if let Some(win) = window_for_msgs.upgrade() {
                         win.present();
                         tray.set_window_visible(true);
-                        // Trigger connection via window action
                         let _ = gtk4::prelude::WidgetExt::activate_action(
                             &win,
                             "connect",
@@ -233,32 +233,26 @@ fn setup_tray_polling(
                     }
                 }
                 TrayMessage::QuickConnect => {
-                    // Show window and trigger quick connect dialog
-                    if let Some(win) = window_weak.upgrade() {
+                    if let Some(win) = window_for_msgs.upgrade() {
                         win.present();
                         tray.set_window_visible(true);
-                        // Activate window action
                         let _ =
                             gtk4::prelude::WidgetExt::activate_action(&win, "quick-connect", None);
                     }
                 }
                 TrayMessage::LocalShell => {
-                    // Show window and open local shell
-                    if let Some(win) = window_weak.upgrade() {
+                    if let Some(win) = window_for_msgs.upgrade() {
                         win.present();
                         tray.set_window_visible(true);
-                        // Activate window action
                         let _ =
                             gtk4::prelude::WidgetExt::activate_action(&win, "local-shell", None);
                     }
                 }
                 TrayMessage::About => {
-                    // Show about dialog (app-level action)
-                    if let Some(win) = window_weak.upgrade() {
+                    if let Some(win) = window_for_msgs.upgrade() {
                         win.present();
                         tray.set_window_visible(true);
                     }
-                    // About is an app action
                     gio::prelude::ActionGroupExt::activate_action(&app, "about", None);
                 }
                 TrayMessage::Quit => {
@@ -267,9 +261,21 @@ fn setup_tray_polling(
             }
         }
 
-        // Update tray state only if changed (dirty-flag tracking)
-        update_tray_state(tray, &state_clone, &mut state_cache.borrow_mut());
+        glib::ControlFlow::Continue
+    });
 
+    // --- Slow state sync (2 seconds) ---
+    // Updates session count and recent connections with dirty-flag tracking.
+    let state_clone = state;
+    let tray_for_state = tray_manager;
+    let state_cache = std::rc::Rc::new(std::cell::RefCell::new(TrayStateCache::default()));
+
+    glib::timeout_add_local(std::time::Duration::from_secs(2), move || {
+        let tray_ref = tray_for_state.borrow();
+        let Some(tray) = tray_ref.as_ref() else {
+            return glib::ControlFlow::Continue;
+        };
+        update_tray_state(tray, &state_clone, &mut state_cache.borrow_mut());
         glib::ControlFlow::Continue
     });
 }
@@ -961,13 +967,18 @@ fn setup_app_actions(
 
     // View shortcuts
     app.set_accels_for_action("win.toggle-fullscreen", &["F11"]);
+
+    // Item management shortcuts
+    app.set_accels_for_action("win.move-to-group", &["<Control>m"]);
 }
 
 /// Shows the about dialog
 fn show_about_dialog(parent: &adw::ApplicationWindow) {
-    let description = "Modern connection manager for Linux with a \
+    let description = gettext(
+        "Modern connection manager for Linux with a \
 GTK4/Wayland-native interface. Manage SSH, RDP, VNC, SPICE, Telnet, \
-Serial, Kubernetes, and Zero Trust connections from a single application.";
+Serial, Kubernetes, and Zero Trust connections from a single application.",
+    );
 
     // Build debug info for troubleshooting
     let debug_info = format!(
@@ -991,7 +1002,7 @@ Serial, Kubernetes, and Zero Trust connections from a single application.";
         .application_name("RustConn")
         .developer_name("Anton Isaiev")
         .version(env!("CARGO_PKG_VERSION"))
-        .comments(description)
+        .comments(&description)
         .website("https://github.com/totoshko88/RustConn")
         .issue_url("https://github.com/totoshko88/rustconn/issues")
         .support_url("https://ko-fi.com/totoshko88")
@@ -999,26 +1010,27 @@ Serial, Kubernetes, and Zero Trust connections from a single application.";
         .developers(vec!["Anton Isaiev <totoshko88@gmail.com>"])
         .copyright("© 2024-2026 Anton Isaiev")
         .application_icon("io.github.totoshko88.RustConn")
-        .translator_credits("Anton Isaiev (Ukrainian)")
+        // Translators: Replace this with your name and language, e.g. "John Doe (German)"
+        .translator_credits(&gettext("translator-credits"))
         .debug_info(&debug_info)
         .debug_info_filename("rustconn-debug-info.txt")
         .build();
 
     // Documentation & resources links
     about.add_link(
-        "User Guide",
+        &gettext("User Guide"),
         "https://github.com/totoshko88/RustConn/blob/main/docs/USER_GUIDE.md",
     );
     about.add_link(
-        "Installation",
+        &gettext("Installation"),
         "https://github.com/totoshko88/RustConn/blob/main/docs/INSTALL.md",
     );
     about.add_link(
-        "Releases",
+        &gettext("Releases"),
         "https://github.com/totoshko88/RustConn/releases",
     );
     about.add_link(
-        "Changelog",
+        &gettext("Changelog"),
         "https://github.com/totoshko88/RustConn/blob/main/CHANGELOG.md",
     );
 
@@ -1029,7 +1041,7 @@ Serial, Kubernetes, and Zero Trust connections from a single application.";
 
     // Acknowledgments
     about.add_acknowledgement_section(
-        Some("Special Thanks"),
+        Some(&gettext("Special Thanks")),
         &[
             "GTK4 and the GNOME project https://www.gtk.org",
             "The Rust community https://www.rust-lang.org",
@@ -1044,8 +1056,8 @@ Serial, Kubernetes, and Zero Trust connections from a single application.";
         ],
     );
     about.add_acknowledgement_section(
-        Some("Made in Ukraine"),
-        &["All contributors and supporters"],
+        Some(&gettext("Made in Ukraine")),
+        &[&gettext("All contributors and supporters")],
     );
 
     // Legal sections for key dependencies
@@ -1104,4 +1116,14 @@ fn apply_saved_color_scheme(state: &SharedAppState) {
     };
 
     apply_color_scheme(color_scheme);
+}
+
+/// Applies the saved language from settings to gettext
+fn apply_saved_language(state: &SharedAppState) {
+    let language = {
+        let state_ref = state.borrow();
+        state_ref.settings().ui.language.clone()
+    };
+
+    crate::i18n::apply_language(&language);
 }

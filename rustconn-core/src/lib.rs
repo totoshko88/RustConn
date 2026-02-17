@@ -67,10 +67,12 @@ pub use automation::{
     SpecialKey, TaskCondition, TaskError, TaskExecutor, TaskResult, TaskTiming,
 };
 pub use cli_download::{
-    get_cli_install_dir, get_component, get_components_by_category, get_installation_status,
-    get_user_friendly_error, install_component, uninstall_component, CliDownloadError,
-    CliDownloadResult, ComponentCategory, DownloadCancellation, DownloadProgress,
-    DownloadableComponent, InstallMethod, DOWNLOADABLE_COMPONENTS,
+    detect_package_manager, get_arch, get_available_components, get_cli_install_dir, get_component,
+    get_components_by_category, get_installation_status, get_pinned_versions,
+    get_system_install_command, get_user_friendly_error, install_component, uninstall_component,
+    ChecksumPolicy, CliDownloadError, CliDownloadResult, ComponentCategory, DownloadCancellation,
+    DownloadProgress, DownloadableComponent, InstallMethod, PackageManager,
+    DOWNLOADABLE_COMPONENTS,
 };
 pub use cluster::{
     Cluster, ClusterError, ClusterManager, ClusterMemberState, ClusterResult, ClusterSession,
@@ -85,7 +87,8 @@ pub use connection::{
 };
 pub use dashboard::{DashboardFilter, SessionStats};
 pub use document::{
-    Document, DocumentError, DocumentManager, DocumentResult, DOCUMENT_FORMAT_VERSION,
+    Document, DocumentError, DocumentManager, DocumentResult, EncryptionStrength,
+    DOCUMENT_FORMAT_VERSION,
 };
 pub use drag_drop::{
     calculate_drop_position, calculate_indicator_y, calculate_row_index, is_valid_drop_position,
@@ -104,6 +107,7 @@ pub use export::{
 pub use ffi::{
     ConnectionState, FfiDisplay, FfiError, FfiResult, VncCredentialType, VncDisplay, VncError,
 };
+#[allow(deprecated)]
 pub use flatpak::{host_command, host_exec, host_has_command, host_spawn, host_which, is_flatpak};
 pub use import::{
     AnsibleInventoryImporter, AsbruImporter, BatchCancelHandle, BatchImportResult, BatchImporter,
@@ -138,11 +142,11 @@ pub use protocol::{
     build_freerdp_args, detect_aws_cli, detect_azure_cli, detect_boundary, detect_cloudflared,
     detect_gcloud_cli, detect_kubectl, detect_oci_cli, detect_picocom, detect_provider,
     detect_rdp_client, detect_ssh_client, detect_tailscale, detect_teleport, detect_telnet_client,
-    detect_vnc_client, extract_geometry_from_args, get_zero_trust_provider_icon,
-    has_decorations_flag, ClientDetectionResult, ClientInfo, CloudProvider, FreeRdpConfig,
-    KubernetesProtocol, Protocol, ProtocolCapabilities, ProtocolRegistry, ProviderIconCache,
-    RdpProtocol, SerialProtocol, SftpProtocol, SpiceProtocol, SshProtocol, TelnetProtocol,
-    VncProtocol,
+    detect_vnc_client, extract_geometry_from_args, get_protocol_icon_by_name,
+    get_zero_trust_provider_icon, has_decorations_flag, ClientDetectionResult, ClientInfo,
+    CloudProvider, FreeRdpConfig, KubernetesProtocol, Protocol, ProtocolCapabilities,
+    ProtocolRegistry, ProviderIconCache, RdpProtocol, SerialProtocol, SftpProtocol, SpiceProtocol,
+    SshProtocol, TelnetProtocol, VncProtocol,
 };
 pub use rdp_client::keyboard_layout::{
     detect_keyboard_layout, xkb_name_to_klid, LAYOUT_US_ENGLISH,

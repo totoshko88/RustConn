@@ -71,6 +71,10 @@ pub fn is_flatpak() -> bool {
 /// let output = cmd.output()?;
 /// ```
 #[must_use]
+#[deprecated(
+    since = "0.8.7",
+    note = "flatpak-spawn --host disabled per Flathub policy since 0.7.7; use embedded clients instead"
+)]
 pub fn host_command(program: &str) -> Command {
     if is_flatpak() {
         let mut cmd = Command::new("flatpak-spawn");
@@ -93,6 +97,11 @@ pub fn host_command(program: &str) -> Command {
 ///
 /// `true` if the program is found, `false` otherwise
 #[must_use]
+#[deprecated(
+    since = "0.8.7",
+    note = "flatpak-spawn --host disabled per Flathub policy since 0.7.7; use embedded clients instead"
+)]
+#[allow(deprecated)]
 pub fn host_has_command(program: &str) -> bool {
     let output = host_command("which")
         .arg(program)
@@ -115,6 +124,11 @@ pub fn host_has_command(program: &str) -> bool {
 ///
 /// The full path to the program if found, `None` otherwise
 #[must_use]
+#[deprecated(
+    since = "0.8.7",
+    note = "flatpak-spawn --host disabled per Flathub policy since 0.7.7; use embedded clients instead"
+)]
+#[allow(deprecated)]
 pub fn host_which(program: &str) -> Option<String> {
     let output = host_command("which").arg(program).output().ok()?;
 
@@ -145,6 +159,11 @@ pub fn host_which(program: &str) -> Option<String> {
 /// # Errors
 ///
 /// Returns an error if the command fails to execute.
+#[deprecated(
+    since = "0.8.7",
+    note = "flatpak-spawn --host disabled per Flathub policy since 0.7.7; use embedded clients instead"
+)]
+#[allow(deprecated)]
 pub fn host_exec(program: &str, args: &[&str]) -> std::io::Result<Output> {
     host_command(program).args(args).output()
 }
@@ -165,11 +184,17 @@ pub fn host_exec(program: &str, args: &[&str]) -> std::io::Result<Output> {
 /// # Errors
 ///
 /// Returns an error if the command fails to spawn.
+#[deprecated(
+    since = "0.8.7",
+    note = "flatpak-spawn --host disabled per Flathub policy since 0.7.7; use embedded clients instead"
+)]
+#[allow(deprecated)]
 pub fn host_spawn(program: &str, args: &[&str]) -> std::io::Result<std::process::Child> {
     host_command(program).args(args).spawn()
 }
 
 #[cfg(test)]
+#[allow(deprecated)]
 mod tests {
     use super::*;
 

@@ -12,6 +12,8 @@ use rustconn_core::config::{SecretBackendType, SecretSettings};
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::i18n::i18n;
+
 /// Results of background CLI detection for all secret backends
 #[allow(clippy::struct_excessive_bools)]
 struct SecretCliDetection {
@@ -262,14 +264,14 @@ pub struct SecretsPageWidgets {
 #[allow(clippy::type_complexity)]
 pub fn create_secrets_page() -> SecretsPageWidgets {
     let page = adw::PreferencesPage::builder()
-        .title("Secrets")
+        .title(i18n("Secrets"))
         .icon_name("dialog-password-symbolic")
         .build();
 
     // === Secret Backend Group ===
     let backend_group = adw::PreferencesGroup::builder()
-        .title("Secret Backend")
-        .description("Choose how passwords are stored")
+        .title(i18n("Secret Backend"))
+        .description(i18n("Choose how passwords are stored"))
         .build();
 
     // Simplified: KeePassXC, libsecret, Bitwarden, 1Password, Passbolt
@@ -286,8 +288,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .valign(gtk4::Align::Center)
         .build();
     let backend_row = adw::ActionRow::builder()
-        .title("Backend")
-        .subtitle("Primary password storage method")
+        .title(i18n("Backend"))
+        .subtitle(i18n("Primary password storage method"))
         .build();
     backend_row.add_suffix(&secret_backend_dropdown);
     backend_row.set_activatable_widget(Some(&secret_backend_dropdown));
@@ -298,7 +300,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .build();
-    let version_row = adw::ActionRow::builder().title("Version").build();
+    let version_row = adw::ActionRow::builder().title(i18n("Version")).build();
     version_row.add_suffix(&version_label);
     backend_group.add(&version_row);
 
@@ -307,8 +309,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .active(true)
         .build();
     let fallback_row = adw::ActionRow::builder()
-        .title("Enable fallback")
-        .subtitle("Use libsecret if primary backend unavailable")
+        .title(i18n("Enable fallback"))
+        .subtitle(i18n("Use libsecret if primary backend unavailable"))
         .activatable_widget(&enable_fallback)
         .build();
     fallback_row.add_prefix(&enable_fallback);
@@ -335,13 +337,13 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let onepassword_cmd: Rc<RefCell<String>> = Rc::new(RefCell::new("op".to_string()));
 
     // Initial version display — "Detecting..."
-    version_label.set_text("Detecting...");
+    version_label.set_text(&i18n("Detecting..."));
     version_label.add_css_class("dim-label");
 
     // === Bitwarden Configuration Group ===
     let bitwarden_group = adw::PreferencesGroup::builder()
-        .title("Bitwarden")
-        .description("Configure Bitwarden CLI integration")
+        .title(i18n("Bitwarden"))
+        .description(i18n("Configure Bitwarden CLI integration"))
         .build();
 
     // Password entry for unlocking
@@ -352,8 +354,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .valign(gtk4::Align::Center)
         .build();
     let bw_password_row = adw::ActionRow::builder()
-        .title("Master Password")
-        .subtitle("Required to unlock vault")
+        .title(i18n("Master Password"))
+        .subtitle(i18n("Required to unlock vault"))
         .build();
     bw_password_row.add_suffix(&bitwarden_password_entry);
     bw_password_row.set_activatable_widget(Some(&bitwarden_password_entry));
@@ -362,8 +364,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     // Save password checkbox for Bitwarden (encrypted in settings file)
     let bitwarden_save_password_check = CheckButton::builder().valign(gtk4::Align::Center).build();
     let bw_save_password_row = adw::ActionRow::builder()
-        .title("Save password")
-        .subtitle("Encrypted storage (machine-specific)")
+        .title(i18n("Save password"))
+        .subtitle(i18n("Encrypted storage (machine-specific)"))
         .activatable_widget(&bitwarden_save_password_check)
         .build();
     bw_save_password_row.add_prefix(&bitwarden_save_password_check);
@@ -373,8 +375,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let bitwarden_save_to_keyring_check =
         CheckButton::builder().valign(gtk4::Align::Center).build();
     let bw_save_to_keyring_row = adw::ActionRow::builder()
-        .title("Save to system keyring")
-        .subtitle("Store in GNOME Keyring / KDE Wallet (recommended)")
+        .title(i18n("Save to system keyring"))
+        .subtitle(i18n("Store in GNOME Keyring / KDE Wallet (recommended)"))
         .activatable_widget(&bitwarden_save_to_keyring_check)
         .build();
     bw_save_to_keyring_row.add_prefix(&bitwarden_save_to_keyring_check);
@@ -418,8 +420,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     // API Key authentication switch
     let bitwarden_use_api_key_check = Switch::builder().valign(gtk4::Align::Center).build();
     let bw_use_api_key_row = adw::ActionRow::builder()
-        .title("Use API key authentication")
-        .subtitle("For automation or 2FA methods not supported by CLI (FIDO2, Duo)")
+        .title(i18n("Use API key authentication"))
+        .subtitle(i18n(
+            "For automation or 2FA methods not supported by CLI (FIDO2, Duo)",
+        ))
         .build();
     bw_use_api_key_row.add_suffix(&bitwarden_use_api_key_check);
     bw_use_api_key_row.set_activatable_widget(Some(&bitwarden_use_api_key_check));
@@ -432,8 +436,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .valign(gtk4::Align::Center)
         .build();
     let bw_client_id_row = adw::ActionRow::builder()
-        .title("Client ID")
-        .subtitle("From Bitwarden web vault → Settings → Security → Keys")
+        .title(i18n("Client ID"))
+        .subtitle(i18n(
+            "From Bitwarden web vault → Settings → Security → Keys",
+        ))
         .build();
     bw_client_id_row.add_suffix(&bitwarden_client_id_entry);
     bw_client_id_row.set_activatable_widget(Some(&bitwarden_client_id_entry));
@@ -447,8 +453,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .valign(gtk4::Align::Center)
         .build();
     let bw_client_secret_row = adw::ActionRow::builder()
-        .title("Client Secret")
-        .subtitle("Keep this secret safe")
+        .title(i18n("Client Secret"))
+        .subtitle(i18n("Keep this secret safe"))
         .build();
     bw_client_secret_row.add_suffix(&bitwarden_client_secret_entry);
     bw_client_secret_row.set_activatable_widget(Some(&bitwarden_client_secret_entry));
@@ -468,7 +474,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     bw_client_secret_row.set_visible(false);
 
     let bitwarden_unlock_button = Button::builder()
-        .label("Unlock")
+        .label(i18n("Unlock"))
         .valign(gtk4::Align::Center)
         .sensitive(false)
         .tooltip_text("Unlock Bitwarden vault")
@@ -483,8 +489,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     bw_status_box.append(&bitwarden_unlock_button);
 
     let bw_status_row = adw::ActionRow::builder()
-        .title("Vault Status")
-        .subtitle("Login with 'bw login' in terminal first")
+        .title(i18n("Vault Status"))
+        .subtitle(i18n("Login with 'bw login' in terminal first"))
         .build();
     bw_status_row.add_suffix(&bw_status_box);
     bitwarden_group.add(&bw_status_row);
@@ -575,8 +581,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // === 1Password Configuration Group ===
     let onepassword_group = adw::PreferencesGroup::builder()
-        .title("1Password")
-        .description("Configure 1Password CLI integration")
+        .title(i18n("1Password"))
+        .description(i18n("Configure 1Password CLI integration"))
         .build();
 
     // Service account token entry
@@ -587,8 +593,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .valign(gtk4::Align::Center)
         .build();
     let op_token_row = adw::ActionRow::builder()
-        .title("Service Account Token")
-        .subtitle("For headless/automated access (OP_SERVICE_ACCOUNT_TOKEN)")
+        .title(i18n("Service Account Token"))
+        .subtitle(i18n(
+            "For headless/automated access (OP_SERVICE_ACCOUNT_TOKEN)",
+        ))
         .build();
     op_token_row.add_suffix(&onepassword_token_entry);
     op_token_row.set_activatable_widget(Some(&onepassword_token_entry));
@@ -598,8 +606,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let onepassword_save_password_check =
         CheckButton::builder().valign(gtk4::Align::Center).build();
     let op_save_password_row = adw::ActionRow::builder()
-        .title("Save token")
-        .subtitle("Encrypted storage (machine-specific)")
+        .title(i18n("Save token"))
+        .subtitle(i18n("Encrypted storage (machine-specific)"))
         .activatable_widget(&onepassword_save_password_check)
         .build();
     op_save_password_row.add_prefix(&onepassword_save_password_check);
@@ -609,8 +617,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let onepassword_save_to_keyring_check =
         CheckButton::builder().valign(gtk4::Align::Center).build();
     let op_save_to_keyring_row = adw::ActionRow::builder()
-        .title("Save to system keyring")
-        .subtitle("Store in GNOME Keyring / KDE Wallet (recommended)")
+        .title(i18n("Save to system keyring"))
+        .subtitle(i18n("Store in GNOME Keyring / KDE Wallet (recommended)"))
         .activatable_widget(&onepassword_save_to_keyring_check)
         .build();
     op_save_to_keyring_row.add_prefix(&onepassword_save_to_keyring_check);
@@ -652,7 +660,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     }
 
     let onepassword_signin_button = Button::builder()
-        .label("Sign In")
+        .label(i18n("Sign In"))
         .valign(gtk4::Align::Center)
         .sensitive(false)
         .tooltip_text("Sign in to 1Password (opens terminal)")
@@ -667,8 +675,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     op_status_box.append(&onepassword_signin_button);
 
     let op_status_row = adw::ActionRow::builder()
-        .title("Account Status")
-        .subtitle("Sign in with 'op signin' in terminal or use biometric unlock")
+        .title(i18n("Account Status"))
+        .subtitle(i18n(
+            "Sign in with 'op signin' in terminal or use biometric unlock",
+        ))
         .build();
     op_status_row.add_suffix(&op_status_box);
     onepassword_group.add(&op_status_row);
@@ -721,8 +731,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // === Passbolt Configuration Group ===
     let passbolt_group = adw::PreferencesGroup::builder()
-        .title("Passbolt")
-        .description("Configure Passbolt CLI integration")
+        .title(i18n("Passbolt"))
+        .description(i18n("Configure Passbolt CLI integration"))
         .build();
 
     // Server URL entry
@@ -732,8 +742,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .valign(gtk4::Align::Center)
         .build();
     let pb_url_row = adw::ActionRow::builder()
-        .title("Server URL")
-        .subtitle("Passbolt web vault address")
+        .title(i18n("Server URL"))
+        .subtitle(i18n("Passbolt web vault address"))
         .build();
     pb_url_row.add_suffix(&passbolt_server_url_entry);
     pb_url_row.set_activatable_widget(Some(&passbolt_server_url_entry));
@@ -747,8 +757,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .valign(gtk4::Align::Center)
         .build();
     let pb_passphrase_row = adw::ActionRow::builder()
-        .title("GPG Passphrase")
-        .subtitle("Required to decrypt credentials from Passbolt")
+        .title(i18n("GPG Passphrase"))
+        .subtitle(i18n("Required to decrypt credentials from Passbolt"))
         .build();
     pb_passphrase_row.add_suffix(&passbolt_passphrase_entry);
     pb_passphrase_row.set_activatable_widget(Some(&passbolt_passphrase_entry));
@@ -757,8 +767,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     // Save passphrase checkbox (encrypted in settings file)
     let passbolt_save_password_check = CheckButton::builder().valign(gtk4::Align::Center).build();
     let pb_save_password_row = adw::ActionRow::builder()
-        .title("Save passphrase")
-        .subtitle("Encrypted storage (machine-specific)")
+        .title(i18n("Save passphrase"))
+        .subtitle(i18n("Encrypted storage (machine-specific)"))
         .activatable_widget(&passbolt_save_password_check)
         .build();
     pb_save_password_row.add_prefix(&passbolt_save_password_check);
@@ -767,8 +777,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     // Save to system keyring checkbox
     let passbolt_save_to_keyring_check = CheckButton::builder().valign(gtk4::Align::Center).build();
     let pb_save_to_keyring_row = adw::ActionRow::builder()
-        .title("Save to system keyring")
-        .subtitle("Store in GNOME Keyring / KDE Wallet (recommended)")
+        .title(i18n("Save to system keyring"))
+        .subtitle(i18n("Store in GNOME Keyring / KDE Wallet (recommended)"))
         .activatable_widget(&passbolt_save_to_keyring_check)
         .build();
     pb_save_to_keyring_row.add_prefix(&passbolt_save_to_keyring_check);
@@ -810,7 +820,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     }
 
     let passbolt_open_vault_button = Button::builder()
-        .label("Open Vault")
+        .label(i18n("Open Vault"))
         .valign(gtk4::Align::Center)
         .sensitive(false)
         .tooltip_text("Open Passbolt web vault in browser")
@@ -825,8 +835,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     pb_status_box.append(&passbolt_open_vault_button);
 
     let pb_status_row = adw::ActionRow::builder()
-        .title("Server Status")
-        .subtitle("Configure with 'passbolt configure' in terminal")
+        .title(i18n("Server Status"))
+        .subtitle(i18n("Configure with 'passbolt configure' in terminal"))
         .build();
     pb_status_row.add_suffix(&pb_status_box);
     passbolt_group.add(&pb_status_row);
@@ -865,14 +875,16 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // === KeePass Database Group ===
     let kdbx_group = adw::PreferencesGroup::builder()
-        .title("KeePass Database")
-        .description("Configure KDBX file integration (works with KeePassXC, GNOME Secrets, etc.)")
+        .title(i18n("KeePass Database"))
+        .description(i18n(
+            "Configure KDBX file integration (works with KeePassXC, GNOME Secrets, etc.)",
+        ))
         .build();
 
     let kdbx_enabled_switch = Switch::builder().valign(gtk4::Align::Center).build();
     let kdbx_enabled_row = adw::ActionRow::builder()
-        .title("KDBX Integration")
-        .subtitle("Enable direct database access")
+        .title(i18n("KDBX Integration"))
+        .subtitle(i18n("Enable direct database access"))
         .build();
     kdbx_enabled_row.add_suffix(&kdbx_enabled_switch);
     kdbx_enabled_row.set_activatable_widget(Some(&kdbx_enabled_switch));
@@ -897,7 +909,9 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     kdbx_path_box.append(&kdbx_path_entry);
     kdbx_path_box.append(&kdbx_browse_button);
 
-    let kdbx_path_row = adw::ActionRow::builder().title("Database File").build();
+    let kdbx_path_row = adw::ActionRow::builder()
+        .title(i18n("Database File"))
+        .build();
     kdbx_path_row.add_suffix(&kdbx_path_box);
     kdbx_group.add(&kdbx_path_row);
 
@@ -905,8 +919,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // === Authentication Group ===
     let auth_group = adw::PreferencesGroup::builder()
-        .title("Authentication")
-        .description("Database unlock methods")
+        .title(i18n("Authentication"))
+        .description(i18n("Database unlock methods"))
         .build();
 
     // Use password switch
@@ -914,7 +928,9 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .active(true)
         .valign(gtk4::Align::Center)
         .build();
-    let use_password_row = adw::ActionRow::builder().title("Use password").build();
+    let use_password_row = adw::ActionRow::builder()
+        .title(i18n("Use password"))
+        .build();
     use_password_row.add_suffix(&kdbx_use_password_check);
     use_password_row.set_activatable_widget(Some(&kdbx_use_password_check));
     auth_group.add(&use_password_row);
@@ -926,7 +942,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .show_peek_icon(true)
         .valign(gtk4::Align::Center)
         .build();
-    let password_row = adw::ActionRow::builder().title("Password").build();
+    let password_row = adw::ActionRow::builder().title(i18n("Password")).build();
     password_row.add_suffix(&kdbx_password_entry);
     password_row.set_activatable_widget(Some(&kdbx_password_entry));
     auth_group.add(&password_row);
@@ -934,8 +950,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     // Save password checkbox
     let kdbx_save_password_check = CheckButton::builder().valign(gtk4::Align::Center).build();
     let save_password_row = adw::ActionRow::builder()
-        .title("Save password")
-        .subtitle("Encrypted storage (machine-specific)")
+        .title(i18n("Save password"))
+        .subtitle(i18n("Encrypted storage (machine-specific)"))
         .activatable_widget(&kdbx_save_password_check)
         .build();
     save_password_row.add_prefix(&kdbx_save_password_check);
@@ -944,15 +960,15 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     // Save to system keyring checkbox (mutually exclusive with save password)
     let kdbx_save_to_keyring_check = CheckButton::builder().valign(gtk4::Align::Center).build();
     let kdbx_save_to_keyring_row = adw::ActionRow::builder()
-        .title("Save to system keyring")
-        .subtitle("Store in GNOME Keyring / KDE Wallet (recommended)")
+        .title(i18n("Save to system keyring"))
+        .subtitle(i18n("Store in GNOME Keyring / KDE Wallet (recommended)"))
         .activatable_widget(&kdbx_save_to_keyring_check)
         .build();
     kdbx_save_to_keyring_row.add_prefix(&kdbx_save_to_keyring_check);
     auth_group.add(&kdbx_save_to_keyring_row);
 
     let kdbx_status_label = Label::builder()
-        .label("Not connected")
+        .label(i18n("Not connected"))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -988,7 +1004,9 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // Use key file switch
     let kdbx_use_key_file_check = Switch::builder().valign(gtk4::Align::Center).build();
-    let use_key_file_row = adw::ActionRow::builder().title("Use key file").build();
+    let use_key_file_row = adw::ActionRow::builder()
+        .title(i18n("Use key file"))
+        .build();
     use_key_file_row.add_suffix(&kdbx_use_key_file_check);
     use_key_file_row.set_activatable_widget(Some(&kdbx_use_key_file_check));
     auth_group.add(&use_key_file_row);
@@ -1012,7 +1030,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     key_file_box.append(&kdbx_key_file_entry);
     key_file_box.append(&kdbx_key_file_browse_button);
 
-    let key_file_row = adw::ActionRow::builder().title("Key File").build();
+    let key_file_row = adw::ActionRow::builder().title(i18n("Key File")).build();
     key_file_row.add_suffix(&key_file_box);
     auth_group.add(&key_file_row);
 
@@ -1020,7 +1038,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // === Status Group ===
     let status_group = adw::PreferencesGroup::builder()
-        .title("KDBX Status")
+        .title(i18n("KDBX Status"))
         .build();
 
     // Check connection button

@@ -128,6 +128,91 @@ pub enum InstallMethod {
     Pip,
     /// Custom installation script
     CustomScript,
+    /// Install via system package manager (apt, dnf, pacman, zypper).
+    /// Contains package names for each supported package manager.
+    SystemPackage {
+        /// Package name for apt (Debian/Ubuntu)
+        apt: Option<&'static str>,
+        /// Package name for dnf (Fedora/RHEL)
+        dnf: Option<&'static str>,
+        /// Package name for pacman (Arch Linux)
+        pacman: Option<&'static str>,
+        /// Package name for zypper (openSUSE)
+        zypper: Option<&'static str>,
+    },
+}
+
+/// Detected system package manager
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PackageManager {
+    /// apt (Debian, Ubuntu)
+    Apt,
+    /// dnf (Fedora, RHEL)
+    Dnf,
+    /// pacman (Arch Linux)
+    Pacman,
+    /// zypper (openSUSE)
+    Zypper,
+}
+
+impl std::fmt::Display for PackageManager {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Apt => write!(f, "apt"),
+            Self::Dnf => write!(f, "dnf"),
+            Self::Pacman => write!(f, "pacman"),
+            Self::Zypper => write!(f, "zypper"),
+        }
+    }
+}
+
+/// Detects the system package manager by checking for known binaries.
+#[must_use]
+pub fn detect_package_manager() -> Option<PackageManager> {
+    use std::path::Path;
+    if Path::new("/usr/bin/apt").exists() {
+        Some(PackageManager::Apt)
+    } else if Path::new("/usr/bin/dnf").exists() {
+        Some(PackageManager::Dnf)
+    } else if Path::new("/usr/bin/pacman").exists() {
+        Some(PackageManager::Pacman)
+    } else if Path::new("/usr/bin/zypper").exists() {
+        Some(PackageManager::Zypper)
+    } else {
+        None
+    }
+}
+
+/// Returns the install command for a system package, if available
+/// for the given package manager.
+#[must_use]
+pub fn get_system_install_command(
+    method: &InstallMethod,
+    manager: PackageManager,
+) -> Option<String> {
+    if let InstallMethod::SystemPackage {
+        apt,
+        dnf,
+        pacman,
+        zypper,
+    } = method
+    {
+        let pkg = match manager {
+            PackageManager::Apt => *apt,
+            PackageManager::Dnf => *dnf,
+            PackageManager::Pacman => *pacman,
+            PackageManager::Zypper => *zypper,
+        }?;
+        let cmd = match manager {
+            PackageManager::Apt => format!("sudo apt install {pkg}"),
+            PackageManager::Dnf => format!("sudo dnf install {pkg}"),
+            PackageManager::Pacman => format!("sudo pacman -S {pkg}"),
+            PackageManager::Zypper => format!("sudo zypper install {pkg}"),
+        };
+        Some(cmd)
+    } else {
+        None
+    }
 }
 
 /// Category of downloadable component
@@ -141,6 +226,22 @@ pub enum ComponentCategory {
     PasswordManager,
     /// Container orchestration CLI (kubectl)
     ContainerOrchestration,
+}
+
+/// Policy for verifying download integrity.
+///
+/// Components with stable release URLs should use `Static` checksums.
+/// Components using "latest" URLs where the binary changes frequently
+/// should use `SkipLatest` — the UI will warn the user.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChecksumPolicy {
+    /// Verified against a known SHA256 hash.
+    Static(&'static str),
+    /// No stable checksum available (e.g. "latest" URL that changes).
+    /// Installation proceeds with a warning to the user.
+    SkipLatest,
+    /// Not available for download at all.
+    None,
 }
 
 /// Downloadable CLI component
@@ -158,8 +259,10 @@ pub struct DownloadableComponent {
     pub install_method: InstallMethod,
     /// Download URL (for Download method)
     pub download_url: Option<&'static str>,
-    /// SHA256 checksum of the download (required for security)
-    pub sha256: Option<&'static str>,
+    /// Download URL for aarch64/arm64 architecture (if available)
+    pub aarch64_url: Option<&'static str>,
+    /// Checksum verification policy for downloads
+    pub checksum: ChecksumPolicy,
     /// pip package name (for Pip method)
     pub pip_package: Option<&'static str>,
     /// Approximate size for display
@@ -168,6 +271,15 @@ pub struct DownloadableComponent {
     pub binary_name: &'static str,
     /// Subdirectory in cli folder
     pub install_subdir: &'static str,
+    /// Pinned version string for tracking. `None` for "latest" or
+    /// unversioned URLs.
+    pub pinned_version: Option<&'static str>,
+    /// Whether this component works inside a Flatpak sandbox.
+    ///
+    /// Network-only tools (cloud CLIs, password managers, kubectl) work
+    /// fine in the sandbox. Tools that need host display access
+    /// (xfreerdp, vncviewer) do not.
+    pub works_in_sandbox: bool,
 }
 
 impl DownloadableComponent {
@@ -248,14 +360,29 @@ impl DownloadableComponent {
         Some(cli_dir.join(self.install_subdir).join(self.binary_name))
     }
 
+    /// Returns the download URL for the current system architecture.
+    ///
+    /// Falls back to the default (x86_64) URL if no architecture-specific
+    /// URL is available.
+    #[must_use]
+    pub fn download_url_for_arch(&self) -> Option<&'static str> {
+        if cfg!(target_arch = "aarch64") {
+            self.aarch64_url.or(self.download_url)
+        } else {
+            self.download_url
+        }
+    }
+
     /// Check if this component can be downloaded
     #[must_use]
     pub fn is_downloadable(&self) -> bool {
         match self.install_method {
             InstallMethod::Download | InstallMethod::CustomScript => {
-                self.download_url.is_some() && self.sha256.is_some()
+                self.download_url_for_arch().is_some()
+                    && !matches!(self.checksum, ChecksumPolicy::None)
             }
             InstallMethod::Pip => self.pip_package.is_some(),
+            InstallMethod::SystemPackage { .. } => true,
         }
     }
 }
@@ -284,6 +411,21 @@ fn find_binary_in_dir_recursive(dir: &Path, binary_name: &str, max_depth: u32) -
     None
 }
 
+/// Returns the architecture identifier used in download URLs.
+///
+/// Maps Rust target architecture to the naming convention used by
+/// most CLI tool download pages.
+#[must_use]
+pub fn get_arch() -> &'static str {
+    if cfg!(target_arch = "x86_64") {
+        "amd64"
+    } else if cfg!(target_arch = "aarch64") {
+        "arm64"
+    } else {
+        "unknown"
+    }
+}
+
 /// All downloadable components
 ///
 /// Note: Components without SHA256 checksums are marked as not downloadable.
@@ -299,11 +441,14 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         install_method: InstallMethod::Download,
         // FreeRDP does not provide pre-built Linux binaries
         download_url: None,
-        sha256: None,
+        aarch64_url: None,
+        checksum: ChecksumPolicy::None,
         pip_package: None,
         size_hint: "N/A",
         binary_name: "xfreerdp3",
         install_subdir: "freerdp",
+        pinned_version: None,
+        works_in_sandbox: false,
     },
     DownloadableComponent {
         id: "vncviewer",
@@ -316,11 +461,16 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
             "https://sourceforge.net/projects/tigervnc/files/stable/1.16.0/\
              tigervnc-1.16.0.x86_64.tar.gz/download",
         ),
-        sha256: Some("e27114dcd7e23896094e654dc21fc6e4eb313e6e346598aa389ff95fd765c6c4"),
+        aarch64_url: None,
+        checksum: ChecksumPolicy::Static(
+            "e27114dcd7e23896094e654dc21fc6e4eb313e6e346598aa389ff95fd765c6c4",
+        ),
         pip_package: None,
         size_hint: "~5 MB",
         binary_name: "vncviewer",
         install_subdir: "tigervnc",
+        pinned_version: Some("1.16.0"),
+        works_in_sandbox: false,
     },
     // Zero Trust CLIs
     DownloadableComponent {
@@ -330,12 +480,15 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::ZeroTrust,
         install_method: InstallMethod::CustomScript,
         download_url: Some("https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"),
+        aarch64_url: Some("https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip"),
         // AWS CLI "latest" URL — checksum changes with each release
-        sha256: Some("aws-cli-latest-no-checksum"),
+        checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~50 MB",
         binary_name: "aws",
         install_subdir: "aws-cli",
+        pinned_version: None,
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "session-manager-plugin",
@@ -347,13 +500,18 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
             "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/\
              ubuntu_64bit/session-manager-plugin.deb",
         ),
+        aarch64_url: Some(
+            "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/\
+             ubuntu_arm64/session-manager-plugin.deb",
+        ),
         // Note: AWS doesn't provide stable checksums for "latest" URL
-        // We use placeholder and skip verification for this component
-        sha256: Some("aws-ssm-latest-no-checksum"),
+        checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~5 MB",
         binary_name: "session-manager-plugin",
         install_subdir: "ssm-plugin",
+        pinned_version: None,
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "gcloud",
@@ -365,11 +523,17 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
             "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/\
              google-cloud-cli-linux-x86_64.tar.gz",
         ),
-        sha256: Some("c2d3e4f5a6b7...placeholder..."), // TODO: Get real checksum
+        aarch64_url: Some(
+            "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/\
+             google-cloud-cli-linux-arm.tar.gz",
+        ),
+        checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~500 MB",
         binary_name: "gcloud",
         install_subdir: "google-cloud-sdk/bin",
+        pinned_version: None,
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "az",
@@ -378,11 +542,14 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::ZeroTrust,
         install_method: InstallMethod::Pip,
         download_url: None,
-        sha256: None,
+        aarch64_url: None,
+        checksum: ChecksumPolicy::None,
         pip_package: Some("azure-cli"),
         size_hint: "~200 MB",
         binary_name: "az",
         install_subdir: "python/bin",
+        pinned_version: None,
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "oci",
@@ -391,11 +558,14 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::ZeroTrust,
         install_method: InstallMethod::Pip,
         download_url: None,
-        sha256: None,
+        aarch64_url: None,
+        checksum: ChecksumPolicy::None,
         pip_package: Some("oci-cli"),
         size_hint: "~50 MB",
         binary_name: "oci",
         install_subdir: "python/bin",
+        pinned_version: None,
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "tsh",
@@ -404,11 +574,14 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::ZeroTrust,
         install_method: InstallMethod::Download,
         download_url: Some("https://cdn.teleport.dev/teleport-v18.6.8-linux-amd64-bin.tar.gz"),
-        sha256: Some("teleport-v18-no-checksum"),
+        aarch64_url: Some("https://cdn.teleport.dev/teleport-v18.6.8-linux-arm64-bin.tar.gz"),
+        checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~100 MB",
         binary_name: "tsh",
         install_subdir: "teleport",
+        pinned_version: Some("18.6.8"),
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "tailscale",
@@ -417,11 +590,16 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::ZeroTrust,
         install_method: InstallMethod::Download,
         download_url: Some("https://pkgs.tailscale.com/stable/tailscale_1.94.1_amd64.tgz"),
-        sha256: Some("84d907bcd6d22f94647aae810ff4383d607c50642c3d744674063b2a76d2461c"),
+        aarch64_url: Some("https://pkgs.tailscale.com/stable/tailscale_1.94.1_arm64.tgz"),
+        checksum: ChecksumPolicy::Static(
+            "84d907bcd6d22f94647aae810ff4383d607c50642c3d744674063b2a76d2461c",
+        ),
         pip_package: None,
         size_hint: "~25 MB",
         binary_name: "tailscale",
         install_subdir: "tailscale",
+        pinned_version: Some("1.94.1"),
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "cloudflared",
@@ -433,11 +611,17 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
             "https://github.com/cloudflare/cloudflared/releases/latest/download/\
              cloudflared-linux-amd64",
         ),
-        sha256: Some("f5a6b7c8d9e0...placeholder..."), // TODO: Get real checksum
+        aarch64_url: Some(
+            "https://github.com/cloudflare/cloudflared/releases/latest/download/\
+             cloudflared-linux-arm64",
+        ),
+        checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~30 MB",
         binary_name: "cloudflared",
         install_subdir: "cloudflared",
+        pinned_version: None,
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "boundary",
@@ -446,13 +630,22 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::ZeroTrust,
         install_method: InstallMethod::Download,
         download_url: Some(
-            "https://releases.hashicorp.com/boundary/0.21.0/boundary_0.21.0_linux_amd64.zip",
+            "https://releases.hashicorp.com/boundary/0.21.0/\
+             boundary_0.21.0_linux_amd64.zip",
         ),
-        sha256: Some("434d569818622b77b2849f20fe64992240df7d3cffba97e65d6913560a0c960a"),
+        aarch64_url: Some(
+            "https://releases.hashicorp.com/boundary/0.21.0/\
+             boundary_0.21.0_linux_arm64.zip",
+        ),
+        checksum: ChecksumPolicy::Static(
+            "434d569818622b77b2849f20fe64992240df7d3cffba97e65d6913560a0c960a",
+        ),
         pip_package: None,
         size_hint: "~50 MB",
         binary_name: "boundary",
         install_subdir: "boundary",
+        pinned_version: Some("0.21.0"),
+        works_in_sandbox: true,
     },
     // Password manager CLIs
     DownloadableComponent {
@@ -462,14 +655,17 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::PasswordManager,
         install_method: InstallMethod::Download,
         download_url: Some(
-            "https://github.com/bitwarden/clients/releases/download/cli-v2026.1.0/\
-             bw-linux-2026.1.0.zip",
+            "https://github.com/bitwarden/clients/releases/download/\
+             cli-v2026.1.0/bw-linux-2026.1.0.zip",
         ),
-        sha256: Some("b7c8d9e0f1a2...placeholder..."), // TODO: Get real checksum
+        aarch64_url: None,
+        checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~50 MB",
         binary_name: "bw",
         install_subdir: "bitwarden",
+        pinned_version: Some("2026.1.0"),
+        works_in_sandbox: true,
     },
     DownloadableComponent {
         id: "op",
@@ -478,13 +674,20 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::PasswordManager,
         install_method: InstallMethod::Download,
         download_url: Some(
-            "https://cache.agilebits.com/dist/1P/op2/pkg/v2.32.1/op_linux_amd64_v2.32.1.zip",
+            "https://cache.agilebits.com/dist/1P/op2/pkg/v2.32.1/\
+             op_linux_amd64_v2.32.1.zip",
         ),
-        sha256: Some("c8d9e0f1a2b3...placeholder..."), // TODO: Get real checksum
+        aarch64_url: Some(
+            "https://cache.agilebits.com/dist/1P/op2/pkg/v2.32.1/\
+             op_linux_arm64_v2.32.1.zip",
+        ),
+        checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~15 MB",
         binary_name: "op",
         install_subdir: "1password",
+        pinned_version: Some("2.32.1"),
+        works_in_sandbox: true,
     },
     // Container orchestration CLIs
     DownloadableComponent {
@@ -494,12 +697,15 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::ContainerOrchestration,
         install_method: InstallMethod::Download,
         download_url: Some("https://dl.k8s.io/release/v1.35.0/bin/linux/amd64/kubectl"),
+        aarch64_url: Some("https://dl.k8s.io/release/v1.35.0/bin/linux/arm64/kubectl"),
         // kubectl is a single binary — checksum changes per release
-        sha256: Some("kubectl-latest-no-checksum"),
+        checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~50 MB",
         binary_name: "kubectl",
         install_subdir: "kubectl",
+        pinned_version: Some("1.35.0"),
+        works_in_sandbox: true,
     },
 ];
 
@@ -622,12 +828,38 @@ pub fn get_components_by_category(
         .collect()
 }
 
+/// Returns components filtered for the current environment.
+///
+/// In Flatpak, excludes components that require host display access
+/// (e.g. xfreerdp, vncviewer). Outside Flatpak, returns all components.
+#[must_use]
+pub fn get_available_components() -> Vec<&'static DownloadableComponent> {
+    if crate::flatpak::is_flatpak() {
+        DOWNLOADABLE_COMPONENTS
+            .iter()
+            .filter(|c| c.works_in_sandbox)
+            .collect()
+    } else {
+        DOWNLOADABLE_COMPONENTS.iter().collect()
+    }
+}
+
 /// Check installation status of all components
 #[must_use]
 pub fn get_installation_status() -> Vec<(&'static DownloadableComponent, bool)> {
     DOWNLOADABLE_COMPONENTS
         .iter()
         .map(|c| (c, c.is_installed()))
+        .collect()
+}
+
+/// Returns `(component_id, version)` pairs for all components with
+/// pinned versions. Useful for CI version-checking scripts.
+#[must_use]
+pub fn get_pinned_versions() -> Vec<(&'static str, &'static str)> {
+    DOWNLOADABLE_COMPONENTS
+        .iter()
+        .filter_map(|c| c.pinned_version.map(|v| (c.id, v)))
         .collect()
 }
 
@@ -639,25 +871,6 @@ fn verify_checksum(data: &[u8], expected: &str) -> CliDownloadResult<()> {
     context.update(data);
     let digest = context.finish();
     let actual = hex::encode(digest.as_ref());
-
-    // Handle placeholder checksums during development
-    if expected.contains("placeholder") {
-        tracing::warn!(
-            "Skipping checksum verification (placeholder): expected={}, actual={}",
-            expected,
-            actual
-        );
-        return Ok(());
-    }
-
-    // Handle SourceForge redirects - skip verification but log actual checksum
-    if expected.starts_with("sf-redirect") {
-        tracing::info!(
-            "SourceForge download - checksum for future reference: {}",
-            actual
-        );
-        return Ok(());
-    }
 
     if actual != expected {
         return Err(CliDownloadError::ChecksumMismatch {
@@ -764,6 +977,11 @@ pub async fn install_component(
         InstallMethod::CustomScript => {
             install_custom_component(component, &cli_dir, progress_callback, cancel_token).await
         }
+        InstallMethod::SystemPackage { .. } => Err(CliDownloadError::NotAvailable(
+            "System packages must be installed via the system \
+                 package manager"
+                .to_string(),
+        )),
     }
 }
 
@@ -774,10 +992,8 @@ async fn install_download_component(
     cancel_token: DownloadCancellation,
 ) -> CliDownloadResult<PathBuf> {
     let url = component
-        .download_url
+        .download_url_for_arch()
         .ok_or_else(|| CliDownloadError::NotAvailable("No download URL".to_string()))?;
-
-    let expected_checksum = component.sha256.ok_or(CliDownloadError::NoChecksum)?;
 
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {
@@ -803,14 +1019,20 @@ async fn install_download_component(
         });
     }
 
-    // Verify checksum (skip for components using "latest" URL without stable checksum)
-    if expected_checksum.ends_with("-no-checksum") {
-        tracing::info!(
-            "Skipping checksum verification for {} (latest URL)",
-            component.name
-        );
-    } else {
-        verify_checksum(&bytes, expected_checksum)?;
+    // Verify checksum based on policy
+    match component.checksum {
+        ChecksumPolicy::Static(expected) => {
+            verify_checksum(&bytes, expected)?;
+        }
+        ChecksumPolicy::SkipLatest => {
+            tracing::warn!(
+                "Skipping checksum for {} (latest URL, no stable hash)",
+                component.name
+            );
+        }
+        ChecksumPolicy::None => {
+            return Err(CliDownloadError::NoChecksum);
+        }
     }
 
     if let Some(ref cb) = progress_callback {
@@ -1214,10 +1436,8 @@ async fn install_gcloud(
     cancel_token: DownloadCancellation,
 ) -> CliDownloadResult<PathBuf> {
     let url = component
-        .download_url
+        .download_url_for_arch()
         .ok_or_else(|| CliDownloadError::NotAvailable("No download URL".to_string()))?;
-
-    let expected_checksum = component.sha256.ok_or(CliDownloadError::NoChecksum)?;
 
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {
@@ -1233,8 +1453,21 @@ async fn install_gcloud(
         return Err(CliDownloadError::Cancelled);
     }
 
-    // Verify checksum
-    verify_checksum(&bytes, expected_checksum)?;
+    // Verify checksum based on policy
+    match component.checksum {
+        ChecksumPolicy::Static(expected) => {
+            verify_checksum(&bytes, expected)?;
+        }
+        ChecksumPolicy::SkipLatest => {
+            tracing::warn!(
+                "Skipping checksum for {} (latest URL, no stable hash)",
+                component.name
+            );
+        }
+        ChecksumPolicy::None => {
+            return Err(CliDownloadError::NoChecksum);
+        }
+    }
 
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {
@@ -1329,10 +1562,8 @@ async fn install_aws_cli(
     cancel_token: DownloadCancellation,
 ) -> CliDownloadResult<PathBuf> {
     let url = component
-        .download_url
+        .download_url_for_arch()
         .ok_or_else(|| CliDownloadError::NotAvailable("No download URL".to_string()))?;
-
-    let expected_checksum = component.sha256.ok_or(CliDownloadError::NoChecksum)?;
 
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {
@@ -1348,11 +1579,20 @@ async fn install_aws_cli(
         return Err(CliDownloadError::Cancelled);
     }
 
-    // Verify checksum (skip for "latest" URL without stable checksum)
-    if expected_checksum == "aws-cli-latest-no-checksum" {
-        tracing::info!("Skipping checksum verification for AWS CLI (latest URL)");
-    } else {
-        verify_checksum(&bytes, expected_checksum)?;
+    // Verify checksum based on policy
+    match component.checksum {
+        ChecksumPolicy::Static(expected) => {
+            verify_checksum(&bytes, expected)?;
+        }
+        ChecksumPolicy::SkipLatest => {
+            tracing::warn!(
+                "Skipping checksum for {} (latest URL, no stable hash)",
+                component.name
+            );
+        }
+        ChecksumPolicy::None => {
+            return Err(CliDownloadError::NoChecksum);
+        }
     }
 
     if let Some(ref cb) = progress_callback {
@@ -1840,6 +2080,9 @@ pub async fn update_component(
         InstallMethod::CustomScript => {
             install_custom_component(component, &cli_dir, progress_callback, cancel_token).await
         }
+        InstallMethod::SystemPackage { .. } => Err(CliDownloadError::NotAvailable(
+            "System packages cannot be updated through RustConn".to_string(),
+        )),
     }
 }
 
@@ -1977,6 +2220,20 @@ mod tests {
                         component.id
                     );
                 }
+                InstallMethod::SystemPackage {
+                    apt,
+                    dnf,
+                    pacman,
+                    zypper,
+                } => {
+                    // At least one package manager should be specified
+                    assert!(
+                        apt.is_some() || dnf.is_some() || pacman.is_some() || zypper.is_some(),
+                        "SystemPackage component {} needs at least one \
+                         package name",
+                        component.id
+                    );
+                }
             }
         }
     }
@@ -1994,6 +2251,56 @@ mod tests {
         assert!(zero_trust
             .iter()
             .all(|c| c.category == ComponentCategory::ZeroTrust));
+    }
+
+    #[test]
+    fn test_sandbox_compatibility_flags() {
+        // Protocol clients that need host display should NOT work in sandbox
+        let protocol = get_components_by_category(ComponentCategory::ProtocolClient);
+        for c in &protocol {
+            assert!(
+                !c.works_in_sandbox,
+                "Protocol client {} should not work in sandbox",
+                c.id,
+            );
+        }
+
+        // Network-only tools should work in sandbox
+        let zero_trust = get_components_by_category(ComponentCategory::ZeroTrust);
+        for c in &zero_trust {
+            assert!(
+                c.works_in_sandbox,
+                "Zero Trust CLI {} should work in sandbox",
+                c.id,
+            );
+        }
+
+        let pw_managers = get_components_by_category(ComponentCategory::PasswordManager);
+        for c in &pw_managers {
+            assert!(
+                c.works_in_sandbox,
+                "Password manager {} should work in sandbox",
+                c.id,
+            );
+        }
+
+        let k8s = get_components_by_category(ComponentCategory::ContainerOrchestration);
+        for c in &k8s {
+            assert!(
+                c.works_in_sandbox,
+                "Container CLI {} should work in sandbox",
+                c.id,
+            );
+        }
+    }
+
+    #[test]
+    fn test_get_available_components_outside_flatpak() {
+        // Outside Flatpak, get_available_components returns all
+        if !crate::flatpak::is_flatpak() {
+            let all = get_available_components();
+            assert_eq!(all.len(), DOWNLOADABLE_COMPONENTS.len());
+        }
     }
 
     #[test]
@@ -2035,7 +2342,8 @@ mod tests {
         for component in DOWNLOADABLE_COMPONENTS {
             match component.install_method {
                 InstallMethod::Download | InstallMethod::CustomScript => {
-                    let expected = component.download_url.is_some() && component.sha256.is_some();
+                    let expected = component.download_url_for_arch().is_some()
+                        && !matches!(component.checksum, ChecksumPolicy::None);
                     assert_eq!(
                         component.is_downloadable(),
                         expected,
@@ -2048,6 +2356,14 @@ mod tests {
                         component.is_downloadable(),
                         component.pip_package.is_some(),
                         "Pip component {} downloadable mismatch",
+                        component.id
+                    );
+                }
+                InstallMethod::SystemPackage { .. } => {
+                    assert!(
+                        component.is_downloadable(),
+                        "SystemPackage component {} should always be \
+                         downloadable",
                         component.id
                     );
                 }
@@ -2074,5 +2390,135 @@ mod tests {
             // Should not contain technical details
             assert!(!msg.contains("test") || matches!(error, CliDownloadError::NotAvailable(_)));
         }
+    }
+
+    #[test]
+    fn test_pinned_versions_match_urls() {
+        for component in DOWNLOADABLE_COMPONENTS {
+            if let (Some(version), Some(url)) = (component.pinned_version, component.download_url) {
+                assert!(
+                    url.contains(version),
+                    "Component '{}': pinned version '{}' not found in URL '{}'",
+                    component.id,
+                    version,
+                    url,
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_get_pinned_versions() {
+        let pinned = get_pinned_versions();
+        assert!(
+            !pinned.is_empty(),
+            "Should have at least one pinned version"
+        );
+        for (id, version) in &pinned {
+            assert!(!id.is_empty());
+            assert!(!version.is_empty());
+            // Every returned id must exist in DOWNLOADABLE_COMPONENTS
+            assert!(
+                get_component(id).is_some(),
+                "Pinned component '{id}' not found"
+            );
+        }
+    }
+
+    #[test]
+    fn test_get_arch_returns_known_value() {
+        let arch = get_arch();
+        assert!(
+            arch == "amd64" || arch == "arm64" || arch == "unknown",
+            "Unexpected arch: {arch}"
+        );
+    }
+
+    #[test]
+    fn test_download_url_for_arch_returns_some() {
+        for component in get_available_components() {
+            if component.download_url.is_some() {
+                assert!(
+                    component.download_url_for_arch().is_some(),
+                    "Component {} should have a download URL for current arch",
+                    component.id
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_detect_package_manager_returns_option() {
+        // Just verify it doesn't panic — actual result depends on system
+        let _ = detect_package_manager();
+    }
+
+    #[test]
+    fn test_system_install_command() {
+        let method = InstallMethod::SystemPackage {
+            apt: Some("freerdp3-wayland"),
+            dnf: Some("freerdp"),
+            pacman: Some("freerdp"),
+            zypper: None,
+        };
+        assert_eq!(
+            get_system_install_command(&method, PackageManager::Apt),
+            Some("sudo apt install freerdp3-wayland".to_string())
+        );
+        assert_eq!(
+            get_system_install_command(&method, PackageManager::Dnf),
+            Some("sudo dnf install freerdp".to_string())
+        );
+        assert_eq!(
+            get_system_install_command(&method, PackageManager::Pacman),
+            Some("sudo pacman -S freerdp".to_string())
+        );
+        assert_eq!(
+            get_system_install_command(&method, PackageManager::Zypper),
+            None
+        );
+    }
+
+    #[test]
+    fn test_system_install_command_wrong_method() {
+        let method = InstallMethod::Download;
+        assert_eq!(
+            get_system_install_command(&method, PackageManager::Apt),
+            None
+        );
+    }
+
+    #[test]
+    fn test_package_manager_display() {
+        assert_eq!(PackageManager::Apt.to_string(), "apt");
+        assert_eq!(PackageManager::Dnf.to_string(), "dnf");
+        assert_eq!(PackageManager::Pacman.to_string(), "pacman");
+        assert_eq!(PackageManager::Zypper.to_string(), "zypper");
+    }
+
+    #[test]
+    fn test_system_package_is_downloadable() {
+        let component = DownloadableComponent {
+            id: "test-pkg",
+            name: "Test Package",
+            description: "A test system package",
+            category: ComponentCategory::ProtocolClient,
+            install_method: InstallMethod::SystemPackage {
+                apt: Some("test-pkg"),
+                dnf: None,
+                pacman: None,
+                zypper: None,
+            },
+            download_url: None,
+            aarch64_url: None,
+            checksum: ChecksumPolicy::None,
+            pip_package: None,
+            size_hint: "1 MB",
+            binary_name: "test-pkg",
+            install_subdir: "test-pkg",
+            pinned_version: None,
+            works_in_sandbox: false,
+        };
+        assert!(component.is_downloadable());
     }
 }

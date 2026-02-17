@@ -21,6 +21,7 @@ use vte4::Terminal;
 use rustconn_core::split::{ColorPool, PanelId, SessionId};
 
 use super::adapter::SplitViewAdapter;
+use crate::i18n::i18n;
 use crate::terminal::TerminalSession;
 
 /// Color palette for split panes
@@ -1450,19 +1451,19 @@ impl SplitViewBridge {
 
         // Basic info section
         let basic_frame = adw::PreferencesGroup::builder()
-            .title("Basic Information")
+            .title(&i18n("Basic Information"))
             .build();
 
         // Protocol row
         let protocol_row = adw::ActionRow::builder()
-            .title("Protocol")
+            .title(&i18n("Protocol"))
             .subtitle(&format!("{:?}", connection.protocol))
             .build();
         basic_frame.add(&protocol_row);
 
         // Host row
         let host_row = adw::ActionRow::builder()
-            .title("Host")
+            .title(&i18n("Host"))
             .subtitle(&format!("{}:{}", connection.host, connection.port))
             .build();
         basic_frame.add(&host_row);
@@ -1470,7 +1471,7 @@ impl SplitViewBridge {
         // Username row
         if let Some(ref username) = connection.username {
             let username_row = adw::ActionRow::builder()
-                .title("Username")
+                .title(&i18n("Username"))
                 .subtitle(username)
                 .build();
             basic_frame.add(&username_row);
@@ -1679,7 +1680,7 @@ impl SplitViewBridge {
         }
 
         status_page.set_title("RustConn");
-        status_page.set_description(Some("Manage remote connections easily"));
+        status_page.set_description(Some(&i18n("Manage remote connections easily")));
 
         // Create content box for additional elements
         let content = GtkBox::new(Orientation::Vertical, 12);
@@ -1695,14 +1696,14 @@ impl SplitViewBridge {
         actions.set_halign(gtk4::Align::Center);
 
         let new_conn_btn = gtk4::Button::builder()
-            .label("New Connection")
+            .label(&i18n("New Connection"))
             .css_classes(["suggested-action", "pill"])
             .action_name("win.new-connection")
             .build();
         actions.append(&new_conn_btn);
 
         let quick_btn = gtk4::Button::builder()
-            .label("Quick Connect")
+            .label(&i18n("Quick Connect"))
             .css_classes(["pill"])
             .action_name("win.quick-connect")
             .build();
@@ -1722,24 +1723,29 @@ impl SplitViewBridge {
         col1.set_valign(gtk4::Align::Start);
         col1.set_hexpand(true);
 
-        let features_group = adw::PreferencesGroup::builder().title("Features").build();
+        let features_group = adw::PreferencesGroup::builder()
+            .title(&i18n("Features"))
+            .build();
 
-        let features = [
-            ("utilities-terminal-symbolic", "Embedded SSH terminals"),
-            ("channel-secure-symbolic", "Secure credential storage"),
-            ("dialog-password-symbolic", "Password Generator"),
-            ("view-refresh-symbolic", "Session Restore"),
-            ("system-run-symbolic", "Expect automation"),
-            ("folder-symbolic", "Groups and tags"),
-            ("network-workgroup-symbolic", "Zero Trust tunnels"),
-            ("preferences-system-symbolic", "Customizable settings"),
+        let features: [(&str, String); 9] = [
+            (
+                "utilities-terminal-symbolic",
+                i18n("Embedded SSH terminals"),
+            ),
+            ("channel-secure-symbolic", i18n("Secure credential storage")),
+            ("dialog-password-symbolic", i18n("Password Generator")),
+            ("view-refresh-symbolic", i18n("Session Restore")),
+            ("system-run-symbolic", i18n("Expect automation")),
+            ("folder-symbolic", i18n("Groups and tags")),
+            ("network-workgroup-symbolic", i18n("Zero Trust tunnels")),
+            ("preferences-system-symbolic", i18n("Customizable settings")),
             (
                 "application-x-executable-symbolic",
-                "Embedded &amp; external clients",
+                i18n("Embedded & external clients"),
             ),
         ];
 
-        for (icon, description) in features {
+        for (icon, description) in &features {
             let row = adw::ActionRow::builder().title(description).build();
             row.add_prefix(&gtk4::Image::from_icon_name(icon));
             features_group.add(&row);
@@ -1753,25 +1759,25 @@ impl SplitViewBridge {
         col2.set_hexpand(true);
 
         let shortcuts_group = adw::PreferencesGroup::builder()
-            .title("Keyboard Shortcuts")
+            .title(&i18n("Keyboard Shortcuts"))
             .build();
 
-        let shortcuts = [
-            ("Ctrl+N", "New connection"),
-            ("Ctrl+Shift+N", "New group"),
-            ("Ctrl+Shift+T", "Local shell"),
-            ("Ctrl+Shift+Q", "Quick connect"),
-            ("Ctrl+F", "Search"),
-            ("Ctrl+Shift+S", "Split vertical"),
-            ("Ctrl+Shift+H", "Split horizontal"),
-            ("Ctrl+W", "Close tab"),
-            ("Ctrl+Tab", "Next tab"),
+        let shortcuts: [(&str, String); 9] = [
+            ("Ctrl+N", i18n("New connection")),
+            ("Ctrl+Shift+N", i18n("New group")),
+            ("Ctrl+Shift+T", i18n("Local shell")),
+            ("Ctrl+Shift+Q", i18n("Quick connect")),
+            ("Ctrl+F", i18n("Search")),
+            ("Ctrl+Shift+S", i18n("Split vertical")),
+            ("Ctrl+Shift+H", i18n("Split horizontal")),
+            ("Ctrl+W", i18n("Close tab")),
+            ("Ctrl+Tab", i18n("Next tab")),
         ];
 
-        for (shortcut, description) in shortcuts {
+        for (shortcut, description) in &shortcuts {
             let row = adw::ActionRow::builder().title(description).build();
             let label = gtk4::Label::builder()
-                .label(shortcut)
+                .label(*shortcut)
                 .css_classes(["dim-label", "monospace"])
                 .build();
             row.add_suffix(&label);
@@ -1786,17 +1792,17 @@ impl SplitViewBridge {
         col3.set_hexpand(true);
 
         let perf_group = adw::PreferencesGroup::builder()
-            .title("Performance")
+            .title(&i18n("Performance"))
             .build();
 
-        let perf_features = [
-            ("edit-find-symbolic", "Smart search caching"),
-            ("folder-symbolic", "Lazy loading for trees"),
-            ("view-list-symbolic", "Virtual scrolling"),
-            ("video-display-symbolic", "Embedded VNC/RDP/SPICE"),
+        let perf_features: [(&str, String); 4] = [
+            ("edit-find-symbolic", i18n("Smart search caching")),
+            ("folder-symbolic", i18n("Lazy loading for trees")),
+            ("view-list-symbolic", i18n("Virtual scrolling")),
+            ("video-display-symbolic", i18n("Embedded VNC/RDP/SPICE")),
         ];
 
-        for (icon, description) in perf_features {
+        for (icon, description) in &perf_features {
             let row = adw::ActionRow::builder().title(description).build();
             row.add_prefix(&gtk4::Image::from_icon_name(icon));
             perf_group.add(&row);
@@ -1805,7 +1811,7 @@ impl SplitViewBridge {
 
         // Import formats
         let formats_group = adw::PreferencesGroup::builder()
-            .title("Import Formats")
+            .title(&i18n("Import Formats"))
             .margin_top(6)
             .build();
 
@@ -1828,7 +1834,9 @@ impl SplitViewBridge {
 
         // Hint at the bottom
         let hint = gtk4::Label::builder()
-            .label("Double-click a connection in the sidebar to get started")
+            .label(&i18n(
+                "Double-click a connection in the sidebar to get started",
+            ))
             .css_classes(["dim-label"])
             .margin_top(12)
             .build();
@@ -1986,7 +1994,7 @@ impl SplitViewBridge {
                     content.set_margin_end(12);
 
                     let label = gtk4::Label::builder()
-                        .label("All tabs are already displayed in this split view")
+                        .label(&i18n("All tabs are already displayed in this split view"))
                         .css_classes(["dim-label"])
                         .build();
                     content.append(&label);
@@ -2025,7 +2033,7 @@ impl SplitViewBridge {
                 content.set_margin_end(12);
 
                 let title = gtk4::Label::builder()
-                    .label("Select a tab to display")
+                    .label(&i18n("Select a tab to display"))
                     .css_classes(["heading"])
                     .halign(gtk4::Align::Start)
                     .build();

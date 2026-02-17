@@ -6,6 +6,7 @@
 use super::MainWindow;
 use crate::alert;
 use crate::dialogs::{ConnectionDialog, ImportDialog};
+use crate::i18n::i18n;
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 use adw::prelude::*;
@@ -96,7 +97,7 @@ pub fn show_new_connection_dialog_internal(
         dialog.set_connection(&connection);
         dialog
             .window()
-            .set_title(Some("New Connection from Template"));
+            .set_title(Some(&i18n("New Connection from Template")));
     }
 
     let window_clone = window.clone();
@@ -154,7 +155,7 @@ pub fn show_new_connection_dialog_internal(
                     }
                     Err(e) => {
                         // Show error in UI dialog with proper transient parent
-                        alert::show_error(&window_clone, "Error Creating Connection", &e);
+                        alert::show_error(&window_clone, &i18n("Error Creating Connection"), &e);
                     }
                 }
             }
@@ -176,7 +177,7 @@ pub fn show_new_group_dialog_with_parent(
     preselected_parent: Option<Uuid>,
 ) {
     let group_window = adw::Window::builder()
-        .title("New Group")
+        .title(i18n("New Group"))
         .transient_for(window)
         .modal(true)
         .default_width(450)
@@ -187,9 +188,9 @@ pub fn show_new_group_dialog_with_parent(
     let header = adw::HeaderBar::new();
     header.set_show_end_title_buttons(false);
     header.set_show_start_title_buttons(false);
-    let close_btn = gtk4::Button::builder().label("Close").build();
+    let close_btn = gtk4::Button::builder().label(i18n("Close")).build();
     let create_btn = gtk4::Button::builder()
-        .label("Create")
+        .label(i18n("Create"))
         .css_classes(["suggested-action"])
         .build();
     header.pack_start(&close_btn);
@@ -223,11 +224,11 @@ pub fn show_new_group_dialog_with_parent(
 
     // === Group Details ===
     let details_group = adw::PreferencesGroup::builder()
-        .title("Group Details")
+        .title(i18n("Group Details"))
         .build();
 
     // Group name using EntryRow
-    let name_row = adw::EntryRow::builder().title("Name").build();
+    let name_row = adw::EntryRow::builder().title(i18n("Name")).build();
     details_group.add(&name_row);
 
     // Parent group dropdown
@@ -248,7 +249,7 @@ pub fn show_new_group_dialog_with_parent(
     drop(state_ref);
 
     let mut group_ids: Vec<Option<Uuid>> = vec![None];
-    let mut strings: Vec<String> = vec!["(None - Root Level)".to_string()];
+    let mut strings: Vec<String> = vec![i18n("(None - Root Level)")];
     let mut preselected_index = 0u32;
 
     for (id, path) in groups {
@@ -273,8 +274,8 @@ pub fn show_new_group_dialog_with_parent(
         .build();
 
     let parent_row = adw::ActionRow::builder()
-        .title("Parent")
-        .subtitle("Optional - leave empty for root level")
+        .title(i18n("Parent"))
+        .subtitle(i18n("Optional - leave empty for root level"))
         .build();
     parent_row.add_suffix(&parent_dropdown);
     details_group.add(&parent_row);
@@ -283,16 +284,21 @@ pub fn show_new_group_dialog_with_parent(
 
     // === Inheritable Credentials ===
     let credentials_group = adw::PreferencesGroup::builder()
-        .title("Default Credentials")
-        .description("Credentials inherited by connections in this group")
+        .title(i18n("Default Credentials"))
+        .description(i18n("Credentials inherited by connections in this group"))
         .build();
 
-    let username_row = adw::EntryRow::builder().title("Username").build();
+    let username_row = adw::EntryRow::builder().title(i18n("Username")).build();
     credentials_group.add(&username_row);
 
     // Password Source dropdown
-    let password_source_list =
-        gtk4::StringList::new(&["Prompt", "Vault", "Variable", "Inherit", "None"]);
+    let password_source_list = gtk4::StringList::new(&[
+        &i18n("Prompt"),
+        &i18n("Vault"),
+        &i18n("Variable"),
+        &i18n("Inherit"),
+        &i18n("None"),
+    ]);
     let password_source_dropdown = gtk4::DropDown::builder()
         .model(&password_source_list)
         .valign(gtk4::Align::Center)
@@ -301,28 +307,28 @@ pub fn show_new_group_dialog_with_parent(
     // Set default to Vault (index 1) — uses whichever backend is configured
     password_source_dropdown.set_selected(1);
 
-    let password_source_row = adw::ActionRow::builder().title("Password").build();
+    let password_source_row = adw::ActionRow::builder().title(i18n("Password")).build();
     password_source_row.add_suffix(&password_source_dropdown);
     credentials_group.add(&password_source_row);
 
     // Password Value entry with visibility toggle and load button
     let password_entry = gtk4::Entry::builder()
-        .placeholder_text("Password value")
+        .placeholder_text(i18n("Password value"))
         .visibility(false)
         .hexpand(true)
         .build();
     let password_visibility_btn = gtk4::Button::builder()
         .icon_name("view-reveal-symbolic")
-        .tooltip_text("Show/hide password")
+        .tooltip_text(i18n("Show/hide password"))
         .valign(gtk4::Align::Center)
         .build();
     let password_load_btn = gtk4::Button::builder()
         .icon_name("folder-symbolic")
-        .tooltip_text("Load password from vault")
+        .tooltip_text(i18n("Load password from vault"))
         .valign(gtk4::Align::Center)
         .build();
 
-    let password_value_row = adw::ActionRow::builder().title("Value").build();
+    let password_value_row = adw::ActionRow::builder().title(i18n("Value")).build();
     password_value_row.add_suffix(&password_entry);
     password_value_row.add_suffix(&password_visibility_btn);
     password_value_row.add_suffix(&password_load_btn);
@@ -365,7 +371,7 @@ pub fn show_new_group_dialog_with_parent(
     password_load_btn.connect_clicked(move |btn| {
         let group_name = name_row_for_load.text().to_string();
         if group_name.trim().is_empty() {
-            alert::show_validation_error(&window_for_load, "Enter group name first");
+            alert::show_validation_error(&window_for_load, &i18n("Enter group name first"));
             return;
         }
 
@@ -393,7 +399,7 @@ pub fn show_new_group_dialog_with_parent(
             {
                 // KeePass backend
                 let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
-                    alert::show_validation_error(&window_clone, "Vault not configured");
+                    alert::show_validation_error(&window_clone, &i18n("Vault not configured"));
                     btn_clone.set_sensitive(true);
                     btn_clone.set_icon_name("folder-symbolic");
                     return;
@@ -422,12 +428,12 @@ pub fn show_new_group_dialog_with_parent(
                             Ok(None) => {
                                 alert::show_validation_error(
                                     &window_clone,
-                                    "No password found for this group",
+                                    &i18n("No password found for this group"),
                                 );
                             }
                             Err(e) => {
                                 tracing::error!("Failed to load password: {e}");
-                                alert::show_error(&window_clone, "Load Error", &e);
+                                alert::show_error(&window_clone, &i18n("Load Error"), &e);
                             }
                         }
                     },
@@ -487,19 +493,19 @@ pub fn show_new_group_dialog_with_parent(
                                 } else {
                                     alert::show_validation_error(
                                         &window_clone,
-                                        "No password found for this group",
+                                        &i18n("No password found for this group"),
                                     );
                                 }
                             }
                             Ok(None) => {
                                 alert::show_validation_error(
                                     &window_clone,
-                                    "No password found for this group",
+                                    &i18n("No password found for this group"),
                                 );
                             }
                             Err(e) => {
                                 tracing::error!("Failed to load password: {e}");
-                                alert::show_error(&window_clone, "Load Error", &e);
+                                alert::show_error(&window_clone, &i18n("Load Error"), &e);
                             }
                         }
                     },
@@ -508,19 +514,19 @@ pub fn show_new_group_dialog_with_parent(
         } else {
             btn.set_sensitive(true);
             btn.set_icon_name("folder-symbolic");
-            alert::show_validation_error(&window_clone, "Select Vault to load password");
+            alert::show_validation_error(&window_clone, &i18n("Select Vault to load password"));
         }
     });
 
-    let domain_row = adw::EntryRow::builder().title("Domain").build();
+    let domain_row = adw::EntryRow::builder().title(i18n("Domain")).build();
     credentials_group.add(&domain_row);
 
     content.append(&credentials_group);
 
     // === Description Section ===
     let description_group = adw::PreferencesGroup::builder()
-        .title("Description")
-        .description("Notes, contacts, project info")
+        .title(i18n("Description"))
+        .description(i18n("Notes, contacts, project info"))
         .build();
 
     let description_view = gtk4::TextView::builder()
@@ -559,7 +565,7 @@ pub fn show_new_group_dialog_with_parent(
     create_btn.connect_clicked(move |_| {
         let name = name_row_clone.text().to_string();
         if name.trim().is_empty() {
-            alert::show_validation_error(&window_clone, "Group name cannot be empty");
+            alert::show_validation_error(&window_clone, &i18n("Group name cannot be empty"));
             return;
         }
 
@@ -634,7 +640,7 @@ pub fn show_new_group_dialog_with_parent(
                             {
                                 alert::show_error(
                                     &window_clone,
-                                    "Error Updating Group",
+                                    &i18n("Error Updating Group"),
                                     &e.to_string(),
                                 );
                                 // Don't return, allow closing window since group was created
@@ -680,7 +686,7 @@ pub fn show_new_group_dialog_with_parent(
                     });
                 }
                 Err(e) => {
-                    alert::show_error(&window_clone, "Error", &e);
+                    alert::show_error(&window_clone, &i18n("Error"), &e);
                 }
             }
         }
@@ -712,13 +718,13 @@ pub fn show_import_dialog(window: &gtk4::Window, state: SharedAppState, sidebar:
                             );
                             alert::show_success(
                                 &window,
-                                "Import Successful",
+                                &i18n("Import Successful"),
                                 &format!("Imported {count} connections to '{source}' group"),
                             );
                         });
                     }
                     Err(e) => {
-                        alert::show_error(&window_clone, "Import Failed", &e);
+                        alert::show_error(&window_clone, &i18n("Import Failed"), &e);
                     }
                 }
             }

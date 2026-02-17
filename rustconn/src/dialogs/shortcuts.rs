@@ -2,6 +2,7 @@
 //!
 //! Displays all available keyboard shortcuts in a searchable dialog.
 
+use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Label, ListBox, ListBoxRow, Orientation, ScrolledWindow, SearchEntry};
@@ -166,7 +167,7 @@ impl ShortcutsDialog {
     #[must_use]
     pub fn new(parent: Option<&impl IsA<gtk4::Window>>) -> Self {
         let window = adw::Window::builder()
-            .title("Keyboard Shortcuts")
+            .title(i18n("Keyboard Shortcuts"))
             .modal(true)
             .default_width(500)
             .default_height(400)
@@ -203,7 +204,7 @@ impl ShortcutsDialog {
 
         // Search entry
         let search_entry = SearchEntry::builder()
-            .placeholder_text("Search shortcuts...")
+            .placeholder_text(i18n("Search shortcuts..."))
             .build();
         content.append(&search_entry);
 
@@ -225,11 +226,11 @@ impl ShortcutsDialog {
             // Add category header if changed
             if shortcut.category != current_category {
                 current_category = shortcut.category;
-                let header_row = Self::create_category_header(current_category);
+                let header_row = Self::create_category_header(&i18n(current_category));
                 list_box.append(&header_row);
             }
 
-            let row = Self::create_shortcut_row(shortcut.keys, shortcut.description);
+            let row = Self::create_shortcut_row(shortcut.keys, &i18n(shortcut.description));
             list_box.append(&row);
         }
 

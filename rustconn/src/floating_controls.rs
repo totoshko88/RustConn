@@ -14,6 +14,8 @@ use gtk4::{Align, Box as GtkBox, Button, Orientation, Revealer, RevealerTransiti
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::i18n::i18n;
+
 /// Default auto-hide timeout in milliseconds
 const DEFAULT_AUTO_HIDE_TIMEOUT_MS: u32 = 3000;
 
@@ -98,19 +100,22 @@ impl FloatingControls {
 
         // Create disconnect button
         let disconnect_btn = Button::from_icon_name("window-close-symbolic");
-        disconnect_btn.set_tooltip_text(Some("Disconnect"));
+        disconnect_btn.set_tooltip_text(Some(&i18n("Disconnect")));
         disconnect_btn.add_css_class("floating-control-button");
         disconnect_btn.add_css_class("destructive-action");
+        disconnect_btn.update_property(&[gtk4::accessible::Property::Label("Disconnect")]);
 
         // Create fullscreen button
         let fullscreen_btn = Button::from_icon_name("view-fullscreen-symbolic");
-        fullscreen_btn.set_tooltip_text(Some("Toggle Fullscreen"));
+        fullscreen_btn.set_tooltip_text(Some(&i18n("Toggle Fullscreen")));
         fullscreen_btn.add_css_class("floating-control-button");
+        fullscreen_btn.update_property(&[gtk4::accessible::Property::Label("Toggle Fullscreen")]);
 
         // Create settings button
         let settings_btn = Button::from_icon_name("emblem-system-symbolic");
-        settings_btn.set_tooltip_text(Some("Session Settings"));
+        settings_btn.set_tooltip_text(Some(&i18n("Session Settings")));
         settings_btn.add_css_class("floating-control-button");
+        settings_btn.update_property(&[gtk4::accessible::Property::Label("Session Settings")]);
 
         // Add buttons to container
         button_box.append(&disconnect_btn);
@@ -172,11 +177,11 @@ impl FloatingControls {
             if is_active {
                 // Was active, now inactive - show fullscreen icon
                 fullscreen_btn.set_icon_name("view-fullscreen-symbolic");
-                fullscreen_btn.set_tooltip_text(Some("Toggle Fullscreen"));
+                fullscreen_btn.set_tooltip_text(Some(&i18n("Toggle Fullscreen")));
             } else {
                 // Was inactive, now active - show restore icon
                 fullscreen_btn.set_icon_name("view-restore-symbolic");
-                fullscreen_btn.set_tooltip_text(Some("Exit Fullscreen"));
+                fullscreen_btn.set_tooltip_text(Some(&i18n("Exit Fullscreen")));
             }
 
             if let Some(ref cb) = *callback.borrow() {
@@ -313,12 +318,12 @@ impl FloatingControls {
         if active {
             self.fullscreen_btn.set_icon_name("view-restore-symbolic");
             self.fullscreen_btn
-                .set_tooltip_text(Some("Exit Fullscreen"));
+                .set_tooltip_text(Some(&i18n("Exit Fullscreen")));
         } else {
             self.fullscreen_btn
                 .set_icon_name("view-fullscreen-symbolic");
             self.fullscreen_btn
-                .set_tooltip_text(Some("Toggle Fullscreen"));
+                .set_tooltip_text(Some(&i18n("Toggle Fullscreen")));
         }
     }
 

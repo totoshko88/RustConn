@@ -7,6 +7,8 @@ use libadwaita as adw;
 use rustconn_core::config::LoggingSettings;
 use std::path::PathBuf;
 
+use crate::i18n::i18n;
+
 /// Creates the logging settings page using AdwPreferencesPage
 #[allow(clippy::type_complexity)]
 pub fn create_logging_page() -> (
@@ -20,21 +22,21 @@ pub fn create_logging_page() -> (
     CheckButton, // log_timestamps
 ) {
     let page = adw::PreferencesPage::builder()
-        .title("Logging")
+        .title(i18n("Logging"))
         .icon_name("document-open-recent-symbolic")
         .build();
 
     // === General Logging Settings ===
     let general_group = adw::PreferencesGroup::builder()
-        .title("General")
-        .description("Configure session logging")
+        .title(i18n("General"))
+        .description(i18n("Configure session logging"))
         .build();
 
     // Enable logging switch
     let logging_enabled_switch = Switch::builder().valign(gtk4::Align::Center).build();
     let enable_row = adw::ActionRow::builder()
-        .title("Persist logs")
-        .subtitle("Save session logs to disk")
+        .title(i18n("Persist logs"))
+        .subtitle(i18n("Save session logs to disk"))
         .build();
     enable_row.add_suffix(&logging_enabled_switch);
     enable_row.set_activatable_widget(Some(&logging_enabled_switch));
@@ -48,7 +50,7 @@ pub fn create_logging_page() -> (
         .valign(gtk4::Align::Center)
         .sensitive(false)
         .build();
-    let log_dir_row = adw::ActionRow::builder().title("Directory").build();
+    let log_dir_row = adw::ActionRow::builder().title(i18n("Directory")).build();
     log_dir_row.add_suffix(&log_dir_entry);
     log_dir_row.set_activatable_widget(Some(&log_dir_entry));
     general_group.add(&log_dir_row);
@@ -63,8 +65,8 @@ pub fn create_logging_page() -> (
         .sensitive(false)
         .build();
     let retention_row = adw::ActionRow::builder()
-        .title("Retention")
-        .subtitle("Days to keep logs")
+        .title(i18n("Retention"))
+        .subtitle(i18n("Days to keep logs"))
         .build();
     retention_row.add_suffix(&retention_spin);
     retention_row.set_activatable_widget(Some(&retention_spin));
@@ -78,7 +80,7 @@ pub fn create_logging_page() -> (
         .sensitive(false)
         .build();
     let open_logs_row = adw::ActionRow::builder()
-        .title("Open Logs Directory")
+        .title(i18n("Open Logs Directory"))
         .activatable(true)
         .build();
     open_logs_row.add_suffix(&open_logs_btn);
@@ -98,8 +100,8 @@ pub fn create_logging_page() -> (
 
     // === Log Content Group ===
     let content_group = adw::PreferencesGroup::builder()
-        .title("Log Content")
-        .description("Select what to include in logs")
+        .title(i18n("Log Content"))
+        .description(i18n("Select what to include in logs"))
         .build();
 
     // Activity logging
@@ -109,8 +111,8 @@ pub fn create_logging_page() -> (
         .sensitive(false)
         .build();
     let log_activity_row = adw::ActionRow::builder()
-        .title("Activity")
-        .subtitle("Connection events and change counts")
+        .title(i18n("Activity"))
+        .subtitle(i18n("Connection events and change counts"))
         .activatable_widget(&log_activity_check)
         .build();
     log_activity_row.add_prefix(&log_activity_check);
@@ -122,8 +124,8 @@ pub fn create_logging_page() -> (
         .sensitive(false)
         .build();
     let log_input_row = adw::ActionRow::builder()
-        .title("User Input")
-        .subtitle("Commands and keystrokes")
+        .title(i18n("User Input"))
+        .subtitle(i18n("Commands and keystrokes"))
         .activatable_widget(&log_input_check)
         .build();
     log_input_row.add_prefix(&log_input_check);
@@ -135,8 +137,8 @@ pub fn create_logging_page() -> (
         .sensitive(false)
         .build();
     let log_output_row = adw::ActionRow::builder()
-        .title("Terminal Output")
-        .subtitle("Full session transcript")
+        .title(i18n("Terminal Output"))
+        .subtitle(i18n("Full session transcript"))
         .activatable_widget(&log_output_check)
         .build();
     log_output_row.add_prefix(&log_output_check);
@@ -146,14 +148,14 @@ pub fn create_logging_page() -> (
 
     // === Session Logging Group ===
     let session_group = adw::PreferencesGroup::builder()
-        .title("Session Logging")
-        .description("Format options for session logs")
+        .title(i18n("Session Logging"))
+        .description(i18n("Format options for session logs"))
         .build();
 
     let log_timestamps_check = CheckButton::builder().valign(gtk4::Align::Center).build();
     let log_timestamps_row = adw::ActionRow::builder()
-        .title("Timestamps")
-        .subtitle("Prepend [HH:MM:SS] to each line in session logs")
+        .title(i18n("Timestamps"))
+        .subtitle(i18n("Prepend [HH:MM:SS] to each line in session logs"))
         .activatable_widget(&log_timestamps_check)
         .build();
     log_timestamps_row.add_prefix(&log_timestamps_check);

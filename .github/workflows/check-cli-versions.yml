@@ -1,0 +1,58 @@
+name: Check CLI component versions
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Every Monday at 06:00 UTC
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  check-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check kubectl
+        run: |
+          LATEST=$(curl -sL https://dl.k8s.io/release/stable.txt)
+          echo "kubectl latest: $LATEST"
+
+      - name: Check Tailscale
+        run: |
+          LATEST=$(curl -sL https://pkgs.tailscale.com/stable/ \
+            | grep -oP 'tailscale_\K[\d.]+' | sort -V | tail -1)
+          echo "tailscale latest: $LATEST"
+
+      - name: Check Cloudflared
+        run: |
+          LATEST=$(curl -sL https://api.github.com/repos/cloudflare/cloudflared/releases/latest \
+            | jq -r .tag_name)
+          echo "cloudflared latest: $LATEST"
+
+      - name: Check Boundary
+        run: |
+          LATEST=$(curl -sL https://api.github.com/repos/hashicorp/boundary/releases/latest \
+            | jq -r .tag_name)
+          echo "boundary latest: $LATEST"
+
+      - name: Check Teleport
+        run: |
+          LATEST=$(curl -sL https://api.github.com/repos/gravitational/teleport/releases/latest \
+            | jq -r .tag_name)
+          echo "teleport latest: $LATEST"
+
+      - name: Check Bitwarden CLI
+        run: |
+          LATEST=$(curl -sL https://api.github.com/repos/bitwarden/clients/releases \
+            | jq -r '[.[] | select(.tag_name | startswith("cli-v"))][0].tag_name // "unknown"')
+          echo "bitwarden-cli latest: $LATEST"
+
+      - name: Check 1Password CLI
+        run: |
+          LATEST=$(curl -sL https://api.github.com/repos/1Password/connect/releases/latest \
+            | jq -r .tag_name)
+          echo "1password-cli latest: $LATEST"
+
+      - name: Show pinned versions from source
+        run: |
+          grep -E 'pinned_version|version.*=.*"[0-9]' rustconn-core/src/cli_download.rs \
+            | head -30

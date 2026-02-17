@@ -9,6 +9,8 @@ use libadwaita as adw;
 use rustconn_core::config::TerminalSettings;
 use rustconn_core::terminal_themes::TerminalTheme;
 
+use crate::i18n::i18n;
+
 /// Creates the terminal settings page using AdwPreferencesPage
 #[allow(clippy::type_complexity)]
 pub fn create_terminal_page() -> (
@@ -27,12 +29,12 @@ pub fn create_terminal_page() -> (
     CheckButton, // sftp_use_mc
 ) {
     let page = adw::PreferencesPage::builder()
-        .title("Terminal")
+        .title(i18n("Terminal"))
         .icon_name("utilities-terminal-symbolic")
         .build();
 
     // === Font Group ===
-    let font_group = adw::PreferencesGroup::builder().title("Font").build();
+    let font_group = adw::PreferencesGroup::builder().title(i18n("Font")).build();
 
     // Font family row - simplified title
     let font_family_entry = Entry::builder()
@@ -40,7 +42,7 @@ pub fn create_terminal_page() -> (
         .hexpand(true)
         .valign(gtk4::Align::Center)
         .build();
-    let font_family_row = adw::ActionRow::builder().title("Family").build();
+    let font_family_row = adw::ActionRow::builder().title(i18n("Family")).build();
     font_family_row.add_suffix(&font_family_entry);
     font_family_row.set_activatable_widget(Some(&font_family_entry));
     font_group.add(&font_family_row);
@@ -53,7 +55,7 @@ pub fn create_terminal_page() -> (
         .digits(0)
         .valign(gtk4::Align::Center)
         .build();
-    let font_size_row = adw::ActionRow::builder().title("Size").build();
+    let font_size_row = adw::ActionRow::builder().title(i18n("Size")).build();
     font_size_row.add_suffix(&font_size_spin);
     font_size_row.set_activatable_widget(Some(&font_size_spin));
     font_group.add(&font_size_row);
@@ -61,7 +63,9 @@ pub fn create_terminal_page() -> (
     page.add(&font_group);
 
     // === Colors Group ===
-    let colors_group = adw::PreferencesGroup::builder().title("Colors").build();
+    let colors_group = adw::PreferencesGroup::builder()
+        .title(i18n("Colors"))
+        .build();
 
     let theme_names = TerminalTheme::theme_names();
     let theme_list = StringList::new(&theme_names.iter().map(String::as_str).collect::<Vec<_>>());
@@ -70,7 +74,7 @@ pub fn create_terminal_page() -> (
         .selected(0)
         .valign(gtk4::Align::Center)
         .build();
-    let color_theme_row = adw::ActionRow::builder().title("Theme").build();
+    let color_theme_row = adw::ActionRow::builder().title(i18n("Theme")).build();
     color_theme_row.add_suffix(&color_theme_dropdown);
     color_theme_row.set_activatable_widget(Some(&color_theme_dropdown));
     colors_group.add(&color_theme_row);
@@ -78,7 +82,9 @@ pub fn create_terminal_page() -> (
     page.add(&colors_group);
 
     // === Cursor Group ===
-    let cursor_group = adw::PreferencesGroup::builder().title("Cursor").build();
+    let cursor_group = adw::PreferencesGroup::builder()
+        .title(i18n("Cursor"))
+        .build();
 
     // Cursor shape - toggle buttons
     let shape_buttons_box = GtkBox::builder()
@@ -90,17 +96,17 @@ pub fn create_terminal_page() -> (
         .build();
 
     let shape_block_btn = ToggleButton::builder()
-        .label("Block")
+        .label(i18n("Block"))
         .active(true)
         .hexpand(true)
         .build();
     let shape_ibeam_btn = ToggleButton::builder()
-        .label("IBeam")
+        .label(i18n("IBeam"))
         .group(&shape_block_btn)
         .hexpand(true)
         .build();
     let shape_underline_btn = ToggleButton::builder()
-        .label("Underline")
+        .label(i18n("Underline"))
         .group(&shape_block_btn)
         .hexpand(true)
         .build();
@@ -109,7 +115,7 @@ pub fn create_terminal_page() -> (
     shape_buttons_box.append(&shape_ibeam_btn);
     shape_buttons_box.append(&shape_underline_btn);
 
-    let cursor_shape_row = adw::ActionRow::builder().title("Shape").build();
+    let cursor_shape_row = adw::ActionRow::builder().title(i18n("Shape")).build();
     cursor_shape_row.add_suffix(&shape_buttons_box);
     cursor_group.add(&cursor_shape_row);
 
@@ -123,17 +129,17 @@ pub fn create_terminal_page() -> (
         .build();
 
     let blink_on_btn = ToggleButton::builder()
-        .label("On")
+        .label(i18n("On"))
         .active(true)
         .hexpand(true)
         .build();
     let blink_off_btn = ToggleButton::builder()
-        .label("Off")
+        .label(i18n("Off"))
         .group(&blink_on_btn)
         .hexpand(true)
         .build();
     let blink_system_btn = ToggleButton::builder()
-        .label("System")
+        .label(i18n("System"))
         .group(&blink_on_btn)
         .hexpand(true)
         .build();
@@ -142,14 +148,16 @@ pub fn create_terminal_page() -> (
     blink_buttons_box.append(&blink_off_btn);
     blink_buttons_box.append(&blink_system_btn);
 
-    let cursor_blink_row = adw::ActionRow::builder().title("Blink").build();
+    let cursor_blink_row = adw::ActionRow::builder().title(i18n("Blink")).build();
     cursor_blink_row.add_suffix(&blink_buttons_box);
     cursor_group.add(&cursor_blink_row);
 
     page.add(&cursor_group);
 
     // === Scrolling Group ===
-    let scrolling_group = adw::PreferencesGroup::builder().title("Scrolling").build();
+    let scrolling_group = adw::PreferencesGroup::builder()
+        .title(i18n("Scrolling"))
+        .build();
 
     // Scrollback lines - simplified title
     let scrollback_adj = gtk4::Adjustment::new(10000.0, 100.0, 1_000_000.0, 100.0, 1000.0, 0.0);
@@ -160,8 +168,8 @@ pub fn create_terminal_page() -> (
         .valign(gtk4::Align::Center)
         .build();
     let scrollback_row = adw::ActionRow::builder()
-        .title("History")
-        .subtitle("Number of lines to keep in scrollback")
+        .title(i18n("History"))
+        .subtitle(i18n("Number of lines to keep in scrollback"))
         .build();
     scrollback_row.add_suffix(&scrollback_spin);
     scrollback_row.set_activatable_widget(Some(&scrollback_spin));
@@ -170,8 +178,8 @@ pub fn create_terminal_page() -> (
     // Scroll on output
     let scroll_on_output_check = CheckButton::builder().valign(gtk4::Align::Center).build();
     let scroll_on_output_row = adw::ActionRow::builder()
-        .title("On output")
-        .subtitle("Scroll to bottom when new output appears")
+        .title(i18n("On output"))
+        .subtitle(i18n("Scroll to bottom when new output appears"))
         .activatable_widget(&scroll_on_output_check)
         .build();
     scroll_on_output_row.add_prefix(&scroll_on_output_check);
@@ -183,8 +191,8 @@ pub fn create_terminal_page() -> (
         .valign(gtk4::Align::Center)
         .build();
     let scroll_on_keystroke_row = adw::ActionRow::builder()
-        .title("On keystroke")
-        .subtitle("Scroll to bottom when typing")
+        .title(i18n("On keystroke"))
+        .subtitle(i18n("Scroll to bottom when typing"))
         .activatable_widget(&scroll_on_keystroke_check)
         .build();
     scroll_on_keystroke_row.add_prefix(&scroll_on_keystroke_check);
@@ -193,7 +201,9 @@ pub fn create_terminal_page() -> (
     page.add(&scrolling_group);
 
     // === Behavior Group ===
-    let behavior_group = adw::PreferencesGroup::builder().title("Behavior").build();
+    let behavior_group = adw::PreferencesGroup::builder()
+        .title(i18n("Behavior"))
+        .build();
 
     // Allow hyperlinks
     let allow_hyperlinks_check = CheckButton::builder()
@@ -201,8 +211,8 @@ pub fn create_terminal_page() -> (
         .valign(gtk4::Align::Center)
         .build();
     let allow_hyperlinks_row = adw::ActionRow::builder()
-        .title("Hyperlinks")
-        .subtitle("Allow clickable URLs in terminal")
+        .title(i18n("Hyperlinks"))
+        .subtitle(i18n("Allow clickable URLs in terminal"))
         .activatable_widget(&allow_hyperlinks_check)
         .build();
     allow_hyperlinks_row.add_prefix(&allow_hyperlinks_check);
@@ -214,8 +224,8 @@ pub fn create_terminal_page() -> (
         .valign(gtk4::Align::Center)
         .build();
     let mouse_autohide_row = adw::ActionRow::builder()
-        .title("Hide pointer")
-        .subtitle("Hide mouse cursor when typing")
+        .title(i18n("Hide pointer"))
+        .subtitle(i18n("Hide mouse cursor when typing"))
         .activatable_widget(&mouse_autohide_check)
         .build();
     mouse_autohide_row.add_prefix(&mouse_autohide_check);
@@ -224,8 +234,8 @@ pub fn create_terminal_page() -> (
     // Audible bell
     let audible_bell_check = CheckButton::builder().valign(gtk4::Align::Center).build();
     let audible_bell_row = adw::ActionRow::builder()
-        .title("Bell")
-        .subtitle("Play sound on terminal bell")
+        .title(i18n("Bell"))
+        .subtitle(i18n("Play sound on terminal bell"))
         .activatable_widget(&audible_bell_check)
         .build();
     audible_bell_row.add_prefix(&audible_bell_check);
@@ -234,8 +244,8 @@ pub fn create_terminal_page() -> (
     // SFTP via Midnight Commander
     let sftp_use_mc_check = CheckButton::builder().valign(gtk4::Align::Center).build();
     let sftp_use_mc_row = adw::ActionRow::builder()
-        .title("SFTP via mc")
-        .subtitle("Open SFTP in Midnight Commander (local shell tab)")
+        .title(i18n("SFTP via mc"))
+        .subtitle(i18n("Open SFTP in Midnight Commander (local shell tab)"))
         .activatable_widget(&sftp_use_mc_check)
         .build();
     sftp_use_mc_row.add_prefix(&sftp_use_mc_check);

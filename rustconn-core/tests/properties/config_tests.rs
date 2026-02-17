@@ -470,6 +470,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                     },
                     ui: UiSettings {
                         color_scheme: ColorScheme::default(),
+                        language: String::from("system"),
                         remember_window_geometry,
                         window_width,
                         window_height,

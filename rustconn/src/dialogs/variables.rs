@@ -6,6 +6,7 @@
 //! Updated for GTK 4.10+ compatibility using Window instead of Dialog.
 //! Uses libadwaita components for GNOME HIG compliance.
 
+use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -56,7 +57,7 @@ impl VariablesDialog {
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
         let window = adw::Window::builder()
-            .title("Global Variables")
+            .title(i18n("Global Variables"))
             .modal(true)
             .default_width(500)
             .default_height(400)
@@ -72,9 +73,9 @@ impl VariablesDialog {
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
-        let cancel_btn = Button::builder().label("Cancel").build();
+        let cancel_btn = Button::builder().label(i18n("Cancel")).build();
         let save_btn = Button::builder()
-            .label("Save")
+            .label(i18n("Save"))
             .css_classes(["suggested-action"])
             .build();
         header.pack_start(&cancel_btn);
@@ -143,11 +144,11 @@ impl VariablesDialog {
     /// Creates the variables section with list and add button
     fn create_variables_section() -> (adw::PreferencesGroup, ListBox, Button) {
         let group = adw::PreferencesGroup::builder()
-            .title("Variables")
-            .description(
+            .title(i18n("Variables"))
+            .description(i18n(
                 "Define variables that can be used in connections \
                  with ${variable_name} syntax",
-            )
+            ))
             .build();
 
         let scrolled = ScrolledWindow::builder()
@@ -170,7 +171,7 @@ impl VariablesDialog {
         button_box.set_margin_top(12);
 
         let add_button = Button::builder()
-            .label("Add Variable")
+            .label(i18n("Add Variable"))
             .css_classes(["suggested-action"])
             .build();
         button_box.append(&add_button);
@@ -196,7 +197,7 @@ impl VariablesDialog {
 
         // Row 0: Name and Delete button
         let name_label = Label::builder()
-            .label("Name:")
+            .label(i18n("Name:"))
             .halign(gtk4::Align::End)
             .build();
         let name_entry = Entry::builder()
@@ -206,7 +207,7 @@ impl VariablesDialog {
         let delete_button = Button::builder()
             .icon_name("user-trash-symbolic")
             .css_classes(["destructive-action", "flat"])
-            .tooltip_text("Delete variable")
+            .tooltip_text(i18n("Delete variable"))
             .build();
 
         grid.attach(&name_label, 0, 0, 1, 1);
@@ -215,7 +216,7 @@ impl VariablesDialog {
 
         // Row 1: Value — single row, switches between plain and secret mode
         let value_label = Label::builder()
-            .label("Value:")
+            .label(i18n("Value:"))
             .halign(gtk4::Align::End)
             .build();
         // Plain value entry (visible when not secret)
@@ -232,12 +233,12 @@ impl VariablesDialog {
         // Show/Hide toggle button (secret mode only)
         let show_hide_btn = Button::builder()
             .icon_name("view-reveal-symbolic")
-            .tooltip_text("Show/hide password")
+            .tooltip_text(i18n("Show/hide password"))
             .build();
         // Load from Vault button (secret mode only)
         let load_vault_btn = Button::builder()
             .icon_name("document-open-symbolic")
-            .tooltip_text("Load password from vault")
+            .tooltip_text(i18n("Load password from vault"))
             .build();
         // Secret row: entry + show/hide + load buttons
         let secret_buttons_box = GtkBox::new(Orientation::Horizontal, 4);
@@ -252,13 +253,15 @@ impl VariablesDialog {
         grid.attach(&secret_buttons_box, 1, 1, 2, 1);
 
         // Row 2: Is Secret checkbox
-        let is_secret_check = CheckButton::builder().label("Secret (mask value)").build();
+        let is_secret_check = CheckButton::builder()
+            .label(i18n("Secret (mask value)"))
+            .build();
 
         grid.attach(&is_secret_check, 1, 2, 2, 1);
 
         // Row 3: Description
         let desc_label = Label::builder()
-            .label("Description:")
+            .label(i18n("Description:"))
             .halign(gtk4::Align::End)
             .build();
         let description_entry = Entry::builder()

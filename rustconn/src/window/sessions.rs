@@ -4,9 +4,10 @@
 //! including the sessions manager dialog and related functionality.
 
 use crate::alert;
+use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{Button, HeaderBar, Label, Orientation};
+use gtk4::{Button, Label, Orientation};
 use libadwaita as adw;
 use std::rc::Rc;
 use uuid::Uuid;
@@ -30,7 +31,7 @@ pub fn show_sessions_manager(
     sidebar: SharedSidebar,
 ) {
     let manager_window = adw::Window::builder()
-        .title("Active Sessions")
+        .title(i18n("Active Sessions"))
         .transient_for(window)
         .modal(true)
         .default_width(500)
@@ -43,10 +44,10 @@ pub fn show_sessions_manager(
     let header = adw::HeaderBar::new();
     header.set_show_end_title_buttons(false);
     header.set_show_start_title_buttons(false);
-    let close_btn = Button::builder().label("Close").build();
+    let close_btn = Button::builder().label(&i18n("Close")).build();
     let refresh_btn = Button::builder()
         .icon_name("view-refresh-symbolic")
-        .tooltip_text("Refresh")
+        .tooltip_text(&i18n("Refresh"))
         .build();
     header.pack_start(&close_btn);
     header.pack_end(&refresh_btn);
@@ -90,15 +91,15 @@ pub fn show_sessions_manager(
     button_box.set_halign(gtk4::Align::End);
 
     let switch_btn = Button::builder()
-        .label("Switch To")
+        .label(&i18n("Switch To"))
         .sensitive(false)
         .build();
     let send_text_btn = Button::builder()
-        .label("Send Text")
+        .label(&i18n("Send Text"))
         .sensitive(false)
         .build();
     let terminate_btn = Button::builder()
-        .label("Terminate")
+        .label(&i18n("Terminate"))
         .sensitive(false)
         .css_classes(["destructive-action"])
         .build();
@@ -159,11 +160,7 @@ pub fn show_sessions_manager(
         if let Some(row) = list_clone.selected_row() {
             if let Some(id_str) = row.widget_name().as_str().strip_prefix("session-") {
                 if let Ok(session_id) = Uuid::parse_str(id_str) {
-                    show_send_text_dialog(
-                        manager_clone.upcast_ref::<gtk4::Window>(),
-                        &notebook_clone,
-                        session_id,
-                    );
+                    show_send_text_dialog(&manager_clone, &notebook_clone, session_id);
                 }
             }
         }
@@ -187,9 +184,9 @@ pub fn show_sessions_manager(
                     let sidebar_inner = sidebar_clone.clone();
                     alert::show_confirm(
                         &manager_clone,
-                        "Terminate Session?",
-                        "Are you sure you want to terminate this session?",
-                        "Terminate",
+                        &i18n("Terminate Session?"),
+                        &i18n("Are you sure you want to terminate this session?"),
+                        &i18n("Terminate"),
                         true,
                         move |confirmed| {
                             if confirmed {
@@ -319,23 +316,24 @@ pub fn populate_sessions_list(
 }
 
 /// Shows a dialog to send text to a specific session
-pub fn show_send_text_dialog(parent: &gtk4::Window, notebook: &SharedNotebook, session_id: Uuid) {
-    let dialog = gtk4::Window::builder()
-        .title("Send Text to Session")
-        .transient_for(parent)
-        .modal(true)
-        .default_width(400)
+pub fn show_send_text_dialog(
+    parent: &impl gtk4::prelude::IsA<gtk4::Widget>,
+    notebook: &SharedNotebook,
+    session_id: Uuid,
+) {
+    let dialog = adw::Dialog::builder()
+        .title(i18n("Send Text to Session"))
+        .content_width(400)
         .build();
 
-    let header = HeaderBar::new();
-    let cancel_btn = Button::builder().label("Cancel").build();
+    let header = adw::HeaderBar::new();
+    let cancel_btn = Button::builder().label(&i18n("Cancel")).build();
     let send_btn = Button::builder()
-        .label("Send")
+        .label(&i18n("Send"))
         .css_classes(["suggested-action"])
         .build();
     header.pack_start(&cancel_btn);
     header.pack_end(&send_btn);
-    dialog.set_titlebar(Some(&header));
 
     let content = gtk4::Box::new(Orientation::Vertical, 8);
     content.set_margin_top(12);
@@ -344,24 +342,27 @@ pub fn show_send_text_dialog(parent: &gtk4::Window, notebook: &SharedNotebook, s
     content.set_margin_end(12);
 
     let label = Label::builder()
-        .label("Enter text to send to the session:")
+        .label(&i18n("Enter text to send to the session:"))
         .halign(gtk4::Align::Start)
         .build();
     content.append(&label);
 
     let entry = gtk4::Entry::builder()
-        .placeholder_text("Text to send...")
+        .placeholder_text(&i18n("Text to send..."))
         .hexpand(true)
         .build();
     content.append(&entry);
 
     let newline_check = gtk4::CheckButton::builder()
-        .label("Append newline (press Enter)")
+        .label(&i18n("Append newline (press Enter)"))
         .active(true)
         .build();
     content.append(&newline_check);
 
-    dialog.set_child(Some(&content));
+    let toolbar_view = adw::ToolbarView::new();
+    toolbar_view.add_top_bar(&header);
+    toolbar_view.set_content(Some(&content));
+    dialog.set_child(Some(&toolbar_view));
 
     // Connect cancel button
     let dialog_clone = dialog.clone();
@@ -404,5 +405,5 @@ pub fn show_send_text_dialog(parent: &gtk4::Window, notebook: &SharedNotebook, s
         dialog_clone.close();
     });
 
-    dialog.present();
+    dialog.present(Some(parent));
 }

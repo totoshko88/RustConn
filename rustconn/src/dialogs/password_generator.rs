@@ -3,6 +3,7 @@
 //! Provides a dialog for generating secure passwords with configurable options.
 //! Migrated to use libadwaita components for GNOME HIG compliance.
 
+use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -18,7 +19,7 @@ use std::rc::Rc;
 /// Shows the password generator dialog
 pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
     let window = adw::Window::builder()
-        .title("Password Generator")
+        .title(i18n("Password Generator"))
         .modal(true)
         .default_width(600)
         .default_height(500)
@@ -35,9 +36,9 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
     let header = adw::HeaderBar::new();
     header.set_show_end_title_buttons(false);
     header.set_show_start_title_buttons(false);
-    let close_btn = Button::builder().label("Close").build();
+    let close_btn = Button::builder().label(i18n("Close")).build();
     let copy_btn = Button::builder()
-        .label("Copy")
+        .label(i18n("Copy"))
         .css_classes(["suggested-action"])
         .build();
     header.pack_start(&close_btn);
@@ -77,7 +78,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
 
     // === Password Display Group ===
     let password_group = adw::PreferencesGroup::builder()
-        .title("Generated Password")
+        .title(i18n("Generated Password"))
         .build();
 
     let password_box = GtkBox::builder()
@@ -103,7 +104,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
 
     // === Strength Indicator Group ===
     let strength_group = adw::PreferencesGroup::builder()
-        .title("Strength Analysis")
+        .title(i18n("Strength Analysis"))
         .build();
 
     // Strength bar row
@@ -126,7 +127,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
         .valign(gtk4::Align::Center)
         .build();
 
-    let strength_row = adw::ActionRow::builder().title("Strength").build();
+    let strength_row = adw::ActionRow::builder().title(i18n("Strength")).build();
     strength_row.add_suffix(&strength_bar);
     strength_row.add_suffix(&strength_label);
     strength_group.add(&strength_row);
@@ -139,8 +140,8 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
         .css_classes(["dim-label"])
         .build();
     let entropy_row = adw::ActionRow::builder()
-        .title("Entropy")
-        .subtitle("Measure of randomness")
+        .title(i18n("Entropy"))
+        .subtitle(i18n("Measure of randomness"))
         .build();
     entropy_row.add_suffix(&entropy_label);
     strength_group.add(&entropy_row);
@@ -153,8 +154,8 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
         .css_classes(["dim-label"])
         .build();
     let crack_time_row = adw::ActionRow::builder()
-        .title("Crack time")
-        .subtitle("At 10 billion guesses/sec")
+        .title(i18n("Crack time"))
+        .subtitle(i18n("At 10 billion guesses/sec"))
         .build();
     crack_time_row.add_suffix(&crack_time_label);
     strength_group.add(&crack_time_row);
@@ -162,7 +163,9 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
     content.append(&strength_group);
 
     // === Length Group ===
-    let length_group = adw::PreferencesGroup::builder().title("Length").build();
+    let length_group = adw::PreferencesGroup::builder()
+        .title(i18n("Length"))
+        .build();
 
     let length_adj = Adjustment::new(16.0, 4.0, 128.0, 1.0, 4.0, 0.0);
     let length_spin = SpinButton::builder()
@@ -187,8 +190,8 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
     length_box.append(&length_spin);
 
     let length_row = adw::ActionRow::builder()
-        .title("Characters")
-        .subtitle("Recommended: 16+ for important accounts")
+        .title(i18n("Characters"))
+        .subtitle(i18n("Recommended: 16+ for important accounts"))
         .build();
     length_row.add_suffix(&length_box);
     length_group.add(&length_row);
@@ -197,13 +200,13 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
 
     // === Character Sets Group ===
     let charset_group = adw::PreferencesGroup::builder()
-        .title("Character Sets")
-        .description("Select which characters to include")
+        .title(i18n("Character Sets"))
+        .description(i18n("Select which characters to include"))
         .build();
 
     // Lowercase
     let lowercase_row = adw::SwitchRow::builder()
-        .title("Lowercase")
+        .title(i18n("Lowercase"))
         .subtitle("a-z")
         .active(true)
         .build();
@@ -211,7 +214,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
 
     // Uppercase
     let uppercase_row = adw::SwitchRow::builder()
-        .title("Uppercase")
+        .title(i18n("Uppercase"))
         .subtitle("A-Z")
         .active(true)
         .build();
@@ -219,7 +222,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
 
     // Digits
     let digits_row = adw::SwitchRow::builder()
-        .title("Digits")
+        .title(i18n("Digits"))
         .subtitle("0-9")
         .active(true)
         .build();
@@ -227,7 +230,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
 
     // Special
     let special_row = adw::SwitchRow::builder()
-        .title("Special")
+        .title(i18n("Special"))
         .subtitle("!@#$%^&amp;*")
         .active(true)
         .build();
@@ -235,7 +238,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
 
     // Extended special
     let extended_row = adw::SwitchRow::builder()
-        .title("Extended")
+        .title(i18n("Extended"))
         .subtitle("()[]{}|;:,.&lt;&gt;?/")
         .active(false)
         .build();
@@ -244,12 +247,14 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
     content.append(&charset_group);
 
     // === Options Group ===
-    let options_group = adw::PreferencesGroup::builder().title("Options").build();
+    let options_group = adw::PreferencesGroup::builder()
+        .title(i18n("Options"))
+        .build();
 
     // Exclude ambiguous
     let ambiguous_row = adw::SwitchRow::builder()
-        .title("Exclude ambiguous")
-        .subtitle("Avoid 0O, 1lI to prevent confusion")
+        .title(i18n("Exclude ambiguous"))
+        .subtitle(i18n("Avoid 0O, 1lI to prevent confusion"))
         .active(false)
         .build();
     options_group.add(&ambiguous_row);
@@ -258,7 +263,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
 
     // === Security Tips Group ===
     let tips_group = adw::PreferencesGroup::builder()
-        .title("Security Tips")
+        .title(i18n("Security Tips"))
         .build();
 
     let tips = [

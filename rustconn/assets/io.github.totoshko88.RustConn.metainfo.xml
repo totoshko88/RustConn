@@ -4,7 +4,7 @@
   <name>RustConn</name>
   <summary>Manage remote connections easily</summary>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>GPL-3.0+</project_license>
+  <project_license>GPL-3.0-or-later</project_license>
   <developer id="io.github.totoshko88">
     <name>Anton Isaiev</name>
   </developer>
@@ -53,6 +53,7 @@
     </ul>
   </description>
   <launchable type="desktop-id">io.github.totoshko88.RustConn.desktop</launchable>
+  <translation type="gettext">rustconn</translation>
   <icon type="stock">io.github.totoshko88.RustConn</icon>
   <icon type="remote" width="128" height="128">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/icons/hicolor/128x128/apps/io.github.totoshko88.RustConn.png</icon>
   <branding>
@@ -72,6 +73,18 @@
       <caption>RDP session</caption>
       <image type="source" width="1920" height="1080">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/rdp.png</image>
     </screenshot>
+    <screenshot>
+      <caption>Main window — light theme</caption>
+      <image type="source" width="1920" height="1080">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/main_light.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>SFTP file browser — light theme</caption>
+      <image type="source" width="1920" height="1080">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/sftp_light.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Ukrainian translation</caption>
+      <image type="source" width="1920" height="1080">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/main_uk.png</image>
+    </screenshot>
   </screenshots>
   <url type="homepage">https://github.com/totoshko88/RustConn</url>
   <url type="bugtracker">https://github.com/totoshko88/RustConn/issues</url>
@@ -79,7 +92,38 @@
   <url type="help">https://github.com/totoshko88/RustConn/blob/main/docs/USER_GUIDE.md</url>
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <recommends>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <display_length compare="ge">768</display_length>
+  </recommends>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <control>touch</control>
+  </supports>
   <releases>
+    <release version="0.8.7" date="2026-02-17">
+      <description>
+        <p>Version 0.8.7 - Internationalization, Security Hardening, CLI Overhaul:</p>
+        <ul>
+          <li>Internationalization (i18n) — 14 languages: uk, de, fr, es, it, pl, cs, sk, da, sv, nl, pt, be, kk (#17)</li>
+          <li>SPICE proxy support for Proxmox VE tunnelled connections (#18)</li>
+          <li>RDP HiDPI fix — IronRDP uses device-pixel resolution on HiDPI displays (#16)</li>
+          <li>Variable injection prevention — command-building validates resolved values</li>
+          <li>Checksum policy for CLI downloads — explicit integrity verification</li>
+          <li>Sensitive CLI arguments masked in log output</li>
+          <li>Configurable document encryption strength (Standard/High/Maximum)</li>
+          <li>SSH Agent passphrase handling via SSH_ASKPASS helper</li>
+          <li>CLI overhaul: modularized into 18 handler modules, shell completions, man page, fuzzy suggestions, dry-run, pager, auto-JSON</li>
+          <li>Czech translation improved by native speaker (PR #19)</li>
+          <li>Remmina RDP import: gateway and domain fields (#20)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.8.6" date="2026-02-16">
       <description>
         <p>Version 0.8.6 - Secrets Management, Keyboard Layout, Flatpak Fixes:</p>

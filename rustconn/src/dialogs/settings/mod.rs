@@ -63,6 +63,7 @@ pub struct SettingsDialog {
     secrets_widgets: SecretsPageWidgets,
     // UI settings
     color_scheme_box: GtkBox,
+    language_dropdown: DropDown,
     remember_geometry: CheckButton,
     enable_tray_icon: CheckButton,
     minimize_to_tray: CheckButton,
@@ -128,6 +129,7 @@ impl SettingsDialog {
         let (
             ui_page,
             color_scheme_box,
+            language_dropdown,
             remember_geometry,
             enable_tray_icon,
             minimize_to_tray,
@@ -188,6 +190,7 @@ impl SettingsDialog {
             log_timestamps_check,
             secrets_widgets,
             color_scheme_box,
+            language_dropdown,
             remember_geometry,
             enable_tray_icon,
             minimize_to_tray,
@@ -368,6 +371,7 @@ impl SettingsDialog {
         // Load UI settings
         load_ui_settings(
             &self.color_scheme_box,
+            &self.language_dropdown,
             &self.remember_geometry,
             &self.enable_tray_icon,
             &self.minimize_to_tray,
@@ -446,6 +450,7 @@ impl SettingsDialog {
 
         // UI controls
         let color_scheme_box_clone = self.color_scheme_box.clone();
+        let language_dropdown_clone = self.language_dropdown.clone();
         let remember_geometry_clone = self.remember_geometry.clone();
         let enable_tray_icon_clone = self.enable_tray_icon.clone();
         let minimize_to_tray_clone = self.minimize_to_tray.clone();
@@ -539,6 +544,7 @@ impl SettingsDialog {
             // Collect UI settings
             let ui = collect_ui_settings(
                 &color_scheme_box_clone,
+                &language_dropdown_clone,
                 &remember_geometry_clone,
                 &enable_tray_icon_clone,
                 &minimize_to_tray_clone,

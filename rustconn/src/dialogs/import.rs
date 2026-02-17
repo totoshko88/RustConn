@@ -22,6 +22,8 @@ use rustconn_core::progress::LocalProgressReporter;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
+use crate::i18n::i18n;
+
 /// Import dialog for importing connections from external sources
 pub struct ImportDialog {
     window: adw::Window,
@@ -46,7 +48,7 @@ impl ImportDialog {
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
         // Create window instead of deprecated Dialog
         let window = adw::Window::builder()
-            .title("Import Connections")
+            .title(i18n("Import Connections"))
             .modal(true)
             .default_width(600)
             .default_height(500)
@@ -61,9 +63,9 @@ impl ImportDialog {
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label("Close").build();
+        let close_btn = Button::builder().label(i18n("Close")).build();
         let import_button = Button::builder()
-            .label("Import")
+            .label(i18n("Import"))
             .css_classes(["suggested-action"])
             .build();
         header.pack_start(&close_btn);
@@ -170,14 +172,14 @@ impl ImportDialog {
         let vbox = GtkBox::new(Orientation::Vertical, 12);
 
         let header = Label::builder()
-            .label("Select Import Source")
+            .label(i18n("Select Import Source"))
             .css_classes(["title-3"])
             .halign(gtk4::Align::Start)
             .build();
         vbox.append(&header);
 
         let description = Label::builder()
-            .label("Choose the source from which to import connections:")
+            .label(i18n("Choose the source from which to import connections:"))
             .halign(gtk4::Align::Start)
             .wrap(true)
             .build();
@@ -317,12 +319,12 @@ impl ImportDialog {
         // Status indicator
         let status = if available {
             Label::builder()
-                .label("Available")
+                .label(i18n("Available"))
                 .css_classes(["success"])
                 .build()
         } else {
             Label::builder()
-                .label("Not Found")
+                .label(i18n("Not Found"))
                 .css_classes(["dim-label"])
                 .build()
         };
@@ -340,7 +342,7 @@ impl ImportDialog {
         vbox.set_valign(gtk4::Align::Center);
 
         let header = Label::builder()
-            .label("Importing...")
+            .label(i18n("Importing..."))
             .css_classes(["title-3"])
             .build();
         vbox.append(&header);
@@ -353,7 +355,7 @@ impl ImportDialog {
         vbox.append(&progress_bar);
 
         let progress_label = Label::builder()
-            .label("Scanning for connections...")
+            .label(i18n("Scanning for connections..."))
             .css_classes(["dim-label"])
             .build();
         vbox.append(&progress_label);
@@ -365,7 +367,7 @@ impl ImportDialog {
         let vbox = GtkBox::new(Orientation::Vertical, 12);
 
         let header = Label::builder()
-            .label("Import Complete")
+            .label(i18n("Import Complete"))
             .css_classes(["title-3"])
             .halign(gtk4::Align::Start)
             .build();
@@ -380,7 +382,7 @@ impl ImportDialog {
         vbox.append(&Separator::new(Orientation::Horizontal));
 
         let details_header = Label::builder()
-            .label("Details")
+            .label(i18n("Details"))
             .css_classes(["heading"])
             .halign(gtk4::Align::Start)
             .margin_top(8)
@@ -614,7 +616,7 @@ impl ImportDialog {
                     Self::do_import_with_progress(&source_id, &progress_bar, &progress_label);
 
                 progress_bar.set_fraction(1.0);
-                progress_label.set_text("Import complete");
+                progress_label.set_text(&i18n("Import complete"));
 
                 // Show results using show_results() pattern (Requirements 5.2, 5.3)
                 let summary = format!(
@@ -629,7 +631,7 @@ impl ImportDialog {
 
                 *result_cell.borrow_mut() = Some(result);
                 stack.set_visible_child_name("result");
-                btn.set_label("Done");
+                btn.set_label(&i18n("Done"));
                 btn.set_sensitive(true);
             }
         });
@@ -828,7 +830,7 @@ impl ImportDialog {
                 *source_name_cell.borrow_mut() = display_name.to_string();
 
                 progress_bar.set_fraction(1.0);
-                progress_label.set_text("Import complete");
+                progress_label.set_text(&i18n("Import complete"));
 
                 // Show results using show_results_with_source() pattern (Requirements 5.2, 5.3)
                 let conn_count = result.connections.len();
@@ -843,7 +845,7 @@ impl ImportDialog {
 
                 *result_cell.borrow_mut() = Some(result);
                 stack.set_visible_child_name("result");
-                btn.set_label("Done");
+                btn.set_label(&i18n("Done"));
                 btn.set_sensitive(true);
             }
         });
@@ -891,7 +893,7 @@ impl ImportDialog {
     ) {
         // Use file dialog for selecting SSH config file (Requirement 1.1)
         let file_dialog = gtk4::FileDialog::builder()
-            .title("Select SSH Config File")
+            .title(i18n("Select SSH Config File"))
             .modal(true)
             .build();
 
@@ -954,7 +956,7 @@ impl ImportDialog {
 
                         *result_cell_clone.borrow_mut() = Some(result);
                         stack_clone.set_visible_child_name("result");
-                        btn_clone.set_label("Done");
+                        btn_clone.set_label(&i18n("Done"));
                         btn_clone.set_sensitive(true);
                     }
                 } else {
@@ -981,7 +983,7 @@ impl ImportDialog {
     ) {
         // Use file dialog
         let file_dialog = gtk4::FileDialog::builder()
-            .title("Select Asbru-CM YAML File")
+            .title(i18n("Select Asbru-CM YAML File"))
             .modal(true)
             .build();
 
@@ -1042,7 +1044,7 @@ impl ImportDialog {
 
                         *result_cell_clone.borrow_mut() = Some(result);
                         stack_clone.set_visible_child_name("result");
-                        btn_clone.set_label("Done");
+                        btn_clone.set_label(&i18n("Done"));
                         btn_clone.set_sensitive(true);
                     }
                 } else {
@@ -1069,7 +1071,7 @@ impl ImportDialog {
     ) {
         // Use file dialog
         let file_dialog = gtk4::FileDialog::builder()
-            .title("Select Ansible Inventory File")
+            .title(i18n("Select Ansible Inventory File"))
             .modal(true)
             .build();
 
@@ -1134,7 +1136,7 @@ impl ImportDialog {
 
                         *result_cell_clone.borrow_mut() = Some(result);
                         stack_clone.set_visible_child_name("result");
-                        btn_clone.set_label("Done");
+                        btn_clone.set_label(&i18n("Done"));
                         btn_clone.set_sensitive(true);
                     }
                 } else {
@@ -1306,7 +1308,7 @@ impl ImportDialog {
     ) {
         // Use file dialog for selecting RustConn native file
         let file_dialog = gtk4::FileDialog::builder()
-            .title("Select RustConn Native File")
+            .title(i18n("Select RustConn Native File"))
             .modal(true)
             .build();
 
@@ -1374,7 +1376,7 @@ impl ImportDialog {
 
                                 *result_cell_clone.borrow_mut() = Some(result);
                                 stack_clone.set_visible_child_name("result");
-                                btn_clone.set_label("Done");
+                                btn_clone.set_label(&i18n("Done"));
                                 btn_clone.set_sensitive(true);
                             }
                             Err(e) => {
@@ -1384,7 +1386,7 @@ impl ImportDialog {
                                 result_details_clone.set_text(&format!("Error: {e}"));
 
                                 stack_clone.set_visible_child_name("result");
-                                btn_clone.set_label("Close");
+                                btn_clone.set_label(&i18n("Close"));
                                 btn_clone.set_sensitive(true);
                             }
                         }
@@ -1412,7 +1414,7 @@ impl ImportDialog {
         btn: &Button,
     ) {
         let file_dialog = gtk4::FileDialog::builder()
-            .title("Select Royal TS File")
+            .title(i18n("Select Royal TS File"))
             .modal(true)
             .build();
 
@@ -1472,7 +1474,7 @@ impl ImportDialog {
 
                         *result_cell_clone.borrow_mut() = Some(result);
                         stack_clone.set_visible_child_name("result");
-                        btn_clone.set_label("Done");
+                        btn_clone.set_label(&i18n("Done"));
                         btn_clone.set_sensitive(true);
                     }
                 } else {
@@ -1498,7 +1500,7 @@ impl ImportDialog {
         btn: &Button,
     ) {
         let file_dialog = gtk4::FileDialog::builder()
-            .title("Select RDM JSON File")
+            .title(i18n("Select RDM JSON File"))
             .modal(true)
             .build();
 
@@ -1559,7 +1561,7 @@ impl ImportDialog {
 
                         *result_cell_clone.borrow_mut() = Some(result);
                         stack_clone.set_visible_child_name("result");
-                        btn_clone.set_label("Done");
+                        btn_clone.set_label(&i18n("Done"));
                         btn_clone.set_sensitive(true);
                     }
                 } else {
@@ -1585,7 +1587,7 @@ impl ImportDialog {
         btn: &Button,
     ) {
         let file_dialog = gtk4::FileDialog::builder()
-            .title("Select MobaXterm Session File")
+            .title(i18n("Select MobaXterm Session File"))
             .modal(true)
             .build();
 
@@ -1646,7 +1648,7 @@ impl ImportDialog {
 
                         *result_cell_clone.borrow_mut() = Some(result);
                         stack_clone.set_visible_child_name("result");
-                        btn_clone.set_label("Done");
+                        btn_clone.set_label(&i18n("Done"));
                         btn_clone.set_sensitive(true);
                     }
                 } else {
@@ -1672,7 +1674,7 @@ impl ImportDialog {
         btn: &Button,
     ) {
         let file_dialog = gtk4::FileDialog::builder()
-            .title("Select Virt-Viewer File")
+            .title(i18n("Select Virt-Viewer File"))
             .modal(true)
             .build();
 
@@ -1732,7 +1734,7 @@ impl ImportDialog {
 
                         *result_cell_clone.borrow_mut() = Some(result);
                         stack_clone.set_visible_child_name("result");
-                        btn_clone.set_label("Done");
+                        btn_clone.set_label(&i18n("Done"));
                         btn_clone.set_sensitive(true);
                     }
                 } else {

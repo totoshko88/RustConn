@@ -11,6 +11,8 @@ use libadwaita::prelude::AdwWindowExt;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::i18n::i18n;
+
 /// Loading overlay that can be shown over any widget
 ///
 /// Uses `adw::StatusPage` for consistent GNOME HIG styling.
@@ -45,7 +47,7 @@ impl LoadingOverlay {
 
         // Create status page for the loading content
         let status_page = adw::StatusPage::builder()
-            .title("Loading...")
+            .title(&i18n("Loading..."))
             .halign(Align::Center)
             .valign(Align::Center)
             .build();
@@ -248,7 +250,7 @@ impl LoadingDialog {
 
         // Cancel button (hidden by default)
         let cancel_button = gtk4::Button::builder()
-            .label("Cancel")
+            .label(&i18n("Cancel"))
             .halign(Align::Center)
             .margin_bottom(16)
             .visible(false)

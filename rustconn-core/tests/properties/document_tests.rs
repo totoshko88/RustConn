@@ -3,7 +3,7 @@
 //! Tests for document dirty tracking, serialization round-trip, and encryption.
 
 use proptest::prelude::*;
-use rustconn_core::document::{Document, DocumentManager};
+use rustconn_core::document::{Document, DocumentManager, EncryptionStrength};
 use rustconn_core::models::{Connection, ConnectionGroup, ConnectionTemplate};
 use rustconn_core::variables::Variable;
 
@@ -297,7 +297,7 @@ proptest! {
         let id = manager.insert(doc.clone());
 
         // Save with encryption
-        manager.save(id, &file_path, Some(&password))
+        manager.save(id, &file_path, Some(&password), EncryptionStrength::Standard)
             .expect("Should save encrypted document");
 
         // Load with correct password
@@ -345,7 +345,7 @@ proptest! {
         let id = manager.document_ids()[0];
 
         // Save with encryption
-        manager.save(id, &file_path, Some(&password))
+        manager.save(id, &file_path, Some(&password), EncryptionStrength::Standard)
             .expect("Should save encrypted document");
 
         // Try to load with wrong password

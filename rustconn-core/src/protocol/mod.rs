@@ -30,8 +30,8 @@ pub use freerdp::{
     build_freerdp_args, extract_geometry_from_args, has_decorations_flag, FreeRdpConfig,
 };
 pub use icons::{
-    all_protocol_icons, detect_provider, get_protocol_icon, get_zero_trust_provider_icon,
-    CloudProvider, ProviderIconCache,
+    all_protocol_icons, detect_provider, get_protocol_icon, get_protocol_icon_by_name,
+    get_zero_trust_provider_icon, CloudProvider, ProviderIconCache,
 };
 pub use kubernetes::KubernetesProtocol;
 pub use rdp::RdpProtocol;

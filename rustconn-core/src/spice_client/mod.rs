@@ -142,6 +142,12 @@ pub fn build_spice_viewer_args(config: &SpiceClientConfig) -> Vec<String> {
         args.push("--spice-disable-audio".to_string());
     }
 
+    // SPICE proxy for tunnelled connections (e.g. Proxmox VE)
+    if let Some(ref proxy) = config.proxy {
+        args.push("--spice-proxy".to_string());
+        args.push(proxy.clone());
+    }
+
     args
 }
 
@@ -255,5 +261,14 @@ mod tests {
 
         assert!(args.contains(&"--spice-ca-file".to_string()));
         assert!(args.contains(&"/etc/ssl/certs/ca.crt".to_string()));
+    }
+
+    #[test]
+    fn test_build_spice_viewer_args_with_proxy() {
+        let config = SpiceClientConfig::new("localhost").with_proxy("http://192.168.1.100:3128");
+        let args = build_spice_viewer_args(&config);
+
+        assert!(args.contains(&"--spice-proxy".to_string()));
+        assert!(args.contains(&"http://192.168.1.100:3128".to_string()));
     }
 }

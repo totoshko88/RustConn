@@ -23,6 +23,8 @@ use std::cell::RefCell;
 use std::process::{Child, Command, Stdio};
 use std::rc::Rc;
 
+use crate::i18n::i18n;
+
 /// Callback type for authentication requests
 type AuthCallback = Box<dyn Fn(&[VncCredentialType]) + 'static>;
 
@@ -114,7 +116,7 @@ impl VncSessionWidget {
         spinner.set_spinning(false);
         spinner.set_visible(false);
 
-        let status_label = Label::new(Some("Disconnected"));
+        let status_label = Label::new(Some(&i18n("Disconnected")));
         status_label.add_css_class("dim-label");
 
         status_container.append(&spinner);
@@ -197,7 +199,7 @@ impl VncSessionWidget {
         let state_callback_clone = state_callback.clone();
         self.display.connect_vnc_disconnected(move |_| {
             *state_clone.borrow_mut() = SessionState::Disconnected;
-            status_label_clone.set_text("Disconnected");
+            status_label_clone.set_text(&i18n("Disconnected"));
             spinner_clone.set_spinning(false);
             spinner_clone.set_visible(false);
 
@@ -728,7 +730,7 @@ impl VncSessionWidget {
         *self.is_external.borrow_mut() = false;
         *self.is_embedded_native.borrow_mut() = false;
         *self.state.borrow_mut() = SessionState::Disconnected;
-        self.status_label.set_text("Disconnected");
+        self.status_label.set_text(&i18n("Disconnected"));
         self.spinner.set_spinning(false);
         self.spinner.set_visible(false);
 

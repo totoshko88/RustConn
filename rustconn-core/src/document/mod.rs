@@ -24,7 +24,7 @@
 //! // ...
 //!
 //! // Save the document
-//! manager.save(doc_id, Path::new("connections.rcdb"), None)?;
+//! manager.save(doc_id, Path::new("connections.rcdb"), None, EncryptionStrength::Standard)?;
 //! ```
 
 use chrono::{DateTime, Utc};
@@ -322,6 +322,64 @@ impl Default for Document {
     }
 }
 
+/// Encryption strength presets for document protection.
+///
+/// Higher strength increases resistance to brute-force attacks but takes
+/// longer to encrypt/decrypt. The chosen strength is stored in the
+/// encrypted file header so decryption automatically uses the correct
+/// parameters.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum EncryptionStrength {
+    /// Standard protection (m=65536, t=3, p=4). Suitable for most use cases.
+    #[default]
+    Standard,
+    /// High protection (m=131072, t=4, p=8). For sensitive documents.
+    High,
+    /// Maximum protection (m=262144, t=6, p=8). Slow but very resistant.
+    Maximum,
+}
+
+impl EncryptionStrength {
+    /// Returns the Argon2 parameters `(m_cost, t_cost, p_cost)` for this
+    /// strength level.
+    ///
+    /// In test builds, lighter parameters are always used regardless of
+    /// the selected strength to keep the test suite fast.
+    fn argon2_params(self) -> (u32, u32, u32) {
+        #[cfg(test)]
+        {
+            let _ = self;
+            (4096, 2, 1)
+        }
+
+        #[cfg(not(test))]
+        match self {
+            Self::Standard => (65536, 3, 4),
+            Self::High => (131_072, 4, 8),
+            Self::Maximum => (262_144, 6, 8),
+        }
+    }
+
+    /// Serializes this strength to a single byte for the file header.
+    const fn to_byte(self) -> u8 {
+        match self {
+            Self::Standard => 0,
+            Self::High => 1,
+            Self::Maximum => 2,
+        }
+    }
+
+    /// Deserializes a strength from a header byte.
+    const fn from_byte(b: u8) -> Option<Self> {
+        match b {
+            0 => Some(Self::Standard),
+            1 => Some(Self::High),
+            2 => Some(Self::Maximum),
+            _ => None,
+        }
+    }
+}
+
 /// Manager for handling multiple documents with dirty state tracking
 ///
 /// The `DocumentManager` provides CRUD operations for documents and tracks
@@ -395,15 +453,22 @@ impl DocumentManager {
     /// * `id` - ID of the document to save
     /// * `path` - Path to save the document to
     /// * `password` - Optional password for encryption
+    /// * `strength` - Argon2 strength preset used when encrypting
     ///
     /// # Errors
     ///
     /// Returns an error if the document is not found or cannot be written
-    pub fn save(&mut self, id: Uuid, path: &Path, password: Option<&str>) -> DocumentResult<()> {
+    pub fn save(
+        &mut self,
+        id: Uuid,
+        path: &Path,
+        password: Option<&str>,
+        strength: EncryptionStrength,
+    ) -> DocumentResult<()> {
         let doc = self.documents.get(&id).ok_or(DocumentError::NotFound(id))?;
 
         let content = if let Some(pwd) = password {
-            encrypt_document(doc, pwd)?
+            encrypt_document(doc, pwd, strength)?
         } else {
             doc.to_json()?.into_bytes()
         };
@@ -544,8 +609,14 @@ impl DocumentManager {
 
 /// Encrypts a document using password-based encryption
 ///
-/// Uses AES-256-GCM with Argon2id key derivation.
-fn encrypt_document(doc: &Document, password: &str) -> DocumentResult<Vec<u8>> {
+/// Uses AES-256-GCM with Argon2id key derivation. The encryption strength
+/// is stored as a single byte after the magic header so that decryption
+/// can automatically select the matching Argon2 parameters.
+fn encrypt_document(
+    doc: &Document,
+    password: &str,
+    strength: EncryptionStrength,
+) -> DocumentResult<Vec<u8>> {
     use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
     use ring::rand::{SecureRandom, SystemRandom};
 
@@ -562,7 +633,7 @@ fn encrypt_document(doc: &Document, password: &str) -> DocumentResult<Vec<u8>> {
         .map_err(|_| DocumentError::EncryptionError("Failed to generate nonce".to_string()))?;
 
     // Derive key using Argon2id
-    let key = derive_key(password, &salt)?;
+    let key = derive_key(password, &salt, strength)?;
 
     // Encrypt using AES-256-GCM
     let unbound_key = UnboundKey::new(&AES_256_GCM, &key)
@@ -575,9 +646,10 @@ fn encrypt_document(doc: &Document, password: &str) -> DocumentResult<Vec<u8>> {
         .seal_in_place_append_tag(nonce, Aad::empty(), &mut ciphertext)
         .map_err(|_| DocumentError::EncryptionError("Encryption failed".to_string()))?;
 
-    // Build output: magic + salt + nonce + ciphertext
-    let mut output = Vec::with_capacity(ENCRYPTED_MAGIC.len() + 32 + 12 + ciphertext.len());
+    // Build output: magic + strength_byte + salt + nonce + ciphertext
+    let mut output = Vec::with_capacity(ENCRYPTED_MAGIC.len() + 1 + 32 + 12 + ciphertext.len());
     output.extend_from_slice(ENCRYPTED_MAGIC);
+    output.push(strength.to_byte());
     output.extend_from_slice(&salt);
     output.extend_from_slice(&nonce_bytes);
     output.extend_from_slice(&ciphertext);
@@ -586,6 +658,9 @@ fn encrypt_document(doc: &Document, password: &str) -> DocumentResult<Vec<u8>> {
 }
 
 /// Decrypts an encrypted document
+///
+/// Supports both the new format (with a strength byte after the magic
+/// header) and the legacy format (no strength byte, assumes Standard).
 fn decrypt_document(data: &[u8], password: &str) -> DocumentResult<Document> {
     use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
 
@@ -597,22 +672,83 @@ fn decrypt_document(data: &[u8], password: &str) -> DocumentResult<Document> {
     }
 
     let header_len = ENCRYPTED_MAGIC.len();
-    let min_len = header_len + 32 + 12 + 16; // magic + salt + nonce + tag
-    if data.len() < min_len {
+
+    // Try new format first: magic + strength_byte + salt(32) + nonce(12) + tag(16)
+    let new_min_len = header_len + 1 + 32 + 12 + 16;
+    // Legacy format: magic + salt(32) + nonce(12) + tag(16)
+    let legacy_min_len = header_len + 32 + 12 + 16;
+
+    if data.len() < legacy_min_len {
         return Err(DocumentError::InvalidFormat(
             "Document too short".to_string(),
         ));
     }
 
-    // Extract salt, nonce, and ciphertext
+    // Determine format: peek at the byte after magic. If it is a valid
+    // strength byte (0, 1, or 2) AND the data is long enough for the new
+    // format, treat it as new format. Otherwise fall back to legacy.
+    let strength_byte = data[header_len];
+    let (strength, salt_offset) = if data.len() >= new_min_len
+        && EncryptionStrength::from_byte(strength_byte).is_some()
+    {
+        // New format — strength byte present
+        (
+            EncryptionStrength::from_byte(strength_byte).unwrap_or(EncryptionStrength::Standard),
+            header_len + 1,
+        )
+    } else {
+        // Legacy format — no strength byte, assume Standard
+        (EncryptionStrength::Standard, header_len)
+    };
+
+    let salt = &data[salt_offset..salt_offset + 32];
+    let nonce_bytes = &data[salt_offset + 32..salt_offset + 32 + 12];
+    let ciphertext = &data[salt_offset + 32 + 12..];
+
+    // Derive key
+    let key = derive_key(password, salt, strength)?;
+
+    // Decrypt using AES-256-GCM
+    let unbound_key = UnboundKey::new(&AES_256_GCM, &key)
+        .map_err(|_| DocumentError::EncryptionError("Failed to create key".to_string()))?;
+    let less_safe_key = LessSafeKey::new(unbound_key);
+
+    let mut nonce_array = [0u8; 12];
+    nonce_array.copy_from_slice(nonce_bytes);
+    let nonce = Nonce::assume_unique_for_key(nonce_array);
+
+    let mut plaintext = ciphertext.to_vec();
+    let decrypt_result = less_safe_key.open_in_place(nonce, Aad::empty(), &mut plaintext);
+
+    // If new-format decryption failed and we used the new format, retry
+    // with legacy layout in case the first byte after magic happened to
+    // look like a valid strength byte.
+    if decrypt_result.is_err() && salt_offset == header_len + 1 {
+        return decrypt_document_legacy(data, password);
+    }
+    decrypt_result.map_err(|_| DocumentError::InvalidPassword)?;
+
+    // Remove the authentication tag
+    let tag_len = AES_256_GCM.tag_len();
+    plaintext.truncate(plaintext.len() - tag_len);
+
+    // Parse JSON
+    let json =
+        String::from_utf8(plaintext).map_err(|e| DocumentError::ParseError(e.to_string()))?;
+    Document::from_json(&json)
+}
+
+/// Decrypts a legacy-format encrypted document (no strength byte).
+fn decrypt_document_legacy(data: &[u8], password: &str) -> DocumentResult<Document> {
+    use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
+
+    let header_len = ENCRYPTED_MAGIC.len();
     let salt = &data[header_len..header_len + 32];
     let nonce_bytes = &data[header_len + 32..header_len + 32 + 12];
     let ciphertext = &data[header_len + 32 + 12..];
 
-    // Derive key
-    let key = derive_key(password, salt)?;
+    let key = derive_key(password, salt, EncryptionStrength::Standard)?;
 
-    // Decrypt using AES-256-GCM
     let unbound_key = UnboundKey::new(&AES_256_GCM, &key)
         .map_err(|_| DocumentError::EncryptionError("Failed to create key".to_string()))?;
     let less_safe_key = LessSafeKey::new(unbound_key);
@@ -626,28 +762,24 @@ fn decrypt_document(data: &[u8], password: &str) -> DocumentResult<Document> {
         .open_in_place(nonce, Aad::empty(), &mut plaintext)
         .map_err(|_| DocumentError::InvalidPassword)?;
 
-    // Remove the authentication tag
     let tag_len = AES_256_GCM.tag_len();
     plaintext.truncate(plaintext.len() - tag_len);
 
-    // Parse JSON
     let json =
         String::from_utf8(plaintext).map_err(|e| DocumentError::ParseError(e.to_string()))?;
     Document::from_json(&json)
 }
 
 /// Derives an encryption key from a password using Argon2id
-fn derive_key(password: &str, salt: &[u8]) -> DocumentResult<[u8; 32]> {
+fn derive_key(
+    password: &str,
+    salt: &[u8],
+    strength: EncryptionStrength,
+) -> DocumentResult<[u8; 32]> {
     use argon2::{Algorithm, Argon2, Params, Version};
 
-    // Use lighter parameters for faster key derivation
-    // In production, consider using higher values (e.g., m=65536, t=3, p=4)
-    #[cfg(test)]
-    let params = Params::new(4096, 2, 1, Some(32))
-        .map_err(|e| DocumentError::EncryptionError(format!("Invalid Argon2 params: {e}")))?;
-
-    #[cfg(not(test))]
-    let params = Params::new(65536, 3, 4, Some(32))
+    let (m_cost, t_cost, p_cost) = strength.argon2_params();
+    let params = Params::new(m_cost, t_cost, p_cost, Some(32))
         .map_err(|e| DocumentError::EncryptionError(format!("Invalid Argon2 params: {e}")))?;
 
     let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);

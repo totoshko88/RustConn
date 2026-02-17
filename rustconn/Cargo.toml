@@ -31,6 +31,8 @@ dirs = { workspace = true }
 ksni = { version = "0.3", features = ["blocking"], optional = true }
 # SVG rendering for tray icon (renders SVG to ARGB32 pixmap)
 resvg = { version = "0.47", optional = true }
+# Internationalization (gettext)
+gettext-rs = { version = "0.7", features = ["gettext-system"] }
 # Tracing for structured logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

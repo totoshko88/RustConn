@@ -87,6 +87,37 @@ impl Protocol for VncProtocol {
     fn capabilities(&self) -> ProtocolCapabilities {
         ProtocolCapabilities::graphical(false, false, true)
     }
+
+    fn build_command(&self, connection: &Connection) -> Option<Vec<String>> {
+        let mut args = Vec::new();
+
+        if let ProtocolConfig::Vnc(ref vnc_config) = connection.protocol_config {
+            if let Some(ref encoding) = vnc_config.encoding {
+                args.push("-encoding".to_string());
+                args.push(encoding.clone());
+            }
+            if let Some(compression) = vnc_config.compression {
+                args.push("-compresslevel".to_string());
+                args.push(compression.to_string());
+            }
+            if let Some(quality) = vnc_config.quality {
+                args.push("-quality".to_string());
+                args.push(quality.to_string());
+            }
+            args.extend(vnc_config.custom_args.clone());
+        }
+
+        let display = if connection.port >= 5900 {
+            connection.port - 5900
+        } else {
+            connection.port
+        };
+        args.push(format!("{}:{display}", connection.host));
+
+        let mut cmd = vec!["vncviewer".to_string()];
+        cmd.extend(args);
+        Some(cmd)
+    }
 }
 
 #[cfg(test)]

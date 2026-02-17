@@ -3,6 +3,7 @@
 //! This module contains methods for managing connection templates.
 
 use crate::alert;
+use crate::i18n::{i18n, i18n_f};
 use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::{Label, Orientation};
@@ -86,7 +87,7 @@ pub fn show_templates_manager(
                     // Save to config file and active document
                     if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
                         if let Err(e) = state_mut.add_template(template) {
-                            alert::show_error(&manager_inner, "Error Saving Template", &e);
+                            alert::show_error(&manager_inner, &i18n("Error Saving Template"), &e);
                         }
                     }
                     // Refresh list
@@ -121,7 +122,7 @@ pub fn show_templates_manager(
                     // Update in config file and active document
                     if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
                         if let Err(e) = state_mut.update_template(updated) {
-                            alert::show_error(&manager_inner, "Error Saving Template", &e);
+                            alert::show_error(&manager_inner, &i18n("Error Saving Template"), &e);
                         }
                     }
                     // Refresh list
@@ -147,9 +148,9 @@ pub fn show_templates_manager(
             let list_inner = list_inner.clone();
             alert::show_confirm(
                 &manager_clone_for_confirm,
-                "Delete Template?",
-                "Are you sure you want to delete this template?",
-                "Delete",
+                &i18n("Delete Template?"),
+                &i18n("Are you sure you want to delete this template?"),
+                &i18n("Delete"),
                 true,
                 move |confirmed| {
                     if confirmed {
@@ -288,11 +289,11 @@ pub fn refresh_templates_list(
             } else {
                 let mut parts = Vec::new();
                 if !template.host.is_empty() {
-                    parts.push(format!("Host: {}", template.host));
+                    parts.push(i18n_f("Host: {}", &[&template.host]));
                 }
-                parts.push(format!("Port: {}", template.port));
+                parts.push(i18n_f("Port: {}", &[&template.port.to_string()]));
                 if let Some(ref user) = template.username {
-                    parts.push(format!("User: {user}"));
+                    parts.push(i18n_f("User: {}", &[user]));
                 }
                 parts.join(" | ")
             };
@@ -313,7 +314,7 @@ pub fn refresh_templates_list(
 
     // Add SSH templates
     if !ssh_templates.is_empty() && protocol_filter.is_none() {
-        add_section_header(list, "SSH Templates");
+        add_section_header(list, &i18n("SSH Templates"));
     }
     for template in ssh_templates {
         add_template_row(list, template);
@@ -321,7 +322,7 @@ pub fn refresh_templates_list(
 
     // Add RDP templates
     if !rdp_templates.is_empty() && protocol_filter.is_none() {
-        add_section_header(list, "RDP Templates");
+        add_section_header(list, &i18n("RDP Templates"));
     }
     for template in rdp_templates {
         add_template_row(list, template);
@@ -329,7 +330,7 @@ pub fn refresh_templates_list(
 
     // Add VNC templates
     if !vnc_templates.is_empty() && protocol_filter.is_none() {
-        add_section_header(list, "VNC Templates");
+        add_section_header(list, &i18n("VNC Templates"));
     }
     for template in vnc_templates {
         add_template_row(list, template);
@@ -337,7 +338,7 @@ pub fn refresh_templates_list(
 
     // Add SPICE templates
     if !spice_templates.is_empty() && protocol_filter.is_none() {
-        add_section_header(list, "SPICE Templates");
+        add_section_header(list, &i18n("SPICE Templates"));
     }
     for template in spice_templates {
         add_template_row(list, template);
@@ -409,7 +410,7 @@ pub fn show_new_connection_from_template(
     // Reset the title since we're creating a new connection
     dialog
         .window()
-        .set_title(Some("New Connection from Template"));
+        .set_title(Some(&i18n("New Connection from Template")));
 
     let window_clone = window.clone();
     dialog.run(move |result| {
@@ -462,7 +463,7 @@ pub fn show_new_connection_from_template(
                         });
                     }
                     Err(e) => {
-                        alert::show_error(&window_clone, "Error Creating Connection", &e);
+                        alert::show_error(&window_clone, &i18n("Error Creating Connection"), &e);
                     }
                 }
             }

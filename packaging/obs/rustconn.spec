@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.8.6
+Version:        0.8.7
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -59,6 +59,7 @@ Requires:       gtk4 >= 4.14
 Requires:       libadwaita
 Requires:       vte >= 0.74
 Requires:       openssh-clients
+Requires:       sshpass
 Requires:       libasound2
 %endif
 
@@ -67,6 +68,7 @@ Requires:       gtk4 >= 4.14
 Requires:       libadwaita
 Requires:       vte291-gtk4
 Requires:       openssh-clients
+Requires:       sshpass
 Requires:       alsa-lib
 %endif
 
@@ -189,6 +191,27 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Mon Feb 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.7-0
+- Version bump to 0.8.7
+- Internationalization (i18n) — 14 languages: uk, de, fr, es, it, pl, cs,
+  sk, da, sv, nl, pt, be, kk; gettext support via gettext-rs (#17)
+- SPICE proxy support for Proxmox VE tunnelled connections (#18)
+- RDP HiDPI fix — IronRDP uses device-pixel resolution on HiDPI displays (#16)
+- Security: variable injection prevention in command-building paths
+- Security: ChecksumPolicy enum replaces placeholder SHA256 strings
+- Security: sensitive CLI arguments masked in log output
+- Security: configurable document encryption strength (Standard/High/Maximum)
+- Security: SSH Agent passphrase handling via SSH_ASKPASS helper
+- CLI overhaul: modularized into 18 handler modules with structured logging
+- CLI: shell completions, man page, fuzzy suggestions, dry-run, pager, auto-JSON
+- CLI: --config flag now threads through all ConfigManager call sites
+- Czech translation improved by native speaker p-bo (PR #19)
+- Remmina RDP import: gateway_server, gateway_username, domain fields (#20)
+- Accessible labels added to 20+ icon-only buttons
+- VTE updated to 0.83.90 in Flatpak manifests
+- Flatpak components dialog hides unusable protocol clients in sandbox
+- SPDX license corrected: GPL-3.0+ → GPL-3.0-or-later in metainfo.xml
+
 * Mon Feb 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.6-0
 - Version bump to 0.8.6
 - Fixed Embedded RDP keyboard layout: incorrect key mapping for non-US

@@ -20,7 +20,8 @@ Rules-Requires-Root: no
 Package: rustconn
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
-         openssh-client
+         openssh-client,
+         sshpass
 Recommends: freerdp2-x11,
             tigervnc-viewer,
             virt-viewer,

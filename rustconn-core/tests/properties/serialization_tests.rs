@@ -260,6 +260,7 @@ fn arb_spice_config() -> impl Strategy<Value = SpiceConfig> {
                 shared_folders,
                 clipboard_enabled,
                 image_compression,
+                proxy: None,
             },
         )
 }

@@ -223,22 +223,7 @@ impl TerminalNotebook {
 
     /// Gets the icon name for a protocol
     fn get_protocol_icon(protocol: &str) -> &'static str {
-        // All ZeroTrust variants use the same icon (matches filter button)
-        if protocol.starts_with("zerotrust") {
-            return "security-high-symbolic";
-        }
-
-        match protocol.to_lowercase().as_str() {
-            "ssh" => "utilities-terminal-symbolic",
-            "rdp" => "computer-symbolic",
-            "vnc" => "video-display-symbolic",
-            "spice" => "preferences-desktop-remote-desktop-symbolic",
-            "telnet" => "call-start-symbolic",
-            "serial" => "modem-symbolic",
-            "sftp" => "folder-remote-symbolic",
-            "kubernetes" => "application-x-executable-symbolic",
-            _ => "network-server-symbolic",
-        }
+        rustconn_core::get_protocol_icon_by_name(protocol)
     }
 
     /// Removes the welcome page if it exists

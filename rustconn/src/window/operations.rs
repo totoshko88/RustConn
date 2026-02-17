@@ -6,6 +6,7 @@
 use super::types::get_protocol_string;
 use super::MainWindow;
 use crate::alert;
+use crate::i18n::{i18n, i18n_f};
 use crate::sidebar::{ConnectionItem, ConnectionSidebar};
 use crate::state::SharedAppState;
 use adw::prelude::*;
@@ -38,7 +39,11 @@ pub fn delete_selected_connection(
     let is_group = conn_item.is_group();
 
     // Show confirmation dialog with connection count for groups
-    let item_type = if is_group { "group" } else { "connection" };
+    let item_type = if is_group {
+        i18n("group")
+    } else {
+        i18n("connection")
+    };
     let detail = if is_group {
         let connection_count = state
             .try_borrow()
@@ -46,15 +51,21 @@ pub fn delete_selected_connection(
             .unwrap_or(0);
 
         if connection_count > 0 {
-            format!(
-                "Are you sure you want to delete the group '{name}'?\n\n\
-                 This will also delete {connection_count} connection(s) in this group."
+            i18n_f(
+                "Are you sure you want to delete the group '{}'?\n\nThis will also delete {} connection(s) in this group.",
+                &[&name, &connection_count.to_string()],
             )
         } else {
-            format!("Are you sure you want to delete the empty group '{name}'?")
+            i18n_f(
+                "Are you sure you want to delete the empty group '{}'?",
+                &[&name],
+            )
         }
     } else {
-        format!("Are you sure you want to delete the connection '{name}'?")
+        i18n_f(
+            "Are you sure you want to delete the connection '{}'?",
+            &[&name],
+        )
     };
 
     let state_clone = state.clone();
@@ -62,9 +73,9 @@ pub fn delete_selected_connection(
     let window_clone = window.clone();
     alert::show_confirm(
         window,
-        &format!("Delete {item_type}?"),
+        &i18n_f("Delete {}?", &[&item_type]),
         &detail,
-        "Delete",
+        &i18n("Delete"),
         true,
         move |confirmed| {
             if confirmed {
@@ -97,13 +108,13 @@ pub fn delete_selected_connection(
                                 );
                                 crate::toast::show_undo_toast_on_window(
                                     &window,
-                                    &format!("Deleted '{}'", name),
+                                    &i18n_f("Deleted '{}'", &[&name]),
                                     &action_target,
                                 );
                             });
                         }
                         Err(e) => {
-                            alert::show_error(&window_clone, "Error Deleting", &e);
+                            alert::show_error(&window_clone, &i18n("Error Deleting"), &e);
                         }
                     }
                 }
@@ -167,7 +178,7 @@ pub fn duplicate_selected_connection(
                     MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
                     crate::toast::show_toast_on_window(
                         &window,
-                        "Connection duplicated",
+                        &i18n("Connection duplicated"),
                         crate::toast::ToastType::Success,
                     );
                 });
@@ -176,7 +187,7 @@ pub fn duplicate_selected_connection(
                 tracing::error!("Failed to duplicate connection: {e}");
                 crate::toast::show_toast_on_window(
                     window,
-                    "Failed to duplicate connection",
+                    &i18n("Failed to duplicate connection"),
                     crate::toast::ToastType::Error,
                 );
             }
@@ -210,7 +221,7 @@ pub fn copy_selected_connection(
             Ok(()) => {
                 crate::toast::show_toast_on_window(
                     window,
-                    "Connection copied to clipboard",
+                    &i18n("Connection copied to clipboard"),
                     crate::toast::ToastType::Info,
                 );
             }
@@ -218,7 +229,7 @@ pub fn copy_selected_connection(
                 tracing::error!("Failed to copy connection: {e}");
                 crate::toast::show_toast_on_window(
                     window,
-                    "Failed to copy connection",
+                    &i18n("Failed to copy connection"),
                     crate::toast::ToastType::Error,
                 );
             }
@@ -237,7 +248,7 @@ pub fn paste_connection(window: &gtk4::Window, state: &SharedAppState, sidebar: 
     if !has_content {
         crate::toast::show_toast_on_window(
             window,
-            "Nothing to paste - copy a connection first",
+            &i18n("Nothing to paste - copy a connection first"),
             crate::toast::ToastType::Warning,
         );
         return;
@@ -255,7 +266,7 @@ pub fn paste_connection(window: &gtk4::Window, state: &SharedAppState, sidebar: 
                     MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
                     crate::toast::show_toast_on_window(
                         &window,
-                        "Connection pasted",
+                        &i18n("Connection pasted"),
                         crate::toast::ToastType::Success,
                     );
                 });
@@ -264,7 +275,7 @@ pub fn paste_connection(window: &gtk4::Window, state: &SharedAppState, sidebar: 
                 tracing::error!("Failed to paste connection: {e}");
                 crate::toast::show_toast_on_window(
                     window,
-                    "Failed to paste connection",
+                    &i18n("Failed to paste connection"),
                     crate::toast::ToastType::Error,
                 );
             }
@@ -349,10 +360,10 @@ fn build_delete_item_list(
 
     for id in selected_ids {
         if let Some(conn) = state_ref.get_connection(*id) {
-            names.push(format!("• {} (connection)", conn.name));
+            names.push(i18n_f("• {} (connection)", &[&conn.name]));
             conn_count += 1;
         } else if let Some(group) = state_ref.get_group(*id) {
-            names.push(format!("• {} (group)", group.name));
+            names.push(i18n_f("• {} (group)", &[&group.name]));
             grp_count += 1;
         }
     }
@@ -369,7 +380,7 @@ fn create_bulk_delete_dialog(
     use gtk4::Label;
 
     let dialog = adw::Window::builder()
-        .title("Delete Selected Items?")
+        .title(i18n("Delete Selected Items?"))
         .transient_for(window)
         .modal(true)
         .default_width(500)
@@ -377,9 +388,9 @@ fn create_bulk_delete_dialog(
         .build();
 
     let header = adw::HeaderBar::new();
-    let cancel_btn = gtk4::Button::builder().label("Cancel").build();
+    let cancel_btn = gtk4::Button::builder().label(&i18n("Cancel")).build();
     let delete_btn = gtk4::Button::builder()
-        .label("Delete All")
+        .label(&i18n("Delete All"))
         .css_classes(["destructive-action"])
         .build();
     header.pack_start(&cancel_btn);
@@ -393,7 +404,7 @@ fn create_bulk_delete_dialog(
 
     // Summary label
     let summary_label = Label::builder()
-        .label(format!("Are you sure you want to delete {summary}?"))
+        .label(i18n_f("Are you sure you want to delete {}?", &[summary]))
         .halign(gtk4::Align::Start)
         .wrap(true)
         .build();
@@ -420,7 +431,7 @@ fn create_bulk_delete_dialog(
 
     // Warning label
     let warning_label = Label::builder()
-        .label("Connections in deleted groups will become ungrouped.")
+        .label(i18n("Connections in deleted groups will become ungrouped."))
         .halign(gtk4::Align::Start)
         .wrap(true)
         .css_classes(["dim-label"])
@@ -471,17 +482,23 @@ fn perform_bulk_delete(
         if failures.is_empty() {
             alert::show_success(
                 &window,
-                "Deletion Complete",
-                &format!("Successfully deleted {success_count} item(s)."),
+                &i18n("Deletion Complete"),
+                &i18n_f(
+                    "Successfully deleted {} item(s).",
+                    &[&success_count.to_string()],
+                ),
             );
         } else {
             alert::show_error(
                 &window,
-                "Deletion Partially Complete",
+                &i18n("Deletion Partially Complete"),
                 &format!(
-                    "Deleted {} item(s).\n\nFailed to delete {} item(s):\n{}",
-                    success_count,
-                    failures.len(),
+                    "{}\n\n{}\n{}",
+                    i18n_f("Deleted {} item(s).", &[&success_count.to_string()]),
+                    i18n_f(
+                        "Failed to delete {} item(s):",
+                        &[&failures.len().to_string()]
+                    ),
                     failures.join("\n")
                 ),
             );
@@ -502,8 +519,8 @@ pub fn delete_selected_connections(
     if selected_ids.is_empty() {
         alert::show_alert(
             window,
-            "No Selection",
-            "Please select one or more items to delete.",
+            &i18n("No Selection"),
+            &i18n("Please select one or more items to delete."),
         );
         return;
     }
@@ -514,11 +531,13 @@ pub fn delete_selected_connections(
     else {
         return;
     };
-
     let summary = match (connection_count, group_count) {
-        (c, 0) => format!("{c} connection(s)"),
-        (0, g) => format!("{g} group(s)"),
-        (c, g) => format!("{c} connection(s) and {g} group(s)"),
+        (c, 0) => i18n_f("{} connection(s)", &[&c.to_string()]),
+        (0, g) => i18n_f("{} group(s)", &[&g.to_string()]),
+        (c, g) => i18n_f(
+            "{} connection(s) and {} group(s)",
+            &[&c.to_string(), &g.to_string()],
+        ),
     };
 
     // Create dialog
@@ -563,8 +582,8 @@ pub fn show_move_selected_to_group_dialog(
     if selected_ids.is_empty() {
         alert::show_alert(
             window,
-            "No Selection",
-            "Please select one or more items to move.",
+            &i18n("No Selection"),
+            &i18n("Please select one or more items to move."),
         );
         return;
     }
@@ -593,16 +612,16 @@ pub fn show_move_selected_to_group_dialog(
 
     // Create dialog
     let move_window = adw::Window::builder()
-        .title("Move")
+        .title(i18n("Move"))
         .transient_for(window)
         .modal(true)
         .default_width(750)
         .build();
 
     let header = adw::HeaderBar::new();
-    let cancel_btn = gtk4::Button::builder().label("Cancel").build();
+    let cancel_btn = gtk4::Button::builder().label(&i18n("Cancel")).build();
     let move_btn = gtk4::Button::builder()
-        .label("Move")
+        .label(&i18n("Move"))
         .css_classes(["suggested-action"])
         .build();
     header.pack_start(&cancel_btn);
@@ -615,15 +634,23 @@ pub fn show_move_selected_to_group_dialog(
     content.set_margin_end(12);
 
     let info_text = if !connection_ids.is_empty() && !group_ids_to_move.is_empty() {
-        format!(
+        i18n_f(
             "Select destination for {} connection(s) and {} group(s):",
-            connection_ids.len(),
-            group_ids_to_move.len()
+            &[
+                &connection_ids.len().to_string(),
+                &group_ids_to_move.len().to_string(),
+            ],
         )
     } else if !connection_ids.is_empty() {
-        format!("Select a group for {} connection(s):", connection_ids.len())
+        i18n_f(
+            "Select a group for {} connection(s):",
+            &[&connection_ids.len().to_string()],
+        )
     } else {
-        format!("Select parent for {} group(s):", group_ids_to_move.len())
+        i18n_f(
+            "Select parent for {} group(s):",
+            &[&group_ids_to_move.len().to_string()],
+        )
     };
 
     let info_label = gtk4::Label::builder()
@@ -672,11 +699,11 @@ pub fn show_move_selected_to_group_dialog(
 
     let mut group_ids: Vec<Option<Uuid>> = vec![None];
     let first_option = if group_ids_to_move.is_empty() {
-        "(No Group)"
+        i18n("(No Group)")
     } else {
-        "(Root Level)"
+        i18n("(Root Level)")
     };
-    let mut strings: Vec<String> = vec![first_option.to_string()];
+    let mut strings: Vec<String> = vec![first_option.clone()];
 
     for (id, path) in &group_paths {
         strings.push(path.clone());
@@ -756,11 +783,14 @@ pub fn show_move_selected_to_group_dialog(
             if !failures_clone.is_empty() {
                 alert::show_error(
                     &parent,
-                    "Move Partially Complete",
+                    &i18n("Move Partially Complete"),
                     &format!(
-                        "Moved {} item(s).\n\nFailed to move {} item(s):\n{}",
-                        success_count,
-                        failures_clone.len(),
+                        "{}\n\n{}\n{}",
+                        i18n_f("Moved {} item(s).", &[&success_count.to_string()]),
+                        i18n_f(
+                            "Failed to move {} item(s):",
+                            &[&failures_clone.len().to_string()]
+                        ),
                         failures_clone.join("\n")
                     ),
                 );

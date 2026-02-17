@@ -25,6 +25,7 @@ pub mod filter;
 pub mod search;
 pub mod view;
 
+use crate::i18n::i18n;
 use crate::sidebar_ui;
 
 use gtk4::prelude::*;
@@ -92,8 +93,8 @@ impl ConnectionSidebar {
     #[must_use]
     pub fn new() -> Self {
         let container = GtkBox::new(Orientation::Vertical, 0);
-        // GNOME HIG recommends 200px for sidebars (increased from 180px for better readability)
-        container.set_width_request(200);
+        // Reduced from 200px to 160px for better mobile/narrow window support
+        container.set_width_request(160);
         container.add_css_class("sidebar");
 
         // Search box with entry and help button
@@ -106,7 +107,7 @@ impl ConnectionSidebar {
 
         // Search entry
         let search_entry = SearchEntry::new();
-        search_entry.set_placeholder_text(Some("Search... (? for help)"));
+        search_entry.set_placeholder_text(Some(&i18n("Search... (? for help)")));
         search_entry.set_hexpand(true);
         // Accessibility: set label for screen readers
         search_entry.update_property(&[gtk4::accessible::Property::Label("Search connections")]);
@@ -115,13 +116,14 @@ impl ConnectionSidebar {
         // Search pending spinner (hidden by default)
         let search_spinner = gtk4::Spinner::new();
         search_spinner.set_visible(false);
-        search_spinner.set_tooltip_text(Some("Search pending..."));
+        search_spinner.set_tooltip_text(Some(&i18n("Search pending...")));
         search_box.append(&search_spinner);
 
         // Help button with popover
         let help_button = Button::from_icon_name("dialog-question-symbolic");
-        help_button.set_tooltip_text(Some("Search syntax help"));
+        help_button.set_tooltip_text(Some(&i18n("Search syntax help")));
         help_button.add_css_class("flat");
+        help_button.update_property(&[gtk4::accessible::Property::Label("Search syntax help")]);
 
         // Create search help popover
         let help_popover = search::create_search_help_popover();
@@ -202,15 +204,16 @@ impl ConnectionSidebar {
         let shell_box = GtkBox::new(Orientation::Horizontal, 4);
         let shell_icon = gtk4::Image::from_icon_name("utilities-terminal-symbolic");
         shell_icon.set_pixel_size(16);
-        let shell_label = Label::new(Some("Shell"));
+        let shell_label = Label::new(Some(&i18n("Shell")));
         shell_box.append(&shell_icon);
         shell_box.append(&shell_label);
         local_shell_btn.set_child(Some(&shell_box));
-        local_shell_btn.set_tooltip_text(Some("Local Shell (Ctrl+Shift+T)"));
+        local_shell_btn.set_tooltip_text(Some(&i18n("Local Shell (Ctrl+Shift+T)")));
         local_shell_btn.set_action_name(Some("win.local-shell"));
         local_shell_btn.add_css_class("suggested-action");
         local_shell_btn.add_css_class("pill");
         local_shell_btn.set_halign(gtk4::Align::End);
+        local_shell_btn.update_property(&[gtk4::accessible::Property::Label("Open Local Shell")]);
 
         filter_box.append(&protocol_group);
         filter_box.append(&local_shell_btn);
@@ -349,6 +352,25 @@ impl ConnectionSidebar {
 
         container.append(&filter_box);
         container.append(&search_box);
+
+        // Responsive: hide less common protocol filters on narrow sidebar
+        {
+            let telnet_c = telnet_filter.clone();
+            let serial_c = serial_filter.clone();
+            let zt_c = zerotrust_filter.clone();
+            let k8s_c = kubernetes_filter.clone();
+            let group_c = protocol_group.clone();
+            container.connect_notify_local(Some("width-request"), move |_container, _| {
+                let width = group_c.width();
+                if width > 0 {
+                    let narrow = width < 280;
+                    telnet_c.set_visible(!narrow);
+                    serial_c.set_visible(!narrow);
+                    zt_c.set_visible(!narrow);
+                    k8s_c.set_visible(!narrow);
+                }
+            });
+        }
 
         // Create search history storage and popover
         let search_history: Rc<RefCell<Vec<String>>> = Rc::new(RefCell::new(Vec::new()));
@@ -1780,16 +1802,16 @@ impl ConnectionSidebar {
             self.keepass_button.remove_css_class("dim-label");
             self.keepass_button.add_css_class("suggested-action");
             self.keepass_button
-                .set_tooltip_text(Some("Open Password Vault (Active)"));
+                .set_tooltip_text(Some(&i18n("Open Password Vault (Active)")));
         } else {
             self.keepass_button.remove_css_class("suggested-action");
             self.keepass_button.add_css_class("dim-label");
             if enabled {
                 self.keepass_button
-                    .set_tooltip_text(Some("Password Vault Not Found"));
+                    .set_tooltip_text(Some(&i18n("Password Vault Not Found")));
             } else {
                 self.keepass_button
-                    .set_tooltip_text(Some("Password Vault Disabled"));
+                    .set_tooltip_text(Some(&i18n("Password Vault Disabled")));
             }
         }
     }

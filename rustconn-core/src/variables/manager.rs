@@ -403,6 +403,86 @@ impl VariableManager {
 
         Ok(())
     }
+
+    // ========== Command-Safe Substitution ==========
+
+    /// Substitutes variables and validates the result is safe for use as a
+    /// command argument.
+    ///
+    /// This method performs the same substitution as [`substitute`], but
+    /// additionally checks that the resolved values do not contain characters
+    /// that could cause unexpected behavior when passed as command-line
+    /// arguments.
+    ///
+    /// # Arguments
+    ///
+    /// * `input` - The string containing variable references
+    /// * `scope` - The scope for variable resolution
+    ///
+    /// # Errors
+    ///
+    /// Returns `VariableError::UnsafeValue` if any resolved variable contains
+    /// null bytes, newlines, or control characters.
+    pub fn substitute_for_command(
+        &self,
+        input: &str,
+        scope: VariableScope,
+    ) -> VariableResult<String> {
+        let refs = Self::parse_references(input)?;
+        let mut result = input.to_string();
+
+        for var_name in &refs {
+            match self.resolve(var_name, scope) {
+                Ok(value) => {
+                    Self::validate_command_value(var_name, &value)?;
+                    let pattern = format!("${{{var_name}}}");
+                    result = result.replace(&pattern, &value);
+                }
+                Err(VariableError::Undefined(_)) => {
+                    let pattern = format!("${{{var_name}}}");
+                    result = result.replace(&pattern, "");
+                }
+                Err(e) => return Err(e),
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Validates that a resolved variable value is safe for command arguments.
+    ///
+    /// Rejects values containing null bytes, newlines, carriage returns, and
+    /// other control characters (except tab, which is allowed).
+    ///
+    /// # Errors
+    ///
+    /// Returns `VariableError::UnsafeValue` if the value contains unsafe
+    /// characters.
+    fn validate_command_value(name: &str, value: &str) -> VariableResult<()> {
+        if value.contains('\0') {
+            return Err(VariableError::UnsafeValue {
+                name: name.to_string(),
+                reason: "contains null byte".to_string(),
+            });
+        }
+
+        if value.contains('\n') || value.contains('\r') {
+            return Err(VariableError::UnsafeValue {
+                name: name.to_string(),
+                reason: "contains newline characters".to_string(),
+            });
+        }
+
+        // Reject control characters (ASCII 0x00–0x1F) except tab (0x09)
+        if value.chars().any(|c| c.is_control() && c != '\t') {
+            return Err(VariableError::UnsafeValue {
+                name: name.to_string(),
+                reason: "contains control characters".to_string(),
+            });
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -650,5 +730,84 @@ mod tests {
             VariableScope::Global,
         );
         assert!(matches!(result, Err(VariableError::MaxDepthExceeded(_))));
+    }
+
+    #[test]
+    fn test_substitute_for_command_safe_value() {
+        let manager = create_test_manager();
+        let result = manager
+            .substitute_for_command("ssh ${user}@${host}", VariableScope::Global)
+            .unwrap();
+        assert_eq!(result, "ssh admin@example.com");
+    }
+
+    #[test]
+    fn test_substitute_for_command_rejects_null_byte() {
+        let mut manager = VariableManager::new();
+        manager.set_global(Variable::new("evil", "value\0injected"));
+
+        let result = manager.substitute_for_command("${evil}", VariableScope::Global);
+        assert!(matches!(result, Err(VariableError::UnsafeValue { .. })));
+    }
+
+    #[test]
+    fn test_substitute_for_command_rejects_newline() {
+        let mut manager = VariableManager::new();
+        manager.set_global(Variable::new("evil", "value\ninjected"));
+
+        let result = manager.substitute_for_command("${evil}", VariableScope::Global);
+        assert!(matches!(result, Err(VariableError::UnsafeValue { .. })));
+    }
+
+    #[test]
+    fn test_substitute_for_command_rejects_carriage_return() {
+        let mut manager = VariableManager::new();
+        manager.set_global(Variable::new("evil", "value\rinjected"));
+
+        let result = manager.substitute_for_command("${evil}", VariableScope::Global);
+        assert!(matches!(result, Err(VariableError::UnsafeValue { .. })));
+    }
+
+    #[test]
+    fn test_substitute_for_command_rejects_control_chars() {
+        let mut manager = VariableManager::new();
+        manager.set_global(Variable::new("evil", "value\x07bell"));
+
+        let result = manager.substitute_for_command("${evil}", VariableScope::Global);
+        assert!(matches!(result, Err(VariableError::UnsafeValue { .. })));
+    }
+
+    #[test]
+    fn test_substitute_for_command_allows_tab() {
+        let mut manager = VariableManager::new();
+        manager.set_global(Variable::new("with_tab", "value\twith_tab"));
+
+        let result = manager
+            .substitute_for_command("${with_tab}", VariableScope::Global)
+            .unwrap();
+        assert_eq!(result, "value\twith_tab");
+    }
+
+    #[test]
+    fn test_substitute_for_command_allows_special_chars() {
+        let mut manager = VariableManager::new();
+        manager.set_global(Variable::new(
+            "complex",
+            "user@host:port/path?query=1&other=2",
+        ));
+
+        let result = manager
+            .substitute_for_command("${complex}", VariableScope::Global)
+            .unwrap();
+        assert_eq!(result, "user@host:port/path?query=1&other=2");
+    }
+
+    #[test]
+    fn test_substitute_for_command_undefined_uses_empty() {
+        let manager = VariableManager::new();
+        let result = manager
+            .substitute_for_command("prefix_${undefined}_suffix", VariableScope::Global)
+            .unwrap();
+        assert_eq!(result, "prefix__suffix");
     }
 }

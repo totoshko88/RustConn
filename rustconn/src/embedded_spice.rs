@@ -18,6 +18,7 @@
 //! - Requirement 9.3: Keyboard and mouse input forwarding
 //! - Requirement 9.4: Fallback to external viewer
 
+use crate::i18n::i18n;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, DrawingArea, Label, Orientation};
 use std::cell::RefCell;
@@ -236,13 +237,13 @@ impl EmbeddedSpiceWidget {
         toolbar.append(&status_label);
 
         // Copy button
-        let copy_button = Button::with_label("Copy");
-        copy_button.set_tooltip_text(Some("Copy from remote session to local clipboard"));
+        let copy_button = Button::with_label(&i18n("Copy"));
+        copy_button.set_tooltip_text(Some(&i18n("Copy from remote session to local clipboard")));
         toolbar.append(&copy_button);
 
         // Paste button
-        let paste_button = Button::with_label("Paste");
-        paste_button.set_tooltip_text(Some("Paste from local clipboard to remote session"));
+        let paste_button = Button::with_label(&i18n("Paste"));
+        paste_button.set_tooltip_text(Some(&i18n("Paste from local clipboard to remote session")));
         toolbar.append(&paste_button);
 
         // Separator
@@ -254,13 +255,13 @@ impl EmbeddedSpiceWidget {
         // Ctrl+Alt+Del button
         let ctrl_alt_del_button = Button::with_label("Ctrl+Alt+Del");
         ctrl_alt_del_button.add_css_class("suggested-action");
-        ctrl_alt_del_button.set_tooltip_text(Some("Send Ctrl+Alt+Del to remote session"));
+        ctrl_alt_del_button.set_tooltip_text(Some(&i18n("Send Ctrl+Alt+Del to remote session")));
         toolbar.append(&ctrl_alt_del_button);
 
         // Reconnect button (shown when disconnected)
-        let reconnect_button = Button::with_label("Reconnect");
+        let reconnect_button = Button::with_label(&i18n("Reconnect"));
         reconnect_button.add_css_class("suggested-action");
-        reconnect_button.set_tooltip_text(Some("Reconnect to the remote session"));
+        reconnect_button.set_tooltip_text(Some(&i18n("Reconnect to the remote session")));
         reconnect_button.set_visible(false); // Hidden by default
         toolbar.append(&reconnect_button);
 

@@ -12,7 +12,8 @@ use rustconn_core::{
     AppSettings, AsyncCredentialResolver, AsyncCredentialResult, CancellationToken, Cluster,
     ClusterManager, ConfigManager, Connection, ConnectionGroup, ConnectionManager,
     CredentialResolver, CredentialVerificationManager, Credentials, Document, DocumentManager,
-    ImportResult, SecretManager, Session, SessionManager, Snippet, SnippetManager,
+    EncryptionStrength, ImportResult, SecretManager, Session, SessionManager, Snippet,
+    SnippetManager,
 };
 use secrecy::SecretString;
 use std::cell::RefCell;
@@ -1998,9 +1999,10 @@ impl AppState {
         id: Uuid,
         path: &Path,
         password: Option<&str>,
+        strength: EncryptionStrength,
     ) -> Result<(), String> {
         self.document_manager
-            .save(id, path, password)
+            .save(id, path, password, strength)
             .map_err(|e| format!("Failed to save document: {e}"))
     }
 

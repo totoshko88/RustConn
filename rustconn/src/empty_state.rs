@@ -6,6 +6,8 @@ use gtk4::prelude::*;
 use gtk4::{Button, Widget};
 use libadwaita as adw;
 
+use crate::i18n::i18n;
+
 /// Creates an empty state widget with icon, title, description, and optional action
 ///
 /// # Arguments
@@ -54,9 +56,9 @@ pub fn create_empty_state(
 pub fn no_connections() -> Widget {
     create_empty_state(
         "network-server-symbolic",
-        "No Connections",
-        "Create your first connection to get started",
-        Some("New Connection"),
+        &i18n("No Connections"),
+        &i18n("Create your first connection to get started"),
+        Some(&i18n("New Connection")),
         Some("win.new-connection"),
     )
 }
@@ -66,8 +68,8 @@ pub fn no_connections() -> Widget {
 pub fn no_search_results(query: &str) -> Widget {
     create_empty_state(
         "edit-find-symbolic",
-        "No Results Found",
-        &format!("No connections match \"{query}\""),
+        &i18n("No Results Found"),
+        &format!("{} \"{query}\"", i18n("No connections match")),
         None,
         None,
     )
@@ -78,9 +80,9 @@ pub fn no_search_results(query: &str) -> Widget {
 pub fn no_sessions() -> Widget {
     create_empty_state(
         "utilities-terminal-symbolic",
-        "No Active Sessions",
-        "Connect to a server to start a session",
-        Some("Quick Connect"),
+        &i18n("No Active Sessions"),
+        &i18n("Connect to a server to start a session"),
+        Some(&i18n("Quick Connect")),
         Some("win.quick-connect"),
     )
 }
@@ -90,9 +92,9 @@ pub fn no_sessions() -> Widget {
 pub fn no_groups() -> Widget {
     create_empty_state(
         "folder-symbolic",
-        "No Groups",
-        "Create groups to organize your connections",
-        Some("New Group"),
+        &i18n("No Groups"),
+        &i18n("Create groups to organize your connections"),
+        Some(&i18n("New Group")),
         Some("win.new-group"),
     )
 }
@@ -102,9 +104,9 @@ pub fn no_groups() -> Widget {
 pub fn no_snippets() -> Widget {
     create_empty_state(
         "edit-paste-symbolic",
-        "No Snippets",
-        "Create command snippets for quick access",
-        Some("New Snippet"),
+        &i18n("No Snippets"),
+        &i18n("Create command snippets for quick access"),
+        Some(&i18n("New Snippet")),
         Some("win.new-snippet"),
     )
 }
@@ -114,9 +116,9 @@ pub fn no_snippets() -> Widget {
 pub fn no_templates() -> Widget {
     create_empty_state(
         "document-new-symbolic",
-        "No Templates",
-        "Create templates for common connection configurations",
-        Some("New Template"),
+        &i18n("No Templates"),
+        &i18n("Create templates for common connection configurations"),
+        Some(&i18n("New Template")),
         Some("win.new-template"),
     )
 }
@@ -126,8 +128,8 @@ pub fn no_templates() -> Widget {
 pub fn no_history() -> Widget {
     create_empty_state(
         "document-open-recent-symbolic",
-        "No Connection History",
-        "Your recent connections will appear here",
+        &i18n("No Connection History"),
+        &i18n("Your recent connections will appear here"),
         None,
         None,
     )
@@ -137,7 +139,7 @@ pub fn no_history() -> Widget {
 #[must_use]
 pub fn loading_state(message: &str) -> Widget {
     let page = adw::StatusPage::builder()
-        .title("Loading...")
+        .title(i18n("Loading..."))
         .description(message)
         .vexpand(true)
         .hexpand(true)

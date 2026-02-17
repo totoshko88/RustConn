@@ -5,21 +5,73 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.8.7] - 2026-02-17
+
+### Security
+- **Variable injection prevention** — All variable substitution in command-building paths now validates resolved values, rejecting null bytes, newlines, and control characters to prevent command injection
+- **Checksum policy for CLI downloads** — Replaced placeholder SHA256 strings with `ChecksumPolicy` enum (`Static`, `SkipLatest`, `None`) for explicit integrity verification
+- **Sensitive CLI arguments masked** — Password-like arguments (`/p:`, `--password`, `token=`, etc.) are masked in log output
+- **Configurable document encryption** — `EncryptionStrength` enum (Standard/High/Maximum) with per-level Argon2 parameters; backward-compatible with legacy format
+- **SSH Agent passphrase handling** — `add_key()` now uses `SSH_ASKPASS` helper script with `SSH_ASKPASS_REQUIRE=force` to securely pass passphrases to `ssh-add` without PTY; temporary script is cleaned up immediately after use
+
+### Added
+- **Internationalization (i18n)** — gettext support via `gettext-rs` with system libintl; `i18n` module with `i18n()`, `i18n_f()`, `ni18n()` helpers; translations for 14 languages: uk, de, fr, es, it, pl, cs, sk, da, sv, nl, pt, be, kk; closes [#17](https://github.com/totoshko88/RustConn/issues/17)
+- **SPICE proxy support** — `SpiceConfig.proxy` field stores proxy URL from virt-viewer `.vv` imports; `remote-viewer` receives `--spice-proxy` flag for Proxmox VE tunnelled connections; fixes [#18](https://github.com/totoshko88/RustConn/issues/18)
+- **RDP HiDPI fix** — IronRDP embedded client now multiplies widget dimensions by `scale_factor()` to negotiate device-pixel resolution on HiDPI displays, eliminating blurry upscaling; fixes [#16](https://github.com/totoshko88/RustConn/issues/16)
+- **Property tests for variable injection** — 8 proptest properties validating command injection prevention
+- **CLI delete confirmation** — Interactive prompt with `--force` flag to skip
+- **CLI `--verbose` / `--quiet`** — Global flags for controlling output verbosity
+- **CLI `--no-color` / `NO_COLOR`** — Per [no-color.org](https://no-color.org/) convention
+- **CLI shell completions** — `completions <shell>` for bash, zsh, fish, elvish, PowerShell
+- **CLI `--dry-run` for connect** — Prints command without executing
+- **CLI pager for long output** — Pipes through `less` when output exceeds 40 lines
+- **CLI auto-JSON when piped** — List commands switch to JSON when stdout is not a terminal
+- **CLI fuzzy suggestions** — "Did you mean: x, y, z?" on connection name mismatch
+- **CLI man page generation** — `man-page` subcommand via `clap_mangen`
+- **Ctrl+M "Move to Group"** — Keyboard shortcut for moving sidebar items between groups
+- **Search history navigation** — Up/Down arrows cycle through sidebar search history
+- **CI version check workflow** — Weekly GitHub Action checks upstream CLI versions
+- **Client detection caching** — 5-minute cache for CLI version checks
+- **Flathub x-checker-data** — Automated dependency tracking for vte, libsecret, inetutils, picocom, mc
+- **Flathub device metadata** — `<requires>`, `<recommends>`, `<supports>` in metainfo.xml
+
+### Fixed
+- **CLI `--config` flag** — Was declared but never used; now threads through all 43 `ConfigManager` call sites
+- **Flatpak components dialog** — Hides unusable protocol clients in sandbox; shows only network-compatible tools
+- **SPDX license** — `GPL-3.0+` → `GPL-3.0-or-later` in metainfo.xml
+
+### Changed
+- **VTE updated to 0.83.90** — From 0.78.7 in all Flatpak manifests
+- **CLI modularized** — Split 5000+ line `main.rs` into 18 handler modules
+- **CLI structured logging** — `tracing` replaces `eprintln!` with `--verbose`/`--quiet` control
+- **VNC viewer list deduplicated** — Single `VNC_VIEWERS` constant shared across detection
+- **Protocol icon mapping unified** — `get_protocol_icon_by_name()` in core replaces duplicate match blocks
+- **Protocol command building unified** — `Protocol::build_command()` trait; CLI delegates to `ProtocolRegistry`
+- **Send Text dialog** — Migrated to `adw::Dialog` per GNOME HIG
+- **Sidebar minimum width** — Reduced from 200px to 160px
+- **Tray polling optimized** — Split into 50ms message handling + 2s state sync with dirty-flag tracking
+
+### Deprecated
+- **Flatpak host command functions** — `host_command()`, `host_has_command()`, etc. in `flatpak.rs`; `flatpak-spawn --host` disabled since 0.7.7
+
+### Improved
+- **Accessible labels** — Added to 20+ icon-only buttons for screen reader compatibility
+- **Czech translation (cs)** — Native speaker review by [p-bo](https://github.com/p-bo); 45 translations improved ([PR #19](https://github.com/totoshko88/RustConn/pull/19))
+- **Remmina RDP import** — Now imports `gateway_server`, `gateway_username`, and `domain` fields from Remmina RDP profiles ([#20](https://github.com/totoshko88/RustConn/issues/20))
 
 ## [0.8.6] - 2026-02-16
 
 ### Fixed
 - **Embedded RDP keyboard layout** — Fixed incorrect key mapping for non-US keyboard layouts (e.g. German QWERTZ) in IronRDP embedded client ([#15](https://github.com/totoshko88/RustConn/issues/15))
 - **Secrets management** — Comprehensive fixes to vault credential storage, backend dispatch, and Bitwarden integration ([#14](https://github.com/totoshko88/RustConn/issues/14)):
-  - All vault operations (`save_password_to_vault`, `save_group_password_to_vault`, `rename_vault_credential`, "Load from Vault") now respect `Settings → Secrets → preferred_backend` instead of being hardcoded to libsecret
-  - Bitwarden encrypted password is decrypted and vault auto-unlocked at startup when preferred backend is Bitwarden; Unlock button now uses `--raw` flag for reliable session key extraction
-  - `PasswordSource::Inherit` resolves group passwords through non-KeePass backends (Bitwarden, 1Password, Passbolt) with correct hierarchy traversal and consistent `group.id` lookup keys
-  - RDP and VNC password prompts auto-save entered passwords to vault when `password_source == Vault`, even without the "Save credentials" checkbox
-  - Toast notifications ("Failed to save password to vault") shown on all vault save error paths; previously errors were only logged
-- **Flatpak component checksums** — Fixed kubectl installation failing with `ChecksumMismatch` by generalizing no-checksum skip for all `*-no-checksum` patterns; updated boundary v0.21.0 checksum to match current upstream binary
-- **Flatpak component uninstall/reinstall** — Fixed `AlreadyInstalled` error when reinstalling AWS CLI and Google Cloud CLI after removal. `uninstall_component` now cleans up custom install paths (`aws-cli/`, `google-cloud-sdk/`), and `find_installed_binary` no longer searches the entire CLI directory as fallback
-- **Terminal search Highlight All** — Fixed "Highlight All" checkbox toggling to next match instead of highlighting. Now correctly adds hover-highlight via VTE regex matching without navigating; cleans up highlights on dialog close
+  - All vault operations now respect `Settings → Secrets → preferred_backend` instead of being hardcoded to libsecret
+  - Bitwarden encrypted password is decrypted and vault auto-unlocked at startup when preferred backend is Bitwarden
+  - `PasswordSource::Inherit` resolves group passwords through non-KeePass backends with correct hierarchy traversal
+  - RDP and VNC password prompts auto-save entered passwords to vault when `password_source == Vault`
+  - Toast notifications shown on all vault save error paths
+- **Flatpak component checksums** — Fixed kubectl installation failing with `ChecksumMismatch`; updated boundary v0.21.0 checksum
+- **Flatpak component uninstall/reinstall** — Fixed `AlreadyInstalled` error when reinstalling AWS CLI and Google Cloud CLI
+- **Terminal search Highlight All** — Fixed checkbox toggling to next match instead of highlighting
 
 ### Changed
 - **Dependencies** — Updated: `futures` 0.3.31→0.3.32, `libc` 0.2.181→0.2.182, `uuid` 1.20.0→1.21.0, `bitflags` 2.10.0→2.11.0, `syn` 2.0.114→2.0.116, `native-tls` 0.2.14→0.2.16, `png` 0.18.0→0.18.1, `cc` 1.2.55→1.2.56
@@ -29,154 +81,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Kubernetes Protocol** — Shell access to Kubernetes pods via `kubectl exec -it` ([#14](https://github.com/totoshko88/RustConn/issues/14)):
   - `KubernetesConfig` model with kubeconfig, context, namespace, pod, container, shell, busybox toggle
-  - `KubernetesProtocol` implementing `Protocol` trait in `rustconn-core`
   - Two modes: exec into existing pod, or launch temporary busybox pod
-  - GUI: Connection dialog Kubernetes tab, sidebar K8s quick filter, `application-x-executable-symbolic` icon
-  - CLI: `kubernetes` subcommand with `--kubeconfig`/`--context`/`--namespace`/`--pod`/`--container`/`--shell`/`--busybox`
+  - GUI: Connection dialog Kubernetes tab, sidebar K8s quick filter
+  - CLI: `kubernetes` subcommand with full flag support
   - Sandbox: kubectl as Flatpak downloadable component
-  - Property tests updated with Kubernetes coverage
 - **Virt-Viewer (.vv) Import** — Import SPICE/VNC connections from virt-viewer files ([#13](https://github.com/totoshko88/RustConn/issues/13)):
-  - `VirtViewerImporter` implementing `ImportSource` trait in `rustconn-core`
   - Parses `[virt-viewer]` INI sections: host, port, tls-port, password, proxy, CA cert, title
   - Supports `type=spice` (with TLS detection) and `type=vnc`
-  - Passwords stored as `SecretString` via `Credentials`, proxy/host-subject preserved as tags
-  - GUI: "Virt-Viewer (.vv)" option in Import dialog with `.vv` file filter
   - Compatible with libvirt, Proxmox VE, and oVirt generated `.vv` files
 - **Serial Console Protocol** — Full serial console support via `picocom` ([#11](https://github.com/totoshko88/RustConn/issues/11)):
   - `SerialConfig` model with device path, baud rate (9600–921600), data bits, stop bits, parity, flow control
-  - GUI: Connection dialog Serial tab, VTE terminal sessions, `phone-symbolic` icon
-  - CLI: `serial` subcommand with `--device`/`--baud-rate`/`--data-bits`/`--stop-bits`/`--parity`/`--flow-control`
-  - Sandbox: Flatpak `--device=all` + bundled `picocom`; Snap `serial-port` plug + bundled `picocom`
-  - Property tests: 13 serial-specific tests
+  - GUI, CLI, and Flatpak sandbox support with bundled `picocom`
 - **SFTP File Browser** — SFTP integration for SSH and standalone SFTP connections ([#10](https://github.com/totoshko88/RustConn/issues/10)):
-  - "Open SFTP" action in sidebar context menu and SSH session toolbar — opens system file manager via `gtk::UriLauncher` (portal-aware, works in Flatpak/Snap/native)
-  - "SFTP via mc" option — opens Midnight Commander with FISH VFS panel
-  - Automatic `ssh-add` before SFTP launch for key-based auth
-  - Standalone `ProtocolType::Sftp` — dedicated SFTP connection type reusing SSH config
-  - CLI: `sftp` subcommand (`--cli`, `--mc`, default opens file manager)
-  - Sandbox: Flatpak/Snap bundle Midnight Commander
-- **Responsive / Adaptive UI** — Improved dialog sizing and window breakpoints ([#9](https://github.com/totoshko88/RustConn/issues/9)):
-  - All 17+ dialogs: reduced default sizes, added minimum sizes via `set_size_request()`, all resizable
-  - `adw::Clamp` (max 600px) added to 7 list-style dialogs for consistent content width
-  - Dashboard and Active Sessions upgraded to `adw::Window` with `adw::ToolbarView`
-  - Main window breakpoint 600sp: hides split view buttons on narrow windows
-- **Terminal Rich Search** — Enhanced terminal search with regex and highlights ([#7](https://github.com/totoshko88/RustConn/issues/7)):
-  - Regex toggle, "Highlight All" toggle, case-sensitive toggle, wrap-around navigation
-  - Keyboard shortcut: Ctrl+Shift+F
-  - Session log timestamps: `log_timestamps` setting prepends `[HH:MM:SS]` to each log line
+  - "Open SFTP" action via `gtk::UriLauncher` (portal-aware)
+  - "SFTP via mc" option with Midnight Commander FISH VFS
+  - Standalone `ProtocolType::Sftp` connection type
+- **Responsive / Adaptive UI** — Improved dialog sizing and window breakpoints ([#9](https://github.com/totoshko88/RustConn/issues/9))
+- **Terminal Rich Search** — Regex, highlights, case-sensitive, wrap-around ([#7](https://github.com/totoshko88/RustConn/issues/7))
 
 ### Changed
-- **Session Logging moved to Logging tab** — Timestamps toggle relocated from Settings → Terminal to Settings → Logging for better discoverability
-- **CLI component versions updated** — Bumped bundled CLI download URLs to latest releases ([#14](https://github.com/totoshko88/RustConn/issues/14)): Bitwarden CLI 2024.12.0→2026.1.0, Teleport 17.1.2→18.6.8, Boundary 0.18.1→0.21.0, 1Password CLI 2.30.0→2.32.1, kubectl 1.32.0→1.35.0
+- **Session Logging moved to Logging tab** — Better discoverability
+- **CLI component versions updated** — Bitwarden CLI 2024.12.0→2026.1.0, Teleport 17.1.2→18.6.8, Boundary 0.18.1→0.21.0, 1Password CLI 2.30.0→2.32.1, kubectl 1.32.0→1.35.0
 
 ### Fixed
-- **Flathub linter `finish-args-home-filesystem-access`** — Replaced `--filesystem=home` with `--filesystem=xdg-download:create` in all Flatpak manifests; mc SFTP now opens XDG Downloads as local panel instead of current directory
-- **Flathub linter `module-rustconn-source-git-no-commit-with-tag`** — Added explicit `commit` hash to Flathub manifest git source
-- **ZeroTrust icon inconsistency** — Changed ZeroTrust icon from `folder-remote-symbolic` (same as SFTP) to `security-high-symbolic` across all UI components (sidebar, tabs, adaptive tabs, filter buttons, templates, cluster dialog)
-- **SFTP tab icon** — SFTP mc tabs now show correct `folder-remote-symbolic` icon instead of generic terminal icon
-- **SFTP sidebar status** — SFTP connections via mc now show connecting/connected status in sidebar and increment session count
+- **Flathub linter `finish-args-home-filesystem-access`** — Replaced `--filesystem=home` with `--filesystem=xdg-download:create`
+- **Flathub linter `module-rustconn-source-git-no-commit-with-tag`** — Added explicit `commit` hash
+- **ZeroTrust icon inconsistency** — Changed to `security-high-symbolic` across all UI
+- **SFTP tab icon** — Correct `folder-remote-symbolic` icon
+- **SFTP sidebar status** — Shows connecting/connected status and increments session count
 
 ## [0.8.4] - 2026-02-14
 
 ### Added
-- **FIDO2/SecurityKey SSH authentication** — New `SshAuthMethod::SecurityKey` variant for FIDO2 hardware key authentication; "Security Key (FIDO2)" option in connection dialog and template dialog SSH auth dropdowns; key file row shown directly without key source dropdown; validation requires key path like `PublicKey`; exports map SecurityKey to `publickey` (Asbru) or `ssh_auth=2` (Remmina); all property test strategies updated with SecurityKey coverage
-- **CLI auth-method support** — Added `--auth-method` flag to `add` and `update` commands (accepts `password`, `publickey`, `keyboard-interactive`, `agent`, `security-key`/`fido2`); `show` command now displays SSH auth method; `ConnectionOutput` JSON includes `auth_method` field for SSH connections; `update` command supports `--key` for SSH key path changes
+- **FIDO2/SecurityKey SSH authentication** — `SshAuthMethod::SecurityKey` variant for hardware key auth
+- **CLI auth-method support** — `--auth-method` flag for `add` and `update` commands
 
 ### Fixed
-- **CLI version check timeout** — Increased `VERSION_CHECK_TIMEOUT` from 3 to 6 seconds in both `detection.rs` and `clients_tab.rs`; Azure CLI (`az --version`) loads Python runtime and takes ~3.3 s, causing false "installed (timeout)" status at the previous limit
-- **Settings dialog startup delay** — Dialog took 3–5 s to appear because `load_secret_settings()` programmatically set 4 "save to keyring" checkboxes, each triggering a `connect_toggled` callback that called `is_secret_tool_available_sync()` → `block_on(which secret-tool)` on the main thread; replaced with a shared `Rc<RefCell<Option<bool>>>` cache populated by the existing background detection thread; removed the blocking `is_secret_tool_available_sync()` wrapper entirely
-- **WoL MAC Entry Disabled on Edit** — Fixed WoL settings fields (MAC address, broadcast, port, wait time) remaining disabled when editing an existing connection and enabling WoL; `set_wol_config()` was setting `set_sensitive(false)` on individual widgets which conflicted with the group-level sensitivity controlled by the "Enable WOL" checkbox `connect_toggled` handler; removed per-widget sensitivity calls since `wol_settings_group` already manages this
-- **secret-tool detection** — `is_secret_tool_available()` was using `secret-tool --version` which is not a valid argument; `secret-tool` prints usage and exits with non-zero code, causing the check to always return `false`; replaced with `which secret-tool` for reliable binary detection
-- **Settings version label race condition** — Backend version showed "Not installed" when reopening Settings with a non-default backend (e.g. Bitwarden) because `load_secret_settings()` triggers the dropdown callback before async CLI detection completes; added `detection_complete` flag so the version label shows "Detecting..." until detection finishes
-- **Unequal split panel sizes** — Splitting vertically then horizontally (before selecting a panel) produced unequal panels because the empty placeholder `adw::StatusPage` had a large minimum size that prevented `gtk::Paned` from honouring the 50/50 position; set `size_request(0, 0)` on panel containers and `overflow: hidden` on the placeholder overlay so panels can shrink freely
+- **CLI version check timeout** — Increased from 3 to 6 seconds for Azure CLI
+- **Settings dialog startup delay** — Replaced blocking `is_secret_tool_available_sync()` with cached async detection
+- **WoL MAC Entry Disabled on Edit** — Fixed sensitivity conflict between widget and group-level control
+- **secret-tool detection** — Replaced invalid `secret-tool --version` with `which secret-tool`
+- **Settings version label race condition** — Added `detection_complete` flag
+- **Unequal split panel sizes** — Set `size_request(0, 0)` on panel containers
 
 ### Refactored
-- **ConnectionManager watch channels** — Replaced 3× `Arc<Mutex<Option<Vec<T>>>>` + `Arc<Notify>` debounced persistence pattern with `tokio::sync::watch` channels; extracted generic `debounce_worker()` async function eliminating 3 duplicated debounce loops; `flush_persistence()` uses `send_replace(None)` for atomic take-and-save; removed `std::sync::{Arc, Mutex}` and `PendingTrash` type alias; struct fields reduced from 8 persistence-related to 3 (`conn_tx`, `group_tx`, `trash_tx`)
-- **EmbeddingError thiserror derive** — Replaced manual `Display`/`Error` impls with `#[derive(Debug, Clone, Error)]` in `embedded.rs`
-- **FreeRDP mutex consolidation** — Combined 3 separate `Arc<Mutex<T>>` (process, state, fallback_triggered) into single `Arc<Mutex<FreeRdpSharedState>>` struct; `frame_buffer` remains separate for independent rendering access
-- **Embedded RDP module directory** — Reorganized 7 flat `embedded_rdp_*.rs` files into `embedded_rdp/` module directory with `mod.rs`, `buffer.rs`, `detect.rs`, `launcher.rs`, `thread.rs`, `types.rs`, `ui.rs`; updated all internal imports to use `super::` and `crate::embedded_rdp::` paths
-- **ConnectionDialog LoggingTab extraction** — Extracted 5 logging widget fields from `ConnectionDialog` into `LoggingTab` struct in `logging_tab.rs` with `new()`/`set()`/`build()` methods; `ConnectionDialogData::build_log_config()` and `set_log_config()` now delegate to `LoggingTab`; deleted legacy `create_logging_tab()` and dead `create_wol_tab()` methods (~310 lines removed)
-- **OverlaySplitView sidebar** — Replaced `gtk::Paned` with `adw::OverlaySplitView` for main window sidebar; added sidebar toggle button (`sidebar-show-symbolic`) in header bar with F9 keyboard shortcut; sidebar supports show/hide gestures and saves width on close
-- **Responsive sidebar breakpoint** — Added `adw::Breakpoint` (max-width: 400sp) that collapses sidebar to overlay mode on narrow windows; sidebar unpins automatically and can be toggled via F9 or swipe gestures; uses `sp` units for GNOME Large Text accessibility
-- **Window module directory** — Reorganized 14 flat `window_*.rs` files into `window/` module directory with `mod.rs`; submodules use `super::` imports for `MainWindow` and sibling references; removed 14 `mod window_*` declarations from `main.rs`
-- **State access error thiserror** — Replaced manual `Display`/`Error` impls for `StateAccessError` in `state.rs` with `#[derive(Debug, Clone, thiserror::Error)]`; audited all `#[allow(dead_code)]` annotations — safe state access API (`with_state`, `try_with_state`, `with_state_mut`, `try_with_state_mut`) retained with justification comments
-- **Workspace clippy suppression audit** — Removed ~80 redundant per-item and per-module `#[allow(clippy::*)]` annotations that duplicate workspace-level allows in `Cargo.toml` (`cast_precision_loss`, `cast_possible_truncation`, `missing_const_for_fn`, `needless_pass_by_value`, `unused_self`, `doc_markdown`); cleaned up blanket module-level suppressions in `performance/mod.rs` (10→7), `search/mod.rs` (6→3), `rdp_client/` (3 files), `embedded_rdp/mod.rs`, `embedded_vnc.rs`, `wayland_surface.rs`, `audio.rs`, `testing/mod.rs`; removed stale `needless_collect` from `freerdp.rs`; fixed exposed `let_and_return` in `password_generator.rs` and `needless_collect` in `freerdp.rs` tests; trimmed 8 redundant lints from `property_tests.rs` and `properties/mod.rs` test harnesses
-- **Protocol trait capabilities and command builder** — Extended `Protocol` trait with `capabilities()` returning `ProtocolCapabilities` struct (7 flags: `embedded`, `external_fallback`, `file_transfer`, `audio`, `clipboard`, `split_view`, `terminal_based`) and `build_command()` returning `Option<Vec<String>>` for CLI command generation; implemented `capabilities()` for all 5 protocols (SSH/Telnet: terminal, RDP: graphical with file/audio/clipboard, VNC: graphical with clipboard, SPICE: external-only with clipboard); implemented `build_command()` for SSH (delegates to `SshConfig::build_command_args()`) and Telnet (host + port + custom args); both new methods have default impls so existing `Protocol` implementors are unaffected
+- **ConnectionManager watch channels** — Replaced `Arc<Mutex<Option<Vec<T>>>>` with `tokio::sync::watch`
+- **Embedded RDP module directory** — Reorganized into `embedded_rdp/` with 6 submodules
+- **Window module directory** — Reorganized 14 flat files into `window/` directory
+- **OverlaySplitView sidebar** — Replaced `gtk::Paned` with `adw::OverlaySplitView`
+- **Protocol trait capabilities** — Extended with `capabilities()` and `build_command()`
 
 ### Changed
-- **Dependencies** — Updated `resvg` 0.46→0.47 (also updates `usvg` 0.46→0.47, `tiny-skia` 0.11→0.12, `tiny-skia-path` 0.11→0.12)
+- **Dependencies** — Updated `resvg` 0.46→0.47
 
 ## [0.8.3] - 2026-02-13
 
 ### Added
-- **Wake On LAN from GUI** — Send WoL magic packets directly from the GUI ([#8](https://github.com/totoshko88/RustConn/issues/8)):
-  - Right-click connection → "Wake On LAN" sends packet using configured MAC address
-  - Auto-WoL before connecting: if a connection has WoL configured, a magic packet is sent automatically on connect (fire-and-forget, does not block connection)
-  - Standalone WoL dialog (Menu → Tools → "Wake On LAN...") with connection picker and manual MAC entry
-  - Retry with 3 packets at 500 ms intervals for reliability
-  - Non-blocking: all sends run on background threads via `spawn_blocking_with_callback`
-  - Toast notifications for success/failure
+- **Wake On LAN from GUI** — Send WoL magic packets directly from the GUI ([#8](https://github.com/totoshko88/RustConn/issues/8))
 
 ### Fixed
-- **Flatpak libsecret Build** — Fixed Flatpak build failure: disabled `bash_completion` in libsecret module (EROFS in sandbox)
-- **Flatpak libsecret Crypto Option** — Fixed libsecret 0.21.7 build: renamed `gcrypt` option to `crypto`
-- **Thread Safety** — Removed `std::env::set_var` calls from FreeRDP spawned thread (`embedded_rdp_thread.rs`); env vars (`QT_LOGGING_RULES`, `QT_QPA_PLATFORM`) are already set per-process via `Command::env()` in `launch_freerdp()`, eliminating a data race (unsafe since Rust 1.66+)
-- **Flatpak Machine Key** — `get_machine_key()` now generates and persists an app-specific key file in `$XDG_DATA_HOME/rustconn/.machine-key` as first priority; `/etc/machine-id` (inaccessible in Flatpak sandbox) is now a fallback, with hostname+username as last resort
-- **Variables Dialog Panic** — Replaced `expect()` on `btn.root().and_downcast::<Window>()` in vault load callback with `if let Some(window)` pattern and `tracing::warn!` fallback
-- **Keyring `secret-tool` Check** — `keyring::store()` now checks `is_secret_tool_available()` before attempting to store; returns `SecretError::BackendUnavailable` with user-friendly message if `secret-tool` is not installed
-- **Flatpak CLI Paths** — Secret backend CLI detection (`bw`, `op`, `passbolt`) no longer adds hardcoded `/snap/bin/` and `/usr/local/bin/` paths when running inside Flatpak; checks `get_cli_install_dir()` for Flatpak-installed tools instead
-- **Settings Dialog Performance** — Moved all secret backend CLI detection (`keepassxc-cli`, `bw`, `op`, `passbolt`) and keyring auto-load operations (Bitwarden auto-unlock, 1Password token, Passbolt passphrase, KeePassXC password) from synchronous main-thread execution to background threads via `glib::spawn_future`; Settings dialog now opens instantly with "Detecting..." placeholders, updating widgets asynchronously when detection and keyring lookups complete (~10 s → instant)
-- **Settings Clients Tab Performance** — Added 3-second timeout to all CLI version checks (`get_version` in `detection.rs`, `get_version_with_env` in `clients_tab.rs`) preventing slow CLIs (`gcloud`, `az`, `oci`) from blocking detection; parallelized all 9 zero trust CLI detections and core/zero trust groups via `std::thread::scope`; moved SSH agent `get_status()` (`ssh-add -l`) from GTK main thread to background thread via `glib::spawn_future` — total Clients tab detection time reduced from ~15 s sequential to ~3 s parallel
-- **Settings Dialog Instant Display** — Moved `dialog.present()` before `load_settings()` in `SettingsDialog::run()` so the window appears immediately; all widget population and async background operations (CLI detection, keyring lookups, SSH agent status) now run after the dialog is already visible
-- **Settings Dialog Visual Render Blocking** — Replaced `glib::spawn_future_local` + `glib::spawn_future` async pattern with `std::thread::spawn` + `std::sync::mpsc::channel` + `glib::idle_add_local` in all three Settings tabs (Clients, Secrets, SSH Agent); the previous pattern kept pending futures in the GTK main loop which prevented frame rendering until background tasks completed (~6 s delay); the new pattern fully decouples background work from the main loop so the dialog renders instantly while CLI detection runs in parallel
+- **Flatpak libsecret Build** — Disabled `bash_completion` (EROFS in sandbox)
+- **Flatpak libsecret Crypto Option** — Renamed `gcrypt` to `crypto`
+- **Thread Safety** — Removed `std::env::set_var` from FreeRDP spawned thread
+- **Flatpak Machine Key** — App-specific key file in `$XDG_DATA_HOME`
+- **Variables Dialog Panic** — Replaced `expect()` with `if let Some(window)` pattern
+- **Keyring `secret-tool` Check** — Returns `SecretError::BackendUnavailable` if not installed
+- **Flatpak CLI Paths** — No longer adds hardcoded paths when running inside Flatpak
+- **Settings Dialog Performance** — Moved all detection to background threads; dialog opens instantly
+- **Settings Clients Tab Performance** — Parallelized CLI detection; ~15s → ~3s
+- **Settings Dialog Visual Render Blocking** — Replaced `glib::spawn_future` with `std::thread::spawn` + `glib::idle_add_local`
 
 ## [0.8.2] - 2026-02-11
 
 ### Added
-- **Shared Keyring Module** — New `rustconn-core::secret::keyring` module with generic `store()`, `lookup()`, `clear()`, and `is_secret_tool_available()` functions for all backends
-- **Keyring Support for All Secret Backends** — System keyring (GNOME Keyring / KDE Wallet) integration for all backends:
-  - Bitwarden: refactored to use shared keyring module
-  - 1Password: `store_token_in_keyring()` / `get_token_from_keyring()` / `delete_token_from_keyring()`
-  - Passbolt: `store_passphrase_in_keyring()` / `get_passphrase_from_keyring()` / `delete_passphrase_from_keyring()`
-  - KeePassXC: `store_kdbx_password_in_keyring()` / `get_kdbx_password_from_keyring()` / `delete_kdbx_password_from_keyring()`
-- **Auto-Load Credentials from Keyring** — On settings load, all backends with "Save to system keyring" enabled automatically restore credentials:
-  - 1Password: loads token and sets `OP_SERVICE_ACCOUNT_TOKEN` env var
-  - Passbolt: loads GPG passphrase into entry field
-  - KeePassXC: loads KDBX password into entry field
-  - Bitwarden: auto-unlocks vault (existing behavior)
-- **`secret-tool` Availability Check** — Toggling "Save to system keyring" for any backend now checks if `secret-tool` is installed; if missing, unchecks the checkbox and shows "Install libsecret-tools for keyring" warning
-- **Flatpak `secret-tool` Support** — Added `libsecret` 0.21.7 as a Flatpak build module in all manifests (flatpak, local, flathub), providing `secret-tool` binary inside the sandbox for system keyring integration
-- **Passbolt Server URL Setting** — New `passbolt_server_url` field in `SecretSettings` for configuring Passbolt server address
-- **Passbolt UI in Settings** — Secrets tab now includes Server URL entry and "Open Vault" button for Passbolt:
-  - Server URL auto-fills from `go-passbolt-cli` config on startup
-  - "Open Vault" button opens configured URL in browser
-- **Unified Credential Save Options** — All secret backends now offer consistent "Save password" (encrypted local) and "Save to system keyring" (libsecret/KWallet) options with mutual exclusion:
-  - KeePassXC: Added "Save to system keyring" checkbox alongside existing "Save password"
-  - Bitwarden: Added mutual exclusion between "Save password" and "Save to system keyring"
-  - 1Password: Added Service Account Token entry with "Save token" and "Save to system keyring"
-  - Passbolt: Added GPG Passphrase entry with "Save passphrase" and "Save to system keyring"
-- **New `SecretSettings` fields** — `kdbx_save_to_keyring`, `onepassword_service_account_token`, `onepassword_save_to_keyring`, `passbolt_passphrase`, `passbolt_save_to_keyring` for unified credential persistence
-
-### Fixed
-- **Secret Lookup Key Mismatch** — Fixed credential store/retrieve inconsistency across all secret backends:
-  - libsecret: `store_unified()` now uses `"{name} ({protocol})"` key format matching `resolve_from_keyring` lookup
-  - Bitwarden/1Password/Passbolt: resolve functions now try `rustconn/{name}` first (matching store), then UUID fallback, then `{name} ({protocol})`
-  - Previously stored credentials were unretrievable because store and retrieve used different lookup keys
-- **Passbolt Server Address Always None** — `get_passbolt_status()` now reads server address from `~/.config/go-passbolt-cli/config.json` via new `read_passbolt_server_address()` function
-- **Passbolt "Open Password Vault" URL** — Button now opens the configured Passbolt server URL instead of hardcoded `https://passbolt.local`; reads URL from Settings or falls back to CLI config
-- **Variable Secrets Ignoring Preferred Backend** — `save_variable_to_vault()` and `load_variable_from_vault()` now respect `preferred_backend` setting; previously they always used KeePass/libsecret regardless of configured backend (Bitwarden, 1Password, Passbolt)
-- **Bitwarden Folder Parsing Crash** — `BitwardenFolder.id` now accepts `null` values from Bitwarden CLI (e.g. "No Folder" system entry); previously caused `Failed to parse folders` error
-- **Bitwarden Vault Auto-Unlock** — Variable save/load now automatically unlocks Bitwarden vault using saved master password from keyring or encrypted settings; previously required manual `bw unlock` or `BW_SESSION` env var
-
-### Changed
-- **Dependencies** — Updated: `clap` 4.5.57→4.5.58, `clap_builder` 4.5.57→4.5.58, `clap_lex` 0.7.7→1.0.0, `deranged` 0.5.5→0.5.6
-
-### Removed
-- **Unused `picky` pin** — Removed `picky = "=7.0.0-rc.20"` version pin from `rustconn-core`; cargo resolves the correct version transitively via ironrdp/sspi without an explicit pin
-
-### Improved
-- **Workspace dependency consistency** — Moved `regex` in `rustconn` crate from inline `"1.11"` to `{ workspace = true }` for unified version management
-- **Description consistency** — Unified short description ("Manage remote connections easily") and long description across all packaging metadata, README, Welcome screen, About dialog, Cargo.toml, .desktop, metainfo.xml, and Snap manifest; added missing `telnet` and `zerotrust` keywords; fixed About dialog `developer_name` field to show author name instead of product description
+- **Shared Keyring Module** — Generic `store()`, `lookup()`, `clear()` for all secret backends
+- **Keyring Support for All Backends** — Bitwarden, 1Password, Passbolt, KeePassXC
+- **Auto-Load Credentials from Keyring** — Automatic restore on settings load
+- **Flatpak `secret-tool` Support** — `libsecret` 0.21.7 as Flatpak build module
+- **Passbolt Server URL Setting** — New field in `SecretSettings`
+- **Unified Credential Save Options** — Consistent "Save password" / "Save to keyring" across all backends
 
 ## [0.8.1] - 2026-02-10
 

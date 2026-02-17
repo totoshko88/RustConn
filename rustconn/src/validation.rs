@@ -8,6 +8,8 @@ use gtk4::{Entry, Label};
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::i18n::{i18n, i18n_f};
+
 /// CSS class applied to fields with validation errors
 pub const ERROR_CSS_CLASS: &str = "error";
 
@@ -60,7 +62,7 @@ pub fn required(field_name: &str) -> ValidatorFn {
     let name = field_name.to_string();
     Box::new(move |value: &str| {
         if value.trim().is_empty() {
-            ValidationResult::Error(format!("{name} is required"))
+            ValidationResult::Error(i18n_f("{} is required", &[&name]))
         } else {
             ValidationResult::Valid
         }
@@ -73,7 +75,10 @@ pub fn min_length(field_name: &str, min: usize) -> ValidatorFn {
     let name = field_name.to_string();
     Box::new(move |value: &str| {
         if value.len() < min {
-            ValidationResult::Error(format!("{name} must be at least {min} characters"))
+            ValidationResult::Error(i18n_f(
+                "{} must be at least {} characters",
+                &[&name, &min.to_string()],
+            ))
         } else {
             ValidationResult::Valid
         }
@@ -86,7 +91,10 @@ pub fn max_length(field_name: &str, max: usize) -> ValidatorFn {
     let name = field_name.to_string();
     Box::new(move |value: &str| {
         if value.len() > max {
-            ValidationResult::Error(format!("{name} must be at most {max} characters"))
+            ValidationResult::Error(i18n_f(
+                "{} must be at most {} characters",
+                &[&name, &max.to_string()],
+            ))
         } else {
             ValidationResult::Valid
         }
@@ -99,7 +107,7 @@ pub fn hostname() -> ValidatorFn {
     Box::new(|value: &str| {
         let value = value.trim();
         if value.is_empty() {
-            return ValidationResult::Error("Host is required".to_string());
+            return ValidationResult::Error(i18n("Host is required"));
         }
 
         // Basic hostname validation
@@ -109,9 +117,9 @@ pub fn hostname() -> ValidatorFn {
         });
 
         if !is_valid {
-            ValidationResult::Error("Invalid hostname format".to_string())
+            ValidationResult::Error(i18n("Invalid hostname format"))
         } else if value.starts_with('-') || value.ends_with('-') {
-            ValidationResult::Error("Hostname cannot start or end with a hyphen".to_string())
+            ValidationResult::Error(i18n("Hostname cannot start or end with a hyphen"))
         } else {
             ValidationResult::Valid
         }
@@ -124,13 +132,13 @@ pub fn port_number() -> ValidatorFn {
     Box::new(|value: &str| {
         let value = value.trim();
         if value.is_empty() {
-            return ValidationResult::Error("Port is required".to_string());
+            return ValidationResult::Error(i18n("Port is required"));
         }
 
         match value.parse::<u16>() {
             Ok(port) if port > 0 => ValidationResult::Valid,
-            Ok(_) => ValidationResult::Error("Port must be greater than 0".to_string()),
-            Err(_) => ValidationResult::Error("Invalid port number".to_string()),
+            Ok(_) => ValidationResult::Error(i18n("Port must be greater than 0")),
+            Err(_) => ValidationResult::Error(i18n("Invalid port number")),
         }
     })
 }
@@ -261,6 +269,9 @@ impl FieldValidator {
 
         match &result {
             ValidationResult::Valid => {
+                self.entry.update_state(&[gtk4::accessible::State::Invalid(
+                    gtk4::AccessibleInvalidState::False,
+                )]);
                 if !value_str.is_empty() {
                     self.entry.add_css_class(SUCCESS_CSS_CLASS);
                 }
@@ -271,6 +282,9 @@ impl FieldValidator {
             }
             ValidationResult::Warning(msg) => {
                 self.entry.add_css_class(WARNING_CSS_CLASS);
+                self.entry.update_state(&[gtk4::accessible::State::Invalid(
+                    gtk4::AccessibleInvalidState::False,
+                )]);
                 if let Some(label) = &self.error_label {
                     label.set_text(msg);
                     label.set_visible(true);
@@ -280,11 +294,19 @@ impl FieldValidator {
             }
             ValidationResult::Error(msg) => {
                 self.entry.add_css_class(ERROR_CSS_CLASS);
+                self.entry.update_state(&[gtk4::accessible::State::Invalid(
+                    gtk4::AccessibleInvalidState::True,
+                )]);
                 if let Some(label) = &self.error_label {
                     label.set_text(msg);
                     label.set_visible(true);
                     label.remove_css_class("warning");
                     label.add_css_class("error");
+                    let accessible: &gtk4::Accessible = label.upcast_ref::<gtk4::Accessible>();
+                    self.entry
+                        .update_relation(&[gtk4::accessible::Relation::ErrorMessage(&[
+                            accessible,
+                        ])]);
                 }
             }
         }

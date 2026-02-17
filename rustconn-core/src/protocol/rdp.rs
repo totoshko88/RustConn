@@ -78,6 +78,48 @@ impl Protocol for RdpProtocol {
     fn capabilities(&self) -> ProtocolCapabilities {
         ProtocolCapabilities::graphical(true, true, true)
     }
+
+    fn build_command(&self, connection: &Connection) -> Option<Vec<String>> {
+        let mut args = vec![format!("/v:{}:{}", connection.host, connection.port)];
+
+        if let Some(ref username) = connection.username {
+            args.push(format!("/u:{username}"));
+        }
+        if let Some(ref domain) = connection.domain {
+            args.push(format!("/d:{domain}"));
+        }
+
+        if let ProtocolConfig::Rdp(ref rdp_config) = connection.protocol_config {
+            if let Some(ref resolution) = rdp_config.resolution {
+                args.push(format!("/w:{}", resolution.width));
+                args.push(format!("/h:{}", resolution.height));
+            }
+            if let Some(depth) = rdp_config.color_depth {
+                args.push(format!("/bpp:{depth}"));
+            }
+            if rdp_config.audio_redirect {
+                args.push("/sound".to_string());
+            }
+            if let Some(ref gateway) = rdp_config.gateway {
+                args.push(format!("/g:{}:{}", gateway.hostname, gateway.port));
+                if let Some(ref gw_user) = gateway.username {
+                    args.push(format!("/gu:{gw_user}"));
+                }
+            }
+            for folder in &rdp_config.shared_folders {
+                args.push(format!(
+                    "/drive:{},{}",
+                    folder.share_name,
+                    folder.local_path.display()
+                ));
+            }
+            args.extend(rdp_config.custom_args.clone());
+        }
+
+        let mut cmd = vec!["xfreerdp".to_string()];
+        cmd.extend(args);
+        Some(cmd)
+    }
 }
 
 #[cfg(test)]

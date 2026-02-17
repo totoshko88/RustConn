@@ -57,6 +57,9 @@ pub struct SpiceClientConfig {
 
     /// Security protocol to use
     pub security_protocol: SpiceSecurityProtocol,
+
+    /// SPICE proxy URL (e.g. `http://proxy:3128`) for tunnelled connections
+    pub proxy: Option<String>,
 }
 
 /// SPICE security protocol options
@@ -138,6 +141,7 @@ impl Default for SpiceClientConfig {
             audio_record: false,
             timeout_secs: 30,
             security_protocol: SpiceSecurityProtocol::default(),
+            proxy: None,
         }
     }
 }
@@ -248,6 +252,13 @@ impl SpiceClientConfig {
     #[must_use]
     pub const fn with_security_protocol(mut self, protocol: SpiceSecurityProtocol) -> Self {
         self.security_protocol = protocol;
+        self
+    }
+
+    /// Sets the SPICE proxy URL for tunnelled connections (e.g. Proxmox VE)
+    #[must_use]
+    pub fn with_proxy(mut self, proxy: impl Into<String>) -> Self {
+        self.proxy = Some(proxy.into());
         self
     }
 

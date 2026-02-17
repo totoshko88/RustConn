@@ -5,6 +5,8 @@
 
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::{Mutex, OnceLock};
+use std::time::{Duration, Instant};
 
 /// Information about a detected protocol client
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -19,6 +21,10 @@ pub struct ClientInfo {
     pub installed: bool,
     /// Installation hint for missing clients
     pub install_hint: Option<String>,
+    /// Minimum required version for compatibility (if known)
+    pub min_version: Option<&'static str>,
+    /// Whether the detected version meets the minimum requirement
+    pub version_compatible: bool,
 }
 
 impl ClientInfo {
@@ -31,6 +37,8 @@ impl ClientInfo {
             version,
             installed: true,
             install_hint: None,
+            min_version: None,
+            version_compatible: true,
         }
     }
 
@@ -43,7 +51,38 @@ impl ClientInfo {
             version: None,
             installed: false,
             install_hint: Some(install_hint.into()),
+            min_version: None,
+            version_compatible: false,
         }
+    }
+
+    /// Checks if the detected version meets the minimum requirement.
+    ///
+    /// Returns `true` if no minimum version is set, or if the detected
+    /// version is greater than or equal to the minimum.
+    #[must_use]
+    pub fn check_version_compatible(&self) -> bool {
+        let Some(min_str) = self.min_version else {
+            return true;
+        };
+        let Some(ref detected) = self.version else {
+            return false;
+        };
+        let Some(min_ver) = parse_semver(min_str) else {
+            return true;
+        };
+        let Some(det_ver) = parse_semver(detected) else {
+            return false;
+        };
+        det_ver >= min_ver
+    }
+
+    /// Sets the minimum version requirement and updates compatibility.
+    #[must_use]
+    pub fn with_min_version(mut self, min: &'static str) -> Self {
+        self.min_version = Some(min);
+        self.version_compatible = self.check_version_compatible();
+        self
     }
 }
 
@@ -73,6 +112,26 @@ impl ClientDetectionResult {
             spice: detect_spice_client(),
             telnet: detect_telnet_client(),
         }
+    }
+
+    /// Returns a cached result if available and fresh (< 5 minutes),
+    /// otherwise runs full detection and caches the result.
+    #[must_use]
+    pub fn detect_cached() -> Self {
+        static CACHE: OnceLock<Mutex<Option<(ClientDetectionResult, Instant)>>> = OnceLock::new();
+        let cache = CACHE.get_or_init(|| Mutex::new(None));
+
+        let mut guard = cache
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some((ref result, ref ts)) = *guard {
+            if ts.elapsed() < Duration::from_secs(300) {
+                return result.clone();
+            }
+        }
+        let result = Self::detect_all();
+        *guard = Some((result.clone(), Instant::now()));
+        result
     }
 }
 
@@ -151,19 +210,19 @@ pub fn detect_rdp_client() -> ClientInfo {
     // Try FreeRDP 3.x first (preferred)
     // wlfreerdp3 for Wayland, xfreerdp3 for X11
     if let Some(info) = try_detect_client("FreeRDP 3", "wlfreerdp3", &["--version"]) {
-        return info;
+        return info.with_min_version("3.0.0");
     }
     if let Some(info) = try_detect_client("FreeRDP 3", "xfreerdp3", &["--version"]) {
-        return info;
+        return info.with_min_version("3.0.0");
     }
 
     // Try FreeRDP 2.x
     // wlfreerdp for Wayland, xfreerdp for X11
     if let Some(info) = try_detect_client("FreeRDP 2", "wlfreerdp", &["--version"]) {
-        return info;
+        return info.with_min_version("3.0.0");
     }
     if let Some(info) = try_detect_client("FreeRDP 2", "xfreerdp", &["--version"]) {
-        return info;
+        return info.with_min_version("3.0.0");
     }
 
     // Try rdesktop as legacy fallback
@@ -242,6 +301,19 @@ pub fn detect_telnet_client() -> ClientInfo {
 
 /// Returns the path to the first available VNC viewer binary
 ///
+/// VNC viewer binaries in order of preference.
+const VNC_VIEWERS: &[&str] = &[
+    "vncviewer",   // TigerVNC, TightVNC - most common and feature-rich
+    "tigervnc",    // TigerVNC specific binary name
+    "gvncviewer",  // GTK-VNC viewer
+    "xvnc4viewer", // RealVNC
+    "vinagre",     // GNOME Vinagre (deprecated but still available)
+    "remmina",     // Remmina (supports VNC)
+    "krdc",        // KDE Remote Desktop Client
+];
+
+/// Returns the path to the first available VNC viewer
+///
 /// This function checks for VNC viewers in order of preference and returns
 /// the path to the first one found. Returns `None` if no viewer is installed.
 ///
@@ -249,24 +321,7 @@ pub fn detect_telnet_client() -> ClientInfo {
 /// `Some(PathBuf)` with the path to the VNC viewer binary, or `None` if not found
 #[must_use]
 pub fn detect_vnc_viewer_path() -> Option<PathBuf> {
-    // VNC viewers in order of preference
-    let viewers = [
-        "vncviewer",   // TigerVNC, TightVNC - most common and feature-rich
-        "tigervnc",    // TigerVNC specific binary name
-        "gvncviewer",  // GTK-VNC viewer
-        "xvnc4viewer", // RealVNC
-        "vinagre",     // GNOME Vinagre (deprecated but still available)
-        "remmina",     // Remmina (supports VNC)
-        "krdc",        // KDE Remote Desktop Client
-    ];
-
-    for viewer in viewers {
-        if let Some(path) = which_binary(viewer) {
-            return Some(path);
-        }
-    }
-
-    None
+    VNC_VIEWERS.iter().find_map(|viewer| which_binary(viewer))
 }
 
 /// Returns the name of the first available VNC viewer
@@ -278,24 +333,10 @@ pub fn detect_vnc_viewer_path() -> Option<PathBuf> {
 /// `Some(String)` with the VNC viewer binary name, or `None` if not found
 #[must_use]
 pub fn detect_vnc_viewer_name() -> Option<String> {
-    // VNC viewers in order of preference
-    let viewers = [
-        "vncviewer",   // TigerVNC, TightVNC - most common and feature-rich
-        "tigervnc",    // TigerVNC specific binary name
-        "gvncviewer",  // GTK-VNC viewer
-        "xvnc4viewer", // RealVNC
-        "vinagre",     // GNOME Vinagre (deprecated but still available)
-        "remmina",     // Remmina (supports VNC)
-        "krdc",        // KDE Remote Desktop Client
-    ];
-
-    for viewer in viewers {
-        if which_binary(viewer).is_some() {
-            return Some(viewer.to_string());
-        }
-    }
-
-    None
+    VNC_VIEWERS
+        .iter()
+        .find(|viewer| which_binary(viewer).is_some())
+        .map(|viewer| (*viewer).to_string())
 }
 
 // ============================================================================
@@ -578,6 +619,23 @@ fn parse_teleport_version(line: &str) -> Option<String> {
     None
 }
 
+/// Parses a version string into (major, minor, patch) tuple.
+///
+/// Handles common version formats: "3.0.0", "v3.0.0", "3.0",
+/// "`FreeRDP` version 3.0.0", etc.
+fn parse_semver(version_str: &str) -> Option<(u32, u32, u32)> {
+    // Extract version-like pattern from the string
+    let re_like = version_str
+        .split(|c: char| !c.is_ascii_digit() && c != '.')
+        .find(|s| s.contains('.') && s.chars().next().is_some_and(|c| c.is_ascii_digit()))?;
+
+    let parts: Vec<&str> = re_like.split('.').collect();
+    let major = parts.first()?.parse().ok()?;
+    let minor = parts.get(1).and_then(|s| s.parse().ok()).unwrap_or(0);
+    let patch = parts.get(2).and_then(|s| s.parse().ok()).unwrap_or(0);
+    Some((major, minor, patch))
+}
+
 /// Extracts a clean version string from a line
 fn extract_version_string(line: &str) -> String {
     // Limit length and clean up
@@ -688,5 +746,43 @@ mod tests {
         let output = "Teleport v18.6.5 git:v18.6.5-0-g4bc3277 go1.24.12";
         let version = parse_version(output);
         assert_eq!(version, Some("v18.6.5".to_string()));
+    }
+
+    #[test]
+    fn test_parse_semver() {
+        assert_eq!(parse_semver("3.0.0"), Some((3, 0, 0)));
+        assert_eq!(parse_semver("v3.0.0"), Some((3, 0, 0)));
+        assert_eq!(parse_semver("FreeRDP version 3.0.0"), Some((3, 0, 0)));
+        assert_eq!(parse_semver("2.11.7"), Some((2, 11, 7)));
+        assert_eq!(parse_semver("1.0"), Some((1, 0, 0)));
+        assert_eq!(parse_semver(""), None);
+        assert_eq!(parse_semver("no version"), None);
+    }
+
+    #[test]
+    fn test_version_compatible() {
+        let info = ClientInfo::installed(
+            "FreeRDP",
+            PathBuf::from("/usr/bin/xfreerdp"),
+            Some("3.0.0".to_string()),
+        )
+        .with_min_version("3.0.0");
+        assert!(info.version_compatible);
+
+        let info = ClientInfo::installed(
+            "FreeRDP",
+            PathBuf::from("/usr/bin/xfreerdp"),
+            Some("2.11.7".to_string()),
+        )
+        .with_min_version("3.0.0");
+        assert!(!info.version_compatible);
+
+        let info = ClientInfo::installed(
+            "FreeRDP",
+            PathBuf::from("/usr/bin/xfreerdp"),
+            Some("3.1.0".to_string()),
+        )
+        .with_min_version("3.0.0");
+        assert!(info.version_compatible);
     }
 }

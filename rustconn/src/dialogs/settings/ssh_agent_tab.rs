@@ -12,6 +12,8 @@ use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
 
+use crate::i18n::i18n;
+
 /// Creates the SSH Agent settings page using AdwPreferencesPage
 #[allow(clippy::type_complexity)]
 pub fn create_ssh_agent_page() -> (
@@ -27,21 +29,21 @@ pub fn create_ssh_agent_page() -> (
     ListBox, // available_keys_list
 ) {
     let page = adw::PreferencesPage::builder()
-        .title("SSH Agent")
+        .title(i18n("SSH Agent"))
         .icon_name("network-server-symbolic")
         .build();
 
     // === Agent Status Group ===
     let status_group = adw::PreferencesGroup::builder()
-        .title("Agent Status")
+        .title(i18n("Agent Status"))
         .build();
 
     let ssh_agent_status_label = Label::builder()
-        .label("Checking...")
+        .label(i18n("Checking..."))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .build();
-    let status_row = adw::ActionRow::builder().title("Status").build();
+    let status_row = adw::ActionRow::builder().title(i18n("Status")).build();
     status_row.add_suffix(&ssh_agent_status_label);
     status_group.add(&status_row);
 
@@ -54,13 +56,13 @@ pub fn create_ssh_agent_page() -> (
         .ellipsize(gtk4::pango::EllipsizeMode::Middle)
         .max_width_chars(40)
         .build();
-    let socket_row = adw::ActionRow::builder().title("Socket").build();
+    let socket_row = adw::ActionRow::builder().title(i18n("Socket")).build();
     socket_row.add_suffix(&ssh_agent_socket_label);
     status_group.add(&socket_row);
 
     // Control buttons row
     let ssh_agent_start_button = Button::builder()
-        .label("Start Agent")
+        .label(i18n("Start Agent"))
         .valign(gtk4::Align::Center)
         .build();
     let ssh_agent_refresh_button = Button::builder()
@@ -77,7 +79,7 @@ pub fn create_ssh_agent_page() -> (
     buttons_box.append(&ssh_agent_start_button);
     buttons_box.append(&ssh_agent_refresh_button);
 
-    let control_row = adw::ActionRow::builder().title("Controls").build();
+    let control_row = adw::ActionRow::builder().title(i18n("Controls")).build();
     control_row.add_suffix(&buttons_box);
     status_group.add(&control_row);
 
@@ -85,8 +87,8 @@ pub fn create_ssh_agent_page() -> (
 
     // === Loaded Keys Group ===
     let keys_group = adw::PreferencesGroup::builder()
-        .title("Loaded Keys")
-        .description("Keys currently loaded in the SSH agent")
+        .title(i18n("Loaded Keys"))
+        .description(i18n("Keys currently loaded in the SSH agent"))
         .build();
 
     let ssh_agent_keys_list = ListBox::builder()
@@ -104,13 +106,13 @@ pub fn create_ssh_agent_page() -> (
 
     // Add Key button
     let ssh_agent_add_key_button = Button::builder()
-        .label("Add Key")
+        .label(i18n("Add Key"))
         .valign(gtk4::Align::Center)
         .css_classes(["suggested-action"])
         .build();
     let add_key_row = adw::ActionRow::builder()
-        .title("Add SSH Key")
-        .subtitle("Load a key from file")
+        .title(i18n("Add SSH Key"))
+        .subtitle(i18n("Load a key from file"))
         .activatable(true)
         .build();
     add_key_row.add_suffix(&ssh_agent_add_key_button);
@@ -120,8 +122,8 @@ pub fn create_ssh_agent_page() -> (
 
     // === Available Key Files Group ===
     let available_group = adw::PreferencesGroup::builder()
-        .title("Available Key Files")
-        .description("Key files found in ~/.ssh/")
+        .title(i18n("Available Key Files"))
+        .description(i18n("Key files found in ~/.ssh/"))
         .build();
 
     let available_keys_list = ListBox::builder()
@@ -164,7 +166,9 @@ pub fn load_ssh_agent_settings(
     while let Some(child) = ssh_agent_keys_list.first_child() {
         ssh_agent_keys_list.remove(&child);
     }
-    let loading_row = adw::ActionRow::builder().title("Loading keys...").build();
+    let loading_row = adw::ActionRow::builder()
+        .title(i18n("Loading keys..."))
+        .build();
     let spinner = Spinner::builder().spinning(true).build();
     loading_row.add_prefix(&spinner);
     ssh_agent_keys_list.append(&loading_row);
@@ -221,8 +225,8 @@ pub fn load_ssh_agent_settings(
 
                     if agent_status.keys.is_empty() {
                         let empty_row = adw::ActionRow::builder()
-                            .title("No keys loaded")
-                            .subtitle("Add keys using ssh-add or the button above")
+                            .title(i18n("No keys loaded"))
+                            .subtitle(i18n("Add keys using ssh-add or the button above"))
                             .build();
                         keys_list.append(&empty_row);
                     } else {
@@ -240,19 +244,19 @@ pub fn load_ssh_agent_settings(
                 } else {
                     status_label.add_css_class("dim-label");
                     let empty_row = adw::ActionRow::builder()
-                        .title("Agent not running")
-                        .subtitle("Start the agent to manage keys")
+                        .title(i18n("Agent not running"))
+                        .subtitle(i18n("Start the agent to manage keys"))
                         .build();
                     keys_list.append(&empty_row);
                 }
             } else {
-                status_label.set_text("Error");
+                status_label.set_text(&i18n("Error"));
                 status_label.remove_css_class("dim-label");
                 status_label.add_css_class("error");
 
                 let empty_row = adw::ActionRow::builder()
-                    .title("Agent not running")
-                    .subtitle("Start the agent to manage keys")
+                    .title(i18n("Agent not running"))
+                    .subtitle(i18n("Start the agent to manage keys"))
                     .build();
                 keys_list.append(&empty_row);
             }
@@ -276,7 +280,7 @@ pub fn populate_available_keys_list(
         available_keys_list.remove(&child);
     }
     let loading_row = adw::ActionRow::builder()
-        .title("Scanning ~/.ssh/...")
+        .title(i18n("Scanning ~/.ssh/..."))
         .build();
     let spinner = Spinner::builder().spinning(true).build();
     loading_row.add_prefix(&spinner);
@@ -301,8 +305,8 @@ pub fn populate_available_keys_list(
         match key_files_result {
             Ok(key_files) if key_files.is_empty() => {
                 let empty_row = adw::ActionRow::builder()
-                    .title("No SSH key files found")
-                    .subtitle("Generate keys with ssh-keygen")
+                    .title(i18n("No SSH key files found"))
+                    .subtitle(i18n("Generate keys with ssh-keygen"))
                     .build();
                 keys_list.append(&empty_row);
             }
@@ -350,7 +354,7 @@ pub fn populate_available_keys_list(
             }
             Err(_) => {
                 let error_row = adw::ActionRow::builder()
-                    .title("Failed to scan ~/.ssh/ directory")
+                    .title(i18n("Failed to scan ~/.ssh/ directory"))
                     .build();
                 error_row.add_css_class("error");
                 keys_list.append(&error_row);
@@ -411,7 +415,9 @@ fn add_key_with_passphrase_dialog(
         .build();
 
     let body_label = Label::builder()
-        .label("Enter passphrase (leave empty if key has no passphrase)")
+        .label(i18n(
+            "Enter passphrase (leave empty if key has no passphrase)",
+        ))
         .wrap(true)
         .halign(gtk4::Align::Start)
         .build();
@@ -428,9 +434,9 @@ fn add_key_with_passphrase_dialog(
         .halign(gtk4::Align::End)
         .build();
 
-    let cancel_button = Button::builder().label("Cancel").build();
+    let cancel_button = Button::builder().label(i18n("Cancel")).build();
     let add_button = Button::builder()
-        .label("Add Key")
+        .label(i18n("Add Key"))
         .css_classes(["suggested-action"])
         .build();
 

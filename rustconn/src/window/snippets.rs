@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use crate::alert;
 use crate::dialogs::SnippetDialog;
+use crate::i18n::i18n;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
 
@@ -29,12 +30,12 @@ pub fn show_new_snippet_dialog(window: &gtk4::Window, state: SharedAppState) {
                     Ok(_) => {
                         alert::show_success(
                             &window_clone,
-                            "Snippet Created",
-                            "Snippet has been saved successfully.",
+                            &i18n("Snippet Created"),
+                            &i18n("Snippet has been saved successfully."),
                         );
                     }
                     Err(e) => {
-                        alert::show_error(&window_clone, "Error Creating Snippet", &e);
+                        alert::show_error(&window_clone, &i18n("Error Creating Snippet"), &e);
                     }
                 }
             }
@@ -50,7 +51,7 @@ pub fn show_snippets_manager(
     notebook: SharedNotebook,
 ) {
     let manager_window = adw::Window::builder()
-        .title("Manage Snippets")
+        .title(i18n("Manage Snippets"))
         .transient_for(window)
         .modal(true)
         .default_width(500)
@@ -61,9 +62,9 @@ pub fn show_snippets_manager(
 
     // Create header bar with Close/Create buttons (GNOME HIG)
     let header = adw::HeaderBar::new();
-    let close_btn = Button::builder().label("Close").build();
+    let close_btn = Button::builder().label(&i18n("Close")).build();
     let new_btn = Button::builder()
-        .label("Create")
+        .label(&i18n("Create"))
         .css_classes(["suggested-action"])
         .build();
     header.pack_start(&close_btn);
@@ -84,7 +85,7 @@ pub fn show_snippets_manager(
 
     // Search entry
     let search_entry = gtk4::SearchEntry::new();
-    search_entry.set_placeholder_text(Some("Search snippets..."));
+    search_entry.set_placeholder_text(Some(&i18n("Search snippets...")));
     content.append(&search_entry);
 
     // Snippets list
@@ -105,10 +106,16 @@ pub fn show_snippets_manager(
     let button_box = gtk4::Box::new(Orientation::Horizontal, 8);
     button_box.set_halign(gtk4::Align::End);
 
-    let edit_btn = Button::builder().label("Edit").sensitive(false).build();
-    let delete_btn = Button::builder().label("Delete").sensitive(false).build();
+    let edit_btn = Button::builder()
+        .label(&i18n("Edit"))
+        .sensitive(false)
+        .build();
+    let delete_btn = Button::builder()
+        .label(&i18n("Delete"))
+        .sensitive(false)
+        .build();
     let execute_btn = Button::builder()
-        .label("Execute")
+        .label(&i18n("Execute"))
         .sensitive(false)
         .css_classes(["suggested-action"])
         .build();
@@ -207,9 +214,9 @@ pub fn show_snippets_manager(
                     let list_inner = list_clone.clone();
                     alert::show_confirm(
                         &manager_clone,
-                        "Delete Snippet?",
-                        "Are you sure you want to delete this snippet?",
-                        "Delete",
+                        &i18n("Delete Snippet?"),
+                        &i18n("Are you sure you want to delete this snippet?"),
+                        &i18n("Delete"),
                         true,
                         move |confirmed| {
                             if confirmed {
@@ -312,7 +319,7 @@ pub fn populate_snippets_list(state: &SharedAppState, list: &gtk4::ListBox, quer
 /// Shows a snippet picker for quick execution
 pub fn show_snippet_picker(window: &gtk4::Window, state: SharedAppState, notebook: SharedNotebook) {
     let picker_window = adw::Window::builder()
-        .title("Execute Snippet")
+        .title(i18n("Execute Snippet"))
         .transient_for(window)
         .modal(true)
         .default_width(400)
@@ -320,7 +327,7 @@ pub fn show_snippet_picker(window: &gtk4::Window, state: SharedAppState, noteboo
         .build();
 
     let header = adw::HeaderBar::new();
-    let cancel_btn = Button::builder().label("Cancel").build();
+    let cancel_btn = Button::builder().label(&i18n("Cancel")).build();
     header.pack_start(&cancel_btn);
 
     let content = gtk4::Box::new(Orientation::Vertical, 8);
@@ -330,7 +337,7 @@ pub fn show_snippet_picker(window: &gtk4::Window, state: SharedAppState, noteboo
     content.set_margin_end(12);
 
     let search_entry = gtk4::SearchEntry::new();
-    search_entry.set_placeholder_text(Some("Search snippets..."));
+    search_entry.set_placeholder_text(Some(&i18n("Search snippets...")));
     content.append(&search_entry);
 
     let scrolled = gtk4::ScrolledWindow::builder()
@@ -399,8 +406,8 @@ pub fn execute_snippet(
         let window: &gtk4::Window = parent.upcast_ref();
         alert::show_error(
             window,
-            "No Active Terminal",
-            "Please open a terminal session first before executing a snippet.",
+            &i18n("No Active Terminal"),
+            &i18n("Please open a terminal session first before executing a snippet."),
         );
         return;
     }
@@ -424,16 +431,16 @@ pub fn show_variable_input_dialog(
     snippet: &rustconn_core::Snippet,
 ) {
     let var_window = adw::Window::builder()
-        .title("Enter Variable Values")
+        .title(i18n("Enter Variable Values"))
         .transient_for(parent)
         .modal(true)
         .default_width(400)
         .build();
 
     let header = adw::HeaderBar::new();
-    let cancel_btn = Button::builder().label("Cancel").build();
+    let cancel_btn = Button::builder().label(&i18n("Cancel")).build();
     let execute_btn = Button::builder()
-        .label("Execute")
+        .label(&i18n("Execute"))
         .css_classes(["suggested-action"])
         .build();
     header.pack_start(&cancel_btn);

@@ -9,6 +9,8 @@ use libadwaita as adw;
 use std::cell::Cell;
 use std::rc::Rc;
 
+use crate::i18n::i18n;
+
 /// Progress dialog for displaying operation progress
 pub struct ProgressDialog {
     window: adw::Window,
@@ -50,7 +52,7 @@ impl ProgressDialog {
 
         // Status label
         let status_label = Label::builder()
-            .label("Starting...")
+            .label(i18n("Starting..."))
             .halign(gtk4::Align::Start)
             .wrap(true)
             .max_width_chars(50)
@@ -64,7 +66,7 @@ impl ProgressDialog {
         // Cancel button (optional)
         let cancelled = Rc::new(Cell::new(false));
         let cancel_button = Button::builder()
-            .label("Cancel")
+            .label(i18n("Cancel"))
             .halign(gtk4::Align::Center)
             .margin_top(12)
             .build();
@@ -78,7 +80,7 @@ impl ProgressDialog {
             cancel_button.connect_clicked(move |_| {
                 cancelled_clone.set(true);
                 cancel_btn_clone.set_sensitive(false);
-                cancel_btn_clone.set_label("Cancelling...");
+                cancel_btn_clone.set_label(&i18n("Cancelling..."));
             });
         }
 
@@ -170,6 +172,6 @@ impl ProgressDialog {
     pub fn reset_cancelled(&self) {
         self.cancelled.set(false);
         self.cancel_button.set_sensitive(true);
-        self.cancel_button.set_label("Cancel");
+        self.cancel_button.set_label(&i18n("Cancel"));
     }
 }

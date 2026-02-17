@@ -100,6 +100,7 @@ mod template_tests;
 mod terminal_theme_tests;
 mod testing_tests;
 mod tracing_tests;
+mod variable_injection_tests;
 mod variable_tests;
 mod verification_tests;
 mod virt_viewer_tests;

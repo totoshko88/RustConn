@@ -3,6 +3,7 @@
 //! Provides dialogs for creating, opening, saving, and managing documents.
 
 use crate::alert::{self, SaveChangesResponse};
+use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -56,7 +57,7 @@ impl NewDocumentDialog {
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
         let window = adw::Window::builder()
-            .title("New Document")
+            .title(i18n("New Document"))
             .modal(true)
             .default_width(400)
             .build();
@@ -71,9 +72,9 @@ impl NewDocumentDialog {
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
-        let cancel_btn = Button::builder().label("Cancel").build();
+        let cancel_btn = Button::builder().label(i18n("Cancel")).build();
         let create_btn = Button::builder()
-            .label("Create")
+            .label(i18n("Create"))
             .css_classes(["suggested-action"])
             .sensitive(false)
             .build();
@@ -95,7 +96,7 @@ impl NewDocumentDialog {
 
         // Name field
         let name_label = Label::builder()
-            .label("Document Name")
+            .label(i18n("Document Name"))
             .halign(gtk4::Align::Start)
             .build();
         content.append(&name_label);
@@ -105,7 +106,7 @@ impl NewDocumentDialog {
 
         // Password protection
         let password_check = CheckButton::builder()
-            .label("Protect with password")
+            .label(i18n("Protect with password"))
             .build();
         content.append(&password_check);
 
@@ -115,7 +116,7 @@ impl NewDocumentDialog {
         password_box.set_visible(false);
 
         let password_label = Label::builder()
-            .label("Password")
+            .label(i18n("Password"))
             .halign(gtk4::Align::Start)
             .build();
         password_box.append(&password_label);
@@ -124,7 +125,7 @@ impl NewDocumentDialog {
         password_box.append(&password_entry);
 
         let confirm_label = Label::builder()
-            .label("Confirm Password")
+            .label(i18n("Confirm Password"))
             .halign(gtk4::Align::Start)
             .build();
         password_box.append(&confirm_label);
@@ -267,7 +268,7 @@ impl OpenDocumentDialog {
         filters.append(&filter);
 
         let dialog = FileDialog::builder()
-            .title("Open Document")
+            .title(i18n("Open Document"))
             .filters(&filters)
             .modal(true)
             .build();
@@ -308,7 +309,7 @@ impl OpenDocumentDialog {
         on_complete: DocumentCallback,
     ) {
         let window = adw::Window::builder()
-            .title("Enter Password")
+            .title(i18n("Enter Password"))
             .modal(true)
             .default_width(350)
             .build();
@@ -322,9 +323,9 @@ impl OpenDocumentDialog {
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
-        let cancel_btn = Button::builder().label("Cancel").build();
+        let cancel_btn = Button::builder().label(i18n("Cancel")).build();
         let open_btn = Button::builder()
-            .label("Open")
+            .label(i18n("Open"))
             .css_classes(["suggested-action"])
             .build();
         header.pack_start(&cancel_btn);
@@ -337,7 +338,10 @@ impl OpenDocumentDialog {
         content.set_margin_end(12);
 
         let label = Label::builder()
-            .label("This document is password protected.\nEnter the password to open it.")
+            .label(i18n(
+                "This document is password protected.\n\
+                 Enter the password to open it.",
+            ))
             .halign(gtk4::Align::Start)
             .build();
         content.append(&label);
@@ -417,7 +421,7 @@ impl SaveDocumentDialog {
         filters.append(&filter);
 
         let dialog = FileDialog::builder()
-            .title("Save Document")
+            .title(i18n("Save Document"))
             .filters(&filters)
             .initial_name(format!("{suggested_name}.rcdb"))
             .modal(true)
@@ -492,7 +496,8 @@ impl CloseDocumentDialog {
             parent_window,
             "Save changes?",
             &format!(
-                "Document \"{doc_name}\" has unsaved changes. Do you want to save before closing?"
+                "Document \"{doc_name}\" has unsaved changes. \
+                 Do you want to save before closing?"
             ),
             move |response| match response {
                 SaveChangesResponse::DontSave => {
@@ -542,7 +547,7 @@ impl DocumentProtectionDialog {
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
         let window = adw::Window::builder()
-            .title("Document Protection")
+            .title(i18n("Document Protection"))
             .modal(true)
             .default_width(400)
             .build();
@@ -557,9 +562,9 @@ impl DocumentProtectionDialog {
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
-        let cancel_btn = Button::builder().label("Cancel").build();
+        let cancel_btn = Button::builder().label(i18n("Cancel")).build();
         let apply_btn = Button::builder()
-            .label("Apply")
+            .label(i18n("Apply"))
             .css_classes(["suggested-action"])
             .build();
         header.pack_start(&cancel_btn);
@@ -580,7 +585,10 @@ impl DocumentProtectionDialog {
 
         // Info label
         let info_label = Label::builder()
-            .label("Password protection encrypts the document contents.\nYou will need to enter the password each time you open it.")
+            .label(i18n(
+                "Password protection encrypts the document contents.\n\
+                 You will need to enter the password each time you open it.",
+            ))
             .halign(gtk4::Align::Start)
             .wrap(true)
             .build();
@@ -588,7 +596,7 @@ impl DocumentProtectionDialog {
 
         // Enable checkbox
         let enable_check = CheckButton::builder()
-            .label("Enable password protection")
+            .label(i18n("Enable password protection"))
             .build();
         content.append(&enable_check);
 
@@ -598,7 +606,7 @@ impl DocumentProtectionDialog {
         password_box.set_visible(false);
 
         let password_label = Label::builder()
-            .label("New Password")
+            .label(i18n("New Password"))
             .halign(gtk4::Align::Start)
             .build();
         password_box.append(&password_label);
@@ -607,7 +615,7 @@ impl DocumentProtectionDialog {
         password_box.append(&password_entry);
 
         let confirm_label = Label::builder()
-            .label("Confirm Password")
+            .label(i18n("Confirm Password"))
             .halign(gtk4::Align::Start)
             .build();
         password_box.append(&confirm_label);
@@ -617,7 +625,7 @@ impl DocumentProtectionDialog {
 
         // Password strength hint
         let hint_label = Label::builder()
-            .label("Use a strong password that you can remember.")
+            .label(i18n("Use a strong password that you can remember."))
             .halign(gtk4::Align::Start)
             .css_classes(["dim-label"])
             .build();
