@@ -13,7 +13,7 @@ use crate::util::create_config_manager;
 pub fn cmd_template(config_path: Option<&Path>, subcmd: TemplateCommands) -> Result<(), CliError> {
     match subcmd {
         TemplateCommands::List { format, protocol } => {
-            cmd_template_list(config_path, format, protocol.as_deref())
+            cmd_template_list(config_path, format.effective(), protocol.as_deref())
         }
         TemplateCommands::Show { name } => cmd_template_show(config_path, &name),
         TemplateCommands::Create {

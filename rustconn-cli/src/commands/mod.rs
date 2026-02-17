@@ -35,7 +35,7 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             tag,
         } => list::cmd_list(
             config_path,
-            format,
+            format.effective(),
             protocol.as_deref(),
             group.as_deref(),
             tag.as_deref(),

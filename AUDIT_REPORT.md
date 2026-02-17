@@ -228,9 +228,9 @@
   }
   ```
 
-- [ ] **CODE-08: Відсутність мінімальної перевірки версій CLI**
-  - `detection.rs` визначає наявність клієнта, але не перевіряє мінімальну версію
-  - Наприклад, FreeRDP 2.x vs 3.x мають різний API аргументів
+- [x] **CODE-08: Відсутність мінімальної перевірки версій CLI** ✅ v0.8.7
+  - `ClientInfo` має `min_version`, `version_compatible`, `with_min_version()`, `check_version_compatible()`
+  - FreeRDP detection використовує `with_min_version("3.0.0")`
   - **Рішення:** Додати `min_version` до `ClientInfo`:
   ```rust
   pub struct ClientInfo {
@@ -341,7 +341,8 @@
   - Немає клавіатурних шорткатів для навігації по історії (стрілки вгору/вниз)
   - **Рішення:** Додати arrow key handler у search entry
 
-- [ ] **GUI-11: Додати `<recommends>` у metainfo для мобільних**
+- [x] **GUI-11: Додати `<recommends>` у metainfo для мобільних** ✅ v0.8.7 (FH-03)
+  - Додано `<requires>`, `<recommends>`, `<supports>` елементи у metainfo.xml
   ```xml
   <recommends>
     <display_length compare="ge">360</display_length>
@@ -424,23 +425,18 @@
 
 ### 🟡 P1 — Важливі
 
-- [ ] **EXT-03: Тільки x86_64 архітектура**
-  - Всі URL у `DOWNLOADABLE_COMPONENTS` — для `linux-amd64` / `x86_64`
-  - Немає підтримки aarch64/arm64
-  - **Рішення:** Додати arch detection:
-  ```rust
-  fn get_arch() -> &'static str {
-      if cfg!(target_arch = "x86_64") { "amd64" }
-      else if cfg!(target_arch = "aarch64") { "arm64" }
-      else { "unknown" }
-  }
-  
-  // У DownloadableComponent:
-  pub download_urls: &'static [(&'static str, &'static str)], // [(arch, url)]
-  ```
+- [x] **EXT-03: Тільки x86_64 архітектура** ✅ v0.8.7
+  - `DownloadableComponent` має `aarch64_url` поле для arm64 URL
+  - `download_url_for_arch()` автоматично обирає правильний URL за `cfg!(target_arch)`
+  - `get_arch()` повертає `"amd64"` або `"arm64"`
+  - aarch64 URL додані для: AWS CLI, SSM Plugin, gcloud, Teleport, Tailscale, Cloudflared, Boundary, 1Password, kubectl
+  - TigerVNC та Bitwarden не мають arm64 Linux бінарників від upstream
 
-- [ ] **EXT-04: Встановлення CLI поза Flatpak — тільки download**
-  - Для нативних пакетів (deb/rpm/snap) немає інтеграції з системним пакетним менеджером
+- [x] **EXT-04: Встановлення CLI поза Flatpak — тільки download** ✅ v0.8.7
+  - `InstallMethod::SystemPackage` з полями `apt`, `dnf`, `pacman`, `zypper`
+  - `detect_package_manager()` визначає системний пакетний менеджер
+  - `get_system_install_command()` генерує команду встановлення
+  - FreeRDP позначений як "Install via system package manager" (не має pre-built бінарників)
   - **Рішення:** Додати `InstallMethod::SystemPackage`:
   ```rust
   pub enum InstallMethod {
@@ -469,27 +465,18 @@
   "FreeRDP not found. Install: sudo apt install freerdp3-wayland"
   ```
 
-- [ ] **EXT-05: Немає перевірки мінімальної версії CLI**
-  - `detection.rs` визначає наявність, але не перевіряє сумісність
-  - FreeRDP 2.x vs 3.x мають різний API аргументів (`/v:` vs `--server`)
-  - **Рішення:** Додати `min_version` та `parse_semver()`:
-  ```rust
-  pub struct ClientRequirement {
-      pub binary: &'static str,
-      pub min_version: Option<(u32, u32, u32)>,
-      pub version_args: &'static [&'static str],
-  }
-  
-  fn check_version_compatible(info: &ClientInfo, min: (u32, u32, u32)) -> bool {
-      info.version.as_ref()
-          .and_then(|v| parse_semver(v))
-          .is_some_and(|v| v >= min)
-  }
-  ```
+- [x] **EXT-05: Немає перевірки мінімальної версії CLI** ✅ v0.8.7
+  - `ClientInfo` має `min_version` та `version_compatible` поля
+  - `with_min_version()` встановлює мінімальну версію та перевіряє сумісність
+  - `check_version_compatible()` порівнює semver
+  - FreeRDP detection використовує `with_min_version("3.0.0")` — FreeRDP 2.x позначається як несумісний
 
-- [ ] **EXT-06: Version check timeout 6s — повільно для UI**
-  - `VERSION_CHECK_TIMEOUT = 6s` з polling кожні 50ms
-  - Settings → Clients tab може зависати на 6s × кількість CLI
+- [x] **EXT-06: Version check timeout 6s — повільно для UI** ✅ v0.8.3+
+  - Settings → Clients tab використовує async detection на background thread
+  - Кожен рядок показує `Spinner` під час завантаження
+  - Core та ZeroTrust detection запускаються паралельно через `std::thread::scope`
+  - `glib::idle_add_local` повертає результати в GTK main loop без блокування
+  - 6s timeout — per-CLI, не блокує інші
   - **Рішення:** Вже є паралельна детекція (v0.8.3), але варто додати progress indicator:
   ```rust
   // Показувати spinner для кожного CLI окремо
@@ -796,7 +783,7 @@
 
 ### 🟢 P2 — Рекомендації
 
-- [ ] **CLI-07: Pipe detection — автоматичний JSON**
+- [x] **CLI-07: Pipe detection — автоматичний JSON** ✅ v0.8.7
   - clig.dev: "If stdin is not an interactive terminal, prefer structured output"
   - **Рішення:**
   ```rust
@@ -809,7 +796,7 @@
   }
   ```
 
-- [ ] **CLI-08: Підказки при помилках**
+- [x] **CLI-08: Підказки при помилках** ✅ v0.8.7
   - clig.dev: "Suggest possible corrections when user input is invalid"
   - **Рішення:** Використати fuzzy matching для connection names:
   ```rust
@@ -1127,10 +1114,10 @@ Fluent має сенс для складних додатків з багато�
 | GUI-03 | GUI | 🟡 P1 | ~~Sidebar 200px~~ ✅ |
 | GUI-04 | GUI | 🟡 P1 | ~~Відсутні accessible names~~ ✅ |
 | GUI-05 | GUI | 🟡 P1 | ~~Валідація не анонсується screen readers~~ ✅ |
-| EXT-03 | Компоненти | 🟡 P1 | Тільки x86_64 |
-| EXT-04 | Компоненти | 🟡 P1 | Немає SystemPackage install method |
-| EXT-05 | Компоненти | 🟡 P1 | Немає min version check |
-| EXT-06 | Компоненти | 🟡 P1 | Version check timeout 6s |
+| EXT-03 | Компоненти | 🟡 P1 | ~~Тільки x86_64~~ ✅ |
+| EXT-04 | Компоненти | 🟡 P1 | ~~Немає SystemPackage install method~~ ✅ |
+| EXT-05 | Компоненти | 🟡 P1 | ~~Немає min version check~~ ✅ |
+| EXT-06 | Компоненти | 🟡 P1 | ~~Version check timeout 6s~~ ✅ |
 | FH-01 | Flathub | 🟡 P1 | ~~SPDX ліцензія inconsistent~~ ✅ |
 | FH-02 | Flathub | 🟡 P1 | ~~Немає `<translation>`~~ ✅ |
 | FH-03 | Flathub | 🟡 P1 | ~~Немає `<recommends>`~~ ✅ |
@@ -1145,19 +1132,19 @@ Fluent має сенс для складних додатків з багато�
 | SEC-07 | Безпека | 🟢 P2 | ~~Property-тести для ін'єкцій~~ ✅ |
 | CODE-06 | Код | 🟢 P2 | ~~Мертвий код flatpak.rs~~ ✅ |
 | CODE-07 | Код | 🟢 P2 | tracing замість println у CLI |
-| CODE-08 | Код | 🟢 P2 | Min version check для CLI |
+| CODE-08 | Код | 🟢 P2 | ~~Min version check для CLI~~ ✅ |
 | GUI-06 | GUI | 🟢 P2 | Split view на мобільних |
 | GUI-07 | GUI | 🟢 P2 | Tray polling → event-driven |
 | GUI-08 | GUI | 🟢 P2 | Непослідовні відступи |
 | GUI-09 | GUI | 🟢 P2 | D&D keyboard alternative |
 | GUI-10 | GUI | 🟢 P2 | Навігація по історії пошуку |
-| GUI-11 | GUI | 🟢 P2 | `<recommends>` у metainfo |
+| GUI-11 | GUI | 🟢 P2 | ~~`<recommends>` у metainfo~~ ✅ |
 | EXT-07 | Компоненти | 🟢 P2 | CI для перевірки версій |
 | EXT-08 | Компоненти | 🟢 P2 | Кешування client detection |
 | FH-06 | Flathub | 🟢 P2 | x-checker-data для modules |
 | FH-07 | Flathub | 🟢 P2 | Flatpak extensions |
-| CLI-07 | CLI | 🟢 P2 | Auto JSON при pipe |
-| CLI-08 | CLI | 🟢 P2 | Fuzzy suggestions |
+| CLI-07 | CLI | 🟢 P2 | ~~Auto JSON при pipe~~ ✅ |
+| CLI-08 | CLI | 🟢 P2 | ~~Fuzzy suggestions~~ ✅ |
 | CLI-09 | CLI | 🟢 P2 | ~~Confirmation для delete~~ ✅ |
 | CLI-10 | CLI | 🟢 P2 | Man pages |
 
@@ -1177,5 +1164,5 @@ Fluent має сенс для складних додатків з багато�
 | Wayland | 9/10 | Wayland-first, немає X11 API, Cairo fallback |
 | Тестування | 9/10 | ~2600 тестів, property tests для injection prevention |
 
-**Виконано:** 28/46 задач (61%) — всі P0, більшість P1
-**Залишилось:** 18 задач (SEC-05, SEC-06, GUI-02/06-11, EXT-03-08, FH-04-07, CODE-07-08, CLI-07/08/10)
+**Виконано:** 36/46 задач (78%) — всі P0, більшість P1
+**Залишилось:** 10 задач (SEC-05, SEC-06, GUI-02/06-10, EXT-07-08, FH-04-07, CODE-07, CLI-10)

@@ -61,7 +61,26 @@ pub fn find_connection<'a>(
         .collect();
 
     match matches.len() {
-        0 => Err(CliError::ConnectionNotFound(name_or_id.to_string())),
+        0 => {
+            // Fuzzy substring suggestions (CLI-08)
+            let needle = name_or_id.to_lowercase();
+            let suggestions: Vec<&str> = connections
+                .iter()
+                .filter(|c| c.name.to_lowercase().contains(&needle))
+                .take(5)
+                .map(|c| c.name.as_str())
+                .collect();
+
+            if suggestions.is_empty() {
+                Err(CliError::ConnectionNotFound(name_or_id.to_string()))
+            } else {
+                Err(CliError::ConnectionNotFound(format!(
+                    "'{}'. Did you mean: {}?",
+                    name_or_id,
+                    suggestions.join(", ")
+                )))
+            }
+        }
         1 => Ok(matches[0]),
         _ => {
             let names: Vec<_> = matches.iter().map(|c| c.name.as_str()).collect();

@@ -18,7 +18,12 @@ pub fn cmd_snippet(config_path: Option<&Path>, subcmd: SnippetCommands) -> Resul
             format,
             category,
             tag,
-        } => cmd_snippet_list(config_path, format, category.as_deref(), tag.as_deref()),
+        } => cmd_snippet_list(
+            config_path,
+            format.effective(),
+            category.as_deref(),
+            tag.as_deref(),
+        ),
         SnippetCommands::Show { name } => cmd_snippet_show(config_path, &name),
         SnippetCommands::Add {
             name,

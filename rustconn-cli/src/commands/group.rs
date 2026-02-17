@@ -12,7 +12,7 @@ use crate::util::create_config_manager;
 /// Group command handler
 pub fn cmd_group(config_path: Option<&Path>, subcmd: GroupCommands) -> Result<(), CliError> {
     match subcmd {
-        GroupCommands::List { format } => cmd_group_list(config_path, format),
+        GroupCommands::List { format } => cmd_group_list(config_path, format.effective()),
         GroupCommands::Show { name } => cmd_group_show(config_path, &name),
         GroupCommands::Create {
             name,

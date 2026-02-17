@@ -1,5 +1,6 @@
 //! CLI argument parsing types using `clap`.
 
+use std::io::IsTerminal;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand, ValueEnum};
@@ -290,6 +291,21 @@ pub enum OutputFormat {
     Json,
     /// Output as CSV
     Csv,
+}
+
+impl OutputFormat {
+    /// Returns the effective format, defaulting to JSON when stdout is not a terminal.
+    ///
+    /// Per clig.dev: "If stdin or stdout is not an interactive terminal,
+    /// prefer structured output."
+    #[must_use]
+    pub fn effective(self) -> Self {
+        if matches!(self, Self::Table) && !std::io::stdout().is_terminal() {
+            Self::Json
+        } else {
+            self
+        }
+    }
 }
 
 /// Export format options

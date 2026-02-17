@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI shell completions (CLI-05)** — `rustconn-cli completions <shell>` generates completion scripts for bash, zsh, fish, elvish, and PowerShell via `clap_complete`
 - **CLI `--dry-run` for connect (CLI-04)** — `rustconn-cli connect --dry-run` prints the command that would be executed without running it
 - **CLI pager for long output (CLI-06)** — `list` command pipes table output through `less -FIRX` when stdout is a terminal and output exceeds 40 lines; falls back to direct print if `less` is unavailable or output is piped
+- **CLI auto-JSON when piped (CLI-07)** — `list`, `group list`, `cluster list`, `variable list`, `snippet list`, and `template list` commands automatically switch from table to JSON output when stdout is not a terminal, per clig.dev structured output guidelines
+- **CLI fuzzy suggestions (CLI-08)** — When a connection name is not found, the CLI searches for connections whose names contain the search term (case-insensitive substring) and shows "Did you mean: x, y, z?" suggestions in the error message
 - **Pinned CLI component versions (EXT-02)** — `DownloadableComponent` now has `pinned_version` field tracking the exact version in download URLs; `get_pinned_versions()` returns all pinned versions for CI version-checking
 - **Flathub device/display metadata (FH-03)** — Added `<requires>`, `<recommends>`, and `<supports>` elements to metainfo.xml for Flathub device filtering
 

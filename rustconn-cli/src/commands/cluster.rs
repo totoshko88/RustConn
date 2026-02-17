@@ -12,7 +12,7 @@ use crate::util::{create_config_manager, find_connection};
 /// Cluster command handler
 pub fn cmd_cluster(config_path: Option<&Path>, subcmd: ClusterCommands) -> Result<(), CliError> {
     match subcmd {
-        ClusterCommands::List { format } => cmd_cluster_list(config_path, format),
+        ClusterCommands::List { format } => cmd_cluster_list(config_path, format.effective()),
         ClusterCommands::Show { name } => cmd_cluster_show(config_path, &name),
         ClusterCommands::Create {
             name,
