@@ -14,7 +14,8 @@ use uuid::Uuid;
 use crate::error::ImportError;
 use crate::models::{
     Connection, ConnectionGroup, Credentials, PasswordSource, ProtocolConfig, RdpConfig,
-    Resolution, SpiceConfig, SshAuthMethod, SshConfig, SshKeySource, TelnetConfig, VncConfig,
+    RdpGateway, Resolution, SpiceConfig, SshAuthMethod, SshConfig, SshKeySource, TelnetConfig,
+    VncConfig,
 };
 
 use super::normalize::parse_host_port;
@@ -283,11 +284,29 @@ impl RemminaImporter {
 
                 let color_depth = config.get("colordepth").and_then(|d| d.parse().ok());
 
+                // Parse RDP gateway from Remmina fields
+                let gateway = config
+                    .get("gateway_server")
+                    .filter(|s| !s.is_empty())
+                    .map(|gw| {
+                        let (gw_host, gw_port) = parse_host_port(gw);
+                        let gw_username = config
+                            .get("gateway_username")
+                            .filter(|s| !s.is_empty())
+                            .cloned();
+                        RdpGateway {
+                            hostname: gw_host,
+                            port: gw_port.unwrap_or(443),
+                            username: gw_username,
+                        }
+                    });
+
                 (
                     ProtocolConfig::Rdp(RdpConfig {
                         resolution,
                         color_depth,
                         audio_redirect: config.get("sound").is_some_and(|s| s != "off"),
+                        gateway,
                         ..Default::default()
                     }),
                     3389u16,
@@ -326,6 +345,11 @@ impl RemminaImporter {
             if !username.is_empty() {
                 connection.username = Some(username.clone());
             }
+        }
+
+        // Set domain for RDP connections
+        if let Some(domain) = config.get("domain").filter(|s| !s.is_empty()) {
+            connection.domain = Some(domain.clone());
         }
 
         // Try to import password from GNOME Keyring if enabled

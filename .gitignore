@@ -32,6 +32,7 @@ Thumbs.db
 # Backup files
 *.bak
 *~
+*.our_backup
 
 # Debug
 *.pdb

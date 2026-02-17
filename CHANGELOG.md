@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Improved
+- **Czech translation (cs)** — Native speaker review by [p-bo](https://github.com/p-bo); 45 translations improved ([PR #19](https://github.com/totoshko88/RustConn/pull/19))
+- **Remmina RDP import** — Now imports `gateway_server`, `gateway_username`, and `domain` fields from Remmina RDP profiles ([#20](https://github.com/totoshko88/RustConn/issues/20))
+
 ## [0.8.7] - 2026-02-17
 
 ### Security
