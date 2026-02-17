@@ -41,6 +41,11 @@ pub fn create_search_help_popover() -> Popover {
 }
 
 /// Sets up search entry hints and history navigation
+///
+/// Handles Up/Down arrow keys for cycling through search history:
+/// - Down when empty: opens history popover
+/// - Up when empty: opens history popover
+/// - Up/Down when popover is open: cycles through history items inline
 pub fn setup_search_entry_hints(
     search_entry: &SearchEntry,
     entry_clone: &SearchEntry,
@@ -51,6 +56,9 @@ pub fn setup_search_entry_hints(
     let history_clone = search_history.clone();
     let entry_weak = entry_clone.downgrade();
     let popover_weak = history_popover.downgrade();
+    // Track current position in history for Up/Down cycling (-1 = not navigating)
+    let history_index: Rc<RefCell<i32>> = Rc::new(RefCell::new(-1));
+    let original_text: Rc<RefCell<String>> = Rc::new(RefCell::new(String::new()));
 
     controller.connect_key_pressed(move |_controller, key, _code, _state| {
         let Some(entry) = entry_weak.upgrade() else {
@@ -59,19 +67,83 @@ pub fn setup_search_entry_hints(
 
         match key {
             gtk4::gdk::Key::Down => {
-                // Show history if empty and focused
-                if entry.text().is_empty() {
-                    let history = history_clone.borrow();
-                    if !history.is_empty() {
-                        if let Some(popover) = popover_weak.upgrade() {
-                            popover.popup();
-                            return glib::Propagation::Stop;
-                        }
+                let history = history_clone.borrow();
+                if history.is_empty() {
+                    return glib::Propagation::Proceed;
+                }
+
+                if entry.text().is_empty() && *history_index.borrow() < 0 {
+                    // First press on empty entry — open popover
+                    if let Some(popover) = popover_weak.upgrade() {
+                        popover.popup();
                     }
+                    return glib::Propagation::Stop;
+                }
+
+                // Navigate forward (toward newer / empty)
+                let mut idx = history_index.borrow_mut();
+                if *idx > 0 {
+                    *idx -= 1;
+                    let text = &history[*idx as usize];
+                    entry.set_text(text);
+                    entry.set_position(-1);
+                } else if *idx == 0 {
+                    // Back to original text
+                    *idx = -1;
+                    entry.set_text(&original_text.borrow());
+                    entry.set_position(-1);
+                }
+                glib::Propagation::Stop
+            }
+            gtk4::gdk::Key::Up => {
+                let history = history_clone.borrow();
+                if history.is_empty() {
+                    return glib::Propagation::Proceed;
+                }
+
+                let mut idx = history_index.borrow_mut();
+                if *idx < 0 {
+                    // Start navigating — save current text
+                    *original_text.borrow_mut() = entry.text().to_string();
+                    *idx = 0;
+                } else if (*idx as usize) < history.len() - 1 {
+                    *idx += 1;
+                } else {
+                    return glib::Propagation::Stop;
+                }
+
+                let text = &history[*idx as usize];
+                entry.set_text(text);
+                entry.set_position(-1);
+
+                // Show popover as visual hint
+                if let Some(popover) = popover_weak.upgrade() {
+                    if !popover.is_visible() {
+                        popover.popup();
+                    }
+                }
+                glib::Propagation::Stop
+            }
+            gtk4::gdk::Key::Escape => {
+                // Reset history navigation on Escape
+                if *history_index.borrow() >= 0 {
+                    *history_index.borrow_mut() = -1;
+                    entry.set_text(&original_text.borrow());
+                    entry.set_position(-1);
+                    if let Some(popover) = popover_weak.upgrade() {
+                        popover.popdown();
+                    }
+                    return glib::Propagation::Stop;
                 }
                 glib::Propagation::Proceed
             }
-            _ => glib::Propagation::Proceed,
+            _ => {
+                // Any other key resets history navigation
+                if *history_index.borrow() >= 0 {
+                    *history_index.borrow_mut() = -1;
+                }
+                glib::Propagation::Proceed
+            }
         }
     });
 

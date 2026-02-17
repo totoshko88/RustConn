@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Flathub device/display metadata (FH-03)** — Added `<requires>`, `<recommends>`, and `<supports>` elements to metainfo.xml for Flathub device filtering
 - **CI version check workflow (EXT-07)** — GitHub Action `.github/workflows/check-cli-versions.yml` runs weekly (Monday 06:00 UTC) to check latest upstream versions of kubectl, Tailscale, Cloudflared, Boundary, Teleport, Bitwarden CLI, and 1Password CLI against pinned versions in `cli_download.rs`
 - **Client detection caching (EXT-08)** — `ClientDetectionResult::detect_cached()` returns cached results for 5 minutes, avoiding repeated CLI version checks when reopening Settings → Clients tab
+- **Ctrl+M "Move to Group" shortcut (GUI-09)** — Keyboard alternative for drag-and-drop: `Ctrl+M` opens the "Move to Group" dialog for the selected sidebar item
+- **Search history arrow key navigation (GUI-10)** — Up/Down arrow keys cycle through search history inline in the sidebar search entry; Escape restores original text; any other key resets navigation
+- **Flathub x-checker-data for all modules (FH-06)** — Added `x-checker-data` entries to vte (GNOME type), libsecret (GNOME type), inetutils (Anitya), picocom (Anitya), and mc (Anitya) in the Flathub manifest for automated dependency version tracking
 
 ### Fixed
 - **CLI `--config` flag now works (CLI-01)** — The `--config` flag was declared but never used; now threads the custom config directory path through all 43 `ConfigManager` call sites via `create_config_manager()` helper
@@ -48,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Protocol command building unified (CODE-03)** — Moved `build_rdp_command()`, `build_vnc_command()`, `build_spice_command()` from CLI into core `Protocol::build_command()` trait implementations; CLI `connect` now delegates to `ProtocolRegistry` for all protocols
 - **Send Text dialog migrated to adw::Dialog (GUI-01)** — Replaced `gtk4::Window` with `adw::Dialog` + `adw::ToolbarView` in `show_send_text_dialog()` per GNOME HIG
 - **Sidebar minimum width reduced (GUI-03)** — Reduced sidebar `width_request` from 200px to 160px for better narrow window and mobile support
+- **Tray message handling split from state sync (GUI-07)** — Replaced single 250ms polling loop with two separate timers: tray messages checked every 50ms (lightweight `try_recv`), state sync (session count, recent connections) every 2 seconds with dirty-flag tracking; reduces idle CPU overhead while keeping message delivery responsive
 
 ### Improved
 - **Accessible labels for icon-only buttons (GUI-04)** — Added `update_property` accessible labels to 20+ icon-only buttons across sidebar, dashboard, adaptive tabs, floating controls, and embedded viewer toolbars for screen reader compatibility
