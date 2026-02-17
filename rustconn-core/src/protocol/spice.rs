@@ -126,6 +126,9 @@ impl Protocol for SpiceProtocol {
                     folder.local_path.display()
                 ));
             }
+            if let Some(ref proxy) = spice_config.proxy {
+                args.push(format!("--spice-proxy={proxy}"));
+            }
         }
 
         let mut cmd = vec!["remote-viewer".to_string()];

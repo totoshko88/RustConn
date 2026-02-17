@@ -2410,6 +2410,7 @@ impl TemplateDialog {
             shared_folders: Vec::new(),
             clipboard_enabled: clipboard_check.is_active(),
             image_compression: compression,
+            proxy: None,
         })
     }
 

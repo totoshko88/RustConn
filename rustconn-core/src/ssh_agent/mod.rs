@@ -505,34 +505,55 @@ impl SshAgentManager {
         let socket_path = self.socket_path.as_ref().ok_or(AgentError::NotRunning)?;
 
         if let Some(pass) = passphrase {
-            // Use SSH_ASKPASS with a helper script for passphrase
-            // This is a simplified approach - in production, you'd use expect or a proper PTY
-            let mut cmd = Command::new("ssh-add");
-            cmd.arg(key_path)
+            // Write a temporary SSH_ASKPASS helper script that echoes the passphrase.
+            // SSH_ASKPASS_REQUIRE=force tells ssh-add to use the helper even without
+            // a terminal, avoiding the need for a PTY/expect library.
+            let script_dir =
+                std::env::temp_dir().join(format!("rustconn-askpass-{}", uuid::Uuid::new_v4()));
+            std::fs::create_dir_all(&script_dir)
+                .map_err(|e| AgentError::AddKeyFailed(format!("mkdir askpass: {e}")))?;
+            let script_path = script_dir.join("askpass.sh");
+
+            // The script prints the passphrase to stdout.
+            // Single-quotes are escaped to prevent shell injection.
+            let escaped = pass.replace('\'', "'\\''");
+            std::fs::write(
+                &script_path,
+                format!("#!/bin/sh\nprintf '%s\\n' '{escaped}'"),
+            )
+            .map_err(|e| AgentError::AddKeyFailed(format!("write askpass: {e}")))?;
+
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                std::fs::set_permissions(&script_path, std::fs::Permissions::from_mode(0o700))
+                    .map_err(|e| AgentError::AddKeyFailed(format!("chmod askpass: {e}")))?;
+            }
+
+            let output = Command::new("ssh-add")
+                .arg(key_path)
                 .env("SSH_AUTH_SOCK", socket_path)
+                .env("SSH_ASKPASS", &script_path)
                 .env("SSH_ASKPASS_REQUIRE", "force")
                 .env("DISPLAY", ":0")
-                .stdin(Stdio::piped())
+                .stdin(Stdio::null())
                 .stdout(Stdio::piped())
-                .stderr(Stdio::piped());
-
-            // For now, we'll use a simple echo approach via environment
-            // In a real implementation, you'd want to use a proper PTY or expect-like library
-            let output = cmd
+                .stderr(Stdio::piped())
                 .output()
-                .map_err(|e| AgentError::AddKeyFailed(e.to_string()))?;
+                .map_err(|e| AgentError::AddKeyFailed(e.to_string()));
+
+            // Always clean up the temporary script
+            let _ = std::fs::remove_dir_all(&script_dir);
+
+            let output = output?;
 
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
-                // If it needs a passphrase, we need a different approach
                 if stderr.contains("passphrase") || stderr.contains("bad passphrase") {
-                    return Err(AgentError::AddKeyFailed(format!(
-                        "Passphrase required or incorrect: {stderr}"
-                    )));
+                    return Err(AgentError::AddKeyFailed("Incorrect passphrase".to_string()));
                 }
                 return Err(AgentError::AddKeyFailed(stderr.to_string()));
             }
-            let _ = pass; // Acknowledge passphrase was provided
         } else {
             // No passphrase - simple ssh-add
             let output = Command::new("ssh-add")

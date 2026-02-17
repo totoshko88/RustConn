@@ -7312,6 +7312,7 @@ impl ConnectionDialogData<'_> {
             shared_folders: self.spice_shared_folders.borrow().clone(),
             clipboard_enabled: self.spice_clipboard_check.is_active(),
             image_compression,
+            proxy: None,
         }
     }
 

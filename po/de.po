@@ -1,0 +1,301 @@
+# German translation for RustConn
+# Copyright (C) 2025-2026 Anton Isaiev
+# This file is distributed under the same license as the RustConn package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: rustconn 0.8.7\n"
+"Report-Msgid-Bugs-To: https://github.com/totoshko88/RustConn/issues\n"
+"POT-Creation-Date: 2026-02-17 00:00+0000\n"
+"PO-Revision-Date: 2026-02-17 00:00+0000\n"
+"Last-Translator: RustConn Team\n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:2
+msgid "RustConn"
+msgstr "RustConn"
+
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
+msgid "Manage remote connections easily"
+msgstr "Fernverbindungen einfach verwalten"
+
+#: rustconn/src/app.rs
+msgid "Initialization Error"
+msgstr "Initialisierungsfehler"
+
+#: rustconn/src/app.rs
+msgid "Failed to initialize application state"
+msgstr "Anwendungsstatus konnte nicht initialisiert werden"
+
+#: rustconn/src/app.rs
+msgid "_Keyboard Shortcuts"
+msgstr "_Tastenkürzel"
+
+#: rustconn/src/app.rs
+msgid "_About RustConn"
+msgstr "_Über RustConn"
+
+#: rustconn/src/app.rs
+msgid "_Quit"
+msgstr "_Beenden"
+
+#: rustconn/src/window/mod.rs
+msgid "Opening mc SFTP..."
+msgstr "mc SFTP wird geöffnet…"
+
+#: rustconn/src/window/mod.rs
+msgid "Opening SFTP..."
+msgstr "SFTP wird geöffnet…"
+
+#: rustconn/src/window/mod.rs
+msgid "Connection failed"
+msgstr "Verbindung fehlgeschlagen"
+
+#: rustconn/src/window/mod.rs
+msgid "Deleted '{}'"
+msgstr "«{}» gelöscht"
+
+#: rustconn/src/window/mod.rs
+msgid "Undo"
+msgstr "Rückgängig"
+
+#: rustconn/src/sidebar/mod.rs
+msgid "Search connections..."
+msgstr "Verbindungen suchen…"
+
+#: rustconn/src/sidebar/mod.rs
+msgid "All"
+msgstr "Alle"
+
+#: rustconn/src/sidebar/mod.rs
+msgid "No connections found"
+msgstr "Keine Verbindungen gefunden"
+
+#: rustconn/src/sidebar/mod.rs
+msgid "Create a new connection to get started"
+msgstr "Erstellen Sie eine neue Verbindung"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "New Connection"
+msgstr "Neue Verbindung"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Edit Connection"
+msgstr "Verbindung bearbeiten"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Save"
+msgstr "Speichern"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "General"
+msgstr "Allgemein"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Name"
+msgstr "Name"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Host"
+msgstr "Host"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Port"
+msgstr "Port"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Username"
+msgstr "Benutzername"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Password"
+msgstr "Passwort"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Protocol"
+msgstr "Protokoll"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Group"
+msgstr "Gruppe"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Tags"
+msgstr "Tags"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Description"
+msgstr "Beschreibung"
+
+#: rustconn/src/dialogs/settings/mod.rs
+msgid "Settings"
+msgstr "Einstellungen"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Appearance"
+msgstr "Erscheinungsbild"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Color Scheme"
+msgstr "Farbschema"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "System"
+msgstr "System"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Light"
+msgstr "Hell"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Dark"
+msgstr "Dunkel"
+
+#: rustconn/src/dialogs/settings/terminal_tab.rs
+msgid "Terminal"
+msgstr "Terminal"
+
+#: rustconn/src/dialogs/settings/clients_tab.rs
+msgid "Clients"
+msgstr "Clients"
+
+#: rustconn/src/dialogs/settings/secrets_tab.rs
+msgid "Secrets"
+msgstr "Geheimnisse"
+
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs
+msgid "SSH Agent"
+msgstr "SSH-Agent"
+
+#: rustconn/src/dialogs/settings/logging_tab.rs
+msgid "Logging"
+msgstr "Protokollierung"
+
+#: rustconn/src/sidebar/filter.rs
+msgid "SSH"
+msgstr "SSH"
+
+#: rustconn/src/sidebar/filter.rs
+msgid "RDP"
+msgstr "RDP"
+
+#: rustconn/src/sidebar/filter.rs
+msgid "VNC"
+msgstr "VNC"
+
+#: rustconn/src/sidebar/filter.rs
+msgid "SPICE"
+msgstr "SPICE"
+
+#: rustconn/src/sidebar/filter.rs
+msgid "Telnet"
+msgstr "Telnet"
+
+#: rustconn/src/sidebar/filter.rs
+msgid "Serial"
+msgstr "Seriell"
+
+#: rustconn/src/sidebar/filter.rs
+msgid "K8s"
+msgstr "K8s"
+
+#: rustconn/src/dialogs/mod.rs
+msgid "Delete"
+msgstr "Löschen"
+
+#: rustconn/src/dialogs/mod.rs
+msgid "Connect"
+msgstr "Verbinden"
+
+#: rustconn/src/dialogs/mod.rs
+msgid "Create"
+msgstr "Erstellen"
+
+#: rustconn/src/dialogs/mod.rs
+msgid "Close"
+msgstr "Schließen"
+
+#: rustconn/src/dialogs/mod.rs
+msgid "Apply"
+msgstr "Anwenden"
+
+#: rustconn/src/dialogs/export.rs
+msgid "Export"
+msgstr "Exportieren"
+
+#: rustconn/src/dialogs/import.rs
+msgid "Import"
+msgstr "Importieren"
+
+#: rustconn/src/dialogs/import.rs
+msgid "Import completed successfully"
+msgstr "Import erfolgreich abgeschlossen"
+
+#: rustconn/src/dialogs/import.rs
+msgid "Import failed"
+msgstr "Import fehlgeschlagen"
+
+#: rustconn/src/sidebar/mod.rs
+msgid "{} connection"
+msgid_plural "{} connections"
+msgstr[0] "{} Verbindung"
+msgstr[1] "{} Verbindungen"
+
+#: rustconn/src/dialogs/import.rs
+msgid "{} connection imported"
+msgid_plural "{} connections imported"
+msgstr[0] "{} Verbindung importiert"
+msgstr[1] "{} Verbindungen importiert"
+
+#: rustconn/src/empty_state.rs
+msgid "No Active Sessions"
+msgstr "Keine aktiven Sitzungen"
+
+#: rustconn/src/empty_state.rs
+msgid "Select a connection from the sidebar to start"
+msgstr "Wählen Sie eine Verbindung aus der Seitenleiste"
+
+#: rustconn/src/validation.rs
+msgid "This field is required"
+msgstr "Dieses Feld ist erforderlich"
+
+#: rustconn/src/validation.rs
+msgid "Invalid port number"
+msgstr "Ungültige Portnummer"
+
+#: rustconn/src/validation.rs
+msgid "Invalid hostname"
+msgstr "Ungültiger Hostname"
+
+#: rustconn/src/app.rs
+msgid "Modern Connection Manager for Linux"
+msgstr "Moderner Verbindungsmanager für Linux"
+
+#: rustconn/src/sidebar/filter.rs
+msgid "Filter SSH connections"
+msgstr "SSH-Verbindungen filtern"
+
+#: rustconn/src/sidebar/filter.rs
+msgid "Filter RDP connections"
+msgstr "RDP-Verbindungen filtern"
+
+#: rustconn/src/sidebar/filter.rs
+msgid "Filter VNC connections"
+msgstr "VNC-Verbindungen filtern"
+
+#: rustconn/src/sidebar/filter.rs
+msgid "Close tab"
+msgstr "Tab schließen"
+
+#: rustconn/src/sidebar/filter.rs
+msgid "Open local shell terminal"
+msgstr "Lokales Terminal öffnen"

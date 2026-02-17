@@ -112,10 +112,14 @@ impl VirtViewerImporter {
                     }
                 });
 
+                // Store proxy URL in SpiceConfig so it's used for connections
+                let proxy = fields.get("proxy").filter(|p| !p.is_empty()).cloned();
+
                 (
                     ProtocolConfig::Spice(SpiceConfig {
                         tls_enabled: has_tls,
                         ca_cert_path,
+                        proxy,
                         ..SpiceConfig::default()
                     }),
                     default_port_for_spice(fields),
@@ -179,11 +183,6 @@ impl VirtViewerImporter {
                 domain: None,
             };
             result.credentials.insert(conn.id, creds);
-        }
-
-        // Store proxy info as a tag so it's visible to the user
-        if let Some(proxy) = fields.get("proxy").filter(|p| !p.is_empty()) {
-            conn.tags.push(format!("proxy:{proxy}"));
         }
 
         // Store host-subject as a tag for reference
@@ -297,7 +296,11 @@ ca=-----BEGIN CERTIFICATE-----\\nMIIFake...
         ));
         assert_eq!(conn.password_source, PasswordSource::Vault);
         assert!(result.credentials.contains_key(&conn.id));
-        assert!(conn.tags.iter().any(|t| t.starts_with("proxy:")));
+        // Proxy should be stored in SpiceConfig, not as a tag
+        assert!(matches!(
+            conn.protocol_config,
+            ProtocolConfig::Spice(ref s) if s.proxy.as_deref() == Some("http://192.168.1.100:3128")
+        ));
         assert!(conn.tags.iter().any(|t| t.starts_with("host-subject:")));
         // Inline PEM CA should produce a skipped entry warning
         assert!(

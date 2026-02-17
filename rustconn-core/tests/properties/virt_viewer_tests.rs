@@ -206,7 +206,7 @@ proptest! {
         }
     }
 
-    /// SPICE with proxy stores proxy as tag
+    /// SPICE with proxy stores proxy in SpiceConfig
     #[test]
     fn prop_spice_proxy_stored_as_tag(
         host in arb_hostname(),
@@ -222,13 +222,17 @@ proptest! {
 
         prop_assert_eq!(result.connections.len(), 1);
         let conn = &result.connections[0];
-        let proxy_tag = format!("proxy:{proxy}");
-        prop_assert!(
-            conn.tags.iter().any(|t| t == &proxy_tag),
-            "Expected proxy tag '{}' in {:?}",
-            proxy_tag,
-            conn.tags
-        );
+        if let ProtocolConfig::Spice(ref s) = conn.protocol_config {
+            prop_assert_eq!(
+                s.proxy.as_deref(),
+                Some(proxy.as_str()),
+                "Expected proxy '{}' in SpiceConfig, got {:?}",
+                proxy,
+                s.proxy
+            );
+        } else {
+            prop_assert!(false, "Expected SPICE protocol config");
+        }
     }
 
     /// Inline PEM CA produces a skipped entry warning

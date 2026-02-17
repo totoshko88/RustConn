@@ -1243,6 +1243,9 @@ pub struct SpiceConfig {
     /// Preferred image compression mode
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image_compression: Option<SpiceImageCompression>,
+    /// SPICE proxy URL (e.g. `http://proxy:3128`) for Proxmox VE tunnelled connections
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub proxy: Option<String>,
 }
 
 impl Default for SpiceConfig {
@@ -1255,6 +1258,7 @@ impl Default for SpiceConfig {
             shared_folders: Vec::new(),
             clipboard_enabled: true, // Clipboard enabled by default
             image_compression: None,
+            proxy: None,
         }
     }
 }

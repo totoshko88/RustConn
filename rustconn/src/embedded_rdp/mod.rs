@@ -1154,8 +1154,10 @@ impl EmbeddedRdpWidget {
 
         self.drawing_area
             .connect_resize(move |area, new_width, new_height| {
-                let new_width = new_width.unsigned_abs();
-                let new_height = new_height.unsigned_abs();
+                // Convert CSS pixels to device pixels for HiDPI displays
+                let scale = area.scale_factor().max(1) as u32;
+                let new_width = new_width.unsigned_abs() * scale;
+                let new_height = new_height.unsigned_abs() * scale;
 
                 tracing::debug!(
                     "[RDP Resize] Widget resized to {}x{} (RDP: {}x{})",
@@ -1545,14 +1547,19 @@ impl EmbeddedRdpWidget {
 
         // Get actual widget size for initial resolution
         // This ensures the RDP session matches the current window size
+        // Multiply by scale_factor to get device pixels on HiDPI displays
         let (actual_width, actual_height) = {
             let w = self.drawing_area.width();
             let h = self.drawing_area.height();
+            let scale = self.drawing_area.scale_factor().max(1) as u32;
             if w > 100 && h > 100 {
+                // Convert CSS pixels to device pixels for HiDPI
+                let device_w = w.unsigned_abs() * scale;
+                let device_h = h.unsigned_abs() * scale;
                 // Round down to multiple of 4 for RDP compatibility
                 // Many RDP servers and codecs require dimensions divisible by 4
-                let width = (w.unsigned_abs() / 4) * 4;
-                let height = (h.unsigned_abs() / 4) * 4;
+                let width = (device_w / 4) * 4;
+                let height = (device_h / 4) * 4;
                 // Ensure minimum size
                 (width.max(640), height.max(480))
             } else {
