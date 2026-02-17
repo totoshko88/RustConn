@@ -9,7 +9,6 @@ use crate::error::CliError;
 pub fn cmd_manpage() -> Result<(), CliError> {
     let cmd = Cli::command();
     let man = clap_mangen::Man::new(cmd);
-    man.render(&mut std::io::stdout())
-        .map_err(CliError::Io)?;
+    man.render(&mut std::io::stdout()).map_err(CliError::Io)?;
     Ok(())
 }

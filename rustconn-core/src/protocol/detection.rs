@@ -5,6 +5,8 @@
 
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::{Mutex, OnceLock};
+use std::time::{Duration, Instant};
 
 /// Information about a detected protocol client
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -110,6 +112,26 @@ impl ClientDetectionResult {
             spice: detect_spice_client(),
             telnet: detect_telnet_client(),
         }
+    }
+
+    /// Returns a cached result if available and fresh (< 5 minutes),
+    /// otherwise runs full detection and caches the result.
+    #[must_use]
+    pub fn detect_cached() -> Self {
+        static CACHE: OnceLock<Mutex<Option<(ClientDetectionResult, Instant)>>> = OnceLock::new();
+        let cache = CACHE.get_or_init(|| Mutex::new(None));
+
+        let mut guard = cache
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some((ref result, ref ts)) = *guard {
+            if ts.elapsed() < Duration::from_secs(300) {
+                return result.clone();
+            }
+        }
+        let result = Self::detect_all();
+        *guard = Some((result.clone(), Instant::now()));
+        result
     }
 }
 

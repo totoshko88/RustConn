@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI man page generation (CLI-10)** — `rustconn-cli man-page` generates a roff man page via `clap_mangen` and writes it to stdout; pipe to `man -l -` for preview or redirect to a file for installation
 - **Pinned CLI component versions (EXT-02)** — `DownloadableComponent` now has `pinned_version` field tracking the exact version in download URLs; `get_pinned_versions()` returns all pinned versions for CI version-checking
 - **Flathub device/display metadata (FH-03)** — Added `<requires>`, `<recommends>`, and `<supports>` elements to metainfo.xml for Flathub device filtering
+- **CI version check workflow (EXT-07)** — GitHub Action `.github/workflows/check-cli-versions.yml` runs weekly (Monday 06:00 UTC) to check latest upstream versions of kubectl, Tailscale, Cloudflared, Boundary, Teleport, Bitwarden CLI, and 1Password CLI against pinned versions in `cli_download.rs`
+- **Client detection caching (EXT-08)** — `ClientDetectionResult::detect_cached()` returns cached results for 5 minutes, avoiding repeated CLI version checks when reopening Settings → Clients tab
 
 ### Fixed
 - **CLI `--config` flag now works (CLI-01)** — The `--config` flag was declared but never used; now threads the custom config directory path through all 43 `ConfigManager` call sites via `create_config_manager()` helper
