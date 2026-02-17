@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI pager for long output (CLI-06)** — `list` command pipes table output through `less -FIRX` when stdout is a terminal and output exceeds 40 lines; falls back to direct print if `less` is unavailable or output is piped
 - **CLI auto-JSON when piped (CLI-07)** — `list`, `group list`, `cluster list`, `variable list`, `snippet list`, and `template list` commands automatically switch from table to JSON output when stdout is not a terminal, per clig.dev structured output guidelines
 - **CLI fuzzy suggestions (CLI-08)** — When a connection name is not found, the CLI searches for connections whose names contain the search term (case-insensitive substring) and shows "Did you mean: x, y, z?" suggestions in the error message
+- **CLI man page generation (CLI-10)** — `rustconn-cli man-page` generates a roff man page via `clap_mangen` and writes it to stdout; pipe to `man -l -` for preview or redirect to a file for installation
 - **Pinned CLI component versions (EXT-02)** — `DownloadableComponent` now has `pinned_version` field tracking the exact version in download URLs; `get_pinned_versions()` returns all pinned versions for CI version-checking
 - **Flathub device/display metadata (FH-03)** — Added `<requires>`, `<recommends>`, and `<supports>` elements to metainfo.xml for Flathub device filtering
 
@@ -38,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Flatpak host command functions (CODE-06)** — `host_command()`, `host_has_command()`, `host_which()`, `host_exec()`, `host_spawn()` in `flatpak.rs` marked `#[deprecated(since = "0.8.7")]`; `flatpak-spawn --host` has been disabled since 0.7.7 per Flathub policy; use embedded clients instead
 
 ### Changed
+- **CLI structured logging (CODE-07)** — Replaced all `eprintln!("Warning: ...")` calls in CLI with `tracing::warn!()` / `tracing::error!()` / `tracing::info!()`; added `tracing` + `tracing-subscriber` dependencies; `setup_logging()` in `main.rs` initializes subscriber with level derived from `--verbose` / `--quiet` flags; respects `RUST_LOG` env var override
 - **CLI modularized (CODE-01)** — Split monolithic `rustconn-cli/src/main.rs` (5000+ lines) into module directory: `cli.rs` (argument types), `error.rs` (error types + exit codes), `format.rs` (CSV escaping), `util.rs` (shared helpers), and `commands/` directory with 18 handler modules; `main.rs` reduced to 22-line entry point
 - **VNC viewer list deduplicated (CODE-04)** — Extracted `VNC_VIEWERS` constant in `detection.rs`; `detect_vnc_viewer_path()` and `detect_vnc_viewer_name()` now share a single list
 - **Protocol icon mapping deduplicated (CODE-05)** — Added `get_protocol_icon_by_name()` to `rustconn-core`; `sidebar_ui.rs` and `terminal/mod.rs` now delegate to core instead of maintaining separate match blocks

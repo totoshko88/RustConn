@@ -280,6 +280,10 @@ pub enum Commands {
         #[arg(value_enum)]
         shell: Shell,
     },
+
+    /// Generate man page
+    #[command(about = "Generate man page and write to stdout")]
+    ManPage,
 }
 
 /// Output format for the list command

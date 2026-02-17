@@ -32,17 +32,11 @@ pub fn cmd_sftp(
     }
 
     if !rustconn_core::sftp::ensure_ssh_agent() {
-        eprintln!(
-            "Warning: ssh-agent is not running. \
-             SFTP may require manual setup."
-        );
+        tracing::warn!("ssh-agent is not running. SFTP may require manual setup.");
     }
 
     if !rustconn_core::sftp::ensure_key_in_agent(connection) {
-        eprintln!(
-            "Warning: could not add SSH key to agent. \
-             You may need to run ssh-add manually."
-        );
+        tracing::warn!("Could not add SSH key to agent. You may need to run ssh-add manually.");
     }
 
     if use_mc {

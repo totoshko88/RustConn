@@ -96,6 +96,26 @@ pub struct CredentialUpdate {
 /// When storing or retrieving credentials, it tries each backend in order
 /// until one succeeds. It also provides session-level caching to avoid
 /// repeated queries to the backend.
+///
+/// # Security
+///
+/// ## Credential lifecycle
+///
+/// 1. **Retrieval** — `resolve_credentials()` queries backends in priority
+///    order. The first successful result is returned and optionally cached.
+/// 2. **Caching** — Resolved credentials are held in an in-memory
+///    `HashMap<String, Credentials>` behind an `Arc<RwLock<…>>`. The cache
+///    lives for the duration of the `SecretManager` instance (typically the
+///    application session). Passwords are stored as `SecretString` and are
+///    never logged or serialized.
+/// 3. **Eviction** — Call `clear_cache()` to drop all cached entries
+///    immediately. The cache is also dropped when the last `SecretManager`
+///    clone is dropped (normal `Arc` semantics).
+/// 4. **Storage** — `store_credentials()` writes to the highest-priority
+///    backend that accepts the operation. Passwords are passed as
+///    `SecretString` and exposed only at the backend boundary.
+/// 5. **Deletion** — `delete_credentials()` removes the entry from all
+///    backends and evicts the cache entry.
 pub struct SecretManager {
     /// Backends in priority order (first = highest priority)
     backends: Vec<Arc<dyn SecretBackend>>,

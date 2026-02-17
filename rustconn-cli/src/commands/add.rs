@@ -154,69 +154,51 @@ fn create_connection(
         }
         ProtocolType::Rdp => {
             if key.is_some() {
-                eprintln!("Warning: --key option is ignored for RDP connections");
+                tracing::warn!("--key option is ignored for RDP connections");
             }
             if auth_method.is_some() {
-                eprintln!("Warning: --auth-method is ignored for RDP connections");
+                tracing::warn!("--auth-method is ignored for RDP connections");
             }
             Connection::new_rdp(name.to_string(), host.to_string(), port)
         }
         ProtocolType::Vnc => {
             if key.is_some() {
-                eprintln!("Warning: --key option is ignored for VNC connections");
+                tracing::warn!("--key option is ignored for VNC connections");
             }
             if auth_method.is_some() {
-                eprintln!("Warning: --auth-method is ignored for VNC connections");
+                tracing::warn!("--auth-method is ignored for VNC connections");
             }
             Connection::new_vnc(name.to_string(), host.to_string(), port)
         }
         ProtocolType::Spice => {
             if key.is_some() {
-                eprintln!("Warning: --key option is ignored for SPICE connections");
+                tracing::warn!("--key option is ignored for SPICE connections");
             }
             if auth_method.is_some() {
-                eprintln!(
-                    "Warning: --auth-method is ignored for \
-                     SPICE connections"
-                );
+                tracing::warn!("--auth-method is ignored for SPICE connections");
             }
             Connection::new_spice(name.to_string(), host.to_string(), port)
         }
         ProtocolType::ZeroTrust => {
-            eprintln!(
-                "Error: Zero Trust connections cannot be created via CLI \
-                 quick-connect"
-            );
-            eprintln!("Use the GUI to configure Zero Trust connections");
+            tracing::error!("Zero Trust connections cannot be created via CLI quick-connect");
+            tracing::info!("Use the GUI to configure Zero Trust connections");
             Connection::new_ssh(name.to_string(), host.to_string(), port)
         }
         ProtocolType::Telnet => {
             if key.is_some() {
-                eprintln!(
-                    "Warning: --key option is ignored for \
-                     Telnet connections"
-                );
+                tracing::warn!("--key option is ignored for Telnet connections");
             }
             if auth_method.is_some() {
-                eprintln!(
-                    "Warning: --auth-method is ignored for \
-                     Telnet connections"
-                );
+                tracing::warn!("--auth-method is ignored for Telnet connections");
             }
             Connection::new_telnet(name.to_string(), host.to_string(), port)
         }
         ProtocolType::Serial => {
             if key.is_some() {
-                eprintln!(
-                    "Warning: --key option is ignored for \
-                     Serial connections"
-                );
+                tracing::warn!("--key option is ignored for Serial connections");
             }
             if auth_method.is_some() {
-                eprintln!(
-                    "Warning: --auth-method is ignored for \
-                     Serial connections"
-                );
+                tracing::warn!("--auth-method is ignored for Serial connections");
             }
             Connection::new_serial(name.to_string(), host.to_string())
         }
@@ -238,16 +220,10 @@ fn create_connection(
         }
         ProtocolType::Kubernetes => {
             if key.is_some() {
-                eprintln!(
-                    "Warning: --key option is ignored for \
-                     Kubernetes connections"
-                );
+                tracing::warn!("--key option is ignored for Kubernetes connections");
             }
             if auth_method.is_some() {
-                eprintln!(
-                    "Warning: --auth-method is ignored for \
-                     Kubernetes connections"
-                );
+                tracing::warn!("--auth-method is ignored for Kubernetes connections");
             }
             Connection::new_kubernetes(name.to_string())
         }

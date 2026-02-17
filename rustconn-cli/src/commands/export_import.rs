@@ -44,9 +44,8 @@ pub fn cmd_export(
     );
 
     if !result.warnings.is_empty() {
-        eprintln!("\nWarnings:");
         for warning in &result.warnings {
-            eprintln!("  - {warning}");
+            tracing::warn!("Export: {warning}");
         }
     }
 
@@ -167,23 +166,23 @@ pub fn cmd_import(
     println!("  Errors: {}", import_result.errors.len());
 
     if !import_result.skipped.is_empty() {
-        eprintln!("\nSkipped entries:");
         for skipped in &import_result.skipped {
             if let Some(ref location) = skipped.location {
-                eprintln!(
-                    "  - {} ({}): {}",
-                    skipped.identifier, location, skipped.reason
+                tracing::warn!(
+                    "Import skipped: {} ({}): {}",
+                    skipped.identifier,
+                    location,
+                    skipped.reason
                 );
             } else {
-                eprintln!("  - {}: {}", skipped.identifier, skipped.reason);
+                tracing::warn!("Import skipped: {}: {}", skipped.identifier, skipped.reason);
             }
         }
     }
 
     if !import_result.errors.is_empty() {
-        eprintln!("\nErrors:");
         for error in &import_result.errors {
-            eprintln!("  - {error}");
+            tracing::error!("Import error: {error}");
         }
     }
 

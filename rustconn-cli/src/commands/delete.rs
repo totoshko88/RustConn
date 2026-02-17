@@ -35,7 +35,7 @@ pub fn cmd_delete(config_path: Option<&Path>, name: &str, force: bool) -> Result
     let protocol = format!("{:?}", connection.protocol);
 
     if !force && !confirm(&format!("Delete connection '{conn_name}' ({protocol})?")) {
-        eprintln!("Aborted.");
+        tracing::info!("Delete aborted by user for '{conn_name}'");
         return Ok(());
     }
 

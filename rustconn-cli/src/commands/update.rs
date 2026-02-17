@@ -62,13 +62,10 @@ pub fn cmd_update(config_path: Option<&Path>, params: UpdateParams<'_>) -> Resul
             }
         } else {
             if params.key.is_some() {
-                eprintln!("Warning: --key is only applicable to SSH connections");
+                tracing::warn!("--key is only applicable to SSH connections");
             }
             if params.auth_method.is_some() {
-                eprintln!(
-                    "Warning: --auth-method is only applicable to SSH \
-                     connections"
-                );
+                tracing::warn!("--auth-method is only applicable to SSH connections");
             }
         }
     }
@@ -95,16 +92,10 @@ pub fn cmd_update(config_path: Option<&Path>, params: UpdateParams<'_>) -> Resul
             }
         } else {
             if params.device.is_some() {
-                eprintln!(
-                    "Warning: --device is only applicable to \
-                     Serial connections"
-                );
+                tracing::warn!("--device is only applicable to Serial connections");
             }
             if params.baud_rate.is_some() {
-                eprintln!(
-                    "Warning: --baud-rate is only applicable to \
-                     Serial connections"
-                );
+                tracing::warn!("--baud-rate is only applicable to Serial connections");
             }
         }
     }

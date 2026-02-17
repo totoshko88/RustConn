@@ -9,6 +9,7 @@ mod duplicate;
 mod export_import;
 mod group;
 mod list;
+mod manpage;
 mod secret;
 mod sftp;
 mod show;
@@ -113,5 +114,6 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
         Commands::Sftp { name, cli, mc } => sftp::cmd_sftp(config_path, &name, cli, mc),
         Commands::Stats => stats::cmd_stats(config_path),
         Commands::Completions { shell } => completions::cmd_completions(shell),
+        Commands::ManPage => manpage::cmd_manpage(),
     }
 }

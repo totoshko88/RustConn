@@ -99,9 +99,9 @@
 
 ### 🟢 P2 — Рекомендації
 
-- [ ] **SEC-06: Документувати lifecycle кредів**
-  - Кредиціали кешуються в `SecretManager` з TTL, але немає документації коли вони очищуються
-  - **Рішення:** Додати `/// # Security` секцію до `SecretManager` з описом lifecycle
+- [x] **SEC-06: Документувати lifecycle кредів** ✅ v0.8.7
+  - Додано `/// # Security` секцію до `SecretManager` з описом credential lifecycle:
+    retrieval → caching → eviction → storage → deletion
 
 - [x] **SEC-07: Додати property-тести для ін'єкцій** ✅ v0.8.7
   ```rust
@@ -213,20 +213,10 @@
   pub fn host_command(program: &str) -> Command { ... }
   ```
 
-- [ ] **CODE-07: `eprintln!` замість `tracing` у CLI**
+- [x] **CODE-07: `tracing` замість `println` у CLI** ✅ v0.8.7
   - Product rule вимагає `tracing` для structured logging
-  - CLI використовує `println!`/`eprintln!` скрізь
-  - **Рішення:** Додати `tracing-subscriber` з `--verbose` прапорцем:
-  ```rust
-  // rustconn-cli/src/main.rs
-  fn setup_logging(verbose: bool) {
-      let filter = if verbose { "debug" } else { "warn" };
-      tracing_subscriber::fmt()
-          .with_env_filter(filter)
-          .with_writer(std::io::stderr)
-          .init();
-  }
-  ```
+  - CLI тепер використовує `tracing` + `tracing-subscriber` з `--verbose` прапорцем
+  - Всі `eprintln!("Warning: ...")` замінені на `tracing::warn!()`, помилки на `tracing::error!()`
 
 - [x] **CODE-08: Відсутність мінімальної перевірки версій CLI** ✅ v0.8.7
   - `ClientInfo` має `min_version`, `version_compatible`, `with_min_version()`, `check_version_compatible()`
@@ -836,17 +826,8 @@
   }
   ```
 
-- [ ] **CLI-10: `man` page generation**
-  - clap підтримує `clap_mangen` для генерації man pages
-  - **Рішення:** Додати build script або окрему команду:
-  ```rust
-  // build.rs або Commands::ManPage
-  fn generate_man_pages() {
-      let cmd = Cli::command();
-      let man = clap_mangen::Man::new(cmd);
-      // Write to stdout or file
-  }
-  ```
+- [x] **CLI-10: `man` page generation** ✅ v0.8.7
+  - `rustconn-cli man-page` генерує man page через `clap_mangen` і виводить у stdout
 
 ---
 
@@ -1128,10 +1109,10 @@ Fluent має сенс для складних додатків з багато�
 | CLI-04 | CLI | 🟡 P1 | ~~Немає --dry-run~~ ✅ |
 | CLI-05 | CLI | 🟡 P1 | ~~Немає shell completions~~ ✅ |
 | CLI-06 | CLI | 🟡 P1 | ~~Немає pager~~ ✅ |
-| SEC-06 | Безпека | 🟢 P2 | Документація credential lifecycle |
+| SEC-06 | Безпека | 🟢 P2 | ~~Документація credential lifecycle~~ ✅ |
 | SEC-07 | Безпека | 🟢 P2 | ~~Property-тести для ін'єкцій~~ ✅ |
 | CODE-06 | Код | 🟢 P2 | ~~Мертвий код flatpak.rs~~ ✅ |
-| CODE-07 | Код | 🟢 P2 | tracing замість println у CLI |
+| CODE-07 | Код | 🟢 P2 | ~~tracing замість println у CLI~~ ✅ |
 | CODE-08 | Код | 🟢 P2 | ~~Min version check для CLI~~ ✅ |
 | GUI-06 | GUI | 🟢 P2 | Split view на мобільних |
 | GUI-07 | GUI | 🟢 P2 | Tray polling → event-driven |
@@ -1146,7 +1127,7 @@ Fluent має сенс для складних додатків з багато�
 | CLI-07 | CLI | 🟢 P2 | ~~Auto JSON при pipe~~ ✅ |
 | CLI-08 | CLI | 🟢 P2 | ~~Fuzzy suggestions~~ ✅ |
 | CLI-09 | CLI | 🟢 P2 | ~~Confirmation для delete~~ ✅ |
-| CLI-10 | CLI | 🟢 P2 | Man pages |
+| CLI-10 | CLI | 🟢 P2 | ~~Man pages~~ ✅ |
 
 ---
 
@@ -1164,5 +1145,5 @@ Fluent має сенс для складних додатків з багато�
 | Wayland | 9/10 | Wayland-first, немає X11 API, Cairo fallback |
 | Тестування | 9/10 | ~2600 тестів, property tests для injection prevention |
 
-**Виконано:** 36/46 задач (78%) — всі P0, більшість P1
-**Залишилось:** 10 задач (SEC-05, SEC-06, GUI-02/06-10, EXT-07-08, FH-04-07, CODE-07, CLI-10)
+**Виконано:** 39/46 задач (85%) — всі P0, більшість P1
+**Залишилось:** 7 задач (SEC-05, GUI-02/06-10, EXT-07-08, FH-04-07)

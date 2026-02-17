@@ -99,7 +99,7 @@ fn build_zerotrust_command(connection: &Connection) -> ConnectionCommand {
         args.extend(zt_config.custom_args.clone());
         ConnectionCommand { program, args }
     } else {
-        eprintln!("Warning: ZeroTrust protocol type but no ZeroTrust config");
+        tracing::warn!("ZeroTrust protocol type but no ZeroTrust config");
         ConnectionCommand {
             program: "echo".to_string(),
             args: vec!["Invalid Zero Trust configuration".to_string()],
@@ -131,7 +131,7 @@ fn execute_connection_command(command: &ConnectionCommand) -> Result<(), CliErro
         let mut cmd = Command::new(&command.program);
         cmd.args(&command.args);
 
-        eprintln!("Executing: {}", format_command_for_log(command));
+        tracing::info!("Executing: {}", format_command_for_log(command));
 
         let err = cmd.exec();
         Err(CliError::Config(format!(
@@ -145,7 +145,7 @@ fn execute_connection_command(command: &ConnectionCommand) -> Result<(), CliErro
         let mut cmd = Command::new(&command.program);
         cmd.args(&command.args);
 
-        eprintln!("Executing: {}", format_command_for_log(command));
+        tracing::info!("Executing: {}", format_command_for_log(command));
 
         let status = cmd
             .status()
