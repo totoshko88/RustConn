@@ -96,8 +96,6 @@
     <display_length compare="ge">360</display_length>
   </requires>
   <recommends>
-    <control>keyboard</control>
-    <control>pointing</control>
     <display_length compare="ge">768</display_length>
   </recommends>
   <supports>
