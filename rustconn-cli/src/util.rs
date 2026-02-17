@@ -17,14 +17,13 @@ pub fn create_config_manager(config_path: Option<&Path>) -> Result<ConfigManager
 
     if let Ok(env_dir) = std::env::var("RUSTCONN_CONFIG_DIR") {
         if !env_dir.is_empty() {
-            return Ok(ConfigManager::with_config_dir(
-                std::path::PathBuf::from(env_dir),
-            ));
+            return Ok(ConfigManager::with_config_dir(std::path::PathBuf::from(
+                env_dir,
+            )));
         }
     }
 
-    ConfigManager::new()
-        .map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))
+    ConfigManager::new().map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))
 }
 
 /// Parse a key=value pair for variable substitution

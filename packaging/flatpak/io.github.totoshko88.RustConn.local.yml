@@ -56,6 +56,13 @@ modules:
         url: https://download.gnome.org/sources/vte/0.83/vte-0.83.90.tar.xz
         sha256: a43441a78f8893268ae927e7bae3b17ffe669913ed954e172fbd12d3e083e286
 
+  - name: sshpass
+    buildsystem: autotools
+    sources:
+      - type: archive
+        url: https://downloads.sourceforge.net/sshpass/sshpass-1.10.tar.gz
+        sha256: ad1106c203cbb56185ca3bad8c6ccafca3b4064696194da879f81c8d7bdfeeda
+
   - name: inetutils
     buildsystem: autotools
     config-opts:

@@ -58,6 +58,13 @@ modules:
           name: vte
           stable-only: true
 
+  - name: sshpass
+    buildsystem: autotools
+    sources:
+      - type: archive
+        url: https://downloads.sourceforge.net/sshpass/sshpass-1.10.tar.gz
+        sha256: ad1106c203cbb56185ca3bad8c6ccafca3b4064696194da879f81c8d7bdfeeda
+
   - name: inetutils
     buildsystem: autotools
     config-opts:
