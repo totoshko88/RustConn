@@ -73,3 +73,35 @@ pub fn find_connection<'a>(
         }
     }
 }
+
+/// Outputs content through a pager (`less`) if stdout is a terminal and
+/// the content exceeds 40 lines. Falls back to direct printing otherwise.
+///
+/// # Errors
+///
+/// Returns `CliError` if writing to the pager fails.
+pub fn output_with_pager(content: &str) -> Result<(), CliError> {
+    use std::io::{IsTerminal, Write};
+
+    if !std::io::stdout().is_terminal() || content.lines().count() < 40 {
+        print!("{content}");
+        return Ok(());
+    }
+
+    let pager = std::process::Command::new("less")
+        .args(["-FIRX"])
+        .stdin(std::process::Stdio::piped())
+        .spawn();
+
+    if let Ok(mut child) = pager {
+        if let Some(ref mut stdin) = child.stdin {
+            let _ = stdin.write_all(content.as_bytes());
+        }
+        let _ = child.wait();
+        Ok(())
+    } else {
+        // Fallback: print directly if less is not available
+        print!("{content}");
+        Ok(())
+    }
+}

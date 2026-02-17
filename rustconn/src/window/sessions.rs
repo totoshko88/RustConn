@@ -6,7 +6,7 @@
 use crate::alert;
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{Button, HeaderBar, Label, Orientation};
+use gtk4::{Button, Label, Orientation};
 use libadwaita as adw;
 use std::rc::Rc;
 use uuid::Uuid;
@@ -159,11 +159,7 @@ pub fn show_sessions_manager(
         if let Some(row) = list_clone.selected_row() {
             if let Some(id_str) = row.widget_name().as_str().strip_prefix("session-") {
                 if let Ok(session_id) = Uuid::parse_str(id_str) {
-                    show_send_text_dialog(
-                        manager_clone.upcast_ref::<gtk4::Window>(),
-                        &notebook_clone,
-                        session_id,
-                    );
+                    show_send_text_dialog(&manager_clone, &notebook_clone, session_id);
                 }
             }
         }
@@ -319,15 +315,17 @@ pub fn populate_sessions_list(
 }
 
 /// Shows a dialog to send text to a specific session
-pub fn show_send_text_dialog(parent: &gtk4::Window, notebook: &SharedNotebook, session_id: Uuid) {
-    let dialog = gtk4::Window::builder()
+pub fn show_send_text_dialog(
+    parent: &impl gtk4::prelude::IsA<gtk4::Widget>,
+    notebook: &SharedNotebook,
+    session_id: Uuid,
+) {
+    let dialog = adw::Dialog::builder()
         .title("Send Text to Session")
-        .transient_for(parent)
-        .modal(true)
-        .default_width(400)
+        .content_width(400)
         .build();
 
-    let header = HeaderBar::new();
+    let header = adw::HeaderBar::new();
     let cancel_btn = Button::builder().label("Cancel").build();
     let send_btn = Button::builder()
         .label("Send")
@@ -335,7 +333,6 @@ pub fn show_send_text_dialog(parent: &gtk4::Window, notebook: &SharedNotebook, s
         .build();
     header.pack_start(&cancel_btn);
     header.pack_end(&send_btn);
-    dialog.set_titlebar(Some(&header));
 
     let content = gtk4::Box::new(Orientation::Vertical, 8);
     content.set_margin_top(12);
@@ -361,7 +358,10 @@ pub fn show_send_text_dialog(parent: &gtk4::Window, notebook: &SharedNotebook, s
         .build();
     content.append(&newline_check);
 
-    dialog.set_child(Some(&content));
+    let toolbar_view = adw::ToolbarView::new();
+    toolbar_view.add_top_bar(&header);
+    toolbar_view.set_content(Some(&content));
+    dialog.set_child(Some(&toolbar_view));
 
     // Connect cancel button
     let dialog_clone = dialog.clone();
@@ -404,5 +404,5 @@ pub fn show_send_text_dialog(parent: &gtk4::Window, notebook: &SharedNotebook, s
         dialog_clone.close();
     });
 
-    dialog.present();
+    dialog.present(Some(parent));
 }

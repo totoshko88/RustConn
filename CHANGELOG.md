@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI `--no-color` / `NO_COLOR` support (CLI-03)** — Global `--no-color` flag and `NO_COLOR` environment variable support per [no-color.org](https://no-color.org/) convention
 - **CLI shell completions (CLI-05)** — `rustconn-cli completions <shell>` generates completion scripts for bash, zsh, fish, elvish, and PowerShell via `clap_complete`
 - **CLI `--dry-run` for connect (CLI-04)** — `rustconn-cli connect --dry-run` prints the command that would be executed without running it
+- **CLI pager for long output (CLI-06)** — `list` command pipes table output through `less -FIRX` when stdout is a terminal and output exceeds 40 lines; falls back to direct print if `less` is unavailable or output is piped
 - **Pinned CLI component versions (EXT-02)** — `DownloadableComponent` now has `pinned_version` field tracking the exact version in download URLs; `get_pinned_versions()` returns all pinned versions for CI version-checking
 - **Flathub device/display metadata (FH-03)** — Added `<requires>`, `<recommends>`, and `<supports>` elements to metainfo.xml for Flathub device filtering
 
@@ -32,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI modularized (CODE-01)** — Split monolithic `rustconn-cli/src/main.rs` (5000+ lines) into module directory: `cli.rs` (argument types), `error.rs` (error types + exit codes), `format.rs` (CSV escaping), `util.rs` (shared helpers), and `commands/` directory with 18 handler modules; `main.rs` reduced to 22-line entry point
 - **VNC viewer list deduplicated (CODE-04)** — Extracted `VNC_VIEWERS` constant in `detection.rs`; `detect_vnc_viewer_path()` and `detect_vnc_viewer_name()` now share a single list
 - **Protocol icon mapping deduplicated (CODE-05)** — Added `get_protocol_icon_by_name()` to `rustconn-core`; `sidebar_ui.rs` and `terminal/mod.rs` now delegate to core instead of maintaining separate match blocks
+- **Protocol command building unified (CODE-03)** — Moved `build_rdp_command()`, `build_vnc_command()`, `build_spice_command()` from CLI into core `Protocol::build_command()` trait implementations; CLI `connect` now delegates to `ProtocolRegistry` for all protocols
+- **Send Text dialog migrated to adw::Dialog (GUI-01)** — Replaced `gtk4::Window` with `adw::Dialog` + `adw::ToolbarView` in `show_send_text_dialog()` per GNOME HIG
+- **Sidebar minimum width reduced (GUI-03)** — Reduced sidebar `width_request` from 200px to 160px for better narrow window and mobile support
 
 ### Improved
 - **Accessible labels for icon-only buttons (GUI-04)** — Added `update_property` accessible labels to 20+ icon-only buttons across sidebar, dashboard, adaptive tabs, floating controls, and embedded viewer toolbars for screen reader compatibility

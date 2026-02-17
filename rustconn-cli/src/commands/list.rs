@@ -81,7 +81,9 @@ pub fn cmd_list(
 
 /// Print connections as a formatted table
 fn print_table(connections: &[&Connection]) {
-    println!("{}", format_table(connections));
+    let output = format_table(connections);
+    // Use pager for long output
+    let _ = crate::util::output_with_pager(&output);
 }
 
 /// Format connections as a table string
