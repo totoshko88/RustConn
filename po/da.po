@@ -13,133 +13,451 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#. Desktop file
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:2
 msgid "RustConn"
 msgstr "RustConn"
+
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
 msgid "Manage remote connections easily"
 msgstr "Administrer fjernforbindelser nemt"
+
+#. Application
+#: rustconn/src/app.rs
 msgid "Initialization Error"
 msgstr "Initialiseringsfejl"
-msgid "Failed to initialize application state"
-msgstr "Kunne ikke initialisere programtilstand"
-msgid "_Keyboard Shortcuts"
-msgstr "_Tastaturgenveje"
-msgid "_About RustConn"
-msgstr "_Om RustConn"
-msgid "_Quit"
-msgstr "_Afslut"
-msgid "Opening mc SFTP..."
-msgstr "Åbner mc SFTP…"
-msgid "Opening SFTP..."
-msgstr "Åbner SFTP…"
-msgid "Connection failed"
-msgstr "Forbindelse mislykkedes"
-msgid "Deleted '{}'"
-msgstr "«{}» slettet"
-msgid "Undo"
-msgstr "Fortryd"
-msgid "Search connections..."
-msgstr "Søg forbindelser…"
-msgid "All"
-msgstr "Alle"
-msgid "No connections found"
-msgstr "Ingen forbindelser fundet"
-msgid "Create a new connection to get started"
-msgstr "Opret en ny forbindelse for at komme i gang"
+
+#: rustconn/src/app.rs
+msgid ""
+"Modern connection manager for Linux with a GTK4/Wayland-native interface. "
+"Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
+"connections from a single application."
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "translator-credits"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "User Guide"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Installation"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Releases"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Changelog"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Special Thanks"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Made in Ukraine"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "All contributors and supporters"
+msgstr ""
+
+#. Sidebar
+#: rustconn/src/sidebar/mod.rs
+msgid "Search... (? for help)"
+msgstr ""
+
+#. Connection dialog
+#: rustconn/src/dialogs/connection/dialog.rs
 msgid "New Connection"
 msgstr "Ny forbindelse"
-msgid "Edit Connection"
-msgstr "Rediger forbindelse"
-msgid "Save"
-msgstr "Gem"
-msgid "Cancel"
-msgstr "Annuller"
-msgid "General"
-msgstr "Generelt"
-msgid "Name"
-msgstr "Navn"
-msgid "Host"
-msgstr "Vært"
-msgid "Port"
-msgstr "Port"
-msgid "Username"
-msgstr "Brugernavn"
-msgid "Password"
-msgstr "Adgangskode"
-msgid "Protocol"
-msgstr "Protokol"
-msgid "Group"
-msgstr "Gruppe"
-msgid "Tags"
-msgstr "Mærker"
-msgid "Description"
-msgstr "Beskrivelse"
-msgid "Settings"
-msgstr "Indstillinger"
-msgid "Appearance"
-msgstr "Udseende"
-msgid "Color Scheme"
-msgstr "Farveskema"
-msgid "System"
-msgstr "System"
-msgid "Light"
-msgstr "Lys"
-msgid "Dark"
-msgstr "Mørk"
-msgid "Terminal"
-msgstr "Terminal"
-msgid "Clients"
-msgstr "Klienter"
-msgid "Secrets"
-msgstr "Hemmeligheder"
-msgid "SSH Agent"
-msgstr "SSH-agent"
-msgid "Logging"
-msgstr "Logning"
-msgid "Delete"
-msgstr "Slet"
-msgid "Connect"
-msgstr "Forbind"
-msgid "Create"
-msgstr "Opret"
+
+#: rustconn/src/dialogs/connection/dialog.rs
 msgid "Close"
 msgstr "Luk"
-msgid "Apply"
-msgstr "Anvend"
-msgid "Export"
-msgstr "Eksporter"
-msgid "Import"
-msgstr "Importer"
-msgid "Import completed successfully"
-msgstr "Import fuldført"
-msgid "Import failed"
-msgstr "Import mislykkedes"
-msgid "{} connection"
-msgid_plural "{} connections"
-msgstr[0] "{} forbindelse"
-msgstr[1] "{} forbindelser"
-msgid "{} connection imported"
-msgid_plural "{} connections imported"
-msgstr[0] "{} forbindelse importeret"
-msgstr[1] "{} forbindelser importeret"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Test"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Create"
+msgstr "Opret"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Name:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Protocol:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Host:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Port:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Username:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Domain:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Password:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Tags:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Group:"
+msgstr ""
+
+#. Settings dialog — UI tab
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Interface"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Appearance"
+msgstr "Udseende"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "System"
+msgstr "System"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Light"
+msgstr "Lys"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Dark"
+msgstr "Mørk"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Theme"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Language"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restart required to apply"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Window"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Remember size"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restore window geometry on startup"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "System Tray"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Requires desktop environment with tray support"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Show icon"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Display icon in system tray"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Minimize to tray"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Hide window instead of closing"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Session Restore"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restore previous connections on startup"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Enabled"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Reconnect to previous sessions on startup"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Ask first"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Prompt before restoring sessions"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Max age"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Hours before sessions expire"
+msgstr ""
+
+#. Empty states
+#: rustconn/src/empty_state.rs
+msgid "No Connections"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create your first connection to get started"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Results Found"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No connections match"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
 msgid "No Active Sessions"
 msgstr "Ingen aktive sessioner"
-msgid "Select a connection from the sidebar to start"
-msgstr "Vælg en forbindelse fra sidebjælken"
-msgid "This field is required"
-msgstr "Dette felt er påkrævet"
-msgid "Invalid port number"
-msgstr "Ugyldigt portnummer"
-msgid "Invalid hostname"
-msgstr "Ugyldigt værtsnavn"
-msgid "Modern Connection Manager for Linux"
-msgstr "Moderne forbindelsesadministrator til Linux"
-msgid "Filter SSH connections"
-msgstr "Filtrer SSH-forbindelser"
-msgid "Filter RDP connections"
-msgstr "Filtrer RDP-forbindelser"
-msgid "Filter VNC connections"
-msgstr "Filtrer VNC-forbindelser"
-msgid "Close tab"
-msgstr "Luk fane"
-msgid "Open local shell terminal"
-msgstr "Åbn lokal terminal"
+
+#: rustconn/src/empty_state.rs
+msgid "Connect to a server to start a session"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Quick Connect"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Groups"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create groups to organize your connections"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "New Group"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Snippets"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create command snippets for quick access"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "New Snippet"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Templates"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create templates for common connection configurations"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "New Template"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Connection History"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Your recent connections will appear here"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Loading..."
+msgstr ""
+
+#~ msgid "Failed to initialize application state"
+#~ msgstr "Kunne ikke initialisere programtilstand"
+
+#~ msgid "_Keyboard Shortcuts"
+#~ msgstr "_Tastaturgenveje"
+
+#~ msgid "_About RustConn"
+#~ msgstr "_Om RustConn"
+
+#~ msgid "_Quit"
+#~ msgstr "_Afslut"
+
+#~ msgid "Opening mc SFTP..."
+#~ msgstr "Åbner mc SFTP…"
+
+#~ msgid "Opening SFTP..."
+#~ msgstr "Åbner SFTP…"
+
+#~ msgid "Connection failed"
+#~ msgstr "Forbindelse mislykkedes"
+
+#~ msgid "Deleted '{}'"
+#~ msgstr "«{}» slettet"
+
+#~ msgid "Undo"
+#~ msgstr "Fortryd"
+
+#~ msgid "Search connections..."
+#~ msgstr "Søg forbindelser…"
+
+#~ msgid "All"
+#~ msgstr "Alle"
+
+#~ msgid "No connections found"
+#~ msgstr "Ingen forbindelser fundet"
+
+#~ msgid "Create a new connection to get started"
+#~ msgstr "Opret en ny forbindelse for at komme i gang"
+
+#~ msgid "Edit Connection"
+#~ msgstr "Rediger forbindelse"
+
+#~ msgid "Save"
+#~ msgstr "Gem"
+
+#~ msgid "Cancel"
+#~ msgstr "Annuller"
+
+#~ msgid "General"
+#~ msgstr "Generelt"
+
+#~ msgid "Name"
+#~ msgstr "Navn"
+
+#~ msgid "Host"
+#~ msgstr "Vært"
+
+#~ msgid "Port"
+#~ msgstr "Port"
+
+#~ msgid "Username"
+#~ msgstr "Brugernavn"
+
+#~ msgid "Password"
+#~ msgstr "Adgangskode"
+
+#~ msgid "Protocol"
+#~ msgstr "Protokol"
+
+#~ msgid "Group"
+#~ msgstr "Gruppe"
+
+#~ msgid "Tags"
+#~ msgstr "Mærker"
+
+#~ msgid "Description"
+#~ msgstr "Beskrivelse"
+
+#~ msgid "Settings"
+#~ msgstr "Indstillinger"
+
+#~ msgid "Color Scheme"
+#~ msgstr "Farveskema"
+
+#~ msgid "Terminal"
+#~ msgstr "Terminal"
+
+#~ msgid "Clients"
+#~ msgstr "Klienter"
+
+#~ msgid "Secrets"
+#~ msgstr "Hemmeligheder"
+
+#~ msgid "SSH Agent"
+#~ msgstr "SSH-agent"
+
+#~ msgid "Logging"
+#~ msgstr "Logning"
+
+#~ msgid "Delete"
+#~ msgstr "Slet"
+
+#~ msgid "Connect"
+#~ msgstr "Forbind"
+
+#~ msgid "Apply"
+#~ msgstr "Anvend"
+
+#~ msgid "Export"
+#~ msgstr "Eksporter"
+
+#~ msgid "Import"
+#~ msgstr "Importer"
+
+#~ msgid "Import completed successfully"
+#~ msgstr "Import fuldført"
+
+#~ msgid "Import failed"
+#~ msgstr "Import mislykkedes"
+
+#~ msgid "{} connection"
+#~ msgid_plural "{} connections"
+#~ msgstr[0] "{} forbindelse"
+#~ msgstr[1] "{} forbindelser"
+
+#~ msgid "{} connection imported"
+#~ msgid_plural "{} connections imported"
+#~ msgstr[0] "{} forbindelse importeret"
+#~ msgstr[1] "{} forbindelser importeret"
+
+#~ msgid "Select a connection from the sidebar to start"
+#~ msgstr "Vælg en forbindelse fra sidebjælken"
+
+#~ msgid "This field is required"
+#~ msgstr "Dette felt er påkrævet"
+
+#~ msgid "Invalid port number"
+#~ msgstr "Ugyldigt portnummer"
+
+#~ msgid "Invalid hostname"
+#~ msgstr "Ugyldigt værtsnavn"
+
+#~ msgid "Modern Connection Manager for Linux"
+#~ msgstr "Moderne forbindelsesadministrator til Linux"
+
+#~ msgid "Filter SSH connections"
+#~ msgstr "Filtrer SSH-forbindelser"
+
+#~ msgid "Filter RDP connections"
+#~ msgstr "Filtrer RDP-forbindelser"
+
+#~ msgid "Filter VNC connections"
+#~ msgstr "Filtrer VNC-forbindelser"
+
+#~ msgid "Close tab"
+#~ msgstr "Luk fane"
+
+#~ msgid "Open local shell terminal"
+#~ msgstr "Åbn lokal terminal"

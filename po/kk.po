@@ -13,133 +13,451 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#. Desktop file
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:2
 msgid "RustConn"
 msgstr "RustConn"
+
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
 msgid "Manage remote connections easily"
 msgstr "Қашықтағы қосылымдарды оңай басқару"
+
+#. Application
+#: rustconn/src/app.rs
 msgid "Initialization Error"
 msgstr "Инициализация қатесі"
-msgid "Failed to initialize application state"
-msgstr "Қолданба күйін инициализациялау мүмкін болмады"
-msgid "_Keyboard Shortcuts"
-msgstr "_Пернетақта тіркесімдері"
-msgid "_About RustConn"
-msgstr "RustConn _туралы"
-msgid "_Quit"
-msgstr "_Шығу"
-msgid "Opening mc SFTP..."
-msgstr "mc SFTP ашылуда…"
-msgid "Opening SFTP..."
-msgstr "SFTP ашылуда…"
-msgid "Connection failed"
-msgstr "Қосылу сәтсіз аяқталды"
-msgid "Deleted '{}'"
-msgstr "«{}» жойылды"
-msgid "Undo"
-msgstr "Болдырмау"
-msgid "Search connections..."
-msgstr "Қосылымдарды іздеу…"
-msgid "All"
-msgstr "Барлығы"
-msgid "No connections found"
-msgstr "Қосылымдар табылмады"
-msgid "Create a new connection to get started"
-msgstr "Бастау үшін жаңа қосылым жасаңыз"
+
+#: rustconn/src/app.rs
+msgid ""
+"Modern connection manager for Linux with a GTK4/Wayland-native interface. "
+"Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
+"connections from a single application."
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "translator-credits"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "User Guide"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Installation"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Releases"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Changelog"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Special Thanks"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Made in Ukraine"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "All contributors and supporters"
+msgstr ""
+
+#. Sidebar
+#: rustconn/src/sidebar/mod.rs
+msgid "Search... (? for help)"
+msgstr ""
+
+#. Connection dialog
+#: rustconn/src/dialogs/connection/dialog.rs
 msgid "New Connection"
 msgstr "Жаңа қосылым"
-msgid "Edit Connection"
-msgstr "Қосылымды өңдеу"
-msgid "Save"
-msgstr "Сақтау"
-msgid "Cancel"
-msgstr "Болдырмау"
-msgid "General"
-msgstr "Жалпы"
-msgid "Name"
-msgstr "Атауы"
-msgid "Host"
-msgstr "Хост"
-msgid "Port"
-msgstr "Порт"
-msgid "Username"
-msgstr "Пайдаланушы"
-msgid "Password"
-msgstr "Құпия сөз"
-msgid "Protocol"
-msgstr "Хаттама"
-msgid "Group"
-msgstr "Топ"
-msgid "Tags"
-msgstr "Тегтер"
-msgid "Description"
-msgstr "Сипаттама"
-msgid "Settings"
-msgstr "Параметрлер"
-msgid "Appearance"
-msgstr "Сыртқы түрі"
-msgid "Color Scheme"
-msgstr "Түс схемасы"
-msgid "System"
-msgstr "Жүйелік"
-msgid "Light"
-msgstr "Жарық"
-msgid "Dark"
-msgstr "Қараңғы"
-msgid "Terminal"
-msgstr "Терминал"
-msgid "Clients"
-msgstr "Клиенттер"
-msgid "Secrets"
-msgstr "Құпиялар"
-msgid "SSH Agent"
-msgstr "SSH агенті"
-msgid "Logging"
-msgstr "Журналдау"
-msgid "Delete"
-msgstr "Жою"
-msgid "Connect"
-msgstr "Қосылу"
-msgid "Create"
-msgstr "Жасау"
+
+#: rustconn/src/dialogs/connection/dialog.rs
 msgid "Close"
 msgstr "Жабу"
-msgid "Apply"
-msgstr "Қолдану"
-msgid "Export"
-msgstr "Экспорт"
-msgid "Import"
-msgstr "Импорт"
-msgid "Import completed successfully"
-msgstr "Импорт сәтті аяқталды"
-msgid "Import failed"
-msgstr "Импорт сәтсіз аяқталды"
-msgid "{} connection"
-msgid_plural "{} connections"
-msgstr[0] "{} қосылым"
-msgstr[1] "{} қосылым"
-msgid "{} connection imported"
-msgid_plural "{} connections imported"
-msgstr[0] "{} қосылым импортталды"
-msgstr[1] "{} қосылым импортталды"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Test"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Create"
+msgstr "Жасау"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Name:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Protocol:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Host:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Port:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Username:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Domain:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Password:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Tags:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Group:"
+msgstr ""
+
+#. Settings dialog — UI tab
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Interface"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Appearance"
+msgstr "Сыртқы түрі"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "System"
+msgstr "Жүйелік"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Light"
+msgstr "Жарық"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Dark"
+msgstr "Қараңғы"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Theme"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Language"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restart required to apply"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Window"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Remember size"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restore window geometry on startup"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "System Tray"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Requires desktop environment with tray support"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Show icon"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Display icon in system tray"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Minimize to tray"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Hide window instead of closing"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Session Restore"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restore previous connections on startup"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Enabled"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Reconnect to previous sessions on startup"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Ask first"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Prompt before restoring sessions"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Max age"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Hours before sessions expire"
+msgstr ""
+
+#. Empty states
+#: rustconn/src/empty_state.rs
+msgid "No Connections"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create your first connection to get started"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Results Found"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No connections match"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
 msgid "No Active Sessions"
 msgstr "Белсенді сеанстар жоқ"
-msgid "Select a connection from the sidebar to start"
-msgstr "Бастау үшін бүйір панелінен қосылымды таңдаңыз"
-msgid "This field is required"
-msgstr "Бұл өріс міндетті"
-msgid "Invalid port number"
-msgstr "Жарамсыз порт нөмірі"
-msgid "Invalid hostname"
-msgstr "Жарамсыз хост атауы"
-msgid "Modern Connection Manager for Linux"
-msgstr "Linux үшін заманауи қосылым менеджері"
-msgid "Filter SSH connections"
-msgstr "SSH қосылымдарын сүзу"
-msgid "Filter RDP connections"
-msgstr "RDP қосылымдарын сүзу"
-msgid "Filter VNC connections"
-msgstr "VNC қосылымдарын сүзу"
-msgid "Close tab"
-msgstr "Қойындыны жабу"
-msgid "Open local shell terminal"
-msgstr "Жергілікті терминалды ашу"
+
+#: rustconn/src/empty_state.rs
+msgid "Connect to a server to start a session"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Quick Connect"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Groups"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create groups to organize your connections"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "New Group"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Snippets"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create command snippets for quick access"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "New Snippet"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Templates"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create templates for common connection configurations"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "New Template"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Connection History"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Your recent connections will appear here"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Loading..."
+msgstr ""
+
+#~ msgid "Failed to initialize application state"
+#~ msgstr "Қолданба күйін инициализациялау мүмкін болмады"
+
+#~ msgid "_Keyboard Shortcuts"
+#~ msgstr "_Пернетақта тіркесімдері"
+
+#~ msgid "_About RustConn"
+#~ msgstr "RustConn _туралы"
+
+#~ msgid "_Quit"
+#~ msgstr "_Шығу"
+
+#~ msgid "Opening mc SFTP..."
+#~ msgstr "mc SFTP ашылуда…"
+
+#~ msgid "Opening SFTP..."
+#~ msgstr "SFTP ашылуда…"
+
+#~ msgid "Connection failed"
+#~ msgstr "Қосылу сәтсіз аяқталды"
+
+#~ msgid "Deleted '{}'"
+#~ msgstr "«{}» жойылды"
+
+#~ msgid "Undo"
+#~ msgstr "Болдырмау"
+
+#~ msgid "Search connections..."
+#~ msgstr "Қосылымдарды іздеу…"
+
+#~ msgid "All"
+#~ msgstr "Барлығы"
+
+#~ msgid "No connections found"
+#~ msgstr "Қосылымдар табылмады"
+
+#~ msgid "Create a new connection to get started"
+#~ msgstr "Бастау үшін жаңа қосылым жасаңыз"
+
+#~ msgid "Edit Connection"
+#~ msgstr "Қосылымды өңдеу"
+
+#~ msgid "Save"
+#~ msgstr "Сақтау"
+
+#~ msgid "Cancel"
+#~ msgstr "Болдырмау"
+
+#~ msgid "General"
+#~ msgstr "Жалпы"
+
+#~ msgid "Name"
+#~ msgstr "Атауы"
+
+#~ msgid "Host"
+#~ msgstr "Хост"
+
+#~ msgid "Port"
+#~ msgstr "Порт"
+
+#~ msgid "Username"
+#~ msgstr "Пайдаланушы"
+
+#~ msgid "Password"
+#~ msgstr "Құпия сөз"
+
+#~ msgid "Protocol"
+#~ msgstr "Хаттама"
+
+#~ msgid "Group"
+#~ msgstr "Топ"
+
+#~ msgid "Tags"
+#~ msgstr "Тегтер"
+
+#~ msgid "Description"
+#~ msgstr "Сипаттама"
+
+#~ msgid "Settings"
+#~ msgstr "Параметрлер"
+
+#~ msgid "Color Scheme"
+#~ msgstr "Түс схемасы"
+
+#~ msgid "Terminal"
+#~ msgstr "Терминал"
+
+#~ msgid "Clients"
+#~ msgstr "Клиенттер"
+
+#~ msgid "Secrets"
+#~ msgstr "Құпиялар"
+
+#~ msgid "SSH Agent"
+#~ msgstr "SSH агенті"
+
+#~ msgid "Logging"
+#~ msgstr "Журналдау"
+
+#~ msgid "Delete"
+#~ msgstr "Жою"
+
+#~ msgid "Connect"
+#~ msgstr "Қосылу"
+
+#~ msgid "Apply"
+#~ msgstr "Қолдану"
+
+#~ msgid "Export"
+#~ msgstr "Экспорт"
+
+#~ msgid "Import"
+#~ msgstr "Импорт"
+
+#~ msgid "Import completed successfully"
+#~ msgstr "Импорт сәтті аяқталды"
+
+#~ msgid "Import failed"
+#~ msgstr "Импорт сәтсіз аяқталды"
+
+#~ msgid "{} connection"
+#~ msgid_plural "{} connections"
+#~ msgstr[0] "{} қосылым"
+#~ msgstr[1] "{} қосылым"
+
+#~ msgid "{} connection imported"
+#~ msgid_plural "{} connections imported"
+#~ msgstr[0] "{} қосылым импортталды"
+#~ msgstr[1] "{} қосылым импортталды"
+
+#~ msgid "Select a connection from the sidebar to start"
+#~ msgstr "Бастау үшін бүйір панелінен қосылымды таңдаңыз"
+
+#~ msgid "This field is required"
+#~ msgstr "Бұл өріс міндетті"
+
+#~ msgid "Invalid port number"
+#~ msgstr "Жарамсыз порт нөмірі"
+
+#~ msgid "Invalid hostname"
+#~ msgstr "Жарамсыз хост атауы"
+
+#~ msgid "Modern Connection Manager for Linux"
+#~ msgstr "Linux үшін заманауи қосылым менеджері"
+
+#~ msgid "Filter SSH connections"
+#~ msgstr "SSH қосылымдарын сүзу"
+
+#~ msgid "Filter RDP connections"
+#~ msgstr "RDP қосылымдарын сүзу"
+
+#~ msgid "Filter VNC connections"
+#~ msgstr "VNC қосылымдарын сүзу"
+
+#~ msgid "Close tab"
+#~ msgstr "Қойындыны жабу"
+
+#~ msgid "Open local shell terminal"
+#~ msgstr "Жергілікті терминалды ашу"

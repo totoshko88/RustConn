@@ -13,147 +13,472 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#. Desktop file
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:2
 msgid "RustConn"
 msgstr "RustConn"
+
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
 msgid "Manage remote connections easily"
 msgstr "Gestisci facilmente le connessioni remote"
+
+#. Application
+#: rustconn/src/app.rs
 msgid "Initialization Error"
 msgstr "Errore di inizializzazione"
-msgid "Failed to initialize application state"
-msgstr "Impossibile inizializzare lo stato dell'applicazione"
-msgid "_Keyboard Shortcuts"
-msgstr "_Scorciatoie da tastiera"
-msgid "_About RustConn"
-msgstr "_Informazioni su RustConn"
-msgid "_Quit"
-msgstr "_Esci"
-msgid "Opening mc SFTP..."
-msgstr "Apertura mc SFTP…"
-msgid "Opening SFTP..."
-msgstr "Apertura SFTP…"
-msgid "Connection failed"
-msgstr "Connessione fallita"
-msgid "Deleted '{}'"
-msgstr "«{}» eliminato"
-msgid "Undo"
-msgstr "Annulla"
-msgid "Search connections..."
-msgstr "Cerca connessioni…"
-msgid "All"
-msgstr "Tutte"
-msgid "No connections found"
-msgstr "Nessuna connessione trovata"
-msgid "Create a new connection to get started"
-msgstr "Crea una nuova connessione per iniziare"
+
+#: rustconn/src/app.rs
+msgid ""
+"Modern connection manager for Linux with a GTK4/Wayland-native interface. "
+"Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
+"connections from a single application."
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "translator-credits"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "User Guide"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Installation"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Releases"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Changelog"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Special Thanks"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Made in Ukraine"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "All contributors and supporters"
+msgstr ""
+
+#. Sidebar
+#: rustconn/src/sidebar/mod.rs
+msgid "Search... (? for help)"
+msgstr ""
+
+#. Connection dialog
+#: rustconn/src/dialogs/connection/dialog.rs
 msgid "New Connection"
 msgstr "Nuova connessione"
-msgid "Edit Connection"
-msgstr "Modifica connessione"
-msgid "Save"
-msgstr "Salva"
-msgid "Cancel"
-msgstr "Annulla"
-msgid "General"
-msgstr "Generale"
-msgid "Name"
-msgstr "Nome"
-msgid "Host"
-msgstr "Host"
-msgid "Port"
-msgstr "Porta"
-msgid "Username"
-msgstr "Nome utente"
-msgid "Password"
-msgstr "Password"
-msgid "Protocol"
-msgstr "Protocollo"
-msgid "Group"
-msgstr "Gruppo"
-msgid "Tags"
-msgstr "Tag"
-msgid "Description"
-msgstr "Descrizione"
-msgid "Settings"
-msgstr "Impostazioni"
-msgid "Appearance"
-msgstr "Aspetto"
-msgid "Color Scheme"
-msgstr "Schema colori"
-msgid "System"
-msgstr "Sistema"
-msgid "Light"
-msgstr "Chiaro"
-msgid "Dark"
-msgstr "Scuro"
-msgid "Terminal"
-msgstr "Terminale"
-msgid "Clients"
-msgstr "Client"
-msgid "Secrets"
-msgstr "Segreti"
-msgid "SSH Agent"
-msgstr "Agente SSH"
-msgid "Logging"
-msgstr "Registrazione"
-msgid "SSH"
-msgstr "SSH"
-msgid "RDP"
-msgstr "RDP"
-msgid "VNC"
-msgstr "VNC"
-msgid "SPICE"
-msgstr "SPICE"
-msgid "Telnet"
-msgstr "Telnet"
-msgid "Serial"
-msgstr "Seriale"
-msgid "K8s"
-msgstr "K8s"
-msgid "Delete"
-msgstr "Elimina"
-msgid "Connect"
-msgstr "Connetti"
-msgid "Create"
-msgstr "Crea"
+
+#: rustconn/src/dialogs/connection/dialog.rs
 msgid "Close"
 msgstr "Chiudi"
-msgid "Apply"
-msgstr "Applica"
-msgid "Export"
-msgstr "Esporta"
-msgid "Import"
-msgstr "Importa"
-msgid "Import completed successfully"
-msgstr "Importazione completata con successo"
-msgid "Import failed"
-msgstr "Importazione fallita"
-msgid "{} connection"
-msgid_plural "{} connections"
-msgstr[0] "{} connessione"
-msgstr[1] "{} connessioni"
-msgid "{} connection imported"
-msgid_plural "{} connections imported"
-msgstr[0] "{} connessione importata"
-msgstr[1] "{} connessioni importate"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Test"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Create"
+msgstr "Crea"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Name:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Protocol:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Host:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Port:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Username:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Domain:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Password:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Tags:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Group:"
+msgstr ""
+
+#. Settings dialog — UI tab
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Interface"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Appearance"
+msgstr "Aspetto"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "System"
+msgstr "Sistema"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Light"
+msgstr "Chiaro"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Dark"
+msgstr "Scuro"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Theme"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Language"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restart required to apply"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Window"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Remember size"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restore window geometry on startup"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "System Tray"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Requires desktop environment with tray support"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Show icon"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Display icon in system tray"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Minimize to tray"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Hide window instead of closing"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Session Restore"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restore previous connections on startup"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Enabled"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Reconnect to previous sessions on startup"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Ask first"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Prompt before restoring sessions"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Max age"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Hours before sessions expire"
+msgstr ""
+
+#. Empty states
+#: rustconn/src/empty_state.rs
+msgid "No Connections"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create your first connection to get started"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Results Found"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No connections match"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
 msgid "No Active Sessions"
 msgstr "Nessuna sessione attiva"
-msgid "Select a connection from the sidebar to start"
-msgstr "Seleziona una connessione dalla barra laterale"
-msgid "This field is required"
-msgstr "Questo campo è obbligatorio"
-msgid "Invalid port number"
-msgstr "Numero di porta non valido"
-msgid "Invalid hostname"
-msgstr "Nome host non valido"
-msgid "Modern Connection Manager for Linux"
-msgstr "Gestore di connessioni moderno per Linux"
-msgid "Filter SSH connections"
-msgstr "Filtra connessioni SSH"
-msgid "Filter RDP connections"
-msgstr "Filtra connessioni RDP"
-msgid "Filter VNC connections"
-msgstr "Filtra connessioni VNC"
-msgid "Close tab"
-msgstr "Chiudi scheda"
-msgid "Open local shell terminal"
-msgstr "Apri terminale locale"
+
+#: rustconn/src/empty_state.rs
+msgid "Connect to a server to start a session"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Quick Connect"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Groups"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create groups to organize your connections"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "New Group"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Snippets"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create command snippets for quick access"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "New Snippet"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Templates"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create templates for common connection configurations"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "New Template"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Connection History"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Your recent connections will appear here"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Loading..."
+msgstr ""
+
+#~ msgid "Failed to initialize application state"
+#~ msgstr "Impossibile inizializzare lo stato dell'applicazione"
+
+#~ msgid "_Keyboard Shortcuts"
+#~ msgstr "_Scorciatoie da tastiera"
+
+#~ msgid "_About RustConn"
+#~ msgstr "_Informazioni su RustConn"
+
+#~ msgid "_Quit"
+#~ msgstr "_Esci"
+
+#~ msgid "Opening mc SFTP..."
+#~ msgstr "Apertura mc SFTP…"
+
+#~ msgid "Opening SFTP..."
+#~ msgstr "Apertura SFTP…"
+
+#~ msgid "Connection failed"
+#~ msgstr "Connessione fallita"
+
+#~ msgid "Deleted '{}'"
+#~ msgstr "«{}» eliminato"
+
+#~ msgid "Undo"
+#~ msgstr "Annulla"
+
+#~ msgid "Search connections..."
+#~ msgstr "Cerca connessioni…"
+
+#~ msgid "All"
+#~ msgstr "Tutte"
+
+#~ msgid "No connections found"
+#~ msgstr "Nessuna connessione trovata"
+
+#~ msgid "Create a new connection to get started"
+#~ msgstr "Crea una nuova connessione per iniziare"
+
+#~ msgid "Edit Connection"
+#~ msgstr "Modifica connessione"
+
+#~ msgid "Save"
+#~ msgstr "Salva"
+
+#~ msgid "Cancel"
+#~ msgstr "Annulla"
+
+#~ msgid "General"
+#~ msgstr "Generale"
+
+#~ msgid "Name"
+#~ msgstr "Nome"
+
+#~ msgid "Host"
+#~ msgstr "Host"
+
+#~ msgid "Port"
+#~ msgstr "Porta"
+
+#~ msgid "Username"
+#~ msgstr "Nome utente"
+
+#~ msgid "Password"
+#~ msgstr "Password"
+
+#~ msgid "Protocol"
+#~ msgstr "Protocollo"
+
+#~ msgid "Group"
+#~ msgstr "Gruppo"
+
+#~ msgid "Tags"
+#~ msgstr "Tag"
+
+#~ msgid "Description"
+#~ msgstr "Descrizione"
+
+#~ msgid "Settings"
+#~ msgstr "Impostazioni"
+
+#~ msgid "Color Scheme"
+#~ msgstr "Schema colori"
+
+#~ msgid "Terminal"
+#~ msgstr "Terminale"
+
+#~ msgid "Clients"
+#~ msgstr "Client"
+
+#~ msgid "Secrets"
+#~ msgstr "Segreti"
+
+#~ msgid "SSH Agent"
+#~ msgstr "Agente SSH"
+
+#~ msgid "Logging"
+#~ msgstr "Registrazione"
+
+#~ msgid "SSH"
+#~ msgstr "SSH"
+
+#~ msgid "RDP"
+#~ msgstr "RDP"
+
+#~ msgid "VNC"
+#~ msgstr "VNC"
+
+#~ msgid "SPICE"
+#~ msgstr "SPICE"
+
+#~ msgid "Telnet"
+#~ msgstr "Telnet"
+
+#~ msgid "Serial"
+#~ msgstr "Seriale"
+
+#~ msgid "K8s"
+#~ msgstr "K8s"
+
+#~ msgid "Delete"
+#~ msgstr "Elimina"
+
+#~ msgid "Connect"
+#~ msgstr "Connetti"
+
+#~ msgid "Apply"
+#~ msgstr "Applica"
+
+#~ msgid "Export"
+#~ msgstr "Esporta"
+
+#~ msgid "Import"
+#~ msgstr "Importa"
+
+#~ msgid "Import completed successfully"
+#~ msgstr "Importazione completata con successo"
+
+#~ msgid "Import failed"
+#~ msgstr "Importazione fallita"
+
+#~ msgid "{} connection"
+#~ msgid_plural "{} connections"
+#~ msgstr[0] "{} connessione"
+#~ msgstr[1] "{} connessioni"
+
+#~ msgid "{} connection imported"
+#~ msgid_plural "{} connections imported"
+#~ msgstr[0] "{} connessione importata"
+#~ msgstr[1] "{} connessioni importate"
+
+#~ msgid "Select a connection from the sidebar to start"
+#~ msgstr "Seleziona una connessione dalla barra laterale"
+
+#~ msgid "This field is required"
+#~ msgstr "Questo campo è obbligatorio"
+
+#~ msgid "Invalid port number"
+#~ msgstr "Numero di porta non valido"
+
+#~ msgid "Invalid hostname"
+#~ msgstr "Nome host non valido"
+
+#~ msgid "Modern Connection Manager for Linux"
+#~ msgstr "Gestore di connessioni moderno per Linux"
+
+#~ msgid "Filter SSH connections"
+#~ msgstr "Filtra connessioni SSH"
+
+#~ msgid "Filter RDP connections"
+#~ msgstr "Filtra connessioni RDP"
+
+#~ msgid "Filter VNC connections"
+#~ msgstr "Filtra connessioni VNC"
+
+#~ msgid "Close tab"
+#~ msgstr "Chiudi scheda"
+
+#~ msgid "Open local shell terminal"
+#~ msgstr "Apri terminale locale"

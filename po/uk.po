@@ -14,8 +14,10 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
+#. Desktop file
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:2
 msgid "RustConn"
 msgstr "RustConn"
@@ -24,129 +26,119 @@ msgstr "RustConn"
 msgid "Manage remote connections easily"
 msgstr "Зручне керування віддаленими з'єднаннями"
 
+#. Application
 #: rustconn/src/app.rs
 msgid "Initialization Error"
 msgstr "Помилка ініціалізації"
 
 #: rustconn/src/app.rs
-msgid "Failed to initialize application state"
-msgstr "Не вдалося ініціалізувати стан застосунку"
+msgid ""
+"Modern connection manager for Linux with a GTK4/Wayland-native interface. "
+"Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
+"connections from a single application."
+msgstr ""
+"Сучасний менеджер з'єднань для Linux із GTK4/Wayland-інтерфейсом. Керуйте "
+"SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes та Zero Trust з'єднаннями з "
+"одного застосунку."
 
 #: rustconn/src/app.rs
-msgid "_Keyboard Shortcuts"
-msgstr "_Клавіатурні скорочення"
+msgid "translator-credits"
+msgstr "Anton Isaiev (Українська)"
 
 #: rustconn/src/app.rs
-msgid "_About RustConn"
-msgstr "_Про RustConn"
+msgid "User Guide"
+msgstr "Посібник користувача"
 
 #: rustconn/src/app.rs
-msgid "_Quit"
-msgstr "_Вийти"
+msgid "Installation"
+msgstr "Встановлення"
 
-#: rustconn/src/window/mod.rs
-msgid "Opening mc SFTP..."
-msgstr "Відкриття mc SFTP…"
+#: rustconn/src/app.rs
+msgid "Releases"
+msgstr "Релізи"
 
-#: rustconn/src/window/mod.rs
-msgid "Opening SFTP..."
-msgstr "Відкриття SFTP…"
+#: rustconn/src/app.rs
+msgid "Changelog"
+msgstr "Журнал змін"
 
-#: rustconn/src/window/mod.rs
-msgid "Connection failed"
-msgstr "З'єднання не вдалося"
+#: rustconn/src/app.rs
+msgid "Special Thanks"
+msgstr "Подяки"
 
-#: rustconn/src/window/mod.rs
-msgid "Deleted '{}'"
-msgstr "Видалено «{}»"
+#: rustconn/src/app.rs
+msgid "Made in Ukraine"
+msgstr "Зроблено в Україні"
 
-#: rustconn/src/window/mod.rs
-msgid "Undo"
-msgstr "Скасувати"
+#: rustconn/src/app.rs
+msgid "All contributors and supporters"
+msgstr "Усім учасникам та прихильникам"
 
+#. Sidebar
 #: rustconn/src/sidebar/mod.rs
-msgid "Search connections..."
-msgstr "Пошук з'єднань…"
+msgid "Search... (? for help)"
+msgstr "Пошук… (? — довідка)"
 
-#: rustconn/src/sidebar/mod.rs
-msgid "All"
-msgstr "Усі"
-
-#: rustconn/src/sidebar/mod.rs
-msgid "No connections found"
-msgstr "З'єднань не знайдено"
-
-#: rustconn/src/sidebar/mod.rs
-msgid "Create a new connection to get started"
-msgstr "Створіть нове з'єднання, щоб почати"
-
+#. Connection dialog
 #: rustconn/src/dialogs/connection/dialog.rs
 msgid "New Connection"
 msgstr "Нове з'єднання"
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Edit Connection"
-msgstr "Редагувати з'єднання"
+msgid "Close"
+msgstr "Закрити"
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Save"
-msgstr "Зберегти"
+msgid "Test"
+msgstr "Тест"
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Cancel"
-msgstr "Скасувати"
+msgid "Create"
+msgstr "Створити"
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "General"
-msgstr "Загальне"
+msgid "Name:"
+msgstr "Назва:"
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Name"
-msgstr "Назва"
+msgid "Protocol:"
+msgstr "Протокол:"
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Host"
-msgstr "Хост"
+msgid "Host:"
+msgstr "Хост:"
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Port"
-msgstr "Порт"
+msgid "Port:"
+msgstr "Порт:"
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Username"
-msgstr "Користувач"
+msgid "Username:"
+msgstr "Користувач:"
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Password"
-msgstr "Пароль"
+msgid "Domain:"
+msgstr "Домен:"
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Protocol"
-msgstr "Протокол"
+msgid "Password:"
+msgstr "Пароль:"
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Group"
-msgstr "Група"
+msgid "Tags:"
+msgstr "Теги:"
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Tags"
-msgstr "Теги"
+msgid "Group:"
+msgstr "Група:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
-msgid "Description"
-msgstr "Опис"
-
-#: rustconn/src/dialogs/settings/mod.rs
-msgid "Settings"
-msgstr "Налаштування"
+#. Settings dialog — UI tab
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Interface"
+msgstr "Інтерфейс"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Appearance"
 msgstr "Зовнішній вигляд"
-
-#: rustconn/src/dialogs/settings/ui_tab.rs
-msgid "Color Scheme"
-msgstr "Кольорова схема"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "System"
@@ -160,144 +152,159 @@ msgstr "Світла"
 msgid "Dark"
 msgstr "Темна"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs
-msgid "Terminal"
-msgstr "Термінал"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Theme"
+msgstr "Тема"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs
-msgid "Clients"
-msgstr "Клієнти"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Language"
+msgstr "Мова"
 
-#: rustconn/src/dialogs/settings/secrets_tab.rs
-msgid "Secrets"
-msgstr "Секрети"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restart required to apply"
+msgstr "Потрібен перезапуск"
 
-#: rustconn/src/dialogs/settings/ssh_agent_tab.rs
-msgid "SSH Agent"
-msgstr "SSH-агент"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Window"
+msgstr "Вікно"
 
-#: rustconn/src/dialogs/settings/logging_tab.rs
-msgid "Logging"
-msgstr "Журналювання"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Remember size"
+msgstr "Запам'ятати розмір"
 
-#: rustconn/src/sidebar/filter.rs
-msgid "SSH"
-msgstr "SSH"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restore window geometry on startup"
+msgstr "Відновити розмір вікна при запуску"
 
-#: rustconn/src/sidebar/filter.rs
-msgid "RDP"
-msgstr "RDP"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "System Tray"
+msgstr "Системний лоток"
 
-#: rustconn/src/sidebar/filter.rs
-msgid "VNC"
-msgstr "VNC"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Requires desktop environment with tray support"
+msgstr "Потрібне середовище з підтримкою лотка"
 
-#: rustconn/src/sidebar/filter.rs
-msgid "SPICE"
-msgstr "SPICE"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Show icon"
+msgstr "Показати значок"
 
-#: rustconn/src/sidebar/filter.rs
-msgid "Telnet"
-msgstr "Telnet"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Display icon in system tray"
+msgstr "Відображати значок у системному лотку"
 
-#: rustconn/src/sidebar/filter.rs
-msgid "Serial"
-msgstr "Послідовний"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Minimize to tray"
+msgstr "Згорнути в лоток"
 
-#: rustconn/src/sidebar/filter.rs
-msgid "K8s"
-msgstr "K8s"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Hide window instead of closing"
+msgstr "Сховати вікно замість закриття"
 
-#: rustconn/src/dialogs/mod.rs
-msgid "Delete"
-msgstr "Видалити"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Session Restore"
+msgstr "Відновлення сеансів"
 
-#: rustconn/src/dialogs/mod.rs
-msgid "Connect"
-msgstr "З'єднатися"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restore previous connections on startup"
+msgstr "Відновити попередні з'єднання при запуску"
 
-#: rustconn/src/dialogs/mod.rs
-msgid "Create"
-msgstr "Створити"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Enabled"
+msgstr "Увімкнено"
 
-#: rustconn/src/dialogs/mod.rs
-msgid "Close"
-msgstr "Закрити"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Reconnect to previous sessions on startup"
+msgstr "Перепідключитися до попередніх сеансів"
 
-#: rustconn/src/dialogs/mod.rs
-msgid "Apply"
-msgstr "Застосувати"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Ask first"
+msgstr "Запитати спочатку"
 
-#: rustconn/src/dialogs/export.rs
-msgid "Export"
-msgstr "Експорт"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Prompt before restoring sessions"
+msgstr "Запитувати перед відновленням сеансів"
 
-#: rustconn/src/dialogs/import.rs
-msgid "Import"
-msgstr "Імпорт"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Max age"
+msgstr "Макс. вік"
 
-#: rustconn/src/dialogs/import.rs
-msgid "Import completed successfully"
-msgstr "Імпорт завершено успішно"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Hours before sessions expire"
+msgstr "Годин до закінчення терміну сеансів"
 
-#: rustconn/src/dialogs/import.rs
-msgid "Import failed"
-msgstr "Помилка імпорту"
+#. Empty states
+#: rustconn/src/empty_state.rs
+msgid "No Connections"
+msgstr "Немає з'єднань"
 
-#: rustconn/src/sidebar/mod.rs
-msgid "{} connection"
-msgid_plural "{} connections"
-msgstr[0] "{} з'єднання"
-msgstr[1] "{} з'єднання"
-msgstr[2] "{} з'єднань"
+#: rustconn/src/empty_state.rs
+msgid "Create your first connection to get started"
+msgstr "Створіть перше з'єднання, щоб почати"
 
-#: rustconn/src/dialogs/import.rs
-msgid "{} connection imported"
-msgid_plural "{} connections imported"
-msgstr[0] "{} з'єднання імпортовано"
-msgstr[1] "{} з'єднання імпортовано"
-msgstr[2] "{} з'єднань імпортовано"
+#: rustconn/src/empty_state.rs
+msgid "No Results Found"
+msgstr "Нічого не знайдено"
+
+#: rustconn/src/empty_state.rs
+msgid "No connections match"
+msgstr "Немає з'єднань, що відповідають"
 
 #: rustconn/src/empty_state.rs
 msgid "No Active Sessions"
 msgstr "Немає активних сеансів"
 
 #: rustconn/src/empty_state.rs
-msgid "Select a connection from the sidebar to start"
-msgstr "Оберіть з'єднання з бічної панелі"
+msgid "Connect to a server to start a session"
+msgstr "Підключіться до сервера, щоб розпочати сеанс"
 
-#: rustconn/src/validation.rs
-msgid "This field is required"
-msgstr "Це поле є обов'язковим"
+#: rustconn/src/empty_state.rs
+msgid "Quick Connect"
+msgstr "Швидке з'єднання"
 
-#: rustconn/src/validation.rs
-msgid "Invalid port number"
-msgstr "Невірний номер порту"
+#: rustconn/src/empty_state.rs
+msgid "No Groups"
+msgstr "Немає груп"
 
-#: rustconn/src/validation.rs
-msgid "Invalid hostname"
-msgstr "Невірне ім'я хоста"
+#: rustconn/src/empty_state.rs
+msgid "Create groups to organize your connections"
+msgstr "Створіть групи для організації з'єднань"
 
-#: rustconn/src/app.rs
-msgid "Modern Connection Manager for Linux"
-msgstr "Сучасний менеджер з'єднань для Linux"
+#: rustconn/src/empty_state.rs
+msgid "New Group"
+msgstr "Нова група"
 
-#: rustconn/src/sidebar/filter.rs
-msgid "Filter SSH connections"
-msgstr "Фільтрувати SSH-з'єднання"
+#: rustconn/src/empty_state.rs
+msgid "No Snippets"
+msgstr "Немає фрагментів"
 
-#: rustconn/src/sidebar/filter.rs
-msgid "Filter RDP connections"
-msgstr "Фільтрувати RDP-з'єднання"
+#: rustconn/src/empty_state.rs
+msgid "Create command snippets for quick access"
+msgstr "Створіть фрагменти команд для швидкого доступу"
 
-#: rustconn/src/sidebar/filter.rs
-msgid "Filter VNC connections"
-msgstr "Фільтрувати VNC-з'єднання"
+#: rustconn/src/empty_state.rs
+msgid "New Snippet"
+msgstr "Новий фрагмент"
 
-#: rustconn/src/sidebar/filter.rs
-msgid "Close tab"
-msgstr "Закрити вкладку"
+#: rustconn/src/empty_state.rs
+msgid "No Templates"
+msgstr "Немає шаблонів"
 
-#: rustconn/src/sidebar/filter.rs
-msgid "Open local shell terminal"
-msgstr "Відкрити локальний термінал"
+#: rustconn/src/empty_state.rs
+msgid "Create templates for common connection configurations"
+msgstr "Створіть шаблони для типових конфігурацій з'єднань"
+
+#: rustconn/src/empty_state.rs
+msgid "New Template"
+msgstr "Новий шаблон"
+
+#: rustconn/src/empty_state.rs
+msgid "No Connection History"
+msgstr "Немає історії з'єднань"
+
+#: rustconn/src/empty_state.rs
+msgid "Your recent connections will appear here"
+msgstr "Ваші останні з'єднання з'являться тут"
+
+#: rustconn/src/empty_state.rs
+msgid "Loading..."
+msgstr "Завантаження…"

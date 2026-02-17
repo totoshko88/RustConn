@@ -32,127 +32,106 @@ msgid "Initialization Error"
 msgstr ""
 
 #: rustconn/src/app.rs
-msgid "Failed to initialize application state"
+msgid "Modern connection manager for Linux with a GTK4/Wayland-native interface. Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust connections from a single application."
 msgstr ""
 
 #: rustconn/src/app.rs
-msgid "_Keyboard Shortcuts"
+msgid "translator-credits"
 msgstr ""
 
 #: rustconn/src/app.rs
-msgid "_About RustConn"
+msgid "User Guide"
 msgstr ""
 
 #: rustconn/src/app.rs
-msgid "_Quit"
+msgid "Installation"
 msgstr ""
 
-#. Toast messages
-#: rustconn/src/window/mod.rs
-msgid "Opening mc SFTP..."
+#: rustconn/src/app.rs
+msgid "Releases"
 msgstr ""
 
-#: rustconn/src/window/mod.rs
-msgid "Opening SFTP..."
+#: rustconn/src/app.rs
+msgid "Changelog"
 msgstr ""
 
-#: rustconn/src/window/mod.rs
-msgid "Connection failed"
+#: rustconn/src/app.rs
+msgid "Special Thanks"
 msgstr ""
 
-#: rustconn/src/window/mod.rs
-msgid "Deleted '{}'"
+#: rustconn/src/app.rs
+msgid "Made in Ukraine"
 msgstr ""
 
-#: rustconn/src/window/mod.rs
-msgid "Undo"
+#: rustconn/src/app.rs
+msgid "All contributors and supporters"
 msgstr ""
 
 #. Sidebar
 #: rustconn/src/sidebar/mod.rs
-msgid "Search connections..."
+msgid "Search... (? for help)"
 msgstr ""
 
-#: rustconn/src/sidebar/mod.rs
-msgid "All"
-msgstr ""
-
-#: rustconn/src/sidebar/mod.rs
-msgid "No connections found"
-msgstr ""
-
-#: rustconn/src/sidebar/mod.rs
-msgid "Create a new connection to get started"
-msgstr ""
-
-#. Dialogs
+#. Connection dialog
 #: rustconn/src/dialogs/connection/dialog.rs
 msgid "New Connection"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Edit Connection"
+msgid "Close"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Save"
+msgid "Test"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Cancel"
+msgid "Create"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "General"
+msgid "Name:"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Name"
+msgid "Protocol:"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Host"
+msgid "Host:"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Port"
+msgid "Port:"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Username"
+msgid "Username:"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Password"
+msgid "Domain:"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Protocol"
+msgid "Password:"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Group"
+msgid "Tags:"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog.rs
-msgid "Tags"
+msgid "Group:"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/dialog.rs
-msgid "Description"
-msgstr ""
-
-#. Settings dialog
-#: rustconn/src/dialogs/settings/mod.rs
-msgid "Settings"
+#. Settings dialog — UI tab
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Interface"
 msgstr ""
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Appearance"
-msgstr ""
-
-#: rustconn/src/dialogs/settings/ui_tab.rs
-msgid "Color Scheme"
 msgstr ""
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
@@ -167,150 +146,159 @@ msgstr ""
 msgid "Dark"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs
-msgid "Terminal"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Theme"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/clients_tab.rs
-msgid "Clients"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Language"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/secrets_tab.rs
-msgid "Secrets"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restart required to apply"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/ssh_agent_tab.rs
-msgid "SSH Agent"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Window"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/logging_tab.rs
-msgid "Logging"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Remember size"
 msgstr ""
 
-#. Protocol names
-#: rustconn/src/sidebar/filter.rs
-msgid "SSH"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restore window geometry on startup"
 msgstr ""
 
-#: rustconn/src/sidebar/filter.rs
-msgid "RDP"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "System Tray"
 msgstr ""
 
-#: rustconn/src/sidebar/filter.rs
-msgid "VNC"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Requires desktop environment with tray support"
 msgstr ""
 
-#: rustconn/src/sidebar/filter.rs
-msgid "SPICE"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Show icon"
 msgstr ""
 
-#: rustconn/src/sidebar/filter.rs
-msgid "Telnet"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Display icon in system tray"
 msgstr ""
 
-#: rustconn/src/sidebar/filter.rs
-msgid "Serial"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Minimize to tray"
 msgstr ""
 
-#: rustconn/src/sidebar/filter.rs
-msgid "K8s"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Hide window instead of closing"
 msgstr ""
 
-#. Common actions
-#: rustconn/src/dialogs/mod.rs
-msgid "Delete"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Session Restore"
 msgstr ""
 
-#: rustconn/src/dialogs/mod.rs
-msgid "Connect"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restore previous connections on startup"
 msgstr ""
 
-#: rustconn/src/dialogs/mod.rs
-msgid "Create"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Enabled"
 msgstr ""
 
-#: rustconn/src/dialogs/mod.rs
-msgid "Close"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Reconnect to previous sessions on startup"
 msgstr ""
 
-#: rustconn/src/dialogs/mod.rs
-msgid "Apply"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Ask first"
 msgstr ""
 
-#. Export/Import
-#: rustconn/src/dialogs/export.rs
-msgid "Export"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Prompt before restoring sessions"
 msgstr ""
 
-#: rustconn/src/dialogs/import.rs
-msgid "Import"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Max age"
 msgstr ""
 
-#: rustconn/src/dialogs/import.rs
-msgid "Import completed successfully"
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Hours before sessions expire"
 msgstr ""
-
-#: rustconn/src/dialogs/import.rs
-msgid "Import failed"
-msgstr ""
-
-#. Plural forms
-#: rustconn/src/sidebar/mod.rs
-msgid "{} connection"
-msgid_plural "{} connections"
-msgstr[0] ""
-msgstr[1] ""
-
-#: rustconn/src/dialogs/import.rs
-msgid "{} connection imported"
-msgid_plural "{} connections imported"
-msgstr[0] ""
-msgstr[1] ""
 
 #. Empty states
+#: rustconn/src/empty_state.rs
+msgid "No Connections"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create your first connection to get started"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Results Found"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No connections match"
+msgstr ""
+
 #: rustconn/src/empty_state.rs
 msgid "No Active Sessions"
 msgstr ""
 
 #: rustconn/src/empty_state.rs
-msgid "Select a connection from the sidebar to start"
+msgid "Connect to a server to start a session"
 msgstr ""
 
-#. Validation
-#: rustconn/src/validation.rs
-msgid "This field is required"
+#: rustconn/src/empty_state.rs
+msgid "Quick Connect"
 msgstr ""
 
-#: rustconn/src/validation.rs
-msgid "Invalid port number"
+#: rustconn/src/empty_state.rs
+msgid "No Groups"
 msgstr ""
 
-#: rustconn/src/validation.rs
-msgid "Invalid hostname"
+#: rustconn/src/empty_state.rs
+msgid "Create groups to organize your connections"
 msgstr ""
 
-#. About dialog
-#: rustconn/src/app.rs
-msgid "Modern Connection Manager for Linux"
+#: rustconn/src/empty_state.rs
+msgid "New Group"
 msgstr ""
 
-#. Accessibility
-#: rustconn/src/sidebar/filter.rs
-msgid "Filter SSH connections"
+#: rustconn/src/empty_state.rs
+msgid "No Snippets"
 msgstr ""
 
-#: rustconn/src/sidebar/filter.rs
-msgid "Filter RDP connections"
+#: rustconn/src/empty_state.rs
+msgid "Create command snippets for quick access"
 msgstr ""
 
-#: rustconn/src/sidebar/filter.rs
-msgid "Filter VNC connections"
+#: rustconn/src/empty_state.rs
+msgid "New Snippet"
 msgstr ""
 
-#: rustconn/src/sidebar/filter.rs
-msgid "Close tab"
+#: rustconn/src/empty_state.rs
+msgid "No Templates"
 msgstr ""
 
-#: rustconn/src/sidebar/filter.rs
-msgid "Open local shell terminal"
+#: rustconn/src/empty_state.rs
+msgid "Create templates for common connection configurations"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "New Template"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Connection History"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Your recent connections will appear here"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Loading..."
 msgstr ""

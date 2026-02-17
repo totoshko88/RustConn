@@ -203,6 +203,7 @@ parts:
       - libasound2t64
       - libssl3t64
       - openssh-client
+      - sshpass
       - libgraphene-1.0-0
       - libpango-1.0-0
       - libpangocairo-1.0-0

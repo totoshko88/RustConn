@@ -25,6 +25,7 @@ pub mod filter;
 pub mod search;
 pub mod view;
 
+use crate::i18n::i18n;
 use crate::sidebar_ui;
 
 use gtk4::prelude::*;
@@ -106,7 +107,7 @@ impl ConnectionSidebar {
 
         // Search entry
         let search_entry = SearchEntry::new();
-        search_entry.set_placeholder_text(Some("Search... (? for help)"));
+        search_entry.set_placeholder_text(Some(&i18n("Search... (? for help)")));
         search_entry.set_hexpand(true);
         // Accessibility: set label for screen readers
         search_entry.update_property(&[gtk4::accessible::Property::Label("Search connections")]);

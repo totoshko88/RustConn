@@ -6,6 +6,8 @@ use gtk4::{Box as GtkBox, CheckButton, DropDown, StringList, ToggleButton};
 use libadwaita as adw;
 use rustconn_core::config::{ColorScheme, SessionRestoreSettings, UiSettings};
 
+use crate::i18n::i18n;
+
 /// Creates the UI settings page using AdwPreferencesPage
 #[allow(clippy::type_complexity)]
 pub fn create_ui_page() -> (
@@ -20,12 +22,14 @@ pub fn create_ui_page() -> (
     adw::SpinRow,
 ) {
     let page = adw::PreferencesPage::builder()
-        .title("Interface")
+        .title(i18n("Interface"))
         .icon_name("applications-graphics-symbolic")
         .build();
 
     // === Appearance Group ===
-    let appearance_group = adw::PreferencesGroup::builder().title("Appearance").build();
+    let appearance_group = adw::PreferencesGroup::builder()
+        .title(i18n("Appearance"))
+        .build();
 
     // Color scheme row with toggle buttons
     let color_scheme_box = GtkBox::builder()
@@ -37,11 +41,17 @@ pub fn create_ui_page() -> (
         .build();
 
     let system_btn = ToggleButton::builder()
-        .label("System")
+        .label(i18n("System"))
         .hexpand(true)
         .build();
-    let light_btn = ToggleButton::builder().label("Light").hexpand(true).build();
-    let dark_btn = ToggleButton::builder().label("Dark").hexpand(true).build();
+    let light_btn = ToggleButton::builder()
+        .label(i18n("Light"))
+        .hexpand(true)
+        .build();
+    let dark_btn = ToggleButton::builder()
+        .label(i18n("Dark"))
+        .hexpand(true)
+        .build();
 
     light_btn.set_group(Some(&system_btn));
     dark_btn.set_group(Some(&system_btn));
@@ -69,7 +79,7 @@ pub fn create_ui_page() -> (
     color_scheme_box.append(&light_btn);
     color_scheme_box.append(&dark_btn);
 
-    let color_scheme_row = adw::ActionRow::builder().title("Theme").build();
+    let color_scheme_row = adw::ActionRow::builder().title(i18n("Theme")).build();
     color_scheme_row.add_suffix(&color_scheme_box);
     appearance_group.add(&color_scheme_row);
 
@@ -83,8 +93,8 @@ pub fn create_ui_page() -> (
         .build();
 
     let language_row = adw::ActionRow::builder()
-        .title("Language")
-        .subtitle("Restart required to apply")
+        .title(i18n("Language"))
+        .subtitle(i18n("Restart required to apply"))
         .build();
     language_row.add_suffix(&language_dropdown);
     appearance_group.add(&language_row);
@@ -92,12 +102,14 @@ pub fn create_ui_page() -> (
     page.add(&appearance_group);
 
     // === Window Group ===
-    let window_group = adw::PreferencesGroup::builder().title("Window").build();
+    let window_group = adw::PreferencesGroup::builder()
+        .title(i18n("Window"))
+        .build();
 
     let remember_geometry = CheckButton::builder().valign(gtk4::Align::Center).build();
     let remember_geometry_row = adw::ActionRow::builder()
-        .title("Remember size")
-        .subtitle("Restore window geometry on startup")
+        .title(i18n("Remember size"))
+        .subtitle(i18n("Restore window geometry on startup"))
         .activatable_widget(&remember_geometry)
         .build();
     remember_geometry_row.add_prefix(&remember_geometry);
@@ -107,14 +119,14 @@ pub fn create_ui_page() -> (
 
     // === System Tray Group ===
     let tray_group = adw::PreferencesGroup::builder()
-        .title("System Tray")
-        .description("Requires desktop environment with tray support")
+        .title(i18n("System Tray"))
+        .description(i18n("Requires desktop environment with tray support"))
         .build();
 
     let enable_tray_icon = CheckButton::builder().valign(gtk4::Align::Center).build();
     let enable_tray_row = adw::ActionRow::builder()
-        .title("Show icon")
-        .subtitle("Display icon in system tray")
+        .title(i18n("Show icon"))
+        .subtitle(i18n("Display icon in system tray"))
         .activatable_widget(&enable_tray_icon)
         .build();
     enable_tray_row.add_prefix(&enable_tray_icon);
@@ -122,8 +134,8 @@ pub fn create_ui_page() -> (
 
     let minimize_to_tray = CheckButton::builder().valign(gtk4::Align::Center).build();
     let minimize_to_tray_row = adw::ActionRow::builder()
-        .title("Minimize to tray")
-        .subtitle("Hide window instead of closing")
+        .title(i18n("Minimize to tray"))
+        .subtitle(i18n("Hide window instead of closing"))
         .activatable_widget(&minimize_to_tray)
         .build();
     minimize_to_tray_row.add_prefix(&minimize_to_tray);
@@ -139,14 +151,14 @@ pub fn create_ui_page() -> (
 
     // === Session Restore Group ===
     let session_group = adw::PreferencesGroup::builder()
-        .title("Session Restore")
-        .description("Restore previous connections on startup")
+        .title(i18n("Session Restore"))
+        .description(i18n("Restore previous connections on startup"))
         .build();
 
     let session_restore_enabled = CheckButton::builder().valign(gtk4::Align::Center).build();
     let session_restore_row = adw::ActionRow::builder()
-        .title("Enabled")
-        .subtitle("Reconnect to previous sessions on startup")
+        .title(i18n("Enabled"))
+        .subtitle(i18n("Reconnect to previous sessions on startup"))
         .activatable_widget(&session_restore_enabled)
         .build();
     session_restore_row.add_prefix(&session_restore_enabled);
@@ -154,16 +166,16 @@ pub fn create_ui_page() -> (
 
     let prompt_on_restore = CheckButton::builder().valign(gtk4::Align::Center).build();
     let prompt_on_restore_row = adw::ActionRow::builder()
-        .title("Ask first")
-        .subtitle("Prompt before restoring sessions")
+        .title(i18n("Ask first"))
+        .subtitle(i18n("Prompt before restoring sessions"))
         .activatable_widget(&prompt_on_restore)
         .build();
     prompt_on_restore_row.add_prefix(&prompt_on_restore);
     session_group.add(&prompt_on_restore_row);
 
     let max_age_row = adw::SpinRow::builder()
-        .title("Max age")
-        .subtitle("Hours before sessions expire")
+        .title(i18n("Max age"))
+        .subtitle(i18n("Hours before sessions expire"))
         .adjustment(&gtk4::Adjustment::new(24.0, 1.0, 168.0, 1.0, 24.0, 0.0))
         .build();
     session_group.add(&max_age_row);

@@ -13,149 +13,474 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
 
+#. Desktop file
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:2
 msgid "RustConn"
 msgstr "RustConn"
+
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
 msgid "Manage remote connections easily"
 msgstr "Snadná správa vzdálených připojení"
+
+#. Application
+#: rustconn/src/app.rs
 msgid "Initialization Error"
 msgstr "Chyba inicializace"
-msgid "Failed to initialize application state"
-msgstr "Nepodařilo se inicializovat stav aplikace"
-msgid "_Keyboard Shortcuts"
-msgstr "_Klávesové zkratky"
-msgid "_About RustConn"
-msgstr "_O aplikaci RustConn"
-msgid "_Quit"
-msgstr "_Ukončit"
-msgid "Opening mc SFTP..."
-msgstr "Otevírání mc SFTP…"
-msgid "Opening SFTP..."
-msgstr "Otevírání SFTP…"
-msgid "Connection failed"
-msgstr "Připojení selhalo"
-msgid "Deleted '{}'"
-msgstr "«{}» smazáno"
-msgid "Undo"
-msgstr "Zpět"
-msgid "Search connections..."
-msgstr "Hledat připojení…"
-msgid "All"
-msgstr "Vše"
-msgid "No connections found"
-msgstr "Žádná připojení nenalezena"
-msgid "Create a new connection to get started"
-msgstr "Vytvořte nové připojení"
+
+#: rustconn/src/app.rs
+msgid ""
+"Modern connection manager for Linux with a GTK4/Wayland-native interface. "
+"Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
+"connections from a single application."
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "translator-credits"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "User Guide"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Installation"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Releases"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Changelog"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Special Thanks"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "Made in Ukraine"
+msgstr ""
+
+#: rustconn/src/app.rs
+msgid "All contributors and supporters"
+msgstr ""
+
+#. Sidebar
+#: rustconn/src/sidebar/mod.rs
+msgid "Search... (? for help)"
+msgstr ""
+
+#. Connection dialog
+#: rustconn/src/dialogs/connection/dialog.rs
 msgid "New Connection"
 msgstr "Nové připojení"
-msgid "Edit Connection"
-msgstr "Upravit připojení"
-msgid "Save"
-msgstr "Uložit"
-msgid "Cancel"
-msgstr "Zrušit"
-msgid "General"
-msgstr "Obecné"
-msgid "Name"
-msgstr "Název"
-msgid "Host"
-msgstr "Host"
-msgid "Port"
-msgstr "Port"
-msgid "Username"
-msgstr "Uživatel"
-msgid "Password"
-msgstr "Heslo"
-msgid "Protocol"
-msgstr "Protokol"
-msgid "Group"
-msgstr "Skupina"
-msgid "Tags"
-msgstr "Štítky"
-msgid "Description"
-msgstr "Popis"
-msgid "Settings"
-msgstr "Nastavení"
-msgid "Appearance"
-msgstr "Vzhled"
-msgid "Color Scheme"
-msgstr "Barevné schéma"
-msgid "System"
-msgstr "Systémové"
-msgid "Light"
-msgstr "Světlé"
-msgid "Dark"
-msgstr "Tmavé"
-msgid "Terminal"
-msgstr "Terminál"
-msgid "Clients"
-msgstr "Klienti"
-msgid "Secrets"
-msgstr "Tajemství"
-msgid "SSH Agent"
-msgstr "SSH agent"
-msgid "Logging"
-msgstr "Protokolování"
-msgid "SSH"
-msgstr "SSH"
-msgid "RDP"
-msgstr "RDP"
-msgid "VNC"
-msgstr "VNC"
-msgid "SPICE"
-msgstr "SPICE"
-msgid "Telnet"
-msgstr "Telnet"
-msgid "Serial"
-msgstr "Sériový"
-msgid "K8s"
-msgstr "K8s"
-msgid "Delete"
-msgstr "Smazat"
-msgid "Connect"
-msgstr "Připojit"
-msgid "Create"
-msgstr "Vytvořit"
+
+#: rustconn/src/dialogs/connection/dialog.rs
 msgid "Close"
 msgstr "Zavřít"
-msgid "Apply"
-msgstr "Použít"
-msgid "Export"
-msgstr "Exportovat"
-msgid "Import"
-msgstr "Importovat"
-msgid "Import completed successfully"
-msgstr "Import úspěšně dokončen"
-msgid "Import failed"
-msgstr "Import selhal"
-msgid "{} connection"
-msgid_plural "{} connections"
-msgstr[0] "{} připojení"
-msgstr[1] "{} připojení"
-msgstr[2] "{} připojení"
-msgid "{} connection imported"
-msgid_plural "{} connections imported"
-msgstr[0] "{} připojení importováno"
-msgstr[1] "{} připojení importována"
-msgstr[2] "{} připojení importováno"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Test"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Create"
+msgstr "Vytvořit"
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Name:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Protocol:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Host:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Port:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Username:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Domain:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Password:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Tags:"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog.rs
+msgid "Group:"
+msgstr ""
+
+#. Settings dialog — UI tab
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Interface"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Appearance"
+msgstr "Vzhled"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "System"
+msgstr "Systémové"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Light"
+msgstr "Světlé"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Dark"
+msgstr "Tmavé"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Theme"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Language"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restart required to apply"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Window"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Remember size"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restore window geometry on startup"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "System Tray"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Requires desktop environment with tray support"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Show icon"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Display icon in system tray"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Minimize to tray"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Hide window instead of closing"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Session Restore"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Restore previous connections on startup"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Enabled"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Reconnect to previous sessions on startup"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Ask first"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Prompt before restoring sessions"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Max age"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/ui_tab.rs
+msgid "Hours before sessions expire"
+msgstr ""
+
+#. Empty states
+#: rustconn/src/empty_state.rs
+msgid "No Connections"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create your first connection to get started"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Results Found"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No connections match"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
 msgid "No Active Sessions"
 msgstr "Žádné aktivní relace"
-msgid "Select a connection from the sidebar to start"
-msgstr "Vyberte připojení z postranního panelu"
-msgid "This field is required"
-msgstr "Toto pole je povinné"
-msgid "Invalid port number"
-msgstr "Neplatné číslo portu"
-msgid "Invalid hostname"
-msgstr "Neplatný název hostitele"
-msgid "Modern Connection Manager for Linux"
-msgstr "Moderní správce připojení pro Linux"
-msgid "Filter SSH connections"
-msgstr "Filtrovat SSH připojení"
-msgid "Filter RDP connections"
-msgstr "Filtrovat RDP připojení"
-msgid "Filter VNC connections"
-msgstr "Filtrovat VNC připojení"
-msgid "Close tab"
-msgstr "Zavřít kartu"
-msgid "Open local shell terminal"
-msgstr "Otevřít lokální terminál"
+
+#: rustconn/src/empty_state.rs
+msgid "Connect to a server to start a session"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Quick Connect"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Groups"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create groups to organize your connections"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "New Group"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Snippets"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create command snippets for quick access"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "New Snippet"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Templates"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Create templates for common connection configurations"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "New Template"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "No Connection History"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Your recent connections will appear here"
+msgstr ""
+
+#: rustconn/src/empty_state.rs
+msgid "Loading..."
+msgstr ""
+
+#~ msgid "Failed to initialize application state"
+#~ msgstr "Nepodařilo se inicializovat stav aplikace"
+
+#~ msgid "_Keyboard Shortcuts"
+#~ msgstr "_Klávesové zkratky"
+
+#~ msgid "_About RustConn"
+#~ msgstr "_O aplikaci RustConn"
+
+#~ msgid "_Quit"
+#~ msgstr "_Ukončit"
+
+#~ msgid "Opening mc SFTP..."
+#~ msgstr "Otevírání mc SFTP…"
+
+#~ msgid "Opening SFTP..."
+#~ msgstr "Otevírání SFTP…"
+
+#~ msgid "Connection failed"
+#~ msgstr "Připojení selhalo"
+
+#~ msgid "Deleted '{}'"
+#~ msgstr "«{}» smazáno"
+
+#~ msgid "Undo"
+#~ msgstr "Zpět"
+
+#~ msgid "Search connections..."
+#~ msgstr "Hledat připojení…"
+
+#~ msgid "All"
+#~ msgstr "Vše"
+
+#~ msgid "No connections found"
+#~ msgstr "Žádná připojení nenalezena"
+
+#~ msgid "Create a new connection to get started"
+#~ msgstr "Vytvořte nové připojení"
+
+#~ msgid "Edit Connection"
+#~ msgstr "Upravit připojení"
+
+#~ msgid "Save"
+#~ msgstr "Uložit"
+
+#~ msgid "Cancel"
+#~ msgstr "Zrušit"
+
+#~ msgid "General"
+#~ msgstr "Obecné"
+
+#~ msgid "Name"
+#~ msgstr "Název"
+
+#~ msgid "Host"
+#~ msgstr "Host"
+
+#~ msgid "Port"
+#~ msgstr "Port"
+
+#~ msgid "Username"
+#~ msgstr "Uživatel"
+
+#~ msgid "Password"
+#~ msgstr "Heslo"
+
+#~ msgid "Protocol"
+#~ msgstr "Protokol"
+
+#~ msgid "Group"
+#~ msgstr "Skupina"
+
+#~ msgid "Tags"
+#~ msgstr "Štítky"
+
+#~ msgid "Description"
+#~ msgstr "Popis"
+
+#~ msgid "Settings"
+#~ msgstr "Nastavení"
+
+#~ msgid "Color Scheme"
+#~ msgstr "Barevné schéma"
+
+#~ msgid "Terminal"
+#~ msgstr "Terminál"
+
+#~ msgid "Clients"
+#~ msgstr "Klienti"
+
+#~ msgid "Secrets"
+#~ msgstr "Tajemství"
+
+#~ msgid "SSH Agent"
+#~ msgstr "SSH agent"
+
+#~ msgid "Logging"
+#~ msgstr "Protokolování"
+
+#~ msgid "SSH"
+#~ msgstr "SSH"
+
+#~ msgid "RDP"
+#~ msgstr "RDP"
+
+#~ msgid "VNC"
+#~ msgstr "VNC"
+
+#~ msgid "SPICE"
+#~ msgstr "SPICE"
+
+#~ msgid "Telnet"
+#~ msgstr "Telnet"
+
+#~ msgid "Serial"
+#~ msgstr "Sériový"
+
+#~ msgid "K8s"
+#~ msgstr "K8s"
+
+#~ msgid "Delete"
+#~ msgstr "Smazat"
+
+#~ msgid "Connect"
+#~ msgstr "Připojit"
+
+#~ msgid "Apply"
+#~ msgstr "Použít"
+
+#~ msgid "Export"
+#~ msgstr "Exportovat"
+
+#~ msgid "Import"
+#~ msgstr "Importovat"
+
+#~ msgid "Import completed successfully"
+#~ msgstr "Import úspěšně dokončen"
+
+#~ msgid "Import failed"
+#~ msgstr "Import selhal"
+
+#~ msgid "{} connection"
+#~ msgid_plural "{} connections"
+#~ msgstr[0] "{} připojení"
+#~ msgstr[1] "{} připojení"
+#~ msgstr[2] "{} připojení"
+
+#~ msgid "{} connection imported"
+#~ msgid_plural "{} connections imported"
+#~ msgstr[0] "{} připojení importováno"
+#~ msgstr[1] "{} připojení importována"
+#~ msgstr[2] "{} připojení importováno"
+
+#~ msgid "Select a connection from the sidebar to start"
+#~ msgstr "Vyberte připojení z postranního panelu"
+
+#~ msgid "This field is required"
+#~ msgstr "Toto pole je povinné"
+
+#~ msgid "Invalid port number"
+#~ msgstr "Neplatné číslo portu"
+
+#~ msgid "Invalid hostname"
+#~ msgstr "Neplatný název hostitele"
+
+#~ msgid "Modern Connection Manager for Linux"
+#~ msgstr "Moderní správce připojení pro Linux"
+
+#~ msgid "Filter SSH connections"
+#~ msgstr "Filtrovat SSH připojení"
+
+#~ msgid "Filter RDP connections"
+#~ msgstr "Filtrovat RDP připojení"
+
+#~ msgid "Filter VNC connections"
+#~ msgstr "Filtrovat VNC připojení"
+
+#~ msgid "Close tab"
+#~ msgstr "Zavřít kartu"
+
+#~ msgid "Open local shell terminal"
+#~ msgstr "Otevřít lokální terminál"

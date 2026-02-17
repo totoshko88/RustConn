@@ -59,6 +59,7 @@ Requires:       gtk4 >= 4.14
 Requires:       libadwaita
 Requires:       vte >= 0.74
 Requires:       openssh-clients
+Requires:       sshpass
 Requires:       libasound2
 %endif
 
@@ -67,6 +68,7 @@ Requires:       gtk4 >= 4.14
 Requires:       libadwaita
 Requires:       vte291-gtk4
 Requires:       openssh-clients
+Requires:       sshpass
 Requires:       alsa-lib
 %endif
 

@@ -56,6 +56,22 @@ fn locale_dir() -> String {
         }
     }
 
+    // User-local install (install-desktop.sh)
+    if let Ok(home) = std::env::var("HOME") {
+        let local_locale = format!("{home}/.local/share/locale");
+        if std::path::Path::new(&local_locale).exists() {
+            return local_locale;
+        }
+    }
+
+    // XDG_DATA_HOME fallback
+    if let Ok(xdg_data) = std::env::var("XDG_DATA_HOME") {
+        let xdg_locale = format!("{xdg_data}/locale");
+        if std::path::Path::new(&xdg_locale).exists() {
+            return xdg_locale;
+        }
+    }
+
     // System default
     "/usr/share/locale".to_string()
 }
