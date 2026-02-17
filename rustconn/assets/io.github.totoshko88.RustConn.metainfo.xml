@@ -53,6 +53,7 @@
     </ul>
   </description>
   <launchable type="desktop-id">io.github.totoshko88.RustConn.desktop</launchable>
+  <translation type="gettext">rustconn</translation>
   <icon type="stock">io.github.totoshko88.RustConn</icon>
   <icon type="remote" width="128" height="128">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/icons/hicolor/128x128/apps/io.github.totoshko88.RustConn.png</icon>
   <branding>

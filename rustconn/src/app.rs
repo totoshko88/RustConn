@@ -14,6 +14,7 @@ use std::rc::Rc;
 use crate::state::{create_shared_state, SharedAppState};
 use crate::tray::{TrayManager, TrayMessage};
 use crate::window::MainWindow;
+use gettextrs::gettext;
 use rustconn_core::config::ColorScheme;
 
 /// Applies a color scheme to GTK/libadwaita settings
@@ -74,7 +75,7 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
         Ok(state) => state,
         Err(e) => {
             eprintln!("Failed to initialize application state: {e}");
-            show_error_dialog(app, "Initialization Error", &e);
+            show_error_dialog(app, &gettext("Initialization Error"), &e);
             return;
         }
     };
@@ -965,9 +966,11 @@ fn setup_app_actions(
 
 /// Shows the about dialog
 fn show_about_dialog(parent: &adw::ApplicationWindow) {
-    let description = "Modern connection manager for Linux with a \
+    let description = gettext(
+        "Modern connection manager for Linux with a \
 GTK4/Wayland-native interface. Manage SSH, RDP, VNC, SPICE, Telnet, \
-Serial, Kubernetes, and Zero Trust connections from a single application.";
+Serial, Kubernetes, and Zero Trust connections from a single application.",
+    );
 
     // Build debug info for troubleshooting
     let debug_info = format!(
@@ -991,7 +994,7 @@ Serial, Kubernetes, and Zero Trust connections from a single application.";
         .application_name("RustConn")
         .developer_name("Anton Isaiev")
         .version(env!("CARGO_PKG_VERSION"))
-        .comments(description)
+        .comments(&description)
         .website("https://github.com/totoshko88/RustConn")
         .issue_url("https://github.com/totoshko88/rustconn/issues")
         .support_url("https://ko-fi.com/totoshko88")
@@ -999,26 +1002,27 @@ Serial, Kubernetes, and Zero Trust connections from a single application.";
         .developers(vec!["Anton Isaiev <totoshko88@gmail.com>"])
         .copyright("© 2024-2026 Anton Isaiev")
         .application_icon("io.github.totoshko88.RustConn")
-        .translator_credits("Anton Isaiev (Ukrainian)")
+        // Translators: Replace this with your name and language, e.g. "John Doe (German)"
+        .translator_credits(&gettext("translator-credits"))
         .debug_info(&debug_info)
         .debug_info_filename("rustconn-debug-info.txt")
         .build();
 
     // Documentation & resources links
     about.add_link(
-        "User Guide",
+        &gettext("User Guide"),
         "https://github.com/totoshko88/RustConn/blob/main/docs/USER_GUIDE.md",
     );
     about.add_link(
-        "Installation",
+        &gettext("Installation"),
         "https://github.com/totoshko88/RustConn/blob/main/docs/INSTALL.md",
     );
     about.add_link(
-        "Releases",
+        &gettext("Releases"),
         "https://github.com/totoshko88/RustConn/releases",
     );
     about.add_link(
-        "Changelog",
+        &gettext("Changelog"),
         "https://github.com/totoshko88/RustConn/blob/main/CHANGELOG.md",
     );
 
@@ -1029,7 +1033,7 @@ Serial, Kubernetes, and Zero Trust connections from a single application.";
 
     // Acknowledgments
     about.add_acknowledgement_section(
-        Some("Special Thanks"),
+        Some(&gettext("Special Thanks")),
         &[
             "GTK4 and the GNOME project https://www.gtk.org",
             "The Rust community https://www.rust-lang.org",
@@ -1044,8 +1048,8 @@ Serial, Kubernetes, and Zero Trust connections from a single application.";
         ],
     );
     about.add_acknowledgement_section(
-        Some("Made in Ukraine"),
-        &["All contributors and supporters"],
+        Some(&gettext("Made in Ukraine")),
+        &[&gettext("All contributors and supporters")],
     );
 
     // Legal sections for key dependencies

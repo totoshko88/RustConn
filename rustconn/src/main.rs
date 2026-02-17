@@ -57,6 +57,7 @@ pub mod embedded_vnc_ui;
 pub mod empty_state;
 pub mod external_window;
 pub mod floating_controls;
+pub mod i18n;
 pub mod loading;
 pub mod session;
 mod sidebar;
@@ -77,6 +78,9 @@ pub mod error;
 pub mod error_display;
 
 fn main() -> gtk4::glib::ExitCode {
+    // Initialize internationalization (gettext)
+    i18n::init();
+
     // Initialize logging with environment filter (RUST_LOG)
     // Filter out noisy zbus debug messages (ProvideXdgActivationToken errors from ksni)
     //

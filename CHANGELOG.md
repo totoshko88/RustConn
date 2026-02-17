@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Configurable document encryption strength (SEC-04)** — Added `EncryptionStrength` enum (Standard/High/Maximum) with per-level Argon2 parameters; strength byte stored in encrypted file header for automatic detection on decrypt; backward-compatible with legacy format
 
 ### Added
+- **Internationalization infrastructure (i18n)** — gettext support via `gettext-rs` crate with `gettext-system` feature (uses system libintl from GNOME Platform runtime); `i18n` module with `i18n()`, `i18n_f()`, `ni18n()` helpers; `<translation type="gettext">rustconn</translation>` in metainfo.xml; `po/` directory with POT template, `POTFILES.in`, `LINGUAS`, and `update-pot.sh` script; Flatpak manifests install compiled `.mo` locale files; About dialog uses `translator-credits` for translator attribution; closes #17
 - **Property tests for variable injection (SEC-07)** — 8 proptest properties (200 cases each) in `variable_injection_tests.rs` validate that `substitute_for_command()` rejects null bytes, newlines, and control characters while allowing safe values, tabs, and undefined-variable fallback
 - **CLI delete confirmation prompt (CLI-09)** — `rustconn-cli delete` now prompts for confirmation on interactive terminals; `--force` / `-f` flag skips the prompt; non-interactive (piped) input auto-confirms per clig.dev guidelines
 - **CLI `--verbose` / `--quiet` flags (CLI-02)** — Global `-v` (count: info/debug/trace) and `-q` (errors only) flags for controlling output verbosity
