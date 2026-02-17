@@ -73,6 +73,18 @@
       <caption>RDP session</caption>
       <image type="source" width="1920" height="1080">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/rdp.png</image>
     </screenshot>
+    <screenshot>
+      <caption>Main window — light theme</caption>
+      <image type="source" width="1920" height="1080">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/main_light.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>SFTP file browser — light theme</caption>
+      <image type="source" width="1920" height="1080">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/sftp_light.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Ukrainian translation</caption>
+      <image type="source" width="1920" height="1080">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/main_uk.png</image>
+    </screenshot>
   </screenshots>
   <url type="homepage">https://github.com/totoshko88/RustConn</url>
   <url type="bugtracker">https://github.com/totoshko88/RustConn/issues</url>
@@ -94,6 +106,24 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.8.7" date="2026-02-17">
+      <description>
+        <p>Version 0.8.7 - Internationalization, Security Hardening, CLI Overhaul:</p>
+        <ul>
+          <li>Internationalization (i18n) — 14 languages: uk, de, fr, es, it, pl, cs, sk, da, sv, nl, pt, be, kk (#17)</li>
+          <li>SPICE proxy support for Proxmox VE tunnelled connections (#18)</li>
+          <li>RDP HiDPI fix — IronRDP uses device-pixel resolution on HiDPI displays (#16)</li>
+          <li>Variable injection prevention — command-building validates resolved values</li>
+          <li>Checksum policy for CLI downloads — explicit integrity verification</li>
+          <li>Sensitive CLI arguments masked in log output</li>
+          <li>Configurable document encryption strength (Standard/High/Maximum)</li>
+          <li>SSH Agent passphrase handling via SSH_ASKPASS helper</li>
+          <li>CLI overhaul: modularized into 18 handler modules, shell completions, man page, fuzzy suggestions, dry-run, pager, auto-JSON</li>
+          <li>Czech translation improved by native speaker (PR #19)</li>
+          <li>Remmina RDP import: gateway and domain fields (#20)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.8.6" date="2026-02-16">
       <description>
         <p>Version 0.8.6 - Secrets Management, Keyboard Layout, Flatpak Fixes:</p>

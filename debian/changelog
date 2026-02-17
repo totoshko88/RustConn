@@ -1,8 +1,26 @@
 rustconn (0.8.7-1) unstable; urgency=medium
 
   * Version bump to 0.8.7
+  * Internationalization (i18n) — 14 languages: uk, de, fr, es, it, pl, cs,
+    sk, da, sv, nl, pt, be, kk; gettext support via gettext-rs (#17)
+  * SPICE proxy support for Proxmox VE tunnelled connections (#18)
+  * RDP HiDPI fix — IronRDP uses device-pixel resolution on HiDPI displays (#16)
+  * Security: variable injection prevention in command-building paths
+  * Security: ChecksumPolicy enum replaces placeholder SHA256 strings
+  * Security: sensitive CLI arguments masked in log output
+  * Security: configurable document encryption strength (Standard/High/Maximum)
+  * Security: SSH Agent passphrase handling via SSH_ASKPASS helper
+  * CLI overhaul: modularized into 18 handler modules with structured logging
+  * CLI: shell completions, man page, fuzzy suggestions, dry-run, pager, auto-JSON
+  * CLI: --config flag now threads through all ConfigManager call sites
+  * Czech translation improved by native speaker p-bo (PR #19)
+  * Remmina RDP import: gateway_server, gateway_username, domain fields (#20)
+  * Accessible labels added to 20+ icon-only buttons
+  * VTE updated to 0.83.90 in Flatpak manifests
+  * Flatpak components dialog hides unusable protocol clients in sandbox
+  * SPDX license corrected: GPL-3.0+ → GPL-3.0-or-later in metainfo.xml
 
- -- Anton Isaiev <totoshko88@gmail.com>  Mon, 16 Feb 2026 12:00:00 +0200
+ -- Anton Isaiev <totoshko88@gmail.com>  Mon, 17 Feb 2026 12:00:00 +0200
 
 rustconn (0.8.6-1) unstable; urgency=medium
 
