@@ -16,6 +16,8 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use uuid::Uuid;
 
+use crate::i18n::i18n;
+
 /// Tab display mode based on available space
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TabDisplayMode {
@@ -164,7 +166,7 @@ impl AdaptiveTab {
         let close_button = Button::from_icon_name("window-close-symbolic");
         close_button.add_css_class("flat");
         close_button.add_css_class("circular");
-        close_button.set_tooltip_text(Some("Close tab"));
+        close_button.set_tooltip_text(Some(&i18n("Close tab")));
         close_button.update_property(&[gtk4::accessible::Property::Label("Close tab")]);
         container.append(&close_button);
 
@@ -285,7 +287,7 @@ impl AdaptiveTabBar {
         // Overflow button
         let overflow_button = Button::from_icon_name("view-more-symbolic");
         overflow_button.add_css_class("flat");
-        overflow_button.set_tooltip_text(Some("More tabs"));
+        overflow_button.set_tooltip_text(Some(&i18n("More tabs")));
         overflow_button.update_property(&[gtk4::accessible::Property::Label("More tabs")]);
         overflow_button.set_visible(false);
         container.append(&overflow_button);

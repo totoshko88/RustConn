@@ -7,6 +7,7 @@ use super::MainWindow;
 use crate::alert;
 use crate::dialogs::ConnectionDialog;
 use crate::embedded_rdp::{EmbeddedRdpWidget, RdpConfig as EmbeddedRdpConfig};
+use crate::i18n::{i18n, i18n_f};
 use crate::sidebar::ConnectionSidebar;
 use crate::split_view::SplitViewBridge;
 use crate::state::SharedAppState;
@@ -166,7 +167,11 @@ pub fn edit_selected_connection(
                             });
                         }
                         Err(e) => {
-                            alert::show_error(&window_clone, "Error Updating Connection", &e);
+                            alert::show_error(
+                                &window_clone,
+                                &i18n("Error Updating Connection"),
+                                &e,
+                            );
                         }
                     }
                 }
@@ -197,9 +202,9 @@ pub fn rename_selected_item(
     // Create rename dialog with Adwaita
     let rename_window = adw::Window::builder()
         .title(if is_group {
-            "Rename Group"
+            i18n("Rename Group")
         } else {
-            "Rename Connection"
+            i18n("Rename Connection")
         })
         .modal(true)
         .default_width(450)
@@ -210,9 +215,9 @@ pub fn rename_selected_item(
     let header = adw::HeaderBar::new();
     header.set_show_end_title_buttons(false);
     header.set_show_start_title_buttons(false);
-    let cancel_btn = gtk4::Button::builder().label("Cancel").build();
+    let cancel_btn = gtk4::Button::builder().label(i18n("Cancel")).build();
     let save_btn = gtk4::Button::builder()
-        .label("Rename")
+        .label(i18n("Rename"))
         .css_classes(["suggested-action"])
         .build();
     header.pack_start(&cancel_btn);
@@ -227,7 +232,7 @@ pub fn rename_selected_item(
     // Name entry using PreferencesGroup with EntryRow
     let name_group = adw::PreferencesGroup::new();
     let name_row = adw::EntryRow::builder()
-        .title("Name")
+        .title(i18n("Name"))
         .text(&current_name)
         .build();
     name_group.add(&name_row);
@@ -253,7 +258,7 @@ pub fn rename_selected_item(
     save_btn.connect_clicked(move |_| {
         let new_name = name_row_clone.text().trim().to_string();
         if new_name.is_empty() {
-            alert::show_validation_error(&window_clone, "Name cannot be empty");
+            alert::show_validation_error(&window_clone, &i18n("Name cannot be empty"));
             return;
         }
 
@@ -269,7 +274,7 @@ pub fn rename_selected_item(
                 drop(state_ref);
                 alert::show_validation_error(
                     &window_clone,
-                    &format!("Group with name '{new_name}' already exists"),
+                    &i18n_f("Group with name '{}' already exists", &[&new_name]),
                 );
                 return;
             }
@@ -280,7 +285,7 @@ pub fn rename_selected_item(
                     let mut updated = existing;
                     updated.name = new_name.clone();
                     if let Err(e) = state_mut.connection_manager().update_group(id, updated) {
-                        alert::show_error(&window_clone, "Error", &format!("{e}"));
+                        alert::show_error(&window_clone, &i18n("Error"), &format!("{e}"));
                         return;
                     }
                 }
@@ -360,7 +365,7 @@ pub fn rename_selected_item(
                             });
                         }
                         Err(e) => {
-                            alert::show_error(&window_clone, "Error", &e);
+                            alert::show_error(&window_clone, &i18n("Error"), &e);
                         }
                     }
                 }
@@ -394,7 +399,7 @@ pub fn show_edit_group_dialog(
 
     // Create group window with Adwaita
     let group_window = adw::Window::builder()
-        .title("Edit Group")
+        .title(i18n("Edit Group"))
         .modal(true)
         .default_width(450)
         .resizable(false)
@@ -404,9 +409,9 @@ pub fn show_edit_group_dialog(
     let header = adw::HeaderBar::new();
     header.set_show_end_title_buttons(false);
     header.set_show_start_title_buttons(false);
-    let cancel_btn = gtk4::Button::builder().label("Cancel").build();
+    let cancel_btn = gtk4::Button::builder().label(i18n("Cancel")).build();
     let save_btn = gtk4::Button::builder()
-        .label("Save")
+        .label(i18n("Save"))
         .css_classes(["suggested-action"])
         .build();
     header.pack_start(&cancel_btn);
@@ -434,12 +439,12 @@ pub fn show_edit_group_dialog(
 
     // === Group Details ===
     let details_group = adw::PreferencesGroup::builder()
-        .title("Group Details")
+        .title(i18n("Group Details"))
         .build();
 
     // Name entry using PreferencesGroup with EntryRow
     let name_row = adw::EntryRow::builder()
-        .title("Name")
+        .title(i18n("Name"))
         .text(&group.name)
         .build();
     details_group.add(&name_row);
@@ -507,7 +512,7 @@ pub fn show_edit_group_dialog(
     available_groups.sort_by(|a, b| a.1.to_lowercase().cmp(&b.1.to_lowercase()));
 
     let mut group_ids: Vec<Option<Uuid>> = vec![None];
-    let mut strings: Vec<String> = vec!["(None - Root Level)".to_string()];
+    let mut strings: Vec<String> = vec![i18n("(None - Root Level)")];
     let mut preselected_index = 0u32;
 
     for (id, path, depth) in available_groups {
@@ -534,8 +539,8 @@ pub fn show_edit_group_dialog(
 
     // Use ComboRow for better handling of long group paths
     let parent_row = adw::ComboRow::builder()
-        .title("Parent")
-        .subtitle("Moving a group moves all its content")
+        .title(i18n("Parent"))
+        .subtitle(i18n("Moving a group moves all its content"))
         .model(&string_list)
         .selected(preselected_index)
         .build();
@@ -545,19 +550,24 @@ pub fn show_edit_group_dialog(
 
     // === Inheritable Credentials ===
     let credentials_group = adw::PreferencesGroup::builder()
-        .title("Default Credentials")
-        .description("Credentials inherited by connections in this group")
+        .title(i18n("Default Credentials"))
+        .description(i18n("Credentials inherited by connections in this group"))
         .build();
 
     let username_row = adw::EntryRow::builder()
-        .title("Username")
+        .title(i18n("Username"))
         .text(group.username.as_deref().unwrap_or_default())
         .build();
     credentials_group.add(&username_row);
 
     // Password Source dropdown
-    let password_source_list =
-        gtk4::StringList::new(&["Prompt", "Vault", "Variable", "Inherit", "None"]);
+    let password_source_list = gtk4::StringList::new(&[
+        &i18n("Prompt"),
+        &i18n("Vault"),
+        &i18n("Variable"),
+        &i18n("Inherit"),
+        &i18n("None"),
+    ]);
     let password_source_dropdown = gtk4::DropDown::builder()
         .model(&password_source_list)
         .valign(gtk4::Align::Center)
@@ -572,28 +582,28 @@ pub fn show_edit_group_dialog(
     };
     password_source_dropdown.set_selected(initial_source_idx);
 
-    let password_source_row = adw::ActionRow::builder().title("Password").build();
+    let password_source_row = adw::ActionRow::builder().title(i18n("Password")).build();
     password_source_row.add_suffix(&password_source_dropdown);
     credentials_group.add(&password_source_row);
 
     // Password Value entry with visibility toggle and load button
     let password_entry = gtk4::Entry::builder()
-        .placeholder_text("Password value")
+        .placeholder_text(i18n("Password value"))
         .visibility(false)
         .hexpand(true)
         .build();
     let password_visibility_btn = gtk4::Button::builder()
         .icon_name("view-reveal-symbolic")
-        .tooltip_text("Show/hide password")
+        .tooltip_text(i18n("Show/hide password"))
         .valign(gtk4::Align::Center)
         .build();
     let password_load_btn = gtk4::Button::builder()
         .icon_name("folder-symbolic")
-        .tooltip_text("Load password from vault")
+        .tooltip_text(i18n("Load password from vault"))
         .valign(gtk4::Align::Center)
         .build();
 
-    let password_value_row = adw::ActionRow::builder().title("Value").build();
+    let password_value_row = adw::ActionRow::builder().title(i18n("Value")).build();
     password_value_row.add_suffix(&password_entry);
     password_value_row.add_suffix(&password_visibility_btn);
     password_value_row.add_suffix(&password_load_btn);
@@ -667,13 +677,16 @@ pub fn show_edit_group_dialog(
             1 => {
                 // KeePass
                 if !settings.secrets.kdbx_enabled {
-                    alert::show_validation_error(&window_clone, "KeePass is not enabled");
+                    alert::show_validation_error(&window_clone, &i18n("KeePass is not enabled"));
                     btn_clone.set_sensitive(true);
                     btn_clone.set_icon_name("folder-symbolic");
                     return;
                 }
                 let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
-                    alert::show_validation_error(&window_clone, "KeePass database not configured");
+                    alert::show_validation_error(
+                        &window_clone,
+                        &i18n("KeePass database not configured"),
+                    );
                     btn_clone.set_sensitive(true);
                     btn_clone.set_icon_name("folder-symbolic");
                     return;
@@ -701,12 +714,12 @@ pub fn show_edit_group_dialog(
                             Ok(None) => {
                                 alert::show_validation_error(
                                     &window_clone,
-                                    "No password found for this group",
+                                    &i18n("No password found for this group"),
                                 );
                             }
                             Err(e) => {
                                 tracing::error!("Failed to load password: {}", e);
-                                alert::show_error(&window_clone, "Load Error", &e);
+                                alert::show_error(&window_clone, &i18n("Load Error"), &e);
                             }
                         }
                     },
@@ -733,19 +746,19 @@ pub fn show_edit_group_dialog(
                                 } else {
                                     alert::show_validation_error(
                                         &window_clone,
-                                        "No password found for this group",
+                                        &i18n("No password found for this group"),
                                     );
                                 }
                             }
                             Ok(None) => {
                                 alert::show_validation_error(
                                     &window_clone,
-                                    "No password found for this group",
+                                    &i18n("No password found for this group"),
                                 );
                             }
                             Err(e) => {
                                 tracing::error!("Failed to load password: {}", e);
-                                alert::show_error(&window_clone, "Load Error", &e);
+                                alert::show_error(&window_clone, &i18n("Load Error"), &e);
                             }
                         }
                     },
@@ -772,19 +785,19 @@ pub fn show_edit_group_dialog(
                                 } else {
                                     alert::show_validation_error(
                                         &window_clone,
-                                        "No password found for this group",
+                                        &i18n("No password found for this group"),
                                     );
                                 }
                             }
                             Ok(None) => {
                                 alert::show_validation_error(
                                     &window_clone,
-                                    "No password found for this group",
+                                    &i18n("No password found for this group"),
                                 );
                             }
                             Err(e) => {
                                 tracing::error!("Failed to load password: {}", e);
-                                alert::show_error(&window_clone, "Load Error", &e);
+                                alert::show_error(&window_clone, &i18n("Load Error"), &e);
                             }
                         }
                     },
@@ -795,14 +808,14 @@ pub fn show_edit_group_dialog(
                 btn.set_icon_name("folder-symbolic");
                 alert::show_validation_error(
                     &window_clone,
-                    "Select KeePass, Keyring, or Bitwarden to load password",
+                    &i18n("Select KeePass, Keyring, or Bitwarden to load password"),
                 );
             }
         }
     });
 
     let domain_row = adw::EntryRow::builder()
-        .title("Domain")
+        .title(i18n("Domain"))
         .text(group.domain.as_deref().unwrap_or_default())
         .build();
     credentials_group.add(&domain_row);
@@ -811,8 +824,8 @@ pub fn show_edit_group_dialog(
 
     // === Description Section ===
     let description_group = adw::PreferencesGroup::builder()
-        .title("Description")
-        .description("Notes, contacts, project info")
+        .title(i18n("Description"))
+        .description(i18n("Notes, contacts, project info"))
         .build();
 
     let description_view = gtk4::TextView::builder()
@@ -860,7 +873,7 @@ pub fn show_edit_group_dialog(
     save_btn.connect_clicked(move |_| {
         let new_name = name_row_clone.text().to_string();
         if new_name.trim().is_empty() {
-            alert::show_validation_error(&window_clone, "Group name cannot be empty");
+            alert::show_validation_error(&window_clone, &i18n("Group name cannot be empty"));
             return;
         }
 
@@ -895,7 +908,7 @@ pub fn show_edit_group_dialog(
                 drop(state_ref);
                 alert::show_validation_error(
                     &window_clone,
-                    &format!("Group with name '{new_name}' already exists"),
+                    &i18n_f("Group with name '{}' already exists", &[&new_name]),
                 );
                 return;
             }
@@ -935,7 +948,7 @@ pub fn show_edit_group_dialog(
                     .connection_manager()
                     .update_group(group_id, updated)
                 {
-                    alert::show_error(&window_clone, "Error", &format!("{e}"));
+                    alert::show_error(&window_clone, &i18n("Error"), &format!("{e}"));
                     return;
                 }
 
@@ -1186,7 +1199,7 @@ pub fn show_quick_connect_dialog_with_state(
 
     // Create a quick connect window with Adwaita
     let quick_window = adw::Window::builder()
-        .title("Quick Connect")
+        .title(i18n("Quick Connect"))
         .modal(true)
         .default_width(450)
         .build();
@@ -1199,9 +1212,9 @@ pub fn show_quick_connect_dialog_with_state(
     let header = adw::HeaderBar::new();
     header.set_show_end_title_buttons(false);
     header.set_show_start_title_buttons(false);
-    let close_btn = Button::builder().label("Close").build();
+    let close_btn = Button::builder().label(i18n("Close")).build();
     let connect_btn = Button::builder()
-        .label("Connect")
+        .label(i18n("Connect"))
         .css_classes(["suggested-action"])
         .build();
     header.pack_start(&close_btn);
@@ -1221,7 +1234,7 @@ pub fn show_quick_connect_dialog_with_state(
     content.set_margin_end(12);
 
     // Info label
-    let info_label = Label::new(Some("⚠ This connection will not be saved"));
+    let info_label = Label::new(Some(&i18n("⚠ This connection will not be saved")));
     info_label.add_css_class("dim-label");
     content.append(&info_label);
 
@@ -1232,7 +1245,7 @@ pub fn show_quick_connect_dialog_with_state(
     let template_dropdown: Option<gtk4::DropDown> = if templates.is_empty() {
         None
     } else {
-        let mut template_names: Vec<String> = vec!["(None)".to_string()];
+        let mut template_names: Vec<String> = vec![i18n("(None)")];
         template_names.extend(templates.iter().map(|t| t.name.clone()));
         let template_strings: Vec<&str> = template_names.iter().map(String::as_str).collect();
         let template_list = gtk4::StringList::new(&template_strings);
@@ -1243,7 +1256,7 @@ pub fn show_quick_connect_dialog_with_state(
             .build();
         dropdown.set_selected(0);
 
-        let template_row = adw::ActionRow::builder().title("Template").build();
+        let template_row = adw::ActionRow::builder().title(i18n("Template")).build();
         template_row.add_suffix(&dropdown);
         settings_group.add(&template_row);
 
@@ -1257,17 +1270,17 @@ pub fn show_quick_connect_dialog_with_state(
         .valign(gtk4::Align::Center)
         .build();
     protocol_dropdown.set_selected(0);
-    let protocol_row = adw::ActionRow::builder().title("Protocol").build();
+    let protocol_row = adw::ActionRow::builder().title(i18n("Protocol")).build();
     protocol_row.add_suffix(&protocol_dropdown);
     settings_group.add(&protocol_row);
 
     // Host entry
     let host_entry = gtk4::Entry::builder()
-        .placeholder_text("hostname or IP")
+        .placeholder_text(i18n("hostname or IP"))
         .valign(gtk4::Align::Center)
         .hexpand(true)
         .build();
-    let host_row = adw::ActionRow::builder().title("Host").build();
+    let host_row = adw::ActionRow::builder().title(i18n("Host")).build();
     host_row.add_suffix(&host_entry);
     settings_group.add(&host_row);
 
@@ -1279,28 +1292,28 @@ pub fn show_quick_connect_dialog_with_state(
         .digits(0)
         .valign(gtk4::Align::Center)
         .build();
-    let port_row = adw::ActionRow::builder().title("Port").build();
+    let port_row = adw::ActionRow::builder().title(i18n("Port")).build();
     port_row.add_suffix(&port_spin);
     settings_group.add(&port_row);
 
     // Username entry
     let user_entry = gtk4::Entry::builder()
-        .placeholder_text("(optional)")
+        .placeholder_text(i18n("(optional)"))
         .valign(gtk4::Align::Center)
         .hexpand(true)
         .build();
-    let user_row = adw::ActionRow::builder().title("Username").build();
+    let user_row = adw::ActionRow::builder().title(i18n("Username")).build();
     user_row.add_suffix(&user_entry);
     settings_group.add(&user_row);
 
     // Password entry
     let password_entry = gtk4::PasswordEntry::builder()
         .show_peek_icon(true)
-        .placeholder_text("(optional)")
+        .placeholder_text(i18n("(optional)"))
         .valign(gtk4::Align::Center)
         .hexpand(true)
         .build();
-    let password_row = adw::ActionRow::builder().title("Password").build();
+    let password_row = adw::ActionRow::builder().title(i18n("Password")).build();
     password_row.add_suffix(&password_entry);
     settings_group.add(&password_row);
 

@@ -76,6 +76,8 @@ use std::cell::RefCell;
 use std::process::Child;
 use std::rc::Rc;
 
+use crate::i18n::i18n;
+
 #[cfg(feature = "rdp-embedded")]
 use rustconn_core::RdpClientCommand;
 
@@ -215,16 +217,16 @@ impl EmbeddedRdpWidget {
         toolbar.append(&status_label);
 
         // Copy button - copies remote clipboard to local (enabled when data available)
-        let copy_button = Button::with_label("Copy");
-        copy_button.set_tooltip_text(Some(
+        let copy_button = Button::with_label(&i18n("Copy"));
+        copy_button.set_tooltip_text(Some(&i18n(
             "Copy remote clipboard to local (waiting for remote data...)",
-        ));
+        )));
         copy_button.set_sensitive(false); // Disabled until we receive clipboard data
         toolbar.append(&copy_button);
 
         // Paste button - pastes from local clipboard to remote
-        let paste_button = Button::with_label("Paste");
-        paste_button.set_tooltip_text(Some("Paste from local clipboard to remote session"));
+        let paste_button = Button::with_label(&i18n("Paste"));
+        paste_button.set_tooltip_text(Some(&i18n("Paste from local clipboard to remote session")));
         toolbar.append(&paste_button);
 
         // Separator
@@ -235,23 +237,23 @@ impl EmbeddedRdpWidget {
 
         let ctrl_alt_del_button = Button::with_label("Ctrl+Alt+Del");
         ctrl_alt_del_button.add_css_class("suggested-action"); // Blue button style
-        ctrl_alt_del_button.set_tooltip_text(Some("Send Ctrl+Alt+Del to remote session"));
+        ctrl_alt_del_button.set_tooltip_text(Some(&i18n("Send Ctrl+Alt+Del to remote session")));
         toolbar.append(&ctrl_alt_del_button);
 
         // Save Files button (shown when files available on remote clipboard)
         #[cfg(feature = "rdp-embedded")]
-        let save_files_button = Button::with_label("Save Files");
+        let save_files_button = Button::with_label(&i18n("Save Files"));
         #[cfg(feature = "rdp-embedded")]
         {
-            save_files_button.set_tooltip_text(Some("Save files from remote clipboard"));
+            save_files_button.set_tooltip_text(Some(&i18n("Save files from remote clipboard")));
             save_files_button.set_visible(false); // Hidden until files available
             toolbar.append(&save_files_button);
         }
 
         // Reconnect button (shown when disconnected)
-        let reconnect_button = Button::with_label("Reconnect");
+        let reconnect_button = Button::with_label(&i18n("Reconnect"));
         reconnect_button.add_css_class("suggested-action");
-        reconnect_button.set_tooltip_text(Some("Reconnect to the remote session"));
+        reconnect_button.set_tooltip_text(Some(&i18n("Reconnect to the remote session")));
         reconnect_button.set_visible(false); // Hidden by default
         toolbar.append(&reconnect_button);
 
@@ -386,7 +388,7 @@ impl EmbeddedRdpWidget {
 
             // Show file chooser dialog for target directory
             let dialog = gtk4::FileDialog::builder()
-                .title("Select folder to save files")
+                .title(i18n("Select folder to save files"))
                 .modal(true)
                 .build();
 
@@ -414,7 +416,7 @@ impl EmbeddedRdpWidget {
 
                             // Disable button during transfer
                             save_btn_clone.set_sensitive(false);
-                            save_btn_clone.set_label("Downloading...");
+                            save_btn_clone.set_label(&i18n("Downloading..."));
 
                             // Request file contents for each file
                             if let Some(ref sender) = *ironrdp_tx_clone.borrow() {
@@ -1855,8 +1857,9 @@ impl EmbeddedRdpWidget {
                                 tracing::debug!("[Clipboard] Received text from server");
                                 *remote_clipboard_text.borrow_mut() = Some(text);
                                 copy_button.set_sensitive(true);
-                                copy_button
-                                    .set_tooltip_text(Some("Copy remote clipboard to local"));
+                                copy_button.set_tooltip_text(Some(&i18n(
+                                    "Copy remote clipboard to local",
+                                )));
                             }
                             RdpClientEvent::ClipboardFormatsAvailable(formats) => {
                                 // Server has clipboard data available

@@ -11,6 +11,8 @@ use rustconn_core::models::SharedFolder;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::i18n::i18n;
+
 /// Creates the Shared Folders preferences group
 ///
 /// Returns a tuple containing:
@@ -24,15 +26,15 @@ pub fn create_shared_folders_group() -> (
     gtk4::ListBox,
 ) {
     let folders_group = adw::PreferencesGroup::builder()
-        .title("Shared Folders")
-        .description("Local folders accessible from remote session")
+        .title(i18n("Shared Folders"))
+        .description(i18n("Local folders accessible from remote session"))
         .build();
 
     let folders_list = gtk4::ListBox::builder()
         .selection_mode(gtk4::SelectionMode::Single)
         .css_classes(["boxed-list"])
         .build();
-    folders_list.set_placeholder(Some(&Label::new(Some("No shared folders"))));
+    folders_list.set_placeholder(Some(&Label::new(Some(&i18n("No shared folders")))));
 
     let folders_scrolled = ScrolledWindow::builder()
         .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -47,10 +49,13 @@ pub fn create_shared_folders_group() -> (
     folders_buttons.set_halign(gtk4::Align::End);
     folders_buttons.set_margin_top(8);
     let add_folder_btn = Button::builder()
-        .label("Add")
+        .label(i18n("Add"))
         .css_classes(["suggested-action"])
         .build();
-    let remove_folder_btn = Button::builder().label("Remove").sensitive(false).build();
+    let remove_folder_btn = Button::builder()
+        .label(i18n("Remove"))
+        .sensitive(false)
+        .build();
     folders_buttons.append(&add_folder_btn);
     folders_buttons.append(&remove_folder_btn);
     folders_group.add(&folders_buttons);
@@ -82,7 +87,7 @@ pub fn connect_add_folder_button(
     let shared_folders_clone = shared_folders.clone();
     add_btn.connect_clicked(move |btn| {
         let file_dialog = FileDialog::builder()
-            .title("Select Folder to Share")
+            .title(i18n("Select Folder to Share"))
             .modal(true)
             .build();
 

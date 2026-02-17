@@ -2,6 +2,7 @@
 //!
 //! This module provides a dialog for viewing connection history.
 
+use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, Label, ListBox, ListBoxRow, Orientation, ScrolledWindow};
@@ -23,7 +24,7 @@ impl HistoryDialog {
     #[must_use]
     pub fn new(parent: Option<&impl IsA<gtk4::Window>>) -> Self {
         let window = adw::Window::builder()
-            .title("Connection History")
+            .title(i18n("Connection History"))
             .default_width(500)
             .default_height(400)
             .modal(true)
@@ -39,9 +40,9 @@ impl HistoryDialog {
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label("Close").build();
+        let close_btn = Button::builder().label(i18n("Close")).build();
         let connect_btn = Button::builder()
-            .label("Connect")
+            .label(i18n("Connect"))
             .css_classes(["suggested-action"])
             .sensitive(false)
             .build();
@@ -80,7 +81,7 @@ impl HistoryDialog {
 
         list_box.set_placeholder(Some(
             &Label::builder()
-                .label("No connection history")
+                .label(i18n("No connection history"))
                 .css_classes(["dim-label"])
                 .margin_top(24)
                 .margin_bottom(24)
@@ -99,7 +100,7 @@ impl HistoryDialog {
         bottom_bar.set_margin_end(12);
 
         let clear_btn = Button::builder()
-            .label("Clear History")
+            .label(i18n("Clear History"))
             .css_classes(["destructive-action"])
             .build();
         bottom_bar.append(&clear_btn);

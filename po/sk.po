@@ -1,9 +1,12 @@
 # Slovak translation for RustConn
+# Copyright (C) 2025-2026 Anton Isaiev
+# This file is distributed under the same license as the RustConn package.
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.8.7\n"
-"Report-Msgid-Bugs-To: https://github.com/totoshko88/RustConn/issues\n"
-"POT-Creation-Date: 2026-02-17 00:00+0000\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-02-17 18:31+0200\n"
 "PO-Revision-Date: 2026-02-17 00:00+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Slovak\n"
@@ -13,474 +16,2951 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
 
-#. Desktop file
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:2
-msgid "RustConn"
-msgstr "RustConn"
+#: ../rustconn/src/adaptive_tabs.rs:169
+#: ../rustconn/src/split_view/bridge.rs:1770
+msgid "Close tab"
+msgstr "Zavrieť kartu"
 
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
-msgid "Manage remote connections easily"
-msgstr "Jednoduchá správa vzdialených pripojení"
+#: ../rustconn/src/adaptive_tabs.rs:290
+msgid "More tabs"
+msgstr "Ďalšie karty"
 
-#. Application
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:78
 msgid "Initialization Error"
 msgstr "Chyba inicializácie"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:978
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
 "connections from a single application."
 msgstr ""
+"Moderný správca pripojení pre Linux s natívnym rozhraním GTK4/Wayland. "
+"Spravujte SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes a Zero Trust "
+"pripojenia z jednej aplikácie."
 
-#: rustconn/src/app.rs
+#. Translators: Replace this with your name and language, e.g. "John Doe (German)"
+#: ../rustconn/src/app.rs:1014
 msgid "translator-credits"
-msgstr ""
+msgstr "Tím RustConn (Slovenčina)"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1021
 msgid "User Guide"
-msgstr ""
+msgstr "Používateľská príručka"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1025
 msgid "Installation"
-msgstr ""
+msgstr "Inštalácia"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1029
 msgid "Releases"
-msgstr ""
+msgstr "Vydania"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1033
 msgid "Changelog"
-msgstr ""
+msgstr "Zoznam zmien"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1044
 msgid "Special Thanks"
-msgstr ""
+msgstr "Špeciálne poďakovanie"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1059
 msgid "Made in Ukraine"
-msgstr ""
+msgstr "Vyrobené na Ukrajine"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1060
 msgid "All contributors and supporters"
-msgstr ""
+msgstr "Všetkým prispievateľom a podporovateľom"
 
-#. Sidebar
-#: rustconn/src/sidebar/mod.rs
-msgid "Search... (? for help)"
-msgstr ""
+#: ../rustconn/src/dashboard.rs:318
+#: ../rustconn/src/dialogs/connection/dialog.rs:1945
+msgid "Protocol:"
+msgstr "Protokol:"
 
-#. Connection dialog
-#: rustconn/src/dialogs/connection/dialog.rs
-msgid "New Connection"
-msgstr "Nové pripojenie"
+#: ../rustconn/src/dashboard.rs:322
+msgid "All Protocols"
+msgstr "Všetky protokoly"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dashboard.rs:330
+msgid "Status:"
+msgstr "Stav:"
+
+#: ../rustconn/src/dashboard.rs:335
+msgid "All Statuses"
+msgstr "Všetky stavy"
+
+#: ../rustconn/src/dashboard.rs:336
+msgid "Connected"
+msgstr "Pripojené"
+
+#: ../rustconn/src/dashboard.rs:337
+msgid "Starting"
+msgstr "Spúšťanie"
+
+#: ../rustconn/src/dashboard.rs:338
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:253
+#: ../rustconn/src/window/connection_dialogs.rs:689
+#: ../rustconn/src/window/edit_dialogs.rs:288
+#: ../rustconn/src/window/edit_dialogs.rs:368
+#: ../rustconn/src/window/edit_dialogs.rs:951
+#: ../rustconn/src/window/groups.rs:218
+msgid "Error"
+msgstr "Chyba"
+
+#: ../rustconn/src/dashboard.rs:350 ../rustconn/src/dashboard.rs:352
+msgid "Refresh Dashboard"
+msgstr "Obnoviť prehľad"
+
+#: ../rustconn/src/dashboard.rs:464
+msgid "No active sessions"
+msgstr "Žiadne aktívne relácie"
+
+#: ../rustconn/src/dashboard.rs:523 ../rustconn/src/split_view/bridge.rs:1466
+#: ../rustconn/src/window/edit_dialogs.rs:1283
+msgid "Host"
+msgstr "Hostiteľ"
+
+#: ../rustconn/src/dashboard.rs:531
+msgid "Duration"
+msgstr "Trvanie"
+
+#: ../rustconn/src/dashboard.rs:555 ../rustconn/src/dashboard.rs:556
+msgid "Focus Session"
+msgstr "Zamerať reláciu"
+
+#: ../rustconn/src/dashboard.rs:568 ../rustconn/src/dashboard.rs:571
+#: ../rustconn/src/embedded.rs:76 ../rustconn/src/floating_controls.rs:103
+msgid "Disconnect"
+msgstr "Odpojiť"
+
+#: ../rustconn/src/dashboard.rs:647
+msgid "Connection Dashboard"
+msgstr "Prehľad pripojení"
+
+#: ../rustconn/src/dialogs/cluster.rs:54
+msgid "New Cluster"
+msgstr "Nový klaster"
+
+#: ../rustconn/src/dialogs/cluster.rs:70 ../rustconn/src/dialogs/cluster.rs:420
+#: ../rustconn/src/dialogs/connection/dialog.rs:1299
+#: ../rustconn/src/dialogs/export.rs:80 ../rustconn/src/dialogs/export.rs:793
+#: ../rustconn/src/dialogs/flatpak_components.rs:99
+#: ../rustconn/src/dialogs/history.rs:43 ../rustconn/src/dialogs/import.rs:66
+#: ../rustconn/src/dialogs/import.rs:1389
+#: ../rustconn/src/dialogs/log_viewer.rs:113
+#: ../rustconn/src/dialogs/password_generator.rs:39
+#: ../rustconn/src/dialogs/snippet.rs:80
+#: ../rustconn/src/dialogs/statistics.rs:45
+#: ../rustconn/src/dialogs/template.rs:139
+#: ../rustconn/src/dialogs/template.rs:2852
+#: ../rustconn/src/dialogs/terminal_search.rs:54
+#: ../rustconn/src/window/connection_dialogs.rs:191
+#: ../rustconn/src/window/edit_dialogs.rs:1215
+#: ../rustconn/src/window/sessions.rs:47 ../rustconn/src/window/snippets.rs:65
 msgid "Close"
 msgstr "Zavrieť"
 
-#: rustconn/src/dialogs/connection/dialog.rs
-msgid "Test"
-msgstr ""
-
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/cluster.rs:72 ../rustconn/src/dialogs/cluster.rs:422
+#: ../rustconn/src/dialogs/connection/dialog.rs:1305
+#: ../rustconn/src/dialogs/document.rs:77 ../rustconn/src/dialogs/snippet.rs:82
+#: ../rustconn/src/dialogs/template.rs:141
+#: ../rustconn/src/dialogs/template.rs:2854
+#: ../rustconn/src/window/connection_dialogs.rs:193
+#: ../rustconn/src/window/snippets.rs:67
 msgid "Create"
 msgstr "Vytvoriť"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/cluster.rs:112
+msgid "Cluster Details"
+msgstr "Podrobnosti klastra"
+
+#: ../rustconn/src/dialogs/cluster.rs:152
+msgid "Cluster name cannot be empty"
+msgstr "Názov klastra nemôže byť prázdny"
+
+#: ../rustconn/src/dialogs/cluster.rs:169
+msgid "Please select at least one connection"
+msgstr "Vyberte aspoň jedno pripojenie"
+
+#: ../rustconn/src/dialogs/cluster.rs:207
+msgid "Connections"
+msgstr "Pripojenia"
+
+#: ../rustconn/src/dialogs/cluster.rs:208
+msgid "Select connections to include in this cluster"
+msgstr "Vybrať pripojenia na zahrnutie do tohto klastra"
+
+#: ../rustconn/src/dialogs/cluster.rs:232 ../rustconn/src/sidebar_ui.rs:244
+msgid "Select All"
+msgstr "Vybrať všetko"
+
+#: ../rustconn/src/dialogs/cluster.rs:233
+msgid "Deselect All"
+msgstr "Zrušiť výber"
+
+#: ../rustconn/src/dialogs/cluster.rs:343
+msgid "Edit Cluster"
+msgstr "Upraviť klaster"
+
+#: ../rustconn/src/dialogs/cluster.rs:404
+msgid "Manage Clusters"
+msgstr "Správa klastrov"
+
+#: ../rustconn/src/dialogs/cluster.rs:456
+msgid ""
+"Clusters allow you to connect to multiple servers simultaneously and "
+"optionally broadcast input to all sessions."
+msgstr ""
+"Klastre umožňujú pripojenie k viacerým serverom súčasne a voliteľne "
+"vysielanie vstupu do všetkých relácií."
+
+#: ../rustconn/src/dialogs/cluster.rs:551
+msgid "Connect to cluster"
+msgstr "Pripojiť ku klastru"
+
+#: ../rustconn/src/dialogs/cluster.rs:557
+msgid "Edit cluster"
+msgstr "Upraviť klaster"
+
+#: ../rustconn/src/dialogs/cluster.rs:563
+msgid "Delete cluster"
+msgstr "Odstrániť klaster"
+
+#: ../rustconn/src/dialogs/cluster.rs:596
+msgid "No clusters defined. Click 'New Cluster' to create one."
+msgstr ""
+"Žiadne klastre nie sú definované. Kliknite na 'Nový klaster' pre vytvorenie."
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:1117
+msgid "Testing..."
+msgstr "Testovanie..."
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:1206
+#: ../rustconn/src/dialogs/connection/dialog.rs:1301
+msgid "Test"
+msgstr "Test"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:1284
+#: ../rustconn/src/empty_state.rs:61 ../rustconn/src/sidebar_ui.rs:390
+#: ../rustconn/src/split_view/bridge.rs:1699 ../rustconn/src/window/ui.rs:116
+msgid "New Connection"
+msgstr "Nové pripojenie"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:1932
+#: ../rustconn/src/dialogs/snippet.rs:304
+#: ../rustconn/src/dialogs/variables.rs:200
 msgid "Name:"
-msgstr ""
+msgstr "Názov:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
-msgid "Protocol:"
-msgstr ""
-
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:1967
 msgid "Host:"
-msgstr ""
+msgstr "Hostiteľ:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:1980
 msgid "Port:"
-msgstr ""
+msgstr "Port:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:2011
+#: ../rustconn/src/dialogs/password.rs:171
 msgid "Username:"
-msgstr ""
+msgstr "Používateľské meno:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:2035
+#: ../rustconn/src/dialogs/password.rs:158
 msgid "Domain:"
-msgstr ""
+msgstr "Doména:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:2058
+#: ../rustconn/src/dialogs/password.rs:184
 msgid "Password:"
-msgstr ""
+msgstr "Heslo:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:2133
 msgid "Tags:"
-msgstr ""
+msgstr "Značky:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:2146
 msgid "Group:"
-msgstr ""
+msgstr "Skupina:"
 
-#. Settings dialog — UI tab
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:2420
+#: ../rustconn/src/dialogs/connection/dialog.rs:2960
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:29
+msgid "Shared Folders"
+msgstr "Zdieľané priečinky"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:2421
+#: ../rustconn/src/dialogs/connection/dialog.rs:2961
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:30
+msgid "Local folders accessible from remote session"
+msgstr "Miestne priečinky prístupné zo vzdialenej relácie"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:2428
+#: ../rustconn/src/dialogs/connection/dialog.rs:2968
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:37
+msgid "No shared folders"
+msgstr "Žiadne zdieľané priečinky"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:3458
+msgid "No variables defined"
+msgstr "Žiadne premenné nie sú definované"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:3492
+msgid "No custom properties"
+msgstr "Žiadne vlastné vlastnosti"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:3576
+msgid "No expect rules"
+msgstr "Žiadne pravidlá expect"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:5046
+msgid "Edit Connection"
+msgstr "Upraviť pripojenie"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:5047
+#: ../rustconn/src/dialogs/snippet.rs:361
+#: ../rustconn/src/dialogs/template.rs:2544
+#: ../rustconn/src/dialogs/variables.rs:78
+#: ../rustconn/src/window/edit_dialogs.rs:414
+msgid "Save"
+msgstr "Uložiť"
+
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:52
+msgid "Add"
+msgstr "Pridať"
+
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:56
+#: ../rustconn/src/dialogs/flatpak_components.rs:296
+#: ../rustconn/src/dialogs/flatpak_components.rs:332
+#: ../rustconn/src/dialogs/flatpak_components.rs:468
+msgid "Remove"
+msgstr "Odstrániť"
+
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:90
+msgid "Select Folder to Share"
+msgstr "Vybrať priečinok na zdieľanie"
+
+#: ../rustconn/src/dialogs/document.rs:60
+msgid "New Document"
+msgstr "Nový dokument"
+
+#: ../rustconn/src/dialogs/document.rs:75
+#: ../rustconn/src/dialogs/document.rs:326
+#: ../rustconn/src/dialogs/document.rs:565
+#: ../rustconn/src/dialogs/flatpak_components.rs:275
+#: ../rustconn/src/dialogs/password.rs:70
+#: ../rustconn/src/dialogs/progress.rs:69
+#: ../rustconn/src/dialogs/progress.rs:175
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:437
+#: ../rustconn/src/dialogs/variables.rs:76 ../rustconn/src/dialogs/wol.rs:45
+#: ../rustconn/src/loading.rs:253 ../rustconn/src/window/edit_dialogs.rs:218
+#: ../rustconn/src/window/edit_dialogs.rs:412
+#: ../rustconn/src/window/groups.rs:60 ../rustconn/src/window/operations.rs:391
+#: ../rustconn/src/window/operations.rs:622
+#: ../rustconn/src/window/sessions.rs:330
+#: ../rustconn/src/window/snippets.rs:330
+#: ../rustconn/src/window/snippets.rs:441
+msgid "Cancel"
+msgstr "Zrušiť"
+
+#: ../rustconn/src/dialogs/document.rs:99
+msgid "Document Name"
+msgstr "Názov dokumentu"
+
+#: ../rustconn/src/dialogs/document.rs:109
+msgid "Protect with password"
+msgstr "Chrániť heslom"
+
+#: ../rustconn/src/dialogs/document.rs:119
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:945
+#: ../rustconn/src/window/connection_dialogs.rs:310
+#: ../rustconn/src/window/edit_dialogs.rs:585
+#: ../rustconn/src/window/edit_dialogs.rs:1316
+msgid "Password"
+msgstr "Heslo"
+
+#: ../rustconn/src/dialogs/document.rs:128
+#: ../rustconn/src/dialogs/document.rs:618
+msgid "Confirm Password"
+msgstr "Potvrdiť heslo"
+
+#: ../rustconn/src/dialogs/document.rs:271
+msgid "Open Document"
+msgstr "Otvoriť dokument"
+
+#: ../rustconn/src/dialogs/document.rs:312
+msgid "Enter Password"
+msgstr "Zadajte heslo"
+
+#: ../rustconn/src/dialogs/document.rs:328
+msgid "Open"
+msgstr "Otvoriť"
+
+#: ../rustconn/src/dialogs/document.rs:342
+msgid ""
+"This document is password protected.\n"
+"                 Enter the password to open it."
+msgstr ""
+"Tento dokument je chránený heslom.\n"
+"                 Zadajte heslo na jeho otvorenie."
+
+#: ../rustconn/src/dialogs/document.rs:424
+msgid "Save Document"
+msgstr "Uložiť dokument"
+
+#: ../rustconn/src/dialogs/document.rs:550
+msgid "Document Protection"
+msgstr "Ochrana dokumentu"
+
+#: ../rustconn/src/dialogs/document.rs:567
+msgid "Apply"
+msgstr "Použiť"
+
+#: ../rustconn/src/dialogs/document.rs:589
+msgid ""
+"Password protection encrypts the document contents.\n"
+"                 You will need to enter the password each time you open it."
+msgstr ""
+"Ochrana heslom šifruje obsah dokumentu.\n"
+"                 Pri každom otvorení budete musieť zadať heslo."
+
+#: ../rustconn/src/dialogs/document.rs:599
+msgid "Enable password protection"
+msgstr "Povoliť ochranu heslom"
+
+#: ../rustconn/src/dialogs/document.rs:609
+msgid "New Password"
+msgstr "Nové heslo"
+
+#: ../rustconn/src/dialogs/document.rs:628
+msgid "Use a strong password that you can remember."
+msgstr "Použite silné heslo, ktoré si zapamätáte."
+
+#: ../rustconn/src/dialogs/export.rs:65 ../rustconn/src/sidebar_ui.rs:328
+msgid "Export Connections"
+msgstr "Exportovať pripojenia"
+
+#: ../rustconn/src/dialogs/export.rs:82
+msgid "Export"
+msgstr "Exportovať"
+
+#: ../rustconn/src/dialogs/export.rs:187
+msgid "Export Format"
+msgstr "Formát exportu"
+
+#: ../rustconn/src/dialogs/export.rs:188
+msgid "Select the format to export your connections to"
+msgstr "Vyberte formát na export pripojení"
+
+#: ../rustconn/src/dialogs/export.rs:206
+msgid "Format"
+msgstr "Formát"
+
+#: ../rustconn/src/dialogs/export.rs:207
+msgid "Target export format"
+msgstr "Cieľový formát exportu"
+
+#: ../rustconn/src/dialogs/export.rs:216
+msgid "Output Location"
+msgstr "Umiestnenie výstupu"
+
+#: ../rustconn/src/dialogs/export.rs:218
+msgid ""
+"Remmina exports to a directory (one file per connection).\n"
+"                 Other formats export to a single file."
+msgstr ""
+"Remmina exportuje do adresára (jeden súbor na pripojenie).\n"
+"                 Ostatné formáty exportujú do jedného súboru."
+
+#: ../rustconn/src/dialogs/export.rs:225
+msgid "Select output file or directory..."
+msgstr "Vybrať výstupný súbor alebo adresár..."
+
+#: ../rustconn/src/dialogs/export.rs:231
+msgid "Browse..."
+msgstr "Prehľadávať..."
+
+#: ../rustconn/src/dialogs/export.rs:236
+msgid "Output"
+msgstr "Výstup"
+
+#: ../rustconn/src/dialogs/export.rs:237
+msgid "Destination path"
+msgstr "Cieľová cesta"
+
+#: ../rustconn/src/dialogs/export.rs:247
+#: ../rustconn/src/dialogs/password_generator.rs:251
+msgid "Options"
+msgstr "Možnosti"
+
+#: ../rustconn/src/dialogs/export.rs:252
+msgid "Include passwords"
+msgstr "Zahrnúť heslá"
+
+#: ../rustconn/src/dialogs/export.rs:253
+msgid "If supported by format"
+msgstr "Ak to formát podporuje"
+
+#: ../rustconn/src/dialogs/export.rs:260
+msgid "Include group hierarchy"
+msgstr "Zahrnúť hierarchiu skupín"
+
+#: ../rustconn/src/dialogs/export.rs:261
+msgid "Preserve folder structure"
+msgstr "Zachovať štruktúru priečinkov"
+
+#: ../rustconn/src/dialogs/export.rs:268
+msgid "⚠ Security Warning"
+msgstr "⚠ Bezpečnostné upozornenie"
+
+#: ../rustconn/src/dialogs/export.rs:269
+msgid ""
+"Including passwords may expose sensitive data. Only enable if you trust the "
+"destination."
+msgstr ""
+"Zahrnutie hesiel môže odhaliť citlivé údaje. Povoľte len ak dôverujete cieľu."
+
+#: ../rustconn/src/dialogs/export.rs:279
+msgid "ℹ Credentials Storage"
+msgstr "ℹ Úložisko prihlasovacích údajov"
+
+#: ../rustconn/src/dialogs/export.rs:280
+msgid ""
+"Passwords are stored in your password manager and not included in exports by "
+"default. Export your credential structure separately if needed."
+msgstr ""
+"Heslá sú uložené vo vašom správcovi hesiel a štandardne nie sú zahrnuté v "
+"exportoch. V prípade potreby exportujte štruktúru prihlasovacích údajov "
+"samostatne."
+
+#: ../rustconn/src/dialogs/export.rs:316
+msgid "Exporting..."
+msgstr "Exportovanie..."
+
+#: ../rustconn/src/dialogs/export.rs:330
+msgid "Preparing export..."
+msgstr "Príprava exportu..."
+
+#: ../rustconn/src/dialogs/export.rs:343
+msgid "Export Complete"
+msgstr "Export dokončený"
+
+#: ../rustconn/src/dialogs/export.rs:358 ../rustconn/src/dialogs/import.rs:385
+msgid "Details"
+msgstr "Podrobnosti"
+
+#: ../rustconn/src/dialogs/export.rs:588
+msgid "Select Export Directory"
+msgstr "Vybrať adresár exportu"
+
+#: ../rustconn/src/dialogs/export.rs:602
+msgid "Select Export File"
+msgstr "Vybrať súbor exportu"
+
+#: ../rustconn/src/dialogs/export.rs:682
+msgid "Select output directory..."
+msgstr "Vybrať výstupný adresár..."
+
+#: ../rustconn/src/dialogs/export.rs:684
+msgid "Select output file..."
+msgstr "Vybrať výstupný súbor..."
+
+#: ../rustconn/src/dialogs/export.rs:729
+msgid "Please select an output file or directory"
+msgstr "Vyberte výstupný súbor alebo adresár"
+
+#: ../rustconn/src/dialogs/export.rs:772
+msgid "Export complete"
+msgstr "Export dokončený"
+
+#: ../rustconn/src/dialogs/export.rs:783 ../rustconn/src/dialogs/import.rs:634
+#: ../rustconn/src/dialogs/import.rs:848 ../rustconn/src/dialogs/import.rs:959
+#: ../rustconn/src/dialogs/import.rs:1047
+#: ../rustconn/src/dialogs/import.rs:1139
+#: ../rustconn/src/dialogs/import.rs:1379
+#: ../rustconn/src/dialogs/import.rs:1477
+#: ../rustconn/src/dialogs/import.rs:1564
+#: ../rustconn/src/dialogs/import.rs:1651
+#: ../rustconn/src/dialogs/import.rs:1737
+msgid "Done"
+msgstr "Hotovo"
+
+#: ../rustconn/src/dialogs/export.rs:788
+msgid "Export failed"
+msgstr "Export zlyhal"
+
+#: ../rustconn/src/dialogs/export.rs:789
+msgid "Export Failed"
+msgstr "Export zlyhal"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:65
+msgid "Flatpak Components"
+msgstr "Komponenty Flatpak"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:132
+msgid ""
+"Showing sandbox-compatible components only.              Downloads are "
+"verified with SHA256 checksums."
+msgstr ""
+"Zobrazené iba komponenty kompatibilné so sandboxom.              Sťahovania "
+"sú overené kontrolnými súčtami SHA256."
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:141
+msgid "Protocol Clients"
+msgstr "Klienti protokolov"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:143
+msgid ""
+"Optional for external RDP/VNC/SPICE connections.              Embedded "
+"clients (IronRDP, vnc-rs) are preferred."
+msgstr ""
+"Voliteľné pre externé pripojenia RDP/VNC/SPICE.              Preferovaní sú "
+"vstavaní klienti (IronRDP, vnc-rs)."
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:155
+msgid "Zero Trust CLIs"
+msgstr "CLI nástroje Zero Trust"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:156
+msgid ""
+"Required for Zero Trust connections (AWS SSM, GCP IAP, Azure Bastion, etc.)"
+msgstr ""
+"Vyžadované pre pripojenia Zero Trust (AWS SSM, GCP IAP, Azure Bastion atď.)"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:166
+msgid "Password Manager CLIs"
+msgstr "CLI správcov hesiel"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:167
+msgid "Required for Bitwarden and 1Password integration"
+msgstr "Vyžadované pre integráciu Bitwarden a 1Password"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:177
+msgid "Container Orchestration"
+msgstr "Orchestrácia kontajnerov"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:178
+msgid "Required for Kubernetes pod shell connections"
+msgstr "Vyžadované pre pripojenia k shellu Kubernetes podov"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:254
+#: ../rustconn/src/dialogs/flatpak_components.rs:458
+msgid "Installed"
+msgstr "Nainštalované"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:285
+msgid "Update"
+msgstr "Aktualizovať"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:299
+#: ../rustconn/src/dialogs/flatpak_components.rs:476
+msgid "Install"
+msgstr "Nainštalovať"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:302
+msgid "N/A"
+msgstr "N/A"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:304
+msgid "Not available for download"
+msgstr "Nie je k dispozícii na stiahnutie"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:489
+#: ../rustconn/src/dialogs/statistics.rs:144
+#: ../rustconn/src/dialogs/statistics.rs:244
+msgid "Failed"
+msgstr "Zlyhalo"
+
+#: ../rustconn/src/dialogs/history.rs:27 ../rustconn/src/sidebar_ui.rs:294
+msgid "Connection History"
+msgstr "História pripojení"
+
+#: ../rustconn/src/dialogs/history.rs:45 ../rustconn/src/dialogs/password.rs:72
+#: ../rustconn/src/sidebar_ui.rs:50 ../rustconn/src/window/edit_dialogs.rs:1217
+msgid "Connect"
+msgstr "Pripojiť"
+
+#: ../rustconn/src/dialogs/history.rs:84
+msgid "No connection history"
+msgstr "Žiadna história pripojení"
+
+#: ../rustconn/src/dialogs/history.rs:103
+msgid "Clear History"
+msgstr "Vymazať históriu"
+
+#: ../rustconn/src/dialogs/import.rs:51
+msgid "Import Connections"
+msgstr "Importovať pripojenia"
+
+#: ../rustconn/src/dialogs/import.rs:68
+msgid "Import"
+msgstr "Importovať"
+
+#: ../rustconn/src/dialogs/import.rs:175
+msgid "Select Import Source"
+msgstr "Vybrať zdroj importu"
+
+#: ../rustconn/src/dialogs/import.rs:182
+msgid "Choose the source from which to import connections:"
+msgstr "Vyberte zdroj na import pripojení:"
+
+#: ../rustconn/src/dialogs/import.rs:322
+msgid "Available"
+msgstr "Dostupné"
+
+#: ../rustconn/src/dialogs/import.rs:327
+msgid "Not Found"
+msgstr "Nenájdené"
+
+#: ../rustconn/src/dialogs/import.rs:345
+msgid "Importing..."
+msgstr "Importovanie..."
+
+#: ../rustconn/src/dialogs/import.rs:358
+msgid "Scanning for connections..."
+msgstr "Vyhľadávanie pripojení..."
+
+#: ../rustconn/src/dialogs/import.rs:370
+msgid "Import Complete"
+msgstr "Import dokončený"
+
+#: ../rustconn/src/dialogs/import.rs:619 ../rustconn/src/dialogs/import.rs:833
+msgid "Import complete"
+msgstr "Import dokončený"
+
+#: ../rustconn/src/dialogs/import.rs:896
+msgid "Select SSH Config File"
+msgstr "Vybrať konfiguračný súbor SSH"
+
+#: ../rustconn/src/dialogs/import.rs:986
+msgid "Select Asbru-CM YAML File"
+msgstr "Vybrať YAML súbor Asbru-CM"
+
+#: ../rustconn/src/dialogs/import.rs:1074
+msgid "Select Ansible Inventory File"
+msgstr "Vybrať súbor inventára Ansible"
+
+#: ../rustconn/src/dialogs/import.rs:1311
+msgid "Select RustConn Native File"
+msgstr "Vybrať natívny súbor RustConn"
+
+#: ../rustconn/src/dialogs/import.rs:1417
+msgid "Select Royal TS File"
+msgstr "Vybrať súbor Royal TS"
+
+#: ../rustconn/src/dialogs/import.rs:1503
+msgid "Select RDM JSON File"
+msgstr "Vybrať JSON súbor RDM"
+
+#: ../rustconn/src/dialogs/import.rs:1590
+msgid "Select MobaXterm Session File"
+msgstr "Vybrať súbor relácií MobaXterm"
+
+#: ../rustconn/src/dialogs/import.rs:1677
+msgid "Select Virt-Viewer File"
+msgstr "Vybrať súbor Virt-Viewer"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:34
+msgid "Session Logs"
+msgstr "Protokoly relácií"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:116
+msgid "Refresh log list"
+msgstr "Obnoviť zoznam protokolov"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:147
+msgid "No log files found"
+msgstr "Neboli nájdené žiadne súbory protokolov"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:181
+msgid "Log Files"
+msgstr "Súbory protokolov"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:192
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:103
+msgid "Log Content"
+msgstr "Obsah protokolu"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:316 ../rustconn/src/empty_state.rs:142
+#: ../rustconn/src/loading.rs:50 ../rustconn/src/split_view/adapter.rs:1237
+msgid "Loading..."
+msgstr "Načítavanie..."
+
+#: ../rustconn/src/dialogs/password_generator.rs:22
+#: ../rustconn/src/split_view/bridge.rs:1733
+msgid "Password Generator"
+msgstr "Generátor hesiel"
+
+#: ../rustconn/src/dialogs/password_generator.rs:41
+#: ../rustconn/src/embedded_rdp/mod.rs:220
+#: ../rustconn/src/embedded_spice.rs:240 ../rustconn/src/embedded_trait.rs:202
+#: ../rustconn/src/embedded_vnc.rs:157
+msgid "Copy"
+msgstr "Kopírovať"
+
+#: ../rustconn/src/dialogs/password_generator.rs:81
+msgid "Generated Password"
+msgstr "Vygenerované heslo"
+
+#: ../rustconn/src/dialogs/password_generator.rs:107
+msgid "Strength Analysis"
+msgstr "Analýza sily"
+
+#: ../rustconn/src/dialogs/password_generator.rs:130
+msgid "Strength"
+msgstr "Sila"
+
+#: ../rustconn/src/dialogs/password_generator.rs:143
+msgid "Entropy"
+msgstr "Entropia"
+
+#: ../rustconn/src/dialogs/password_generator.rs:144
+msgid "Measure of randomness"
+msgstr "Miera náhodnosti"
+
+#: ../rustconn/src/dialogs/password_generator.rs:157
+msgid "Crack time"
+msgstr "Čas prelomenia"
+
+#: ../rustconn/src/dialogs/password_generator.rs:158
+msgid "At 10 billion guesses/sec"
+msgstr "Pri 10 miliardách pokusov/s"
+
+#: ../rustconn/src/dialogs/password_generator.rs:167
+msgid "Length"
+msgstr "Dĺžka"
+
+#: ../rustconn/src/dialogs/password_generator.rs:193
+msgid "Characters"
+msgstr "Znaky"
+
+#: ../rustconn/src/dialogs/password_generator.rs:194
+msgid "Recommended: 16+ for important accounts"
+msgstr "Odporúčané: 16+ pre dôležité účty"
+
+#: ../rustconn/src/dialogs/password_generator.rs:203
+msgid "Character Sets"
+msgstr "Znakové sady"
+
+#: ../rustconn/src/dialogs/password_generator.rs:204
+msgid "Select which characters to include"
+msgstr "Vyberte, ktoré znaky zahrnúť"
+
+#: ../rustconn/src/dialogs/password_generator.rs:209
+msgid "Lowercase"
+msgstr "Malé písmená"
+
+#: ../rustconn/src/dialogs/password_generator.rs:217
+msgid "Uppercase"
+msgstr "Veľké písmená"
+
+#: ../rustconn/src/dialogs/password_generator.rs:225
+msgid "Digits"
+msgstr "Číslice"
+
+#: ../rustconn/src/dialogs/password_generator.rs:233
+msgid "Special"
+msgstr "Špeciálne znaky"
+
+#: ../rustconn/src/dialogs/password_generator.rs:241
+msgid "Extended"
+msgstr "Rozšírené"
+
+#: ../rustconn/src/dialogs/password_generator.rs:256
+msgid "Exclude ambiguous"
+msgstr "Vynechať nejednoznačné"
+
+#: ../rustconn/src/dialogs/password_generator.rs:257
+msgid "Avoid 0O, 1lI to prevent confusion"
+msgstr "Vynechať 0O, 1lI na predchádzanie zámene"
+
+#: ../rustconn/src/dialogs/password_generator.rs:266
+msgid "Security Tips"
+msgstr "Bezpečnostné tipy"
+
+#: ../rustconn/src/dialogs/password.rs:55
+msgid "Authentication Required"
+msgstr "Vyžaduje sa overenie totožnosti"
+
+#: ../rustconn/src/dialogs/password.rs:93
+msgid "Enter credentials for this connection:"
+msgstr "Zadajte prihlasovacie údaje pre toto pripojenie:"
+
+#: ../rustconn/src/dialogs/password.rs:106
+msgid "Resolving credentials..."
+msgstr "Získavanie prihlasovacích údajov..."
+
+#: ../rustconn/src/dialogs/password.rs:199
+msgid "Save Credentials"
+msgstr "Uložiť prihlasovacie údaje"
+
+#: ../rustconn/src/dialogs/password.rs:206
+msgid "Save to KeePass"
+msgstr "Uložiť do KeePass"
+
+#: ../rustconn/src/dialogs/progress.rs:55
+msgid "Starting..."
+msgstr "Spúšťanie..."
+
+#: ../rustconn/src/dialogs/progress.rs:83
+msgid "Cancelling..."
+msgstr "Rušenie..."
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:35
+msgid "Clients"
+msgstr "Klienti"
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:41
+msgid "Core Clients"
+msgstr "Základní klienti"
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:42
+msgid "Essential connection clients"
+msgstr "Základní klienti pripojení"
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:60
+msgid "Zero Trust Clients"
+msgstr "Klienti Zero Trust"
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:61
+msgid "Cloud provider CLI tools"
+msgstr "CLI nástroje cloudových poskytovateľov"
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:216
+msgid "Embedded"
+msgstr "Vstavaný"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:25
+msgid "Logging"
+msgstr "Protokolovanie"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:31
+msgid "General"
+msgstr "Všeobecné"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:32
+msgid "Configure session logging"
+msgstr "Nastaviť protokolovanie relácií"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:38
+msgid "Persist logs"
+msgstr "Uchovávať protokoly"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:39
+msgid "Save session logs to disk"
+msgstr "Uložiť protokoly relácií na disk"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:53
+msgid "Directory"
+msgstr "Adresár"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:68
+msgid "Retention"
+msgstr "Uchovávanie"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:69
+msgid "Days to keep logs"
+msgstr "Počet dní uchovávania protokolov"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:83
+msgid "Open Logs Directory"
+msgstr "Otvoriť adresár protokolov"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:104
+msgid "Select what to include in logs"
+msgstr "Vyberte, čo zahrnúť do protokolov"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:114
+msgid "Activity"
+msgstr "Aktivita"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:115
+msgid "Connection events and change counts"
+msgstr "Udalosti pripojení a počty zmien"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:127
+msgid "User Input"
+msgstr "Vstup používateľa"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:128
+msgid "Commands and keystrokes"
+msgstr "Príkazy a klávesové skratky"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:140
+msgid "Terminal Output"
+msgstr "Výstup terminálu"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:141
+msgid "Full session transcript"
+msgstr "Úplný prepis relácie"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:151
+msgid "Session Logging"
+msgstr "Protokolovanie relácií"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:152
+msgid "Format options for session logs"
+msgstr "Možnosti formátu protokolov relácií"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:157
+msgid "Timestamps"
+msgstr "Časové značky"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:158
+msgid "Prepend [HH:MM:SS] to each line in session logs"
+msgstr "Pridať [HH:MM:SS] pred každý riadok v protokoloch relácií"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:267
+msgid "Secrets"
+msgstr "Tajné kľúče"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:273
+msgid "Secret Backend"
+msgstr "Backend tajných kľúčov"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:274
+msgid "Choose how passwords are stored"
+msgstr "Vyberte spôsob ukladania hesiel"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:291
+msgid "Backend"
+msgstr "Backend"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:292
+msgid "Primary password storage method"
+msgstr "Primárna metóda ukladania hesiel"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:303
+msgid "Version"
+msgstr "Verzia"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:312
+msgid "Enable fallback"
+msgstr "Povoliť záložný režim"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:313
+msgid "Use libsecret if primary backend unavailable"
+msgstr "Použiť libsecret ak primárny backend nie je dostupný"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:340
+msgid "Detecting..."
+msgstr "Zisťovanie..."
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:345
+msgid "Bitwarden"
+msgstr "Bitwarden"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:346
+msgid "Configure Bitwarden CLI integration"
+msgstr "Nastaviť integráciu Bitwarden CLI"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:357
+msgid "Master Password"
+msgstr "Hlavné heslo"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:358
+msgid "Required to unlock vault"
+msgstr "Vyžaduje sa na odomknutie trezoru"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:367
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:953
+msgid "Save password"
+msgstr "Uložiť heslo"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:368
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:610
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:771
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:954
+msgid "Encrypted storage (machine-specific)"
+msgstr "Šifrované úložisko (špecifické pre zariadenie)"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:378
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:620
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:780
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:963
+msgid "Save to system keyring"
+msgstr "Uložiť do systémového kľúčenky"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:379
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:621
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:781
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:964
+msgid "Store in GNOME Keyring / KDE Wallet (recommended)"
+msgstr "Uložiť do GNOME Keyring / KDE Wallet (odporúčané)"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:423
+msgid "Use API key authentication"
+msgstr "Použiť overenie API kľúčom"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:425
+msgid "For automation or 2FA methods not supported by CLI (FIDO2, Duo)"
+msgstr "Pre automatizáciu alebo metódy 2FA nepodporované CLI (FIDO2, Duo)"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:439
+msgid "Client ID"
+msgstr "ID klienta"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:441
+msgid "From Bitwarden web vault → Settings → Security → Keys"
+msgstr "Z webového trezoru Bitwarden → Nastavenia → Bezpečnosť → Kľúče"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:456
+msgid "Client Secret"
+msgstr "Tajný kľúč klienta"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:457
+msgid "Keep this secret safe"
+msgstr "Uchovajte tento tajný kľúč v bezpečí"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:477
+msgid "Unlock"
+msgstr "Odomknúť"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:492
+msgid "Vault Status"
+msgstr "Stav trezoru"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:493
+msgid "Login with 'bw login' in terminal first"
+msgstr "Najprv sa prihláste pomocou 'bw login' v termináli"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:584
+msgid "1Password"
+msgstr "1Password"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:585
+msgid "Configure 1Password CLI integration"
+msgstr "Nastaviť integráciu 1Password CLI"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:596
+msgid "Service Account Token"
+msgstr "Token servisného účtu"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:598
+msgid "For headless/automated access (OP_SERVICE_ACCOUNT_TOKEN)"
+msgstr "Pre automatizovaný prístup (OP_SERVICE_ACCOUNT_TOKEN)"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:609
+msgid "Save token"
+msgstr "Uložiť token"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:663
+msgid "Sign In"
+msgstr "Prihlásiť sa"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:678
+msgid "Account Status"
+msgstr "Stav účtu"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:680
+msgid "Sign in with 'op signin' in terminal or use biometric unlock"
+msgstr ""
+"Prihláste sa pomocou 'op signin' v termináli alebo použite biometrické "
+"odomknutie"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:734
+msgid "Passbolt"
+msgstr "Passbolt"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:735
+msgid "Configure Passbolt CLI integration"
+msgstr "Nastaviť integráciu Passbolt CLI"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:745
+msgid "Server URL"
+msgstr "URL servera"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:746
+msgid "Passbolt web vault address"
+msgstr "Adresa webového trezoru Passbolt"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:760
+msgid "GPG Passphrase"
+msgstr "GPG prístupová fráza"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:761
+msgid "Required to decrypt credentials from Passbolt"
+msgstr "Vyžaduje sa na dešifrovanie prihlasovacích údajov z Passbolt"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:770
+msgid "Save passphrase"
+msgstr "Uložiť prístupovú frázu"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:823
+msgid "Open Vault"
+msgstr "Otvoriť trezor"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:838
+msgid "Server Status"
+msgstr "Stav servera"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:839
+msgid "Configure with 'passbolt configure' in terminal"
+msgstr "Nastavte pomocou 'passbolt configure' v termináli"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:878
+msgid "KeePass Database"
+msgstr "KeePass databáza"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:880
+msgid ""
+"Configure KDBX file integration (works with KeePassXC, GNOME Secrets, etc.)"
+msgstr ""
+"Nastaviť integráciu KDBX súborov (funguje s KeePassXC, GNOME Secrets atď.)"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:886
+msgid "KDBX Integration"
+msgstr "Integrácia KDBX"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:887
+msgid "Enable direct database access"
+msgstr "Povoliť priamy prístup k databáze"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:913
+msgid "Database File"
+msgstr "Súbor databázy"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:922
+msgid "Authentication"
+msgstr "Overenie totožnosti"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:923
+msgid "Database unlock methods"
+msgstr "Metódy odomknutia databázy"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:932
+msgid "Use password"
+msgstr "Použiť heslo"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:971
+msgid "Not connected"
+msgstr "Nepripojené"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:1008
+msgid "Use key file"
+msgstr "Použiť súbor kľúča"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:1033
+msgid "Key File"
+msgstr "Súbor kľúča"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:1041
+msgid "KDBX Status"
+msgstr "Stav KDBX"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:32
+msgid "SSH Agent"
+msgstr "SSH agent"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:38
+msgid "Agent Status"
+msgstr "Stav agenta"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:42
+msgid "Checking..."
+msgstr "Kontrola..."
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:46
+msgid "Status"
+msgstr "Stav"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:59
+msgid "Socket"
+msgstr "Soket"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:65
+msgid "Start Agent"
+msgstr "Spustiť agenta"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:82
+msgid "Controls"
+msgstr "Ovládanie"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:90
+msgid "Loaded Keys"
+msgstr "Načítané kľúče"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:91
+msgid "Keys currently loaded in the SSH agent"
+msgstr "Kľúče aktuálne načítané v SSH agentovi"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:109
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:439
+msgid "Add Key"
+msgstr "Pridať kľúč"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:114
+msgid "Add SSH Key"
+msgstr "Pridať SSH kľúč"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:115
+msgid "Load a key from file"
+msgstr "Načítať kľúč zo súboru"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:125
+msgid "Available Key Files"
+msgstr "Dostupné súbory kľúčov"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:126
+msgid "Key files found in ~/.ssh/"
+msgstr "Súbory kľúčov nájdené v ~/.ssh/"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:170
+msgid "Loading keys..."
+msgstr "Načítavanie kľúčov..."
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:228
+msgid "No keys loaded"
+msgstr "Žiadne načítané kľúče"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:229
+msgid "Add keys using ssh-add or the button above"
+msgstr "Pridajte kľúče pomocou ssh-add alebo tlačidla vyššie"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:247
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:258
+msgid "Agent not running"
+msgstr "Agent nie je spustený"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:248
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:259
+msgid "Start the agent to manage keys"
+msgstr "Spustiť agenta na správu kľúčov"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:283
+msgid "Scanning ~/.ssh/..."
+msgstr "Prehľadávanie ~/.ssh/..."
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:308
+msgid "No SSH key files found"
+msgstr "Nenašli sa žiadne SSH súbory kľúčov"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:309
+msgid "Generate keys with ssh-keygen"
+msgstr "Vygenerovať kľúče pomocou ssh-keygen"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:357
+msgid "Failed to scan ~/.ssh/ directory"
+msgstr "Nepodarilo sa prehľadať adresár ~/.ssh/"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:419
+msgid "Enter passphrase (leave empty if key has no passphrase)"
+msgstr "Zadajte prístupovú frázu (nechajte prázdne, ak kľúč nemá frázu)"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:32
+msgid "Terminal"
+msgstr "Terminál"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:37
+msgid "Font"
+msgstr "Písmo"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:45
+msgid "Family"
+msgstr "Rodina"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:58
+msgid "Size"
+msgstr "Veľkosť"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:67
+msgid "Colors"
+msgstr "Farby"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:77
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:82
+msgid "Theme"
+msgstr "Téma"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:86
+msgid "Cursor"
+msgstr "Kurzor"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:99
+msgid "Block"
+msgstr "Blok"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:104
+msgid "IBeam"
+msgstr "Kurzor I"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:109
+msgid "Underline"
+msgstr "Podčiarknutie"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:118
+msgid "Shape"
+msgstr "Tvar"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:132
+msgid "On"
+msgstr "Zapnuté"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:137
+msgid "Off"
+msgstr "Vypnuté"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:142
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:44
+msgid "System"
+msgstr "Systém"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:151
+msgid "Blink"
+msgstr "Blikanie"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:159
+msgid "Scrolling"
+msgstr "Posúvanie"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:171
+msgid "History"
+msgstr "História"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:172
+msgid "Number of lines to keep in scrollback"
+msgstr "Počet riadkov v zásobníku posúvania"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:181
+msgid "On output"
+msgstr "Pri výstupe"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:182
+msgid "Scroll to bottom when new output appears"
+msgstr "Posunúť nadol pri novom výstupe"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:194
+msgid "On keystroke"
+msgstr "Pri stlačení klávesu"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:195
+msgid "Scroll to bottom when typing"
+msgstr "Posunúť nadol pri písaní"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:205
+msgid "Behavior"
+msgstr "Správanie"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:214
+msgid "Hyperlinks"
+msgstr "Hypertextové odkazy"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:215
+msgid "Allow clickable URLs in terminal"
+msgstr "Povoliť klikateľné URL v termináli"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:227
+msgid "Hide pointer"
+msgstr "Skryť ukazovateľ"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:228
+msgid "Hide mouse cursor when typing"
+msgstr "Skryť kurzor myši pri písaní"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:237
+msgid "Bell"
+msgstr "Zvonček"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:238
+msgid "Play sound on terminal bell"
+msgstr "Prehrať zvuk pri zvončeku terminálu"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:247
+msgid "SFTP via mc"
+msgstr "SFTP cez mc"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:248
+msgid "Open SFTP in Midnight Commander (local shell tab)"
+msgstr "Otvoriť SFTP v Midnight Commander (karta lokálneho shellu)"
+
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:25
 msgid "Interface"
-msgstr ""
+msgstr "Rozhranie"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:31
 msgid "Appearance"
 msgstr "Vzhľad"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
-msgid "System"
-msgstr "Systémová"
-
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:48
 msgid "Light"
-msgstr "Svetlá"
+msgstr "Svetlý"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:52
 msgid "Dark"
-msgstr "Tmavá"
+msgstr "Tmavý"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
-msgid "Theme"
-msgstr ""
-
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:96
 msgid "Language"
-msgstr ""
+msgstr "Jazyk"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:97
 msgid "Restart required to apply"
-msgstr ""
+msgstr "Na uplatnenie je potrebný reštart"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:106
 msgid "Window"
-msgstr ""
+msgstr "Okno"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:111
 msgid "Remember size"
-msgstr ""
+msgstr "Zapamätať veľkosť"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:112
 msgid "Restore window geometry on startup"
-msgstr ""
+msgstr "Obnoviť geometriu okna pri spustení"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:122
 msgid "System Tray"
-msgstr ""
+msgstr "Systémová lišta"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:123
 msgid "Requires desktop environment with tray support"
-msgstr ""
+msgstr "Vyžaduje desktopové prostredie s podporou systémovej lišty"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:128
 msgid "Show icon"
-msgstr ""
+msgstr "Zobraziť ikonu"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:129
 msgid "Display icon in system tray"
-msgstr ""
+msgstr "Zobraziť ikonu v systémovej lište"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:137
 msgid "Minimize to tray"
-msgstr ""
+msgstr "Minimalizovať do systémovej lišty"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:138
 msgid "Hide window instead of closing"
-msgstr ""
+msgstr "Skryť okno namiesto zatvorenia"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:154
+#: ../rustconn/src/split_view/bridge.rs:1734
 msgid "Session Restore"
-msgstr ""
+msgstr "Obnovenie relácií"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:155
 msgid "Restore previous connections on startup"
-msgstr ""
+msgstr "Obnoviť predchádzajúce pripojenia pri spustení"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:160
 msgid "Enabled"
-msgstr ""
+msgstr "Povolené"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:161
 msgid "Reconnect to previous sessions on startup"
-msgstr ""
+msgstr "Pri spustení sa znovu pripojiť k predchádzajúcim reláciám"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:169
 msgid "Ask first"
-msgstr ""
+msgstr "Najprv sa opýtať"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:170
 msgid "Prompt before restoring sessions"
-msgstr ""
+msgstr "Opýtať sa pred obnovením relácií"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:177
 msgid "Max age"
-msgstr ""
+msgstr "Max. vek"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:178
 msgid "Hours before sessions expire"
-msgstr ""
+msgstr "Hodiny do vypršania relácií"
 
-#. Empty states
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/dialogs/shortcuts.rs:170
+#: ../rustconn/src/split_view/bridge.rs:1759
+msgid "Keyboard Shortcuts"
+msgstr "Klávesové skratky"
+
+#: ../rustconn/src/dialogs/shortcuts.rs:207
+msgid "Search shortcuts..."
+msgstr "Hľadať skratky..."
+
+#: ../rustconn/src/dialogs/snippet.rs:64 ../rustconn/src/empty_state.rs:109
+msgid "New Snippet"
+msgstr "Nový úryvok"
+
+#: ../rustconn/src/dialogs/snippet.rs:167
+msgid "Snippet Info"
+msgstr "Informácie o úryvku"
+
+#: ../rustconn/src/dialogs/snippet.rs:210
+msgid "Command"
+msgstr "Príkaz"
+
+#: ../rustconn/src/dialogs/snippet.rs:211
+msgid "Use ${variable_name} for placeholders"
+msgstr "Použite ${variable_name} pre zástupné symboly"
+
+#: ../rustconn/src/dialogs/snippet.rs:233
+#: ../rustconn/src/dialogs/variables.rs:147
+msgid "Variables"
+msgstr "Premenné"
+
+#: ../rustconn/src/dialogs/snippet.rs:234
+msgid "Variables are auto-detected from command"
+msgstr "Premenné sú automaticky rozpoznané z príkazu"
+
+#: ../rustconn/src/dialogs/snippet.rs:255
+#: ../rustconn/src/dialogs/variables.rs:174
+msgid "Add Variable"
+msgstr "Pridať premennú"
+
+#: ../rustconn/src/dialogs/snippet.rs:317
+#: ../rustconn/src/dialogs/variables.rs:264
+msgid "Description:"
+msgstr "Popis:"
+
+#: ../rustconn/src/dialogs/snippet.rs:322
+msgid "Variable description"
+msgstr "Popis premennej"
+
+#: ../rustconn/src/dialogs/snippet.rs:332
+msgid "Default:"
+msgstr "Predvolené:"
+
+#: ../rustconn/src/dialogs/snippet.rs:337
+msgid "Default value"
+msgstr "Predvolená hodnota"
+
+#: ../rustconn/src/dialogs/snippet.rs:360
+msgid "Edit Snippet"
+msgstr "Upraviť úryvok"
+
+#: ../rustconn/src/dialogs/statistics.rs:29
+#: ../rustconn/src/dialogs/statistics.rs:122
+msgid "Connection Statistics"
+msgstr "Štatistiky pripojení"
+
+#: ../rustconn/src/dialogs/statistics.rs:47
+msgid "Reset"
+msgstr "Resetovať"
+
+#: ../rustconn/src/dialogs/statistics.rs:127
+msgid "Total connections"
+msgstr "Celkom pripojení"
+
+#: ../rustconn/src/dialogs/statistics.rs:136
+#: ../rustconn/src/dialogs/statistics.rs:236
+msgid "Successful"
+msgstr "Úspešné"
+
+#: ../rustconn/src/dialogs/statistics.rs:153
+msgid "Success rate"
+msgstr "Úspešnosť"
+
+#: ../rustconn/src/dialogs/statistics.rs:163
+msgid "Total time connected"
+msgstr "Celkový čas pripojenia"
+
+#: ../rustconn/src/dialogs/statistics.rs:176
+msgid "Last connected"
+msgstr "Naposledy pripojené"
+
+#: ../rustconn/src/dialogs/statistics.rs:190
+msgid "Average session"
+msgstr "Priemerná relácia"
+
+#: ../rustconn/src/dialogs/statistics.rs:222
+msgid "Overview"
+msgstr "Prehľad"
+
+#: ../rustconn/src/dialogs/statistics.rs:223
+msgid "All connections summary"
+msgstr "Súhrn všetkých pripojení"
+
+#: ../rustconn/src/dialogs/statistics.rs:227
+msgid "Total sessions"
+msgstr "Celkom relácií"
+
+#: ../rustconn/src/dialogs/statistics.rs:252
+msgid "Total time"
+msgstr "Celkový čas"
+
+#: ../rustconn/src/dialogs/statistics.rs:265
+msgid "Per-Connection"
+msgstr "Podľa pripojenia"
+
+#: ../rustconn/src/dialogs/statistics.rs:299
+msgid "Success Rate"
+msgstr "Úspešnosť"
+
+#: ../rustconn/src/dialogs/template.rs:123 ../rustconn/src/empty_state.rs:121
+msgid "New Template"
+msgstr "Nová šablóna"
+
+#: ../rustconn/src/dialogs/template.rs:2543
+msgid "Edit Template"
+msgstr "Upraviť šablónu"
+
+#: ../rustconn/src/dialogs/template.rs:2837
+msgid "Manage Templates"
+msgstr "Správa šablón"
+
+#: ../rustconn/src/dialogs/template.rs:2881
+msgid "Filter by protocol:"
+msgstr "Filtrovať podľa protokolu:"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:37
+msgid "Search in Terminal"
+msgstr "Hľadať v termináli"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:72
+msgid "Search text..."
+msgstr "Hľadať text..."
+
+#: ../rustconn/src/dialogs/terminal_search.rs:80
+msgid "Case sensitive"
+msgstr "Rozlišovať veľkosť písmen"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:84
+msgid "Regex"
+msgstr "Regulárny výraz"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:85
+msgid "Use regular expression pattern"
+msgstr "Použiť vzor regulárneho výrazu"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:90
+msgid "Highlight All"
+msgstr "Zvýrazniť všetko"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:91
+msgid "Highlight all matches in terminal"
+msgstr "Zvýrazniť všetky zhody v termináli"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:103
+msgid "Previous match"
+msgstr "Predchádzajúca zhoda"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:109
+msgid "Next match"
+msgstr "Ďalšia zhoda"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:114
+#: ../rustconn/src/dialogs/terminal_search.rs:164
+msgid "Enter text to search"
+msgstr "Zadajte text na vyhľadanie"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:333
+msgid "Found matches"
+msgstr "Nájdené zhody"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:335
+msgid "No matches found"
+msgstr "Neboli nájdené žiadne zhody"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:338
+msgid "Invalid regex pattern"
+msgstr "Neplatný vzor regulárneho výrazu"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:341
+msgid "Search error"
+msgstr "Chyba vyhľadávania"
+
+#: ../rustconn/src/dialogs/variables.rs:60
+msgid "Global Variables"
+msgstr "Globálne premenné"
+
+#: ../rustconn/src/dialogs/variables.rs:149
+msgid ""
+"Define variables that can be used in connections                  with "
+"${variable_name} syntax"
+msgstr ""
+"Definujte premenné, ktoré možno použiť v pripojeniach                  so "
+"syntaxou ${variable_name}"
+
+#: ../rustconn/src/dialogs/variables.rs:210
+msgid "Delete variable"
+msgstr "Odstrániť premennú"
+
+#: ../rustconn/src/dialogs/variables.rs:219
+msgid "Value:"
+msgstr "Hodnota:"
+
+#: ../rustconn/src/dialogs/variables.rs:236
+#: ../rustconn/src/window/connection_dialogs.rs:322
+#: ../rustconn/src/window/edit_dialogs.rs:597
+msgid "Show/hide password"
+msgstr "Zobraziť/skryť heslo"
+
+#: ../rustconn/src/dialogs/variables.rs:241
+#: ../rustconn/src/window/connection_dialogs.rs:327
+#: ../rustconn/src/window/edit_dialogs.rs:602
+msgid "Load password from vault"
+msgstr "Načítať heslo z trezoru"
+
+#: ../rustconn/src/dialogs/variables.rs:257
+msgid "Secret (mask value)"
+msgstr "Tajné (maskovať hodnotu)"
+
+#: ../rustconn/src/dialogs/wol.rs:29 ../rustconn/src/sidebar_ui.rs:133
+msgid "Wake On LAN"
+msgstr "Wake On LAN"
+
+#: ../rustconn/src/dialogs/wol.rs:47 ../rustconn/src/window/sessions.rs:332
+msgid "Send"
+msgstr "Odoslať"
+
+#: ../rustconn/src/dialogs/wol.rs:68 ../rustconn/src/dialogs/wol.rs:74
+msgid "Connection"
+msgstr "Pripojenie"
+
+#: ../rustconn/src/dialogs/wol.rs:69
+msgid "Pick a connection with WoL configured"
+msgstr "Vyberte pripojenie s nakonfigurovaným WoL"
+
+#: ../rustconn/src/dialogs/wol.rs:72 ../rustconn/src/dialogs/wol.rs:220
+msgid "Manual entry"
+msgstr "Ručné zadanie"
+
+#: ../rustconn/src/dialogs/wol.rs:82
+msgid "Manual"
+msgstr "Ručné"
+
+#: ../rustconn/src/dialogs/wol.rs:83
+msgid "Or enter MAC address manually"
+msgstr "Alebo zadajte MAC adresu ručne"
+
+#: ../rustconn/src/dialogs/wol.rs:86
+msgid "MAC Address"
+msgstr "MAC adresa"
+
+#: ../rustconn/src/dialogs/wol.rs:91
+msgid "Broadcast Address"
+msgstr "Broadcastová adresa"
+
+#: ../rustconn/src/dialogs/wol.rs:96
+#: ../rustconn/src/window/edit_dialogs.rs:1295
+msgid "Port"
+msgstr "Port"
+
+#: ../rustconn/src/dialogs/wol.rs:154
+msgid "Invalid MAC address format"
+msgstr "Neplatný formát MAC adresy"
+
+#: ../rustconn/src/dialogs/wol.rs:163 ../rustconn/src/validation.rs:141
+msgid "Invalid port number"
+msgstr "Neplatné číslo portu"
+
+#: ../rustconn/src/dialogs/wol.rs:177
+msgid "Sending…"
+msgstr "Odosielanie…"
+
+#: ../rustconn/src/dialogs/wol.rs:197
+msgid "Failed to send packet. Check permissions."
+msgstr "Nepodarilo sa odoslať paket. Skontrolujte oprávnenia."
+
+#: ../rustconn/src/embedded_rdp/mod.rs:222
+msgid "Copy remote clipboard to local (waiting for remote data...)"
+msgstr ""
+"Kopírovať vzdialenú schránku do miestnej (čakanie na vzdialené dáta...)"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:228
+#: ../rustconn/src/embedded_spice.rs:245 ../rustconn/src/embedded_trait.rs:207
+#: ../rustconn/src/embedded_vnc.rs:162
+msgid "Paste"
+msgstr "Prilepiť"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:229
+#: ../rustconn/src/embedded_spice.rs:246 ../rustconn/src/embedded_trait.rs:208
+#: ../rustconn/src/embedded_vnc.rs:163
+msgid "Paste from local clipboard to remote session"
+msgstr "Prilepiť z miestnej schránky do vzdialenej relácie"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:240
+#: ../rustconn/src/embedded_spice.rs:258 ../rustconn/src/embedded_trait.rs:220
+#: ../rustconn/src/embedded_vnc.rs:175
+msgid "Send Ctrl+Alt+Del to remote session"
+msgstr "Odoslať Ctrl+Alt+Del do vzdialenej relácie"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:245
+msgid "Save Files"
+msgstr "Uložiť súbory"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:248
+msgid "Save files from remote clipboard"
+msgstr "Uložiť súbory zo vzdialenej schránky"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:254
+#: ../rustconn/src/embedded_spice.rs:262 ../rustconn/src/embedded_trait.rs:224
+#: ../rustconn/src/embedded_vnc.rs:179
+msgid "Reconnect"
+msgstr "Znovu pripojiť"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:256
+#: ../rustconn/src/embedded_spice.rs:264 ../rustconn/src/embedded_trait.rs:226
+#: ../rustconn/src/embedded_vnc.rs:181
+msgid "Reconnect to the remote session"
+msgstr "Znovu pripojiť k vzdialenej relácii"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:391
+msgid "Select folder to save files"
+msgstr "Vybrať priečinok na uloženie súborov"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:419
+msgid "Downloading..."
+msgstr "Sťahovanie..."
+
+#: ../rustconn/src/embedded_rdp/mod.rs:1861
+msgid "Copy remote clipboard to local"
+msgstr "Kopírovať vzdialenú schránku do miestnej"
+
+#: ../rustconn/src/embedded.rs:62
+msgid "Connecting..."
+msgstr "Pripájanie..."
+
+#: ../rustconn/src/embedded.rs:69 ../rustconn/src/floating_controls.rs:110
+#: ../rustconn/src/floating_controls.rs:180
+#: ../rustconn/src/floating_controls.rs:326
+msgid "Toggle Fullscreen"
+msgstr "Prepnúť celú obrazovku"
+
+#: ../rustconn/src/embedded_spice.rs:241 ../rustconn/src/embedded_trait.rs:203
+#: ../rustconn/src/embedded_vnc.rs:158
+msgid "Copy from remote session to local clipboard"
+msgstr "Kopírovať zo vzdialenej relácie do miestnej schránky"
+
+#: ../rustconn/src/empty_state.rs:59
 msgid "No Connections"
-msgstr ""
+msgstr "Žiadne pripojenia"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:60
 msgid "Create your first connection to get started"
-msgstr ""
+msgstr "Vytvorte prvé pripojenie na začatie práce"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:71
 msgid "No Results Found"
-msgstr ""
+msgstr "Žiadne výsledky"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:72
 msgid "No connections match"
-msgstr ""
+msgstr "Žiadne zodpovedajúce pripojenia"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:83
 msgid "No Active Sessions"
 msgstr "Žiadne aktívne relácie"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:84
 msgid "Connect to a server to start a session"
-msgstr ""
+msgstr "Pripojte sa k serveru na spustenie relácie"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:85 ../rustconn/src/sidebar_ui.rs:376
+#: ../rustconn/src/split_view/bridge.rs:1706
+#: ../rustconn/src/window/edit_dialogs.rs:1202 ../rustconn/src/window/ui.rs:118
 msgid "Quick Connect"
-msgstr ""
+msgstr "Rýchle pripojenie"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:95
 msgid "No Groups"
-msgstr ""
+msgstr "Žiadne skupiny"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:96
 msgid "Create groups to organize your connections"
-msgstr ""
+msgstr "Vytvorte skupiny na organizáciu pripojení"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:97 ../rustconn/src/sidebar_ui.rs:227
+#: ../rustconn/src/sidebar_ui.rs:404
+#: ../rustconn/src/window/connection_dialogs.rs:180
+#: ../rustconn/src/window/ui.rs:117
 msgid "New Group"
-msgstr ""
+msgstr "Nová skupina"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:107
 msgid "No Snippets"
-msgstr ""
+msgstr "Žiadne úryvky"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:108
 msgid "Create command snippets for quick access"
-msgstr ""
+msgstr "Vytvorte úryvky príkazov pre rýchly prístup"
 
-#: rustconn/src/empty_state.rs
-msgid "New Snippet"
-msgstr ""
-
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:119
 msgid "No Templates"
-msgstr ""
+msgstr "Žiadne šablóny"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:120
 msgid "Create templates for common connection configurations"
-msgstr ""
+msgstr "Vytvorte šablóny pre bežné konfigurácie pripojení"
 
-#: rustconn/src/empty_state.rs
-msgid "New Template"
-msgstr ""
-
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:131
 msgid "No Connection History"
-msgstr ""
+msgstr "Žiadna história pripojení"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:132
 msgid "Your recent connections will appear here"
+msgstr "Vaše posledné pripojenia sa zobrazia tu"
+
+#: ../rustconn/src/floating_controls.rs:116
+msgid "Session Settings"
+msgstr "Nastavenia relácie"
+
+#: ../rustconn/src/floating_controls.rs:184
+#: ../rustconn/src/floating_controls.rs:321
+msgid "Exit Fullscreen"
+msgstr "Ukončiť celú obrazovku"
+
+#: ../rustconn/src/session/vnc.rs:119 ../rustconn/src/session/vnc.rs:202
+#: ../rustconn/src/session/vnc.rs:733
+msgid "Disconnected"
+msgstr "Odpojené"
+
+#: ../rustconn/src/sidebar/mod.rs:110
+msgid "Search... (? for help)"
+msgstr "Hľadať... (? pre pomoc)"
+
+#: ../rustconn/src/sidebar/mod.rs:119
+msgid "Search pending..."
+msgstr "Vyhľadávanie čaká..."
+
+#: ../rustconn/src/sidebar/mod.rs:124
+msgid "Search syntax help"
+msgstr "Nápoveda syntaxe vyhľadávania"
+
+#: ../rustconn/src/sidebar/mod.rs:207
+msgid "Shell"
+msgstr "Shell"
+
+#: ../rustconn/src/sidebar/mod.rs:211
+msgid "Local Shell (Ctrl+Shift+T)"
+msgstr "Miestny shell (Ctrl+Shift+T)"
+
+#: ../rustconn/src/sidebar/mod.rs:1805
+msgid "Open Password Vault (Active)"
+msgstr "Otvoriť trezor hesiel (aktívny)"
+
+#: ../rustconn/src/sidebar/mod.rs:1811
+msgid "Password Vault Not Found"
+msgstr "Trezor hesiel nenájdený"
+
+#: ../rustconn/src/sidebar/mod.rs:1814
+msgid "Password Vault Disabled"
+msgstr "Trezor hesiel zakázaný"
+
+#: ../rustconn/src/sidebar_ui.rs:64 ../rustconn/src/window/snippets.rs:110
+msgid "Edit"
+msgstr "Upraviť"
+
+#: ../rustconn/src/sidebar_ui.rs:78 ../rustconn/src/window/edit_dialogs.rs:220
+msgid "Rename"
+msgstr "Premenovať"
+
+#: ../rustconn/src/sidebar_ui.rs:92
+msgid "Duplicate"
+msgstr "Duplikovať"
+
+#: ../rustconn/src/sidebar_ui.rs:105 ../rustconn/src/sidebar_ui.rs:235
+msgid "Move to Group..."
+msgstr "Presunúť do skupiny..."
+
+#: ../rustconn/src/sidebar_ui.rs:119
+msgid "Run Snippet..."
+msgstr "Spustiť úryvok..."
+
+#: ../rustconn/src/sidebar_ui.rs:148
+msgid "Open SFTP"
+msgstr "Otvoriť SFTP"
+
+#: ../rustconn/src/sidebar_ui.rs:163 ../rustconn/src/sidebar_ui.rs:259
+#: ../rustconn/src/window/operations.rs:78
+#: ../rustconn/src/window/snippets.rs:114
+#: ../rustconn/src/window/snippets.rs:219
+#: ../rustconn/src/window/templates.rs:153
+msgid "Delete"
+msgstr "Odstrániť"
+
+#: ../rustconn/src/sidebar_ui.rs:228
+msgid "Create a new group"
+msgstr "Vytvoriť novú skupinu"
+
+#: ../rustconn/src/sidebar_ui.rs:236
+msgid "Move selected items to a group"
+msgstr "Presunúť vybrané položky do skupiny"
+
+#: ../rustconn/src/sidebar_ui.rs:245
+msgid "Select all items (Ctrl+A)"
+msgstr "Vybrať všetky položky (Ctrl+A)"
+
+#: ../rustconn/src/sidebar_ui.rs:252
+msgid "Clear"
+msgstr "Vymazať"
+
+#: ../rustconn/src/sidebar_ui.rs:253
+msgid "Clear selection (Escape)"
+msgstr "Zrušiť výber (Escape)"
+
+#: ../rustconn/src/sidebar_ui.rs:260
+msgid "Delete all selected items"
+msgstr "Odstrániť všetky vybrané položky"
+
+#: ../rustconn/src/sidebar_ui.rs:285
+msgid "Group Operations Mode"
+msgstr "Režim skupinových operácií"
+
+#: ../rustconn/src/sidebar_ui.rs:301
+msgid "Sort Alphabetically"
+msgstr "Zoradiť abecedne"
+
+#: ../rustconn/src/sidebar_ui.rs:310
+msgid "Sort by Recent Usage"
+msgstr "Zoradiť podľa posledného použitia"
+
+#: ../rustconn/src/sidebar_ui.rs:319
+msgid "Import Connections (Ctrl+I)"
+msgstr "Importovať pripojenia (Ctrl+I)"
+
+#: ../rustconn/src/sidebar_ui.rs:337
+msgid "Open Password Vault"
+msgstr "Otvoriť trezor hesiel"
+
+#: ../rustconn/src/sidebar_ui.rs:424
+msgid "Import..."
+msgstr "Importovať..."
+
+#: ../rustconn/src/sidebar_ui.rs:438
+msgid "Export..."
+msgstr "Exportovať..."
+
+#: ../rustconn/src/split_view/adapter.rs:1020
+msgid "Drag to move this session to another panel or tab"
+msgstr "Potiahnutím presuňte reláciu do iného panelu alebo karty"
+
+#: ../rustconn/src/split_view/adapter.rs:1162
+msgid "Empty Panel"
+msgstr "Prázdny panel"
+
+#: ../rustconn/src/split_view/adapter.rs:1163
+msgid "Select an existing tab to display in this panel"
+msgstr "Vyberte existujúcu kartu na zobrazenie v tomto paneli"
+
+#: ../rustconn/src/split_view/adapter.rs:1173
+msgid "Select Tab..."
+msgstr "Vybrať kartu..."
+
+#: ../rustconn/src/split_view/adapter.rs:1174
+msgid "Choose an open tab to display in this panel"
+msgstr "Vyberte otvorenú kartu na zobrazenie v tomto paneli"
+
+#: ../rustconn/src/split_view/adapter.rs:1198
+msgid "Close panel"
+msgstr "Zavrieť panel"
+
+#: ../rustconn/src/split_view/bridge.rs:1454
+msgid "Basic Information"
+msgstr "Základné informácie"
+
+#: ../rustconn/src/split_view/bridge.rs:1459
+#: ../rustconn/src/window/edit_dialogs.rs:1273
+msgid "Protocol"
+msgstr "Protokol"
+
+#: ../rustconn/src/split_view/bridge.rs:1474
+#: ../rustconn/src/window/connection_dialogs.rs:291
+#: ../rustconn/src/window/edit_dialogs.rs:558
+#: ../rustconn/src/window/edit_dialogs.rs:1305
+msgid "Username"
+msgstr "Používateľské meno"
+
+#: ../rustconn/src/split_view/bridge.rs:1683
+msgid "Manage remote connections easily"
+msgstr "Jednoduchá správa vzdialených pripojení"
+
+#: ../rustconn/src/split_view/bridge.rs:1727
+msgid "Features"
+msgstr "Funkcie"
+
+#: ../rustconn/src/split_view/bridge.rs:1731
+msgid "Embedded SSH terminals"
+msgstr "Vstavané SSH terminály"
+
+#: ../rustconn/src/split_view/bridge.rs:1732
+msgid "Secure credential storage"
+msgstr "Bezpečné úložisko prihlasovacích údajov"
+
+#: ../rustconn/src/split_view/bridge.rs:1735
+msgid "Expect automation"
+msgstr "Automatizácia Expect"
+
+#: ../rustconn/src/split_view/bridge.rs:1736
+msgid "Groups and tags"
+msgstr "Skupiny a štítky"
+
+#: ../rustconn/src/split_view/bridge.rs:1737
+msgid "Zero Trust tunnels"
+msgstr "Tunely Zero Trust"
+
+#: ../rustconn/src/split_view/bridge.rs:1738
+msgid "Customizable settings"
+msgstr "Prispôsobiteľné nastavenia"
+
+#: ../rustconn/src/split_view/bridge.rs:1741
+msgid "Embedded & external clients"
+msgstr "Vstavaní a externí klienti"
+
+#: ../rustconn/src/split_view/bridge.rs:1763
+msgid "New connection"
+msgstr "Nové pripojenie"
+
+#: ../rustconn/src/split_view/bridge.rs:1764
+msgid "New group"
+msgstr "Nová skupina"
+
+#: ../rustconn/src/split_view/bridge.rs:1765
+msgid "Local shell"
+msgstr "Miestny shell"
+
+#: ../rustconn/src/split_view/bridge.rs:1766
+msgid "Quick connect"
+msgstr "Rýchle pripojenie"
+
+#: ../rustconn/src/split_view/bridge.rs:1767
+msgid "Search"
+msgstr "Hľadať"
+
+#: ../rustconn/src/split_view/bridge.rs:1768
+msgid "Split vertical"
+msgstr "Rozdeliť zvisle"
+
+#: ../rustconn/src/split_view/bridge.rs:1769
+msgid "Split horizontal"
+msgstr "Rozdeliť vodorovne"
+
+#: ../rustconn/src/split_view/bridge.rs:1771
+msgid "Next tab"
+msgstr "Ďalšia karta"
+
+#: ../rustconn/src/split_view/bridge.rs:1792
+msgid "Performance"
+msgstr "Výkon"
+
+#: ../rustconn/src/split_view/bridge.rs:1796
+msgid "Smart search caching"
+msgstr "Inteligentné ukladanie vyhľadávania"
+
+#: ../rustconn/src/split_view/bridge.rs:1797
+msgid "Lazy loading for trees"
+msgstr "Lenivé načítanie stromov"
+
+#: ../rustconn/src/split_view/bridge.rs:1798
+msgid "Virtual scrolling"
+msgstr "Virtuálne posúvanie"
+
+#: ../rustconn/src/split_view/bridge.rs:1799
+msgid "Embedded VNC/RDP/SPICE"
+msgstr "Vstavané VNC/RDP/SPICE"
+
+#: ../rustconn/src/split_view/bridge.rs:1811
+msgid "Import Formats"
+msgstr "Formáty importu"
+
+#: ../rustconn/src/split_view/bridge.rs:1835
+msgid "Double-click a connection in the sidebar to get started"
+msgstr "Dvojklikom na pripojenie v bočnom paneli začnite"
+
+#: ../rustconn/src/split_view/bridge.rs:1994
+msgid "All tabs are already displayed in this split view"
+msgstr "Všetky karty sú už zobrazené v tomto rozdelenom zobrazení"
+
+#: ../rustconn/src/split_view/bridge.rs:2033
+msgid "Select a tab to display"
+msgstr "Vyberte kartu na zobrazenie"
+
+#: ../rustconn/src/validation.rs:65
+msgid "{} is required"
+msgstr "{} je povinné"
+
+#: ../rustconn/src/validation.rs:79
+msgid "{} must be at least {} characters"
+msgstr "{} musí mať aspoň {} znakov"
+
+#: ../rustconn/src/validation.rs:95
+msgid "{} must be at most {} characters"
+msgstr "{} musí mať najviac {} znakov"
+
+#: ../rustconn/src/validation.rs:110
+msgid "Host is required"
+msgstr "Hostiteľ je povinný"
+
+#: ../rustconn/src/validation.rs:120
+msgid "Invalid hostname format"
+msgstr "Neplatný formát názvu hostiteľa"
+
+#: ../rustconn/src/validation.rs:122
+msgid "Hostname cannot start or end with a hyphen"
+msgstr "Názov hostiteľa nemôže začínať ani končiť pomlčkou"
+
+#: ../rustconn/src/validation.rs:135
+msgid "Port is required"
+msgstr "Port je povinný"
+
+#: ../rustconn/src/validation.rs:140
+msgid "Port must be greater than 0"
+msgstr "Port musí byť väčší ako 0"
+
+#: ../rustconn/src/window/connection_dialogs.rs:100
+#: ../rustconn/src/window/templates.rs:413
+msgid "New Connection from Template"
+msgstr "Nové pripojenie zo šablóny"
+
+#: ../rustconn/src/window/connection_dialogs.rs:158
+#: ../rustconn/src/window/templates.rs:466
+msgid "Error Creating Connection"
+msgstr "Chyba pri vytváraní pripojenia"
+
+#: ../rustconn/src/window/connection_dialogs.rs:227
+#: ../rustconn/src/window/edit_dialogs.rs:442
+msgid "Group Details"
+msgstr "Podrobnosti skupiny"
+
+#: ../rustconn/src/window/connection_dialogs.rs:231
+#: ../rustconn/src/window/edit_dialogs.rs:235
+#: ../rustconn/src/window/edit_dialogs.rs:447
+msgid "Name"
+msgstr "Názov"
+
+#: ../rustconn/src/window/connection_dialogs.rs:252
+#: ../rustconn/src/window/edit_dialogs.rs:515
+msgid "(None - Root Level)"
+msgstr "(Žiadna - koreňová úroveň)"
+
+#: ../rustconn/src/window/connection_dialogs.rs:277
+#: ../rustconn/src/window/edit_dialogs.rs:542
+msgid "Parent"
+msgstr "Nadradená"
+
+#: ../rustconn/src/window/connection_dialogs.rs:278
+msgid "Optional - leave empty for root level"
+msgstr "Voliteľné - ponechajte prázdne pre koreňovú úroveň"
+
+#: ../rustconn/src/window/connection_dialogs.rs:287
+#: ../rustconn/src/window/edit_dialogs.rs:553
+msgid "Default Credentials"
+msgstr "Predvolené prihlasovacie údaje"
+
+#: ../rustconn/src/window/connection_dialogs.rs:288
+#: ../rustconn/src/window/edit_dialogs.rs:554
+msgid "Credentials inherited by connections in this group"
+msgstr "Prihlasovacie údaje zdedené pripojeniami v tejto skupine"
+
+#: ../rustconn/src/window/connection_dialogs.rs:296
+#: ../rustconn/src/window/edit_dialogs.rs:565
+msgid "Prompt"
+msgstr "Výzva"
+
+#: ../rustconn/src/window/connection_dialogs.rs:297
+#: ../rustconn/src/window/edit_dialogs.rs:566
+msgid "Vault"
+msgstr "Trezor"
+
+#: ../rustconn/src/window/connection_dialogs.rs:298
+#: ../rustconn/src/window/edit_dialogs.rs:567
+msgid "Variable"
+msgstr "Premenná"
+
+#: ../rustconn/src/window/connection_dialogs.rs:299
+#: ../rustconn/src/window/edit_dialogs.rs:568
+msgid "Inherit"
+msgstr "Zdediť"
+
+#: ../rustconn/src/window/connection_dialogs.rs:300
+#: ../rustconn/src/window/edit_dialogs.rs:569
+msgid "None"
+msgstr "Žiadne"
+
+#: ../rustconn/src/window/connection_dialogs.rs:316
+#: ../rustconn/src/window/edit_dialogs.rs:591
+msgid "Password value"
+msgstr "Hodnota hesla"
+
+#: ../rustconn/src/window/connection_dialogs.rs:331
+#: ../rustconn/src/window/edit_dialogs.rs:606
+msgid "Value"
+msgstr "Hodnota"
+
+#: ../rustconn/src/window/connection_dialogs.rs:374
+msgid "Enter group name first"
+msgstr "Najprv zadajte názov skupiny"
+
+#: ../rustconn/src/window/connection_dialogs.rs:402
+msgid "Vault not configured"
+msgstr "Trezor nie je nakonfigurovaný"
+
+#: ../rustconn/src/window/connection_dialogs.rs:431
+#: ../rustconn/src/window/connection_dialogs.rs:496
+#: ../rustconn/src/window/connection_dialogs.rs:503
+#: ../rustconn/src/window/edit_dialogs.rs:717
+#: ../rustconn/src/window/edit_dialogs.rs:749
+#: ../rustconn/src/window/edit_dialogs.rs:756
+#: ../rustconn/src/window/edit_dialogs.rs:788
+#: ../rustconn/src/window/edit_dialogs.rs:795
+msgid "No password found for this group"
+msgstr "Pre túto skupinu nebolo nájdené žiadne heslo"
+
+#: ../rustconn/src/window/connection_dialogs.rs:436
+#: ../rustconn/src/window/connection_dialogs.rs:508
+#: ../rustconn/src/window/edit_dialogs.rs:722
+#: ../rustconn/src/window/edit_dialogs.rs:761
+#: ../rustconn/src/window/edit_dialogs.rs:800
+msgid "Load Error"
+msgstr "Chyba načítania"
+
+#: ../rustconn/src/window/connection_dialogs.rs:517
+msgid "Select Vault to load password"
+msgstr "Vyberte trezor na načítanie hesla"
+
+#: ../rustconn/src/window/connection_dialogs.rs:521
+#: ../rustconn/src/window/edit_dialogs.rs:818
+msgid "Domain"
+msgstr "Doména"
+
+#: ../rustconn/src/window/connection_dialogs.rs:528
+#: ../rustconn/src/window/edit_dialogs.rs:827
+msgid "Description"
+msgstr "Popis"
+
+#: ../rustconn/src/window/connection_dialogs.rs:529
+#: ../rustconn/src/window/edit_dialogs.rs:828
+msgid "Notes, contacts, project info"
+msgstr "Poznámky, kontakty, informácie o projekte"
+
+#: ../rustconn/src/window/connection_dialogs.rs:568
+#: ../rustconn/src/window/edit_dialogs.rs:876
+msgid "Group name cannot be empty"
+msgstr "Názov skupiny nemôže byť prázdny"
+
+#: ../rustconn/src/window/connection_dialogs.rs:643
+msgid "Error Updating Group"
+msgstr "Chyba pri aktualizácii skupiny"
+
+#: ../rustconn/src/window/connection_dialogs.rs:721
+msgid "Import Successful"
+msgstr "Import úspešný"
+
+#: ../rustconn/src/window/connection_dialogs.rs:727
+msgid "Import Failed"
+msgstr "Import zlyhal"
+
+#: ../rustconn/src/window/document_actions.rs:93
+msgid "Failed to open document."
+msgstr "Nepodarilo sa otvoriť dokument."
+
+#: ../rustconn/src/window/document_actions.rs:131
+#: ../rustconn/src/window/document_actions.rs:151
+msgid "Failed to save document."
+msgstr "Nepodarilo sa uložiť dokument."
+
+#: ../rustconn/src/window/document_actions.rs:184
+msgid "Untitled"
+msgstr "Bez názvu"
+
+#: ../rustconn/src/window/document_actions.rs:242
+#: ../rustconn/src/window/document_actions.rs:299
+msgid "Document Files"
+msgstr "Súbory dokumentov"
+
+#: ../rustconn/src/window/document_actions.rs:248
+msgid "Export Document"
+msgstr "Exportovať dokument"
+
+#: ../rustconn/src/window/document_actions.rs:269
+msgid "Failed to export document."
+msgstr "Nepodarilo sa exportovať dokument."
+
+#: ../rustconn/src/window/document_actions.rs:305
+msgid "Import Document"
+msgstr "Importovať dokument"
+
+#: ../rustconn/src/window/document_actions.rs:330
+msgid "Failed to import document."
+msgstr "Nepodarilo sa importovať dokument."
+
+#: ../rustconn/src/window/edit_dialogs.rs:172
+msgid "Error Updating Connection"
+msgstr "Chyba pri aktualizácii pripojenia"
+
+#: ../rustconn/src/window/edit_dialogs.rs:205
+msgid "Rename Group"
+msgstr "Premenovať skupinu"
+
+#: ../rustconn/src/window/edit_dialogs.rs:207
+msgid "Rename Connection"
+msgstr "Premenovať pripojenie"
+
+#: ../rustconn/src/window/edit_dialogs.rs:261
+msgid "Name cannot be empty"
+msgstr "Názov nemôže byť prázdny"
+
+#: ../rustconn/src/window/edit_dialogs.rs:277
+#: ../rustconn/src/window/edit_dialogs.rs:911
+msgid "Group with name '{}' already exists"
+msgstr "Skupina s názvom '{}' už existuje"
+
+#: ../rustconn/src/window/edit_dialogs.rs:402
+msgid "Edit Group"
+msgstr "Upraviť skupinu"
+
+#: ../rustconn/src/window/edit_dialogs.rs:543
+msgid "Moving a group moves all its content"
+msgstr "Presunutie skupiny presunie celý jej obsah"
+
+#: ../rustconn/src/window/edit_dialogs.rs:680
+msgid "KeePass is not enabled"
+msgstr "KeePass nie je povolený"
+
+#: ../rustconn/src/window/edit_dialogs.rs:688
+msgid "KeePass database not configured"
+msgstr "Databáza KeePass nie je nakonfigurovaná"
+
+#: ../rustconn/src/window/edit_dialogs.rs:811
+msgid "Select KeePass, Keyring, or Bitwarden to load password"
+msgstr "Vyberte KeePass, Keyring alebo Bitwarden na načítanie hesla"
+
+#: ../rustconn/src/window/edit_dialogs.rs:1237
+msgid "⚠ This connection will not be saved"
+msgstr "⚠ Toto pripojenie nebude uložené"
+
+#: ../rustconn/src/window/edit_dialogs.rs:1248
+msgid "(None)"
+msgstr "(Žiadne)"
+
+#: ../rustconn/src/window/edit_dialogs.rs:1259
+msgid "Template"
+msgstr "Šablóna"
+
+#: ../rustconn/src/window/edit_dialogs.rs:1279
+msgid "hostname or IP"
+msgstr "názov hostiteľa alebo IP"
+
+#: ../rustconn/src/window/edit_dialogs.rs:1301
+#: ../rustconn/src/window/edit_dialogs.rs:1312
+msgid "(optional)"
+msgstr "(voliteľné)"
+
+#: ../rustconn/src/window/groups.rs:53 ../rustconn/src/window/groups.rs:62
+#: ../rustconn/src/window/operations.rs:615
+#: ../rustconn/src/window/operations.rs:624
+msgid "Move"
+msgstr "Presunúť"
+
+#: ../rustconn/src/window/groups.rs:75
+msgid "Move '{}' to:"
+msgstr "Presunúť '{}' do:"
+
+#: ../rustconn/src/window/groups.rs:113
+#: ../rustconn/src/window/operations.rs:704
+msgid "(Root Level)"
+msgstr "(Koreňová úroveň)"
+
+#: ../rustconn/src/window/groups.rs:115
+msgid "(Ungrouped)"
+msgstr "(Bez skupiny)"
+
+#: ../rustconn/src/window/groups.rs:192
+msgid "Error Moving Item"
+msgstr "Chyba pri presúvaní položky"
+
+#: ../rustconn/src/window/operations.rs:43
+msgid "group"
+msgstr "skupina"
+
+#: ../rustconn/src/window/operations.rs:45
+msgid "connection"
+msgstr "pripojenie"
+
+#: ../rustconn/src/window/operations.rs:55
+msgid ""
+"Are you sure you want to delete the group '{}'?\n"
+"\n"
+"This will also delete {} connection(s) in this group."
 msgstr ""
+"Naozaj chcete odstrániť skupinu '{}'?\n"
+"\n"
+"Tým sa tiež odstráni {} pripojení v tejto skupine."
 
-#: rustconn/src/empty_state.rs
-msgid "Loading..."
-msgstr ""
+#: ../rustconn/src/window/operations.rs:60
+msgid "Are you sure you want to delete the empty group '{}'?"
+msgstr "Naozaj chcete odstrániť prázdnu skupinu '{}'?"
 
-#~ msgid "Failed to initialize application state"
-#~ msgstr "Nepodarilo sa inicializovať stav aplikácie"
+#: ../rustconn/src/window/operations.rs:66
+msgid "Are you sure you want to delete the connection '{}'?"
+msgstr "Naozaj chcete odstrániť pripojenie '{}'?"
 
-#~ msgid "_Keyboard Shortcuts"
-#~ msgstr "_Klávesové skratky"
+#: ../rustconn/src/window/operations.rs:76
+msgid "Delete {}?"
+msgstr "Odstrániť {}?"
 
-#~ msgid "_About RustConn"
-#~ msgstr "_O aplikácii RustConn"
+#: ../rustconn/src/window/operations.rs:111
+msgid "Deleted '{}'"
+msgstr "Odstránené '{}'"
 
-#~ msgid "_Quit"
-#~ msgstr "_Ukončiť"
+#: ../rustconn/src/window/operations.rs:117
+msgid "Error Deleting"
+msgstr "Chyba pri odstraňovaní"
 
-#~ msgid "Opening mc SFTP..."
-#~ msgstr "Otváranie mc SFTP…"
+#: ../rustconn/src/window/operations.rs:181
+msgid "Connection duplicated"
+msgstr "Pripojenie duplikované"
 
-#~ msgid "Opening SFTP..."
-#~ msgstr "Otváranie SFTP…"
+#: ../rustconn/src/window/operations.rs:190
+msgid "Failed to duplicate connection"
+msgstr "Nepodarilo sa duplikovať pripojenie"
 
-#~ msgid "Connection failed"
-#~ msgstr "Pripojenie zlyhalo"
+#: ../rustconn/src/window/operations.rs:224
+msgid "Connection copied to clipboard"
+msgstr "Pripojenie skopírované do schránky"
 
-#~ msgid "Deleted '{}'"
-#~ msgstr "«{}» zmazané"
+#: ../rustconn/src/window/operations.rs:232
+msgid "Failed to copy connection"
+msgstr "Nepodarilo sa skopírovať pripojenie"
 
-#~ msgid "Undo"
-#~ msgstr "Späť"
+#: ../rustconn/src/window/operations.rs:251
+msgid "Nothing to paste - copy a connection first"
+msgstr "Nie je čo prilepiť - najprv skopírujte pripojenie"
 
-#~ msgid "Search connections..."
-#~ msgstr "Hľadať pripojenia…"
+#: ../rustconn/src/window/operations.rs:269
+msgid "Connection pasted"
+msgstr "Pripojenie prilepené"
 
-#~ msgid "All"
-#~ msgstr "Všetky"
+#: ../rustconn/src/window/operations.rs:278
+msgid "Failed to paste connection"
+msgstr "Nepodarilo sa prilepiť pripojenie"
 
-#~ msgid "No connections found"
-#~ msgstr "Žiadne pripojenia nenájdené"
+#: ../rustconn/src/window/operations.rs:363
+msgid "• {} (connection)"
+msgstr "• {} (pripojenie)"
 
-#~ msgid "Create a new connection to get started"
-#~ msgstr "Vytvorte nové pripojenie"
+#: ../rustconn/src/window/operations.rs:366
+msgid "• {} (group)"
+msgstr "• {} (skupina)"
 
-#~ msgid "Edit Connection"
-#~ msgstr "Upraviť pripojenie"
+#: ../rustconn/src/window/operations.rs:383
+msgid "Delete Selected Items?"
+msgstr "Odstrániť vybrané položky?"
 
-#~ msgid "Save"
-#~ msgstr "Uložiť"
+#: ../rustconn/src/window/operations.rs:393
+msgid "Delete All"
+msgstr "Odstrániť všetko"
 
-#~ msgid "Cancel"
-#~ msgstr "Zrušiť"
+#: ../rustconn/src/window/operations.rs:407
+msgid "Are you sure you want to delete {}?"
+msgstr "Naozaj chcete odstrániť {}?"
 
-#~ msgid "General"
-#~ msgstr "Všeobecné"
+#: ../rustconn/src/window/operations.rs:434
+msgid "Connections in deleted groups will become ungrouped."
+msgstr "Pripojenia v odstránených skupinách budú bez skupiny."
 
-#~ msgid "Name"
-#~ msgstr "Názov"
+#: ../rustconn/src/window/operations.rs:485
+msgid "Deletion Complete"
+msgstr "Odstránenie dokončené"
 
-#~ msgid "Host"
-#~ msgstr "Host"
+#: ../rustconn/src/window/operations.rs:487
+msgid "Successfully deleted {} item(s)."
+msgstr "Úspešne odstránených {} položiek."
 
-#~ msgid "Port"
-#~ msgstr "Port"
+#: ../rustconn/src/window/operations.rs:494
+msgid "Deletion Partially Complete"
+msgstr "Odstránenie čiastočne dokončené"
 
-#~ msgid "Username"
-#~ msgstr "Používateľ"
+#: ../rustconn/src/window/operations.rs:497
+msgid "Deleted {} item(s)."
+msgstr "Odstránených {} položiek."
 
-#~ msgid "Password"
-#~ msgstr "Heslo"
+#: ../rustconn/src/window/operations.rs:499
+msgid "Failed to delete {} item(s):"
+msgstr "Nepodarilo sa odstrániť {} položiek:"
 
-#~ msgid "Protocol"
-#~ msgstr "Protokol"
+#: ../rustconn/src/window/operations.rs:522
+#: ../rustconn/src/window/operations.rs:585
+msgid "No Selection"
+msgstr "Žiadny výber"
 
-#~ msgid "Group"
-#~ msgstr "Skupina"
+#: ../rustconn/src/window/operations.rs:523
+msgid "Please select one or more items to delete."
+msgstr "Vyberte jednu alebo viac položiek na odstránenie."
 
-#~ msgid "Tags"
-#~ msgstr "Štítky"
+#: ../rustconn/src/window/operations.rs:535
+msgid "{} connection(s)"
+msgstr "{} pripojení"
 
-#~ msgid "Description"
-#~ msgstr "Popis"
+#: ../rustconn/src/window/operations.rs:536
+msgid "{} group(s)"
+msgstr "{} skupín"
 
-#~ msgid "Settings"
-#~ msgstr "Nastavenia"
+#: ../rustconn/src/window/operations.rs:538
+msgid "{} connection(s) and {} group(s)"
+msgstr "{} pripojení a {} skupín"
 
-#~ msgid "Color Scheme"
-#~ msgstr "Farebná schéma"
+#: ../rustconn/src/window/operations.rs:586
+msgid "Please select one or more items to move."
+msgstr "Vyberte jednu alebo viac položiek na presunutie."
 
-#~ msgid "Terminal"
-#~ msgstr "Terminál"
+#: ../rustconn/src/window/operations.rs:638
+msgid "Select destination for {} connection(s) and {} group(s):"
+msgstr "Vyberte cieľ pre {} pripojení a {} skupín:"
 
-#~ msgid "Clients"
-#~ msgstr "Klienti"
+#: ../rustconn/src/window/operations.rs:646
+msgid "Select a group for {} connection(s):"
+msgstr "Vyberte skupinu pre {} pripojení:"
 
-#~ msgid "Secrets"
-#~ msgstr "Tajomstvá"
+#: ../rustconn/src/window/operations.rs:651
+msgid "Select parent for {} group(s):"
+msgstr "Vyberte nadradenú skupinu pre {} skupín:"
 
-#~ msgid "SSH Agent"
-#~ msgstr "SSH agent"
+#: ../rustconn/src/window/operations.rs:702
+msgid "(No Group)"
+msgstr "(Bez skupiny)"
 
-#~ msgid "Logging"
-#~ msgstr "Protokolovanie"
+#: ../rustconn/src/window/operations.rs:786
+msgid "Move Partially Complete"
+msgstr "Presunutie čiastočne dokončené"
 
-#~ msgid "SSH"
-#~ msgstr "SSH"
+#: ../rustconn/src/window/operations.rs:789
+msgid "Moved {} item(s)."
+msgstr "Presunutých {} položiek."
 
-#~ msgid "RDP"
-#~ msgstr "RDP"
+#: ../rustconn/src/window/operations.rs:791
+msgid "Failed to move {} item(s):"
+msgstr "Nepodarilo sa presunúť {} položiek:"
 
-#~ msgid "VNC"
-#~ msgstr "VNC"
+#: ../rustconn/src/window/sessions.rs:34 ../rustconn/src/window/ui.rs:128
+msgid "Active Sessions"
+msgstr "Aktívne relácie"
 
-#~ msgid "SPICE"
-#~ msgstr "SPICE"
+#: ../rustconn/src/window/sessions.rs:50
+msgid "Refresh"
+msgstr "Obnoviť"
 
-#~ msgid "Telnet"
-#~ msgstr "Telnet"
+#: ../rustconn/src/window/sessions.rs:94
+msgid "Switch To"
+msgstr "Prepnúť na"
 
-#~ msgid "Serial"
-#~ msgstr "Sériový"
+#: ../rustconn/src/window/sessions.rs:98
+msgid "Send Text"
+msgstr "Odoslať text"
 
-#~ msgid "K8s"
-#~ msgstr "K8s"
+#: ../rustconn/src/window/sessions.rs:102
+#: ../rustconn/src/window/sessions.rs:189
+msgid "Terminate"
+msgstr "Ukončiť"
 
-#~ msgid "Delete"
-#~ msgstr "Zmazať"
+#: ../rustconn/src/window/sessions.rs:187
+msgid "Terminate Session?"
+msgstr "Ukončiť reláciu?"
 
-#~ msgid "Connect"
-#~ msgstr "Pripojiť"
+#: ../rustconn/src/window/sessions.rs:188
+msgid "Are you sure you want to terminate this session?"
+msgstr "Naozaj chcete ukončiť túto reláciu?"
 
-#~ msgid "Apply"
-#~ msgstr "Použiť"
+#: ../rustconn/src/window/sessions.rs:325
+msgid "Send Text to Session"
+msgstr "Odoslať text do relácie"
 
-#~ msgid "Export"
-#~ msgstr "Exportovať"
+#: ../rustconn/src/window/sessions.rs:345
+msgid "Enter text to send to the session:"
+msgstr "Zadajte text na odoslanie do relácie:"
 
-#~ msgid "Import"
-#~ msgstr "Importovať"
+#: ../rustconn/src/window/sessions.rs:351
+msgid "Text to send..."
+msgstr "Text na odoslanie..."
 
-#~ msgid "Import completed successfully"
-#~ msgstr "Import úspešne dokončený"
+#: ../rustconn/src/window/sessions.rs:357
+msgid "Append newline (press Enter)"
+msgstr "Pridať nový riadok (stlačte Enter)"
 
-#~ msgid "Import failed"
-#~ msgstr "Import zlyhal"
+#: ../rustconn/src/window/snippets.rs:33
+msgid "Snippet Created"
+msgstr "Úryvok vytvorený"
 
-#~ msgid "{} connection"
-#~ msgid_plural "{} connections"
-#~ msgstr[0] "{} pripojenie"
-#~ msgstr[1] "{} pripojenia"
-#~ msgstr[2] "{} pripojení"
+#: ../rustconn/src/window/snippets.rs:34
+msgid "Snippet has been saved successfully."
+msgstr "Úryvok bol úspešne uložený."
 
-#~ msgid "{} connection imported"
-#~ msgid_plural "{} connections imported"
-#~ msgstr[0] "{} pripojenie importované"
-#~ msgstr[1] "{} pripojenia importované"
-#~ msgstr[2] "{} pripojení importovaných"
+#: ../rustconn/src/window/snippets.rs:38
+msgid "Error Creating Snippet"
+msgstr "Chyba pri vytváraní úryvku"
 
-#~ msgid "Select a connection from the sidebar to start"
-#~ msgstr "Vyberte pripojenie z bočného panelu"
+#: ../rustconn/src/window/snippets.rs:54
+msgid "Manage Snippets"
+msgstr "Správa úryvkov"
 
-#~ msgid "This field is required"
-#~ msgstr "Toto pole je povinné"
+#: ../rustconn/src/window/snippets.rs:88 ../rustconn/src/window/snippets.rs:340
+msgid "Search snippets..."
+msgstr "Hľadať úryvky..."
 
-#~ msgid "Invalid port number"
-#~ msgstr "Neplatné číslo portu"
+#: ../rustconn/src/window/snippets.rs:118
+#: ../rustconn/src/window/snippets.rs:443
+msgid "Execute"
+msgstr "Spustiť"
 
-#~ msgid "Invalid hostname"
-#~ msgstr "Neplatný názov hostiteľa"
+#: ../rustconn/src/window/snippets.rs:217
+msgid "Delete Snippet?"
+msgstr "Odstrániť úryvok?"
 
-#~ msgid "Modern Connection Manager for Linux"
-#~ msgstr "Moderný správca pripojení pre Linux"
+#: ../rustconn/src/window/snippets.rs:218
+msgid "Are you sure you want to delete this snippet?"
+msgstr "Naozaj chcete odstrániť tento úryvok?"
 
-#~ msgid "Filter SSH connections"
-#~ msgstr "Filtrovať SSH pripojenia"
+#: ../rustconn/src/window/snippets.rs:322
+msgid "Execute Snippet"
+msgstr "Spustiť úryvok"
 
-#~ msgid "Filter RDP connections"
-#~ msgstr "Filtrovať RDP pripojenia"
+#: ../rustconn/src/window/snippets.rs:409
+msgid "No Active Terminal"
+msgstr "Žiadny aktívny terminál"
 
-#~ msgid "Filter VNC connections"
-#~ msgstr "Filtrovať VNC pripojenia"
+#: ../rustconn/src/window/snippets.rs:410
+msgid "Please open a terminal session first before executing a snippet."
+msgstr "Pred spustením úryvku najprv otvorte reláciu terminálu."
 
-#~ msgid "Close tab"
-#~ msgstr "Zavrieť kartu"
+#: ../rustconn/src/window/snippets.rs:434
+msgid "Enter Variable Values"
+msgstr "Zadajte hodnoty premenných"
 
-#~ msgid "Open local shell terminal"
-#~ msgstr "Otvoriť lokálny terminál"
+#: ../rustconn/src/window/templates.rs:90
+#: ../rustconn/src/window/templates.rs:125
+msgid "Error Saving Template"
+msgstr "Chyba pri ukladaní šablóny"
+
+#: ../rustconn/src/window/templates.rs:151
+msgid "Delete Template?"
+msgstr "Odstrániť šablónu?"
+
+#: ../rustconn/src/window/templates.rs:152
+msgid "Are you sure you want to delete this template?"
+msgstr "Naozaj chcete odstrániť túto šablónu?"
+
+#: ../rustconn/src/window/templates.rs:292
+msgid "Host: {}"
+msgstr "Hostiteľ: {}"
+
+#: ../rustconn/src/window/templates.rs:294
+msgid "Port: {}"
+msgstr "Port: {}"
+
+#: ../rustconn/src/window/templates.rs:296
+msgid "User: {}"
+msgstr "Používateľ: {}"
+
+#: ../rustconn/src/window/templates.rs:317
+msgid "SSH Templates"
+msgstr "Šablóny SSH"
+
+#: ../rustconn/src/window/templates.rs:325
+msgid "RDP Templates"
+msgstr "Šablóny RDP"
+
+#: ../rustconn/src/window/templates.rs:333
+msgid "VNC Templates"
+msgstr "Šablóny VNC"
+
+#: ../rustconn/src/window/templates.rs:341
+msgid "SPICE Templates"
+msgstr "Šablóny SPICE"
+
+#: ../rustconn/src/window/ui.rs:32
+msgid "Toggle Sidebar (F9)"
+msgstr "Prepnúť bočný panel (F9)"
+
+#: ../rustconn/src/window/ui.rs:39
+msgid "Quick Connect (Ctrl+Shift+Q)"
+msgstr "Rýchle pripojenie (Ctrl+Shift+Q)"
+
+#: ../rustconn/src/window/ui.rs:46
+msgid "New Connection (Ctrl+N)"
+msgstr "Nové pripojenie (Ctrl+N)"
+
+#: ../rustconn/src/window/ui.rs:53
+msgid "Delete Selected (Delete)"
+msgstr "Odstrániť vybrané (Delete)"
+
+#: ../rustconn/src/window/ui.rs:60
+msgid "New Group (Ctrl+Shift+N)"
+msgstr "Nová skupina (Ctrl+Shift+N)"
+
+#: ../rustconn/src/window/ui.rs:70
+msgid "Menu"
+msgstr "Menu"
+
+#: ../rustconn/src/window/ui.rs:80
+msgid "Settings (Ctrl+,)"
+msgstr "Nastavenia (Ctrl+,)"
+
+#: ../rustconn/src/window/ui.rs:87
+msgid "Split Vertical (Ctrl+Shift+S)"
+msgstr "Rozdeliť zvisle (Ctrl+Shift+S)"
+
+#: ../rustconn/src/window/ui.rs:93
+msgid "Split Horizontal (Ctrl+Shift+H)"
+msgstr "Rozdeliť vodorovne (Ctrl+Shift+H)"
+
+#: ../rustconn/src/window/ui.rs:119
+msgid "Local Shell"
+msgstr "Miestny shell"
+
+#: ../rustconn/src/window/ui.rs:124
+msgid "Snippets..."
+msgstr "Snippety…"
+
+#: ../rustconn/src/window/ui.rs:125
+msgid "Clusters..."
+msgstr "Klastre…"
+
+#: ../rustconn/src/window/ui.rs:126
+msgid "Templates..."
+msgstr "Šablóny…"
+
+#: ../rustconn/src/window/ui.rs:127
+msgid "Variables..."
+msgstr "Premenné…"
+
+#: ../rustconn/src/window/ui.rs:130
+msgid "Connection History..."
+msgstr "História pripojení…"
+
+#: ../rustconn/src/window/ui.rs:133
+msgid "Statistics..."
+msgstr "Štatistiky…"
+
+#: ../rustconn/src/window/ui.rs:135
+msgid "Password Generator..."
+msgstr "Generátor hesiel…"
+
+#: ../rustconn/src/window/ui.rs:139
+msgid "Wake On LAN..."
+msgstr "Wake On LAN…"
+
+#: ../rustconn/src/window/ui.rs:146
+msgid "Import Connections..."
+msgstr "Importovať pripojenia…"
+
+#: ../rustconn/src/window/ui.rs:147
+msgid "Export Connections..."
+msgstr "Exportovať pripojenia…"
+
+#: ../rustconn/src/window/ui.rs:153
+msgid "Copy Connection"
+msgstr "Kopírovať pripojenie"
+
+#: ../rustconn/src/window/ui.rs:157
+msgid "Paste Connection"
+msgstr "Vložiť pripojenie"
+
+#: ../rustconn/src/window/ui.rs:164
+msgid "Settings"
+msgstr "Nastavenia"
+
+#: ../rustconn/src/window/ui.rs:169
+msgid "Flatpak Components..."
+msgstr "Komponenty Flatpak…"
+
+#: ../rustconn/src/window/ui.rs:173
+msgid "About"
+msgstr "O aplikácii"
+
+#: ../rustconn/src/window/ui.rs:174
+msgid "Quit"
+msgstr "Ukončiť"
+
+#~ msgid "RustConn"
+#~ msgstr "RustConn"
+
+#~ msgid "ssh;rdp;vnc;spice;telnet;zerotrust;connection;terminal;remote;"
+#~ msgstr "ssh;rdp;vnc;spice;telnet;zerotrust;pripojenie;terminál;vzdialené;"

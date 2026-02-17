@@ -1,9 +1,12 @@
 # Belarusian translation for RustConn
+# Copyright (C) 2025-2026 Anton Isaiev
+# This file is distributed under the same license as the RustConn package.
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.8.7\n"
-"Report-Msgid-Bugs-To: https://github.com/totoshko88/RustConn/issues\n"
-"POT-Creation-Date: 2026-02-17 00:00+0000\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-02-17 18:31+0200\n"
 "PO-Revision-Date: 2026-02-17 00:00+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Belarusian\n"
@@ -14,453 +17,2951 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-#. Desktop file
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:2
-msgid "RustConn"
-msgstr "RustConn"
+#: ../rustconn/src/adaptive_tabs.rs:169
+#: ../rustconn/src/split_view/bridge.rs:1770
+msgid "Close tab"
+msgstr "Закрыць укладку"
 
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
-msgid "Manage remote connections easily"
-msgstr "Зручнае кіраванне аддаленымі злучэннямі"
+#: ../rustconn/src/adaptive_tabs.rs:290
+msgid "More tabs"
+msgstr "Больш укладак"
 
-#. Application
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:78
 msgid "Initialization Error"
 msgstr "Памылка ініцыялізацыі"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:978
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
 "connections from a single application."
 msgstr ""
+"Сучасны менеджар злучэнняў для Linux з інтэрфейсам GTK4/Wayland. Кіруйце "
+"злучэннямі SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes і Zero Trust з "
+"адной праграмы."
 
-#: rustconn/src/app.rs
+#. Translators: Replace this with your name and language, e.g. "John Doe (German)"
+#: ../rustconn/src/app.rs:1014
 msgid "translator-credits"
-msgstr ""
+msgstr "Каманда RustConn (Беларуская)"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1021
 msgid "User Guide"
-msgstr ""
+msgstr "Кіраўніцтва карыстальніка"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1025
 msgid "Installation"
-msgstr ""
+msgstr "Усталяванне"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1029
 msgid "Releases"
-msgstr ""
+msgstr "Выпускі"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1033
 msgid "Changelog"
-msgstr ""
+msgstr "Спіс змяненняў"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1044
 msgid "Special Thanks"
-msgstr ""
+msgstr "Асаблівая падзяка"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1059
 msgid "Made in Ukraine"
-msgstr ""
+msgstr "Зроблена ва Украіне"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1060
 msgid "All contributors and supporters"
-msgstr ""
+msgstr "Усім удзельнікам і падтрымліваючым"
 
-#. Sidebar
-#: rustconn/src/sidebar/mod.rs
-msgid "Search... (? for help)"
-msgstr ""
+#: ../rustconn/src/dashboard.rs:318
+#: ../rustconn/src/dialogs/connection/dialog.rs:1945
+msgid "Protocol:"
+msgstr "Пратакол:"
 
-#. Connection dialog
-#: rustconn/src/dialogs/connection/dialog.rs
-msgid "New Connection"
-msgstr "Новае злучэнне"
+#: ../rustconn/src/dashboard.rs:322
+msgid "All Protocols"
+msgstr "Усе пратаколы"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dashboard.rs:330
+msgid "Status:"
+msgstr "Стан:"
+
+#: ../rustconn/src/dashboard.rs:335
+msgid "All Statuses"
+msgstr "Усе станы"
+
+#: ../rustconn/src/dashboard.rs:336
+msgid "Connected"
+msgstr "Злучана"
+
+#: ../rustconn/src/dashboard.rs:337
+msgid "Starting"
+msgstr "Запуск"
+
+#: ../rustconn/src/dashboard.rs:338
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:253
+#: ../rustconn/src/window/connection_dialogs.rs:689
+#: ../rustconn/src/window/edit_dialogs.rs:288
+#: ../rustconn/src/window/edit_dialogs.rs:368
+#: ../rustconn/src/window/edit_dialogs.rs:951
+#: ../rustconn/src/window/groups.rs:218
+msgid "Error"
+msgstr "Памылка"
+
+#: ../rustconn/src/dashboard.rs:350 ../rustconn/src/dashboard.rs:352
+msgid "Refresh Dashboard"
+msgstr "Абнавіць панэль"
+
+#: ../rustconn/src/dashboard.rs:464
+msgid "No active sessions"
+msgstr "Няма актыўных сеансаў"
+
+#: ../rustconn/src/dashboard.rs:523 ../rustconn/src/split_view/bridge.rs:1466
+#: ../rustconn/src/window/edit_dialogs.rs:1283
+msgid "Host"
+msgstr "Хост"
+
+#: ../rustconn/src/dashboard.rs:531
+msgid "Duration"
+msgstr "Працягласць"
+
+#: ../rustconn/src/dashboard.rs:555 ../rustconn/src/dashboard.rs:556
+msgid "Focus Session"
+msgstr "Фокус на сеансе"
+
+#: ../rustconn/src/dashboard.rs:568 ../rustconn/src/dashboard.rs:571
+#: ../rustconn/src/embedded.rs:76 ../rustconn/src/floating_controls.rs:103
+msgid "Disconnect"
+msgstr "Адлучыцца"
+
+#: ../rustconn/src/dashboard.rs:647
+msgid "Connection Dashboard"
+msgstr "Панэль злучэнняў"
+
+#: ../rustconn/src/dialogs/cluster.rs:54
+msgid "New Cluster"
+msgstr "Новы кластар"
+
+#: ../rustconn/src/dialogs/cluster.rs:70 ../rustconn/src/dialogs/cluster.rs:420
+#: ../rustconn/src/dialogs/connection/dialog.rs:1299
+#: ../rustconn/src/dialogs/export.rs:80 ../rustconn/src/dialogs/export.rs:793
+#: ../rustconn/src/dialogs/flatpak_components.rs:99
+#: ../rustconn/src/dialogs/history.rs:43 ../rustconn/src/dialogs/import.rs:66
+#: ../rustconn/src/dialogs/import.rs:1389
+#: ../rustconn/src/dialogs/log_viewer.rs:113
+#: ../rustconn/src/dialogs/password_generator.rs:39
+#: ../rustconn/src/dialogs/snippet.rs:80
+#: ../rustconn/src/dialogs/statistics.rs:45
+#: ../rustconn/src/dialogs/template.rs:139
+#: ../rustconn/src/dialogs/template.rs:2852
+#: ../rustconn/src/dialogs/terminal_search.rs:54
+#: ../rustconn/src/window/connection_dialogs.rs:191
+#: ../rustconn/src/window/edit_dialogs.rs:1215
+#: ../rustconn/src/window/sessions.rs:47 ../rustconn/src/window/snippets.rs:65
 msgid "Close"
 msgstr "Закрыць"
 
-#: rustconn/src/dialogs/connection/dialog.rs
-msgid "Test"
-msgstr ""
-
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/cluster.rs:72 ../rustconn/src/dialogs/cluster.rs:422
+#: ../rustconn/src/dialogs/connection/dialog.rs:1305
+#: ../rustconn/src/dialogs/document.rs:77 ../rustconn/src/dialogs/snippet.rs:82
+#: ../rustconn/src/dialogs/template.rs:141
+#: ../rustconn/src/dialogs/template.rs:2854
+#: ../rustconn/src/window/connection_dialogs.rs:193
+#: ../rustconn/src/window/snippets.rs:67
 msgid "Create"
 msgstr "Стварыць"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/cluster.rs:112
+msgid "Cluster Details"
+msgstr "Дэталі кластара"
+
+#: ../rustconn/src/dialogs/cluster.rs:152
+msgid "Cluster name cannot be empty"
+msgstr "Назва кластара не можа быць пустой"
+
+#: ../rustconn/src/dialogs/cluster.rs:169
+msgid "Please select at least one connection"
+msgstr "Калі ласка, абярыце хаця б адно злучэнне"
+
+#: ../rustconn/src/dialogs/cluster.rs:207
+msgid "Connections"
+msgstr "Злучэнні"
+
+#: ../rustconn/src/dialogs/cluster.rs:208
+msgid "Select connections to include in this cluster"
+msgstr "Абярыце злучэнні для ўключэння ў гэты кластар"
+
+#: ../rustconn/src/dialogs/cluster.rs:232 ../rustconn/src/sidebar_ui.rs:244
+msgid "Select All"
+msgstr "Абраць усё"
+
+#: ../rustconn/src/dialogs/cluster.rs:233
+msgid "Deselect All"
+msgstr "Зняць выбар"
+
+#: ../rustconn/src/dialogs/cluster.rs:343
+msgid "Edit Cluster"
+msgstr "Рэдагаваць кластар"
+
+#: ../rustconn/src/dialogs/cluster.rs:404
+msgid "Manage Clusters"
+msgstr "Кіраванне кластарамі"
+
+#: ../rustconn/src/dialogs/cluster.rs:456
+msgid ""
+"Clusters allow you to connect to multiple servers simultaneously and "
+"optionally broadcast input to all sessions."
+msgstr ""
+"Кластары дазваляюць злучацца з некалькімі серверамі адначасова і пры жаданні "
+"транславаць увод ва ўсе сеансы."
+
+#: ../rustconn/src/dialogs/cluster.rs:551
+msgid "Connect to cluster"
+msgstr "Злучыцца з кластарам"
+
+#: ../rustconn/src/dialogs/cluster.rs:557
+msgid "Edit cluster"
+msgstr "Рэдагаваць кластар"
+
+#: ../rustconn/src/dialogs/cluster.rs:563
+msgid "Delete cluster"
+msgstr "Выдаліць кластар"
+
+#: ../rustconn/src/dialogs/cluster.rs:596
+msgid "No clusters defined. Click 'New Cluster' to create one."
+msgstr "Кластары не вызначаны. Націсніце 'Новы кластар', каб стварыць."
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:1117
+msgid "Testing..."
+msgstr "Тэставанне..."
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:1206
+#: ../rustconn/src/dialogs/connection/dialog.rs:1301
+msgid "Test"
+msgstr "Тэст"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:1284
+#: ../rustconn/src/empty_state.rs:61 ../rustconn/src/sidebar_ui.rs:390
+#: ../rustconn/src/split_view/bridge.rs:1699 ../rustconn/src/window/ui.rs:116
+msgid "New Connection"
+msgstr "Новае злучэнне"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:1932
+#: ../rustconn/src/dialogs/snippet.rs:304
+#: ../rustconn/src/dialogs/variables.rs:200
 msgid "Name:"
-msgstr ""
+msgstr "Назва:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
-msgid "Protocol:"
-msgstr ""
-
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:1967
 msgid "Host:"
-msgstr ""
+msgstr "Хост:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:1980
 msgid "Port:"
-msgstr ""
+msgstr "Порт:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:2011
+#: ../rustconn/src/dialogs/password.rs:171
 msgid "Username:"
-msgstr ""
+msgstr "Імя карыстальніка:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:2035
+#: ../rustconn/src/dialogs/password.rs:158
 msgid "Domain:"
-msgstr ""
+msgstr "Дамен:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:2058
+#: ../rustconn/src/dialogs/password.rs:184
 msgid "Password:"
-msgstr ""
+msgstr "Пароль:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:2133
 msgid "Tags:"
-msgstr ""
+msgstr "Тэгі:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:2146
 msgid "Group:"
+msgstr "Група:"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:2420
+#: ../rustconn/src/dialogs/connection/dialog.rs:2960
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:29
+msgid "Shared Folders"
+msgstr "Агульныя тэчкі"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:2421
+#: ../rustconn/src/dialogs/connection/dialog.rs:2961
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:30
+msgid "Local folders accessible from remote session"
+msgstr "Лакальныя тэчкі, даступныя з аддаленага сеансу"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:2428
+#: ../rustconn/src/dialogs/connection/dialog.rs:2968
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:37
+msgid "No shared folders"
+msgstr "Няма агульных тэчак"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:3458
+msgid "No variables defined"
+msgstr "Зменныя не вызначаны"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:3492
+msgid "No custom properties"
+msgstr "Няма карыстальніцкіх уласцівасцей"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:3576
+msgid "No expect rules"
+msgstr "Няма правілаў expect"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:5046
+msgid "Edit Connection"
+msgstr "Рэдагаваць злучэнне"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:5047
+#: ../rustconn/src/dialogs/snippet.rs:361
+#: ../rustconn/src/dialogs/template.rs:2544
+#: ../rustconn/src/dialogs/variables.rs:78
+#: ../rustconn/src/window/edit_dialogs.rs:414
+msgid "Save"
+msgstr "Захаваць"
+
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:52
+msgid "Add"
+msgstr "Дадаць"
+
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:56
+#: ../rustconn/src/dialogs/flatpak_components.rs:296
+#: ../rustconn/src/dialogs/flatpak_components.rs:332
+#: ../rustconn/src/dialogs/flatpak_components.rs:468
+msgid "Remove"
+msgstr "Выдаліць"
+
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:90
+msgid "Select Folder to Share"
+msgstr "Абраць тэчку для агульнага доступу"
+
+#: ../rustconn/src/dialogs/document.rs:60
+msgid "New Document"
+msgstr "Новы дакумент"
+
+#: ../rustconn/src/dialogs/document.rs:75
+#: ../rustconn/src/dialogs/document.rs:326
+#: ../rustconn/src/dialogs/document.rs:565
+#: ../rustconn/src/dialogs/flatpak_components.rs:275
+#: ../rustconn/src/dialogs/password.rs:70
+#: ../rustconn/src/dialogs/progress.rs:69
+#: ../rustconn/src/dialogs/progress.rs:175
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:437
+#: ../rustconn/src/dialogs/variables.rs:76 ../rustconn/src/dialogs/wol.rs:45
+#: ../rustconn/src/loading.rs:253 ../rustconn/src/window/edit_dialogs.rs:218
+#: ../rustconn/src/window/edit_dialogs.rs:412
+#: ../rustconn/src/window/groups.rs:60 ../rustconn/src/window/operations.rs:391
+#: ../rustconn/src/window/operations.rs:622
+#: ../rustconn/src/window/sessions.rs:330
+#: ../rustconn/src/window/snippets.rs:330
+#: ../rustconn/src/window/snippets.rs:441
+msgid "Cancel"
+msgstr "Скасаваць"
+
+#: ../rustconn/src/dialogs/document.rs:99
+msgid "Document Name"
+msgstr "Назва дакумента"
+
+#: ../rustconn/src/dialogs/document.rs:109
+msgid "Protect with password"
+msgstr "Абараніць паролем"
+
+#: ../rustconn/src/dialogs/document.rs:119
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:945
+#: ../rustconn/src/window/connection_dialogs.rs:310
+#: ../rustconn/src/window/edit_dialogs.rs:585
+#: ../rustconn/src/window/edit_dialogs.rs:1316
+msgid "Password"
+msgstr "Пароль"
+
+#: ../rustconn/src/dialogs/document.rs:128
+#: ../rustconn/src/dialogs/document.rs:618
+msgid "Confirm Password"
+msgstr "Пацвердзіце пароль"
+
+#: ../rustconn/src/dialogs/document.rs:271
+msgid "Open Document"
+msgstr "Адкрыць дакумент"
+
+#: ../rustconn/src/dialogs/document.rs:312
+msgid "Enter Password"
+msgstr "Увядзіце пароль"
+
+#: ../rustconn/src/dialogs/document.rs:328
+msgid "Open"
+msgstr "Адкрыць"
+
+#: ../rustconn/src/dialogs/document.rs:342
+msgid ""
+"This document is password protected.\n"
+"                 Enter the password to open it."
 msgstr ""
+"Гэты дакумент абаронены паролем.\n"
+"                 Увядзіце пароль, каб адкрыць яго."
 
-#. Settings dialog — UI tab
-#: rustconn/src/dialogs/settings/ui_tab.rs
-msgid "Interface"
+#: ../rustconn/src/dialogs/document.rs:424
+msgid "Save Document"
+msgstr "Захаваць дакумент"
+
+#: ../rustconn/src/dialogs/document.rs:550
+msgid "Document Protection"
+msgstr "Абарона дакумента"
+
+#: ../rustconn/src/dialogs/document.rs:567
+msgid "Apply"
+msgstr "Прымяніць"
+
+#: ../rustconn/src/dialogs/document.rs:589
+msgid ""
+"Password protection encrypts the document contents.\n"
+"                 You will need to enter the password each time you open it."
 msgstr ""
+"Абарона паролем шыфруе змесціва дакумента.\n"
+"                 Вам трэба будзе ўводзіць пароль кожны раз пры адкрыцці."
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
-msgid "Appearance"
-msgstr "Знешні выгляд"
+#: ../rustconn/src/dialogs/document.rs:599
+msgid "Enable password protection"
+msgstr "Уключыць абарону паролем"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/document.rs:609
+msgid "New Password"
+msgstr "Новы пароль"
+
+#: ../rustconn/src/dialogs/document.rs:628
+msgid "Use a strong password that you can remember."
+msgstr "Выкарыстоўвайце надзейны пароль, які вы зможаце запомніць."
+
+#: ../rustconn/src/dialogs/export.rs:65 ../rustconn/src/sidebar_ui.rs:328
+msgid "Export Connections"
+msgstr "Экспарт злучэнняў"
+
+#: ../rustconn/src/dialogs/export.rs:82
+msgid "Export"
+msgstr "Экспарт"
+
+#: ../rustconn/src/dialogs/export.rs:187
+msgid "Export Format"
+msgstr "Фармат экспарту"
+
+#: ../rustconn/src/dialogs/export.rs:188
+msgid "Select the format to export your connections to"
+msgstr "Абярыце фармат для экспарту злучэнняў"
+
+#: ../rustconn/src/dialogs/export.rs:206
+msgid "Format"
+msgstr "Фармат"
+
+#: ../rustconn/src/dialogs/export.rs:207
+msgid "Target export format"
+msgstr "Мэтавы фармат экспарту"
+
+#: ../rustconn/src/dialogs/export.rs:216
+msgid "Output Location"
+msgstr "Месца вываду"
+
+#: ../rustconn/src/dialogs/export.rs:218
+msgid ""
+"Remmina exports to a directory (one file per connection).\n"
+"                 Other formats export to a single file."
+msgstr ""
+"Remmina экспартуе ў каталог (адзін файл на злучэнне).\n"
+"                 Іншыя фарматы экспартуюць у адзін файл."
+
+#: ../rustconn/src/dialogs/export.rs:225
+msgid "Select output file or directory..."
+msgstr "Абраць файл або каталог вываду..."
+
+#: ../rustconn/src/dialogs/export.rs:231
+msgid "Browse..."
+msgstr "Агляд..."
+
+#: ../rustconn/src/dialogs/export.rs:236
+msgid "Output"
+msgstr "Вывад"
+
+#: ../rustconn/src/dialogs/export.rs:237
+msgid "Destination path"
+msgstr "Шлях прызначэння"
+
+#: ../rustconn/src/dialogs/export.rs:247
+#: ../rustconn/src/dialogs/password_generator.rs:251
+msgid "Options"
+msgstr "Параметры"
+
+#: ../rustconn/src/dialogs/export.rs:252
+msgid "Include passwords"
+msgstr "Уключыць паролі"
+
+#: ../rustconn/src/dialogs/export.rs:253
+msgid "If supported by format"
+msgstr "Калі падтрымліваецца фарматам"
+
+#: ../rustconn/src/dialogs/export.rs:260
+msgid "Include group hierarchy"
+msgstr "Уключыць іерархію груп"
+
+#: ../rustconn/src/dialogs/export.rs:261
+msgid "Preserve folder structure"
+msgstr "Захаваць структуру тэчак"
+
+#: ../rustconn/src/dialogs/export.rs:268
+msgid "⚠ Security Warning"
+msgstr "⚠ Папярэджанне бяспекі"
+
+#: ../rustconn/src/dialogs/export.rs:269
+msgid ""
+"Including passwords may expose sensitive data. Only enable if you trust the "
+"destination."
+msgstr ""
+"Уключэнне пароляў можа раскрыць канфідэнцыяльныя даныя. Уключайце толькі "
+"калі давяраеце прызначэнню."
+
+#: ../rustconn/src/dialogs/export.rs:279
+msgid "ℹ Credentials Storage"
+msgstr "ℹ Захоўванне ўліковых даных"
+
+#: ../rustconn/src/dialogs/export.rs:280
+msgid ""
+"Passwords are stored in your password manager and not included in exports by "
+"default. Export your credential structure separately if needed."
+msgstr ""
+"Паролі захоўваюцца ў вашым менеджары пароляў і не ўключаюцца ў экспарт па "
+"змаўчанні. Экспартуйце структуру ўліковых даных асобна пры неабходнасці."
+
+#: ../rustconn/src/dialogs/export.rs:316
+msgid "Exporting..."
+msgstr "Экспарт..."
+
+#: ../rustconn/src/dialogs/export.rs:330
+msgid "Preparing export..."
+msgstr "Падрыхтоўка экспарту..."
+
+#: ../rustconn/src/dialogs/export.rs:343
+msgid "Export Complete"
+msgstr "Экспарт завершаны"
+
+#: ../rustconn/src/dialogs/export.rs:358 ../rustconn/src/dialogs/import.rs:385
+msgid "Details"
+msgstr "Дэталі"
+
+#: ../rustconn/src/dialogs/export.rs:588
+msgid "Select Export Directory"
+msgstr "Абраць каталог экспарту"
+
+#: ../rustconn/src/dialogs/export.rs:602
+msgid "Select Export File"
+msgstr "Абраць файл экспарту"
+
+#: ../rustconn/src/dialogs/export.rs:682
+msgid "Select output directory..."
+msgstr "Абраць каталог вываду..."
+
+#: ../rustconn/src/dialogs/export.rs:684
+msgid "Select output file..."
+msgstr "Абраць файл вываду..."
+
+#: ../rustconn/src/dialogs/export.rs:729
+msgid "Please select an output file or directory"
+msgstr "Калі ласка, абярыце файл або каталог для вываду"
+
+#: ../rustconn/src/dialogs/export.rs:772
+msgid "Export complete"
+msgstr "Экспарт завершаны"
+
+#: ../rustconn/src/dialogs/export.rs:783 ../rustconn/src/dialogs/import.rs:634
+#: ../rustconn/src/dialogs/import.rs:848 ../rustconn/src/dialogs/import.rs:959
+#: ../rustconn/src/dialogs/import.rs:1047
+#: ../rustconn/src/dialogs/import.rs:1139
+#: ../rustconn/src/dialogs/import.rs:1379
+#: ../rustconn/src/dialogs/import.rs:1477
+#: ../rustconn/src/dialogs/import.rs:1564
+#: ../rustconn/src/dialogs/import.rs:1651
+#: ../rustconn/src/dialogs/import.rs:1737
+msgid "Done"
+msgstr "Гатова"
+
+#: ../rustconn/src/dialogs/export.rs:788
+msgid "Export failed"
+msgstr "Памылка экспарту"
+
+#: ../rustconn/src/dialogs/export.rs:789
+msgid "Export Failed"
+msgstr "Памылка экспарту"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:65
+msgid "Flatpak Components"
+msgstr "Кампаненты Flatpak"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:132
+msgid ""
+"Showing sandbox-compatible components only.              Downloads are "
+"verified with SHA256 checksums."
+msgstr ""
+"Паказаны толькі sandbox-сумяшчальныя кампаненты.              Спампоўкі "
+"правяраюцца кантрольнымі сумамі SHA256."
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:141
+msgid "Protocol Clients"
+msgstr "Кліенты пратаколаў"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:143
+msgid ""
+"Optional for external RDP/VNC/SPICE connections.              Embedded "
+"clients (IronRDP, vnc-rs) are preferred."
+msgstr ""
+"Неабавязкова для знешніх злучэнняў RDP/VNC/SPICE.              Убудаваныя "
+"кліенты (IronRDP, vnc-rs) пераважней."
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:155
+msgid "Zero Trust CLIs"
+msgstr "CLI Zero Trust"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:156
+msgid ""
+"Required for Zero Trust connections (AWS SSM, GCP IAP, Azure Bastion, etc.)"
+msgstr ""
+"Патрабуецца для злучэнняў Zero Trust (AWS SSM, GCP IAP, Azure Bastion і інш.)"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:166
+msgid "Password Manager CLIs"
+msgstr "CLI менеджараў пароляў"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:167
+msgid "Required for Bitwarden and 1Password integration"
+msgstr "Патрабуецца для інтэграцыі з Bitwarden і 1Password"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:177
+msgid "Container Orchestration"
+msgstr "Аркестрацыя кантэйнераў"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:178
+msgid "Required for Kubernetes pod shell connections"
+msgstr "Патрабуецца для злучэнняў Kubernetes pod shell"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:254
+#: ../rustconn/src/dialogs/flatpak_components.rs:458
+msgid "Installed"
+msgstr "Усталявана"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:285
+msgid "Update"
+msgstr "Абнавіць"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:299
+#: ../rustconn/src/dialogs/flatpak_components.rs:476
+msgid "Install"
+msgstr "Усталяваць"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:302
+msgid "N/A"
+msgstr "Н/Д"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:304
+msgid "Not available for download"
+msgstr "Недаступна для спампоўкі"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:489
+#: ../rustconn/src/dialogs/statistics.rs:144
+#: ../rustconn/src/dialogs/statistics.rs:244
+msgid "Failed"
+msgstr "Няўдача"
+
+#: ../rustconn/src/dialogs/history.rs:27 ../rustconn/src/sidebar_ui.rs:294
+msgid "Connection History"
+msgstr "Гісторыя злучэнняў"
+
+#: ../rustconn/src/dialogs/history.rs:45 ../rustconn/src/dialogs/password.rs:72
+#: ../rustconn/src/sidebar_ui.rs:50 ../rustconn/src/window/edit_dialogs.rs:1217
+msgid "Connect"
+msgstr "Злучыцца"
+
+#: ../rustconn/src/dialogs/history.rs:84
+msgid "No connection history"
+msgstr "Няма гісторыі злучэнняў"
+
+#: ../rustconn/src/dialogs/history.rs:103
+msgid "Clear History"
+msgstr "Ачысціць гісторыю"
+
+#: ../rustconn/src/dialogs/import.rs:51
+msgid "Import Connections"
+msgstr "Імпарт злучэнняў"
+
+#: ../rustconn/src/dialogs/import.rs:68
+msgid "Import"
+msgstr "Імпарт"
+
+#: ../rustconn/src/dialogs/import.rs:175
+msgid "Select Import Source"
+msgstr "Абраць крыніцу імпарту"
+
+#: ../rustconn/src/dialogs/import.rs:182
+msgid "Choose the source from which to import connections:"
+msgstr "Абярыце крыніцу для імпарту злучэнняў:"
+
+#: ../rustconn/src/dialogs/import.rs:322
+msgid "Available"
+msgstr "Даступна"
+
+#: ../rustconn/src/dialogs/import.rs:327
+msgid "Not Found"
+msgstr "Не знойдзена"
+
+#: ../rustconn/src/dialogs/import.rs:345
+msgid "Importing..."
+msgstr "Імпарт..."
+
+#: ../rustconn/src/dialogs/import.rs:358
+msgid "Scanning for connections..."
+msgstr "Пошук злучэнняў..."
+
+#: ../rustconn/src/dialogs/import.rs:370
+msgid "Import Complete"
+msgstr "Імпарт завершаны"
+
+#: ../rustconn/src/dialogs/import.rs:619 ../rustconn/src/dialogs/import.rs:833
+msgid "Import complete"
+msgstr "Імпарт завершаны"
+
+#: ../rustconn/src/dialogs/import.rs:896
+msgid "Select SSH Config File"
+msgstr "Абраць файл канфігурацыі SSH"
+
+#: ../rustconn/src/dialogs/import.rs:986
+msgid "Select Asbru-CM YAML File"
+msgstr "Абраць YAML-файл Asbru-CM"
+
+#: ../rustconn/src/dialogs/import.rs:1074
+msgid "Select Ansible Inventory File"
+msgstr "Абраць файл інвентарызацыі Ansible"
+
+#: ../rustconn/src/dialogs/import.rs:1311
+msgid "Select RustConn Native File"
+msgstr "Абраць файл RustConn"
+
+#: ../rustconn/src/dialogs/import.rs:1417
+msgid "Select Royal TS File"
+msgstr "Абраць файл Royal TS"
+
+#: ../rustconn/src/dialogs/import.rs:1503
+msgid "Select RDM JSON File"
+msgstr "Абраць JSON-файл RDM"
+
+#: ../rustconn/src/dialogs/import.rs:1590
+msgid "Select MobaXterm Session File"
+msgstr "Абраць файл сеансу MobaXterm"
+
+#: ../rustconn/src/dialogs/import.rs:1677
+msgid "Select Virt-Viewer File"
+msgstr "Абраць файл Virt-Viewer"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:34
+msgid "Session Logs"
+msgstr "Журналы сеансаў"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:116
+msgid "Refresh log list"
+msgstr "Абнавіць спіс журналаў"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:147
+msgid "No log files found"
+msgstr "Файлы журналаў не знойдзены"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:181
+msgid "Log Files"
+msgstr "Файлы журналаў"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:192
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:103
+msgid "Log Content"
+msgstr "Змесціва журнала"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:316 ../rustconn/src/empty_state.rs:142
+#: ../rustconn/src/loading.rs:50 ../rustconn/src/split_view/adapter.rs:1237
+msgid "Loading..."
+msgstr "Загрузка..."
+
+#: ../rustconn/src/dialogs/password_generator.rs:22
+#: ../rustconn/src/split_view/bridge.rs:1733
+msgid "Password Generator"
+msgstr "Генератар пароляў"
+
+#: ../rustconn/src/dialogs/password_generator.rs:41
+#: ../rustconn/src/embedded_rdp/mod.rs:220
+#: ../rustconn/src/embedded_spice.rs:240 ../rustconn/src/embedded_trait.rs:202
+#: ../rustconn/src/embedded_vnc.rs:157
+msgid "Copy"
+msgstr "Капіяваць"
+
+#: ../rustconn/src/dialogs/password_generator.rs:81
+msgid "Generated Password"
+msgstr "Згенераваны пароль"
+
+#: ../rustconn/src/dialogs/password_generator.rs:107
+msgid "Strength Analysis"
+msgstr "Аналіз надзейнасці"
+
+#: ../rustconn/src/dialogs/password_generator.rs:130
+msgid "Strength"
+msgstr "Надзейнасць"
+
+#: ../rustconn/src/dialogs/password_generator.rs:143
+msgid "Entropy"
+msgstr "Энтрапія"
+
+#: ../rustconn/src/dialogs/password_generator.rs:144
+msgid "Measure of randomness"
+msgstr "Мера выпадковасці"
+
+#: ../rustconn/src/dialogs/password_generator.rs:157
+msgid "Crack time"
+msgstr "Час узлому"
+
+#: ../rustconn/src/dialogs/password_generator.rs:158
+msgid "At 10 billion guesses/sec"
+msgstr "Пры 10 млрд спроб/сек"
+
+#: ../rustconn/src/dialogs/password_generator.rs:167
+msgid "Length"
+msgstr "Даўжыня"
+
+#: ../rustconn/src/dialogs/password_generator.rs:193
+msgid "Characters"
+msgstr "Сімвалы"
+
+#: ../rustconn/src/dialogs/password_generator.rs:194
+msgid "Recommended: 16+ for important accounts"
+msgstr "Рэкамендавана: 16+ для важных уліковых запісаў"
+
+#: ../rustconn/src/dialogs/password_generator.rs:203
+msgid "Character Sets"
+msgstr "Наборы сімвалаў"
+
+#: ../rustconn/src/dialogs/password_generator.rs:204
+msgid "Select which characters to include"
+msgstr "Абярыце, якія сімвалы ўключыць"
+
+#: ../rustconn/src/dialogs/password_generator.rs:209
+msgid "Lowercase"
+msgstr "Малыя літары"
+
+#: ../rustconn/src/dialogs/password_generator.rs:217
+msgid "Uppercase"
+msgstr "Вялікія літары"
+
+#: ../rustconn/src/dialogs/password_generator.rs:225
+msgid "Digits"
+msgstr "Лічбы"
+
+#: ../rustconn/src/dialogs/password_generator.rs:233
+msgid "Special"
+msgstr "Спецыяльныя"
+
+#: ../rustconn/src/dialogs/password_generator.rs:241
+msgid "Extended"
+msgstr "Пашыраныя"
+
+#: ../rustconn/src/dialogs/password_generator.rs:256
+msgid "Exclude ambiguous"
+msgstr "Выключыць неадназначныя"
+
+#: ../rustconn/src/dialogs/password_generator.rs:257
+msgid "Avoid 0O, 1lI to prevent confusion"
+msgstr "Пазбягаць 0O, 1lI для прадухілення блытаніны"
+
+#: ../rustconn/src/dialogs/password_generator.rs:266
+msgid "Security Tips"
+msgstr "Парады па бяспецы"
+
+#: ../rustconn/src/dialogs/password.rs:55
+msgid "Authentication Required"
+msgstr "Патрабуецца аўтэнтыфікацыя"
+
+#: ../rustconn/src/dialogs/password.rs:93
+msgid "Enter credentials for this connection:"
+msgstr "Увядзіце ўліковыя даныя для гэтага злучэння:"
+
+#: ../rustconn/src/dialogs/password.rs:106
+msgid "Resolving credentials..."
+msgstr "Вызначэнне ўліковых даных..."
+
+#: ../rustconn/src/dialogs/password.rs:199
+msgid "Save Credentials"
+msgstr "Захаваць уліковыя даныя"
+
+#: ../rustconn/src/dialogs/password.rs:206
+msgid "Save to KeePass"
+msgstr "Захаваць у KeePass"
+
+#: ../rustconn/src/dialogs/progress.rs:55
+msgid "Starting..."
+msgstr "Запуск..."
+
+#: ../rustconn/src/dialogs/progress.rs:83
+msgid "Cancelling..."
+msgstr "Скасаванне..."
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:35
+msgid "Clients"
+msgstr "Кліенты"
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:41
+msgid "Core Clients"
+msgstr "Асноўныя кліенты"
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:42
+msgid "Essential connection clients"
+msgstr "Асноўныя кліенты злучэнняў"
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:60
+msgid "Zero Trust Clients"
+msgstr "Кліенты Zero Trust"
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:61
+msgid "Cloud provider CLI tools"
+msgstr "CLI-інструменты хмарных правайдараў"
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:216
+msgid "Embedded"
+msgstr "Убудаваны"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:25
+msgid "Logging"
+msgstr "Журналяванне"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:31
+msgid "General"
+msgstr "Агульнае"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:32
+msgid "Configure session logging"
+msgstr "Наладзіць журналяванне сеансаў"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:38
+msgid "Persist logs"
+msgstr "Захоўваць журналы"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:39
+msgid "Save session logs to disk"
+msgstr "Захоўваць журналы сеансаў на дыск"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:53
+msgid "Directory"
+msgstr "Каталог"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:68
+msgid "Retention"
+msgstr "Захоўванне"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:69
+msgid "Days to keep logs"
+msgstr "Дні захоўвання журналаў"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:83
+msgid "Open Logs Directory"
+msgstr "Адкрыць каталог журналаў"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:104
+msgid "Select what to include in logs"
+msgstr "Абярыце, што ўключыць у журналы"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:114
+msgid "Activity"
+msgstr "Актыўнасць"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:115
+msgid "Connection events and change counts"
+msgstr "Падзеі злучэнняў і лічыльнікі змяненняў"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:127
+msgid "User Input"
+msgstr "Увод карыстальніка"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:128
+msgid "Commands and keystrokes"
+msgstr "Каманды і націсканні клавіш"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:140
+msgid "Terminal Output"
+msgstr "Вывад тэрмінала"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:141
+msgid "Full session transcript"
+msgstr "Поўны пратакол сеансу"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:151
+msgid "Session Logging"
+msgstr "Журналяванне сеансаў"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:152
+msgid "Format options for session logs"
+msgstr "Параметры фармату журналаў сеансаў"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:157
+msgid "Timestamps"
+msgstr "Часавыя адзнакі"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:158
+msgid "Prepend [HH:MM:SS] to each line in session logs"
+msgstr "Дадаваць [HH:MM:SS] да кожнага радка ў журналах сеансаў"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:267
+msgid "Secrets"
+msgstr "Сакрэты"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:273
+msgid "Secret Backend"
+msgstr "Бэкенд сакрэтаў"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:274
+msgid "Choose how passwords are stored"
+msgstr "Абярыце спосаб захоўвання пароляў"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:291
+msgid "Backend"
+msgstr "Бэкенд"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:292
+msgid "Primary password storage method"
+msgstr "Асноўны спосаб захоўвання пароляў"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:303
+msgid "Version"
+msgstr "Версія"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:312
+msgid "Enable fallback"
+msgstr "Уключыць рэзервны варыянт"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:313
+msgid "Use libsecret if primary backend unavailable"
+msgstr "Выкарыстоўваць libsecret, калі асноўны бэкенд недаступны"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:340
+msgid "Detecting..."
+msgstr "Вызначэнне..."
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:345
+msgid "Bitwarden"
+msgstr "Bitwarden"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:346
+msgid "Configure Bitwarden CLI integration"
+msgstr "Наладзіць інтэграцыю з Bitwarden CLI"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:357
+msgid "Master Password"
+msgstr "Майстар-пароль"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:358
+msgid "Required to unlock vault"
+msgstr "Патрабуецца для разблакіроўкі сховішча"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:367
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:953
+msgid "Save password"
+msgstr "Захаваць пароль"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:368
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:610
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:771
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:954
+msgid "Encrypted storage (machine-specific)"
+msgstr "Зашыфраванае сховішча (спецыфічнае для машыны)"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:378
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:620
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:780
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:963
+msgid "Save to system keyring"
+msgstr "Захаваць у сістэмным звязку ключоў"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:379
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:621
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:781
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:964
+msgid "Store in GNOME Keyring / KDE Wallet (recommended)"
+msgstr "Захоўваць у GNOME Keyring / KDE Wallet (рэкамендавана)"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:423
+msgid "Use API key authentication"
+msgstr "Выкарыстоўваць аўтэнтыфікацыю па API-ключу"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:425
+msgid "For automation or 2FA methods not supported by CLI (FIDO2, Duo)"
+msgstr "Для аўтаматызацыі або метадаў 2FA, не падтрыманых CLI (FIDO2, Duo)"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:439
+msgid "Client ID"
+msgstr "Ідэнтыфікатар кліента"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:441
+msgid "From Bitwarden web vault → Settings → Security → Keys"
+msgstr "З вэб-сховішча Bitwarden → Налады → Бяспека → Ключы"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:456
+msgid "Client Secret"
+msgstr "Сакрэт кліента"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:457
+msgid "Keep this secret safe"
+msgstr "Захоўвайце гэты сакрэт у бяспецы"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:477
+msgid "Unlock"
+msgstr "Разблакіраваць"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:492
+msgid "Vault Status"
+msgstr "Стан сховішча"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:493
+msgid "Login with 'bw login' in terminal first"
+msgstr "Спачатку ўвайдзіце з дапамогай 'bw login' у тэрмінале"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:584
+msgid "1Password"
+msgstr "1Password"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:585
+msgid "Configure 1Password CLI integration"
+msgstr "Наладзіць інтэграцыю з 1Password CLI"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:596
+msgid "Service Account Token"
+msgstr "Токен сэрвіснага ўліковага запісу"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:598
+msgid "For headless/automated access (OP_SERVICE_ACCOUNT_TOKEN)"
+msgstr "Для аўтаматызаванага доступу (OP_SERVICE_ACCOUNT_TOKEN)"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:609
+msgid "Save token"
+msgstr "Захаваць токен"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:663
+msgid "Sign In"
+msgstr "Увайсці"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:678
+msgid "Account Status"
+msgstr "Стан уліковага запісу"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:680
+msgid "Sign in with 'op signin' in terminal or use biometric unlock"
+msgstr ""
+"Увайдзіце з дапамогай 'op signin' у тэрмінале або выкарыстоўвайце "
+"біяметрычную разблакіроўку"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:734
+msgid "Passbolt"
+msgstr "Passbolt"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:735
+msgid "Configure Passbolt CLI integration"
+msgstr "Наладзіць інтэграцыю з Passbolt CLI"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:745
+msgid "Server URL"
+msgstr "URL сервера"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:746
+msgid "Passbolt web vault address"
+msgstr "Адрас вэб-сховішча Passbolt"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:760
+msgid "GPG Passphrase"
+msgstr "Парольная фраза GPG"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:761
+msgid "Required to decrypt credentials from Passbolt"
+msgstr "Патрабуецца для расшыфроўкі ўліковых даных Passbolt"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:770
+msgid "Save passphrase"
+msgstr "Захаваць парольную фразу"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:823
+msgid "Open Vault"
+msgstr "Адкрыць сховішча"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:838
+msgid "Server Status"
+msgstr "Стан сервера"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:839
+msgid "Configure with 'passbolt configure' in terminal"
+msgstr "Наладзьце з дапамогай 'passbolt configure' у тэрмінале"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:878
+msgid "KeePass Database"
+msgstr "База даных KeePass"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:880
+msgid ""
+"Configure KDBX file integration (works with KeePassXC, GNOME Secrets, etc.)"
+msgstr ""
+"Наладзіць інтэграцыю з KDBX-файлам (працуе з KeePassXC, GNOME Secrets і інш.)"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:886
+msgid "KDBX Integration"
+msgstr "Інтэграцыя KDBX"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:887
+msgid "Enable direct database access"
+msgstr "Уключыць прамы доступ да базы даных"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:913
+msgid "Database File"
+msgstr "Файл базы даных"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:922
+msgid "Authentication"
+msgstr "Аўтэнтыфікацыя"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:923
+msgid "Database unlock methods"
+msgstr "Спосабы разблакіроўкі базы даных"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:932
+msgid "Use password"
+msgstr "Выкарыстоўваць пароль"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:971
+msgid "Not connected"
+msgstr "Не злучана"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:1008
+msgid "Use key file"
+msgstr "Выкарыстоўваць файл ключа"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:1033
+msgid "Key File"
+msgstr "Файл ключа"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:1041
+msgid "KDBX Status"
+msgstr "Стан KDBX"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:32
+msgid "SSH Agent"
+msgstr "SSH-агент"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:38
+msgid "Agent Status"
+msgstr "Стан агента"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:42
+msgid "Checking..."
+msgstr "Праверка..."
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:46
+msgid "Status"
+msgstr "Стан"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:59
+msgid "Socket"
+msgstr "Сокет"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:65
+msgid "Start Agent"
+msgstr "Запусціць агент"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:82
+msgid "Controls"
+msgstr "Кіраванне"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:90
+msgid "Loaded Keys"
+msgstr "Загружаныя ключы"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:91
+msgid "Keys currently loaded in the SSH agent"
+msgstr "Ключы, загружаныя ў SSH-агент"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:109
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:439
+msgid "Add Key"
+msgstr "Дадаць ключ"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:114
+msgid "Add SSH Key"
+msgstr "Дадаць SSH-ключ"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:115
+msgid "Load a key from file"
+msgstr "Загрузіць ключ з файла"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:125
+msgid "Available Key Files"
+msgstr "Даступныя файлы ключоў"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:126
+msgid "Key files found in ~/.ssh/"
+msgstr "Файлы ключоў у ~/.ssh/"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:170
+msgid "Loading keys..."
+msgstr "Загрузка ключоў..."
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:228
+msgid "No keys loaded"
+msgstr "Ключы не загружаны"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:229
+msgid "Add keys using ssh-add or the button above"
+msgstr "Дадайце ключы з дапамогай ssh-add або кнопкі вышэй"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:247
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:258
+msgid "Agent not running"
+msgstr "Агент не запушчаны"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:248
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:259
+msgid "Start the agent to manage keys"
+msgstr "Запусціце агент для кіравання ключамі"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:283
+msgid "Scanning ~/.ssh/..."
+msgstr "Сканаванне ~/.ssh/..."
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:308
+msgid "No SSH key files found"
+msgstr "SSH-ключы не знойдзены"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:309
+msgid "Generate keys with ssh-keygen"
+msgstr "Згенерыруйце ключы з дапамогай ssh-keygen"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:357
+msgid "Failed to scan ~/.ssh/ directory"
+msgstr "Не ўдалося прасканаваць каталог ~/.ssh/"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:419
+msgid "Enter passphrase (leave empty if key has no passphrase)"
+msgstr "Увядзіце парольную фразу (пакіньце пустым, калі ключ без фразы)"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:32
+msgid "Terminal"
+msgstr "Тэрмінал"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:37
+msgid "Font"
+msgstr "Шрыфт"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:45
+msgid "Family"
+msgstr "Сямейства"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:58
+msgid "Size"
+msgstr "Памер"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:67
+msgid "Colors"
+msgstr "Колеры"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:77
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:82
+msgid "Theme"
+msgstr "Тэма"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:86
+msgid "Cursor"
+msgstr "Курсор"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:99
+msgid "Block"
+msgstr "Блок"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:104
+msgid "IBeam"
+msgstr "I-курсор"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:109
+msgid "Underline"
+msgstr "Падкрэсліванне"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:118
+msgid "Shape"
+msgstr "Форма"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:132
+msgid "On"
+msgstr "Укл."
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:137
+msgid "Off"
+msgstr "Выкл."
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:142
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:44
 msgid "System"
 msgstr "Сістэмная"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:151
+msgid "Blink"
+msgstr "Мігценне"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:159
+msgid "Scrolling"
+msgstr "Пракрутка"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:171
+msgid "History"
+msgstr "Гісторыя"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:172
+msgid "Number of lines to keep in scrollback"
+msgstr "Колькасць радкоў у буферы пракруткі"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:181
+msgid "On output"
+msgstr "Пры вывадзе"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:182
+msgid "Scroll to bottom when new output appears"
+msgstr "Пракручваць уніз пры новым вывадзе"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:194
+msgid "On keystroke"
+msgstr "Пры націсканні клавішы"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:195
+msgid "Scroll to bottom when typing"
+msgstr "Пракручваць уніз пры ўводзе"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:205
+msgid "Behavior"
+msgstr "Паводзіны"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:214
+msgid "Hyperlinks"
+msgstr "Гіперспасылкі"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:215
+msgid "Allow clickable URLs in terminal"
+msgstr "Дазволіць клікабельныя URL у тэрмінале"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:227
+msgid "Hide pointer"
+msgstr "Хаваць паказальнік"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:228
+msgid "Hide mouse cursor when typing"
+msgstr "Хаваць курсор мышы пры ўводзе"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:237
+msgid "Bell"
+msgstr "Званок"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:238
+msgid "Play sound on terminal bell"
+msgstr "Прайграваць гук пры званку тэрмінала"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:247
+msgid "SFTP via mc"
+msgstr "SFTP праз mc"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:248
+msgid "Open SFTP in Midnight Commander (local shell tab)"
+msgstr "Адкрыць SFTP у Midnight Commander (лакальная ўкладка)"
+
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:25
+msgid "Interface"
+msgstr "Інтэрфейс"
+
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:31
+msgid "Appearance"
+msgstr "Знешні выгляд"
+
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:48
 msgid "Light"
 msgstr "Светлая"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:52
 msgid "Dark"
 msgstr "Цёмная"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
-msgid "Theme"
-msgstr ""
-
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:96
 msgid "Language"
-msgstr ""
+msgstr "Мова"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:97
 msgid "Restart required to apply"
-msgstr ""
+msgstr "Патрабуецца перазапуск"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:106
 msgid "Window"
-msgstr ""
+msgstr "Акно"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:111
 msgid "Remember size"
-msgstr ""
+msgstr "Запомніць памер"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:112
 msgid "Restore window geometry on startup"
-msgstr ""
+msgstr "Аднаўляць геаметрыю акна пры запуску"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:122
 msgid "System Tray"
-msgstr ""
+msgstr "Сістэмны лотак"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:123
 msgid "Requires desktop environment with tray support"
-msgstr ""
+msgstr "Патрабуецца асяроддзе працоўнага стала з падтрымкай лотка"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:128
 msgid "Show icon"
-msgstr ""
+msgstr "Паказваць значок"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:129
 msgid "Display icon in system tray"
-msgstr ""
+msgstr "Паказваць значок у сістэмным лотку"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:137
 msgid "Minimize to tray"
-msgstr ""
+msgstr "Згарнуць у лотак"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:138
 msgid "Hide window instead of closing"
-msgstr ""
+msgstr "Хаваць акно замест закрыцця"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:154
+#: ../rustconn/src/split_view/bridge.rs:1734
 msgid "Session Restore"
-msgstr ""
+msgstr "Аднаўленне сеансаў"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:155
 msgid "Restore previous connections on startup"
-msgstr ""
+msgstr "Аднаўляць папярэднія злучэнні пры запуску"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:160
 msgid "Enabled"
-msgstr ""
+msgstr "Уключана"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:161
 msgid "Reconnect to previous sessions on startup"
-msgstr ""
+msgstr "Аднаўляць папярэднія сеансы пры запуску"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:169
 msgid "Ask first"
-msgstr ""
+msgstr "Спачатку спытаць"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:170
 msgid "Prompt before restoring sessions"
-msgstr ""
+msgstr "Пытаць перад аднаўленнем сеансаў"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:177
 msgid "Max age"
-msgstr ""
+msgstr "Макс. узрост"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:178
 msgid "Hours before sessions expire"
-msgstr ""
+msgstr "Гадзіны да заканчэння сеансаў"
 
-#. Empty states
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/dialogs/shortcuts.rs:170
+#: ../rustconn/src/split_view/bridge.rs:1759
+msgid "Keyboard Shortcuts"
+msgstr "Клавіятурныя скароты"
+
+#: ../rustconn/src/dialogs/shortcuts.rs:207
+msgid "Search shortcuts..."
+msgstr "Пошук скаротаў..."
+
+#: ../rustconn/src/dialogs/snippet.rs:64 ../rustconn/src/empty_state.rs:109
+msgid "New Snippet"
+msgstr "Новы фрагмент"
+
+#: ../rustconn/src/dialogs/snippet.rs:167
+msgid "Snippet Info"
+msgstr "Інфармацыя пра фрагмент"
+
+#: ../rustconn/src/dialogs/snippet.rs:210
+msgid "Command"
+msgstr "Каманда"
+
+#: ../rustconn/src/dialogs/snippet.rs:211
+msgid "Use ${variable_name} for placeholders"
+msgstr "Выкарыстоўвайце ${variable_name} для запаўняльнікаў"
+
+#: ../rustconn/src/dialogs/snippet.rs:233
+#: ../rustconn/src/dialogs/variables.rs:147
+msgid "Variables"
+msgstr "Зменныя"
+
+#: ../rustconn/src/dialogs/snippet.rs:234
+msgid "Variables are auto-detected from command"
+msgstr "Зменныя аўтаматычна вызначаюцца з каманды"
+
+#: ../rustconn/src/dialogs/snippet.rs:255
+#: ../rustconn/src/dialogs/variables.rs:174
+msgid "Add Variable"
+msgstr "Дадаць зменную"
+
+#: ../rustconn/src/dialogs/snippet.rs:317
+#: ../rustconn/src/dialogs/variables.rs:264
+msgid "Description:"
+msgstr "Апісанне:"
+
+#: ../rustconn/src/dialogs/snippet.rs:322
+msgid "Variable description"
+msgstr "Апісанне зменнай"
+
+#: ../rustconn/src/dialogs/snippet.rs:332
+msgid "Default:"
+msgstr "Па змаўчанні:"
+
+#: ../rustconn/src/dialogs/snippet.rs:337
+msgid "Default value"
+msgstr "Значэнне па змаўчанні"
+
+#: ../rustconn/src/dialogs/snippet.rs:360
+msgid "Edit Snippet"
+msgstr "Рэдагаваць фрагмент"
+
+#: ../rustconn/src/dialogs/statistics.rs:29
+#: ../rustconn/src/dialogs/statistics.rs:122
+msgid "Connection Statistics"
+msgstr "Статыстыка злучэнняў"
+
+#: ../rustconn/src/dialogs/statistics.rs:47
+msgid "Reset"
+msgstr "Скінуць"
+
+#: ../rustconn/src/dialogs/statistics.rs:127
+msgid "Total connections"
+msgstr "Усяго злучэнняў"
+
+#: ../rustconn/src/dialogs/statistics.rs:136
+#: ../rustconn/src/dialogs/statistics.rs:236
+msgid "Successful"
+msgstr "Паспяховыя"
+
+#: ../rustconn/src/dialogs/statistics.rs:153
+msgid "Success rate"
+msgstr "Працэнт поспеху"
+
+#: ../rustconn/src/dialogs/statistics.rs:163
+msgid "Total time connected"
+msgstr "Агульны час злучэння"
+
+#: ../rustconn/src/dialogs/statistics.rs:176
+msgid "Last connected"
+msgstr "Апошняе злучэнне"
+
+#: ../rustconn/src/dialogs/statistics.rs:190
+msgid "Average session"
+msgstr "Сярэдні сеанс"
+
+#: ../rustconn/src/dialogs/statistics.rs:222
+msgid "Overview"
+msgstr "Агляд"
+
+#: ../rustconn/src/dialogs/statistics.rs:223
+msgid "All connections summary"
+msgstr "Зводка ўсіх злучэнняў"
+
+#: ../rustconn/src/dialogs/statistics.rs:227
+msgid "Total sessions"
+msgstr "Усяго сеансаў"
+
+#: ../rustconn/src/dialogs/statistics.rs:252
+msgid "Total time"
+msgstr "Агульны час"
+
+#: ../rustconn/src/dialogs/statistics.rs:265
+msgid "Per-Connection"
+msgstr "Па злучэнні"
+
+#: ../rustconn/src/dialogs/statistics.rs:299
+msgid "Success Rate"
+msgstr "Працэнт поспеху"
+
+#: ../rustconn/src/dialogs/template.rs:123 ../rustconn/src/empty_state.rs:121
+msgid "New Template"
+msgstr "Новы шаблон"
+
+#: ../rustconn/src/dialogs/template.rs:2543
+msgid "Edit Template"
+msgstr "Рэдагаваць шаблон"
+
+#: ../rustconn/src/dialogs/template.rs:2837
+msgid "Manage Templates"
+msgstr "Кіраванне шаблонамі"
+
+#: ../rustconn/src/dialogs/template.rs:2881
+msgid "Filter by protocol:"
+msgstr "Фільтр па пратаколе:"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:37
+msgid "Search in Terminal"
+msgstr "Пошук у тэрмінале"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:72
+msgid "Search text..."
+msgstr "Тэкст пошуку..."
+
+#: ../rustconn/src/dialogs/terminal_search.rs:80
+msgid "Case sensitive"
+msgstr "З улікам рэгістра"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:84
+msgid "Regex"
+msgstr "Regex"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:85
+msgid "Use regular expression pattern"
+msgstr "Выкарыстоўваць рэгулярны выраз"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:90
+msgid "Highlight All"
+msgstr "Падсвятліць усё"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:91
+msgid "Highlight all matches in terminal"
+msgstr "Падсвятліць усе супадзенні ў тэрмінале"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:103
+msgid "Previous match"
+msgstr "Папярэдняе супадзенне"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:109
+msgid "Next match"
+msgstr "Наступнае супадзенне"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:114
+#: ../rustconn/src/dialogs/terminal_search.rs:164
+msgid "Enter text to search"
+msgstr "Увядзіце тэкст для пошуку"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:333
+msgid "Found matches"
+msgstr "Знойдзены супадзенні"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:335
+msgid "No matches found"
+msgstr "Супадзенні не знойдзены"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:338
+msgid "Invalid regex pattern"
+msgstr "Няправільны шаблон regex"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:341
+msgid "Search error"
+msgstr "Памылка пошуку"
+
+#: ../rustconn/src/dialogs/variables.rs:60
+msgid "Global Variables"
+msgstr "Глабальныя зменныя"
+
+#: ../rustconn/src/dialogs/variables.rs:149
+msgid ""
+"Define variables that can be used in connections                  with "
+"${variable_name} syntax"
+msgstr ""
+"Вызначце зменныя, якія можна выкарыстоўваць у злучэннях                  з "
+"сінтаксісам ${variable_name}"
+
+#: ../rustconn/src/dialogs/variables.rs:210
+msgid "Delete variable"
+msgstr "Выдаліць зменную"
+
+#: ../rustconn/src/dialogs/variables.rs:219
+msgid "Value:"
+msgstr "Значэнне:"
+
+#: ../rustconn/src/dialogs/variables.rs:236
+#: ../rustconn/src/window/connection_dialogs.rs:322
+#: ../rustconn/src/window/edit_dialogs.rs:597
+msgid "Show/hide password"
+msgstr "Паказаць/схаваць пароль"
+
+#: ../rustconn/src/dialogs/variables.rs:241
+#: ../rustconn/src/window/connection_dialogs.rs:327
+#: ../rustconn/src/window/edit_dialogs.rs:602
+msgid "Load password from vault"
+msgstr "Загрузіць пароль са сховішча"
+
+#: ../rustconn/src/dialogs/variables.rs:257
+msgid "Secret (mask value)"
+msgstr "Сакрэт (маскіраваць значэнне)"
+
+#: ../rustconn/src/dialogs/wol.rs:29 ../rustconn/src/sidebar_ui.rs:133
+msgid "Wake On LAN"
+msgstr "Wake On LAN"
+
+#: ../rustconn/src/dialogs/wol.rs:47 ../rustconn/src/window/sessions.rs:332
+msgid "Send"
+msgstr "Адправіць"
+
+#: ../rustconn/src/dialogs/wol.rs:68 ../rustconn/src/dialogs/wol.rs:74
+msgid "Connection"
+msgstr "Злучэнне"
+
+#: ../rustconn/src/dialogs/wol.rs:69
+msgid "Pick a connection with WoL configured"
+msgstr "Абярыце злучэнне з наладжаным WoL"
+
+#: ../rustconn/src/dialogs/wol.rs:72 ../rustconn/src/dialogs/wol.rs:220
+msgid "Manual entry"
+msgstr "Ручны ўвод"
+
+#: ../rustconn/src/dialogs/wol.rs:82
+msgid "Manual"
+msgstr "Ручны"
+
+#: ../rustconn/src/dialogs/wol.rs:83
+msgid "Or enter MAC address manually"
+msgstr "Або ўвядзіце MAC-адрас уручную"
+
+#: ../rustconn/src/dialogs/wol.rs:86
+msgid "MAC Address"
+msgstr "MAC-адрас"
+
+#: ../rustconn/src/dialogs/wol.rs:91
+msgid "Broadcast Address"
+msgstr "Шырокавяшчальны адрас"
+
+#: ../rustconn/src/dialogs/wol.rs:96
+#: ../rustconn/src/window/edit_dialogs.rs:1295
+msgid "Port"
+msgstr "Порт"
+
+#: ../rustconn/src/dialogs/wol.rs:154
+msgid "Invalid MAC address format"
+msgstr "Няправільны фармат MAC-адраса"
+
+#: ../rustconn/src/dialogs/wol.rs:163 ../rustconn/src/validation.rs:141
+msgid "Invalid port number"
+msgstr "Няправільны нумар порта"
+
+#: ../rustconn/src/dialogs/wol.rs:177
+msgid "Sending…"
+msgstr "Адпраўка…"
+
+#: ../rustconn/src/dialogs/wol.rs:197
+msgid "Failed to send packet. Check permissions."
+msgstr "Не ўдалося адправіць пакет. Праверце дазволы."
+
+#: ../rustconn/src/embedded_rdp/mod.rs:222
+msgid "Copy remote clipboard to local (waiting for remote data...)"
+msgstr ""
+"Капіяваць аддалены буфер абмену ў лакальны (чаканне аддаленых даных...)"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:228
+#: ../rustconn/src/embedded_spice.rs:245 ../rustconn/src/embedded_trait.rs:207
+#: ../rustconn/src/embedded_vnc.rs:162
+msgid "Paste"
+msgstr "Уставіць"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:229
+#: ../rustconn/src/embedded_spice.rs:246 ../rustconn/src/embedded_trait.rs:208
+#: ../rustconn/src/embedded_vnc.rs:163
+msgid "Paste from local clipboard to remote session"
+msgstr "Уставіць з лакальнага буфера абмену ў аддалены сеанс"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:240
+#: ../rustconn/src/embedded_spice.rs:258 ../rustconn/src/embedded_trait.rs:220
+#: ../rustconn/src/embedded_vnc.rs:175
+msgid "Send Ctrl+Alt+Del to remote session"
+msgstr "Адправіць Ctrl+Alt+Del у аддалены сеанс"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:245
+msgid "Save Files"
+msgstr "Захаваць файлы"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:248
+msgid "Save files from remote clipboard"
+msgstr "Захаваць файлы з аддаленага буфера абмену"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:254
+#: ../rustconn/src/embedded_spice.rs:262 ../rustconn/src/embedded_trait.rs:224
+#: ../rustconn/src/embedded_vnc.rs:179
+msgid "Reconnect"
+msgstr "Перазлучыцца"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:256
+#: ../rustconn/src/embedded_spice.rs:264 ../rustconn/src/embedded_trait.rs:226
+#: ../rustconn/src/embedded_vnc.rs:181
+msgid "Reconnect to the remote session"
+msgstr "Перазлучыцца з аддаленым сеансам"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:391
+msgid "Select folder to save files"
+msgstr "Абраць тэчку для захавання файлаў"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:419
+msgid "Downloading..."
+msgstr "Спампоўка..."
+
+#: ../rustconn/src/embedded_rdp/mod.rs:1861
+msgid "Copy remote clipboard to local"
+msgstr "Капіяваць аддалены буфер абмену ў лакальны"
+
+#: ../rustconn/src/embedded.rs:62
+msgid "Connecting..."
+msgstr "Злучэнне..."
+
+#: ../rustconn/src/embedded.rs:69 ../rustconn/src/floating_controls.rs:110
+#: ../rustconn/src/floating_controls.rs:180
+#: ../rustconn/src/floating_controls.rs:326
+msgid "Toggle Fullscreen"
+msgstr "Поўнаэкранны рэжым"
+
+#: ../rustconn/src/embedded_spice.rs:241 ../rustconn/src/embedded_trait.rs:203
+#: ../rustconn/src/embedded_vnc.rs:158
+msgid "Copy from remote session to local clipboard"
+msgstr "Капіяваць з аддаленага сеансу ў лакальны буфер абмену"
+
+#: ../rustconn/src/empty_state.rs:59
 msgid "No Connections"
-msgstr ""
+msgstr "Няма злучэнняў"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:60
 msgid "Create your first connection to get started"
-msgstr ""
+msgstr "Стварыце першае злучэнне, каб пачаць"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:71
 msgid "No Results Found"
-msgstr ""
+msgstr "Нічога не знойдзена"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:72
 msgid "No connections match"
-msgstr ""
+msgstr "Злучэнні не знойдзены"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:83
 msgid "No Active Sessions"
 msgstr "Няма актыўных сеансаў"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:84
 msgid "Connect to a server to start a session"
-msgstr ""
+msgstr "Злучыцеся з серверам, каб пачаць сеанс"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:85 ../rustconn/src/sidebar_ui.rs:376
+#: ../rustconn/src/split_view/bridge.rs:1706
+#: ../rustconn/src/window/edit_dialogs.rs:1202 ../rustconn/src/window/ui.rs:118
 msgid "Quick Connect"
-msgstr ""
+msgstr "Хуткае злучэнне"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:95
 msgid "No Groups"
-msgstr ""
+msgstr "Няма груп"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:96
 msgid "Create groups to organize your connections"
-msgstr ""
+msgstr "Стварыце групы для арганізацыі злучэнняў"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:97 ../rustconn/src/sidebar_ui.rs:227
+#: ../rustconn/src/sidebar_ui.rs:404
+#: ../rustconn/src/window/connection_dialogs.rs:180
+#: ../rustconn/src/window/ui.rs:117
 msgid "New Group"
-msgstr ""
+msgstr "Новая група"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:107
 msgid "No Snippets"
-msgstr ""
+msgstr "Няма фрагментаў"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:108
 msgid "Create command snippets for quick access"
-msgstr ""
+msgstr "Стварыце фрагменты каманд для хуткага доступу"
 
-#: rustconn/src/empty_state.rs
-msgid "New Snippet"
-msgstr ""
-
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:119
 msgid "No Templates"
-msgstr ""
+msgstr "Няма шаблонаў"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:120
 msgid "Create templates for common connection configurations"
-msgstr ""
+msgstr "Стварыце шаблоны для тыповых канфігурацый злучэнняў"
 
-#: rustconn/src/empty_state.rs
-msgid "New Template"
-msgstr ""
-
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:131
 msgid "No Connection History"
-msgstr ""
+msgstr "Няма гісторыі злучэнняў"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:132
 msgid "Your recent connections will appear here"
+msgstr "Вашы апошнія злучэнні з'явяцца тут"
+
+#: ../rustconn/src/floating_controls.rs:116
+msgid "Session Settings"
+msgstr "Налады сеансу"
+
+#: ../rustconn/src/floating_controls.rs:184
+#: ../rustconn/src/floating_controls.rs:321
+msgid "Exit Fullscreen"
+msgstr "Выйсці з поўнаэкраннага рэжыму"
+
+#: ../rustconn/src/session/vnc.rs:119 ../rustconn/src/session/vnc.rs:202
+#: ../rustconn/src/session/vnc.rs:733
+msgid "Disconnected"
+msgstr "Адлучана"
+
+#: ../rustconn/src/sidebar/mod.rs:110
+msgid "Search... (? for help)"
+msgstr "Пошук... (? для даведкі)"
+
+#: ../rustconn/src/sidebar/mod.rs:119
+msgid "Search pending..."
+msgstr "Пошук у чаканні..."
+
+#: ../rustconn/src/sidebar/mod.rs:124
+msgid "Search syntax help"
+msgstr "Даведка па сінтаксісе пошуку"
+
+#: ../rustconn/src/sidebar/mod.rs:207
+msgid "Shell"
+msgstr "Shell"
+
+#: ../rustconn/src/sidebar/mod.rs:211
+msgid "Local Shell (Ctrl+Shift+T)"
+msgstr "Лакальны shell (Ctrl+Shift+T)"
+
+#: ../rustconn/src/sidebar/mod.rs:1805
+msgid "Open Password Vault (Active)"
+msgstr "Адкрыць сховішча пароляў (актыўнае)"
+
+#: ../rustconn/src/sidebar/mod.rs:1811
+msgid "Password Vault Not Found"
+msgstr "Сховішча пароляў не знойдзена"
+
+#: ../rustconn/src/sidebar/mod.rs:1814
+msgid "Password Vault Disabled"
+msgstr "Сховішча пароляў адключана"
+
+#: ../rustconn/src/sidebar_ui.rs:64 ../rustconn/src/window/snippets.rs:110
+msgid "Edit"
+msgstr "Рэдагаваць"
+
+#: ../rustconn/src/sidebar_ui.rs:78 ../rustconn/src/window/edit_dialogs.rs:220
+msgid "Rename"
+msgstr "Перайменаваць"
+
+#: ../rustconn/src/sidebar_ui.rs:92
+msgid "Duplicate"
+msgstr "Дубляваць"
+
+#: ../rustconn/src/sidebar_ui.rs:105 ../rustconn/src/sidebar_ui.rs:235
+msgid "Move to Group..."
+msgstr "Перамясціць у групу..."
+
+#: ../rustconn/src/sidebar_ui.rs:119
+msgid "Run Snippet..."
+msgstr "Выканаць фрагмент..."
+
+#: ../rustconn/src/sidebar_ui.rs:148
+msgid "Open SFTP"
+msgstr "Адкрыць SFTP"
+
+#: ../rustconn/src/sidebar_ui.rs:163 ../rustconn/src/sidebar_ui.rs:259
+#: ../rustconn/src/window/operations.rs:78
+#: ../rustconn/src/window/snippets.rs:114
+#: ../rustconn/src/window/snippets.rs:219
+#: ../rustconn/src/window/templates.rs:153
+msgid "Delete"
+msgstr "Выдаліць"
+
+#: ../rustconn/src/sidebar_ui.rs:228
+msgid "Create a new group"
+msgstr "Стварыць новую групу"
+
+#: ../rustconn/src/sidebar_ui.rs:236
+msgid "Move selected items to a group"
+msgstr "Перамясціць абраныя элементы ў групу"
+
+#: ../rustconn/src/sidebar_ui.rs:245
+msgid "Select all items (Ctrl+A)"
+msgstr "Абраць усе элементы (Ctrl+A)"
+
+#: ../rustconn/src/sidebar_ui.rs:252
+msgid "Clear"
+msgstr "Ачысціць"
+
+#: ../rustconn/src/sidebar_ui.rs:253
+msgid "Clear selection (Escape)"
+msgstr "Зняць выбар (Escape)"
+
+#: ../rustconn/src/sidebar_ui.rs:260
+msgid "Delete all selected items"
+msgstr "Выдаліць усе абраныя элементы"
+
+#: ../rustconn/src/sidebar_ui.rs:285
+msgid "Group Operations Mode"
+msgstr "Рэжым групавых аперацый"
+
+#: ../rustconn/src/sidebar_ui.rs:301
+msgid "Sort Alphabetically"
+msgstr "Сартаваць па алфавіце"
+
+#: ../rustconn/src/sidebar_ui.rs:310
+msgid "Sort by Recent Usage"
+msgstr "Сартаваць па апошнім выкарыстанні"
+
+#: ../rustconn/src/sidebar_ui.rs:319
+msgid "Import Connections (Ctrl+I)"
+msgstr "Імпарт злучэнняў (Ctrl+I)"
+
+#: ../rustconn/src/sidebar_ui.rs:337
+msgid "Open Password Vault"
+msgstr "Адкрыць сховішча пароляў"
+
+#: ../rustconn/src/sidebar_ui.rs:424
+msgid "Import..."
+msgstr "Імпарт..."
+
+#: ../rustconn/src/sidebar_ui.rs:438
+msgid "Export..."
+msgstr "Экспарт..."
+
+#: ../rustconn/src/split_view/adapter.rs:1020
+msgid "Drag to move this session to another panel or tab"
+msgstr "Перацягніце, каб перамясціць гэты сеанс у іншую панэль або ўкладку"
+
+#: ../rustconn/src/split_view/adapter.rs:1162
+msgid "Empty Panel"
+msgstr "Пустая панэль"
+
+#: ../rustconn/src/split_view/adapter.rs:1163
+msgid "Select an existing tab to display in this panel"
+msgstr "Абярыце існуючую ўкладку для адлюстравання ў гэтай панэлі"
+
+#: ../rustconn/src/split_view/adapter.rs:1173
+msgid "Select Tab..."
+msgstr "Абраць укладку..."
+
+#: ../rustconn/src/split_view/adapter.rs:1174
+msgid "Choose an open tab to display in this panel"
+msgstr "Абярыце адкрытую ўкладку для адлюстравання ў гэтай панэлі"
+
+#: ../rustconn/src/split_view/adapter.rs:1198
+msgid "Close panel"
+msgstr "Закрыць панэль"
+
+#: ../rustconn/src/split_view/bridge.rs:1454
+msgid "Basic Information"
+msgstr "Асноўная інфармацыя"
+
+#: ../rustconn/src/split_view/bridge.rs:1459
+#: ../rustconn/src/window/edit_dialogs.rs:1273
+msgid "Protocol"
+msgstr "Пратакол"
+
+#: ../rustconn/src/split_view/bridge.rs:1474
+#: ../rustconn/src/window/connection_dialogs.rs:291
+#: ../rustconn/src/window/edit_dialogs.rs:558
+#: ../rustconn/src/window/edit_dialogs.rs:1305
+msgid "Username"
+msgstr "Імя карыстальніка"
+
+#: ../rustconn/src/split_view/bridge.rs:1683
+msgid "Manage remote connections easily"
+msgstr "Лёгкае кіраванне аддаленымі злучэннямі"
+
+#: ../rustconn/src/split_view/bridge.rs:1727
+msgid "Features"
+msgstr "Магчымасці"
+
+#: ../rustconn/src/split_view/bridge.rs:1731
+msgid "Embedded SSH terminals"
+msgstr "Убудаваныя SSH-тэрміналы"
+
+#: ../rustconn/src/split_view/bridge.rs:1732
+msgid "Secure credential storage"
+msgstr "Бяспечнае захоўванне ўліковых даных"
+
+#: ../rustconn/src/split_view/bridge.rs:1735
+msgid "Expect automation"
+msgstr "Аўтаматызацыя Expect"
+
+#: ../rustconn/src/split_view/bridge.rs:1736
+msgid "Groups and tags"
+msgstr "Групы і тэгі"
+
+#: ../rustconn/src/split_view/bridge.rs:1737
+msgid "Zero Trust tunnels"
+msgstr "Тунэлі Zero Trust"
+
+#: ../rustconn/src/split_view/bridge.rs:1738
+msgid "Customizable settings"
+msgstr "Наладжвальныя параметры"
+
+#: ../rustconn/src/split_view/bridge.rs:1741
+msgid "Embedded & external clients"
+msgstr "Убудаваныя і знешнія кліенты"
+
+#: ../rustconn/src/split_view/bridge.rs:1763
+msgid "New connection"
+msgstr "Новае злучэнне"
+
+#: ../rustconn/src/split_view/bridge.rs:1764
+msgid "New group"
+msgstr "Новая група"
+
+#: ../rustconn/src/split_view/bridge.rs:1765
+msgid "Local shell"
+msgstr "Лакальная абалонка"
+
+#: ../rustconn/src/split_view/bridge.rs:1766
+msgid "Quick connect"
+msgstr "Хуткае злучэнне"
+
+#: ../rustconn/src/split_view/bridge.rs:1767
+msgid "Search"
+msgstr "Пошук"
+
+#: ../rustconn/src/split_view/bridge.rs:1768
+msgid "Split vertical"
+msgstr "Падзяліць вертыкальна"
+
+#: ../rustconn/src/split_view/bridge.rs:1769
+msgid "Split horizontal"
+msgstr "Падзяліць гарызантальна"
+
+#: ../rustconn/src/split_view/bridge.rs:1771
+msgid "Next tab"
+msgstr "Наступная ўкладка"
+
+#: ../rustconn/src/split_view/bridge.rs:1792
+msgid "Performance"
+msgstr "Прадукцыйнасць"
+
+#: ../rustconn/src/split_view/bridge.rs:1796
+msgid "Smart search caching"
+msgstr "Разумнае кэшаванне пошуку"
+
+#: ../rustconn/src/split_view/bridge.rs:1797
+msgid "Lazy loading for trees"
+msgstr "Лянівая загрузка дрэў"
+
+#: ../rustconn/src/split_view/bridge.rs:1798
+msgid "Virtual scrolling"
+msgstr "Віртуальная пракрутка"
+
+#: ../rustconn/src/split_view/bridge.rs:1799
+msgid "Embedded VNC/RDP/SPICE"
+msgstr "Убудаваныя VNC/RDP/SPICE"
+
+#: ../rustconn/src/split_view/bridge.rs:1811
+msgid "Import Formats"
+msgstr "Фарматы імпарту"
+
+#: ../rustconn/src/split_view/bridge.rs:1835
+msgid "Double-click a connection in the sidebar to get started"
+msgstr "Двойчы клікніце на злучэнне ў бакавой панэлі, каб пачаць"
+
+#: ../rustconn/src/split_view/bridge.rs:1994
+msgid "All tabs are already displayed in this split view"
+msgstr "Усе ўкладкі ўжо адлюстраваны ў гэтым падзеленым выглядзе"
+
+#: ../rustconn/src/split_view/bridge.rs:2033
+msgid "Select a tab to display"
+msgstr "Абярыце ўкладку для адлюстравання"
+
+#: ../rustconn/src/validation.rs:65
+msgid "{} is required"
+msgstr "{} абавязковае"
+
+#: ../rustconn/src/validation.rs:79
+msgid "{} must be at least {} characters"
+msgstr "{} павінна мець не менш за {} сімвалаў"
+
+#: ../rustconn/src/validation.rs:95
+msgid "{} must be at most {} characters"
+msgstr "{} павінна мець не больш за {} сімвалаў"
+
+#: ../rustconn/src/validation.rs:110
+msgid "Host is required"
+msgstr "Хост абавязковы"
+
+#: ../rustconn/src/validation.rs:120
+msgid "Invalid hostname format"
+msgstr "Няправільны фармат імя хоста"
+
+#: ../rustconn/src/validation.rs:122
+msgid "Hostname cannot start or end with a hyphen"
+msgstr "Імя хоста не можа пачынацца або заканчвацца злучком"
+
+#: ../rustconn/src/validation.rs:135
+msgid "Port is required"
+msgstr "Порт абавязковы"
+
+#: ../rustconn/src/validation.rs:140
+msgid "Port must be greater than 0"
+msgstr "Порт павінен быць больш за 0"
+
+#: ../rustconn/src/window/connection_dialogs.rs:100
+#: ../rustconn/src/window/templates.rs:413
+msgid "New Connection from Template"
+msgstr "Новае злучэнне з шаблону"
+
+#: ../rustconn/src/window/connection_dialogs.rs:158
+#: ../rustconn/src/window/templates.rs:466
+msgid "Error Creating Connection"
+msgstr "Памылка стварэння злучэння"
+
+#: ../rustconn/src/window/connection_dialogs.rs:227
+#: ../rustconn/src/window/edit_dialogs.rs:442
+msgid "Group Details"
+msgstr "Дэталі групы"
+
+#: ../rustconn/src/window/connection_dialogs.rs:231
+#: ../rustconn/src/window/edit_dialogs.rs:235
+#: ../rustconn/src/window/edit_dialogs.rs:447
+msgid "Name"
+msgstr "Назва"
+
+#: ../rustconn/src/window/connection_dialogs.rs:252
+#: ../rustconn/src/window/edit_dialogs.rs:515
+msgid "(None - Root Level)"
+msgstr "(Няма - Каранёвы ўзровень)"
+
+#: ../rustconn/src/window/connection_dialogs.rs:277
+#: ../rustconn/src/window/edit_dialogs.rs:542
+msgid "Parent"
+msgstr "Бацькоўская"
+
+#: ../rustconn/src/window/connection_dialogs.rs:278
+msgid "Optional - leave empty for root level"
+msgstr "Неабавязкова - пакіньце пустым для каранёвага ўзроўню"
+
+#: ../rustconn/src/window/connection_dialogs.rs:287
+#: ../rustconn/src/window/edit_dialogs.rs:553
+msgid "Default Credentials"
+msgstr "Уліковыя даныя па змаўчанні"
+
+#: ../rustconn/src/window/connection_dialogs.rs:288
+#: ../rustconn/src/window/edit_dialogs.rs:554
+msgid "Credentials inherited by connections in this group"
+msgstr "Уліковыя даныя, атрыманыя злучэннямі ў гэтай групе"
+
+#: ../rustconn/src/window/connection_dialogs.rs:296
+#: ../rustconn/src/window/edit_dialogs.rs:565
+msgid "Prompt"
+msgstr "Запыт"
+
+#: ../rustconn/src/window/connection_dialogs.rs:297
+#: ../rustconn/src/window/edit_dialogs.rs:566
+msgid "Vault"
+msgstr "Сховішча"
+
+#: ../rustconn/src/window/connection_dialogs.rs:298
+#: ../rustconn/src/window/edit_dialogs.rs:567
+msgid "Variable"
+msgstr "Зменная"
+
+#: ../rustconn/src/window/connection_dialogs.rs:299
+#: ../rustconn/src/window/edit_dialogs.rs:568
+msgid "Inherit"
+msgstr "Наследаваць"
+
+#: ../rustconn/src/window/connection_dialogs.rs:300
+#: ../rustconn/src/window/edit_dialogs.rs:569
+msgid "None"
+msgstr "Няма"
+
+#: ../rustconn/src/window/connection_dialogs.rs:316
+#: ../rustconn/src/window/edit_dialogs.rs:591
+msgid "Password value"
+msgstr "Значэнне пароля"
+
+#: ../rustconn/src/window/connection_dialogs.rs:331
+#: ../rustconn/src/window/edit_dialogs.rs:606
+msgid "Value"
+msgstr "Значэнне"
+
+#: ../rustconn/src/window/connection_dialogs.rs:374
+msgid "Enter group name first"
+msgstr "Спачатку ўвядзіце назву групы"
+
+#: ../rustconn/src/window/connection_dialogs.rs:402
+msgid "Vault not configured"
+msgstr "Сховішча не наладжана"
+
+#: ../rustconn/src/window/connection_dialogs.rs:431
+#: ../rustconn/src/window/connection_dialogs.rs:496
+#: ../rustconn/src/window/connection_dialogs.rs:503
+#: ../rustconn/src/window/edit_dialogs.rs:717
+#: ../rustconn/src/window/edit_dialogs.rs:749
+#: ../rustconn/src/window/edit_dialogs.rs:756
+#: ../rustconn/src/window/edit_dialogs.rs:788
+#: ../rustconn/src/window/edit_dialogs.rs:795
+msgid "No password found for this group"
+msgstr "Пароль для гэтай групы не знойдзены"
+
+#: ../rustconn/src/window/connection_dialogs.rs:436
+#: ../rustconn/src/window/connection_dialogs.rs:508
+#: ../rustconn/src/window/edit_dialogs.rs:722
+#: ../rustconn/src/window/edit_dialogs.rs:761
+#: ../rustconn/src/window/edit_dialogs.rs:800
+msgid "Load Error"
+msgstr "Памылка загрузкі"
+
+#: ../rustconn/src/window/connection_dialogs.rs:517
+msgid "Select Vault to load password"
+msgstr "Абярыце сховішча для загрузкі пароля"
+
+#: ../rustconn/src/window/connection_dialogs.rs:521
+#: ../rustconn/src/window/edit_dialogs.rs:818
+msgid "Domain"
+msgstr "Дамен"
+
+#: ../rustconn/src/window/connection_dialogs.rs:528
+#: ../rustconn/src/window/edit_dialogs.rs:827
+msgid "Description"
+msgstr "Апісанне"
+
+#: ../rustconn/src/window/connection_dialogs.rs:529
+#: ../rustconn/src/window/edit_dialogs.rs:828
+msgid "Notes, contacts, project info"
+msgstr "Нататкі, кантакты, інфармацыя пра праект"
+
+#: ../rustconn/src/window/connection_dialogs.rs:568
+#: ../rustconn/src/window/edit_dialogs.rs:876
+msgid "Group name cannot be empty"
+msgstr "Назва групы не можа быць пустой"
+
+#: ../rustconn/src/window/connection_dialogs.rs:643
+msgid "Error Updating Group"
+msgstr "Памылка абнаўлення групы"
+
+#: ../rustconn/src/window/connection_dialogs.rs:721
+msgid "Import Successful"
+msgstr "Імпарт паспяховы"
+
+#: ../rustconn/src/window/connection_dialogs.rs:727
+msgid "Import Failed"
+msgstr "Памылка імпарту"
+
+#: ../rustconn/src/window/document_actions.rs:93
+msgid "Failed to open document."
+msgstr "Не ўдалося адкрыць дакумент."
+
+#: ../rustconn/src/window/document_actions.rs:131
+#: ../rustconn/src/window/document_actions.rs:151
+msgid "Failed to save document."
+msgstr "Не ўдалося захаваць дакумент."
+
+#: ../rustconn/src/window/document_actions.rs:184
+msgid "Untitled"
+msgstr "Без назвы"
+
+#: ../rustconn/src/window/document_actions.rs:242
+#: ../rustconn/src/window/document_actions.rs:299
+msgid "Document Files"
+msgstr "Файлы дакументаў"
+
+#: ../rustconn/src/window/document_actions.rs:248
+msgid "Export Document"
+msgstr "Экспарт дакумента"
+
+#: ../rustconn/src/window/document_actions.rs:269
+msgid "Failed to export document."
+msgstr "Не ўдалося экспартаваць дакумент."
+
+#: ../rustconn/src/window/document_actions.rs:305
+msgid "Import Document"
+msgstr "Імпарт дакумента"
+
+#: ../rustconn/src/window/document_actions.rs:330
+msgid "Failed to import document."
+msgstr "Не ўдалося імпартаваць дакумент."
+
+#: ../rustconn/src/window/edit_dialogs.rs:172
+msgid "Error Updating Connection"
+msgstr "Памылка абнаўлення злучэння"
+
+#: ../rustconn/src/window/edit_dialogs.rs:205
+msgid "Rename Group"
+msgstr "Перайменаваць групу"
+
+#: ../rustconn/src/window/edit_dialogs.rs:207
+msgid "Rename Connection"
+msgstr "Перайменаваць злучэнне"
+
+#: ../rustconn/src/window/edit_dialogs.rs:261
+msgid "Name cannot be empty"
+msgstr "Назва не можа быць пустой"
+
+#: ../rustconn/src/window/edit_dialogs.rs:277
+#: ../rustconn/src/window/edit_dialogs.rs:911
+msgid "Group with name '{}' already exists"
+msgstr "Група з назвай '{}' ужо існуе"
+
+#: ../rustconn/src/window/edit_dialogs.rs:402
+msgid "Edit Group"
+msgstr "Рэдагаваць групу"
+
+#: ../rustconn/src/window/edit_dialogs.rs:543
+msgid "Moving a group moves all its content"
+msgstr "Перамяшчэнне групы перамяшчае ўсё яе змесціва"
+
+#: ../rustconn/src/window/edit_dialogs.rs:680
+msgid "KeePass is not enabled"
+msgstr "KeePass не ўключаны"
+
+#: ../rustconn/src/window/edit_dialogs.rs:688
+msgid "KeePass database not configured"
+msgstr "База даных KeePass не наладжана"
+
+#: ../rustconn/src/window/edit_dialogs.rs:811
+msgid "Select KeePass, Keyring, or Bitwarden to load password"
+msgstr "Абярыце KeePass, Keyring або Bitwarden для загрузкі пароля"
+
+#: ../rustconn/src/window/edit_dialogs.rs:1237
+msgid "⚠ This connection will not be saved"
+msgstr "⚠ Гэта злучэнне не будзе захавана"
+
+#: ../rustconn/src/window/edit_dialogs.rs:1248
+msgid "(None)"
+msgstr "(Няма)"
+
+#: ../rustconn/src/window/edit_dialogs.rs:1259
+msgid "Template"
+msgstr "Шаблон"
+
+#: ../rustconn/src/window/edit_dialogs.rs:1279
+msgid "hostname or IP"
+msgstr "імя хоста або IP"
+
+#: ../rustconn/src/window/edit_dialogs.rs:1301
+#: ../rustconn/src/window/edit_dialogs.rs:1312
+msgid "(optional)"
+msgstr "(неабавязкова)"
+
+#: ../rustconn/src/window/groups.rs:53 ../rustconn/src/window/groups.rs:62
+#: ../rustconn/src/window/operations.rs:615
+#: ../rustconn/src/window/operations.rs:624
+msgid "Move"
+msgstr "Перамясціць"
+
+#: ../rustconn/src/window/groups.rs:75
+msgid "Move '{}' to:"
+msgstr "Перамясціць '{}' у:"
+
+#: ../rustconn/src/window/groups.rs:113
+#: ../rustconn/src/window/operations.rs:704
+msgid "(Root Level)"
+msgstr "(Каранёвы ўзровень)"
+
+#: ../rustconn/src/window/groups.rs:115
+msgid "(Ungrouped)"
+msgstr "(Без групы)"
+
+#: ../rustconn/src/window/groups.rs:192
+msgid "Error Moving Item"
+msgstr "Памылка перамяшчэння элемента"
+
+#: ../rustconn/src/window/operations.rs:43
+msgid "group"
+msgstr "група"
+
+#: ../rustconn/src/window/operations.rs:45
+msgid "connection"
+msgstr "злучэнне"
+
+#: ../rustconn/src/window/operations.rs:55
+msgid ""
+"Are you sure you want to delete the group '{}'?\n"
+"\n"
+"This will also delete {} connection(s) in this group."
 msgstr ""
+"Вы ўпэўнены, што хочаце выдаліць групу '{}'?\n"
+"\n"
+"Гэта таксама выдаліць {} злучэнне(яў) у гэтай групе."
 
-#: rustconn/src/empty_state.rs
-msgid "Loading..."
+#: ../rustconn/src/window/operations.rs:60
+msgid "Are you sure you want to delete the empty group '{}'?"
+msgstr "Вы ўпэўнены, што хочаце выдаліць пустую групу '{}'?"
+
+#: ../rustconn/src/window/operations.rs:66
+msgid "Are you sure you want to delete the connection '{}'?"
+msgstr "Вы ўпэўнены, што хочаце выдаліць злучэнне '{}'?"
+
+#: ../rustconn/src/window/operations.rs:76
+msgid "Delete {}?"
+msgstr "Выдаліць {}?"
+
+#: ../rustconn/src/window/operations.rs:111
+msgid "Deleted '{}'"
+msgstr "'{}' выдалена"
+
+#: ../rustconn/src/window/operations.rs:117
+msgid "Error Deleting"
+msgstr "Памылка выдалення"
+
+#: ../rustconn/src/window/operations.rs:181
+msgid "Connection duplicated"
+msgstr "Злучэнне дубляванае"
+
+#: ../rustconn/src/window/operations.rs:190
+msgid "Failed to duplicate connection"
+msgstr "Не ўдалося дубляваць злучэнне"
+
+#: ../rustconn/src/window/operations.rs:224
+msgid "Connection copied to clipboard"
+msgstr "Злучэнне скапіявана ў буфер абмену"
+
+#: ../rustconn/src/window/operations.rs:232
+msgid "Failed to copy connection"
+msgstr "Не ўдалося скапіяваць злучэнне"
+
+#: ../rustconn/src/window/operations.rs:251
+msgid "Nothing to paste - copy a connection first"
+msgstr "Няма чаго ўставіць - спачатку скапіюйце злучэнне"
+
+#: ../rustconn/src/window/operations.rs:269
+msgid "Connection pasted"
+msgstr "Злучэнне ўстаўлена"
+
+#: ../rustconn/src/window/operations.rs:278
+msgid "Failed to paste connection"
+msgstr "Не ўдалося ўставіць злучэнне"
+
+#: ../rustconn/src/window/operations.rs:363
+msgid "• {} (connection)"
+msgstr "• {} (злучэнне)"
+
+#: ../rustconn/src/window/operations.rs:366
+msgid "• {} (group)"
+msgstr "• {} (група)"
+
+#: ../rustconn/src/window/operations.rs:383
+msgid "Delete Selected Items?"
+msgstr "Выдаліць абраныя элементы?"
+
+#: ../rustconn/src/window/operations.rs:393
+msgid "Delete All"
+msgstr "Выдаліць усё"
+
+#: ../rustconn/src/window/operations.rs:407
+msgid "Are you sure you want to delete {}?"
+msgstr "Вы ўпэўнены, што хочаце выдаліць {}?"
+
+#: ../rustconn/src/window/operations.rs:434
+msgid "Connections in deleted groups will become ungrouped."
+msgstr "Злучэнні ў выдаленых групах стануць без групы."
+
+#: ../rustconn/src/window/operations.rs:485
+msgid "Deletion Complete"
+msgstr "Выдаленне завершана"
+
+#: ../rustconn/src/window/operations.rs:487
+msgid "Successfully deleted {} item(s)."
+msgstr "Паспяхова выдалена {} элемент(аў)."
+
+#: ../rustconn/src/window/operations.rs:494
+msgid "Deletion Partially Complete"
+msgstr "Выдаленне часткова завершана"
+
+#: ../rustconn/src/window/operations.rs:497
+msgid "Deleted {} item(s)."
+msgstr "Выдалена {} элемент(аў)."
+
+#: ../rustconn/src/window/operations.rs:499
+msgid "Failed to delete {} item(s):"
+msgstr "Не ўдалося выдаліць {} элемент(аў):"
+
+#: ../rustconn/src/window/operations.rs:522
+#: ../rustconn/src/window/operations.rs:585
+msgid "No Selection"
+msgstr "Няма выбару"
+
+#: ../rustconn/src/window/operations.rs:523
+msgid "Please select one or more items to delete."
+msgstr "Калі ласка, абярыце адзін або некалькі элементаў для выдалення."
+
+#: ../rustconn/src/window/operations.rs:535
+msgid "{} connection(s)"
+msgstr "{} злучэнне(яў)"
+
+#: ../rustconn/src/window/operations.rs:536
+msgid "{} group(s)"
+msgstr "{} група(ў)"
+
+#: ../rustconn/src/window/operations.rs:538
+msgid "{} connection(s) and {} group(s)"
+msgstr "{} злучэнне(яў) і {} група(ў)"
+
+#: ../rustconn/src/window/operations.rs:586
+msgid "Please select one or more items to move."
+msgstr "Калі ласка, абярыце адзін або некалькі элементаў для перамяшчэння."
+
+#: ../rustconn/src/window/operations.rs:638
+msgid "Select destination for {} connection(s) and {} group(s):"
+msgstr "Абярыце прызначэнне для {} злучэнне(яў) і {} група(ў):"
+
+#: ../rustconn/src/window/operations.rs:646
+msgid "Select a group for {} connection(s):"
+msgstr "Абярыце групу для {} злучэнне(яў):"
+
+#: ../rustconn/src/window/operations.rs:651
+msgid "Select parent for {} group(s):"
+msgstr "Абярыце бацькоўскую для {} група(ў):"
+
+#: ../rustconn/src/window/operations.rs:702
+msgid "(No Group)"
+msgstr "(Без групы)"
+
+#: ../rustconn/src/window/operations.rs:786
+msgid "Move Partially Complete"
+msgstr "Перамяшчэнне часткова завершана"
+
+#: ../rustconn/src/window/operations.rs:789
+msgid "Moved {} item(s)."
+msgstr "Перамешчана {} элемент(аў)."
+
+#: ../rustconn/src/window/operations.rs:791
+msgid "Failed to move {} item(s):"
+msgstr "Не ўдалося перамясціць {} элемент(аў):"
+
+#: ../rustconn/src/window/sessions.rs:34 ../rustconn/src/window/ui.rs:128
+msgid "Active Sessions"
+msgstr "Актыўныя сеансы"
+
+#: ../rustconn/src/window/sessions.rs:50
+msgid "Refresh"
+msgstr "Абнавіць"
+
+#: ../rustconn/src/window/sessions.rs:94
+msgid "Switch To"
+msgstr "Пераключыцца на"
+
+#: ../rustconn/src/window/sessions.rs:98
+msgid "Send Text"
+msgstr "Адправіць тэкст"
+
+#: ../rustconn/src/window/sessions.rs:102
+#: ../rustconn/src/window/sessions.rs:189
+msgid "Terminate"
+msgstr "Завяршыць"
+
+#: ../rustconn/src/window/sessions.rs:187
+msgid "Terminate Session?"
+msgstr "Завяршыць сеанс?"
+
+#: ../rustconn/src/window/sessions.rs:188
+msgid "Are you sure you want to terminate this session?"
+msgstr "Вы ўпэўнены, што хочаце завяршыць гэты сеанс?"
+
+#: ../rustconn/src/window/sessions.rs:325
+msgid "Send Text to Session"
+msgstr "Адправіць тэкст у сеанс"
+
+#: ../rustconn/src/window/sessions.rs:345
+msgid "Enter text to send to the session:"
+msgstr "Увядзіце тэкст для адпраўкі ў сеанс:"
+
+#: ../rustconn/src/window/sessions.rs:351
+msgid "Text to send..."
+msgstr "Тэкст для адпраўкі..."
+
+#: ../rustconn/src/window/sessions.rs:357
+msgid "Append newline (press Enter)"
+msgstr "Дадаць новы радок (націсніце Enter)"
+
+#: ../rustconn/src/window/snippets.rs:33
+msgid "Snippet Created"
+msgstr "Фрагмент створаны"
+
+#: ../rustconn/src/window/snippets.rs:34
+msgid "Snippet has been saved successfully."
+msgstr "Фрагмент паспяхова захаваны."
+
+#: ../rustconn/src/window/snippets.rs:38
+msgid "Error Creating Snippet"
+msgstr "Памылка стварэння фрагмента"
+
+#: ../rustconn/src/window/snippets.rs:54
+msgid "Manage Snippets"
+msgstr "Кіраванне фрагментамі"
+
+#: ../rustconn/src/window/snippets.rs:88 ../rustconn/src/window/snippets.rs:340
+msgid "Search snippets..."
+msgstr "Пошук фрагментаў..."
+
+#: ../rustconn/src/window/snippets.rs:118
+#: ../rustconn/src/window/snippets.rs:443
+msgid "Execute"
+msgstr "Выканаць"
+
+#: ../rustconn/src/window/snippets.rs:217
+msgid "Delete Snippet?"
+msgstr "Выдаліць фрагмент?"
+
+#: ../rustconn/src/window/snippets.rs:218
+msgid "Are you sure you want to delete this snippet?"
+msgstr "Вы ўпэўнены, што хочаце выдаліць гэты фрагмент?"
+
+#: ../rustconn/src/window/snippets.rs:322
+msgid "Execute Snippet"
+msgstr "Выканаць фрагмент"
+
+#: ../rustconn/src/window/snippets.rs:409
+msgid "No Active Terminal"
+msgstr "Няма актыўнага тэрмінала"
+
+#: ../rustconn/src/window/snippets.rs:410
+msgid "Please open a terminal session first before executing a snippet."
 msgstr ""
+"Калі ласка, спачатку адкрыйце сеанс тэрмінала перад выкананнем фрагмента."
 
-#~ msgid "Failed to initialize application state"
-#~ msgstr "Не ўдалося ініцыялізаваць стан праграмы"
+#: ../rustconn/src/window/snippets.rs:434
+msgid "Enter Variable Values"
+msgstr "Увядзіце значэнні зменных"
 
-#~ msgid "_Keyboard Shortcuts"
-#~ msgstr "_Клавіятурныя скароты"
+#: ../rustconn/src/window/templates.rs:90
+#: ../rustconn/src/window/templates.rs:125
+msgid "Error Saving Template"
+msgstr "Памылка захавання шаблону"
 
-#~ msgid "_About RustConn"
-#~ msgstr "_Пра RustConn"
+#: ../rustconn/src/window/templates.rs:151
+msgid "Delete Template?"
+msgstr "Выдаліць шаблон?"
 
-#~ msgid "_Quit"
-#~ msgstr "_Выйсці"
+#: ../rustconn/src/window/templates.rs:152
+msgid "Are you sure you want to delete this template?"
+msgstr "Вы ўпэўнены, што хочаце выдаліць гэты шаблон?"
 
-#~ msgid "Opening mc SFTP..."
-#~ msgstr "Адкрыццё mc SFTP…"
+#: ../rustconn/src/window/templates.rs:292
+msgid "Host: {}"
+msgstr "Хост: {}"
 
-#~ msgid "Opening SFTP..."
-#~ msgstr "Адкрыццё SFTP…"
+#: ../rustconn/src/window/templates.rs:294
+msgid "Port: {}"
+msgstr "Порт: {}"
 
-#~ msgid "Connection failed"
-#~ msgstr "Злучэнне не ўдалося"
+#: ../rustconn/src/window/templates.rs:296
+msgid "User: {}"
+msgstr "Карыстальнік: {}"
 
-#~ msgid "Deleted '{}'"
-#~ msgstr "Выдалена «{}»"
+#: ../rustconn/src/window/templates.rs:317
+msgid "SSH Templates"
+msgstr "Шаблоны SSH"
 
-#~ msgid "Undo"
-#~ msgstr "Адмяніць"
+#: ../rustconn/src/window/templates.rs:325
+msgid "RDP Templates"
+msgstr "Шаблоны RDP"
 
-#~ msgid "Search connections..."
-#~ msgstr "Пошук злучэнняў…"
+#: ../rustconn/src/window/templates.rs:333
+msgid "VNC Templates"
+msgstr "Шаблоны VNC"
 
-#~ msgid "All"
-#~ msgstr "Усе"
+#: ../rustconn/src/window/templates.rs:341
+msgid "SPICE Templates"
+msgstr "Шаблоны SPICE"
 
-#~ msgid "No connections found"
-#~ msgstr "Злучэнняў не знойдзена"
+#: ../rustconn/src/window/ui.rs:32
+msgid "Toggle Sidebar (F9)"
+msgstr "Бакавая панэль (F9)"
 
-#~ msgid "Create a new connection to get started"
-#~ msgstr "Стварыце новае злучэнне, каб пачаць"
+#: ../rustconn/src/window/ui.rs:39
+msgid "Quick Connect (Ctrl+Shift+Q)"
+msgstr "Хуткае злучэнне (Ctrl+Shift+Q)"
 
-#~ msgid "Edit Connection"
-#~ msgstr "Рэдагаваць злучэнне"
+#: ../rustconn/src/window/ui.rs:46
+msgid "New Connection (Ctrl+N)"
+msgstr "Новае злучэнне (Ctrl+N)"
 
-#~ msgid "Save"
-#~ msgstr "Захаваць"
+#: ../rustconn/src/window/ui.rs:53
+msgid "Delete Selected (Delete)"
+msgstr "Выдаліць абранае (Delete)"
 
-#~ msgid "Cancel"
-#~ msgstr "Скасаваць"
+#: ../rustconn/src/window/ui.rs:60
+msgid "New Group (Ctrl+Shift+N)"
+msgstr "Новая група (Ctrl+Shift+N)"
 
-#~ msgid "General"
-#~ msgstr "Агульнае"
+#: ../rustconn/src/window/ui.rs:70
+msgid "Menu"
+msgstr "Меню"
 
-#~ msgid "Name"
-#~ msgstr "Назва"
+#: ../rustconn/src/window/ui.rs:80
+msgid "Settings (Ctrl+,)"
+msgstr "Налады (Ctrl+,)"
 
-#~ msgid "Host"
-#~ msgstr "Хост"
+#: ../rustconn/src/window/ui.rs:87
+msgid "Split Vertical (Ctrl+Shift+S)"
+msgstr "Падзяліць вертыкальна (Ctrl+Shift+S)"
 
-#~ msgid "Port"
-#~ msgstr "Порт"
+#: ../rustconn/src/window/ui.rs:93
+msgid "Split Horizontal (Ctrl+Shift+H)"
+msgstr "Падзяліць гарызантальна (Ctrl+Shift+H)"
 
-#~ msgid "Username"
-#~ msgstr "Карыстальнік"
+#: ../rustconn/src/window/ui.rs:119
+msgid "Local Shell"
+msgstr "Лакальная абалонка"
 
-#~ msgid "Password"
-#~ msgstr "Пароль"
+#: ../rustconn/src/window/ui.rs:124
+msgid "Snippets..."
+msgstr "Сніпеты…"
 
-#~ msgid "Protocol"
-#~ msgstr "Пратакол"
+#: ../rustconn/src/window/ui.rs:125
+msgid "Clusters..."
+msgstr "Кластары…"
 
-#~ msgid "Group"
-#~ msgstr "Група"
+#: ../rustconn/src/window/ui.rs:126
+msgid "Templates..."
+msgstr "Шаблоны…"
 
-#~ msgid "Tags"
-#~ msgstr "Тэгі"
+#: ../rustconn/src/window/ui.rs:127
+msgid "Variables..."
+msgstr "Зменныя…"
 
-#~ msgid "Description"
-#~ msgstr "Апісанне"
+#: ../rustconn/src/window/ui.rs:130
+msgid "Connection History..."
+msgstr "Гісторыя злучэнняў…"
 
-#~ msgid "Settings"
-#~ msgstr "Налады"
+#: ../rustconn/src/window/ui.rs:133
+msgid "Statistics..."
+msgstr "Статыстыка…"
 
-#~ msgid "Color Scheme"
-#~ msgstr "Каляровая схема"
+#: ../rustconn/src/window/ui.rs:135
+msgid "Password Generator..."
+msgstr "Генератар пароляў…"
 
-#~ msgid "Terminal"
-#~ msgstr "Тэрмінал"
+#: ../rustconn/src/window/ui.rs:139
+msgid "Wake On LAN..."
+msgstr "Wake On LAN…"
 
-#~ msgid "Clients"
-#~ msgstr "Кліенты"
+#: ../rustconn/src/window/ui.rs:146
+msgid "Import Connections..."
+msgstr "Імпартаваць злучэнні…"
 
-#~ msgid "Secrets"
-#~ msgstr "Сакрэты"
+#: ../rustconn/src/window/ui.rs:147
+msgid "Export Connections..."
+msgstr "Экспартаваць злучэнні…"
 
-#~ msgid "SSH Agent"
-#~ msgstr "SSH-агент"
+#: ../rustconn/src/window/ui.rs:153
+msgid "Copy Connection"
+msgstr "Капіяваць злучэнне"
 
-#~ msgid "Logging"
-#~ msgstr "Журналяванне"
+#: ../rustconn/src/window/ui.rs:157
+msgid "Paste Connection"
+msgstr "Уставіць злучэнне"
 
-#~ msgid "Delete"
-#~ msgstr "Выдаліць"
+#: ../rustconn/src/window/ui.rs:164
+msgid "Settings"
+msgstr "Налады"
 
-#~ msgid "Connect"
-#~ msgstr "Злучыцца"
+#: ../rustconn/src/window/ui.rs:169
+msgid "Flatpak Components..."
+msgstr "Кампаненты Flatpak…"
 
-#~ msgid "Apply"
-#~ msgstr "Ужыць"
+#: ../rustconn/src/window/ui.rs:173
+msgid "About"
+msgstr "Пра праграму"
 
-#~ msgid "Export"
-#~ msgstr "Экспарт"
+#: ../rustconn/src/window/ui.rs:174
+msgid "Quit"
+msgstr "Выйсці"
 
-#~ msgid "Import"
-#~ msgstr "Імпарт"
+#~ msgid "RustConn"
+#~ msgstr "RustConn"
 
-#~ msgid "Import completed successfully"
-#~ msgstr "Імпарт завершаны паспяхова"
-
-#~ msgid "Import failed"
-#~ msgstr "Памылка імпарту"
-
-#~ msgid "{} connection"
-#~ msgid_plural "{} connections"
-#~ msgstr[0] "{} злучэнне"
-#~ msgstr[1] "{} злучэнні"
-#~ msgstr[2] "{} злучэнняў"
-
-#~ msgid "{} connection imported"
-#~ msgid_plural "{} connections imported"
-#~ msgstr[0] "{} злучэнне імпартавана"
-#~ msgstr[1] "{} злучэнні імпартаваны"
-#~ msgstr[2] "{} злучэнняў імпартавана"
-
-#~ msgid "Select a connection from the sidebar to start"
-#~ msgstr "Абярыце злучэнне з бакавой панэлі"
-
-#~ msgid "This field is required"
-#~ msgstr "Гэта поле абавязковае"
-
-#~ msgid "Invalid port number"
-#~ msgstr "Няправільны нумар порта"
-
-#~ msgid "Invalid hostname"
-#~ msgstr "Няправільнае імя хоста"
-
-#~ msgid "Modern Connection Manager for Linux"
-#~ msgstr "Сучасны менеджар злучэнняў для Linux"
-
-#~ msgid "Filter SSH connections"
-#~ msgstr "Фільтраваць SSH-злучэнні"
-
-#~ msgid "Filter RDP connections"
-#~ msgstr "Фільтраваць RDP-злучэнні"
-
-#~ msgid "Filter VNC connections"
-#~ msgstr "Фільтраваць VNC-злучэнні"
-
-#~ msgid "Close tab"
-#~ msgstr "Закрыць укладку"
-
-#~ msgid "Open local shell terminal"
-#~ msgstr "Адкрыць лакальны тэрмінал"
+#~ msgid "ssh;rdp;vnc;spice;telnet;zerotrust;connection;terminal;remote;"
+#~ msgstr "ssh;rdp;vnc;spice;telnet;zerotrust;злучэнне;тэрмінал;аддалены;"

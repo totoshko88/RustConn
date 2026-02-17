@@ -1,9 +1,12 @@
 # Danish translation for RustConn
+# Copyright (C) 2025-2026 Anton Isaiev
+# This file is distributed under the same license as the RustConn package.
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.8.7\n"
-"Report-Msgid-Bugs-To: https://github.com/totoshko88/RustConn/issues\n"
-"POT-Creation-Date: 2026-02-17 00:00+0000\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-02-17 18:31+0200\n"
 "PO-Revision-Date: 2026-02-17 00:00+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Danish\n"
@@ -13,451 +16,2950 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#. Desktop file
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:2
-msgid "RustConn"
-msgstr "RustConn"
+#: ../rustconn/src/adaptive_tabs.rs:169
+#: ../rustconn/src/split_view/bridge.rs:1770
+msgid "Close tab"
+msgstr "Luk fane"
 
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
-msgid "Manage remote connections easily"
-msgstr "Administrer fjernforbindelser nemt"
+#: ../rustconn/src/adaptive_tabs.rs:290
+msgid "More tabs"
+msgstr "Flere faner"
 
-#. Application
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:78
 msgid "Initialization Error"
 msgstr "Initialiseringsfejl"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:978
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
 "connections from a single application."
 msgstr ""
+"Moderne forbindelseshåndtering til Linux med en GTK4/Wayland-brugerflade. "
+"Administrér SSH-, RDP-, VNC-, SPICE-, Telnet-, Seriel-, Kubernetes- og Zero "
+"Trust-forbindelser fra én applikation."
 
-#: rustconn/src/app.rs
+#. Translators: Replace this with your name and language, e.g. "John Doe (German)"
+#: ../rustconn/src/app.rs:1014
 msgid "translator-credits"
-msgstr ""
+msgstr "RustConn-holdet (Dansk)"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1021
 msgid "User Guide"
-msgstr ""
+msgstr "Brugervejledning"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1025
 msgid "Installation"
-msgstr ""
+msgstr "Installation"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1029
 msgid "Releases"
-msgstr ""
+msgstr "Udgivelser"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1033
 msgid "Changelog"
-msgstr ""
+msgstr "Ændringslog"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1044
 msgid "Special Thanks"
-msgstr ""
+msgstr "Særlig tak"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1059
 msgid "Made in Ukraine"
-msgstr ""
+msgstr "Lavet i Ukraine"
 
-#: rustconn/src/app.rs
+#: ../rustconn/src/app.rs:1060
 msgid "All contributors and supporters"
-msgstr ""
+msgstr "Alle bidragydere og støtter"
 
-#. Sidebar
-#: rustconn/src/sidebar/mod.rs
-msgid "Search... (? for help)"
-msgstr ""
+#: ../rustconn/src/dashboard.rs:318
+#: ../rustconn/src/dialogs/connection/dialog.rs:1945
+msgid "Protocol:"
+msgstr "Protokol:"
 
-#. Connection dialog
-#: rustconn/src/dialogs/connection/dialog.rs
-msgid "New Connection"
-msgstr "Ny forbindelse"
+#: ../rustconn/src/dashboard.rs:322
+msgid "All Protocols"
+msgstr "Alle protokoller"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dashboard.rs:330
+msgid "Status:"
+msgstr "Status:"
+
+#: ../rustconn/src/dashboard.rs:335
+msgid "All Statuses"
+msgstr "Alle statusser"
+
+#: ../rustconn/src/dashboard.rs:336
+msgid "Connected"
+msgstr "Forbundet"
+
+#: ../rustconn/src/dashboard.rs:337
+msgid "Starting"
+msgstr "Starter"
+
+#: ../rustconn/src/dashboard.rs:338
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:253
+#: ../rustconn/src/window/connection_dialogs.rs:689
+#: ../rustconn/src/window/edit_dialogs.rs:288
+#: ../rustconn/src/window/edit_dialogs.rs:368
+#: ../rustconn/src/window/edit_dialogs.rs:951
+#: ../rustconn/src/window/groups.rs:218
+msgid "Error"
+msgstr "Fejl"
+
+#: ../rustconn/src/dashboard.rs:350 ../rustconn/src/dashboard.rs:352
+msgid "Refresh Dashboard"
+msgstr "Opdatér oversigt"
+
+#: ../rustconn/src/dashboard.rs:464
+msgid "No active sessions"
+msgstr "Ingen aktive sessioner"
+
+#: ../rustconn/src/dashboard.rs:523 ../rustconn/src/split_view/bridge.rs:1466
+#: ../rustconn/src/window/edit_dialogs.rs:1283
+msgid "Host"
+msgstr "Vært"
+
+#: ../rustconn/src/dashboard.rs:531
+msgid "Duration"
+msgstr "Varighed"
+
+#: ../rustconn/src/dashboard.rs:555 ../rustconn/src/dashboard.rs:556
+msgid "Focus Session"
+msgstr "Fokusér session"
+
+#: ../rustconn/src/dashboard.rs:568 ../rustconn/src/dashboard.rs:571
+#: ../rustconn/src/embedded.rs:76 ../rustconn/src/floating_controls.rs:103
+msgid "Disconnect"
+msgstr "Afbryd"
+
+#: ../rustconn/src/dashboard.rs:647
+msgid "Connection Dashboard"
+msgstr "Forbindelsesoversigt"
+
+#: ../rustconn/src/dialogs/cluster.rs:54
+msgid "New Cluster"
+msgstr "Ny klynge"
+
+#: ../rustconn/src/dialogs/cluster.rs:70 ../rustconn/src/dialogs/cluster.rs:420
+#: ../rustconn/src/dialogs/connection/dialog.rs:1299
+#: ../rustconn/src/dialogs/export.rs:80 ../rustconn/src/dialogs/export.rs:793
+#: ../rustconn/src/dialogs/flatpak_components.rs:99
+#: ../rustconn/src/dialogs/history.rs:43 ../rustconn/src/dialogs/import.rs:66
+#: ../rustconn/src/dialogs/import.rs:1389
+#: ../rustconn/src/dialogs/log_viewer.rs:113
+#: ../rustconn/src/dialogs/password_generator.rs:39
+#: ../rustconn/src/dialogs/snippet.rs:80
+#: ../rustconn/src/dialogs/statistics.rs:45
+#: ../rustconn/src/dialogs/template.rs:139
+#: ../rustconn/src/dialogs/template.rs:2852
+#: ../rustconn/src/dialogs/terminal_search.rs:54
+#: ../rustconn/src/window/connection_dialogs.rs:191
+#: ../rustconn/src/window/edit_dialogs.rs:1215
+#: ../rustconn/src/window/sessions.rs:47 ../rustconn/src/window/snippets.rs:65
 msgid "Close"
 msgstr "Luk"
 
-#: rustconn/src/dialogs/connection/dialog.rs
-msgid "Test"
-msgstr ""
-
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/cluster.rs:72 ../rustconn/src/dialogs/cluster.rs:422
+#: ../rustconn/src/dialogs/connection/dialog.rs:1305
+#: ../rustconn/src/dialogs/document.rs:77 ../rustconn/src/dialogs/snippet.rs:82
+#: ../rustconn/src/dialogs/template.rs:141
+#: ../rustconn/src/dialogs/template.rs:2854
+#: ../rustconn/src/window/connection_dialogs.rs:193
+#: ../rustconn/src/window/snippets.rs:67
 msgid "Create"
 msgstr "Opret"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/cluster.rs:112
+msgid "Cluster Details"
+msgstr "Klyngedetaljer"
+
+#: ../rustconn/src/dialogs/cluster.rs:152
+msgid "Cluster name cannot be empty"
+msgstr "Klyngenavn må ikke være tomt"
+
+#: ../rustconn/src/dialogs/cluster.rs:169
+msgid "Please select at least one connection"
+msgstr "Vælg venligst mindst én forbindelse"
+
+#: ../rustconn/src/dialogs/cluster.rs:207
+msgid "Connections"
+msgstr "Forbindelser"
+
+#: ../rustconn/src/dialogs/cluster.rs:208
+msgid "Select connections to include in this cluster"
+msgstr "Vælg forbindelser, der skal medtages i denne klynge"
+
+#: ../rustconn/src/dialogs/cluster.rs:232 ../rustconn/src/sidebar_ui.rs:244
+msgid "Select All"
+msgstr "Vælg alle"
+
+#: ../rustconn/src/dialogs/cluster.rs:233
+msgid "Deselect All"
+msgstr "Fravælg alle"
+
+#: ../rustconn/src/dialogs/cluster.rs:343
+msgid "Edit Cluster"
+msgstr "Redigér klynge"
+
+#: ../rustconn/src/dialogs/cluster.rs:404
+msgid "Manage Clusters"
+msgstr "Administrér klynger"
+
+#: ../rustconn/src/dialogs/cluster.rs:456
+msgid ""
+"Clusters allow you to connect to multiple servers simultaneously and "
+"optionally broadcast input to all sessions."
+msgstr ""
+"Klynger giver dig mulighed for at oprette forbindelse til flere servere "
+"samtidigt og eventuelt sende input til alle sessioner."
+
+#: ../rustconn/src/dialogs/cluster.rs:551
+msgid "Connect to cluster"
+msgstr "Opret forbindelse til klynge"
+
+#: ../rustconn/src/dialogs/cluster.rs:557
+msgid "Edit cluster"
+msgstr "Redigér klynge"
+
+#: ../rustconn/src/dialogs/cluster.rs:563
+msgid "Delete cluster"
+msgstr "Slet klynge"
+
+#: ../rustconn/src/dialogs/cluster.rs:596
+msgid "No clusters defined. Click 'New Cluster' to create one."
+msgstr "Ingen klynger defineret. Klik på 'Ny klynge' for at oprette en."
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:1117
+msgid "Testing..."
+msgstr "Tester..."
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:1206
+#: ../rustconn/src/dialogs/connection/dialog.rs:1301
+msgid "Test"
+msgstr "Test"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:1284
+#: ../rustconn/src/empty_state.rs:61 ../rustconn/src/sidebar_ui.rs:390
+#: ../rustconn/src/split_view/bridge.rs:1699 ../rustconn/src/window/ui.rs:116
+msgid "New Connection"
+msgstr "Ny forbindelse"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:1932
+#: ../rustconn/src/dialogs/snippet.rs:304
+#: ../rustconn/src/dialogs/variables.rs:200
 msgid "Name:"
-msgstr ""
+msgstr "Navn:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
-msgid "Protocol:"
-msgstr ""
-
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:1967
 msgid "Host:"
-msgstr ""
+msgstr "Vært:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:1980
 msgid "Port:"
-msgstr ""
+msgstr "Port:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:2011
+#: ../rustconn/src/dialogs/password.rs:171
 msgid "Username:"
-msgstr ""
+msgstr "Brugernavn:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:2035
+#: ../rustconn/src/dialogs/password.rs:158
 msgid "Domain:"
-msgstr ""
+msgstr "Domæne:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:2058
+#: ../rustconn/src/dialogs/password.rs:184
 msgid "Password:"
-msgstr ""
+msgstr "Adgangskode:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:2133
 msgid "Tags:"
-msgstr ""
+msgstr "Tags:"
 
-#: rustconn/src/dialogs/connection/dialog.rs
+#: ../rustconn/src/dialogs/connection/dialog.rs:2146
 msgid "Group:"
+msgstr "Gruppe:"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:2420
+#: ../rustconn/src/dialogs/connection/dialog.rs:2960
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:29
+msgid "Shared Folders"
+msgstr "Delte mapper"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:2421
+#: ../rustconn/src/dialogs/connection/dialog.rs:2961
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:30
+msgid "Local folders accessible from remote session"
+msgstr "Lokale mapper tilgængelige fra fjernsession"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:2428
+#: ../rustconn/src/dialogs/connection/dialog.rs:2968
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:37
+msgid "No shared folders"
+msgstr "Ingen delte mapper"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:3458
+msgid "No variables defined"
+msgstr "Ingen variabler defineret"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:3492
+msgid "No custom properties"
+msgstr "Ingen brugerdefinerede egenskaber"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:3576
+msgid "No expect rules"
+msgstr "Ingen expect-regler"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:5046
+msgid "Edit Connection"
+msgstr "Redigér forbindelse"
+
+#: ../rustconn/src/dialogs/connection/dialog.rs:5047
+#: ../rustconn/src/dialogs/snippet.rs:361
+#: ../rustconn/src/dialogs/template.rs:2544
+#: ../rustconn/src/dialogs/variables.rs:78
+#: ../rustconn/src/window/edit_dialogs.rs:414
+msgid "Save"
+msgstr "Gem"
+
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:52
+msgid "Add"
+msgstr "Tilføj"
+
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:56
+#: ../rustconn/src/dialogs/flatpak_components.rs:296
+#: ../rustconn/src/dialogs/flatpak_components.rs:332
+#: ../rustconn/src/dialogs/flatpak_components.rs:468
+msgid "Remove"
+msgstr "Fjern"
+
+#: ../rustconn/src/dialogs/connection/shared_folders.rs:90
+msgid "Select Folder to Share"
+msgstr "Vælg mappe til deling"
+
+#: ../rustconn/src/dialogs/document.rs:60
+msgid "New Document"
+msgstr "Nyt dokument"
+
+#: ../rustconn/src/dialogs/document.rs:75
+#: ../rustconn/src/dialogs/document.rs:326
+#: ../rustconn/src/dialogs/document.rs:565
+#: ../rustconn/src/dialogs/flatpak_components.rs:275
+#: ../rustconn/src/dialogs/password.rs:70
+#: ../rustconn/src/dialogs/progress.rs:69
+#: ../rustconn/src/dialogs/progress.rs:175
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:437
+#: ../rustconn/src/dialogs/variables.rs:76 ../rustconn/src/dialogs/wol.rs:45
+#: ../rustconn/src/loading.rs:253 ../rustconn/src/window/edit_dialogs.rs:218
+#: ../rustconn/src/window/edit_dialogs.rs:412
+#: ../rustconn/src/window/groups.rs:60 ../rustconn/src/window/operations.rs:391
+#: ../rustconn/src/window/operations.rs:622
+#: ../rustconn/src/window/sessions.rs:330
+#: ../rustconn/src/window/snippets.rs:330
+#: ../rustconn/src/window/snippets.rs:441
+msgid "Cancel"
+msgstr "Annuller"
+
+#: ../rustconn/src/dialogs/document.rs:99
+msgid "Document Name"
+msgstr "Dokumentnavn"
+
+#: ../rustconn/src/dialogs/document.rs:109
+msgid "Protect with password"
+msgstr "Beskyt med adgangskode"
+
+#: ../rustconn/src/dialogs/document.rs:119
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:945
+#: ../rustconn/src/window/connection_dialogs.rs:310
+#: ../rustconn/src/window/edit_dialogs.rs:585
+#: ../rustconn/src/window/edit_dialogs.rs:1316
+msgid "Password"
+msgstr "Adgangskode"
+
+#: ../rustconn/src/dialogs/document.rs:128
+#: ../rustconn/src/dialogs/document.rs:618
+msgid "Confirm Password"
+msgstr "Bekræft adgangskode"
+
+#: ../rustconn/src/dialogs/document.rs:271
+msgid "Open Document"
+msgstr "Åbn dokument"
+
+#: ../rustconn/src/dialogs/document.rs:312
+msgid "Enter Password"
+msgstr "Indtast adgangskode"
+
+#: ../rustconn/src/dialogs/document.rs:328
+msgid "Open"
+msgstr "Åbn"
+
+#: ../rustconn/src/dialogs/document.rs:342
+msgid ""
+"This document is password protected.\n"
+"                 Enter the password to open it."
 msgstr ""
+"Dette dokument er beskyttet med adgangskode.\n"
+"                 Indtast adgangskoden for at åbne det."
 
-#. Settings dialog — UI tab
-#: rustconn/src/dialogs/settings/ui_tab.rs
-msgid "Interface"
+#: ../rustconn/src/dialogs/document.rs:424
+msgid "Save Document"
+msgstr "Gem dokument"
+
+#: ../rustconn/src/dialogs/document.rs:550
+msgid "Document Protection"
+msgstr "Dokumentbeskyttelse"
+
+#: ../rustconn/src/dialogs/document.rs:567
+msgid "Apply"
+msgstr "Anvend"
+
+#: ../rustconn/src/dialogs/document.rs:589
+msgid ""
+"Password protection encrypts the document contents.\n"
+"                 You will need to enter the password each time you open it."
 msgstr ""
+"Adgangskodebeskyttelse krypterer dokumentets indhold.\n"
+"                 Du skal indtaste adgangskoden, hver gang du åbner det."
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
-msgid "Appearance"
-msgstr "Udseende"
+#: ../rustconn/src/dialogs/document.rs:599
+msgid "Enable password protection"
+msgstr "Aktivér adgangskodebeskyttelse"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/document.rs:609
+msgid "New Password"
+msgstr "Ny adgangskode"
+
+#: ../rustconn/src/dialogs/document.rs:628
+msgid "Use a strong password that you can remember."
+msgstr "Brug en stærk adgangskode, du kan huske."
+
+#: ../rustconn/src/dialogs/export.rs:65 ../rustconn/src/sidebar_ui.rs:328
+msgid "Export Connections"
+msgstr "Eksportér forbindelser"
+
+#: ../rustconn/src/dialogs/export.rs:82
+msgid "Export"
+msgstr "Eksportér"
+
+#: ../rustconn/src/dialogs/export.rs:187
+msgid "Export Format"
+msgstr "Eksportformat"
+
+#: ../rustconn/src/dialogs/export.rs:188
+msgid "Select the format to export your connections to"
+msgstr "Vælg formatet til eksport af dine forbindelser"
+
+#: ../rustconn/src/dialogs/export.rs:206
+msgid "Format"
+msgstr "Format"
+
+#: ../rustconn/src/dialogs/export.rs:207
+msgid "Target export format"
+msgstr "Måleksportformat"
+
+#: ../rustconn/src/dialogs/export.rs:216
+msgid "Output Location"
+msgstr "Outputplacering"
+
+#: ../rustconn/src/dialogs/export.rs:218
+msgid ""
+"Remmina exports to a directory (one file per connection).\n"
+"                 Other formats export to a single file."
+msgstr ""
+"Remmina eksporterer til en mappe (én fil pr. forbindelse).\n"
+"                 Andre formater eksporterer til en enkelt fil."
+
+#: ../rustconn/src/dialogs/export.rs:225
+msgid "Select output file or directory..."
+msgstr "Vælg outputfil eller mappe..."
+
+#: ../rustconn/src/dialogs/export.rs:231
+msgid "Browse..."
+msgstr "Gennemse..."
+
+#: ../rustconn/src/dialogs/export.rs:236
+msgid "Output"
+msgstr "Output"
+
+#: ../rustconn/src/dialogs/export.rs:237
+msgid "Destination path"
+msgstr "Destinationssti"
+
+#: ../rustconn/src/dialogs/export.rs:247
+#: ../rustconn/src/dialogs/password_generator.rs:251
+msgid "Options"
+msgstr "Indstillinger"
+
+#: ../rustconn/src/dialogs/export.rs:252
+msgid "Include passwords"
+msgstr "Medtag adgangskoder"
+
+#: ../rustconn/src/dialogs/export.rs:253
+msgid "If supported by format"
+msgstr "Hvis understøttet af formatet"
+
+#: ../rustconn/src/dialogs/export.rs:260
+msgid "Include group hierarchy"
+msgstr "Medtag gruppehierarki"
+
+#: ../rustconn/src/dialogs/export.rs:261
+msgid "Preserve folder structure"
+msgstr "Bevar mappestruktur"
+
+#: ../rustconn/src/dialogs/export.rs:268
+msgid "⚠ Security Warning"
+msgstr "⚠ Sikkerhedsadvarsel"
+
+#: ../rustconn/src/dialogs/export.rs:269
+msgid ""
+"Including passwords may expose sensitive data. Only enable if you trust the "
+"destination."
+msgstr ""
+"Medtagelse af adgangskoder kan afsløre følsomme data. Aktivér kun, hvis du "
+"stoler på destinationen."
+
+#: ../rustconn/src/dialogs/export.rs:279
+msgid "ℹ Credentials Storage"
+msgstr "ℹ Lagring af legitimationsoplysninger"
+
+#: ../rustconn/src/dialogs/export.rs:280
+msgid ""
+"Passwords are stored in your password manager and not included in exports by "
+"default. Export your credential structure separately if needed."
+msgstr ""
+"Adgangskoder gemmes i din adgangskodehåndtering og medtages ikke i eksporter "
+"som standard. Eksportér din legitimationsstruktur separat, hvis det er "
+"nødvendigt."
+
+#: ../rustconn/src/dialogs/export.rs:316
+msgid "Exporting..."
+msgstr "Eksporterer..."
+
+#: ../rustconn/src/dialogs/export.rs:330
+msgid "Preparing export..."
+msgstr "Forbereder eksport..."
+
+#: ../rustconn/src/dialogs/export.rs:343
+msgid "Export Complete"
+msgstr "Eksport fuldført"
+
+#: ../rustconn/src/dialogs/export.rs:358 ../rustconn/src/dialogs/import.rs:385
+msgid "Details"
+msgstr "Detaljer"
+
+#: ../rustconn/src/dialogs/export.rs:588
+msgid "Select Export Directory"
+msgstr "Vælg eksportmappe"
+
+#: ../rustconn/src/dialogs/export.rs:602
+msgid "Select Export File"
+msgstr "Vælg eksportfil"
+
+#: ../rustconn/src/dialogs/export.rs:682
+msgid "Select output directory..."
+msgstr "Vælg outputmappe..."
+
+#: ../rustconn/src/dialogs/export.rs:684
+msgid "Select output file..."
+msgstr "Vælg outputfil..."
+
+#: ../rustconn/src/dialogs/export.rs:729
+msgid "Please select an output file or directory"
+msgstr "Vælg venligst en outputfil eller mappe"
+
+#: ../rustconn/src/dialogs/export.rs:772
+msgid "Export complete"
+msgstr "Eksport fuldført"
+
+#: ../rustconn/src/dialogs/export.rs:783 ../rustconn/src/dialogs/import.rs:634
+#: ../rustconn/src/dialogs/import.rs:848 ../rustconn/src/dialogs/import.rs:959
+#: ../rustconn/src/dialogs/import.rs:1047
+#: ../rustconn/src/dialogs/import.rs:1139
+#: ../rustconn/src/dialogs/import.rs:1379
+#: ../rustconn/src/dialogs/import.rs:1477
+#: ../rustconn/src/dialogs/import.rs:1564
+#: ../rustconn/src/dialogs/import.rs:1651
+#: ../rustconn/src/dialogs/import.rs:1737
+msgid "Done"
+msgstr "Færdig"
+
+#: ../rustconn/src/dialogs/export.rs:788
+msgid "Export failed"
+msgstr "Eksport mislykkedes"
+
+#: ../rustconn/src/dialogs/export.rs:789
+msgid "Export Failed"
+msgstr "Eksport mislykkedes"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:65
+msgid "Flatpak Components"
+msgstr "Flatpak-komponenter"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:132
+msgid ""
+"Showing sandbox-compatible components only.              Downloads are "
+"verified with SHA256 checksums."
+msgstr ""
+"Viser kun sandbox-kompatible komponenter.              Downloads verificeres "
+"med SHA256-kontrolsummer."
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:141
+msgid "Protocol Clients"
+msgstr "Protokolklienter"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:143
+msgid ""
+"Optional for external RDP/VNC/SPICE connections.              Embedded "
+"clients (IronRDP, vnc-rs) are preferred."
+msgstr ""
+"Valgfrit for eksterne RDP/VNC/SPICE-forbindelser.              Indlejrede "
+"klienter (IronRDP, vnc-rs) foretrækkes."
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:155
+msgid "Zero Trust CLIs"
+msgstr "Zero Trust CLI-værktøjer"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:156
+msgid ""
+"Required for Zero Trust connections (AWS SSM, GCP IAP, Azure Bastion, etc.)"
+msgstr ""
+"Påkrævet for Zero Trust-forbindelser (AWS SSM, GCP IAP, Azure Bastion osv.)"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:166
+msgid "Password Manager CLIs"
+msgstr "CLI-værktøjer til adgangskodehåndtering"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:167
+msgid "Required for Bitwarden and 1Password integration"
+msgstr "Påkrævet for Bitwarden- og 1Password-integration"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:177
+msgid "Container Orchestration"
+msgstr "Containerorkestrering"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:178
+msgid "Required for Kubernetes pod shell connections"
+msgstr "Påkrævet for Kubernetes pod shell-forbindelser"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:254
+#: ../rustconn/src/dialogs/flatpak_components.rs:458
+msgid "Installed"
+msgstr "Installeret"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:285
+msgid "Update"
+msgstr "Opdatér"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:299
+#: ../rustconn/src/dialogs/flatpak_components.rs:476
+msgid "Install"
+msgstr "Installér"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:302
+msgid "N/A"
+msgstr "N/A"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:304
+msgid "Not available for download"
+msgstr "Ikke tilgængelig til download"
+
+#: ../rustconn/src/dialogs/flatpak_components.rs:489
+#: ../rustconn/src/dialogs/statistics.rs:144
+#: ../rustconn/src/dialogs/statistics.rs:244
+msgid "Failed"
+msgstr "Mislykket"
+
+#: ../rustconn/src/dialogs/history.rs:27 ../rustconn/src/sidebar_ui.rs:294
+msgid "Connection History"
+msgstr "Forbindelseshistorik"
+
+#: ../rustconn/src/dialogs/history.rs:45 ../rustconn/src/dialogs/password.rs:72
+#: ../rustconn/src/sidebar_ui.rs:50 ../rustconn/src/window/edit_dialogs.rs:1217
+msgid "Connect"
+msgstr "Forbind"
+
+#: ../rustconn/src/dialogs/history.rs:84
+msgid "No connection history"
+msgstr "Ingen forbindelseshistorik"
+
+#: ../rustconn/src/dialogs/history.rs:103
+msgid "Clear History"
+msgstr "Ryd historik"
+
+#: ../rustconn/src/dialogs/import.rs:51
+msgid "Import Connections"
+msgstr "Importér forbindelser"
+
+#: ../rustconn/src/dialogs/import.rs:68
+msgid "Import"
+msgstr "Importér"
+
+#: ../rustconn/src/dialogs/import.rs:175
+msgid "Select Import Source"
+msgstr "Vælg importkilde"
+
+#: ../rustconn/src/dialogs/import.rs:182
+msgid "Choose the source from which to import connections:"
+msgstr "Vælg kilden til import af forbindelser:"
+
+#: ../rustconn/src/dialogs/import.rs:322
+msgid "Available"
+msgstr "Tilgængelig"
+
+#: ../rustconn/src/dialogs/import.rs:327
+msgid "Not Found"
+msgstr "Ikke fundet"
+
+#: ../rustconn/src/dialogs/import.rs:345
+msgid "Importing..."
+msgstr "Importerer..."
+
+#: ../rustconn/src/dialogs/import.rs:358
+msgid "Scanning for connections..."
+msgstr "Scanner efter forbindelser..."
+
+#: ../rustconn/src/dialogs/import.rs:370
+msgid "Import Complete"
+msgstr "Import fuldført"
+
+#: ../rustconn/src/dialogs/import.rs:619 ../rustconn/src/dialogs/import.rs:833
+msgid "Import complete"
+msgstr "Import fuldført"
+
+#: ../rustconn/src/dialogs/import.rs:896
+msgid "Select SSH Config File"
+msgstr "Vælg SSH-konfigurationsfil"
+
+#: ../rustconn/src/dialogs/import.rs:986
+msgid "Select Asbru-CM YAML File"
+msgstr "Vælg Asbru-CM YAML-fil"
+
+#: ../rustconn/src/dialogs/import.rs:1074
+msgid "Select Ansible Inventory File"
+msgstr "Vælg Ansible-inventarfil"
+
+#: ../rustconn/src/dialogs/import.rs:1311
+msgid "Select RustConn Native File"
+msgstr "Vælg RustConn-fil"
+
+#: ../rustconn/src/dialogs/import.rs:1417
+msgid "Select Royal TS File"
+msgstr "Vælg Royal TS-fil"
+
+#: ../rustconn/src/dialogs/import.rs:1503
+msgid "Select RDM JSON File"
+msgstr "Vælg RDM JSON-fil"
+
+#: ../rustconn/src/dialogs/import.rs:1590
+msgid "Select MobaXterm Session File"
+msgstr "Vælg MobaXterm-sessionsfil"
+
+#: ../rustconn/src/dialogs/import.rs:1677
+msgid "Select Virt-Viewer File"
+msgstr "Vælg Virt-Viewer-fil"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:34
+msgid "Session Logs"
+msgstr "Sessionslogfiler"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:116
+msgid "Refresh log list"
+msgstr "Opdatér logliste"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:147
+msgid "No log files found"
+msgstr "Ingen logfiler fundet"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:181
+msgid "Log Files"
+msgstr "Logfiler"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:192
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:103
+msgid "Log Content"
+msgstr "Logindhold"
+
+#: ../rustconn/src/dialogs/log_viewer.rs:316 ../rustconn/src/empty_state.rs:142
+#: ../rustconn/src/loading.rs:50 ../rustconn/src/split_view/adapter.rs:1237
+msgid "Loading..."
+msgstr "Indlæser..."
+
+#: ../rustconn/src/dialogs/password_generator.rs:22
+#: ../rustconn/src/split_view/bridge.rs:1733
+msgid "Password Generator"
+msgstr "Adgangskodegenerator"
+
+#: ../rustconn/src/dialogs/password_generator.rs:41
+#: ../rustconn/src/embedded_rdp/mod.rs:220
+#: ../rustconn/src/embedded_spice.rs:240 ../rustconn/src/embedded_trait.rs:202
+#: ../rustconn/src/embedded_vnc.rs:157
+msgid "Copy"
+msgstr "Kopiér"
+
+#: ../rustconn/src/dialogs/password_generator.rs:81
+msgid "Generated Password"
+msgstr "Genereret adgangskode"
+
+#: ../rustconn/src/dialogs/password_generator.rs:107
+msgid "Strength Analysis"
+msgstr "Styrkeanalyse"
+
+#: ../rustconn/src/dialogs/password_generator.rs:130
+msgid "Strength"
+msgstr "Styrke"
+
+#: ../rustconn/src/dialogs/password_generator.rs:143
+msgid "Entropy"
+msgstr "Entropi"
+
+#: ../rustconn/src/dialogs/password_generator.rs:144
+msgid "Measure of randomness"
+msgstr "Mål for tilfældighed"
+
+#: ../rustconn/src/dialogs/password_generator.rs:157
+msgid "Crack time"
+msgstr "Knækningstid"
+
+#: ../rustconn/src/dialogs/password_generator.rs:158
+msgid "At 10 billion guesses/sec"
+msgstr "Ved 10 mia. gæt/sek."
+
+#: ../rustconn/src/dialogs/password_generator.rs:167
+msgid "Length"
+msgstr "Længde"
+
+#: ../rustconn/src/dialogs/password_generator.rs:193
+msgid "Characters"
+msgstr "Tegn"
+
+#: ../rustconn/src/dialogs/password_generator.rs:194
+msgid "Recommended: 16+ for important accounts"
+msgstr "Anbefalet: 16+ for vigtige konti"
+
+#: ../rustconn/src/dialogs/password_generator.rs:203
+msgid "Character Sets"
+msgstr "Tegnsæt"
+
+#: ../rustconn/src/dialogs/password_generator.rs:204
+msgid "Select which characters to include"
+msgstr "Vælg hvilke tegn der skal medtages"
+
+#: ../rustconn/src/dialogs/password_generator.rs:209
+msgid "Lowercase"
+msgstr "Små bogstaver"
+
+#: ../rustconn/src/dialogs/password_generator.rs:217
+msgid "Uppercase"
+msgstr "Store bogstaver"
+
+#: ../rustconn/src/dialogs/password_generator.rs:225
+msgid "Digits"
+msgstr "Cifre"
+
+#: ../rustconn/src/dialogs/password_generator.rs:233
+msgid "Special"
+msgstr "Specialtegn"
+
+#: ../rustconn/src/dialogs/password_generator.rs:241
+msgid "Extended"
+msgstr "Udvidet"
+
+#: ../rustconn/src/dialogs/password_generator.rs:256
+msgid "Exclude ambiguous"
+msgstr "Udeluk tvetydige"
+
+#: ../rustconn/src/dialogs/password_generator.rs:257
+msgid "Avoid 0O, 1lI to prevent confusion"
+msgstr "Undgå 0O, 1lI for at forhindre forveksling"
+
+#: ../rustconn/src/dialogs/password_generator.rs:266
+msgid "Security Tips"
+msgstr "Sikkerhedstips"
+
+#: ../rustconn/src/dialogs/password.rs:55
+msgid "Authentication Required"
+msgstr "Godkendelse påkrævet"
+
+#: ../rustconn/src/dialogs/password.rs:93
+msgid "Enter credentials for this connection:"
+msgstr "Indtast legitimationsoplysninger for denne forbindelse:"
+
+#: ../rustconn/src/dialogs/password.rs:106
+msgid "Resolving credentials..."
+msgstr "Henter legitimationsoplysninger..."
+
+#: ../rustconn/src/dialogs/password.rs:199
+msgid "Save Credentials"
+msgstr "Gem legitimationsoplysninger"
+
+#: ../rustconn/src/dialogs/password.rs:206
+msgid "Save to KeePass"
+msgstr "Gem i KeePass"
+
+#: ../rustconn/src/dialogs/progress.rs:55
+msgid "Starting..."
+msgstr "Starter..."
+
+#: ../rustconn/src/dialogs/progress.rs:83
+msgid "Cancelling..."
+msgstr "Annullerer..."
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:35
+msgid "Clients"
+msgstr "Klienter"
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:41
+msgid "Core Clients"
+msgstr "Kerneklienter"
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:42
+msgid "Essential connection clients"
+msgstr "Vigtige forbindelsesklienter"
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:60
+msgid "Zero Trust Clients"
+msgstr "Zero Trust-klienter"
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:61
+msgid "Cloud provider CLI tools"
+msgstr "CLI-værktøjer til cloud-udbydere"
+
+#: ../rustconn/src/dialogs/settings/clients_tab.rs:216
+msgid "Embedded"
+msgstr "Indlejret"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:25
+msgid "Logging"
+msgstr "Logning"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:31
+msgid "General"
+msgstr "Generelt"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:32
+msgid "Configure session logging"
+msgstr "Konfigurer sessionslogning"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:38
+msgid "Persist logs"
+msgstr "Gem logfiler"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:39
+msgid "Save session logs to disk"
+msgstr "Gem sessionslogfiler på disk"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:53
+msgid "Directory"
+msgstr "Mappe"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:68
+msgid "Retention"
+msgstr "Opbevaring"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:69
+msgid "Days to keep logs"
+msgstr "Dage at beholde logfiler"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:83
+msgid "Open Logs Directory"
+msgstr "Åbn logmappe"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:104
+msgid "Select what to include in logs"
+msgstr "Vælg hvad der skal medtages i logfiler"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:114
+msgid "Activity"
+msgstr "Aktivitet"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:115
+msgid "Connection events and change counts"
+msgstr "Forbindelseshændelser og ændringstællere"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:127
+msgid "User Input"
+msgstr "Brugerinput"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:128
+msgid "Commands and keystrokes"
+msgstr "Kommandoer og tastetryk"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:140
+msgid "Terminal Output"
+msgstr "Terminaloutput"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:141
+msgid "Full session transcript"
+msgstr "Fuld sessionsudskrift"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:151
+msgid "Session Logging"
+msgstr "Sessionslogning"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:152
+msgid "Format options for session logs"
+msgstr "Formatindstillinger for sessionslogfiler"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:157
+msgid "Timestamps"
+msgstr "Tidsstempler"
+
+#: ../rustconn/src/dialogs/settings/logging_tab.rs:158
+msgid "Prepend [HH:MM:SS] to each line in session logs"
+msgstr "Tilføj [HH:MM:SS] foran hver linje i sessionslogfiler"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:267
+msgid "Secrets"
+msgstr "Hemmeligheder"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:273
+msgid "Secret Backend"
+msgstr "Hemmelighedsbackend"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:274
+msgid "Choose how passwords are stored"
+msgstr "Vælg hvordan adgangskoder gemmes"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:291
+msgid "Backend"
+msgstr "Backend"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:292
+msgid "Primary password storage method"
+msgstr "Primær metode til lagring af adgangskoder"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:303
+msgid "Version"
+msgstr "Version"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:312
+msgid "Enable fallback"
+msgstr "Aktivér reserveløsning"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:313
+msgid "Use libsecret if primary backend unavailable"
+msgstr "Brug libsecret, hvis primær backend er utilgængelig"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:340
+msgid "Detecting..."
+msgstr "Registrerer..."
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:345
+msgid "Bitwarden"
+msgstr "Bitwarden"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:346
+msgid "Configure Bitwarden CLI integration"
+msgstr "Konfigurer Bitwarden CLI-integration"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:357
+msgid "Master Password"
+msgstr "Hovedadgangskode"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:358
+msgid "Required to unlock vault"
+msgstr "Påkrævet for at låse boksen op"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:367
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:953
+msgid "Save password"
+msgstr "Gem adgangskode"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:368
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:610
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:771
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:954
+msgid "Encrypted storage (machine-specific)"
+msgstr "Krypteret lagring (maskinspecifik)"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:378
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:620
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:780
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:963
+msgid "Save to system keyring"
+msgstr "Gem i systemnøglering"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:379
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:621
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:781
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:964
+msgid "Store in GNOME Keyring / KDE Wallet (recommended)"
+msgstr "Gem i GNOME Keyring / KDE Wallet (anbefalet)"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:423
+msgid "Use API key authentication"
+msgstr "Brug API-nøglegodkendelse"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:425
+msgid "For automation or 2FA methods not supported by CLI (FIDO2, Duo)"
+msgstr ""
+"Til automatisering eller 2FA-metoder, der ikke understøttes af CLI (FIDO2, "
+"Duo)"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:439
+msgid "Client ID"
+msgstr "Klient-ID"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:441
+msgid "From Bitwarden web vault → Settings → Security → Keys"
+msgstr "Fra Bitwarden-webboks → Indstillinger → Sikkerhed → Nøgler"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:456
+msgid "Client Secret"
+msgstr "Klienthemmelighed"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:457
+msgid "Keep this secret safe"
+msgstr "Opbevar denne hemmelighed sikkert"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:477
+msgid "Unlock"
+msgstr "Lås op"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:492
+msgid "Vault Status"
+msgstr "Boksstatus"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:493
+msgid "Login with 'bw login' in terminal first"
+msgstr "Log ind med 'bw login' i terminalen først"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:584
+msgid "1Password"
+msgstr "1Password"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:585
+msgid "Configure 1Password CLI integration"
+msgstr "Konfigurer 1Password CLI-integration"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:596
+msgid "Service Account Token"
+msgstr "Tjenestekontotoken"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:598
+msgid "For headless/automated access (OP_SERVICE_ACCOUNT_TOKEN)"
+msgstr "Til automatiseret adgang (OP_SERVICE_ACCOUNT_TOKEN)"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:609
+msgid "Save token"
+msgstr "Gem token"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:663
+msgid "Sign In"
+msgstr "Log ind"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:678
+msgid "Account Status"
+msgstr "Kontostatus"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:680
+msgid "Sign in with 'op signin' in terminal or use biometric unlock"
+msgstr "Log ind med 'op signin' i terminalen eller brug biometrisk oplåsning"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:734
+msgid "Passbolt"
+msgstr "Passbolt"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:735
+msgid "Configure Passbolt CLI integration"
+msgstr "Konfigurer Passbolt CLI-integration"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:745
+msgid "Server URL"
+msgstr "Server-URL"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:746
+msgid "Passbolt web vault address"
+msgstr "Passbolt-webboksadresse"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:760
+msgid "GPG Passphrase"
+msgstr "GPG-adgangsfrase"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:761
+msgid "Required to decrypt credentials from Passbolt"
+msgstr "Påkrævet for at dekryptere legitimationsoplysninger fra Passbolt"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:770
+msgid "Save passphrase"
+msgstr "Gem adgangsfrase"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:823
+msgid "Open Vault"
+msgstr "Åbn boks"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:838
+msgid "Server Status"
+msgstr "Serverstatus"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:839
+msgid "Configure with 'passbolt configure' in terminal"
+msgstr "Konfigurer med 'passbolt configure' i terminalen"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:878
+msgid "KeePass Database"
+msgstr "KeePass-database"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:880
+msgid ""
+"Configure KDBX file integration (works with KeePassXC, GNOME Secrets, etc.)"
+msgstr ""
+"Konfigurer KDBX-filintegration (fungerer med KeePassXC, GNOME Secrets osv.)"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:886
+msgid "KDBX Integration"
+msgstr "KDBX-integration"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:887
+msgid "Enable direct database access"
+msgstr "Aktivér direkte databaseadgang"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:913
+msgid "Database File"
+msgstr "Databasefil"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:922
+msgid "Authentication"
+msgstr "Godkendelse"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:923
+msgid "Database unlock methods"
+msgstr "Metoder til oplåsning af database"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:932
+msgid "Use password"
+msgstr "Brug adgangskode"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:971
+msgid "Not connected"
+msgstr "Ikke forbundet"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:1008
+msgid "Use key file"
+msgstr "Brug nøglefil"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:1033
+msgid "Key File"
+msgstr "Nøglefil"
+
+#: ../rustconn/src/dialogs/settings/secrets_tab.rs:1041
+msgid "KDBX Status"
+msgstr "KDBX-status"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:32
+msgid "SSH Agent"
+msgstr "SSH-agent"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:38
+msgid "Agent Status"
+msgstr "Agentstatus"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:42
+msgid "Checking..."
+msgstr "Kontrollerer..."
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:46
+msgid "Status"
+msgstr "Status"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:59
+msgid "Socket"
+msgstr "Socket"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:65
+msgid "Start Agent"
+msgstr "Start agent"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:82
+msgid "Controls"
+msgstr "Kontroller"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:90
+msgid "Loaded Keys"
+msgstr "Indlæste nøgler"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:91
+msgid "Keys currently loaded in the SSH agent"
+msgstr "Nøgler der aktuelt er indlæst i SSH-agenten"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:109
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:439
+msgid "Add Key"
+msgstr "Tilføj nøgle"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:114
+msgid "Add SSH Key"
+msgstr "Tilføj SSH-nøgle"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:115
+msgid "Load a key from file"
+msgstr "Indlæs en nøgle fra fil"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:125
+msgid "Available Key Files"
+msgstr "Tilgængelige nøglefiler"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:126
+msgid "Key files found in ~/.ssh/"
+msgstr "Nøglefiler fundet i ~/.ssh/"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:170
+msgid "Loading keys..."
+msgstr "Indlæser nøgler..."
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:228
+msgid "No keys loaded"
+msgstr "Ingen nøgler indlæst"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:229
+msgid "Add keys using ssh-add or the button above"
+msgstr "Tilføj nøgler med ssh-add eller knappen ovenfor"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:247
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:258
+msgid "Agent not running"
+msgstr "Agent kører ikke"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:248
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:259
+msgid "Start the agent to manage keys"
+msgstr "Start agenten for at administrere nøgler"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:283
+msgid "Scanning ~/.ssh/..."
+msgstr "Scanner ~/.ssh/..."
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:308
+msgid "No SSH key files found"
+msgstr "Ingen SSH-nøglefiler fundet"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:309
+msgid "Generate keys with ssh-keygen"
+msgstr "Generér nøgler med ssh-keygen"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:357
+msgid "Failed to scan ~/.ssh/ directory"
+msgstr "Kunne ikke scanne mappen ~/.ssh/"
+
+#: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:419
+msgid "Enter passphrase (leave empty if key has no passphrase)"
+msgstr "Indtast adgangsfrase (lad stå tom, hvis nøglen ikke har en)"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:32
+msgid "Terminal"
+msgstr "Terminal"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:37
+msgid "Font"
+msgstr "Skrifttype"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:45
+msgid "Family"
+msgstr "Familie"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:58
+msgid "Size"
+msgstr "Størrelse"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:67
+msgid "Colors"
+msgstr "Farver"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:77
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:82
+msgid "Theme"
+msgstr "Tema"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:86
+msgid "Cursor"
+msgstr "Markør"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:99
+msgid "Block"
+msgstr "Blok"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:104
+msgid "IBeam"
+msgstr "I-markør"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:109
+msgid "Underline"
+msgstr "Understregning"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:118
+msgid "Shape"
+msgstr "Form"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:132
+msgid "On"
+msgstr "Til"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:137
+msgid "Off"
+msgstr "Fra"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:142
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:44
 msgid "System"
 msgstr "System"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:151
+msgid "Blink"
+msgstr "Blink"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:159
+msgid "Scrolling"
+msgstr "Rulning"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:171
+msgid "History"
+msgstr "Historik"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:172
+msgid "Number of lines to keep in scrollback"
+msgstr "Antal linjer at beholde i tilbagerulning"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:181
+msgid "On output"
+msgstr "Ved output"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:182
+msgid "Scroll to bottom when new output appears"
+msgstr "Rul til bunden, når nyt output vises"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:194
+msgid "On keystroke"
+msgstr "Ved tastetryk"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:195
+msgid "Scroll to bottom when typing"
+msgstr "Rul til bunden under indtastning"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:205
+msgid "Behavior"
+msgstr "Adfærd"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:214
+msgid "Hyperlinks"
+msgstr "Hyperlinks"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:215
+msgid "Allow clickable URLs in terminal"
+msgstr "Tillad klikbare URL'er i terminalen"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:227
+msgid "Hide pointer"
+msgstr "Skjul markør"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:228
+msgid "Hide mouse cursor when typing"
+msgstr "Skjul musemarkør under indtastning"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:237
+msgid "Bell"
+msgstr "Klokke"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:238
+msgid "Play sound on terminal bell"
+msgstr "Afspil lyd ved terminalklokke"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:247
+msgid "SFTP via mc"
+msgstr "SFTP via mc"
+
+#: ../rustconn/src/dialogs/settings/terminal_tab.rs:248
+msgid "Open SFTP in Midnight Commander (local shell tab)"
+msgstr "Åbn SFTP i Midnight Commander (lokal shell-fane)"
+
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:25
+msgid "Interface"
+msgstr "Brugerflade"
+
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:31
+msgid "Appearance"
+msgstr "Udseende"
+
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:48
 msgid "Light"
 msgstr "Lys"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:52
 msgid "Dark"
 msgstr "Mørk"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
-msgid "Theme"
-msgstr ""
-
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:96
 msgid "Language"
-msgstr ""
+msgstr "Sprog"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:97
 msgid "Restart required to apply"
-msgstr ""
+msgstr "Genstart påkrævet for at anvende"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:106
 msgid "Window"
-msgstr ""
+msgstr "Vindue"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:111
 msgid "Remember size"
-msgstr ""
+msgstr "Husk størrelse"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:112
 msgid "Restore window geometry on startup"
-msgstr ""
+msgstr "Gendan vinduesgeometri ved opstart"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:122
 msgid "System Tray"
-msgstr ""
+msgstr "Systembakke"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:123
 msgid "Requires desktop environment with tray support"
-msgstr ""
+msgstr "Kræver skrivebordsmiljø med understøttelse af systembakke"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:128
 msgid "Show icon"
-msgstr ""
+msgstr "Vis ikon"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:129
 msgid "Display icon in system tray"
-msgstr ""
+msgstr "Vis ikon i systembakken"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:137
 msgid "Minimize to tray"
-msgstr ""
+msgstr "Minimér til systembakke"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:138
 msgid "Hide window instead of closing"
-msgstr ""
+msgstr "Skjul vindue i stedet for at lukke"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:154
+#: ../rustconn/src/split_view/bridge.rs:1734
 msgid "Session Restore"
-msgstr ""
+msgstr "Sessionsgendannelse"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:155
 msgid "Restore previous connections on startup"
-msgstr ""
+msgstr "Gendan tidligere forbindelser ved opstart"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:160
 msgid "Enabled"
-msgstr ""
+msgstr "Aktiveret"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:161
 msgid "Reconnect to previous sessions on startup"
-msgstr ""
+msgstr "Genopret forbindelse til tidligere sessioner ved opstart"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:169
 msgid "Ask first"
-msgstr ""
+msgstr "Spørg først"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:170
 msgid "Prompt before restoring sessions"
-msgstr ""
+msgstr "Spørg før gendannelse af sessioner"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:177
 msgid "Max age"
-msgstr ""
+msgstr "Maks. alder"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs
+#: ../rustconn/src/dialogs/settings/ui_tab.rs:178
 msgid "Hours before sessions expire"
-msgstr ""
+msgstr "Timer før sessioner udløber"
 
-#. Empty states
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/dialogs/shortcuts.rs:170
+#: ../rustconn/src/split_view/bridge.rs:1759
+msgid "Keyboard Shortcuts"
+msgstr "Tastaturgenveje"
+
+#: ../rustconn/src/dialogs/shortcuts.rs:207
+msgid "Search shortcuts..."
+msgstr "Søg genveje..."
+
+#: ../rustconn/src/dialogs/snippet.rs:64 ../rustconn/src/empty_state.rs:109
+msgid "New Snippet"
+msgstr "Ny stump"
+
+#: ../rustconn/src/dialogs/snippet.rs:167
+msgid "Snippet Info"
+msgstr "Uddragsinformation"
+
+#: ../rustconn/src/dialogs/snippet.rs:210
+msgid "Command"
+msgstr "Kommando"
+
+#: ../rustconn/src/dialogs/snippet.rs:211
+msgid "Use ${variable_name} for placeholders"
+msgstr "Brug ${variable_name} som pladsholdere"
+
+#: ../rustconn/src/dialogs/snippet.rs:233
+#: ../rustconn/src/dialogs/variables.rs:147
+msgid "Variables"
+msgstr "Variabler"
+
+#: ../rustconn/src/dialogs/snippet.rs:234
+msgid "Variables are auto-detected from command"
+msgstr "Variabler registreres automatisk fra kommandoen"
+
+#: ../rustconn/src/dialogs/snippet.rs:255
+#: ../rustconn/src/dialogs/variables.rs:174
+msgid "Add Variable"
+msgstr "Tilføj variabel"
+
+#: ../rustconn/src/dialogs/snippet.rs:317
+#: ../rustconn/src/dialogs/variables.rs:264
+msgid "Description:"
+msgstr "Beskrivelse:"
+
+#: ../rustconn/src/dialogs/snippet.rs:322
+msgid "Variable description"
+msgstr "Variabelbeskrivelse"
+
+#: ../rustconn/src/dialogs/snippet.rs:332
+msgid "Default:"
+msgstr "Standard:"
+
+#: ../rustconn/src/dialogs/snippet.rs:337
+msgid "Default value"
+msgstr "Standardværdi"
+
+#: ../rustconn/src/dialogs/snippet.rs:360
+msgid "Edit Snippet"
+msgstr "Redigér uddrag"
+
+#: ../rustconn/src/dialogs/statistics.rs:29
+#: ../rustconn/src/dialogs/statistics.rs:122
+msgid "Connection Statistics"
+msgstr "Forbindelsesstatistik"
+
+#: ../rustconn/src/dialogs/statistics.rs:47
+msgid "Reset"
+msgstr "Nulstil"
+
+#: ../rustconn/src/dialogs/statistics.rs:127
+msgid "Total connections"
+msgstr "Forbindelser i alt"
+
+#: ../rustconn/src/dialogs/statistics.rs:136
+#: ../rustconn/src/dialogs/statistics.rs:236
+msgid "Successful"
+msgstr "Vellykkede"
+
+#: ../rustconn/src/dialogs/statistics.rs:153
+msgid "Success rate"
+msgstr "Succesrate"
+
+#: ../rustconn/src/dialogs/statistics.rs:163
+msgid "Total time connected"
+msgstr "Samlet forbindelsestid"
+
+#: ../rustconn/src/dialogs/statistics.rs:176
+msgid "Last connected"
+msgstr "Sidst forbundet"
+
+#: ../rustconn/src/dialogs/statistics.rs:190
+msgid "Average session"
+msgstr "Gennemsnitlig session"
+
+#: ../rustconn/src/dialogs/statistics.rs:222
+msgid "Overview"
+msgstr "Oversigt"
+
+#: ../rustconn/src/dialogs/statistics.rs:223
+msgid "All connections summary"
+msgstr "Oversigt over alle forbindelser"
+
+#: ../rustconn/src/dialogs/statistics.rs:227
+msgid "Total sessions"
+msgstr "Sessioner i alt"
+
+#: ../rustconn/src/dialogs/statistics.rs:252
+msgid "Total time"
+msgstr "Samlet tid"
+
+#: ../rustconn/src/dialogs/statistics.rs:265
+msgid "Per-Connection"
+msgstr "Pr. forbindelse"
+
+#: ../rustconn/src/dialogs/statistics.rs:299
+msgid "Success Rate"
+msgstr "Succesrate"
+
+#: ../rustconn/src/dialogs/template.rs:123 ../rustconn/src/empty_state.rs:121
+msgid "New Template"
+msgstr "Ny skabelon"
+
+#: ../rustconn/src/dialogs/template.rs:2543
+msgid "Edit Template"
+msgstr "Redigér skabelon"
+
+#: ../rustconn/src/dialogs/template.rs:2837
+msgid "Manage Templates"
+msgstr "Administrér skabeloner"
+
+#: ../rustconn/src/dialogs/template.rs:2881
+msgid "Filter by protocol:"
+msgstr "Filtrér efter protokol:"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:37
+msgid "Search in Terminal"
+msgstr "Søg i terminal"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:72
+msgid "Search text..."
+msgstr "Søgetekst..."
+
+#: ../rustconn/src/dialogs/terminal_search.rs:80
+msgid "Case sensitive"
+msgstr "Forskel på store/små bogstaver"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:84
+msgid "Regex"
+msgstr "Regulært udtryk"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:85
+msgid "Use regular expression pattern"
+msgstr "Brug regulært udtryksmønster"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:90
+msgid "Highlight All"
+msgstr "Fremhæv alle"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:91
+msgid "Highlight all matches in terminal"
+msgstr "Fremhæv alle matches i terminalen"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:103
+msgid "Previous match"
+msgstr "Forrige match"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:109
+msgid "Next match"
+msgstr "Næste match"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:114
+#: ../rustconn/src/dialogs/terminal_search.rs:164
+msgid "Enter text to search"
+msgstr "Indtast tekst til søgning"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:333
+msgid "Found matches"
+msgstr "Fundne matches"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:335
+msgid "No matches found"
+msgstr "Ingen matches fundet"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:338
+msgid "Invalid regex pattern"
+msgstr "Ugyldigt regulært udtryksmønster"
+
+#: ../rustconn/src/dialogs/terminal_search.rs:341
+msgid "Search error"
+msgstr "Søgefejl"
+
+#: ../rustconn/src/dialogs/variables.rs:60
+msgid "Global Variables"
+msgstr "Globale variabler"
+
+#: ../rustconn/src/dialogs/variables.rs:149
+msgid ""
+"Define variables that can be used in connections                  with "
+"${variable_name} syntax"
+msgstr ""
+"Definér variabler, der kan bruges i forbindelser                  med "
+"${variable_name}-syntaks"
+
+#: ../rustconn/src/dialogs/variables.rs:210
+msgid "Delete variable"
+msgstr "Slet variabel"
+
+#: ../rustconn/src/dialogs/variables.rs:219
+msgid "Value:"
+msgstr "Værdi:"
+
+#: ../rustconn/src/dialogs/variables.rs:236
+#: ../rustconn/src/window/connection_dialogs.rs:322
+#: ../rustconn/src/window/edit_dialogs.rs:597
+msgid "Show/hide password"
+msgstr "Vis/skjul adgangskode"
+
+#: ../rustconn/src/dialogs/variables.rs:241
+#: ../rustconn/src/window/connection_dialogs.rs:327
+#: ../rustconn/src/window/edit_dialogs.rs:602
+msgid "Load password from vault"
+msgstr "Indlæs adgangskode fra boks"
+
+#: ../rustconn/src/dialogs/variables.rs:257
+msgid "Secret (mask value)"
+msgstr "Hemmeligt (maskér værdi)"
+
+#: ../rustconn/src/dialogs/wol.rs:29 ../rustconn/src/sidebar_ui.rs:133
+msgid "Wake On LAN"
+msgstr "Wake On LAN"
+
+#: ../rustconn/src/dialogs/wol.rs:47 ../rustconn/src/window/sessions.rs:332
+msgid "Send"
+msgstr "Send"
+
+#: ../rustconn/src/dialogs/wol.rs:68 ../rustconn/src/dialogs/wol.rs:74
+msgid "Connection"
+msgstr "Forbindelse"
+
+#: ../rustconn/src/dialogs/wol.rs:69
+msgid "Pick a connection with WoL configured"
+msgstr "Vælg en forbindelse med WoL konfigureret"
+
+#: ../rustconn/src/dialogs/wol.rs:72 ../rustconn/src/dialogs/wol.rs:220
+msgid "Manual entry"
+msgstr "Manuel indtastning"
+
+#: ../rustconn/src/dialogs/wol.rs:82
+msgid "Manual"
+msgstr "Manuel"
+
+#: ../rustconn/src/dialogs/wol.rs:83
+msgid "Or enter MAC address manually"
+msgstr "Eller indtast MAC-adresse manuelt"
+
+#: ../rustconn/src/dialogs/wol.rs:86
+msgid "MAC Address"
+msgstr "MAC-adresse"
+
+#: ../rustconn/src/dialogs/wol.rs:91
+msgid "Broadcast Address"
+msgstr "Broadcastadresse"
+
+#: ../rustconn/src/dialogs/wol.rs:96
+#: ../rustconn/src/window/edit_dialogs.rs:1295
+msgid "Port"
+msgstr "Port"
+
+#: ../rustconn/src/dialogs/wol.rs:154
+msgid "Invalid MAC address format"
+msgstr "Ugyldigt MAC-adresseformat"
+
+#: ../rustconn/src/dialogs/wol.rs:163 ../rustconn/src/validation.rs:141
+msgid "Invalid port number"
+msgstr "Ugyldigt portnummer"
+
+#: ../rustconn/src/dialogs/wol.rs:177
+msgid "Sending…"
+msgstr "Sender…"
+
+#: ../rustconn/src/dialogs/wol.rs:197
+msgid "Failed to send packet. Check permissions."
+msgstr "Kunne ikke sende pakke. Kontrollér tilladelser."
+
+#: ../rustconn/src/embedded_rdp/mod.rs:222
+msgid "Copy remote clipboard to local (waiting for remote data...)"
+msgstr "Kopiér fjernudklipsholder til lokal (venter på fjerndata...)"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:228
+#: ../rustconn/src/embedded_spice.rs:245 ../rustconn/src/embedded_trait.rs:207
+#: ../rustconn/src/embedded_vnc.rs:162
+msgid "Paste"
+msgstr "Indsæt"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:229
+#: ../rustconn/src/embedded_spice.rs:246 ../rustconn/src/embedded_trait.rs:208
+#: ../rustconn/src/embedded_vnc.rs:163
+msgid "Paste from local clipboard to remote session"
+msgstr "Indsæt fra lokal udklipsholder til fjernsession"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:240
+#: ../rustconn/src/embedded_spice.rs:258 ../rustconn/src/embedded_trait.rs:220
+#: ../rustconn/src/embedded_vnc.rs:175
+msgid "Send Ctrl+Alt+Del to remote session"
+msgstr "Send Ctrl+Alt+Del til fjernsession"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:245
+msgid "Save Files"
+msgstr "Gem filer"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:248
+msgid "Save files from remote clipboard"
+msgstr "Gem filer fra fjernudklipsholder"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:254
+#: ../rustconn/src/embedded_spice.rs:262 ../rustconn/src/embedded_trait.rs:224
+#: ../rustconn/src/embedded_vnc.rs:179
+msgid "Reconnect"
+msgstr "Genopret forbindelse"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:256
+#: ../rustconn/src/embedded_spice.rs:264 ../rustconn/src/embedded_trait.rs:226
+#: ../rustconn/src/embedded_vnc.rs:181
+msgid "Reconnect to the remote session"
+msgstr "Genopret forbindelse til fjernsessionen"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:391
+msgid "Select folder to save files"
+msgstr "Vælg mappe til at gemme filer"
+
+#: ../rustconn/src/embedded_rdp/mod.rs:419
+msgid "Downloading..."
+msgstr "Downloader..."
+
+#: ../rustconn/src/embedded_rdp/mod.rs:1861
+msgid "Copy remote clipboard to local"
+msgstr "Kopiér fjernudklipsholder til lokal"
+
+#: ../rustconn/src/embedded.rs:62
+msgid "Connecting..."
+msgstr "Opretter forbindelse..."
+
+#: ../rustconn/src/embedded.rs:69 ../rustconn/src/floating_controls.rs:110
+#: ../rustconn/src/floating_controls.rs:180
+#: ../rustconn/src/floating_controls.rs:326
+msgid "Toggle Fullscreen"
+msgstr "Skift fuldskærm"
+
+#: ../rustconn/src/embedded_spice.rs:241 ../rustconn/src/embedded_trait.rs:203
+#: ../rustconn/src/embedded_vnc.rs:158
+msgid "Copy from remote session to local clipboard"
+msgstr "Kopiér fra fjernsession til lokal udklipsholder"
+
+#: ../rustconn/src/empty_state.rs:59
 msgid "No Connections"
-msgstr ""
+msgstr "Ingen forbindelser"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:60
 msgid "Create your first connection to get started"
-msgstr ""
+msgstr "Opret din første forbindelse for at komme i gang"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:71
 msgid "No Results Found"
-msgstr ""
+msgstr "Ingen resultater fundet"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:72
 msgid "No connections match"
-msgstr ""
+msgstr "Ingen forbindelser matcher"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:83
 msgid "No Active Sessions"
 msgstr "Ingen aktive sessioner"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:84
 msgid "Connect to a server to start a session"
-msgstr ""
+msgstr "Forbind til en server for at starte en session"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:85 ../rustconn/src/sidebar_ui.rs:376
+#: ../rustconn/src/split_view/bridge.rs:1706
+#: ../rustconn/src/window/edit_dialogs.rs:1202 ../rustconn/src/window/ui.rs:118
 msgid "Quick Connect"
-msgstr ""
+msgstr "Hurtig forbindelse"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:95
 msgid "No Groups"
-msgstr ""
+msgstr "Ingen grupper"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:96
 msgid "Create groups to organize your connections"
-msgstr ""
+msgstr "Opret grupper til at organisere dine forbindelser"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:97 ../rustconn/src/sidebar_ui.rs:227
+#: ../rustconn/src/sidebar_ui.rs:404
+#: ../rustconn/src/window/connection_dialogs.rs:180
+#: ../rustconn/src/window/ui.rs:117
 msgid "New Group"
-msgstr ""
+msgstr "Ny gruppe"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:107
 msgid "No Snippets"
-msgstr ""
+msgstr "Ingen stumper"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:108
 msgid "Create command snippets for quick access"
-msgstr ""
+msgstr "Opret kommandostumper til hurtig adgang"
 
-#: rustconn/src/empty_state.rs
-msgid "New Snippet"
-msgstr ""
-
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:119
 msgid "No Templates"
-msgstr ""
+msgstr "Ingen skabeloner"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:120
 msgid "Create templates for common connection configurations"
-msgstr ""
+msgstr "Opret skabeloner til almindelige forbindelseskonfigurationer"
 
-#: rustconn/src/empty_state.rs
-msgid "New Template"
-msgstr ""
-
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:131
 msgid "No Connection History"
-msgstr ""
+msgstr "Ingen forbindelseshistorik"
 
-#: rustconn/src/empty_state.rs
+#: ../rustconn/src/empty_state.rs:132
 msgid "Your recent connections will appear here"
+msgstr "Dine seneste forbindelser vises her"
+
+#: ../rustconn/src/floating_controls.rs:116
+msgid "Session Settings"
+msgstr "Sessionsindstillinger"
+
+#: ../rustconn/src/floating_controls.rs:184
+#: ../rustconn/src/floating_controls.rs:321
+msgid "Exit Fullscreen"
+msgstr "Afslut fuldskærm"
+
+#: ../rustconn/src/session/vnc.rs:119 ../rustconn/src/session/vnc.rs:202
+#: ../rustconn/src/session/vnc.rs:733
+msgid "Disconnected"
+msgstr "Afbrudt"
+
+#: ../rustconn/src/sidebar/mod.rs:110
+msgid "Search... (? for help)"
+msgstr "Søg... (? for hjælp)"
+
+#: ../rustconn/src/sidebar/mod.rs:119
+msgid "Search pending..."
+msgstr "Søgning afventer..."
+
+#: ../rustconn/src/sidebar/mod.rs:124
+msgid "Search syntax help"
+msgstr "Hjælp til søgesyntaks"
+
+#: ../rustconn/src/sidebar/mod.rs:207
+msgid "Shell"
+msgstr "Shell"
+
+#: ../rustconn/src/sidebar/mod.rs:211
+msgid "Local Shell (Ctrl+Shift+T)"
+msgstr "Lokal shell (Ctrl+Shift+T)"
+
+#: ../rustconn/src/sidebar/mod.rs:1805
+msgid "Open Password Vault (Active)"
+msgstr "Åbn adgangskodeboks (aktiv)"
+
+#: ../rustconn/src/sidebar/mod.rs:1811
+msgid "Password Vault Not Found"
+msgstr "Adgangskodeboks ikke fundet"
+
+#: ../rustconn/src/sidebar/mod.rs:1814
+msgid "Password Vault Disabled"
+msgstr "Adgangskodeboks deaktiveret"
+
+#: ../rustconn/src/sidebar_ui.rs:64 ../rustconn/src/window/snippets.rs:110
+msgid "Edit"
+msgstr "Redigér"
+
+#: ../rustconn/src/sidebar_ui.rs:78 ../rustconn/src/window/edit_dialogs.rs:220
+msgid "Rename"
+msgstr "Omdøb"
+
+#: ../rustconn/src/sidebar_ui.rs:92
+msgid "Duplicate"
+msgstr "Duplikér"
+
+#: ../rustconn/src/sidebar_ui.rs:105 ../rustconn/src/sidebar_ui.rs:235
+msgid "Move to Group..."
+msgstr "Flyt til gruppe..."
+
+#: ../rustconn/src/sidebar_ui.rs:119
+msgid "Run Snippet..."
+msgstr "Kør uddrag..."
+
+#: ../rustconn/src/sidebar_ui.rs:148
+msgid "Open SFTP"
+msgstr "Åbn SFTP"
+
+#: ../rustconn/src/sidebar_ui.rs:163 ../rustconn/src/sidebar_ui.rs:259
+#: ../rustconn/src/window/operations.rs:78
+#: ../rustconn/src/window/snippets.rs:114
+#: ../rustconn/src/window/snippets.rs:219
+#: ../rustconn/src/window/templates.rs:153
+msgid "Delete"
+msgstr "Slet"
+
+#: ../rustconn/src/sidebar_ui.rs:228
+msgid "Create a new group"
+msgstr "Opret en ny gruppe"
+
+#: ../rustconn/src/sidebar_ui.rs:236
+msgid "Move selected items to a group"
+msgstr "Flyt valgte elementer til en gruppe"
+
+#: ../rustconn/src/sidebar_ui.rs:245
+msgid "Select all items (Ctrl+A)"
+msgstr "Vælg alle elementer (Ctrl+A)"
+
+#: ../rustconn/src/sidebar_ui.rs:252
+msgid "Clear"
+msgstr "Ryd"
+
+#: ../rustconn/src/sidebar_ui.rs:253
+msgid "Clear selection (Escape)"
+msgstr "Ryd valg (Escape)"
+
+#: ../rustconn/src/sidebar_ui.rs:260
+msgid "Delete all selected items"
+msgstr "Slet alle valgte elementer"
+
+#: ../rustconn/src/sidebar_ui.rs:285
+msgid "Group Operations Mode"
+msgstr "Gruppefunktionstilstand"
+
+#: ../rustconn/src/sidebar_ui.rs:301
+msgid "Sort Alphabetically"
+msgstr "Sortér alfabetisk"
+
+#: ../rustconn/src/sidebar_ui.rs:310
+msgid "Sort by Recent Usage"
+msgstr "Sortér efter seneste brug"
+
+#: ../rustconn/src/sidebar_ui.rs:319
+msgid "Import Connections (Ctrl+I)"
+msgstr "Importér forbindelser (Ctrl+I)"
+
+#: ../rustconn/src/sidebar_ui.rs:337
+msgid "Open Password Vault"
+msgstr "Åbn adgangskodeboks"
+
+#: ../rustconn/src/sidebar_ui.rs:424
+msgid "Import..."
+msgstr "Importér..."
+
+#: ../rustconn/src/sidebar_ui.rs:438
+msgid "Export..."
+msgstr "Eksportér..."
+
+#: ../rustconn/src/split_view/adapter.rs:1020
+msgid "Drag to move this session to another panel or tab"
+msgstr "Træk for at flytte denne session til et andet panel eller fane"
+
+#: ../rustconn/src/split_view/adapter.rs:1162
+msgid "Empty Panel"
+msgstr "Tomt panel"
+
+#: ../rustconn/src/split_view/adapter.rs:1163
+msgid "Select an existing tab to display in this panel"
+msgstr "Vælg en eksisterende fane til visning i dette panel"
+
+#: ../rustconn/src/split_view/adapter.rs:1173
+msgid "Select Tab..."
+msgstr "Vælg fane..."
+
+#: ../rustconn/src/split_view/adapter.rs:1174
+msgid "Choose an open tab to display in this panel"
+msgstr "Vælg en åben fane til visning i dette panel"
+
+#: ../rustconn/src/split_view/adapter.rs:1198
+msgid "Close panel"
+msgstr "Luk panel"
+
+#: ../rustconn/src/split_view/bridge.rs:1454
+msgid "Basic Information"
+msgstr "Grundlæggende oplysninger"
+
+#: ../rustconn/src/split_view/bridge.rs:1459
+#: ../rustconn/src/window/edit_dialogs.rs:1273
+msgid "Protocol"
+msgstr "Protokol"
+
+#: ../rustconn/src/split_view/bridge.rs:1474
+#: ../rustconn/src/window/connection_dialogs.rs:291
+#: ../rustconn/src/window/edit_dialogs.rs:558
+#: ../rustconn/src/window/edit_dialogs.rs:1305
+msgid "Username"
+msgstr "Brugernavn"
+
+#: ../rustconn/src/split_view/bridge.rs:1683
+msgid "Manage remote connections easily"
+msgstr "Administrér fjernforbindelser nemt"
+
+#: ../rustconn/src/split_view/bridge.rs:1727
+msgid "Features"
+msgstr "Funktioner"
+
+#: ../rustconn/src/split_view/bridge.rs:1731
+msgid "Embedded SSH terminals"
+msgstr "Indlejrede SSH-terminaler"
+
+#: ../rustconn/src/split_view/bridge.rs:1732
+msgid "Secure credential storage"
+msgstr "Sikker lagring af legitimationsoplysninger"
+
+#: ../rustconn/src/split_view/bridge.rs:1735
+msgid "Expect automation"
+msgstr "Expect-automatisering"
+
+#: ../rustconn/src/split_view/bridge.rs:1736
+msgid "Groups and tags"
+msgstr "Grupper og tags"
+
+#: ../rustconn/src/split_view/bridge.rs:1737
+msgid "Zero Trust tunnels"
+msgstr "Zero Trust-tunneler"
+
+#: ../rustconn/src/split_view/bridge.rs:1738
+msgid "Customizable settings"
+msgstr "Tilpasselige indstillinger"
+
+#: ../rustconn/src/split_view/bridge.rs:1741
+msgid "Embedded & external clients"
+msgstr "Indlejrede og eksterne klienter"
+
+#: ../rustconn/src/split_view/bridge.rs:1763
+msgid "New connection"
+msgstr "Ny forbindelse"
+
+#: ../rustconn/src/split_view/bridge.rs:1764
+msgid "New group"
+msgstr "Ny gruppe"
+
+#: ../rustconn/src/split_view/bridge.rs:1765
+msgid "Local shell"
+msgstr "Lokal shell"
+
+#: ../rustconn/src/split_view/bridge.rs:1766
+msgid "Quick connect"
+msgstr "Hurtig forbindelse"
+
+#: ../rustconn/src/split_view/bridge.rs:1767
+msgid "Search"
+msgstr "Søg"
+
+#: ../rustconn/src/split_view/bridge.rs:1768
+msgid "Split vertical"
+msgstr "Del lodret"
+
+#: ../rustconn/src/split_view/bridge.rs:1769
+msgid "Split horizontal"
+msgstr "Del vandret"
+
+#: ../rustconn/src/split_view/bridge.rs:1771
+msgid "Next tab"
+msgstr "Næste fane"
+
+#: ../rustconn/src/split_view/bridge.rs:1792
+msgid "Performance"
+msgstr "Ydeevne"
+
+#: ../rustconn/src/split_view/bridge.rs:1796
+msgid "Smart search caching"
+msgstr "Intelligent søgecache"
+
+#: ../rustconn/src/split_view/bridge.rs:1797
+msgid "Lazy loading for trees"
+msgstr "Doven indlæsning af træer"
+
+#: ../rustconn/src/split_view/bridge.rs:1798
+msgid "Virtual scrolling"
+msgstr "Virtuel rulning"
+
+#: ../rustconn/src/split_view/bridge.rs:1799
+msgid "Embedded VNC/RDP/SPICE"
+msgstr "Indlejret VNC/RDP/SPICE"
+
+#: ../rustconn/src/split_view/bridge.rs:1811
+msgid "Import Formats"
+msgstr "Importformater"
+
+#: ../rustconn/src/split_view/bridge.rs:1835
+msgid "Double-click a connection in the sidebar to get started"
+msgstr "Dobbeltklik på en forbindelse i sidebjælken for at komme i gang"
+
+#: ../rustconn/src/split_view/bridge.rs:1994
+msgid "All tabs are already displayed in this split view"
+msgstr "Alle faner vises allerede i denne opdelte visning"
+
+#: ../rustconn/src/split_view/bridge.rs:2033
+msgid "Select a tab to display"
+msgstr "Vælg en fane til visning"
+
+#: ../rustconn/src/validation.rs:65
+msgid "{} is required"
+msgstr "{} er påkrævet"
+
+#: ../rustconn/src/validation.rs:79
+msgid "{} must be at least {} characters"
+msgstr "{} skal være mindst {} tegn"
+
+#: ../rustconn/src/validation.rs:95
+msgid "{} must be at most {} characters"
+msgstr "{} må højst være {} tegn"
+
+#: ../rustconn/src/validation.rs:110
+msgid "Host is required"
+msgstr "Vært er påkrævet"
+
+#: ../rustconn/src/validation.rs:120
+msgid "Invalid hostname format"
+msgstr "Ugyldigt værtsnavnformat"
+
+#: ../rustconn/src/validation.rs:122
+msgid "Hostname cannot start or end with a hyphen"
+msgstr "Værtsnavn må ikke starte eller slutte med bindestreg"
+
+#: ../rustconn/src/validation.rs:135
+msgid "Port is required"
+msgstr "Port er påkrævet"
+
+#: ../rustconn/src/validation.rs:140
+msgid "Port must be greater than 0"
+msgstr "Port skal være større end 0"
+
+#: ../rustconn/src/window/connection_dialogs.rs:100
+#: ../rustconn/src/window/templates.rs:413
+msgid "New Connection from Template"
+msgstr "Ny forbindelse fra skabelon"
+
+#: ../rustconn/src/window/connection_dialogs.rs:158
+#: ../rustconn/src/window/templates.rs:466
+msgid "Error Creating Connection"
+msgstr "Fejl ved oprettelse af forbindelse"
+
+#: ../rustconn/src/window/connection_dialogs.rs:227
+#: ../rustconn/src/window/edit_dialogs.rs:442
+msgid "Group Details"
+msgstr "Gruppedetaljer"
+
+#: ../rustconn/src/window/connection_dialogs.rs:231
+#: ../rustconn/src/window/edit_dialogs.rs:235
+#: ../rustconn/src/window/edit_dialogs.rs:447
+msgid "Name"
+msgstr "Navn"
+
+#: ../rustconn/src/window/connection_dialogs.rs:252
+#: ../rustconn/src/window/edit_dialogs.rs:515
+msgid "(None - Root Level)"
+msgstr "(Ingen - rodniveau)"
+
+#: ../rustconn/src/window/connection_dialogs.rs:277
+#: ../rustconn/src/window/edit_dialogs.rs:542
+msgid "Parent"
+msgstr "Overordnet"
+
+#: ../rustconn/src/window/connection_dialogs.rs:278
+msgid "Optional - leave empty for root level"
+msgstr "Valgfrit - lad stå tomt for rodniveau"
+
+#: ../rustconn/src/window/connection_dialogs.rs:287
+#: ../rustconn/src/window/edit_dialogs.rs:553
+msgid "Default Credentials"
+msgstr "Standardlegitimationsoplysninger"
+
+#: ../rustconn/src/window/connection_dialogs.rs:288
+#: ../rustconn/src/window/edit_dialogs.rs:554
+msgid "Credentials inherited by connections in this group"
+msgstr "Legitimationsoplysninger nedarvet af forbindelser i denne gruppe"
+
+#: ../rustconn/src/window/connection_dialogs.rs:296
+#: ../rustconn/src/window/edit_dialogs.rs:565
+msgid "Prompt"
+msgstr "Prompt"
+
+#: ../rustconn/src/window/connection_dialogs.rs:297
+#: ../rustconn/src/window/edit_dialogs.rs:566
+msgid "Vault"
+msgstr "Boks"
+
+#: ../rustconn/src/window/connection_dialogs.rs:298
+#: ../rustconn/src/window/edit_dialogs.rs:567
+msgid "Variable"
+msgstr "Variabel"
+
+#: ../rustconn/src/window/connection_dialogs.rs:299
+#: ../rustconn/src/window/edit_dialogs.rs:568
+msgid "Inherit"
+msgstr "Nedarv"
+
+#: ../rustconn/src/window/connection_dialogs.rs:300
+#: ../rustconn/src/window/edit_dialogs.rs:569
+msgid "None"
+msgstr "Ingen"
+
+#: ../rustconn/src/window/connection_dialogs.rs:316
+#: ../rustconn/src/window/edit_dialogs.rs:591
+msgid "Password value"
+msgstr "Adgangskodeværdi"
+
+#: ../rustconn/src/window/connection_dialogs.rs:331
+#: ../rustconn/src/window/edit_dialogs.rs:606
+msgid "Value"
+msgstr "Værdi"
+
+#: ../rustconn/src/window/connection_dialogs.rs:374
+msgid "Enter group name first"
+msgstr "Indtast gruppenavn først"
+
+#: ../rustconn/src/window/connection_dialogs.rs:402
+msgid "Vault not configured"
+msgstr "Boks ikke konfigureret"
+
+#: ../rustconn/src/window/connection_dialogs.rs:431
+#: ../rustconn/src/window/connection_dialogs.rs:496
+#: ../rustconn/src/window/connection_dialogs.rs:503
+#: ../rustconn/src/window/edit_dialogs.rs:717
+#: ../rustconn/src/window/edit_dialogs.rs:749
+#: ../rustconn/src/window/edit_dialogs.rs:756
+#: ../rustconn/src/window/edit_dialogs.rs:788
+#: ../rustconn/src/window/edit_dialogs.rs:795
+msgid "No password found for this group"
+msgstr "Ingen adgangskode fundet for denne gruppe"
+
+#: ../rustconn/src/window/connection_dialogs.rs:436
+#: ../rustconn/src/window/connection_dialogs.rs:508
+#: ../rustconn/src/window/edit_dialogs.rs:722
+#: ../rustconn/src/window/edit_dialogs.rs:761
+#: ../rustconn/src/window/edit_dialogs.rs:800
+msgid "Load Error"
+msgstr "Indlæsningsfejl"
+
+#: ../rustconn/src/window/connection_dialogs.rs:517
+msgid "Select Vault to load password"
+msgstr "Vælg boks til indlæsning af adgangskode"
+
+#: ../rustconn/src/window/connection_dialogs.rs:521
+#: ../rustconn/src/window/edit_dialogs.rs:818
+msgid "Domain"
+msgstr "Domæne"
+
+#: ../rustconn/src/window/connection_dialogs.rs:528
+#: ../rustconn/src/window/edit_dialogs.rs:827
+msgid "Description"
+msgstr "Beskrivelse"
+
+#: ../rustconn/src/window/connection_dialogs.rs:529
+#: ../rustconn/src/window/edit_dialogs.rs:828
+msgid "Notes, contacts, project info"
+msgstr "Noter, kontakter, projektinfo"
+
+#: ../rustconn/src/window/connection_dialogs.rs:568
+#: ../rustconn/src/window/edit_dialogs.rs:876
+msgid "Group name cannot be empty"
+msgstr "Gruppenavn må ikke være tomt"
+
+#: ../rustconn/src/window/connection_dialogs.rs:643
+msgid "Error Updating Group"
+msgstr "Fejl ved opdatering af gruppe"
+
+#: ../rustconn/src/window/connection_dialogs.rs:721
+msgid "Import Successful"
+msgstr "Import vellykket"
+
+#: ../rustconn/src/window/connection_dialogs.rs:727
+msgid "Import Failed"
+msgstr "Import mislykkedes"
+
+#: ../rustconn/src/window/document_actions.rs:93
+msgid "Failed to open document."
+msgstr "Kunne ikke åbne dokument."
+
+#: ../rustconn/src/window/document_actions.rs:131
+#: ../rustconn/src/window/document_actions.rs:151
+msgid "Failed to save document."
+msgstr "Kunne ikke gemme dokument."
+
+#: ../rustconn/src/window/document_actions.rs:184
+msgid "Untitled"
+msgstr "Unavngivet"
+
+#: ../rustconn/src/window/document_actions.rs:242
+#: ../rustconn/src/window/document_actions.rs:299
+msgid "Document Files"
+msgstr "Dokumentfiler"
+
+#: ../rustconn/src/window/document_actions.rs:248
+msgid "Export Document"
+msgstr "Eksportér dokument"
+
+#: ../rustconn/src/window/document_actions.rs:269
+msgid "Failed to export document."
+msgstr "Kunne ikke eksportere dokument."
+
+#: ../rustconn/src/window/document_actions.rs:305
+msgid "Import Document"
+msgstr "Importér dokument"
+
+#: ../rustconn/src/window/document_actions.rs:330
+msgid "Failed to import document."
+msgstr "Kunne ikke importere dokument."
+
+#: ../rustconn/src/window/edit_dialogs.rs:172
+msgid "Error Updating Connection"
+msgstr "Fejl ved opdatering af forbindelse"
+
+#: ../rustconn/src/window/edit_dialogs.rs:205
+msgid "Rename Group"
+msgstr "Omdøb gruppe"
+
+#: ../rustconn/src/window/edit_dialogs.rs:207
+msgid "Rename Connection"
+msgstr "Omdøb forbindelse"
+
+#: ../rustconn/src/window/edit_dialogs.rs:261
+msgid "Name cannot be empty"
+msgstr "Navn må ikke være tomt"
+
+#: ../rustconn/src/window/edit_dialogs.rs:277
+#: ../rustconn/src/window/edit_dialogs.rs:911
+msgid "Group with name '{}' already exists"
+msgstr "Gruppe med navnet '{}' findes allerede"
+
+#: ../rustconn/src/window/edit_dialogs.rs:402
+msgid "Edit Group"
+msgstr "Redigér gruppe"
+
+#: ../rustconn/src/window/edit_dialogs.rs:543
+msgid "Moving a group moves all its content"
+msgstr "Flytning af en gruppe flytter alt dens indhold"
+
+#: ../rustconn/src/window/edit_dialogs.rs:680
+msgid "KeePass is not enabled"
+msgstr "KeePass er ikke aktiveret"
+
+#: ../rustconn/src/window/edit_dialogs.rs:688
+msgid "KeePass database not configured"
+msgstr "KeePass-database ikke konfigureret"
+
+#: ../rustconn/src/window/edit_dialogs.rs:811
+msgid "Select KeePass, Keyring, or Bitwarden to load password"
+msgstr "Vælg KeePass, Keyring eller Bitwarden til indlæsning af adgangskode"
+
+#: ../rustconn/src/window/edit_dialogs.rs:1237
+msgid "⚠ This connection will not be saved"
+msgstr "⚠ Denne forbindelse gemmes ikke"
+
+#: ../rustconn/src/window/edit_dialogs.rs:1248
+msgid "(None)"
+msgstr "(Ingen)"
+
+#: ../rustconn/src/window/edit_dialogs.rs:1259
+msgid "Template"
+msgstr "Skabelon"
+
+#: ../rustconn/src/window/edit_dialogs.rs:1279
+msgid "hostname or IP"
+msgstr "værtsnavn eller IP"
+
+#: ../rustconn/src/window/edit_dialogs.rs:1301
+#: ../rustconn/src/window/edit_dialogs.rs:1312
+msgid "(optional)"
+msgstr "(valgfrit)"
+
+#: ../rustconn/src/window/groups.rs:53 ../rustconn/src/window/groups.rs:62
+#: ../rustconn/src/window/operations.rs:615
+#: ../rustconn/src/window/operations.rs:624
+msgid "Move"
+msgstr "Flyt"
+
+#: ../rustconn/src/window/groups.rs:75
+msgid "Move '{}' to:"
+msgstr "Flyt '{}' til:"
+
+#: ../rustconn/src/window/groups.rs:113
+#: ../rustconn/src/window/operations.rs:704
+msgid "(Root Level)"
+msgstr "(Rodniveau)"
+
+#: ../rustconn/src/window/groups.rs:115
+msgid "(Ungrouped)"
+msgstr "(Ugrupperet)"
+
+#: ../rustconn/src/window/groups.rs:192
+msgid "Error Moving Item"
+msgstr "Fejl ved flytning af element"
+
+#: ../rustconn/src/window/operations.rs:43
+msgid "group"
+msgstr "gruppe"
+
+#: ../rustconn/src/window/operations.rs:45
+msgid "connection"
+msgstr "forbindelse"
+
+#: ../rustconn/src/window/operations.rs:55
+msgid ""
+"Are you sure you want to delete the group '{}'?\n"
+"\n"
+"This will also delete {} connection(s) in this group."
 msgstr ""
+"Er du sikker på, at du vil slette gruppen '{}'?\n"
+"\n"
+"Dette vil også slette {} forbindelse(r) i denne gruppe."
 
-#: rustconn/src/empty_state.rs
-msgid "Loading..."
-msgstr ""
+#: ../rustconn/src/window/operations.rs:60
+msgid "Are you sure you want to delete the empty group '{}'?"
+msgstr "Er du sikker på, at du vil slette den tomme gruppe '{}'?"
 
-#~ msgid "Failed to initialize application state"
-#~ msgstr "Kunne ikke initialisere programtilstand"
+#: ../rustconn/src/window/operations.rs:66
+msgid "Are you sure you want to delete the connection '{}'?"
+msgstr "Er du sikker på, at du vil slette forbindelsen '{}'?"
 
-#~ msgid "_Keyboard Shortcuts"
-#~ msgstr "_Tastaturgenveje"
+#: ../rustconn/src/window/operations.rs:76
+msgid "Delete {}?"
+msgstr "Slet {}?"
 
-#~ msgid "_About RustConn"
-#~ msgstr "_Om RustConn"
+#: ../rustconn/src/window/operations.rs:111
+msgid "Deleted '{}'"
+msgstr "Slettet '{}'"
 
-#~ msgid "_Quit"
-#~ msgstr "_Afslut"
+#: ../rustconn/src/window/operations.rs:117
+msgid "Error Deleting"
+msgstr "Fejl ved sletning"
 
-#~ msgid "Opening mc SFTP..."
-#~ msgstr "Åbner mc SFTP…"
+#: ../rustconn/src/window/operations.rs:181
+msgid "Connection duplicated"
+msgstr "Forbindelse duplikeret"
 
-#~ msgid "Opening SFTP..."
-#~ msgstr "Åbner SFTP…"
+#: ../rustconn/src/window/operations.rs:190
+msgid "Failed to duplicate connection"
+msgstr "Kunne ikke duplikere forbindelse"
 
-#~ msgid "Connection failed"
-#~ msgstr "Forbindelse mislykkedes"
+#: ../rustconn/src/window/operations.rs:224
+msgid "Connection copied to clipboard"
+msgstr "Forbindelse kopieret til udklipsholder"
 
-#~ msgid "Deleted '{}'"
-#~ msgstr "«{}» slettet"
+#: ../rustconn/src/window/operations.rs:232
+msgid "Failed to copy connection"
+msgstr "Kunne ikke kopiere forbindelse"
 
-#~ msgid "Undo"
-#~ msgstr "Fortryd"
+#: ../rustconn/src/window/operations.rs:251
+msgid "Nothing to paste - copy a connection first"
+msgstr "Intet at indsætte - kopiér en forbindelse først"
 
-#~ msgid "Search connections..."
-#~ msgstr "Søg forbindelser…"
+#: ../rustconn/src/window/operations.rs:269
+msgid "Connection pasted"
+msgstr "Forbindelse indsat"
 
-#~ msgid "All"
-#~ msgstr "Alle"
+#: ../rustconn/src/window/operations.rs:278
+msgid "Failed to paste connection"
+msgstr "Kunne ikke indsætte forbindelse"
 
-#~ msgid "No connections found"
-#~ msgstr "Ingen forbindelser fundet"
+#: ../rustconn/src/window/operations.rs:363
+msgid "• {} (connection)"
+msgstr "• {} (forbindelse)"
 
-#~ msgid "Create a new connection to get started"
-#~ msgstr "Opret en ny forbindelse for at komme i gang"
+#: ../rustconn/src/window/operations.rs:366
+msgid "• {} (group)"
+msgstr "• {} (gruppe)"
 
-#~ msgid "Edit Connection"
-#~ msgstr "Rediger forbindelse"
+#: ../rustconn/src/window/operations.rs:383
+msgid "Delete Selected Items?"
+msgstr "Slet valgte elementer?"
 
-#~ msgid "Save"
-#~ msgstr "Gem"
+#: ../rustconn/src/window/operations.rs:393
+msgid "Delete All"
+msgstr "Slet alle"
 
-#~ msgid "Cancel"
-#~ msgstr "Annuller"
+#: ../rustconn/src/window/operations.rs:407
+msgid "Are you sure you want to delete {}?"
+msgstr "Er du sikker på, at du vil slette {}?"
 
-#~ msgid "General"
-#~ msgstr "Generelt"
+#: ../rustconn/src/window/operations.rs:434
+msgid "Connections in deleted groups will become ungrouped."
+msgstr "Forbindelser i slettede grupper bliver ugrupperede."
 
-#~ msgid "Name"
-#~ msgstr "Navn"
+#: ../rustconn/src/window/operations.rs:485
+msgid "Deletion Complete"
+msgstr "Sletning fuldført"
 
-#~ msgid "Host"
-#~ msgstr "Vært"
+#: ../rustconn/src/window/operations.rs:487
+msgid "Successfully deleted {} item(s)."
+msgstr "Slettet {} element(er) med succes."
 
-#~ msgid "Port"
-#~ msgstr "Port"
+#: ../rustconn/src/window/operations.rs:494
+msgid "Deletion Partially Complete"
+msgstr "Sletning delvist fuldført"
 
-#~ msgid "Username"
-#~ msgstr "Brugernavn"
+#: ../rustconn/src/window/operations.rs:497
+msgid "Deleted {} item(s)."
+msgstr "Slettet {} element(er)."
 
-#~ msgid "Password"
-#~ msgstr "Adgangskode"
+#: ../rustconn/src/window/operations.rs:499
+msgid "Failed to delete {} item(s):"
+msgstr "Kunne ikke slette {} element(er):"
 
-#~ msgid "Protocol"
-#~ msgstr "Protokol"
+#: ../rustconn/src/window/operations.rs:522
+#: ../rustconn/src/window/operations.rs:585
+msgid "No Selection"
+msgstr "Intet valgt"
 
-#~ msgid "Group"
-#~ msgstr "Gruppe"
+#: ../rustconn/src/window/operations.rs:523
+msgid "Please select one or more items to delete."
+msgstr "Vælg venligst et eller flere elementer til sletning."
 
-#~ msgid "Tags"
-#~ msgstr "Mærker"
+#: ../rustconn/src/window/operations.rs:535
+msgid "{} connection(s)"
+msgstr "{} forbindelse(r)"
 
-#~ msgid "Description"
-#~ msgstr "Beskrivelse"
+#: ../rustconn/src/window/operations.rs:536
+msgid "{} group(s)"
+msgstr "{} gruppe(r)"
 
-#~ msgid "Settings"
-#~ msgstr "Indstillinger"
+#: ../rustconn/src/window/operations.rs:538
+msgid "{} connection(s) and {} group(s)"
+msgstr "{} forbindelse(r) og {} gruppe(r)"
 
-#~ msgid "Color Scheme"
-#~ msgstr "Farveskema"
+#: ../rustconn/src/window/operations.rs:586
+msgid "Please select one or more items to move."
+msgstr "Vælg venligst et eller flere elementer til flytning."
 
-#~ msgid "Terminal"
-#~ msgstr "Terminal"
+#: ../rustconn/src/window/operations.rs:638
+msgid "Select destination for {} connection(s) and {} group(s):"
+msgstr "Vælg destination for {} forbindelse(r) og {} gruppe(r):"
 
-#~ msgid "Clients"
-#~ msgstr "Klienter"
+#: ../rustconn/src/window/operations.rs:646
+msgid "Select a group for {} connection(s):"
+msgstr "Vælg en gruppe for {} forbindelse(r):"
 
-#~ msgid "Secrets"
-#~ msgstr "Hemmeligheder"
+#: ../rustconn/src/window/operations.rs:651
+msgid "Select parent for {} group(s):"
+msgstr "Vælg overordnet for {} gruppe(r):"
 
-#~ msgid "SSH Agent"
-#~ msgstr "SSH-agent"
+#: ../rustconn/src/window/operations.rs:702
+msgid "(No Group)"
+msgstr "(Ingen gruppe)"
 
-#~ msgid "Logging"
-#~ msgstr "Logning"
+#: ../rustconn/src/window/operations.rs:786
+msgid "Move Partially Complete"
+msgstr "Flytning delvist fuldført"
 
-#~ msgid "Delete"
-#~ msgstr "Slet"
+#: ../rustconn/src/window/operations.rs:789
+msgid "Moved {} item(s)."
+msgstr "Flyttet {} element(er)."
 
-#~ msgid "Connect"
-#~ msgstr "Forbind"
+#: ../rustconn/src/window/operations.rs:791
+msgid "Failed to move {} item(s):"
+msgstr "Kunne ikke flytte {} element(er):"
 
-#~ msgid "Apply"
-#~ msgstr "Anvend"
+#: ../rustconn/src/window/sessions.rs:34 ../rustconn/src/window/ui.rs:128
+msgid "Active Sessions"
+msgstr "Aktive sessioner"
 
-#~ msgid "Export"
-#~ msgstr "Eksporter"
+#: ../rustconn/src/window/sessions.rs:50
+msgid "Refresh"
+msgstr "Opdatér"
 
-#~ msgid "Import"
-#~ msgstr "Importer"
+#: ../rustconn/src/window/sessions.rs:94
+msgid "Switch To"
+msgstr "Skift til"
 
-#~ msgid "Import completed successfully"
-#~ msgstr "Import fuldført"
+#: ../rustconn/src/window/sessions.rs:98
+msgid "Send Text"
+msgstr "Send tekst"
 
-#~ msgid "Import failed"
-#~ msgstr "Import mislykkedes"
+#: ../rustconn/src/window/sessions.rs:102
+#: ../rustconn/src/window/sessions.rs:189
+msgid "Terminate"
+msgstr "Afslut"
 
-#~ msgid "{} connection"
-#~ msgid_plural "{} connections"
-#~ msgstr[0] "{} forbindelse"
-#~ msgstr[1] "{} forbindelser"
+#: ../rustconn/src/window/sessions.rs:187
+msgid "Terminate Session?"
+msgstr "Afslut session?"
 
-#~ msgid "{} connection imported"
-#~ msgid_plural "{} connections imported"
-#~ msgstr[0] "{} forbindelse importeret"
-#~ msgstr[1] "{} forbindelser importeret"
+#: ../rustconn/src/window/sessions.rs:188
+msgid "Are you sure you want to terminate this session?"
+msgstr "Er du sikker på, at du vil afslutte denne session?"
 
-#~ msgid "Select a connection from the sidebar to start"
-#~ msgstr "Vælg en forbindelse fra sidebjælken"
+#: ../rustconn/src/window/sessions.rs:325
+msgid "Send Text to Session"
+msgstr "Send tekst til session"
 
-#~ msgid "This field is required"
-#~ msgstr "Dette felt er påkrævet"
+#: ../rustconn/src/window/sessions.rs:345
+msgid "Enter text to send to the session:"
+msgstr "Indtast tekst til afsendelse til sessionen:"
 
-#~ msgid "Invalid port number"
-#~ msgstr "Ugyldigt portnummer"
+#: ../rustconn/src/window/sessions.rs:351
+msgid "Text to send..."
+msgstr "Tekst til afsendelse..."
 
-#~ msgid "Invalid hostname"
-#~ msgstr "Ugyldigt værtsnavn"
+#: ../rustconn/src/window/sessions.rs:357
+msgid "Append newline (press Enter)"
+msgstr "Tilføj linjeskift (tryk Enter)"
 
-#~ msgid "Modern Connection Manager for Linux"
-#~ msgstr "Moderne forbindelsesadministrator til Linux"
+#: ../rustconn/src/window/snippets.rs:33
+msgid "Snippet Created"
+msgstr "Uddrag oprettet"
 
-#~ msgid "Filter SSH connections"
-#~ msgstr "Filtrer SSH-forbindelser"
+#: ../rustconn/src/window/snippets.rs:34
+msgid "Snippet has been saved successfully."
+msgstr "Uddraget er gemt."
 
-#~ msgid "Filter RDP connections"
-#~ msgstr "Filtrer RDP-forbindelser"
+#: ../rustconn/src/window/snippets.rs:38
+msgid "Error Creating Snippet"
+msgstr "Fejl ved oprettelse af uddrag"
 
-#~ msgid "Filter VNC connections"
-#~ msgstr "Filtrer VNC-forbindelser"
+#: ../rustconn/src/window/snippets.rs:54
+msgid "Manage Snippets"
+msgstr "Administrér uddrag"
 
-#~ msgid "Close tab"
-#~ msgstr "Luk fane"
+#: ../rustconn/src/window/snippets.rs:88 ../rustconn/src/window/snippets.rs:340
+msgid "Search snippets..."
+msgstr "Søg uddrag..."
 
-#~ msgid "Open local shell terminal"
-#~ msgstr "Åbn lokal terminal"
+#: ../rustconn/src/window/snippets.rs:118
+#: ../rustconn/src/window/snippets.rs:443
+msgid "Execute"
+msgstr "Udfør"
+
+#: ../rustconn/src/window/snippets.rs:217
+msgid "Delete Snippet?"
+msgstr "Slet uddrag?"
+
+#: ../rustconn/src/window/snippets.rs:218
+msgid "Are you sure you want to delete this snippet?"
+msgstr "Er du sikker på, at du vil slette dette uddrag?"
+
+#: ../rustconn/src/window/snippets.rs:322
+msgid "Execute Snippet"
+msgstr "Udfør uddrag"
+
+#: ../rustconn/src/window/snippets.rs:409
+msgid "No Active Terminal"
+msgstr "Ingen aktiv terminal"
+
+#: ../rustconn/src/window/snippets.rs:410
+msgid "Please open a terminal session first before executing a snippet."
+msgstr "Åbn venligst en terminalsession, før du udfører et uddrag."
+
+#: ../rustconn/src/window/snippets.rs:434
+msgid "Enter Variable Values"
+msgstr "Indtast variabelværdier"
+
+#: ../rustconn/src/window/templates.rs:90
+#: ../rustconn/src/window/templates.rs:125
+msgid "Error Saving Template"
+msgstr "Fejl ved gemning af skabelon"
+
+#: ../rustconn/src/window/templates.rs:151
+msgid "Delete Template?"
+msgstr "Slet skabelon?"
+
+#: ../rustconn/src/window/templates.rs:152
+msgid "Are you sure you want to delete this template?"
+msgstr "Er du sikker på, at du vil slette denne skabelon?"
+
+#: ../rustconn/src/window/templates.rs:292
+msgid "Host: {}"
+msgstr "Vært: {}"
+
+#: ../rustconn/src/window/templates.rs:294
+msgid "Port: {}"
+msgstr "Port: {}"
+
+#: ../rustconn/src/window/templates.rs:296
+msgid "User: {}"
+msgstr "Bruger: {}"
+
+#: ../rustconn/src/window/templates.rs:317
+msgid "SSH Templates"
+msgstr "SSH-skabeloner"
+
+#: ../rustconn/src/window/templates.rs:325
+msgid "RDP Templates"
+msgstr "RDP-skabeloner"
+
+#: ../rustconn/src/window/templates.rs:333
+msgid "VNC Templates"
+msgstr "VNC-skabeloner"
+
+#: ../rustconn/src/window/templates.rs:341
+msgid "SPICE Templates"
+msgstr "SPICE-skabeloner"
+
+#: ../rustconn/src/window/ui.rs:32
+msgid "Toggle Sidebar (F9)"
+msgstr "Vis/skjul sidebjælke (F9)"
+
+#: ../rustconn/src/window/ui.rs:39
+msgid "Quick Connect (Ctrl+Shift+Q)"
+msgstr "Hurtig forbindelse (Ctrl+Shift+Q)"
+
+#: ../rustconn/src/window/ui.rs:46
+msgid "New Connection (Ctrl+N)"
+msgstr "Ny forbindelse (Ctrl+N)"
+
+#: ../rustconn/src/window/ui.rs:53
+msgid "Delete Selected (Delete)"
+msgstr "Slet valgte (Delete)"
+
+#: ../rustconn/src/window/ui.rs:60
+msgid "New Group (Ctrl+Shift+N)"
+msgstr "Ny gruppe (Ctrl+Shift+N)"
+
+#: ../rustconn/src/window/ui.rs:70
+msgid "Menu"
+msgstr "Menu"
+
+#: ../rustconn/src/window/ui.rs:80
+msgid "Settings (Ctrl+,)"
+msgstr "Indstillinger (Ctrl+,)"
+
+#: ../rustconn/src/window/ui.rs:87
+msgid "Split Vertical (Ctrl+Shift+S)"
+msgstr "Opdel lodret (Ctrl+Shift+S)"
+
+#: ../rustconn/src/window/ui.rs:93
+msgid "Split Horizontal (Ctrl+Shift+H)"
+msgstr "Opdel vandret (Ctrl+Shift+H)"
+
+#: ../rustconn/src/window/ui.rs:119
+msgid "Local Shell"
+msgstr "Lokal shell"
+
+#: ../rustconn/src/window/ui.rs:124
+msgid "Snippets..."
+msgstr "Snippets…"
+
+#: ../rustconn/src/window/ui.rs:125
+msgid "Clusters..."
+msgstr "Klynger…"
+
+#: ../rustconn/src/window/ui.rs:126
+msgid "Templates..."
+msgstr "Skabeloner…"
+
+#: ../rustconn/src/window/ui.rs:127
+msgid "Variables..."
+msgstr "Variabler…"
+
+#: ../rustconn/src/window/ui.rs:130
+msgid "Connection History..."
+msgstr "Forbindelseshistorik…"
+
+#: ../rustconn/src/window/ui.rs:133
+msgid "Statistics..."
+msgstr "Statistik…"
+
+#: ../rustconn/src/window/ui.rs:135
+msgid "Password Generator..."
+msgstr "Adgangskodegenerator…"
+
+#: ../rustconn/src/window/ui.rs:139
+msgid "Wake On LAN..."
+msgstr "Wake On LAN…"
+
+#: ../rustconn/src/window/ui.rs:146
+msgid "Import Connections..."
+msgstr "Importér forbindelser…"
+
+#: ../rustconn/src/window/ui.rs:147
+msgid "Export Connections..."
+msgstr "Eksportér forbindelser…"
+
+#: ../rustconn/src/window/ui.rs:153
+msgid "Copy Connection"
+msgstr "Kopiér forbindelse"
+
+#: ../rustconn/src/window/ui.rs:157
+msgid "Paste Connection"
+msgstr "Indsæt forbindelse"
+
+#: ../rustconn/src/window/ui.rs:164
+msgid "Settings"
+msgstr "Indstillinger"
+
+#: ../rustconn/src/window/ui.rs:169
+msgid "Flatpak Components..."
+msgstr "Flatpak-komponenter…"
+
+#: ../rustconn/src/window/ui.rs:173
+msgid "About"
+msgstr "Om"
+
+#: ../rustconn/src/window/ui.rs:174
+msgid "Quit"
+msgstr "Afslut"
+
+#~ msgid "RustConn"
+#~ msgstr "RustConn"
+
+#~ msgid "ssh;rdp;vnc;spice;telnet;zerotrust;connection;terminal;remote;"
+#~ msgstr "ssh;rdp;vnc;spice;telnet;zerotrust;forbindelse;terminal;fjern;"

@@ -3,6 +3,7 @@
 //! Provides a simple dialog for entering credentials when connecting
 //! to RDP/VNC sessions that require authentication.
 
+use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::glib;
 use gtk4::prelude::*;
@@ -51,7 +52,7 @@ impl PasswordDialog {
     #[must_use]
     pub fn new(parent: Option<&impl IsA<gtk4::Window>>) -> Self {
         let window = adw::Window::builder()
-            .title("Authentication Required")
+            .title(i18n("Authentication Required"))
             .modal(true)
             .default_width(400)
             .build();
@@ -66,9 +67,9 @@ impl PasswordDialog {
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
-        let cancel_btn = Button::builder().label("Cancel").build();
+        let cancel_btn = Button::builder().label(i18n("Cancel")).build();
         let connect_btn = Button::builder()
-            .label("Connect")
+            .label(i18n("Connect"))
             .css_classes(["suggested-action"])
             .build();
         header.pack_start(&cancel_btn);
@@ -89,7 +90,7 @@ impl PasswordDialog {
 
         // Info label
         let info_label = Label::builder()
-            .label("Enter credentials for this connection:")
+            .label(i18n("Enter credentials for this connection:"))
             .halign(gtk4::Align::Start)
             .css_classes(["dim-label"])
             .build();
@@ -102,7 +103,7 @@ impl PasswordDialog {
 
         let spinner = Spinner::builder().spinning(false).build();
         let spinner_label = Label::builder()
-            .label("Resolving credentials...")
+            .label(i18n("Resolving credentials..."))
             .css_classes(["dim-label"])
             .build();
         spinner_box.append(&spinner);
@@ -154,7 +155,7 @@ impl PasswordDialog {
 
         // Domain
         let domain_label = Label::builder()
-            .label("Domain:")
+            .label(i18n("Domain:"))
             .halign(gtk4::Align::End)
             .build();
         let domain_entry = Entry::builder()
@@ -167,7 +168,7 @@ impl PasswordDialog {
 
         // Username
         let username_label = Label::builder()
-            .label("Username:")
+            .label(i18n("Username:"))
             .halign(gtk4::Align::End)
             .build();
         let username_entry = Entry::builder()
@@ -180,7 +181,7 @@ impl PasswordDialog {
 
         // Password
         let password_label = Label::builder()
-            .label("Password:")
+            .label(i18n("Password:"))
             .halign(gtk4::Align::End)
             .build();
         let password_entry = Entry::builder()
@@ -194,13 +195,15 @@ impl PasswordDialog {
         row += 1;
 
         // Save credentials checkbox
-        let save_check = CheckButton::builder().label("Save Credentials").build();
+        let save_check = CheckButton::builder()
+            .label(i18n("Save Credentials"))
+            .build();
         grid.attach(&save_check, 1, row, 1, 1);
         row += 1;
 
         // Save to KeePass button (hidden by default)
         let migrate_button = Button::builder()
-            .label("Save to KeePass")
+            .label(i18n("Save to KeePass"))
             .tooltip_text("Migrate credentials from system keyring to KeePass")
             .visible(false)
             .build();

@@ -4,6 +4,7 @@
 //! including move to group dialog and related functionality.
 
 use crate::alert;
+use crate::i18n::{i18n, i18n_f};
 use adw::prelude::*;
 use gtk4::glib;
 use gtk4::prelude::*;
@@ -49,16 +50,16 @@ pub fn show_move_to_group_dialog(
 
     // Create dialog
     let move_window = adw::Window::builder()
-        .title("Move")
+        .title(i18n("Move"))
         .transient_for(window)
         .modal(true)
         .default_width(750)
         .build();
 
     let header = adw::HeaderBar::new();
-    let cancel_btn = Button::builder().label("Cancel").build();
+    let cancel_btn = Button::builder().label(i18n("Cancel")).build();
     let move_btn = Button::builder()
-        .label("Move")
+        .label(i18n("Move"))
         .css_classes(["suggested-action"])
         .build();
     header.pack_start(&cancel_btn);
@@ -71,7 +72,7 @@ pub fn show_move_to_group_dialog(
     content.set_margin_end(12);
 
     let info_label = Label::builder()
-        .label(format!("Move '{item_name}' to:"))
+        .label(i18n_f("Move '{}' to:", &[&item_name]))
         .halign(gtk4::Align::Start)
         .build();
     content.append(&info_label);
@@ -109,11 +110,11 @@ pub fn show_move_to_group_dialog(
 
     let mut group_ids: Vec<Option<Uuid>> = vec![None];
     let first_option = if is_group {
-        "(Root Level)"
+        i18n("(Root Level)")
     } else {
-        "(Ungrouped)"
+        i18n("(Ungrouped)")
     };
-    let mut strings: Vec<String> = vec![first_option.to_string()];
+    let mut strings: Vec<String> = vec![first_option];
     let mut current_index = 0u32;
 
     for (id, path) in &group_paths {
@@ -188,7 +189,7 @@ pub fn show_move_to_group_dialog(
                 });
             }
             Err(e) => {
-                alert::show_error(&parent_window, "Error Moving Item", &e);
+                alert::show_error(&parent_window, &i18n("Error Moving Item"), &e);
             }
         }
     });
@@ -214,5 +215,5 @@ fn is_descendant_of(
 
 /// Shows an error toast/notification
 pub fn show_error_toast(window: &impl gtk4::prelude::IsA<gtk4::Widget>, message: &str) {
-    alert::show_error(window, "Error", message);
+    alert::show_error(window, &i18n("Error"), message);
 }

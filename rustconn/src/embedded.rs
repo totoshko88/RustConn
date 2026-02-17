@@ -12,6 +12,8 @@ use std::rc::Rc;
 use thiserror::Error;
 use uuid::Uuid;
 
+use crate::i18n::i18n;
+
 // Re-export DisplayServer from the unified display module for backward compatibility
 pub use crate::display::DisplayServer;
 
@@ -57,21 +59,21 @@ impl SessionControls {
         container.set_margin_top(4);
         container.set_margin_bottom(4);
 
-        let status_label = Label::new(Some("Connecting..."));
+        let status_label = Label::new(Some(&i18n("Connecting...")));
         status_label.set_hexpand(true);
         status_label.set_halign(gtk4::Align::Start);
         status_label.add_css_class("dim-label");
         container.append(&status_label);
 
         let fullscreen_button = Button::from_icon_name("view-fullscreen-symbolic");
-        fullscreen_button.set_tooltip_text(Some("Toggle Fullscreen"));
+        fullscreen_button.set_tooltip_text(Some(&i18n("Toggle Fullscreen")));
         fullscreen_button.add_css_class("flat");
         fullscreen_button
             .update_property(&[gtk4::accessible::Property::Label("Toggle Fullscreen")]);
         container.append(&fullscreen_button);
 
         let disconnect_button = Button::from_icon_name("process-stop-symbolic");
-        disconnect_button.set_tooltip_text(Some("Disconnect"));
+        disconnect_button.set_tooltip_text(Some(&i18n("Disconnect")));
         disconnect_button.add_css_class("flat");
         disconnect_button.add_css_class("destructive-action");
         disconnect_button.update_property(&[gtk4::accessible::Property::Label("Disconnect")]);

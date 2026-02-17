@@ -4,6 +4,7 @@
 //! the Tools menu. Allows picking a connection with WoL configured
 //! or entering MAC address manually.
 
+use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, Orientation};
@@ -25,7 +26,7 @@ impl WolDialog {
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
         let window = adw::Window::builder()
-            .title("Wake On LAN")
+            .title(i18n("Wake On LAN"))
             .modal(true)
             .default_width(500)
             .default_height(400)
@@ -41,9 +42,9 @@ impl WolDialog {
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
 
-        let cancel_btn = Button::builder().label("Cancel").build();
+        let cancel_btn = Button::builder().label(i18n("Cancel")).build();
         let send_btn = Button::builder()
-            .label("Send")
+            .label(i18n("Send"))
             .css_classes(["suggested-action"])
             .build();
         header.pack_start(&cancel_btn);
@@ -64,13 +65,13 @@ impl WolDialog {
 
         // Connection picker
         let conn_group = adw::PreferencesGroup::builder()
-            .title("Connection")
-            .description("Pick a connection with WoL configured")
+            .title(i18n("Connection"))
+            .description(i18n("Pick a connection with WoL configured"))
             .build();
 
-        let string_list = gtk4::StringList::new(&["Manual entry"]);
+        let string_list = gtk4::StringList::new(&[&i18n("Manual entry")]);
         let connection_dropdown = adw::ComboRow::builder()
-            .title("Connection")
+            .title(i18n("Connection"))
             .model(&string_list)
             .build();
         conn_group.add(&connection_dropdown);
@@ -78,19 +79,21 @@ impl WolDialog {
 
         // Manual entry fields
         let manual_group = adw::PreferencesGroup::builder()
-            .title("Manual")
-            .description("Or enter MAC address manually")
+            .title(i18n("Manual"))
+            .description(i18n("Or enter MAC address manually"))
             .build();
 
-        let mac_entry = adw::EntryRow::builder().title("MAC Address").build();
+        let mac_entry = adw::EntryRow::builder().title(i18n("MAC Address")).build();
         mac_entry.set_text("AA:BB:CC:DD:EE:FF");
         manual_group.add(&mac_entry);
 
-        let broadcast_entry = adw::EntryRow::builder().title("Broadcast Address").build();
+        let broadcast_entry = adw::EntryRow::builder()
+            .title(i18n("Broadcast Address"))
+            .build();
         broadcast_entry.set_text(rustconn_core::wol::DEFAULT_BROADCAST_ADDRESS);
         manual_group.add(&broadcast_entry);
 
-        let port_entry = adw::EntryRow::builder().title("Port").build();
+        let port_entry = adw::EntryRow::builder().title(i18n("Port")).build();
         port_entry.set_text(&rustconn_core::wol::DEFAULT_WOL_PORT.to_string());
         manual_group.add(&port_entry);
 
@@ -148,7 +151,7 @@ impl WolDialog {
             let mac = if let Ok(m) = MacAddress::parse(&mac_text) {
                 m
             } else {
-                status_c.set_text("Invalid MAC address format");
+                status_c.set_text(&i18n("Invalid MAC address format"));
                 status_c.remove_css_class("success");
                 status_c.add_css_class("error");
                 return;
@@ -157,7 +160,7 @@ impl WolDialog {
             let port: u16 = if let Ok(p) = port_text.parse() {
                 p
             } else {
-                status_c.set_text("Invalid port number");
+                status_c.set_text(&i18n("Invalid port number"));
                 status_c.remove_css_class("success");
                 status_c.add_css_class("error");
                 return;
@@ -171,7 +174,7 @@ impl WolDialog {
             let broadcast_display = broadcast.to_string();
             let status_ok = status_c.clone();
             let status_err = status_c.clone();
-            status_c.set_text("Sending…");
+            status_c.set_text(&i18n("Sending…"));
             status_c.remove_css_class("error");
             status_c.remove_css_class("success");
 
@@ -191,10 +194,7 @@ impl WolDialog {
                     }
                     Err(e) => {
                         tracing::error!(?e, "WoL send failed from dialog");
-                        status_err.set_text(
-                            "Failed to send packet. \
-                             Check permissions.",
-                        );
+                        status_err.set_text(&i18n("Failed to send packet. Check permissions."));
                         status_err.remove_css_class("success");
                         status_err.add_css_class("error");
                     }
@@ -217,7 +217,7 @@ impl WolDialog {
             .cloned()
             .collect();
 
-        let mut items: Vec<String> = vec!["Manual entry".to_string()];
+        let mut items: Vec<String> = vec![i18n("Manual entry")];
         for conn in &wol_connections {
             items.push(conn.name.clone());
         }

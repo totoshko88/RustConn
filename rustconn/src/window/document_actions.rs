@@ -4,6 +4,7 @@
 //! new, open, save, close, export, and import documents.
 
 use super::groups;
+use crate::i18n::i18n;
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 use gtk4::gio;
@@ -86,9 +87,10 @@ fn setup_open_document_action(
                         }
                         Err(e) => {
                             drop(state_ref);
+                            tracing::error!(?e, "Failed to open document");
                             groups::show_error_toast(
                                 &win_for_cb,
-                                &format!("Failed to open document: {e}"),
+                                &i18n("Failed to open document."),
                             );
                         }
                     }
@@ -125,10 +127,8 @@ fn setup_save_document_action(window: &gtk4::ApplicationWindow, state: &SharedAp
                             EncryptionStrength::Standard,
                         ) {
                             drop(state_ref);
-                            groups::show_error_toast(
-                                &win,
-                                &format!("Failed to save document: {e}"),
-                            );
+                            tracing::error!(?e, "Failed to save document");
+                            groups::show_error_toast(&win, &i18n("Failed to save document."));
                         }
                     } else {
                         let dialog = SaveDocumentDialog::new();
@@ -145,9 +145,10 @@ fn setup_save_document_action(window: &gtk4::ApplicationWindow, state: &SharedAp
                                     EncryptionStrength::Standard,
                                 ) {
                                     drop(state_ref);
+                                    tracing::error!(?e, "Failed to save document");
                                     groups::show_error_toast(
                                         &win_for_cb,
-                                        &format!("Failed to save document: {e}"),
+                                        &i18n("Failed to save document."),
                                     );
                                 }
                             }
@@ -180,7 +181,7 @@ fn setup_close_document_action(
                 let doc_name = state_ref
                     .get_document(doc_id)
                     .map(|d| d.name.clone())
-                    .unwrap_or_else(|| "Untitled".to_string());
+                    .unwrap_or_else(|| i18n("Untitled"));
                 drop(state_ref);
 
                 if is_dirty {
@@ -238,13 +239,13 @@ fn setup_export_document_action(window: &gtk4::ApplicationWindow, state: &Shared
                     let filter = gtk4::FileFilter::new();
                     filter.add_pattern("*.json");
                     filter.add_pattern("*.yaml");
-                    filter.set_name(Some("Document Files"));
+                    filter.set_name(Some(&i18n("Document Files")));
 
                     let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
                     filters.append(&filter);
 
                     let dialog = gtk4::FileDialog::builder()
-                        .title("Export Document")
+                        .title(i18n("Export Document"))
                         .filters(&filters)
                         .initial_name(format!("{doc_name}.json"))
                         .modal(true)
@@ -262,9 +263,10 @@ fn setup_export_document_action(window: &gtk4::ApplicationWindow, state: &Shared
                                     let state_ref = state_for_cb.borrow();
                                     if let Err(e) = state_ref.export_document(doc_id, &path) {
                                         drop(state_ref);
+                                        tracing::error!(?e, "Failed to export document");
                                         groups::show_error_toast(
                                             &win_for_cb,
-                                            &format!("Failed to export document: {e}"),
+                                            &i18n("Failed to export document."),
                                         );
                                     }
                                 }
@@ -294,13 +296,13 @@ fn setup_import_document_action(
             filter.add_pattern("*.yaml");
             filter.add_pattern("*.yml");
             filter.add_pattern("*.rcdb");
-            filter.set_name(Some("Document Files"));
+            filter.set_name(Some(&i18n("Document Files")));
 
             let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
             filters.append(&filter);
 
             let dialog = gtk4::FileDialog::builder()
-                .title("Import Document")
+                .title(i18n("Import Document"))
                 .filters(&filters)
                 .modal(true)
                 .build();
@@ -322,9 +324,10 @@ fn setup_import_document_action(
                                 }
                                 Err(e) => {
                                     drop(state_ref);
+                                    tracing::error!(?e, "Failed to import document");
                                     groups::show_error_toast(
                                         &win_for_cb,
-                                        &format!("Failed to import document: {e}"),
+                                        &i18n("Failed to import document."),
                                     );
                                 }
                             }

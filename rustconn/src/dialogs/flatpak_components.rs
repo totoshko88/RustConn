@@ -24,6 +24,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::async_utils::spawn_async;
+use crate::i18n::i18n;
 
 /// Dialog for managing Flatpak components
 ///
@@ -61,7 +62,7 @@ impl FlatpakComponentsDialog {
         }
 
         let window = adw::Window::builder()
-            .title("Flatpak Components")
+            .title(i18n("Flatpak Components"))
             .default_width(500)
             .default_height(500)
             .modal(true)
@@ -95,7 +96,7 @@ impl FlatpakComponentsDialog {
     fn build_header_bar(window: &adw::Window) -> adw::HeaderBar {
         let header = adw::HeaderBar::new();
 
-        let close_button = Button::with_label("Close");
+        let close_button = Button::with_label(&i18n("Close"));
         close_button.connect_clicked(glib::clone!(
             #[weak]
             window,
@@ -127,19 +128,21 @@ impl FlatpakComponentsDialog {
         let inner = GtkBox::new(Orientation::Vertical, 24);
 
         // Info banner
-        let info_banner = adw::Banner::new(
+        let info_banner = adw::Banner::new(&i18n(
             "Showing sandbox-compatible components only. \
              Downloads are verified with SHA256 checksums.",
-        );
+        ));
         info_banner.set_revealed(true);
         inner.append(&info_banner);
 
         // Protocol clients section — may be empty in Flatpak
         // since xfreerdp/vncviewer need host display access
         let protocol_group = Self::build_category_group(
-            "Protocol Clients",
-            "Optional for external RDP/VNC/SPICE connections. \
+            &i18n("Protocol Clients"),
+            &i18n(
+                "Optional for external RDP/VNC/SPICE connections. \
              Embedded clients (IronRDP, vnc-rs) are preferred.",
+            ),
             ComponentCategory::ProtocolClient,
             component_rows,
         );
@@ -149,8 +152,8 @@ impl FlatpakComponentsDialog {
 
         // Zero Trust section
         let zerotrust_group = Self::build_category_group(
-            "Zero Trust CLIs",
-            "Required for Zero Trust connections (AWS SSM, GCP IAP, Azure Bastion, etc.)",
+            &i18n("Zero Trust CLIs"),
+            &i18n("Required for Zero Trust connections (AWS SSM, GCP IAP, Azure Bastion, etc.)"),
             ComponentCategory::ZeroTrust,
             component_rows,
         );
@@ -160,8 +163,8 @@ impl FlatpakComponentsDialog {
 
         // Password managers section
         let password_group = Self::build_category_group(
-            "Password Manager CLIs",
-            "Required for Bitwarden and 1Password integration",
+            &i18n("Password Manager CLIs"),
+            &i18n("Required for Bitwarden and 1Password integration"),
             ComponentCategory::PasswordManager,
             component_rows,
         );
@@ -171,8 +174,8 @@ impl FlatpakComponentsDialog {
 
         // Container orchestration section
         let k8s_group = Self::build_category_group(
-            "Container Orchestration",
-            "Required for Kubernetes pod shell connections",
+            &i18n("Container Orchestration"),
+            &i18n("Required for Kubernetes pod shell connections"),
             ComponentCategory::ContainerOrchestration,
             component_rows,
         );
@@ -248,8 +251,9 @@ impl FlatpakComponentsDialog {
         row.add_suffix(&size_label);
 
         // Status label
+        let installed_text = i18n("Installed");
         let status_label = Label::builder()
-            .label(if is_installed { "Installed" } else { "" })
+            .label(if is_installed { &installed_text } else { "" })
             .css_classes(if is_installed {
                 vec!["success"]
             } else {
@@ -268,7 +272,7 @@ impl FlatpakComponentsDialog {
         // Cancel button (hidden by default)
         let cancel_button = Button::builder()
             .icon_name("process-stop-symbolic")
-            .tooltip_text("Cancel")
+            .tooltip_text(&i18n("Cancel"))
             .valign(Align::Center)
             .visible(false)
             .build();
@@ -278,7 +282,7 @@ impl FlatpakComponentsDialog {
         // Update button (visible only when installed and downloadable)
         let update_button = Button::builder()
             .icon_name("emblem-synchronizing-symbolic")
-            .tooltip_text("Update")
+            .tooltip_text(&i18n("Update"))
             .valign(Align::Center)
             .visible(is_installed && component.is_downloadable())
             .build();
@@ -289,15 +293,15 @@ impl FlatpakComponentsDialog {
         let action_button = Button::builder().valign(Align::Center).build();
 
         if is_installed {
-            action_button.set_label("Remove");
+            action_button.set_label(&i18n("Remove"));
             action_button.add_css_class("destructive-action");
         } else if component.is_downloadable() {
-            action_button.set_label("Install");
+            action_button.set_label(&i18n("Install"));
             action_button.add_css_class("suggested-action");
         } else {
-            action_button.set_label("N/A");
+            action_button.set_label(&i18n("N/A"));
             action_button.set_sensitive(false);
-            action_button.set_tooltip_text(Some("Not available for download"));
+            action_button.set_tooltip_text(Some(&i18n("Not available for download")));
         }
 
         // Store row info for updates
@@ -325,7 +329,7 @@ impl FlatpakComponentsDialog {
         // Connect action button click (Install/Remove)
         let rows_clone = component_rows.clone();
         action_button.connect_clicked(move |button| {
-            let is_currently_installed = button.label().is_some_and(|l| l == "Remove");
+            let is_currently_installed = button.label().is_some_and(|l| l == i18n("Remove"));
             Self::handle_action_click(component, is_currently_installed, false, &rows_clone);
         });
 
@@ -451,13 +455,17 @@ impl FlatpakComponentsDialog {
             match result {
                 Ok(()) => {
                     let is_now_installed = was_install;
-                    info.status_label
-                        .set_label(if is_now_installed { "Installed" } else { "" });
+                    let installed_label = i18n("Installed");
+                    info.status_label.set_label(if is_now_installed {
+                        &installed_label
+                    } else {
+                        ""
+                    });
                     info.status_label.remove_css_class("error");
 
                     if is_now_installed {
                         info.status_label.add_css_class("success");
-                        info.action_button.set_label("Remove");
+                        info.action_button.set_label(&i18n("Remove"));
                         info.action_button.remove_css_class("suggested-action");
                         info.action_button.add_css_class("destructive-action");
                         // Show update button if component is downloadable
@@ -465,7 +473,7 @@ impl FlatpakComponentsDialog {
                         info.update_button.set_visible(is_downloadable);
                     } else {
                         info.status_label.remove_css_class("success");
-                        info.action_button.set_label("Install");
+                        info.action_button.set_label(&i18n("Install"));
                         info.action_button.remove_css_class("destructive-action");
                         info.action_button.add_css_class("suggested-action");
                         // Hide update button when not installed
@@ -478,7 +486,7 @@ impl FlatpakComponentsDialog {
 
                     // Show user-friendly message
                     let user_msg = get_user_friendly_error(error);
-                    info.status_label.set_label("Failed");
+                    info.status_label.set_label(&i18n("Failed"));
                     info.status_label.remove_css_class("success");
                     info.status_label.add_css_class("error");
 

@@ -21,6 +21,7 @@ use rustconn_core::split::{
 };
 
 use super::types::{DropOutcome, DropSource, EvictionAction, SourceCleanup};
+use crate::i18n::i18n;
 
 /// Callback type for "Select Tab" button clicks in empty panels.
 ///
@@ -1015,7 +1016,9 @@ impl SplitViewAdapter {
         });
 
         // Set tooltip to indicate draggability
-        widget.set_tooltip_text(Some("Drag to move this session to another panel or tab"));
+        widget.set_tooltip_text(Some(&i18n(
+            "Drag to move this session to another panel or tab",
+        )));
 
         widget.add_controller(drag_source);
     }
@@ -1156,8 +1159,8 @@ impl SplitViewAdapter {
         // Use tab-symbolic icon to indicate this is for selecting tabs
         let status_page = adw::StatusPage::builder()
             .icon_name("tab-new-symbolic")
-            .title("Empty Panel")
-            .description("Select an existing tab to display in this panel")
+            .title(&i18n("Empty Panel"))
+            .description(&i18n("Select an existing tab to display in this panel"))
             .hexpand(true)
             .vexpand(true)
             .build();
@@ -1167,8 +1170,8 @@ impl SplitViewAdapter {
         // Create "Select Tab" button as an alternative to drag-and-drop
         // This is useful because AdwTabBar intercepts drag events
         let select_button = Button::builder()
-            .label("Select Tab...")
-            .tooltip_text("Choose an open tab to display in this panel")
+            .label(&i18n("Select Tab..."))
+            .tooltip_text(&i18n("Choose an open tab to display in this panel"))
             .halign(Align::Center)
             .build();
         select_button.add_css_class("suggested-action");
@@ -1192,7 +1195,7 @@ impl SplitViewAdapter {
         // Create the close button
         let close_button = Button::builder()
             .icon_name("window-close-symbolic")
-            .tooltip_text("Close panel")
+            .tooltip_text(&i18n("Close panel"))
             .halign(Align::End)
             .valign(Align::Start)
             .margin_top(6)
@@ -1231,7 +1234,7 @@ impl SplitViewAdapter {
     fn create_occupied_placeholder(&self) -> adw::StatusPage {
         adw::StatusPage::builder()
             .icon_name("content-loading-symbolic")
-            .title("Loading...")
+            .title(&i18n("Loading..."))
             .hexpand(true)
             .vexpand(true)
             .build()

@@ -18,6 +18,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use uuid::Uuid;
 
+use crate::i18n::i18n;
+
 /// Snippet dialog for creating/editing snippets
 pub struct SnippetDialog {
     window: adw::Window,
@@ -59,7 +61,7 @@ impl SnippetDialog {
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
         // Create window instead of deprecated Dialog
         let window = adw::Window::builder()
-            .title("New Snippet")
+            .title(i18n("New Snippet"))
             .modal(true)
             .default_width(500)
             .default_height(400)
@@ -75,9 +77,9 @@ impl SnippetDialog {
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label("Close").build();
+        let close_btn = Button::builder().label(i18n("Close")).build();
         let new_btn = Button::builder()
-            .label("Create")
+            .label(i18n("Create"))
             .css_classes(["suggested-action"])
             .build();
         header.pack_start(&close_btn);
@@ -162,7 +164,7 @@ impl SnippetDialog {
         use super::widgets::EntryRowBuilder;
 
         let group = adw::PreferencesGroup::builder()
-            .title("Snippet Info")
+            .title(i18n("Snippet Info"))
             .build();
 
         // Name
@@ -205,8 +207,8 @@ impl SnippetDialog {
 
     fn create_command_section() -> (adw::PreferencesGroup, TextView) {
         let group = adw::PreferencesGroup::builder()
-            .title("Command")
-            .description("Use ${variable_name} for placeholders")
+            .title(i18n("Command"))
+            .description(i18n("Use ${variable_name} for placeholders"))
             .build();
 
         let scrolled = ScrolledWindow::builder()
@@ -228,8 +230,8 @@ impl SnippetDialog {
 
     fn create_variables_section() -> (adw::PreferencesGroup, ListBox, Button) {
         let group = adw::PreferencesGroup::builder()
-            .title("Variables")
-            .description("Variables are auto-detected from command")
+            .title(i18n("Variables"))
+            .description(i18n("Variables are auto-detected from command"))
             .build();
 
         let scrolled = ScrolledWindow::builder()
@@ -250,7 +252,7 @@ impl SnippetDialog {
         let button_box = GtkBox::new(Orientation::Horizontal, 8);
         button_box.set_halign(gtk4::Align::End);
 
-        let add_var_button = Button::builder().label("Add Variable").build();
+        let add_var_button = Button::builder().label(i18n("Add Variable")).build();
         button_box.append(&add_var_button);
 
         group.add(&button_box);
@@ -299,7 +301,7 @@ impl SnippetDialog {
 
         // Variable name (read-only display)
         let name_label = Label::builder()
-            .label("Name:")
+            .label(i18n("Name:"))
             .halign(gtk4::Align::End)
             .build();
         let name_entry = Entry::builder()
@@ -312,12 +314,12 @@ impl SnippetDialog {
 
         // Description
         let desc_label = Label::builder()
-            .label("Description:")
+            .label(i18n("Description:"))
             .halign(gtk4::Align::End)
             .build();
         let desc_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Variable description")
+            .placeholder_text(&i18n("Variable description"))
             .build();
         if let Some(d) = description {
             desc_entry.set_text(d);
@@ -327,12 +329,12 @@ impl SnippetDialog {
 
         // Default value
         let default_label = Label::builder()
-            .label("Default:")
+            .label(i18n("Default:"))
             .halign(gtk4::Align::End)
             .build();
         let default_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Default value")
+            .placeholder_text(&i18n("Default value"))
             .build();
         if let Some(d) = default {
             default_entry.set_text(d);
@@ -355,8 +357,8 @@ impl SnippetDialog {
 
     /// Populates the dialog with an existing snippet for editing
     pub fn set_snippet(&self, snippet: &Snippet) {
-        self.window.set_title(Some("Edit Snippet"));
-        self.save_btn.set_label("Save");
+        self.window.set_title(Some(&i18n("Edit Snippet")));
+        self.save_btn.set_label(&i18n("Save"));
         *self.editing_id.borrow_mut() = Some(snippet.id);
 
         self.name_entry.set_text(&snippet.name);

@@ -1114,7 +1114,7 @@ impl ConnectionDialog {
 
             // Show testing status
             btn.set_sensitive(false);
-            btn.set_label("Testing...");
+            btn.set_label(&i18n("Testing..."));
 
             // Clone data needed for the test (not GTK widgets)
             let host = connection.host.clone();
@@ -1203,7 +1203,7 @@ impl ConnectionDialog {
                 move |result: Option<rustconn_core::testing::TestResult>| {
                     // Update UI
                     test_button_clone.set_sensitive(true);
-                    test_button_clone.set_label("Test");
+                    test_button_clone.set_label(&i18n("Test"));
 
                     match result {
                         Some(test_result) if test_result.is_success() => {
@@ -2417,15 +2417,15 @@ impl ConnectionDialog {
 
         // === Shared Folders Group ===
         let folders_group = adw::PreferencesGroup::builder()
-            .title("Shared Folders")
-            .description("Local folders accessible from remote session")
+            .title(i18n("Shared Folders"))
+            .description(i18n("Local folders accessible from remote session"))
             .build();
 
         let folders_list = gtk4::ListBox::builder()
             .selection_mode(gtk4::SelectionMode::Single)
             .css_classes(["boxed-list"])
             .build();
-        folders_list.set_placeholder(Some(&Label::new(Some("No shared folders"))));
+        folders_list.set_placeholder(Some(&Label::new(Some(&i18n("No shared folders")))));
 
         let folders_scrolled = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -2957,15 +2957,15 @@ impl ConnectionDialog {
 
         // === Shared Folders Group ===
         let folders_group = adw::PreferencesGroup::builder()
-            .title("Shared Folders")
-            .description("Local folders accessible from remote session")
+            .title(i18n("Shared Folders"))
+            .description(i18n("Local folders accessible from remote session"))
             .build();
 
         let folders_list = gtk4::ListBox::builder()
             .selection_mode(gtk4::SelectionMode::Single)
             .css_classes(["boxed-list"])
             .build();
-        folders_list.set_placeholder(Some(&Label::new(Some("No shared folders"))));
+        folders_list.set_placeholder(Some(&Label::new(Some(&i18n("No shared folders")))));
 
         let folders_scrolled = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -3455,7 +3455,7 @@ impl ConnectionDialog {
             .selection_mode(gtk4::SelectionMode::None)
             .css_classes(["boxed-list"])
             .build();
-        variables_list.set_placeholder(Some(&Label::new(Some("No variables defined"))));
+        variables_list.set_placeholder(Some(&Label::new(Some(&i18n("No variables defined")))));
         variables_scrolled.set_child(Some(&variables_list));
 
         variables_group.add(&variables_scrolled);
@@ -3489,7 +3489,7 @@ impl ConnectionDialog {
             .selection_mode(gtk4::SelectionMode::None)
             .css_classes(["boxed-list"])
             .build();
-        properties_list.set_placeholder(Some(&Label::new(Some("No custom properties"))));
+        properties_list.set_placeholder(Some(&Label::new(Some(&i18n("No custom properties")))));
         properties_scrolled.set_child(Some(&properties_list));
 
         properties_group.add(&properties_scrolled);
@@ -3573,7 +3573,7 @@ impl ConnectionDialog {
             .selection_mode(gtk4::SelectionMode::None)
             .css_classes(["boxed-list"])
             .build();
-        expect_rules_list.set_placeholder(Some(&Label::new(Some("No expect rules"))));
+        expect_rules_list.set_placeholder(Some(&Label::new(Some(&i18n("No expect rules")))));
         rules_scrolled.set_child(Some(&expect_rules_list));
 
         rules_group.add(&rules_scrolled);
@@ -5043,8 +5043,8 @@ impl ConnectionDialog {
 
     /// Populates the dialog with an existing connection for editing
     pub fn set_connection(&self, conn: &Connection) {
-        self.window.set_title(Some("Edit Connection"));
-        self.save_button.set_label("Save");
+        self.window.set_title(Some(&i18n("Edit Connection")));
+        self.save_button.set_label(&i18n("Save"));
         *self.editing_id.borrow_mut() = Some(conn.id);
 
         // Basic fields

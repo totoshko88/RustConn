@@ -4,6 +4,7 @@
 //! including the sessions manager dialog and related functionality.
 
 use crate::alert;
+use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Button, Label, Orientation};
@@ -30,7 +31,7 @@ pub fn show_sessions_manager(
     sidebar: SharedSidebar,
 ) {
     let manager_window = adw::Window::builder()
-        .title("Active Sessions")
+        .title(i18n("Active Sessions"))
         .transient_for(window)
         .modal(true)
         .default_width(500)
@@ -43,10 +44,10 @@ pub fn show_sessions_manager(
     let header = adw::HeaderBar::new();
     header.set_show_end_title_buttons(false);
     header.set_show_start_title_buttons(false);
-    let close_btn = Button::builder().label("Close").build();
+    let close_btn = Button::builder().label(&i18n("Close")).build();
     let refresh_btn = Button::builder()
         .icon_name("view-refresh-symbolic")
-        .tooltip_text("Refresh")
+        .tooltip_text(&i18n("Refresh"))
         .build();
     header.pack_start(&close_btn);
     header.pack_end(&refresh_btn);
@@ -90,15 +91,15 @@ pub fn show_sessions_manager(
     button_box.set_halign(gtk4::Align::End);
 
     let switch_btn = Button::builder()
-        .label("Switch To")
+        .label(&i18n("Switch To"))
         .sensitive(false)
         .build();
     let send_text_btn = Button::builder()
-        .label("Send Text")
+        .label(&i18n("Send Text"))
         .sensitive(false)
         .build();
     let terminate_btn = Button::builder()
-        .label("Terminate")
+        .label(&i18n("Terminate"))
         .sensitive(false)
         .css_classes(["destructive-action"])
         .build();
@@ -183,9 +184,9 @@ pub fn show_sessions_manager(
                     let sidebar_inner = sidebar_clone.clone();
                     alert::show_confirm(
                         &manager_clone,
-                        "Terminate Session?",
-                        "Are you sure you want to terminate this session?",
-                        "Terminate",
+                        &i18n("Terminate Session?"),
+                        &i18n("Are you sure you want to terminate this session?"),
+                        &i18n("Terminate"),
                         true,
                         move |confirmed| {
                             if confirmed {
@@ -321,14 +322,14 @@ pub fn show_send_text_dialog(
     session_id: Uuid,
 ) {
     let dialog = adw::Dialog::builder()
-        .title("Send Text to Session")
+        .title(i18n("Send Text to Session"))
         .content_width(400)
         .build();
 
     let header = adw::HeaderBar::new();
-    let cancel_btn = Button::builder().label("Cancel").build();
+    let cancel_btn = Button::builder().label(&i18n("Cancel")).build();
     let send_btn = Button::builder()
-        .label("Send")
+        .label(&i18n("Send"))
         .css_classes(["suggested-action"])
         .build();
     header.pack_start(&cancel_btn);
@@ -341,19 +342,19 @@ pub fn show_send_text_dialog(
     content.set_margin_end(12);
 
     let label = Label::builder()
-        .label("Enter text to send to the session:")
+        .label(&i18n("Enter text to send to the session:"))
         .halign(gtk4::Align::Start)
         .build();
     content.append(&label);
 
     let entry = gtk4::Entry::builder()
-        .placeholder_text("Text to send...")
+        .placeholder_text(&i18n("Text to send..."))
         .hexpand(true)
         .build();
     content.append(&entry);
 
     let newline_check = gtk4::CheckButton::builder()
-        .label("Append newline (press Enter)")
+        .label(&i18n("Append newline (press Enter)"))
         .active(true)
         .build();
     content.append(&newline_check);

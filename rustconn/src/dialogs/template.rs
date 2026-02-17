@@ -28,6 +28,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use uuid::Uuid;
 
+use crate::i18n::i18n;
+
 /// Callback type for template dialog
 pub type TemplateCallback = Rc<RefCell<Option<Box<dyn Fn(Option<ConnectionTemplate>)>>>>;
 
@@ -118,7 +120,7 @@ impl TemplateDialog {
     #[allow(clippy::too_many_lines, clippy::similar_names)]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
         let window = adw::Window::builder()
-            .title("New Template")
+            .title(i18n("New Template"))
             .modal(true)
             .default_width(600)
             .default_height(500)
@@ -134,9 +136,9 @@ impl TemplateDialog {
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label("Close").build();
+        let close_btn = Button::builder().label(i18n("Close")).build();
         let save_btn = Button::builder()
-            .label("Create")
+            .label(i18n("Create"))
             .css_classes(["suggested-action"])
             .build();
         header.pack_start(&close_btn);
@@ -2538,8 +2540,8 @@ impl TemplateDialog {
 
     /// Populates the dialog with an existing template for editing
     pub fn set_template(&self, template: &ConnectionTemplate) {
-        self.window.set_title(Some("Edit Template"));
-        self.save_button.set_label("Save");
+        self.window.set_title(Some(&i18n("Edit Template")));
+        self.save_button.set_label(&i18n("Save"));
         *self.editing_id.borrow_mut() = Some(template.id);
 
         self.name_entry.set_text(&template.name);
@@ -2832,7 +2834,7 @@ impl TemplateManagerDialog {
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
         let window = adw::Window::builder()
-            .title("Manage Templates")
+            .title(i18n("Manage Templates"))
             .modal(true)
             .default_width(500)
             .default_height(400)
@@ -2847,9 +2849,9 @@ impl TemplateManagerDialog {
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label("Close").build();
+        let close_btn = Button::builder().label(i18n("Close")).build();
         let create_conn_btn = Button::builder()
-            .label("Create")
+            .label(i18n("Create"))
             .css_classes(["suggested-action"])
             .sensitive(false)
             .build();
@@ -2876,7 +2878,7 @@ impl TemplateManagerDialog {
         clamp.set_child(Some(&content));
 
         let filter_box = GtkBox::new(Orientation::Horizontal, 8);
-        let filter_label = Label::new(Some("Filter by protocol:"));
+        let filter_label = Label::new(Some(&i18n("Filter by protocol:")));
         let protocols = StringList::new(&["All", "SSH", "RDP", "VNC", "SPICE"]);
         let filter_dropdown = DropDown::builder().model(&protocols).build();
         filter_box.append(&filter_label);

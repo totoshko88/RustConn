@@ -116,12 +116,12 @@ impl ConnectionSidebar {
         // Search pending spinner (hidden by default)
         let search_spinner = gtk4::Spinner::new();
         search_spinner.set_visible(false);
-        search_spinner.set_tooltip_text(Some("Search pending..."));
+        search_spinner.set_tooltip_text(Some(&i18n("Search pending...")));
         search_box.append(&search_spinner);
 
         // Help button with popover
         let help_button = Button::from_icon_name("dialog-question-symbolic");
-        help_button.set_tooltip_text(Some("Search syntax help"));
+        help_button.set_tooltip_text(Some(&i18n("Search syntax help")));
         help_button.add_css_class("flat");
         help_button.update_property(&[gtk4::accessible::Property::Label("Search syntax help")]);
 
@@ -204,11 +204,11 @@ impl ConnectionSidebar {
         let shell_box = GtkBox::new(Orientation::Horizontal, 4);
         let shell_icon = gtk4::Image::from_icon_name("utilities-terminal-symbolic");
         shell_icon.set_pixel_size(16);
-        let shell_label = Label::new(Some("Shell"));
+        let shell_label = Label::new(Some(&i18n("Shell")));
         shell_box.append(&shell_icon);
         shell_box.append(&shell_label);
         local_shell_btn.set_child(Some(&shell_box));
-        local_shell_btn.set_tooltip_text(Some("Local Shell (Ctrl+Shift+T)"));
+        local_shell_btn.set_tooltip_text(Some(&i18n("Local Shell (Ctrl+Shift+T)")));
         local_shell_btn.set_action_name(Some("win.local-shell"));
         local_shell_btn.add_css_class("suggested-action");
         local_shell_btn.add_css_class("pill");
@@ -1802,16 +1802,16 @@ impl ConnectionSidebar {
             self.keepass_button.remove_css_class("dim-label");
             self.keepass_button.add_css_class("suggested-action");
             self.keepass_button
-                .set_tooltip_text(Some("Open Password Vault (Active)"));
+                .set_tooltip_text(Some(&i18n("Open Password Vault (Active)")));
         } else {
             self.keepass_button.remove_css_class("suggested-action");
             self.keepass_button.add_css_class("dim-label");
             if enabled {
                 self.keepass_button
-                    .set_tooltip_text(Some("Password Vault Not Found"));
+                    .set_tooltip_text(Some(&i18n("Password Vault Not Found")));
             } else {
                 self.keepass_button
-                    .set_tooltip_text(Some("Password Vault Disabled"));
+                    .set_tooltip_text(Some(&i18n("Password Vault Disabled")));
             }
         }
     }

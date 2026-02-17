@@ -6,6 +6,7 @@
 //! Updated for GTK 4.10+ compatibility using Window instead of Dialog.
 //! Migrated to libadwaita components for GNOME HIG compliance.
 
+use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -50,7 +51,7 @@ impl ClusterDialog {
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
         let window = adw::Window::builder()
-            .title("New Cluster")
+            .title(i18n("New Cluster"))
             .modal(true)
             .default_width(500)
             .default_height(400)
@@ -66,9 +67,9 @@ impl ClusterDialog {
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label("Close").build();
+        let close_btn = Button::builder().label(i18n("Close")).build();
         let save_btn = Button::builder()
-            .label("Create")
+            .label(i18n("Create"))
             .css_classes(["suggested-action"])
             .build();
         header.pack_start(&close_btn);
@@ -108,7 +109,7 @@ impl ClusterDialog {
 
         // === Cluster Details ===
         let details_group = adw::PreferencesGroup::builder()
-            .title("Cluster Details")
+            .title(i18n("Cluster Details"))
             .build();
 
         // Name entry row using builder
@@ -148,7 +149,7 @@ impl ClusterDialog {
             if name.is_empty() {
                 crate::toast::show_toast_on_window(
                     &window_clone,
-                    "Cluster name cannot be empty",
+                    &i18n("Cluster name cannot be empty"),
                     crate::toast::ToastType::Warning,
                 );
                 return;
@@ -165,7 +166,7 @@ impl ClusterDialog {
             if selected_ids.is_empty() {
                 crate::toast::show_toast_on_window(
                     &window_clone,
-                    "Please select at least one connection",
+                    &i18n("Please select at least one connection"),
                     crate::toast::ToastType::Warning,
                 );
                 return;
@@ -203,8 +204,8 @@ impl ClusterDialog {
     /// Creates the connections selection section
     fn create_connections_section() -> (adw::PreferencesGroup, ListBox) {
         let group = adw::PreferencesGroup::builder()
-            .title("Connections")
-            .description("Select connections to include in this cluster")
+            .title(i18n("Connections"))
+            .description(i18n("Select connections to include in this cluster"))
             .vexpand(true)
             .build();
 
@@ -228,8 +229,8 @@ impl ClusterDialog {
         button_box.set_halign(gtk4::Align::End);
         button_box.set_margin_top(12);
 
-        let select_all_btn = Button::builder().label("Select All").build();
-        let deselect_all_btn = Button::builder().label("Deselect All").build();
+        let select_all_btn = Button::builder().label(i18n("Select All")).build();
+        let deselect_all_btn = Button::builder().label(i18n("Deselect All")).build();
         button_box.append(&select_all_btn);
         button_box.append(&deselect_all_btn);
 
@@ -339,7 +340,7 @@ impl ClusterDialog {
     /// Sets the cluster to edit (for editing existing clusters)
     pub fn set_cluster(&self, cluster: &Cluster) {
         *self.editing_id.borrow_mut() = Some(cluster.id);
-        self.window.set_title(Some("Edit Cluster"));
+        self.window.set_title(Some(&i18n("Edit Cluster")));
         self.name_entry.set_text(&cluster.name);
         self.broadcast_row.set_active(cluster.broadcast_enabled);
 
@@ -400,7 +401,7 @@ impl ClusterListDialog {
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
         let window = adw::Window::builder()
-            .title("Manage Clusters")
+            .title(i18n("Manage Clusters"))
             .modal(true)
             .default_width(500)
             .default_height(400)
@@ -416,9 +417,9 @@ impl ClusterListDialog {
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label("Close").build();
+        let close_btn = Button::builder().label(i18n("Close")).build();
         let new_btn = Button::builder()
-            .label("Create")
+            .label(i18n("Create"))
             .css_classes(["suggested-action"])
             .build();
         header.pack_start(&close_btn);
@@ -452,7 +453,7 @@ impl ClusterListDialog {
 
         // Info label
         let info_label = Label::builder()
-            .label("Clusters allow you to connect to multiple servers simultaneously and optionally broadcast input to all sessions.")
+            .label(i18n("Clusters allow you to connect to multiple servers simultaneously and optionally broadcast input to all sessions."))
             .halign(gtk4::Align::Start)
             .wrap(true)
             .css_classes(["dim-label"])
@@ -547,19 +548,19 @@ impl ClusterListDialog {
         // Action buttons
         let connect_button = Button::builder()
             .icon_name("media-playback-start-symbolic")
-            .tooltip_text("Connect to cluster")
+            .tooltip_text(&i18n("Connect to cluster"))
             .css_classes(["flat"])
             .build();
 
         let edit_button = Button::builder()
             .icon_name("document-edit-symbolic")
-            .tooltip_text("Edit cluster")
+            .tooltip_text(&i18n("Edit cluster"))
             .css_classes(["flat"])
             .build();
 
         let delete_button = Button::builder()
             .icon_name("user-trash-symbolic")
-            .tooltip_text("Delete cluster")
+            .tooltip_text(&i18n("Delete cluster"))
             .css_classes(["flat", "destructive-action"])
             .build();
 
@@ -591,7 +592,9 @@ impl ClusterListDialog {
         if clusters.is_empty() {
             // Show empty state
             let empty_label = Label::builder()
-                .label("No clusters defined. Click 'New Cluster' to create one.")
+                .label(i18n(
+                    "No clusters defined. Click 'New Cluster' to create one.",
+                ))
                 .css_classes(["dim-label"])
                 .margin_top(20)
                 .margin_bottom(20)

@@ -15,12 +15,19 @@ VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
 echo "Extracting translatable strings for ${DOMAIN} v${VERSION}..."
 
 # Extract from Rust source files (gettext/ngettext calls via gettextrs)
+# Use --language=C because xgettext doesn't natively support Rust,
+# but the gettext("...") call syntax is identical to C.
 xgettext \
+    --language=C \
     --from-code=UTF-8 \
     --keyword=gettext \
     --keyword=ngettext:1,2 \
     --keyword=pgettext:1c,2 \
     --keyword=npgettext:1c,2,3 \
+    --keyword=i18n \
+    --keyword=i18n_f \
+    --keyword=ni18n:1,2 \
+    --keyword=ni18n_f:1,2 \
     --add-comments=Translators \
     --package-name="${DOMAIN}" \
     --package-version="${VERSION}" \

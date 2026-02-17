@@ -19,6 +19,8 @@ use uuid::Uuid;
 
 use rustconn_core::session::{Session, SessionState};
 
+use crate::i18n::i18n;
+
 /// Session statistics for dashboard display
 /// **Validates: Requirements 13.2**
 #[derive(Debug, Clone)]
@@ -313,10 +315,11 @@ impl ConnectionDashboard {
         filter_bar.set_margin_bottom(8);
 
         // Protocol filter
-        let protocol_label = Label::new(Some("Protocol:"));
+        let protocol_label = Label::new(Some(&i18n("Protocol:")));
         filter_bar.append(&protocol_label);
 
-        let protocol_items = StringList::new(&["All Protocols", "SSH", "RDP", "VNC", "SPICE"]);
+        let protocol_items =
+            StringList::new(&[&i18n("All Protocols"), "SSH", "RDP", "VNC", "SPICE"]);
         let protocol_filter = DropDown::builder()
             .model(&protocol_items)
             .selected(0)
@@ -324,11 +327,16 @@ impl ConnectionDashboard {
         filter_bar.append(&protocol_filter);
 
         // Status filter
-        let status_label = Label::new(Some("Status:"));
+        let status_label = Label::new(Some(&i18n("Status:")));
         status_label.set_margin_start(16);
         filter_bar.append(&status_label);
 
-        let status_items = StringList::new(&["All Statuses", "Connected", "Starting", "Error"]);
+        let status_items = StringList::new(&[
+            &i18n("All Statuses"),
+            &i18n("Connected"),
+            &i18n("Starting"),
+            &i18n("Error"),
+        ]);
         let status_filter = DropDown::builder().model(&status_items).selected(0).build();
         filter_bar.append(&status_filter);
 
@@ -339,8 +347,10 @@ impl ConnectionDashboard {
 
         // Refresh button
         let refresh_button = Button::from_icon_name("view-refresh-symbolic");
-        refresh_button.set_tooltip_text(Some("Refresh Dashboard"));
-        refresh_button.update_property(&[gtk4::accessible::Property::Label("Refresh Dashboard")]);
+        refresh_button.set_tooltip_text(Some(&i18n("Refresh Dashboard")));
+        refresh_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
+            "Refresh Dashboard",
+        ))]);
         filter_bar.append(&refresh_button);
 
         (filter_bar, protocol_filter, status_filter)
@@ -451,7 +461,7 @@ impl ConnectionDashboard {
         let filtered = filter.apply(sessions);
 
         if filtered.is_empty() {
-            let empty_label = Label::new(Some("No active sessions"));
+            let empty_label = Label::new(Some(&i18n("No active sessions")));
             empty_label.add_css_class("dim-label");
             flow_box.append(&empty_label);
         } else {
@@ -510,13 +520,17 @@ impl ConnectionDashboard {
         card_box.append(&header_box);
 
         // Host info
-        let host_label = Label::new(Some(&format!("Host: {}", stats.host)));
+        let host_label = Label::new(Some(&format!("{}: {}", i18n("Host"), stats.host)));
         host_label.set_halign(gtk4::Align::Start);
         host_label.add_css_class("dim-label");
         card_box.append(&host_label);
 
         // Duration
-        let duration_label = Label::new(Some(&format!("Duration: {}", stats.format_duration())));
+        let duration_label = Label::new(Some(&format!(
+            "{}: {}",
+            i18n("Duration"),
+            stats.format_duration()
+        )));
         duration_label.set_halign(gtk4::Align::Start);
         duration_label.add_css_class("dim-label");
         card_box.append(&duration_label);
@@ -538,8 +552,8 @@ impl ConnectionDashboard {
 
         // Focus button
         let focus_button = Button::from_icon_name("go-jump-symbolic");
-        focus_button.set_tooltip_text(Some("Focus Session"));
-        focus_button.update_property(&[gtk4::accessible::Property::Label("Focus Session")]);
+        focus_button.set_tooltip_text(Some(&i18n("Focus Session")));
+        focus_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Focus Session"))]);
         let session_id = stats.session_id;
         let focus_cb = focus_callback.clone();
         focus_button.connect_clicked(move |_| {
@@ -551,9 +565,10 @@ impl ConnectionDashboard {
 
         // Disconnect button
         let disconnect_button = Button::from_icon_name("window-close-symbolic");
-        disconnect_button.set_tooltip_text(Some("Disconnect"));
+        disconnect_button.set_tooltip_text(Some(&i18n("Disconnect")));
         disconnect_button.add_css_class("destructive-action");
-        disconnect_button.update_property(&[gtk4::accessible::Property::Label("Disconnect")]);
+        disconnect_button
+            .update_property(&[gtk4::accessible::Property::Label(&i18n("Disconnect"))]);
         let session_id = stats.session_id;
         let disconnect_cb = disconnect_callback.clone();
         disconnect_button.connect_clicked(move |_| {
@@ -629,7 +644,7 @@ pub fn show_dashboard_dialog(
     disconnect_callback: impl Fn(Uuid) + 'static,
 ) {
     let dialog = adw::Window::builder()
-        .title("Connection Dashboard")
+        .title(i18n("Connection Dashboard"))
         .transient_for(parent)
         .modal(false)
         .default_width(800)

@@ -3,6 +3,7 @@
 //! This module provides a dialog for viewing detailed connection statistics.
 //! Migrated to libadwaita components for GNOME HIG compliance.
 
+use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::Box as GtkBox;
@@ -25,7 +26,7 @@ impl StatisticsDialog {
     #[must_use]
     pub fn new(parent: Option<&impl IsA<gtk4::Window>>) -> Self {
         let window = adw::Window::builder()
-            .title("Connection Statistics")
+            .title(i18n("Connection Statistics"))
             .default_width(500)
             .default_height(400)
             .modal(true)
@@ -41,9 +42,9 @@ impl StatisticsDialog {
         let header = adw::HeaderBar::new();
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label("Close").build();
+        let close_btn = Button::builder().label(i18n("Close")).build();
         let reset_btn = Button::builder()
-            .label("Reset")
+            .label(i18n("Reset"))
             .css_classes(["destructive-action"])
             .build();
         header.pack_start(&close_btn);
@@ -118,11 +119,13 @@ impl StatisticsDialog {
         // Connection name header in PreferencesGroup
         let stats_group = adw::PreferencesGroup::builder()
             .title(name)
-            .description("Connection Statistics")
+            .description(i18n("Connection Statistics"))
             .build();
 
         // Statistics rows
-        let total_row = adw::ActionRow::builder().title("Total connections").build();
+        let total_row = adw::ActionRow::builder()
+            .title(i18n("Total connections"))
+            .build();
         let total_label = Label::builder()
             .label(&stats.total_connections.to_string())
             .css_classes(["dim-label"])
@@ -130,7 +133,7 @@ impl StatisticsDialog {
         total_row.add_suffix(&total_label);
         stats_group.add(&total_row);
 
-        let success_row = adw::ActionRow::builder().title("Successful").build();
+        let success_row = adw::ActionRow::builder().title(i18n("Successful")).build();
         let success_label = Label::builder()
             .label(&stats.successful_connections.to_string())
             .css_classes(["success"])
@@ -138,7 +141,7 @@ impl StatisticsDialog {
         success_row.add_suffix(&success_label);
         stats_group.add(&success_row);
 
-        let failed_row = adw::ActionRow::builder().title("Failed").build();
+        let failed_row = adw::ActionRow::builder().title(i18n("Failed")).build();
         let failed_label = Label::builder()
             .label(&stats.failed_connections.to_string())
             .css_classes(["error"])
@@ -146,7 +149,9 @@ impl StatisticsDialog {
         failed_row.add_suffix(&failed_label);
         stats_group.add(&failed_row);
 
-        let rate_row = adw::ActionRow::builder().title("Success rate").build();
+        let rate_row = adw::ActionRow::builder()
+            .title(i18n("Success rate"))
+            .build();
         let rate_label = Label::builder()
             .label(&format!("{:.1}%", stats.success_rate()))
             .css_classes(["dim-label"])
@@ -155,7 +160,7 @@ impl StatisticsDialog {
         stats_group.add(&rate_row);
 
         let duration_row = adw::ActionRow::builder()
-            .title("Total time connected")
+            .title(i18n("Total time connected"))
             .build();
         let duration_label = Label::builder()
             .label(&ConnectionStatistics::format_duration(
@@ -167,7 +172,9 @@ impl StatisticsDialog {
         stats_group.add(&duration_row);
 
         if let Some(last) = &stats.last_connected {
-            let last_row = adw::ActionRow::builder().title("Last connected").build();
+            let last_row = adw::ActionRow::builder()
+                .title(i18n("Last connected"))
+                .build();
             let last_label = Label::builder()
                 .label(&last.format("%Y-%m-%d %H:%M").to_string())
                 .css_classes(["dim-label"])
@@ -179,7 +186,9 @@ impl StatisticsDialog {
         // Average session duration
         let avg = stats.average_duration();
         if avg.num_seconds() > 0 {
-            let avg_row = adw::ActionRow::builder().title("Average session").build();
+            let avg_row = adw::ActionRow::builder()
+                .title(i18n("Average session"))
+                .build();
             let avg_label = Label::builder()
                 .label(&ConnectionStatistics::format_duration(avg.num_seconds()))
                 .css_classes(["dim-label"])
@@ -210,11 +219,13 @@ impl StatisticsDialog {
 
         // Summary group
         let summary_group = adw::PreferencesGroup::builder()
-            .title("Overview")
-            .description("All connections summary")
+            .title(i18n("Overview"))
+            .description(i18n("All connections summary"))
             .build();
 
-        let total_row = adw::ActionRow::builder().title("Total sessions").build();
+        let total_row = adw::ActionRow::builder()
+            .title(i18n("Total sessions"))
+            .build();
         let total_label = Label::builder()
             .label(&total_connections.to_string())
             .css_classes(["dim-label"])
@@ -222,7 +233,7 @@ impl StatisticsDialog {
         total_row.add_suffix(&total_label);
         summary_group.add(&total_row);
 
-        let success_row = adw::ActionRow::builder().title("Successful").build();
+        let success_row = adw::ActionRow::builder().title(i18n("Successful")).build();
         let success_label = Label::builder()
             .label(&total_successful.to_string())
             .css_classes(["success"])
@@ -230,7 +241,7 @@ impl StatisticsDialog {
         success_row.add_suffix(&success_label);
         summary_group.add(&success_row);
 
-        let failed_row = adw::ActionRow::builder().title("Failed").build();
+        let failed_row = adw::ActionRow::builder().title(i18n("Failed")).build();
         let failed_label = Label::builder()
             .label(&total_failed.to_string())
             .css_classes(["error"])
@@ -238,7 +249,7 @@ impl StatisticsDialog {
         failed_row.add_suffix(&failed_label);
         summary_group.add(&failed_row);
 
-        let duration_row = adw::ActionRow::builder().title("Total time").build();
+        let duration_row = adw::ActionRow::builder().title(i18n("Total time")).build();
         let duration_label = Label::builder()
             .label(&ConnectionStatistics::format_duration(total_duration))
             .css_classes(["dim-label"])
@@ -251,7 +262,7 @@ impl StatisticsDialog {
         // Per-connection breakdown
         if !stats.is_empty() {
             let breakdown_group = adw::PreferencesGroup::builder()
-                .title("Per-Connection")
+                .title(i18n("Per-Connection"))
                 .build();
 
             for (name, stat) in stats {
@@ -285,7 +296,7 @@ impl StatisticsDialog {
         container.set_margin_top(16);
 
         let label = Label::builder()
-            .label("Success Rate")
+            .label(i18n("Success Rate"))
             .css_classes(["title-4"])
             .halign(gtk4::Align::Start)
             .build();

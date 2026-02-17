@@ -12,6 +12,8 @@ use std::rc::Rc;
 use vte4::prelude::*;
 use vte4::Terminal;
 
+use crate::i18n::i18n;
+
 /// Terminal search dialog for VTE terminals
 pub struct TerminalSearchDialog {
     window: adw::Window,
@@ -32,7 +34,7 @@ impl TerminalSearchDialog {
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>, terminal: Terminal) -> Self {
         let window = adw::Window::builder()
-            .title("Search in Terminal")
+            .title(i18n("Search in Terminal"))
             .modal(true)
             .default_width(400)
             .default_height(180)
@@ -49,7 +51,7 @@ impl TerminalSearchDialog {
         header.set_show_end_title_buttons(false);
         header.set_show_start_title_buttons(false);
 
-        let close_btn = Button::builder().label("Close").build();
+        let close_btn = Button::builder().label(i18n("Close")).build();
         header.pack_start(&close_btn);
 
         // Create main content
@@ -67,7 +69,7 @@ impl TerminalSearchDialog {
 
         // Search entry
         let search_entry = SearchEntry::builder()
-            .placeholder_text("Search text...")
+            .placeholder_text(&i18n("Search text..."))
             .hexpand(true)
             .build();
         content.append(&search_entry);
@@ -75,18 +77,18 @@ impl TerminalSearchDialog {
         // Options row
         let options_box = GtkBox::new(Orientation::Horizontal, 12);
 
-        let case_sensitive = CheckButton::builder().label("Case sensitive").build();
+        let case_sensitive = CheckButton::builder().label(i18n("Case sensitive")).build();
         options_box.append(&case_sensitive);
 
         let regex_toggle = CheckButton::builder()
-            .label("Regex")
-            .tooltip_text("Use regular expression pattern")
+            .label(i18n("Regex"))
+            .tooltip_text(&i18n("Use regular expression pattern"))
             .build();
         options_box.append(&regex_toggle);
 
         let highlight_all = CheckButton::builder()
-            .label("Highlight All")
-            .tooltip_text("Highlight all matches in terminal")
+            .label(i18n("Highlight All"))
+            .tooltip_text(&i18n("Highlight all matches in terminal"))
             .active(true)
             .build();
         options_box.append(&highlight_all);
@@ -98,18 +100,18 @@ impl TerminalSearchDialog {
 
         let prev_btn = Button::builder()
             .icon_name("go-up-symbolic")
-            .tooltip_text("Previous match")
+            .tooltip_text(&i18n("Previous match"))
             .build();
         nav_box.append(&prev_btn);
 
         let next_btn = Button::builder()
             .icon_name("go-down-symbolic")
-            .tooltip_text("Next match")
+            .tooltip_text(&i18n("Next match"))
             .build();
         nav_box.append(&next_btn);
 
         let match_label = Label::builder()
-            .label("Enter text to search")
+            .label(i18n("Enter text to search"))
             .hexpand(true)
             .halign(gtk4::Align::Start)
             .build();
@@ -159,7 +161,7 @@ impl TerminalSearchDialog {
         self.search_entry.connect_search_changed(move |entry| {
             let text = entry.text();
             if text.is_empty() {
-                match_label.set_text("Enter text to search");
+                match_label.set_text(&i18n("Enter text to search"));
                 *current_search.borrow_mut() = String::new();
                 terminal.match_remove_all();
                 terminal.search_set_regex(None, 0);
@@ -328,15 +330,15 @@ impl TerminalSearchDialog {
             }
 
             if terminal.search_find_next() {
-                match_label.set_text("Found matches");
+                match_label.set_text(&i18n("Found matches"));
             } else {
-                match_label.set_text("No matches found");
+                match_label.set_text(&i18n("No matches found"));
             }
         } else if is_regex {
-            match_label.set_text("Invalid regex pattern");
+            match_label.set_text(&i18n("Invalid regex pattern"));
             terminal.search_set_regex(None, 0);
         } else {
-            match_label.set_text("Search error");
+            match_label.set_text(&i18n("Search error"));
             terminal.search_set_regex(None, 0);
         }
     }
