@@ -95,9 +95,10 @@ fn locale_dir() -> String {
     }
 
     // 2. Build-time locale dir (set by build.rs via cargo:rustc-env)
-    let build_locale = env!("RUSTCONN_LOCALE_DIR");
-    if !build_locale.is_empty() && std::path::Path::new(build_locale).exists() {
-        return build_locale.to_string();
+    if let Some(build_locale) = option_env!("RUSTCONN_LOCALE_DIR") {
+        if !build_locale.is_empty() && std::path::Path::new(build_locale).exists() {
+            return build_locale.to_string();
+        }
     }
 
     // 3. Flatpak

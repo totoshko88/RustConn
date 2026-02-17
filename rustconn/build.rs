@@ -22,6 +22,8 @@ fn main() {
             "cargo:warning=msgfmt not found — translations will not be compiled. \
              Install gettext: sudo apt install gettext"
         );
+        // Still export an empty locale dir so env!() doesn't fail
+        println!("cargo:rustc-env=RUSTCONN_LOCALE_DIR=");
         return;
     }
 
