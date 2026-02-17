@@ -352,6 +352,25 @@ impl ConnectionSidebar {
         container.append(&filter_box);
         container.append(&search_box);
 
+        // Responsive: hide less common protocol filters on narrow sidebar
+        {
+            let telnet_c = telnet_filter.clone();
+            let serial_c = serial_filter.clone();
+            let zt_c = zerotrust_filter.clone();
+            let k8s_c = kubernetes_filter.clone();
+            let group_c = protocol_group.clone();
+            container.connect_notify_local(Some("width-request"), move |_container, _| {
+                let width = group_c.width();
+                if width > 0 {
+                    let narrow = width < 280;
+                    telnet_c.set_visible(!narrow);
+                    serial_c.set_visible(!narrow);
+                    zt_c.set_visible(!narrow);
+                    k8s_c.set_visible(!narrow);
+                }
+            });
+        }
+
         // Create search history storage and popover
         let search_history: Rc<RefCell<Vec<String>>> = Rc::new(RefCell::new(Vec::new()));
         let history_popover = search::create_history_popover(&search_entry, search_history.clone());

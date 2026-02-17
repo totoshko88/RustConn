@@ -70,7 +70,7 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
         }
         Commands::Import { format, file } => export_import::cmd_import(config_path, format, &file),
         Commands::Test { name, timeout } => test::cmd_test(config_path, &name, timeout),
-        Commands::Delete { name } => delete::cmd_delete(config_path, &name),
+        Commands::Delete { name, force } => delete::cmd_delete(config_path, &name, force),
         Commands::Show { name } => show::cmd_show(config_path, &name),
         Commands::Update {
             name,

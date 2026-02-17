@@ -67,10 +67,11 @@ pub use automation::{
     SpecialKey, TaskCondition, TaskError, TaskExecutor, TaskResult, TaskTiming,
 };
 pub use cli_download::{
-    get_available_components, get_cli_install_dir, get_component, get_components_by_category,
-    get_installation_status, get_pinned_versions, get_user_friendly_error, install_component,
-    uninstall_component, ChecksumPolicy, CliDownloadError, CliDownloadResult, ComponentCategory,
-    DownloadCancellation, DownloadProgress, DownloadableComponent, InstallMethod,
+    detect_package_manager, get_arch, get_available_components, get_cli_install_dir, get_component,
+    get_components_by_category, get_installation_status, get_pinned_versions,
+    get_system_install_command, get_user_friendly_error, install_component, uninstall_component,
+    ChecksumPolicy, CliDownloadError, CliDownloadResult, ComponentCategory, DownloadCancellation,
+    DownloadProgress, DownloadableComponent, InstallMethod, PackageManager,
     DOWNLOADABLE_COMPONENTS,
 };
 pub use cluster::{
@@ -106,6 +107,7 @@ pub use export::{
 pub use ffi::{
     ConnectionState, FfiDisplay, FfiError, FfiResult, VncCredentialType, VncDisplay, VncError,
 };
+#[allow(deprecated)]
 pub use flatpak::{host_command, host_exec, host_has_command, host_spawn, host_which, is_flatpak};
 pub use import::{
     AnsibleInventoryImporter, AsbruImporter, BatchCancelHandle, BatchImportResult, BatchImporter,

@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Configurable document encryption strength (SEC-04)** — Added `EncryptionStrength` enum (Standard/High/Maximum) with per-level Argon2 parameters; strength byte stored in encrypted file header for automatic detection on decrypt; backward-compatible with legacy format
 
 ### Added
+- **Property tests for variable injection (SEC-07)** — 8 proptest properties (200 cases each) in `variable_injection_tests.rs` validate that `substitute_for_command()` rejects null bytes, newlines, and control characters while allowing safe values, tabs, and undefined-variable fallback
+- **CLI delete confirmation prompt (CLI-09)** — `rustconn-cli delete` now prompts for confirmation on interactive terminals; `--force` / `-f` flag skips the prompt; non-interactive (piped) input auto-confirms per clig.dev guidelines
 - **CLI `--verbose` / `--quiet` flags (CLI-02)** — Global `-v` (count: info/debug/trace) and `-q` (errors only) flags for controlling output verbosity
 - **CLI `--no-color` / `NO_COLOR` support (CLI-03)** — Global `--no-color` flag and `NO_COLOR` environment variable support per [no-color.org](https://no-color.org/) convention
 - **CLI shell completions (CLI-05)** — `rustconn-cli completions <shell>` generates completion scripts for bash, zsh, fish, elvish, and PowerShell via `clap_complete`
@@ -28,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI `--config` flag now works (CLI-01)** — The `--config` flag was declared but never used; now threads the custom config directory path through all 43 `ConfigManager` call sites via `create_config_manager()` helper
 - **Flatpak components dialog hides unusable CLIs (EXT-01)** — Protocol clients (xfreerdp, vncviewer) hidden in Flatpak sandbox since `flatpak-spawn --host` is disabled; only network-compatible tools (cloud CLIs, password managers, kubectl) are shown
 - **SPDX license consistency (FH-01)** — Changed metainfo.xml `<project_license>` from `GPL-3.0+` to `GPL-3.0-or-later` matching Cargo.toml
+
+### Deprecated
+- **Flatpak host command functions (CODE-06)** — `host_command()`, `host_has_command()`, `host_which()`, `host_exec()`, `host_spawn()` in `flatpak.rs` marked `#[deprecated(since = "0.8.7")]`; `flatpak-spawn --host` has been disabled since 0.7.7 per Flathub policy; use embedded clients instead
 
 ### Changed
 - **CLI modularized (CODE-01)** — Split monolithic `rustconn-cli/src/main.rs` (5000+ lines) into module directory: `cli.rs` (argument types), `error.rs` (error types + exit codes), `format.rs` (CSV escaping), `util.rs` (shared helpers), and `commands/` directory with 18 handler modules; `main.rs` reduced to 22-line entry point

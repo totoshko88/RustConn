@@ -19,6 +19,10 @@ pub struct ClientInfo {
     pub installed: bool,
     /// Installation hint for missing clients
     pub install_hint: Option<String>,
+    /// Minimum required version for compatibility (if known)
+    pub min_version: Option<&'static str>,
+    /// Whether the detected version meets the minimum requirement
+    pub version_compatible: bool,
 }
 
 impl ClientInfo {
@@ -31,6 +35,8 @@ impl ClientInfo {
             version,
             installed: true,
             install_hint: None,
+            min_version: None,
+            version_compatible: true,
         }
     }
 
@@ -43,7 +49,38 @@ impl ClientInfo {
             version: None,
             installed: false,
             install_hint: Some(install_hint.into()),
+            min_version: None,
+            version_compatible: false,
         }
+    }
+
+    /// Checks if the detected version meets the minimum requirement.
+    ///
+    /// Returns `true` if no minimum version is set, or if the detected
+    /// version is greater than or equal to the minimum.
+    #[must_use]
+    pub fn check_version_compatible(&self) -> bool {
+        let Some(min_str) = self.min_version else {
+            return true;
+        };
+        let Some(ref detected) = self.version else {
+            return false;
+        };
+        let Some(min_ver) = parse_semver(min_str) else {
+            return true;
+        };
+        let Some(det_ver) = parse_semver(detected) else {
+            return false;
+        };
+        det_ver >= min_ver
+    }
+
+    /// Sets the minimum version requirement and updates compatibility.
+    #[must_use]
+    pub fn with_min_version(mut self, min: &'static str) -> Self {
+        self.min_version = Some(min);
+        self.version_compatible = self.check_version_compatible();
+        self
     }
 }
 
@@ -151,19 +188,19 @@ pub fn detect_rdp_client() -> ClientInfo {
     // Try FreeRDP 3.x first (preferred)
     // wlfreerdp3 for Wayland, xfreerdp3 for X11
     if let Some(info) = try_detect_client("FreeRDP 3", "wlfreerdp3", &["--version"]) {
-        return info;
+        return info.with_min_version("3.0.0");
     }
     if let Some(info) = try_detect_client("FreeRDP 3", "xfreerdp3", &["--version"]) {
-        return info;
+        return info.with_min_version("3.0.0");
     }
 
     // Try FreeRDP 2.x
     // wlfreerdp for Wayland, xfreerdp for X11
     if let Some(info) = try_detect_client("FreeRDP 2", "wlfreerdp", &["--version"]) {
-        return info;
+        return info.with_min_version("3.0.0");
     }
     if let Some(info) = try_detect_client("FreeRDP 2", "xfreerdp", &["--version"]) {
-        return info;
+        return info.with_min_version("3.0.0");
     }
 
     // Try rdesktop as legacy fallback
@@ -560,6 +597,23 @@ fn parse_teleport_version(line: &str) -> Option<String> {
     None
 }
 
+/// Parses a version string into (major, minor, patch) tuple.
+///
+/// Handles common version formats: "3.0.0", "v3.0.0", "3.0",
+/// "`FreeRDP` version 3.0.0", etc.
+fn parse_semver(version_str: &str) -> Option<(u32, u32, u32)> {
+    // Extract version-like pattern from the string
+    let re_like = version_str
+        .split(|c: char| !c.is_ascii_digit() && c != '.')
+        .find(|s| s.contains('.') && s.chars().next().is_some_and(|c| c.is_ascii_digit()))?;
+
+    let parts: Vec<&str> = re_like.split('.').collect();
+    let major = parts.first()?.parse().ok()?;
+    let minor = parts.get(1).and_then(|s| s.parse().ok()).unwrap_or(0);
+    let patch = parts.get(2).and_then(|s| s.parse().ok()).unwrap_or(0);
+    Some((major, minor, patch))
+}
+
 /// Extracts a clean version string from a line
 fn extract_version_string(line: &str) -> String {
     // Limit length and clean up
@@ -670,5 +724,43 @@ mod tests {
         let output = "Teleport v18.6.5 git:v18.6.5-0-g4bc3277 go1.24.12";
         let version = parse_version(output);
         assert_eq!(version, Some("v18.6.5".to_string()));
+    }
+
+    #[test]
+    fn test_parse_semver() {
+        assert_eq!(parse_semver("3.0.0"), Some((3, 0, 0)));
+        assert_eq!(parse_semver("v3.0.0"), Some((3, 0, 0)));
+        assert_eq!(parse_semver("FreeRDP version 3.0.0"), Some((3, 0, 0)));
+        assert_eq!(parse_semver("2.11.7"), Some((2, 11, 7)));
+        assert_eq!(parse_semver("1.0"), Some((1, 0, 0)));
+        assert_eq!(parse_semver(""), None);
+        assert_eq!(parse_semver("no version"), None);
+    }
+
+    #[test]
+    fn test_version_compatible() {
+        let info = ClientInfo::installed(
+            "FreeRDP",
+            PathBuf::from("/usr/bin/xfreerdp"),
+            Some("3.0.0".to_string()),
+        )
+        .with_min_version("3.0.0");
+        assert!(info.version_compatible);
+
+        let info = ClientInfo::installed(
+            "FreeRDP",
+            PathBuf::from("/usr/bin/xfreerdp"),
+            Some("2.11.7".to_string()),
+        )
+        .with_min_version("3.0.0");
+        assert!(!info.version_compatible);
+
+        let info = ClientInfo::installed(
+            "FreeRDP",
+            PathBuf::from("/usr/bin/xfreerdp"),
+            Some("3.1.0".to_string()),
+        )
+        .with_min_version("3.0.0");
+        assert!(info.version_compatible);
     }
 }

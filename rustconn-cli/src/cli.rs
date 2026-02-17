@@ -149,6 +149,10 @@ pub enum Commands {
     Delete {
         /// Connection name or UUID
         name: String,
+
+        /// Skip confirmation prompt
+        #[arg(short, long)]
+        force: bool,
     },
 
     /// Show connection details

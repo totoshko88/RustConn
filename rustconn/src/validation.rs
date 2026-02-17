@@ -261,6 +261,9 @@ impl FieldValidator {
 
         match &result {
             ValidationResult::Valid => {
+                self.entry.update_state(&[gtk4::accessible::State::Invalid(
+                    gtk4::AccessibleInvalidState::False,
+                )]);
                 if !value_str.is_empty() {
                     self.entry.add_css_class(SUCCESS_CSS_CLASS);
                 }
@@ -271,6 +274,9 @@ impl FieldValidator {
             }
             ValidationResult::Warning(msg) => {
                 self.entry.add_css_class(WARNING_CSS_CLASS);
+                self.entry.update_state(&[gtk4::accessible::State::Invalid(
+                    gtk4::AccessibleInvalidState::False,
+                )]);
                 if let Some(label) = &self.error_label {
                     label.set_text(msg);
                     label.set_visible(true);
@@ -280,11 +286,19 @@ impl FieldValidator {
             }
             ValidationResult::Error(msg) => {
                 self.entry.add_css_class(ERROR_CSS_CLASS);
+                self.entry.update_state(&[gtk4::accessible::State::Invalid(
+                    gtk4::AccessibleInvalidState::True,
+                )]);
                 if let Some(label) = &self.error_label {
                     label.set_text(msg);
                     label.set_visible(true);
                     label.remove_css_class("warning");
                     label.add_css_class("error");
+                    let accessible: &gtk4::Accessible = label.upcast_ref::<gtk4::Accessible>();
+                    self.entry
+                        .update_relation(&[gtk4::accessible::Relation::ErrorMessage(&[
+                            accessible,
+                        ])]);
                 }
             }
         }

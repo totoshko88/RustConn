@@ -103,7 +103,7 @@
   - Кредиціали кешуються в `SecretManager` з TTL, але немає документації коли вони очищуються
   - **Рішення:** Додати `/// # Security` секцію до `SecretManager` з описом lifecycle
 
-- [ ] **SEC-07: Додати property-тести для ін'єкцій**
+- [x] **SEC-07: Додати property-тести для ін'єкцій** ✅ v0.8.7
   ```rust
   // rustconn-core/tests/properties/variable_injection.rs
   proptest! {
@@ -204,7 +204,7 @@
 
 ### 🟢 P2 — Рекомендації
 
-- [ ] **CODE-06: Мертвий код — `flatpak.rs` модуль**
+- [x] **CODE-06: Мертвий код — `flatpak.rs` модуль** ✅ v0.8.7
   - Документація каже: `flatpak-spawn --host` не працює після видалення `--talk-name=org.freedesktop.Flatpak`
   - Модуль залишений "for backward compatibility" але фактично не використовується у Flatpak
   - **Рішення:** Додати `#[deprecated]` або `cfg` guard:
@@ -845,7 +845,7 @@
   }
   ```
 
-- [ ] **CLI-09: Confirmation для деструктивних операцій**
+- [x] **CLI-09: Confirmation для деструктивних операцій** ✅ v0.8.7
   - `delete` видаляє без підтвердження
   - clig.dev: "If input or output is a terminal, confirm before doing anything destructive"
   - **Рішення:**
@@ -932,8 +932,8 @@
 | CLI-05 | CLI | 🟡 P1 | Немає shell completions |
 | CLI-06 | CLI | 🟡 P1 | Немає pager |
 | SEC-06 | Безпека | 🟢 P2 | Документація credential lifecycle |
-| SEC-07 | Безпека | 🟢 P2 | Property-тести для ін'єкцій |
-| CODE-06 | Код | 🟢 P2 | Мертвий код flatpak.rs |
+| SEC-07 | Безпека | 🟢 P2 | ~~Property-тести для ін'єкцій~~ ✅ |
+| CODE-06 | Код | 🟢 P2 | ~~Мертвий код flatpak.rs~~ ✅ |
 | CODE-07 | Код | 🟢 P2 | tracing замість println у CLI |
 | CODE-08 | Код | 🟢 P2 | Min version check для CLI |
 | GUI-06 | GUI | 🟢 P2 | Split view на мобільних |
@@ -948,7 +948,7 @@
 | FH-07 | Flathub | 🟢 P2 | Flatpak extensions |
 | CLI-07 | CLI | 🟢 P2 | Auto JSON при pipe |
 | CLI-08 | CLI | 🟢 P2 | Fuzzy suggestions |
-| CLI-09 | CLI | 🟢 P2 | Confirmation для delete |
+| CLI-09 | CLI | 🟢 P2 | ~~Confirmation для delete~~ ✅ |
 | CLI-10 | CLI | 🟢 P2 | Man pages |
 
 ---
