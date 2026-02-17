@@ -33,6 +33,10 @@ msgid ""
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
 "connections from a single application."
 msgstr ""
+"Moderní správce připojení pro Linux (rozhraní implementované v GTK4 a "
+"s nativní podporou nad Wayland). Spravujte SSH, RDP, VNC, SPICE a Telnet "
+"připojení, dále ta pře sériový port, do Kubernetes a přes Zero Trust "
+"– toto vše z jediné aplikace!"
 
 #: rustconn/src/app.rs
 msgid "translator-credits"
@@ -40,36 +44,36 @@ msgstr ""
 
 #: rustconn/src/app.rs
 msgid "User Guide"
-msgstr ""
+msgstr "Uživatelská příručka"
 
 #: rustconn/src/app.rs
 msgid "Installation"
-msgstr ""
+msgstr "Instalace"
 
 #: rustconn/src/app.rs
 msgid "Releases"
-msgstr ""
+msgstr "Vydání"
 
 #: rustconn/src/app.rs
 msgid "Changelog"
-msgstr ""
+msgstr "Seznam změn"
 
 #: rustconn/src/app.rs
 msgid "Special Thanks"
-msgstr ""
+msgstr "Zvláštní poděkování"
 
 #: rustconn/src/app.rs
 msgid "Made in Ukraine"
-msgstr ""
+msgstr "Vytvořeno na Ukrajině"
 
 #: rustconn/src/app.rs
 msgid "All contributors and supporters"
-msgstr ""
+msgstr "Všem přispěvatelům a podporovatelům"
 
 #. Sidebar
 #: rustconn/src/sidebar/mod.rs
 msgid "Search... (? for help)"
-msgstr ""
+msgstr "Hledat… (? pro nápovědu)"
 
 #. Connection dialog
 #: rustconn/src/dialogs/connection/dialog.rs
@@ -82,7 +86,7 @@ msgstr "Zavřít"
 
 #: rustconn/src/dialogs/connection/dialog.rs
 msgid "Test"
-msgstr ""
+msgstr "Vyzkoušet"
 
 #: rustconn/src/dialogs/connection/dialog.rs
 msgid "Create"
@@ -90,44 +94,44 @@ msgstr "Vytvořit"
 
 #: rustconn/src/dialogs/connection/dialog.rs
 msgid "Name:"
-msgstr ""
+msgstr "Název"
 
 #: rustconn/src/dialogs/connection/dialog.rs
 msgid "Protocol:"
-msgstr ""
+msgstr "Protokol"
 
 #: rustconn/src/dialogs/connection/dialog.rs
 msgid "Host:"
-msgstr ""
+msgstr "Hostitel:"
 
 #: rustconn/src/dialogs/connection/dialog.rs
 msgid "Port:"
-msgstr ""
+msgstr "Port:"
 
 #: rustconn/src/dialogs/connection/dialog.rs
 msgid "Username:"
-msgstr ""
+msgstr "Uživatelské jméno"
 
 #: rustconn/src/dialogs/connection/dialog.rs
 msgid "Domain:"
-msgstr ""
+msgstr "Doména"
 
 #: rustconn/src/dialogs/connection/dialog.rs
 msgid "Password:"
-msgstr ""
+msgstr "Heslo"
 
 #: rustconn/src/dialogs/connection/dialog.rs
 msgid "Tags:"
-msgstr ""
+msgstr "Štítky"
 
 #: rustconn/src/dialogs/connection/dialog.rs
 msgid "Group:"
-msgstr ""
+msgstr "Skupina:"
 
 #. Settings dialog — UI tab
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Interface"
-msgstr ""
+msgstr "Rozhraní"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Appearance"
@@ -135,112 +139,113 @@ msgstr "Vzhled"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "System"
-msgstr "Systémové"
+msgstr "Dle systému"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Light"
-msgstr "Světlé"
+msgstr "Světlý"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Dark"
-msgstr "Tmavé"
+msgstr "Tmavý"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Theme"
-msgstr ""
+msgstr "Motiv vzhledu"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Language"
-msgstr ""
+msgstr "Jazyk"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Restart required to apply"
-msgstr ""
+msgstr "Aby se uplatnilo, je třeba aplikaci zavřít a spustit znovu"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Window"
-msgstr ""
+msgstr "Okno"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Remember size"
-msgstr ""
+msgstr "Zapamatovat si velikost"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Restore window geometry on startup"
-msgstr ""
+msgstr "Obnovit geometrii okna po spuštění"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "System Tray"
-msgstr ""
+msgstr "Oznamovací oblast systémového panelu"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Requires desktop environment with tray support"
 msgstr ""
+"Vyžaduje desktopové prostředí, které má oznamovací oblast systémového panelu"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Show icon"
-msgstr ""
+msgstr "Zobrazit ikonu"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Display icon in system tray"
-msgstr ""
+msgstr "Zobrazit ikonu v oznamovací oblasti"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Minimize to tray"
-msgstr ""
+msgstr "Minimalizovat do oznamovací oblasti"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Hide window instead of closing"
-msgstr ""
+msgstr "Namísto jeho zavření okno skrýt"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Session Restore"
-msgstr ""
+msgstr "Obnovení relace"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Restore previous connections on startup"
-msgstr ""
+msgstr "Při spuštění obnovit předchozí spojení"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Enabled"
-msgstr ""
+msgstr "Zapnuto"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Reconnect to previous sessions on startup"
-msgstr ""
+msgstr "Při spuštění se znovu připojit k předchozím relacím"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Ask first"
-msgstr ""
+msgstr "Nejprve se zeptat"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Prompt before restoring sessions"
-msgstr ""
+msgstr "Dotázat se před obnovením relací"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Max age"
-msgstr ""
+msgstr "Nejvyšší stáří"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs
 msgid "Hours before sessions expire"
-msgstr ""
+msgstr "Hodin než platnost relace skončí"
 
 #. Empty states
 #: rustconn/src/empty_state.rs
 msgid "No Connections"
-msgstr ""
+msgstr "Žádní spřipojení"
 
 #: rustconn/src/empty_state.rs
 msgid "Create your first connection to get started"
-msgstr ""
+msgstr "Začněte vytvořením svého prvního připojení"
 
 #: rustconn/src/empty_state.rs
 msgid "No Results Found"
-msgstr ""
+msgstr "Nic nenalezeno"
 
 #: rustconn/src/empty_state.rs
 msgid "No connections match"
-msgstr ""
+msgstr "Neshoduje se s žádnžm z připojení"
 
 #: rustconn/src/empty_state.rs
 msgid "No Active Sessions"
@@ -248,59 +253,59 @@ msgstr "Žádné aktivní relace"
 
 #: rustconn/src/empty_state.rs
 msgid "Connect to a server to start a session"
-msgstr ""
+msgstr "Připojit se k serveru a zahájit relaci"
 
 #: rustconn/src/empty_state.rs
 msgid "Quick Connect"
-msgstr ""
+msgstr "Rychlé připojení"
 
 #: rustconn/src/empty_state.rs
 msgid "No Groups"
-msgstr ""
+msgstr "Žádné skupiny"
 
 #: rustconn/src/empty_state.rs
 msgid "Create groups to organize your connections"
-msgstr ""
+msgstr "Vytvářejte skupiny a škatulkujte si jimi svá připojení"
 
 #: rustconn/src/empty_state.rs
 msgid "New Group"
-msgstr ""
+msgstr "Nová skupina"
 
 #: rustconn/src/empty_state.rs
 msgid "No Snippets"
-msgstr ""
+msgstr "Žádné útržky příkazů"
 
 #: rustconn/src/empty_state.rs
 msgid "Create command snippets for quick access"
-msgstr ""
+msgstr "Vytvářejte si útržky příkazů pro rychlý přístup"
 
 #: rustconn/src/empty_state.rs
 msgid "New Snippet"
-msgstr ""
+msgstr "Nový útržek"
 
 #: rustconn/src/empty_state.rs
 msgid "No Templates"
-msgstr ""
+msgstr "Žádné šablony"
 
 #: rustconn/src/empty_state.rs
 msgid "Create templates for common connection configurations"
-msgstr ""
+msgstr "Vytvářejte si šablony pro opakující se uspořádání připojení"
 
 #: rustconn/src/empty_state.rs
 msgid "New Template"
-msgstr ""
+msgstr "Nová šablona"
 
 #: rustconn/src/empty_state.rs
 msgid "No Connection History"
-msgstr ""
+msgstr "Žádná historie připojení"
 
 #: rustconn/src/empty_state.rs
 msgid "Your recent connections will appear here"
-msgstr ""
+msgstr "Vaše nedávná připojení se zobrazí zde"
 
 #: rustconn/src/empty_state.rs
 msgid "Loading..."
-msgstr ""
+msgstr "Načítání…"
 
 #~ msgid "Failed to initialize application state"
 #~ msgstr "Nepodařilo se inicializovat stav aplikace"
@@ -309,7 +314,7 @@ msgstr ""
 #~ msgstr "_Klávesové zkratky"
 
 #~ msgid "_About RustConn"
-#~ msgstr "_O aplikaci RustConn"
+#~ msgstr "O _aplikaci RustConn"
 
 #~ msgid "_Quit"
 #~ msgstr "_Ukončit"
@@ -321,10 +326,10 @@ msgstr ""
 #~ msgstr "Otevírání SFTP…"
 
 #~ msgid "Connection failed"
-#~ msgstr "Připojení selhalo"
+#~ msgstr "Připojení se nezdařilo"
 
 #~ msgid "Deleted '{}'"
-#~ msgstr "«{}» smazáno"
+#~ msgstr "„{}“ smazáno"
 
 #~ msgid "Undo"
 #~ msgstr "Zpět"
@@ -336,10 +341,10 @@ msgstr ""
 #~ msgstr "Vše"
 
 #~ msgid "No connections found"
-#~ msgstr "Žádná připojení nenalezena"
+#~ msgstr "Nenalezena žádná připojení"
 
 #~ msgid "Create a new connection to get started"
-#~ msgstr "Vytvořte nové připojení"
+#~ msgstr "Začněte vytvořením nového připojení"
 
 #~ msgid "Edit Connection"
 #~ msgstr "Upravit připojení"
@@ -357,13 +362,13 @@ msgstr ""
 #~ msgstr "Název"
 
 #~ msgid "Host"
-#~ msgstr "Host"
+#~ msgstr "Hostitel"
 
 #~ msgid "Port"
 #~ msgstr "Port"
 
 #~ msgid "Username"
-#~ msgstr "Uživatel"
+#~ msgstr "Uživatelské jméno"
 
 #~ msgid "Password"
 #~ msgstr "Heslo"
@@ -384,7 +389,7 @@ msgstr ""
 #~ msgstr "Nastavení"
 
 #~ msgid "Color Scheme"
-#~ msgstr "Barevné schéma"
+#~ msgstr "Schéma barev"
 
 #~ msgid "Terminal"
 #~ msgstr "Terminál"
@@ -399,7 +404,7 @@ msgstr ""
 #~ msgstr "SSH agent"
 
 #~ msgid "Logging"
-#~ msgstr "Protokolování"
+#~ msgstr "Zaznamenávání událostí"
 
 #~ msgid "SSH"
 #~ msgstr "SSH"
@@ -417,7 +422,7 @@ msgstr ""
 #~ msgstr "Telnet"
 
 #~ msgid "Serial"
-#~ msgstr "Sériový"
+#~ msgstr "Sériový port"
 
 #~ msgid "K8s"
 #~ msgstr "K8s"
@@ -441,7 +446,7 @@ msgstr ""
 #~ msgstr "Import úspěšně dokončen"
 
 #~ msgid "Import failed"
-#~ msgstr "Import selhal"
+#~ msgstr "Import se nezdařil"
 
 #~ msgid "{} connection"
 #~ msgid_plural "{} connections"
@@ -451,15 +456,15 @@ msgstr ""
 
 #~ msgid "{} connection imported"
 #~ msgid_plural "{} connections imported"
-#~ msgstr[0] "{} připojení importováno"
-#~ msgstr[1] "{} připojení importována"
-#~ msgstr[2] "{} připojení importováno"
+#~ msgstr[0] "{} připojení naimportováno"
+#~ msgstr[1] "{} připojení naimportována"
+#~ msgstr[2] "{} připojení naimportováno"
 
 #~ msgid "Select a connection from the sidebar to start"
-#~ msgstr "Vyberte připojení z postranního panelu"
+#~ msgstr "Začněte výběrem připojení z postranního panelu"
 
 #~ msgid "This field is required"
-#~ msgstr "Toto pole je povinné"
+#~ msgstr "Tuto kolonku je třeba vyplnit"
 
 #~ msgid "Invalid port number"
 #~ msgstr "Neplatné číslo portu"
