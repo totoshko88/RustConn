@@ -340,6 +340,7 @@ impl ConnectionDashboard {
         // Refresh button
         let refresh_button = Button::from_icon_name("view-refresh-symbolic");
         refresh_button.set_tooltip_text(Some("Refresh Dashboard"));
+        refresh_button.update_property(&[gtk4::accessible::Property::Label("Refresh Dashboard")]);
         filter_bar.append(&refresh_button);
 
         (filter_bar, protocol_filter, status_filter)
@@ -538,6 +539,7 @@ impl ConnectionDashboard {
         // Focus button
         let focus_button = Button::from_icon_name("go-jump-symbolic");
         focus_button.set_tooltip_text(Some("Focus Session"));
+        focus_button.update_property(&[gtk4::accessible::Property::Label("Focus Session")]);
         let session_id = stats.session_id;
         let focus_cb = focus_callback.clone();
         focus_button.connect_clicked(move |_| {
@@ -551,6 +553,7 @@ impl ConnectionDashboard {
         let disconnect_button = Button::from_icon_name("window-close-symbolic");
         disconnect_button.set_tooltip_text(Some("Disconnect"));
         disconnect_button.add_css_class("destructive-action");
+        disconnect_button.update_property(&[gtk4::accessible::Property::Label("Disconnect")]);
         let session_id = stats.session_id;
         let disconnect_cb = disconnect_callback.clone();
         disconnect_button.connect_clicked(move |_| {

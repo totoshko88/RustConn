@@ -209,24 +209,7 @@ pub fn show_context_menu_for_item(
 /// Icons are aligned with `rustconn_core::protocol::icons::get_protocol_icon()`.
 #[must_use]
 pub fn get_protocol_icon(protocol: &str) -> &'static str {
-    // All ZeroTrust variants use the same icon (matches filter button)
-    if protocol.starts_with("zerotrust") {
-        return "security-high-symbolic";
-    }
-
-    // Standard protocol icons — aligned with rustconn-core icons.rs
-    match protocol {
-        "ssh" => "utilities-terminal-symbolic",
-        "rdp" => "computer-symbolic",
-        "vnc" => "video-display-symbolic",
-        "spice" => "preferences-desktop-remote-desktop-symbolic",
-        "telnet" => "call-start-symbolic",
-        "serial" => "modem-symbolic",
-        "sftp" => "folder-remote-symbolic",
-        "kubernetes" => "application-x-executable-symbolic",
-        "info" => "dialog-information-symbolic",
-        _ => "network-server-symbolic",
-    }
+    rustconn_core::get_protocol_icon_by_name(protocol)
 }
 
 /// Creates the bulk actions toolbar for group operations mode

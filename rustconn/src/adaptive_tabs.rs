@@ -165,6 +165,7 @@ impl AdaptiveTab {
         close_button.add_css_class("flat");
         close_button.add_css_class("circular");
         close_button.set_tooltip_text(Some("Close tab"));
+        close_button.update_property(&[gtk4::accessible::Property::Label("Close tab")]);
         container.append(&close_button);
 
         // Set tooltip
@@ -285,6 +286,7 @@ impl AdaptiveTabBar {
         let overflow_button = Button::from_icon_name("view-more-symbolic");
         overflow_button.add_css_class("flat");
         overflow_button.set_tooltip_text(Some("More tabs"));
+        overflow_button.update_property(&[gtk4::accessible::Property::Label("More tabs")]);
         overflow_button.set_visible(false);
         container.append(&overflow_button);
 

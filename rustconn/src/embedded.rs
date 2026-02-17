@@ -66,12 +66,15 @@ impl SessionControls {
         let fullscreen_button = Button::from_icon_name("view-fullscreen-symbolic");
         fullscreen_button.set_tooltip_text(Some("Toggle Fullscreen"));
         fullscreen_button.add_css_class("flat");
+        fullscreen_button
+            .update_property(&[gtk4::accessible::Property::Label("Toggle Fullscreen")]);
         container.append(&fullscreen_button);
 
         let disconnect_button = Button::from_icon_name("process-stop-symbolic");
         disconnect_button.set_tooltip_text(Some("Disconnect"));
         disconnect_button.add_css_class("flat");
         disconnect_button.add_css_class("destructive-action");
+        disconnect_button.update_property(&[gtk4::accessible::Property::Label("Disconnect")]);
         container.append(&disconnect_button);
 
         Self {

@@ -101,16 +101,19 @@ impl FloatingControls {
         disconnect_btn.set_tooltip_text(Some("Disconnect"));
         disconnect_btn.add_css_class("floating-control-button");
         disconnect_btn.add_css_class("destructive-action");
+        disconnect_btn.update_property(&[gtk4::accessible::Property::Label("Disconnect")]);
 
         // Create fullscreen button
         let fullscreen_btn = Button::from_icon_name("view-fullscreen-symbolic");
         fullscreen_btn.set_tooltip_text(Some("Toggle Fullscreen"));
         fullscreen_btn.add_css_class("floating-control-button");
+        fullscreen_btn.update_property(&[gtk4::accessible::Property::Label("Toggle Fullscreen")]);
 
         // Create settings button
         let settings_btn = Button::from_icon_name("emblem-system-symbolic");
         settings_btn.set_tooltip_text(Some("Session Settings"));
         settings_btn.add_css_class("floating-control-button");
+        settings_btn.update_property(&[gtk4::accessible::Property::Label("Session Settings")]);
 
         // Add buttons to container
         button_box.append(&disconnect_btn);

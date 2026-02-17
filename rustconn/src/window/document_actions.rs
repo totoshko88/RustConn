@@ -8,6 +8,7 @@ use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 use gtk4::gio;
 use gtk4::prelude::*;
+use rustconn_core::EncryptionStrength;
 use std::rc::Rc;
 
 /// Type alias for shared sidebar reference
@@ -117,7 +118,12 @@ fn setup_save_document_action(window: &gtk4::ApplicationWindow, state: &SharedAp
 
                     if let Some(path) = existing_path {
                         let mut state_ref = state_clone.borrow_mut();
-                        if let Err(e) = state_ref.save_document(doc_id, &path, None) {
+                        if let Err(e) = state_ref.save_document(
+                            doc_id,
+                            &path,
+                            None,
+                            EncryptionStrength::Standard,
+                        ) {
                             drop(state_ref);
                             groups::show_error_toast(
                                 &win,
@@ -132,9 +138,12 @@ fn setup_save_document_action(window: &gtk4::ApplicationWindow, state: &SharedAp
                             if let Some(DocumentDialogResult::Save { id, path, password }) = result
                             {
                                 let mut state_ref = state_for_cb.borrow_mut();
-                                if let Err(e) =
-                                    state_ref.save_document(id, &path, password.as_deref())
-                                {
+                                if let Err(e) = state_ref.save_document(
+                                    id,
+                                    &path,
+                                    password.as_deref(),
+                                    EncryptionStrength::Standard,
+                                ) {
                                     drop(state_ref);
                                     groups::show_error_toast(
                                         &win_for_cb,
@@ -188,7 +197,12 @@ fn setup_close_document_action(
 
                             if let Some(path) = existing_path {
                                 let mut state_ref = state_for_cb.borrow_mut();
-                                let _ = state_ref.save_document(id, &path, None);
+                                let _ = state_ref.save_document(
+                                    id,
+                                    &path,
+                                    None,
+                                    EncryptionStrength::Standard,
+                                );
                                 let _ = state_ref.close_document(id);
                             }
                         }

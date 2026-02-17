@@ -127,6 +127,33 @@ pub const fn get_protocol_icon(protocol: ProtocolType) -> &'static str {
     }
 }
 
+/// Returns the icon name for a protocol given its string name.
+///
+/// This is the string-based counterpart of [`get_protocol_icon`].
+/// Handles `ZeroTrust` variants (e.g., "zerotrust", "zerotrust:aws").
+///
+/// Falls back to `"network-server-symbolic"` for unknown protocols.
+#[must_use]
+pub fn get_protocol_icon_by_name(protocol: &str) -> &'static str {
+    // All ZeroTrust variants use the same base icon
+    if protocol.starts_with("zerotrust") {
+        return "security-high-symbolic";
+    }
+
+    match protocol.to_lowercase().as_str() {
+        "ssh" => "utilities-terminal-symbolic",
+        "rdp" => "computer-symbolic",
+        "vnc" => "video-display-symbolic",
+        "spice" => "preferences-desktop-remote-desktop-symbolic",
+        "telnet" => "call-start-symbolic",
+        "serial" => "modem-symbolic",
+        "sftp" => "folder-remote-symbolic",
+        "kubernetes" => "application-x-executable-symbolic",
+        "info" => "dialog-information-symbolic",
+        _ => "network-server-symbolic",
+    }
+}
+
 /// Returns all protocol types with their corresponding icon names
 ///
 /// Useful for testing that all protocols have distinct icons.

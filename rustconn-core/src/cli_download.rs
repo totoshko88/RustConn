@@ -184,6 +184,9 @@ pub struct DownloadableComponent {
     pub binary_name: &'static str,
     /// Subdirectory in cli folder
     pub install_subdir: &'static str,
+    /// Pinned version string for tracking. `None` for "latest" or
+    /// unversioned URLs.
+    pub pinned_version: Option<&'static str>,
     /// Whether this component works inside a Flatpak sandbox.
     ///
     /// Network-only tools (cloud CLIs, password managers, kubectl) work
@@ -326,6 +329,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "N/A",
         binary_name: "xfreerdp3",
         install_subdir: "freerdp",
+        pinned_version: None,
         works_in_sandbox: false,
     },
     DownloadableComponent {
@@ -346,6 +350,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~5 MB",
         binary_name: "vncviewer",
         install_subdir: "tigervnc",
+        pinned_version: Some("1.16.0"),
         works_in_sandbox: false,
     },
     // Zero Trust CLIs
@@ -362,6 +367,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~50 MB",
         binary_name: "aws",
         install_subdir: "aws-cli",
+        pinned_version: None,
         works_in_sandbox: true,
     },
     DownloadableComponent {
@@ -380,6 +386,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~5 MB",
         binary_name: "session-manager-plugin",
         install_subdir: "ssm-plugin",
+        pinned_version: None,
         works_in_sandbox: true,
     },
     DownloadableComponent {
@@ -397,6 +404,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~500 MB",
         binary_name: "gcloud",
         install_subdir: "google-cloud-sdk/bin",
+        pinned_version: None,
         works_in_sandbox: true,
     },
     DownloadableComponent {
@@ -411,6 +419,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~200 MB",
         binary_name: "az",
         install_subdir: "python/bin",
+        pinned_version: None,
         works_in_sandbox: true,
     },
     DownloadableComponent {
@@ -425,6 +434,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~50 MB",
         binary_name: "oci",
         install_subdir: "python/bin",
+        pinned_version: None,
         works_in_sandbox: true,
     },
     DownloadableComponent {
@@ -439,6 +449,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~100 MB",
         binary_name: "tsh",
         install_subdir: "teleport",
+        pinned_version: Some("18.6.8"),
         works_in_sandbox: true,
     },
     DownloadableComponent {
@@ -455,6 +466,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~25 MB",
         binary_name: "tailscale",
         install_subdir: "tailscale",
+        pinned_version: Some("1.94.1"),
         works_in_sandbox: true,
     },
     DownloadableComponent {
@@ -472,6 +484,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~30 MB",
         binary_name: "cloudflared",
         install_subdir: "cloudflared",
+        pinned_version: None,
         works_in_sandbox: true,
     },
     DownloadableComponent {
@@ -490,6 +503,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~50 MB",
         binary_name: "boundary",
         install_subdir: "boundary",
+        pinned_version: Some("0.21.0"),
         works_in_sandbox: true,
     },
     // Password manager CLIs
@@ -508,6 +522,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~50 MB",
         binary_name: "bw",
         install_subdir: "bitwarden",
+        pinned_version: Some("2026.1.0"),
         works_in_sandbox: true,
     },
     DownloadableComponent {
@@ -524,6 +539,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~15 MB",
         binary_name: "op",
         install_subdir: "1password",
+        pinned_version: Some("2.32.1"),
         works_in_sandbox: true,
     },
     // Container orchestration CLIs
@@ -540,6 +556,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~50 MB",
         binary_name: "kubectl",
         install_subdir: "kubectl",
+        pinned_version: Some("1.35.0"),
         works_in_sandbox: true,
     },
 ];
@@ -685,6 +702,16 @@ pub fn get_installation_status() -> Vec<(&'static DownloadableComponent, bool)> 
     DOWNLOADABLE_COMPONENTS
         .iter()
         .map(|c| (c, c.is_installed()))
+        .collect()
+}
+
+/// Returns `(component_id, version)` pairs for all components with
+/// pinned versions. Useful for CI version-checking scripts.
+#[must_use]
+pub fn get_pinned_versions() -> Vec<(&'static str, &'static str)> {
+    DOWNLOADABLE_COMPONENTS
+        .iter()
+        .filter_map(|c| c.pinned_version.map(|v| (c.id, v)))
         .collect()
 }
 
@@ -2184,6 +2211,39 @@ mod tests {
             assert!(!msg.is_empty());
             // Should not contain technical details
             assert!(!msg.contains("test") || matches!(error, CliDownloadError::NotAvailable(_)));
+        }
+    }
+
+    #[test]
+    fn test_pinned_versions_match_urls() {
+        for component in DOWNLOADABLE_COMPONENTS {
+            if let (Some(version), Some(url)) = (component.pinned_version, component.download_url) {
+                assert!(
+                    url.contains(version),
+                    "Component '{}': pinned version '{}' not found in URL '{}'",
+                    component.id,
+                    version,
+                    url,
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_get_pinned_versions() {
+        let pinned = get_pinned_versions();
+        assert!(
+            !pinned.is_empty(),
+            "Should have at least one pinned version"
+        );
+        for (id, version) in &pinned {
+            assert!(!id.is_empty());
+            assert!(!version.is_empty());
+            // Every returned id must exist in DOWNLOADABLE_COMPONENTS
+            assert!(
+                get_component(id).is_some(),
+                "Pinned component '{id}' not found"
+            );
         }
     }
 }

@@ -30,30 +30,35 @@ pub fn create_header_bar() -> adw::HeaderBar {
     let sidebar_toggle = Button::from_icon_name("sidebar-show-symbolic");
     sidebar_toggle.set_tooltip_text(Some("Toggle Sidebar (F9)"));
     sidebar_toggle.set_action_name(Some("win.toggle-sidebar"));
+    sidebar_toggle.update_property(&[gtk4::accessible::Property::Label("Toggle Sidebar")]);
     header_bar.pack_start(&sidebar_toggle);
 
     // Quick connect button
     let quick_connect_button = Button::from_icon_name("go-jump-symbolic");
     quick_connect_button.set_tooltip_text(Some("Quick Connect (Ctrl+Shift+Q)"));
     quick_connect_button.set_action_name(Some("win.quick-connect"));
+    quick_connect_button.update_property(&[gtk4::accessible::Property::Label("Quick Connect")]);
     header_bar.pack_start(&quick_connect_button);
 
     // Add connection button
     let add_button = Button::from_icon_name("list-add-symbolic");
     add_button.set_tooltip_text(Some("New Connection (Ctrl+N)"));
     add_button.set_action_name(Some("win.new-connection"));
+    add_button.update_property(&[gtk4::accessible::Property::Label("New Connection")]);
     header_bar.pack_start(&add_button);
 
     // Remove button (sensitive only when item selected)
     let remove_button = Button::from_icon_name("list-remove-symbolic");
     remove_button.set_tooltip_text(Some("Delete Selected (Delete)"));
     remove_button.set_action_name(Some("win.delete-connection"));
+    remove_button.update_property(&[gtk4::accessible::Property::Label("Delete Selected")]);
     header_bar.pack_start(&remove_button);
 
     // Add group button
     let add_group_button = Button::from_icon_name("folder-new-symbolic");
     add_group_button.set_tooltip_text(Some("New Group (Ctrl+Shift+N)"));
     add_group_button.set_action_name(Some("win.new-group"));
+    add_group_button.update_property(&[gtk4::accessible::Property::Label("New Group")]);
     header_bar.pack_start(&add_group_button);
 
     // === Right side (pack_end) - Secondary actions ===
@@ -63,6 +68,7 @@ pub fn create_header_bar() -> adw::HeaderBar {
         .icon_name("open-menu-symbolic")
         .tooltip_text("Menu")
         .build();
+    menu_button.update_property(&[gtk4::accessible::Property::Label("Menu")]);
 
     let menu = create_app_menu();
     menu_button.set_menu_model(Some(&menu));
@@ -72,17 +78,21 @@ pub fn create_header_bar() -> adw::HeaderBar {
     let settings_button = Button::from_icon_name("emblem-system-symbolic");
     settings_button.set_tooltip_text(Some("Settings (Ctrl+,)"));
     settings_button.set_action_name(Some("win.settings"));
+    settings_button.update_property(&[gtk4::accessible::Property::Label("Settings")]);
     header_bar.pack_end(&settings_button);
 
     // Add split view buttons
     let split_vertical_button = Button::from_icon_name("object-flip-horizontal-symbolic");
     split_vertical_button.set_tooltip_text(Some("Split Vertical (Ctrl+Shift+S)"));
     split_vertical_button.set_action_name(Some("win.split-vertical"));
+    split_vertical_button.update_property(&[gtk4::accessible::Property::Label("Split Vertical")]);
     header_bar.pack_end(&split_vertical_button);
 
     let split_horizontal_button = Button::from_icon_name("object-flip-vertical-symbolic");
     split_horizontal_button.set_tooltip_text(Some("Split Horizontal (Ctrl+Shift+H)"));
     split_horizontal_button.set_action_name(Some("win.split-horizontal"));
+    split_horizontal_button
+        .update_property(&[gtk4::accessible::Property::Label("Split Horizontal")]);
     header_bar.pack_end(&split_horizontal_button);
 
     header_bar

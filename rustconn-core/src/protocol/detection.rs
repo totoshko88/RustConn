@@ -242,6 +242,19 @@ pub fn detect_telnet_client() -> ClientInfo {
 
 /// Returns the path to the first available VNC viewer binary
 ///
+/// VNC viewer binaries in order of preference.
+const VNC_VIEWERS: &[&str] = &[
+    "vncviewer",   // TigerVNC, TightVNC - most common and feature-rich
+    "tigervnc",    // TigerVNC specific binary name
+    "gvncviewer",  // GTK-VNC viewer
+    "xvnc4viewer", // RealVNC
+    "vinagre",     // GNOME Vinagre (deprecated but still available)
+    "remmina",     // Remmina (supports VNC)
+    "krdc",        // KDE Remote Desktop Client
+];
+
+/// Returns the path to the first available VNC viewer
+///
 /// This function checks for VNC viewers in order of preference and returns
 /// the path to the first one found. Returns `None` if no viewer is installed.
 ///
@@ -249,24 +262,7 @@ pub fn detect_telnet_client() -> ClientInfo {
 /// `Some(PathBuf)` with the path to the VNC viewer binary, or `None` if not found
 #[must_use]
 pub fn detect_vnc_viewer_path() -> Option<PathBuf> {
-    // VNC viewers in order of preference
-    let viewers = [
-        "vncviewer",   // TigerVNC, TightVNC - most common and feature-rich
-        "tigervnc",    // TigerVNC specific binary name
-        "gvncviewer",  // GTK-VNC viewer
-        "xvnc4viewer", // RealVNC
-        "vinagre",     // GNOME Vinagre (deprecated but still available)
-        "remmina",     // Remmina (supports VNC)
-        "krdc",        // KDE Remote Desktop Client
-    ];
-
-    for viewer in viewers {
-        if let Some(path) = which_binary(viewer) {
-            return Some(path);
-        }
-    }
-
-    None
+    VNC_VIEWERS.iter().find_map(|viewer| which_binary(viewer))
 }
 
 /// Returns the name of the first available VNC viewer
@@ -278,24 +274,10 @@ pub fn detect_vnc_viewer_path() -> Option<PathBuf> {
 /// `Some(String)` with the VNC viewer binary name, or `None` if not found
 #[must_use]
 pub fn detect_vnc_viewer_name() -> Option<String> {
-    // VNC viewers in order of preference
-    let viewers = [
-        "vncviewer",   // TigerVNC, TightVNC - most common and feature-rich
-        "tigervnc",    // TigerVNC specific binary name
-        "gvncviewer",  // GTK-VNC viewer
-        "xvnc4viewer", // RealVNC
-        "vinagre",     // GNOME Vinagre (deprecated but still available)
-        "remmina",     // Remmina (supports VNC)
-        "krdc",        // KDE Remote Desktop Client
-    ];
-
-    for viewer in viewers {
-        if which_binary(viewer).is_some() {
-            return Some(viewer.to_string());
-        }
-    }
-
-    None
+    VNC_VIEWERS
+        .iter()
+        .find(|viewer| which_binary(viewer).is_some())
+        .map(|viewer| (*viewer).to_string())
 }
 
 // ============================================================================

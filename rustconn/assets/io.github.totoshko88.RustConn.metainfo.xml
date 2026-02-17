@@ -4,7 +4,7 @@
   <name>RustConn</name>
   <summary>Manage remote connections easily</summary>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>GPL-3.0+</project_license>
+  <project_license>GPL-3.0-or-later</project_license>
   <developer id="io.github.totoshko88">
     <name>Anton Isaiev</name>
   </developer>
@@ -79,6 +79,19 @@
   <url type="help">https://github.com/totoshko88/RustConn/blob/main/docs/USER_GUIDE.md</url>
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <recommends>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <display_length compare="ge">768</display_length>
+  </recommends>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <control>touch</control>
+  </supports>
   <releases>
     <release version="0.8.6" date="2026-02-16">
       <description>

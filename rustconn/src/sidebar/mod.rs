@@ -122,6 +122,7 @@ impl ConnectionSidebar {
         let help_button = Button::from_icon_name("dialog-question-symbolic");
         help_button.set_tooltip_text(Some("Search syntax help"));
         help_button.add_css_class("flat");
+        help_button.update_property(&[gtk4::accessible::Property::Label("Search syntax help")]);
 
         // Create search help popover
         let help_popover = search::create_search_help_popover();
@@ -211,6 +212,7 @@ impl ConnectionSidebar {
         local_shell_btn.add_css_class("suggested-action");
         local_shell_btn.add_css_class("pill");
         local_shell_btn.set_halign(gtk4::Align::End);
+        local_shell_btn.update_property(&[gtk4::accessible::Property::Label("Open Local Shell")]);
 
         filter_box.append(&protocol_group);
         filter_box.append(&local_shell_btn);
