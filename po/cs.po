@@ -5,7 +5,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-02-17 18:31+0200\n"
 "PO-Revision-Date: 2026-02-17 00:00+0000\n"
-"Last-Translator: RustConn Team\n"
+"Last-Translator: p-bo <https://github.com/p-bo>\n"
 "Language-Team: Czech\n"
 "Language: cs\n"
 "MIME-Version: 1.0\n"
@@ -32,14 +32,12 @@ msgid ""
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
 "connections from a single application."
 msgstr ""
-"Moderní správce připojení pro Linux s nativním rozhraním GTK4/Wayland. "
-"Spravujte SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes a Zero Trust "
-"připojení z jedné aplikace."
+"Moderní správce připojení pro Linux (rozhraní implementované v GTK4 a s nativní podporou nad Wayland). Spravujte SSH, RDP, VNC, SPICE a Telnet připojení, dále ta přes sériový port, do Kubernetes a přes Zero Trust – toto vše z jediné aplikace."
 
 #. Translators: Replace this with your name and language, e.g. "John Doe (German)"
 #: ../rustconn/src/app.rs:1014
 msgid "translator-credits"
-msgstr "Tým RustConn (Čeština)"
+msgstr "p-bo https://github.com/p-bo (Čeština)"
 
 #: ../rustconn/src/app.rs:1021
 msgid "User Guide"
@@ -63,7 +61,7 @@ msgstr "Zvláštní poděkování"
 
 #: ../rustconn/src/app.rs:1059
 msgid "Made in Ukraine"
-msgstr "Made in Ukraine"
+msgstr "Vytvořeno na Ukrajině"
 
 #: ../rustconn/src/app.rs:1060
 msgid "All contributors and supporters"
@@ -234,7 +232,7 @@ msgstr "Testování…"
 #: ../rustconn/src/dialogs/connection/dialog.rs:1206
 #: ../rustconn/src/dialogs/connection/dialog.rs:1301
 msgid "Test"
-msgstr "Test"
+msgstr "Vyzkoušet"
 
 #: ../rustconn/src/dialogs/connection/dialog.rs:1284
 #: ../rustconn/src/empty_state.rs:61 ../rustconn/src/sidebar_ui.rs:390
@@ -1365,7 +1363,7 @@ msgstr "Barvy"
 #: ../rustconn/src/dialogs/settings/terminal_tab.rs:77
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:82
 msgid "Theme"
-msgstr "Motiv"
+msgstr "Motiv vzhledu"
 
 #: ../rustconn/src/dialogs/settings/terminal_tab.rs:86
 msgid "Cursor"
@@ -1398,7 +1396,7 @@ msgstr "Vypnuto"
 #: ../rustconn/src/dialogs/settings/terminal_tab.rs:142
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:44
 msgid "System"
-msgstr "Systémové"
+msgstr "Dle systému"
 
 #: ../rustconn/src/dialogs/settings/terminal_tab.rs:151
 msgid "Blink"
@@ -1478,11 +1476,11 @@ msgstr "Vzhled"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:48
 msgid "Light"
-msgstr "Světlé"
+msgstr "Světlý"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:52
 msgid "Dark"
-msgstr "Tmavé"
+msgstr "Tmavý"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:96
 msgid "Language"
@@ -1490,7 +1488,7 @@ msgstr "Jazyk"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:97
 msgid "Restart required to apply"
-msgstr "Pro použití je nutný restart"
+msgstr "Aby se uplatnilo, je třeba aplikaci zavřít a spustit znovu"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:106
 msgid "Window"
@@ -1498,19 +1496,19 @@ msgstr "Okno"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:111
 msgid "Remember size"
-msgstr "Zapamatovat velikost"
+msgstr "Zapamatovat si velikost"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:112
 msgid "Restore window geometry on startup"
-msgstr "Obnovit geometrii okna při spuštění"
+msgstr "Obnovit geometrii okna po spuštění"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:122
 msgid "System Tray"
-msgstr "Systémová lišta"
+msgstr "Oznamovací oblast systémového panelu"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:123
 msgid "Requires desktop environment with tray support"
-msgstr "Vyžaduje prostředí s podporou systémové lišty"
+msgstr "Vyžaduje desktopové prostředí, které má oznamovací oblast systémového panelu"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:128
 msgid "Show icon"
@@ -1518,32 +1516,32 @@ msgstr "Zobrazit ikonu"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:129
 msgid "Display icon in system tray"
-msgstr "Zobrazit ikonu v systémové liště"
+msgstr "Zobrazit ikonu v oznamovací oblasti"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:137
 msgid "Minimize to tray"
-msgstr "Minimalizovat do lišty"
+msgstr "Minimalizovat do oznamovací oblasti"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:138
 msgid "Hide window instead of closing"
-msgstr "Skrýt okno místo zavření"
+msgstr "Namísto jeho zavření okno skrýt"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:154
 #: ../rustconn/src/split_view/bridge.rs:1734
 msgid "Session Restore"
-msgstr "Obnovení relací"
+msgstr "Obnovení relace"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:155
 msgid "Restore previous connections on startup"
-msgstr "Obnovit předchozí připojení při spuštění"
+msgstr "Při spuštění obnovit předchozí spojení"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:160
 msgid "Enabled"
-msgstr "Povoleno"
+msgstr "Zapnuto"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:161
 msgid "Reconnect to previous sessions on startup"
-msgstr "Znovu připojit k předchozím relacím při spuštění"
+msgstr "Při spuštění se znovu připojit k předchozím relacím"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:169
 msgid "Ask first"
@@ -1555,11 +1553,11 @@ msgstr "Dotázat se před obnovením relací"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:177
 msgid "Max age"
-msgstr "Maximální stáří"
+msgstr "Nejvyšší stáří"
 
 #: ../rustconn/src/dialogs/settings/ui_tab.rs:178
 msgid "Hours before sessions expire"
-msgstr "Hodiny do vypršení relací"
+msgstr "Hodin než platnost relace skončí"
 
 #: ../rustconn/src/dialogs/shortcuts.rs:170
 #: ../rustconn/src/split_view/bridge.rs:1759
@@ -1572,7 +1570,7 @@ msgstr "Hledat zkratky…"
 
 #: ../rustconn/src/dialogs/snippet.rs:64 ../rustconn/src/empty_state.rs:109
 msgid "New Snippet"
-msgstr "Nový úryvek"
+msgstr "Nový útržek"
 
 #: ../rustconn/src/dialogs/snippet.rs:167
 msgid "Snippet Info"
@@ -1920,15 +1918,15 @@ msgstr "Žádná připojení"
 
 #: ../rustconn/src/empty_state.rs:60
 msgid "Create your first connection to get started"
-msgstr "Vytvořte první připojení pro začátek"
+msgstr "Začněte vytvořením svého prvního připojení"
 
 #: ../rustconn/src/empty_state.rs:71
 msgid "No Results Found"
-msgstr "Nebyly nalezeny žádné výsledky"
+msgstr "Nic nenalezeno"
 
 #: ../rustconn/src/empty_state.rs:72
 msgid "No connections match"
-msgstr "Žádná připojení neodpovídají"
+msgstr "Žádné připojení neodpovídá"
 
 #: ../rustconn/src/empty_state.rs:83
 msgid "No Active Sessions"
@@ -1936,7 +1934,7 @@ msgstr "Žádné aktivní relace"
 
 #: ../rustconn/src/empty_state.rs:84
 msgid "Connect to a server to start a session"
-msgstr "Připojte se k serveru pro zahájení relace"
+msgstr "Připojit se k serveru a zahájit relaci"
 
 #: ../rustconn/src/empty_state.rs:85 ../rustconn/src/sidebar_ui.rs:376
 #: ../rustconn/src/split_view/bridge.rs:1706
@@ -1950,7 +1948,7 @@ msgstr "Žádné skupiny"
 
 #: ../rustconn/src/empty_state.rs:96
 msgid "Create groups to organize your connections"
-msgstr "Vytvořte skupiny pro organizaci připojení"
+msgstr "Vytvářejte skupiny a škatulkujte si jimi svá připojení"
 
 #: ../rustconn/src/empty_state.rs:97 ../rustconn/src/sidebar_ui.rs:227
 #: ../rustconn/src/sidebar_ui.rs:404
@@ -1961,11 +1959,11 @@ msgstr "Nová skupina"
 
 #: ../rustconn/src/empty_state.rs:107
 msgid "No Snippets"
-msgstr "Žádné úryvky"
+msgstr "Žádné útržky příkazů"
 
 #: ../rustconn/src/empty_state.rs:108
 msgid "Create command snippets for quick access"
-msgstr "Vytvořte úryvky příkazů pro rychlý přístup"
+msgstr "Vytvářejte si útržky příkazů pro rychlý přístup"
 
 #: ../rustconn/src/empty_state.rs:119
 msgid "No Templates"
@@ -1973,7 +1971,7 @@ msgstr "Žádné šablony"
 
 #: ../rustconn/src/empty_state.rs:120
 msgid "Create templates for common connection configurations"
-msgstr "Vytvořte šablony pro běžné konfigurace připojení"
+msgstr "Vytvářejte si šablony pro opakující se uspořádání připojení"
 
 #: ../rustconn/src/empty_state.rs:131
 msgid "No Connection History"
@@ -1999,7 +1997,7 @@ msgstr "Odpojeno"
 
 #: ../rustconn/src/sidebar/mod.rs:110
 msgid "Search... (? for help)"
-msgstr "Hledat... (? pro nápovědu)"
+msgstr "Hledat… (? pro nápovědu)"
 
 #: ../rustconn/src/sidebar/mod.rs:119
 msgid "Search pending..."
