@@ -129,6 +129,7 @@ pub fn sample_rdp_connection_with_domain() -> Connection {
         client_mode: Default::default(),
         performance_mode: Default::default(),
         keyboard_layout: None,
+        scale_override: Default::default(),
     };
 
     let mut conn = Connection::new(
@@ -158,6 +159,7 @@ pub fn sample_vnc_connection_custom_port() -> Connection {
         scaling: true,
         clipboard_enabled: true,
         custom_args: Vec::new(),
+        scale_override: Default::default(),
     };
 
     Connection::new(

@@ -2,6 +2,7 @@
 //!
 //! This module contains types, enums, and helper structs used by the embedded VNC widget.
 
+use rustconn_core::models::ScaleOverride;
 use thiserror::Error;
 
 /// Standard VNC/display resolutions (width, height)
@@ -126,6 +127,8 @@ pub struct VncConfig {
     pub clipboard_enabled: bool,
     /// View only mode (no input forwarding)
     pub view_only: bool,
+    /// Display scale override for embedded mode
+    pub scale_override: ScaleOverride,
     /// Additional VNC viewer arguments
     pub extra_args: Vec<String>,
 }
@@ -145,6 +148,7 @@ impl VncConfig {
             compression: None,
             clipboard_enabled: true,
             view_only: false,
+            scale_override: ScaleOverride::default(),
             extra_args: Vec::new(),
         }
     }

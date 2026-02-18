@@ -458,10 +458,11 @@ impl VncSessionWidget {
         // Embedded mode requested - try native embedded VNC using EmbeddedVncWidget
         if rustconn_core::is_embedded_vnc_available() {
             // Create embedded VNC config from protocol config
-            let embedded_config = EmbeddedVncConfig::new(host)
+            let mut embedded_config = EmbeddedVncConfig::new(host)
                 .with_port(port)
                 .with_view_only(config.view_only)
                 .with_clipboard(config.clipboard_enabled);
+            embedded_config.scale_override = config.scale_override;
 
             let embedded_config = if let Some(pwd) = password {
                 embedded_config.with_password(pwd)

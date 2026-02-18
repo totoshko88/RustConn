@@ -16,7 +16,7 @@ use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, CheckButton, DropDown, Entry, SpinButton};
 use libadwaita as adw;
-use rustconn_core::models::{VncClientMode, VncPerformanceMode};
+use rustconn_core::models::{ScaleOverride, VncClientMode, VncPerformanceMode};
 
 /// Return type for VNC options creation
 #[allow(clippy::type_complexity)]
@@ -30,6 +30,7 @@ pub type VncOptionsWidgets = (
     CheckButton, // view_only_check
     CheckButton, // scaling_check
     CheckButton, // clipboard_check
+    DropDown,    // scale_override_dropdown
     Entry,       // custom_args_entry
 );
 
@@ -39,8 +40,13 @@ pub fn create_vnc_options() -> VncOptionsWidgets {
     let (container, content) = ProtocolLayoutBuilder::new().build();
 
     // === Display Group ===
-    let (display_group, client_mode_dropdown, performance_mode_dropdown, encoding_entry) =
-        create_display_group();
+    let (
+        display_group,
+        client_mode_dropdown,
+        performance_mode_dropdown,
+        encoding_entry,
+        scale_override_dropdown,
+    ) = create_display_group();
     content.append(&display_group);
 
     // === Quality Group ===
@@ -65,12 +71,13 @@ pub fn create_vnc_options() -> VncOptionsWidgets {
         view_only_check,
         scaling_check,
         clipboard_check,
+        scale_override_dropdown,
         custom_args_entry,
     )
 }
 
 /// Creates the Display preferences group
-fn create_display_group() -> (adw::PreferencesGroup, DropDown, DropDown, Entry) {
+fn create_display_group() -> (adw::PreferencesGroup, DropDown, DropDown, Entry, DropDown) {
     let display_group = adw::PreferencesGroup::builder().title("Display").build();
 
     // Client mode dropdown
@@ -95,6 +102,17 @@ fn create_display_group() -> (adw::PreferencesGroup, DropDown, DropDown, Entry) 
         .build();
     display_group.add(&perf_row);
 
+    // Scale override dropdown (for embedded mode)
+    let scale_items: Vec<&str> = ScaleOverride::all()
+        .iter()
+        .map(|s| s.display_name())
+        .collect();
+    let (scale_row, scale_override_dropdown) = DropdownRowBuilder::new("Display Scale")
+        .subtitle("Override HiDPI scaling for embedded viewer")
+        .items(&scale_items)
+        .build();
+    display_group.add(&scale_row);
+
     // Encoding
     let (encoding_row, encoding_entry) = EntryRowBuilder::new("Encoding")
         .subtitle("Preferred encoding methods (comma-separated)")
@@ -102,11 +120,19 @@ fn create_display_group() -> (adw::PreferencesGroup, DropDown, DropDown, Entry) 
         .build();
     display_group.add(&encoding_row);
 
+    // Toggle scale row visibility based on client mode
+    let scale_row_clone = scale_row.clone();
+    client_mode_dropdown.connect_selected_notify(move |dropdown| {
+        let is_embedded = dropdown.selected() == 0;
+        scale_row_clone.set_visible(is_embedded);
+    });
+
     (
         display_group,
         client_mode_dropdown,
         performance_mode_dropdown,
         encoding_entry,
+        scale_override_dropdown,
     )
 }
 

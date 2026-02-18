@@ -18,7 +18,7 @@ use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, CheckButton, DropDown, Entry, Label, Orientation, SpinButton};
 use libadwaita as adw;
-use rustconn_core::models::{RdpClientMode, RdpPerformanceMode, SharedFolder};
+use rustconn_core::models::{RdpClientMode, RdpPerformanceMode, ScaleOverride, SharedFolder};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -31,6 +31,7 @@ pub type RdpOptionsWidgets = (
     SpinButton,                     // width_spin
     SpinButton,                     // height_spin
     DropDown,                       // color_dropdown
+    DropDown,                       // scale_override_dropdown
     CheckButton,                    // audio_check
     Entry,                          // gateway_entry
     Rc<RefCell<Vec<SharedFolder>>>, // shared_folders
@@ -51,6 +52,7 @@ pub fn create_rdp_options() -> RdpOptionsWidgets {
         width_spin,
         height_spin,
         color_dropdown,
+        scale_override_dropdown,
     ) = create_display_group();
     content.append(&display_group);
 
@@ -74,6 +76,7 @@ pub fn create_rdp_options() -> RdpOptionsWidgets {
         width_spin,
         height_spin,
         color_dropdown,
+        scale_override_dropdown,
         audio_check,
         gateway_entry,
         shared_folders,
@@ -90,6 +93,7 @@ fn create_display_group() -> (
     DropDown,
     SpinButton,
     SpinButton,
+    DropDown,
     DropDown,
 ) {
     let display_group = adw::PreferencesGroup::builder().title("Display").build();
@@ -156,18 +160,32 @@ fn create_display_group() -> (
         .build();
     display_group.add(&color_row);
 
+    // Scale override dropdown (for embedded mode)
+    let scale_items: Vec<&str> = ScaleOverride::all()
+        .iter()
+        .map(|s| s.display_name())
+        .collect();
+    let (scale_row, scale_override_dropdown) = DropdownRowBuilder::new("Display Scale")
+        .subtitle("Override HiDPI scaling for embedded viewer")
+        .items(&scale_items)
+        .build();
+    display_group.add(&scale_row);
+
     // Connect client mode dropdown to show/hide resolution/color rows
     let resolution_row_clone = resolution_row.clone();
     let color_row_clone = color_row.clone();
+    let scale_row_clone = scale_row.clone();
     client_mode_dropdown.connect_selected_notify(move |dropdown| {
         let is_embedded = dropdown.selected() == 0;
         resolution_row_clone.set_visible(!is_embedded);
         color_row_clone.set_visible(!is_embedded);
+        scale_row_clone.set_visible(is_embedded);
     });
 
-    // Set initial state (Embedded - hide resolution/color)
+    // Set initial state (Embedded - hide resolution/color, show scale)
     resolution_row.set_visible(false);
     color_row.set_visible(false);
+    scale_row.set_visible(true);
 
     (
         display_group,
@@ -176,6 +194,7 @@ fn create_display_group() -> (
         width_spin,
         height_spin,
         color_dropdown,
+        scale_override_dropdown,
     )
 }
 

@@ -95,6 +95,12 @@ fn build_connection_command(connection: &Connection) -> ConnectionCommand {
 /// etc.) to establish secure connections through identity-aware proxies.
 fn build_zerotrust_command(connection: &Connection) -> ConnectionCommand {
     if let ProtocolConfig::ZeroTrust(ref zt_config) = connection.protocol_config {
+        tracing::info!(
+            provider = %zt_config.provider,
+            cli = %zt_config.provider.cli_command(),
+            connection = %connection.name,
+            "Building ZeroTrust command"
+        );
         let (program, mut args) = zt_config.build_command(connection.username.as_deref());
         args.extend(zt_config.custom_args.clone());
         ConnectionCommand { program, args }

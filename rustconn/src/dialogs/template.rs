@@ -19,8 +19,8 @@ use libadwaita as adw;
 use rustconn_core::models::{
     AwsSsmConfig, AzureBastionConfig, AzureSshConfig, BoundaryConfig, CloudflareAccessConfig,
     ConnectionTemplate, GcpIapConfig, GenericZeroTrustConfig, OciBastionConfig, ProtocolConfig,
-    ProtocolType, RdpClientMode, RdpConfig, RdpPerformanceMode, Resolution, SpiceConfig,
-    SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, TailscaleSshConfig,
+    ProtocolType, RdpClientMode, RdpConfig, RdpPerformanceMode, Resolution, ScaleOverride,
+    SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, TailscaleSshConfig,
     TeleportConfig, VncClientMode, VncConfig, VncPerformanceMode, ZeroTrustConfig,
     ZeroTrustProvider, ZeroTrustProviderConfig,
 };
@@ -2333,6 +2333,7 @@ impl TemplateDialog {
             shared_folders: Vec::new(),
             custom_args,
             keyboard_layout: None,
+            scale_override: ScaleOverride::default(),
         })
     }
 
@@ -2380,6 +2381,7 @@ impl TemplateDialog {
             scaling: scaling_check.is_active(),
             clipboard_enabled: clipboard_check.is_active(),
             custom_args,
+            scale_override: ScaleOverride::default(),
         })
     }
 

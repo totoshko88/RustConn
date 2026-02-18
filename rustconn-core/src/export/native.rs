@@ -13,13 +13,13 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::cluster::Cluster;
-use crate::models::{Connection, ConnectionGroup, ConnectionTemplate};
+use crate::models::{Connection, ConnectionGroup, ConnectionTemplate, Snippet};
 use crate::variables::Variable;
 
 use super::ExportError;
 
 /// Current version of the native export format
-pub const NATIVE_FORMAT_VERSION: u32 = 1;
+pub const NATIVE_FORMAT_VERSION: u32 = 2;
 
 /// File extension for native export files
 pub const NATIVE_FILE_EXTENSION: &str = "rcn";
@@ -66,6 +66,9 @@ pub struct NativeExport {
     pub clusters: Vec<Cluster>,
     /// Global variables
     pub variables: Vec<Variable>,
+    /// Snippets (added in format version 2)
+    #[serde(default)]
+    pub snippets: Vec<Snippet>,
     /// Custom metadata
     #[serde(default)]
     pub metadata: HashMap<String, String>,
@@ -84,6 +87,7 @@ impl NativeExport {
             templates: Vec::new(),
             clusters: Vec::new(),
             variables: Vec::new(),
+            snippets: Vec::new(),
             metadata: HashMap::new(),
         }
     }
@@ -96,6 +100,7 @@ impl NativeExport {
         templates: Vec<ConnectionTemplate>,
         clusters: Vec<Cluster>,
         variables: Vec<Variable>,
+        snippets: Vec<Snippet>,
     ) -> Self {
         Self {
             version: NATIVE_FORMAT_VERSION,
@@ -106,6 +111,7 @@ impl NativeExport {
             templates,
             clusters,
             variables,
+            snippets,
             metadata: HashMap::new(),
         }
     }
@@ -211,11 +217,7 @@ impl NativeExport {
     /// This function handles forward compatibility by applying necessary
     /// transformations to data from older format versions.
     const fn migrate(mut export: Self) -> Self {
-        // Version 1 is current, no migrations needed yet
-        // Future migrations would be handled here:
-        // if export.version < 2 {
-        //     // Apply v1 -> v2 migration
-        // }
+        // v1 → v2: snippets field added with #[serde(default)], no data migration needed
 
         // Update version to current after migration
         export.version = NATIVE_FORMAT_VERSION;
@@ -230,6 +232,7 @@ impl NativeExport {
             + self.templates.len()
             + self.clusters.len()
             + self.variables.len()
+            + self.snippets.len()
     }
 
     /// Returns true if this export contains no data
@@ -240,18 +243,21 @@ impl NativeExport {
             && self.templates.is_empty()
             && self.clusters.is_empty()
             && self.variables.is_empty()
+            && self.snippets.is_empty()
     }
 
     /// Returns a summary of the export contents
     #[must_use]
     pub fn summary(&self) -> String {
         format!(
-            "Connections: {}, Groups: {}, Templates: {}, Clusters: {}, Variables: {}",
+            "Connections: {}, Groups: {}, Templates: {}, Clusters: {}, \
+             Variables: {}, Snippets: {}",
             self.connections.len(),
             self.groups.len(),
             self.templates.len(),
             self.clusters.len(),
-            self.variables.len()
+            self.variables.len(),
+            self.snippets.len()
         )
     }
 }
@@ -293,6 +299,7 @@ mod tests {
             vec![template],
             vec![cluster],
             vec![variable],
+            Vec::new(),
         );
 
         assert_eq!(export.connections.len(), 1);
@@ -390,6 +397,7 @@ mod tests {
                 22,
             )],
             vec![ConnectionGroup::new("Group".to_string())],
+            vec![],
             vec![],
             vec![],
             vec![],

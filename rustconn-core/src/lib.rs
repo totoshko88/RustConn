@@ -29,7 +29,6 @@ pub mod cli_download;
 pub mod cluster;
 pub mod config;
 pub mod connection;
-pub mod dashboard;
 pub mod dialog_utils;
 pub mod document;
 pub mod drag_drop;
@@ -85,7 +84,6 @@ pub use connection::{
     log_interning_stats, log_interning_stats_with_warning, ConnectionManager, LazyGroupLoader,
     PortCheckError, PortCheckResult, RetryConfig, RetryState, SelectionState, VirtualScrollConfig,
 };
-pub use dashboard::{DashboardFilter, SessionStats};
 pub use document::{
     Document, DocumentError, DocumentManager, DocumentResult, EncryptionStrength,
     DOCUMENT_FORMAT_VERSION,
@@ -118,10 +116,10 @@ pub use models::{
     group_templates_by_protocol, Connection, ConnectionGroup, ConnectionHistoryEntry,
     ConnectionStatistics, ConnectionTemplate, Credentials, CustomProperty, HistorySettings,
     KubernetesConfig, PasswordSource, PropertyType, ProtocolConfig, ProtocolType, RdpConfig,
-    RdpGateway, Resolution, SerialBaudRate, SerialConfig, SerialDataBits, SerialFlowControl,
-    SerialParity, SerialStopBits, Snippet, SnippetVariable, SpiceConfig, SpiceImageCompression,
-    SshAuthMethod, SshConfig, SshKeySource, TelnetBackspaceSends, TelnetConfig, TelnetDeleteSends,
-    TemplateError, VncConfig, WindowGeometry, WindowMode,
+    RdpGateway, Resolution, ScaleOverride, SerialBaudRate, SerialConfig, SerialDataBits,
+    SerialFlowControl, SerialParity, SerialStopBits, Snippet, SnippetVariable, SpiceConfig,
+    SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, TelnetBackspaceSends,
+    TelnetConfig, TelnetDeleteSends, TemplateError, VncConfig, WindowGeometry, WindowMode,
 };
 pub use password_generator::{
     estimate_crack_time, CharacterSet, PasswordGenerator, PasswordGeneratorConfig,

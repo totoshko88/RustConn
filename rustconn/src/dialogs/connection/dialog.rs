@@ -23,9 +23,9 @@ use rustconn_core::models::{
     AwsSsmConfig, AzureBastionConfig, AzureSshConfig, BoundaryConfig, CloudflareAccessConfig,
     Connection, CustomProperty, GcpIapConfig, GenericZeroTrustConfig, OciBastionConfig,
     PasswordSource, PropertyType, ProtocolConfig, RdpClientMode, RdpConfig, RdpPerformanceMode,
-    Resolution, SharedFolder, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig,
-    SshKeySource, TailscaleSshConfig, TeleportConfig, VncClientMode, VncConfig, VncPerformanceMode,
-    WindowMode, ZeroTrustConfig, ZeroTrustProvider, ZeroTrustProviderConfig,
+    Resolution, ScaleOverride, SharedFolder, SpiceConfig, SpiceImageCompression, SshAuthMethod,
+    SshConfig, SshKeySource, TailscaleSshConfig, TeleportConfig, VncClientMode, VncConfig,
+    VncPerformanceMode, WindowMode, ZeroTrustConfig, ZeroTrustProvider, ZeroTrustProviderConfig,
 };
 use rustconn_core::session::LogConfig;
 use rustconn_core::variables::Variable;
@@ -148,6 +148,7 @@ pub struct ConnectionDialog {
     rdp_width_spin: SpinButton,
     rdp_height_spin: SpinButton,
     rdp_color_dropdown: DropDown,
+    rdp_scale_override_dropdown: DropDown,
     rdp_audio_check: CheckButton,
     rdp_gateway_entry: Entry,
     rdp_shared_folders: Rc<RefCell<Vec<SharedFolder>>>,
@@ -163,6 +164,7 @@ pub struct ConnectionDialog {
     vnc_view_only_check: CheckButton,
     vnc_scaling_check: CheckButton,
     vnc_clipboard_check: CheckButton,
+    vnc_scale_override_dropdown: DropDown,
     vnc_custom_args_entry: Entry,
     // SPICE fields
     spice_tls_check: CheckButton,
@@ -424,6 +426,7 @@ impl ConnectionDialog {
             rdp_width_spin,
             rdp_height_spin,
             rdp_color_dropdown,
+            rdp_scale_override_dropdown,
             rdp_audio_check,
             rdp_gateway_entry,
             rdp_shared_folders,
@@ -444,6 +447,7 @@ impl ConnectionDialog {
             vnc_view_only_check,
             vnc_scaling_check,
             vnc_clipboard_check,
+            vnc_scale_override_dropdown,
             vnc_custom_args_entry,
         ) = Self::create_vnc_options();
         protocol_stack.add_named(&vnc_box, Some("vnc"));
@@ -680,6 +684,7 @@ impl ConnectionDialog {
             &rdp_width_spin,
             &rdp_height_spin,
             &rdp_color_dropdown,
+            &rdp_scale_override_dropdown,
             &rdp_audio_check,
             &rdp_gateway_entry,
             &rdp_shared_folders,
@@ -693,6 +698,7 @@ impl ConnectionDialog {
             &vnc_view_only_check,
             &vnc_scaling_check,
             &vnc_clipboard_check,
+            &vnc_scale_override_dropdown,
             &vnc_custom_args_entry,
             &spice_tls_check,
             &spice_ca_cert_entry,
@@ -810,6 +816,7 @@ impl ConnectionDialog {
             rdp_width_spin,
             rdp_height_spin,
             rdp_color_dropdown,
+            rdp_scale_override_dropdown,
             rdp_audio_check,
             rdp_gateway_entry,
             rdp_shared_folders,
@@ -824,6 +831,7 @@ impl ConnectionDialog {
             vnc_view_only_check,
             vnc_scaling_check,
             vnc_clipboard_check,
+            vnc_scale_override_dropdown,
             vnc_custom_args_entry,
             spice_tls_check,
             variables_list,
@@ -1502,6 +1510,7 @@ impl ConnectionDialog {
         rdp_width_spin: &SpinButton,
         rdp_height_spin: &SpinButton,
         rdp_color_dropdown: &DropDown,
+        rdp_scale_override_dropdown: &DropDown,
         rdp_audio_check: &CheckButton,
         rdp_gateway_entry: &Entry,
         rdp_shared_folders: &Rc<RefCell<Vec<SharedFolder>>>,
@@ -1515,6 +1524,7 @@ impl ConnectionDialog {
         vnc_view_only_check: &CheckButton,
         vnc_scaling_check: &CheckButton,
         vnc_clipboard_check: &CheckButton,
+        vnc_scale_override_dropdown: &DropDown,
         vnc_custom_args_entry: &Entry,
         spice_tls_check: &CheckButton,
         spice_ca_cert_entry: &Entry,
@@ -1621,6 +1631,7 @@ impl ConnectionDialog {
         let rdp_width_spin = rdp_width_spin.clone();
         let rdp_height_spin = rdp_height_spin.clone();
         let rdp_color_dropdown = rdp_color_dropdown.clone();
+        let rdp_scale_override_dropdown = rdp_scale_override_dropdown.clone();
         let rdp_audio_check = rdp_audio_check.clone();
         let rdp_gateway_entry = rdp_gateway_entry.clone();
         let rdp_shared_folders = rdp_shared_folders.clone();
@@ -1634,6 +1645,7 @@ impl ConnectionDialog {
         let vnc_view_only_check = vnc_view_only_check.clone();
         let vnc_scaling_check = vnc_scaling_check.clone();
         let vnc_clipboard_check = vnc_clipboard_check.clone();
+        let vnc_scale_override_dropdown = vnc_scale_override_dropdown.clone();
         let vnc_custom_args_entry = vnc_custom_args_entry.clone();
         let vnc_performance_mode_dropdown = vnc_performance_mode_dropdown.clone();
         let spice_tls_check = spice_tls_check.clone();
@@ -1749,6 +1761,7 @@ impl ConnectionDialog {
                 rdp_width_spin: &rdp_width_spin,
                 rdp_height_spin: &rdp_height_spin,
                 rdp_color_dropdown: &rdp_color_dropdown,
+                rdp_scale_override_dropdown: &rdp_scale_override_dropdown,
                 rdp_audio_check: &rdp_audio_check,
                 rdp_gateway_entry: &rdp_gateway_entry,
                 rdp_shared_folders: &rdp_shared_folders,
@@ -1761,6 +1774,7 @@ impl ConnectionDialog {
                 vnc_view_only_check: &vnc_view_only_check,
                 vnc_scaling_check: &vnc_scaling_check,
                 vnc_clipboard_check: &vnc_clipboard_check,
+                vnc_scale_override_dropdown: &vnc_scale_override_dropdown,
                 vnc_custom_args_entry: &vnc_custom_args_entry,
                 spice_tls_check: &spice_tls_check,
                 spice_ca_cert_entry: &spice_ca_cert_entry,
@@ -2260,6 +2274,7 @@ impl ConnectionDialog {
         SpinButton,
         SpinButton,
         DropDown,
+        DropDown,
         CheckButton,
         Entry,
         Rc<RefCell<Vec<SharedFolder>>>,
@@ -2369,20 +2384,40 @@ impl ConnectionDialog {
         color_row.add_suffix(&color_dropdown);
         display_group.add(&color_row);
 
-        // Connect client mode dropdown to show/hide resolution/color rows
+        // Scale override dropdown (for embedded mode)
+        let scale_items: Vec<&str> = ScaleOverride::all()
+            .iter()
+            .map(|s| s.display_name())
+            .collect();
+        let scale_list = StringList::new(&scale_items);
+        let scale_override_dropdown = DropDown::builder()
+            .model(&scale_list)
+            .valign(gtk4::Align::Center)
+            .build();
+        let scale_row = adw::ActionRow::builder()
+            .title("Display Scale")
+            .subtitle("Override HiDPI scaling for embedded viewer")
+            .build();
+        scale_row.add_suffix(&scale_override_dropdown);
+        display_group.add(&scale_row);
+
+        // Connect client mode dropdown to show/hide resolution/color/scale rows
         // Embedded (0) - hide resolution and color depth (dynamic resolution)
         // External (1) - show resolution and color depth
         let resolution_row_clone = resolution_row.clone();
         let color_row_clone = color_row.clone();
+        let scale_row_clone = scale_row.clone();
         client_mode_dropdown.connect_selected_notify(move |dropdown| {
             let is_embedded = dropdown.selected() == 0;
             resolution_row_clone.set_visible(!is_embedded);
             color_row_clone.set_visible(!is_embedded);
+            scale_row_clone.set_visible(is_embedded);
         });
 
-        // Set initial state (Embedded - hide resolution/color)
+        // Set initial state (Embedded - hide resolution/color, show scale)
         resolution_row.set_visible(false);
         color_row.set_visible(false);
+        scale_row.set_visible(true);
 
         content.append(&display_group);
 
@@ -2541,6 +2576,7 @@ impl ConnectionDialog {
             width_spin,
             height_spin,
             color_dropdown,
+            scale_override_dropdown,
             audio_check,
             gateway_entry,
             shared_folders,
@@ -2653,6 +2689,7 @@ impl ConnectionDialog {
         CheckButton,
         CheckButton,
         CheckButton,
+        DropDown,
         Entry,
     ) {
         let scrolled = ScrolledWindow::builder()
@@ -2724,6 +2761,31 @@ impl ConnectionDialog {
             .build();
         encoding_row.add_suffix(&encoding_entry);
         display_group.add(&encoding_row);
+
+        // Scale override dropdown (for embedded mode)
+        let scale_items: Vec<&str> = ScaleOverride::all()
+            .iter()
+            .map(|s| s.display_name())
+            .collect();
+        let scale_list = StringList::new(&scale_items);
+        let scale_override_dropdown = DropDown::builder()
+            .model(&scale_list)
+            .valign(gtk4::Align::Center)
+            .build();
+        let scale_row = adw::ActionRow::builder()
+            .title("Display Scale")
+            .subtitle("Override HiDPI scaling for embedded viewer")
+            .build();
+        scale_row.add_suffix(&scale_override_dropdown);
+        display_group.add(&scale_row);
+
+        // Show scale row only in embedded mode
+        let scale_row_clone = scale_row.clone();
+        client_mode_dropdown.connect_selected_notify(move |dropdown| {
+            let is_embedded = dropdown.selected() == 0;
+            scale_row_clone.set_visible(is_embedded);
+        });
+        scale_row.set_visible(true); // Default: embedded
 
         content.append(&display_group);
 
@@ -2835,6 +2897,7 @@ impl ConnectionDialog {
             view_only_check,
             scaling_check,
             clipboard_check,
+            scale_override_dropdown,
             custom_args_entry,
         )
     }
@@ -5658,6 +5721,8 @@ impl ConnectionDialog {
             };
             self.rdp_color_dropdown.set_selected(idx);
         }
+        self.rdp_scale_override_dropdown
+            .set_selected(rdp.scale_override.index());
         self.rdp_audio_check.set_active(rdp.audio_redirect);
         if let Some(ref gw) = rdp.gateway {
             self.rdp_gateway_entry.set_text(&gw.hostname);
@@ -5731,6 +5796,8 @@ impl ConnectionDialog {
         self.vnc_view_only_check.set_active(vnc.view_only);
         self.vnc_scaling_check.set_active(vnc.scaling);
         self.vnc_clipboard_check.set_active(vnc.clipboard_enabled);
+        self.vnc_scale_override_dropdown
+            .set_selected(vnc.scale_override.index());
 
         if !vnc.custom_args.is_empty() {
             self.vnc_custom_args_entry
@@ -6450,6 +6517,7 @@ struct ConnectionDialogData<'a> {
     rdp_width_spin: &'a SpinButton,
     rdp_height_spin: &'a SpinButton,
     rdp_color_dropdown: &'a DropDown,
+    rdp_scale_override_dropdown: &'a DropDown,
     rdp_audio_check: &'a CheckButton,
     rdp_gateway_entry: &'a Entry,
     rdp_shared_folders: &'a Rc<RefCell<Vec<SharedFolder>>>,
@@ -6463,6 +6531,7 @@ struct ConnectionDialogData<'a> {
     vnc_view_only_check: &'a CheckButton,
     vnc_scaling_check: &'a CheckButton,
     vnc_clipboard_check: &'a CheckButton,
+    vnc_scale_override_dropdown: &'a DropDown,
     vnc_custom_args_entry: &'a Entry,
     spice_tls_check: &'a CheckButton,
     spice_ca_cert_entry: &'a Entry,
@@ -7249,6 +7318,7 @@ impl ConnectionDialogData<'_> {
             shared_folders,
             custom_args,
             keyboard_layout: dropdown_index_to_klid(self.rdp_keyboard_layout_dropdown.selected()),
+            scale_override: ScaleOverride::from_index(self.rdp_scale_override_dropdown.selected()),
         }
     }
 
@@ -7283,6 +7353,7 @@ impl ConnectionDialogData<'_> {
             scaling: self.vnc_scaling_check.is_active(),
             clipboard_enabled: self.vnc_clipboard_check.is_active(),
             custom_args,
+            scale_override: ScaleOverride::from_index(self.vnc_scale_override_dropdown.selected()),
         }
     }
 

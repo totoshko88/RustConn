@@ -5,6 +5,31 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.8] - 2026-02-18
+
+### Security
+- **AES-256-GCM for stored credentials** — Replaced XOR obfuscation with AES-256-GCM + Argon2id key derivation for KeePassXC, Bitwarden, 1Password, and Passbolt passwords in settings; transparent migration from legacy format on first save
+- **FreeRDP password via stdin** — Passwords are now passed using `/from-stdin` instead of `/p:{password}` command-line argument, preventing exposure via `/proc/PID/cmdline`
+
+### Changed
+- **FreeRDP detection unified** — Single `detect_best_freerdp()` function with Wayland-first candidate ordering (`wlfreerdp3` → `wlfreerdp` → `xfreerdp3` → `xfreerdp`); all detection paths delegate to it
+- **RDP `build_args()` decoupled** — New `build_args()` and `build_command_with_binary()` methods on `RdpProtocol` separate argument construction from binary name; callers determine the binary via runtime detection
+- **ZeroTrust validation** — Provider-specific `validate()` on `ZeroTrustConfig` checks required fields (AWS SSM target, GCP IAP instance/zone/project, Teleport cluster, Tailscale hostname, Generic command template) before save
+- **ZeroTrust CLI detection** — CLI tool availability (`aws`, `gcloud`, `tsh`, `tailscale`) is verified before connection launch; missing tools show a toast and log a warning
+- **ZeroTrust tracing** — Connection launch attempts and failures are now logged via `tracing` in both GUI and CLI paths
+- **Native export format v2** — `NativeExport` now includes `snippets` field; backward-compatible with v1 imports via `#[serde(default)]`
+
+### Dependencies
+- **native-tls** `0.2.14` → `0.2.18` — Removed version pin; 0.2.18 fixes the `Tlsv13` compile error from 0.2.17 ([#367](https://github.com/rust-native-tls/rust-native-tls/issues/367))
+### Fixed
+- **RDP HiDPI scaling on 4K displays** — IronRDP now sends `desktop_scale_factor` to the Windows server (e.g. 200% on a 2× display), so remote UI elements render at the correct logical size instead of appearing tiny; previously hardcoded to 0
+- **RDP mouse coordinate mismatch on HiDPI** — Widget dimensions used for mouse→RDP coordinate transform now store CSS pixels (matching GTK event coordinates) instead of device pixels, fixing misaligned clicks on scaled displays
+
+### Removed
+- **Dashboard module** — Removed unused `ConnectionDashboard` GUI widget, core types (`SessionStats`, `DashboardFilter`), and property tests; session monitoring is handled by Active Sessions manager and sidebar indicators
+- **5 dead GUI modules** — Removed `adaptive_tabs.rs`, `empty_state.rs`, `error_display.rs`, `floating_controls.rs`, `loading.rs` (all replaced by native adw/GTK4 equivalents)
+- **`tab_split_manager` remnants** — Removed unused field from `MainWindow` and `SharedTabSplitManager` type alias; split view fully handled by `SplitViewBridge`
+
 ## [0.8.7] - 2026-02-17
 
 ### Security

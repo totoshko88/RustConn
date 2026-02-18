@@ -705,6 +705,13 @@ pub fn show_import_dialog(window: &gtk4::Window, state: SharedAppState, sidebar:
             if let Ok(mut state_mut) = state.try_borrow_mut() {
                 match state_mut.import_connections_with_source(&import_result, &source_name) {
                     Ok(count) => {
+                        // Merge snippets if present (native format)
+                        let snippet_count = import_result.snippets.len();
+                        for snippet in import_result.snippets {
+                            if let Err(e) = state_mut.create_snippet(snippet) {
+                                tracing::warn!("Failed to import snippet: {e}");
+                            }
+                        }
                         drop(state_mut);
                         // Defer sidebar reload to prevent UI freeze
                         let state_clone = state.clone();
@@ -716,11 +723,15 @@ pub fn show_import_dialog(window: &gtk4::Window, state: SharedAppState, sidebar:
                                 &state_clone,
                                 &sidebar_clone,
                             );
-                            alert::show_success(
-                                &window,
-                                &i18n("Import Successful"),
-                                &format!("Imported {count} connections to '{source}' group"),
-                            );
+                            let msg = if snippet_count > 0 {
+                                format!(
+                                    "Imported {count} connections and \
+                                     {snippet_count} snippets to '{source}' group"
+                                )
+                            } else {
+                                format!("Imported {count} connections to '{source}' group")
+                            };
+                            alert::show_success(&window, &i18n("Import Successful"), &msg);
                         });
                     }
                     Err(e) => {

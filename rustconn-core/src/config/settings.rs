@@ -522,29 +522,53 @@ impl Default for ConnectionSettings {
     }
 }
 
-/// Password encryption utilities for KDBX password persistence
+/// Magic bytes identifying AES-256-GCM encrypted credentials (v1)
+const SETTINGS_CRYPTO_MAGIC: &[u8] = b"RCSC";
+
+/// Current settings crypto version
+const SETTINGS_CRYPTO_VERSION: u8 = 1;
+
+/// Salt length for Argon2id key derivation
+const SETTINGS_SALT_LEN: usize = 16;
+
+/// Nonce length for AES-256-GCM
+const SETTINGS_NONCE_LEN: usize = 12;
+
+/// Header length: magic(4) + version(1) + salt(16) + nonce(12)
+const SETTINGS_HEADER_LEN: usize = 4 + 1 + SETTINGS_SALT_LEN + SETTINGS_NONCE_LEN;
+
+/// Password encryption utilities for credential persistence
+///
+/// Uses AES-256-GCM with Argon2id key derivation from a machine-specific key.
+/// Legacy XOR-encrypted data is transparently decrypted and re-encrypted
+/// in the new format on the next save.
 impl SecretSettings {
-    /// Encrypts the KDBX password for storage
-    /// Uses a simple XOR cipher with machine-specific key
+    /// Encrypts the KDBX password for storage using AES-256-GCM
     pub fn encrypt_password(&mut self) {
         if let Some(ref password) = self.kdbx_password {
             use secrecy::ExposeSecret;
-            let key = Self::get_machine_key();
-            let encrypted = Self::xor_cipher(password.expose_secret().as_bytes(), &key);
-            self.kdbx_password_encrypted = Some(base64_encode(&encrypted));
+            if let Ok(encrypted) = encrypt_credential(
+                password.expose_secret().as_bytes(),
+                &Self::get_machine_key(),
+            ) {
+                self.kdbx_password_encrypted = Some(hex_encode(&encrypted));
+            }
         }
     }
 
     /// Decrypts the stored KDBX password
-    /// Returns true if decryption was successful
+    ///
+    /// Transparently handles both AES-256-GCM (new) and XOR (legacy) formats.
+    /// Returns true if decryption was successful.
     pub fn decrypt_password(&mut self) -> bool {
         if let Some(ref encrypted) = self.kdbx_password_encrypted {
-            if let Some(decoded) = base64_decode(encrypted) {
+            if let Some(decoded) = hex_decode(encrypted) {
                 let key = Self::get_machine_key();
-                let decrypted = Self::xor_cipher(&decoded, &key);
-                if let Ok(password_str) = String::from_utf8(decrypted) {
-                    self.kdbx_password = Some(SecretString::from(password_str));
-                    return true;
+                if let Ok(plaintext) = decrypt_credential(&decoded, &key) {
+                    if let Ok(password_str) = String::from_utf8(plaintext) {
+                        self.kdbx_password = Some(SecretString::from(password_str));
+                        return true;
+                    }
                 }
             }
         }
@@ -557,27 +581,32 @@ impl SecretSettings {
         self.kdbx_password_encrypted = None;
     }
 
-    /// Encrypts the Bitwarden master password for storage
-    /// Uses a simple XOR cipher with machine-specific key
+    /// Encrypts the Bitwarden master password for storage using AES-256-GCM
     pub fn encrypt_bitwarden_password(&mut self) {
         if let Some(ref password) = self.bitwarden_password {
             use secrecy::ExposeSecret;
-            let key = Self::get_machine_key();
-            let encrypted = Self::xor_cipher(password.expose_secret().as_bytes(), &key);
-            self.bitwarden_password_encrypted = Some(base64_encode(&encrypted));
+            if let Ok(encrypted) = encrypt_credential(
+                password.expose_secret().as_bytes(),
+                &Self::get_machine_key(),
+            ) {
+                self.bitwarden_password_encrypted = Some(hex_encode(&encrypted));
+            }
         }
     }
 
     /// Decrypts the stored Bitwarden master password
-    /// Returns true if decryption was successful
+    ///
+    /// Transparently handles both AES-256-GCM (new) and XOR (legacy) formats.
+    /// Returns true if decryption was successful.
     pub fn decrypt_bitwarden_password(&mut self) -> bool {
         if let Some(ref encrypted) = self.bitwarden_password_encrypted {
-            if let Some(decoded) = base64_decode(encrypted) {
+            if let Some(decoded) = hex_decode(encrypted) {
                 let key = Self::get_machine_key();
-                let decrypted = Self::xor_cipher(&decoded, &key);
-                if let Ok(password_str) = String::from_utf8(decrypted) {
-                    self.bitwarden_password = Some(SecretString::from(password_str));
-                    return true;
+                if let Ok(plaintext) = decrypt_credential(&decoded, &key) {
+                    if let Ok(password_str) = String::from_utf8(plaintext) {
+                        self.bitwarden_password = Some(SecretString::from(password_str));
+                        return true;
+                    }
                 }
             }
         }
@@ -590,52 +619,64 @@ impl SecretSettings {
         self.bitwarden_password_encrypted = None;
     }
 
-    /// Encrypts the 1Password service account token for storage
+    /// Encrypts the 1Password service account token for storage using AES-256-GCM
     pub fn encrypt_onepassword_token(&mut self) {
         if let Some(ref token) = self.onepassword_service_account_token {
             use secrecy::ExposeSecret;
-            let key = Self::get_machine_key();
-            let encrypted = Self::xor_cipher(token.expose_secret().as_bytes(), &key);
-            self.onepassword_service_account_token_encrypted = Some(base64_encode(&encrypted));
+            if let Ok(encrypted) =
+                encrypt_credential(token.expose_secret().as_bytes(), &Self::get_machine_key())
+            {
+                self.onepassword_service_account_token_encrypted = Some(hex_encode(&encrypted));
+            }
         }
     }
 
     /// Decrypts the stored 1Password service account token
-    /// Returns true if decryption was successful
+    ///
+    /// Transparently handles both AES-256-GCM (new) and XOR (legacy) formats.
+    /// Returns true if decryption was successful.
     pub fn decrypt_onepassword_token(&mut self) -> bool {
         if let Some(ref encrypted) = self.onepassword_service_account_token_encrypted {
-            if let Some(decoded) = base64_decode(encrypted) {
+            if let Some(decoded) = hex_decode(encrypted) {
                 let key = Self::get_machine_key();
-                let decrypted = Self::xor_cipher(&decoded, &key);
-                if let Ok(token_str) = String::from_utf8(decrypted) {
-                    self.onepassword_service_account_token = Some(SecretString::from(token_str));
-                    return true;
+                if let Ok(plaintext) = decrypt_credential(&decoded, &key) {
+                    if let Ok(token_str) = String::from_utf8(plaintext) {
+                        self.onepassword_service_account_token =
+                            Some(SecretString::from(token_str));
+                        return true;
+                    }
                 }
             }
         }
         false
     }
 
-    /// Encrypts the Passbolt GPG passphrase for storage
+    /// Encrypts the Passbolt GPG passphrase for storage using AES-256-GCM
     pub fn encrypt_passbolt_passphrase(&mut self) {
         if let Some(ref passphrase) = self.passbolt_passphrase {
             use secrecy::ExposeSecret;
-            let key = Self::get_machine_key();
-            let encrypted = Self::xor_cipher(passphrase.expose_secret().as_bytes(), &key);
-            self.passbolt_passphrase_encrypted = Some(base64_encode(&encrypted));
+            if let Ok(encrypted) = encrypt_credential(
+                passphrase.expose_secret().as_bytes(),
+                &Self::get_machine_key(),
+            ) {
+                self.passbolt_passphrase_encrypted = Some(hex_encode(&encrypted));
+            }
         }
     }
 
     /// Decrypts the stored Passbolt GPG passphrase
-    /// Returns true if decryption was successful
+    ///
+    /// Transparently handles both AES-256-GCM (new) and XOR (legacy) formats.
+    /// Returns true if decryption was successful.
     pub fn decrypt_passbolt_passphrase(&mut self) -> bool {
         if let Some(ref encrypted) = self.passbolt_passphrase_encrypted {
-            if let Some(decoded) = base64_decode(encrypted) {
+            if let Some(decoded) = hex_decode(encrypted) {
                 let key = Self::get_machine_key();
-                let decrypted = Self::xor_cipher(&decoded, &key);
-                if let Ok(pass_str) = String::from_utf8(decrypted) {
-                    self.passbolt_passphrase = Some(SecretString::from(pass_str));
-                    return true;
+                if let Ok(plaintext) = decrypt_credential(&decoded, &key) {
+                    if let Ok(pass_str) = String::from_utf8(plaintext) {
+                        self.passbolt_passphrase = Some(SecretString::from(pass_str));
+                        return true;
+                    }
                 }
             }
         }
@@ -643,8 +684,8 @@ impl SecretSettings {
     }
 
     /// Gets a machine-specific key for encryption
-    /// Uses app-specific key file, machine-id, or falls back to a default.
     ///
+    /// Uses app-specific key file, machine-id, or falls back to a default.
     /// In Flatpak sandbox `/etc/machine-id` is inaccessible, so we first
     /// try an app-specific key file stored in the XDG data directory.
     fn get_machine_key() -> Vec<u8> {
@@ -680,8 +721,8 @@ impl SecretSettings {
         format!("{hostname}-{username}-rustconn-key").into_bytes()
     }
 
-    /// Simple XOR cipher for obfuscation
-    fn xor_cipher(data: &[u8], key: &[u8]) -> Vec<u8> {
+    /// Legacy XOR cipher for decrypting old-format credentials
+    fn xor_cipher_legacy(data: &[u8], key: &[u8]) -> Vec<u8> {
         data.iter()
             .enumerate()
             .map(|(i, &byte)| byte ^ key[i % key.len()])
@@ -689,19 +730,121 @@ impl SecretSettings {
     }
 }
 
-/// Base64 encode helper
-fn base64_encode(data: &[u8]) -> String {
+/// Encrypts credential data using AES-256-GCM with Argon2id key derivation
+///
+/// Output format: `RCSC` (4) + version (1) + salt (16) + nonce (12) + ciphertext + tag (16)
+fn encrypt_credential(plaintext: &[u8], machine_key: &[u8]) -> Result<Vec<u8>, String> {
+    use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
+    use ring::rand::{SecureRandom, SystemRandom};
+
+    let rng = SystemRandom::new();
+
+    let mut salt = [0u8; SETTINGS_SALT_LEN];
+    rng.fill(&mut salt)
+        .map_err(|_| "Failed to generate salt".to_string())?;
+
+    let mut nonce_bytes = [0u8; SETTINGS_NONCE_LEN];
+    rng.fill(&mut nonce_bytes)
+        .map_err(|_| "Failed to generate nonce".to_string())?;
+
+    let key = derive_settings_key(machine_key, &salt)?;
+
+    let unbound_key = UnboundKey::new(&AES_256_GCM, &key)
+        .map_err(|_| "Failed to create encryption key".to_string())?;
+    let less_safe_key = LessSafeKey::new(unbound_key);
+    let nonce = Nonce::assume_unique_for_key(nonce_bytes);
+
+    let mut in_out = plaintext.to_vec();
+    less_safe_key
+        .seal_in_place_append_tag(nonce, Aad::empty(), &mut in_out)
+        .map_err(|_| "Encryption failed".to_string())?;
+
+    let mut result = Vec::with_capacity(SETTINGS_HEADER_LEN + in_out.len());
+    result.extend_from_slice(SETTINGS_CRYPTO_MAGIC);
+    result.push(SETTINGS_CRYPTO_VERSION);
+    result.extend_from_slice(&salt);
+    result.extend_from_slice(&nonce_bytes);
+    result.extend_from_slice(&in_out);
+    Ok(result)
+}
+
+/// Decrypts credential data; falls back to legacy XOR if no magic header
+fn decrypt_credential(data: &[u8], machine_key: &[u8]) -> Result<Vec<u8>, String> {
+    if data.len() >= SETTINGS_HEADER_LEN && data[..4] == *SETTINGS_CRYPTO_MAGIC {
+        decrypt_credential_aes(data, machine_key)
+    } else {
+        // Legacy XOR format — decrypt transparently; re-encrypted on next save
+        Ok(SecretSettings::xor_cipher_legacy(data, machine_key))
+    }
+}
+
+/// Decrypts AES-256-GCM encrypted credential data
+fn decrypt_credential_aes(data: &[u8], machine_key: &[u8]) -> Result<Vec<u8>, String> {
+    use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
+
+    if data.len() < SETTINGS_HEADER_LEN + 16 {
+        return Err("Encrypted data too short".to_string());
+    }
+
+    let _version = data[4];
+    let salt = &data[5..5 + SETTINGS_SALT_LEN];
+    let nonce_bytes: [u8; SETTINGS_NONCE_LEN] = data
+        [5 + SETTINGS_SALT_LEN..5 + SETTINGS_SALT_LEN + SETTINGS_NONCE_LEN]
+        .try_into()
+        .map_err(|_| "Invalid nonce".to_string())?;
+    let ciphertext = &data[SETTINGS_HEADER_LEN..];
+
+    let key = derive_settings_key(machine_key, salt)?;
+
+    let unbound_key = UnboundKey::new(&AES_256_GCM, &key)
+        .map_err(|_| "Failed to create decryption key".to_string())?;
+    let less_safe_key = LessSafeKey::new(unbound_key);
+    let nonce = Nonce::assume_unique_for_key(nonce_bytes);
+
+    let mut in_out = ciphertext.to_vec();
+    less_safe_key
+        .open_in_place(nonce, Aad::empty(), &mut in_out)
+        .map_err(|_| "Decryption failed (wrong key or corrupted data)".to_string())?;
+
+    // Remove the authentication tag (last 16 bytes)
+    in_out.truncate(in_out.len() - 16);
+    Ok(in_out)
+}
+
+/// Derives a 256-bit key from machine key using Argon2id
+///
+/// Uses lighter parameters than document encryption since settings
+/// encryption happens on every save and the key material is already
+/// high-entropy (machine-specific UUID or machine-id).
+fn derive_settings_key(machine_key: &[u8], salt: &[u8]) -> Result<[u8; 32], String> {
+    use argon2::{Algorithm, Argon2, Params, Version};
+
+    // Lighter params: 16 MiB memory, 2 iterations, 1 thread
+    // Appropriate for machine-key derivation (not user passwords)
+    let params = Params::new(16 * 1024, 2, 1, Some(32))
+        .map_err(|e| format!("Invalid Argon2 params: {e}"))?;
+    let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
+
+    let mut key = [0u8; 32];
+    argon2
+        .hash_password_into(machine_key, salt, &mut key)
+        .map_err(|e| format!("Key derivation failed: {e}"))?;
+    Ok(key)
+}
+
+/// Hex-encodes binary data to a string
+fn hex_encode(data: &[u8]) -> String {
     use std::fmt::Write;
-    let mut result = String::new();
+    let mut result = String::with_capacity(data.len() * 2);
     for byte in data {
         write!(result, "{byte:02x}").ok();
     }
     result
 }
 
-/// Base64 decode helper (hex decode)
-fn base64_decode(data: &str) -> Option<Vec<u8>> {
-    let mut result = Vec::new();
+/// Hex-decodes a string to binary data
+fn hex_decode(data: &str) -> Option<Vec<u8>> {
+    let mut result = Vec::with_capacity(data.len() / 2);
     let mut chars = data.chars();
     while let (Some(a), Some(b)) = (chars.next(), chars.next()) {
         let byte = u8::from_str_radix(&format!("{a}{b}"), 16).ok()?;

@@ -116,25 +116,29 @@ impl SafeFreeRdpLauncher {
         // Redirect stderr to suppress warnings
         cmd.stderr(Stdio::null());
 
-        cmd.spawn()
-            .map_err(|e| EmbeddedRdpError::FreeRdpInit(e.to_string()))
-    }
+        let mut child = cmd
+            .spawn()
+            .map_err(|e| EmbeddedRdpError::FreeRdpInit(e.to_string()))?;
 
-    /// Detects available FreeRDP binary
-    pub fn detect_freerdp() -> Option<String> {
-        let candidates = ["xfreerdp3", "xfreerdp", "freerdp"];
-        for candidate in candidates {
-            if Command::new("which")
-                .arg(candidate)
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .status()
-                .is_ok_and(|s| s.success())
-            {
-                return Some(candidate.to_string());
+        // Write password via stdin when /from-stdin is used
+        if let Some(ref password) = config.password {
+            if !password.is_empty() {
+                if let Some(mut stdin) = child.stdin.take() {
+                    use std::io::Write;
+                    // FreeRDP /from-stdin reads the password from stdin
+                    let _ = writeln!(stdin, "{password}");
+                }
             }
         }
-        None
+
+        Ok(child)
+    }
+
+    /// Detects the best available FreeRDP binary (Wayland-first)
+    ///
+    /// Delegates to the unified detection in [`super::detect::detect_best_freerdp`].
+    pub fn detect_freerdp() -> Option<String> {
+        super::detect::detect_best_freerdp()
     }
 
     /// Adds connection arguments to the command
@@ -151,7 +155,9 @@ impl SafeFreeRdpLauncher {
 
         if let Some(ref password) = config.password {
             if !password.is_empty() {
-                cmd.arg(format!("/p:{password}"));
+                // Use /from-stdin to avoid exposing password in /proc/PID/cmdline
+                cmd.arg("/from-stdin");
+                cmd.stdin(Stdio::piped());
             }
         }
 

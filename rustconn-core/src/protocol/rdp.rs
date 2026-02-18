@@ -80,6 +80,18 @@ impl Protocol for RdpProtocol {
     }
 
     fn build_command(&self, connection: &Connection) -> Option<Vec<String>> {
+        // Default binary for CLI compatibility; GUI overrides via detect_best_freerdp()
+        self.build_command_with_binary("xfreerdp", connection)
+    }
+}
+
+impl RdpProtocol {
+    /// Builds the FreeRDP argument list without a binary name.
+    ///
+    /// Callers that perform runtime detection (GUI, CLI) should use this
+    /// and prepend the detected binary themselves.
+    #[must_use]
+    pub fn build_args(connection: &Connection) -> Option<Vec<String>> {
         let mut args = vec![format!("/v:{}:{}", connection.host, connection.port)];
 
         if let Some(ref username) = connection.username {
@@ -116,9 +128,21 @@ impl Protocol for RdpProtocol {
             args.extend(rdp_config.custom_args.clone());
         }
 
-        let mut cmd = vec!["xfreerdp".to_string()];
-        cmd.extend(args);
-        Some(cmd)
+        Some(args)
+    }
+
+    /// Builds a full command with the given binary name prepended.
+    #[must_use]
+    pub fn build_command_with_binary(
+        &self,
+        binary: &str,
+        connection: &Connection,
+    ) -> Option<Vec<String>> {
+        Self::build_args(connection).map(|args| {
+            let mut cmd = vec![binary.to_string()];
+            cmd.extend(args);
+            cmd
+        })
     }
 }
 

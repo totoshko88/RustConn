@@ -1156,21 +1156,35 @@ impl EmbeddedRdpWidget {
 
         self.drawing_area
             .connect_resize(move |area, new_width, new_height| {
-                // Convert CSS pixels to device pixels for HiDPI displays
-                let scale = area.scale_factor().max(1) as u32;
-                let new_width = new_width.unsigned_abs() * scale;
-                let new_height = new_height.unsigned_abs() * scale;
+                // Store CSS pixel dimensions for mouse coordinate transform.
+                // GTK mouse events use CSS coordinates, and the draw function
+                // also operates in CSS space, so self.width/height must match.
+                let css_width = new_width.unsigned_abs();
+                let css_height = new_height.unsigned_abs();
+
+                // Compute device pixels for RDP resolution requests
+                let effective_scale = config.borrow().as_ref().map_or_else(
+                    || f64::from(area.scale_factor().max(1)),
+                    |c| c.scale_override.effective_scale(area.scale_factor()),
+                );
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                let device_width = (f64::from(css_width) * effective_scale) as u32;
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                let device_height = (f64::from(css_height) * effective_scale) as u32;
 
                 tracing::debug!(
-                    "[RDP Resize] Widget resized to {}x{} (RDP: {}x{})",
-                    new_width,
-                    new_height,
+                    "[RDP Resize] Widget resized to {}x{} CSS ({}x{} device) (RDP: {}x{})",
+                    css_width,
+                    css_height,
+                    device_width,
+                    device_height,
                     *rdp_width.borrow(),
                     *rdp_height.borrow()
                 );
 
-                *width.borrow_mut() = new_width;
-                *height.borrow_mut() = new_height;
+                // Store CSS dimensions for coordinate transform
+                *width.borrow_mut() = css_width;
+                *height.borrow_mut() = css_height;
 
                 // Queue redraw for scaling - the draw function handles aspect ratio
                 area.queue_draw();
@@ -1204,14 +1218,14 @@ impl EmbeddedRdpWidget {
                         let current_rdp_w = *rdp_w.borrow();
                         let current_rdp_h = *rdp_h.borrow();
 
-                        // Only reconnect if size actually changed significantly (>50px)
-                        let w_diff = (new_width as i32 - current_rdp_w as i32).unsigned_abs();
-                        let h_diff = (new_height as i32 - current_rdp_h as i32).unsigned_abs();
+                        // Only reconnect if size actually changed significantly (>50px device)
+                        let w_diff = (device_width as i32 - current_rdp_w as i32).unsigned_abs();
+                        let h_diff = (device_height as i32 - current_rdp_h as i32).unsigned_abs();
 
                         if w_diff > 50 || h_diff > 50 {
                             // Round down to multiple of 4 for RDP compatibility
-                            let rounded_width = (new_width / 4) * 4;
-                            let rounded_height = (new_height / 4) * 4;
+                            let rounded_width = (device_width / 4) * 4;
+                            let rounded_height = (device_height / 4) * 4;
 
                             tracing::info!(
                                 "[RDP Resize] Reconnecting with new resolution: {}x{} -> {}x{} \
@@ -1220,8 +1234,8 @@ impl EmbeddedRdpWidget {
                                 current_rdp_h,
                                 rounded_width,
                                 rounded_height,
-                                new_width,
-                                new_height
+                                device_width,
+                                device_height
                             );
 
                             // Update config with new resolution
@@ -1549,21 +1563,25 @@ impl EmbeddedRdpWidget {
 
         // Get actual widget size for initial resolution
         // This ensures the RDP session matches the current window size
-        // Multiply by scale_factor to get device pixels on HiDPI displays
+        // Use scale override from config, falling back to system scale_factor
+        let effective_scale = config
+            .scale_override
+            .effective_scale(self.drawing_area.scale_factor());
         let (actual_width, actual_height) = {
             let w = self.drawing_area.width();
             let h = self.drawing_area.height();
-            let scale = self.drawing_area.scale_factor().max(1) as u32;
             if w > 100 && h > 100 {
-                // Convert CSS pixels to device pixels for HiDPI
-                let device_w = w.unsigned_abs() * scale;
-                let device_h = h.unsigned_abs() * scale;
+                // Convert CSS pixels to device pixels using effective scale
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                let device_w = (f64::from(w.unsigned_abs()) * effective_scale) as u32;
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                let device_h = (f64::from(h.unsigned_abs()) * effective_scale) as u32;
                 // Round down to multiple of 4 for RDP compatibility
                 // Many RDP servers and codecs require dimensions divisible by 4
                 let width = (device_w / 4) * 4;
                 let height = (device_h / 4) * 4;
-                // Ensure minimum size
-                (width.max(640), height.max(480))
+                // Clamp to reasonable maximum (8K) and ensure minimum size
+                (width.clamp(640, 7680), height.clamp(480, 4320))
             } else {
                 // Widget not yet realized, use config values
                 (config.width, config.height)
@@ -1575,10 +1593,22 @@ impl EmbeddedRdpWidget {
             config.host,
             config.port
         );
+
+        // Compute RDP desktop scale factor as percentage (e.g. 2.0 → 200)
+        // This tells the Windows server what DPI scaling to use so UI elements
+        // appear at the correct logical size on HiDPI displays.
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let rdp_scale_percent = (effective_scale * 100.0) as u32;
+
         tracing::debug!(
             "[EmbeddedRDP] Using resolution {}x{} (widget size)",
             actual_width,
             actual_height
+        );
+        tracing::debug!(
+            "[EmbeddedRDP] Scale: effective={:.2}x, desktop_scale_factor={}%",
+            effective_scale,
+            rdp_scale_percent
         );
         tracing::debug!(
             "[EmbeddedRDP] Username: {:?}, Domain: {:?}, Password: {}",
@@ -1623,7 +1653,8 @@ impl EmbeddedRdpWidget {
             .with_clipboard(config.clipboard_enabled)
             .with_shared_folders(shared_folders)
             .with_performance_mode(config.performance_mode)
-            .with_color_depth(config.performance_mode.color_depth());
+            .with_color_depth(config.performance_mode.color_depth())
+            .with_scale_factor(rdp_scale_percent);
 
         if let Some(ref username) = config.username {
             client_config = client_config.with_username(username);

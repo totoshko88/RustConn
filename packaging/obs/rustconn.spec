@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.8.7
+Version:        0.8.8
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -191,6 +191,9 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Wed Feb 18 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.8-0
+- Version bump to 0.8.8
+
 * Mon Feb 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.7-0
 - Version bump to 0.8.7
 - Internationalization (i18n) — 14 languages: uk, de, fr, es, it, pl, cs,

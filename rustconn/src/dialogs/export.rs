@@ -17,7 +17,7 @@ use rustconn_core::export::{
     AnsibleExporter, AsbruExporter, ExportFormat, ExportOptions, ExportResult, ExportTarget,
     MobaXtermExporter, NativeExport, RemminaExporter, RoyalTsExporter, SshConfigExporter,
 };
-use rustconn_core::models::{Connection, ConnectionGroup};
+use rustconn_core::models::{Connection, ConnectionGroup, Snippet};
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -52,6 +52,7 @@ pub struct ExportDialog {
     // State
     connections: Rc<RefCell<Vec<Connection>>>,
     groups: Rc<RefCell<Vec<ConnectionGroup>>>,
+    snippets: Rc<RefCell<Vec<Snippet>>>,
     result: Rc<RefCell<Option<ExportResult>>>,
     on_complete: ExportCallback,
 }
@@ -150,6 +151,7 @@ impl ExportDialog {
             export_button,
             connections: Rc::new(RefCell::new(Vec::new())),
             groups: Rc::new(RefCell::new(Vec::new())),
+            snippets: Rc::new(RefCell::new(Vec::new())),
             result: Rc::new(RefCell::new(None)),
             on_complete,
         }
@@ -427,10 +429,16 @@ impl ExportDialog {
         *self.groups.borrow_mut() = groups;
     }
 
+    /// Sets the snippets for export (used in native format)
+    pub fn set_snippets(&self, snippets: Vec<Snippet>) {
+        *self.snippets.borrow_mut() = snippets;
+    }
+
     /// Performs the export operation
     fn do_export(
         connections: &[Connection],
         groups: &[ConnectionGroup],
+        snippets: &[Snippet],
         options: &ExportOptions,
     ) -> Result<ExportResult, String> {
         match options.format {
@@ -466,6 +474,7 @@ impl ExportDialog {
                     Vec::new(), // Templates would need to be passed in
                     Vec::new(), // Clusters would need to be passed in
                     Vec::new(), // Variables would need to be passed in
+                    snippets.to_vec(),
                 );
                 export
                     .to_file(&options.output_path)
@@ -705,6 +714,7 @@ impl ExportDialog {
         let export_button = self.export_button.clone();
         let connections = self.connections.clone();
         let groups = self.groups.clone();
+        let snippets = self.snippets.clone();
         let result_cell = self.result.clone();
         let on_complete = self.on_complete.clone();
 
@@ -758,11 +768,12 @@ impl ExportDialog {
             // Perform export
             let conns = connections.borrow();
             let grps = groups.borrow();
+            let snips = snippets.borrow();
 
             progress_bar.set_fraction(0.5);
             progress_label.set_text("Writing output files...");
 
-            let export_result = Self::do_export(&conns, &grps, &options);
+            let export_result = Self::do_export(&conns, &grps, &snips, &options);
 
             progress_bar.set_fraction(1.0);
             progress_spinner.set_spinning(false);

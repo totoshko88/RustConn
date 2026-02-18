@@ -1,3 +1,17 @@
+rustconn (0.8.8-1) unstable; urgency=medium
+
+  * Security: AES-256-GCM replaces XOR obfuscation for stored credentials
+    (transparent migration from legacy format)
+  * Security: FreeRDP password passed via stdin instead of command line
+  * FreeRDP detection unified with Wayland-first priority
+  * RDP build_args() decoupled from hardcoded binary name
+  * ZeroTrust: provider-specific validation and CLI tool detection
+  * Native export/import now includes snippets (format v2)
+  * Removed dead code: Dashboard module, 5 unused GUI modules,
+    tab_split_manager remnants
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 18 Feb 2026 12:00:00 +0200
+
 rustconn (0.8.7-1) unstable; urgency=medium
 
   * Version bump to 0.8.7

@@ -46,7 +46,6 @@ mod cluster_tests;
 mod config_tests;
 mod connection_tests;
 mod custom_property_tests;
-mod dashboard_tests;
 mod detection_tests;
 mod dialog_tests;
 mod document_tests;

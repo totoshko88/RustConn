@@ -110,6 +110,7 @@ proptest! {
             templates.clone(),
             clusters.clone(),
             variables.clone(),
+            Vec::new(),
         );
 
         let json = export.to_json().expect("Serialization should succeed");
@@ -170,6 +171,7 @@ proptest! {
             templates.clone(),
             clusters.clone(),
             variables.clone(),
+            Vec::new(),
         );
 
         let json = export.to_json().expect("Serialization should succeed");
@@ -252,6 +254,7 @@ proptest! {
             templates.clone(),
             clusters.clone(),
             variables.clone(),
+            Vec::new(),
         );
 
         let json = export.to_json().expect("Serialization should succeed");
@@ -315,6 +318,7 @@ proptest! {
     ) {
         let export = NativeExport::with_data(
             connections,
+            vec![],
             vec![],
             vec![],
             vec![],

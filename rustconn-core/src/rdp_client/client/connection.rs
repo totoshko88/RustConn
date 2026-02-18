@@ -225,7 +225,7 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
             width: config.width,
             height: config.height,
         },
-        desktop_scale_factor: 0,
+        desktop_scale_factor: config.scale_factor,
         bitmap: bitmap_config,
         client_build: 0,
         client_name: String::from("RustConn"),

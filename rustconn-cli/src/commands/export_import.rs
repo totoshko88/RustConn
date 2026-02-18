@@ -102,6 +102,7 @@ fn export_connections(
                 Vec::new(),
                 Vec::new(),
                 Vec::new(),
+                Vec::new(),
             );
 
             native_export
@@ -162,6 +163,7 @@ pub fn cmd_import(
         import_result.connections.len()
     );
     println!("  Groups imported: {}", import_result.groups.len());
+    println!("  Snippets imported: {}", import_result.snippets.len());
     println!("  Entries skipped: {}", import_result.skipped.len());
     println!("  Errors: {}", import_result.errors.len());
 
@@ -208,6 +210,27 @@ pub fn cmd_import(
     let new_connections = existing_connections.len() - initial_count;
     let new_groups = existing_groups.len() - initial_group_count;
 
+    // Merge snippets (native format only)
+    let mut new_snippets = 0;
+    if !import_result.snippets.is_empty() {
+        let mut existing_snippets = config_manager
+            .load_snippets()
+            .map_err(|e| CliError::Config(format!("Failed to load existing snippets: {e}")))?;
+        let initial_snippet_count = existing_snippets.len();
+
+        for snippet in import_result.snippets {
+            let is_duplicate = existing_snippets.iter().any(|s| s.name == snippet.name);
+            if !is_duplicate {
+                existing_snippets.push(snippet);
+            }
+        }
+
+        new_snippets = existing_snippets.len() - initial_snippet_count;
+        config_manager
+            .save_snippets(&existing_snippets)
+            .map_err(|e| CliError::Config(format!("Failed to save snippets: {e}")))?;
+    }
+
     config_manager
         .save_connections(&existing_connections)
         .map_err(|e| CliError::Config(format!("Failed to save connections: {e}")))?;
@@ -219,6 +242,7 @@ pub fn cmd_import(
     println!("\nMerge results:");
     println!("  New connections added: {new_connections}");
     println!("  New groups added: {new_groups}");
+    println!("  New snippets added: {new_snippets}");
     println!("  Total connections: {}", existing_connections.len());
     println!("  Total groups: {}", existing_groups.len());
 
@@ -270,6 +294,7 @@ fn import_connections(
                 skipped: Vec::new(),
                 errors: Vec::new(),
                 credentials: std::collections::HashMap::new(),
+                snippets: native.snippets,
             }
         }
         ImportFormatArg::RoyalTs => {

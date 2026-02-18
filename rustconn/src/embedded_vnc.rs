@@ -627,24 +627,33 @@ impl EmbeddedVncWidget {
         let state = self.state.clone();
         let is_embedded = self.is_embedded.clone();
         let command_sender = self.command_sender.clone();
+        let config = self.config.clone();
 
         // Track last requested resolution to avoid duplicate requests
         let last_requested: Rc<RefCell<(u32, u32)>> = Rc::new(RefCell::new((0, 0)));
 
         self.drawing_area
-            .connect_resize(move |_area, new_width, new_height| {
-                let new_width = new_width.unsigned_abs();
-                let new_height = new_height.unsigned_abs();
+            .connect_resize(move |area, new_width, new_height| {
+                // Apply scale override from config, falling back to system scale_factor
+                let effective_scale = config.borrow().as_ref().map_or_else(
+                    || f64::from(area.scale_factor().max(1)),
+                    |c| c.scale_override.effective_scale(area.scale_factor()),
+                );
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                let scaled_width = (f64::from(new_width.unsigned_abs()) * effective_scale) as u32;
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                let scaled_height = (f64::from(new_height.unsigned_abs()) * effective_scale) as u32;
 
-                *width.borrow_mut() = new_width;
-                *height.borrow_mut() = new_height;
+                *width.borrow_mut() = new_width.unsigned_abs();
+                *height.borrow_mut() = new_height.unsigned_abs();
 
                 let current_state = *state.borrow();
                 let embedded = *is_embedded.borrow();
 
                 if embedded && current_state == VncConnectionState::Connected {
-                    // Find the best standard resolution that fits the window
-                    let (best_w, best_h) = find_best_standard_resolution(new_width, new_height);
+                    // Find the best standard resolution that fits the scaled window
+                    let (best_w, best_h) =
+                        find_best_standard_resolution(scaled_width, scaled_height);
 
                     // Only request if different from current VNC resolution and last request
                     let current_vnc_w = *vnc_width.borrow();
@@ -662,9 +671,14 @@ impl EmbeddedVncWidget {
                                 width: crate::utils::dimension_to_u16(best_w),
                                 height: crate::utils::dimension_to_u16(best_h),
                             });
-                            eprintln!(
-                                "[VNC] Requesting standard resolution {}x{} for window {}x{}",
-                                best_w, best_h, new_width, new_height
+                            tracing::debug!(
+                                "[VNC] Requesting resolution {}x{} for window {}x{} \
+                                 (scale: {:.2})",
+                                best_w,
+                                best_h,
+                                new_width,
+                                new_height,
+                                effective_scale
                             );
                         }
                     }

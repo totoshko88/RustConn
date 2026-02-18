@@ -977,6 +977,99 @@ impl RdpClientMode {
     }
 }
 
+/// Display scale override for embedded protocol viewers.
+///
+/// Controls the scale factor used to convert CSS pixels to device pixels
+/// when negotiating resolution with the remote server. `Auto` uses the
+/// system-reported scale factor; explicit values override it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ScaleOverride {
+    /// Use the system/compositor scale factor (default)
+    #[default]
+    Auto,
+    /// 1.25× scale
+    Scale125,
+    /// 1.5× scale
+    Scale150,
+    /// 2× scale
+    Scale200,
+    /// 3× scale
+    Scale300,
+    /// 4× scale
+    Scale400,
+}
+
+impl ScaleOverride {
+    /// Returns all available scale override options
+    #[must_use]
+    pub const fn all() -> &'static [Self] {
+        &[
+            Self::Auto,
+            Self::Scale125,
+            Self::Scale150,
+            Self::Scale200,
+            Self::Scale300,
+            Self::Scale400,
+        ]
+    }
+
+    /// Returns the display name for this scale override
+    #[must_use]
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::Auto => "Auto (system)",
+            Self::Scale125 => "125%",
+            Self::Scale150 => "150%",
+            Self::Scale200 => "200%",
+            Self::Scale300 => "300%",
+            Self::Scale400 => "400%",
+        }
+    }
+
+    /// Returns the dropdown index for this scale override
+    #[must_use]
+    pub const fn index(self) -> u32 {
+        match self {
+            Self::Auto => 0,
+            Self::Scale125 => 1,
+            Self::Scale150 => 2,
+            Self::Scale200 => 3,
+            Self::Scale300 => 4,
+            Self::Scale400 => 5,
+        }
+    }
+
+    /// Creates a scale override from a dropdown index
+    #[must_use]
+    pub const fn from_index(index: u32) -> Self {
+        match index {
+            1 => Self::Scale125,
+            2 => Self::Scale150,
+            3 => Self::Scale200,
+            4 => Self::Scale300,
+            5 => Self::Scale400,
+            _ => Self::Auto,
+        }
+    }
+
+    /// Returns the effective scale factor given the system-reported widget scale.
+    ///
+    /// For `Auto`, returns the system scale factor (minimum 1).
+    /// For explicit values, returns the fixed multiplier.
+    #[must_use]
+    pub fn effective_scale(self, system_scale: i32) -> f64 {
+        match self {
+            Self::Auto => f64::from(system_scale.max(1)),
+            Self::Scale125 => 1.25,
+            Self::Scale150 => 1.5,
+            Self::Scale200 => 2.0,
+            Self::Scale300 => 3.0,
+            Self::Scale400 => 4.0,
+        }
+    }
+}
+
 /// RDP protocol configuration
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RdpConfig {
@@ -1007,6 +1100,9 @@ pub struct RdpConfig {
     /// Keyboard layout override (Windows KLID). None = auto-detect.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub keyboard_layout: Option<u32>,
+    /// Display scale override for embedded mode
+    #[serde(default)]
+    pub scale_override: ScaleOverride,
 }
 
 impl RdpConfig {
@@ -1174,6 +1270,9 @@ pub struct VncConfig {
     /// Custom command-line arguments (for external client)
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub custom_args: Vec<String>,
+    /// Display scale override for embedded mode
+    #[serde(default)]
+    pub scale_override: ScaleOverride,
 }
 
 impl VncConfig {
@@ -1399,6 +1498,123 @@ impl Default for ZeroTrustConfig {
 }
 
 impl ZeroTrustConfig {
+    /// Validates provider-specific configuration fields.
+    ///
+    /// Returns `Ok(())` if the configuration is valid, or a `ProtocolError`
+    /// describing which required field is missing or invalid.
+    ///
+    /// # Errors
+    ///
+    /// Returns `ProtocolError::InvalidConfig` if required fields are empty.
+    #[allow(clippy::too_many_lines)] // Single match over 10 provider variants
+    pub fn validate(&self) -> crate::error::ProtocolResult<()> {
+        use crate::error::ProtocolError;
+
+        match &self.provider_config {
+            ZeroTrustProviderConfig::AwsSsm(cfg) => {
+                if cfg.target.trim().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "AWS SSM target cannot be empty".into(),
+                    ));
+                }
+            }
+            ZeroTrustProviderConfig::GcpIap(cfg) => {
+                if cfg.instance.trim().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "GCP IAP instance cannot be empty".into(),
+                    ));
+                }
+                if cfg.zone.trim().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "GCP IAP zone cannot be empty".into(),
+                    ));
+                }
+            }
+            ZeroTrustProviderConfig::AzureBastion(cfg) => {
+                if cfg.target_resource_id.trim().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "Azure Bastion target resource ID cannot be empty".into(),
+                    ));
+                }
+                if cfg.resource_group.trim().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "Azure Bastion resource group cannot be empty".into(),
+                    ));
+                }
+                if cfg.bastion_name.trim().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "Azure Bastion name cannot be empty".into(),
+                    ));
+                }
+            }
+            ZeroTrustProviderConfig::AzureSsh(cfg) => {
+                if cfg.vm_name.trim().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "Azure SSH VM name cannot be empty".into(),
+                    ));
+                }
+                if cfg.resource_group.trim().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "Azure SSH resource group cannot be empty".into(),
+                    ));
+                }
+            }
+            ZeroTrustProviderConfig::OciBastion(cfg) => {
+                if cfg.bastion_id.trim().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "OCI Bastion ID cannot be empty".into(),
+                    ));
+                }
+                if cfg.target_resource_id.trim().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "OCI target resource ID cannot be empty".into(),
+                    ));
+                }
+                if cfg.target_private_ip.trim().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "OCI target private IP cannot be empty".into(),
+                    ));
+                }
+            }
+            ZeroTrustProviderConfig::CloudflareAccess(cfg) => {
+                if cfg.hostname.trim().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "Cloudflare Access hostname cannot be empty".into(),
+                    ));
+                }
+            }
+            ZeroTrustProviderConfig::Teleport(cfg) => {
+                if cfg.host.trim().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "Teleport host cannot be empty".into(),
+                    ));
+                }
+            }
+            ZeroTrustProviderConfig::TailscaleSsh(cfg) => {
+                if cfg.host.trim().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "Tailscale SSH host cannot be empty".into(),
+                    ));
+                }
+            }
+            ZeroTrustProviderConfig::Boundary(cfg) => {
+                if cfg.target.trim().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "Boundary target cannot be empty".into(),
+                    ));
+                }
+            }
+            ZeroTrustProviderConfig::Generic(cfg) => {
+                if cfg.command_template.trim().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "Generic ZeroTrust command template cannot be empty".into(),
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// Builds the command and arguments for this Zero Trust connection
     ///
     /// Returns a tuple of (program, arguments) that can be used to spawn the process.

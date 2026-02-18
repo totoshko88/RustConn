@@ -120,6 +120,8 @@ pub struct RdpConfig {
     pub polling_interval_ms: u32,
     /// Keyboard layout override (Windows KLID). None = auto-detect.
     pub keyboard_layout: Option<u32>,
+    /// Display scale override for embedded mode
+    pub scale_override: rustconn_core::models::ScaleOverride,
 }
 
 impl Default for RdpConfig {
@@ -140,6 +142,7 @@ impl Default for RdpConfig {
             remember_window_position: true,
             polling_interval_ms: 16, // ~60 FPS
             keyboard_layout: None,
+            scale_override: rustconn_core::models::ScaleOverride::default(),
         }
     }
 }

@@ -170,6 +170,7 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                 client_mode: Default::default(),
                 performance_mode: Default::default(),
                 keyboard_layout: None,
+                scale_override: Default::default(),
             },
         )
 }
@@ -210,6 +211,7 @@ fn arb_vnc_config() -> impl Strategy<Value = VncConfig> {
             scaling: true,
             clipboard_enabled: true,
             custom_args,
+            scale_override: Default::default(),
         })
 }
 

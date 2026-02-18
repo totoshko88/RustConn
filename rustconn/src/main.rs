@@ -37,14 +37,12 @@
 #![allow(clippy::missing_errors_doc)] // Internal GUI functions don't need error docs
 #![allow(clippy::missing_panics_doc)] // Internal GUI functions don't need panic docs
 
-pub mod adaptive_tabs;
 pub mod alert;
 mod app;
 pub mod async_utils;
 #[cfg(feature = "rdp-audio")]
 pub mod audio;
 pub mod automation;
-pub mod dashboard;
 pub mod dialogs;
 pub mod display;
 pub mod embedded;
@@ -54,11 +52,8 @@ pub mod embedded_trait;
 pub mod embedded_vnc;
 pub mod embedded_vnc_types;
 pub mod embedded_vnc_ui;
-pub mod empty_state;
 pub mod external_window;
-pub mod floating_controls;
 pub mod i18n;
-pub mod loading;
 pub mod session;
 mod sidebar;
 mod sidebar_types;
@@ -73,9 +68,7 @@ pub mod validation;
 pub mod wayland_surface;
 mod window;
 
-// Error display utilities
 pub mod error;
-pub mod error_display;
 
 fn main() -> gtk4::glib::ExitCode {
     // Initialize internationalization (gettext)

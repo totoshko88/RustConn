@@ -10,7 +10,7 @@ use std::path::Path;
 use uuid::Uuid;
 
 use crate::error::ImportError;
-use crate::models::{Connection, ConnectionGroup, Credentials};
+use crate::models::{Connection, ConnectionGroup, Credentials, Snippet};
 use crate::progress::ProgressReporter;
 
 /// Maximum allowed import file size (50 MB).
@@ -93,6 +93,8 @@ pub struct ImportResult {
     pub errors: Vec<ImportError>,
     /// Credentials extracted during import, keyed by connection UUID
     pub credentials: HashMap<Uuid, Credentials>,
+    /// Snippets imported (native format only)
+    pub snippets: Vec<Snippet>,
 }
 
 impl ImportResult {

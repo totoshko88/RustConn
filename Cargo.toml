@@ -7,7 +7,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.8.7"
+version = "0.8.8"
 edition = "2021"
 authors = ["Anton Isaiev <totoshko88@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -50,6 +50,10 @@ reqwest = { version = "0.12", features = ["rustls-tls", "stream"], default-featu
 zip = "2.2"
 flate2 = "1.1"
 tar = "0.4"
+
+# TLS — native-tls 0.2.18 fixes the Tlsv13 compile bug from 0.2.17
+# See: https://github.com/rust-native-tls/rust-native-tls/issues/367
+native-tls = "0.2.18"
 
 # Testing
 proptest = "1.6"

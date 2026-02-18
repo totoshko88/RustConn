@@ -361,6 +361,9 @@ fn start_embedded_rdp_session(
     // Pass keyboard layout override if configured
     embedded_config.keyboard_layout = rdp_config.keyboard_layout;
 
+    // Pass scale override for HiDPI support
+    embedded_config.scale_override = rdp_config.scale_override;
+
     // Wrap in Rc to keep widget alive in notebook
     let embedded_widget = Rc::new(embedded_widget);
 

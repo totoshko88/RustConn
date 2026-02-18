@@ -807,8 +807,59 @@ pub fn start_zerotrust_connection(
     // Get Zero Trust config and build command
     let (program, args, provider_name, provider_key) =
         if let rustconn_core::ProtocolConfig::ZeroTrust(zt_config) = &conn.protocol_config {
+            // Validate configuration before launch
+            if let Err(e) = zt_config.validate() {
+                tracing::error!(?e, "ZeroTrust config validation failed for {}", conn_name);
+                if let Some(root) = notebook.widget().root() {
+                    if let Some(window) = root.downcast_ref::<gtk4::Window>() {
+                        crate::toast::show_toast_on_window(
+                            window,
+                            &format!("Invalid config: {e}"),
+                            crate::toast::ToastType::Error,
+                        );
+                    }
+                }
+                return None;
+            }
+
             let (prog, args) = zt_config.build_command(username.as_deref());
             let provider = zt_config.provider.display_name();
+
+            // Check CLI tool availability before launch
+            let cli = zt_config.provider.cli_command();
+            if !cli.is_empty() {
+                let cli_found = std::process::Command::new("which")
+                    .arg(cli)
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .status()
+                    .is_ok_and(|s| s.success());
+                if !cli_found {
+                    tracing::warn!(
+                        provider = %provider,
+                        cli,
+                        "ZeroTrust CLI tool not found"
+                    );
+                    if let Some(root) = notebook.widget().root() {
+                        if let Some(window) = root.downcast_ref::<gtk4::Window>() {
+                            crate::toast::show_toast_on_window(
+                                window,
+                                &format!("{provider} requires '{cli}' CLI tool"),
+                                crate::toast::ToastType::Error,
+                            );
+                        }
+                    }
+                    return None;
+                }
+            }
+
+            tracing::info!(
+                provider = %provider,
+                cli = %prog,
+                connection = %conn_name,
+                "Launching ZeroTrust connection"
+            );
+
             // Get provider key for icon matching
             let key = match zt_config.provider {
                 rustconn_core::models::ZeroTrustProvider::AwsSsm => "aws",

@@ -104,6 +104,21 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.8.8" date="2026-02-18">
+      <description>
+        <p>Version 0.8.8 - Security Audit, Dead Code Removal, RDP Hardening:</p>
+        <ul>
+          <li>Security: AES-256-GCM encryption replaces XOR obfuscation for stored credentials (transparent migration)</li>
+          <li>Security: FreeRDP password passed via stdin instead of command line (/from-stdin)</li>
+          <li>FreeRDP detection unified with Wayland-first priority (wlfreerdp preferred on Wayland sessions)</li>
+          <li>RDP build_args() decoupled from hardcoded binary — callers use runtime detection</li>
+          <li>ZeroTrust: provider-specific validation and CLI tool detection before launch</li>
+          <li>Native export/import now includes snippets (format version 2, backward compatible)</li>
+          <li>Removed dead code: Dashboard module, 5 unused GUI modules, tab_split_manager remnants</li>
+          <li>ZeroTrust connection launch logged via tracing (GUI and CLI)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.8.7" date="2026-02-17">
       <description>
         <p>Version 0.8.7 - Internationalization, Security Hardening, CLI Overhaul:</p>

@@ -15,7 +15,7 @@
 
 use crate::external_window::ExternalWindowManager;
 use crate::sidebar::ConnectionSidebar;
-use crate::split_view::{SplitViewBridge, TabSplitManager};
+use crate::split_view::SplitViewBridge;
 use crate::terminal::TerminalNotebook;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -36,11 +36,6 @@ pub type SharedNotebook = Rc<TerminalNotebook>;
 ///
 /// Uses `Rc` because GTK is single-threaded; no need for `Arc`.
 pub type SharedSplitView = Rc<SplitViewBridge>;
-
-/// Shared tab split manager type (new implementation)
-///
-/// Uses `Rc<RefCell<_>>` for single-threaded interior mutability.
-pub type SharedTabSplitManager = Rc<RefCell<TabSplitManager>>;
 
 /// Map of session IDs to their split view bridges
 ///

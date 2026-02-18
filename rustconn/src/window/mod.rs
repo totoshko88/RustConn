@@ -30,7 +30,7 @@ use vte4::prelude::*;
 use self::document_actions as doc_actions;
 use self::types::{
     get_protocol_string, SessionSplitBridges, SharedExternalWindowManager, SharedNotebook,
-    SharedSidebar, SharedSplitView, SharedTabSplitManager,
+    SharedSidebar, SharedSplitView,
 };
 use crate::alert;
 use crate::toast::ToastOverlay;
@@ -38,7 +38,7 @@ use crate::toast::ToastOverlay;
 use crate::dialogs::{ExportDialog, SettingsDialog};
 use crate::external_window::ExternalWindowManager;
 use crate::sidebar::{ConnectionItem, ConnectionSidebar};
-use crate::split_view::{SplitDirection, SplitViewBridge, TabSplitManager};
+use crate::split_view::{SplitDirection, SplitViewBridge};
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
 use rustconn_core::split::ColorPool;
@@ -58,8 +58,6 @@ pub struct MainWindow {
     sidebar: SharedSidebar,
     terminal_notebook: SharedNotebook,
     split_view: SharedSplitView,
-    /// New tab-scoped split manager (for migration to new split view system)
-    tab_split_manager: SharedTabSplitManager,
     /// Per-session split bridges - each session that has been split gets its own bridge
     /// Requirement 3: Each tab maintains its own independent split layout
     session_split_bridges: SessionSplitBridges,
@@ -146,10 +144,6 @@ impl MainWindow {
         let split_view = Rc::new(SplitViewBridge::with_color_pool(Rc::clone(
             &global_color_pool,
         )));
-
-        // Create new tab-scoped split manager (for migration to new split view system)
-        let tab_split_manager: SharedTabSplitManager =
-            Rc::new(RefCell::new(TabSplitManager::new()));
 
         // Create per-session split bridges map
         // Requirement 3: Each tab maintains its own independent split layout
@@ -270,7 +264,6 @@ impl MainWindow {
             sidebar,
             terminal_notebook,
             split_view,
-            tab_split_manager,
             session_split_bridges,
             global_color_pool,
             split_container,
@@ -4803,11 +4796,13 @@ impl MainWindow {
             .iter()
             .map(|g| (*g).clone())
             .collect();
+        let snippets: Vec<_> = state_ref.list_snippets().into_iter().cloned().collect();
         drop(state_ref);
 
         // Set data for export
         dialog.set_connections(connections);
         dialog.set_groups(groups);
+        dialog.set_snippets(snippets);
 
         let window_clone = window.clone();
         dialog.run(move |result| {
