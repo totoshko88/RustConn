@@ -1,6 +1,6 @@
 <project name="home:totoshko88:rustconn">
   <title>RustConn - Modern Connection Manager</title>
-  <description>GTK4-based connection manager for SSH, RDP, VNC, SPICE, and Telnet</description>
+  <description>GTK4-based connection manager for SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust</description>
   <person userid="totoshko88" role="maintainer"/>
   <person userid="totoshko88" role="bugowner"/>
   

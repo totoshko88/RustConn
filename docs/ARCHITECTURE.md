@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.8.5** | Last updated: February 2026
+**Version 0.8.8** | Last updated: February 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -496,6 +496,10 @@ if contains_sensitive_prompt(&output) {
 
 ## Credential Security
 
+### Stored Credential Encryption
+
+Backend passwords stored in settings (KeePassXC, Bitwarden, 1Password, Passbolt master passwords) are encrypted with AES-256-GCM + Argon2id key derivation, tied to a machine-specific key. Legacy XOR-obfuscated values are transparently migrated on first save.
+
 ### SecretString Usage
 
 All passwords and keys use `secrecy::SecretString`:
@@ -678,33 +682,35 @@ pub struct ProtocolCapabilities {
 
 See `TelnetProtocol`, `SerialProtocol`, or `KubernetesProtocol` for minimal reference implementations using external clients.
 
+### Zero Trust Integration
+
+Zero Trust connections (AWS SSM, GCP IAP, Teleport, Tailscale, Cloudflare, Boundary) have provider-specific validation and CLI detection:
+
+- `ZeroTrustConfig::validate()` checks required fields per provider before save
+- CLI tool availability (`aws`, `gcloud`, `tsh`, `tailscale`, etc.) is verified before connection launch
+- Missing tools show a toast and log a warning via `tracing`
+- All connection attempts and failures are logged in both GUI and CLI paths
+
 ### RDP Backend Selection
 
-The `backend` module (`rustconn-core/src/rdp_client/backend.rs`) centralizes RDP backend selection:
+The `detect` module (`rustconn/src/embedded_rdp/detect.rs`) provides unified FreeRDP detection with Wayland-first candidate ordering:
 
 ```rust
-// Detect available backends
-let selector = RdpBackendSelector::new();
-let backends = selector.detect_all();
+// Single detection function with Wayland-first priority
+let best = detect_best_freerdp();
+// Tries: wlfreerdp3 → wlfreerdp → xfreerdp3 → xfreerdp
 
-// Select best backend for embedded mode (IronRDP > wlfreerdp)
-let embedded = selector.select_embedded();
-
-// Select best backend for external mode (xfreerdp3 > xfreerdp > freerdp)
-let external = selector.select_external();
-
-// Auto-select based on context
-let best = selector.select_best();
-
-// Check embedded support
-if selector.has_embedded_support() {
-    // Can use native RDP rendering
-}
+// All detection paths delegate to detect_best_freerdp()
+// No more separate Wayland/X11 detection functions
 ```
 
 **Backend Priority:**
-- **Embedded:** IronRDP (native Rust) → wlfreerdp (Wayland)
-- **External:** xfreerdp3 → xfreerdp → freerdp (legacy)
+- **Embedded:** IronRDP (native Rust, always preferred)
+- **External Wayland-first:** wlfreerdp3 → wlfreerdp → xfreerdp3 → xfreerdp
+
+**Security:** FreeRDP passwords are passed via `/from-stdin` instead of `/p:{password}` command-line argument, preventing exposure via `/proc/PID/cmdline`.
+
+**HiDPI:** IronRDP sends `desktop_scale_factor` to the Windows server (e.g. 200 for 2× display), and mouse coordinates use CSS pixels matching GTK event coordinates.
 
 ## GTK4/Libadwaita Patterns
 
@@ -787,7 +793,6 @@ rustconn/src/
 │   └── ...                # Domain-specific window functionality
 ├── state.rs               # SharedAppState
 ├── async_utils.rs         # Async helpers (spawn_async, block_on_async_with_timeout)
-├── loading.rs             # LoadingOverlay, LoadingDialog components
 ├── sidebar/               # Connection tree (modular structure)
 │   ├── mod.rs             # Module exports, Sidebar struct
 │   ├── search.rs          # Search logic, predicates, history

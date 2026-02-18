@@ -433,23 +433,8 @@ pub fn get_arch() -> &'static str {
 /// FreeRDP does not provide pre-built Linux binaries - users should install via system package.
 pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
     // Protocol clients (optional for external fallback)
-    DownloadableComponent {
-        id: "xfreerdp",
-        name: "FreeRDP",
-        description: "Not available for download. Install via system package manager.",
-        category: ComponentCategory::ProtocolClient,
-        install_method: InstallMethod::Download,
-        // FreeRDP does not provide pre-built Linux binaries
-        download_url: None,
-        aarch64_url: None,
-        checksum: ChecksumPolicy::None,
-        pip_package: None,
-        size_hint: "N/A",
-        binary_name: "xfreerdp3",
-        install_subdir: "freerdp",
-        pinned_version: None,
-        works_in_sandbox: false,
-    },
+    // Note: FreeRDP is not listed here — it does not provide pre-built
+    // Linux binaries and must be installed via the system package manager.
     DownloadableComponent {
         id: "vncviewer",
         name: "TigerVNC Viewer",

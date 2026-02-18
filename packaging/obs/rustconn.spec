@@ -193,6 +193,18 @@ fi
 %changelog
 * Wed Feb 18 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.8-0
 - Version bump to 0.8.8
+- Security: AES-256-GCM replaces XOR obfuscation for stored credentials
+  (transparent migration from legacy format)
+- Security: FreeRDP password passed via stdin instead of command line
+- FreeRDP detection unified with Wayland-first priority
+- RDP build_args() decoupled from hardcoded binary name
+- ZeroTrust: provider-specific validation and CLI tool detection
+- Native export/import now includes snippets (format v2)
+- Removed dead code: Dashboard module, 5 unused GUI modules,
+  tab_split_manager remnants
+- Dependencies: native-tls 0.2.14→0.2.18, toml 0.8→1.0, zip 2.2→8.1
+- Fixed RDP HiDPI scaling on 4K displays (desktop_scale_factor)
+- Fixed RDP mouse coordinate mismatch on HiDPI displays
 
 * Mon Feb 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.7-0
 - Version bump to 0.8.7

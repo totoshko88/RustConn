@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.8.5** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.8.8** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, SFTP, Telnet, Serial, Kubernetes protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -126,7 +126,7 @@ Shows integration status in sidebar toolbar:
 | Protocol | Options |
 |----------|---------|
 | SSH | Auth method (password, publickey, keyboard-interactive, agent, security-key/FIDO2), proxy jump (Jump Host), agent forwarding, X11 forwarding, compression, startup command |
-| RDP | Resolution, color depth, audio, gateway, shared folders |
+| RDP | Resolution, color depth, audio, gateway, shared folders, scale override |
 | VNC | Encoding, compression, quality, view-only, scaling |
 | SPICE | TLS, USB redirection, clipboard, image compression |
 | Telnet | Host, port (default 23), extra arguments |
@@ -243,6 +243,8 @@ RustConn/
 |----------|--------------|
 | SSH | Embedded VTE terminal tab |
 | RDP | Embedded IronRDP or external FreeRDP |
+
+**RDP HiDPI Support:** On HiDPI/4K displays, the embedded IronRDP client automatically sends the correct scale factor to the Windows server (e.g. 200% on a 2× display), so remote UI elements render at the correct logical size. The Scale Override setting in the connection dialog allows manual adjustment if needed.
 | VNC | Embedded vnc-rs or external TigerVNC |
 | SPICE | Embedded spice-client or external remote-viewer |
 | Telnet | Embedded VTE terminal tab (external `telnet` client) |
@@ -723,6 +725,7 @@ Access via **Ctrl+,** or Menu → **Settings**
 
 - **Preferred Backend** — libsecret, KeePassXC, KDBX file, Bitwarden, 1Password, Passbolt
 - **Enable Fallback** — Use libsecret if primary unavailable
+- **Credential Encryption** — Backend master passwords stored in settings are encrypted with AES-256-GCM + Argon2id key derivation (machine-specific key); legacy XOR format is migrated transparently on first save
 - **KDBX Path** — KeePass database file (for KDBX backend)
 - **KDBX Authentication** — Password and/or key file
 - **Bitwarden Settings:**
@@ -1067,6 +1070,8 @@ rustconn-cli secret verify-keepass -d ~/vault.kdbx -k ~/key.key
 1. Check IronRDP/vnc-rs features enabled
 2. For external: verify FreeRDP/TigerVNC installed
 3. Wayland vs X11 compatibility
+4. HiDPI/4K: IronRDP sends scale factor automatically; use Scale Override in connection dialog if remote UI is too small or too large
+5. FreeRDP passwords are passed via stdin (`/from-stdin`), not command-line arguments
 
 ### Session Restore Issues
 

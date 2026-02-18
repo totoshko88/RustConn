@@ -5,7 +5,7 @@ Manage remote connections easily.
 RustConn is a connection orchestrator for Linux with a GTK4/Wayland-native interface.
 It brings SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust connections under one roof — with embedded Rust clients where possible and seamless integration with external tools where needed.
 
-[![Demo](https://img.youtube.com/vi/jYcCPAUShI0/maxresdefault.jpg)](https://youtu.be/jYcCPAUShI0)
+[![Demo](https://img.youtube.com/vi/DpYM0UbR9TM/maxresdefault.jpg)](https://youtu.be/DpYM0UbR9TM)
 
 ## Features
 
