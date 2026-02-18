@@ -1714,7 +1714,14 @@ fn extract_zip(data: &[u8], dest: &Path) -> CliDownloadResult<()> {
             .by_index(i)
             .map_err(|e| CliDownloadError::ExtractionFailed(e.to_string()))?;
 
-        let outpath = dest.join(file.mangled_name());
+        // enclosed_name() validates against path traversal (e.g. "../../../etc/passwd")
+        let relative = file.enclosed_name().ok_or_else(|| {
+            CliDownloadError::ExtractionFailed(format!(
+                "zip entry has unsafe path: {:?}",
+                file.name()
+            ))
+        })?;
+        let outpath = dest.join(relative);
 
         if file.is_dir() {
             std::fs::create_dir_all(&outpath)?;
