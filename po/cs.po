@@ -4,7 +4,7 @@ msgstr ""
 "Project-Id-Version: rustconn 0.8.7\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-02-17 18:31+0200\n"
-"PO-Revision-Date: 2026-02-17 00:00+0000\n"
+"PO-Revision-Date: 2026-02-18 00:00+0000\n"
 "Last-Translator: p-bo <https://github.com/p-bo>\n"
 "Language-Team: Czech\n"
 "Language: cs\n"
@@ -37,7 +37,7 @@ msgstr ""
 #. Translators: Replace this with your name and language, e.g. "John Doe (German)"
 #: ../rustconn/src/app.rs:1014
 msgid "translator-credits"
-msgstr "p-bo https://github.com/p-bo (Čeština)"
+msgstr "p-bo https://github.com/p-bo (čeština)"
 
 #: ../rustconn/src/app.rs:1021
 msgid "User Guide"
@@ -104,7 +104,7 @@ msgstr "Chyba"
 
 #: ../rustconn/src/dashboard.rs:350 ../rustconn/src/dashboard.rs:352
 msgid "Refresh Dashboard"
-msgstr "Obnovit přehled"
+msgstr "Znovu načíst přehled"
 
 #: ../rustconn/src/dashboard.rs:464
 msgid "No active sessions"
@@ -113,7 +113,7 @@ msgstr "Žádné aktivní relace"
 #: ../rustconn/src/dashboard.rs:523 ../rustconn/src/split_view/bridge.rs:1466
 #: ../rustconn/src/window/edit_dialogs.rs:1283
 msgid "Host"
-msgstr "Host"
+msgstr "Hostitel"
 
 #: ../rustconn/src/dashboard.rs:531
 msgid "Duration"
@@ -167,11 +167,11 @@ msgstr "Vytvořit"
 
 #: ../rustconn/src/dialogs/cluster.rs:112
 msgid "Cluster Details"
-msgstr "Podrobnosti clusteru"
+msgstr "Podrobnosti o clusteru"
 
 #: ../rustconn/src/dialogs/cluster.rs:152
 msgid "Cluster name cannot be empty"
-msgstr "Název clusteru nesmí být prázdný"
+msgstr "Název clusteru nemůže být prázdný"
 
 #: ../rustconn/src/dialogs/cluster.rs:169
 msgid "Please select at least one connection"
@@ -183,7 +183,7 @@ msgstr "Připojení"
 
 #: ../rustconn/src/dialogs/cluster.rs:208
 msgid "Select connections to include in this cluster"
-msgstr "Vyberte připojení pro zahrnutí do tohoto clusteru"
+msgstr "Vyberte připojení která zahrnout do tohoto clusteru"
 
 #: ../rustconn/src/dialogs/cluster.rs:232 ../rustconn/src/sidebar_ui.rs:244
 msgid "Select All"
@@ -206,7 +206,7 @@ msgid ""
 "Clusters allow you to connect to multiple servers simultaneously and "
 "optionally broadcast input to all sessions."
 msgstr ""
-"Clustery umožňují připojení k více serverům současně a volitelně vysílání "
+"Clustery umožňují připojení k vícero serverům souběžně a volitelně vysílání "
 "vstupu do všech relací."
 
 #: ../rustconn/src/dialogs/cluster.rs:551
@@ -223,7 +223,7 @@ msgstr "Smazat cluster"
 
 #: ../rustconn/src/dialogs/cluster.rs:596
 msgid "No clusters defined. Click 'New Cluster' to create one."
-msgstr "Žádné clustery. Klikněte na «Nový cluster» pro vytvoření."
+msgstr "Nejsou definovány žádné clustery. Klikněte na „Nový cluster“ a nějaký vytvořte."
 
 #: ../rustconn/src/dialogs/connection/dialog.rs:1117
 msgid "Testing..."
@@ -297,11 +297,11 @@ msgstr "Žádné sdílené složky"
 
 #: ../rustconn/src/dialogs/connection/dialog.rs:3458
 msgid "No variables defined"
-msgstr "Žádné definované proměnné"
+msgstr "Nedefinovány žádné proměnné"
 
 #: ../rustconn/src/dialogs/connection/dialog.rs:3492
 msgid "No custom properties"
-msgstr "Žádné vlastní vlastnosti"
+msgstr "Žádné uživatelsky určené vlastnosti"
 
 #: ../rustconn/src/dialogs/connection/dialog.rs:3576
 msgid "No expect rules"
@@ -396,7 +396,7 @@ msgid ""
 "                 Enter the password to open it."
 msgstr ""
 "Tento dokument je chráněn heslem.\n"
-"                 Zadejte heslo pro otevření."
+"                 Pro jeho otevření zadejte heslo."
 
 #: ../rustconn/src/dialogs/document.rs:424
 msgid "Save Document"
@@ -416,11 +416,11 @@ msgid ""
 "                 You will need to enter the password each time you open it."
 msgstr ""
 "Ochrana heslem šifruje obsah dokumentu.\n"
-"                 Heslo budete muset zadat při každém otevření."
+"                 Heslo bude třeba zadat při každém otevření."
 
 #: ../rustconn/src/dialogs/document.rs:599
 msgid "Enable password protection"
-msgstr "Povolit ochranu heslem"
+msgstr "Chránit heslem"
 
 #: ../rustconn/src/dialogs/document.rs:609
 msgid "New Password"
@@ -463,12 +463,12 @@ msgid ""
 "Remmina exports to a directory (one file per connection).\n"
 "                 Other formats export to a single file."
 msgstr ""
-"Remmina exportuje do adresáře (jeden soubor na připojení).\n"
+"Remmina exportuje do složky (zvlášť soubor pro každé připojení).\n"
 "                 Ostatní formáty exportují do jednoho souboru."
 
 #: ../rustconn/src/dialogs/export.rs:225
 msgid "Select output file or directory..."
-msgstr "Vyberte výstupní soubor nebo adresář…"
+msgstr "Vyberte výstupní soubor nebo složku…"
 
 #: ../rustconn/src/dialogs/export.rs:231
 msgid "Browse..."
@@ -480,12 +480,12 @@ msgstr "Výstup"
 
 #: ../rustconn/src/dialogs/export.rs:237
 msgid "Destination path"
-msgstr "Cílová cesta"
+msgstr "Popis umístění cíle"
 
 #: ../rustconn/src/dialogs/export.rs:247
 #: ../rustconn/src/dialogs/password_generator.rs:251
 msgid "Options"
-msgstr "Možnosti"
+msgstr "Předvolby"
 
 #: ../rustconn/src/dialogs/export.rs:252
 msgid "Include passwords"
@@ -512,7 +512,7 @@ msgid ""
 "Including passwords may expose sensitive data. Only enable if you trust the "
 "destination."
 msgstr ""
-"Zahrnutí hesel může odhalit citlivá data. Povolte pouze pokud důvěřujete "
+"Zahrnutí hesel může odhalit citlivé údaje. Povolte pouze pokud důvěřujete "
 "cíli."
 
 #: ../rustconn/src/dialogs/export.rs:279
@@ -545,7 +545,7 @@ msgstr "Podrobnosti"
 
 #: ../rustconn/src/dialogs/export.rs:588
 msgid "Select Export Directory"
-msgstr "Vybrat adresář exportu"
+msgstr "Vybrat složku exportu"
 
 #: ../rustconn/src/dialogs/export.rs:602
 msgid "Select Export File"
@@ -553,7 +553,7 @@ msgstr "Vybrat soubor exportu"
 
 #: ../rustconn/src/dialogs/export.rs:682
 msgid "Select output directory..."
-msgstr "Vyberte výstupní adresář…"
+msgstr "Vyberte výstupní složku…"
 
 #: ../rustconn/src/dialogs/export.rs:684
 msgid "Select output file..."
@@ -561,7 +561,7 @@ msgstr "Vyberte výstupní soubor…"
 
 #: ../rustconn/src/dialogs/export.rs:729
 msgid "Please select an output file or directory"
-msgstr "Vyberte výstupní soubor nebo adresář"
+msgstr "Vyberte výstupní soubor nebo složku"
 
 #: ../rustconn/src/dialogs/export.rs:772
 msgid "Export complete"
@@ -581,15 +581,15 @@ msgstr "Hotovo"
 
 #: ../rustconn/src/dialogs/export.rs:788
 msgid "Export failed"
-msgstr "Export selhal"
+msgstr "Export se nezdařil"
 
 #: ../rustconn/src/dialogs/export.rs:789
 msgid "Export Failed"
-msgstr "Export selhal"
+msgstr "Export se nezdařil"
 
 #: ../rustconn/src/dialogs/flatpak_components.rs:65
 msgid "Flatpak Components"
-msgstr "Komponenty Flatpak"
+msgstr "Součásti Flatpak"
 
 #: ../rustconn/src/dialogs/flatpak_components.rs:132
 msgid ""
@@ -608,7 +608,7 @@ msgid ""
 "Optional for external RDP/VNC/SPICE connections.              Embedded "
 "clients (IronRDP, vnc-rs) are preferred."
 msgstr ""
-"Volitelné pro externí připojení RDP/VNC/SPICE.              Preferovány jsou "
+"Volitelné pro externí připojení RDP/VNC/SPICE.              Upřednostňovány jsou "
 "vestavěné klienty (IronRDP, vnc-rs)."
 
 #: ../rustconn/src/dialogs/flatpak_components.rs:155
@@ -623,7 +623,7 @@ msgstr ""
 
 #: ../rustconn/src/dialogs/flatpak_components.rs:166
 msgid "Password Manager CLIs"
-msgstr "CLI správců hesel"
+msgstr "CLI rozhraní správců hesel"
 
 #: ../rustconn/src/dialogs/flatpak_components.rs:167
 msgid "Required for Bitwarden and 1Password integration"
@@ -663,7 +663,7 @@ msgstr "Není k dispozici ke stažení"
 #: ../rustconn/src/dialogs/statistics.rs:144
 #: ../rustconn/src/dialogs/statistics.rs:244
 msgid "Failed"
-msgstr "Selhalo"
+msgstr "Nezdařilo se"
 
 #: ../rustconn/src/dialogs/history.rs:27 ../rustconn/src/sidebar_ui.rs:294
 msgid "Connection History"
@@ -684,7 +684,7 @@ msgstr "Vymazat historii"
 
 #: ../rustconn/src/dialogs/import.rs:51
 msgid "Import Connections"
-msgstr "Importovat připojení"
+msgstr "Naimportovat připojení"
 
 #: ../rustconn/src/dialogs/import.rs:68
 msgid "Import"
@@ -724,11 +724,11 @@ msgstr "Import dokončen"
 
 #: ../rustconn/src/dialogs/import.rs:896
 msgid "Select SSH Config File"
-msgstr "Vybrat soubor SSH konfigurace"
+msgstr "Vybrat soubor s nastaveními pro SSH"
 
 #: ../rustconn/src/dialogs/import.rs:986
 msgid "Select Asbru-CM YAML File"
-msgstr "Vybrat soubor Asbru-CM YAML"
+msgstr "Vybrat YAML soubor Asbru-CM"
 
 #: ../rustconn/src/dialogs/import.rs:1074
 msgid "Select Ansible Inventory File"
@@ -760,20 +760,20 @@ msgstr "Protokoly relací"
 
 #: ../rustconn/src/dialogs/log_viewer.rs:116
 msgid "Refresh log list"
-msgstr "Obnovit seznam protokolů"
+msgstr "Znovu načíst seznam záznamu relací"
 
 #: ../rustconn/src/dialogs/log_viewer.rs:147
 msgid "No log files found"
-msgstr "Nenalezeny žádné soubory protokolů"
+msgstr "Nenalezeny žádné soubory záznamu relací"
 
 #: ../rustconn/src/dialogs/log_viewer.rs:181
 msgid "Log Files"
-msgstr "Soubory protokolů"
+msgstr "Soubory záznamu relací"
 
 #: ../rustconn/src/dialogs/log_viewer.rs:192
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:103
 msgid "Log Content"
-msgstr "Obsah protokolu"
+msgstr "Obsah záznamu relace"
 
 #: ../rustconn/src/dialogs/log_viewer.rs:316 ../rustconn/src/empty_state.rs:142
 #: ../rustconn/src/loading.rs:50 ../rustconn/src/split_view/adapter.rs:1237
@@ -790,7 +790,7 @@ msgstr "Generátor hesel"
 #: ../rustconn/src/embedded_spice.rs:240 ../rustconn/src/embedded_trait.rs:202
 #: ../rustconn/src/embedded_vnc.rs:157
 msgid "Copy"
-msgstr "Kopírovat"
+msgstr "Zkopírovat"
 
 #: ../rustconn/src/dialogs/password_generator.rs:81
 msgid "Generated Password"
@@ -798,11 +798,11 @@ msgstr "Vygenerované heslo"
 
 #: ../rustconn/src/dialogs/password_generator.rs:107
 msgid "Strength Analysis"
-msgstr "Analýza síly"
+msgstr "Analýza odolnosti"
 
 #: ../rustconn/src/dialogs/password_generator.rs:130
 msgid "Strength"
-msgstr "Síla"
+msgstr "Odolnost"
 
 #: ../rustconn/src/dialogs/password_generator.rs:143
 msgid "Entropy"
@@ -814,7 +814,7 @@ msgstr "Míra náhodnosti"
 
 #: ../rustconn/src/dialogs/password_generator.rs:157
 msgid "Crack time"
-msgstr "Čas prolomení"
+msgstr "Doba potřebná k prolomení"
 
 #: ../rustconn/src/dialogs/password_generator.rs:158
 msgid "At 10 billion guesses/sec"
@@ -866,7 +866,7 @@ msgstr "Vyloučit nejednoznačné"
 
 #: ../rustconn/src/dialogs/password_generator.rs:257
 msgid "Avoid 0O, 1lI to prevent confusion"
-msgstr "Vyhnout se 0O, 1lI pro zamezení záměny"
+msgstr "Vyhnout se 0O, 1lI aby se zamezilo záměnám"
 
 #: ../rustconn/src/dialogs/password_generator.rs:266
 msgid "Security Tips"
@@ -926,7 +926,7 @@ msgstr "Vestavěné"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:25
 msgid "Logging"
-msgstr "Protokolování"
+msgstr "Zaznamenávání relace"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:31
 msgid "General"
@@ -934,19 +934,19 @@ msgstr "Obecné"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:32
 msgid "Configure session logging"
-msgstr "Nastavit protokolování relací"
+msgstr "Nastavit záznam z relací"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:38
 msgid "Persist logs"
-msgstr "Ukládat protokoly"
+msgstr "Ukládat záznamy z relací"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:39
 msgid "Save session logs to disk"
-msgstr "Ukládat protokoly relací na disk"
+msgstr "Ukládat záznamy z relací na disk"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:53
 msgid "Directory"
-msgstr "Adresář"
+msgstr "Složka"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:68
 msgid "Retention"
@@ -954,15 +954,15 @@ msgstr "Uchovávání"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:69
 msgid "Days to keep logs"
-msgstr "Počet dní uchovávání protokolů"
+msgstr "Počet dní uchovávání záznamů relací"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:83
 msgid "Open Logs Directory"
-msgstr "Otevřít adresář protokolů"
+msgstr "Otevřít složku záznamů relací"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:104
 msgid "Select what to include in logs"
-msgstr "Vyberte, co zahrnout do protokolů"
+msgstr "Vyberte, co zahrnout do záznamů relací"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:114
 msgid "Activity"
@@ -982,7 +982,7 @@ msgstr "Příkazy a stisky kláves"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:140
 msgid "Terminal Output"
-msgstr "Výstup terminálu"
+msgstr "Výstup z terminálu"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:141
 msgid "Full session transcript"
@@ -990,11 +990,11 @@ msgstr "Úplný přepis relace"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:151
 msgid "Session Logging"
-msgstr "Protokolování relací"
+msgstr "Zaznamenávat relací"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:152
 msgid "Format options for session logs"
-msgstr "Možnosti formátu protokolů relací"
+msgstr "Předvolby formátu záznamu relací"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:157
 msgid "Timestamps"
@@ -1002,7 +1002,7 @@ msgstr "Časová razítka"
 
 #: ../rustconn/src/dialogs/settings/logging_tab.rs:158
 msgid "Prepend [HH:MM:SS] to each line in session logs"
-msgstr "Přidat [HH:MM:SS] na začátek každého řádku v protokolech"
+msgstr "Přidat [HH:MM:SS] na začátek každého řádku záznamů"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:267
 msgid "Secrets"
@@ -1010,7 +1010,7 @@ msgstr "Tajemství"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:273
 msgid "Secret Backend"
-msgstr "Backend tajemství"
+msgstr "Tajemství pro podpůrnou vrstvu"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:274
 msgid "Choose how passwords are stored"
@@ -1018,7 +1018,7 @@ msgstr "Zvolte způsob ukládání hesel"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:291
 msgid "Backend"
-msgstr "Backend"
+msgstr "Podpůrná vrstva"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:292
 msgid "Primary password storage method"
@@ -1030,11 +1030,11 @@ msgstr "Verze"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:312
 msgid "Enable fallback"
-msgstr "Povolit zálohu"
+msgstr "Povolit náhradní způsob"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:313
 msgid "Use libsecret if primary backend unavailable"
-msgstr "Použít libsecret pokud primární backend není dostupný"
+msgstr "Použít libsecret pokud primární podpůrná vrstva není dostupná"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:340
 msgid "Detecting..."
@@ -1092,7 +1092,7 @@ msgstr "Pro automatizaci nebo metody 2FA nepodporované CLI (FIDO2, Duo)"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:439
 msgid "Client ID"
-msgstr "ID klienta"
+msgstr "Identif. klienta"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:441
 msgid "From Bitwarden web vault → Settings → Security → Keys"
@@ -1104,7 +1104,7 @@ msgstr "Tajný klíč klienta"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:457
 msgid "Keep this secret safe"
-msgstr "Uchovejte toto tajemství v bezpečí"
+msgstr "Uchovávejte toto tajemství v bezpečí"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:477
 msgid "Unlock"
@@ -1124,7 +1124,7 @@ msgstr "1Password"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:585
 msgid "Configure 1Password CLI integration"
-msgstr "Nastavit integraci 1Password CLI"
+msgstr "Nastavit napojení na 1Password CLI"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:596
 msgid "Service Account Token"
@@ -1149,7 +1149,7 @@ msgstr "Stav účtu"
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:680
 msgid "Sign in with 'op signin' in terminal or use biometric unlock"
 msgstr ""
-"Přihlaste se pomocí «op signin» v terminálu nebo biometrickým odemknutím"
+"Přihlaste se pomocí „op signin“ v terminálu nebo biometrickým odemknutím"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:734
 msgid "Passbolt"
@@ -1157,7 +1157,7 @@ msgstr "Passbolt"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:735
 msgid "Configure Passbolt CLI integration"
-msgstr "Nastavit integraci Passbolt CLI"
+msgstr "Nastavit napojení na Passbolt CLI"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:745
 msgid "Server URL"
@@ -1189,7 +1189,7 @@ msgstr "Stav serveru"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:839
 msgid "Configure with 'passbolt configure' in terminal"
-msgstr "Nastavte pomocí «passbolt configure» v terminálu"
+msgstr "Nastavte pomocí „passbolt configure“ v terminálu"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:878
 msgid "KeePass Database"
@@ -1199,11 +1199,11 @@ msgstr "Databáze KeePass"
 msgid ""
 "Configure KDBX file integration (works with KeePassXC, GNOME Secrets, etc.)"
 msgstr ""
-"Nastavit integraci KDBX souborů (funguje s KeePassXC, GNOME Secrets atd.)"
+"Nastavit začlenění KDBX souborů (funguje s KeePassXC, GNOME Secrets atd.)"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:886
 msgid "KDBX Integration"
-msgstr "Integrace KDBX"
+msgstr "Začlenění KDBX"
 
 #: ../rustconn/src/dialogs/settings/secrets_tab.rs:887
 msgid "Enable direct database access"
@@ -1259,7 +1259,7 @@ msgstr "Stav"
 
 #: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:59
 msgid "Socket"
-msgstr "Socket"
+msgstr "Soket"
 
 #: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:65
 msgid "Start Agent"
@@ -1292,7 +1292,7 @@ msgstr "Načíst klíč ze souboru"
 
 #: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:125
 msgid "Available Key Files"
-msgstr "Dostupné soubory klíčů"
+msgstr "Soubory klíčů k dispozici"
 
 #: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:126
 msgid "Key files found in ~/.ssh/"
@@ -1304,7 +1304,7 @@ msgstr "Načítání klíčů…"
 
 #: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:228
 msgid "No keys loaded"
-msgstr "Žádné načtené klíče"
+msgstr "Nenačteny žádné klíče"
 
 #: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:229
 msgid "Add keys using ssh-add or the button above"
@@ -1313,7 +1313,7 @@ msgstr "Přidejte klíče pomocí ssh-add nebo tlačítka výše"
 #: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:247
 #: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:258
 msgid "Agent not running"
-msgstr "Agent neběží"
+msgstr "Agent není spuštěný"
 
 #: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:248
 #: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:259
@@ -1330,15 +1330,15 @@ msgstr "Nenalezeny žádné soubory SSH klíčů"
 
 #: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:309
 msgid "Generate keys with ssh-keygen"
-msgstr "Vygenerujte klíče pomocí ssh-keygen"
+msgstr "Nechte vytvořit klíče pomocí ssh-keygen"
 
 #: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:357
 msgid "Failed to scan ~/.ssh/ directory"
-msgstr "Nepodařilo se prohledat adresář ~/.ssh/"
+msgstr "Nepodařilo se prohledat složku ~/.ssh/"
 
 #: ../rustconn/src/dialogs/settings/ssh_agent_tab.rs:419
 msgid "Enter passphrase (leave empty if key has no passphrase)"
-msgstr "Zadejte heslo (ponechte prázdné pokud klíč nemá heslo)"
+msgstr "Zadejte heslo (nevyplňujte, pokud jím klíč není opatřen)"
 
 #: ../rustconn/src/dialogs/settings/terminal_tab.rs:32
 msgid "Terminal"
@@ -1570,11 +1570,11 @@ msgstr "Hledat zkratky…"
 
 #: ../rustconn/src/dialogs/snippet.rs:64 ../rustconn/src/empty_state.rs:109
 msgid "New Snippet"
-msgstr "Nový útržek"
+msgstr "Nový útržek příkazů"
 
 #: ../rustconn/src/dialogs/snippet.rs:167
 msgid "Snippet Info"
-msgstr "Info o snippetu"
+msgstr "Informace o útržku příkazů"
 
 #: ../rustconn/src/dialogs/snippet.rs:210
 msgid "Command"
@@ -1582,7 +1582,7 @@ msgstr "Příkaz"
 
 #: ../rustconn/src/dialogs/snippet.rs:211
 msgid "Use ${variable_name} for placeholders"
-msgstr "Použijte ${variable_name} pro zástupné symboly"
+msgstr "Coby zástupná vyjádření použijte ${variable_name}"
 
 #: ../rustconn/src/dialogs/snippet.rs:233
 #: ../rustconn/src/dialogs/variables.rs:147
@@ -1591,7 +1591,7 @@ msgstr "Proměnné"
 
 #: ../rustconn/src/dialogs/snippet.rs:234
 msgid "Variables are auto-detected from command"
-msgstr "Proměnné jsou automaticky detekovány z příkazu"
+msgstr "Proměnné jsou automaticky zjišťovány z příkazu"
 
 #: ../rustconn/src/dialogs/snippet.rs:255
 #: ../rustconn/src/dialogs/variables.rs:174
@@ -1617,7 +1617,7 @@ msgstr "Výchozí hodnota"
 
 #: ../rustconn/src/dialogs/snippet.rs:360
 msgid "Edit Snippet"
-msgstr "Upravit snippet"
+msgstr "Upravit útržek příkazů"
 
 #: ../rustconn/src/dialogs/statistics.rs:29
 #: ../rustconn/src/dialogs/statistics.rs:122
@@ -1643,7 +1643,7 @@ msgstr "Úspěšnost"
 
 #: ../rustconn/src/dialogs/statistics.rs:163
 msgid "Total time connected"
-msgstr "Celkový čas připojení"
+msgstr "Celková doba připojení"
 
 #: ../rustconn/src/dialogs/statistics.rs:176
 msgid "Last connected"
@@ -1667,7 +1667,7 @@ msgstr "Celkem relací"
 
 #: ../rustconn/src/dialogs/statistics.rs:252
 msgid "Total time"
-msgstr "Celkový čas"
+msgstr "Celková doba"
 
 #: ../rustconn/src/dialogs/statistics.rs:265
 msgid "Per-Connection"
@@ -1740,7 +1740,7 @@ msgstr "Nalezené shody"
 
 #: ../rustconn/src/dialogs/terminal_search.rs:335
 msgid "No matches found"
-msgstr "Žádné shody nenalezeny"
+msgstr "Nenalezeny žádné shody"
 
 #: ../rustconn/src/dialogs/terminal_search.rs:338
 msgid "Invalid regex pattern"
@@ -1788,7 +1788,7 @@ msgstr "Tajné (maskovat hodnotu)"
 
 #: ../rustconn/src/dialogs/wol.rs:29 ../rustconn/src/sidebar_ui.rs:133
 msgid "Wake On LAN"
-msgstr "Wake On LAN"
+msgstr "Probudit po síti (WoL)"
 
 #: ../rustconn/src/dialogs/wol.rs:47 ../rustconn/src/window/sessions.rs:332
 msgid "Send"
@@ -1820,7 +1820,7 @@ msgstr "MAC adresa"
 
 #: ../rustconn/src/dialogs/wol.rs:91
 msgid "Broadcast Address"
-msgstr "Broadcastová adresa"
+msgstr "Adresa všesměrového vysílání"
 
 #: ../rustconn/src/dialogs/wol.rs:96
 #: ../rustconn/src/window/edit_dialogs.rs:1295
@@ -2037,7 +2037,7 @@ msgstr "Přejmenovat"
 
 #: ../rustconn/src/sidebar_ui.rs:92
 msgid "Duplicate"
-msgstr "Duplikovat"
+msgstr "Zduplikovat"
 
 #: ../rustconn/src/sidebar_ui.rs:105 ../rustconn/src/sidebar_ui.rs:235
 msgid "Move to Group..."
@@ -2045,7 +2045,7 @@ msgstr "Přesunout do skupiny…"
 
 #: ../rustconn/src/sidebar_ui.rs:119
 msgid "Run Snippet..."
-msgstr "Spustit snippet…"
+msgstr "Spustit útržek příkazů…"
 
 #: ../rustconn/src/sidebar_ui.rs:148
 msgid "Open SFTP"
@@ -2217,7 +2217,7 @@ msgstr "Rozdělit vodorovně"
 
 #: ../rustconn/src/split_view/bridge.rs:1771
 msgid "Next tab"
-msgstr "Další záložka"
+msgstr "Další karta"
 
 #: ../rustconn/src/split_view/bridge.rs:1792
 msgid "Performance"
@@ -2229,7 +2229,7 @@ msgstr "Inteligentní mezipaměť vyhledávání"
 
 #: ../rustconn/src/split_view/bridge.rs:1797
 msgid "Lazy loading for trees"
-msgstr "Líné načítání stromů"
+msgstr "Postupné donačítání stromů"
 
 #: ../rustconn/src/split_view/bridge.rs:1798
 msgid "Virtual scrolling"
@@ -2249,7 +2249,7 @@ msgstr "Dvojklikem na připojení v postranním panelu začněte"
 
 #: ../rustconn/src/split_view/bridge.rs:1994
 msgid "All tabs are already displayed in this split view"
-msgstr "Všechny záložky jsou již zobrazeny v tomto rozděleném zobrazení"
+msgstr "Všechny záložky jsou už zobrazeny v tomto rozděleném zobrazení"
 
 #: ../rustconn/src/split_view/bridge.rs:2033
 msgid "Select a tab to display"
@@ -2261,15 +2261,15 @@ msgstr "{} je povinné"
 
 #: ../rustconn/src/validation.rs:79
 msgid "{} must be at least {} characters"
-msgstr "{} musí mít alespoň {} znaků"
+msgstr "je třeba, aby {} mělo alespoň {} znaků"
 
 #: ../rustconn/src/validation.rs:95
 msgid "{} must be at most {} characters"
-msgstr "{} musí mít nejvýše {} znaků"
+msgstr "je třeba, aby {} mělo nejvýše {} znaků"
 
 #: ../rustconn/src/validation.rs:110
 msgid "Host is required"
-msgstr "Hostitel je povinný"
+msgstr "Hostitele je třeba vyplnit"
 
 #: ../rustconn/src/validation.rs:120
 msgid "Invalid hostname format"
@@ -2277,15 +2277,15 @@ msgstr "Neplatný formát názvu hostitele"
 
 #: ../rustconn/src/validation.rs:122
 msgid "Hostname cannot start or end with a hyphen"
-msgstr "Název hostitele nesmí začínat ani končit pomlčkou"
+msgstr "Název hostitele nemůže začínat ani končit pomlčkou"
 
 #: ../rustconn/src/validation.rs:135
 msgid "Port is required"
-msgstr "Port je povinný"
+msgstr "Port je třeba vyplnit"
 
 #: ../rustconn/src/validation.rs:140
 msgid "Port must be greater than 0"
-msgstr "Port musí být větší než 0"
+msgstr "Je třeba, aby číslo portu bylo vyšší než 0 (nula)"
 
 #: ../rustconn/src/window/connection_dialogs.rs:100
 #: ../rustconn/src/window/templates.rs:413
@@ -2300,7 +2300,7 @@ msgstr "Chyba při vytváření připojení"
 #: ../rustconn/src/window/connection_dialogs.rs:227
 #: ../rustconn/src/window/edit_dialogs.rs:442
 msgid "Group Details"
-msgstr "Podrobnosti skupiny"
+msgstr "Podrobnosti o skupině"
 
 #: ../rustconn/src/window/connection_dialogs.rs:231
 #: ../rustconn/src/window/edit_dialogs.rs:235
@@ -2311,7 +2311,7 @@ msgstr "Název"
 #: ../rustconn/src/window/connection_dialogs.rs:252
 #: ../rustconn/src/window/edit_dialogs.rs:515
 msgid "(None - Root Level)"
-msgstr "(Žádný - Kořenová úroveň)"
+msgstr "(Žádný – kořenová úroveň)"
 
 #: ../rustconn/src/window/connection_dialogs.rs:277
 #: ../rustconn/src/window/edit_dialogs.rs:542
@@ -2320,7 +2320,7 @@ msgstr "Nadřazený"
 
 #: ../rustconn/src/window/connection_dialogs.rs:278
 msgid "Optional - leave empty for root level"
-msgstr "Volitelné - ponechte prázdné pro kořenovou úroveň"
+msgstr "Volitelné – pokud má být kořenová úroveň, nevyplňujte"
 
 #: ../rustconn/src/window/connection_dialogs.rs:287
 #: ../rustconn/src/window/edit_dialogs.rs:553
@@ -2373,7 +2373,7 @@ msgstr "Nejprve zadejte název skupiny"
 
 #: ../rustconn/src/window/connection_dialogs.rs:402
 msgid "Vault not configured"
-msgstr "Trezor není nakonfigurován"
+msgstr "Trezor není nastaven"
 
 #: ../rustconn/src/window/connection_dialogs.rs:431
 #: ../rustconn/src/window/connection_dialogs.rs:496
@@ -2384,7 +2384,7 @@ msgstr "Trezor není nakonfigurován"
 #: ../rustconn/src/window/edit_dialogs.rs:788
 #: ../rustconn/src/window/edit_dialogs.rs:795
 msgid "No password found for this group"
-msgstr "Pro tuto skupinu nebylo nalezeno heslo"
+msgstr "Pro tuto skupinu nenalezeno heslo"
 
 #: ../rustconn/src/window/connection_dialogs.rs:436
 #: ../rustconn/src/window/connection_dialogs.rs:508
@@ -2416,7 +2416,7 @@ msgstr "Poznámky, kontakty, info o projektu"
 #: ../rustconn/src/window/connection_dialogs.rs:568
 #: ../rustconn/src/window/edit_dialogs.rs:876
 msgid "Group name cannot be empty"
-msgstr "Název skupiny nesmí být prázdný"
+msgstr "Název skupiny je třeba vyplnit"
 
 #: ../rustconn/src/window/connection_dialogs.rs:643
 msgid "Error Updating Group"
@@ -2428,7 +2428,7 @@ msgstr "Import úspěšný"
 
 #: ../rustconn/src/window/connection_dialogs.rs:727
 msgid "Import Failed"
-msgstr "Import selhal"
+msgstr "Import se nezdařil"
 
 #: ../rustconn/src/window/document_actions.rs:93
 msgid "Failed to open document."
@@ -2478,12 +2478,12 @@ msgstr "Přejmenovat připojení"
 
 #: ../rustconn/src/window/edit_dialogs.rs:261
 msgid "Name cannot be empty"
-msgstr "Název nesmí být prázdný"
+msgstr "Název je třeba vyplnit"
 
 #: ../rustconn/src/window/edit_dialogs.rs:277
 #: ../rustconn/src/window/edit_dialogs.rs:911
 msgid "Group with name '{}' already exists"
-msgstr "Skupina s názvem «{}» již existuje"
+msgstr "Skupina s názvem „{}“ už existuje"
 
 #: ../rustconn/src/window/edit_dialogs.rs:402
 msgid "Edit Group"
@@ -2499,7 +2499,7 @@ msgstr "KeePass není povolen"
 
 #: ../rustconn/src/window/edit_dialogs.rs:688
 msgid "KeePass database not configured"
-msgstr "Databáze KeePass není nakonfigurována"
+msgstr "Databáze KeePass není nastavena"
 
 #: ../rustconn/src/window/edit_dialogs.rs:811
 msgid "Select KeePass, Keyring, or Bitwarden to load password"
@@ -2519,7 +2519,7 @@ msgstr "Šablona"
 
 #: ../rustconn/src/window/edit_dialogs.rs:1279
 msgid "hostname or IP"
-msgstr "název hostitele nebo IP"
+msgstr "název hostitele nebo IP adresa"
 
 #: ../rustconn/src/window/edit_dialogs.rs:1301
 #: ../rustconn/src/window/edit_dialogs.rs:1312
@@ -2534,7 +2534,7 @@ msgstr "Přesunout"
 
 #: ../rustconn/src/window/groups.rs:75
 msgid "Move '{}' to:"
-msgstr "Přesunout «{}» do:"
+msgstr "Přesunout „{}“ do:"
 
 #: ../rustconn/src/window/groups.rs:113
 #: ../rustconn/src/window/operations.rs:704
@@ -2563,17 +2563,17 @@ msgid ""
 "\n"
 "This will also delete {} connection(s) in this group."
 msgstr ""
-"Opravdu chcete smazat skupinu «{}»?\n"
+"Opravdu chcete skupinu „{}“ smazat?\n"
 "\n"
-"Tím se smaže i {} připojení v této skupině."
+"Tím budou smazáno i {} připojení v této skupině."
 
 #: ../rustconn/src/window/operations.rs:60
 msgid "Are you sure you want to delete the empty group '{}'?"
-msgstr "Opravdu chcete smazat prázdnou skupinu «{}»?"
+msgstr "Opravdu chcete smazat prázdnou skupinu „{}“?"
 
 #: ../rustconn/src/window/operations.rs:66
 msgid "Are you sure you want to delete the connection '{}'?"
-msgstr "Opravdu chcete smazat připojení «{}»?"
+msgstr "Opravdu chcete připojení „{}“?"
 
 #: ../rustconn/src/window/operations.rs:76
 msgid "Delete {}?"
@@ -2581,7 +2581,7 @@ msgstr "Smazat {}?"
 
 #: ../rustconn/src/window/operations.rs:111
 msgid "Deleted '{}'"
-msgstr "«{}» smazáno"
+msgstr "„{}“ smazáno"
 
 #: ../rustconn/src/window/operations.rs:117
 msgid "Error Deleting"
@@ -2589,11 +2589,11 @@ msgstr "Chyba při mazání"
 
 #: ../rustconn/src/window/operations.rs:181
 msgid "Connection duplicated"
-msgstr "Připojení duplikováno"
+msgstr "Připojení zduplikováno"
 
 #: ../rustconn/src/window/operations.rs:190
 msgid "Failed to duplicate connection"
-msgstr "Nepodařilo se duplikovat připojení"
+msgstr "Nepodařilo se zduplikovat připojení"
 
 #: ../rustconn/src/window/operations.rs:224
 msgid "Connection copied to clipboard"
@@ -2605,7 +2605,7 @@ msgstr "Nepodařilo se zkopírovat připojení"
 
 #: ../rustconn/src/window/operations.rs:251
 msgid "Nothing to paste - copy a connection first"
-msgstr "Není co vložit - nejprve zkopírujte připojení"
+msgstr "Není co vložit – nejprve zkopírujte připojení"
 
 #: ../rustconn/src/window/operations.rs:269
 msgid "Connection pasted"
@@ -2633,7 +2633,7 @@ msgstr "Smazat vše"
 
 #: ../rustconn/src/window/operations.rs:407
 msgid "Are you sure you want to delete {}?"
-msgstr "Opravdu chcete smazat {}?"
+msgstr "Opravdu chcete {} smazat?"
 
 #: ../rustconn/src/window/operations.rs:434
 msgid "Connections in deleted groups will become ungrouped."
@@ -2718,7 +2718,7 @@ msgstr "Aktivní relace"
 
 #: ../rustconn/src/window/sessions.rs:50
 msgid "Refresh"
-msgstr "Obnovit"
+msgstr "Načíst znovu"
 
 #: ../rustconn/src/window/sessions.rs:94
 msgid "Switch To"
@@ -2759,23 +2759,23 @@ msgstr "Přidat nový řádek (Enter)"
 
 #: ../rustconn/src/window/snippets.rs:33
 msgid "Snippet Created"
-msgstr "Snippet vytvořen"
+msgstr "útržek příkazů vytvořen"
 
 #: ../rustconn/src/window/snippets.rs:34
 msgid "Snippet has been saved successfully."
-msgstr "Snippet byl úspěšně uložen."
+msgstr "Útržek příkazů byl úspěšně uložen."
 
 #: ../rustconn/src/window/snippets.rs:38
 msgid "Error Creating Snippet"
-msgstr "Chyba při vytváření snippetu"
+msgstr "Chyba při vytváření útržku příkazů"
 
 #: ../rustconn/src/window/snippets.rs:54
 msgid "Manage Snippets"
-msgstr "Spravovat snippety"
+msgstr "Spravovat útržky příkazů"
 
 #: ../rustconn/src/window/snippets.rs:88 ../rustconn/src/window/snippets.rs:340
 msgid "Search snippets..."
-msgstr "Hledat snippety…"
+msgstr "Hledat útřžky příkazů…"
 
 #: ../rustconn/src/window/snippets.rs:118
 #: ../rustconn/src/window/snippets.rs:443
@@ -2784,15 +2784,15 @@ msgstr "Spustit"
 
 #: ../rustconn/src/window/snippets.rs:217
 msgid "Delete Snippet?"
-msgstr "Smazat snippet?"
+msgstr "Smazat útržek příkazů?"
 
 #: ../rustconn/src/window/snippets.rs:218
 msgid "Are you sure you want to delete this snippet?"
-msgstr "Opravdu chcete smazat tento snippet?"
+msgstr "Opravdu chcete tento útržek příkazů smazat?"
 
 #: ../rustconn/src/window/snippets.rs:322
 msgid "Execute Snippet"
-msgstr "Spustit snippet"
+msgstr "Spustit útržek příkazů"
 
 #: ../rustconn/src/window/snippets.rs:409
 msgid "No Active Terminal"
@@ -2800,7 +2800,7 @@ msgstr "Žádný aktivní terminál"
 
 #: ../rustconn/src/window/snippets.rs:410
 msgid "Please open a terminal session first before executing a snippet."
-msgstr "Nejprve otevřete relaci terminálu před spuštěním snippetu."
+msgstr "Před spuštěním útržku příkazů nejprve otevřete relaci terminálu."
 
 #: ../rustconn/src/window/snippets.rs:434
 msgid "Enter Variable Values"
@@ -2817,7 +2817,7 @@ msgstr "Smazat šablonu?"
 
 #: ../rustconn/src/window/templates.rs:152
 msgid "Are you sure you want to delete this template?"
-msgstr "Opravdu chcete smazat tuto šablonu?"
+msgstr "Opravdu chcete tuto šablonu smazat?"
 
 #: ../rustconn/src/window/templates.rs:292
 msgid "Host: {}"
@@ -2849,7 +2849,7 @@ msgstr "Šablony SPICE"
 
 #: ../rustconn/src/window/ui.rs:32
 msgid "Toggle Sidebar (F9)"
-msgstr "Přepnout postranní panel (F9)"
+msgstr "(Ne)zobrazovat postranní panel (F9)"
 
 #: ../rustconn/src/window/ui.rs:39
 msgid "Quick Connect (Ctrl+Shift+Q)"
@@ -2982,7 +2982,7 @@ msgstr "Ukončit"
 #~ msgstr "Štítky"
 
 #~ msgid "Color Scheme"
-#~ msgstr "Barevné schéma"
+#~ msgstr "Schéma barev"
 
 #~ msgid "SSH"
 #~ msgstr "SSH"
@@ -3007,9 +3007,9 @@ msgstr "Ukončit"
 
 #~ msgid "{} connection imported"
 #~ msgid_plural "{} connections imported"
-#~ msgstr[0] "{} připojení importováno"
-#~ msgstr[1] "{} připojení importována"
-#~ msgstr[2] "{} připojení importováno"
+#~ msgstr[0] "{} připojení naimportováno"
+#~ msgstr[1] "{} připojení naimportována"
+#~ msgstr[2] "{} připojení naimportováno"
 
 #~ msgid "Modern Connection Manager for Linux"
 #~ msgstr "Moderní správce připojení pro Linux"
