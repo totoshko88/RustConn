@@ -7,7 +7,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.8.8"
+version = "0.8.9"
 edition = "2021"
 authors = ["Anton Isaiev <totoshko88@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -22,7 +22,8 @@ futures-util = "0.3"
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-serde_yaml = "0.9"
+# serde_yaml is deprecated; serde_yaml_ng is a maintained drop-in fork
+serde_yaml = { version = "0.9", package = "serde_yaml_ng" }
 toml = "1.0"
 
 # GTK4 and VTE

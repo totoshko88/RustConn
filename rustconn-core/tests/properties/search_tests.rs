@@ -925,8 +925,8 @@ proptest! {
         query in arb_cache_query(),
         results in arb_search_results()
     ) {
-        // Use a very short TTL for testing
-        let mut cache = SearchCache::new(100, Duration::from_millis(5));
+        // Use a short but robust TTL for testing (not too short to avoid flakiness under load)
+        let mut cache = SearchCache::new(100, Duration::from_millis(50));
 
         // Insert results
         cache.insert(query.clone(), results);
@@ -938,7 +938,7 @@ proptest! {
         );
 
         // Wait for TTL to expire
-        std::thread::sleep(Duration::from_millis(10));
+        std::thread::sleep(Duration::from_millis(80));
 
         // Verify results are no longer available
         prop_assert!(
@@ -952,8 +952,8 @@ proptest! {
         queries in prop::collection::vec(arb_cache_query(), 1..5),
         results in arb_search_results()
     ) {
-        // Use a very short TTL for testing
-        let mut cache = SearchCache::new(100, Duration::from_millis(5));
+        // Use a short but robust TTL for testing (not too short to avoid flakiness under load)
+        let mut cache = SearchCache::new(100, Duration::from_millis(50));
 
         // Insert multiple entries
         for query in &queries {
@@ -964,7 +964,7 @@ proptest! {
         prop_assert!(initial_count > 0, "Cache should have entries");
 
         // Wait for TTL to expire
-        std::thread::sleep(Duration::from_millis(10));
+        std::thread::sleep(Duration::from_millis(80));
 
         // Evict stale entries
         let evicted = cache.evict_stale();

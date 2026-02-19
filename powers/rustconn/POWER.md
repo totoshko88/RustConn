@@ -33,7 +33,7 @@ GTK4/libadwaita GUI, Wayland-first. Rust 2021 edition, MSRV 1.88, three-crate Ca
 Виконай послідовно і поверни результат (pass/fail + помилки якщо є):
 1. cargo fmt --check
 2. cargo clippy --all-targets (має бути 0 warnings)
-3. cargo test --workspace (timeout 90s, тести йдуть ~50s)
+3. cargo test --workspace (timeout 240s, тести йдуть ~120s)
 Якщо fmt або clippy мають помилки — виправ автоматично і перезапусти.
 ```
 

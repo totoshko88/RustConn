@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.8.8
+Version:        0.8.9
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -191,6 +191,15 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Thu Feb 19 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.9-0
+- Version bump to 0.8.9
+- Dependencies: serde_yaml replaced with serde_yaml_ng 0.9 (maintained fork)
+  via Cargo rename — all source code unchanged
+- Internal: architecture audit completed (rustconn_audit_report.md)
+
+* Thu Feb 19 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.9-0
+- Version bump to 0.8.9
+
 * Wed Feb 18 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.8-0
 - Version bump to 0.8.8
 - Security: AES-256-GCM replaces XOR obfuscation for stored credentials

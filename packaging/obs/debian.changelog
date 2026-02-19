@@ -1,3 +1,17 @@
+rustconn (0.8.9-1) unstable; urgency=medium
+
+  * Dependencies: serde_yaml replaced with serde_yaml_ng 0.9 (maintained fork)
+    via Cargo rename — all source code unchanged
+  * Internal: architecture audit completed (rustconn_audit_report.md)
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Thu, 19 Feb 2026 12:00:00 +0200
+
+rustconn (0.8.9-1) unstable; urgency=medium
+
+  * Version bump to 0.8.9
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Thu, 19 Feb 2026 12:00:00 +0200
+
 rustconn (0.8.8-1) unstable; urgency=medium
 
   * Security: AES-256-GCM replaces XOR obfuscation for stored credentials

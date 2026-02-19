@@ -5,6 +5,14 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.9] - 2026-02-19
+
+### Dependencies
+- **serde_yaml** replaced with **serde_yaml_ng** 0.9 — maintained community fork of deprecated `serde_yaml`; transparent Cargo rename (`package = "serde_yaml_ng"`) keeps all source code unchanged
+
+### Internal
+- Architecture audit completed (`rustconn_audit_report.md`) — 51 findings across 4 domains
+
 ## [0.8.8] - 2026-02-19
 
 ### Security

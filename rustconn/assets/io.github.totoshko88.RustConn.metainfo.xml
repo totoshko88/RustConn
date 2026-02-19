@@ -104,6 +104,15 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.8.9" date="2026-02-19">
+      <description>
+        <p>Version 0.8.9 - Dependency Migration and Architecture Audit:</p>
+        <ul>
+          <li>Dependencies: serde_yaml replaced with serde_yaml_ng 0.9 (maintained community fork) via Cargo rename</li>
+          <li>Internal: comprehensive architecture audit completed (51 findings across 4 domains)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.8.8" date="2026-02-18">
       <description>
         <p>Version 0.8.8 - Security Audit, Dead Code Removal, RDP Hardening:</p>
