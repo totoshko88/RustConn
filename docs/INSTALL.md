@@ -39,9 +39,42 @@ RustConn requests the following permissions for full functionality:
 
 **Note:** SSH client is included in the Flatpak runtime. For RDP/VNC/SPICE connections, RustConn uses embedded clients (IronRDP, vnc-rs). Telnet requires the `telnet` client on the host. External clients (xfreerdp, vncviewer, remote-viewer) and cloud CLIs (aws, gcloud, az) should be installed on the host system if needed for fallback.
 
-Or install from a local bundle:
+### Install from CI Bundle
+
+CI builds a `.flatpak` bundle on every tagged release and on manual `workflow_dispatch` runs.
+The bundle is available in two places:
+
+- **GitHub Release** — file `RustConn-<version>.flatpak` attached to the release
+- **CI Artifacts** — file `RustConn.flatpak` in the Actions → Flatpak workflow run artifacts
+
+#### Prerequisites
+
+The bundle requires GNOME Platform runtime 49. Install it once:
+
 ```bash
-flatpak install RustConn-*.flatpak
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install flathub org.gnome.Platform//49
+```
+
+#### Install
+
+```bash
+flatpak install --user RustConn-0.8.8.flatpak
+```
+
+Confirm runtime dependency installation if prompted.
+
+#### Update
+
+Install a newer bundle with the same command — Flatpak will offer to replace the existing version.
+
+#### Extra filesystem access
+
+The sandbox grants read-only access to `~/.ssh` and read-write to `~/Downloads` by default.
+To expose additional directories:
+
+```bash
+flatpak override --user --filesystem=/path/to/dir io.github.totoshko88.RustConn
 ```
 
 ## Snap (Strict Confinement)
