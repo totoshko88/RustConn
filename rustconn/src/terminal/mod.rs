@@ -742,10 +742,10 @@ impl TerminalNotebook {
         host: &str,
         port: u16,
         extra_args: &[&str],
-        backspace_sends: rustconn_core::TelnetBackspaceSends,
-        delete_sends: rustconn_core::TelnetDeleteSends,
+        backspace_sends: rustconn_core::models::TelnetBackspaceSends,
+        delete_sends: rustconn_core::models::TelnetDeleteSends,
     ) -> bool {
-        use rustconn_core::{TelnetBackspaceSends, TelnetDeleteSends};
+        use rustconn_core::models::{TelnetBackspaceSends, TelnetDeleteSends};
         use vte4::EraseBinding;
 
         // Apply keyboard bindings directly on the VTE terminal

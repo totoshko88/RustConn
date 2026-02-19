@@ -104,7 +104,13 @@ impl Protocol for VncProtocol {
                 args.push("-quality".to_string());
                 args.push(quality.to_string());
             }
-            args.extend(vnc_config.custom_args.clone());
+            for arg in &vnc_config.custom_args {
+                if arg.contains('\0') || arg.contains('\n') {
+                    tracing::warn!(arg = %arg, "Skipping suspicious VNC custom arg");
+                    continue;
+                }
+                args.push(arg.clone());
+            }
         }
 
         let display = if connection.port >= 5900 {

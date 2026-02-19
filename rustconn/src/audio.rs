@@ -22,7 +22,7 @@
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Stream, StreamConfig};
-use rustconn_core::AudioFormatInfo;
+use rustconn_core::rdp_client::AudioFormatInfo;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};

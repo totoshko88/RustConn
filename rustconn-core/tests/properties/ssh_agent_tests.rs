@@ -393,7 +393,7 @@ proptest! {
             x11_forwarding: false,
             compression: false,
             custom_options: std::collections::HashMap::new(),
-            startup_command: None, jump_host_id: None, sftp_enabled: false,
+            startup_command: None, jump_host_id: None, sftp_enabled: false, port_forwards: Vec::new(),
         };
 
         // Create connection
@@ -461,7 +461,7 @@ proptest! {
             x11_forwarding: false,
             compression: false,
             custom_options: std::collections::HashMap::new(),
-            startup_command: None, jump_host_id: None, sftp_enabled: false,
+            startup_command: None, jump_host_id: None, sftp_enabled: false, port_forwards: Vec::new(),
         };
 
         let connection = Connection::new(

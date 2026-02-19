@@ -619,6 +619,54 @@ impl SecretSettings {
         self.bitwarden_password_encrypted = None;
     }
 
+    /// Encrypts the Bitwarden API credentials (client_id + client_secret) for storage
+    pub fn encrypt_bitwarden_api_credentials(&mut self) {
+        use secrecy::ExposeSecret;
+        let key = Self::get_machine_key();
+        if let Some(ref client_id) = self.bitwarden_client_id {
+            if let Ok(encrypted) = encrypt_credential(client_id.expose_secret().as_bytes(), &key) {
+                self.bitwarden_client_id_encrypted = Some(hex_encode(&encrypted));
+            }
+        }
+        if let Some(ref client_secret) = self.bitwarden_client_secret {
+            if let Ok(encrypted) =
+                encrypt_credential(client_secret.expose_secret().as_bytes(), &key)
+            {
+                self.bitwarden_client_secret_encrypted = Some(hex_encode(&encrypted));
+            }
+        }
+    }
+
+    /// Decrypts the stored Bitwarden API credentials (client_id + client_secret)
+    ///
+    /// Transparently handles both AES-256-GCM (new) and XOR (legacy) formats.
+    /// Returns true if at least one credential was decrypted successfully.
+    pub fn decrypt_bitwarden_api_credentials(&mut self) -> bool {
+        let key = Self::get_machine_key();
+        let mut any_decrypted = false;
+        if let Some(ref encrypted) = self.bitwarden_client_id_encrypted {
+            if let Some(decoded) = hex_decode(encrypted) {
+                if let Ok(plaintext) = decrypt_credential(&decoded, &key) {
+                    if let Ok(s) = String::from_utf8(plaintext) {
+                        self.bitwarden_client_id = Some(SecretString::from(s));
+                        any_decrypted = true;
+                    }
+                }
+            }
+        }
+        if let Some(ref encrypted) = self.bitwarden_client_secret_encrypted {
+            if let Some(decoded) = hex_decode(encrypted) {
+                if let Ok(plaintext) = decrypt_credential(&decoded, &key) {
+                    if let Ok(s) = String::from_utf8(plaintext) {
+                        self.bitwarden_client_secret = Some(SecretString::from(s));
+                        any_decrypted = true;
+                    }
+                }
+            }
+        }
+        any_decrypted
+    }
+
     /// Encrypts the 1Password service account token for storage using AES-256-GCM
     pub fn encrypt_onepassword_token(&mut self) {
         if let Some(ref token) = self.onepassword_service_account_token {

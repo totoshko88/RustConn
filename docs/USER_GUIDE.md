@@ -125,7 +125,7 @@ Shows integration status in sidebar toolbar:
 
 | Protocol | Options |
 |----------|---------|
-| SSH | Auth method (password, publickey, keyboard-interactive, agent, security-key/FIDO2), proxy jump (Jump Host), agent forwarding, X11 forwarding, compression, startup command |
+| SSH | Auth method (password, publickey, keyboard-interactive, agent, security-key/FIDO2), proxy jump (Jump Host), agent forwarding, X11 forwarding, compression, startup command, port forwarding (local/remote/dynamic) |
 | RDP | Resolution, color depth, audio, gateway, shared folders, scale override |
 | VNC | Encoding, compression, quality, view-only, scaling |
 | SPICE | TLS, USB redirection, clipboard, image compression |
@@ -344,6 +344,37 @@ rustconn-cli add --name "Router" --protocol serial --device /dev/ttyUSB0 --baud-
 rustconn-cli connect "Router"
 rustconn-cli serial --device /dev/ttyACM0 --baud-rate 115200
 ```
+
+### SSH Port Forwarding
+
+Forward TCP ports through SSH tunnels. Three modes are supported:
+
+| Mode | SSH Flag | Description |
+|------|----------|-------------|
+| Local (`-L`) | `-L local_port:remote_host:remote_port` | Forward a local port to a remote destination through the tunnel |
+| Remote (`-R`) | `-R remote_port:local_host:local_port` | Forward a remote port back to a local destination |
+| Dynamic (`-D`) | `-D local_port` | SOCKS proxy on a local port |
+
+**Configure Port Forwarding:**
+1. Edit an SSH connection → **SSH** tab
+2. Scroll to **Port Forwarding** section
+3. Click **Add Rule**
+4. Select direction (Local, Remote, Dynamic)
+5. Enter local port, remote host, and remote port (remote host/port not needed for Dynamic)
+6. Add multiple rules as needed
+7. Click **Save**
+
+**Examples:**
+- Local: forward local port 8080 to remote `db-server:5432` → access the database at `localhost:8080`
+- Remote: expose local port 3000 on the remote server's port 9000
+- Dynamic: create a SOCKS proxy on local port 1080
+
+**Import Support:**
+Port forwarding rules are automatically imported from:
+- SSH config (`LocalForward`, `RemoteForward`, `DynamicForward` directives)
+- Remmina SSH profiles
+- Asbru-CM configurations
+- MobaXterm sessions
 
 ### Kubernetes Shell
 

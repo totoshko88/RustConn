@@ -35,7 +35,8 @@ use gtk4::{
     ListItem, ListView, Orientation, PolicyType, ScrolledWindow, SearchEntry,
     SignalListItemFactory, TreeExpander, TreeListModel, TreeListRow, Widget,
 };
-use rustconn_core::{Debouncer, LazyGroupLoader, SelectionState as CoreSelectionState};
+use rustconn_core::connection::{LazyGroupLoader, SelectionState as CoreSelectionState};
+use rustconn_core::Debouncer;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;

@@ -587,6 +587,103 @@ pub struct SerialConfig {
     pub custom_args: Vec<String>,
 }
 
+/// Direction of an SSH port forward
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum PortForwardDirection {
+    /// Local port forwarding (`-L`): binds a local port and forwards traffic
+    /// through the SSH tunnel to a remote destination
+    #[default]
+    Local,
+    /// Remote port forwarding (`-R`): binds a port on the remote host and
+    /// forwards traffic back through the tunnel to a local destination
+    Remote,
+    /// Dynamic port forwarding (`-D`): opens a local SOCKS proxy that routes
+    /// traffic through the SSH tunnel
+    Dynamic,
+}
+
+impl std::fmt::Display for PortForwardDirection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Local => write!(f, "Local (-L)"),
+            Self::Remote => write!(f, "Remote (-R)"),
+            Self::Dynamic => write!(f, "Dynamic (-D)"),
+        }
+    }
+}
+
+/// A single SSH port forwarding rule
+///
+/// Supports local (`-L`), remote (`-R`), and dynamic (`-D`) forwarding.
+/// For dynamic forwarding only `local_port` is used (SOCKS proxy).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PortForward {
+    /// Forwarding direction
+    #[serde(default)]
+    pub direction: PortForwardDirection,
+    /// Local port to bind
+    pub local_port: u16,
+    /// Remote host to forward to (unused for dynamic)
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub remote_host: String,
+    /// Remote port to forward to (unused for dynamic)
+    #[serde(default)]
+    pub remote_port: u16,
+}
+
+impl PortForward {
+    /// Builds the SSH command-line argument for this port forward rule
+    #[must_use]
+    pub fn to_ssh_arg(&self) -> Vec<String> {
+        match self.direction {
+            PortForwardDirection::Local => {
+                vec![
+                    "-L".to_string(),
+                    format!(
+                        "{}:{}:{}",
+                        self.local_port, self.remote_host, self.remote_port
+                    ),
+                ]
+            }
+            PortForwardDirection::Remote => {
+                vec![
+                    "-R".to_string(),
+                    format!(
+                        "{}:{}:{}",
+                        self.local_port, self.remote_host, self.remote_port
+                    ),
+                ]
+            }
+            PortForwardDirection::Dynamic => {
+                vec!["-D".to_string(), self.local_port.to_string()]
+            }
+        }
+    }
+
+    /// Returns a human-readable summary of this forwarding rule
+    #[must_use]
+    pub fn display_summary(&self) -> String {
+        match self.direction {
+            PortForwardDirection::Local => {
+                format!(
+                    "L {} → {}:{}",
+                    self.local_port, self.remote_host, self.remote_port
+                )
+            }
+            PortForwardDirection::Remote => {
+                format!(
+                    "R {} → {}:{}",
+                    self.local_port, self.remote_host, self.remote_port
+                )
+            }
+            PortForwardDirection::Dynamic => {
+                format!("D {} (SOCKS)", self.local_port)
+            }
+        }
+    }
+}
+
 /// SSH authentication method
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
@@ -656,6 +753,9 @@ pub struct SshConfig {
     /// (always true — SFTP is available for all SSH connections)
     #[serde(default = "default_true")]
     pub sftp_enabled: bool,
+    /// Port forwarding rules (local, remote, dynamic)
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub port_forwards: Vec<PortForward>,
 }
 
 fn default_true() -> bool {
@@ -779,6 +879,11 @@ impl SshConfig {
         for (key, value) in &self.custom_options {
             args.push("-o".to_string());
             args.push(format!("{key}={value}"));
+        }
+
+        // Add port forwarding rules
+        for pf in &self.port_forwards {
+            args.extend(pf.to_ssh_arg());
         }
 
         args
@@ -1744,15 +1849,24 @@ impl ZeroTrustConfig {
             }
             ZeroTrustProviderConfig::Generic(cfg) => {
                 // Parse the command template
-                let cmd = cfg.command_template.clone();
+                let mut cmd = cfg.command_template.clone();
+                // Embed custom_args into the shell command (appending after -c
+                // would make them positional parameters $0/$1 which are ignored
+                // unless the template explicitly references them)
+                if !self.custom_args.is_empty() {
+                    cmd.push(' ');
+                    cmd.push_str(&self.custom_args.join(" "));
+                }
                 // Simple shell execution
                 let a = vec!["-c".to_string(), cmd];
                 ("sh".to_string(), a)
             }
         };
 
-        // Append custom args
-        args.1.extend(self.custom_args.clone());
+        // Append custom args (skip for Generic — already embedded above)
+        if !matches!(self.provider_config, ZeroTrustProviderConfig::Generic(_)) {
+            args.1.extend(self.custom_args.clone());
+        }
 
         args
     }

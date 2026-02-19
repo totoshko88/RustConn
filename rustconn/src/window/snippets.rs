@@ -399,7 +399,7 @@ pub fn show_snippet_picker(window: &gtk4::Window, state: SharedAppState, noteboo
 pub fn execute_snippet(
     parent: &impl IsA<gtk4::Window>,
     notebook: &SharedNotebook,
-    snippet: &rustconn_core::Snippet,
+    snippet: &rustconn_core::models::Snippet,
 ) {
     // Check if there's an active terminal
     if notebook.get_active_terminal().is_none() {
@@ -413,7 +413,7 @@ pub fn execute_snippet(
     }
 
     // Check if snippet has variables that need values
-    let variables = rustconn_core::SnippetManager::extract_variables(&snippet.command);
+    let variables = rustconn_core::snippet::SnippetManager::extract_variables(&snippet.command);
 
     if variables.is_empty() {
         // No variables, execute directly
@@ -428,7 +428,7 @@ pub fn execute_snippet(
 pub fn show_variable_input_dialog(
     parent: &impl IsA<gtk4::Window>,
     notebook: &SharedNotebook,
-    snippet: &rustconn_core::Snippet,
+    snippet: &rustconn_core::models::Snippet,
 ) {
     let var_window = adw::Window::builder()
         .title(i18n("Enter Variable Values"))
@@ -458,7 +458,7 @@ pub fn show_variable_input_dialog(
         .build();
 
     let mut entries: Vec<(String, gtk4::Entry)> = Vec::new();
-    let variables = rustconn_core::SnippetManager::extract_variables(&snippet.command);
+    let variables = rustconn_core::snippet::SnippetManager::extract_variables(&snippet.command);
 
     for (i, var_name) in variables.iter().enumerate() {
         let label = Label::builder()
@@ -509,7 +509,8 @@ pub fn show_variable_input_dialog(
             values.insert(name.clone(), entry.text().to_string());
         }
 
-        let substituted = rustconn_core::SnippetManager::substitute_variables(&command, &values);
+        let substituted =
+            rustconn_core::snippet::SnippetManager::substitute_variables(&command, &values);
         notebook_clone.send_text(&format!("{substituted}\n"));
         window_clone.close();
     });

@@ -601,8 +601,13 @@ impl VncSessionWidget {
             }
         }
 
-        // Add custom arguments from config
+        // Add custom arguments from config (filter unsafe characters
+        // consistent with VncProtocol::build_command in rustconn-core)
         for arg in &config.custom_args {
+            if arg.contains('\0') || arg.contains('\n') {
+                tracing::warn!(arg = %arg, "Skipping VNC custom arg with unsafe characters");
+                continue;
+            }
             cmd.arg(arg);
         }
 

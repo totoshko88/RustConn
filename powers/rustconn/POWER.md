@@ -20,7 +20,7 @@ GTK4/libadwaita GUI, Wayland-first. Rust 2021 edition, MSRV 1.88, three-crate Ca
 1. Створити нову гілку від main
 2. Підняти версію та створити запис в CHANGELOG.md (використай steering `release.md`)
 3. Поступово реалізувати фічі
-4. Після кожної фічі — автоматичні перевірки (fmt, clippy, test) через сабагент
+4. Після кожної фічі — автоматичні перевірки через хук `rustconn-checks` (agentStop)
 5. Ручне тестування GUI
 6. Merge в main
 7. `git tag -a vX.Y.Z -m "Release X.Y.Z" && git push origin main --tags` — тригерить CI
@@ -33,11 +33,13 @@ GTK4/libadwaita GUI, Wayland-first. Rust 2021 edition, MSRV 1.88, three-crate Ca
 Виконай послідовно і поверни результат (pass/fail + помилки якщо є):
 1. cargo fmt --check
 2. cargo clippy --all-targets (має бути 0 warnings)
-3. cargo test --workspace (timeout 240s, тести йдуть ~120s)
+3. cargo test --workspace (timeout 180s, property tests з argon2 біжать ~120s в debug mode)
 Якщо fmt або clippy мають помилки — виправ автоматично і перезапусти.
 ```
 
 Це економить контекст основного діалогу від тисяч рядків виводу cargo.
+
+**УВАГА:** Хук `rustconn-checks` (agentStop) вже автоматично запускає ці перевірки після кожної відповіді агента. Не потрібно делегувати вручну — хук це зробить сам.
 
 ## Quick Reference
 
@@ -130,7 +132,7 @@ impl MyTrait for MyStruct {
 
 Локація: `rustconn-core/tests/properties/`
 
-⏱️ Повний тестовий набір ~50 секунд. Завжди чекай завершення (timeout 90s).
+⏱️ Повний тестовий набір ~120 секунд (argon2 property tests повільні в debug mode). Завжди чекай завершення (timeout 180s).
 
 Новий property test модуль:
 1. Створи файл в `rustconn-core/tests/properties/`

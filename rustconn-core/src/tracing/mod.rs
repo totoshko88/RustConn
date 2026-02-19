@@ -438,7 +438,8 @@ pub mod field_names {
     pub const HOST: &str = "host";
     /// Port field
     pub const PORT: &str = "port";
-    /// Username field
+    /// Username field.
+    /// WARNING: May contain PII. Use only at debug/trace level.
     pub const USERNAME: &str = "username";
     /// Query field (for search)
     pub const QUERY: &str = "query";

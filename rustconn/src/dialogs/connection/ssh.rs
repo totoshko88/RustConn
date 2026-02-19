@@ -13,8 +13,10 @@ use super::protocol_layout::ProtocolLayoutBuilder;
 use super::widgets::{CheckboxRowBuilder, EntryRowBuilder};
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, CheckButton, DropDown, Entry, StringList};
+use gtk4::{Box as GtkBox, Button, CheckButton, DropDown, Entry, Label, Orientation, StringList};
 use libadwaita as adw;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 /// Return type for SSH options creation
 ///
@@ -405,4 +407,203 @@ fn create_session_group() -> (
         startup_entry,
         options_entry,
     )
+}
+
+/// Creates the Port Forwarding preferences group
+///
+/// Provides UI for managing SSH port forwarding rules (local, remote, dynamic).
+/// The list box and data vector are owned by `ConnectionDialog` and passed in.
+#[must_use]
+pub fn create_port_forwarding_group(
+    forwards_list: &gtk4::ListBox,
+    forwards_data: &Rc<RefCell<Vec<rustconn_core::models::PortForward>>>,
+) -> adw::PreferencesGroup {
+    let pf_group = adw::PreferencesGroup::builder()
+        .title("Port Forwarding")
+        .description("Forward ports through the SSH tunnel")
+        .build();
+
+    // Direction dropdown
+    let direction_list = StringList::new(&["Local (-L)", "Remote (-R)", "Dynamic (-D)"]);
+    let direction_dropdown = DropDown::new(Some(direction_list), gtk4::Expression::NONE);
+    direction_dropdown.set_selected(0);
+
+    let direction_row = adw::ActionRow::builder()
+        .title("Direction")
+        .subtitle("Type of port forwarding")
+        .build();
+    direction_row.add_suffix(&direction_dropdown);
+    pf_group.add(&direction_row);
+
+    // Local port entry
+    let local_port_entry = Entry::builder()
+        .placeholder_text("8080")
+        .input_purpose(gtk4::InputPurpose::Digits)
+        .max_width_chars(6)
+        .valign(gtk4::Align::Center)
+        .build();
+    let local_port_row = adw::ActionRow::builder()
+        .title("Local Port")
+        .subtitle("Port to bind locally")
+        .build();
+    local_port_row.add_suffix(&local_port_entry);
+    pf_group.add(&local_port_row);
+
+    // Remote host entry
+    let remote_host_entry = Entry::builder()
+        .placeholder_text("localhost")
+        .valign(gtk4::Align::Center)
+        .build();
+    let remote_host_row = adw::ActionRow::builder()
+        .title("Remote Host")
+        .subtitle("Destination host on the remote side")
+        .build();
+    remote_host_row.add_suffix(&remote_host_entry);
+    pf_group.add(&remote_host_row);
+
+    // Remote port entry
+    let remote_port_entry = Entry::builder()
+        .placeholder_text("80")
+        .input_purpose(gtk4::InputPurpose::Digits)
+        .max_width_chars(6)
+        .valign(gtk4::Align::Center)
+        .build();
+    let remote_port_row = adw::ActionRow::builder()
+        .title("Remote Port")
+        .subtitle("Destination port on the remote side")
+        .build();
+    remote_port_row.add_suffix(&remote_port_entry);
+    pf_group.add(&remote_port_row);
+
+    // Show/hide remote host/port based on direction
+    let remote_host_row_clone = remote_host_row.clone();
+    let remote_port_row_clone = remote_port_row.clone();
+    direction_dropdown.connect_selected_notify(move |dd| {
+        let is_dynamic = dd.selected() == 2;
+        remote_host_row_clone.set_visible(!is_dynamic);
+        remote_port_row_clone.set_visible(!is_dynamic);
+    });
+
+    // Add button
+    let add_button = Button::builder()
+        .label("Add Forward")
+        .css_classes(["suggested-action"])
+        .build();
+
+    let add_row = adw::ActionRow::builder().build();
+    add_row.add_suffix(&add_button);
+    pf_group.add(&add_row);
+
+    // Existing forwards list
+    pf_group.add(forwards_list);
+
+    // Wire up add button
+    let data = forwards_data.clone();
+    let list = forwards_list.clone();
+    let dir_dd = direction_dropdown.clone();
+    let local_port_clone = local_port_entry.clone();
+    let remote_host_clone = remote_host_entry.clone();
+    let remote_port_clone = remote_port_entry.clone();
+
+    add_button.connect_clicked(move |_| {
+        let local_port_text = local_port_clone.text();
+        let local_port: u16 = match local_port_text.trim().parse() {
+            Ok(p) if p > 0 => p,
+            _ => return, // silently ignore invalid input
+        };
+
+        let direction = match dir_dd.selected() {
+            1 => rustconn_core::models::PortForwardDirection::Remote,
+            2 => rustconn_core::models::PortForwardDirection::Dynamic,
+            _ => rustconn_core::models::PortForwardDirection::Local,
+        };
+
+        let (remote_host, remote_port) = if matches!(
+            direction,
+            rustconn_core::models::PortForwardDirection::Dynamic
+        ) {
+            (String::new(), 0)
+        } else {
+            let rh = remote_host_clone.text().trim().to_string();
+            let rh = if rh.is_empty() {
+                "localhost".to_string()
+            } else {
+                rh
+            };
+            let rp: u16 = remote_port_clone.text().trim().parse().unwrap_or(0);
+            if rp == 0 {
+                return; // need a valid remote port for L/R
+            }
+            (rh, rp)
+        };
+
+        let pf = rustconn_core::models::PortForward {
+            direction,
+            local_port,
+            remote_host,
+            remote_port,
+        };
+
+        // Add to data
+        data.borrow_mut().push(pf.clone());
+
+        // Add row to list
+        add_port_forward_row_to_list(&list, &data, data.borrow().len() - 1, &pf);
+
+        // Clear inputs
+        local_port_clone.set_text("");
+        remote_host_clone.set_text("");
+        remote_port_clone.set_text("");
+    });
+
+    pf_group
+}
+
+/// Adds a single port forward row to the list box
+pub fn add_port_forward_row_to_list(
+    list: &gtk4::ListBox,
+    data: &Rc<RefCell<Vec<rustconn_core::models::PortForward>>>,
+    idx: usize,
+    pf: &rustconn_core::models::PortForward,
+) {
+    let row_box = GtkBox::new(Orientation::Horizontal, 8);
+    row_box.set_margin_top(4);
+    row_box.set_margin_bottom(4);
+    row_box.set_margin_start(8);
+    row_box.set_margin_end(8);
+
+    let summary_label = Label::builder()
+        .label(&pf.display_summary())
+        .hexpand(true)
+        .halign(gtk4::Align::Start)
+        .ellipsize(gtk4::pango::EllipsizeMode::End)
+        .build();
+
+    let remove_button = Button::builder()
+        .icon_name("user-trash-symbolic")
+        .css_classes(["flat"])
+        .tooltip_text("Remove this port forward")
+        .build();
+
+    let data_clone = data.clone();
+    let list_clone = list.clone();
+    remove_button.connect_clicked(move |_| {
+        let mut forwards = data_clone.borrow_mut();
+        if idx < forwards.len() {
+            forwards.remove(idx);
+        }
+        drop(forwards);
+        // Rebuild list
+        while let Some(child) = list_clone.first_child() {
+            list_clone.remove(&child);
+        }
+        let forwards = data_clone.borrow();
+        for (i, f) in forwards.iter().enumerate() {
+            add_port_forward_row_to_list(&list_clone, &data_clone, i, f);
+        }
+    });
+
+    row_box.append(&summary_label);
+    row_box.append(&remove_button);
+    list.append(&row_box);
 }

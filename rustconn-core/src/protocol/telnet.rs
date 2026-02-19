@@ -59,9 +59,15 @@ impl Protocol for TelnetProtocol {
     fn build_command(&self, connection: &Connection) -> Option<Vec<String>> {
         let mut cmd = vec!["telnet".to_string()];
 
-        // Add custom args from TelnetConfig
+        // Add custom args from TelnetConfig (sanitized to prevent injection)
         if let ProtocolConfig::Telnet(ref config) = connection.protocol_config {
-            cmd.extend(config.custom_args.clone());
+            for arg in &config.custom_args {
+                if arg.contains('\0') || arg.contains('\n') {
+                    tracing::warn!(arg = %arg, "Skipping Telnet custom arg with unsafe characters");
+                    continue;
+                }
+                cmd.push(arg.clone());
+            }
         }
 
         cmd.push(connection.host.clone());

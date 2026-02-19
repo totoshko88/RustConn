@@ -25,7 +25,8 @@ pub const MAX_NESTING_DEPTH: usize = 10;
 pub struct Variable {
     /// The variable name (used in `${name}` references)
     pub name: String,
-    /// The variable value
+    /// The variable value.
+    /// TODO: For `is_secret == true`, consider using `SecretString` or zeroize on Drop.
     pub value: String,
     /// Whether this variable contains sensitive data
     pub is_secret: bool,

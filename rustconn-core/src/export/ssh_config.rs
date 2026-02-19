@@ -115,8 +115,23 @@ impl SshConfigExporter {
                 let _ = writeln!(output, "    ForwardAgent yes");
             }
 
-            // Custom options
+            // Custom options (filter dangerous directives that allow arbitrary command execution)
             for (key, value) in &ssh_config.custom_options {
+                if DANGEROUS_DIRECTIVES
+                    .iter()
+                    .any(|d| key.eq_ignore_ascii_case(d))
+                {
+                    tracing::warn!(
+                        key = %key,
+                        connection = %connection.name,
+                        "Skipping dangerous SSH config directive in export"
+                    );
+                    let _ = writeln!(
+                        output,
+                        "    # {key} omitted (security: command-execution directive)"
+                    );
+                    continue;
+                }
                 let escaped_value = escape_value(value);
                 let _ = writeln!(output, "    {key} {escaped_value}");
             }
@@ -193,6 +208,16 @@ impl ExportTarget for SshConfigExporter {
         *protocol == ProtocolType::Ssh
     }
 }
+
+/// SSH config directives that allow arbitrary command execution and must be
+/// filtered out when exporting user-supplied custom options.
+const DANGEROUS_DIRECTIVES: &[&str] = &[
+    "ProxyCommand",
+    "LocalCommand",
+    "PermitLocalCommand",
+    "RemoteCommand",
+    "Match",
+];
 
 /// Escapes special characters in SSH config values.
 ///

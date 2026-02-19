@@ -291,18 +291,26 @@ proptest! {
         );
     }
 
-    // Additional property: Password only when set and non-empty
+    // Additional property: Password uses /from-stdin, never /p:
     #[test]
     fn prop_password_only_when_set(config in arb_freerdp_config()) {
         let args = build_freerdp_args(&config);
 
-        let has_password = args.iter().any(|a| a.starts_with("/p:"));
-        let password_is_set = config.password.as_ref().is_some_and(|p| !p.is_empty());
+        let has_from_stdin = args.iter().any(|a| a == "/from-stdin");
+        let has_plain_password = args.iter().any(|a| a.starts_with("/p:"));
+        let password_is_set =
+            config.password.as_ref().is_some_and(|p| !p.is_empty());
 
+        prop_assert!(
+            !has_plain_password,
+            "Password must never appear as /p: argument. Args: {:?}",
+            args
+        );
         prop_assert_eq!(
-            has_password,
+            has_from_stdin,
             password_is_set,
-            "Password flag should only be present when password is set and non-empty. Config: {:?}, Args: {:?}",
+            "/from-stdin should be present iff password is set and non-empty. \
+             Config: {:?}, Args: {:?}",
             config.password,
             args
         );

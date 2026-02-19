@@ -1,42 +1,5 @@
 //! Property-based tests for `RustConn` core library
 
-// Allow common test patterns that Clippy warns about
-#![allow(clippy::redundant_clone)]
-#![allow(clippy::similar_names)]
-#![allow(clippy::unreadable_literal)]
-#![allow(clippy::items_after_statements)]
-#![allow(clippy::too_many_lines)]
-#![allow(clippy::cognitive_complexity)]
-#![allow(clippy::field_reassign_with_default)]
-#![allow(clippy::single_component_path_imports)]
-#![allow(clippy::use_self)]
-#![allow(clippy::redundant_closure)]
-#![allow(clippy::redundant_closure_for_method_calls)]
-#![allow(clippy::expect_fun_call)]
-#![allow(clippy::unwrap_or_default)]
-#![allow(clippy::map_unwrap_or)]
-#![allow(clippy::single_char_pattern)]
-#![allow(clippy::cast_sign_loss)]
-#![allow(clippy::cast_possible_wrap)]
-#![allow(clippy::default_trait_access)]
-#![allow(clippy::useless_format)]
-#![allow(clippy::match_same_arms)]
-#![allow(clippy::uninlined_format_args)]
-#![allow(clippy::significant_drop_tightening)]
-#![allow(clippy::collection_is_never_read)]
-#![allow(clippy::used_underscore_binding)]
-#![allow(clippy::stable_sort_primitive)]
-#![allow(clippy::implicit_clone)]
-#![allow(clippy::or_fun_call)]
-#![allow(clippy::len_zero)]
-#![allow(clippy::literal_string_with_formatting_args)]
-#![allow(clippy::collapsible_str_replace)]
-#![allow(clippy::needless_collect)]
-#![allow(clippy::manual_let_else)]
-#![allow(clippy::branches_sharing_code)]
-#![allow(clippy::format_push_string)]
-#![allow(clippy::clone_on_copy)]
-
 mod async_credential_tests;
 mod batch_processing_tests;
 mod bulk_credential_tests;

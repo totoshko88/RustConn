@@ -15,6 +15,7 @@ use ironrdp::rdpdr::Rdpdr;
 use ironrdp::rdpsnd::client::Rdpsnd;
 use ironrdp_tokio::reqwest::ReqwestNetworkClient;
 use ironrdp_tokio::TokioFramed;
+use secrecy::ExposeSecret;
 use std::net::SocketAddr;
 use tokio::net::TcpStream;
 
@@ -188,7 +189,11 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
     // The server will prompt for credentials if needed
     let credentials = Credentials::UsernamePassword {
         username: config.username.clone().unwrap_or_default(),
-        password: config.password.clone().unwrap_or_default(),
+        password: config
+            .password
+            .as_ref()
+            .map(|s| s.expose_secret().to_string())
+            .unwrap_or_default(),
     };
 
     // NOTE: BitmapConfig affects two things:

@@ -1,5 +1,6 @@
 //! VNC client configuration
 
+use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 
 /// Configuration for VNC client connection
@@ -12,8 +13,8 @@ pub struct VncClientConfig {
     pub port: u16,
 
     /// Password for authentication (if required)
-    #[serde(skip_serializing)]
-    pub password: Option<String>,
+    #[serde(skip)]
+    pub password: Option<SecretString>,
 
     /// Preferred pixel format
     pub pixel_format: PixelFormat,
@@ -71,7 +72,7 @@ impl VncClientConfig {
     /// Sets the password
     #[must_use]
     pub fn with_password(mut self, password: impl Into<String>) -> Self {
-        self.password = Some(password.into());
+        self.password = Some(SecretString::from(password.into()));
         self
     }
 
@@ -124,6 +125,7 @@ pub enum VncEncoding {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use secrecy::ExposeSecret;
 
     #[test]
     fn test_config_builder() {
@@ -135,7 +137,10 @@ mod tests {
 
         assert_eq!(config.host, "192.168.1.100");
         assert_eq!(config.port, 5901);
-        assert_eq!(config.password, Some("secret".to_string()));
+        assert_eq!(
+            config.password.as_ref().map(ExposeSecret::expose_secret),
+            Some("secret")
+        );
         assert!(config.view_only);
         assert!(!config.shared);
     }

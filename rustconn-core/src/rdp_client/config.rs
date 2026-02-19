@@ -8,6 +8,7 @@ use super::graphics::{GraphicsMode, GraphicsQuality};
 use super::multimonitor::MonitorLayout;
 use super::reconnect::ReconnectPolicy;
 use crate::models::RdpPerformanceMode;
+use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -42,7 +43,7 @@ impl SharedFolder {
 }
 
 /// Configuration for RDP client connection
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RdpClientConfig {
     /// Target hostname or IP address
     pub host: String,
@@ -53,9 +54,9 @@ pub struct RdpClientConfig {
     /// Username for authentication
     pub username: Option<String>,
 
-    /// Password for authentication
-    #[serde(skip_serializing)]
-    pub password: Option<String>,
+    /// Password for authentication (stored securely, never serialized)
+    #[serde(skip)]
+    pub password: Option<SecretString>,
 
     /// Domain for authentication
     pub domain: Option<String>,
@@ -279,7 +280,7 @@ impl RdpClientConfig {
     /// Sets the password
     #[must_use]
     pub fn with_password(mut self, password: impl Into<String>) -> Self {
-        self.password = Some(password.into());
+        self.password = Some(SecretString::from(password.into()));
         self
     }
 
@@ -486,6 +487,45 @@ impl RdpClientConfig {
     }
 }
 
+// Manual PartialEq implementation since SecretString doesn't implement it
+impl PartialEq for RdpClientConfig {
+    fn eq(&self, other: &Self) -> bool {
+        self.host == other.host
+            && self.port == other.port
+            && self.username == other.username
+            && match (&self.password, &other.password) {
+                (Some(a), Some(b)) => a.expose_secret() == b.expose_secret(),
+                (None, None) => true,
+                _ => false,
+            }
+            && self.domain == other.domain
+            && self.width == other.width
+            && self.height == other.height
+            && self.color_depth == other.color_depth
+            && self.clipboard_enabled == other.clipboard_enabled
+            && self.audio_enabled == other.audio_enabled
+            && self.timeout_secs == other.timeout_secs
+            && self.ignore_certificate == other.ignore_certificate
+            && self.nla_enabled == other.nla_enabled
+            && self.security_protocol == other.security_protocol
+            && self.shared_folders == other.shared_folders
+            && self.dynamic_resolution == other.dynamic_resolution
+            && self.scale_factor == other.scale_factor
+            && self.performance_mode == other.performance_mode
+            && self.graphics_mode == other.graphics_mode
+            && self.graphics_quality == other.graphics_quality
+            && self.gateway == other.gateway
+            && self.monitor_layout == other.monitor_layout
+            && self.reconnect_policy == other.reconnect_policy
+            && self.printer_enabled == other.printer_enabled
+            && self.smartcard_enabled == other.smartcard_enabled
+            && self.microphone_enabled == other.microphone_enabled
+            && self.remote_app == other.remote_app
+            && self.connection_name == other.connection_name
+            && self.keyboard_layout == other.keyboard_layout
+    }
+}
+
 /// Configuration validation errors
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum ConfigValidationError {
@@ -527,7 +567,13 @@ mod tests {
         assert_eq!(config.host, "192.168.1.100");
         assert_eq!(config.port, 3390);
         assert_eq!(config.username, Some("admin".to_string()));
-        assert_eq!(config.password, Some("secret".to_string()));
+        assert_eq!(
+            config
+                .password
+                .as_ref()
+                .map(|p| p.expose_secret().to_string()),
+            Some("secret".to_string())
+        );
         assert_eq!(config.domain, Some("CORP".to_string()));
         assert_eq!(config.width, 1920);
         assert_eq!(config.height, 1080);

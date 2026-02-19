@@ -34,9 +34,9 @@ use gtk4::{
     Box as GtkBox, Button, DrawingArea, EventControllerKey, EventControllerMotion, GestureClick,
     Label, Orientation,
 };
-use rustconn_core::is_embedded_vnc_available;
+use rustconn_core::vnc_client::is_embedded_vnc_available;
 #[cfg(feature = "vnc-embedded")]
-use rustconn_core::{
+use rustconn_core::vnc_client::{
     VncClient, VncClientCommand, VncClientConfig, VncClientEvent, VncCommandSender,
 };
 use std::cell::RefCell;
@@ -401,7 +401,7 @@ impl EmbeddedVncWidget {
     #[cfg(feature = "vnc-embedded")]
     fn setup_input_handlers(&self) {
         use glib::translate::IntoGlib;
-        use rustconn_core::VncClientCommand;
+        use rustconn_core::vnc_client::VncClientCommand;
 
         // Keyboard input handler
         let key_controller = EventControllerKey::new();
@@ -618,7 +618,7 @@ impl EmbeddedVncWidget {
     /// Sets up the resize handler
     #[cfg(feature = "vnc-embedded")]
     fn setup_resize_handler(&self) {
-        use rustconn_core::VncClientCommand;
+        use rustconn_core::vnc_client::VncClientCommand;
 
         let width = self.width.clone();
         let height = self.height.clone();
@@ -1022,7 +1022,7 @@ impl EmbeddedVncWidget {
                 Ok(()) => return Ok(()),
                 Err(e) => {
                     // Log the error and fall back to external mode
-                    eprintln!("Embedded VNC failed, falling back to external: {e}");
+                    tracing::warn!(%e, "Embedded VNC failed, falling back to external");
                 }
             }
         }
@@ -1103,7 +1103,7 @@ impl EmbeddedVncWidget {
 
         // Set up a GLib timeout to poll for VNC events (~60 FPS)
         glib::timeout_add_local(std::time::Duration::from_millis(16), move || {
-            use rustconn_core::VncClientCommand;
+            use rustconn_core::vnc_client::VncClientCommand;
 
             // Check if we're still in embedded mode
             if !*is_embedded.borrow() {
@@ -1111,9 +1111,15 @@ impl EmbeddedVncWidget {
             }
 
             // Try to get events from the VNC client
-            let client_guard = match client.lock() {
+            let client_guard = match client.try_lock() {
                 Ok(guard) => guard,
-                Err(_) => return glib::ControlFlow::Break,
+                Err(std::sync::TryLockError::WouldBlock) => {
+                    return glib::ControlFlow::Continue; // skip this frame
+                }
+                Err(std::sync::TryLockError::Poisoned(_)) => {
+                    tracing::error!("[EmbeddedVNC] Client mutex poisoned");
+                    return glib::ControlFlow::Break;
+                }
             };
 
             // Poll all available events
@@ -1544,7 +1550,7 @@ impl EmbeddedVncWidget {
         }
 
         if let Some(ref sender) = *self.command_sender.borrow() {
-            use rustconn_core::VncClientCommand;
+            use rustconn_core::vnc_client::VncClientCommand;
             // Use try_send to avoid blocking GTK main thread
             let _ = sender.try_send(VncClientCommand::SendCtrlAltDel);
         }

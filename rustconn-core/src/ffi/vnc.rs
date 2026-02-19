@@ -45,6 +45,7 @@
 //! ```
 
 use super::{ConnectionState, FfiDisplay, FfiError};
+use secrecy::SecretString;
 use std::cell::RefCell;
 use std::rc::Rc;
 use thiserror::Error;
@@ -127,8 +128,8 @@ struct VncDisplayState {
     port: Option<u16>,
     /// Whether scaling is enabled
     scaling_enabled: bool,
-    /// Stored credentials
-    credentials: std::collections::HashMap<VncCredentialType, String>,
+    /// Stored credentials (passwords wrapped in `SecretString`)
+    credentials: std::collections::HashMap<VncCredentialType, SecretString>,
 }
 
 /// Safe wrapper around `GtkVncDisplay` widget
@@ -292,7 +293,9 @@ impl VncDisplay {
         }
 
         let mut state = self.state.borrow_mut();
-        state.credentials.insert(cred_type, value.to_string());
+        state
+            .credentials
+            .insert(cred_type, SecretString::from(value.to_string()));
         Ok(())
     }
 

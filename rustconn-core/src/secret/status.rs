@@ -359,7 +359,7 @@ impl KeePassStatus {
             }
 
             // Entry password (prompted by -p flag)
-            tracing::debug!("DEBUG: Sending entry password");
+            tracing::debug!("Sending entry password to keepassxc-cli");
             stdin
                 .write_all(password.as_bytes())
                 .map_err(|e| format!("Failed to send entry password: {e}"))?;

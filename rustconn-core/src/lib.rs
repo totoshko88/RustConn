@@ -60,6 +60,15 @@ pub mod variables;
 pub mod vnc_client;
 pub mod wol;
 
+// =============================================================================
+// Convenience re-exports
+//
+// These flat re-exports exist for backward compatibility with property tests
+// and integration tests. New code in `rustconn` (GUI) and `rustconn-cli`
+// should import via modular paths (e.g. `rustconn_core::models::Connection`)
+// rather than the flat namespace (`rustconn_core::Connection`).
+// =============================================================================
+
 pub use automation::{
     CompiledRule, ConnectionTask, ExpectEngine, ExpectError, ExpectResult, ExpectRule,
     FolderConnectionTracker, KeyElement, KeySequence, KeySequenceError, KeySequenceResult,
@@ -105,8 +114,9 @@ pub use export::{
 pub use ffi::{
     ConnectionState, FfiDisplay, FfiError, FfiResult, VncCredentialType, VncDisplay, VncError,
 };
-#[allow(deprecated)]
-pub use flatpak::{host_command, host_exec, host_has_command, host_spawn, host_which, is_flatpak};
+pub use flatpak::is_flatpak;
+// Deprecated flatpak-spawn functions (host_command, host_exec, host_has_command,
+// host_spawn, host_which) are no longer re-exported since Flathub policy change in v0.7.7.
 pub use import::{
     AnsibleInventoryImporter, AsbruImporter, BatchCancelHandle, BatchImportResult, BatchImporter,
     ImportResult, ImportSource, RemminaImporter, RoyalTsImporter, SkippedEntry, SshConfigImporter,
@@ -115,11 +125,12 @@ pub use import::{
 pub use models::{
     group_templates_by_protocol, Connection, ConnectionGroup, ConnectionHistoryEntry,
     ConnectionStatistics, ConnectionTemplate, Credentials, CustomProperty, HistorySettings,
-    KubernetesConfig, PasswordSource, PropertyType, ProtocolConfig, ProtocolType, RdpConfig,
-    RdpGateway, Resolution, ScaleOverride, SerialBaudRate, SerialConfig, SerialDataBits,
-    SerialFlowControl, SerialParity, SerialStopBits, Snippet, SnippetVariable, SpiceConfig,
-    SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, TelnetBackspaceSends,
-    TelnetConfig, TelnetDeleteSends, TemplateError, VncConfig, WindowGeometry, WindowMode,
+    KubernetesConfig, PasswordSource, PortForward, PortForwardDirection, PropertyType,
+    ProtocolConfig, ProtocolType, RdpConfig, RdpGateway, Resolution, ScaleOverride, SerialBaudRate,
+    SerialConfig, SerialDataBits, SerialFlowControl, SerialParity, SerialStopBits, Snippet,
+    SnippetVariable, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource,
+    TelnetBackspaceSends, TelnetConfig, TelnetDeleteSends, TemplateError, VncConfig,
+    WindowGeometry, WindowMode,
 };
 pub use password_generator::{
     estimate_crack_time, CharacterSet, PasswordGenerator, PasswordGeneratorConfig,

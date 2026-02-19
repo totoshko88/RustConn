@@ -7,10 +7,31 @@
 use proptest::prelude::*;
 use rustconn_core::{Variable, VariableManager, VariableScope};
 
-/// Strategy for generating safe variable values (printable ASCII + tab)
+/// Strategy for generating safe variable values (printable ASCII + tab, no shell metacharacters)
 fn arb_safe_value() -> impl Strategy<Value = String> {
-    prop::collection::vec(prop_oneof![prop::char::range(' ', '~'), Just('\t')], 0..100)
-        .prop_map(|chars| chars.into_iter().collect::<String>())
+    // Exclude shell metacharacters: ; | & ` $ ( ) < > !
+    prop::collection::vec(
+        prop_oneof![
+            prop::char::range(' ', ' '), // space
+            prop::char::range('#', '#'),
+            prop::char::range('%', '%'),
+            prop::char::range('+', '+'),
+            prop::char::range(',', '.'), // , - .
+            prop::char::range('0', '9'),
+            prop::char::range(':', ':'),
+            prop::char::range('=', '='),
+            prop::char::range('@', 'Z'), // @ A-Z
+            prop::char::range('^', '_'), // ^ _
+            prop::char::range('a', 'z'),
+            prop::char::range('{', '{'),
+            prop::char::range('}', '}'),
+            prop::char::range('~', '~'),
+            prop::char::range('/', '/'),
+            Just('\t'),
+        ],
+        0..100,
+    )
+    .prop_map(|chars| chars.into_iter().collect::<String>())
 }
 
 /// Strategy for generating values with at least one control character
@@ -162,7 +183,7 @@ proptest! {
     #[test]
     fn command_substitution_resolves_all_references(
         names in prop::collection::hash_set(arb_var_name(), 1..5),
-        values in prop::collection::vec("[a-zA-Z0-9 .,;:!?@#%^&*]{0,30}", 1..10)
+        values in prop::collection::vec("[a-zA-Z0-9 .,:\\-_@#%^/=+~]{0,30}", 1..10)
     ) {
         let mut manager = VariableManager::new();
         let names: Vec<_> = names.into_iter().collect();

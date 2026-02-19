@@ -317,6 +317,7 @@ impl MobaXtermImporter {
             custom_options: HashMap::new(),
             startup_command,
             sftp_enabled: false,
+            port_forwards: Vec::new(),
         };
 
         let mut connection = Connection::new(

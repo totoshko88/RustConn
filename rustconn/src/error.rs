@@ -124,6 +124,11 @@ pub enum AppStateError {
 /// Result type alias for application state operations
 pub type AppStateResult<T> = Result<T, AppStateError>;
 
+/// Converts IO errors to `ConfigError` variant.
+///
+/// NOTE: This blanket conversion always maps to `ConfigError`, even when the IO
+/// error originates from a document or session context. Prefer explicit
+/// `.map_err()` with the correct variant at each call site for better diagnostics.
 impl From<std::io::Error> for AppStateError {
     fn from(err: std::io::Error) -> Self {
         Self::ConfigError(err.to_string())

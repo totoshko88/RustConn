@@ -161,7 +161,7 @@ pub fn create_app_menu() -> gio::Menu {
     app_section.append(Some(&i18n("Settings")), Some("win.settings"));
     // Flatpak Components menu item - only visible in Flatpak environment
     // The action is always registered but does nothing outside Flatpak
-    if rustconn_core::is_flatpak() {
+    if rustconn_core::flatpak::is_flatpak() {
         app_section.append(
             Some(&i18n("Flatpak Components...")),
             Some("win.flatpak-components"),

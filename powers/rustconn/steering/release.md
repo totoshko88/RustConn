@@ -165,5 +165,5 @@ version: 'X.Y.Z'
 cargo check
 cargo fmt --check
 cargo clippy --all-targets  # 0 warnings
-cargo test --workspace      # ~50s
+cargo test --workspace      # ~120s (argon2 property tests повільні в debug mode)
 ```

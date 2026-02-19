@@ -50,7 +50,7 @@ fn detect_secret_backends() -> SecretCliDetection {
 
     // Bitwarden
     let mut bw_paths: Vec<String> = vec!["bw".to_string()];
-    if !rustconn_core::is_flatpak() {
+    if !rustconn_core::flatpak::is_flatpak() {
         bw_paths.extend(["/snap/bin/bw".to_string(), "/usr/local/bin/bw".to_string()]);
     }
     if let Some(cli_dir) = rustconn_core::cli_download::get_cli_install_dir() {
@@ -93,7 +93,7 @@ fn detect_secret_backends() -> SecretCliDetection {
 
     // 1Password
     let mut op_paths: Vec<String> = vec!["op".to_string()];
-    if !rustconn_core::is_flatpak() {
+    if !rustconn_core::flatpak::is_flatpak() {
         op_paths.push("/usr/local/bin/op".to_string());
     }
     if let Some(cli_dir) = rustconn_core::cli_download::get_cli_install_dir() {
@@ -136,7 +136,7 @@ fn detect_secret_backends() -> SecretCliDetection {
 
     // Passbolt
     let mut passbolt_paths: Vec<String> = vec!["passbolt".to_string()];
-    if !rustconn_core::is_flatpak() {
+    if !rustconn_core::flatpak::is_flatpak() {
         passbolt_paths.push("/usr/local/bin/passbolt".to_string());
     }
     if let Some(cli_dir) = rustconn_core::cli_download::get_cli_install_dir() {
@@ -525,8 +525,16 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
             let bw_cmd_str = bw_cmd.borrow().clone();
 
+            tracing::debug!(
+                bw_cmd = %bw_cmd_str,
+                password_len = password.len(),
+                password_source = if password_text.is_empty() { "keyring" } else { "manual" },
+                "Bitwarden GUI: unlock button clicked"
+            );
+
             // Run unlock with password via environment variable
-            let result = std::process::Command::new(&bw_cmd_str)
+            // Try --raw first, then verbose output parsing as fallback
+            let raw_result = std::process::Command::new(&bw_cmd_str)
                 .arg("unlock")
                 .arg("--passwordenv")
                 .arg("BW_PASSWORD")
@@ -534,43 +542,68 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 .env("BW_PASSWORD", &password)
                 .output();
 
-            match result {
-                Ok(output) => {
-                    if output.status.success() {
-                        let stdout = String::from_utf8_lossy(&output.stdout);
-                        let session_key = stdout.trim();
-                        if session_key.is_empty() {
-                            // --raw returned empty — try parsing verbose output
-                            update_status_label(
-                                &status_label,
-                                "Unlocked (no session key)",
-                                "warning",
-                            );
-                        } else {
-                            std::env::set_var("BW_SESSION", session_key);
-                            update_status_label(&status_label, "Unlocked", "success");
-                            password_entry.set_text("");
-
-                            // Save to keyring if checkbox is active
-                            if save_to_keyring {
-                                save_bw_password_to_keyring(&password);
-                            }
-                        }
+            let (session_result, raw_stderr) = match raw_result {
+                Ok(output) if output.status.success() => {
+                    let stdout = String::from_utf8_lossy(&output.stdout);
+                    let key = stdout.trim().to_string();
+                    if key.is_empty() {
+                        (None, String::new())
                     } else {
-                        let stderr = String::from_utf8_lossy(&output.stderr);
-                        let msg = if stderr.contains("Invalid master password") {
-                            "Invalid password"
-                        } else if stderr.contains("not logged in") {
-                            "Not logged in"
-                        } else {
-                            "Unlock failed"
-                        };
-                        update_status_label(&status_label, msg, "error");
+                        (Some(key), String::new())
                     }
                 }
-                Err(_) => {
-                    update_status_label(&status_label, "Command failed", "error");
+                Ok(output) => {
+                    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+                    (None, stderr)
                 }
+                Err(_) => (None, String::new()),
+            };
+
+            // Fallback: try without --raw and parse session key from verbose output
+            let session_result = session_result.or_else(|| {
+                let result = std::process::Command::new(&bw_cmd_str)
+                    .arg("unlock")
+                    .arg("--passwordenv")
+                    .arg("BW_PASSWORD")
+                    .env("BW_PASSWORD", &password)
+                    .output();
+                match result {
+                    Ok(output) if output.status.success() => {
+                        let stdout = String::from_utf8_lossy(&output.stdout);
+                        extract_session_key(&stdout)
+                    }
+                    _ => None,
+                }
+            });
+
+            if let Some(session_key) = session_result {
+                tracing::info!(
+                    session_key_len = session_key.len(),
+                    "Bitwarden GUI: unlock succeeded"
+                );
+                std::env::set_var("BW_SESSION", &session_key);
+                update_status_label(&status_label, "Unlocked", "success");
+                // Don't clear password_entry — it's a PasswordEntry (hidden),
+                // and clearing it causes the encrypted settings to keep a stale
+                // password when the user saves settings with an empty field.
+
+                // Save to keyring if checkbox is active
+                if save_to_keyring {
+                    save_bw_password_to_keyring(&password);
+                }
+            } else {
+                tracing::warn!(
+                    raw_stderr = %raw_stderr,
+                    "Bitwarden GUI: unlock failed"
+                );
+                let msg = if raw_stderr.contains("Invalid master password") {
+                    "Invalid password"
+                } else if raw_stderr.contains("not logged in") {
+                    "Not logged in"
+                } else {
+                    "Unlock failed"
+                };
+                update_status_label(&status_label, msg, "error");
             }
 
             button.set_sensitive(true);

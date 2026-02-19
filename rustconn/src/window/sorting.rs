@@ -36,14 +36,14 @@ pub fn sort_connections(state: &SharedAppState, sidebar: &SharedSidebar) {
         // Sort only the selected group
         if let Ok(mut state_mut) = state.try_borrow_mut() {
             if let Err(e) = state_mut.sort_group(group_id) {
-                eprintln!("Failed to sort group: {e}");
+                tracing::error!(%e, "Failed to sort group");
             }
         }
     } else {
         // Sort all groups and connections
         if let Ok(mut state_mut) = state.try_borrow_mut() {
             if let Err(e) = state_mut.sort_all() {
-                eprintln!("Failed to sort all: {e}");
+                tracing::error!(%e, "Failed to sort all");
             }
         }
     }
@@ -57,7 +57,7 @@ pub fn sort_recent(state: &SharedAppState, sidebar: &SharedSidebar) {
     // Sort all connections by last_connected timestamp
     if let Ok(mut state_mut) = state.try_borrow_mut() {
         if let Err(e) = state_mut.sort_by_recent() {
-            eprintln!("Failed to sort by recent: {e}");
+            tracing::error!(%e, "Failed to sort by recent");
         }
     }
 
@@ -221,7 +221,7 @@ pub fn handle_drag_drop(state: &SharedAppState, sidebar: &SharedSidebar, data: &
                         if let Err(e) =
                             state_mut.move_connection_to_group(item_uuid, Some(target_uuid))
                         {
-                            eprintln!("Failed to move connection to group: {e}");
+                            tracing::error!(%e, "Failed to move connection to group");
                             return;
                         }
                     }
@@ -236,7 +236,7 @@ pub fn handle_drag_drop(state: &SharedAppState, sidebar: &SharedSidebar, data: &
                         if let Err(e) =
                             state_mut.move_connection_to_group(item_uuid, parent_group_id)
                         {
-                            eprintln!("Failed to move connection: {e}");
+                            tracing::error!(%e, "Failed to move connection");
                             return;
                         }
                     }
@@ -254,13 +254,13 @@ pub fn handle_drag_drop(state: &SharedAppState, sidebar: &SharedSidebar, data: &
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
                     // First move to the same group as target
                     if let Err(e) = state_mut.move_connection_to_group(item_uuid, target_group_id) {
-                        eprintln!("Failed to move connection: {e}");
+                        tracing::error!(%e, "Failed to move connection");
                         return;
                     }
 
                     // Then reorder within the group
                     if let Err(e) = state_mut.reorder_connection(item_uuid, target_uuid) {
-                        eprintln!("Failed to reorder connection: {e}");
+                        tracing::error!(%e, "Failed to reorder connection");
                         return;
                     }
                 }
@@ -270,7 +270,7 @@ pub fn handle_drag_drop(state: &SharedAppState, sidebar: &SharedSidebar, data: &
             // Moving a group - reorder among groups
             if let Ok(mut state_mut) = state.try_borrow_mut() {
                 if let Err(e) = state_mut.reorder_group(item_uuid, target_uuid) {
-                    eprintln!("Failed to reorder group: {e}");
+                    tracing::error!(%e, "Failed to reorder group");
                     return;
                 }
             }

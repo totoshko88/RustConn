@@ -7,11 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.9] - 2026-02-19
 
-### Dependencies
-- **serde_yaml** replaced with **serde_yaml_ng** 0.9 — maintained community fork of deprecated `serde_yaml`; transparent Cargo rename (`package = "serde_yaml_ng"`) keeps all source code unchanged
+### Security
+- Input validation hardening across all protocols — `custom_args`, device paths, shell paths, hostnames, proxy URLs, and shared folder names are now validated against injection attacks (null bytes, newlines, shell metacharacters, path traversal)
+- SSH config export blocks dangerous directives (`ProxyCommand`, `LocalCommand`, etc.) with inline comments
+- KeePassXC socket responses capped at 10 MB; reduced password exposure lifetime
+- Async import enforces the same 50 MB file size limit as sync path
+- VNC and RDP client passwords migrated to `SecretString` — exposed only at point of use
+- FreeRDP external launcher uses `/from-stdin` instead of `/p:{password}` on command line
+
+### Added
+- **SSH port forwarding** — Local (`-L`), remote (`-R`), and dynamic SOCKS (`-D`) port forwarding rules can be configured per connection; rules are persisted in `SshConfig.port_forwards` and passed as CLI flags to `ssh` ([#22](https://github.com/totoshko88/RustConn/issues/22))
+- **Deferred secret backend initialization** — Bitwarden vault unlock and KDBX password decryption now run asynchronously after the main window is presented, eliminating the 1–3 second startup delay when a secret backend is configured
+
+### Fixed
+- `localhost` no longer rejected as placeholder during import
+- Bitwarden: fixed duplicate vault writes, false "unlocked" status at startup, auto-unlock after restart, and compatibility with CLI v2026.1.0 including automatic `logout → login → unlock` recovery on "key type mismatch" ([#28](https://github.com/totoshko88/RustConn/issues/28))
+- Bitwarden GUI unlock no longer clears password field, preventing stale encrypted password on next save ([#28](https://github.com/totoshko88/RustConn/issues/28))
+- Generic ZeroTrust `custom_args` now embedded into shell command instead of passed as positional parameters
+- RefCell borrow panic in EmbeddedRdpWidget; VNC polling mutex contention; RDP polling timer leak
+- FreeRDP now uses native Wayland backend (removed `QT_QPA_PLATFORM=xcb` override)
+- Several `unwrap()` panics replaced with safe fallbacks (VNC, TaskExecutor, tray, build.rs)
+- EmbeddedRdpWidget resize signal handler properly cleaned up on disconnect
+- Quick connect RDP fails with "Got empty identity" CredSSP error — NLA is now auto-disabled when username or password is not provided, letting the server prompt for credentials ([#29](https://github.com/totoshko88/RustConn/issues/29))
+- Bitwarden vault unlock moved to a background thread — eliminates "application not responding" dialog on startup when Bitwarden is the configured secret backend
+
+### Changed
+- **CLI downloads** — Tailscale 1.94.1→1.94.2, Teleport 18.6.8→18.7.0, kubectl 1.35.0→1.35.1
+- **Documentation** — Updated README, ARCHITECTURE, and USER_GUIDE with SSH port forwarding and deferred secret backend initialization
+
+### Improved
+- ~40 `eprintln!` calls migrated to structured `tracing` across GUI crate
+- VNC client warns about unencrypted connections
 
 ### Internal
-- Architecture audit completed (`rustconn_audit_report.md`) — 51 findings across 4 domains
+- `tracing` moved to workspace dependencies; deprecated flatpak re-exports removed
+- API surface migrated from flat re-exports to modular paths (`rustconn_core::models::*`, etc.)
+- Architecture audit: 51 findings, 49 resolved
+
+### Dependencies
+- **serde_yaml** replaced with **serde_yaml_ng** 0.9 (maintained fork; transparent rename)
+- **cpal** `0.17.1` → `0.17.3`
+- **clap** `4.5.59` → `4.5.60`
 
 ## [0.8.8] - 2026-02-19
 

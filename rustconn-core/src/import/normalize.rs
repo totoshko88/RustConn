@@ -271,9 +271,18 @@ pub fn is_valid_hostname(s: &str) -> bool {
         return false;
     }
 
-    // Reject common placeholder values
+    // Reject common placeholder values (localhost is intentionally allowed —
+    // it is a valid target for SSH tunnels, port-forwarding, and local services)
     let lower = trimmed.to_lowercase();
-    if lower == "tmp" || lower == "placeholder" || lower == "none" || lower == "localhost" {
+    if lower == "tmp" || lower == "placeholder" || lower == "none" {
+        return false;
+    }
+
+    // Reject hostnames with invalid characters
+    if !trimmed
+        .chars()
+        .all(|c| c.is_alphanumeric() || ".-:[]_".contains(c))
+    {
         return false;
     }
 

@@ -41,6 +41,7 @@ fn arb_ssh_config_with_key() -> impl Strategy<Value = SshConfig> {
         startup_command: None,
         jump_host_id: None,
         sftp_enabled: false,
+        port_forwards: Vec::new(),
     })
 }
 

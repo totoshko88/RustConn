@@ -16,11 +16,11 @@ It brings SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust conne
 | **Organization** | Groups, tags, templates, connection history & statistics |
 | **Import/Export** | Asbru-CM, Remmina, SSH config, Ansible inventory, Royal TS, MobaXterm, virt-viewer (.vv), native (.rcn) |
 | **Security** | KeePassXC (KDBX), libsecret, Bitwarden CLI, 1Password CLI, Passbolt CLI integration |
-| **Productivity** | Split terminals, command snippets, cluster commands, Wake-on-LAN |
+| **Productivity** | Split terminals, command snippets, cluster commands, Wake-on-LAN, SSH port forwarding |
 
 | Protocol | Client | Type |
 |----------|--------|------|
-| SSH | VTE terminal | Embedded |
+| SSH | VTE terminal (port forwarding: -L/-R/-D) | Embedded |
 | RDP | IronRDP / FreeRDP fallback | Embedded + external |
 | VNC | vnc-rs / vncviewer fallback | Embedded + external |
 | SPICE | remote-viewer | External |

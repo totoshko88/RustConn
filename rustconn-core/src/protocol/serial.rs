@@ -91,7 +91,18 @@ impl Protocol for SerialProtocol {
             .to_string(),
         ];
 
-        cmd.extend(config.custom_args.clone());
+        if !config.device.starts_with("/dev/") {
+            tracing::warn!(device = %config.device, "Rejecting non-/dev/ serial device path");
+            return None;
+        }
+
+        for arg in &config.custom_args {
+            if arg.contains('\0') || arg.contains('\n') {
+                tracing::warn!(arg = %arg, "Skipping suspicious Serial custom arg");
+                continue;
+            }
+            cmd.push(arg.clone());
+        }
         cmd.push(config.device.clone());
 
         Some(cmd)

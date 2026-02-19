@@ -460,7 +460,11 @@ impl TaskExecutor {
         timeout_ms: Option<u32>,
         abort_on_failure: bool,
     ) -> TaskResult<i32> {
-        // Use sh -c to execute the command string
+        // SAFETY: Variable values are validated by validate_command_value() which rejects
+        // shell metacharacters (;|&`$()<>!) to prevent injection via variable substitution.
+        // The command template itself is defined by the user (not from untrusted input),
+        // and all dynamic variable values are sanitized before substitution in
+        // substitute_for_command().
         let mut cmd = Command::new("sh");
         cmd.arg("-c").arg(command);
 
@@ -514,7 +518,10 @@ impl TaskExecutor {
         folder_id: Option<Uuid>,
     ) -> TaskResult<i32> {
         let is_first = {
-            let mut tracker = self.folder_tracker.lock().unwrap();
+            let mut tracker = self
+                .folder_tracker
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             tracker.connection_opened(folder_id)
         };
 
@@ -539,7 +546,10 @@ impl TaskExecutor {
         folder_id: Option<Uuid>,
     ) -> TaskResult<i32> {
         let is_last = {
-            let mut tracker = self.folder_tracker.lock().unwrap();
+            let mut tracker = self
+                .folder_tracker
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             tracker.connection_closed(folder_id)
         };
 

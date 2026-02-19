@@ -38,8 +38,8 @@ ar = "0.9"  # For extracting .deb packages (AWS SSM Plugin)
 # Linux-only application, no macOS features needed
 notify = { version = "8.2", default-features = false }
 # Tracing for structured logging and performance profiling
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 # Pure Rust VNC client for embedded VNC sessions
 vnc-rs = { version = "0.5", optional = true }
 # Native SPICE client for embedded SPICE sessions

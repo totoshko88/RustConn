@@ -684,6 +684,12 @@ fn decrypt_document(data: &[u8], password: &str) -> DocumentResult<Document> {
         ));
     }
 
+    // NOTE: Format detection relies on the byte after the magic header.
+    // If the first byte of a legacy salt happens to be 0, 1, or 2, it could be
+    // misinterpreted as a strength byte of the new format. This is a known
+    // limitation. A future format version should use a distinct magic header
+    // (e.g., "RCDB_EN2") to eliminate ambiguity.
+    //
     // Determine format: peek at the byte after magic. If it is a valid
     // strength byte (0, 1, or 2) AND the data is long enough for the new
     // format, treat it as new format. Otherwise fall back to legacy.

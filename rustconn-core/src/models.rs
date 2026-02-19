@@ -20,13 +20,13 @@ pub use history::{ConnectionHistoryEntry, ConnectionStatistics, HistorySettings}
 pub use protocol::ProtocolType;
 pub use protocol::{
     AwsSsmConfig, AzureBastionConfig, AzureSshConfig, BoundaryConfig, CloudflareAccessConfig,
-    GcpIapConfig, GenericZeroTrustConfig, KubernetesConfig, OciBastionConfig, ProtocolConfig,
-    RdpClientMode, RdpConfig, RdpGateway, RdpPerformanceMode, Resolution, ScaleOverride,
-    SerialBaudRate, SerialConfig, SerialDataBits, SerialFlowControl, SerialParity, SerialStopBits,
-    SharedFolder, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource,
-    TailscaleSshConfig, TeleportConfig, TelnetBackspaceSends, TelnetConfig, TelnetDeleteSends,
-    VncClientMode, VncConfig, VncPerformanceMode, ZeroTrustConfig, ZeroTrustProvider,
-    ZeroTrustProviderConfig,
+    GcpIapConfig, GenericZeroTrustConfig, KubernetesConfig, OciBastionConfig, PortForward,
+    PortForwardDirection, ProtocolConfig, RdpClientMode, RdpConfig, RdpGateway, RdpPerformanceMode,
+    Resolution, ScaleOverride, SerialBaudRate, SerialConfig, SerialDataBits, SerialFlowControl,
+    SerialParity, SerialStopBits, SharedFolder, SpiceConfig, SpiceImageCompression, SshAuthMethod,
+    SshConfig, SshKeySource, TailscaleSshConfig, TeleportConfig, TelnetBackspaceSends,
+    TelnetConfig, TelnetDeleteSends, VncClientMode, VncConfig, VncPerformanceMode, ZeroTrustConfig,
+    ZeroTrustProvider, ZeroTrustProviderConfig,
 };
 pub use snippet::{Snippet, SnippetVariable};
 pub use template::{group_templates_by_protocol, ConnectionTemplate, TemplateError};

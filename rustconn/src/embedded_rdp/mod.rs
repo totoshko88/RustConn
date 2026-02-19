@@ -79,7 +79,7 @@ use std::rc::Rc;
 use crate::i18n::i18n;
 
 #[cfg(feature = "rdp-embedded")]
-use rustconn_core::RdpClientCommand;
+use rustconn_core::rdp_client::RdpClientCommand;
 
 /// Embedded RDP widget using Wayland subsurface
 ///
@@ -191,6 +191,8 @@ pub struct EmbeddedRdpWidget {
     connection_generation: Rc<RefCell<u64>>,
     /// Unique widget ID for debugging
     widget_id: u64,
+    /// Signal handler ID for the drawing area resize handler
+    resize_handler_id: Rc<RefCell<Option<glib::SignalHandlerId>>>,
 }
 
 impl EmbeddedRdpWidget {
@@ -333,6 +335,7 @@ impl EmbeddedRdpWidget {
                 static WIDGET_COUNTER: AtomicU64 = AtomicU64::new(1);
                 WIDGET_COUNTER.fetch_add(1, Ordering::SeqCst)
             },
+            resize_handler_id: Rc::new(RefCell::new(None)),
         };
 
         widget.setup_drawing();
@@ -628,7 +631,7 @@ impl EmbeddedRdpWidget {
                     // Send via FreeRDP thread
                     if let Some(ref thread) = *freerdp_thread.borrow() {
                         let _ = thread.send_command(RdpCommand::SendCtrlAltDel);
-                        eprintln!("[FreeRDP] Sent Ctrl+Alt+Del");
+                        tracing::debug!("Sent Ctrl+Alt+Del via FreeRDP");
                     }
                 }
             });
@@ -650,7 +653,7 @@ impl EmbeddedRdpWidget {
 
                 if let Some(ref thread) = *freerdp_thread.borrow() {
                     let _ = thread.send_command(RdpCommand::SendCtrlAltDel);
-                    eprintln!("[FreeRDP] Sent Ctrl+Alt+Del");
+                    tracing::debug!("Sent Ctrl+Alt+Del via FreeRDP");
                 }
             });
         }
@@ -789,7 +792,9 @@ impl EmbeddedRdpWidget {
     /// Sets up keyboard and mouse input handlers with coordinate transformation
     #[cfg(feature = "rdp-embedded")]
     fn setup_input_handlers(&self) {
-        use rustconn_core::{keycode_to_scancode, keyval_to_scancode, keyval_to_unicode};
+        use rustconn_core::rdp_client::{
+            keycode_to_scancode, keyval_to_scancode, keyval_to_unicode,
+        };
 
         // Keyboard input handler
         let key_controller = EventControllerKey::new();
@@ -1154,7 +1159,8 @@ impl EmbeddedRdpWidget {
         let status_label = self.status_label.clone();
         let on_reconnect = self.on_reconnect.clone();
 
-        self.drawing_area
+        let handler_id = self
+            .drawing_area
             .connect_resize(move |area, new_width, new_height| {
                 // Store CSS pixel dimensions for mouse coordinate transform.
                 // GTK mouse events use CSS coordinates, and the draw function
@@ -1272,6 +1278,7 @@ impl EmbeddedRdpWidget {
 
                 *reconnect_timer.borrow_mut() = Some(source_id);
             });
+        *self.resize_handler_id.borrow_mut() = Some(handler_id);
     }
 
     /// Sets up the resize handler (fallback when rdp-embedded is disabled)
@@ -1281,7 +1288,8 @@ impl EmbeddedRdpWidget {
         let height = self.height.clone();
         let pixel_buffer = self.pixel_buffer.clone();
 
-        self.drawing_area
+        let handler_id = self
+            .drawing_area
             .connect_resize(move |area, new_width, new_height| {
                 let new_width = new_width.unsigned_abs();
                 let new_height = new_height.unsigned_abs();
@@ -1293,6 +1301,7 @@ impl EmbeddedRdpWidget {
                 pixel_buffer.borrow_mut().resize(new_width, new_height);
                 area.queue_draw();
             });
+        *self.resize_handler_id.borrow_mut() = Some(handler_id);
     }
 
     /// Returns the main container widget
@@ -1392,8 +1401,10 @@ impl EmbeddedRdpWidget {
 
     /// Reports a fallback and notifies listeners (Requirement 6.4)
     fn report_fallback(&self, message: &str) {
-        if let Some(ref callback) = *self.on_fallback.borrow() {
-            callback(message);
+        let callback = self.on_fallback.borrow_mut().take();
+        if let Some(cb) = callback {
+            cb(message);
+            *self.on_fallback.borrow_mut() = Some(cb);
         }
     }
 
@@ -1402,8 +1413,13 @@ impl EmbeddedRdpWidget {
         *self.state.borrow_mut() = new_state;
         self.drawing_area.queue_draw();
 
-        if let Some(ref callback) = *self.on_state_changed.borrow() {
-            callback(new_state);
+        // Take callback out so the RefCell borrow is released before invocation,
+        // preventing panics if the callback re-enters and borrows the same cell.
+        let callback = self.on_state_changed.borrow_mut().take();
+        if let Some(cb) = callback {
+            cb(new_state);
+            // Restore the callback for future use
+            *self.on_state_changed.borrow_mut() = Some(cb);
         }
     }
 
@@ -1411,8 +1427,10 @@ impl EmbeddedRdpWidget {
     fn report_error(&self, message: &str) {
         self.set_state(RdpConnectionState::Error);
 
-        if let Some(ref callback) = *self.on_error.borrow() {
-            callback(message);
+        let callback = self.on_error.borrow_mut().take();
+        if let Some(cb) = callback {
+            cb(message);
+            *self.on_error.borrow_mut() = Some(cb);
         }
     }
 }
@@ -1548,7 +1566,7 @@ impl EmbeddedRdpWidget {
     /// - Requirement 1.5: Fallback to FreeRDP if IronRDP fails
     #[cfg(feature = "rdp-embedded")]
     fn connect_ironrdp(&self, config: &RdpConfig) -> Result<(), EmbeddedRdpError> {
-        use rustconn_core::{RdpClient, RdpClientConfig, RdpClientEvent};
+        use rustconn_core::rdp_client::{RdpClient, RdpClientConfig, RdpClientEvent};
 
         // Increment connection generation to invalidate any stale polling loops
         let generation = {
@@ -1668,6 +1686,18 @@ impl EmbeddedRdpWidget {
             client_config = client_config.with_domain(domain);
         }
 
+        // Disable NLA (CredSSP) when credentials are incomplete — CredSSP
+        // requires both username and password; empty identity causes
+        // "Got empty identity" error. The server will prompt instead.
+        if config.username.is_none() || config.password.is_none() {
+            tracing::debug!(
+                "[EmbeddedRDP] Disabling NLA: credentials incomplete (username={}, password={})",
+                config.username.is_some(),
+                config.password.is_some(),
+            );
+            client_config = client_config.with_nla(false);
+        }
+
         if let Some(klid) = config.keyboard_layout {
             client_config = client_config.with_keyboard_layout(klid);
         }
@@ -1733,6 +1763,10 @@ impl EmbeddedRdpWidget {
         glib::timeout_add_local(
             std::time::Duration::from_millis(polling_interval),
             move || {
+                if client_ref.borrow().is_none() {
+                    return glib::ControlFlow::Break;
+                }
+
                 // Check if this polling loop is stale (a newer connection was started)
                 if *connection_generation.borrow() != generation {
                     tracing::debug!(
@@ -1909,9 +1943,9 @@ impl EmbeddedRdpWidget {
                             RdpClientEvent::ClipboardDataRequest(format) => {
                                 // Server requests clipboard data from us
                                 // Get local clipboard and send to server
-                                eprintln!(
-                                    "[Clipboard] Server requests data for format {}",
-                                    format.id
+                                tracing::debug!(
+                                    format_id = format.id,
+                                    "Server requests clipboard data"
                                 );
                                 let display = drawing_area.display();
                                 let clipboard = display.clipboard();
@@ -1922,9 +1956,9 @@ impl EmbeddedRdpWidget {
                                     None::<&gtk4::gio::Cancellable>,
                                     move |result| {
                                         if let Ok(Some(text)) = result {
-                                            eprintln!(
-                                                "[Clipboard] Sending {} chars to server",
-                                                text.len()
+                                            tracing::debug!(
+                                                chars = text.len(),
+                                                "Sending clipboard text to server"
                                             );
                                             if let Some(ref sender) = *tx.borrow() {
                                                 // Send as UTF-16 for CF_UNICODETEXT
@@ -2223,6 +2257,9 @@ impl EmbeddedRdpWidget {
 
     /// Cleans up embedded mode resources
     fn cleanup_embedded_mode(&self) {
+        if let Some(handler_id) = self.resize_handler_id.borrow_mut().take() {
+            self.drawing_area.disconnect(handler_id);
+        }
         if let Some(mut thread) = self.freerdp_thread.borrow_mut().take() {
             thread.shutdown();
         }
@@ -2415,6 +2452,11 @@ impl EmbeddedRdpWidget {
     ///
     /// - Requirement 1.6: Proper cleanup on disconnect
     pub fn disconnect(&self) {
+        // Disconnect resize signal handler
+        if let Some(handler_id) = self.resize_handler_id.borrow_mut().take() {
+            self.drawing_area.disconnect(handler_id);
+        }
+
         // Shutdown FreeRDP thread if running (Requirement 1.6)
         if let Some(mut thread) = self.freerdp_thread.borrow_mut().take() {
             thread.shutdown();

@@ -87,7 +87,11 @@ mod vnc_config_tests {
         #[test]
         fn config_with_password_sets_password(host in arb_host(), password in "[a-zA-Z0-9]{4,20}") {
             let config = VncClientConfig::new(&host).with_password(&password);
-            prop_assert_eq!(config.password, Some(password));
+            let stored = config
+                .password
+                .as_ref()
+                .map(|p| secrecy::ExposeSecret::expose_secret(p).to_string());
+            prop_assert_eq!(stored, Some(password));
         }
     }
 

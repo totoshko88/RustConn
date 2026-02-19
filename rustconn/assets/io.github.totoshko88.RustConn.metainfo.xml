@@ -104,12 +104,21 @@
     <control>touch</control>
   </supports>
   <releases>
-    <release version="0.8.9" date="2026-02-19">
+    <release version="0.8.9" date="2026-02-20">
       <description>
-        <p>Version 0.8.9 - Dependency Migration and Architecture Audit:</p>
+        <p>Version 0.8.9 - SSH Port Forwarding, Security Hardening, Faster Startup:</p>
         <ul>
-          <li>Dependencies: serde_yaml replaced with serde_yaml_ng 0.9 (maintained community fork) via Cargo rename</li>
-          <li>Internal: comprehensive architecture audit completed (51 findings across 4 domains)</li>
+          <li>SSH port forwarding — Local (-L), remote (-R), and dynamic SOCKS (-D) rules per connection (#22)</li>
+          <li>Deferred secret backend initialization — async startup eliminates 1–3 second delay</li>
+          <li>Security: input validation hardening across all protocols (injection prevention)</li>
+          <li>Security: SSH config export blocks dangerous directives (ProxyCommand, etc.)</li>
+          <li>Security: KeePassXC socket responses capped at 10 MB; VNC/RDP passwords use SecretString</li>
+          <li>Fixed Quick Connect RDP "Got empty identity" CredSSP error — NLA auto-disabled (#29)</li>
+          <li>Fixed Bitwarden duplicate vault writes, false "unlocked" status, CLI v2026.1.0 compatibility (#28)</li>
+          <li>Fixed RefCell borrow panic in EmbeddedRdpWidget, VNC polling, RDP timer leak</li>
+          <li>~40 eprintln! calls migrated to structured tracing</li>
+          <li>Dependencies: serde_yaml replaced with serde_yaml_ng 0.9; cpal 0.17.3, clap 4.5.60</li>
+          <li>Architecture audit completed (51 findings, 49 resolved)</li>
         </ul>
       </description>
     </release>

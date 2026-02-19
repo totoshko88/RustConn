@@ -92,5 +92,5 @@ pub const fn is_embedded_rdp_available() -> bool {
     cfg!(feature = "rdp-embedded")
 }
 
-// Re-export keyval_to_unicode for keyboard input handling
-pub use input::keyval_to_unicode;
+// Re-export key mapping functions for keyboard input handling
+pub use input::{keycode_to_scancode, keyval_to_scancode, keyval_to_unicode};

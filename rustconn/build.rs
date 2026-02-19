@@ -8,7 +8,7 @@ use std::path::Path;
 use std::process::Command;
 
 fn main() {
-    let out_dir = std::env::var("OUT_DIR").unwrap();
+    let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR must be set by Cargo");
     let locale_out = Path::new(&out_dir).join("locale");
     let po_dir = Path::new("../po");
 

@@ -56,6 +56,10 @@ tar = "0.4"
 # See: https://github.com/rust-native-tls/rust-native-tls/issues/367
 native-tls = "0.2.18"
 
+# Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
 # Testing
 proptest = "1.6"
 tempfile = "3.15"

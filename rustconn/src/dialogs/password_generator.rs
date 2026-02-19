@@ -10,7 +10,7 @@ use gtk4::{
     Adjustment, Box as GtkBox, Button, Entry, Label, LevelBar, Orientation, Scale, SpinButton,
 };
 use libadwaita as adw;
-use rustconn_core::{
+use rustconn_core::password_generator::{
     estimate_crack_time, PasswordGenerator, PasswordGeneratorConfig, PasswordStrength,
 };
 use std::cell::RefCell;

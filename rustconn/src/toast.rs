@@ -178,8 +178,8 @@ pub fn show_toast_on_window(window: &impl IsA<gui::Window>, message: &str, _toas
         }
     }
 
-    // Fallback: print to stderr so we don't silently lose messages during dev
-    eprintln!("Toast (fallback): {}", message);
+    // Fallback: log so we don't silently lose messages during dev
+    tracing::warn!(toast_message = %message, "Could not find ToastOverlay in window hierarchy");
 }
 
 /// Helper to recursively find a ToastOverlay

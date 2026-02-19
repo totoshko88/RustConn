@@ -8,6 +8,7 @@ use async_trait::async_trait;
 use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::UnixStream;
 
@@ -27,7 +28,7 @@ pub struct KeePassXcBackend {
     /// Client ID for association
     client_id: String,
     /// Whether the backend has been associated with `KeePassXC`
-    associated: bool,
+    associated: AtomicBool,
 }
 
 /// Request message for `KeePassXC` protocol
@@ -96,7 +97,7 @@ impl KeePassXcBackend {
         Self {
             socket_path,
             client_id: client_id.into(),
-            associated: false,
+            associated: AtomicBool::new(false),
         }
     }
 
@@ -113,7 +114,7 @@ impl KeePassXcBackend {
         Self {
             socket_path,
             client_id: client_id.into(),
-            associated: false,
+            associated: AtomicBool::new(false),
         }
     }
 
@@ -135,6 +136,8 @@ impl KeePassXcBackend {
 
     /// Sends a request and receives a response
     async fn send_request(&self, request: &KeePassXcRequest) -> SecretResult<KeePassXcResponse> {
+        const MAX_RESPONSE_SIZE: usize = 10 * 1024 * 1024; // 10 MB
+
         let mut stream = self.connect().await?;
 
         // Serialize request
@@ -160,6 +163,11 @@ impl KeePassXcBackend {
             .await
             .map_err(|e| SecretError::KeePassXC(format!("Failed to read response length: {e}")))?;
         let response_len = u32::from_ne_bytes(len_buf) as usize;
+        if response_len > MAX_RESPONSE_SIZE {
+            return Err(SecretError::KeePassXC(format!(
+                "Response too large: {response_len} bytes (max {MAX_RESPONSE_SIZE})"
+            )));
+        }
 
         // Read response
         let mut response_buf = vec![0u8; response_len];
@@ -187,7 +195,7 @@ impl KeePassXcBackend {
 
     /// Associates with `KeePassXC` if not already associated
     async fn ensure_associated(&self) -> SecretResult<()> {
-        if self.associated {
+        if self.associated.load(Ordering::Relaxed) {
             return Ok(());
         }
 
@@ -223,6 +231,7 @@ impl KeePassXcBackend {
             }
         }
 
+        self.associated.store(true, Ordering::Relaxed);
         Ok(())
     }
 }
@@ -234,17 +243,20 @@ impl SecretBackend for KeePassXcBackend {
 
         let url = Self::connection_url(connection_id);
         let login = credentials.username.clone().unwrap_or_default();
-        let password = credentials
-            .expose_password()
-            .unwrap_or_default()
-            .to_string();
 
+        // Inline the exposed password directly into the request to minimize
+        // the lifetime of the plaintext in memory — no intermediate String variable.
         let request = KeePassXcRequest {
             action: "set-login".to_string(),
             id: Some(self.client_id.clone()),
             url: Some(url),
             login: Some(login),
-            password: Some(password),
+            password: Some(
+                credentials
+                    .expose_password()
+                    .unwrap_or_default()
+                    .to_string(),
+            ),
             group: Some("RustConn".to_string()),
             uuid: None,
         };

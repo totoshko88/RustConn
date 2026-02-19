@@ -1030,8 +1030,8 @@ fn start_quick_telnet(
         &params.host,
         params.port,
         &[],
-        rustconn_core::TelnetBackspaceSends::Automatic,
-        rustconn_core::TelnetDeleteSends::Automatic,
+        rustconn_core::models::TelnetBackspaceSends::Automatic,
+        rustconn_core::models::TelnetDeleteSends::Automatic,
     );
 }
 

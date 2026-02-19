@@ -191,14 +191,26 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
-* Thu Feb 19 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.9-0
-- Version bump to 0.8.9
+* Fri Feb 20 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.9-0
+- SSH port forwarding — Local (-L), remote (-R), and dynamic SOCKS (-D)
+  port forwarding rules per connection (#22)
+- Deferred secret backend initialization — async startup, eliminates
+  1–3 second delay when secret backend is configured
+- Security: input validation hardening across all protocols
+- Security: SSH config export blocks dangerous directives
+- Security: KeePassXC socket responses capped at 10 MB
+- Security: VNC and RDP client passwords migrated to SecretString
+- Security: FreeRDP external launcher uses /from-stdin
+- Fixed Quick Connect RDP "Got empty identity" CredSSP error (#29)
+- Fixed Bitwarden duplicate vault writes, false "unlocked" status,
+  auto-unlock after restart, CLI v2026.1.0 compatibility (#28)
+- Fixed RefCell borrow panic in EmbeddedRdpWidget, VNC polling mutex
+  contention, RDP polling timer leak
+- Fixed several unwrap() panics (VNC, TaskExecutor, tray, build.rs)
+- ~40 eprintln! calls migrated to structured tracing
 - Dependencies: serde_yaml replaced with serde_yaml_ng 0.9 (maintained fork)
-  via Cargo rename — all source code unchanged
-- Internal: architecture audit completed (rustconn_audit_report.md)
-
-* Thu Feb 19 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.9-0
-- Version bump to 0.8.9
+- Dependencies: cpal 0.17.1→0.17.3, clap 4.5.59→4.5.60
+- Internal: architecture audit completed (51 findings, 49 resolved)
 
 * Wed Feb 18 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.8-0
 - Version bump to 0.8.8

@@ -9,7 +9,7 @@ use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, DropDown, Entry, StringList};
 use libadwaita as adw;
-use rustconn_core::{TelnetBackspaceSends, TelnetDeleteSends};
+use rustconn_core::models::{TelnetBackspaceSends, TelnetDeleteSends};
 
 /// Return type for Telnet options creation
 ///

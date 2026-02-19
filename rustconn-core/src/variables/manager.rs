@@ -459,6 +459,9 @@ impl VariableManager {
     /// Returns `VariableError::UnsafeValue` if the value contains unsafe
     /// characters.
     fn validate_command_value(name: &str, value: &str) -> VariableResult<()> {
+        // Shell metacharacters that could enable injection via `sh -c`
+        const SHELL_META: &[char] = &[';', '|', '&', '`', '$', '(', ')', '<', '>', '!'];
+
         if value.contains('\0') {
             return Err(VariableError::UnsafeValue {
                 name: name.to_string(),
@@ -478,6 +481,14 @@ impl VariableManager {
             return Err(VariableError::UnsafeValue {
                 name: name.to_string(),
                 reason: "contains control characters".to_string(),
+            });
+        }
+
+        // Reject shell metacharacters to prevent injection
+        if value.chars().any(|c| SHELL_META.contains(&c)) {
+            return Err(VariableError::UnsafeValue {
+                name: name.to_string(),
+                reason: "contains shell metacharacters".to_string(),
             });
         }
 
@@ -789,17 +800,26 @@ mod tests {
     }
 
     #[test]
-    fn test_substitute_for_command_allows_special_chars() {
+    fn test_substitute_for_command_rejects_shell_metacharacters() {
         let mut manager = VariableManager::new();
         manager.set_global(Variable::new(
             "complex",
             "user@host:port/path?query=1&other=2",
         ));
 
+        let result = manager.substitute_for_command("${complex}", VariableScope::Global);
+        assert!(result.is_err(), "should reject value containing '&'");
+    }
+
+    #[test]
+    fn test_substitute_for_command_allows_safe_special_chars() {
+        let mut manager = VariableManager::new();
+        manager.set_global(Variable::new("safe", "user@host:port/path?query=1"));
+
         let result = manager
-            .substitute_for_command("${complex}", VariableScope::Global)
+            .substitute_for_command("${safe}", VariableScope::Global)
             .unwrap();
-        assert_eq!(result, "user@host:port/path?query=1&other=2");
+        assert_eq!(result, "user@host:port/path?query=1");
     }
 
     #[test]

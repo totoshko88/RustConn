@@ -76,6 +76,20 @@ pub enum CliError {
     Io(#[from] std::io::Error),
 }
 
+impl From<rustconn_core::error::RustConnError> for CliError {
+    fn from(err: rustconn_core::error::RustConnError) -> Self {
+        use rustconn_core::error::RustConnError;
+        match err {
+            RustConnError::Config(e) => Self::Config(e.to_string()),
+            RustConnError::Protocol(e) => Self::Protocol(e.to_string()),
+            RustConnError::Secret(e) => Self::Secret(e.to_string()),
+            RustConnError::Import(e) => Self::Import(e.to_string()),
+            RustConnError::Session(e) => Self::Connection(e.to_string()),
+            RustConnError::Io(e) => Self::Io(e),
+        }
+    }
+}
+
 impl CliError {
     /// Returns the appropriate exit code for this error type.
     ///

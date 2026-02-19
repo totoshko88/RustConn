@@ -2259,6 +2259,7 @@ impl TemplateDialog {
             },
             custom_options: std::collections::HashMap::new(),
             sftp_enabled: true,
+            port_forwards: Vec::new(),
         };
 
         if !custom_options_text.is_empty() {

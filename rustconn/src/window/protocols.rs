@@ -9,7 +9,7 @@ use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
 use crate::utils::spawn_blocking_with_callback;
 use gtk4::prelude::*;
-use rustconn_core::check_port;
+use rustconn_core::connection::check_port;
 use rustconn_core::variables::{Variable, VariableManager, VariableScope};
 use std::rc::Rc;
 use uuid::Uuid;
@@ -466,7 +466,7 @@ fn start_vnc_connection_internal(
         let widget_for_reconnect = vnc_widget.clone();
         vnc_widget.connect_reconnect(move || {
             if let Err(e) = widget_for_reconnect.reconnect() {
-                eprintln!("VNC reconnect failed: {}", e);
+                tracing::error!(%e, "VNC reconnect failed");
             }
         });
 
@@ -474,7 +474,7 @@ fn start_vnc_connection_internal(
         if let Err(e) =
             vnc_widget.connect_with_config(&host, port, password.as_deref(), &vnc_config)
         {
-            eprintln!("Failed to connect VNC session '{}': {}", conn_name, e);
+            tracing::error!(%e, conn_name, "Failed to connect VNC session");
             sidebar.update_connection_status(&connection_id.to_string(), "failed");
         } else {
             sidebar.update_connection_status(&connection_id.to_string(), "connecting");
@@ -601,7 +601,7 @@ fn start_spice_connection_internal(
     // Get the SPICE widget and initiate connection
     if let Some(spice_widget) = notebook.get_spice_widget(session_id) {
         // Build connection config using SpiceClientConfig from spice_client module
-        use rustconn_core::SpiceClientConfig;
+        use rustconn_core::spice_client::SpiceClientConfig;
         let mut config = SpiceClientConfig::new(&host).with_port(port);
 
         // Apply SPICE-specific settings if available
@@ -657,13 +657,13 @@ fn start_spice_connection_internal(
         let widget_for_reconnect = spice_widget.clone();
         spice_widget.connect_reconnect(move || {
             if let Err(e) = widget_for_reconnect.reconnect() {
-                eprintln!("SPICE reconnect failed: {}", e);
+                tracing::error!(%e, "SPICE reconnect failed");
             }
         });
 
         // Initiate connection
         if let Err(e) = spice_widget.connect(&config) {
-            eprintln!("Failed to connect SPICE session '{conn_name}': {e}");
+            tracing::error!(%e, conn_name, "Failed to connect SPICE session");
         }
     }
 
@@ -739,8 +739,8 @@ pub fn start_telnet_connection(
         } else {
             (
                 Vec::new(),
-                rustconn_core::TelnetBackspaceSends::Automatic,
-                rustconn_core::TelnetDeleteSends::Automatic,
+                rustconn_core::models::TelnetBackspaceSends::Automatic,
+                rustconn_core::models::TelnetDeleteSends::Automatic,
             )
         };
 

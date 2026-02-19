@@ -481,32 +481,147 @@ pub async fn get_bitwarden_version() -> Option<BitwardenVersion> {
 
 /// Unlocks Bitwarden vault with master password
 ///
-/// Uses `--passwordenv` option as recommended by Bitwarden documentation
-/// for secure password passing without exposing it in process arguments.
+/// Uses `std::process::Command` (blocking) via `spawn_blocking` because the
+/// new Rust-based Bitwarden CLI (v2026+) has compatibility issues with
+/// `tokio::process::Command` for the `unlock` subcommand.
+///
+/// Tries three strategies in order:
+/// 1. `--passwordenv BW_PASSWORD --raw` (returns session key directly)
+/// 2. `--passwordenv BW_PASSWORD` without `--raw` (parses session key from verbose output)
+/// 3. Stdin password pipe without `--raw` (for older CLI versions)
 ///
 /// # Errors
 /// Returns `SecretError` if the unlock command fails or password is incorrect
 pub async fn unlock_vault(password: &SecretString) -> SecretResult<SecretString> {
-    // Use --passwordenv as recommended by Bitwarden docs
-    // This is more secure than passing password via stdin or command line
-    let output = Command::new("bw")
-        .args(["unlock", "--passwordenv", "BW_PASSWORD", "--raw"])
-        .env("BW_PASSWORD", password.expose_secret())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
+    let pw = password.expose_secret().to_string();
+
+    tokio::task::spawn_blocking(move || unlock_vault_sync(&pw))
         .await
+        .map_err(|e| SecretError::ConnectionFailed(format!("Unlock task panicked: {e}")))?
+}
+
+/// Synchronous implementation of vault unlock.
+///
+/// Uses `std::process::Command` which is compatible with all Bitwarden CLI versions
+/// including the new Rust-based CLI (v2026+).
+fn unlock_vault_sync(password: &str) -> SecretResult<SecretString> {
+    tracing::debug!(
+        password_len = password.len(),
+        "Bitwarden: unlock_vault_sync called"
+    );
+
+    // Strategy 1: --passwordenv with --raw (returns session key directly)
+    let output = std::process::Command::new("bw")
+        .args(["unlock", "--passwordenv", "BW_PASSWORD", "--raw"])
+        .env("BW_PASSWORD", password)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .output()
         .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run bw unlock: {e}")))?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(SecretError::ConnectionFailed(format!(
-            "Failed to unlock vault: {stderr}"
-        )));
+    if output.status.success() {
+        let session_key = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !session_key.is_empty() {
+            tracing::debug!("Bitwarden: unlocked with --passwordenv --raw");
+            return Ok(SecretString::from(session_key));
+        }
     }
 
-    let session_key = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    Ok(SecretString::from(session_key))
+    let stderr_raw = String::from_utf8_lossy(&output.stderr).to_string();
+    tracing::debug!("Bitwarden: --raw unlock failed, trying verbose: {stderr_raw}");
+
+    // Strategy 2: --passwordenv without --raw (parse session key from verbose output)
+    let output = std::process::Command::new("bw")
+        .args(["unlock", "--passwordenv", "BW_PASSWORD"])
+        .env("BW_PASSWORD", password)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .output()
+        .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run bw unlock: {e}")))?;
+
+    if output.status.success() {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        if let Some(session_key) = extract_session_key(&stdout) {
+            tracing::debug!("Bitwarden: unlocked with --passwordenv (verbose)");
+            return Ok(SecretString::from(session_key));
+        }
+        tracing::debug!("Bitwarden: verbose unlock succeeded but no session key in output");
+    }
+
+    let stderr_verbose = String::from_utf8_lossy(&output.stderr);
+    tracing::debug!("Bitwarden: verbose unlock failed: {stderr_verbose}");
+
+    // Strategy 3: stdin pipe without --raw (for maximum compatibility)
+    let mut child = std::process::Command::new("bw")
+        .arg("unlock")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run bw unlock: {e}")))?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        use std::io::Write;
+        let _ = stdin.write_all(password.as_bytes());
+        let _ = stdin.write_all(b"\n");
+        drop(stdin);
+    }
+
+    let output = child
+        .wait_with_output()
+        .map_err(|e| SecretError::ConnectionFailed(format!("Failed to wait for bw: {e}")))?;
+
+    if output.status.success() {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        if let Some(session_key) = extract_session_key(&stdout) {
+            tracing::debug!("Bitwarden: unlocked with stdin pipe (verbose)");
+            return Ok(SecretString::from(session_key));
+        }
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    // Check if this is the "provided key" error — indicates corrupted vault data
+    if stderr_raw.contains("provided key is not the expected type")
+        || stderr.contains("provided key is not the expected type")
+    {
+        return Err(SecretError::ConnectionFailed(
+            "Vault data may be corrupted (key type mismatch). \
+             Try: bw logout → bw login → bw unlock"
+                .to_string(),
+        ));
+    }
+
+    Err(SecretError::ConnectionFailed(format!(
+        "Failed to unlock vault: {stderr}"
+    )))
+}
+
+/// Extracts session key from verbose `bw unlock` output.
+///
+/// Parses output lines looking for `BW_SESSION="<key>"` or `BW_SESSION=<key>`.
+fn extract_session_key(output: &str) -> Option<String> {
+    for line in output.lines() {
+        if line.contains("BW_SESSION=") {
+            // Try quoted format: export BW_SESSION="<key>"
+            if let Some(start) = line.find('"') {
+                if let Some(end) = line.rfind('"') {
+                    if end > start {
+                        return Some(line[start + 1..end].to_string());
+                    }
+                }
+            }
+            // Try unquoted format: BW_SESSION=<key>
+            if let Some(pos) = line.find("BW_SESSION=") {
+                let value_start = pos + "BW_SESSION=".len();
+                let value = line[value_start..].trim().trim_matches('"');
+                if !value.is_empty() {
+                    return Some(value.to_string());
+                }
+            }
+        }
+    }
+    None
 }
 
 /// Locks the Bitwarden vault
@@ -717,6 +832,115 @@ pub async fn delete_api_credentials_from_keyring() -> SecretResult<()> {
 ///
 /// # Errors
 /// Returns `SecretError` if vault cannot be unlocked from any source
+/// Attempts API key login when vault is unauthenticated.
+///
+/// Decrypts stored API credentials if needed and calls `bw login --apikey`.
+///
+/// # Errors
+/// Returns `SecretError::BackendUnavailable` if login fails or credentials are missing.
+async fn try_api_key_login(settings: &crate::config::SecretSettings) -> SecretResult<()> {
+    if !settings.bitwarden_use_api_key {
+        tracing::warn!("Bitwarden: vault unauthenticated, API key login not enabled");
+        return Err(SecretError::BackendUnavailable(
+            "Bitwarden vault is not logged in. \
+             Run 'bw login' in terminal or enable API key in Settings → Secrets."
+                .to_string(),
+        ));
+    }
+
+    let mut settings_clone = settings.clone();
+    if (settings_clone.bitwarden_client_id.is_none()
+        || settings_clone.bitwarden_client_secret.is_none())
+        && (settings_clone.bitwarden_client_id_encrypted.is_some()
+            || settings_clone.bitwarden_client_secret_encrypted.is_some())
+    {
+        settings_clone.decrypt_bitwarden_api_credentials();
+    }
+
+    if let (Some(ref client_id), Some(ref client_secret)) = (
+        settings_clone.bitwarden_client_id,
+        settings_clone.bitwarden_client_secret,
+    ) {
+        tracing::debug!("Bitwarden: attempting API key login");
+        login_with_api_key(client_id, client_secret)
+            .await
+            .map_err(|e| {
+                tracing::warn!("Bitwarden: API key login failed: {e}");
+                SecretError::BackendUnavailable(
+                    "Bitwarden vault is not logged in. \
+                 API key login failed. Check credentials in Settings → Secrets."
+                        .to_string(),
+                )
+            })?;
+        tracing::info!("Bitwarden: API key login successful");
+        Ok(())
+    } else {
+        tracing::warn!("Bitwarden: vault unauthenticated but no API credentials configured");
+        Err(SecretError::BackendUnavailable(
+            "Bitwarden vault is not logged in. \
+             Run 'bw login' in terminal or configure API key in Settings → Secrets."
+                .to_string(),
+        ))
+    }
+}
+
+/// Attempts to fix "key type mismatch" by re-logging in and retrying unlock.
+///
+/// This handles corrupted vault data (e.g. after CLI upgrade from Node.js to Rust).
+/// Performs: `bw logout` → `bw login --apikey` → `bw unlock`.
+///
+/// # Errors
+/// Returns `SecretError` if re-login or unlock fails, or if API key is not configured.
+async fn try_relogin_and_unlock(
+    settings: &crate::config::SecretSettings,
+    password: &SecretString,
+) -> SecretResult<()> {
+    if !settings.bitwarden_use_api_key {
+        tracing::debug!("Bitwarden: key type mismatch but no API key configured, cannot re-login");
+        return Err(SecretError::BackendUnavailable(
+            "Vault data corrupted. Run 'bw logout && bw login' manually.".to_string(),
+        ));
+    }
+
+    tracing::info!("Bitwarden: key type mismatch detected, attempting re-login");
+
+    // Logout (ignore errors — might already be logged out)
+    let _ = logout().await;
+
+    // Re-login with API key
+    try_api_key_login(settings).await.map_err(|e| {
+        tracing::warn!("Bitwarden: re-login failed: {e}");
+        SecretError::BackendUnavailable(
+            "Vault data corrupted and re-login failed. \
+             Run 'bw logout && bw login' manually."
+                .to_string(),
+        )
+    })?;
+
+    // Retry unlock
+    let session_key = unlock_vault(password).await.map_err(|e| {
+        tracing::warn!("Bitwarden: unlock after re-login failed: {e}");
+        SecretError::BackendUnavailable(
+            "Re-login succeeded but unlock still failed. Check master password.".to_string(),
+        )
+    })?;
+
+    std::env::set_var("BW_SESSION", session_key.expose_secret());
+    tracing::info!("Bitwarden: re-login + unlock successful");
+    Ok(())
+}
+
+/// Attempts to auto-unlock the Bitwarden vault using saved credentials.
+///
+/// Tries the following strategies in order:
+/// 1. Existing `BW_SESSION` environment variable
+/// 2. Vault already unlocked (no session needed)
+/// 3. API key login if vault is unauthenticated
+/// 4. Master password from system keyring
+/// 5. Master password from encrypted settings
+///
+/// # Errors
+/// Returns `SecretError::BackendUnavailable` if all strategies fail.
 pub async fn auto_unlock(
     settings: &crate::config::SecretSettings,
 ) -> SecretResult<BitwardenBackend> {
@@ -734,9 +958,29 @@ pub async fn auto_unlock(
 
     // 2. Check if vault is already unlocked (no session needed)
     let bare = BitwardenBackend::new();
-    if bare.is_unlocked().await {
+    let status = bare.get_status().await;
+    tracing::debug!(
+        vault_status = ?status.as_ref().map(|s| &s.status),
+        "Bitwarden: vault status before unlock"
+    );
+
+    if status
+        .as_ref()
+        .map(|s| s.status == "unlocked")
+        .unwrap_or(false)
+    {
         tracing::debug!("Bitwarden: vault already unlocked");
         return Ok(bare);
+    }
+
+    // 2b. Check if vault is unauthenticated — need login before unlock
+    let needs_login = status
+        .as_ref()
+        .map(|s| s.status == "unauthenticated")
+        .unwrap_or(false);
+
+    if needs_login {
+        try_api_key_login(settings).await?;
     }
 
     // 3. Try master password from system keyring
@@ -745,12 +989,20 @@ pub async fn auto_unlock(
             tracing::debug!("Bitwarden: attempting unlock with keyring password");
             match unlock_vault(&password).await {
                 Ok(session_key) => {
-                    // Persist session for other commands in this process
                     std::env::set_var("BW_SESSION", session_key.expose_secret());
                     return Ok(BitwardenBackend::with_session(session_key));
                 }
                 Err(e) => {
+                    let is_key_type_error = e.to_string().contains("key type mismatch");
                     tracing::warn!("Bitwarden: keyring password unlock failed: {e}");
+                    // If key type mismatch, try re-login before giving up
+                    if is_key_type_error
+                        && try_relogin_and_unlock(settings, &password).await.is_ok()
+                    {
+                        return Ok(BitwardenBackend::with_session(SecretString::from(
+                            std::env::var("BW_SESSION").unwrap_or_default(),
+                        )));
+                    }
                 }
             }
         }
@@ -772,7 +1024,15 @@ pub async fn auto_unlock(
                     return Ok(BitwardenBackend::with_session(session_key));
                 }
                 Err(e) => {
+                    let is_key_type_error = e.to_string().contains("key type mismatch");
                     tracing::warn!("Bitwarden: saved password unlock failed: {e}");
+                    // If key type mismatch, try re-login before giving up
+                    if is_key_type_error && try_relogin_and_unlock(settings, password).await.is_ok()
+                    {
+                        return Ok(BitwardenBackend::with_session(SecretString::from(
+                            std::env::var("BW_SESSION").unwrap_or_default(),
+                        )));
+                    }
                 }
             }
         }

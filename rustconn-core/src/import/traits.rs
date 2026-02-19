@@ -72,6 +72,24 @@ pub fn read_import_file(path: &Path, source_name: &str) -> Result<String, Import
 /// Returns `ImportError::ParseError` if the file cannot be read.
 #[allow(dead_code)] // Prepared for future async import implementation
 pub async fn read_import_file_async(path: &Path, source_name: &str) -> Result<String, ImportError> {
+    let metadata = tokio::fs::metadata(path)
+        .await
+        .map_err(|e| ImportError::ParseError {
+            source_name: source_name.to_string(),
+            reason: format!("Cannot read {}: {}", path.display(), e),
+        })?;
+
+    if metadata.len() > MAX_IMPORT_FILE_SIZE {
+        return Err(ImportError::ParseError {
+            source_name: source_name.to_string(),
+            reason: format!(
+                "File too large ({:.1} MB, max {} MB)",
+                metadata.len() as f64 / (1024.0 * 1024.0),
+                MAX_IMPORT_FILE_SIZE / (1024 * 1024),
+            ),
+        });
+    }
+
     tokio::fs::read_to_string(path)
         .await
         .map_err(|e| ImportError::ParseError {

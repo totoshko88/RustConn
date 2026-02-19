@@ -91,8 +91,28 @@ impl Protocol for KubernetesProtocol {
 }
 
 impl KubernetesProtocol {
+    /// Returns `true` if the value contains shell metacharacters that could
+    /// enable command injection when passed as a single argument to kubectl.
+    fn contains_shell_metachar(value: &str) -> bool {
+        value.contains(' ')
+            || value.contains(';')
+            || value.contains('|')
+            || value.contains('&')
+            || value.contains('\0')
+            || value.contains('\n')
+    }
+
     /// Builds `kubectl exec -it <pod> -- <shell>` command
     fn build_exec_command(config: &KubernetesConfig) -> Option<Vec<String>> {
+        // Validate shell value before building command
+        if Self::contains_shell_metachar(&config.shell) {
+            tracing::warn!(
+                shell = %config.shell,
+                "Rejecting suspicious Kubernetes shell value"
+            );
+            return None;
+        }
+
         let mut cmd = vec!["kubectl".to_string()];
 
         Self::append_global_args(&mut cmd, config);
@@ -111,8 +131,12 @@ impl KubernetesProtocol {
             }
         }
 
-        // Custom args
+        // Custom args — filter out values with injection characters
         for arg in &config.custom_args {
+            if arg.contains('\0') || arg.contains('\n') {
+                tracing::warn!(arg = %arg, "Skipping Kubernetes custom arg with unsafe characters");
+                continue;
+            }
             cmd.push(arg.clone());
         }
 
@@ -125,6 +149,24 @@ impl KubernetesProtocol {
 
     /// Builds `kubectl run` command for temporary busybox pod
     fn build_busybox_command(config: &KubernetesConfig) -> Option<Vec<String>> {
+        // Validate shell value before building command
+        if Self::contains_shell_metachar(&config.shell) {
+            tracing::warn!(
+                shell = %config.shell,
+                "Rejecting suspicious Kubernetes shell value"
+            );
+            return None;
+        }
+
+        // Validate busybox image — reject values with shell metacharacters
+        if Self::contains_shell_metachar(&config.busybox_image) {
+            tracing::warn!(
+                image = %config.busybox_image,
+                "Rejecting suspicious Kubernetes busybox image value"
+            );
+            return None;
+        }
+
         let mut cmd = vec!["kubectl".to_string()];
 
         Self::append_global_args(&mut cmd, config);
@@ -140,8 +182,12 @@ impl KubernetesProtocol {
         cmd.push("--image".to_string());
         cmd.push(config.busybox_image.clone());
 
-        // Custom args
+        // Custom args — filter out values with injection characters
         for arg in &config.custom_args {
+            if arg.contains('\0') || arg.contains('\n') {
+                tracing::warn!(arg = %arg, "Skipping Kubernetes custom arg with unsafe characters");
+                continue;
+            }
             cmd.push(arg.clone());
         }
 

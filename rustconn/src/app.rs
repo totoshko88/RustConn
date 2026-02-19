@@ -70,7 +70,7 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     // Load CSS styles for split view panes
     load_css_styles();
 
-    // Create shared application state
+    // Create shared application state (fast — secret backends deferred)
     let state = match create_shared_state() {
         Ok(state) => state,
         Err(e) => {
@@ -114,7 +114,98 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
         }
     });
 
+    // Present window immediately — no waiting for secret backends
     window.present();
+
+    // Initialize secret backends in a background thread after the window is visible.
+    // Decryption is fast and runs on the main thread; the slow Bitwarden vault
+    // unlock runs in a background thread to avoid blocking the GTK main loop.
+    let state_for_secrets = state.clone();
+    let sidebar_for_secrets = window.sidebar_rc();
+    glib::idle_add_local_once(move || {
+        // Phase 1: Decrypt stored credentials (fast, needs &mut self)
+        {
+            let mut state_ref = state_for_secrets.borrow_mut();
+            let settings = &mut state_ref.settings_mut().secrets;
+
+            if settings.bitwarden_password_encrypted.is_some()
+                && settings.decrypt_bitwarden_password()
+            {
+                tracing::info!("Bitwarden password restored from encrypted storage");
+            }
+
+            if settings.bitwarden_use_api_key
+                && (settings.bitwarden_client_id_encrypted.is_some()
+                    || settings.bitwarden_client_secret_encrypted.is_some())
+                && settings.decrypt_bitwarden_api_credentials()
+            {
+                tracing::info!("Bitwarden API credentials restored from encrypted storage");
+            }
+        }
+
+        // Phase 2: Check if Bitwarden auto-unlock is needed
+        let needs_bitwarden = {
+            let state_ref = state_for_secrets.borrow();
+            matches!(
+                state_ref.settings().secrets.preferred_backend,
+                rustconn_core::config::SecretBackendType::Bitwarden
+            )
+        };
+
+        if needs_bitwarden {
+            // Clone settings for the background thread (Send + 'static)
+            let secret_settings = state_for_secrets.borrow().settings().secrets.clone();
+
+            // Channel to receive the result on the GTK main thread
+            let (tx, rx) = std::sync::mpsc::channel::<bool>();
+
+            // Run slow Bitwarden unlock in a background thread
+            std::thread::spawn(move || {
+                let rt = match tokio::runtime::Runtime::new() {
+                    Ok(rt) => rt,
+                    Err(e) => {
+                        tracing::warn!("Failed to create runtime for Bitwarden unlock: {e}");
+                        let _ = tx.send(false);
+                        return;
+                    }
+                };
+
+                match rt.block_on(rustconn_core::secret::auto_unlock(&secret_settings)) {
+                    Ok(_) => {
+                        tracing::info!("Bitwarden vault unlocked at startup");
+                        let _ = tx.send(true);
+                    }
+                    Err(e) => {
+                        tracing::warn!("Bitwarden auto-unlock at startup failed: {e}");
+                        let _ = tx.send(false);
+                    }
+                }
+            });
+
+            // Poll for the result on the GTK main thread (non-blocking)
+            let state_for_poll = state_for_secrets.clone();
+            let sidebar_for_poll = sidebar_for_secrets.clone();
+            glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+                match rx.try_recv() {
+                    Ok(_) => {
+                        refresh_sidebar_secret_status(&state_for_poll, &sidebar_for_poll);
+                        tracing::info!("Secret backends initialized after window presentation");
+                        glib::ControlFlow::Break
+                    }
+                    Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
+                    Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                        refresh_sidebar_secret_status(&state_for_poll, &sidebar_for_poll);
+                        tracing::warn!("Bitwarden unlock thread disconnected");
+                        glib::ControlFlow::Break
+                    }
+                }
+            });
+        } else {
+            // No Bitwarden — just refresh sidebar status immediately
+            refresh_sidebar_secret_status(&state_for_secrets, &sidebar_for_secrets);
+            tracing::info!("Secret backends initialized after window presentation");
+        }
+    });
 }
 
 /// Updates the tray icon state from the application state
@@ -278,6 +369,33 @@ fn setup_tray_polling(
         update_tray_state(tray, &state_clone, &mut state_cache.borrow_mut());
         glib::ControlFlow::Continue
     });
+}
+
+/// Refreshes the sidebar secret backend status indicator.
+fn refresh_sidebar_secret_status(
+    state: &SharedAppState,
+    sidebar: &std::rc::Rc<crate::sidebar::ConnectionSidebar>,
+) {
+    let state_ref = state.borrow();
+    let settings = state_ref.settings();
+    let backend = settings.secrets.preferred_backend;
+    let (enabled, database_exists) = match backend {
+        rustconn_core::config::SecretBackendType::LibSecret
+        | rustconn_core::config::SecretBackendType::Bitwarden
+        | rustconn_core::config::SecretBackendType::OnePassword
+        | rustconn_core::config::SecretBackendType::Passbolt => (true, true),
+        rustconn_core::config::SecretBackendType::KeePassXc
+        | rustconn_core::config::SecretBackendType::KdbxFile => {
+            let kdbx_enabled = settings.secrets.kdbx_enabled;
+            let db_exists = settings
+                .secrets
+                .kdbx_path
+                .as_ref()
+                .is_some_and(|p| p.exists());
+            (kdbx_enabled, db_exists)
+        }
+    };
+    sidebar.update_keepass_status(enabled, database_exists);
 }
 
 /// Loads CSS styles for the application

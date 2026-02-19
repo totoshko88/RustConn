@@ -148,7 +148,13 @@ mod tray_impl {
         }
 
         fn tool_tip(&self) -> ksni::ToolTip {
-            let state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+            let state = match self.state.lock() {
+                Ok(state) => state,
+                Err(e) => {
+                    tracing::warn!("Tray state mutex poisoned in tool_tip");
+                    e.into_inner()
+                }
+            };
             let description = if state.active_sessions > 0 {
                 format!("{} active session(s)", state.active_sessions)
             } else {

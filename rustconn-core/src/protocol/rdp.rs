@@ -119,13 +119,25 @@ impl RdpProtocol {
                 }
             }
             for folder in &rdp_config.shared_folders {
+                if folder.share_name.contains(',') || folder.share_name.contains('/') {
+                    tracing::warn!(share_name = %folder.share_name, "Skipping shared folder with invalid share name");
+                    continue;
+                }
                 args.push(format!(
                     "/drive:{},{}",
                     folder.share_name,
                     folder.local_path.display()
                 ));
             }
-            args.extend(rdp_config.custom_args.clone());
+            let dangerous_prefixes = ["/p:", "/password:", "/shell:", "/proxy:"];
+            for arg in &rdp_config.custom_args {
+                let lower = arg.to_lowercase();
+                if dangerous_prefixes.iter().any(|p| lower.starts_with(p)) {
+                    tracing::warn!(arg = %arg, "Blocked dangerous RDP custom arg");
+                    continue;
+                }
+                args.push(arg.clone());
+            }
         }
 
         Some(args)

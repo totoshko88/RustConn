@@ -227,12 +227,20 @@ async fn run_vnc_client(
     mut command_rx: mpsc::Receiver<VncClientCommand>,
 ) -> Result<(), VncClientError> {
     // Connect to the server
+    tracing::warn!(
+        host = %config.host,
+        port = %config.port,
+        "VNC connection is unencrypted. Consider using SSH tunnel for security."
+    );
     let tcp = TcpStream::connect(config.server_address())
         .await
         .map_err(|e| VncClientError::ConnectionFailed(e.to_string()))?;
 
     // Build the VNC connector
-    let password = config.password.clone();
+    let password = config
+        .password
+        .as_ref()
+        .map(|p| secrecy::ExposeSecret::expose_secret(p).to_string());
     let mut connector = VncConnector::new(tcp)
         .set_auth_method(async move {
             if let Some(p) = password {
@@ -282,7 +290,9 @@ async fn run_vnc_client(
             last_refresh = now;
             refresh_interval
         } else {
-            refresh_interval.checked_sub(time_since_refresh).unwrap()
+            refresh_interval
+                .checked_sub(time_since_refresh)
+                .unwrap_or(refresh_interval)
         };
 
         tokio::select! {

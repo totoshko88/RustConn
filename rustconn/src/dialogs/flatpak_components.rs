@@ -19,7 +19,7 @@ use rustconn_core::cli_download::{
     install_component, uninstall_component, update_component, ComponentCategory,
     DownloadCancellation, DownloadableComponent,
 };
-use rustconn_core::is_flatpak;
+use rustconn_core::flatpak::is_flatpak;
 use std::cell::RefCell;
 use std::rc::Rc;
 

@@ -28,8 +28,8 @@ use std::rc::Rc;
 #[cfg(feature = "spice-embedded")]
 use gtk4::glib;
 #[cfg(feature = "spice-embedded")]
-use rustconn_core::{SpiceClient, SpiceClientCommand, SpiceClientEvent};
-use rustconn_core::{SpiceClientConfig, SpiceClientError};
+use rustconn_core::spice_client::{SpiceClient, SpiceClientCommand, SpiceClientEvent};
+use rustconn_core::spice_client::{SpiceClientConfig, SpiceClientError};
 
 /// Connection state for embedded SPICE widget
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -797,7 +797,7 @@ impl EmbeddedSpiceWidget {
                 match self.connect_native(config) {
                     Ok(()) => return Ok(()),
                     Err(e) => {
-                        eprintln!("[EmbeddedSpice] Native connection failed: {e}, trying fallback");
+                        tracing::warn!(%e, "Native SPICE connection failed, trying fallback");
                     }
                 }
             }
@@ -853,7 +853,7 @@ impl EmbeddedSpiceWidget {
             while let Ok(event) = event_rx.try_recv() {
                 match event {
                     SpiceClientEvent::Connected { width, height } => {
-                        eprintln!("[EmbeddedSpice] Connected: {width}x{height}");
+                        tracing::info!(width, height, "SPICE connected");
                         *state.borrow_mut() = SpiceConnectionState::Connected;
                         *spice_width.borrow_mut() = u32::from(width);
                         *spice_height.borrow_mut() = u32::from(height);
@@ -867,7 +867,7 @@ impl EmbeddedSpiceWidget {
                         drawing_area.queue_draw();
                     }
                     SpiceClientEvent::Disconnected => {
-                        eprintln!("[EmbeddedSpice] Disconnected");
+                        tracing::info!("SPICE disconnected");
                         *state.borrow_mut() = SpiceConnectionState::Disconnected;
                         toolbar.set_visible(false);
                         if let Some(ref callback) = *on_state_changed.borrow() {
@@ -877,7 +877,7 @@ impl EmbeddedSpiceWidget {
                         return glib::ControlFlow::Break;
                     }
                     SpiceClientEvent::ResolutionChanged { width, height } => {
-                        eprintln!("[EmbeddedSpice] Resolution changed: {width}x{height}");
+                        tracing::debug!(width, height, "SPICE resolution changed");
                         *spice_width.borrow_mut() = u32::from(width);
                         *spice_height.borrow_mut() = u32::from(height);
                         pixel_buffer
@@ -919,7 +919,7 @@ impl EmbeddedSpiceWidget {
                         drawing_area.queue_draw();
                     }
                     SpiceClientEvent::Error(msg) => {
-                        eprintln!("[EmbeddedSpice] Error: {msg}");
+                        tracing::error!(error = %msg, "SPICE client error");
                         *state.borrow_mut() = SpiceConnectionState::Error;
                         toolbar.set_visible(false);
                         if let Some(ref callback) = *on_error.borrow() {
@@ -944,11 +944,11 @@ impl EmbeddedSpiceWidget {
 
     /// Connects using external SPICE viewer (fallback)
     fn connect_external(&self, config: &SpiceClientConfig) -> Result<(), SpiceClientError> {
-        use rustconn_core::{launch_spice_viewer, SpiceViewerLaunchResult};
+        use rustconn_core::spice_client::{launch_spice_viewer, SpiceViewerLaunchResult};
 
         match launch_spice_viewer(config) {
             SpiceViewerLaunchResult::Launched { viewer, pid } => {
-                eprintln!("[EmbeddedSpice] Launched external viewer: {viewer} (pid: {pid:?})");
+                tracing::info!(%viewer, ?pid, "Launched external SPICE viewer");
                 *self.is_embedded.borrow_mut() = false;
                 self.set_state(SpiceConnectionState::Connected);
                 // Hide toolbar for external mode

@@ -142,6 +142,8 @@ pub struct ConnectionDialog {
     ssh_compression: CheckButton,
     ssh_startup_entry: Entry,
     ssh_options_entry: Entry,
+    ssh_port_forwards: Rc<RefCell<Vec<rustconn_core::models::PortForward>>>,
+    ssh_port_forwards_list: gtk4::ListBox,
     // RDP fields
     rdp_client_mode_dropdown: DropDown,
     rdp_performance_mode_dropdown: DropDown,
@@ -394,6 +396,19 @@ impl ConnectionDialog {
         // === Protocol-specific Tab ===
         let protocol_stack = Self::create_protocol_stack(&view_stack);
 
+        // Storage for agent keys (populated when dialog is shown)
+        let ssh_agent_keys: Rc<RefCell<Vec<rustconn_core::ssh_agent::AgentKey>>> =
+            Rc::new(RefCell::new(Vec::new()));
+
+        // Storage for port forwarding rules (created before SSH options so we can
+        // append the port forwarding group to the SSH panel)
+        let ssh_port_forwards: Rc<RefCell<Vec<rustconn_core::models::PortForward>>> =
+            Rc::new(RefCell::new(Vec::new()));
+        let ssh_port_forwards_list = gtk4::ListBox::builder()
+            .selection_mode(gtk4::SelectionMode::None)
+            .css_classes(["boxed-list"])
+            .build();
+
         // SSH options
         let (
             ssh_box,
@@ -402,7 +417,7 @@ impl ConnectionDialog {
             ssh_key_entry,
             ssh_key_button,
             ssh_agent_key_dropdown,
-            ssh_jump_host_dropdown, // New field
+            ssh_jump_host_dropdown,
             ssh_proxy_entry,
             ssh_identities_only,
             ssh_control_master,
@@ -412,11 +427,28 @@ impl ConnectionDialog {
             ssh_startup_entry,
             ssh_options_entry,
         ) = ssh::create_ssh_options();
-        protocol_stack.add_named(&ssh_box, Some("ssh"));
 
-        // Storage for agent keys (populated when dialog is shown)
-        let ssh_agent_keys: Rc<RefCell<Vec<rustconn_core::ssh_agent::AgentKey>>> =
-            Rc::new(RefCell::new(Vec::new()));
+        // Add port forwarding group to SSH options panel
+        // Navigate: ssh_box → ScrolledWindow → Clamp → content Box
+        if let Some(scrolled) = ssh_box.first_child() {
+            if let Some(scrolled_win) = scrolled.downcast_ref::<ScrolledWindow>() {
+                if let Some(clamp) = scrolled_win.child() {
+                    if let Some(adw_clamp) = clamp.downcast_ref::<adw::Clamp>() {
+                        if let Some(content) = adw_clamp.child() {
+                            if let Some(content_box) = content.downcast_ref::<GtkBox>() {
+                                let pf_group = ssh::create_port_forwarding_group(
+                                    &ssh_port_forwards_list,
+                                    &ssh_port_forwards,
+                                );
+                                content_box.append(&pf_group);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        protocol_stack.add_named(&ssh_box, Some("ssh"));
 
         // RDP options
         let (
@@ -679,6 +711,7 @@ impl ConnectionDialog {
             &ssh_compression,
             &ssh_startup_entry,
             &ssh_options_entry,
+            &ssh_port_forwards,
             &rdp_client_mode_dropdown,
             &rdp_performance_mode_dropdown,
             &rdp_width_spin,
@@ -811,6 +844,8 @@ impl ConnectionDialog {
             ssh_compression,
             ssh_startup_entry,
             ssh_options_entry,
+            ssh_port_forwards,
+            ssh_port_forwards_list,
             rdp_client_mode_dropdown,
             rdp_performance_mode_dropdown,
             rdp_width_spin,
@@ -1505,6 +1540,7 @@ impl ConnectionDialog {
         ssh_compression: &CheckButton,
         ssh_startup_entry: &Entry,
         ssh_options_entry: &Entry,
+        ssh_port_forwards: &Rc<RefCell<Vec<rustconn_core::models::PortForward>>>,
         rdp_client_mode_dropdown: &DropDown,
         rdp_performance_mode_dropdown: &DropDown,
         rdp_width_spin: &SpinButton,
@@ -1599,7 +1635,7 @@ impl ConnectionDialog {
     ) {
         let window = window.clone();
         let on_save = on_save.clone();
-        let state = state.clone();
+        let _state = state.clone();
         let name_entry = name_entry.clone();
         let description_view = description_view.clone();
         let host_entry = host_entry.clone();
@@ -1627,6 +1663,7 @@ impl ConnectionDialog {
         let ssh_compression = ssh_compression.clone();
         let ssh_startup_entry = ssh_startup_entry.clone();
         let ssh_options_entry = ssh_options_entry.clone();
+        let ssh_port_forwards = ssh_port_forwards.clone();
         let rdp_client_mode_dropdown = rdp_client_mode_dropdown.clone();
         let rdp_width_spin = rdp_width_spin.clone();
         let rdp_height_spin = rdp_height_spin.clone();
@@ -1757,6 +1794,7 @@ impl ConnectionDialog {
                 ssh_compression: &ssh_compression,
                 ssh_startup_entry: &ssh_startup_entry,
                 ssh_options_entry: &ssh_options_entry,
+                ssh_port_forwards: &ssh_port_forwards,
                 rdp_client_mode_dropdown: &rdp_client_mode_dropdown,
                 rdp_width_spin: &rdp_width_spin,
                 rdp_height_spin: &rdp_height_spin,
@@ -1862,36 +1900,9 @@ impl ConnectionDialog {
             }
 
             if let Some(result) = data.build_connection() {
-                // Save password to vault if password_source is Vault and password is not empty
-                let password_text = password_entry.text().to_string();
-                let password_source_idx = password_source_dropdown.selected();
-
-                if password_source_idx == 1 && !password_text.is_empty() {
-                    // 1 = Vault
-                    let conn_id = result.connection.id;
-                    let conn_name = result.connection.name.clone();
-                    let conn_host = result.connection.host.clone();
-                    let protocol = result.connection.protocol_config.protocol_type();
-                    let username = username_entry.text().to_string();
-
-                    // Get settings and groups for save_password_to_vault
-                    if let Ok(state_ref) = state.try_borrow() {
-                        let settings = state_ref.settings().clone();
-                        let groups: Vec<_> = state_ref.list_groups().into_iter().cloned().collect();
-
-                        crate::state::save_password_to_vault(
-                            &settings,
-                            &groups,
-                            Some(&result.connection),
-                            &conn_name,
-                            &conn_host,
-                            protocol,
-                            &username,
-                            &password_text,
-                            conn_id,
-                        );
-                    }
-                }
+                // Password saving is handled by the caller (edit_dialogs,
+                // connection_dialogs, templates) after the on_save callback
+                // to avoid duplicate vault writes.
 
                 if let Some(ref cb) = *on_save.borrow() {
                     cb(Some(result));
@@ -5682,6 +5693,32 @@ impl ConnectionDialog {
                 .collect();
             self.ssh_options_entry.set_text(&opts.join(", "));
         }
+
+        // Populate port forwarding rules
+        {
+            let mut pf_list = self.ssh_port_forwards.borrow_mut();
+            pf_list.clear();
+            pf_list.extend(ssh.port_forwards.clone());
+        }
+        self.refresh_port_forwards_list();
+    }
+
+    /// Refreshes the port forwarding list UI from the stored rules
+    fn refresh_port_forwards_list(&self) {
+        // Remove all existing rows
+        while let Some(child) = self.ssh_port_forwards_list.first_child() {
+            self.ssh_port_forwards_list.remove(&child);
+        }
+
+        let forwards = self.ssh_port_forwards.borrow();
+        for (idx, pf) in forwards.iter().enumerate() {
+            ssh::add_port_forward_row_to_list(
+                &self.ssh_port_forwards_list,
+                &self.ssh_port_forwards,
+                idx,
+                pf,
+            );
+        }
     }
 
     /// Selects an agent key in the dropdown by fingerprint
@@ -6512,6 +6549,7 @@ struct ConnectionDialogData<'a> {
     ssh_compression: &'a CheckButton,
     ssh_startup_entry: &'a Entry,
     ssh_options_entry: &'a Entry,
+    ssh_port_forwards: &'a Rc<RefCell<Vec<rustconn_core::models::PortForward>>>,
     rdp_client_mode_dropdown: &'a DropDown,
     rdp_performance_mode_dropdown: &'a DropDown,
     rdp_width_spin: &'a SpinButton,
@@ -7071,11 +7109,12 @@ impl ConnectionDialogData<'_> {
                 .map(String::from)
                 .collect()
         };
-        let backspace_sends = rustconn_core::TelnetBackspaceSends::from_index(
+        let backspace_sends = rustconn_core::models::TelnetBackspaceSends::from_index(
             self.telnet_backspace_dropdown.selected(),
         );
-        let delete_sends =
-            rustconn_core::TelnetDeleteSends::from_index(self.telnet_delete_dropdown.selected());
+        let delete_sends = rustconn_core::models::TelnetDeleteSends::from_index(
+            self.telnet_delete_dropdown.selected(),
+        );
         rustconn_core::models::TelnetConfig {
             custom_args,
             backspace_sends,
@@ -7268,6 +7307,7 @@ impl ConnectionDialogData<'_> {
             custom_options,
             startup_command,
             sftp_enabled: true,
+            port_forwards: self.ssh_port_forwards.borrow().clone(),
         }
     }
 

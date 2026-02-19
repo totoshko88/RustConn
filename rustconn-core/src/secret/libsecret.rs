@@ -48,6 +48,13 @@ impl LibSecretBackend {
 
     /// Builds the attribute map for a connection
     fn build_attributes(&self, connection_id: &str) -> HashMap<String, String> {
+        // Validate connection_id to prevent injection via secret-tool arguments
+        debug_assert!(
+            connection_id
+                .chars()
+                .all(|c| c.is_alphanumeric() || c == '-'),
+            "connection_id should be a UUID: {connection_id}"
+        );
         let mut attrs = HashMap::new();
         attrs.insert("application".to_string(), self.application_id.clone());
         attrs.insert("connection_id".to_string(), connection_id.to_string());

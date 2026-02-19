@@ -203,6 +203,7 @@ impl SshConfigImporter {
             custom_options: self.extract_recognized_options(options),
             startup_command: None,
             sftp_enabled: false,
+            port_forwards: Vec::new(),
         };
 
         // Create connection

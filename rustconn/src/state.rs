@@ -5,16 +5,22 @@
 
 use crate::async_utils::with_runtime;
 use chrono::Utc;
+use rustconn_core::cluster::{Cluster, ClusterManager};
+use rustconn_core::config::{AppSettings, ConfigManager};
+use rustconn_core::connection::ConnectionManager;
+use rustconn_core::document::{Document, DocumentManager, EncryptionStrength};
 use rustconn_core::error::ConfigResult;
-use rustconn_core::models::PasswordSource;
-use rustconn_core::models::{ConnectionHistoryEntry, ConnectionStatistics};
-use rustconn_core::{
-    AppSettings, AsyncCredentialResolver, AsyncCredentialResult, CancellationToken, Cluster,
-    ClusterManager, ConfigManager, Connection, ConnectionGroup, ConnectionManager,
-    CredentialResolver, CredentialVerificationManager, Credentials, Document, DocumentManager,
-    EncryptionStrength, ImportResult, SecretManager, Session, SessionManager, Snippet,
-    SnippetManager,
+use rustconn_core::import::ImportResult;
+use rustconn_core::models::{
+    Connection, ConnectionGroup, ConnectionHistoryEntry, ConnectionStatistics, Credentials,
+    PasswordSource, Snippet,
 };
+use rustconn_core::secret::{
+    AsyncCredentialResolver, AsyncCredentialResult, CancellationToken, CredentialResolver,
+    CredentialVerificationManager, SecretManager,
+};
+use rustconn_core::session::{Session, SessionManager};
+use rustconn_core::snippet::SnippetManager;
 use secrecy::SecretString;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -205,14 +211,14 @@ impl AppState {
             // Check if KDBX file exists
             if let Some(ref kdbx_path) = settings.secrets.kdbx_path {
                 if !kdbx_path.exists() {
-                    eprintln!(
-                        "KeePass database file not found: {}. Disabling integration.",
-                        kdbx_path.display()
+                    tracing::warn!(
+                        path = %kdbx_path.display(),
+                        "KeePass database file not found. Disabling integration."
                     );
                     disable_integration = true;
                 }
             } else {
-                eprintln!(
+                tracing::warn!(
                     "KeePass integration enabled but no database path configured. Disabling."
                 );
                 disable_integration = true;
@@ -223,41 +229,19 @@ impl AppState {
                 settings.secrets.clear_password();
                 // Save updated settings
                 if let Err(e) = config_manager.save_settings(&settings) {
-                    eprintln!("Failed to save settings after disabling KDBX: {e}");
+                    tracing::error!(%e, "Failed to save settings after disabling KDBX");
                 }
             } else {
                 // Try to decrypt stored password
                 if settings.secrets.decrypt_password() {
-                    eprintln!("KeePass password restored from encrypted storage");
+                    tracing::info!("KeePass password restored from encrypted storage");
                 }
             }
         }
 
-        // Decrypt Bitwarden password at startup (Fix 5)
-        if settings.secrets.bitwarden_password_encrypted.is_some() {
-            if settings.secrets.decrypt_bitwarden_password() {
-                tracing::info!("Bitwarden password restored from encrypted storage");
-            } else {
-                tracing::warn!("Failed to decrypt Bitwarden password");
-            }
-        }
-
-        // Auto-unlock Bitwarden vault at startup (Fix 2)
-        if matches!(
-            settings.secrets.preferred_backend,
-            rustconn_core::config::SecretBackendType::Bitwarden
-        ) {
-            match crate::async_utils::with_runtime(|rt| {
-                rt.block_on(rustconn_core::secret::auto_unlock(&settings.secrets))
-            }) {
-                Ok(_backend) => {
-                    tracing::info!("Bitwarden vault unlocked at startup");
-                }
-                Err(e) => {
-                    tracing::warn!("Bitwarden auto-unlock at startup failed: {e}");
-                }
-            }
-        }
+        // Note: Bitwarden password decryption and vault auto-unlock are deferred
+        // to `initialize_secret_backends()` which runs asynchronously after the
+        // main window is presented. This avoids blocking the UI on startup.
 
         // Initialize connection manager
         let connection_manager = ConnectionManager::new(config_manager.clone())
@@ -311,6 +295,69 @@ impl AppState {
             clipboard: ConnectionClipboard::new(),
             history_entries,
         })
+    }
+
+    /// Initializes secret backends asynchronously after the main window is shown.
+    ///
+    /// This decrypts Bitwarden/KDBX passwords and auto-unlocks vaults without
+    /// blocking the GTK main thread. Call this via `spawn_async` after
+    /// `window.present()` to keep startup fast.
+    ///
+    /// Returns `true` if a backend was successfully initialized.
+    pub fn initialize_secret_backends(&mut self) -> bool {
+        let mut backend_ready = false;
+
+        // Decrypt Bitwarden password from encrypted storage
+        if self.settings.secrets.bitwarden_password_encrypted.is_some() {
+            if self.settings.secrets.decrypt_bitwarden_password() {
+                tracing::info!("Bitwarden password restored from encrypted storage");
+            } else {
+                tracing::warn!("Failed to decrypt Bitwarden password");
+            }
+        }
+
+        // Decrypt Bitwarden API credentials
+        if self.settings.secrets.bitwarden_use_api_key
+            && (self
+                .settings
+                .secrets
+                .bitwarden_client_id_encrypted
+                .is_some()
+                || self
+                    .settings
+                    .secrets
+                    .bitwarden_client_secret_encrypted
+                    .is_some())
+        {
+            if self.settings.secrets.decrypt_bitwarden_api_credentials() {
+                tracing::info!("Bitwarden API credentials restored from encrypted storage");
+            } else {
+                tracing::warn!("Failed to decrypt Bitwarden API credentials");
+            }
+        }
+
+        // Auto-unlock Bitwarden vault
+        if matches!(
+            self.settings.secrets.preferred_backend,
+            rustconn_core::config::SecretBackendType::Bitwarden
+        ) {
+            match crate::async_utils::with_runtime(|rt| {
+                rt.block_on(rustconn_core::secret::auto_unlock(&self.settings.secrets))
+            }) {
+                Ok(Ok(_backend)) => {
+                    tracing::info!("Bitwarden vault unlocked at startup");
+                    backend_ready = true;
+                }
+                Ok(Err(e)) => {
+                    tracing::warn!("Bitwarden auto-unlock at startup failed: {e}");
+                }
+                Err(e) => {
+                    tracing::warn!("Bitwarden auto-unlock at startup failed (runtime): {e}");
+                }
+            }
+        }
+
+        backend_ready
     }
 
     // ========== Password Cache Operations ==========
@@ -1639,6 +1686,13 @@ impl AppState {
             settings.secrets.encrypt_bitwarden_password();
         }
 
+        // Encrypt Bitwarden API credentials before saving if present
+        if settings.secrets.bitwarden_client_id.is_some()
+            || settings.secrets.bitwarden_client_secret.is_some()
+        {
+            settings.secrets.encrypt_bitwarden_api_credentials();
+        }
+
         self.config_manager
             .save_settings(&settings)
             .map_err(|e| format!("Failed to save settings: {e}"))?;
@@ -1835,7 +1889,7 @@ impl AppState {
 
             match self.connection_manager.create_connection_from(connection) {
                 Ok(_) => imported += 1,
-                Err(e) => eprintln!("Warning: Failed to import connection {}: {}", conn.name, e),
+                Err(e) => tracing::warn!(name = %conn.name, %e, "Failed to import connection"),
             }
         }
 

@@ -401,6 +401,41 @@ ensure_main_thread(|| update_widget());
 - `spawn_async_with_callback`: Async with result callback
 - `block_on_async_with_timeout`: Bounded blocking for critical operations
 
+### Deferred Secret Backend Initialization
+
+Secret backends (Bitwarden vault unlock, KDBX password decryption) are initialized asynchronously after the window is presented, not during `AppState::new()`. This prevents the UI from blocking on slow operations like vault unlock or password prompts at startup.
+
+```rust
+// In build_ui():
+window.present();  // Show window immediately
+
+// Phase 1: Decrypt stored credentials (fast, main thread)
+glib::idle_add_local_once(move || {
+    state.borrow_mut().settings_mut().secrets.decrypt_bitwarden_password();
+
+    // Phase 2: Slow Bitwarden unlock in background thread
+    let secret_settings = state.borrow().settings().secrets.clone();
+    let (tx, rx) = std::sync::mpsc::channel();
+
+    std::thread::spawn(move || {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let result = rt.block_on(auto_unlock(&secret_settings));
+        let _ = tx.send(result.is_ok());
+    });
+
+    // Poll result on GTK main thread (non-blocking)
+    glib::timeout_add_local(Duration::from_millis(100), move || {
+        match rx.try_recv() {
+            Ok(_) => { refresh_sidebar(); glib::ControlFlow::Break }
+            Err(TryRecvError::Empty) => glib::ControlFlow::Continue,
+            Err(TryRecvError::Disconnected) => glib::ControlFlow::Break,
+        }
+    });
+});
+```
+
+This ensures the application window appears instantly while credential backends initialize in the background without triggering "application not responding" dialogs.
+
 ## Error Handling
 
 ### Core Library Errors
@@ -663,7 +698,7 @@ pub struct ProtocolCapabilities {
 ```
 
 **Implementations:**
-- `SshProtocol`: SSH via VTE terminal (capabilities: embedded, terminal, split_view)
+- `SshProtocol`: SSH via VTE terminal (capabilities: embedded, terminal, split_view, port forwarding)
 - `RdpProtocol`: RDP via IronRDP/FreeRDP (capabilities: embedded, external_fallback, file_transfer, audio, clipboard)
 - `VncProtocol`: VNC via vnc-rs/TigerVNC (capabilities: embedded, external_fallback, clipboard)
 - `SpiceProtocol`: SPICE via remote-viewer (capabilities: external_fallback, clipboard)
@@ -681,6 +716,27 @@ pub struct ProtocolCapabilities {
 5. Add UI fields in `rustconn/src/dialogs/connection/dialog.rs`
 
 See `TelnetProtocol`, `SerialProtocol`, or `KubernetesProtocol` for minimal reference implementations using external clients.
+
+### SSH Port Forwarding
+
+The `PortForward` model (`rustconn-core/src/models/protocol.rs`) supports local (`-L`), remote (`-R`), and dynamic (`-D`) SSH port forwarding:
+
+```rust
+pub enum PortForwardDirection {
+    Local,   // -L local_port:remote_host:remote_port
+    Remote,  // -R remote_port:local_host:local_port
+    Dynamic, // -D local_port (SOCKS proxy)
+}
+
+pub struct PortForward {
+    pub direction: PortForwardDirection,
+    pub local_port: u16,
+    pub remote_host: String,
+    pub remote_port: u16,
+}
+```
+
+Rules are stored in `SshConfig::port_forwards: Vec<PortForward>` and converted to SSH arguments via `PortForward::to_ssh_arg()`. The GUI provides an inline editor in the SSH tab for adding/removing rules. Import from SSH config (`LocalForward`, `RemoteForward`, `DynamicForward`), Remmina, Asbru-CM, and MobaXterm is supported.
 
 ### Zero Trust Integration
 

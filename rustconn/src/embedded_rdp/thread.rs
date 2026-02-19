@@ -402,7 +402,7 @@ impl FreeRdpThread {
 
         // Set environment to suppress Qt warnings
         cmd.env("QT_LOGGING_RULES", "qt.qpa.wayland=false;qt.qpa.*=false");
-        cmd.env("QT_QPA_PLATFORM", "xcb");
+        // Do NOT set QT_QPA_PLATFORM — allow wlfreerdp to use native Wayland backend
 
         // Build connection arguments
         if let Some(ref domain) = config.domain {

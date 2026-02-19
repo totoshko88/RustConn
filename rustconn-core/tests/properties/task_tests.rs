@@ -16,10 +16,10 @@ fn arb_var_name() -> impl Strategy<Value = String> {
     "[a-zA-Z_][a-zA-Z0-9_]{0,15}".prop_map(|s| s)
 }
 
-/// Strategy for generating variable values (no nested references)
+/// Strategy for generating variable values (no nested references, no shell metacharacters)
 fn arb_var_value() -> impl Strategy<Value = String> {
-    // Generate values that don't contain ${...} patterns
-    "[a-zA-Z0-9 .,;:!?@#%^&*()\\[\\]<>/-]{0,50}".prop_map(|s| s.replace("${", "").replace("}", ""))
+    // Generate values safe for command substitution: no ${...} patterns, no shell metacharacters
+    "[a-zA-Z0-9 .,:\\-_@#%^/=+~]{0,50}".prop_map(|s| s.replace("${", "").replace("}", ""))
 }
 
 /// Strategy for generating task timing

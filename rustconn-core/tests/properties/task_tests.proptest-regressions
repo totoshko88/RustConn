@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 3e0b0de4aa378ce9b0172ccdcb1d3f9f2243e72a19021172131f3efdbd899b92 # shrinks to defined_name = "a", defined_value = "&", undefined_name = "_"
+cc 8b6aaa6cd9cd3dd519712ab3179cf74ac4b8b099db92a924efec1a5e2449c426 # shrinks to prefix = "a", suffix = "0", var_name = "a", var_value = "("

@@ -9,7 +9,7 @@ use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, CheckButton, Entry, Grid, Label, Orientation, Spinner};
 use libadwaita as adw;
-use rustconn_core::CancellationToken;
+use rustconn_core::secret::CancellationToken;
 use std::cell::RefCell;
 use std::rc::Rc;
 

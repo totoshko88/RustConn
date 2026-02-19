@@ -182,11 +182,9 @@ pub fn build_freerdp_args(config: &FreeRdpConfig) -> Vec<String> {
         args.push(format!("/u:{username}"));
     }
 
-    // Password
-    if let Some(ref password) = config.password {
-        if !password.is_empty() {
-            args.push(format!("/p:{password}"));
-        }
+    // Password — use /from-stdin to avoid /proc/PID/cmdline exposure
+    if config.password.as_ref().is_some_and(|p| !p.is_empty()) {
+        args.push("/from-stdin".to_string());
     }
 
     // Resolution
@@ -308,7 +306,8 @@ mod tests {
         let args = build_freerdp_args(&config);
 
         assert!(args.contains(&"/u:admin".to_string()));
-        assert!(args.contains(&"/p:secret".to_string()));
+        assert!(args.contains(&"/from-stdin".to_string()));
+        assert!(!args.iter().any(|a| a.starts_with("/p:")));
         assert!(args.contains(&"/d:CORP".to_string()));
     }
 

@@ -394,7 +394,7 @@ impl MainWindow {
             }
         });
         // Only enable in Flatpak environment
-        flatpak_components_action.set_enabled(rustconn_core::is_flatpak());
+        flatpak_components_action.set_enabled(rustconn_core::flatpak::is_flatpak());
         window.add_action(&flatpak_components_action);
 
         // Open password vault action - opens the configured password manager
@@ -411,7 +411,7 @@ impl MainWindow {
             if let Err(e) =
                 rustconn_core::secret::open_password_manager(&backend, passbolt_url.as_deref())
             {
-                eprintln!("Failed to open password manager: {e}");
+                tracing::error!(%e, "Failed to open password manager");
             }
         });
         // Enable based on backend type - always enabled for libsecret/bitwarden/1password,
@@ -3385,7 +3385,7 @@ impl MainWindow {
         resolved_credentials: Option<rustconn_core::Credentials>,
         cached_credentials: Option<(String, String, String)>,
     ) {
-        use rustconn_core::ProtocolType;
+        use rustconn_core::models::ProtocolType;
 
         match protocol_type {
             ProtocolType::Rdp => {
@@ -3941,8 +3941,8 @@ impl MainWindow {
             "rdp" => {
                 // RDP connections are handled by start_rdp_session_with_credentials
                 // which is called from start_connection_with_credential_resolution
-                eprintln!(
-                    "Warning: RDP connection reached start_connection without credentials. \
+                tracing::warn!(
+                    "RDP connection reached start_connection without credentials. \
                      Use start_connection_with_credential_resolution instead."
                 );
                 None
@@ -4100,10 +4100,10 @@ impl MainWindow {
             move |result: Result<std::path::PathBuf, String>| {
                 match result {
                     Ok(log_path) => {
-                        eprintln!(
-                            "Session logging enabled for '{}': {}",
-                            connection_name_for_callback,
-                            log_path.display()
+                        tracing::info!(
+                            connection_name = %connection_name_for_callback,
+                            log_path = %log_path.display(),
+                            "Session logging enabled"
                         );
 
                         // Store log file path in session info
@@ -4120,7 +4120,7 @@ impl MainWindow {
                         );
                     }
                     Err(e) => {
-                        eprintln!("{}", e);
+                        tracing::error!(%e, "Session logging setup failed");
                     }
                 }
             },
@@ -4199,7 +4199,7 @@ impl MainWindow {
             }
 
             if is_failure {
-                eprintln!("Session {session_id} exited with status: {exit_status} (Signal: {term_sig}, Code: {exit_code})");
+                tracing::error!(%session_id, exit_status, term_sig, exit_code, "Session exited with failure");
             }
 
             // Decrement session count - status changes only if no other sessions active
@@ -4237,10 +4237,10 @@ impl MainWindow {
                 *log_writer.borrow_mut() = Some(std::io::BufWriter::new(file));
             }
             Err(e) => {
-                eprintln!(
-                    "Failed to open log file '{}' for session logging: {}",
-                    log_path.display(),
-                    e
+                tracing::error!(
+                    %e,
+                    log_path = %log_path.display(),
+                    "Failed to open log file for session logging"
                 );
                 return;
             }
@@ -4472,7 +4472,7 @@ impl MainWindow {
 
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
                     if let Err(e) = state_mut.update_settings(settings) {
-                        eprintln!("Failed to save settings: {e}");
+                        tracing::error!(%e, "Failed to save settings");
                     } else {
                         // Update open-keepass action enabled state based on backend
                         if let Some(action) = window_clone.lookup_action("open-keepass") {
@@ -4493,7 +4493,7 @@ impl MainWindow {
                         }
                     }
                 } else {
-                    eprintln!("Failed to borrow state for settings update");
+                    tracing::error!("Failed to borrow state for settings update");
                 }
             }
         });

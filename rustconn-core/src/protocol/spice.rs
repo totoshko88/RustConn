@@ -127,7 +127,14 @@ impl Protocol for SpiceProtocol {
                 ));
             }
             if let Some(ref proxy) = spice_config.proxy {
-                args.push(format!("--spice-proxy={proxy}"));
+                if proxy
+                    .chars()
+                    .all(|c| c.is_alphanumeric() || ".-:/@_".contains(c))
+                {
+                    args.push(format!("--spice-proxy={proxy}"));
+                } else {
+                    tracing::warn!(proxy = %proxy, "Invalid SPICE proxy format, skipping");
+                }
             }
         }
 
