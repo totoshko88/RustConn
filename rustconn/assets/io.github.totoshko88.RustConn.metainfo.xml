@@ -104,6 +104,15 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.9.0" date="2026-02-21">
+      <description>
+        <p>Version 0.9.0 - Ukrainian Translation Review:</p>
+        <ul>
+          <li>Ukrainian translation professionally reviewed by Mykola Zubkov</li>
+          <li>674 translations revised for accuracy and modern Ukrainian orthography</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.8.9" date="2026-02-20">
       <description>
         <p>Version 0.8.9 - SSH Port Forwarding, Security Hardening, Faster Startup:</p>

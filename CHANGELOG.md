@@ -5,6 +5,11 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-02-21
+
+### Improved
+- **Ukrainian translation (uk)** — Professional linguistic review by Mykola Zubkov; 674 translations revised for accuracy, consistent terminology, and modern Ukrainian orthography
+
 ## [0.8.9] - 2026-02-19
 
 ### Security

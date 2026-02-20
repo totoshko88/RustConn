@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.8.9
+Version:        0.9.0
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -191,6 +191,10 @@ fi
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sat Feb 21 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.0-0
+- Ukrainian translation reviewed by Mykola Zubkov — 674 translations
+  revised for accuracy and modern Ukrainian orthography
+
 * Fri Feb 20 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.9-0
 - SSH port forwarding — Local (-L), remote (-R), and dynamic SOCKS (-D)
   port forwarding rules per connection (#22)
