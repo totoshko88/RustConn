@@ -9,15 +9,12 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
-use crate::error::SessionError;
+use crate::error::{SessionError, SessionResult};
 use crate::models::Connection;
 use crate::protocol::ProtocolRegistry;
 
 use super::logger::{LogConfig, LogContext, SessionLogger};
 use super::session::{Session, SessionState, SessionType};
-
-/// Result type for session operations
-pub type SessionResult<T> = Result<T, SessionError>;
 
 /// Default health check interval in seconds
 pub const DEFAULT_HEALTH_CHECK_INTERVAL_SECS: u64 = 30;

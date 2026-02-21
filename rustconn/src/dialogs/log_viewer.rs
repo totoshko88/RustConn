@@ -105,17 +105,12 @@ impl LogViewerDialog {
 
     /// Creates the header bar and main layout components
     fn create_header_and_layout() -> (adw::ToolbarView, Paned, Button, Button) {
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-
-        let close_btn = Button::builder().label(i18n("Close")).build();
-        let refresh_btn = Button::builder()
-            .icon_name("view-refresh-symbolic")
-            .tooltip_text(&i18n("Refresh log list"))
-            .build();
-        header.pack_start(&close_btn);
-        header.pack_end(&refresh_btn);
+        let (header, close_btn, refresh_btn) = super::widgets::dialog_header("Close", "Refresh");
+        // Override: refresh button uses icon instead of text label
+        refresh_btn.set_label("");
+        refresh_btn.set_icon_name("view-refresh-symbolic");
+        refresh_btn.set_tooltip_text(Some(&i18n("Refresh log list")));
+        refresh_btn.remove_css_class("suggested-action");
 
         let paned = Paned::new(Orientation::Horizontal);
         paned.set_position(250);

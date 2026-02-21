@@ -7,8 +7,7 @@ use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
-    Box as GtkBox, Button, CheckButton, Entry, FileDialog, FileFilter, Label, Orientation,
-    PasswordEntry,
+    Box as GtkBox, CheckButton, Entry, FileDialog, FileFilter, Label, Orientation, PasswordEntry,
 };
 use libadwaita as adw;
 use std::cell::RefCell;
@@ -68,18 +67,16 @@ impl NewDocumentDialog {
 
         window.set_size_request(280, -1);
 
-        // Header bar with Cancel/Create buttons (GNOME HIG)
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let cancel_btn = Button::builder().label(i18n("Cancel")).build();
-        let create_btn = Button::builder()
-            .label(i18n("Create"))
-            .css_classes(["suggested-action"])
-            .sensitive(false)
-            .build();
-        header.pack_start(&cancel_btn);
-        header.pack_end(&create_btn);
+        // Header bar (GNOME HIG)
+        let (header, cancel_btn, create_btn) =
+            crate::dialogs::widgets::dialog_header("Cancel", "Create");
+        create_btn.set_sensitive(false);
+
+        // Cancel button handler
+        let window_clone = window.clone();
+        cancel_btn.connect_clicked(move |_| {
+            window_clone.close();
+        });
 
         // Content
         let content = GtkBox::new(Orientation::Vertical, 12);
@@ -333,16 +330,8 @@ impl OpenDocumentDialog {
 
         window.set_size_request(280, -1);
 
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let cancel_btn = Button::builder().label(i18n("Cancel")).build();
-        let open_btn = Button::builder()
-            .label(i18n("Open"))
-            .css_classes(["suggested-action"])
-            .build();
-        header.pack_start(&cancel_btn);
-        header.pack_end(&open_btn);
+        let (header, cancel_btn, open_btn) =
+            crate::dialogs::widgets::dialog_header("Cancel", "Open");
 
         let content = GtkBox::new(Orientation::Vertical, 12);
         content.set_margin_top(12);
@@ -565,17 +554,8 @@ impl DocumentProtectionDialog {
             .content_width(400)
             .build();
 
-        // Header bar with Cancel/Apply buttons (GNOME HIG)
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let cancel_btn = Button::builder().label(i18n("Cancel")).build();
-        let apply_btn = Button::builder()
-            .label(i18n("Apply"))
-            .css_classes(["suggested-action"])
-            .build();
-        header.pack_start(&cancel_btn);
-        header.pack_end(&apply_btn);
+        // Header bar (GNOME HIG)
+        let (header, cancel_btn, apply_btn) = super::widgets::dialog_header("Cancel", "Apply");
 
         // Content
         let content = GtkBox::new(Orientation::Vertical, 12);

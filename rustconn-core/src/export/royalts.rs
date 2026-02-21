@@ -12,7 +12,9 @@ use uuid::Uuid;
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
 use crate::tracing::span_names;
 
-use super::{ExportError, ExportFormat, ExportOptions, ExportResult, ExportResult2, ExportTarget};
+use super::{
+    ExportError, ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
+};
 
 /// Royal TS XML exporter.
 ///
@@ -262,7 +264,7 @@ impl ExportTarget for RoyalTsExporter {
         connections: &[Connection],
         groups: &[ConnectionGroup],
         options: &ExportOptions,
-    ) -> ExportResult2<ExportResult> {
+    ) -> ExportOperationResult<ExportResult> {
         let mut result = ExportResult::new();
 
         // Filter supported connections and count skipped
@@ -304,7 +306,7 @@ impl ExportTarget for RoyalTsExporter {
         Ok(result)
     }
 
-    fn export_connection(&self, connection: &Connection) -> ExportResult2<String> {
+    fn export_connection(&self, connection: &Connection) -> ExportOperationResult<String> {
         if !matches!(
             connection.protocol,
             ProtocolType::Ssh | ProtocolType::Rdp | ProtocolType::Vnc

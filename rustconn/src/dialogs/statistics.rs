@@ -7,7 +7,7 @@ use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::Box as GtkBox;
-use gtk4::{Button, Label, Orientation, ScrolledWindow};
+use gtk4::{Label, Orientation, ScrolledWindow};
 use libadwaita as adw;
 use rustconn_core::models::ConnectionStatistics;
 use std::cell::RefCell;
@@ -38,17 +38,11 @@ impl StatisticsDialog {
 
         window.set_size_request(320, 280);
 
-        // Header bar with Close/Reset buttons (GNOME HIG)
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label(i18n("Close")).build();
-        let reset_btn = Button::builder()
-            .label(i18n("Reset"))
-            .css_classes(["destructive-action"])
-            .build();
-        header.pack_start(&close_btn);
-        header.pack_end(&reset_btn);
+        // Header bar (GNOME HIG)
+        let (header, close_btn, reset_btn) =
+            crate::dialogs::widgets::dialog_header("Close", "Reset");
+        reset_btn.remove_css_class("suggested-action");
+        reset_btn.add_css_class("destructive-action");
 
         // Close button handler
         let window_clone = window.clone();

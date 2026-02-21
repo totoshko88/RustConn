@@ -13,7 +13,9 @@ use uuid::Uuid;
 
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType, SshAuthMethod};
 
-use super::{ExportError, ExportFormat, ExportOptions, ExportResult, ExportResult2, ExportTarget};
+use super::{
+    ExportError, ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
+};
 
 /// Default icon numbers for each session type in MobaXterm.
 const ICON_SSH: u16 = 109;
@@ -296,7 +298,7 @@ impl MobaXtermExporter {
         connections: &[Connection],
         groups: &[ConnectionGroup],
         output_path: &Path,
-    ) -> ExportResult2<ExportResult> {
+    ) -> ExportOperationResult<ExportResult> {
         let mut result = ExportResult::new();
         let mut output = String::new();
 
@@ -432,11 +434,11 @@ impl ExportTarget for MobaXtermExporter {
         connections: &[Connection],
         groups: &[ConnectionGroup],
         options: &ExportOptions,
-    ) -> ExportResult2<ExportResult> {
+    ) -> ExportOperationResult<ExportResult> {
         Self::export_to_file(connections, groups, &options.output_path)
     }
 
-    fn export_connection(&self, connection: &Connection) -> ExportResult2<String> {
+    fn export_connection(&self, connection: &Connection) -> ExportOperationResult<String> {
         Self::export_connection_line(connection)
     }
 

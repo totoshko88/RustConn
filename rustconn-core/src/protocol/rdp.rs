@@ -8,7 +8,7 @@ use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 /// RDP protocol handler
 ///
 /// Implements the Protocol trait for RDP connections.
-/// Native embedding via gtk-frdp will be implemented in Phase 6.
+/// Native RDP embedding is available via IronRDP (`rdp-embedded` feature flag).
 pub struct RdpProtocol;
 
 impl RdpProtocol {

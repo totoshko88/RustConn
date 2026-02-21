@@ -8,3 +8,4 @@ Type=Application
 Categories=Network;RemoteAccess;GTK;
 Keywords=ssh;rdp;vnc;spice;telnet;zerotrust;connection;terminal;remote;
 StartupWMClass=io.github.totoshko88.RustConn
+SingleMainWindow=true

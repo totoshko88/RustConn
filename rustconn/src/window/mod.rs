@@ -1698,14 +1698,12 @@ impl MainWindow {
                                 let pwd = var.value.clone();
                                 let var_name = var.name.clone();
                                 let var_name_log = var_name.clone();
-                                let settings_c = settings.clone();
+                                let secrets_c = settings.secrets.clone();
                                 let toast_c = toast_for_save.clone();
                                 crate::utils::spawn_blocking_with_callback(
                                     move || {
                                         crate::state::save_variable_to_vault(
-                                            &settings_c,
-                                            &var_name,
-                                            &pwd,
+                                            &secrets_c, &var_name, &pwd,
                                         )
                                     },
                                     move |result: Result<(), String>| {
@@ -4601,37 +4599,6 @@ impl MainWindow {
     #[must_use]
     pub const fn gtk_window(&self) -> &adw::ApplicationWindow {
         &self.window
-    }
-
-    /// Returns a reference to the toast overlay
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn toast_overlay(&self) -> &SharedToastOverlay {
-        &self.toast_overlay
-    }
-
-    /// Shows an info toast message
-    #[allow(dead_code)]
-    pub fn show_toast(&self, message: &str) {
-        self.toast_overlay.show_toast(message);
-    }
-
-    /// Shows a success toast message
-    #[allow(dead_code)]
-    pub fn show_success(&self, message: &str) {
-        self.toast_overlay.show_success(message);
-    }
-
-    /// Shows a warning toast message
-    #[allow(dead_code)]
-    pub fn show_warning(&self, message: &str) {
-        self.toast_overlay.show_warning(message);
-    }
-
-    /// Shows an error toast message
-    #[allow(dead_code)]
-    pub fn show_error(&self, message: &str) {
-        self.toast_overlay.show_error(message);
     }
 
     /// Registers the application icon in the icon theme

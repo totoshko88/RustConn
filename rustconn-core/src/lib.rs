@@ -103,7 +103,8 @@ pub use drag_drop::{
 };
 pub use embedded_client_error::EmbeddedClientError;
 pub use error::{
-    ConfigError, ConfigResult, ImportError, ProtocolError, RustConnError, SecretError, SessionError,
+    ConfigError, ConfigResult, ImportError, ProtocolError, RustConnError, SecretError,
+    SessionError, SessionResult,
 };
 pub use export::{
     BatchExportCancelHandle, BatchExportResult, BatchExporter, ExportError, ExportFormat,

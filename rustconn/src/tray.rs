@@ -395,10 +395,8 @@ pub use tray_impl::TrayManager;
 mod tray_stub {
     use super::*;
 
-    pub struct TrayManager {
-        state: Arc<Mutex<TrayState>>,
-        receiver: Receiver<TrayMessage>,
-    }
+    /// No-op tray manager when the `tray` feature is disabled.
+    pub struct TrayManager;
 
     impl TrayManager {
         #[must_use]
@@ -406,35 +404,20 @@ mod tray_stub {
             None
         }
 
-        pub fn set_active_sessions(&self, count: u32) {
-            if let Ok(mut state) = self.state.lock() {
-                state.active_sessions = count;
-            }
-        }
+        pub fn set_active_sessions(&self, _count: u32) {}
 
-        pub fn set_recent_connections(&self, connections: Vec<(Uuid, String)>) {
-            if let Ok(mut state) = self.state.lock() {
-                state.recent_connections = connections;
-            }
-        }
+        pub fn set_recent_connections(&self, _connections: Vec<(Uuid, String)>) {}
 
-        pub fn set_window_visible(&self, visible: bool) {
-            if let Ok(mut state) = self.state.lock() {
-                state.window_visible = visible;
-            }
-        }
+        pub fn set_window_visible(&self, _visible: bool) {}
 
         pub fn try_recv(&self) -> Option<TrayMessage> {
-            self.receiver.try_recv().ok()
+            None
         }
     }
 
     impl Default for TrayManager {
         fn default() -> Self {
-            Self {
-                state: Arc::new(Mutex::new(TrayState::default())),
-                receiver: mpsc::channel().1,
-            }
+            Self
         }
     }
 }

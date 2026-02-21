@@ -4773,6 +4773,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "criterion",
+ "data-encoding",
  "dirs",
  "flate2",
  "futures",

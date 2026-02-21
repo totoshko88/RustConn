@@ -69,17 +69,8 @@ impl ExportDialog {
             .content_height(500)
             .build();
 
-        // Create header bar with Close/Export buttons (GNOME HIG)
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label(i18n("Close")).build();
-        let export_button = Button::builder()
-            .label(i18n("Export"))
-            .css_classes(["suggested-action"])
-            .build();
-        header.pack_start(&close_btn);
-        header.pack_end(&export_button);
+        // Header bar (GNOME HIG)
+        let (header, close_btn, export_button) = super::widgets::dialog_header("Close", "Export");
 
         // Close button handler
         let dialog_clone = dialog.clone();

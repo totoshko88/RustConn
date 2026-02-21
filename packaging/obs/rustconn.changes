@@ -452,7 +452,7 @@ Sat Jan 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.5.9
 
 - Update to version 0.5.9
   * Migrated Settings dialog from deprecated PreferencesWindow to PreferencesDialog
-  * Updated libadwaita feature from v1_4 to v1_6
+  * Updated libadwaita feature from v1_4 to v1_5
   * Migrated Template dialog to modern libadwaita patterns
   * Fixed Zero Trust (AWS SSM) connection status icon showing as failed
   * Fixed remote-viewer version parsing in Settings Clients tab

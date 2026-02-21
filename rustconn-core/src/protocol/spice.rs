@@ -8,7 +8,7 @@ use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 /// SPICE protocol handler
 ///
 /// Implements the Protocol trait for SPICE connections.
-/// Native embedding via spice-gtk will be implemented in Phase 7.
+/// Native SPICE embedding is available via spice-client (`spice-embedded` feature flag, disabled by default).
 pub struct SpiceProtocol;
 
 impl SpiceProtocol {

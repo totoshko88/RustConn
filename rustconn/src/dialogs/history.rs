@@ -30,18 +30,9 @@ impl HistoryDialog {
             .content_height(400)
             .build();
 
-        // Header bar with Close/Connect buttons (GNOME HIG)
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label(i18n("Close")).build();
-        let connect_btn = Button::builder()
-            .label(i18n("Connect"))
-            .css_classes(["suggested-action"])
-            .sensitive(false)
-            .build();
-        header.pack_start(&close_btn);
-        header.pack_end(&connect_btn);
+        // Header bar (GNOME HIG)
+        let (header, close_btn, connect_btn) = super::widgets::dialog_header("Close", "Connect");
+        connect_btn.set_sensitive(false);
 
         // Close button handler
         let dialog_clone = dialog.clone();
@@ -142,13 +133,36 @@ impl HistoryDialog {
             }
         });
 
-        // Clear history button
+        // Clear history button — show confirmation dialog before destructive action
         let entries_clear = hist.entries.clone();
         let list_box_clear = list_box;
+        let dialog_weak = dialog.downgrade();
         clear_btn.connect_clicked(move |_| {
-            entries_clear.borrow_mut().clear();
-            while let Some(row) = list_box_clear.row_at_index(0) {
-                list_box_clear.remove(&row);
+            let alert = adw::AlertDialog::builder()
+                .heading(i18n("Clear History?"))
+                .body(i18n(
+                    "All connection history entries will be permanently removed.",
+                ))
+                .build();
+            alert.add_response("cancel", &i18n("Cancel"));
+            alert.add_response("clear", &i18n("Clear"));
+            alert.set_response_appearance("clear", adw::ResponseAppearance::Destructive);
+            alert.set_default_response(Some("cancel"));
+            alert.set_close_response("cancel");
+
+            let entries_ref = entries_clear.clone();
+            let list_ref = list_box_clear.clone();
+            alert.connect_response(None, move |_, response| {
+                if response == "clear" {
+                    entries_ref.borrow_mut().clear();
+                    while let Some(row) = list_ref.row_at_index(0) {
+                        list_ref.remove(&row);
+                    }
+                }
+            });
+
+            if let Some(dlg) = dialog_weak.upgrade() {
+                alert.present(Some(&dlg));
             }
         });
 

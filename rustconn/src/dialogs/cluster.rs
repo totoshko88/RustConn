@@ -63,17 +63,9 @@ impl ClusterDialog {
 
         window.set_size_request(320, 280);
 
-        // Create header bar with Close/Create buttons (GNOME HIG)
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label(i18n("Close")).build();
-        let save_btn = Button::builder()
-            .label(i18n("Create"))
-            .css_classes(["suggested-action"])
-            .build();
-        header.pack_start(&close_btn);
-        header.pack_end(&save_btn);
+        // Header bar (GNOME HIG)
+        let (header, close_btn, save_btn) =
+            crate::dialogs::widgets::dialog_header("Close", "Create");
 
         // Close button handler
         let window_clone = window.clone();
@@ -413,17 +405,9 @@ impl ClusterListDialog {
 
         window.set_size_request(320, 280);
 
-        // Create header bar with Close/Create buttons (GNOME HIG)
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label(i18n("Close")).build();
-        let new_btn = Button::builder()
-            .label(i18n("Create"))
-            .css_classes(["suggested-action"])
-            .build();
-        header.pack_start(&close_btn);
-        header.pack_end(&new_btn);
+        // Header bar (GNOME HIG)
+        let (header, close_btn, new_btn) =
+            crate::dialogs::widgets::dialog_header("Close", "Create");
 
         // Close button handler
         let window_clone = window.clone();

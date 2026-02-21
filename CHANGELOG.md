@@ -8,30 +8,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.0] - 2026-02-21
 
 ### Security
-- FreeRDP embedded thread (`thread.rs`) password exposure fixed — replaced `/p:{password}` CLI arg with `/from-stdin` + stdin pipe, matching `SafeFreeRdpLauncher` pattern (SEC-02)
-- `FreeRdpConfig.password`, `RdpConfig.password`, `SpiceClientConfig.password` migrated from plain `String` to `SecretString` — passwords exposed only at point of use via `expose_secret()` (SEC-01)
-- Bitwarden `BW_SESSION` no longer stored via `std::env::set_var` — replaced with thread-safe in-process `RwLock` storage; 1Password `OP_SERVICE_ACCOUNT_TOKEN` `set_var` removed (already passed via `Command::env()`); remaining `set_var` calls (i18n, sftp, SSH agent) documented as safe with justification (SEC-03)
-- All KDBX functions in `secret/status.rs` migrated from `&str`/`String` to `SecretString` + `SecretResult` — database passwords and retrieved credentials no longer held as plain strings (SEC-04)
+- All password fields (`FreeRdpConfig`, `RdpConfig`, `SpiceClientConfig`, `KdbxEntry`, `PasswordDialogResult`, `ConnectionDialogResult`) migrated to `SecretString` — credentials are now exposed only at point of use
+- FreeRDP embedded thread no longer passes password via CLI arg — uses `/from-stdin` + stdin pipe
+- Bitwarden `BW_SESSION` replaced with thread-safe in-process `RwLock` storage instead of `set_var`
+- KDBX functions migrated to `SecretString` + `SecretResult` throughout
+- SSH `custom_options` now filtered against dangerous directives (`ProxyCommand`, `LocalCommand`, etc.) before passing to `ssh -o`
+- Hand-rolled base64 in Bitwarden backend replaced with `data-encoding` crate
 
 ### Improved
-- **Ukrainian translation (uk)** — Professional linguistic review by Mykola Zubkov; 674 translations revised for accuracy, consistent terminology, and modern Ukrainian orthography
-- All remaining `eprintln!` calls migrated to structured `tracing` — session manager, VNC fallback, RDP connection, terminal spawn, export, template deletion (LOG-01)
-- 8 dialogs migrated from `adw::Window` to `adw::Dialog` (libadwaita 1.5+) — HistoryDialog, ProgressDialog, PasswordDialog, LogViewerDialog, FlatpakComponentsDialog, ImportDialog, ExportDialog, DocumentProtectionDialog; automatic escape-to-close, adaptive sizing, proper modal behavior (HIG-01)
+- **Ukrainian translation** — 674 translations professionally reviewed by Mykola Zubkov for accuracy and modern orthography
+- 8 dialogs migrated to `adw::Dialog` (libadwaita 1.5+) with adaptive sizing and proper modal behavior
+- Password field uses `PasswordEntry` with built-in peek icon
+- Screen reader support: accessible label relations added to password and connection dialogs
+- `adw::Clamp` added to dialogs to prevent content stretching on wide screens
+- Dialog header bar pattern deduplicated via shared `dialog_header()` helper
+- Clear History now requires confirmation via `adw::AlertDialog`
+- Search history popover items are now clickable
+- All `eprintln!` calls replaced with structured `tracing`
 
 ### Fixed
-- Debian build no longer uses `--all-features` — prevents `spice-embedded` compilation without build dependencies (PKG-01)
-- Locale `.mo` files now installed in Debian, RPM, and local Flatpak packages — translations were missing from all non-Flathub packaging formats (PKG-02, PKG-03)
-- Deprecated `<categories>` block removed from AppStream metainfo.xml (PKG-04)
-- Debian `Recommends` updated: `freerdp2-x11 | freerdp3-x11 | freerdp3-wayland` (PKG-09)
-- `gettext` added to Debian Build-Depends, `gettext-tools` to RPM BuildRequires
+- Variable password source (`PasswordSource::Variable`) now resolves correctly at connection time — `SecretManager` is initialized with backends from settings, and variable lookup uses the same backend as save
+- Locale `.mo` files now included in Debian, RPM, and local Flatpak packages
+- Debian build no longer enables `spice-embedded` feature without build dependencies
+- AppStream metainfo.xml cleaned up (removed deprecated `<categories>`)
+- Debian `Recommends` updated for FreeRDP 3 / Wayland support
+- Build dependencies corrected for `gettext` across Debian and RPM
 
 ### Removed
-- Dead credential caching methods from `AppState` — 8 unused methods and `verification_manager` field (DC-02)
-- Dead split view adapter methods `handle_session_disconnect()` and `clear_session()` — disconnect cleanup works via `SplitViewBridge::clear_session_from_panes()` (DC-01)
+- Dead code cleanup: unused credential caching, split view adapter methods, toast helpers, deprecated flatpak host command functions
 
 ### Internal
-- `Project-Id-Version` updated to `0.9.0` in all 14 `.po` files and `rustconn.pot`
-- Architecture audit responses documented in `AUDIT_REPORT.md`
+- `Project-Id-Version` updated to `0.9.0` in all `.po` files
+- Duplicate `SessionResult` type alias removed from `session/manager.rs` — canonical definition in `error.rs`
+- Tray stub no longer allocates orphaned `mpsc` channel when `tray` feature is disabled
 
 ## [0.8.9] - 2026-02-19
 
@@ -140,7 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SPDX license** — `GPL-3.0+` → `GPL-3.0-or-later` in metainfo.xml
 
 ### Changed
-- **VTE updated to 0.83.90** — From 0.78.7 in all Flatpak manifests
+- **VTE** — Flatpak manifests use VTE 0.78.7 (LTS branch for GNOME 46/47); `vte4` Rust crate 0.9 with `v0_72` feature
 - **CLI modularized** — Split 5000+ line `main.rs` into 18 handler modules
 - **CLI structured logging** — `tracing` replaces `eprintln!` with `--verbose`/`--quiet` control
 - **VNC viewer list deduplicated** — Single `VNC_VIEWERS` constant shared across detection

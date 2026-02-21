@@ -156,56 +156,66 @@ pub fn create_history_popover(
     search_history: Rc<RefCell<Vec<String>>>,
 ) -> Popover {
     let popover = Popover::new();
-    // Note: Parent is set by the caller after this function returns
-
-    // Note: The actual content population would happen on popup
-    // For now returning the basic popover structure
-    // In a full implementation we'd connect to the "notify::visible" signal
-    // to populate the list when shown.
-
-    // For this refactor, we'll keep it simple as the original code
-    // likely had more logic inline or in `create_history_popover`.
-    // Let's assume the population logic is inside the `mod.rs` closure or
-    // we need to move it here.
-
-    // Re-reading `mod.rs` line 1707...
-    // It seems I missed the body in the previous view.
-    // I will use a placeholder or check `mod.rs` content again if needed.
-    // But based on the previous `view_file` (lines 1707+), I can infer the structure.
 
     let list_box = gtk4::ListBox::new();
     list_box.set_selection_mode(gtk4::SelectionMode::None);
     list_box.add_css_class("boxed-list");
 
-    let history_clone = search_history.clone();
+    let scroll = gtk4::ScrolledWindow::builder()
+        .hscrollbar_policy(gtk4::PolicyType::Never)
+        .vscrollbar_policy(gtk4::PolicyType::Automatic)
+        .max_content_height(200)
+        .propagate_natural_height(true)
+        .child(&list_box)
+        .build();
 
+    popover.set_child(Some(&scroll));
+
+    let history_clone = search_history;
+    let list_box_clone = list_box.clone();
+    let popover_weak = popover.downgrade();
+
+    // Populate rows each time the popover becomes visible
     popover.connect_visible_notify(move |popover| {
-        if popover.is_visible() {
-            // clear children
-            while let Some(child) = list_box.first_child() {
-                list_box.remove(&child);
-            }
+        if !popover.is_visible() {
+            return;
+        }
 
-            let history = history_clone.borrow();
-            for query in history.iter().rev().take(MAX_SEARCH_HISTORY) {
-                let row = gtk4::ListBoxRow::new();
-                let label = Label::new(Some(query));
-                label.set_halign(gtk4::Align::Start);
-                label.set_margin_start(6);
-                label.set_margin_end(6);
-                label.set_margin_top(4);
-                label.set_margin_bottom(4);
-                row.set_child(Some(&label));
+        // Clear previous rows
+        while let Some(child) = list_box_clone.first_child() {
+            list_box_clone.remove(&child);
+        }
 
-                // This part requires ListBox activation handling, usually done on the ListBox itself
-                // But we can't easily capture the listbox here inside the closure if we are constructing it.
-                // The original code probably did this differently.
-            }
+        let history = history_clone.borrow();
+        for query in history.iter().take(MAX_SEARCH_HISTORY) {
+            let row = gtk4::ListBoxRow::new();
+            let label = Label::new(Some(query));
+            label.set_halign(gtk4::Align::Start);
+            label.set_margin_start(6);
+            label.set_margin_end(6);
+            label.set_margin_top(4);
+            label.set_margin_bottom(4);
+            row.set_child(Some(&label));
+            list_box_clone.append(&row);
         }
     });
 
-    // Actually, I should probably read the full implementation of `create_history_popover` first
-    // to ensure I copy it correctly.
+    // Connect row activation to fill search entry and close popover
+    list_box.connect_row_activated(move |_, row| {
+        if let Some(label) = row.child().and_then(|c| c.downcast::<Label>().ok()) {
+            let text = label.text();
+            // Walk up to find the SearchEntry sibling via the popover parent
+            if let Some(pop) = popover_weak.upgrade() {
+                if let Some(parent) = pop.parent() {
+                    if let Ok(entry) = parent.downcast::<SearchEntry>() {
+                        entry.set_text(&text);
+                        entry.set_position(-1);
+                    }
+                }
+                pop.popdown();
+            }
+        }
+    });
 
     popover
 }

@@ -14,7 +14,7 @@ pub use logger::{
     SanitizeConfig, SessionLogger,
 };
 pub use manager::{
-    HealthCheckConfig, HealthCheckEvent, HealthStatus, SessionManager, SessionResult,
+    HealthCheckConfig, HealthCheckEvent, HealthStatus, SessionManager,
     DEFAULT_HEALTH_CHECK_INTERVAL_SECS,
 };
 pub use restore::{

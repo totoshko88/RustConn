@@ -1082,35 +1082,7 @@ pub async fn auto_unlock(
     ))
 }
 
-/// Base64 encode helper (standard base64 alphabet)
+/// Base64 encode helper (standard base64 with padding)
 fn base64_encode(data: &[u8]) -> String {
-    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-    let mut result = String::new();
-    let mut i = 0;
-
-    while i < data.len() {
-        let b0 = data[i];
-        let b1 = data.get(i + 1).copied().unwrap_or(0);
-        let b2 = data.get(i + 2).copied().unwrap_or(0);
-
-        result.push(ALPHABET[(b0 >> 2) as usize] as char);
-        result.push(ALPHABET[(((b0 & 0x03) << 4) | (b1 >> 4)) as usize] as char);
-
-        if i + 1 < data.len() {
-            result.push(ALPHABET[(((b1 & 0x0f) << 2) | (b2 >> 6)) as usize] as char);
-        } else {
-            result.push('=');
-        }
-
-        if i + 2 < data.len() {
-            result.push(ALPHABET[(b2 & 0x3f) as usize] as char);
-        } else {
-            result.push('=');
-        }
-
-        i += 3;
-    }
-
-    result
+    data_encoding::BASE64.encode(data)
 }

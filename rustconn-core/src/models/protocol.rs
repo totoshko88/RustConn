@@ -875,8 +875,20 @@ impl SshConfig {
             args.push("-C".to_string());
         }
 
-        // Add custom options
+        // Add custom options (filter out dangerous directives)
         for (key, value) in &self.custom_options {
+            // Block directives that could execute arbitrary commands
+            let key_lower = key.to_lowercase();
+            if matches!(
+                key_lower.as_str(),
+                "proxycommand" | "localcommand" | "permitlocalcommand" | "remotecommand" | "match"
+            ) {
+                tracing::warn!(
+                    option = %key,
+                    "Skipping dangerous SSH custom option"
+                );
+                continue;
+            }
             args.push("-o".to_string());
             args.push(format!("{key}={value}"));
         }

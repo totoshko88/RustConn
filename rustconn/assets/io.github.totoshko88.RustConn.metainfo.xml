@@ -546,7 +546,7 @@
         <p>Version 0.5.9 - Settings and Template Dialog Improvements:</p>
         <ul>
           <li>Migrated Settings dialog from deprecated PreferencesWindow to PreferencesDialog</li>
-          <li>Updated libadwaita feature from v1_4 to v1_6</li>
+          <li>Updated libadwaita feature from v1_4 to v1_5</li>
           <li>Migrated Template dialog to modern libadwaita patterns</li>
           <li>Fixed Zero Trust (AWS SSM) connection status icon showing as failed</li>
           <li>Fixed remote-viewer version parsing in Settings Clients tab</li>

@@ -7,7 +7,7 @@
 use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, Orientation};
+use gtk4::{Box as GtkBox, Orientation};
 use libadwaita as adw;
 use rustconn_core::models::Connection;
 use rustconn_core::wol::{MacAddress, WolConfig};
@@ -38,17 +38,14 @@ impl WolDialog {
 
         window.set_size_request(320, 280);
 
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
+        let (header, cancel_btn, send_btn) =
+            crate::dialogs::widgets::dialog_header("Cancel", "Send");
 
-        let cancel_btn = Button::builder().label(i18n("Cancel")).build();
-        let send_btn = Button::builder()
-            .label(i18n("Send"))
-            .css_classes(["suggested-action"])
-            .build();
-        header.pack_start(&cancel_btn);
-        header.pack_end(&send_btn);
+        // Cancel button handler
+        let window_clone = window.clone();
+        cancel_btn.connect_clicked(move |_| {
+            window_clone.close();
+        });
 
         let clamp = adw::Clamp::builder()
             .maximum_size(600)

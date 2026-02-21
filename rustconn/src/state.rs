@@ -263,8 +263,8 @@ impl AppState {
         let snippet_manager = SnippetManager::new(config_manager.clone())
             .map_err(|e| format!("Failed to initialize snippet manager: {e}"))?;
 
-        // Initialize secret manager (empty for now, backends added later)
-        let secret_manager = SecretManager::empty();
+        // Initialize secret manager with backends from settings
+        let secret_manager = SecretManager::build_from_settings(&settings.secrets);
 
         // Initialize document manager
         let document_manager = DocumentManager::new();
@@ -811,6 +811,43 @@ impl AppState {
             .cloned()
             .collect();
 
+        // For Variable password source — resolve directly via vault backend
+        if let PasswordSource::Variable(ref var_name) = connection.password_source {
+            tracing::debug!(
+                var_name,
+                "[resolve_credentials] Resolving variable password"
+            );
+            match load_variable_from_vault(&self.settings.secrets, var_name) {
+                Ok(Some(password)) => {
+                    tracing::debug!(var_name, "[resolve_credentials] Variable resolved");
+                    let creds = if let Some(ref username) = connection.username {
+                        Credentials::with_password(username, &password)
+                    } else {
+                        Credentials {
+                            username: None,
+                            password: Some(secrecy::SecretString::from(password)),
+                            key_passphrase: None,
+                            domain: None,
+                        }
+                    };
+                    return Ok(Some(creds));
+                }
+                Ok(None) => {
+                    tracing::warn!(
+                        var_name,
+                        "[resolve_credentials] No secret found for variable"
+                    );
+                }
+                Err(e) => {
+                    tracing::error!(
+                        var_name,
+                        error = %e,
+                        "[resolve_credentials] Failed to load variable from vault"
+                    );
+                }
+            }
+        }
+
         // For Vault password source with KeePass backend, directly use
         // KeePassStatus to retrieve password. This bypasses the
         // SecretManager which requires registered backends.
@@ -1264,6 +1301,46 @@ impl AppState {
         use rustconn_core::secret::{KeePassHierarchy, KeePassStatus};
         use secrecy::ExposeSecret;
 
+        // For Variable password source — resolve directly via vault backend
+        // This bypasses SecretManager's backend list and uses the same
+        // backend selection logic as save_variable_to_vault, ensuring
+        // the variable is read from the same backend it was written to.
+        if let PasswordSource::Variable(ref var_name) = connection.password_source {
+            tracing::debug!(
+                var_name,
+                "[resolve_credentials_blocking] Resolving variable password"
+            );
+            match load_variable_from_vault(&secret_settings, var_name) {
+                Ok(Some(password)) => {
+                    tracing::debug!(var_name, "[resolve_credentials_blocking] Variable resolved");
+                    let creds = if let Some(ref username) = connection.username {
+                        Credentials::with_password(username, &password)
+                    } else {
+                        Credentials {
+                            username: None,
+                            password: Some(secrecy::SecretString::from(password)),
+                            key_passphrase: None,
+                            domain: None,
+                        }
+                    };
+                    return Ok(Some(creds));
+                }
+                Ok(None) => {
+                    tracing::warn!(
+                        var_name,
+                        "[resolve_credentials_blocking] No secret found for variable"
+                    );
+                }
+                Err(e) => {
+                    tracing::error!(
+                        var_name,
+                        error = %e,
+                        "[resolve_credentials_blocking] Failed to load variable from vault"
+                    );
+                }
+            }
+        }
+
         // For Vault password source with KeePass backend
         if connection.password_source == PasswordSource::Vault
             && kdbx_enabled
@@ -1600,6 +1677,11 @@ impl AppState {
         if settings.logging.enabled != self.settings.logging.enabled {
             self.session_manager
                 .set_logging_enabled(settings.logging.enabled);
+        }
+
+        // Rebuild secret manager backends if secret settings changed
+        if self.settings.secrets != settings.secrets {
+            self.secret_manager.rebuild_from_settings(&settings.secrets);
         }
 
         self.settings = settings;
@@ -3059,7 +3141,7 @@ pub fn rename_vault_credential(
 /// Respects `preferred_backend` from secret settings, using the same
 /// backend selection logic as connection passwords.
 pub fn save_variable_to_vault(
-    settings: &rustconn_core::config::AppSettings,
+    settings: &rustconn_core::config::SecretSettings,
     var_name: &str,
     password: &str,
 ) -> Result<(), String> {
@@ -3067,7 +3149,7 @@ pub fn save_variable_to_vault(
     use rustconn_core::secret::SecretBackend;
 
     let lookup_key = rustconn_core::variable_secret_key(var_name);
-    let backend_type = select_backend_for_load(&settings.secrets);
+    let backend_type = select_backend_for_load(settings);
 
     tracing::debug!(?backend_type, var_name, "Saving secret variable to vault");
 
@@ -3080,8 +3162,8 @@ pub fn save_variable_to_vault(
 
     match backend_type {
         SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
-            if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
-                let key_file = settings.secrets.kdbx_key_file.clone();
+            if let Some(kdbx_path) = settings.kdbx_path.as_ref() {
+                let key_file = settings.kdbx_key_file.clone();
                 let kdbx = std::path::Path::new(kdbx_path);
                 let key = key_file.as_ref().map(|p| std::path::Path::new(p));
                 rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
@@ -3099,7 +3181,7 @@ pub fn save_variable_to_vault(
             }
         }
         SecretBackendType::Bitwarden => {
-            let secret_settings = settings.secrets.clone();
+            let secret_settings = settings.clone();
             crate::async_utils::with_runtime(|rt| {
                 let backend = rt
                     .block_on(rustconn_core::secret::auto_unlock(&secret_settings))
@@ -3137,7 +3219,7 @@ pub fn save_variable_to_vault(
 /// Respects `preferred_backend` from secret settings, using the same
 /// backend selection logic as connection passwords.
 pub fn load_variable_from_vault(
-    settings: &rustconn_core::config::AppSettings,
+    settings: &rustconn_core::config::SecretSettings,
     var_name: &str,
 ) -> Result<Option<String>, String> {
     use rustconn_core::config::SecretBackendType;
@@ -3145,7 +3227,7 @@ pub fn load_variable_from_vault(
     use secrecy::ExposeSecret;
 
     let lookup_key = rustconn_core::variable_secret_key(var_name);
-    let backend_type = select_backend_for_load(&settings.secrets);
+    let backend_type = select_backend_for_load(settings);
 
     tracing::debug!(
         ?backend_type,
@@ -3155,8 +3237,8 @@ pub fn load_variable_from_vault(
 
     match backend_type {
         SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
-            if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
-                let key_file = settings.secrets.kdbx_key_file.clone();
+            if let Some(kdbx_path) = settings.kdbx_path.as_ref() {
+                let key_file = settings.kdbx_key_file.clone();
                 let kdbx = std::path::Path::new(kdbx_path);
                 let key = key_file.as_ref().map(|p| std::path::Path::new(p));
                 rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
@@ -3173,7 +3255,7 @@ pub fn load_variable_from_vault(
             }
         }
         SecretBackendType::Bitwarden => {
-            let secret_settings = settings.secrets.clone();
+            let secret_settings = settings.clone();
             crate::async_utils::with_runtime(|rt| {
                 let backend = rt
                     .block_on(rustconn_core::secret::auto_unlock(&secret_settings))

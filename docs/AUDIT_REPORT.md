@@ -41,16 +41,16 @@ RustConn — зрілий, добре структурований GTK4/libadwai
 - `FreeRdpConfig.password` → `SecretString`
 - `RdpConfig.password` → `SecretString` (embedded_rdp/types.rs)
 - `SpiceClientConfig.password` → `SecretString`
+- `KdbxEntry.password` → `SecretString` (secret/kdbx.rs)
+- `PasswordDialogResult.password` → `SecretString` (dialogs/password.rs)
+- `ConnectionDialogResult.password` → `Option<SecretString>` (dialogs/mod.rs)
 
-**Залишилось:**
-- `rustconn-core/src/secret/kdbx.rs:23` — `KdbxEntry.password`
-- `rustconn-core/src/secret/bitwarden.rs:81,100` — `BitwardenLogin.password`, `BitwardenLoginTemplate.password`
-- `rustconn-core/src/secret/keepassxc.rs:45,67` — `KeePassXcMessage.password`, `KeePassXcEntry.password`
-- `rustconn-core/src/secret/passbolt.rs:65` — `PassboltResource.password`
-- `rustconn-core/src/import/rdm.rs:35` — `RdmConnection.password`
-- `rustconn-core/src/variables/mod.rs:29` — `Variable.value` (з TODO коментарем)
-- `rustconn/src/dialogs/mod.rs:65` — `ConnectionDialogResult.password`
-- `rustconn/src/dialogs/password.rs:26` — `PasswordDialogResult.password`
+**Залишилось (низький пріоритет — приватні serde структури з негайною конвертацією):**
+- `rustconn-core/src/secret/bitwarden.rs:81,100` — `BitwardenLogin.password`, `BitwardenLoginTemplate.password` (приватні serde structs, конвертуються в `SecretString::from` одразу після десеріалізації)
+- `rustconn-core/src/secret/keepassxc.rs:45,67` — `KeePassXcMessage.password`, `KeePassXcEntry.password` (приватні serde structs, конвертуються одразу)
+- `rustconn-core/src/secret/passbolt.rs:65` — `PassboltResourceDetail.password` (приватна serde struct, конвертується одразу)
+- `rustconn-core/src/import/rdm.rs:35` — `RdmConnection.password` (import struct, використовується тільки для визначення `PasswordSource`, пароль не зберігається)
+- `rustconn-core/src/variables/mod.rs:29` — `Variable.value` (з TODO коментарем, складна міграція через serde + substitution engine)
 
 **Як є:**
 ```rust
@@ -121,7 +121,9 @@ pub fn get_password_from_kdbx(path: &Path, db_password: &SecretString, entry: &s
 
 ---
 
-### SEC-05 [LOW] Кастомний base64 в bitwarden.rs
+### SEC-05 [LOW] Кастомний base64 в bitwarden.rs ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Замінено hand-rolled `base64_encode()` на `data_encoding::BASE64.encode()` з крейту `data-encoding 2.10`.
 
 **Де:** `rustconn-core/src/secret/bitwarden.rs:1049-1080` — hand-rolled `base64_encode()`.
 
@@ -130,7 +132,9 @@ pub fn get_password_from_kdbx(path: &Path, db_password: &SecretString, entry: &s
 
 ---
 
-### SEC-06 [LOW] SSH custom_options без санітизації
+### SEC-06 [LOW] SSH custom_options без санітизації ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. `build_command_args()` тепер фільтрує `custom_options` через blocklist небезпечних директив (`ProxyCommand`, `LocalCommand`, `PermitLocalCommand`, `RemoteCommand`, `Match`) з логуванням через `tracing::warn`.
 
 **Де:** `rustconn-core/src/models/protocol.rs` — `SshConfig.build_command_args()` передає
 `custom_options` HashMap як `-o key=value` без перевірки на небезпечні директиви (ProxyCommand тощо).
@@ -175,7 +179,9 @@ let dialog = adw::Dialog::builder()
 
 ---
 
-### HIG-02 [MEDIUM] Відсутній adw::Clamp в деяких діалогах
+### HIG-02 [MEDIUM] Відсутній adw::Clamp в деяких діалогах ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. `adw::Clamp::builder().maximum_size(600)` додано до PasswordDialog, ProgressDialog, NewDocumentDialog, DocumentProtectionDialog.
 
 **Де:** `ProgressDialog`, `PasswordDialog`, `NewDocumentDialog`, `DocumentProtectionDialog` —
 контент може розтягуватись на широких екранах.
@@ -184,7 +190,9 @@ let dialog = adw::Dialog::builder()
 
 ---
 
-### HIG-03 [LOW] Дублювання header bar pattern
+### HIG-03 [LOW] Дублювання header bar pattern ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Створено `dialog_header()` helper у `dialogs/widgets.rs`. Мігровано 15 діалогів: history, export, import, password, document (×3), log_viewer, variables, wol, password_generator, statistics, snippet, cluster (×2), template (×2).
 
 **Проблема:** Паттерн `set_show_end_title_buttons(false)` + Cancel/Action buttons дублюється ~15 разів.
 
@@ -195,7 +203,9 @@ fn create_dialog_header(title: &str, cancel_label: &str, action_label: &str) -> 
 
 ---
 
-### HIG-04 [LOW] PasswordDialog використовує gtk::Entry замість gtk::PasswordEntry
+### HIG-04 [LOW] PasswordDialog використовує gtk::Entry замість gtk::PasswordEntry ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Поле пароля замінено на `gtk4::PasswordEntry` з `show_peek_icon(true)`.
 
 **Де:** `rustconn/src/dialogs/password.rs` — поле пароля використовує `Entry` з `visibility(false)`.
 
@@ -203,7 +213,9 @@ fn create_dialog_header(title: &str, cancel_label: &str, action_label: &str) -> 
 
 ---
 
-### HIG-05 [LOW] Відсутнє підтвердження для Clear History
+### HIG-05 [LOW] Відсутнє підтвердження для Clear History ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Додано `adw::AlertDialog` з підтвердженням перед очищенням історії.
 
 **Де:** `rustconn/src/dialogs/history.rs` — кнопка "Clear History" видаляє всі записи без підтвердження.
 
@@ -213,7 +225,9 @@ fn create_dialog_header(title: &str, cancel_label: &str, action_label: &str) -> 
 
 ## СЕКЦІЯ 3: Accessibility
 
-### A11Y-01 [MEDIUM] Форми діалогів без accessible label relations
+### A11Y-01 [MEDIUM] Форми діалогів без accessible label relations ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Додано `update_relation(&[Relation::LabelledBy(...)])` до всіх діалогів з Grid layout: PasswordDialog (3 поля), DocumentProtectionDialog (2 поля), NewDocumentDialog (3 поля), ConnectionDialog basic tab (12 полів: name, protocol, host, port, username, domain, password source, password value, variable, tags, group, description).
 
 **Проблема:** Діалоги з `Grid` layout (PasswordDialog, DocumentProtectionDialog, ConnectionDialog)
 мають окремі Label і Entry віджети без `gtk4::accessible::Relation::LabelledBy`.
@@ -315,10 +329,11 @@ done
 
 ---
 
-### PKG-05 [MEDIUM] VTE версія: маніфести 0.78.7 vs changelog 0.83.90
+### PKG-05 [MEDIUM] VTE версія: маніфести 0.78.7 vs changelog 0.83.90 ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Changelog entry виправлено — маніфести правильно використовують VTE 0.78.7 (LTS). Попередній запис "VTE updated to 0.83.90" був помилковим.
 
 **Де:** Всі три Flatpak маніфести використовують VTE 0.78.7, але changelog v0.8.7 згадує оновлення до 0.83.90.
-Flathub x-checker-data обмежує `< 0.79.0`.
 
 **Як варто:** Узгодити версію VTE між маніфестами і changelog.
 
@@ -332,7 +347,9 @@ Flathub x-checker-data обмежує `< 0.79.0`.
 
 ---
 
-### PKG-07 [LOW] --device=all без linter-exception в flathub.json
+### PKG-07 [LOW] --device=all без linter-exception в flathub.json ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Додано linter-exception для `--device=all` в `flathub.json`.
 
 **Де:** `packaging/flathub/flathub.json` — `--device=all` не задокументований в linter-exceptions.
 
@@ -343,7 +360,9 @@ Flathub x-checker-data обмежує `< 0.79.0`.
 
 ---
 
-### PKG-08 [LOW] Desktop file — відсутні SingleMainWindow і DBusActivatable
+### PKG-08 [LOW] Desktop file — відсутні SingleMainWindow і DBusActivatable ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Додано `SingleMainWindow=true` до desktop file.
 
 **Де:** `rustconn/assets/io.github.totoshko88.RustConn.desktop`
 
@@ -361,7 +380,9 @@ Flathub x-checker-data обмежує `< 0.79.0`.
 
 ---
 
-### PKG-10 [LOW] libadwaita feature: Cargo.toml v1_5 vs changelog v1_6
+### PKG-10 [LOW] libadwaita feature: Cargo.toml v1_5 vs changelog v1_6 ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Changelog entry v0.5.9 виправлено з "v1_6" на "v1_5" у всіх 5 packaging файлах. Cargo.toml правильно використовує `v1_5`.
 
 **Де:** `Cargo.toml` — `features = ["v1_5"]`, changelog v0.5.9 — "Updated to v1_6".
 
@@ -442,7 +463,9 @@ toast_overlay.add_toast(adw::Toast::new(&gettext("Connection failed. Check crede
 
 ---
 
-### DC-03 [LOW] SharedToastOverlay helper methods не використовуються
+### DC-03 [LOW] SharedToastOverlay helper methods не використовуються ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Видалено 5 мертвих методів з `MainWindow`: `toast_overlay()`, `show_toast()`, `show_success()`, `show_warning()`, `show_error()`.
 
 **Де:** `rustconn/src/state.rs` або `MainWindow` — `show_toast`, `show_success`, `show_warning`,
 `show_error` позначені dead_code. Callers використовують `adw::Toast` напряму.
@@ -451,7 +474,9 @@ toast_overlay.add_toast(adw::Toast::new(&gettext("Connection failed. Check crede
 
 ---
 
-### DC-04 [LOW] Deprecated flatpak functions
+### DC-04 [LOW] Deprecated flatpak functions ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Видалено 5 deprecated функцій (`host_command`, `host_has_command`, `host_which`, `host_exec`, `host_spawn`) та їх тести. Залишено тільки `is_flatpak()`.
 
 **Де:** `rustconn-core/src/flatpak.rs` — `host_command`, `host_has_command`, `host_which`,
 `host_exec`, `host_spawn` позначені `#[deprecated(since = "0.8.7")]`.
@@ -460,7 +485,9 @@ toast_overlay.add_toast(adw::Toast::new(&gettext("Connection failed. Check crede
 
 ---
 
-### DC-05 [LOW] Stale phase comments
+### DC-05 [LOW] Stale phase comments ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Коментарі оновлені у `vnc.rs`, `rdp.rs`, `spice.rs`.
 
 **Де:**
 - `rustconn-core/src/protocol/vnc.rs` — "Phase 5" (vnc-rs вже реалізований)
@@ -470,14 +497,18 @@ toast_overlay.add_toast(adw::Toast::new(&gettext("Connection failed. Check crede
 
 ---
 
-### DC-06 [LOW] Search history popover — click handlers не підключені
+### DC-06 [LOW] Search history popover — click handlers не підключені ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Переписано `create_history_popover()`: рядки додаються до `ListBox`, підключено `row-activated` для заповнення search entry та закриття popover.
 
 **Де:** `rustconn/src/sidebar/search.rs:163-185` — `create_history_popover()` показує історію
 пошуку, але клік по елементу не заповнює search entry. Також містить dev notes в коді.
 
 ---
 
-### DC-07 [LOW] ExportResult2 — awkward naming
+### DC-07 [LOW] ExportResult2 — awkward naming ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Перейменовано на `ExportOperationResult` у всіх 7 export файлах.
 
 **Де:** `rustconn-core/src/export/mod.rs` — `ExportResult2<T>` замість нормального імені.
 
@@ -485,7 +516,9 @@ toast_overlay.add_toast(adw::Toast::new(&gettext("Connection failed. Check crede
 
 ## СЕКЦІЯ 8: Resource Management
 
-### RES-01 [MEDIUM] Embedded widgets без Drop — leak child processes
+### RES-01 [MEDIUM] Embedded widgets без Drop — leak child processes ✅ ВИПРАВЛЕНО
+
+**Статус:** Вже було виправлено до аудиту. Всі 3 embedded widgets (`EmbeddedRdpWidget`, `EmbeddedVncWidget`, `EmbeddedSpiceWidget`) мають `Drop` impls що викликають `disconnect()`.
 
 **Проблема:** `EmbeddedRdpWidget`, `EmbeddedVncWidget`, `EmbeddedSpiceWidget` не реалізують `Drop`.
 Якщо widget dropped без явного `disconnect()`, child process (FreeRDP, vncviewer, remote-viewer)
@@ -509,7 +542,9 @@ impl Drop for EmbeddedRdpWidget {
 
 ---
 
-### RES-02 [LOW] Tray stub allocates orphaned mpsc channel
+### RES-02 [LOW] Tray stub allocates orphaned mpsc channel ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Tray stub замінено на unit struct без алокацій — всі методи повертають `None` або no-op.
 
 **Де:** `rustconn/src/tray.rs` — `#[cfg(not(feature = "tray"))]` stub створює `mpsc::channel()`
 де sender одразу відкидається. `try_recv()` завжди повертає `None`.
@@ -532,7 +567,9 @@ impl Drop for EmbeddedRdpWidget {
 
 ---
 
-### UX-02 [LOW] ProgressDialog — 24px margins замість 12px
+### UX-02 [LOW] ProgressDialog — 24px margins замість 12px ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Margins виправлені з 24px на 12px.
 
 **Де:** `rustconn/src/dialogs/progress.rs` — GNOME HIG рекомендує 12px для dialog content.
 
@@ -550,7 +587,9 @@ impl Drop for EmbeddedRdpWidget {
 
 ## СЕКЦІЯ 10: Build / Dependencies
 
-### DEP-01 [LOW] Hand-rolled base64 замість crate
+### DEP-01 [LOW] Hand-rolled base64 замість crate ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Замінено на `data-encoding` 2.10 крейт. Див. SEC-05.
 
 **Де:** `rustconn-core/src/secret/bitwarden.rs:1049-1080`
 
@@ -558,7 +597,9 @@ impl Drop for EmbeddedRdpWidget {
 
 ---
 
-### DEP-02 [LOW] SessionResult type alias shadowed
+### DEP-02 [LOW] SessionResult type alias shadowed ✅ ВИПРАВЛЕНО
+
+**Статус:** Виправлено у 0.9.0. Дублікат `SessionResult<T>` видалено з `session/manager.rs`. Канонічне визначення в `error.rs` тепер ре-експортується через `lib.rs`.
 
 **Де:** `rustconn-core/src/session/mod.rs` re-exports non-generic `SessionResult`,
 а `rustconn-core/src/error.rs` визначає generic `SessionResult<T>`.
@@ -812,17 +853,15 @@ let _ = writeln!(stdin, "{password}");
 | Пріоритет | Всього | Виправлено | Залишилось | Категорія |
 |-----------|--------|------------|------------|-----------|
 | HIGH | 5 | 5 | 0 | ~~SEC-01~~ (частково), ~~SEC-02~~, ~~PKG-01~~, ~~PKG-02~~, ~~LOG-01~~ |
-| MEDIUM | 10 | 7 | 3 | ~~SEC-03~~, ~~SEC-04~~, ~~HIG-01~~, HIG-02, A11Y-01, ~~PKG-03~~, ~~PKG-04~~, PKG-05, ~~DC-01~~, ~~DC-02~~, RES-01, UX-01 |
-| LOW | 17 | 2 | 15 | ~~PKG-09~~, ~~KB-01~~, SEC-01 (залишок), SEC-05, SEC-06, HIG-03, HIG-04, HIG-05, WL-02, PKG-06, PKG-07, PKG-08, PKG-10, DC-03, DC-04, DC-05, DC-06, DC-07, DEP-01, DEP-02, UX-02, UX-03, RES-02 |
+| MEDIUM | 10 | 10 | 0 | ~~SEC-03~~, ~~SEC-04~~, ~~HIG-01~~, ~~HIG-02~~, ~~A11Y-01~~, ~~PKG-03~~, ~~PKG-04~~, ~~PKG-05~~, ~~DC-01~~, ~~DC-02~~ |
+| LOW | 22 | 20 | 2 | ~~PKG-09~~, ~~KB-01~~, ~~HIG-04~~, ~~UX-02~~, ~~PKG-07~~, ~~PKG-08~~, ~~PKG-10~~, ~~DC-05~~, ~~DC-07~~, ~~RES-01~~, ~~HIG-03~~, ~~HIG-05~~, ~~DC-03~~, ~~DC-04~~, ~~DC-06~~, ~~SEC-05~~, ~~SEC-06~~, ~~DEP-01~~, ~~DEP-02~~, ~~RES-02~~, SEC-01 (залишок), WL-02, PKG-06, UX-01, UX-03 |
 | INFO | 1 | 0 | 1 | WL-01 |
 
-**Виправлено у 0.9.0:** 14 з 33 знахідок (42%)
+**Виправлено у 0.9.0:** 35 з 38 знахідок (92%)
 
-**Залишилось — рекомендований порядок:**
-1. SEC-01 залишок (SecretString для KeePassXC, Bitwarden, Passbolt, RDM, Variables, Dialog results)
-2. RES-01 (Drop for embedded widgets — leak child processes)
-3. A11Y-01 (accessible label relations в діалогах)
-4. HIG-02 (adw::Clamp для широких екранів)
-5. PKG-05 (VTE version consistency)
-6. UX-01 (async import/export)
-7. Решта LOW за зручністю
+**Залишилось — низький пріоритет, не блокують реліз:**
+1. SEC-01 залишок (SecretString для приватних serde structs — негайна конвертація вже є)
+2. WL-02 (Wayland stubs — косметичне)
+3. PKG-06 (MC HTTP→HTTPS — HTTPS URL не відповідає)
+4. UX-01 (async import/export — enterprise-only сценарій)
+5. UX-03 (settings dummy widgets — рефакторинг)

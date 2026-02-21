@@ -132,17 +132,9 @@ impl TemplateDialog {
 
         window.set_size_request(350, 300);
 
-        // Create header bar with Close/Create buttons (GNOME HIG)
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label(i18n("Close")).build();
-        let save_btn = Button::builder()
-            .label(i18n("Create"))
-            .css_classes(["suggested-action"])
-            .build();
-        header.pack_start(&close_btn);
-        header.pack_end(&save_btn);
+        // Header bar (GNOME HIG)
+        let (header, close_btn, save_btn) =
+            crate::dialogs::widgets::dialog_header("Close", "Create");
 
         // Close button handler
         let window_clone = window.clone();
@@ -2849,17 +2841,9 @@ impl TemplateManagerDialog {
 
         window.set_size_request(320, 280);
 
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label(i18n("Close")).build();
-        let create_conn_btn = Button::builder()
-            .label(i18n("Create"))
-            .css_classes(["suggested-action"])
-            .sensitive(false)
-            .build();
-        header.pack_start(&close_btn);
-        header.pack_end(&create_conn_btn);
+        let (header, close_btn, create_conn_btn) =
+            crate::dialogs::widgets::dialog_header("Close", "Create");
+        create_conn_btn.set_sensitive(false);
 
         // Close button handler
         let window_clone = window.clone();

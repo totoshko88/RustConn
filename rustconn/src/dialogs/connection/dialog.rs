@@ -2203,6 +2203,44 @@ impl ConnectionDialog {
         grid.attach(&desc_label, 0, row, 1, 1);
         grid.attach(&desc_scrolled, 1, row, 2, 1);
 
+        // Accessible label relations for screen readers (A11Y-01)
+        name_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            name_label.upcast_ref()
+        ])]);
+        protocol_dropdown.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            protocol_label_grid.upcast_ref(),
+        ])]);
+        host_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            host_label.upcast_ref()
+        ])]);
+        port_spin.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            port_label.upcast_ref()
+        ])]);
+        username_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            username_label.upcast_ref(),
+        ])]);
+        domain_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            domain_label.upcast_ref()
+        ])]);
+        password_source_dropdown.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            password_source_label.upcast_ref(),
+        ])]);
+        password_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            password_entry_label.upcast_ref(),
+        ])]);
+        variable_dropdown.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            variable_label.upcast_ref(),
+        ])]);
+        tags_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            tags_label.upcast_ref()
+        ])]);
+        group_dropdown.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            group_label.upcast_ref()
+        ])]);
+        description_view.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            desc_label.upcast_ref()
+        ])]);
+
         (
             vbox,
             name_entry,

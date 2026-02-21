@@ -9,7 +9,9 @@ use uuid::Uuid;
 
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
 
-use super::{ExportError, ExportFormat, ExportOptions, ExportResult, ExportResult2, ExportTarget};
+use super::{
+    ExportError, ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
+};
 
 /// Ansible inventory exporter.
 ///
@@ -249,7 +251,7 @@ impl ExportTarget for AnsibleExporter {
         connections: &[Connection],
         groups: &[ConnectionGroup],
         options: &ExportOptions,
-    ) -> ExportResult2<ExportResult> {
+    ) -> ExportOperationResult<ExportResult> {
         let mut result = ExportResult::new();
 
         // Filter SSH connections and count skipped
@@ -298,7 +300,7 @@ impl ExportTarget for AnsibleExporter {
         Ok(result)
     }
 
-    fn export_connection(&self, connection: &Connection) -> ExportResult2<String> {
+    fn export_connection(&self, connection: &Connection) -> ExportOperationResult<String> {
         if connection.protocol != ProtocolType::Ssh {
             return Err(ExportError::UnsupportedProtocol(format!(
                 "{}",

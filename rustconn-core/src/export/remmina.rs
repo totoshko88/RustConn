@@ -8,7 +8,9 @@ use std::path::Path;
 
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
 
-use super::{ExportError, ExportFormat, ExportOptions, ExportResult, ExportResult2, ExportTarget};
+use super::{
+    ExportError, ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
+};
 
 /// Remmina connection file exporter.
 ///
@@ -228,7 +230,7 @@ impl RemminaExporter {
     pub fn export_to_directory(
         connections: &[Connection],
         output_dir: &Path,
-    ) -> ExportResult2<ExportResult> {
+    ) -> ExportOperationResult<ExportResult> {
         let mut result = ExportResult::new();
 
         // Create output directory if it doesn't exist
@@ -300,11 +302,11 @@ impl ExportTarget for RemminaExporter {
         connections: &[Connection],
         _groups: &[ConnectionGroup],
         options: &ExportOptions,
-    ) -> ExportResult2<ExportResult> {
+    ) -> ExportOperationResult<ExportResult> {
         Self::export_to_directory(connections, &options.output_path)
     }
 
-    fn export_connection(&self, connection: &Connection) -> ExportResult2<String> {
+    fn export_connection(&self, connection: &Connection) -> ExportOperationResult<String> {
         Self::export_connection(connection)
     }
 

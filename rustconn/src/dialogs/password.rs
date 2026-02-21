@@ -59,17 +59,8 @@ impl PasswordDialog {
             .content_width(400)
             .build();
 
-        // Header bar with Cancel/Connect buttons (GNOME HIG)
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let cancel_btn = Button::builder().label(i18n("Cancel")).build();
-        let connect_btn = Button::builder()
-            .label(i18n("Connect"))
-            .css_classes(["suggested-action"])
-            .build();
-        header.pack_start(&cancel_btn);
-        header.pack_end(&connect_btn);
+        // Header bar (GNOME HIG)
+        let (header, cancel_btn, connect_btn) = super::widgets::dialog_header("Cancel", "Connect");
 
         // Content
         let content = GtkBox::new(Orientation::Vertical, 12);

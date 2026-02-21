@@ -32,17 +32,8 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
 
     window.set_size_request(350, 300);
 
-    // Header bar with Close/Copy buttons (GNOME HIG)
-    let header = adw::HeaderBar::new();
-    header.set_show_end_title_buttons(false);
-    header.set_show_start_title_buttons(false);
-    let close_btn = Button::builder().label(i18n("Close")).build();
-    let copy_btn = Button::builder()
-        .label(i18n("Copy"))
-        .css_classes(["suggested-action"])
-        .build();
-    header.pack_start(&close_btn);
-    header.pack_end(&copy_btn);
+    // Header bar (GNOME HIG)
+    let (header, close_btn, copy_btn) = crate::dialogs::widgets::dialog_header("Close", "Copy");
 
     // Close button handler
     let window_clone = window.clone();

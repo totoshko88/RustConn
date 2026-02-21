@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType, SshAuthMethod};
 
-use super::{ExportFormat, ExportOptions, ExportResult, ExportResult2, ExportTarget};
+use super::{ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget};
 
 /// Asbru-CM YAML exporter.
 ///
@@ -280,7 +280,7 @@ impl ExportTarget for AsbruExporter {
         connections: &[Connection],
         groups: &[ConnectionGroup],
         options: &ExportOptions,
-    ) -> ExportResult2<ExportResult> {
+    ) -> ExportOperationResult<ExportResult> {
         let mut result = ExportResult::new();
 
         // Filter groups if not including them
@@ -302,7 +302,7 @@ impl ExportTarget for AsbruExporter {
         Ok(result)
     }
 
-    fn export_connection(&self, connection: &Connection) -> ExportResult2<String> {
+    fn export_connection(&self, connection: &Connection) -> ExportOperationResult<String> {
         let group_uuid_map = HashMap::new();
         let asbru_uuid = generate_asbru_uuid();
         let entry = Self::connection_to_entry(connection, &group_uuid_map);

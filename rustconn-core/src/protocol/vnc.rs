@@ -8,7 +8,7 @@ use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 /// VNC protocol handler
 ///
 /// Implements the Protocol trait for VNC connections.
-/// Native embedding via gtk-vnc will be implemented in Phase 5.
+/// Native VNC embedding is available via vnc-rs (`vnc-embedded` feature flag).
 pub struct VncProtocol;
 
 impl VncProtocol {

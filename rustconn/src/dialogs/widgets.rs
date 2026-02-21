@@ -4,10 +4,40 @@
 //! across dialogs, reducing code duplication and ensuring consistent
 //! styling following GNOME HIG.
 
+use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{CheckButton, DropDown, Entry, SpinButton, StringList};
+use gtk4::{Button, CheckButton, DropDown, Entry, SpinButton, StringList};
 use libadwaita as adw;
+
+/// Creates a standard dialog header bar following GNOME HIG.
+///
+/// Returns `(header_bar, start_button, end_button)`. The start button
+/// (Cancel/Close) is placed at the start, the action button at the end
+/// with the `suggested-action` CSS class. The caller is responsible for
+/// connecting the start button to close the dialog/window.
+///
+/// # Arguments
+///
+/// * `start_label` - Label for the start (cancel/close) button.
+/// * `end_label` - Label for the end (action) button.
+#[must_use]
+pub fn dialog_header(start_label: &str, end_label: &str) -> (adw::HeaderBar, Button, Button) {
+    let header = adw::HeaderBar::new();
+    header.set_show_end_title_buttons(false);
+    header.set_show_start_title_buttons(false);
+
+    let start_btn = Button::builder().label(i18n(start_label)).build();
+    let end_btn = Button::builder()
+        .label(i18n(end_label))
+        .css_classes(["suggested-action"])
+        .build();
+
+    header.pack_start(&start_btn);
+    header.pack_end(&end_btn);
+
+    (header, start_btn, end_btn)
+}
 
 /// Common label strings used across dialogs
 pub mod labels {
