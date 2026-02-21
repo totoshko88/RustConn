@@ -2191,7 +2191,7 @@ msgid "Customizable settings"
 msgstr "Баптауларды теңшеу"
 
 #: ../rustconn/src/split_view/bridge.rs:1741
-msgid "Embedded & external clients"
+msgid "Embedded and external clients"
 msgstr "Кірістірілген және сыртқы клиенттер"
 
 #: ../rustconn/src/split_view/bridge.rs:1763

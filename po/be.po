@@ -2192,7 +2192,7 @@ msgid "Customizable settings"
 msgstr "Наладжвальныя параметры"
 
 #: ../rustconn/src/split_view/bridge.rs:1741
-msgid "Embedded & external clients"
+msgid "Embedded and external clients"
 msgstr "Убудаваныя і знешнія кліенты"
 
 #: ../rustconn/src/split_view/bridge.rs:1763

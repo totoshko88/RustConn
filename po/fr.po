@@ -2197,7 +2197,7 @@ msgid "Customizable settings"
 msgstr "Paramètres personnalisables"
 
 #: ../rustconn/src/split_view/bridge.rs:1741
-msgid "Embedded & external clients"
+msgid "Embedded and external clients"
 msgstr "Clients intégrés et externes"
 
 #: ../rustconn/src/split_view/bridge.rs:1763

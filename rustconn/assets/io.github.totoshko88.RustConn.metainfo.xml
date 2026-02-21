@@ -11,85 +11,71 @@
   <update_contact>totoshko88@gmail.com</update_contact>
   <description>
     <p>
-      RustConn is a modern connection manager for Linux with a GTK4/Wayland-native interface.
-      Manage SSH, RDP, VNC, SPICE, Telnet, Kubernetes, and Zero Trust connections from a single application.
-      All core protocols use embedded Rust implementations — no external dependencies required.
+      RustConn is a modern connection manager for Linux with a GTK4/Wayland-native
+      interface. Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust
+      connections from a single application. Core protocols use embedded Rust
+      implementations with no external dependencies required.
     </p>
-    <p>Protocols (embedded Rust implementations):</p>
+    <p>
+      Organize connections into groups and tags, split terminals side by side, automate
+      tasks with expect scripts and command snippets, and import from Remmina, Asbru-CM,
+      MobaXterm, Royal TS, SSH config, or Ansible inventory.
+    </p>
     <ul>
-      <li>SSH with embedded VTE terminal and split view</li>
-      <li>RDP via IronRDP (embedded, with FreeRDP fallback)</li>
-      <li>VNC via vnc-rs (embedded, with TigerVNC fallback)</li>
-      <li>SPICE via remote-viewer (external)</li>
-      <li>Telnet via external telnet client (port 23)</li>
-      <li>Kubernetes via kubectl exec (shell access to pods)</li>
-      <li>Zero Trust: AWS SSM, GCP IAP, Azure Bastion, OCI Bastion, Cloudflare, Teleport, Tailscale, Boundary</li>
-    </ul>
-    <p>Organization:</p>
-    <ul>
-      <li>Groups, tags, and templates</li>
-      <li>Connection history and statistics</li>
-      <li>Session logging</li>
-    </ul>
-    <p>Import/Export:</p>
-    <ul>
-      <li>Asbru-CM, Remmina, SSH config, Ansible inventory</li>
-      <li>Royal TS, MobaXterm, native format (.rcn)</li>
-    </ul>
-    <p>Security:</p>
-    <ul>
-      <li>KeePassXC (KDBX files and proxy)</li>
-      <li>libsecret (GNOME Keyring)</li>
-      <li>Bitwarden CLI</li>
-      <li>1Password CLI</li>
-      <li>Passbolt CLI</li>
-    </ul>
-    <p>Productivity:</p>
-    <ul>
-      <li>Split terminals</li>
-      <li>Command snippets</li>
-      <li>Cluster commands</li>
-      <li>Wake-on-LAN</li>
+      <li>SSH, Telnet, Serial, and Kubernetes with embedded VTE terminals</li>
+      <li>RDP via IronRDP and VNC via vnc-rs with external client fallback</li>
+      <li>Zero Trust tunnels: AWS SSM, GCP IAP, Azure Bastion, Cloudflare, Teleport, Tailscale</li>
+      <li>Credential storage via KeePassXC, GNOME Keyring, Bitwarden, 1Password, or Passbolt</li>
+      <li>Split view, cluster commands, session logging, and Wake-on-LAN</li>
     </ul>
   </description>
   <launchable type="desktop-id">io.github.totoshko88.RustConn.desktop</launchable>
   <translation type="gettext">rustconn</translation>
+  <categories>
+    <category>Network</category>
+    <category>RemoteAccess</category>
+  </categories>
   <icon type="stock">io.github.totoshko88.RustConn</icon>
   <icon type="remote" width="128" height="128">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/icons/hicolor/128x128/apps/io.github.totoshko88.RustConn.png</icon>
   <branding>
-    <color type="primary" scheme_preference="light">#9141ac</color>
+    <color type="primary" scheme_preference="light">#dc8add</color>
     <color type="primary" scheme_preference="dark">#613583</color>
   </branding>
   <screenshots>
     <screenshot type="default">
-      <caption>Main window with connection sidebar</caption>
-      <image type="source" width="1920" height="1080">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/main.png</image>
+      <caption>Connection sidebar with SSH sessions</caption>
+      <image type="source" width="3566" height="2374">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/main_dark_en.png</image>
+      <image xml:lang="uk" type="source" width="3566" height="2374">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/main_dark_uk.png</image>
+      <image xml:lang="be" type="source" width="3566" height="2374">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/main_white_by.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Embedded RDP session</caption>
+      <image type="source" width="3566" height="2374">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/rdp_dark_en.png</image>
     </screenshot>
     <screenshot>
       <caption>Split terminal view</caption>
-      <image type="source" width="1920" height="1080">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/split.png</image>
+      <image type="source" width="3566" height="2374">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/split_white_en.png</image>
     </screenshot>
     <screenshot>
-      <caption>RDP session</caption>
-      <image type="source" width="1920" height="1080">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/rdp.png</image>
+      <caption>Local shell session</caption>
+      <image type="source" width="3566" height="2374">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/shell_white_en.png</image>
     </screenshot>
     <screenshot>
-      <caption>Main window — light theme</caption>
-      <image type="source" width="1920" height="1080">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/main_light.png</image>
+      <caption>SFTP file browser</caption>
+      <image type="source" width="3566" height="2374">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/sftp_dark_uk.png</image>
     </screenshot>
     <screenshot>
-      <caption>SFTP file browser — light theme</caption>
-      <image type="source" width="1920" height="1080">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/sftp_light.png</image>
-    </screenshot>
-    <screenshot>
-      <caption>Ukrainian translation</caption>
-      <image type="source" width="1920" height="1080">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/main_uk.png</image>
+      <caption>Credential storage settings</caption>
+      <image type="source" width="3566" height="2374">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/creds_dark_uk.png</image>
+      <image xml:lang="cs" type="source" width="3566" height="2374">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/creds_dark_cz.png</image>
     </screenshot>
   </screenshots>
   <url type="homepage">https://github.com/totoshko88/RustConn</url>
   <url type="bugtracker">https://github.com/totoshko88/RustConn/issues</url>
   <url type="vcs-browser">https://github.com/totoshko88/RustConn</url>
   <url type="help">https://github.com/totoshko88/RustConn/blob/main/docs/USER_GUIDE.md</url>
+  <url type="translate">https://github.com/totoshko88/RustConn/tree/main/po</url>
+  <url type="contribute">https://github.com/totoshko88/RustConn/blob/main/README.md</url>
   <url type="donation">https://ko-fi.com/totoshko88</url>
   <content_rating type="oars-1.1"/>
   <requires>
@@ -106,583 +92,261 @@
   <releases>
     <release version="0.9.0" date="2026-02-21">
       <description>
-        <p>Version 0.9.0 - Ukrainian Translation Review:</p>
+        <p>Security hardening, Rust 2024 edition, and translation quality improvements.</p>
         <ul>
-          <li>Ukrainian translation professionally reviewed by Mykola Zubkov</li>
-          <li>674 translations revised for accuracy and modern Ukrainian orthography</li>
+          <li>All credential fields migrated to SecretString with point-of-use exposure</li>
+          <li>FreeRDP password passed via stdin instead of CLI argument</li>
+          <li>SSH custom_options filtered against dangerous directives</li>
+          <li>Migrated to Rust 2024 edition across all three crates</li>
+          <li>Ukrainian translation professionally reviewed (674 strings)</li>
+          <li>RDP cursor scaling fixed for HiDPI displays</li>
+          <li>Flathub metadata overhauled per quality guidelines</li>
         </ul>
       </description>
     </release>
     <release version="0.8.9" date="2026-02-20">
       <description>
-        <p>Version 0.8.9 - SSH Port Forwarding, Security Hardening, Faster Startup:</p>
+        <p>SSH port forwarding, security hardening, and faster startup.</p>
         <ul>
-          <li>SSH port forwarding — Local (-L), remote (-R), and dynamic SOCKS (-D) rules per connection (#22)</li>
-          <li>Deferred secret backend initialization — async startup eliminates 1–3 second delay</li>
-          <li>Security: input validation hardening across all protocols (injection prevention)</li>
-          <li>Security: SSH config export blocks dangerous directives (ProxyCommand, etc.)</li>
-          <li>Security: KeePassXC socket responses capped at 10 MB; VNC/RDP passwords use SecretString</li>
-          <li>Fixed Quick Connect RDP "Got empty identity" CredSSP error — NLA auto-disabled (#29)</li>
-          <li>Fixed Bitwarden duplicate vault writes, false "unlocked" status, CLI v2026.1.0 compatibility (#28)</li>
-          <li>Fixed RefCell borrow panic in EmbeddedRdpWidget, VNC polling, RDP timer leak</li>
-          <li>~40 eprintln! calls migrated to structured tracing</li>
-          <li>Dependencies: serde_yaml replaced with serde_yaml_ng 0.9; cpal 0.17.3, clap 4.5.60</li>
-          <li>Architecture audit completed (51 findings, 49 resolved)</li>
+          <li>SSH port forwarding with local, remote, and dynamic SOCKS rules</li>
+          <li>Deferred secret backend initialization for faster startup</li>
+          <li>Input validation hardening across all protocols</li>
+          <li>Fixed Quick Connect RDP CredSSP error and Bitwarden compatibility</li>
         </ul>
       </description>
     </release>
     <release version="0.8.8" date="2026-02-18">
       <description>
-        <p>Version 0.8.8 - Security Audit, Dead Code Removal, RDP Hardening:</p>
+        <p>AES-256-GCM credential encryption and RDP security improvements.</p>
         <ul>
-          <li>Security: AES-256-GCM encryption replaces XOR obfuscation for stored credentials (transparent migration)</li>
-          <li>Security: FreeRDP password passed via stdin instead of command line (/from-stdin)</li>
-          <li>FreeRDP detection unified with Wayland-first priority (wlfreerdp preferred on Wayland sessions)</li>
-          <li>RDP build_args() decoupled from hardcoded binary — callers use runtime detection</li>
-          <li>ZeroTrust: provider-specific validation and CLI tool detection before launch</li>
-          <li>Native export/import now includes snippets (format version 2, backward compatible)</li>
-          <li>Removed dead code: Dashboard module, 5 unused GUI modules, tab_split_manager remnants</li>
-          <li>ZeroTrust connection launch logged via tracing (GUI and CLI)</li>
+          <li>AES-256-GCM replaces XOR obfuscation for stored credentials</li>
+          <li>FreeRDP password via stdin, Wayland-first client detection</li>
+          <li>Zero Trust provider validation and CLI tool detection</li>
+          <li>Snippet support in native export/import format</li>
         </ul>
       </description>
     </release>
     <release version="0.8.7" date="2026-02-17">
       <description>
-        <p>Version 0.8.7 - Internationalization, Security Hardening, CLI Overhaul:</p>
+        <p>Internationalization with 14 languages and CLI overhaul.</p>
         <ul>
-          <li>Internationalization (i18n) — 14 languages: uk, de, fr, es, it, pl, cs, sk, da, sv, nl, pt, be, kk (#17)</li>
-          <li>SPICE proxy support for Proxmox VE tunnelled connections (#18)</li>
-          <li>RDP HiDPI fix — IronRDP uses device-pixel resolution on HiDPI displays (#16)</li>
-          <li>Variable injection prevention — command-building validates resolved values</li>
-          <li>Checksum policy for CLI downloads — explicit integrity verification</li>
-          <li>Sensitive CLI arguments masked in log output</li>
-          <li>Configurable document encryption strength (Standard/High/Maximum)</li>
-          <li>SSH Agent passphrase handling via SSH_ASKPASS helper</li>
-          <li>CLI overhaul: modularized into 18 handler modules, shell completions, man page, fuzzy suggestions, dry-run, pager, auto-JSON</li>
-          <li>Czech translation improved by native speaker (PR #19)</li>
-          <li>Remmina RDP import: gateway and domain fields (#20)</li>
+          <li>14 languages: uk, de, fr, es, it, pl, cs, sk, da, sv, nl, pt, be, kk</li>
+          <li>SPICE proxy support for Proxmox VE tunnelled connections</li>
+          <li>RDP HiDPI fix for device-pixel resolution</li>
+          <li>CLI modularized with shell completions, man page, and fuzzy suggestions</li>
         </ul>
       </description>
     </release>
     <release version="0.8.6" date="2026-02-16">
       <description>
-        <p>Version 0.8.6 - Secrets Management, Keyboard Layout, Flatpak Fixes:</p>
+        <p>Secrets management improvements and keyboard layout fix.</p>
         <ul>
-          <li>Fixed embedded RDP keyboard layout for non-US layouts (e.g. German QWERTZ)</li>
-          <li>Secrets management: all vault operations now respect preferred backend setting (Bitwarden, 1Password, Passbolt) instead of defaulting to libsecret</li>
+          <li>Fixed embedded RDP keyboard layout for non-US layouts</li>
+          <li>Vault operations now respect preferred backend setting</li>
           <li>Bitwarden auto-unlock at startup with encrypted password restore</li>
-          <li>Inherit credential resolution for non-KeePass backends with correct hierarchy traversal</li>
-          <li>Auto-save passwords to vault on RDP/VNC connections when password source is Vault</li>
-          <li>Toast notifications for vault save errors</li>
-          <li>Bitwarden auto-sync and retry on out-of-date cipher conflicts</li>
-          <li>Fixed Flatpak component checksum and uninstall/reinstall issues</li>
-          <li>Fixed terminal search Highlight All toggle behavior</li>
         </ul>
       </description>
     </release>
     <release version="0.8.5" date="2026-02-15">
       <description>
-        <p>Version 0.8.5 - Kubernetes, Serial Console, SFTP, Adaptive UI, Terminal Search:</p>
+        <p>Kubernetes, Serial Console, SFTP browser, and terminal search.</p>
         <ul>
-          <li>Kubernetes protocol support via kubectl exec with shell access to pods (#14)</li>
-          <li>Two modes: exec into existing pod, or launch temporary busybox pod</li>
-          <li>GUI: Connection dialog Kubernetes tab, sidebar K8s quick filter</li>
-          <li>CLI: kubernetes subcommand with full parameter support</li>
-          <li>Serial Console protocol via picocom with full GUI, CLI, Flatpak, and Snap support (#11)</li>
-          <li>SFTP file browser for SSH connections via system file manager and Midnight Commander (#10)</li>
-          <li>Standalone SFTP connection type reusing SSH configuration</li>
-          <li>Responsive dialog sizing with adw::Clamp and minimum size constraints (#9)</li>
-          <li>Terminal search with regex, highlight all, and case-sensitive toggles (#7)</li>
-          <li>Session log timestamps prepend [HH:MM:SS] to each log line</li>
+          <li>Kubernetes protocol via kubectl exec with pod shell access</li>
+          <li>Serial Console protocol via picocom</li>
+          <li>SFTP file browser for SSH connections</li>
+          <li>Terminal search with regex and highlight support</li>
+          <li>Responsive dialog sizing with adw::Clamp</li>
         </ul>
       </description>
     </release>
     <release version="0.8.4" date="2026-02-14">
       <description>
-        <p>Version 0.8.4 - FIDO2 Auth, CLI Enhancements, and Major Refactoring:</p>
+        <p>FIDO2 authentication and major code refactoring.</p>
         <ul>
-          <li>FIDO2/SecurityKey SSH authentication with hardware key support in connection and template dialogs</li>
-          <li>CLI --auth-method flag for add/update commands; show displays SSH auth method; --key for key path changes</li>
-          <li>Fixed CLI version check timeout from 3s to 6s for Azure CLI compatibility</li>
-          <li>Fixed WoL settings fields remaining disabled when editing existing connection</li>
-          <li>Refactored ConnectionManager persistence with tokio watch channels (8 fields to 3)</li>
-          <li>Refactored OverlaySplitView sidebar with F9 toggle, gestures, and responsive breakpoint</li>
-          <li>Reorganized Window module (14 flat files into directory) and Embedded RDP module (7 files)</li>
-          <li>Extracted ConnectionDialog LoggingTab (~310 lines removed)</li>
-          <li>Removed ~80 redundant clippy suppression annotations in workspace audit</li>
-          <li>Extended Protocol trait with capabilities() and build_command() methods</li>
-          <li>Updated resvg 0.46 to 0.47, tiny-skia 0.11 to 0.12</li>
+          <li>FIDO2/SecurityKey SSH authentication with hardware key support</li>
+          <li>Refactored Window, Embedded RDP, and ConnectionDialog modules</li>
+          <li>Extended Protocol trait with capabilities and build_command methods</li>
         </ul>
       </description>
     </release>
     <release version="0.8.3" date="2026-02-13">
       <description>
-        <p>Version 0.8.3 - Wake On LAN, Code Audit Fixes, and Settings Performance:</p>
+        <p>Wake-on-LAN support and Settings dialog performance improvements.</p>
         <ul>
-          <li>Wake On LAN from GUI: context menu, auto-WoL before connect, standalone dialog (#8)</li>
-          <li>Fixed Flatpak libsecret build: disabled bash_completion (EROFS in sandbox)</li>
-          <li>Fixed libsecret 0.21.7 build: renamed gcrypt option to crypto</li>
-          <li>Fixed thread safety: removed std::env::set_var from FreeRDP spawned thread</li>
-          <li>Fixed Flatpak machine key: app-specific key file instead of /etc/machine-id</li>
-          <li>Fixed variables dialog panic: replaced expect() with safe pattern</li>
-          <li>Fixed keyring secret-tool check: validates availability before storing</li>
-          <li>Fixed Flatpak CLI paths: no hardcoded /snap/bin/ paths inside Flatpak</li>
-          <li>Fixed Settings dialog performance: CLI detection on background threads (~10s to instant)</li>
-          <li>Fixed Settings clients tab: parallel detection with 3s timeout (~15s to ~3s)</li>
-          <li>Fixed Settings dialog instant display: window appears before loading</li>
-          <li>Fixed Settings dialog render blocking: fully decoupled background work from GTK main loop</li>
+          <li>Wake-on-LAN from GUI with auto-WoL before connect</li>
+          <li>Settings dialog loads instantly with background CLI detection</li>
+          <li>Multiple Flatpak sandbox and thread safety fixes</li>
         </ul>
       </description>
     </release>
     <release version="0.8.2" date="2026-02-11">
       <description>
-        <p>Version 0.8.2 - Unified Keyring Integration and Secret Backend Fixes:</p>
-        <ul>
-          <li>Shared keyring module with generic store/lookup/clear for all backends</li>
-          <li>Keyring support for all secret backends (Bitwarden, 1Password, Passbolt, KeePassXC)</li>
-          <li>Auto-load credentials from keyring on settings load</li>
-          <li>secret-tool availability check when toggling keyring option</li>
-          <li>Passbolt Server URL setting and Open Vault button in Secrets tab</li>
-          <li>Unified credential save options with mutual exclusion across all backends</li>
-          <li>Fixed secret lookup key mismatch across all secret backends</li>
-          <li>Fixed Passbolt server address always showing None</li>
-          <li>Fixed variable secrets ignoring preferred backend setting</li>
-          <li>Fixed Bitwarden folder parsing crash on null folder IDs</li>
-          <li>Fixed Bitwarden vault auto-unlock for variable save/load</li>
-          <li>Removed unused picky version pin from rustconn-core</li>
-        </ul>
+        <p>Unified keyring integration across all secret backends.</p>
       </description>
     </release>
     <release version="0.8.1" date="2026-02-11">
       <description>
-        <p>Version 0.8.1 - Passbolt Integration, Unified Vault, and Variable Passwords:</p>
-        <ul>
-          <li>Passbolt secret backend via go-passbolt-cli (#6)</li>
-          <li>Unified secret backends: single "Vault" password source replaces individual backends</li>
-          <li>Variable password source: read credentials from named secret global variables</li>
-          <li>Variables dialog: Show/Hide toggle and Load from Vault for secret variables</li>
-          <li>Secret variables auto-saved to vault, cleared from settings file</li>
-          <li>Fixed secret variables always using libsecret instead of configured backend</li>
-          <li>Fixed Variable dropdown showing empty when editing connections</li>
-          <li>Fixed Telnet backspace/delete: uses VTE native EraseBinding API instead of stty wrapper</li>
-          <li>Fixed split view left panel shrinking on nested splits</li>
-        </ul>
+        <p>Passbolt integration and unified vault password source.</p>
       </description>
     </release>
     <release version="0.8.0" date="2026-02-10">
       <description>
-        <p>Version 0.8.0 - Telnet Keyboard Configuration and Flatpak fixes:</p>
-        <ul>
-          <li>Configurable Backspace/Delete key behavior for Telnet connections (#5)</li>
-          <li>Telnet available in Flatpak via bundled GNU inetutils 2.7</li>
-          <li>Fixed Flatpak AWS CLI: replaced Docker wrapper with official binary installer</li>
-          <li>Fixed Flatpak component detection for SSM Plugin, Azure CLI, OCI CLI</li>
-          <li>Fixed Python version detection in pip wrapper scripts</li>
-          <li>Fixed OBS screenshot display on software.opensuse.org</li>
-        </ul>
+        <p>Telnet keyboard configuration and Flatpak fixes.</p>
       </description>
     </release>
     <release version="0.7.9" date="2026-02-09">
       <description>
-        <p>Version 0.7.9 - Telnet protocol support and icon fixes:</p>
-        <ul>
-          <li>Added full Telnet protocol support across all crates (#5)</li>
-          <li>TelnetConfig model with host, port, and extra arguments</li>
-          <li>Import/export support for Remmina, Asbru, MobaXterm, RDM</li>
-          <li>CLI telnet subcommand</li>
-          <li>GUI connection dialog, template, sidebar filter, quick connect</li>
-          <li>Fixed missing Telnet icon in sidebar</li>
-          <li>Fixed Telnet icon to call-start-symbolic for clarity across icon themes</li>
-          <li>Fixed ZeroTrust sidebar icon unified to folder-remote-symbolic</li>
-        </ul>
+        <p>Full Telnet protocol support across all crates.</p>
       </description>
     </release>
     <release version="0.7.8" date="2026-02-08">
       <description>
-        <p>Version 0.7.8 - Remmina Password Import and I/O Improvements:</p>
-        <ul>
-          <li>Remmina import now transfers saved passwords to the configured secret backend</li>
-          <li>Fixed silent import failures: errors now display user-friendly messages</li>
-          <li>Fixed MobaXterm import double memory allocation during UTF-8 conversion</li>
-          <li>Added 50 MB file size limit to prevent out-of-memory on large imports</li>
-          <li>Native export/import uses streaming I/O, reducing peak memory by ~50%</li>
-          <li>Native import validates format version before full deserialization</li>
-          <li>Centralized export file writing with buffered I/O across all exporters</li>
-          <li>Removed redundant file existence checks in importers</li>
-          <li>Updated dependencies: memchr, ryu, zerocopy, zmij</li>
-        </ul>
+        <p>Remmina password import and streaming I/O for imports.</p>
       </description>
     </release>
     <release version="0.7.7" date="2026-02-08">
       <description>
-        <p>Version 0.7.7 - Keyboard Shortcut Fix and Code Quality:</p>
-        <ul>
-          <li>Fixed Delete, Ctrl+E, Ctrl+D intercepting VTE terminal and embedded viewer input (#4)</li>
-          <li>Sidebar-scoped shortcuts no longer steal keys from active sessions</li>
-          <li>Audio mutex locks use graceful fallback instead of unwrap()</li>
-          <li>Search engine mutex locks use graceful recovery patterns</li>
-          <li>VNC client logs warning when connecting without password</li>
-          <li>Replaced 23 redundant tokio runtime calls with shared with_runtime()</li>
-          <li>Removed deprecated credential methods and unused menu builder</li>
-        </ul>
+        <p>Fixed keyboard shortcuts intercepting terminal input.</p>
       </description>
     </release>
     <release version="0.7.6" date="2026-02-07">
       <description>
-        <p>Version 0.7.6 - Flatpak Components and Snap Strict Confinement:</p>
-        <ul>
-          <li>Flatpak Components Dialog - View and manage Flatpak extensions (Settings → Clients)</li>
-          <li>CLI Download Support - Download external CLIs directly within Flatpak sandbox</li>
-          <li>Snap Strict Confinement - Migrated from classic to strict confinement</li>
-          <li>Snap permissions for SSH keys, cloud credentials, and host CLI access</li>
-        </ul>
+        <p>Flatpak Components dialog and Snap strict confinement.</p>
       </description>
     </release>
     <release version="0.7.5" date="2026-02-06">
       <description>
-        <p>Version 0.7.5 - Snap Strict Confinement Preparation:</p>
-        <ul>
-          <li>Snap detection and permission checking</li>
-          <li>Snap-specific documentation and user guidance</li>
-          <li>Improved error messages for missing Snap interfaces</li>
-        </ul>
+        <p>Snap strict confinement preparation and permission checking.</p>
       </description>
     </release>
     <release version="0.7.4" date="2026-02-05">
       <description>
-        <p>Version 0.7.4 - Zero Trust UI and Connection Dialog Modularization:</p>
-        <ul>
-          <li>Fixed Zero Trust Entry Field Alignment - converted all Zero Trust provider fields to adw::EntryRow for consistent widths</li>
-          <li>Refactored Connection Dialog - split monolithic connection.rs into modular structure (dialog.rs, ssh.rs, rdp.rs, vnc.rs, spice.rs)</li>
-          <li>Refactored Import File I/O - extracted common file reading pattern into read_import_file() helper</li>
-          <li>Refactored Protocol Client Errors - consolidated duplicate error types into unified EmbeddedClientError</li>
-          <li>Refactored Config Atomic Writes - improved reliability with temp file + atomic rename pattern</li>
-          <li>Added GTK Lifecycle Documentation - module-level docs explaining #[allow(dead_code)] pattern</li>
-          <li>Code Quality - removed legacy types, standardized error patterns, reduced unnecessary clones</li>
-        </ul>
+        <p>Zero Trust UI improvements and connection dialog modularization.</p>
       </description>
     </release>
     <release version="0.7.3" date="2026-02-03">
       <description>
-        <p>Version 0.7.3 - Client Detection Improvements:</p>
-        <ul>
-          <li>Fixed Azure CLI version parsing - version now correctly extracted from unique output format</li>
-          <li>Fixed Flatpak XDG config - removed unnecessary xdg-config/rustconn:create permission</li>
-          <li>Fixed Teleport CLI detection - changed binary from teleport to tsh</li>
-          <li>Improved RDP client detection - FreeRDP 3.x with Wayland support (wlfreerdp3/xfreerdp3)</li>
-          <li>Unified client install hints - format: deb-package (rpm-package)</li>
-          <li>Updated dependencies: bytes, flate2, regex</li>
-        </ul>
+        <p>Client detection improvements for Azure CLI, Teleport, and FreeRDP 3.</p>
       </description>
     </release>
     <release version="0.7.2" date="2026-02-03">
       <description>
-        <p>Version 0.7.2 - Flatpak Improvements:</p>
-        <ul>
-          <li>Fixed Flatpak config access - connections and settings now persist correctly</li>
-          <li>Fixed split view equal proportions - panels now split 50/50 reliably</li>
-          <li>Added Flatpak host command support for external clients (xfreerdp, vncviewer, aws, gcloud)</li>
-          <li>Extended Flatpak permissions for GNOME Keyring, KWallet, KeePassXC, and system tray</li>
-        </ul>
+        <p>Flatpak config persistence and host command support for external clients.</p>
       </description>
     </release>
     <release version="0.7.1" date="2026-02-01">
       <description>
-        <p>Version 0.7.1 - Undo/Trash, Group Inheritance, and Sidebar Refactoring:</p>
-        <ul>
-          <li>Undo/Trash Functionality - Deleted items can be restored via "Undo" notification</li>
-          <li>Group Inheritance - "Load from Group" buttons auto-fill credentials from parent group</li>
-          <li>Debounced Persistence - Changes batched and saved after 2 seconds of inactivity</li>
-          <li>Sort Optimization - Sorting skipped when data order unchanged</li>
-          <li>Connection History Sorting - Newest entries now shown first</li>
-          <li>Sidebar Module Refactoring - Decomposed into search.rs, filter.rs, view.rs, drag_drop.rs</li>
-          <li>Drag-and-Drop Refactoring - Strongly typed DragPayload enum replaces string parsing</li>
-          <li>Search Highlighting - Matched text highlighted in bold with Pango markup</li>
-          <li>Fixed credential inheritance from parent groups for KeePass</li>
-          <li>Fixed GTK widget parenting warning at startup</li>
-          <li>Fixed Connection History reconnect not opening tab</li>
-        </ul>
+        <p>Undo/Trash, group credential inheritance, and sidebar refactoring.</p>
       </description>
     </release>
     <release version="0.7.0" date="2026-02-01">
       <description>
-        <p>Version 0.7.0 - Asbru Import Fixes and Group Descriptions:</p>
-        <ul>
-          <li>Fixed Asbru Import nested groups - group hierarchy now preserved correctly</li>
-          <li>Fixed Asbru Export description field for connections and groups</li>
-          <li>Added Group Description field for storing project info and notes</li>
-          <li>Asbru global variable conversion during import</li>
-          <li>Variable substitution at connection time for host and username</li>
-          <li>Dialog size unification for visual consistency</li>
-        </ul>
+        <p>Asbru import fixes, group descriptions, and variable substitution.</p>
       </description>
     </release>
     <release version="0.6.9" date="2026-01-31">
       <description>
-        <p>Version 0.6.9 - Password Caching, Retry Logic, and 1Password Support:</p>
-        <ul>
-          <li>Password Caching TTL - Cached credentials expire after configurable time</li>
-          <li>Connection Retry Logic - Automatic retry with exponential backoff</li>
-          <li>Loading States - Visual feedback for long-running operations</li>
-          <li>Session State Persistence - Split layouts preserved across restarts</li>
-          <li>Connection Health Check - Periodic monitoring of active sessions</li>
-          <li>1Password as PasswordSource - 1Password can now be selected per-connection</li>
-          <li>Credential Rename on Connection Rename - Credentials automatically renamed</li>
-          <li>Fixed KeePass password retrieval for subgroups</li>
-          <li>Fixed Keyring and Bitwarden password retrieval</li>
-          <li>370+ new property tests (total: 1241 tests)</li>
-        </ul>
+        <p>Password caching TTL, connection retry logic, and 1Password support.</p>
       </description>
     </release>
     <release version="0.6.8" date="2026-01-30">
       <description>
-        <p>Version 0.6.8 - 1Password CLI Integration:</p>
-        <ul>
-          <li>1Password CLI Integration - New secret backend with biometric auth</li>
-          <li>Service account support via OP_SERVICE_ACCOUNT_TOKEN</li>
-          <li>Automatic vault creation for storing credentials</li>
-          <li>Bitwarden API Key Authentication for automated workflows</li>
-          <li>Bitwarden Self-Hosted Support</li>
-        </ul>
+        <p>1Password CLI integration with biometric auth and service accounts.</p>
       </description>
     </release>
     <release version="0.6.7" date="2026-01-29">
       <description>
-        <p>Version 0.6.7 - Group-Level Secret Storage and CLI Secret Management:</p>
-        <ul>
-          <li>Group-Level Secret Storage - Groups can now store passwords in secret backends</li>
-          <li>CLI Secret Management - New secret command for managing credentials</li>
-          <li>Hierarchical storage in KeePass mirrors group structure</li>
-        </ul>
+        <p>Group-level secret storage and CLI secret management.</p>
       </description>
     </release>
     <release version="0.6.6" date="2026-01-29">
       <description>
-        <p>Version 0.6.6 - KeePass Password Saving and SSH Options:</p>
-        <ul>
-          <li>KeePass Password Saving for RDP/VNC connections</li>
-          <li>Load Password from Vault button in connection dialog</li>
-          <li>Keyring Password Storage via libsecret</li>
-          <li>SSH X11 Forwarding and Compression options</li>
-          <li>Import Normalizer for post-import consistency</li>
-          <li>IronRDP Enhanced Features: reconnection, multi-monitor, RD Gateway, graphics modes</li>
-          <li>Fixed AWS EC2 RDP Compatibility with 32-bit color depth</li>
-        </ul>
+        <p>KeePass password saving, SSH X11 forwarding, and IronRDP enhancements.</p>
       </description>
     </release>
     <release version="0.6.5" date="2026-01-21">
       <description>
-        <p>Version 0.6.5 - Split View Redesign and Terminal Tabs Migration:</p>
-        <ul>
-          <li>Split View Redesign - Tab-scoped layouts with tree-based panel structure</li>
-          <li>Color-coded panel borders to visually identify split containers</li>
-          <li>Terminal Tabs Migration from gtk::Notebook to adw::TabView</li>
-          <li>Fixed KeePass Password Saving for names with / character</li>
-          <li>Fixed Split View Loading panels and Context Menu Freeze</li>
-        </ul>
+        <p>Split view redesign with tree-based panel structure and adw::TabView migration.</p>
       </description>
     </release>
     <release version="0.6.4" date="2026-01-17">
       <description>
-        <p>Version 0.6.4 - Snap Package and RDP/VNC Performance Modes:</p>
-        <ul>
-          <li>Snap Package - New distribution format via Snapcraft</li>
-          <li>RDP/VNC Performance Modes - Quality, Balanced, Speed presets</li>
-          <li>Fixed RDP Initial Resolution matching actual widget size</li>
-          <li>Fixed RDP Dynamic Resolution with automatic reconnect</li>
-          <li>Fixed Sidebar Fixed Width - content area properly expands</li>
-          <li>Updated IronRDP to 0.14</li>
-        </ul>
+        <p>Snap package and RDP/VNC performance mode presets.</p>
       </description>
     </release>
     <release version="0.6.3" date="2026-01-16">
       <description>
-        <p>Version 0.6.3 - Bitwarden CLI Integration:</p>
-        <ul>
-          <li>Bitwarden CLI Integration - New secret backend with vault status checking</li>
-          <li>Password Manager Detection - Automatic detection of installed managers</li>
-          <li>Enhanced Secrets Settings UI with dynamic configuration</li>
-          <li>Universal Password Vault Button opens appropriate manager</li>
-          <li>Improved split view button icons</li>
-        </ul>
+        <p>Bitwarden CLI integration with vault status checking.</p>
       </description>
     </release>
     <release version="0.6.2" date="2026-01-15">
       <description>
-        <p>Version 0.6.2 - MobaXterm Import/Export and UX Improvements:</p>
-        <ul>
-          <li>MobaXterm Import/Export - Full support for .mxtsessions files</li>
-          <li>Connection History Button - Quick access from sidebar toolbar</li>
-          <li>Run Snippet from Context Menu - Right-click on connection</li>
-          <li>Persistent Search History - Up to 20 recent searches saved</li>
-        </ul>
+        <p>MobaXterm import/export and persistent search history.</p>
       </description>
     </release>
     <release version="0.6.1" date="2026-01-12">
       <description>
-        <p>Version 0.6.1 - Credential Inheritance and Jump Host Support:</p>
-        <ul>
-          <li>Added Credential Inheritance from parent groups</li>
-          <li>Added native SSH Jump Host support</li>
-          <li>Migrated empty states to adw::StatusPage</li>
-        </ul>
+        <p>Credential inheritance from parent groups and SSH Jump Host support.</p>
       </description>
     </release>
     <release version="0.6.0" date="2026-01-12">
       <description>
-        <p>Version 0.6.0 - Code Audit and Cleanup Release:</p>
-        <ul>
-          <li>Comprehensive codebase audit and modernization</li>
-          <li>Removed unsafe code artifact (check_structs.rs)</li>
-          <li>Fixed VNC input handlers to prevent UI freezes</li>
-          <li>Improved error handling throughout the codebase</li>
-          <li>Fixed package metadata for proper author/license display</li>
-          <li>Updated license field in Cargo.toml to GPL-3.0-or-later</li>
-        </ul>
+        <p>Codebase audit, unsafe code removal, and error handling improvements.</p>
       </description>
     </release>
     <release version="0.5.9" date="2026-01-11">
       <description>
-        <p>Version 0.5.9 - Settings and Template Dialog Improvements:</p>
-        <ul>
-          <li>Migrated Settings dialog from deprecated PreferencesWindow to PreferencesDialog</li>
-          <li>Updated libadwaita feature from v1_4 to v1_5</li>
-          <li>Migrated Template dialog to modern libadwaita patterns</li>
-          <li>Fixed Zero Trust (AWS SSM) connection status icon showing as failed</li>
-          <li>Fixed remote-viewer version parsing in Settings Clients tab</li>
-          <li>Fixed SSH Agent key selection when connecting</li>
-          <li>Improved agent key dropdown display in Connection Dialog</li>
-          <li>Fixed KeePass Settings browse buttons and authentication fields</li>
-          <li>Fixed SSH Agent Settings "Start Agent" button</li>
-        </ul>
+        <p>Settings and Template dialog migration to modern libadwaita patterns.</p>
       </description>
     </release>
     <release version="0.5.3" date="2026-01-02">
       <description>
-        <p>Version 0.5.3 - UI Unification and History:</p>
-        <ul>
-          <li>UI Unification: All dialogs now use consistent 750×500px dimensions</li>
-          <li>Connection history recording for all protocols (SSH, VNC, SPICE, RDP, ZeroTrust)</li>
-          <li>Connection history and statistics dialogs with search and visualization</li>
-          <li>Protocol-specific tabs in Template Dialog matching Connection Dialog</li>
-          <li>Common embedded widget trait for RDP/VNC/SPICE deduplication</li>
-          <li>Quick Connect now supports RDP and VNC protocols with templates</li>
-          <li>Refactored terminal.rs into modular structure</li>
-          <li>Removed duplicate Close/Cancel buttons from all dialogs</li>
-          <li>Renamed action buttons: "New X" → "Create", "Quick Connect" → "Connect"</li>
-          <li>Create Connection now always opens blank dialog (removed template picker)</li>
-          <li>Property tests for history and session restore models</li>
-          <li>Updated gtk4 dependency to 0.10.2</li>
-        </ul>
+        <p>UI unification, connection history, and Quick Connect for RDP/VNC.</p>
       </description>
     </release>
     <release version="0.5.2" date="2025-12-29">
       <description>
-        <p>Version 0.5.2 - Code refactoring and bug fixes:</p>
-        <ul>
-          <li>Refactored window.rs into modular structure (reduced from 7283 to 2396 lines, -67%)</li>
-          <li>Refactored embedded_rdp.rs, sidebar.rs, embedded_vnc.rs into modular structure</li>
-          <li>Fixed tab icons to match sidebar icons for all protocols</li>
-          <li>Fixed Snippet dialog Save button not clickable</li>
-          <li>Fixed Template dialog not showing all fields</li>
-          <li>Added wayland-native feature flag with gdk4-wayland integration</li>
-          <li>CI improvements: libadwaita-1-dev, property tests job, OBS changelog generation</li>
-        </ul>
+        <p>Major code refactoring and wayland-native feature flag.</p>
       </description>
     </release>
     <release version="0.5.1" date="2025-12-28">
       <description>
-        <p>Version 0.5.1 - CLI improvements and code cleanup:</p>
-        <ul>
-          <li>CLI: Wake-on-LAN command (wol) - send magic packets by MAC or connection name</li>
-          <li>CLI: Snippet management (snippet list/show/add/delete/run) with variable substitution</li>
-          <li>CLI: Group management (group list/show/create/delete/add-connection/remove-connection)</li>
-          <li>CLI: Connection list filters (--group, --tag)</li>
-          <li>CLI: Native format (.rcn) support for import/export</li>
-          <li>Search debouncing with visual spinner indicator (100ms delay)</li>
-          <li>Pre-search state preservation (expanded groups, scroll position)</li>
-          <li>Clipboard file transfer UI for embedded RDP sessions</li>
-          <li>Dead code cleanup and documentation improvements</li>
-        </ul>
+        <p>CLI Wake-on-LAN, snippet management, group management, and search debouncing.</p>
       </description>
     </release>
     <release version="0.5.0" date="2025-12-27">
       <description>
-        <p>Version 0.5.0:</p>
-        <ul>
-          <li>RDP clipboard file transfer support (CF_HDROP format)</li>
-          <li>RDPDR directory change notifications and file locking</li>
-          <li>Native SPICE protocol embedding using spice-client crate</li>
-          <li>Real-time connection status indicators in sidebar</li>
-          <li>Custom cursors in RDP sessions</li>
-          <li>Full Expect automation engine integration</li>
-          <li>Terminal context menu and keyboard shortcuts</li>
-          <li>Performance: lock-free audio, optimized search, cached tokio runtime</li>
-          <li>Fixed SSH Agent key discovery for all private key formats</li>
-          <li>Fixed system tray menu intermittent issues</li>
-        </ul>
+        <p>RDP clipboard file transfer, SPICE embedding, expect automation, and status indicators.</p>
       </description>
     </release>
     <release version="0.4.2" date="2025-12-25">
       <description>
-        <p>Version 0.4.2:</p>
-        <ul>
-          <li>Fixed Asbru-CM import for installed configuration</li>
-          <li>Fixed application icon resolution</li>
-        </ul>
+        <p>Fixed Asbru-CM import and application icon resolution.</p>
       </description>
     </release>
     <release version="0.4.1" date="2025-12-25">
       <description>
-        <p>Version 0.4.1:</p>
-        <ul>
-          <li>IronRDP audio backend (RDPSND) with PCM format support</li>
-          <li>Optional rdp-audio feature for audio playback</li>
-          <li>Bidirectional clipboard improvements for embedded RDP</li>
-          <li>Updated dependencies</li>
-        </ul>
+        <p>IronRDP audio backend and bidirectional clipboard improvements.</p>
       </description>
     </release>
     <release version="0.4.0" date="2025-12-24">
       <description>
-        <p>Version 0.4.0:</p>
-        <ul>
-          <li>Updated dependencies</li>
-          <li>Streamlined build configuration</li>
-          <li>Improved Flatpak packaging</li>
-        </ul>
+        <p>Build configuration and Flatpak packaging improvements.</p>
       </description>
     </release>
     <release version="0.3.1" date="2025-12-23">
       <description>
-        <p>Code quality improvements:</p>
-        <ul>
-          <li>Fixed all Clippy warnings (pedantic, nursery)</li>
-          <li>Applied rustfmt formatting</li>
-          <li>Added Deactivation-Reactivation for RDP sessions</li>
-          <li>Removed sensitive clipboard debug logging</li>
-        </ul>
+        <p>Clippy pedantic compliance and RDP session deactivation-reactivation.</p>
       </description>
     </release>
     <release version="0.3.0" date="2025-12-23">
       <description>
-        <p>RDP improvements:</p>
-        <ul>
-          <li>IronRDP clipboard integration (bidirectional)</li>
-          <li>IronRDP shared folders (RDPDR) support</li>
-          <li>RemoteFX codec for better image quality</li>
-        </ul>
+        <p>IronRDP clipboard, shared folders (RDPDR), and RemoteFX codec.</p>
       </description>
     </release>
     <release version="0.2.0" date="2025-12-22">
       <description>
-        <p>New features and improvements:</p>
-        <ul>
-          <li>Tree view state persistence</li>
-          <li>Fixed RDP embedded mode window sizing</li>
-          <li>Zero Trust providers support</li>
-          <li>Updated dependencies</li>
-        </ul>
+        <p>Tree view persistence, Zero Trust providers, and RDP window sizing fix.</p>
       </description>
     </release>
     <release version="0.1.0" date="2025-12-01">

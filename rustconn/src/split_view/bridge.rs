@@ -1667,14 +1667,10 @@ impl SplitViewBridge {
     fn create_welcome_content() -> adw::StatusPage {
         let status_page = adw::StatusPage::new();
 
-        // Try to set logo image as icon
-        if let Some(pixbuf) = Self::load_embedded_logo(96) {
-            let texture = gtk4::gdk::Texture::for_pixbuf(&pixbuf);
-            let paintable = texture.upcast::<gtk4::gdk::Paintable>();
-            status_page.set_paintable(Some(&paintable));
-        } else {
-            status_page.set_icon_name(Some("network-server-symbolic"));
-        }
+        // Use GTK themed icon — same as About dialog. GTK handles
+        // HiDPI scaling automatically via librsvg, rendering the SVG
+        // at the correct resolution for the display scale factor.
+        status_page.set_icon_name(Some("io.github.totoshko88.RustConn"));
 
         status_page.set_title("RustConn");
         status_page.set_description(Some(&i18n("Manage remote connections easily")));
@@ -1738,7 +1734,7 @@ impl SplitViewBridge {
             ("preferences-system-symbolic", i18n("Customizable settings")),
             (
                 "application-x-executable-symbolic",
-                i18n("Embedded & external clients"),
+                i18n("Embedded and external clients"),
             ),
         ];
 
@@ -1841,54 +1837,6 @@ impl SplitViewBridge {
 
         status_page.set_child(Some(&content));
         status_page
-    }
-
-    /// Load embedded SVG logo and render to GdkPixbuf
-    fn load_embedded_logo(size: u32) -> Option<gtk4::gdk_pixbuf::Pixbuf> {
-        // Embedded SVG icon data
-        const ICON_SVG: &[u8] = include_bytes!(
-            "../../assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg"
-        );
-
-        // Parse SVG using resvg
-        let tree = resvg::usvg::Tree::from_data(ICON_SVG, &resvg::usvg::Options::default()).ok()?;
-
-        // Create pixmap
-        let mut pixmap = resvg::tiny_skia::Pixmap::new(size, size)?;
-
-        // Calculate transform to fit SVG into target size
-        let svg_size = tree.size();
-        let scale = (size as f32 / svg_size.width()).min(size as f32 / svg_size.height());
-        let transform = resvg::tiny_skia::Transform::from_scale(scale, scale);
-
-        // Render SVG to pixmap
-        resvg::render(&tree, transform, &mut pixmap.as_mut());
-
-        // Convert from premultiplied RGBA to straight RGBA for GdkPixbuf
-        let premultiplied = pixmap.data();
-        let mut rgba_data = Vec::with_capacity(premultiplied.len());
-        for chunk in premultiplied.chunks_exact(4) {
-            let a = chunk[3];
-            if a == 0 {
-                rgba_data.extend_from_slice(&[0, 0, 0, 0]);
-            } else {
-                // Un-premultiply: color = premultiplied_color * 255 / alpha
-                let r = (u16::from(chunk[0]) * 255 / u16::from(a)) as u8;
-                let g = (u16::from(chunk[1]) * 255 / u16::from(a)) as u8;
-                let b = (u16::from(chunk[2]) * 255 / u16::from(a)) as u8;
-                rgba_data.extend_from_slice(&[r, g, b, a]);
-            }
-        }
-
-        Some(gtk4::gdk_pixbuf::Pixbuf::from_bytes(
-            &gtk4::glib::Bytes::from(&rgba_data),
-            gtk4::gdk_pixbuf::Colorspace::Rgb,
-            true, // has_alpha
-            8,    // bits_per_sample
-            size as i32,
-            size as i32,
-            (size * 4) as i32, // rowstride
-        ))
     }
 
     /// Sets up the "Select Tab" callback for empty panel placeholders.

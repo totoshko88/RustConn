@@ -170,7 +170,7 @@ install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml \
     %{buildroot}%{_datadir}/metainfo/io.github.totoshko88.RustConn.metainfo.xml
 
 # Install icons
-for size in 48 64 128 256; do
+for size in 128 256; do
     if [ -f "rustconn/assets/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png" ]; then
         install -Dm644 "rustconn/assets/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png" \
             "%{buildroot}%{_datadir}/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png"

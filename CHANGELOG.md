@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 - **Ukrainian translation** — 674 translations professionally reviewed by Mykola Zubkov for accuracy and modern orthography
+- SVG icon optimized and simplified per GNOME HIG; 48×48 and 64×64 PNG removed — GTK renders SVG at any size; 128×128 and 256×256 PNG regenerated from SVG
+- Welcome page logo now uses GTK themed icon lookup (same as About dialog) — renders SVG at native HiDPI resolution instead of fixed-size raster
+- Flathub metainfo.xml overhauled: description condensed, brand colors improved, screenshots replaced with HiDPI windowed captures with shadows, localized screenshots for uk/be/cs, added translate and contribute URLs
 - 8 dialogs migrated to `adw::Dialog` (libadwaita 1.5+) with adaptive sizing and proper modal behavior
 - Password field uses `PasswordEntry` with built-in peek icon
 - Screen reader support: accessible label relations added to password and connection dialogs
@@ -27,10 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All `eprintln!` calls replaced with structured `tracing`
 
 ### Fixed
+- Embedded RDP cursor size corrected on HiDPI displays — server-sent device-pixel bitmaps now downscaled to logical pixels before GTK cursor creation
+- Pango markup warning on welcome page — ampersand in "Embedded & external clients" escaped for GTK label rendering
 - Variable password source (`PasswordSource::Variable`) now resolves correctly at connection time — `SecretManager` is initialized with backends from settings, and variable lookup uses the same backend as save
 - Locale `.mo` files now included in Debian, RPM, and local Flatpak packages
 - Debian build no longer enables `spice-embedded` feature without build dependencies
-- AppStream metainfo.xml cleaned up (removed deprecated `<categories>`)
+- AppStream metainfo.xml: categories added explicitly (`Network`, `RemoteAccess`), generic `GTK` category removed
 - Debian `Recommends` updated for FreeRDP 3 / Wayland support
 - Build dependencies corrected for `gettext` across Debian and RPM
 

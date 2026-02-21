@@ -1756,6 +1756,12 @@ impl EmbeddedRdpWidget {
         #[cfg(feature = "rdp-audio")]
         let audio_player = self.audio_player.clone();
 
+        // Capture effective scale for cursor size correction
+        // RDP server sends cursor bitmaps in device pixels when desktop_scale_factor > 100%,
+        // but GTK's Cursor::from_texture interprets dimensions as logical pixels.
+        // We need to downscale cursor bitmaps to logical pixels.
+        let cursor_scale = effective_scale;
+
         // Store client in a shared reference for the polling closure
         let client = std::rc::Rc::new(std::cell::RefCell::new(Some(client)));
         let client_ref = client.clone();
@@ -2018,22 +2024,96 @@ impl EmbeddedRdpWidget {
                                 height,
                                 data,
                             } => {
-                                // Create custom cursor from bitmap data
-                                let bytes = glib::Bytes::from(&data);
-                                let texture = gdk::MemoryTexture::new(
-                                    i32::from(width),
-                                    i32::from(height),
-                                    gdk::MemoryFormat::B8g8r8a8,
-                                    &bytes,
-                                    usize::from(width) * 4,
-                                );
-                                let cursor = gdk::Cursor::from_texture(
-                                    &texture,
-                                    i32::from(hotspot_x),
-                                    i32::from(hotspot_y),
-                                    None,
-                                );
-                                drawing_area.set_cursor(Some(&cursor));
+                                // RDP server sends cursor bitmaps in device pixels when
+                                // desktop_scale_factor > 100%, but GTK Cursor::from_texture
+                                // interprets texture dimensions as logical pixels. Downscale
+                                // the bitmap to logical size so GTK renders it correctly.
+                                let scale = cursor_scale;
+                                if scale > 1.01 {
+                                    #[allow(
+                                        clippy::cast_possible_truncation,
+                                        clippy::cast_sign_loss
+                                    )]
+                                    let logical_w =
+                                        (f64::from(width) / scale).round().max(1.0) as u16;
+                                    #[allow(
+                                        clippy::cast_possible_truncation,
+                                        clippy::cast_sign_loss
+                                    )]
+                                    let logical_h =
+                                        (f64::from(height) / scale).round().max(1.0) as u16;
+                                    #[allow(
+                                        clippy::cast_possible_truncation,
+                                        clippy::cast_sign_loss
+                                    )]
+                                    let hotspot_logical_x =
+                                        (f64::from(hotspot_x) / scale).round() as i32;
+                                    #[allow(
+                                        clippy::cast_possible_truncation,
+                                        clippy::cast_sign_loss
+                                    )]
+                                    let hotspot_logical_y =
+                                        (f64::from(hotspot_y) / scale).round() as i32;
+
+                                    // Nearest-neighbor downscale (BGRA, 4 bytes per pixel)
+                                    let src_w = usize::from(width);
+                                    let dst_w = usize::from(logical_w);
+                                    let dst_h = usize::from(logical_h);
+                                    let mut scaled = vec![0u8; dst_w * dst_h * 4];
+                                    for dy in 0..dst_h {
+                                        #[allow(
+                                            clippy::cast_possible_truncation,
+                                            clippy::cast_sign_loss
+                                        )]
+                                        let sy = (dy as f64 * scale) as usize;
+                                        for dx in 0..dst_w {
+                                            #[allow(
+                                                clippy::cast_possible_truncation,
+                                                clippy::cast_sign_loss
+                                            )]
+                                            let sx = (dx as f64 * scale) as usize;
+                                            let src_off = (sy * src_w + sx) * 4;
+                                            let dst_off = (dy * dst_w + dx) * 4;
+                                            if src_off + 4 <= data.len() {
+                                                scaled[dst_off..dst_off + 4]
+                                                    .copy_from_slice(&data[src_off..src_off + 4]);
+                                            }
+                                        }
+                                    }
+
+                                    let bytes = glib::Bytes::from(&scaled);
+                                    let texture = gdk::MemoryTexture::new(
+                                        i32::from(logical_w),
+                                        i32::from(logical_h),
+                                        gdk::MemoryFormat::B8g8r8a8,
+                                        &bytes,
+                                        usize::from(logical_w) * 4,
+                                    );
+                                    let cursor = gdk::Cursor::from_texture(
+                                        &texture,
+                                        hotspot_logical_x,
+                                        hotspot_logical_y,
+                                        None,
+                                    );
+                                    drawing_area.set_cursor(Some(&cursor));
+                                } else {
+                                    // No scaling needed (1x display)
+                                    let bytes = glib::Bytes::from(&data);
+                                    let texture = gdk::MemoryTexture::new(
+                                        i32::from(width),
+                                        i32::from(height),
+                                        gdk::MemoryFormat::B8g8r8a8,
+                                        &bytes,
+                                        usize::from(width) * 4,
+                                    );
+                                    let cursor = gdk::Cursor::from_texture(
+                                        &texture,
+                                        i32::from(hotspot_x),
+                                        i32::from(hotspot_y),
+                                        None,
+                                    );
+                                    drawing_area.set_cursor(Some(&cursor));
+                                }
                             }
                             RdpClientEvent::ServerMessage(msg) => {
                                 tracing::debug!("[IronRDP] Server message: {}", msg);
