@@ -115,6 +115,33 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     // Present window immediately — no waiting for secret backends
     window.present();
 
+    // Execute startup action (CLI override takes precedence over settings)
+    {
+        use rustconn_core::config::StartupAction;
+
+        // 1. Check CLI override (--shell or --connect <uuid>)
+        let cli_action = crate::take_cli_startup_override();
+
+        // 2. Check CLI --connect <name> (deferred name resolution)
+        let cli_name_action = crate::take_cli_connect_name().and_then(|name| {
+            let state_ref = state.borrow();
+            state_ref
+                .find_connection_by_name(&name)
+                .map(|conn| StartupAction::Connection(conn.id))
+                .or_else(|| {
+                    tracing::warn!(name, "CLI --connect: connection not found by name");
+                    None
+                })
+        });
+
+        // CLI args override persisted setting
+        let action = cli_action
+            .or(cli_name_action)
+            .unwrap_or_else(|| state.borrow().settings().ui.startup_action.clone());
+
+        window.execute_startup_action(&action);
+    }
+
     // Initialize secret backends in a background thread after the window is visible.
     // Decryption is fast and runs on the main thread; the slow Bitwarden vault
     // unlock runs in a background thread to avoid blocking the GTK main loop.

@@ -27,6 +27,7 @@ use gtk4::{
 };
 use libadwaita as adw;
 use rustconn_core::config::AppSettings;
+use rustconn_core::models::Connection;
 use rustconn_core::ssh_agent::SshAgentManager;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -71,6 +72,8 @@ pub struct SettingsDialog {
     session_restore_enabled: CheckButton,
     prompt_on_restore: CheckButton,
     max_age_row: adw::SpinRow,
+    // Startup action
+    startup_action_dropdown: DropDown,
     // SSH Agent settings
     ssh_agent_status_label: Label,
     ssh_agent_socket_label: Label,
@@ -84,6 +87,8 @@ pub struct SettingsDialog {
     ssh_agent_manager: Rc<RefCell<SshAgentManager>>,
     // Current settings
     settings: Rc<RefCell<AppSettings>>,
+    // Connections list for startup action dropdown
+    connections: Rc<RefCell<Vec<Connection>>>,
     // Callback
     on_save: SettingsCallback,
 }
@@ -136,6 +141,7 @@ impl SettingsDialog {
             session_restore_enabled,
             prompt_on_restore,
             max_age_row,
+            startup_action_dropdown,
         ) = create_ui_page();
 
         let (
@@ -197,6 +203,7 @@ impl SettingsDialog {
             session_restore_enabled,
             prompt_on_restore,
             max_age_row,
+            startup_action_dropdown,
             ssh_agent_status_label,
             ssh_agent_socket_label,
             ssh_agent_start_button,
@@ -208,6 +215,7 @@ impl SettingsDialog {
             ssh_agent_available_keys_list,
             ssh_agent_manager,
             settings,
+            connections: Rc::new(RefCell::new(Vec::new())),
             on_save: None,
         }
     }
@@ -223,6 +231,11 @@ impl SettingsDialog {
     /// Sets the current settings
     pub fn set_settings(&mut self, settings: AppSettings) {
         *self.settings.borrow_mut() = settings;
+    }
+
+    /// Sets the connections list for the startup action dropdown
+    pub fn set_connections(&self, connections: Vec<Connection>) {
+        *self.connections.borrow_mut() = connections;
     }
 
     /// Shows the dialog and loads current settings
@@ -372,6 +385,8 @@ impl SettingsDialog {
         load_secret_settings(&self.secrets_widgets, &settings.secrets);
 
         // Load UI settings
+        let conn_list = self.connections.borrow();
+        let conn_refs: Vec<&Connection> = conn_list.iter().collect();
         load_ui_settings(
             &self.color_scheme_box,
             &self.language_dropdown,
@@ -381,8 +396,12 @@ impl SettingsDialog {
             &self.session_restore_enabled,
             &self.prompt_on_restore,
             &self.max_age_row,
+            &self.startup_action_dropdown,
             &settings.ui,
+            &conn_refs,
         );
+        drop(conn_refs);
+        drop(conn_list);
 
         // Load SSH agent settings
         load_ssh_agent_settings(
@@ -460,6 +479,8 @@ impl SettingsDialog {
         let session_restore_enabled_clone = self.session_restore_enabled.clone();
         let prompt_on_restore_clone = self.prompt_on_restore.clone();
         let max_age_row_clone = self.max_age_row.clone();
+        let startup_action_dropdown_clone = self.startup_action_dropdown.clone();
+        let connections_clone = self.connections.clone();
 
         // Store callback reference
         let on_save_callback = self.on_save.clone();
@@ -545,6 +566,8 @@ impl SettingsDialog {
             let secrets = collect_secret_settings(&secrets_widgets_for_collect, &settings_clone);
 
             // Collect UI settings
+            let conn_list = connections_clone.borrow();
+            let conn_refs: Vec<&Connection> = conn_list.iter().collect();
             let ui = collect_ui_settings(
                 &color_scheme_box_clone,
                 &language_dropdown_clone,
@@ -554,7 +577,11 @@ impl SettingsDialog {
                 &session_restore_enabled_clone,
                 &prompt_on_restore_clone,
                 &max_age_row_clone,
+                &startup_action_dropdown_clone,
+                &conn_refs,
             );
+            drop(conn_refs);
+            drop(conn_list);
 
             // Create new settings
             let new_settings = AppSettings {

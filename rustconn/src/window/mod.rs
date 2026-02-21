@@ -4419,10 +4419,12 @@ impl MainWindow {
     ) {
         let mut dialog = SettingsDialog::new(None);
 
-        // Load current settings
+        // Load current settings and connections
         {
             let state_ref = state.borrow();
             dialog.set_settings(state_ref.settings().clone());
+            let connections: Vec<_> = state_ref.list_connections().into_iter().cloned().collect();
+            dialog.set_connections(connections);
         }
 
         let window_clone = window.clone();
@@ -4617,6 +4619,48 @@ impl MainWindow {
     #[must_use]
     pub fn sidebar_rc(&self) -> Rc<ConnectionSidebar> {
         self.sidebar.clone()
+    }
+
+    /// Executes a startup action (open local shell or connect to a saved connection)
+    ///
+    /// Called from `build_ui` after the window is presented. CLI args override
+    /// the persisted setting.
+    pub fn execute_startup_action(&self, action: &rustconn_core::config::StartupAction) {
+        use rustconn_core::config::StartupAction;
+        match action {
+            StartupAction::None => {}
+            StartupAction::LocalShell => {
+                tracing::info!("Startup action: opening local shell");
+                Self::open_local_shell_with_split(
+                    &self.terminal_notebook,
+                    &self.split_view,
+                    Some(&self.state),
+                );
+            }
+            StartupAction::Connection(id) => {
+                // Verify the connection exists before attempting to connect
+                let exists = self
+                    .state
+                    .try_borrow()
+                    .ok()
+                    .and_then(|s| s.get_connection(*id).cloned())
+                    .is_some();
+                if exists {
+                    tracing::info!(%id, "Startup action: connecting to saved connection");
+                    Self::start_connection_with_split(
+                        &self.state,
+                        &self.terminal_notebook,
+                        &self.split_view,
+                        &self.sidebar,
+                        *id,
+                    );
+                } else {
+                    tracing::warn!(%id, "Startup action: connection not found, skipping");
+                    self.toast_overlay
+                        .show_warning(&crate::i18n::i18n("Startup connection not found"));
+                }
+            }
+        }
     }
 
     /// Returns a reference to the terminal notebook

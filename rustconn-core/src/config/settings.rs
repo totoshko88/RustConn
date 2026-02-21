@@ -359,6 +359,19 @@ pub enum ColorScheme {
     Dark,
 }
 
+/// Action to perform when the application starts
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StartupAction {
+    /// Do nothing (show empty session area)
+    #[default]
+    None,
+    /// Open a local shell terminal
+    LocalShell,
+    /// Connect to a specific saved connection by UUID
+    Connection(uuid::Uuid),
+}
+
 /// Maximum number of search history entries to persist
 const MAX_SEARCH_HISTORY_ENTRIES: usize = 20;
 
@@ -398,6 +411,9 @@ pub struct UiSettings {
     /// Search history for sidebar (persisted across sessions)
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub search_history: Vec<String>,
+    /// Action to perform on application startup
+    #[serde(default)]
+    pub startup_action: StartupAction,
 }
 
 impl UiSettings {
@@ -494,6 +510,7 @@ impl Default for UiSettings {
             expanded_groups: std::collections::HashSet::new(),
             session_restore: SessionRestoreSettings::default(),
             search_history: Vec::new(),
+            startup_action: StartupAction::default(),
         }
     }
 }

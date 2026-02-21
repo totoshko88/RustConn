@@ -22,6 +22,8 @@ use rustconn_core::models::{RdpClientMode, RdpPerformanceMode, ScaleOverride, Sh
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::i18n::i18n;
+
 /// Return type for RDP options creation
 #[allow(clippy::type_complexity)]
 pub type RdpOptionsWidgets = (
@@ -96,7 +98,7 @@ fn create_display_group() -> (
     DropDown,
     DropDown,
 ) {
-    let display_group = adw::PreferencesGroup::builder().title("Display").build();
+    let display_group = adw::PreferencesGroup::builder().title(i18n("Display")).build();
 
     // Client mode dropdown
     let (client_mode_row, client_mode_dropdown) = DropdownRowBuilder::new("Client Mode")
@@ -141,8 +143,8 @@ fn create_display_group() -> (
     res_box.append(&height_spin);
 
     let resolution_row = adw::ActionRow::builder()
-        .title("Resolution")
-        .subtitle("Width × Height in pixels")
+        .title(i18n("Resolution"))
+        .subtitle(i18n("Width × Height in pixels"))
         .build();
     resolution_row.add_suffix(&res_box);
     display_group.add(&resolution_row);
@@ -200,7 +202,7 @@ fn create_display_group() -> (
 
 /// Creates the Features preferences group
 fn create_features_group() -> (adw::PreferencesGroup, CheckButton, Entry) {
-    let features_group = adw::PreferencesGroup::builder().title("Features").build();
+    let features_group = adw::PreferencesGroup::builder().title(i18n("Features")).build();
 
     // Audio redirect
     let (audio_row, audio_check) = CheckboxRowBuilder::new("Audio Redirection")
@@ -220,7 +222,7 @@ fn create_features_group() -> (adw::PreferencesGroup, CheckButton, Entry) {
 
 /// Creates the Advanced preferences group
 fn create_advanced_group() -> (adw::PreferencesGroup, Entry) {
-    let advanced_group = adw::PreferencesGroup::builder().title("Advanced").build();
+    let advanced_group = adw::PreferencesGroup::builder().title(i18n("Advanced")).build();
 
     let (args_row, args_entry) = EntryRowBuilder::new("Custom Arguments")
         .subtitle("Extra FreeRDP command-line options")

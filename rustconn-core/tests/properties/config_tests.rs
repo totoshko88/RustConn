@@ -483,6 +483,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         expanded_groups: std::collections::HashSet::new(),
                         session_restore: SessionRestoreSettings::default(),
                         search_history: Vec::new(),
+                        startup_action: rustconn_core::config::StartupAction::default(),
                     },
                     connection: rustconn_core::ConnectionSettings::default(),
                     global_variables: Vec::new(),

@@ -101,11 +101,11 @@ impl CheckboxRowBuilder {
         checkbox.set_active(self.active);
 
         let mut row_builder = adw::ActionRow::builder()
-            .title(&self.title)
+            .title(i18n(&self.title))
             .activatable_widget(&checkbox);
 
         if let Some(subtitle) = &self.subtitle {
-            row_builder = row_builder.subtitle(subtitle);
+            row_builder = row_builder.subtitle(i18n(subtitle));
         }
 
         let row = row_builder.build();
@@ -184,10 +184,10 @@ impl EntryRowBuilder {
             entry.set_text(text);
         }
 
-        let mut row_builder = adw::ActionRow::builder().title(&self.title);
+        let mut row_builder = adw::ActionRow::builder().title(i18n(&self.title));
 
         if let Some(subtitle) = &self.subtitle {
-            row_builder = row_builder.subtitle(subtitle);
+            row_builder = row_builder.subtitle(i18n(subtitle));
         }
 
         let row = row_builder.build();
@@ -285,10 +285,10 @@ impl SpinRowBuilder {
             .valign(gtk4::Align::Center)
             .build();
 
-        let mut row_builder = adw::ActionRow::builder().title(&self.title);
+        let mut row_builder = adw::ActionRow::builder().title(i18n(&self.title));
 
         if let Some(subtitle) = &self.subtitle {
-            row_builder = row_builder.subtitle(subtitle);
+            row_builder = row_builder.subtitle(i18n(subtitle));
         }
 
         let row = row_builder.build();
@@ -361,10 +361,10 @@ impl DropdownRowBuilder {
         let dropdown = DropDown::new(Some(string_list), gtk4::Expression::NONE);
         dropdown.set_selected(self.selected);
 
-        let mut row_builder = adw::ActionRow::builder().title(&self.title);
+        let mut row_builder = adw::ActionRow::builder().title(i18n(&self.title));
 
         if let Some(subtitle) = &self.subtitle {
-            row_builder = row_builder.subtitle(subtitle);
+            row_builder = row_builder.subtitle(i18n(subtitle));
         }
 
         let row = row_builder.build();
@@ -422,11 +422,11 @@ impl SwitchRowBuilder {
     #[must_use]
     pub fn build(self) -> adw::SwitchRow {
         let mut builder = adw::SwitchRow::builder()
-            .title(&self.title)
+            .title(i18n(&self.title))
             .active(self.active);
 
         if let Some(subtitle) = &self.subtitle {
-            builder = builder.subtitle(subtitle);
+            builder = builder.subtitle(i18n(subtitle));
         }
 
         builder.build()

@@ -492,6 +492,17 @@ impl AppState {
         self.connection_manager.get_connection(id)
     }
 
+    /// Finds a connection by name (case-insensitive)
+    ///
+    /// Returns the first match. Used by CLI `--connect <name>` resolution.
+    pub fn find_connection_by_name(&self, name: &str) -> Option<&Connection> {
+        let lower = name.to_lowercase();
+        self.connection_manager
+            .list_connections()
+            .into_iter()
+            .find(|c| c.name.to_lowercase() == lower)
+    }
+
     /// Lists all connections
     pub fn list_connections(&self) -> Vec<&Connection> {
         self.connection_manager.list_connections()

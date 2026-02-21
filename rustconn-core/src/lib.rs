@@ -86,7 +86,9 @@ pub use cluster::{
     Cluster, ClusterError, ClusterManager, ClusterMemberState, ClusterResult, ClusterSession,
     ClusterSessionStatus, ClusterSessionSummary,
 };
-pub use config::{AppSettings, ConfigManager, ConnectionSettings, SecretBackendType};
+pub use config::{
+    AppSettings, ConfigManager, ConnectionSettings, SecretBackendType, StartupAction,
+};
 pub use connection::{
     ConnectionManager, LazyGroupLoader, PortCheckError, PortCheckResult, RetryConfig, RetryState,
     SelectionState, VirtualScrollConfig, check_interning_stats, check_port, check_port_async,

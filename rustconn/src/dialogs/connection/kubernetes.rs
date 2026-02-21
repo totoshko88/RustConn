@@ -9,6 +9,8 @@ use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, CheckButton, DropDown, Entry, StringList};
 use libadwaita as adw;
 
+use crate::i18n::i18n;
+
 /// Return type for Kubernetes options creation
 ///
 /// Contains:
@@ -43,8 +45,8 @@ pub fn create_kubernetes_options() -> KubernetesOptionsWidgets {
 
     // === Connection Group ===
     let connection_group = adw::PreferencesGroup::builder()
-        .title("Kubernetes")
-        .description("Connect to pod shell via kubectl exec")
+        .title(i18n("Kubernetes"))
+        .description(i18n("Connect to pod shell via kubectl exec"))
         .build();
 
     let (kubeconfig_row, kubeconfig_entry) = EntryRowBuilder::new("Kubeconfig")
@@ -81,8 +83,8 @@ pub fn create_kubernetes_options() -> KubernetesOptionsWidgets {
     let shell_model = StringList::new(&["/bin/sh", "/bin/bash", "/bin/ash", "/bin/zsh"]);
     let shell_dropdown = DropDown::builder().model(&shell_model).selected(0).build();
     let shell_row = adw::ActionRow::builder()
-        .title("Shell")
-        .subtitle("Shell to use inside the container")
+        .title(i18n("Shell"))
+        .subtitle(i18n("Shell to use inside the container"))
         .build();
     shell_row.add_suffix(&shell_dropdown);
     shell_row.set_activatable_widget(Some(&shell_dropdown));
@@ -92,14 +94,14 @@ pub fn create_kubernetes_options() -> KubernetesOptionsWidgets {
 
     // === Busybox Group ===
     let busybox_group = adw::PreferencesGroup::builder()
-        .title("Temporary Pod")
-        .description("Run a temporary pod instead of exec into existing")
+        .title(i18n("Temporary Pod"))
+        .description(i18n("Run a temporary pod instead of exec into existing"))
         .build();
 
     let busybox_check = CheckButton::builder().build();
     let busybox_row = adw::ActionRow::builder()
-        .title("Busybox Mode")
-        .subtitle("Creates a temporary pod with kubectl run")
+        .title(i18n("Busybox Mode"))
+        .subtitle(i18n("Creates a temporary pod with kubectl run"))
         .activatable_widget(&busybox_check)
         .build();
     busybox_row.add_suffix(&busybox_check);
@@ -114,7 +116,7 @@ pub fn create_kubernetes_options() -> KubernetesOptionsWidgets {
     content.append(&busybox_group);
 
     // === Advanced Group ===
-    let advanced_group = adw::PreferencesGroup::builder().title("Advanced").build();
+    let advanced_group = adw::PreferencesGroup::builder().title(i18n("Advanced")).build();
 
     let (custom_args_row, custom_args_entry) = EntryRowBuilder::new("Custom Arguments")
         .subtitle("Additional kubectl arguments")

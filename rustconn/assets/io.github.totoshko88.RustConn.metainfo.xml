@@ -94,13 +94,12 @@
       <description>
         <p>Security hardening, Rust 2024 edition, and translation quality improvements.</p>
         <ul>
+          <li>Startup action: auto-open local shell or saved connection on launch (Settings or CLI)</li>
           <li>All credential fields migrated to SecretString with point-of-use exposure</li>
           <li>FreeRDP password passed via stdin instead of CLI argument</li>
-          <li>SSH custom_options filtered against dangerous directives</li>
           <li>Migrated to Rust 2024 edition across all three crates</li>
           <li>Ukrainian translation professionally reviewed (674 strings)</li>
           <li>RDP cursor scaling fixed for HiDPI displays</li>
-          <li>Flathub metadata overhauled per quality guidelines</li>
         </ul>
       </description>
     </release>

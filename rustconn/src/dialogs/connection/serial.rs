@@ -14,6 +14,8 @@ use rustconn_core::{
     SerialBaudRate, SerialDataBits, SerialFlowControl, SerialParity, SerialStopBits,
 };
 
+use crate::i18n::i18n;
+
 /// Return type for Serial options creation
 ///
 /// Contains:
@@ -45,8 +47,8 @@ pub fn create_serial_options() -> SerialOptionsWidgets {
 
     // === Device Group ===
     let device_group = adw::PreferencesGroup::builder()
-        .title("Device")
-        .description("Serial uses picocom as the terminal client")
+        .title(i18n("Device"))
+        .description(i18n("Serial uses picocom as the terminal client"))
         .build();
 
     let (device_row, device_entry) = EntryRowBuilder::new("Device Path")
@@ -65,8 +67,8 @@ pub fn create_serial_options() -> SerialOptionsWidgets {
 
     // === Line Parameters Group ===
     let line_group = adw::PreferencesGroup::builder()
-        .title("Line Parameters")
-        .description("Standard serial line configuration (default: 115200 8N1)")
+        .title(i18n("Line Parameters"))
+        .description(i18n("Standard serial line configuration (default: 115200 8N1)"))
         .build();
 
     // Baud rate dropdown
@@ -81,8 +83,8 @@ pub fn create_serial_options() -> SerialOptionsWidgets {
         .selected(SerialBaudRate::default().index())
         .build();
     let baud_row = adw::ActionRow::builder()
-        .title("Baud Rate")
-        .subtitle("Communication speed in bits per second")
+        .title(i18n("Baud Rate"))
+        .subtitle(i18n("Communication speed in bits per second"))
         .build();
     baud_row.add_suffix(&baud_dropdown);
     baud_row.set_activatable_widget(Some(&baud_dropdown));
@@ -100,8 +102,8 @@ pub fn create_serial_options() -> SerialOptionsWidgets {
         .selected(SerialDataBits::default().index())
         .build();
     let data_bits_row = adw::ActionRow::builder()
-        .title("Data Bits")
-        .subtitle("Number of data bits per character")
+        .title(i18n("Data Bits"))
+        .subtitle(i18n("Number of data bits per character"))
         .build();
     data_bits_row.add_suffix(&data_bits_dropdown);
     data_bits_row.set_activatable_widget(Some(&data_bits_dropdown));
@@ -119,8 +121,8 @@ pub fn create_serial_options() -> SerialOptionsWidgets {
         .selected(SerialStopBits::default().index())
         .build();
     let stop_bits_row = adw::ActionRow::builder()
-        .title("Stop Bits")
-        .subtitle("Number of stop bits")
+        .title(i18n("Stop Bits"))
+        .subtitle(i18n("Number of stop bits"))
         .build();
     stop_bits_row.add_suffix(&stop_bits_dropdown);
     stop_bits_row.set_activatable_widget(Some(&stop_bits_dropdown));
@@ -138,8 +140,8 @@ pub fn create_serial_options() -> SerialOptionsWidgets {
         .selected(SerialParity::default().index())
         .build();
     let parity_row = adw::ActionRow::builder()
-        .title("Parity")
-        .subtitle("Error detection scheme")
+        .title(i18n("Parity"))
+        .subtitle(i18n("Error detection scheme"))
         .build();
     parity_row.add_suffix(&parity_dropdown);
     parity_row.set_activatable_widget(Some(&parity_dropdown));
@@ -157,8 +159,8 @@ pub fn create_serial_options() -> SerialOptionsWidgets {
         .selected(SerialFlowControl::default().index())
         .build();
     let flow_row = adw::ActionRow::builder()
-        .title("Flow Control")
-        .subtitle("Data flow management method")
+        .title(i18n("Flow Control"))
+        .subtitle(i18n("Data flow management method"))
         .build();
     flow_row.add_suffix(&flow_dropdown);
     flow_row.set_activatable_widget(Some(&flow_dropdown));

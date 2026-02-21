@@ -11,6 +11,8 @@ use gtk4::{Box as GtkBox, DropDown, Entry, StringList};
 use libadwaita as adw;
 use rustconn_core::models::{TelnetBackspaceSends, TelnetDeleteSends};
 
+use crate::i18n::i18n;
+
 /// Return type for Telnet options creation
 ///
 /// Contains:
@@ -31,8 +33,8 @@ pub fn create_telnet_options() -> TelnetOptionsWidgets {
 
     // === Connection Group ===
     let connection_group = adw::PreferencesGroup::builder()
-        .title("Connection")
-        .description("Telnet uses an external telnet client")
+        .title(i18n("Connection"))
+        .description(i18n("Telnet uses an external telnet client"))
         .build();
 
     let (custom_args_row, custom_args_entry) = EntryRowBuilder::new("Custom Arguments")
@@ -45,11 +47,11 @@ pub fn create_telnet_options() -> TelnetOptionsWidgets {
 
     // === Keyboard Group ===
     let keyboard_group = adw::PreferencesGroup::builder()
-        .title("Keyboard")
-        .description(
+        .title(i18n("Keyboard"))
+        .description(i18n(
             "Configure key behavior for remote systems with \
              inverted backspace/delete",
-        )
+        ))
         .build();
 
     // Backspace sends dropdown
@@ -64,8 +66,8 @@ pub fn create_telnet_options() -> TelnetOptionsWidgets {
         .selected(0)
         .build();
     let backspace_row = adw::ActionRow::builder()
-        .title("Backspace sends")
-        .subtitle("What the Backspace key sends to the remote")
+        .title(i18n("Backspace sends"))
+        .subtitle(i18n("What the Backspace key sends to the remote"))
         .build();
     backspace_row.add_suffix(&backspace_dropdown);
     backspace_row.set_activatable_widget(Some(&backspace_dropdown));
@@ -80,8 +82,8 @@ pub fn create_telnet_options() -> TelnetOptionsWidgets {
     );
     let delete_dropdown = DropDown::builder().model(&delete_model).selected(0).build();
     let delete_row = adw::ActionRow::builder()
-        .title("Delete sends")
-        .subtitle("What the Delete key sends to the remote")
+        .title(i18n("Delete sends"))
+        .subtitle(i18n("What the Delete key sends to the remote"))
         .build();
     delete_row.add_suffix(&delete_dropdown);
     delete_row.set_activatable_widget(Some(&delete_dropdown));
