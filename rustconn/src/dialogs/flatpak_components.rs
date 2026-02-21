@@ -31,14 +31,16 @@ use crate::i18n::i18n;
 /// Note: `component_rows` field is kept alive for GTK widget lifecycle.
 /// The rows contain GTK widgets that must remain valid while the dialog is open.
 pub struct FlatpakComponentsDialog {
-    /// The dialog window
-    window: adw::Window,
+    /// The dialog
+    dialog: adw::Dialog,
     /// Toast overlay for notifications
     toast_overlay: adw::ToastOverlay,
     /// List of component rows for updating status
     /// Note: This field appears unused but is required to keep GTK widgets alive
     #[allow(dead_code)]
     component_rows: Rc<RefCell<Vec<ComponentRow>>>,
+    /// Parent widget for presenting
+    parent: Option<gtk4::Widget>,
 }
 
 struct ComponentRow {
@@ -61,18 +63,11 @@ impl FlatpakComponentsDialog {
             return None;
         }
 
-        let window = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(i18n("Flatpak Components"))
-            .default_width(500)
-            .default_height(500)
-            .modal(true)
+            .content_width(500)
+            .content_height(500)
             .build();
-
-        if let Some(parent) = parent {
-            window.set_transient_for(Some(parent));
-        }
-
-        window.set_size_request(320, 280);
 
         let toast_overlay = adw::ToastOverlay::new();
         let component_rows = Rc::new(RefCell::new(Vec::new()));
@@ -81,27 +76,31 @@ impl FlatpakComponentsDialog {
         toast_overlay.set_child(Some(&content));
 
         let toolbar_view = adw::ToolbarView::new();
-        toolbar_view.add_top_bar(&Self::build_header_bar(&window));
+        toolbar_view.add_top_bar(&Self::build_header_bar(&dialog));
         toolbar_view.set_content(Some(&toast_overlay));
 
-        window.set_content(Some(&toolbar_view));
+        dialog.set_child(Some(&toolbar_view));
+
+        let stored_parent: Option<gtk4::Widget> =
+            parent.map(|p| p.clone().upcast::<gtk4::Window>().upcast::<gtk4::Widget>());
 
         Some(Self {
-            window,
+            dialog,
             toast_overlay,
             component_rows,
+            parent: stored_parent,
         })
     }
 
-    fn build_header_bar(window: &adw::Window) -> adw::HeaderBar {
+    fn build_header_bar(dialog: &adw::Dialog) -> adw::HeaderBar {
         let header = adw::HeaderBar::new();
 
         let close_button = Button::with_label(&i18n("Close"));
         close_button.connect_clicked(glib::clone!(
             #[weak]
-            window,
+            dialog,
             move |_| {
-                window.close();
+                dialog.close();
             }
         ));
         header.pack_end(&close_button);
@@ -500,7 +499,8 @@ impl FlatpakComponentsDialog {
 
     /// Show the dialog
     pub fn present(&self) {
-        self.window.present();
+        self.dialog
+            .present(self.parent.as_ref().map(|w| w as &gtk4::Widget));
     }
 
     /// Show a toast message

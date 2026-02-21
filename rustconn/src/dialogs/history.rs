@@ -13,28 +13,22 @@ use std::rc::Rc;
 
 /// Connection history dialog
 pub struct HistoryDialog {
-    window: adw::Window,
+    dialog: adw::Dialog,
     list_box: ListBox,
     entries: Rc<RefCell<Vec<ConnectionHistoryEntry>>>,
     on_connect: Rc<RefCell<Option<Box<dyn Fn(&ConnectionHistoryEntry) + 'static>>>>,
+    parent: Option<gtk4::Widget>,
 }
 
 impl HistoryDialog {
     /// Creates a new history dialog
     #[must_use]
     pub fn new(parent: Option<&impl IsA<gtk4::Window>>) -> Self {
-        let window = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(i18n("Connection History"))
-            .default_width(500)
-            .default_height(400)
-            .modal(true)
+            .content_width(500)
+            .content_height(400)
             .build();
-
-        if let Some(p) = parent {
-            window.set_transient_for(Some(p));
-        }
-
-        window.set_size_request(320, 280);
 
         // Header bar with Close/Connect buttons (GNOME HIG)
         let header = adw::HeaderBar::new();
@@ -50,9 +44,9 @@ impl HistoryDialog {
         header.pack_end(&connect_btn);
 
         // Close button handler
-        let window_clone = window.clone();
+        let dialog_clone = dialog.clone();
         close_btn.connect_clicked(move |_| {
-            window_clone.close();
+            dialog_clone.close();
         });
 
         // Main content
@@ -109,13 +103,17 @@ impl HistoryDialog {
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
         toolbar_view.set_content(Some(&content));
-        window.set_content(Some(&toolbar_view));
+        dialog.set_child(Some(&toolbar_view));
 
-        let dialog = Self {
-            window: window.clone(),
+        let stored_parent: Option<gtk4::Widget> =
+            parent.map(|p| p.clone().upcast::<gtk4::Window>().upcast::<gtk4::Widget>());
+
+        let hist = Self {
+            dialog: dialog.clone(),
             list_box: list_box.clone(),
             entries: Rc::new(RefCell::new(Vec::new())),
             on_connect: Rc::new(RefCell::new(None)),
+            parent: stored_parent,
         };
 
         let connect_btn_clone = connect_btn.clone();
@@ -124,10 +122,10 @@ impl HistoryDialog {
         });
 
         // Connect button
-        let entries_clone = dialog.entries.clone();
+        let entries_clone = hist.entries.clone();
         let list_box_clone = list_box.clone();
-        let on_connect = dialog.on_connect.clone();
-        let window_clone = window.clone();
+        let on_connect = hist.on_connect.clone();
+        let dialog_clone = dialog.clone();
         connect_btn.connect_clicked(move |_| {
             if let Some(row) = list_box_clone.selected_row() {
                 let index = row.index();
@@ -138,14 +136,14 @@ impl HistoryDialog {
                         if let Some(ref callback) = *on_connect.borrow() {
                             callback(entry);
                         }
-                        window_clone.close();
+                        dialog_clone.close();
                     }
                 }
             }
         });
 
         // Clear history button
-        let entries_clear = dialog.entries.clone();
+        let entries_clear = hist.entries.clone();
         let list_box_clear = list_box;
         clear_btn.connect_clicked(move |_| {
             entries_clear.borrow_mut().clear();
@@ -154,7 +152,7 @@ impl HistoryDialog {
             }
         });
 
-        dialog
+        hist
     }
 
     /// Sets the history entries to display
@@ -252,6 +250,7 @@ impl HistoryDialog {
 
     /// Shows the dialog
     pub fn present(&self) {
-        self.window.present();
+        self.dialog
+            .present(self.parent.as_ref().map(|w| w as &gtk4::Widget));
     }
 }

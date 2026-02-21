@@ -8,6 +8,7 @@ use std::io::Write;
 use std::path::Path;
 
 use chrono::Utc;
+use secrecy::{ExposeSecret, SecretString};
 
 use crate::error::{SecretError, SecretResult};
 use crate::models::{Connection, Credentials};
@@ -19,8 +20,8 @@ pub struct KdbxEntry {
     pub title: String,
     /// Username
     pub username: Option<String>,
-    /// Password
-    pub password: Option<String>,
+    /// Password (stored as `SecretString` to minimize plaintext lifetime)
+    pub password: Option<SecretString>,
     /// URL (connection URL)
     pub url: Option<String>,
     /// Notes
@@ -60,7 +61,9 @@ impl KdbxEntry {
         Self {
             title: connection.name.clone(),
             username: credentials.username.clone(),
-            password: credentials.expose_password().map(String::from),
+            password: credentials
+                .expose_password()
+                .map(|s| SecretString::from(s.to_string())),
             url: Some(url),
             notes: Some(notes),
             group: format!("RustConn/{protocol_name}"),
@@ -183,7 +186,7 @@ impl KdbxExporter {
                 if let Some(password) = &entry.password {
                     xml.push_str(&format!(
                         "\t\t\t\t\t<String><Key>Password</Key><Value Protected=\"True\">{}</Value></String>\n",
-                        escape_xml(password)
+                        escape_xml(password.expose_secret())
                     ));
                 }
 
@@ -262,7 +265,7 @@ mod tests {
         let entry = KdbxEntry {
             title: "Test Server".to_string(),
             username: Some("admin".to_string()),
-            password: Some("secret".to_string()),
+            password: Some(SecretString::from("secret".to_string())),
             url: Some("ssh://test.example.com:22".to_string()),
             notes: None,
             group: "RustConn/SSH".to_string(),
@@ -278,7 +281,7 @@ mod tests {
         exporter.add_entry(KdbxEntry {
             title: "Server 1".to_string(),
             username: Some("user1".to_string()),
-            password: Some("pass1".to_string()),
+            password: Some(SecretString::from("pass1".to_string())),
             url: Some("ssh://server1:22".to_string()),
             notes: None,
             group: "RustConn/SSH".to_string(),

@@ -297,7 +297,7 @@ impl VariableManager {
         // Log warnings for undefined variables (in production, use proper logging)
         #[cfg(debug_assertions)]
         for var in &undefined_vars {
-            eprintln!("Warning: Undefined variable: {var}");
+            tracing::debug!("Undefined variable: {var}");
         }
 
         Ok(result)

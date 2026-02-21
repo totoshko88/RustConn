@@ -3,6 +3,7 @@
 //! Provides a GTK4 dialog for displaying progress during operations like
 //! imports, exports, and bulk operations.
 
+use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, Label, Orientation, ProgressBar};
 use libadwaita as adw;
@@ -13,11 +14,12 @@ use crate::i18n::i18n;
 
 /// Progress dialog for displaying operation progress
 pub struct ProgressDialog {
-    window: adw::Window,
+    dialog: adw::Dialog,
     progress_bar: ProgressBar,
     status_label: Label,
     cancel_button: Button,
     cancelled: Rc<Cell<bool>>,
+    parent: Option<gtk4::Widget>,
 }
 
 impl ProgressDialog {
@@ -30,25 +32,18 @@ impl ProgressDialog {
     /// * `cancellable` - Whether to show a cancel button
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>, title: &str, cancellable: bool) -> Self {
-        let window = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(title)
-            .modal(true)
-            .default_width(400)
-            .deletable(false)
+            .content_width(400)
+            .can_close(false)
             .build();
-
-        if let Some(p) = parent {
-            window.set_transient_for(Some(p));
-        }
-
-        window.set_size_request(280, -1);
 
         // Create main content area
         let content = GtkBox::new(Orientation::Vertical, 12);
-        content.set_margin_top(24);
-        content.set_margin_bottom(24);
-        content.set_margin_start(24);
-        content.set_margin_end(24);
+        content.set_margin_top(12);
+        content.set_margin_bottom(12);
+        content.set_margin_start(12);
+        content.set_margin_end(12);
 
         // Status label
         let status_label = Label::builder()
@@ -84,14 +79,26 @@ impl ProgressDialog {
             });
         }
 
-        window.set_child(Some(&content));
+        let header = adw::HeaderBar::new();
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header);
+        let clamp = adw::Clamp::builder()
+            .maximum_size(600)
+            .child(&content)
+            .build();
+        toolbar_view.set_content(Some(&clamp));
+        dialog.set_child(Some(&toolbar_view));
+
+        let stored_parent: Option<gtk4::Widget> =
+            parent.map(|p| p.clone().upcast::<gtk4::Widget>());
 
         Self {
-            window,
+            dialog,
             progress_bar,
             status_label,
             cancel_button,
             cancelled,
+            parent: stored_parent,
         }
     }
 
@@ -135,18 +142,20 @@ impl ProgressDialog {
 
     /// Shows the progress dialog
     pub fn show(&self) {
-        self.window.present();
+        self.dialog
+            .present(self.parent.as_ref().map(|w| w as &gtk4::Widget));
     }
 
     /// Closes the progress dialog
     pub fn close(&self) {
-        self.window.close();
+        self.dialog.set_can_close(true);
+        self.dialog.close();
     }
 
-    /// Returns a reference to the underlying window
+    /// Returns a reference to the underlying dialog
     #[must_use]
-    pub const fn window(&self) -> &adw::Window {
-        &self.window
+    pub const fn dialog(&self) -> &adw::Dialog {
+        &self.dialog
     }
 
     /// Sets the progress to indeterminate mode (pulsing)

@@ -720,6 +720,7 @@ fn cmd_secret_verify_keepass(
         eprint!("Enter database password: ");
         let password = rpassword::read_password()
             .map_err(|e| CliError::Secret(format!("Failed to read password: {e}")))?;
+        let password = secrecy::SecretString::from(password);
 
         KeePassStatus::verify_kdbx_credentials(database, Some(&password), None)
             .map_err(|e| CliError::Secret(format!("Verification failed: {e}")))?;

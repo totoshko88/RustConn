@@ -436,7 +436,8 @@ async fn run_spice_client(
 
     // Set password if provided
     if let Some(ref password) = config.password {
-        native_client.set_password(password.clone());
+        use secrecy::ExposeSecret;
+        native_client.set_password(password.expose_secret().to_string());
     }
 
     // Connect with timeout

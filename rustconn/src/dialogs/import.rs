@@ -26,7 +26,7 @@ use crate::i18n::i18n;
 
 /// Import dialog for importing connections from external sources
 pub struct ImportDialog {
-    window: adw::Window,
+    dialog: adw::Dialog,
     stack: Stack,
     source_list: ListBox,
     progress_bar: ProgressBar,
@@ -40,24 +40,18 @@ pub struct ImportDialog {
     source_name: Rc<RefCell<String>>,
     on_complete: super::ImportCallback,
     on_complete_with_source: super::ImportWithSourceCallback,
+    parent: Option<gtk4::Window>,
 }
 
 impl ImportDialog {
     /// Creates a new import dialog
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
-        // Create window instead of deprecated Dialog
-        let window = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(i18n("Import Connections"))
-            .modal(true)
-            .default_width(600)
-            .default_height(500)
+            .content_width(600)
+            .content_height(500)
             .build();
-        window.set_size_request(350, 300);
-
-        if let Some(p) = parent {
-            window.set_transient_for(Some(p));
-        }
 
         // Create header bar with Close/Import buttons (GNOME HIG)
         let header = adw::HeaderBar::new();
@@ -72,9 +66,9 @@ impl ImportDialog {
         header.pack_end(&import_button);
 
         // Close button handler
-        let window_clone = window.clone();
+        let dialog_clone = dialog.clone();
         close_btn.connect_clicked(move |_| {
-            window_clone.close();
+            dialog_clone.close();
         });
 
         // Create main layout with header at top using ToolbarView
@@ -100,7 +94,7 @@ impl ImportDialog {
 
         clamp.set_child(Some(&content));
         toolbar_view.set_content(Some(&clamp));
-        window.set_content(Some(&toolbar_view));
+        dialog.set_child(Some(&toolbar_view));
 
         // === Source Selection Page ===
         let source_page = Self::create_source_page();
@@ -121,8 +115,8 @@ impl ImportDialog {
         let on_complete_with_source: super::ImportWithSourceCallback = Rc::new(RefCell::new(None));
         let source_name: Rc<RefCell<String>> = Rc::new(RefCell::new(String::new()));
 
-        let dialog = Self {
-            window,
+        let dialog_inst = Self {
+            dialog,
             stack,
             source_list: source_page.1,
             progress_bar,
@@ -134,12 +128,13 @@ impl ImportDialog {
             source_name,
             on_complete,
             on_complete_with_source,
+            parent: parent.cloned(),
         };
 
         // Wire up source selection to import button state (Requirement 5.1)
-        dialog.connect_source_selection_to_import_button();
+        dialog_inst.connect_source_selection_to_import_button();
 
-        dialog
+        dialog_inst
     }
 
     /// Connects source list selection changes to import button enabled state
@@ -568,7 +563,7 @@ impl ImportDialog {
         // Store callback
         *self.on_complete.borrow_mut() = Some(Box::new(cb));
 
-        let window = self.window.clone();
+        let dialog = self.dialog.clone();
         let stack = self.stack.clone();
         let source_list = self.source_list.clone();
         let progress_bar = self.progress_bar.clone();
@@ -588,7 +583,7 @@ impl ImportDialog {
                 if let Some(ref cb) = *on_complete.borrow() {
                     cb(result_cell.borrow_mut().take());
                 }
-                window.close();
+                dialog.close();
                 return;
             }
 
@@ -636,7 +631,8 @@ impl ImportDialog {
             }
         });
 
-        self.window.present();
+        self.dialog
+            .present(self.parent.as_ref().map(|w| w.upcast_ref::<gtk4::Widget>()));
     }
 
     /// Runs the dialog and calls the callback with the result and source name
@@ -651,7 +647,7 @@ impl ImportDialog {
         // Store callback
         *self.on_complete_with_source.borrow_mut() = Some(Box::new(cb));
 
-        let window = self.window.clone();
+        let dialog = self.dialog.clone();
         let stack = self.stack.clone();
         let source_list = self.source_list.clone();
         let progress_bar = self.progress_bar.clone();
@@ -662,6 +658,7 @@ impl ImportDialog {
         let result_cell = self.result.clone();
         let source_name_cell = self.source_name.clone();
         let on_complete_with_source = self.on_complete_with_source.clone();
+        let parent_window = self.parent.clone();
 
         // Wire import button click to do_import() (Requirement 5.1)
         import_button.connect_clicked(move |btn| {
@@ -673,7 +670,7 @@ impl ImportDialog {
                     let source = source_name_cell.borrow().clone();
                     cb(result_cell.borrow_mut().take(), source);
                 }
-                window.close();
+                dialog.close();
                 return;
             }
 
@@ -701,7 +698,7 @@ impl ImportDialog {
                 // Handle special case for file-based import
                 if source_id == "ssh_config_file" {
                     Self::handle_ssh_config_file_import(
-                        &window,
+                        parent_window.as_ref(),
                         &stack,
                         &progress_bar,
                         &progress_label,
@@ -716,7 +713,7 @@ impl ImportDialog {
 
                 if source_id == "asbru_file" {
                     Self::handle_asbru_file_import(
-                        &window,
+                        parent_window.as_ref(),
                         &stack,
                         &progress_bar,
                         &progress_label,
@@ -731,7 +728,7 @@ impl ImportDialog {
 
                 if source_id == "ansible_file" {
                     Self::handle_ansible_file_import(
-                        &window,
+                        parent_window.as_ref(),
                         &stack,
                         &progress_bar,
                         &progress_label,
@@ -746,7 +743,7 @@ impl ImportDialog {
 
                 if source_id == "native_file" {
                     Self::handle_native_file_import(
-                        &window,
+                        parent_window.as_ref(),
                         &stack,
                         &progress_bar,
                         &progress_label,
@@ -761,7 +758,7 @@ impl ImportDialog {
 
                 if source_id == "royalts_file" {
                     Self::handle_royalts_file_import(
-                        &window,
+                        parent_window.as_ref(),
                         &stack,
                         &progress_bar,
                         &progress_label,
@@ -776,7 +773,7 @@ impl ImportDialog {
 
                 if source_id == "rdm_file" {
                     Self::handle_rdm_file_import(
-                        &window,
+                        parent_window.as_ref(),
                         &stack,
                         &progress_bar,
                         &progress_label,
@@ -791,7 +788,7 @@ impl ImportDialog {
 
                 if source_id == "mobaxterm_file" {
                     Self::handle_mobaxterm_file_import(
-                        &window,
+                        parent_window.as_ref(),
                         &stack,
                         &progress_bar,
                         &progress_label,
@@ -806,7 +803,7 @@ impl ImportDialog {
 
                 if source_id == "vv_file" {
                     Self::handle_vv_file_import(
-                        &window,
+                        parent_window.as_ref(),
                         &stack,
                         &progress_bar,
                         &progress_label,
@@ -869,7 +866,8 @@ impl ImportDialog {
         });
         self.source_list.add_controller(gesture);
 
-        self.window.present();
+        self.dialog
+            .present(self.parent.as_ref().map(|w| w.upcast_ref::<gtk4::Widget>()));
     }
 
     /// Handles the special case of importing from an SSH config file
@@ -881,7 +879,7 @@ impl ImportDialog {
     /// Requirements: 1.1, 1.5
     #[allow(clippy::too_many_arguments)]
     fn handle_ssh_config_file_import(
-        window: &adw::Window,
+        parent_window: Option<&gtk4::Window>,
         stack: &Stack,
         progress_bar: &ProgressBar,
         progress_label: &Label,
@@ -917,7 +915,7 @@ impl ImportDialog {
         let btn_clone = btn.clone();
 
         file_dialog.open(
-            Some(window),
+            parent_window,
             gtk4::gio::Cancellable::NONE,
             move |file_result| {
                 if let Ok(file) = file_result {
@@ -971,7 +969,7 @@ impl ImportDialog {
     /// Handles the special case of importing from an Asbru-CM YAML file
     #[allow(clippy::too_many_arguments)]
     fn handle_asbru_file_import(
-        window: &adw::Window,
+        parent_window: Option<&gtk4::Window>,
         stack: &Stack,
         progress_bar: &ProgressBar,
         progress_label: &Label,
@@ -1006,7 +1004,7 @@ impl ImportDialog {
         let btn_clone = btn.clone();
 
         file_dialog.open(
-            Some(window),
+            parent_window,
             gtk4::gio::Cancellable::NONE,
             move |file_result| {
                 if let Ok(file) = file_result {
@@ -1059,7 +1057,7 @@ impl ImportDialog {
     /// Handles the special case of importing from an Ansible inventory file
     #[allow(clippy::too_many_arguments)]
     fn handle_ansible_file_import(
-        window: &adw::Window,
+        parent_window: Option<&gtk4::Window>,
         stack: &Stack,
         progress_bar: &ProgressBar,
         progress_label: &Label,
@@ -1098,7 +1096,7 @@ impl ImportDialog {
         let btn_clone = btn.clone();
 
         file_dialog.open(
-            Some(window),
+            parent_window,
             gtk4::gio::Cancellable::NONE,
             move |file_result| {
                 if let Ok(file) = file_result {
@@ -1148,10 +1146,10 @@ impl ImportDialog {
         );
     }
 
-    /// Returns a reference to the underlying window
+    /// Returns a reference to the underlying dialog
     #[must_use]
-    pub const fn window(&self) -> &adw::Window {
-        &self.window
+    pub const fn dialog(&self) -> &adw::Dialog {
+        &self.dialog
     }
 
     /// Creates a progress reporter that updates the dialog's progress bar
@@ -1296,7 +1294,7 @@ impl ImportDialog {
     /// Requirements: 13.1, 13.3
     #[allow(clippy::too_many_arguments)]
     fn handle_native_file_import(
-        window: &adw::Window,
+        parent_window: Option<&gtk4::Window>,
         stack: &Stack,
         progress_bar: &ProgressBar,
         progress_label: &Label,
@@ -1330,7 +1328,7 @@ impl ImportDialog {
         let btn_clone = btn.clone();
 
         file_dialog.open(
-            Some(window),
+            parent_window,
             gtk4::gio::Cancellable::NONE,
             move |file_result| {
                 if let Ok(file) = file_result {
@@ -1404,7 +1402,7 @@ impl ImportDialog {
     /// Handles the special case of importing from a Royal TS file (.rtsz)
     #[allow(clippy::too_many_arguments)]
     fn handle_royalts_file_import(
-        window: &adw::Window,
+        parent_window: Option<&gtk4::Window>,
         stack: &Stack,
         progress_bar: &ProgressBar,
         progress_label: &Label,
@@ -1437,7 +1435,7 @@ impl ImportDialog {
         let btn_clone = btn.clone();
 
         file_dialog.open(
-            Some(window),
+            parent_window,
             gtk4::gio::Cancellable::NONE,
             move |file_result| {
                 if let Ok(file) = file_result {
@@ -1490,7 +1488,7 @@ impl ImportDialog {
     /// Handles the special case of importing from a Remote Desktop Manager JSON file
     #[allow(clippy::too_many_arguments)]
     fn handle_rdm_file_import(
-        window: &adw::Window,
+        parent_window: Option<&gtk4::Window>,
         stack: &Stack,
         progress_bar: &ProgressBar,
         progress_label: &Label,
@@ -1522,7 +1520,7 @@ impl ImportDialog {
         let btn_clone = btn.clone();
 
         file_dialog.open(
-            Some(window),
+            parent_window,
             gtk4::gio::Cancellable::NONE,
             move |file_result| {
                 if let Ok(file) = file_result {
@@ -1577,7 +1575,7 @@ impl ImportDialog {
     /// Handles the special case of importing from a MobaXterm session file
     #[allow(clippy::too_many_arguments)]
     fn handle_mobaxterm_file_import(
-        window: &adw::Window,
+        parent_window: Option<&gtk4::Window>,
         stack: &Stack,
         progress_bar: &ProgressBar,
         progress_label: &Label,
@@ -1609,7 +1607,7 @@ impl ImportDialog {
         let btn_clone = btn.clone();
 
         file_dialog.open(
-            Some(window),
+            parent_window,
             gtk4::gio::Cancellable::NONE,
             move |file_result| {
                 if let Ok(file) = file_result {
@@ -1664,7 +1662,7 @@ impl ImportDialog {
     /// Handles importing from a virt-viewer (.vv) file
     #[allow(clippy::too_many_arguments)]
     fn handle_vv_file_import(
-        window: &adw::Window,
+        parent_window: Option<&gtk4::Window>,
         stack: &Stack,
         progress_bar: &ProgressBar,
         progress_label: &Label,
@@ -1696,7 +1694,7 @@ impl ImportDialog {
         let btn_clone = btn.clone();
 
         file_dialog.open(
-            Some(window),
+            parent_window,
             gtk4::gio::Cancellable::NONE,
             move |file_result| {
                 if let Ok(file) = file_result {

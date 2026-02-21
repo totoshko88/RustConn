@@ -387,9 +387,12 @@ impl AsbruImporter {
 
         // Log protocol detection for debugging
         #[cfg(debug_assertions)]
-        eprintln!(
-            "Asbru import: {} - method={:?}, type={:?}, resolved={}",
-            name, entry.method, entry.protocol_type, protocol_type
+        tracing::debug!(
+            name = %name,
+            method = ?entry.method,
+            protocol_type = ?entry.protocol_type,
+            resolved = %protocol_type,
+            "Asbru import protocol detection"
         );
 
         let (protocol_config, default_port) = match protocol_type.as_str() {

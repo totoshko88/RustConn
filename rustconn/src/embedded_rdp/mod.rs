@@ -72,6 +72,7 @@ use gtk4::{
     Box as GtkBox, Button, DrawingArea, EventControllerKey, EventControllerMotion,
     EventControllerScroll, EventControllerScrollFlags, GestureClick, Label, Orientation,
 };
+use secrecy::ExposeSecret;
 use std::cell::RefCell;
 use std::process::Child;
 use std::rc::Rc;
@@ -1679,7 +1680,7 @@ impl EmbeddedRdpWidget {
         }
 
         if let Some(ref password) = config.password {
-            client_config = client_config.with_password(password);
+            client_config = client_config.with_password(password.expose_secret());
         }
 
         if let Some(ref domain) = config.domain {

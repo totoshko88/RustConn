@@ -12,6 +12,7 @@
 
 use super::buffer::PixelBuffer;
 use super::types::{EmbeddedRdpError, FreeRdpThreadState, RdpCommand, RdpConfig, RdpEvent};
+use secrecy::ExposeSecret;
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::PathBuf;
@@ -416,8 +417,10 @@ impl FreeRdpThread {
         }
 
         if let Some(ref password) = config.password {
-            if !password.is_empty() {
-                cmd.arg(format!("/p:{password}"));
+            if !password.expose_secret().is_empty() {
+                // Use /from-stdin to avoid exposing password in /proc/PID/cmdline
+                cmd.arg("/from-stdin");
+                cmd.stdin(Stdio::piped());
             }
         }
 
@@ -444,7 +447,16 @@ impl FreeRdpThread {
         cmd.stderr(Stdio::null());
 
         match cmd.spawn() {
-            Ok(child) => {
+            Ok(mut child) => {
+                // Write password via stdin when /from-stdin is used
+                if let Some(ref password) = config.password {
+                    if !password.expose_secret().is_empty() {
+                        if let Some(mut stdin) = child.stdin.take() {
+                            use std::io::Write;
+                            let _ = writeln!(stdin, "{}", password.expose_secret());
+                        }
+                    }
+                }
                 lock_or_recover(shared).process = Some(child);
                 Ok(())
             }

@@ -130,6 +130,13 @@ modules:
       - install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.desktop /app/share/applications/io.github.totoshko88.RustConn.desktop
       - install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml /app/share/metainfo/io.github.totoshko88.RustConn.metainfo.xml
       - install -Dm644 rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg /app/share/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg
+      - |
+        for po_file in po/*.po; do
+          [ -f "$po_file" ] || continue
+          lang=$(basename "$po_file" .po)
+          mkdir -p /app/share/locale/$lang/LC_MESSAGES
+          msgfmt -o /app/share/locale/$lang/LC_MESSAGES/rustconn.mo "$po_file"
+        done
     sources:
       - type: dir
         path: ../..

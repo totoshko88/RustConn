@@ -6238,7 +6238,9 @@ impl ConnectionDialog {
                     {
                         if let Some(ref kdbx_path) = kdbx_path {
                             let kdbx_path = kdbx_path.clone();
-                            let db_password = kdbx_password.clone();
+                            let db_password = kdbx_password
+                                .as_ref()
+                                .map(|p| secrecy::SecretString::from(p.clone()));
                             let key_file = kdbx_key_file.clone();
 
                             spawn_blocking_with_callback(
@@ -6246,19 +6248,22 @@ impl ConnectionDialog {
                                     rustconn_core::secret::KeePassStatus
                                         ::get_password_from_kdbx_with_key(
                                             &kdbx_path,
-                                            db_password.as_deref(),
+                                            db_password.as_ref(),
                                             key_file.as_deref(),
                                             &lookup_key,
                                             None,
                                         )
                                 },
-                                move |result: Result<Option<String>, String>| {
+                                move |result: rustconn_core::error::SecretResult<
+                                    Option<secrecy::SecretString>,
+                                >| {
                                     btn.set_sensitive(true);
                                     btn.set_icon_name("document-open-symbolic");
 
                                     match result {
                                         Ok(Some(password)) => {
-                                            password_entry.set_text(&password);
+                                            use secrecy::ExposeSecret;
+                                            password_entry.set_text(password.expose_secret());
                                         }
                                         Ok(None) => {
                                             alert::show_error(
@@ -6840,7 +6845,7 @@ impl ConnectionDialogData<'_> {
             if pwd.is_empty() {
                 None
             } else {
-                Some(pwd)
+                Some(secrecy::SecretString::from(pwd))
             }
         } else {
             None

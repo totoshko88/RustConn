@@ -245,16 +245,25 @@ fn lang_to_locale(lang: &str) -> String {
 /// which works even when the target locale is not installed on the system.
 /// Falls back to `setlocale(LC_MESSAGES)` for completeness.
 pub fn apply_language(lang: &str) {
+    // SEC-03: gettext requires LANGUAGE/LC_MESSAGES env vars — no alternative API.
+    // These calls run on the GTK main thread. Acceptable because:
+    // 1. GNU gettext reads these vars internally via libc getenv()
+    // 2. Language changes are rare (settings save + restart recommended)
+    // 3. No thread-safe alternative exists for gettextrs locale switching
     if lang == "system" || lang.is_empty() {
         // Revert to system locale — remove LANGUAGE override
-        std::env::remove_var("LANGUAGE");
-        std::env::remove_var("LC_MESSAGES");
+        #[allow(clippy::disallowed_methods)]
+        {
+            std::env::remove_var("LANGUAGE");
+            std::env::remove_var("LC_MESSAGES");
+        }
         gettextrs::setlocale(gettextrs::LocaleCategory::LcMessages, "");
     } else {
         // Set LANGUAGE env var — this is the primary gettext lookup mechanism.
         // Unlike setlocale, it does NOT require the locale to be installed.
         // GNU gettext checks LANGUAGE first (before LC_MESSAGES) as long as
         // LC_MESSAGES is not "C" or "POSIX".
+        #[allow(clippy::disallowed_methods)]
         std::env::set_var("LANGUAGE", lang);
 
         // Try to set the full locale for plural forms, collation, etc.
@@ -271,10 +280,12 @@ pub fn apply_language(lang: &str) {
                 lang,
                 "Locale {full_locale} not installed; trying fallback for gettext"
             );
+            #[allow(clippy::disallowed_methods)]
             std::env::set_var("LC_MESSAGES", &full_locale);
             let retry = gettextrs::setlocale(gettextrs::LocaleCategory::LcMessages, "");
             if retry.is_none() {
                 // Last resort: use en_US.UTF-8 which is almost always installed
+                #[allow(clippy::disallowed_methods)]
                 std::env::set_var("LC_MESSAGES", "en_US.UTF-8");
                 gettextrs::setlocale(gettextrs::LocaleCategory::LcMessages, "en_US.UTF-8");
             }

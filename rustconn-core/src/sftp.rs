@@ -206,8 +206,9 @@ pub fn ensure_ssh_agent() -> bool {
         return false;
     };
 
-    // set_var is safe in Rust 2021 edition. Called once at startup
-    // before any threads are spawned (from main() before tokio).
+    // SEC-03: safe — called once at startup from main() before spawning
+    // any threads or starting the tokio runtime. Required for child processes
+    // (ssh, sftp, scp) to inherit the agent socket.
     std::env::set_var("SSH_AUTH_SOCK", &sock_val);
     if let Some(ref pid_val) = pid {
         std::env::set_var("SSH_AGENT_PID", pid_val);

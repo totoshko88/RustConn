@@ -274,8 +274,13 @@ impl SettingsDialog {
                 match SshAgentManager::start_agent() {
                     Ok(socket_path) => {
                         tracing::info!("SSH agent started with socket: {socket_path}");
-                        // Update the process environment so other components can find the agent
-                        // SAFETY: This is safe in single-threaded GTK context
+                        // Update the process environment so child processes (ssh, sftp)
+                        // inherit the agent socket. This runs on the GTK main thread
+                        // before any concurrent reads. SEC-03: acceptable — required by
+                        // sftp.rs and ssh_agent/mod.rs which read SSH_AUTH_SOCK from env.
+                        // TODO: migrate to per-Command env passing when all SSH spawn
+                        // sites are consolidated.
+                        #[allow(clippy::disallowed_methods)]
                         std::env::set_var("SSH_AUTH_SOCK", &socket_path);
                         // Update the manager with the new socket path
                         manager_clone

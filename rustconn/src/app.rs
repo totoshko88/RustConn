@@ -74,7 +74,7 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     let state = match create_shared_state() {
         Ok(state) => state,
         Err(e) => {
-            eprintln!("Failed to initialize application state: {e}");
+            tracing::error!(%e, "Failed to initialize application state");
             show_error_dialog(app, &gettext("Initialization Error"), &e);
             return;
         }
@@ -110,7 +110,7 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     let state_shutdown = state.clone();
     app.connect_shutdown(move |_| {
         if let Err(e) = state_shutdown.borrow().flush_persistence() {
-            eprintln!("Failed to flush persistence on shutdown: {e}");
+            tracing::error!(%e, "Failed to flush persistence on shutdown");
         }
     });
 

@@ -4,6 +4,7 @@
 //! used by the embedded RDP widget.
 
 use rustconn_core::models::RdpPerformanceMode;
+use secrecy::SecretString;
 use std::path::PathBuf;
 use thiserror::Error;
 
@@ -94,8 +95,8 @@ pub struct RdpConfig {
     pub port: u16,
     /// Username for authentication
     pub username: Option<String>,
-    /// Password for authentication (should use SecretString in production)
-    pub password: Option<String>,
+    /// Password for authentication
+    pub password: Option<SecretString>,
     /// Domain for authentication
     pub domain: Option<String>,
     /// Desired width in pixels
@@ -174,7 +175,7 @@ impl RdpConfig {
     /// Sets the password
     #[must_use]
     pub fn with_password(mut self, password: impl Into<String>) -> Self {
-        self.password = Some(password.into());
+        self.password = Some(SecretString::from(password.into()));
         self
     }
 

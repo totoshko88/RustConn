@@ -7,8 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.0] - 2026-02-21
 
+### Security
+- FreeRDP embedded thread (`thread.rs`) password exposure fixed — replaced `/p:{password}` CLI arg with `/from-stdin` + stdin pipe, matching `SafeFreeRdpLauncher` pattern (SEC-02)
+- `FreeRdpConfig.password`, `RdpConfig.password`, `SpiceClientConfig.password` migrated from plain `String` to `SecretString` — passwords exposed only at point of use via `expose_secret()` (SEC-01)
+- Bitwarden `BW_SESSION` no longer stored via `std::env::set_var` — replaced with thread-safe in-process `RwLock` storage; 1Password `OP_SERVICE_ACCOUNT_TOKEN` `set_var` removed (already passed via `Command::env()`); remaining `set_var` calls (i18n, sftp, SSH agent) documented as safe with justification (SEC-03)
+- All KDBX functions in `secret/status.rs` migrated from `&str`/`String` to `SecretString` + `SecretResult` — database passwords and retrieved credentials no longer held as plain strings (SEC-04)
+
 ### Improved
 - **Ukrainian translation (uk)** — Professional linguistic review by Mykola Zubkov; 674 translations revised for accuracy, consistent terminology, and modern Ukrainian orthography
+- All remaining `eprintln!` calls migrated to structured `tracing` — session manager, VNC fallback, RDP connection, terminal spawn, export, template deletion (LOG-01)
+- 8 dialogs migrated from `adw::Window` to `adw::Dialog` (libadwaita 1.5+) — HistoryDialog, ProgressDialog, PasswordDialog, LogViewerDialog, FlatpakComponentsDialog, ImportDialog, ExportDialog, DocumentProtectionDialog; automatic escape-to-close, adaptive sizing, proper modal behavior (HIG-01)
+
+### Fixed
+- Debian build no longer uses `--all-features` — prevents `spice-embedded` compilation without build dependencies (PKG-01)
+- Locale `.mo` files now installed in Debian, RPM, and local Flatpak packages — translations were missing from all non-Flathub packaging formats (PKG-02, PKG-03)
+- Deprecated `<categories>` block removed from AppStream metainfo.xml (PKG-04)
+- Debian `Recommends` updated: `freerdp2-x11 | freerdp3-x11 | freerdp3-wayland` (PKG-09)
+- `gettext` added to Debian Build-Depends, `gettext-tools` to RPM BuildRequires
+
+### Removed
+- Dead credential caching methods from `AppState` — 8 unused methods and `verification_manager` field (DC-02)
+- Dead split view adapter methods `handle_session_disconnect()` and `clear_session()` — disconnect cleanup works via `SplitViewBridge::clear_session_from_panes()` (DC-01)
+
+### Internal
+- `Project-Id-Version` updated to `0.9.0` in all 14 `.po` files and `rustconn.pot`
+- Architecture audit responses documented in `AUDIT_REPORT.md`
 
 ## [0.8.9] - 2026-02-19
 

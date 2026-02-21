@@ -18,6 +18,7 @@ use gtk4::prelude::*;
 use gtk4::{Button, Label, Orientation};
 use libadwaita as adw;
 use rustconn_core::models::{Credentials, PasswordSource};
+use secrecy::ExposeSecret;
 use std::cell::RefCell;
 use std::rc::Rc;
 use uuid::Uuid;
@@ -152,7 +153,7 @@ pub fn edit_selected_connection(
                                         &conn_host,
                                         protocol,
                                         &username,
-                                        &pwd,
+                                        pwd.expose_secret(),
                                         id,
                                     );
                                 }
@@ -704,12 +705,15 @@ pub fn show_edit_group_dialog(
                             None, // No protocol for groups
                         )
                     },
-                    move |result: Result<Option<String>, String>| {
+                    move |result: rustconn_core::error::SecretResult<
+                        Option<secrecy::SecretString>,
+                    >| {
                         btn_clone.set_sensitive(true);
                         btn_clone.set_icon_name("folder-symbolic");
                         match result {
                             Ok(Some(pwd)) => {
-                                password_entry_clone.set_text(&pwd);
+                                use secrecy::ExposeSecret;
+                                password_entry_clone.set_text(pwd.expose_secret());
                             }
                             Ok(None) => {
                                 alert::show_validation_error(
@@ -718,8 +722,9 @@ pub fn show_edit_group_dialog(
                                 );
                             }
                             Err(e) => {
-                                tracing::error!("Failed to load password: {}", e);
-                                alert::show_error(&window_clone, &i18n("Load Error"), &e);
+                                let msg = e.to_string();
+                                tracing::error!("Failed to load password: {}", msg);
+                                alert::show_error(&window_clone, &i18n("Load Error"), &msg);
                             }
                         }
                     },

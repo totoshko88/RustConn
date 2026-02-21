@@ -5,11 +5,13 @@
 
 use crate::i18n::i18n;
 use adw::prelude::*;
-use gtk4::glib;
 use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, CheckButton, Entry, Grid, Label, Orientation, Spinner};
+use gtk4::{
+    Box as GtkBox, Button, CheckButton, Entry, Grid, Label, Orientation, PasswordEntry, Spinner,
+};
 use libadwaita as adw;
 use rustconn_core::secret::CancellationToken;
+use secrecy::SecretString;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -19,7 +21,7 @@ pub struct PasswordDialogResult {
     /// Username (may be updated by user)
     pub username: String,
     /// Password entered by user
-    pub password: String,
+    pub password: SecretString,
     /// Domain for Windows authentication
     pub domain: String,
     /// Whether to save credentials
@@ -31,9 +33,9 @@ pub struct PasswordDialogResult {
 /// Password prompt dialog
 #[allow(dead_code)] // Fields kept for GTK widget lifecycle
 pub struct PasswordDialog {
-    window: adw::Window,
+    dialog: adw::Dialog,
     username_entry: Entry,
-    password_entry: Entry,
+    password_entry: PasswordEntry,
     domain_entry: Entry,
     save_check: CheckButton,
     migrate_button: Button,
@@ -45,23 +47,17 @@ pub struct PasswordDialog {
     migrate_requested: Rc<RefCell<bool>>,
     /// Cancellation token for pending async operations
     cancel_token: Rc<RefCell<Option<CancellationToken>>>,
+    parent: Option<gtk4::Widget>,
 }
 
 impl PasswordDialog {
     /// Creates a new password dialog
     #[must_use]
     pub fn new(parent: Option<&impl IsA<gtk4::Window>>) -> Self {
-        let window = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(i18n("Authentication Required"))
-            .modal(true)
-            .default_width(400)
+            .content_width(400)
             .build();
-
-        if let Some(p) = parent {
-            window.set_transient_for(Some(p));
-        }
-
-        window.set_size_request(280, -1);
 
         // Header bar with Cancel/Connect buttons (GNOME HIG)
         let header = adw::HeaderBar::new();
@@ -82,11 +78,15 @@ impl PasswordDialog {
         content.set_margin_start(12);
         content.set_margin_end(12);
 
-        // Use ToolbarView for adw::Window
+        // Use ToolbarView for adw::Dialog
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
-        toolbar_view.set_content(Some(&content));
-        window.set_content(Some(&toolbar_view));
+        let clamp = adw::Clamp::builder()
+            .maximum_size(600)
+            .child(&content)
+            .build();
+        toolbar_view.set_content(Some(&clamp));
+        dialog.set_child(Some(&toolbar_view));
 
         // Info label
         let info_label = Label::builder()
@@ -121,7 +121,7 @@ impl PasswordDialog {
         let migrate_requested: Rc<RefCell<bool>> = Rc::new(RefCell::new(false));
 
         Self::connect_signals(
-            &window,
+            &dialog,
             &cancel_btn,
             &connect_btn,
             &migrate_button,
@@ -133,8 +133,11 @@ impl PasswordDialog {
             &migrate_requested,
         );
 
+        let stored_parent: Option<gtk4::Widget> =
+            parent.map(|p| p.clone().upcast::<gtk4::Window>().upcast::<gtk4::Widget>());
+
         Self {
-            window,
+            dialog,
             username_entry,
             password_entry,
             domain_entry,
@@ -147,10 +150,11 @@ impl PasswordDialog {
             result,
             migrate_requested,
             cancel_token: Rc::new(RefCell::new(None)),
+            parent: stored_parent,
         }
     }
 
-    fn build_form_fields(grid: &Grid) -> (Entry, Entry, Entry, CheckButton, Button) {
+    fn build_form_fields(grid: &Grid) -> (Entry, Entry, PasswordEntry, CheckButton, Button) {
         let mut row = 0;
 
         // Domain
@@ -162,6 +166,9 @@ impl PasswordDialog {
             .hexpand(true)
             .placeholder_text("(optional)")
             .build();
+        domain_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            domain_label.upcast_ref()
+        ])]);
         grid.attach(&domain_label, 0, row, 1, 1);
         grid.attach(&domain_entry, 1, row, 1, 1);
         row += 1;
@@ -175,21 +182,25 @@ impl PasswordDialog {
             .hexpand(true)
             .placeholder_text("username")
             .build();
+        username_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            username_label.upcast_ref(),
+        ])]);
         grid.attach(&username_label, 0, row, 1, 1);
         grid.attach(&username_entry, 1, row, 1, 1);
         row += 1;
 
-        // Password
+        // Password (HIG-04: use PasswordEntry instead of Entry with visibility=false)
         let password_label = Label::builder()
             .label(i18n("Password:"))
             .halign(gtk4::Align::End)
             .build();
-        let password_entry = Entry::builder()
+        let password_entry = PasswordEntry::builder()
             .hexpand(true)
-            .visibility(false)
-            .input_purpose(gtk4::InputPurpose::Password)
-            .placeholder_text("password")
+            .show_peek_icon(true)
             .build();
+        password_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            password_label.upcast_ref(),
+        ])]);
         grid.attach(&password_label, 0, row, 1, 1);
         grid.attach(&password_entry, 1, row, 1, 1);
         row += 1;
@@ -220,21 +231,21 @@ impl PasswordDialog {
 
     #[allow(clippy::too_many_arguments)]
     fn connect_signals(
-        window: &adw::Window,
+        dialog: &adw::Dialog,
         cancel_btn: &Button,
         connect_btn: &Button,
         migrate_button: &Button,
         username_entry: &Entry,
-        password_entry: &Entry,
+        password_entry: &PasswordEntry,
         domain_entry: &Entry,
         save_check: &CheckButton,
         result: &Rc<RefCell<Option<PasswordDialogResult>>>,
         migrate_requested: &Rc<RefCell<bool>>,
     ) {
         // Connect cancel
-        let window_clone = window.clone();
+        let dialog_clone = dialog.clone();
         cancel_btn.connect_clicked(move |_| {
-            window_clone.close();
+            dialog_clone.close();
         });
 
         // Connect migrate button
@@ -244,7 +255,7 @@ impl PasswordDialog {
         });
 
         // Connect connect button
-        let window_clone = window.clone();
+        let dialog_clone = dialog.clone();
         let username_clone = username_entry.clone();
         let password_clone = password_entry.clone();
         let domain_clone = domain_entry.clone();
@@ -255,12 +266,12 @@ impl PasswordDialog {
         connect_btn_clone.connect_clicked(move |_| {
             *result_clone.borrow_mut() = Some(PasswordDialogResult {
                 username: username_clone.text().to_string(),
-                password: password_clone.text().to_string(),
+                password: SecretString::from(password_clone.text().to_string()),
                 domain: domain_clone.text().to_string(),
                 save_credentials: save_clone.is_active(),
                 migrate_to_keepass: *migrate_requested_clone.borrow(),
             });
-            window_clone.close();
+            dialog_clone.close();
         });
 
         // Connect Enter key in password field
@@ -289,13 +300,13 @@ impl PasswordDialog {
     ///
     /// This is useful for async operations that need to update the password field.
     #[must_use]
-    pub fn password_entry(&self) -> &Entry {
+    pub fn password_entry(&self) -> &PasswordEntry {
         &self.password_entry
     }
 
     /// Sets the connection name in the title
     pub fn set_connection_name(&self, name: &str) {
-        self.window.set_title(Some(&format!("Connect to {name}")));
+        self.dialog.set_title(&format!("Connect to {name}"));
     }
 
     /// Shows or hides the "Save to KeePass" migration button
@@ -335,13 +346,13 @@ impl PasswordDialog {
         let result = self.result.clone();
         let callback = Rc::new(callback);
 
-        self.window.connect_close_request(move |_| {
+        self.dialog.connect_closed(move |_| {
             let res = result.borrow().clone();
             callback(res);
-            glib::Propagation::Proceed
         });
 
-        self.window.present();
+        self.dialog
+            .present(self.parent.as_ref().map(|w| w as &gtk4::Widget));
 
         // Focus password field if username is set
         if self.username_entry.text().is_empty() {
@@ -351,10 +362,10 @@ impl PasswordDialog {
         }
     }
 
-    /// Returns the window widget
+    /// Returns the dialog widget
     #[must_use]
-    pub const fn window(&self) -> &adw::Window {
-        &self.window
+    pub const fn dialog(&self) -> &adw::Dialog {
+        &self.dialog
     }
 
     /// Shows the loading indicator during async credential resolution
@@ -456,7 +467,7 @@ impl PasswordDialog {
         let cancel_token = self.cancel_token.clone();
         let callback = Rc::new(callback);
 
-        self.window.connect_close_request(move |_| {
+        self.dialog.connect_closed(move |_| {
             // Cancel any pending operations when dialog closes
             if let Some(token) = cancel_token.borrow().as_ref() {
                 token.cancel();
@@ -464,10 +475,10 @@ impl PasswordDialog {
 
             let res = result.borrow().clone();
             callback(res);
-            glib::Propagation::Proceed
         });
 
-        self.window.present();
+        self.dialog
+            .present(self.parent.as_ref().map(|w| w as &gtk4::Widget));
 
         // Focus password field if username is set
         if self.username_entry.text().is_empty() {

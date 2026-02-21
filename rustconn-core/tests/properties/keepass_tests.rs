@@ -171,7 +171,7 @@ proptest! {
             non_kdbx_path
         );
         prop_assert!(
-            result.as_ref().unwrap_err().contains(".kdbx extension"),
+            result.as_ref().unwrap_err().to_string().contains(".kdbx extension"),
             "Error message should mention .kdbx extension requirement: {:?}",
             result.err()
         );
@@ -197,7 +197,7 @@ proptest! {
             nonexistent_path
         );
         prop_assert!(
-            result.as_ref().unwrap_err().contains("does not exist"),
+            result.as_ref().unwrap_err().to_string().contains("does not exist"),
             "Error message should mention file does not exist: {:?}",
             result.err()
         );
@@ -226,7 +226,7 @@ proptest! {
             dir_path
         );
         prop_assert!(
-            result.as_ref().unwrap_err().contains("not a file"),
+            result.as_ref().unwrap_err().to_string().contains("not a file"),
             "Error message should mention path is not a file: {:?}",
             result.err()
         );

@@ -15,6 +15,7 @@ use rustconn_core::models::WindowGeometry;
 use rustconn_core::protocol::{
     build_freerdp_args, extract_geometry_from_args, has_decorations_flag, FreeRdpConfig,
 };
+use secrecy::ExposeSecret;
 
 // ============================================================================
 // Generators for FreeRDP configurations
@@ -298,8 +299,10 @@ proptest! {
 
         let has_from_stdin = args.iter().any(|a| a == "/from-stdin");
         let has_plain_password = args.iter().any(|a| a.starts_with("/p:"));
-        let password_is_set =
-            config.password.as_ref().is_some_and(|p| !p.is_empty());
+        let password_is_set = config
+            .password
+            .as_ref()
+            .is_some_and(|p| !p.expose_secret().is_empty());
 
         prop_assert!(
             !has_plain_password,

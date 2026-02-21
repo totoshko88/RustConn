@@ -52,6 +52,7 @@ BuildRequires:  pkgconfig(openssl)
 BuildRequires:  zstd
 BuildRequires:  gcc
 BuildRequires:  make
+BuildRequires:  gettext-tools
 
 # Runtime dependencies
 %if 0%{?suse_version}
@@ -181,6 +182,14 @@ if [ -f "rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustCo
         "%{buildroot}%{_datadir}/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg"
 fi
 
+# Locale files (compile .po to .mo)
+for po_file in po/*.po; do
+    [ -f "$po_file" ] || continue
+    lang=$(basename "$po_file" .po)
+    mkdir -p "%{buildroot}%{_datadir}/locale/$lang/LC_MESSAGES"
+    msgfmt -o "%{buildroot}%{_datadir}/locale/$lang/LC_MESSAGES/rustconn.mo" "$po_file"
+done
+
 %files
 %license LICENSE
 %doc README.md CHANGELOG.md docs/
@@ -189,6 +198,7 @@ fi
 %{_datadir}/applications/io.github.totoshko88.RustConn.desktop
 %{_datadir}/metainfo/io.github.totoshko88.RustConn.metainfo.xml
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
+%{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
 * Sat Feb 21 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.0-0

@@ -12,6 +12,7 @@ Build-Depends: debhelper-compat (= 13),
                libssl-dev,
                libasound2-dev,
                pkg-config,
+               gettext,
                zstd
 Standards-Version: 4.6.2
 Homepage: https://github.com/totoshko88/RustConn
@@ -22,7 +23,7 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
          openssh-client,
          sshpass
-Recommends: freerdp2-x11,
+Recommends: freerdp2-x11 | freerdp3-x11 | freerdp3-wayland,
             tigervnc-viewer,
             virt-viewer,
             picocom

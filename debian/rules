@@ -9,7 +9,7 @@ override_dh_auto_build:
 	tar --zstd -xf vendor.tar.zst
 	mkdir -p .cargo
 	cp cargo_config .cargo/config.toml
-	cargo build --release --offline -p rustconn -p rustconn-cli --all-features
+	cargo build --release --offline -p rustconn -p rustconn-cli
 
 override_dh_auto_install:
 	# Binaries
@@ -47,6 +47,13 @@ override_dh_auto_install:
 		debian/rustconn/usr/share/app-info/screenshots/io.github.totoshko88.RustConn/split.png
 	install -Dm644 rustconn/assets/screenshots/rdp.png \
 		debian/rustconn/usr/share/app-info/screenshots/io.github.totoshko88.RustConn/rdp.png
+	# Locale files (compile .po to .mo)
+	for po_file in po/*.po; do \
+		[ -f "$$po_file" ] || continue; \
+		lang=$$(basename "$$po_file" .po); \
+		mkdir -p debian/rustconn/usr/share/locale/$$lang/LC_MESSAGES; \
+		msgfmt -o debian/rustconn/usr/share/locale/$$lang/LC_MESSAGES/rustconn.mo "$$po_file"; \
+	done
 	# Cleanup
 	rm -rf vendor .cargo
 

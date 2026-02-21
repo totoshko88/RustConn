@@ -687,7 +687,7 @@ impl TerminalNotebook {
             gio::Cancellable::NONE,
             |result| {
                 if let Err(e) = result {
-                    eprintln!("Failed to spawn command: {e}");
+                    tracing::error!(%e, "Failed to spawn command");
                 }
             },
         );

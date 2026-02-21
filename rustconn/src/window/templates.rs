@@ -14,6 +14,7 @@ use crate::dialogs::{ConnectionDialog, TemplateDialog, TemplateManagerDialog};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 use rustconn_core::models::PasswordSource;
+use secrecy::ExposeSecret;
 
 /// Type alias for shared sidebar
 pub type SharedSidebar = Rc<ConnectionSidebar>;
@@ -159,7 +160,7 @@ pub fn show_templates_manager(
                         // Remove from config file and active document
                         if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
                             if let Err(e) = state_mut.delete_template(id) {
-                                eprintln!("Failed to delete template: {e}");
+                                tracing::error!(%e, "Failed to delete template");
                             }
                         }
                         // Refresh list
@@ -445,7 +446,7 @@ pub fn show_new_connection_from_template(
                                     &conn_host,
                                     protocol,
                                     &username,
-                                    &pwd,
+                                    pwd.expose_secret(),
                                     conn_id,
                                 );
                             }

@@ -30,7 +30,7 @@ pub type ExportCallback = Rc<RefCell<Option<Box<dyn Fn(Option<ExportResult>)>>>>
 /// Export dialog for exporting connections to external formats
 #[allow(dead_code)] // Fields kept for GTK widget lifecycle
 pub struct ExportDialog {
-    window: adw::Window,
+    dialog: adw::Dialog,
     stack: Stack,
     // Format selection
     format_dropdown: DropDown,
@@ -55,24 +55,19 @@ pub struct ExportDialog {
     snippets: Rc<RefCell<Vec<Snippet>>>,
     result: Rc<RefCell<Option<ExportResult>>>,
     on_complete: ExportCallback,
+    parent: Option<gtk4::Window>,
 }
 
 impl ExportDialog {
     /// Creates a new export dialog
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
-        // Create window
-        let window = adw::Window::builder()
+        // Create dialog
+        let dialog = adw::Dialog::builder()
             .title(i18n("Export Connections"))
-            .modal(true)
-            .default_width(600)
-            .default_height(500)
+            .content_width(600)
+            .content_height(500)
             .build();
-        window.set_size_request(350, 300);
-
-        if let Some(p) = parent {
-            window.set_transient_for(Some(p));
-        }
 
         // Create header bar with Close/Export buttons (GNOME HIG)
         let header = adw::HeaderBar::new();
@@ -87,9 +82,9 @@ impl ExportDialog {
         header.pack_end(&export_button);
 
         // Close button handler
-        let window_clone = window.clone();
+        let dialog_clone = dialog.clone();
         close_btn.connect_clicked(move |_| {
-            window_clone.close();
+            dialog_clone.close();
         });
 
         // Create main content area
@@ -104,11 +99,11 @@ impl ExportDialog {
         stack.set_vexpand(true);
         content.append(&stack);
 
-        // Use ToolbarView for adw::Window
+        // Use ToolbarView for adw::Dialog
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
         toolbar_view.set_content(Some(&content));
-        window.set_content(Some(&toolbar_view));
+        dialog.set_child(Some(&toolbar_view));
 
         // === Options Page ===
         let (
@@ -136,7 +131,7 @@ impl ExportDialog {
         let on_complete: ExportCallback = Rc::new(RefCell::new(None));
 
         Self {
-            window,
+            dialog,
             stack,
             format_dropdown,
             output_path_entry,
@@ -154,6 +149,7 @@ impl ExportDialog {
             snippets: Rc::new(RefCell::new(Vec::new())),
             result: Rc::new(RefCell::new(None)),
             on_complete,
+            parent: parent.cloned(),
         }
     }
 
@@ -568,14 +564,15 @@ impl ExportDialog {
         // Connect export button
         self.connect_export_button();
 
-        self.window.present();
+        self.dialog
+            .present(self.parent.as_ref().map(|w| w.upcast_ref::<gtk4::Widget>()));
     }
 
     /// Connects the browse button to show file/folder dialog
     fn connect_browse_button(&self) {
         let format_dropdown = self.format_dropdown.clone();
         let output_path_entry = self.output_path_entry.clone();
-        let window = self.window.clone();
+        let parent_window = self.parent.clone();
 
         self.browse_button.connect_clicked(move |_| {
             let format = match format_dropdown.selected() {
@@ -598,13 +595,17 @@ impl ExportDialog {
                     .modal(true)
                     .build();
 
-                dialog.select_folder(Some(&window), gtk4::gio::Cancellable::NONE, move |result| {
-                    if let Ok(file) = result {
-                        if let Some(path) = file.path() {
-                            output_entry.set_text(&path.to_string_lossy());
+                dialog.select_folder(
+                    parent_window.as_ref(),
+                    gtk4::gio::Cancellable::NONE,
+                    move |result| {
+                        if let Ok(file) = result {
+                            if let Some(path) = file.path() {
+                                output_entry.set_text(&path.to_string_lossy());
+                            }
                         }
-                    }
-                });
+                    },
+                );
             } else {
                 // Use file dialog for other formats
                 let dialog = FileDialog::builder()
@@ -657,13 +658,17 @@ impl ExportDialog {
                 filters.append(&filter);
                 dialog.set_filters(Some(&filters));
 
-                dialog.save(Some(&window), gtk4::gio::Cancellable::NONE, move |result| {
-                    if let Ok(file) = result {
-                        if let Some(path) = file.path() {
-                            output_entry.set_text(&path.to_string_lossy());
+                dialog.save(
+                    parent_window.as_ref(),
+                    gtk4::gio::Cancellable::NONE,
+                    move |result| {
+                        if let Ok(file) = result {
+                            if let Some(path) = file.path() {
+                                output_entry.set_text(&path.to_string_lossy());
+                            }
                         }
-                    }
-                });
+                    },
+                );
             }
         });
     }
@@ -700,7 +705,8 @@ impl ExportDialog {
 
     /// Connects the export button to perform export
     fn connect_export_button(&self) {
-        let window = self.window.clone();
+        let dialog = self.dialog.clone();
+        let parent_window = self.parent.clone();
         let stack = self.stack.clone();
         let format_dropdown = self.format_dropdown.clone();
         let output_path_entry = self.output_path_entry.clone();
@@ -726,19 +732,21 @@ impl ExportDialog {
                 if let Some(ref cb) = *on_complete.borrow() {
                     cb(result_cell.borrow_mut().take());
                 }
-                window.close();
+                dialog.close();
                 return;
             }
 
             // Validate output path
             let output_text = output_path_entry.text();
             if output_text.is_empty() {
-                // Show error using toast instead of AlertDialog
-                crate::toast::show_toast_on_window(
-                    &window,
-                    &i18n("Please select an output file or directory"),
-                    crate::toast::ToastType::Warning,
-                );
+                // Show error using toast
+                if let Some(ref win) = parent_window {
+                    crate::toast::show_toast_on_window(
+                        win,
+                        &i18n("Please select an output file or directory"),
+                        crate::toast::ToastType::Warning,
+                    );
+                }
                 return;
             }
 
@@ -821,7 +829,7 @@ impl ExportDialog {
         };
 
         if let Err(e) = open::that(&dir_to_open) {
-            eprintln!("Failed to open output location: {e}");
+            tracing::warn!(%e, "Failed to open output location");
         }
     }
 }

@@ -17,7 +17,7 @@ use rustconn_core::models::{
 };
 use rustconn_core::secret::{
     AsyncCredentialResolver, AsyncCredentialResult, CancellationToken, CredentialResolver,
-    CredentialVerificationManager, SecretManager,
+    SecretManager,
 };
 use rustconn_core::session::{Session, SessionManager};
 use rustconn_core::snippet::SnippetManager;
@@ -172,8 +172,6 @@ pub struct AppState {
     document_manager: DocumentManager,
     /// Cluster manager for connection clusters
     cluster_manager: ClusterManager,
-    /// Credential verification manager for tracking verified credentials
-    verification_manager: CredentialVerificationManager,
     /// Currently active document ID
     active_document_id: Option<Uuid>,
     /// Application settings
@@ -288,7 +286,6 @@ impl AppState {
             config_manager,
             document_manager,
             cluster_manager,
-            verification_manager: CredentialVerificationManager::new(),
             active_document_id: None,
             settings,
             password_cache: HashMap::new(),
@@ -393,94 +390,6 @@ impl AppState {
         self.password_cache
             .get(&connection_id)
             .filter(|creds| !creds.is_expired())
-    }
-
-    /// Checks if valid (non-expired) credentials are cached for a connection
-    ///
-    /// Note: Part of credential caching API.
-    #[allow(dead_code)]
-    pub fn has_cached_credentials(&self, connection_id: Uuid) -> bool {
-        self.password_cache
-            .get(&connection_id)
-            .is_some_and(|creds| !creds.is_expired())
-    }
-
-    /// Clears cached credentials for a connection
-    ///
-    /// Note: Part of credential caching API.
-    #[allow(dead_code)]
-    pub fn clear_cached_credentials(&mut self, connection_id: Uuid) {
-        self.password_cache.remove(&connection_id);
-    }
-
-    /// Clears all cached credentials
-    ///
-    /// Note: Part of credential caching API.
-    #[allow(dead_code)]
-    pub fn clear_all_cached_credentials(&mut self) {
-        self.password_cache.clear();
-    }
-
-    /// Refreshes the TTL for cached credentials (extends expiration)
-    ///
-    /// Call this after successful authentication to keep credentials cached.
-    #[allow(dead_code)]
-    pub fn refresh_cached_credentials(&mut self, connection_id: Uuid) -> bool {
-        if let Some(creds) = self.password_cache.get_mut(&connection_id) {
-            creds.refresh();
-            true
-        } else {
-            false
-        }
-    }
-
-    // ========== Credential Verification Operations ==========
-
-    /// Marks credentials as verified for a connection after successful authentication
-    ///
-    /// Note: Part of credential verification API.
-    #[allow(dead_code)]
-    pub fn mark_credentials_verified(&mut self, connection_id: Uuid) {
-        self.verification_manager.mark_verified(connection_id);
-    }
-
-    /// Marks credentials as unverified for a connection after failed authentication
-    ///
-    /// Note: Part of credential verification API.
-    #[allow(dead_code)]
-    pub fn mark_credentials_unverified(&mut self, connection_id: Uuid, error: Option<String>) {
-        self.verification_manager
-            .mark_unverified(connection_id, error);
-    }
-
-    /// Checks if credentials are verified for a connection
-    ///
-    /// Note: Part of credential verification API.
-    #[allow(dead_code)]
-    pub fn are_credentials_verified(&self, connection_id: Uuid) -> bool {
-        self.verification_manager.is_verified(connection_id)
-    }
-
-    /// Checks if we can skip the password dialog for a connection
-    ///
-    /// Returns true if:
-    /// - Credentials are verified (previously successful auth)
-    /// - AND we have valid (non-expired) cached credentials
-    ///
-    /// Note: This method only checks the in-memory cache to avoid blocking the UI.
-    /// KeePass credential resolution is done asynchronously when needed.
-    ///
-    /// Note: Part of credential verification API - used internally by resolve_credentials_gtk.
-    #[allow(dead_code)]
-    pub fn can_skip_password_dialog(&self, connection_id: Uuid) -> bool {
-        if !self.verification_manager.is_verified(connection_id) {
-            return false;
-        }
-
-        // Check if we have valid (non-expired) cached credentials
-        self.password_cache
-            .get(&connection_id)
-            .is_some_and(|creds| !creds.is_expired())
     }
 
     // ========== Connection Operations ==========
@@ -927,12 +836,7 @@ impl AppState {
                 let lookup_key = format!("{entry_name} ({protocol_str})");
 
                 // Get credentials - password and key file can be used together
-                let db_password = self
-                    .settings
-                    .secrets
-                    .kdbx_password
-                    .as_ref()
-                    .map(|p| p.expose_secret());
+                let db_password = self.settings.secrets.kdbx_password.as_ref();
 
                 let key_file = self.settings.secrets.kdbx_key_file.as_deref();
 
@@ -954,11 +858,11 @@ impl AppState {
                         tracing::debug!("[resolve_credentials] Found password in KeePass");
                         // Build credentials with optional username and password
                         let mut creds = if let Some(ref username) = connection.username {
-                            Credentials::with_password(username, &password)
+                            Credentials::with_password(username, password.expose_secret())
                         } else {
                             Credentials {
                                 username: None,
-                                password: Some(SecretString::from(password)),
+                                password: Some(password),
                                 key_passphrase: None,
                                 domain: None,
                             }
@@ -987,12 +891,7 @@ impl AppState {
             )
         {
             if let Some(ref kdbx_path) = self.settings.secrets.kdbx_path {
-                let db_password = self
-                    .settings
-                    .secrets
-                    .kdbx_password
-                    .as_ref()
-                    .map(|p| p.expose_secret());
+                let db_password = self.settings.secrets.kdbx_password.as_ref();
                 let key_file = self.settings.secrets.kdbx_key_file.as_deref();
 
                 // Traverse up the group hierarchy
@@ -1029,11 +928,11 @@ impl AppState {
                                     .clone()
                                     .or_else(|| group.username.clone());
                                 let creds = if let Some(ref uname) = username {
-                                    Credentials::with_password(uname, &password)
+                                    Credentials::with_password(uname, password.expose_secret())
                                 } else {
                                     Credentials {
                                         username: None,
-                                        password: Some(SecretString::from(password)),
+                                        password: Some(password),
                                         key_passphrase: None,
                                         domain: None,
                                     }
@@ -1388,7 +1287,7 @@ impl AppState {
                 let lookup_key = format!("{entry_name} ({protocol_str})");
 
                 // Get credentials - password and key file can be used together
-                let db_password = kdbx_password.as_ref().map(|p| p.expose_secret());
+                let db_password = kdbx_password.as_ref();
                 let key_file = kdbx_key_file.as_deref();
 
                 tracing::debug!(
@@ -1408,11 +1307,11 @@ impl AppState {
                     Ok(Some(password)) => {
                         tracing::debug!("[resolve_credentials_blocking] Found password in KeePass");
                         let creds = if let Some(ref username) = connection.username {
-                            Credentials::with_password(username, &password)
+                            Credentials::with_password(username, password.expose_secret())
                         } else {
                             Credentials {
                                 username: None,
-                                password: Some(SecretString::from(password)),
+                                password: Some(password),
                                 key_passphrase: None,
                                 domain: None,
                             }
@@ -1441,7 +1340,7 @@ impl AppState {
             )
         {
             if let Some(ref kdbx_path) = kdbx_path {
-                let db_password = kdbx_password.as_ref().map(|p| p.expose_secret());
+                let db_password = kdbx_password.as_ref();
                 let key_file = kdbx_key_file.as_deref();
 
                 // Traverse up the group hierarchy
@@ -1479,11 +1378,11 @@ impl AppState {
                                     .clone()
                                     .or_else(|| group.username.clone());
                                 let creds = if let Some(ref uname) = username {
-                                    Credentials::with_password(uname, &password)
+                                    Credentials::with_password(uname, password.expose_secret())
                                 } else {
                                     Credentials {
                                         username: None,
-                                        password: Some(SecretString::from(password)),
+                                        password: Some(password),
                                         key_passphrase: None,
                                         domain: None,
                                     }
@@ -3194,6 +3093,7 @@ pub fn save_variable_to_vault(
                     password,
                     None,
                 )
+                .map_err(|e| format!("{e}"))
             } else {
                 Err("KeePass enabled but no database file configured".to_string())
             }
@@ -3242,6 +3142,7 @@ pub fn load_variable_from_vault(
 ) -> Result<Option<String>, String> {
     use rustconn_core::config::SecretBackendType;
     use rustconn_core::secret::SecretBackend;
+    use secrecy::ExposeSecret;
 
     let lookup_key = rustconn_core::variable_secret_key(var_name);
     let backend_type = select_backend_for_load(&settings.secrets);
@@ -3265,6 +3166,8 @@ pub fn load_variable_from_vault(
                     &lookup_key,
                     None,
                 )
+                .map(|opt| opt.map(|s| s.expose_secret().to_string()))
+                .map_err(|e| format!("{e}"))
             } else {
                 Err("KeePass enabled but no database file configured".to_string())
             }

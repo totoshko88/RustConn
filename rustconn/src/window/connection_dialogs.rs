@@ -14,6 +14,7 @@ use gtk4::glib;
 use gtk4::prelude::*;
 use libadwaita as adw;
 use rustconn_core::models::PasswordSource;
+use secrecy::ExposeSecret;
 use std::rc::Rc;
 use uuid::Uuid;
 
@@ -134,7 +135,7 @@ pub fn show_new_connection_dialog_internal(
                                     &conn_host,
                                     protocol,
                                     &username,
-                                    &pwd,
+                                    pwd.expose_secret(),
                                     conn_id,
                                 );
                             }
@@ -418,12 +419,15 @@ pub fn show_new_group_dialog_with_parent(
                             None,
                         )
                     },
-                    move |result: Result<Option<String>, String>| {
+                    move |result: rustconn_core::error::SecretResult<
+                        Option<secrecy::SecretString>,
+                    >| {
                         btn_clone.set_sensitive(true);
                         btn_clone.set_icon_name("folder-symbolic");
                         match result {
                             Ok(Some(pwd)) => {
-                                password_entry_clone.set_text(&pwd);
+                                use secrecy::ExposeSecret;
+                                password_entry_clone.set_text(pwd.expose_secret());
                             }
                             Ok(None) => {
                                 alert::show_validation_error(
@@ -432,8 +436,9 @@ pub fn show_new_group_dialog_with_parent(
                                 );
                             }
                             Err(e) => {
-                                tracing::error!("Failed to load password: {e}");
-                                alert::show_error(&window_clone, &i18n("Load Error"), &e);
+                                let msg = e.to_string();
+                                tracing::error!("Failed to load password: {msg}");
+                                alert::show_error(&window_clone, &i18n("Load Error"), &msg);
                             }
                         }
                     },

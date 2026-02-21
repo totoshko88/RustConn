@@ -9,6 +9,7 @@
 //! - Requirement 6.2: Wayland requestActivate warning suppression
 
 use super::types::{EmbeddedRdpError, RdpConfig};
+use secrecy::ExposeSecret;
 use std::process::{Child, Command, Stdio};
 
 /// Safe FreeRDP launcher with Qt error suppression
@@ -122,11 +123,11 @@ impl SafeFreeRdpLauncher {
 
         // Write password via stdin when /from-stdin is used
         if let Some(ref password) = config.password {
-            if !password.is_empty() {
+            if !password.expose_secret().is_empty() {
                 if let Some(mut stdin) = child.stdin.take() {
                     use std::io::Write;
                     // FreeRDP /from-stdin reads the password from stdin
-                    let _ = writeln!(stdin, "{password}");
+                    let _ = writeln!(stdin, "{}", password.expose_secret());
                 }
             }
         }
@@ -154,7 +155,7 @@ impl SafeFreeRdpLauncher {
         }
 
         if let Some(ref password) = config.password {
-            if !password.is_empty() {
+            if !password.expose_secret().is_empty() {
                 // Use /from-stdin to avoid exposing password in /proc/PID/cmdline
                 cmd.arg("/from-stdin");
                 cmd.stdin(Stdio::piped());

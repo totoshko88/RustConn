@@ -695,11 +695,6 @@
     <binary>rustconn</binary>
     <binary>rustconn-cli</binary>
   </provides>
-  <categories>
-    <category>Network</category>
-    <category>RemoteAccess</category>
-    <category>GTK</category>
-  </categories>
   <keywords>
     <keyword>ssh</keyword>
     <keyword>rdp</keyword>

@@ -248,27 +248,27 @@ impl SessionManager {
                 match SessionLogger::new(config.clone(), &context, None) {
                     Ok(logger) => {
                         let log_path = logger.log_path().to_path_buf();
-                        eprintln!(
-                            "Session logging enabled for '{}': {}",
-                            connection.name,
-                            log_path.display()
+                        tracing::info!(
+                            connection = %connection.name,
+                            path = %log_path.display(),
+                            "Session logging enabled"
                         );
                         session.set_log_file(log_path);
                         self.session_loggers.insert(session_id, logger);
                     }
                     Err(e) => {
-                        // Log detailed error for debugging
-                        eprintln!(
-                            "Warning: Failed to create session logger for '{}': {}",
-                            connection.name, e
+                        tracing::warn!(
+                            %e,
+                            connection = %connection.name,
+                            path_template = %config.path_template,
+                            "Failed to create session logger"
                         );
-                        eprintln!("  Log config path template: {}", config.path_template);
                     }
                 }
             } else {
-                eprintln!(
-                    "Warning: Logging enabled but no log config set for session '{}'",
-                    connection.name
+                tracing::warn!(
+                    connection = %connection.name,
+                    "Logging enabled but no log config set for session"
                 );
             }
         }
@@ -316,7 +316,7 @@ impl SessionManager {
         // Close the session logger (this will finalize the log file)
         if let Some(mut logger) = self.session_loggers.remove(&session_id) {
             if let Err(e) = logger.close() {
-                eprintln!("Warning: Failed to close session logger: {e}");
+                tracing::warn!(%e, "Failed to close session logger");
             }
         }
 
@@ -340,7 +340,7 @@ impl SessionManager {
         // Close the session logger (this will finalize the log file)
         if let Some(mut logger) = self.session_loggers.remove(&session_id) {
             if let Err(e) = logger.close() {
-                eprintln!("Warning: Failed to close session logger: {e}");
+                tracing::warn!(%e, "Failed to close session logger");
             }
         }
 

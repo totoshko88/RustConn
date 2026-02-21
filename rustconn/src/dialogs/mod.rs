@@ -52,6 +52,7 @@ use rustconn_core::config::AppSettings;
 use rustconn_core::import::ImportResult;
 use rustconn_core::models::{Connection, Snippet};
 use rustconn_core::variables::Variable;
+use secrecy::SecretString;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -61,7 +62,7 @@ pub struct ConnectionDialogResult {
     /// The connection configuration
     pub connection: Connection,
     /// Password value if user entered one (for KeePass/Keyring/Stored sources)
-    pub password: Option<String>,
+    pub password: Option<SecretString>,
 }
 
 /// Type alias for connection dialog callback

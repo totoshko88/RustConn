@@ -3,11 +3,12 @@
 // Allow struct with multiple bools - SPICE has many boolean options
 #![allow(clippy::struct_excessive_bools)]
 
+use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 /// Configuration for SPICE client connection
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SpiceClientConfig {
     /// Target hostname or IP address
     pub host: String,
@@ -17,7 +18,7 @@ pub struct SpiceClientConfig {
 
     /// Password for authentication
     #[serde(skip_serializing)]
-    pub password: Option<String>,
+    pub password: Option<SecretString>,
 
     /// Desired screen width
     pub width: u16,
@@ -166,7 +167,7 @@ impl SpiceClientConfig {
     /// Sets the password
     #[must_use]
     pub fn with_password(mut self, password: impl Into<String>) -> Self {
-        self.password = Some(password.into());
+        self.password = Some(SecretString::from(password.into()));
         self
     }
 
@@ -315,7 +316,7 @@ mod tests {
 
         assert_eq!(config.host, "192.168.1.100");
         assert_eq!(config.port, 5901);
-        assert_eq!(config.password, Some("secret".to_string()));
+        assert!(config.password.is_some());
         assert_eq!(config.width, 1920);
         assert_eq!(config.height, 1080);
         assert!(config.tls_enabled);

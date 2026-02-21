@@ -9,6 +9,7 @@ use gtk4::{
 };
 use libadwaita as adw;
 use rustconn_core::config::{SecretBackendType, SecretSettings};
+use rustconn_core::secret::set_session_key;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -581,7 +582,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     session_key_len = session_key.len(),
                     "Bitwarden GUI: unlock succeeded"
                 );
-                std::env::set_var("BW_SESSION", &session_key);
+                set_session_key(&session_key);
                 update_status_label(&status_label, "Unlocked", "success");
                 // Don't clear password_entry — it's a PasswordEntry (hidden),
                 // and clearing it causes the encrypted settings to keep a stale
@@ -1306,9 +1307,11 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             None
         };
 
+        let password_secret = password.map(secrecy::SecretString::from);
+
         let result = rustconn_core::secret::KeePassStatus::verify_kdbx_credentials(
             kdbx_path,
-            password.as_deref(),
+            password_secret.as_ref(),
             key_file.as_deref(),
         );
 
@@ -1317,7 +1320,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 update_status_label(&kdbx_status_label_check, "Connected", "success");
             }
             Err(e) => {
-                update_status_label(&kdbx_status_label_check, &e, "error");
+                update_status_label(&kdbx_status_label_check, &e.to_string(), "error");
             }
         }
     });
@@ -1992,7 +1995,7 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
 
                 if let Some((text, css, session_key)) = result {
                     if let Some(key) = session_key {
-                        std::env::set_var("BW_SESSION", &key);
+                        set_session_key(&key);
                         tracing::info!("Bitwarden auto-unlocked from keyring");
                     }
                     update_status_label(&status_label, &text, css);
@@ -2020,7 +2023,8 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
             if let Some(token) = token {
                 tracing::debug!("1Password token loaded from keyring");
                 token_entry.set_text(&token);
-                std::env::set_var("OP_SERVICE_ACCOUNT_TOKEN", &token);
+                // Token is passed to `op` CLI via Command::env() in OnePasswordBackend,
+                // no need to set process-wide env var.
                 update_status_label(&status_label, "Token loaded from keyring", "success");
                 tracing::info!("1Password token set from keyring");
             } else {
