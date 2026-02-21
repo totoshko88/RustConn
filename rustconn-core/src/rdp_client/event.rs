@@ -815,7 +815,7 @@ mod tests {
             assert_eq!(rect.width, 2);
             assert_eq!(rect.height, 2);
             assert_eq!(data.len(), 16); // 4 pixels * 4 bytes
-                                        // First pixel should be red in BGRA: B=0, G=0, R=255, A=255
+            // First pixel should be red in BGRA: B=0, G=0, R=255, A=255
             assert_eq!(data[0], 0);
             assert_eq!(data[1], 0);
             assert_eq!(data[2], 255);

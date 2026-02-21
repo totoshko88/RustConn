@@ -31,7 +31,9 @@ pub fn cmd_sftp(
         )));
     }
 
-    if !rustconn_core::sftp::ensure_ssh_agent() {
+    if let Some(info) = rustconn_core::sftp::ensure_ssh_agent() {
+        rustconn_core::sftp::set_agent_info(info);
+    } else {
         tracing::warn!("ssh-agent is not running. SFTP may require manual setup.");
     }
 
@@ -45,15 +47,15 @@ pub fn cmd_sftp(
 
         println!("Opening mc SFTP for '{}'...", connection.name);
 
-        let status = std::process::Command::new(&cmd[0])
-            .args(&cmd[1..])
-            .status()
-            .map_err(|e| {
-                CliError::Connection(format!(
-                    "Failed to launch mc: {e}. \
-                     Is midnight-commander installed?"
-                ))
-            })?;
+        let mut proc = std::process::Command::new(&cmd[0]);
+        proc.args(&cmd[1..]);
+        rustconn_core::sftp::apply_agent_env(&mut proc);
+        let status = proc.status().map_err(|e| {
+            CliError::Connection(format!(
+                "Failed to launch mc: {e}. \
+                 Is midnight-commander installed?"
+            ))
+        })?;
 
         if !status.success() {
             return Err(CliError::Connection(
@@ -66,8 +68,10 @@ pub fn cmd_sftp(
 
         println!("Connecting via sftp CLI to '{}'...", connection.name);
 
-        let status = std::process::Command::new(&cmd[0])
-            .args(&cmd[1..])
+        let mut proc = std::process::Command::new(&cmd[0]);
+        proc.args(&cmd[1..]);
+        rustconn_core::sftp::apply_agent_env(&mut proc);
+        let status = proc
             .status()
             .map_err(|e| CliError::Connection(format!("Failed to launch sftp: {e}")))?;
 
@@ -83,34 +87,27 @@ pub fn cmd_sftp(
         println!("Opening SFTP file browser for '{}'...", connection.name);
         println!("URI: {uri}");
 
-        // Launch file manager as a direct subprocess so it
-        // inherits SSH_AUTH_SOCK. On KDE, xdg-open routes
-        // through D-Bus to an already-running Dolphin that
-        // won't have our env, so try dolphin directly first.
-        let dolphin_ok = std::process::Command::new("dolphin")
-            .args(["--new-window", &uri])
-            .spawn()
-            .is_ok();
-
-        if dolphin_ok {
+        // Launch file manager with agent env injected. On KDE,
+        // xdg-open routes through D-Bus to an already-running
+        // Dolphin that won't have our env.
+        let mut proc = std::process::Command::new("dolphin");
+        proc.args(["--new-window", &uri]);
+        rustconn_core::sftp::apply_agent_env(&mut proc);
+        if proc.spawn().is_ok() {
             return Ok(());
         }
 
-        let nautilus_ok = std::process::Command::new("nautilus")
-            .args(["--new-window", &uri])
-            .spawn()
-            .is_ok();
-
-        if nautilus_ok {
+        let mut proc = std::process::Command::new("nautilus");
+        proc.args(["--new-window", &uri]);
+        rustconn_core::sftp::apply_agent_env(&mut proc);
+        if proc.spawn().is_ok() {
             return Ok(());
         }
 
-        let xdg_ok = std::process::Command::new("xdg-open")
-            .arg(&uri)
-            .spawn()
-            .is_ok();
-
-        if xdg_ok {
+        let mut proc = std::process::Command::new("xdg-open");
+        proc.arg(&uri);
+        rustconn_core::sftp::apply_agent_env(&mut proc);
+        if proc.spawn().is_ok() {
             return Ok(());
         }
 

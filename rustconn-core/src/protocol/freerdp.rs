@@ -172,10 +172,10 @@ pub fn build_freerdp_args(config: &FreeRdpConfig) -> Vec<String> {
     let mut args = Vec::new();
 
     // Domain
-    if let Some(ref domain) = config.domain {
-        if !domain.is_empty() {
-            args.push(format!("/d:{domain}"));
-        }
+    if let Some(ref domain) = config.domain
+        && !domain.is_empty()
+    {
+        args.push(format!("/d:{domain}"));
     }
 
     // Username
@@ -206,11 +206,11 @@ pub fn build_freerdp_args(config: &FreeRdpConfig) -> Vec<String> {
     args.push("/decorations".to_string());
 
     // Window geometry (Requirements 6.2, 6.3, 6.4)
-    if config.remember_window_position {
-        if let Some(ref geometry) = config.window_geometry {
-            args.push(format!("/x:{}", geometry.x));
-            args.push(format!("/y:{}", geometry.y));
-        }
+    if config.remember_window_position
+        && let Some(ref geometry) = config.window_geometry
+    {
+        args.push(format!("/x:{}", geometry.x));
+        args.push(format!("/y:{}", geometry.y));
     }
 
     // Clipboard

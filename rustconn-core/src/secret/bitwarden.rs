@@ -640,12 +640,11 @@ fn extract_session_key(output: &str) -> Option<String> {
     for line in output.lines() {
         if line.contains("BW_SESSION=") {
             // Try quoted format: export BW_SESSION="<key>"
-            if let Some(start) = line.find('"') {
-                if let Some(end) = line.rfind('"') {
-                    if end > start {
-                        return Some(line[start + 1..end].to_string());
-                    }
-                }
+            if let Some(start) = line.find('"')
+                && let Some(end) = line.rfind('"')
+                && end > start
+            {
+                return Some(line[start + 1..end].to_string());
             }
             // Try unquoted format: BW_SESSION=<key>
             if let Some(pos) = line.find("BW_SESSION=") {
@@ -1021,25 +1020,23 @@ pub async fn auto_unlock(
     }
 
     // 3. Try master password from system keyring
-    if settings.bitwarden_save_to_keyring {
-        if let Ok(Some(password)) = get_master_password_from_keyring().await {
-            tracing::debug!("Bitwarden: attempting unlock with keyring password");
-            match unlock_vault(&password).await {
-                Ok(session_key) => {
-                    set_session_key(session_key.expose_secret());
-                    return Ok(BitwardenBackend::with_session(session_key));
-                }
-                Err(e) => {
-                    let is_key_type_error = e.to_string().contains("key type mismatch");
-                    tracing::warn!("Bitwarden: keyring password unlock failed: {e}");
-                    // If key type mismatch, try re-login before giving up
-                    if is_key_type_error
-                        && try_relogin_and_unlock(settings, &password).await.is_ok()
-                    {
-                        return Ok(BitwardenBackend::with_session(SecretString::from(
-                            get_session_key().unwrap_or_default(),
-                        )));
-                    }
+    if settings.bitwarden_save_to_keyring
+        && let Ok(Some(password)) = get_master_password_from_keyring().await
+    {
+        tracing::debug!("Bitwarden: attempting unlock with keyring password");
+        match unlock_vault(&password).await {
+            Ok(session_key) => {
+                set_session_key(session_key.expose_secret());
+                return Ok(BitwardenBackend::with_session(session_key));
+            }
+            Err(e) => {
+                let is_key_type_error = e.to_string().contains("key type mismatch");
+                tracing::warn!("Bitwarden: keyring password unlock failed: {e}");
+                // If key type mismatch, try re-login before giving up
+                if is_key_type_error && try_relogin_and_unlock(settings, &password).await.is_ok() {
+                    return Ok(BitwardenBackend::with_session(SecretString::from(
+                        get_session_key().unwrap_or_default(),
+                    )));
                 }
             }
         }

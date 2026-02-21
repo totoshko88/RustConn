@@ -45,17 +45,17 @@ pub fn cmd_list(
         .iter()
         .filter(|c| {
             // Filter by protocol
-            if let Some(proto_filter) = protocol {
-                if c.protocol.as_str() != proto_filter.to_lowercase() {
-                    return false;
-                }
+            if let Some(proto_filter) = protocol
+                && c.protocol.as_str() != proto_filter.to_lowercase()
+            {
+                return false;
             }
 
             // Filter by group
-            if let Some(gid) = group_id {
-                if c.group_id != Some(gid) {
-                    return false;
-                }
+            if let Some(gid) = group_id
+                && c.group_id != Some(gid)
+            {
+                return false;
             }
 
             // Filter by tag

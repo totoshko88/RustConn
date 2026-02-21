@@ -11,7 +11,7 @@ use libadwaita as adw;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::state::{create_shared_state, SharedAppState};
+use crate::state::{SharedAppState, create_shared_state};
 use crate::tray::{TrayManager, TrayMessage};
 use crate::window::MainWindow;
 use gettextrs::gettext;
@@ -91,13 +91,11 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
 
     // Initialize tray icon if enabled in settings
     let enable_tray = state.borrow().settings().ui.enable_tray_icon;
-    if enable_tray {
-        if let Some(tray) = TrayManager::new() {
-            // Update tray with initial state
-            let mut initial_cache = TrayStateCache::default();
-            update_tray_state(&tray, &state, &mut initial_cache);
-            *tray_manager.borrow_mut() = Some(tray);
-        }
+    if enable_tray && let Some(tray) = TrayManager::new() {
+        // Update tray with initial state
+        let mut initial_cache = TrayStateCache::default();
+        update_tray_state(&tray, &state, &mut initial_cache);
+        *tray_manager.borrow_mut() = Some(tray);
     }
 
     // Set up application actions

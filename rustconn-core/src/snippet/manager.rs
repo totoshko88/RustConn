@@ -288,17 +288,17 @@ impl SnippetManager {
                 }
 
                 // Match description
-                if let Some(ref desc) = snippet.description {
-                    if desc.to_lowercase().contains(&query_lower) {
-                        return true;
-                    }
+                if let Some(ref desc) = snippet.description
+                    && desc.to_lowercase().contains(&query_lower)
+                {
+                    return true;
                 }
 
                 // Match category
-                if let Some(ref cat) = snippet.category {
-                    if cat.to_lowercase().contains(&query_lower) {
-                        return true;
-                    }
+                if let Some(ref cat) = snippet.category
+                    && cat.to_lowercase().contains(&query_lower)
+                {
+                    return true;
                 }
 
                 // Match tags

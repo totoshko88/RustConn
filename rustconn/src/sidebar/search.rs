@@ -1,6 +1,6 @@
 //! Search logic for the sidebar
 use gtk4::prelude::*;
-use gtk4::{glib, Button, EventControllerKey, Label, Orientation, Popover, SearchEntry};
+use gtk4::{Button, EventControllerKey, Label, Orientation, Popover, SearchEntry, glib};
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
@@ -117,10 +117,10 @@ pub fn setup_search_entry_hints(
                 entry.set_position(-1);
 
                 // Show popover as visual hint
-                if let Some(popover) = popover_weak.upgrade() {
-                    if !popover.is_visible() {
-                        popover.popup();
-                    }
+                if let Some(popover) = popover_weak.upgrade()
+                    && !popover.is_visible()
+                {
+                    popover.popup();
                 }
                 glib::Propagation::Stop
             }
@@ -206,11 +206,11 @@ pub fn create_history_popover(
             let text = label.text();
             // Walk up to find the SearchEntry sibling via the popover parent
             if let Some(pop) = popover_weak.upgrade() {
-                if let Some(parent) = pop.parent() {
-                    if let Ok(entry) = parent.downcast::<SearchEntry>() {
-                        entry.set_text(&text);
-                        entry.set_position(-1);
-                    }
+                if let Some(parent) = pop.parent()
+                    && let Ok(entry) = parent.downcast::<SearchEntry>()
+                {
+                    entry.set_text(&text);
+                    entry.set_position(-1);
                 }
                 pop.popdown();
             }

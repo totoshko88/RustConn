@@ -131,28 +131,26 @@ pub fn parse_agent_output(output: &str) -> AgentResult<String> {
         let line = line.trim();
 
         // Bash format: SSH_AUTH_SOCK=/path; export SSH_AUTH_SOCK;
-        if line.starts_with("SSH_AUTH_SOCK=") {
-            if let Some(value) = line
+        if line.starts_with("SSH_AUTH_SOCK=")
+            && let Some(value) = line
                 .strip_prefix("SSH_AUTH_SOCK=")
                 .and_then(|s| s.split(';').next())
-            {
-                let socket_path = value.trim();
-                if !socket_path.is_empty() {
-                    return Ok(socket_path.to_string());
-                }
+        {
+            let socket_path = value.trim();
+            if !socket_path.is_empty() {
+                return Ok(socket_path.to_string());
             }
         }
 
         // Csh format: setenv SSH_AUTH_SOCK /path;
-        if line.starts_with("setenv SSH_AUTH_SOCK ") {
-            if let Some(value) = line
+        if line.starts_with("setenv SSH_AUTH_SOCK ")
+            && let Some(value) = line
                 .strip_prefix("setenv SSH_AUTH_SOCK ")
                 .and_then(|s| s.split(';').next())
-            {
-                let socket_path = value.trim();
-                if !socket_path.is_empty() {
-                    return Ok(socket_path.to_string());
-                }
+        {
+            let socket_path = value.trim();
+            if !socket_path.is_empty() {
+                return Ok(socket_path.to_string());
             }
         }
     }
@@ -650,42 +648,40 @@ impl SshAgentManager {
             let entry = entry?;
             let path = entry.path();
 
-            if path.is_file() {
-                if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
-                    // Skip public keys
-                    let is_pub = std::path::Path::new(file_name)
-                        .extension()
-                        .is_some_and(|ext| ext.eq_ignore_ascii_case("pub"));
-                    if is_pub {
-                        continue;
-                    }
+            if path.is_file()
+                && let Some(file_name) = path.file_name().and_then(|n| n.to_str())
+            {
+                // Skip public keys
+                let is_pub = std::path::Path::new(file_name)
+                    .extension()
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("pub"));
+                if is_pub {
+                    continue;
+                }
 
-                    // Skip known non-key files
-                    if skip_files.contains(&file_name) {
-                        continue;
-                    }
+                // Skip known non-key files
+                if skip_files.contains(&file_name) {
+                    continue;
+                }
 
-                    // Check if it matches a known pattern
-                    let is_standard_key =
-                        key_patterns.contains(&file_name) || file_name.starts_with("id_");
+                // Check if it matches a known pattern
+                let is_standard_key =
+                    key_patterns.contains(&file_name) || file_name.starts_with("id_");
 
-                    // Check if it has a key extension (.pem, .key)
-                    let has_key_extension = std::path::Path::new(file_name)
-                        .extension()
-                        .is_some_and(|ext| {
-                            key_extensions.iter().any(|e| ext.eq_ignore_ascii_case(e))
-                        });
+                // Check if it has a key extension (.pem, .key)
+                let has_key_extension = std::path::Path::new(file_name)
+                    .extension()
+                    .is_some_and(|ext| key_extensions.iter().any(|e| ext.eq_ignore_ascii_case(e)));
 
-                    // Check file content for private key header
-                    let is_private_key_content = if !is_standard_key && !has_key_extension {
-                        Self::is_private_key_file(&path)
-                    } else {
-                        false
-                    };
+                // Check file content for private key header
+                let is_private_key_content = if !is_standard_key && !has_key_extension {
+                    Self::is_private_key_file(&path)
+                } else {
+                    false
+                };
 
-                    if is_standard_key || has_key_extension || is_private_key_content {
-                        keys.push(path);
-                    }
+                if is_standard_key || has_key_extension || is_private_key_content {
+                    keys.push(path);
                 }
             }
         }
@@ -755,15 +751,15 @@ impl SshAgentManager {
                     let _ = stdin.write_all(line.as_bytes());
                 }
 
-                if let Ok(output) = child.wait_with_output() {
-                    if output.status.success() {
-                        let fp_line = String::from_utf8_lossy(&output.stdout);
-                        // Output format: "256 SHA256:xxx comment (ED25519)"
-                        // Extract fingerprint (second field)
-                        let parts: Vec<&str> = fp_line.split_whitespace().collect();
-                        if parts.len() >= 2 && parts[1] == fingerprint {
-                            return Ok(line.to_string());
-                        }
+                if let Ok(output) = child.wait_with_output()
+                    && output.status.success()
+                {
+                    let fp_line = String::from_utf8_lossy(&output.stdout);
+                    // Output format: "256 SHA256:xxx comment (ED25519)"
+                    // Extract fingerprint (second field)
+                    let parts: Vec<&str> = fp_line.split_whitespace().collect();
+                    if parts.len() >= 2 && parts[1] == fingerprint {
+                        return Ok(line.to_string());
                     }
                 }
             }

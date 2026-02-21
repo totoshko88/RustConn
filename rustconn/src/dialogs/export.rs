@@ -590,10 +590,10 @@ impl ExportDialog {
                     parent_window.as_ref(),
                     gtk4::gio::Cancellable::NONE,
                     move |result| {
-                        if let Ok(file) = result {
-                            if let Some(path) = file.path() {
-                                output_entry.set_text(&path.to_string_lossy());
-                            }
+                        if let Ok(file) = result
+                            && let Some(path) = file.path()
+                        {
+                            output_entry.set_text(&path.to_string_lossy());
                         }
                     },
                 );
@@ -653,10 +653,10 @@ impl ExportDialog {
                     parent_window.as_ref(),
                     gtk4::gio::Cancellable::NONE,
                     move |result| {
-                        if let Ok(file) = result {
-                            if let Some(path) = file.path() {
-                                output_entry.set_text(&path.to_string_lossy());
-                            }
+                        if let Ok(file) = result
+                            && let Some(path) = file.path()
+                        {
+                            output_entry.set_text(&path.to_string_lossy());
                         }
                     },
                 );

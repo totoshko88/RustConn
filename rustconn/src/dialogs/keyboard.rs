@@ -39,33 +39,32 @@ pub fn setup_dialog_shortcuts<W: IsA<gtk4::Widget>>(
         match key {
             // Escape: Close dialog
             gdk::Key::Escape => {
-                if let Some(w) = window_weak.upgrade() {
-                    if let Some(window) = w.root().and_then(|r| r.downcast::<gtk4::Window>().ok()) {
-                        window.close();
-                        return glib::Propagation::Stop;
-                    }
+                if let Some(w) = window_weak.upgrade()
+                    && let Some(window) = w.root().and_then(|r| r.downcast::<gtk4::Window>().ok())
+                {
+                    window.close();
+                    return glib::Propagation::Stop;
                 }
                 glib::Propagation::Proceed
             }
             // Ctrl+S: Save/Confirm
             gdk::Key::s | gdk::Key::S if ctrl => {
-                if let Some(ref weak) = save_button_weak {
-                    if let Some(btn) = weak.upgrade() {
-                        if btn.is_sensitive() {
-                            btn.emit_clicked();
-                            return glib::Propagation::Stop;
-                        }
-                    }
+                if let Some(ref weak) = save_button_weak
+                    && let Some(btn) = weak.upgrade()
+                    && btn.is_sensitive()
+                {
+                    btn.emit_clicked();
+                    return glib::Propagation::Stop;
                 }
                 glib::Propagation::Proceed
             }
             // Ctrl+W: Close dialog
             gdk::Key::w | gdk::Key::W if ctrl => {
-                if let Some(w) = window_weak.upgrade() {
-                    if let Some(window) = w.root().and_then(|r| r.downcast::<gtk4::Window>().ok()) {
-                        window.close();
-                        return glib::Propagation::Stop;
-                    }
+                if let Some(w) = window_weak.upgrade()
+                    && let Some(window) = w.root().and_then(|r| r.downcast::<gtk4::Window>().ok())
+                {
+                    window.close();
+                    return glib::Propagation::Stop;
                 }
                 glib::Propagation::Proceed
             }
@@ -88,10 +87,10 @@ pub fn setup_entry_activation(entry: &gtk4::Entry, button: &gtk4::Button) {
     let button_weak = button.downgrade();
 
     entry.connect_activate(move |_| {
-        if let Some(btn) = button_weak.upgrade() {
-            if btn.is_sensitive() {
-                btn.emit_clicked();
-            }
+        if let Some(btn) = button_weak.upgrade()
+            && btn.is_sensitive()
+        {
+            btn.emit_clicked();
         }
     });
 }
@@ -105,10 +104,10 @@ pub fn setup_password_entry_activation(entry: &gtk4::PasswordEntry, button: &gtk
     let button_weak = button.downgrade();
 
     entry.connect_activate(move |_| {
-        if let Some(btn) = button_weak.upgrade() {
-            if btn.is_sensitive() {
-                btn.emit_clicked();
-            }
+        if let Some(btn) = button_weak.upgrade()
+            && btn.is_sensitive()
+        {
+            btn.emit_clicked();
         }
     });
 }

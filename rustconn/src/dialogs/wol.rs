@@ -120,12 +120,12 @@ impl WolDialog {
                 return; // "Manual entry"
             }
             let conns = conns_c.borrow();
-            if let Some(conn) = conns.get((idx - 1) as usize) {
-                if let Some(wol) = conn.get_wol_config() {
-                    mac_c.set_text(&wol.mac_address.to_string());
-                    broadcast_c.set_text(&wol.broadcast_address);
-                    port_c.set_text(&wol.port.to_string());
-                }
+            if let Some(conn) = conns.get((idx - 1) as usize)
+                && let Some(wol) = conn.get_wol_config()
+            {
+                mac_c.set_text(&wol.mac_address.to_string());
+                broadcast_c.set_text(&wol.broadcast_address);
+                port_c.set_text(&wol.port.to_string());
             }
         });
 

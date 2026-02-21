@@ -20,7 +20,7 @@ mod ui;
 
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{gio, glib, Orientation};
+use gtk4::{Orientation, gio, glib};
 use libadwaita as adw;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -29,8 +29,8 @@ use vte4::prelude::*;
 
 use self::document_actions as doc_actions;
 use self::types::{
-    get_protocol_string, SessionSplitBridges, SharedExternalWindowManager, SharedNotebook,
-    SharedSidebar, SharedSplitView,
+    SessionSplitBridges, SharedExternalWindowManager, SharedNotebook, SharedSidebar,
+    SharedSplitView, get_protocol_string,
 };
 use crate::alert;
 use crate::toast::ToastOverlay;
@@ -94,14 +94,13 @@ impl MainWindow {
         {
             let state_ref = state.borrow();
             let settings = state_ref.settings();
-            if settings.ui.remember_window_geometry {
-                if let (Some(width), Some(height)) =
+            if settings.ui.remember_window_geometry
+                && let (Some(width), Some(height)) =
                     (settings.ui.window_width, settings.ui.window_height)
-                {
-                    if width > 0 && height > 0 {
-                        window.set_default_size(width, height);
-                    }
-                }
+                && width > 0
+                && height > 0
+            {
+                window.set_default_size(width, height);
             }
         }
 
@@ -387,10 +386,10 @@ impl MainWindow {
         let flatpak_components_action = gio::SimpleAction::new("flatpak-components", None);
         let window_weak = window.downgrade();
         flatpak_components_action.connect_activate(move |_, _| {
-            if let Some(win) = window_weak.upgrade() {
-                if let Some(dialog) = crate::dialogs::FlatpakComponentsDialog::new(Some(&win)) {
-                    dialog.present();
-                }
+            if let Some(win) = window_weak.upgrade()
+                && let Some(dialog) = crate::dialogs::FlatpakComponentsDialog::new(Some(&win))
+            {
+                dialog.present();
             }
         });
         // Only enable in Flatpak environment
@@ -555,44 +554,44 @@ impl MainWindow {
         let sidebar_clone = sidebar.clone();
         let window_weak = window.downgrade();
         undo_delete_action.connect_activate(move |_, param| {
-            if let Some(param) = param {
-                if let Some(param_str) = param.get::<String>() {
-                    // Format: "type:uuid"
-                    let parts: Vec<&str> = param_str.split(':').collect();
-                    if parts.len() != 2 {
-                        return;
-                    }
+            if let Some(param) = param
+                && let Some(param_str) = param.get::<String>()
+            {
+                // Format: "type:uuid"
+                let parts: Vec<&str> = param_str.split(':').collect();
+                if parts.len() != 2 {
+                    return;
+                }
 
-                    let item_type = parts[0];
-                    let Ok(id) = Uuid::parse_str(parts[1]) else {
-                        return;
+                let item_type = parts[0];
+                let Ok(id) = Uuid::parse_str(parts[1]) else {
+                    return;
+                };
+
+                if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
+                    let result = match item_type {
+                        "connection" => state_mut.restore_connection(id),
+                        "group" => state_mut.restore_group(id),
+                        _ => return,
                     };
 
-                    if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
-                        let result = match item_type {
-                            "connection" => state_mut.restore_connection(id),
-                            "group" => state_mut.restore_group(id),
-                            _ => return,
-                        };
+                    if result.is_ok() {
+                        drop(state_mut);
+                        let state = state_clone.clone();
+                        let sidebar = sidebar_clone.clone();
 
-                        if result.is_ok() {
-                            drop(state_mut);
-                            let state = state_clone.clone();
-                            let sidebar = sidebar_clone.clone();
+                        // Reload sidebar
+                        glib::idle_add_local_once(move || {
+                            Self::reload_sidebar_preserving_state(&state, &sidebar);
+                        });
 
-                            // Reload sidebar
-                            glib::idle_add_local_once(move || {
-                                Self::reload_sidebar_preserving_state(&state, &sidebar);
-                            });
-
-                            // Show confirmation
-                            if let Some(win) = window_weak.upgrade() {
-                                crate::toast::show_toast_on_window(
-                                    &win,
-                                    "Item restored",
-                                    crate::toast::ToastType::Success,
-                                );
-                            }
+                        // Show confirmation
+                        if let Some(win) = window_weak.upgrade() {
+                            crate::toast::show_toast_on_window(
+                                &win,
+                                "Item restored",
+                                crate::toast::ToastType::Success,
+                            );
                         }
                     }
                 }
@@ -728,13 +727,14 @@ impl MainWindow {
                         );
                     }
                     tracing::info!(?kp, "Adding SSH key to agent for mc");
-                    match std::process::Command::new("ssh-add")
+                    let mut ssh_add = std::process::Command::new("ssh-add");
+                    ssh_add
                         .arg(kp)
                         .stdin(std::process::Stdio::null())
                         .stdout(std::process::Stdio::null())
-                        .stderr(std::process::Stdio::piped())
-                        .output()
-                    {
+                        .stderr(std::process::Stdio::piped());
+                    rustconn_core::sftp::apply_agent_env(&mut ssh_add);
+                    match ssh_add.output() {
                         Ok(output) if output.status.success() => {
                             tracing::info!("SSH key added to agent for mc");
                         }
@@ -816,13 +816,14 @@ impl MainWindow {
                                 );
                             }
                             tracing::info!(?kp, "Adding SSH key to agent for SFTP");
-                            match std::process::Command::new("ssh-add")
+                            let mut ssh_add = std::process::Command::new("ssh-add");
+                            ssh_add
                                 .arg(kp)
                                 .stdin(std::process::Stdio::null())
                                 .stdout(std::process::Stdio::null())
-                                .stderr(std::process::Stdio::piped())
-                                .output()
-                            {
+                                .stderr(std::process::Stdio::piped());
+                            rustconn_core::sftp::apply_agent_env(&mut ssh_add);
+                            match ssh_add.output() {
                                 Ok(output) if output.status.success() => {
                                     tracing::info!("SSH key added to agent");
                                 }
@@ -861,7 +862,7 @@ impl MainWindow {
     }
 
     /// Launches a file manager for an `sftp://` URI as a direct
-    /// subprocess so it inherits `SSH_AUTH_SOCK`.
+    /// subprocess so it inherits the ssh-agent socket.
     ///
     /// On KDE, `xdg-open` may route through D-Bus to an
     /// already-running Dolphin that doesn't have our env.
@@ -870,33 +871,29 @@ impl MainWindow {
     ///
     /// Tries: `dolphin` → `nautilus` → `xdg-open` (last resort).
     fn sftp_launch_file_manager(uri: &str) {
-        // Try dolphin first (KDE) — direct child inherits env
-        let dolphin_ok = std::process::Command::new("dolphin")
-            .arg("--new-window")
-            .arg(uri)
-            .spawn()
-            .is_ok();
-        if dolphin_ok {
+        // Try dolphin first (KDE)
+        let mut cmd = std::process::Command::new("dolphin");
+        cmd.arg("--new-window").arg(uri);
+        rustconn_core::sftp::apply_agent_env(&mut cmd);
+        if cmd.spawn().is_ok() {
             tracing::info!(%uri, "Launched dolphin for SFTP");
             return;
         }
 
         // Try nautilus (GNOME)
-        let nautilus_ok = std::process::Command::new("nautilus")
-            .args(["--new-window", uri])
-            .spawn()
-            .is_ok();
-        if nautilus_ok {
+        let mut cmd = std::process::Command::new("nautilus");
+        cmd.args(["--new-window", uri]);
+        rustconn_core::sftp::apply_agent_env(&mut cmd);
+        if cmd.spawn().is_ok() {
             tracing::info!(%uri, "Launched nautilus for SFTP");
             return;
         }
 
         // Last resort — xdg-open (may go through D-Bus)
-        let xdg_ok = std::process::Command::new("xdg-open")
-            .arg(uri)
-            .spawn()
-            .is_ok();
-        if xdg_ok {
+        let mut cmd = std::process::Command::new("xdg-open");
+        cmd.arg(uri);
+        rustconn_core::sftp::apply_agent_env(&mut cmd);
+        if cmd.spawn().is_ok() {
             tracing::info!(%uri, "Launched xdg-open for SFTP");
             return;
         }
@@ -938,13 +935,14 @@ impl MainWindow {
             tracing::info!(?mc_args, "SFTP connect: opening mc");
 
             if let Some(ref kp) = key_path {
-                match std::process::Command::new("ssh-add")
+                let mut ssh_add = std::process::Command::new("ssh-add");
+                ssh_add
                     .arg(kp)
                     .stdin(std::process::Stdio::null())
                     .stdout(std::process::Stdio::null())
-                    .stderr(std::process::Stdio::piped())
-                    .output()
-                {
+                    .stderr(std::process::Stdio::piped());
+                rustconn_core::sftp::apply_agent_env(&mut ssh_add);
+                match ssh_add.output() {
                     Ok(output) if output.status.success() => {
                         tracing::info!(?kp, "SSH key added to agent");
                     }
@@ -1005,13 +1003,14 @@ impl MainWindow {
             crate::utils::spawn_blocking_with_callback(
                 move || {
                     if let Some(ref kp) = key_for_add {
-                        match std::process::Command::new("ssh-add")
+                        let mut ssh_add = std::process::Command::new("ssh-add");
+                        ssh_add
                             .arg(kp)
                             .stdin(std::process::Stdio::null())
                             .stdout(std::process::Stdio::null())
-                            .stderr(std::process::Stdio::piped())
-                            .output()
-                        {
+                            .stderr(std::process::Stdio::piped());
+                        rustconn_core::sftp::apply_agent_env(&mut ssh_add);
+                        match ssh_add.output() {
                             Ok(output) if output.status.success() => {
                                 tracing::info!(?kp, "SSH key added to agent");
                             }
@@ -1060,11 +1059,11 @@ impl MainWindow {
         let split_view_clone = self.split_view.clone();
         copy_action.connect_activate(move |_, _| {
             // Try split view's focused session first (for SSH in split panes)
-            if let Some(session_id) = split_view_clone.get_focused_session() {
-                if let Some(terminal) = notebook_clone.get_terminal(session_id) {
-                    terminal.copy_clipboard_format(vte4::Format::Text);
-                    return;
-                }
+            if let Some(session_id) = split_view_clone.get_focused_session()
+                && let Some(terminal) = notebook_clone.get_terminal(session_id)
+            {
+                terminal.copy_clipboard_format(vte4::Format::Text);
+                return;
             }
             // Fall back to TabView's active terminal (for RDP/VNC/SPICE)
             notebook_clone.copy_to_clipboard();
@@ -1077,11 +1076,11 @@ impl MainWindow {
         let split_view_clone = self.split_view.clone();
         paste_action.connect_activate(move |_, _| {
             // Try split view's focused session first (for SSH in split panes)
-            if let Some(session_id) = split_view_clone.get_focused_session() {
-                if let Some(terminal) = notebook_clone.get_terminal(session_id) {
-                    terminal.paste_clipboard();
-                    return;
-                }
+            if let Some(session_id) = split_view_clone.get_focused_session()
+                && let Some(terminal) = notebook_clone.get_terminal(session_id)
+            {
+                terminal.paste_clipboard();
+                return;
             }
             // Fall back to TabView's active terminal (for RDP/VNC/SPICE)
             notebook_clone.paste_from_clipboard();
@@ -1139,13 +1138,12 @@ impl MainWindow {
                 // showing the correct content for the new active session.
                 // We only need to handle RDP redraw here since it's not handled
                 // by the selected-page handler.
-                if let Some(new_session_id) = notebook_clone.get_active_session_id() {
-                    if let Some(info) = notebook_clone.get_session_info(new_session_id) {
-                        if info.protocol == "rdp" {
-                            // Trigger redraw for RDP widget
-                            notebook_clone.queue_rdp_redraw(new_session_id);
-                        }
-                    }
+                if let Some(new_session_id) = notebook_clone.get_active_session_id()
+                    && let Some(info) = notebook_clone.get_session_info(new_session_id)
+                    && info.protocol == "rdp"
+                {
+                    // Trigger redraw for RDP widget
+                    notebook_clone.queue_rdp_redraw(new_session_id);
                 }
             }
         });
@@ -1160,104 +1158,96 @@ impl MainWindow {
         let session_bridges_close = self.session_split_bridges.clone();
         let split_container_close = self.split_container.clone();
         close_tab_by_id_action.connect_activate(move |_, param| {
-            if let Some(param) = param {
-                if let Some(session_id_str) = param.get::<String>() {
-                    if let Ok(session_id) = uuid::Uuid::parse_str(&session_id_str) {
-                        // Get the currently active session BEFORE closing
-                        // This is important because page numbers will shift after removal
-                        let current_active_session = notebook_clone.get_active_session_id();
-                        let is_closing_active = current_active_session == Some(session_id);
+            if let Some(param) = param
+                && let Some(session_id_str) = param.get::<String>()
+                && let Ok(session_id) = uuid::Uuid::parse_str(&session_id_str)
+            {
+                // Get the currently active session BEFORE closing
+                // This is important because page numbers will shift after removal
+                let current_active_session = notebook_clone.get_active_session_id();
+                let is_closing_active = current_active_session == Some(session_id);
 
-                        // Get connection ID before closing
-                        let connection_id = notebook_clone
-                            .get_session_info(session_id)
-                            .map(|info| info.connection_id);
+                // Get connection ID before closing
+                let connection_id = notebook_clone
+                    .get_session_info(session_id)
+                    .map(|info| info.connection_id);
 
-                        // Clear tab color indicator
-                        notebook_clone.clear_tab_split_color(session_id);
+                // Clear tab color indicator
+                notebook_clone.clear_tab_split_color(session_id);
 
-                        // Clear session from ALL per-session split bridges
-                        // This ensures the panel shows "Empty Panel" placeholder
-                        {
-                            let bridges = session_bridges_close.borrow();
-                            for (_owner_session_id, bridge) in bridges.iter() {
-                                if bridge.is_session_displayed(session_id) {
-                                    tracing::debug!(
-                                        "close-tab-by-id: clearing session {} from per-session bridge",
-                                        session_id
-                                    );
-                                    bridge.clear_session_from_panes(session_id);
-                                }
-                            }
-                        }
-
-                        // Close session from global split view with auto-cleanup
-                        // Returns true if split view should be hidden
-                        let should_hide_split =
-                            split_view_clone.close_session_from_panes(session_id);
-
-                        // Then close the tab
-                        notebook_clone.close_tab(session_id);
-
-                        // Decrement session count in sidebar if we have a connection ID
-                        if let Some(conn_id) = connection_id {
-                            sidebar_clone.decrement_session_count(&conn_id.to_string(), false);
-                        }
-
-                        // Hide split view if no sessions remain in panes
-                        if should_hide_split {
-                            split_view_clone.widget().set_visible(false);
-                            split_view_clone.widget().set_vexpand(false);
-                            split_container_close.set_visible(false);
-                            notebook_clone.widget().set_vexpand(true);
-                            notebook_clone.show_tab_view_content();
-                        }
-
-                        // The selected-page handler will take care of showing the correct
-                        // content for the new active session. We only need to handle
-                        // special cases here.
-                        let notebook_for_idle = notebook_clone.clone();
-                        if is_closing_active {
-                            // We closed the active tab - selected-page handler will fire
-                            // Just handle RDP redraw
-                            glib::idle_add_local_once(move || {
-                                if let Some(new_session_id) =
-                                    notebook_for_idle.get_active_session_id()
-                                {
-                                    if let Some(info) =
-                                        notebook_for_idle.get_session_info(new_session_id)
-                                    {
-                                        if info.protocol == "rdp" {
-                                            notebook_for_idle.queue_rdp_redraw(new_session_id);
-                                        }
-                                    }
-                                }
-                            });
-                        } else if let Some(active_id) = current_active_session {
-                            // We closed a non-active tab, ensure we stay on the active tab
-                            // Defer to next main loop iteration to override switch-page effects
-                            glib::idle_add_local_once(move || {
-                                notebook_for_idle.switch_to_tab(active_id);
-                                if let Some(info) = notebook_for_idle.get_session_info(active_id) {
-                                    if info.protocol == "rdp" {
-                                        notebook_for_idle.queue_rdp_redraw(active_id);
-                                    } else if info.protocol == "vnc" {
-                                        if let Some(vnc_widget) =
-                                            notebook_for_idle.get_vnc_widget(active_id)
-                                        {
-                                            vnc_widget.widget().queue_draw();
-                                        }
-                                    } else if info.protocol == "spice" {
-                                        if let Some(spice_widget) =
-                                            notebook_for_idle.get_spice_widget(active_id)
-                                        {
-                                            spice_widget.widget().queue_draw();
-                                        }
-                                    }
-                                }
-                            });
+                // Clear session from ALL per-session split bridges
+                // This ensures the panel shows "Empty Panel" placeholder
+                {
+                    let bridges = session_bridges_close.borrow();
+                    for (_owner_session_id, bridge) in bridges.iter() {
+                        if bridge.is_session_displayed(session_id) {
+                            tracing::debug!(
+                                "close-tab-by-id: clearing session {} from per-session bridge",
+                                session_id
+                            );
+                            bridge.clear_session_from_panes(session_id);
                         }
                     }
+                }
+
+                // Close session from global split view with auto-cleanup
+                // Returns true if split view should be hidden
+                let should_hide_split = split_view_clone.close_session_from_panes(session_id);
+
+                // Then close the tab
+                notebook_clone.close_tab(session_id);
+
+                // Decrement session count in sidebar if we have a connection ID
+                if let Some(conn_id) = connection_id {
+                    sidebar_clone.decrement_session_count(&conn_id.to_string(), false);
+                }
+
+                // Hide split view if no sessions remain in panes
+                if should_hide_split {
+                    split_view_clone.widget().set_visible(false);
+                    split_view_clone.widget().set_vexpand(false);
+                    split_container_close.set_visible(false);
+                    notebook_clone.widget().set_vexpand(true);
+                    notebook_clone.show_tab_view_content();
+                }
+
+                // The selected-page handler will take care of showing the correct
+                // content for the new active session. We only need to handle
+                // special cases here.
+                let notebook_for_idle = notebook_clone.clone();
+                if is_closing_active {
+                    // We closed the active tab - selected-page handler will fire
+                    // Just handle RDP redraw
+                    glib::idle_add_local_once(move || {
+                        if let Some(new_session_id) = notebook_for_idle.get_active_session_id()
+                            && let Some(info) = notebook_for_idle.get_session_info(new_session_id)
+                            && info.protocol == "rdp"
+                        {
+                            notebook_for_idle.queue_rdp_redraw(new_session_id);
+                        }
+                    });
+                } else if let Some(active_id) = current_active_session {
+                    // We closed a non-active tab, ensure we stay on the active tab
+                    // Defer to next main loop iteration to override switch-page effects
+                    glib::idle_add_local_once(move || {
+                        notebook_for_idle.switch_to_tab(active_id);
+                        if let Some(info) = notebook_for_idle.get_session_info(active_id) {
+                            if info.protocol == "rdp" {
+                                notebook_for_idle.queue_rdp_redraw(active_id);
+                            } else if info.protocol == "vnc" {
+                                if let Some(vnc_widget) =
+                                    notebook_for_idle.get_vnc_widget(active_id)
+                                {
+                                    vnc_widget.widget().queue_draw();
+                                }
+                            } else if info.protocol == "spice"
+                                && let Some(spice_widget) =
+                                    notebook_for_idle.get_spice_widget(active_id)
+                            {
+                                spice_widget.widget().queue_draw();
+                            }
+                        }
+                    });
                 }
             }
         });
@@ -1327,13 +1317,13 @@ impl MainWindow {
         next_tab_action.connect_activate(move |_, _| {
             let tab_view = notebook_clone.tab_view();
             let n_pages = tab_view.n_pages();
-            if n_pages > 0 {
-                if let Some(selected) = tab_view.selected_page() {
-                    let current_pos = tab_view.page_position(&selected);
-                    let next_pos = (current_pos + 1) % n_pages;
-                    let next_page = tab_view.nth_page(next_pos);
-                    tab_view.set_selected_page(&next_page);
-                }
+            if n_pages > 0
+                && let Some(selected) = tab_view.selected_page()
+            {
+                let current_pos = tab_view.page_position(&selected);
+                let next_pos = (current_pos + 1) % n_pages;
+                let next_page = tab_view.nth_page(next_pos);
+                tab_view.set_selected_page(&next_page);
             }
         });
         window.add_action(&next_tab_action);
@@ -1344,17 +1334,17 @@ impl MainWindow {
         prev_tab_action.connect_activate(move |_, _| {
             let tab_view = notebook_clone.tab_view();
             let n_pages = tab_view.n_pages();
-            if n_pages > 0 {
-                if let Some(selected) = tab_view.selected_page() {
-                    let current_pos = tab_view.page_position(&selected);
-                    let prev_pos = if current_pos == 0 {
-                        n_pages - 1
-                    } else {
-                        current_pos - 1
-                    };
-                    let prev_page = tab_view.nth_page(prev_pos);
-                    tab_view.set_selected_page(&prev_page);
-                }
+            if n_pages > 0
+                && let Some(selected) = tab_view.selected_page()
+            {
+                let current_pos = tab_view.page_position(&selected);
+                let prev_pos = if current_pos == 0 {
+                    n_pages - 1
+                } else {
+                    current_pos - 1
+                };
+                let prev_page = tab_view.nth_page(prev_pos);
+                tab_view.set_selected_page(&prev_page);
             }
         });
         window.add_action(&prev_tab_action);
@@ -1757,7 +1747,7 @@ impl MainWindow {
 
     /// Sets up history and statistics actions
     fn setup_history_actions(&self, window: &adw::ApplicationWindow, state: &SharedAppState) {
-        use crate::dialogs::{show_password_generator_dialog, HistoryDialog, StatisticsDialog};
+        use crate::dialogs::{HistoryDialog, StatisticsDialog, show_password_generator_dialog};
 
         // Show history action
         let show_history_action = gio::SimpleAction::new("show-history", None);
@@ -2157,11 +2147,10 @@ impl MainWindow {
                     split_view_for_close.set_focused_pane(Some(pane_uuid));
 
                     // Update focus styling via the adapter
-                    if let Some(panel_id) = split_view_for_close.get_panel_id_for_uuid(pane_uuid) {
-                        if let Err(e) = split_view_for_close.adapter_set_focus(panel_id) {
+                    if let Some(panel_id) = split_view_for_close.get_panel_id_for_uuid(pane_uuid)
+                        && let Err(e) = split_view_for_close.adapter_set_focus(panel_id) {
                             tracing::warn!("Failed to set focus on panel: {}", e);
                         }
-                    }
                 });
             }
         });
@@ -2424,11 +2413,10 @@ impl MainWindow {
                     split_view_for_close.set_focused_pane(Some(pane_uuid));
 
                     // Update focus styling via the adapter
-                    if let Some(panel_id) = split_view_for_close.get_panel_id_for_uuid(pane_uuid) {
-                        if let Err(e) = split_view_for_close.adapter_set_focus(panel_id) {
+                    if let Some(panel_id) = split_view_for_close.get_panel_id_for_uuid(pane_uuid)
+                        && let Err(e) = split_view_for_close.adapter_set_focus(panel_id) {
                             tracing::warn!("Failed to set focus on panel: {}", e);
                         }
-                    }
                 });
             }
         });
@@ -2556,38 +2544,37 @@ impl MainWindow {
         let notebook_for_unsplit = self.terminal_notebook.clone();
         let split_container_unsplit = self.split_container.clone();
         unsplit_session_action.connect_activate(move |_, param| {
-            if let Some(param) = param {
-                if let Some(session_id_str) = param.get::<String>() {
-                    if let Ok(session_id) = Uuid::parse_str(&session_id_str) {
-                        // Find the bridge containing this session
-                        let bridges = session_bridges_unsplit.borrow();
-                        for bridge in bridges.values() {
-                            if bridge.is_session_displayed(session_id) {
-                                // Clear session from split pane
-                                bridge.clear_session_from_panes(session_id);
+            if let Some(param) = param
+                && let Some(session_id_str) = param.get::<String>()
+                && let Ok(session_id) = Uuid::parse_str(&session_id_str)
+            {
+                // Find the bridge containing this session
+                let bridges = session_bridges_unsplit.borrow();
+                for bridge in bridges.values() {
+                    if bridge.is_session_displayed(session_id) {
+                        // Clear session from split pane
+                        bridge.clear_session_from_panes(session_id);
 
-                                // Move terminal back to TabView
-                                notebook_for_unsplit.reparent_terminal_to_tab(session_id);
+                        // Move terminal back to TabView
+                        notebook_for_unsplit.reparent_terminal_to_tab(session_id);
 
-                                // Clear tab color indicator
-                                notebook_for_unsplit.clear_tab_split_color(session_id);
+                        // Clear tab color indicator
+                        notebook_for_unsplit.clear_tab_split_color(session_id);
 
-                                // Check if any sessions remain in this split view
-                                let has_sessions_in_split = bridge
-                                    .pane_ids()
-                                    .iter()
-                                    .any(|&pane_id| bridge.get_pane_session(pane_id).is_some());
+                        // Check if any sessions remain in this split view
+                        let has_sessions_in_split = bridge
+                            .pane_ids()
+                            .iter()
+                            .any(|&pane_id| bridge.get_pane_session(pane_id).is_some());
 
-                                if !has_sessions_in_split {
-                                    // No sessions in split view - hide it and show TabView
-                                    bridge.widget().set_visible(false);
-                                    split_container_unsplit.set_visible(false);
-                                    notebook_for_unsplit.widget().set_vexpand(true);
-                                    notebook_for_unsplit.show_tab_view_content();
-                                }
-                                break;
-                            }
+                        if !has_sessions_in_split {
+                            // No sessions in split view - hide it and show TabView
+                            bridge.widget().set_visible(false);
+                            split_container_unsplit.set_visible(false);
+                            notebook_for_unsplit.widget().set_vexpand(true);
+                            notebook_for_unsplit.show_tab_view_content();
                         }
+                        break;
                     }
                 }
             }
@@ -2769,10 +2756,10 @@ impl MainWindow {
                 split_view_for_close.set_focused_pane(Some(pane_uuid));
 
                 // Update focus styling via the adapter
-                if let Some(panel_id) = split_view_for_close.get_panel_id_for_uuid(pane_uuid) {
-                    if let Err(e) = split_view_for_close.adapter_set_focus(panel_id) {
-                        tracing::warn!("Failed to set focus on panel: {}", e);
-                    }
+                if let Some(panel_id) = split_view_for_close.get_panel_id_for_uuid(pane_uuid)
+                    && let Err(e) = split_view_for_close.adapter_set_focus(panel_id)
+                {
+                    tracing::warn!("Failed to set focus on panel: {}", e);
                 }
             });
         }
@@ -2863,20 +2850,20 @@ impl MainWindow {
                     std::time::Duration::from_millis(u64::from(delay_ms)),
                     move || {
                         // Only proceed if this is still the pending query
-                        if let Some(pending) = sidebar_for_timeout.pending_search_query() {
-                            if pending == query {
-                                sidebar_for_timeout.hide_search_pending();
-                                sidebar_for_timeout.set_pending_search_query(None);
-                                Self::filter_connections(
-                                    &state_for_timeout,
-                                    &sidebar_for_timeout,
-                                    &pending,
-                                );
+                        if let Some(pending) = sidebar_for_timeout.pending_search_query()
+                            && pending == query
+                        {
+                            sidebar_for_timeout.hide_search_pending();
+                            sidebar_for_timeout.set_pending_search_query(None);
+                            Self::filter_connections(
+                                &state_for_timeout,
+                                &sidebar_for_timeout,
+                                &pending,
+                            );
 
-                                // Restore state if search cleared
-                                if pending.is_empty() {
-                                    sidebar_for_timeout.restore_pre_search_state();
-                                }
+                            // Restore state if search cleared
+                            if pending.is_empty() {
+                                sidebar_for_timeout.restore_pre_search_state();
                             }
                         }
                     },
@@ -2951,18 +2938,17 @@ impl MainWindow {
                 // Get session ID for this page
                 if let Some(session_id) = notebook_clone.get_session_id_for_page(page_num) {
                     // Check if this is a VNC, RDP, or SPICE session - they display differently
-                    if let Some(info) = notebook_clone.get_session_info(session_id) {
-                        if info.protocol == "vnc"
+                    if let Some(info) = notebook_clone.get_session_info(session_id)
+                        && (info.protocol == "vnc"
                             || info.protocol == "rdp"
-                            || info.protocol == "spice"
-                        {
-                            // For VNC/RDP/SPICE: hide split view, show TabView content
-                            global_split_view.widget().set_visible(false);
-                            split_container_for_tab.set_visible(false);
-                            notebook_clone.widget().set_vexpand(true);
-                            notebook_clone.show_tab_view_content();
-                            return;
-                        }
+                            || info.protocol == "spice")
+                    {
+                        // For VNC/RDP/SPICE: hide split view, show TabView content
+                        global_split_view.widget().set_visible(false);
+                        split_container_for_tab.set_visible(false);
+                        notebook_clone.widget().set_vexpand(true);
+                        notebook_clone.show_tab_view_content();
+                        return;
                     }
 
                     // For SSH: check if this session has its own split bridge
@@ -2994,11 +2980,11 @@ impl MainWindow {
                         // Update tab colors for ALL sessions in this split view
                         // Each tab should have the color of its pane
                         for pane_id in bridge.pane_ids() {
-                            if let Some(pane_session_id) = bridge.get_pane_session(pane_id) {
-                                if let Some(pane_color) = bridge.get_pane_color(pane_id) {
-                                    notebook_clone.set_tab_split_color(pane_session_id, pane_color);
-                                    bridge.set_session_color(pane_session_id, pane_color);
-                                }
+                            if let Some(pane_session_id) = bridge.get_pane_session(pane_id)
+                                && let Some(pane_color) = bridge.get_pane_color(pane_id)
+                            {
+                                notebook_clone.set_tab_split_color(pane_session_id, pane_color);
+                                bridge.set_session_color(pane_session_id, pane_color);
                             }
                         }
 
@@ -3253,22 +3239,20 @@ impl MainWindow {
         let tree_model = sidebar.tree_model();
         if let Some(item) = tree_model.item(position) {
             // TreeListModel returns TreeListRow, need to get the actual item
-            if let Some(row) = item.downcast_ref::<gtk4::TreeListRow>() {
-                if let Some(conn_item) =
+            if let Some(row) = item.downcast_ref::<gtk4::TreeListRow>()
+                && let Some(conn_item) =
                     row.item().and_then(|i| i.downcast::<ConnectionItem>().ok())
-                {
-                    if !conn_item.is_group() {
-                        let id_str = conn_item.id();
-                        if let Ok(conn_id) = Uuid::parse_str(&id_str) {
-                            Self::start_connection_with_credential_resolution(
-                                state.clone(),
-                                notebook.clone(),
-                                split_view.clone(),
-                                sidebar.clone(),
-                                conn_id,
-                            );
-                        }
-                    }
+                && !conn_item.is_group()
+            {
+                let id_str = conn_item.id();
+                if let Ok(conn_id) = Uuid::parse_str(&id_str) {
+                    Self::start_connection_with_credential_resolution(
+                        state.clone(),
+                        notebook.clone(),
+                        split_view.clone(),
+                        sidebar.clone(),
+                        conn_id,
+                    );
                 }
             }
         }
@@ -3415,14 +3399,12 @@ impl MainWindow {
             | ProtocolType::Serial
             | ProtocolType::Kubernetes => {
                 // For SSH/SPICE, cache credentials if available and start connection
-                if let Some(ref creds) = resolved_credentials {
-                    if let (Some(username), Some(password)) =
+                if let Some(ref creds) = resolved_credentials
+                    && let (Some(username), Some(password)) =
                         (&creds.username, creds.expose_password())
-                    {
-                        if let Ok(mut state_mut) = state.try_borrow_mut() {
-                            state_mut.cache_credentials(connection_id, username, password, "");
-                        }
-                    }
+                    && let Ok(mut state_mut) = state.try_borrow_mut()
+                {
+                    state_mut.cache_credentials(connection_id, username, password, "");
                 }
                 Self::start_connection_with_split(
                     &state,
@@ -3502,17 +3484,17 @@ impl MainWindow {
                             tracing::warn!("Port check failed for RDP connection: {e}");
                             sidebar_clone
                                 .update_connection_status(&connection_id.to_string(), "failed");
-                            if let Some(root) = notebook_clone.widget().root() {
-                                if let Some(window) = root.downcast_ref::<gtk4::Window>() {
-                                    crate::alert::show_error(
-                                        window,
-                                        "Connection Failed",
-                                        &format!(
-                                            "{e}\n\n\
+                            if let Some(root) = notebook_clone.widget().root()
+                                && let Some(window) = root.downcast_ref::<gtk4::Window>()
+                            {
+                                crate::alert::show_error(
+                                    window,
+                                    "Connection Failed",
+                                    &format!(
+                                        "{e}\n\n\
                                             The host may be offline or the port may be blocked."
-                                        ),
-                                    );
-                                }
+                                    ),
+                                );
                             }
                         }
                     }
@@ -3544,20 +3526,20 @@ impl MainWindow {
         cached_credentials: Option<(String, String, String)>,
     ) {
         // Use resolved credentials if available
-        if let Some(ref creds) = resolved_credentials {
-            if let (Some(username), Some(password)) = (&creds.username, creds.expose_password()) {
-                Self::start_rdp_session_with_credentials(
-                    &state,
-                    &notebook,
-                    &split_view,
-                    &sidebar,
-                    connection_id,
-                    username,
-                    password,
-                    "",
-                );
-                return;
-            }
+        if let Some(ref creds) = resolved_credentials
+            && let (Some(username), Some(password)) = (&creds.username, creds.expose_password())
+        {
+            Self::start_rdp_session_with_credentials(
+                &state,
+                &notebook,
+                &split_view,
+                &sidebar,
+                connection_id,
+                username,
+                password,
+                "",
+            );
+            return;
         }
 
         // Use cached credentials if available
@@ -3579,17 +3561,16 @@ impl MainWindow {
         if let Some(window) = notebook
             .widget()
             .ancestor(adw::ApplicationWindow::static_type())
+            && let Some(app_window) = window.downcast_ref::<adw::ApplicationWindow>()
         {
-            if let Some(app_window) = window.downcast_ref::<adw::ApplicationWindow>() {
-                Self::start_rdp_with_password_dialog(
-                    state,
-                    notebook,
-                    split_view,
-                    sidebar,
-                    connection_id,
-                    app_window,
-                );
-            }
+            Self::start_rdp_with_password_dialog(
+                state,
+                notebook,
+                split_view,
+                sidebar,
+                connection_id,
+                app_window,
+            );
         }
     }
 
@@ -3650,17 +3631,17 @@ impl MainWindow {
                             tracing::warn!("Port check failed for VNC connection: {e}");
                             sidebar_clone
                                 .update_connection_status(&connection_id.to_string(), "failed");
-                            if let Some(root) = notebook_clone.widget().root() {
-                                if let Some(window) = root.downcast_ref::<gtk4::Window>() {
-                                    crate::alert::show_error(
-                                        window,
-                                        "Connection Failed",
-                                        &format!(
-                                            "{e}\n\n\
+                            if let Some(root) = notebook_clone.widget().root()
+                                && let Some(window) = root.downcast_ref::<gtk4::Window>()
+                            {
+                                crate::alert::show_error(
+                                    window,
+                                    "Connection Failed",
+                                    &format!(
+                                        "{e}\n\n\
                                             The host may be offline or the port may be blocked."
-                                        ),
-                                    );
-                                }
+                                    ),
+                                );
                             }
                         }
                     }
@@ -3692,20 +3673,20 @@ impl MainWindow {
         cached_credentials: Option<(String, String, String)>,
     ) {
         // Use resolved credentials if available (VNC only needs password)
-        if let Some(ref creds) = resolved_credentials {
-            if let Some(password) = creds.expose_password() {
-                if let Ok(mut state_mut) = state.try_borrow_mut() {
-                    state_mut.cache_credentials(connection_id, "", password, "");
-                }
-                Self::start_connection_with_split(
-                    &state,
-                    &notebook,
-                    &split_view,
-                    &sidebar,
-                    connection_id,
-                );
-                return;
+        if let Some(ref creds) = resolved_credentials
+            && let Some(password) = creds.expose_password()
+        {
+            if let Ok(mut state_mut) = state.try_borrow_mut() {
+                state_mut.cache_credentials(connection_id, "", password, "");
             }
+            Self::start_connection_with_split(
+                &state,
+                &notebook,
+                &split_view,
+                &sidebar,
+                connection_id,
+            );
+            return;
         }
 
         // Use cached credentials if available
@@ -3724,17 +3705,16 @@ impl MainWindow {
         if let Some(window) = notebook
             .widget()
             .ancestor(adw::ApplicationWindow::static_type())
+            && let Some(app_window) = window.downcast_ref::<adw::ApplicationWindow>()
         {
-            if let Some(app_window) = window.downcast_ref::<adw::ApplicationWindow>() {
-                Self::start_vnc_with_password_dialog(
-                    state,
-                    notebook,
-                    split_view,
-                    sidebar,
-                    connection_id,
-                    app_window,
-                );
-            }
+            Self::start_vnc_with_password_dialog(
+                state,
+                notebook,
+                split_view,
+                sidebar,
+                connection_id,
+                app_window,
+            );
         }
     }
 
@@ -4154,11 +4134,10 @@ impl MainWindow {
             // If it doesn't, the tab was closed by user
             if notebook_clone.get_session_info(session_id).is_none() {
                 // Record connection end in history (user closed tab)
-                if let Some(entry_id) = history_entry_id {
-                    if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
+                if let Some(entry_id) = history_entry_id
+                    && let Ok(mut state_mut) = state_clone.try_borrow_mut() {
                         state_mut.record_connection_end(entry_id);
                     }
-                }
                 // Decrement session count - status changes only if no other sessions active
                 sidebar_clone.decrement_session_count(&connection_id_str, false);
                 return;
@@ -4184,8 +4163,8 @@ impl MainWindow {
             };
 
             // Record connection end/failure in history
-            if let Some(entry_id) = history_entry_id {
-                if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
+            if let Some(entry_id) = history_entry_id
+                && let Ok(mut state_mut) = state_clone.try_borrow_mut() {
                     if is_failure {
                         let error_msg =
                             format!("Exit status: {exit_status} (Signal: {term_sig}, Code: {exit_code})");
@@ -4194,7 +4173,6 @@ impl MainWindow {
                         state_mut.record_connection_end(entry_id);
                     }
                 }
-            }
 
             if is_failure {
                 tracing::error!(%session_id, exit_status, term_sig, exit_code, "Session exited with failure");
@@ -4263,19 +4241,19 @@ impl MainWindow {
                 let elapsed = now.duration_since(*last_log_time.borrow());
 
                 if *counter >= 100 || elapsed.as_secs() >= 5 {
-                    if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut() {
-                        if let Some(ref mut writer) = *writer_opt {
-                            let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
-                            let _ = writeln!(
-                                writer,
-                                "[{}] Terminal activity ({} changes)",
-                                timestamp, *counter
-                            );
+                    if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut()
+                        && let Some(ref mut writer) = *writer_opt
+                    {
+                        let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+                        let _ = writeln!(
+                            writer,
+                            "[{}] Terminal activity ({} changes)",
+                            timestamp, *counter
+                        );
 
-                            if *flush_count >= 10 || elapsed.as_secs() >= 30 {
-                                let _ = writer.flush();
-                                *flush_count = 0;
-                            }
+                        if *flush_count >= 10 || elapsed.as_secs() >= 30 {
+                            let _ = writer.flush();
+                            *flush_count = 0;
                         }
                     }
 
@@ -4301,14 +4279,13 @@ impl MainWindow {
                         '\r' | '\n' => {
                             // End of command - log it
                             if !buffer.is_empty() {
-                                if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut() {
-                                    if let Some(ref mut writer) = *writer_opt {
-                                        let timestamp =
-                                            chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
-                                        let _ =
-                                            writeln!(writer, "[{}] INPUT: {}", timestamp, *buffer);
-                                        let _ = writer.flush();
-                                    }
+                                if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut()
+                                    && let Some(ref mut writer) = *writer_opt
+                                {
+                                    let timestamp =
+                                        chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+                                    let _ = writeln!(writer, "[{}] INPUT: {}", timestamp, *buffer);
+                                    let _ = writer.flush();
                                 }
                                 buffer.clear();
                             }
@@ -4319,25 +4296,23 @@ impl MainWindow {
                         }
                         '\x03' => {
                             // Ctrl+C
-                            if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut() {
-                                if let Some(ref mut writer) = *writer_opt {
-                                    let timestamp =
-                                        chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
-                                    let _ = writeln!(writer, "[{}] INPUT: ^C", timestamp);
-                                    let _ = writer.flush();
-                                }
+                            if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut()
+                                && let Some(ref mut writer) = *writer_opt
+                            {
+                                let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+                                let _ = writeln!(writer, "[{}] INPUT: ^C", timestamp);
+                                let _ = writer.flush();
                             }
                             buffer.clear();
                         }
                         '\x04' => {
                             // Ctrl+D
-                            if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut() {
-                                if let Some(ref mut writer) = *writer_opt {
-                                    let timestamp =
-                                        chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
-                                    let _ = writeln!(writer, "[{}] INPUT: ^D", timestamp);
-                                    let _ = writer.flush();
-                                }
+                            if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut()
+                                && let Some(ref mut writer) = *writer_opt
+                            {
+                                let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+                                let _ = writeln!(writer, "[{}] INPUT: ^D", timestamp);
+                                let _ = writer.flush();
                             }
                         }
                         _ if ch.is_control() => {
@@ -4352,13 +4327,12 @@ impl MainWindow {
                 // Periodic flush for long-running commands
                 let now = std::time::Instant::now();
                 if now.duration_since(*last_flush.borrow()).as_secs() >= 30 && !buffer.is_empty() {
-                    if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut() {
-                        if let Some(ref mut writer) = *writer_opt {
-                            let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
-                            let _ =
-                                writeln!(writer, "[{}] INPUT (partial): {}", timestamp, *buffer);
-                            let _ = writer.flush();
-                        }
+                    if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut()
+                        && let Some(ref mut writer) = *writer_opt
+                    {
+                        let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+                        let _ = writeln!(writer, "[{}] INPUT (partial): {}", timestamp, *buffer);
+                        let _ = writer.flush();
                     }
                     *last_flush.borrow_mut() = now;
                 }
@@ -4388,18 +4362,16 @@ impl MainWindow {
                             let new_lines: Vec<&str> =
                                 current_text.lines().skip(last.lines().count()).collect();
 
-                            if !new_lines.is_empty() {
-                                if let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut() {
-                                    if let Some(ref mut writer) = *writer_opt {
-                                        let timestamp =
-                                            chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
-                                        let _ = writeln!(writer, "[{}] OUTPUT:", timestamp);
-                                        for line in new_lines {
-                                            let _ = writeln!(writer, "  {}", line);
-                                        }
-                                        let _ = writer.flush();
-                                    }
+                            if !new_lines.is_empty()
+                                && let Ok(mut writer_opt) = log_writer_clone.try_borrow_mut()
+                                && let Some(ref mut writer) = *writer_opt
+                            {
+                                let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+                                let _ = writeln!(writer, "[{}] OUTPUT:", timestamp);
+                                for line in new_lines {
+                                    let _ = writeln!(writer, "  {}", line);
                                 }
+                                let _ = writer.flush();
                             }
 
                             *last = current_text;
@@ -4473,21 +4445,20 @@ impl MainWindow {
                         tracing::error!(%e, "Failed to save settings");
                     } else {
                         // Update open-keepass action enabled state based on backend
-                        if let Some(action) = window_clone.lookup_action("open-keepass") {
-                            if let Some(simple_action) = action.downcast_ref::<gio::SimpleAction>()
-                            {
-                                let action_enabled = match backend {
-                                    rustconn_core::config::SecretBackendType::LibSecret
-                                    | rustconn_core::config::SecretBackendType::Bitwarden
-                                    | rustconn_core::config::SecretBackendType::OnePassword
-                                    | rustconn_core::config::SecretBackendType::Passbolt => true,
-                                    rustconn_core::config::SecretBackendType::KeePassXc
-                                    | rustconn_core::config::SecretBackendType::KdbxFile => {
-                                        keepass_enabled && kdbx_path_exists
-                                    }
-                                };
-                                simple_action.set_enabled(action_enabled);
-                            }
+                        if let Some(action) = window_clone.lookup_action("open-keepass")
+                            && let Some(simple_action) = action.downcast_ref::<gio::SimpleAction>()
+                        {
+                            let action_enabled = match backend {
+                                rustconn_core::config::SecretBackendType::LibSecret
+                                | rustconn_core::config::SecretBackendType::Bitwarden
+                                | rustconn_core::config::SecretBackendType::OnePassword
+                                | rustconn_core::config::SecretBackendType::Passbolt => true,
+                                rustconn_core::config::SecretBackendType::KeePassXc
+                                | rustconn_core::config::SecretBackendType::KdbxFile => {
+                                    keepass_enabled && kdbx_path_exists
+                                }
+                            };
+                            simple_action.set_enabled(action_enabled);
                         }
                     }
                 } else {
@@ -4775,10 +4746,10 @@ impl MainWindow {
         dialog.run(move |result| {
             if let Some(export_result) = result {
                 // Optionally open the output location on success
-                if !export_result.output_files.is_empty() {
-                    if let Some(first_file) = export_result.output_files.first() {
-                        ExportDialog::open_output_location(first_file);
-                    }
+                if !export_result.output_files.is_empty()
+                    && let Some(first_file) = export_result.output_files.first()
+                {
+                    ExportDialog::open_output_location(first_file);
                 }
 
                 // Show success notification

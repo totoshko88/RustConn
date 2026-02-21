@@ -64,12 +64,12 @@ impl Protocol for RdpProtocol {
         }
 
         // Validate color depth if specified
-        if let Some(depth) = rdp_config.color_depth {
-            if !matches!(depth, 8 | 15 | 16 | 24 | 32) {
-                return Err(ProtocolError::InvalidConfig(format!(
-                    "Invalid color depth: {depth}. Must be 8, 15, 16, 24, or 32"
-                )));
-            }
+        if let Some(depth) = rdp_config.color_depth
+            && !matches!(depth, 8 | 15 | 16 | 24 | 32)
+        {
+            return Err(ProtocolError::InvalidConfig(format!(
+                "Invalid color depth: {depth}. Must be 8, 15, 16, 24, or 32"
+            )));
         }
 
         Ok(())

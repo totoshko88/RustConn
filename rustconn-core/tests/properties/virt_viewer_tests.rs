@@ -367,8 +367,10 @@ host-subject=OU=PVE Cluster Node,O=Proxmox,CN=node1
     let result = importer.import_from_path(f.path()).expect("import");
 
     assert_eq!(result.connections.len(), 1);
-    assert!(result.connections[0]
-        .tags
-        .iter()
-        .any(|t| t.starts_with("host-subject:")));
+    assert!(
+        result.connections[0]
+            .tags
+            .iter()
+            .any(|t| t.starts_with("host-subject:"))
+    );
 }

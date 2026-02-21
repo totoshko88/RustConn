@@ -11,7 +11,7 @@ use gtk4::{
 };
 use libadwaita as adw;
 use rustconn_core::password_generator::{
-    estimate_crack_time, PasswordGenerator, PasswordGeneratorConfig, PasswordStrength,
+    PasswordGenerator, PasswordGeneratorConfig, PasswordStrength, estimate_crack_time,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -323,9 +323,9 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
         let generator = generator.clone();
 
         Rc::new(move |password: &str| {
-            let gen = generator.borrow();
-            let entropy = gen.calculate_entropy(password);
-            let strength = gen.evaluate_strength(password);
+            let pw_gen = generator.borrow();
+            let entropy = pw_gen.calculate_entropy(password);
+            let strength = pw_gen.evaluate_strength(password);
 
             let level = match strength {
                 PasswordStrength::VeryWeak => 1.0,

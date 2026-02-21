@@ -13,7 +13,7 @@
 use proptest::prelude::*;
 use rustconn_core::models::WindowGeometry;
 use rustconn_core::protocol::{
-    build_freerdp_args, extract_geometry_from_args, has_decorations_flag, FreeRdpConfig,
+    FreeRdpConfig, build_freerdp_args, extract_geometry_from_args, has_decorations_flag,
 };
 use secrecy::ExposeSecret;
 

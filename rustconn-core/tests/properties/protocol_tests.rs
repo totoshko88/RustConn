@@ -882,8 +882,8 @@ proptest! {
     fn prop_ssh_identity_file_command_generation(config in arb_ssh_config_with_identities_only()) {
         let args = config.build_command_args();
 
-        if let Some(ref key_path) = config.key_path {
-            if !key_path.as_os_str().is_empty() {
+        if let Some(ref key_path) = config.key_path
+            && !key_path.as_os_str().is_empty() {
                 // When key_path is set, args should contain "-i" followed by the path
                 let path_str = key_path.display().to_string();
                 let has_identity = args.windows(2).any(|w| w[0] == "-i" && w[1] == path_str);
@@ -893,7 +893,6 @@ proptest! {
                     args
                 );
             }
-        }
     }
 
     // **Feature: rustconn-bugfixes, Property 5: SSH Config Serialization Round-Trip**
@@ -1103,7 +1102,7 @@ proptest! {
 // Property Tests for Cloud Provider Icon Detection
 // ============================================================================
 
-use rustconn_core::protocol::icons::{detect_provider, CloudProvider};
+use rustconn_core::protocol::icons::{CloudProvider, detect_provider};
 
 /// Generator for AWS-style commands
 fn arb_aws_command() -> impl Strategy<Value = String> {

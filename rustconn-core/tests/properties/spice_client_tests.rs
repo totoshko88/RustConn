@@ -9,9 +9,9 @@
 
 use proptest::prelude::*;
 use rustconn_core::spice_client::{
-    build_spice_viewer_args, detect_spice_viewer, is_embedded_spice_available, SpiceClientConfig,
-    SpiceClientError, SpiceCompression, SpiceRect, SpiceSecurityProtocol, SpiceSharedFolder,
-    SpiceViewerLaunchResult,
+    SpiceClientConfig, SpiceClientError, SpiceCompression, SpiceRect, SpiceSecurityProtocol,
+    SpiceSharedFolder, SpiceViewerLaunchResult, build_spice_viewer_args, detect_spice_viewer,
+    is_embedded_spice_available,
 };
 
 // Strategy for generating valid hostnames

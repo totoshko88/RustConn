@@ -336,53 +336,53 @@ impl TerminalPane {
             popover.set_pointing_to(Some(&gtk4::gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
             popover.set_has_arrow(false);
 
-            if let Some(root) = container.root() {
-                if let Some(window) = root.downcast_ref::<gtk4::ApplicationWindow>() {
-                    let action_group = gtk4::gio::SimpleActionGroup::new();
-                    let window_weak = window.downgrade();
+            if let Some(root) = container.root()
+                && let Some(window) = root.downcast_ref::<gtk4::ApplicationWindow>()
+            {
+                let action_group = gtk4::gio::SimpleActionGroup::new();
+                let window_weak = window.downgrade();
 
-                    let simple_actions = [
-                        "copy",
-                        "paste",
-                        "close-tab",
-                        "close-pane",
-                        "split-horizontal",
-                        "split-vertical",
-                    ];
+                let simple_actions = [
+                    "copy",
+                    "paste",
+                    "close-tab",
+                    "close-pane",
+                    "split-horizontal",
+                    "split-vertical",
+                ];
 
-                    for name in simple_actions {
-                        let win = window_weak.clone();
-                        let action_name = name.to_string();
-                        let action = gtk4::gio::SimpleAction::new(name, None);
-                        action.connect_activate(move |_, _| {
-                            if let Some(w) = win.upgrade() {
-                                if let Some(a) = w.lookup_action(&action_name) {
-                                    a.activate(None);
-                                }
-                            }
-                        });
-                        action_group.add_action(&action);
-                    }
-
-                    let string_actions = ["close-tab-by-id", "unsplit-session"];
-
-                    for name in string_actions {
-                        let win = window_weak.clone();
-                        let action_name = name.to_string();
-                        let action =
-                            gtk4::gio::SimpleAction::new(name, Some(gtk4::glib::VariantTy::STRING));
-                        action.connect_activate(move |_, param| {
-                            if let Some(w) = win.upgrade() {
-                                if let Some(a) = w.lookup_action(&action_name) {
-                                    a.activate(param);
-                                }
-                            }
-                        });
-                        action_group.add_action(&action);
-                    }
-
-                    popover.insert_action_group("win", Some(&action_group));
+                for name in simple_actions {
+                    let win = window_weak.clone();
+                    let action_name = name.to_string();
+                    let action = gtk4::gio::SimpleAction::new(name, None);
+                    action.connect_activate(move |_, _| {
+                        if let Some(w) = win.upgrade()
+                            && let Some(a) = w.lookup_action(&action_name)
+                        {
+                            a.activate(None);
+                        }
+                    });
+                    action_group.add_action(&action);
                 }
+
+                let string_actions = ["close-tab-by-id", "unsplit-session"];
+
+                for name in string_actions {
+                    let win = window_weak.clone();
+                    let action_name = name.to_string();
+                    let action =
+                        gtk4::gio::SimpleAction::new(name, Some(gtk4::glib::VariantTy::STRING));
+                    action.connect_activate(move |_, param| {
+                        if let Some(w) = win.upgrade()
+                            && let Some(a) = w.lookup_action(&action_name)
+                        {
+                            a.activate(param);
+                        }
+                    });
+                    action_group.add_action(&action);
+                }
+
+                popover.insert_action_group("win", Some(&action_group));
             }
 
             popover.popup();
@@ -423,11 +423,11 @@ impl TerminalPane {
         drop_target.connect_drop(move |_target, value, _x, _y| {
             container.remove_css_class("drop-target-highlight");
 
-            if let Ok(session_str) = value.get::<String>() {
-                if let Ok(session_id) = Uuid::parse_str(&session_str) {
-                    on_drop(pane_id, session_id);
-                    return true;
-                }
+            if let Ok(session_str) = value.get::<String>()
+                && let Ok(session_id) = Uuid::parse_str(&session_str)
+            {
+                on_drop(pane_id, session_id);
+                return true;
             }
             false
         });
@@ -1067,13 +1067,13 @@ impl SplitViewBridge {
             .any(|&pid| adapter.get_panel_session(pid).is_some());
 
         // Release container color only when closing the entire split view
-        if no_panels || no_sessions {
-            if let Some(color) = *self.container_color.borrow() {
-                self.color_pool
-                    .borrow_mut()
-                    .release(rustconn_core::split::ColorId::new(color as u8));
-                *self.container_color.borrow_mut() = None;
-            }
+        if (no_panels || no_sessions)
+            && let Some(color) = *self.container_color.borrow()
+        {
+            self.color_pool
+                .borrow_mut()
+                .release(rustconn_core::split::ColorId::new(color as u8));
+            *self.container_color.borrow_mut() = None;
         }
 
         // Per Requirement 13.3: When the last remaining Panel in a Split_Container
@@ -1120,13 +1120,11 @@ impl SplitViewBridge {
         let should_close_split = remaining_panels.is_empty();
 
         // Release container color only when closing the entire split view
-        if should_close_split {
-            if let Some(color) = *self.container_color.borrow() {
-                self.color_pool
-                    .borrow_mut()
-                    .release(rustconn_core::split::ColorId::new(color as u8));
-                *self.container_color.borrow_mut() = None;
-            }
+        if should_close_split && let Some(color) = *self.container_color.borrow() {
+            self.color_pool
+                .borrow_mut()
+                .release(rustconn_core::split::ColorId::new(color as u8));
+            *self.container_color.borrow_mut() = None;
         }
 
         // Update focused pane to first available
@@ -1416,12 +1414,12 @@ impl SplitViewBridge {
 
     /// Shows info content in the focused pane
     pub fn show_info_content(&self, connection: &rustconn_core::Connection) {
-        if let Some(focused_uuid) = *self.focused_pane_uuid.borrow() {
-            if let Some(&panel_id) = self.uuid_panel_map.borrow().get(&focused_uuid) {
-                let adapter = self.adapter.borrow();
-                let info_content = Self::create_info_content(connection);
-                adapter.set_panel_content(panel_id, &info_content);
-            }
+        if let Some(focused_uuid) = *self.focused_pane_uuid.borrow()
+            && let Some(&panel_id) = self.uuid_panel_map.borrow().get(&focused_uuid)
+        {
+            let adapter = self.adapter.borrow();
+            let info_content = Self::create_info_content(connection);
+            adapter.set_panel_content(panel_id, &info_content);
         }
     }
 
@@ -1579,12 +1577,11 @@ impl SplitViewBridge {
         *self.focused_pane_uuid.borrow_mut() = pane_uuid;
 
         // Update the adapter's focus styling (this updates the actual visible widgets)
-        if let Some(uuid) = pane_uuid {
-            if let Some(&panel_id) = self.uuid_panel_map.borrow().get(&uuid) {
-                if let Err(e) = self.adapter.borrow_mut().set_focus(panel_id) {
-                    tracing::warn!("Failed to set adapter focus: {}", e);
-                }
-            }
+        if let Some(uuid) = pane_uuid
+            && let Some(&panel_id) = self.uuid_panel_map.borrow().get(&uuid)
+            && let Err(e) = self.adapter.borrow_mut().set_focus(panel_id)
+        {
+            tracing::warn!("Failed to set adapter focus: {}", e);
         }
     }
 
@@ -1653,7 +1650,7 @@ impl SplitViewBridge {
                         let map = uuid_panel_map.borrow();
                         // Reverse lookup: find UUID for panel_id
                         map.iter()
-                            .find(|(_, &pid)| pid == clicked_panel_id)
+                            .find(|&(_, &pid)| pid == clicked_panel_id)
                             .map(|(&uuid, _)| uuid)
                     };
 

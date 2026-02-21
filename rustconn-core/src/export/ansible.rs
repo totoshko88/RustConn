@@ -53,15 +53,15 @@ impl AnsibleExporter {
         }
 
         // Output ungrouped connections first (under [all] or no section)
-        if let Some(ungrouped) = grouped.remove(&None) {
-            if !ungrouped.is_empty() {
-                output.push_str("[ungrouped]\n");
-                for conn in ungrouped {
-                    output.push_str(&Self::format_host_entry(conn));
-                    output.push('\n');
-                }
+        if let Some(ungrouped) = grouped.remove(&None)
+            && !ungrouped.is_empty()
+        {
+            output.push_str("[ungrouped]\n");
+            for conn in ungrouped {
+                output.push_str(&Self::format_host_entry(conn));
                 output.push('\n');
             }
+            output.push('\n');
         }
 
         // Output grouped connections
@@ -114,12 +114,12 @@ impl AnsibleExporter {
         let has_groups = grouped.keys().any(Option::is_some);
 
         // Output ungrouped hosts directly under 'all'
-        if let Some(ungrouped) = grouped.get(&None) {
-            if !ungrouped.is_empty() {
-                output.push_str("  hosts:\n");
-                for conn in ungrouped {
-                    output.push_str(&Self::format_yaml_host(conn, 4));
-                }
+        if let Some(ungrouped) = grouped.get(&None)
+            && !ungrouped.is_empty()
+        {
+            output.push_str("  hosts:\n");
+            for conn in ungrouped {
+                output.push_str(&Self::format_yaml_host(conn, 4));
             }
         }
 
@@ -174,13 +174,13 @@ impl AnsibleExporter {
         }
 
         // ansible_ssh_private_key_file
-        if let ProtocolConfig::Ssh(ref ssh_config) = connection.protocol_config {
-            if let Some(ref key_path) = ssh_config.key_path {
-                vars.push(format!(
-                    "ansible_ssh_private_key_file={}",
-                    key_path.display()
-                ));
-            }
+        if let ProtocolConfig::Ssh(ref ssh_config) = connection.protocol_config
+            && let Some(ref key_path) = ssh_config.key_path
+        {
+            vars.push(format!(
+                "ansible_ssh_private_key_file={}",
+                key_path.display()
+            ));
         }
 
         if !vars.is_empty() {
@@ -217,14 +217,14 @@ impl AnsibleExporter {
         }
 
         // ansible_ssh_private_key_file
-        if let ProtocolConfig::Ssh(ref ssh_config) = connection.protocol_config {
-            if let Some(ref key_path) = ssh_config.key_path {
-                let _ = writeln!(
-                    output,
-                    "{indent_str}  ansible_ssh_private_key_file: {}",
-                    key_path.display()
-                );
-            }
+        if let ProtocolConfig::Ssh(ref ssh_config) = connection.protocol_config
+            && let Some(ref key_path) = ssh_config.key_path
+        {
+            let _ = writeln!(
+                output,
+                "{indent_str}  ansible_ssh_private_key_file: {}",
+                key_path.display()
+            );
         }
 
         output

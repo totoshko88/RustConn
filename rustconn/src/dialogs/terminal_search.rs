@@ -9,8 +9,8 @@ use gtk4::{Box as GtkBox, Button, CheckButton, Label, Orientation, SearchEntry};
 use libadwaita as adw;
 use std::cell::RefCell;
 use std::rc::Rc;
-use vte4::prelude::*;
 use vte4::Terminal;
+use vte4::prelude::*;
 
 use crate::i18n::i18n;
 
@@ -323,10 +323,8 @@ impl TerminalSearchDialog {
 
             // Add hover-highlight for all matches when enabled
             // VTE4 match_add_regex highlights text on mouse hover
-            if highlight_all {
-                if let Ok(hl_regex) = vte4::Regex::for_search(&pattern, 0) {
-                    terminal.match_add_regex(&hl_regex, 0);
-                }
+            if highlight_all && let Ok(hl_regex) = vte4::Regex::for_search(&pattern, 0) {
+                terminal.match_add_regex(&hl_regex, 0);
             }
 
             if terminal.search_find_next() {

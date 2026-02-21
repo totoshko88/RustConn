@@ -4,7 +4,7 @@
 
 use proptest::prelude::*;
 use rustconn_core::cluster::Cluster;
-use rustconn_core::export::{NativeExport, NativeImportError, NATIVE_FORMAT_VERSION};
+use rustconn_core::export::{NATIVE_FORMAT_VERSION, NativeExport, NativeImportError};
 use rustconn_core::models::{Connection, ConnectionGroup, ConnectionTemplate};
 use rustconn_core::variables::Variable;
 

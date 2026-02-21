@@ -41,32 +41,26 @@ pub fn show_templates_manager(
     let manager_window = manager_dialog.window().clone();
 
     // Connect filter dropdown
-    if let Some(content) = manager_window.child() {
-        if let Some(vbox) = content.downcast_ref::<gtk4::Box>() {
-            if let Some(filter_box) = vbox.first_child() {
-                if let Some(hbox) = filter_box.downcast_ref::<gtk4::Box>() {
-                    if let Some(dropdown_widget) = hbox.last_child() {
-                        if let Some(filter_dropdown) =
-                            dropdown_widget.downcast_ref::<gtk4::DropDown>()
-                        {
-                            let list_clone = templates_list.clone();
-                            let templates_clone = state_templates.clone();
-                            filter_dropdown.connect_selected_notify(move |dropdown| {
-                                let selected = dropdown.selected();
-                                let filter = match selected {
-                                    1 => Some(rustconn_core::models::ProtocolType::Ssh),
-                                    2 => Some(rustconn_core::models::ProtocolType::Rdp),
-                                    3 => Some(rustconn_core::models::ProtocolType::Vnc),
-                                    4 => Some(rustconn_core::models::ProtocolType::Spice),
-                                    _ => None,
-                                };
-                                refresh_templates_list(&list_clone, &templates_clone, filter);
-                            });
-                        }
-                    }
-                }
-            }
-        }
+    if let Some(content) = manager_window.child()
+        && let Some(vbox) = content.downcast_ref::<gtk4::Box>()
+        && let Some(filter_box) = vbox.first_child()
+        && let Some(hbox) = filter_box.downcast_ref::<gtk4::Box>()
+        && let Some(dropdown_widget) = hbox.last_child()
+        && let Some(filter_dropdown) = dropdown_widget.downcast_ref::<gtk4::DropDown>()
+    {
+        let list_clone = templates_list.clone();
+        let templates_clone = state_templates.clone();
+        filter_dropdown.connect_selected_notify(move |dropdown| {
+            let selected = dropdown.selected();
+            let filter = match selected {
+                1 => Some(rustconn_core::models::ProtocolType::Ssh),
+                2 => Some(rustconn_core::models::ProtocolType::Rdp),
+                3 => Some(rustconn_core::models::ProtocolType::Vnc),
+                4 => Some(rustconn_core::models::ProtocolType::Spice),
+                _ => None,
+            };
+            refresh_templates_list(&list_clone, &templates_clone, filter);
+        });
     }
 
     // Set up "New Template" callback
@@ -86,10 +80,10 @@ pub fn show_templates_manager(
                     // Add to state templates (local cache)
                     templates_inner.borrow_mut().push(template.clone());
                     // Save to config file and active document
-                    if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
-                        if let Err(e) = state_mut.add_template(template) {
-                            alert::show_error(&manager_inner, &i18n("Error Saving Template"), &e);
-                        }
+                    if let Ok(mut state_mut) = state_inner.try_borrow_mut()
+                        && let Err(e) = state_mut.add_template(template)
+                    {
+                        alert::show_error(&manager_inner, &i18n("Error Saving Template"), &e);
                     }
                     // Refresh list
                     refresh_templates_list(&list_inner, &templates_inner, None);
@@ -121,10 +115,10 @@ pub fn show_templates_manager(
                     }
                     drop(templates);
                     // Update in config file and active document
-                    if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
-                        if let Err(e) = state_mut.update_template(updated) {
-                            alert::show_error(&manager_inner, &i18n("Error Saving Template"), &e);
-                        }
+                    if let Ok(mut state_mut) = state_inner.try_borrow_mut()
+                        && let Err(e) = state_mut.update_template(updated)
+                    {
+                        alert::show_error(&manager_inner, &i18n("Error Saving Template"), &e);
                     }
                     // Refresh list
                     refresh_templates_list(&list_inner, &templates_inner, None);
@@ -158,10 +152,10 @@ pub fn show_templates_manager(
                         // Remove from state templates (local cache)
                         templates_inner.borrow_mut().retain(|t| t.id != id);
                         // Remove from config file and active document
-                        if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
-                            if let Err(e) = state_mut.delete_template(id) {
-                                tracing::error!(%e, "Failed to delete template");
-                            }
+                        if let Ok(mut state_mut) = state_inner.try_borrow_mut()
+                            && let Err(e) = state_mut.delete_template(id)
+                        {
+                            tracing::error!(%e, "Failed to delete template");
                         }
                         // Refresh list
                         refresh_templates_list(&list_inner, &templates_inner, None);
@@ -215,10 +209,10 @@ pub fn refresh_templates_list(
     let mut spice_templates: Vec<&rustconn_core::models::ConnectionTemplate> = Vec::new();
 
     for template in templates_ref.iter() {
-        if let Some(filter) = protocol_filter {
-            if template.protocol != filter {
-                continue;
-            }
+        if let Some(filter) = protocol_filter
+            && template.protocol != filter
+        {
+            continue;
         }
         match template.protocol {
             ProtocolType::Ssh | ProtocolType::ZeroTrust | ProtocolType::Telnet => {
@@ -430,26 +424,26 @@ pub fn show_new_connection_from_template(
                 match state_mut.create_connection(conn) {
                     Ok(conn_id) => {
                         // Save password to vault if needed
-                        if password_source == PasswordSource::Vault {
-                            if let Some(pwd) = password {
-                                let settings = state_mut.settings().clone();
-                                let groups: Vec<_> =
-                                    state_mut.list_groups().into_iter().cloned().collect();
-                                let conn_for_path = state_mut.get_connection(conn_id).cloned();
-                                let username = conn_username.unwrap_or_default();
+                        if password_source == PasswordSource::Vault
+                            && let Some(pwd) = password
+                        {
+                            let settings = state_mut.settings().clone();
+                            let groups: Vec<_> =
+                                state_mut.list_groups().into_iter().cloned().collect();
+                            let conn_for_path = state_mut.get_connection(conn_id).cloned();
+                            let username = conn_username.unwrap_or_default();
 
-                                crate::state::save_password_to_vault(
-                                    &settings,
-                                    &groups,
-                                    conn_for_path.as_ref(),
-                                    &conn_name,
-                                    &conn_host,
-                                    protocol,
-                                    &username,
-                                    pwd.expose_secret(),
-                                    conn_id,
-                                );
-                            }
+                            crate::state::save_password_to_vault(
+                                &settings,
+                                &groups,
+                                conn_for_path.as_ref(),
+                                &conn_name,
+                                &conn_host,
+                                protocol,
+                                &username,
+                                pwd.expose_secret(),
+                                conn_id,
+                            );
                         }
 
                         drop(state_mut);

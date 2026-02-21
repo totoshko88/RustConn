@@ -283,15 +283,15 @@ impl CliprdrBackend for RustConnClipboardBackend {
         );
 
         // Check for file list format (CF_HDROP = 15 or FileGroupDescriptorW)
-        if format_id == Some(ClipboardFormatId::CF_HDROP) {
-            if let Some(files) = parse_file_group_descriptor(data) {
-                debug!("Parsed {} files from clipboard", files.len());
-                let _ = self
-                    .proxy
-                    .event_tx
-                    .send(RdpClientEvent::ClipboardFileList(files));
-                return;
-            }
+        if format_id == Some(ClipboardFormatId::CF_HDROP)
+            && let Some(files) = parse_file_group_descriptor(data)
+        {
+            debug!("Parsed {} files from clipboard", files.len());
+            let _ = self
+                .proxy
+                .event_tx
+                .send(RdpClientEvent::ClipboardFileList(files));
+            return;
         }
 
         match format_id {
@@ -536,11 +536,7 @@ fn parse_file_group_descriptor(data: &[u8]) -> Option<Vec<ClipboardFileInfo>> {
         offset += FILEDESCRIPTOR_SIZE;
     }
 
-    if files.is_empty() {
-        None
-    } else {
-        Some(files)
-    }
+    if files.is_empty() { None } else { Some(files) }
 }
 
 #[cfg(test)]

@@ -349,10 +349,10 @@ fn get_active_toggle_index(button_box: &GtkBox) -> usize {
     let mut child = button_box.first_child();
     let mut i = 0;
     while let Some(widget) = child {
-        if let Ok(btn) = widget.clone().downcast::<ToggleButton>() {
-            if btn.is_active() {
-                return i;
-            }
+        if let Ok(btn) = widget.clone().downcast::<ToggleButton>()
+            && btn.is_active()
+        {
+            return i;
         }
         child = widget.next_sibling();
         i += 1;

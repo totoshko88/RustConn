@@ -123,13 +123,13 @@ impl KeePassStatus {
     /// Searches in PATH and common installation locations.
     fn find_keepassxc_cli() -> Option<std::path::PathBuf> {
         // First, try to find in PATH using `which`
-        if let Ok(output) = Command::new("which").arg("keepassxc-cli").output() {
-            if output.status.success() {
-                let path_str = String::from_utf8_lossy(&output.stdout);
-                let path = std::path::PathBuf::from(path_str.trim());
-                if path.exists() {
-                    return Some(path);
-                }
+        if let Ok(output) = Command::new("which").arg("keepassxc-cli").output()
+            && output.status.success()
+        {
+            let path_str = String::from_utf8_lossy(&output.stdout);
+            let path = std::path::PathBuf::from(path_str.trim());
+            if path.exists() {
+                return Some(path);
             }
         }
 
@@ -336,11 +336,11 @@ impl KeePassStatus {
         }
 
         // Add URL if provided
-        if let Some(u) = url {
-            if !u.is_empty() {
-                args.push("--url".to_string());
-                args.push(u.to_string());
-            }
+        if let Some(u) = url
+            && !u.is_empty()
+        {
+            args.push("--url".to_string());
+            args.push(u.to_string());
         }
 
         // Add password prompt flag - this tells keepassxc-cli to read entry password from stdin
@@ -477,11 +477,11 @@ impl KeePassStatus {
             .map_err(|e| SecretError::KeePassXC(format!("Failed to run keepassxc-cli: {e}")))?;
 
         // Only send password if we have one
-        if let Some(mut stdin) = child.stdin.take() {
-            if let Some(db_pwd) = db_password {
-                stdin.write_all(db_pwd.expose_secret().as_bytes()).ok();
-                stdin.write_all(b"\n").ok();
-            }
+        if let Some(mut stdin) = child.stdin.take()
+            && let Some(db_pwd) = db_password
+        {
+            stdin.write_all(db_pwd.expose_secret().as_bytes()).ok();
+            stdin.write_all(b"\n").ok();
         }
 
         let output = child.wait_with_output().ok();
@@ -529,11 +529,11 @@ impl KeePassStatus {
             })?;
 
         // Only send password if we have one
-        if let Some(mut stdin) = child.stdin.take() {
-            if let Some(db_pwd) = db_password {
-                stdin.write_all(db_pwd.expose_secret().as_bytes()).ok();
-                stdin.write_all(b"\n").ok();
-            }
+        if let Some(mut stdin) = child.stdin.take()
+            && let Some(db_pwd) = db_password
+        {
+            stdin.write_all(db_pwd.expose_secret().as_bytes()).ok();
+            stdin.write_all(b"\n").ok();
         }
 
         let output = child.wait_with_output().map_err(|e| {
@@ -623,11 +623,11 @@ impl KeePassStatus {
                     SecretError::KeePassXC(format!("Failed to run keepassxc-cli mkdir: {e}"))
                 })?;
 
-            if let Some(mut stdin) = child.stdin.take() {
-                if let Some(db_pwd) = db_password {
-                    stdin.write_all(db_pwd.expose_secret().as_bytes()).ok();
-                    stdin.write_all(b"\n").ok();
-                }
+            if let Some(mut stdin) = child.stdin.take()
+                && let Some(db_pwd) = db_password
+            {
+                stdin.write_all(db_pwd.expose_secret().as_bytes()).ok();
+                stdin.write_all(b"\n").ok();
             }
 
             let output = child.wait_with_output().ok();
@@ -682,11 +682,11 @@ impl KeePassStatus {
             .map_err(|e| SecretError::KeePassXC(format!("Failed to run keepassxc-cli: {e}")))?;
 
         // Only send password if we have one
-        if let Some(mut stdin) = child.stdin.take() {
-            if let Some(db_pwd) = db_password {
-                stdin.write_all(db_pwd.expose_secret().as_bytes()).ok();
-                stdin.write_all(b"\n").ok();
-            }
+        if let Some(mut stdin) = child.stdin.take()
+            && let Some(db_pwd) = db_password
+        {
+            stdin.write_all(db_pwd.expose_secret().as_bytes()).ok();
+            stdin.write_all(b"\n").ok();
         }
 
         let _ = child.wait_with_output();
@@ -823,17 +823,15 @@ impl KeePassStatus {
                 .map_err(|e| SecretError::KeePassXC(format!("Failed to run keepassxc-cli: {e}")))?;
 
             // Only send password if we have one (not using --no-password)
-            if let Some(mut stdin) = child.stdin.take() {
-                if let Some(db_pwd) = db_password {
-                    stdin
-                        .write_all(db_pwd.expose_secret().as_bytes())
-                        .map_err(|e| {
-                            SecretError::KeePassXC(format!("Failed to send password: {e}"))
-                        })?;
-                    stdin.write_all(b"\n").map_err(|e| {
-                        SecretError::KeePassXC(format!("Failed to send password: {e}"))
-                    })?;
-                }
+            if let Some(mut stdin) = child.stdin.take()
+                && let Some(db_pwd) = db_password
+            {
+                stdin
+                    .write_all(db_pwd.expose_secret().as_bytes())
+                    .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
+                stdin
+                    .write_all(b"\n")
+                    .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
             }
 
             let output = child.wait_with_output().map_err(|e| {
@@ -1004,11 +1002,11 @@ impl KeePassStatus {
             .spawn()
             .ok()?;
 
-        if let Some(mut stdin) = child.stdin.take() {
-            if let Some(db_pwd) = db_password {
-                stdin.write_all(db_pwd.expose_secret().as_bytes()).ok()?;
-                stdin.write_all(b"\n").ok()?;
-            }
+        if let Some(mut stdin) = child.stdin.take()
+            && let Some(db_pwd) = db_password
+        {
+            stdin.write_all(db_pwd.expose_secret().as_bytes()).ok()?;
+            stdin.write_all(b"\n").ok()?;
         }
 
         let output = child.wait_with_output().ok()?;
@@ -1063,22 +1061,18 @@ impl KeePassStatus {
             .spawn()
             .ok()?;
 
-        if let Some(mut stdin) = child.stdin.take() {
-            if let Some(db_pwd) = db_password {
-                stdin.write_all(db_pwd.expose_secret().as_bytes()).ok()?;
-                stdin.write_all(b"\n").ok()?;
-            }
+        if let Some(mut stdin) = child.stdin.take()
+            && let Some(db_pwd) = db_password
+        {
+            stdin.write_all(db_pwd.expose_secret().as_bytes()).ok()?;
+            stdin.write_all(b"\n").ok()?;
         }
 
         let output = child.wait_with_output().ok()?;
 
         if output.status.success() {
             let url = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            if url.is_empty() {
-                None
-            } else {
-                Some(url)
-            }
+            if url.is_empty() { None } else { Some(url) }
         } else {
             None
         }
@@ -1154,15 +1148,15 @@ impl KeePassStatus {
             .map_err(|e| SecretError::KeePassXC(format!("Failed to run keepassxc-cli: {e}")))?;
 
         // Write password to stdin (only if we have one)
-        if let Some(mut stdin) = child.stdin.take() {
-            if let Some(pwd) = password {
-                stdin
-                    .write_all(pwd.expose_secret().as_bytes())
-                    .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
-                stdin
-                    .write_all(b"\n")
-                    .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
-            }
+        if let Some(mut stdin) = child.stdin.take()
+            && let Some(pwd) = password
+        {
+            stdin
+                .write_all(pwd.expose_secret().as_bytes())
+                .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
+            stdin
+                .write_all(b"\n")
+                .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
         }
 
         let output = child.wait_with_output().map_err(|e| {

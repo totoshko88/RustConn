@@ -12,7 +12,7 @@ use crate::error::ImportError;
 use crate::models::{Connection, ProtocolConfig, SshAuthMethod, SshConfig, SshKeySource};
 use crate::tracing::span_names;
 
-use super::traits::{read_import_file, ImportResult, ImportSource, SkippedEntry};
+use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 
 /// Importer for SSH config files.
 ///
@@ -287,13 +287,13 @@ impl ImportSource for SshConfigImporter {
             }
 
             let config_d = ssh_dir.join("config.d");
-            if config_d.is_dir() {
-                if let Ok(entries) = fs::read_dir(&config_d) {
-                    for entry in entries.flatten() {
-                        let path = entry.path();
-                        if path.is_file() {
-                            paths.push(path);
-                        }
+            if config_d.is_dir()
+                && let Ok(entries) = fs::read_dir(&config_d)
+            {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_file() {
+                        paths.push(path);
                     }
                 }
             }

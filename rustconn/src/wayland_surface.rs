@@ -25,8 +25,8 @@
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::missing_panics_doc)]
 
-use gtk4::prelude::*;
 use gtk4::DrawingArea;
+use gtk4::prelude::*;
 use thiserror::Error;
 
 // Re-export DisplayServer from the unified display module
@@ -427,18 +427,16 @@ impl WaylandSubsurface {
                 #[cfg(feature = "wayland-native")]
                 {
                     // Verify we're running on Wayland by checking the surface type
-                    if let Some(native) = parent.as_ref().native() {
-                        if let Some(surface) = native.surface() {
-                            if surface
-                                .downcast_ref::<gdk4_wayland::WaylandSurface>()
-                                .is_some()
-                            {
-                                tracing::info!(
-                                    "[WaylandSubsurface] Wayland surface confirmed, \
+                    if let Some(native) = parent.as_ref().native()
+                        && let Some(surface) = native.surface()
+                        && surface
+                            .downcast_ref::<gdk4_wayland::WaylandSurface>()
+                            .is_some()
+                    {
+                        tracing::info!(
+                            "[WaylandSubsurface] Wayland surface confirmed, \
                                      using Cairo rendering (native subsurface requires unsafe)"
-                                );
-                            }
-                        }
+                        );
                     }
                 }
 
@@ -888,10 +886,10 @@ impl EmbeddedRenderer {
         self.subsurface.commit();
 
         // Queue redraw for Cairo fallback mode
-        if self.mode == RenderingMode::CairoFallback {
-            if let Some(ref drawing_area) = self.drawing_area {
-                drawing_area.queue_draw();
-            }
+        if self.mode == RenderingMode::CairoFallback
+            && let Some(ref drawing_area) = self.drawing_area
+        {
+            drawing_area.queue_draw();
         }
     }
 

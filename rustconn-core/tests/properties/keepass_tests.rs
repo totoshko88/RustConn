@@ -5,7 +5,7 @@
 use chrono::Utc;
 use proptest::prelude::*;
 use rustconn_core::models::{PasswordSource, ProtocolConfig, ProtocolType, SshConfig};
-use rustconn_core::{parse_keepassxc_version, Connection, CredentialResolver, KeePassStatus};
+use rustconn_core::{Connection, CredentialResolver, KeePassStatus, parse_keepassxc_version};
 use std::path::PathBuf;
 use tempfile::TempDir;
 use uuid::Uuid;
@@ -543,8 +543,8 @@ mod button_state_tests {
 #[cfg(test)]
 mod resolution_chain_tests {
     use super::*;
-    use rustconn_core::config::SecretSettings;
     use rustconn_core::SecretManager;
+    use rustconn_core::config::SecretSettings;
     use std::sync::Arc;
 
     /// **Feature: keepass-integration, Property 5: Credential Resolution Chain**
@@ -731,7 +731,7 @@ mod hierarchy_tests {
     use rustconn_core::models::{
         ConnectionGroup, PasswordSource, ProtocolConfig, ProtocolType, SshConfig,
     };
-    use rustconn_core::{Connection, KeePassHierarchy, KEEPASS_ROOT_GROUP};
+    use rustconn_core::{Connection, KEEPASS_ROOT_GROUP, KeePassHierarchy};
     use std::collections::HashSet;
     use uuid::Uuid;
 

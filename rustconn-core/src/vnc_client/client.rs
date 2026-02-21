@@ -4,8 +4,8 @@
 //! and produces framebuffer events for the GUI to render.
 
 use super::{VncClientCommand, VncClientConfig, VncClientError, VncClientEvent, VncRect};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::net::TcpStream;
 use tokio::sync::mpsc;
 use vnc::{

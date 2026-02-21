@@ -617,7 +617,7 @@ fn encrypt_document(
     password: &str,
     strength: EncryptionStrength,
 ) -> DocumentResult<Vec<u8>> {
-    use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
+    use ring::aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey};
     use ring::rand::{SecureRandom, SystemRandom};
 
     // Serialize document to JSON
@@ -662,7 +662,7 @@ fn encrypt_document(
 /// Supports both the new format (with a strength byte after the magic
 /// header) and the legacy format (no strength byte, assumes Standard).
 fn decrypt_document(data: &[u8], password: &str) -> DocumentResult<Document> {
-    use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
+    use ring::aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey};
 
     // Verify magic bytes
     if !data.starts_with(ENCRYPTED_MAGIC) {
@@ -746,7 +746,7 @@ fn decrypt_document(data: &[u8], password: &str) -> DocumentResult<Document> {
 
 /// Decrypts a legacy-format encrypted document (no strength byte).
 fn decrypt_document_legacy(data: &[u8], password: &str) -> DocumentResult<Document> {
-    use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
+    use ring::aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey};
 
     let header_len = ENCRYPTED_MAGIC.len();
     let salt = &data[header_len..header_len + 32];

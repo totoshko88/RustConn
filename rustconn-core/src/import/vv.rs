@@ -16,7 +16,7 @@ use crate::models::{
     Connection, Credentials, PasswordSource, ProtocolConfig, SpiceConfig, VncConfig,
 };
 
-use super::traits::{read_import_file, ImportResult, ImportSource, SkippedEntry};
+use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 
 /// Importer for virt-viewer `.vv` connection files.
 ///
@@ -63,12 +63,10 @@ impl VirtViewerImporter {
                 continue;
             }
 
-            if in_section {
-                if let Some(eq_pos) = line.find('=') {
-                    let key = line[..eq_pos].trim().to_lowercase();
-                    let value = line[eq_pos + 1..].trim().to_string();
-                    fields.insert(key, value);
-                }
+            if in_section && let Some(eq_pos) = line.find('=') {
+                let key = line[..eq_pos].trim().to_lowercase();
+                let value = line[eq_pos + 1..].trim().to_string();
+                fields.insert(key, value);
             }
         }
 

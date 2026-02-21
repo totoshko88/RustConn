@@ -99,21 +99,20 @@ pub fn connect_add_folder_button(
             parent.as_ref(),
             gtk4::gio::Cancellable::NONE,
             move |result| {
-                if let Ok(file) = result {
-                    if let Some(path) = file.path() {
-                        let share_name = path.file_name().map_or_else(
-                            || "Share".to_string(),
-                            |n| n.to_string_lossy().to_string(),
-                        );
+                if let Ok(file) = result
+                    && let Some(path) = file.path()
+                {
+                    let share_name = path
+                        .file_name()
+                        .map_or_else(|| "Share".to_string(), |n| n.to_string_lossy().to_string());
 
-                        let folder = SharedFolder {
-                            local_path: path.clone(),
-                            share_name: share_name.clone(),
-                        };
+                    let folder = SharedFolder {
+                        local_path: path.clone(),
+                        share_name: share_name.clone(),
+                    };
 
-                        shared_folders.borrow_mut().push(folder);
-                        add_folder_row_to_list(&folders_list, &path, &share_name);
-                    }
+                    shared_folders.borrow_mut().push(folder);
+                    add_folder_row_to_list(&folders_list, &path, &share_name);
                 }
             },
         );
@@ -157,13 +156,12 @@ pub fn connect_remove_folder_button(
     let folders_list_clone = folders_list.clone();
     let shared_folders_clone = shared_folders.clone();
     remove_btn.connect_clicked(move |_| {
-        if let Some(selected_row) = folders_list_clone.selected_row() {
-            if let Ok(index) = usize::try_from(selected_row.index()) {
-                if index < shared_folders_clone.borrow().len() {
-                    shared_folders_clone.borrow_mut().remove(index);
-                    folders_list_clone.remove(&selected_row);
-                }
-            }
+        if let Some(selected_row) = folders_list_clone.selected_row()
+            && let Ok(index) = usize::try_from(selected_row.index())
+            && index < shared_folders_clone.borrow().len()
+        {
+            shared_folders_clone.borrow_mut().remove(index);
+            folders_list_clone.remove(&selected_row);
         }
     });
 }

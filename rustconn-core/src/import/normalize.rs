@@ -97,10 +97,10 @@ impl ImportNormalizer {
         // Update connection group_ids if groups were deduplicated
         if !group_remap.is_empty() {
             for conn in &mut result.connections {
-                if let Some(ref group_id) = conn.group_id {
-                    if let Some(&new_id) = group_remap.get(group_id) {
-                        conn.group_id = Some(new_id);
-                    }
+                if let Some(ref group_id) = conn.group_id
+                    && let Some(&new_id) = group_remap.get(group_id)
+                {
+                    conn.group_id = Some(new_id);
                 }
             }
         }
@@ -152,19 +152,19 @@ impl ImportNormalizer {
             }
 
             // Validate key path exists
-            if self.options.validate_key_paths {
-                if let Some(ref key_path) = ssh_config.key_path {
-                    // Expand ~ to home directory
-                    let expanded = expand_tilde(key_path);
-                    if expanded.exists() {
-                        // Update to expanded path
-                        ssh_config.key_path = Some(expanded);
-                    } else {
-                        // Key doesn't exist, clear it and fall back to password
-                        ssh_config.key_path = None;
-                        if ssh_config.auth_method == SshAuthMethod::PublicKey {
-                            ssh_config.auth_method = SshAuthMethod::Password;
-                        }
+            if self.options.validate_key_paths
+                && let Some(ref key_path) = ssh_config.key_path
+            {
+                // Expand ~ to home directory
+                let expanded = expand_tilde(key_path);
+                if expanded.exists() {
+                    // Update to expanded path
+                    ssh_config.key_path = Some(expanded);
+                } else {
+                    // Key doesn't exist, clear it and fall back to password
+                    ssh_config.key_path = None;
+                    if ssh_config.auth_method == SshAuthMethod::PublicKey {
+                        ssh_config.auth_method = SshAuthMethod::Password;
                     }
                 }
             }
@@ -200,11 +200,11 @@ impl ImportNormalizer {
 /// Expands ~ to home directory in a path
 fn expand_tilde(path: &Path) -> std::path::PathBuf {
     let path_str = path.to_string_lossy();
-    if let Some(stripped) = path_str.strip_prefix('~') {
-        if let Some(home) = dirs::home_dir() {
-            let suffix = stripped.strip_prefix('/').unwrap_or(stripped);
-            return home.join(suffix);
-        }
+    if let Some(stripped) = path_str.strip_prefix('~')
+        && let Some(home) = dirs::home_dir()
+    {
+        let suffix = stripped.strip_prefix('/').unwrap_or(stripped);
+        return home.join(suffix);
     }
     path.to_path_buf()
 }
@@ -213,17 +213,17 @@ fn expand_tilde(path: &Path) -> std::path::PathBuf {
 #[must_use]
 pub fn parse_host_port(server: &str) -> (String, Option<u16>) {
     // Handle IPv6 addresses like [::1]:22
-    if server.starts_with('[') {
-        if let Some(bracket_end) = server.find(']') {
-            let host = &server[1..bracket_end];
-            let rest = &server[bracket_end + 1..];
-            if let Some(port_str) = rest.strip_prefix(':') {
-                if let Ok(port) = port_str.parse::<u16>() {
-                    return (host.to_string(), Some(port));
-                }
-            }
-            return (host.to_string(), None);
+    if server.starts_with('[')
+        && let Some(bracket_end) = server.find(']')
+    {
+        let host = &server[1..bracket_end];
+        let rest = &server[bracket_end + 1..];
+        if let Some(port_str) = rest.strip_prefix(':')
+            && let Ok(port) = port_str.parse::<u16>()
+        {
+            return (host.to_string(), Some(port));
         }
+        return (host.to_string(), None);
     }
 
     // Handle regular host:port
@@ -444,9 +444,11 @@ mod tests {
         let normalizer = ImportNormalizer::new("ssh_config", options);
         normalizer.normalize(&mut result);
 
-        assert!(result.connections[0]
-            .tags
-            .contains(&"imported:ssh_config".to_string()));
+        assert!(
+            result.connections[0]
+                .tags
+                .contains(&"imported:ssh_config".to_string())
+        );
     }
 
     #[test]

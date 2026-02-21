@@ -54,13 +54,13 @@ mod vv;
 pub use ansible::AnsibleInventoryImporter;
 pub use asbru::AsbruImporter;
 pub use batch::{
-    BatchCancelHandle, BatchImportResult, BatchImporter, BATCH_IMPORT_THRESHOLD,
+    BATCH_IMPORT_THRESHOLD, BatchCancelHandle, BatchImportResult, BatchImporter,
     DEFAULT_IMPORT_BATCH_SIZE,
 };
 pub use mobaxterm::MobaXtermImporter;
 pub use normalize::{
-    is_valid_hostname, looks_like_hostname, parse_host_port, sanitize_imported_value,
-    ImportNormalizer, NormalizeOptions,
+    ImportNormalizer, NormalizeOptions, is_valid_hostname, looks_like_hostname, parse_host_port,
+    sanitize_imported_value,
 };
 pub use preview::{DuplicateAction, ImportPreview, MergeStrategy, PreviewConnection, PreviewGroup};
 pub use rdm::RdmImporter;

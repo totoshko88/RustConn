@@ -1215,22 +1215,22 @@ impl SplitViewAdapter {
         click.connect_pressed(move |gesture, _, x, y| {
             // Check if the click is on a button widget - if so, let it propagate
             // to allow the button to handle the click (e.g., "Select Tab" button)
-            if let Some(gesture_widget) = gesture.widget() {
-                if let Some(target_widget) = gesture_widget.pick(x, y, gtk4::PickFlags::DEFAULT) {
-                    // Walk up the widget tree to check if we clicked on a button
-                    let mut current: Option<gtk4::Widget> = Some(target_widget);
-                    while let Some(widget) = current {
-                        if widget.downcast_ref::<Button>().is_some() {
-                            // Click is on a button - don't claim, let it propagate
-                            tracing::debug!(
-                                "Panel click handler: click on button in panel {}, not claiming",
-                                panel_id
-                            );
-                            gesture.set_state(gtk4::EventSequenceState::None);
-                            return;
-                        }
-                        current = widget.parent();
+            if let Some(gesture_widget) = gesture.widget()
+                && let Some(target_widget) = gesture_widget.pick(x, y, gtk4::PickFlags::DEFAULT)
+            {
+                // Walk up the widget tree to check if we clicked on a button
+                let mut current: Option<gtk4::Widget> = Some(target_widget);
+                while let Some(widget) = current {
+                    if widget.downcast_ref::<Button>().is_some() {
+                        // Click is on a button - don't claim, let it propagate
+                        tracing::debug!(
+                            "Panel click handler: click on button in panel {}, not claiming",
+                            panel_id
+                        );
+                        gesture.set_state(gtk4::EventSequenceState::None);
+                        return;
                     }
+                    current = widget.parent();
                 }
             }
 

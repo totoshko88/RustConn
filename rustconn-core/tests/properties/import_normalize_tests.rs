@@ -2,8 +2,8 @@
 
 use proptest::prelude::*;
 use rustconn_core::import::{
-    is_valid_hostname, looks_like_hostname, parse_host_port, ImportNormalizer, ImportResult,
-    NormalizeOptions,
+    ImportNormalizer, ImportResult, NormalizeOptions, is_valid_hostname, looks_like_hostname,
+    parse_host_port,
 };
 use rustconn_core::models::{
     Connection, ConnectionGroup, ProtocolConfig, SshAuthMethod, SshConfig,

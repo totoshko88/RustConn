@@ -170,12 +170,12 @@ pub fn show_toast_on_window(window: &impl IsA<gui::Window>, message: &str, _toas
     // But `window.child()` might be `adw::ToolbarView`.
 
     // Let's implement a hierarchy check
-    if let Some(child) = window.child() {
-        if let Some(overlay) = find_toast_overlay(&child) {
-            let toast = adw::Toast::new(message);
-            overlay.add_toast(toast);
-            return;
-        }
+    if let Some(child) = window.child()
+        && let Some(overlay) = find_toast_overlay(&child)
+    {
+        let toast = adw::Toast::new(message);
+        overlay.add_toast(toast);
+        return;
     }
 
     // Fallback: log so we don't silently lose messages during dev
@@ -189,12 +189,11 @@ fn find_toast_overlay(widget: &gui::Widget) -> Option<adw::ToastOverlay> {
     }
 
     // Special handling for ToolbarView which is common root
-    if let Some(toolbar_view) = widget.downcast_ref::<adw::ToolbarView>() {
-        if let Some(content) = toolbar_view.content() {
-            if let Some(found) = find_toast_overlay(&content) {
-                return Some(found);
-            }
-        }
+    if let Some(toolbar_view) = widget.downcast_ref::<adw::ToolbarView>()
+        && let Some(content) = toolbar_view.content()
+        && let Some(found) = find_toast_overlay(&content)
+    {
+        return Some(found);
     }
 
     // General child walking could be expensive and GTK4 doesn't have a simple "get_children"
@@ -209,13 +208,13 @@ pub fn show_undo_toast_on_window(
     message: &str,
     action_target: &str,
 ) {
-    if let Some(child) = window.child() {
-        if let Some(overlay) = find_toast_overlay(&child) {
-            let toast = adw::Toast::new(message);
-            toast.set_button_label(Some("Undo"));
-            toast.set_action_name(Some("win.undo-delete"));
-            toast.set_action_target_value(Some(&glib::Variant::from(action_target)));
-            overlay.add_toast(toast);
-        }
+    if let Some(child) = window.child()
+        && let Some(overlay) = find_toast_overlay(&child)
+    {
+        let toast = adw::Toast::new(message);
+        toast.set_button_label(Some("Undo"));
+        toast.set_action_name(Some("win.undo-delete"));
+        toast.set_action_target_value(Some(&glib::Variant::from(action_target)));
+        overlay.add_toast(toast);
     }
 }

@@ -612,11 +612,11 @@ fn create_test_connection_for_add(
     let mut connection = match protocol {
         ProtocolType::Ssh | ProtocolType::ZeroTrust => {
             let mut conn = Connection::new_ssh(name.to_string(), host.to_string(), port);
-            if let Some(key) = key_path {
-                if let ProtocolConfig::Ssh(ref mut ssh_config) = conn.protocol_config {
-                    ssh_config.key_path = Some(key.clone());
-                    ssh_config.auth_method = SshAuthMethod::PublicKey;
-                }
+            if let Some(key) = key_path
+                && let ProtocolConfig::Ssh(ref mut ssh_config) = conn.protocol_config
+            {
+                ssh_config.key_path = Some(key.clone());
+                ssh_config.auth_method = SshAuthMethod::PublicKey;
             }
             conn
         }
@@ -809,14 +809,13 @@ proptest! {
         );
 
         // Property: Key path should be preserved (if specified)
-        if let ProtocolConfig::Ssh(ref ssh_config) = imported.protocol_config {
-            if conn.key_path.is_some() {
+        if let ProtocolConfig::Ssh(ref ssh_config) = imported.protocol_config
+            && conn.key_path.is_some() {
                 prop_assert!(
                     ssh_config.key_path.is_some(),
                     "Key path should be preserved when specified"
                 );
             }
-        }
     }
 
     /// **Feature: ssh-agent-cli, Property 18: Import Field Preservation (Ansible)**
@@ -882,14 +881,13 @@ proptest! {
         );
 
         // Property: Key path should be preserved (ansible_ssh_private_key_file)
-        if let ProtocolConfig::Ssh(ref ssh_config) = imported.protocol_config {
-            if conn.key_path.is_some() {
+        if let ProtocolConfig::Ssh(ref ssh_config) = imported.protocol_config
+            && conn.key_path.is_some() {
                 prop_assert!(
                     ssh_config.key_path.is_some(),
                     "Key path should be preserved when specified"
                 );
             }
-        }
     }
 
     /// **Feature: ssh-agent-cli, Property 18: Import Field Preservation (Remmina)**
@@ -955,14 +953,13 @@ proptest! {
         );
 
         // Property: Key path should be preserved (ssh_privatekey)
-        if let ProtocolConfig::Ssh(ref ssh_config) = imported.protocol_config {
-            if conn.key_path.is_some() {
+        if let ProtocolConfig::Ssh(ref ssh_config) = imported.protocol_config
+            && conn.key_path.is_some() {
                 prop_assert!(
                     ssh_config.key_path.is_some(),
                     "Key path should be preserved when specified"
                 );
             }
-        }
     }
 
     /// **Feature: ssh-agent-cli, Property 18: Import Field Preservation (Asbru)**
@@ -1028,14 +1025,13 @@ proptest! {
         );
 
         // Property: Key path should be preserved (public key)
-        if let ProtocolConfig::Ssh(ref ssh_config) = imported.protocol_config {
-            if conn.key_path.is_some() {
+        if let ProtocolConfig::Ssh(ref ssh_config) = imported.protocol_config
+            && conn.key_path.is_some() {
                 prop_assert!(
                     ssh_config.key_path.is_some(),
                     "Key path should be preserved when specified"
                 );
             }
-        }
     }
 
     /// **Feature: ssh-agent-cli, Property 18: Import Field Preservation (RDP)**

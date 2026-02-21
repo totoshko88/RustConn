@@ -1,8 +1,8 @@
 use super::super::{RdpClientCommand, RdpClientError};
 use ironrdp::cliprdr::CliprdrClient;
+use ironrdp::pdu::input::MousePdu;
 use ironrdp::pdu::input::fast_path::{FastPathInputEvent, KeyboardFlags};
 use ironrdp::pdu::input::mouse::PointerFlags;
-use ironrdp::pdu::input::MousePdu;
 use ironrdp::session::image::DecodedImage;
 use ironrdp::session::{ActiveStage, ActiveStageOutput};
 use ironrdp_tokio::FramedWrite;
@@ -259,15 +259,15 @@ async fn handle_clipboard_data<W: FramedWrite>(
 ) {
     if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() {
         let response = ironrdp::cliprdr::pdu::OwnedFormatDataResponse::new_data(data.clone());
-        if let Ok(messages) = cliprdr.submit_format_data(response) {
-            if let Ok(frame) = active_stage.process_svc_processor_messages(messages) {
-                let _ = writer.write_all(&frame).await;
-                tracing::debug!(
-                    "Clipboard data sent for format {}: {} bytes",
-                    format_id,
-                    data.len()
-                );
-            }
+        if let Ok(messages) = cliprdr.submit_format_data(response)
+            && let Ok(frame) = active_stage.process_svc_processor_messages(messages)
+        {
+            let _ = writer.write_all(&frame).await;
+            tracing::debug!(
+                "Clipboard data sent for format {}: {} bytes",
+                format_id,
+                data.len()
+            );
         }
     }
 }
@@ -292,11 +292,11 @@ async fn handle_clipboard_copy<W: FramedWrite>(
                 format
             })
             .collect();
-        if let Ok(messages) = cliprdr.initiate_copy(&clipboard_formats) {
-            if let Ok(frame) = active_stage.process_svc_processor_messages(messages) {
-                let _ = writer.write_all(&frame).await;
-                tracing::debug!("Clipboard copy initiated with {} formats", formats.len());
-            }
+        if let Ok(messages) = cliprdr.initiate_copy(&clipboard_formats)
+            && let Ok(frame) = active_stage.process_svc_processor_messages(messages)
+        {
+            let _ = writer.write_all(&frame).await;
+            tracing::debug!("Clipboard copy initiated with {} formats", formats.len());
         }
     }
 }

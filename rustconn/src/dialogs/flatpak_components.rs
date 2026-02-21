@@ -15,9 +15,9 @@ use gtk4::prelude::*;
 use gtk4::{Align, Box as GtkBox, Button, Label, Orientation, PolicyType, ScrolledWindow, Spinner};
 use libadwaita as adw;
 use rustconn_core::cli_download::{
-    get_components_by_category, get_installation_status, get_user_friendly_error,
-    install_component, uninstall_component, update_component, ComponentCategory,
-    DownloadCancellation, DownloadableComponent,
+    ComponentCategory, DownloadCancellation, DownloadableComponent, get_components_by_category,
+    get_installation_status, get_user_friendly_error, install_component, uninstall_component,
+    update_component,
 };
 use rustconn_core::flatpak::is_flatpak;
 use std::cell::RefCell;

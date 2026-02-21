@@ -58,9 +58,11 @@ fn build_connection_command(connection: &Connection) -> ConnectionCommand {
         ProtocolType::Sftp => {
             return ConnectionCommand {
                 program: "echo".to_string(),
-                args: vec!["SFTP connections open a file manager. \
+                args: vec![
+                    "SFTP connections open a file manager. \
                      Use 'rustconn-cli sftp' instead."
-                    .to_string()],
+                        .to_string(),
+                ],
             };
         }
         ProtocolType::ZeroTrust => {
@@ -71,15 +73,14 @@ fn build_connection_command(connection: &Connection) -> ConnectionCommand {
 
     // Delegate to the core Protocol trait via the registry
     let registry = ProtocolRegistry::new();
-    if let Some(handler) = registry.get_by_type(connection.protocol) {
-        if let Some(cmd_parts) = handler.build_command(connection) {
-            if let Some((program, args)) = cmd_parts.split_first() {
-                return ConnectionCommand {
-                    program: program.clone(),
-                    args: args.to_vec(),
-                };
-            }
-        }
+    if let Some(handler) = registry.get_by_type(connection.protocol)
+        && let Some(cmd_parts) = handler.build_command(connection)
+        && let Some((program, args)) = cmd_parts.split_first()
+    {
+        return ConnectionCommand {
+            program: program.clone(),
+            args: args.to_vec(),
+        };
     }
 
     // Fallback for protocols without build_command

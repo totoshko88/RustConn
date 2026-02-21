@@ -311,10 +311,10 @@ impl SessionManager {
         })?;
 
         // Close the session logger (this will finalize the log file)
-        if let Some(mut logger) = self.session_loggers.remove(&session_id) {
-            if let Err(e) = logger.close() {
-                tracing::warn!(%e, "Failed to close session logger");
-            }
+        if let Some(mut logger) = self.session_loggers.remove(&session_id)
+            && let Err(e) = logger.close()
+        {
+            tracing::warn!(%e, "Failed to close session logger");
         }
 
         Ok(())
@@ -335,10 +335,10 @@ impl SessionManager {
             .map_err(|e| SessionError::TerminateFailed(format!("Failed to kill process: {e}")))?;
 
         // Close the session logger (this will finalize the log file)
-        if let Some(mut logger) = self.session_loggers.remove(&session_id) {
-            if let Err(e) = logger.close() {
-                tracing::warn!(%e, "Failed to close session logger");
-            }
+        if let Some(mut logger) = self.session_loggers.remove(&session_id)
+            && let Err(e) = logger.close()
+        {
+            tracing::warn!(%e, "Failed to close session logger");
         }
 
         Ok(())
@@ -416,10 +416,10 @@ impl SessionManager {
         let mut first_error: Option<SessionError> = None;
 
         for session_id in session_ids {
-            if let Err(e) = self.terminate_session(session_id) {
-                if first_error.is_none() {
-                    first_error = Some(e);
-                }
+            if let Err(e) = self.terminate_session(session_id)
+                && first_error.is_none()
+            {
+                first_error = Some(e);
             }
         }
 

@@ -289,16 +289,16 @@ impl SecretBackend for KeePassXcBackend {
 
         let response = self.send_request(&request).await?;
 
-        if let Some(entries) = response.entries {
-            if let Some(entry) = entries.into_iter().next() {
-                let credentials = Credentials {
-                    username: entry.login,
-                    password: entry.password.map(SecretString::from),
-                    key_passphrase: None,
-                    domain: None,
-                };
-                return Ok(Some(credentials));
-            }
+        if let Some(entries) = response.entries
+            && let Some(entry) = entries.into_iter().next()
+        {
+            let credentials = Credentials {
+                username: entry.login,
+                password: entry.password.map(SecretString::from),
+                key_passphrase: None,
+                domain: None,
+            };
+            return Ok(Some(credentials));
         }
 
         Ok(None)

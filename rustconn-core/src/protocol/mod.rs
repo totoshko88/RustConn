@@ -20,18 +20,18 @@ mod vnc;
 
 pub use cli::{format_command_message, format_connection_message};
 pub use detection::{
-    detect_aws_cli, detect_azure_cli, detect_boundary, detect_cloudflared, detect_gcloud_cli,
-    detect_kubectl, detect_oci_cli, detect_picocom, detect_rdp_client, detect_spice_client,
-    detect_ssh_client, detect_tailscale, detect_teleport, detect_telnet_client, detect_vnc_client,
-    detect_vnc_viewer_name, detect_vnc_viewer_path, ClientDetectionResult, ClientInfo,
-    ZeroTrustDetectionResult,
+    ClientDetectionResult, ClientInfo, ZeroTrustDetectionResult, detect_aws_cli, detect_azure_cli,
+    detect_boundary, detect_cloudflared, detect_gcloud_cli, detect_kubectl, detect_oci_cli,
+    detect_picocom, detect_rdp_client, detect_spice_client, detect_ssh_client, detect_tailscale,
+    detect_teleport, detect_telnet_client, detect_vnc_client, detect_vnc_viewer_name,
+    detect_vnc_viewer_path,
 };
 pub use freerdp::{
-    build_freerdp_args, extract_geometry_from_args, has_decorations_flag, FreeRdpConfig,
+    FreeRdpConfig, build_freerdp_args, extract_geometry_from_args, has_decorations_flag,
 };
 pub use icons::{
-    all_protocol_icons, detect_provider, get_protocol_icon, get_protocol_icon_by_name,
-    get_zero_trust_provider_icon, CloudProvider, ProviderIconCache,
+    CloudProvider, ProviderIconCache, all_protocol_icons, detect_provider, get_protocol_icon,
+    get_protocol_icon_by_name, get_zero_trust_provider_icon,
 };
 pub use kubernetes::KubernetesProtocol;
 pub use rdp::RdpProtocol;

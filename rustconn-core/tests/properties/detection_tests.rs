@@ -16,10 +16,10 @@
 //! **Validates: Requirements 5.2**
 
 use proptest::prelude::*;
-use rustconn_core::protocol::icons::{detect_provider, CloudProvider};
+use rustconn_core::protocol::icons::{CloudProvider, detect_provider};
 use rustconn_core::protocol::{
-    detect_rdp_client, detect_ssh_client, detect_vnc_client, detect_vnc_viewer_name,
-    detect_vnc_viewer_path, ClientDetectionResult, ClientInfo,
+    ClientDetectionResult, ClientInfo, detect_rdp_client, detect_ssh_client, detect_vnc_client,
+    detect_vnc_viewer_name, detect_vnc_viewer_path,
 };
 
 // ============================================================================

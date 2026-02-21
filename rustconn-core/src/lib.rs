@@ -75,12 +75,12 @@ pub use automation::{
     SpecialKey, TaskCondition, TaskError, TaskExecutor, TaskResult, TaskTiming,
 };
 pub use cli_download::{
-    detect_package_manager, get_arch, get_available_components, get_cli_install_dir, get_component,
-    get_components_by_category, get_installation_status, get_pinned_versions,
-    get_system_install_command, get_user_friendly_error, install_component, uninstall_component,
-    ChecksumPolicy, CliDownloadError, CliDownloadResult, ComponentCategory, DownloadCancellation,
-    DownloadProgress, DownloadableComponent, InstallMethod, PackageManager,
-    DOWNLOADABLE_COMPONENTS,
+    ChecksumPolicy, CliDownloadError, CliDownloadResult, ComponentCategory,
+    DOWNLOADABLE_COMPONENTS, DownloadCancellation, DownloadProgress, DownloadableComponent,
+    InstallMethod, PackageManager, detect_package_manager, get_arch, get_available_components,
+    get_cli_install_dir, get_component, get_components_by_category, get_installation_status,
+    get_pinned_versions, get_system_install_command, get_user_friendly_error, install_component,
+    uninstall_component,
 };
 pub use cluster::{
     Cluster, ClusterError, ClusterManager, ClusterMemberState, ClusterResult, ClusterSession,
@@ -88,18 +88,18 @@ pub use cluster::{
 };
 pub use config::{AppSettings, ConfigManager, ConnectionSettings, SecretBackendType};
 pub use connection::{
-    check_interning_stats, check_port, check_port_async, get_interning_stats,
-    intern_connection_strings, intern_hostname, intern_protocol_name, intern_username,
-    log_interning_stats, log_interning_stats_with_warning, ConnectionManager, LazyGroupLoader,
-    PortCheckError, PortCheckResult, RetryConfig, RetryState, SelectionState, VirtualScrollConfig,
+    ConnectionManager, LazyGroupLoader, PortCheckError, PortCheckResult, RetryConfig, RetryState,
+    SelectionState, VirtualScrollConfig, check_interning_stats, check_port, check_port_async,
+    get_interning_stats, intern_connection_strings, intern_hostname, intern_protocol_name,
+    intern_username, log_interning_stats, log_interning_stats_with_warning,
 };
 pub use document::{
-    Document, DocumentError, DocumentManager, DocumentResult, EncryptionStrength,
-    DOCUMENT_FORMAT_VERSION,
+    DOCUMENT_FORMAT_VERSION, Document, DocumentError, DocumentManager, DocumentResult,
+    EncryptionStrength,
 };
 pub use drag_drop::{
-    calculate_drop_position, calculate_indicator_y, calculate_row_index, is_valid_drop_position,
-    DropConfig, DropPosition, ItemType,
+    DropConfig, DropPosition, ItemType, calculate_drop_position, calculate_indicator_y,
+    calculate_row_index, is_valid_drop_position,
 };
 pub use embedded_client_error::EmbeddedClientError;
 pub use error::{
@@ -107,10 +107,9 @@ pub use error::{
     SessionError, SessionResult,
 };
 pub use export::{
-    BatchExportCancelHandle, BatchExportResult, BatchExporter, ExportError, ExportFormat,
-    ExportOptions, ExportResult, ExportTarget, NativeExport, NativeImportError,
-    BATCH_EXPORT_THRESHOLD, DEFAULT_EXPORT_BATCH_SIZE, NATIVE_FILE_EXTENSION,
-    NATIVE_FORMAT_VERSION,
+    BATCH_EXPORT_THRESHOLD, BatchExportCancelHandle, BatchExportResult, BatchExporter,
+    DEFAULT_EXPORT_BATCH_SIZE, ExportError, ExportFormat, ExportOptions, ExportResult,
+    ExportTarget, NATIVE_FILE_EXTENSION, NATIVE_FORMAT_VERSION, NativeExport, NativeImportError,
 };
 pub use ffi::{
     ConnectionState, FfiDisplay, FfiError, FfiResult, VncCredentialType, VncDisplay, VncError,
@@ -119,51 +118,65 @@ pub use flatpak::is_flatpak;
 // Deprecated flatpak-spawn functions (host_command, host_exec, host_has_command,
 // host_spawn, host_which) are no longer re-exported since Flathub policy change in v0.7.7.
 pub use import::{
-    AnsibleInventoryImporter, AsbruImporter, BatchCancelHandle, BatchImportResult, BatchImporter,
-    ImportResult, ImportSource, RemminaImporter, RoyalTsImporter, SkippedEntry, SshConfigImporter,
-    VirtViewerImporter, BATCH_IMPORT_THRESHOLD, DEFAULT_IMPORT_BATCH_SIZE,
+    AnsibleInventoryImporter, AsbruImporter, BATCH_IMPORT_THRESHOLD, BatchCancelHandle,
+    BatchImportResult, BatchImporter, DEFAULT_IMPORT_BATCH_SIZE, ImportResult, ImportSource,
+    RemminaImporter, RoyalTsImporter, SkippedEntry, SshConfigImporter, VirtViewerImporter,
 };
 pub use models::{
-    group_templates_by_protocol, Connection, ConnectionGroup, ConnectionHistoryEntry,
-    ConnectionStatistics, ConnectionTemplate, Credentials, CustomProperty, HistorySettings,
-    KubernetesConfig, PasswordSource, PortForward, PortForwardDirection, PropertyType,
-    ProtocolConfig, ProtocolType, RdpConfig, RdpGateway, Resolution, ScaleOverride, SerialBaudRate,
-    SerialConfig, SerialDataBits, SerialFlowControl, SerialParity, SerialStopBits, Snippet,
-    SnippetVariable, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource,
-    TelnetBackspaceSends, TelnetConfig, TelnetDeleteSends, TemplateError, VncConfig,
-    WindowGeometry, WindowMode,
+    Connection, ConnectionGroup, ConnectionHistoryEntry, ConnectionStatistics, ConnectionTemplate,
+    Credentials, CustomProperty, HistorySettings, KubernetesConfig, PasswordSource, PortForward,
+    PortForwardDirection, PropertyType, ProtocolConfig, ProtocolType, RdpConfig, RdpGateway,
+    Resolution, ScaleOverride, SerialBaudRate, SerialConfig, SerialDataBits, SerialFlowControl,
+    SerialParity, SerialStopBits, Snippet, SnippetVariable, SpiceConfig, SpiceImageCompression,
+    SshAuthMethod, SshConfig, SshKeySource, TelnetBackspaceSends, TelnetConfig, TelnetDeleteSends,
+    TemplateError, VncConfig, WindowGeometry, WindowMode, group_templates_by_protocol,
 };
 pub use password_generator::{
-    estimate_crack_time, CharacterSet, PasswordGenerator, PasswordGeneratorConfig,
-    PasswordGeneratorError, PasswordGeneratorResult, PasswordStrength,
+    CharacterSet, PasswordGenerator, PasswordGeneratorConfig, PasswordGeneratorError,
+    PasswordGeneratorResult, PasswordStrength, estimate_crack_time,
 };
 pub use performance::{
-    format_bytes, memory_optimizer, metrics, AllocationStats, BatchProcessor, CompactString,
-    Debouncer, InternerStats, LazyInit, MemoryBreakdown, MemoryEstimate, MemoryOptimizer,
-    MemoryPressure, MemorySnapshot, MemoryTracker, ObjectPool, OperationStats,
-    OptimizationCategory, OptimizationRecommendation, PerformanceMetrics, PoolStats, ShrinkableVec,
-    StringInterner, TimingGuard, VirtualScroller,
+    AllocationStats, BatchProcessor, CompactString, Debouncer, InternerStats, LazyInit,
+    MemoryBreakdown, MemoryEstimate, MemoryOptimizer, MemoryPressure, MemorySnapshot,
+    MemoryTracker, ObjectPool, OperationStats, OptimizationCategory, OptimizationRecommendation,
+    PerformanceMetrics, PoolStats, ShrinkableVec, StringInterner, TimingGuard, VirtualScroller,
+    format_bytes, memory_optimizer, metrics,
 };
 pub use progress::{
     CallbackProgressReporter, CancelHandle, LocalProgressReporter, NoOpProgressReporter,
     ProgressReporter,
 };
 pub use protocol::{
-    build_freerdp_args, detect_aws_cli, detect_azure_cli, detect_boundary, detect_cloudflared,
-    detect_gcloud_cli, detect_kubectl, detect_oci_cli, detect_picocom, detect_provider,
-    detect_rdp_client, detect_ssh_client, detect_tailscale, detect_teleport, detect_telnet_client,
-    detect_vnc_client, extract_geometry_from_args, get_protocol_icon_by_name,
-    get_zero_trust_provider_icon, has_decorations_flag, ClientDetectionResult, ClientInfo,
-    CloudProvider, FreeRdpConfig, KubernetesProtocol, Protocol, ProtocolCapabilities,
-    ProtocolRegistry, ProviderIconCache, RdpProtocol, SerialProtocol, SftpProtocol, SpiceProtocol,
-    SshProtocol, TelnetProtocol, VncProtocol,
+    ClientDetectionResult, ClientInfo, CloudProvider, FreeRdpConfig, KubernetesProtocol, Protocol,
+    ProtocolCapabilities, ProtocolRegistry, ProviderIconCache, RdpProtocol, SerialProtocol,
+    SftpProtocol, SpiceProtocol, SshProtocol, TelnetProtocol, VncProtocol, build_freerdp_args,
+    detect_aws_cli, detect_azure_cli, detect_boundary, detect_cloudflared, detect_gcloud_cli,
+    detect_kubectl, detect_oci_cli, detect_picocom, detect_provider, detect_rdp_client,
+    detect_ssh_client, detect_tailscale, detect_teleport, detect_telnet_client, detect_vnc_client,
+    extract_geometry_from_args, get_protocol_icon_by_name, get_zero_trust_provider_icon,
+    has_decorations_flag,
 };
 pub use rdp_client::keyboard_layout::{
-    detect_keyboard_layout, xkb_name_to_klid, LAYOUT_US_ENGLISH,
+    LAYOUT_US_ENGLISH, detect_keyboard_layout, xkb_name_to_klid,
 };
+#[cfg(feature = "rdp-embedded")]
+pub use rdp_client::{AudioFormatInfo, RdpClient, RdpCommandSender, RdpEventReceiver};
 pub use rdp_client::{
-    convert_to_bgra, create_frame_update, create_frame_update_with_conversion,
+    ClipboardFormatInfo, PixelFormat, RdpClientCommand, RdpClientConfig, RdpClientError,
+    RdpClientEvent, RdpRect, RdpSecurityProtocol, convert_to_bgra, create_frame_update,
+    create_frame_update_with_conversion,
     input::{
+        CoordinateTransform,
+        MAX_RDP_HEIGHT,
+        MAX_RDP_WIDTH,
+        MIN_RDP_HEIGHT,
+        MIN_RDP_WIDTH,
+        // Keyboard input
+        RdpScancode,
+        SCANCODE_ALT,
+        SCANCODE_CTRL,
+        SCANCODE_DELETE,
+        STANDARD_RESOLUTIONS,
         ctrl_alt_del_sequence,
         find_best_standard_resolution,
         generate_resize_request,
@@ -172,35 +185,20 @@ pub use rdp_client::{
         keycode_to_scancode,
         keyval_to_scancode,
         should_resize,
-        CoordinateTransform,
-        // Keyboard input
-        RdpScancode,
-        MAX_RDP_HEIGHT,
-        MAX_RDP_WIDTH,
-        MIN_RDP_HEIGHT,
-        MIN_RDP_WIDTH,
-        SCANCODE_ALT,
-        SCANCODE_CTRL,
-        SCANCODE_DELETE,
-        STANDARD_RESOLUTIONS,
     },
-    is_embedded_rdp_available, keyval_to_unicode, ClipboardFormatInfo, PixelFormat,
-    RdpClientCommand, RdpClientConfig, RdpClientError, RdpClientEvent, RdpRect,
-    RdpSecurityProtocol,
+    is_embedded_rdp_available, keyval_to_unicode,
 };
-#[cfg(feature = "rdp-embedded")]
-pub use rdp_client::{AudioFormatInfo, RdpClient, RdpCommandSender, RdpEventReceiver};
 pub use search::{
-    benchmark, cache::SearchCache, ConnectionSearchResult, DebouncedSearchEngine, MatchHighlight,
-    SearchEngine, SearchError, SearchFilter, SearchQuery, SearchResult,
+    ConnectionSearchResult, DebouncedSearchEngine, MatchHighlight, SearchEngine, SearchError,
+    SearchFilter, SearchQuery, SearchResult, benchmark, cache::SearchCache,
 };
 pub use secret::{
-    parse_keepassxc_version, resolve_with_callback, spawn_credential_resolution,
     AsyncCredentialResolver, AsyncCredentialResult, CancellationToken, CredentialResolver,
     CredentialStatus, CredentialVerificationManager, DialogPreFillData, GroupCreationResult,
-    KdbxExporter, KeePassHierarchy, KeePassStatus, KeePassXcBackend, LibSecretBackend,
-    PendingCredentialResolution, SecretBackend, SecretManager, VerifiedCredentials,
-    KEEPASS_ROOT_GROUP,
+    KEEPASS_ROOT_GROUP, KdbxExporter, KeePassHierarchy, KeePassStatus, KeePassXcBackend,
+    LibSecretBackend, PendingCredentialResolution, SecretBackend, SecretManager,
+    VerifiedCredentials, parse_keepassxc_version, resolve_with_callback,
+    spawn_credential_resolution,
 };
 pub use session::{
     LogConfig, LogContext, LogError, LogResult, Session, SessionLogger, SessionManager,
@@ -215,33 +213,33 @@ pub use snap::{
     is_interface_connected, is_snap,
 };
 pub use snippet::SnippetManager;
-pub use spice_client::{
-    build_spice_viewer_args, detect_spice_viewer, is_embedded_spice_available, launch_spice_viewer,
-    SpiceClientCommand, SpiceClientConfig, SpiceClientError, SpiceClientEvent, SpiceCompression,
-    SpiceRect, SpiceSecurityProtocol, SpiceSharedFolder, SpiceViewerLaunchResult,
-};
 #[cfg(feature = "spice-embedded")]
 pub use spice_client::{SpiceClient, SpiceClientState, SpiceCommandSender, SpiceEventReceiver};
+pub use spice_client::{
+    SpiceClientCommand, SpiceClientConfig, SpiceClientError, SpiceClientEvent, SpiceCompression,
+    SpiceRect, SpiceSecurityProtocol, SpiceSharedFolder, SpiceViewerLaunchResult,
+    build_spice_viewer_args, detect_spice_viewer, is_embedded_spice_available, launch_spice_viewer,
+};
 // Split view types (tab-scoped layouts)
 pub use split::SplitDirection;
 pub use split::{
-    ColorId, ColorPool, DropResult, LeafPanel, PanelId, PanelNode, SessionId as SplitSessionId,
-    SplitError, SplitLayoutModel, SplitNode, TabId, SPLIT_COLORS,
+    ColorId, ColorPool, DropResult, LeafPanel, PanelId, PanelNode, SPLIT_COLORS,
+    SessionId as SplitSessionId, SplitError, SplitLayoutModel, SplitNode, TabId,
 };
 pub use ssh_agent::{
-    parse_agent_output, parse_key_list, AgentError, AgentKey, AgentResult, AgentStatus,
-    SshAgentManager,
+    AgentError, AgentKey, AgentResult, AgentStatus, SshAgentManager, parse_agent_output,
+    parse_key_list,
 };
 pub use testing::{
-    ConnectionTester, TestError, TestResult, TestSummary, DEFAULT_CONCURRENCY,
-    DEFAULT_TEST_TIMEOUT_SECS,
+    ConnectionTester, DEFAULT_CONCURRENCY, DEFAULT_TEST_TIMEOUT_SECS, TestError, TestResult,
+    TestSummary,
 };
 pub use tracing::{
-    field_names, get_tracing_config, init_tracing, is_tracing_initialized, span_names,
-    TracingConfig, TracingError, TracingLevel, TracingOutput, TracingResult,
+    TracingConfig, TracingError, TracingLevel, TracingOutput, TracingResult, field_names,
+    get_tracing_config, init_tracing, is_tracing_initialized, span_names,
 };
 pub use variables::{
-    variable_secret_key, Variable, VariableError, VariableManager, VariableResult, VariableScope,
+    Variable, VariableError, VariableManager, VariableResult, VariableScope, variable_secret_key,
 };
 pub use vnc_client::is_embedded_vnc_available;
 #[cfg(feature = "vnc-embedded")]
@@ -250,6 +248,6 @@ pub use vnc_client::{
     VncEventReceiver, VncRect,
 };
 pub use wol::{
-    generate_magic_packet, send_magic_packet, send_wol, MacAddress, WolConfig, WolError, WolResult,
     DEFAULT_BROADCAST_ADDRESS, DEFAULT_WOL_PORT, DEFAULT_WOL_WAIT_SECONDS, MAGIC_PACKET_SIZE,
+    MacAddress, WolConfig, WolError, WolResult, generate_magic_packet, send_magic_packet, send_wol,
 };

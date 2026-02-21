@@ -97,7 +97,9 @@ fn main() -> gtk4::glib::ExitCode {
     // Ensure ssh-agent is running so that child processes (Dolphin,
     // mc, ssh-add) inherit SSH_AUTH_SOCK. On some DEs (KDE on
     // openSUSE Tumbleweed) ssh-agent is not started by default.
-    if !rustconn_core::sftp::ensure_ssh_agent() {
+    if let Some(info) = rustconn_core::sftp::ensure_ssh_agent() {
+        rustconn_core::sftp::set_agent_info(info);
+    } else {
         tracing::warn!(
             "Could not ensure ssh-agent is running; \
              SFTP via file managers may require manual setup"

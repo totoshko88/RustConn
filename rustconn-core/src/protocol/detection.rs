@@ -124,10 +124,10 @@ impl ClientDetectionResult {
         let mut guard = cache
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some((ref result, ref ts)) = *guard {
-            if ts.elapsed() < Duration::from_secs(300) {
-                return result.clone();
-            }
+        if let Some((ref result, ref ts)) = *guard
+            && ts.elapsed() < Duration::from_secs(300)
+        {
+            return result.clone();
         }
         let result = Self::detect_all();
         *guard = Some((result.clone(), Instant::now()));

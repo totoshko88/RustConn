@@ -11,8 +11,8 @@ use rustconn_core::{
     PasswordSource, ProtocolConfig, ProtocolType, SecretManager, SshConfig, WindowMode,
 };
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::time::Duration;
 
 /// Creates a test connection for integration testing

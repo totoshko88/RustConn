@@ -433,14 +433,14 @@ impl SaveDocumentDialog {
 
         dialog.save(parent, gtk4::gio::Cancellable::NONE, move |result| {
             if let Ok(file) = result {
-                if let Some(path) = file.path() {
-                    if let Some(ref cb) = *on_complete.borrow() {
-                        cb(Some(DocumentDialogResult::Save {
-                            id: doc_id,
-                            path,
-                            password: None, // Password set separately if needed
-                        }));
-                    }
+                if let Some(path) = file.path()
+                    && let Some(ref cb) = *on_complete.borrow()
+                {
+                    cb(Some(DocumentDialogResult::Save {
+                        id: doc_id,
+                        path,
+                        password: None, // Password set separately if needed
+                    }));
                 }
             } else if let Some(ref cb) = *on_complete.borrow() {
                 cb(None);
@@ -688,14 +688,14 @@ impl DocumentProtectionDialog {
                 None
             };
 
-            if let Some(id) = *doc_id_clone.borrow() {
-                if let Some(ref cb) = *on_complete_clone.borrow() {
-                    cb(Some(DocumentDialogResult::Save {
-                        id,
-                        path: PathBuf::new(), // Path will be determined by caller
-                        password,
-                    }));
-                }
+            if let Some(id) = *doc_id_clone.borrow()
+                && let Some(ref cb) = *on_complete_clone.borrow()
+            {
+                cb(Some(DocumentDialogResult::Save {
+                    id,
+                    path: PathBuf::new(), // Path will be determined by caller
+                    password,
+                }));
             }
             dialog_clone.close();
         });

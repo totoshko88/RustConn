@@ -32,7 +32,7 @@ pub use document::{
     NewDocumentDialog, OpenDocumentDialog, SaveDocumentDialog,
 };
 pub use export::{ExportCallback, ExportDialog};
-pub use flatpak_components::{should_show_flatpak_components_menu, FlatpakComponentsDialog};
+pub use flatpak_components::{FlatpakComponentsDialog, should_show_flatpak_components_menu};
 pub use history::HistoryDialog;
 pub use import::ImportDialog;
 pub use log_viewer::LogViewerDialog;
@@ -40,9 +40,9 @@ pub use password::{PasswordDialog, PasswordDialogResult};
 pub use password_generator::show_password_generator_dialog;
 pub use progress::ProgressDialog;
 pub use settings::SettingsDialog;
-pub use shortcuts::{ShortcutsDialog, SHORTCUTS_CSS};
+pub use shortcuts::{SHORTCUTS_CSS, ShortcutsDialog};
 pub use snippet::SnippetDialog;
-pub use statistics::{empty_statistics, StatisticsDialog};
+pub use statistics::{StatisticsDialog, empty_statistics};
 pub use template::{TemplateCallback, TemplateDialog, TemplateManagerDialog};
 pub use terminal_search::TerminalSearchDialog;
 pub use variables::VariablesDialog;

@@ -858,62 +858,61 @@ impl AppState {
                 rustconn_core::config::SecretBackendType::KeePassXc
                     | rustconn_core::config::SecretBackendType::KdbxFile
             )
+            && let Some(ref kdbx_path) = self.settings.secrets.kdbx_path
         {
-            if let Some(ref kdbx_path) = self.settings.secrets.kdbx_path {
-                // Build hierarchical entry path using KeePassHierarchy
-                // This matches how passwords are saved with group structure
-                let entry_path = KeePassHierarchy::build_entry_path(connection, &groups);
+            // Build hierarchical entry path using KeePassHierarchy
+            // This matches how passwords are saved with group structure
+            let entry_path = KeePassHierarchy::build_entry_path(connection, &groups);
 
-                // Add protocol suffix for uniqueness
-                let protocol = connection.protocol_config.protocol_type();
-                let protocol_str = protocol.as_str();
+            // Add protocol suffix for uniqueness
+            let protocol = connection.protocol_config.protocol_type();
+            let protocol_str = protocol.as_str();
 
-                // Strip RustConn/ prefix since get_password_from_kdbx_with_key adds it back
-                let entry_name = entry_path.strip_prefix("RustConn/").unwrap_or(&entry_path);
-                let lookup_key = format!("{entry_name} ({protocol_str})");
+            // Strip RustConn/ prefix since get_password_from_kdbx_with_key adds it back
+            let entry_name = entry_path.strip_prefix("RustConn/").unwrap_or(&entry_path);
+            let lookup_key = format!("{entry_name} ({protocol_str})");
 
-                // Get credentials - password and key file can be used together
-                let db_password = self.settings.secrets.kdbx_password.as_ref();
+            // Get credentials - password and key file can be used together
+            let db_password = self.settings.secrets.kdbx_password.as_ref();
 
-                let key_file = self.settings.secrets.kdbx_key_file.as_deref();
+            let key_file = self.settings.secrets.kdbx_key_file.as_deref();
 
-                tracing::debug!(
-                    "[resolve_credentials] KeePass lookup: key='{}', has_password={}, has_key_file={}",
-                    lookup_key,
-                    db_password.is_some(),
-                    key_file.is_some()
-                );
+            tracing::debug!(
+                "[resolve_credentials] KeePass lookup: key='{}', has_password={}, has_key_file={}",
+                lookup_key,
+                db_password.is_some(),
+                key_file.is_some()
+            );
 
-                match KeePassStatus::get_password_from_kdbx_with_key(
-                    kdbx_path,
-                    db_password,
-                    key_file,
-                    &lookup_key,
-                    None, // Protocol already included in lookup_key
-                ) {
-                    Ok(Some(password)) => {
-                        tracing::debug!("[resolve_credentials] Found password in KeePass");
-                        // Build credentials with optional username and password
-                        let mut creds = if let Some(ref username) = connection.username {
-                            Credentials::with_password(username, password.expose_secret())
-                        } else {
-                            Credentials {
-                                username: None,
-                                password: Some(password),
-                                key_passphrase: None,
-                                domain: None,
-                            }
-                        };
-                        // Preserve key_passphrase if needed
-                        creds.key_passphrase = None;
-                        return Ok(Some(creds));
-                    }
-                    Ok(None) => {
-                        tracing::debug!("[resolve_credentials] No password found in KeePass");
-                    }
-                    Err(e) => {
-                        tracing::error!("[resolve_credentials] KeePass error: {}", e);
-                    }
+            match KeePassStatus::get_password_from_kdbx_with_key(
+                kdbx_path,
+                db_password,
+                key_file,
+                &lookup_key,
+                None, // Protocol already included in lookup_key
+            ) {
+                Ok(Some(password)) => {
+                    tracing::debug!("[resolve_credentials] Found password in KeePass");
+                    // Build credentials with optional username and password
+                    let mut creds = if let Some(ref username) = connection.username {
+                        Credentials::with_password(username, password.expose_secret())
+                    } else {
+                        Credentials {
+                            username: None,
+                            password: Some(password),
+                            key_passphrase: None,
+                            domain: None,
+                        }
+                    };
+                    // Preserve key_passphrase if needed
+                    creds.key_passphrase = None;
+                    return Ok(Some(creds));
+                }
+                Ok(None) => {
+                    tracing::debug!("[resolve_credentials] No password found in KeePass");
+                }
+                Err(e) => {
+                    tracing::error!("[resolve_credentials] KeePass error: {}", e);
                 }
             }
         }
@@ -926,80 +925,79 @@ impl AppState {
                 rustconn_core::config::SecretBackendType::KeePassXc
                     | rustconn_core::config::SecretBackendType::KdbxFile
             )
+            && let Some(ref kdbx_path) = self.settings.secrets.kdbx_path
         {
-            if let Some(ref kdbx_path) = self.settings.secrets.kdbx_path {
-                let db_password = self.settings.secrets.kdbx_password.as_ref();
-                let key_file = self.settings.secrets.kdbx_key_file.as_deref();
+            let db_password = self.settings.secrets.kdbx_password.as_ref();
+            let key_file = self.settings.secrets.kdbx_key_file.as_deref();
 
-                // Traverse up the group hierarchy
-                let mut current_group_id = connection.group_id;
-                while let Some(group_id) = current_group_id {
-                    let Some(group) = groups.iter().find(|g| g.id == group_id) else {
-                        break;
-                    };
+            // Traverse up the group hierarchy
+            let mut current_group_id = connection.group_id;
+            while let Some(group_id) = current_group_id {
+                let Some(group) = groups.iter().find(|g| g.id == group_id) else {
+                    break;
+                };
 
-                    // Check if this group has Vault credentials configured
-                    if group.password_source == Some(PasswordSource::Vault) {
-                        let group_path = KeePassHierarchy::build_group_entry_path(group, &groups);
+                // Check if this group has Vault credentials configured
+                if group.password_source == Some(PasswordSource::Vault) {
+                    let group_path = KeePassHierarchy::build_group_entry_path(group, &groups);
 
-                        tracing::debug!(
-                            "[resolve_credentials] Inherit: checking group '{}' at path '{}'",
-                            group.name,
-                            group_path
-                        );
+                    tracing::debug!(
+                        "[resolve_credentials] Inherit: checking group '{}' at path '{}'",
+                        group.name,
+                        group_path
+                    );
 
-                        match KeePassStatus::get_password_from_kdbx_with_key(
-                            kdbx_path,
-                            db_password,
-                            key_file,
-                            &group_path,
-                            None,
-                        ) {
-                            Ok(Some(password)) => {
-                                tracing::debug!(
-                                    "[resolve_credentials] Found inherited password from group '{}'",
-                                    group.name
-                                );
-                                let username = connection
-                                    .username
-                                    .clone()
-                                    .or_else(|| group.username.clone());
-                                let creds = if let Some(ref uname) = username {
-                                    Credentials::with_password(uname, password.expose_secret())
-                                } else {
-                                    Credentials {
-                                        username: None,
-                                        password: Some(password),
-                                        key_passphrase: None,
-                                        domain: None,
-                                    }
-                                };
-                                return Ok(Some(creds));
-                            }
-                            Ok(None) => {
-                                tracing::debug!(
-                                    "[resolve_credentials] No password in group '{}'",
-                                    group.name
-                                );
-                            }
-                            Err(e) => {
-                                tracing::warn!(
-                                    "[resolve_credentials] KeePass error for group '{}': {}",
-                                    group.name,
-                                    e
-                                );
-                            }
+                    match KeePassStatus::get_password_from_kdbx_with_key(
+                        kdbx_path,
+                        db_password,
+                        key_file,
+                        &group_path,
+                        None,
+                    ) {
+                        Ok(Some(password)) => {
+                            tracing::debug!(
+                                "[resolve_credentials] Found inherited password from group '{}'",
+                                group.name
+                            );
+                            let username = connection
+                                .username
+                                .clone()
+                                .or_else(|| group.username.clone());
+                            let creds = if let Some(ref uname) = username {
+                                Credentials::with_password(uname, password.expose_secret())
+                            } else {
+                                Credentials {
+                                    username: None,
+                                    password: Some(password),
+                                    key_passphrase: None,
+                                    domain: None,
+                                }
+                            };
+                            return Ok(Some(creds));
                         }
-                    } else if group.password_source == Some(PasswordSource::Inherit) {
+                        Ok(None) => {
+                            tracing::debug!(
+                                "[resolve_credentials] No password in group '{}'",
+                                group.name
+                            );
+                        }
+                        Err(e) => {
+                            tracing::warn!(
+                                "[resolve_credentials] KeePass error for group '{}': {}",
+                                group.name,
+                                e
+                            );
+                        }
                     }
-
-                    current_group_id = group.parent_id;
+                } else if group.password_source == Some(PasswordSource::Inherit) {
                 }
 
-                tracing::debug!(
-                    "[resolve_credentials] No inherited credentials found in group hierarchy"
-                );
+                current_group_id = group.parent_id;
             }
+
+            tracing::debug!(
+                "[resolve_credentials] No inherited credentials found in group hierarchy"
+            );
         }
 
         // Fall back to the standard resolver for other password sources
@@ -1349,60 +1347,57 @@ impl AppState {
                 rustconn_core::config::SecretBackendType::KeePassXc
                     | rustconn_core::config::SecretBackendType::KdbxFile
             )
+            && let Some(ref kdbx_path) = kdbx_path
         {
-            if let Some(ref kdbx_path) = kdbx_path {
-                // Build hierarchical entry path using KeePassHierarchy
-                // This matches how passwords are saved with group structure
-                let entry_path = KeePassHierarchy::build_entry_path(connection, groups);
+            // Build hierarchical entry path using KeePassHierarchy
+            // This matches how passwords are saved with group structure
+            let entry_path = KeePassHierarchy::build_entry_path(connection, groups);
 
-                // Add protocol suffix for uniqueness
-                let protocol = connection.protocol_config.protocol_type();
-                let protocol_str = protocol.as_str();
+            // Add protocol suffix for uniqueness
+            let protocol = connection.protocol_config.protocol_type();
+            let protocol_str = protocol.as_str();
 
-                // Strip RustConn/ prefix since get_password_from_kdbx_with_key adds it back
-                let entry_name = entry_path.strip_prefix("RustConn/").unwrap_or(&entry_path);
-                let lookup_key = format!("{entry_name} ({protocol_str})");
+            // Strip RustConn/ prefix since get_password_from_kdbx_with_key adds it back
+            let entry_name = entry_path.strip_prefix("RustConn/").unwrap_or(&entry_path);
+            let lookup_key = format!("{entry_name} ({protocol_str})");
 
-                // Get credentials - password and key file can be used together
-                let db_password = kdbx_password.as_ref();
-                let key_file = kdbx_key_file.as_deref();
+            // Get credentials - password and key file can be used together
+            let db_password = kdbx_password.as_ref();
+            let key_file = kdbx_key_file.as_deref();
 
-                tracing::debug!(
-                    "[resolve_credentials_blocking] KeePass lookup: key='{}', has_password={}, has_key_file={}",
-                    lookup_key,
-                    db_password.is_some(),
-                    key_file.is_some()
-                );
+            tracing::debug!(
+                "[resolve_credentials_blocking] KeePass lookup: key='{}', has_password={}, has_key_file={}",
+                lookup_key,
+                db_password.is_some(),
+                key_file.is_some()
+            );
 
-                match KeePassStatus::get_password_from_kdbx_with_key(
-                    kdbx_path,
-                    db_password,
-                    key_file,
-                    &lookup_key,
-                    None,
-                ) {
-                    Ok(Some(password)) => {
-                        tracing::debug!("[resolve_credentials_blocking] Found password in KeePass");
-                        let creds = if let Some(ref username) = connection.username {
-                            Credentials::with_password(username, password.expose_secret())
-                        } else {
-                            Credentials {
-                                username: None,
-                                password: Some(password),
-                                key_passphrase: None,
-                                domain: None,
-                            }
-                        };
-                        return Ok(Some(creds));
-                    }
-                    Ok(None) => {
-                        tracing::debug!(
-                            "[resolve_credentials_blocking] No password found in KeePass"
-                        );
-                    }
-                    Err(e) => {
-                        tracing::error!("[resolve_credentials_blocking] KeePass error: {}", e);
-                    }
+            match KeePassStatus::get_password_from_kdbx_with_key(
+                kdbx_path,
+                db_password,
+                key_file,
+                &lookup_key,
+                None,
+            ) {
+                Ok(Some(password)) => {
+                    tracing::debug!("[resolve_credentials_blocking] Found password in KeePass");
+                    let creds = if let Some(ref username) = connection.username {
+                        Credentials::with_password(username, password.expose_secret())
+                    } else {
+                        Credentials {
+                            username: None,
+                            password: Some(password),
+                            key_passphrase: None,
+                            domain: None,
+                        }
+                    };
+                    return Ok(Some(creds));
+                }
+                Ok(None) => {
+                    tracing::debug!("[resolve_credentials_blocking] No password found in KeePass");
+                }
+                Err(e) => {
+                    tracing::error!("[resolve_credentials_blocking] KeePass error: {}", e);
                 }
             }
         }
@@ -1415,87 +1410,86 @@ impl AppState {
                 rustconn_core::config::SecretBackendType::KeePassXc
                     | rustconn_core::config::SecretBackendType::KdbxFile
             )
+            && let Some(ref kdbx_path) = kdbx_path
         {
-            if let Some(ref kdbx_path) = kdbx_path {
-                let db_password = kdbx_password.as_ref();
-                let key_file = kdbx_key_file.as_deref();
+            let db_password = kdbx_password.as_ref();
+            let key_file = kdbx_key_file.as_deref();
 
-                // Traverse up the group hierarchy
-                let mut current_group_id = connection.group_id;
-                while let Some(group_id) = current_group_id {
-                    let Some(group) = groups.iter().find(|g| g.id == group_id) else {
-                        break;
-                    };
+            // Traverse up the group hierarchy
+            let mut current_group_id = connection.group_id;
+            while let Some(group_id) = current_group_id {
+                let Some(group) = groups.iter().find(|g| g.id == group_id) else {
+                    break;
+                };
 
-                    // Check if this group has Vault credentials configured
-                    if group.password_source == Some(PasswordSource::Vault) {
-                        let group_path = KeePassHierarchy::build_group_entry_path(group, groups);
+                // Check if this group has Vault credentials configured
+                if group.password_source == Some(PasswordSource::Vault) {
+                    let group_path = KeePassHierarchy::build_group_entry_path(group, groups);
 
-                        tracing::debug!(
-                            "[resolve_credentials_blocking] Inherit: checking group '{}' at path '{}'",
-                            group.name,
-                            group_path
-                        );
+                    tracing::debug!(
+                        "[resolve_credentials_blocking] Inherit: checking group '{}' at path '{}'",
+                        group.name,
+                        group_path
+                    );
 
-                        match KeePassStatus::get_password_from_kdbx_with_key(
-                            kdbx_path,
-                            db_password,
-                            key_file,
-                            &group_path,
-                            None,
-                        ) {
-                            Ok(Some(password)) => {
-                                tracing::debug!(
-                                    "[resolve_credentials_blocking] Found inherited password from group '{}'",
-                                    group.name
-                                );
-                                // Use group's username if connection doesn't have one
-                                let username = connection
-                                    .username
-                                    .clone()
-                                    .or_else(|| group.username.clone());
-                                let creds = if let Some(ref uname) = username {
-                                    Credentials::with_password(uname, password.expose_secret())
-                                } else {
-                                    Credentials {
-                                        username: None,
-                                        password: Some(password),
-                                        key_passphrase: None,
-                                        domain: None,
-                                    }
-                                };
-                                return Ok(Some(creds));
-                            }
-                            Ok(None) => {
-                                tracing::debug!(
-                                    "[resolve_credentials_blocking] No password in group '{}'",
-                                    group.name
-                                );
-                            }
-                            Err(e) => {
-                                tracing::warn!(
-                                    "[resolve_credentials_blocking] KeePass error for group '{}': {}",
-                                    group.name,
-                                    e
-                                );
-                            }
+                    match KeePassStatus::get_password_from_kdbx_with_key(
+                        kdbx_path,
+                        db_password,
+                        key_file,
+                        &group_path,
+                        None,
+                    ) {
+                        Ok(Some(password)) => {
+                            tracing::debug!(
+                                "[resolve_credentials_blocking] Found inherited password from group '{}'",
+                                group.name
+                            );
+                            // Use group's username if connection doesn't have one
+                            let username = connection
+                                .username
+                                .clone()
+                                .or_else(|| group.username.clone());
+                            let creds = if let Some(ref uname) = username {
+                                Credentials::with_password(uname, password.expose_secret())
+                            } else {
+                                Credentials {
+                                    username: None,
+                                    password: Some(password),
+                                    key_passphrase: None,
+                                    domain: None,
+                                }
+                            };
+                            return Ok(Some(creds));
                         }
-                    } else if group.password_source == Some(PasswordSource::Inherit) {
-                        // Continue to parent
-                        tracing::debug!(
-                            "[resolve_credentials_blocking] Group '{}' also inherits, continuing to parent",
-                            group.name
-                        );
+                        Ok(None) => {
+                            tracing::debug!(
+                                "[resolve_credentials_blocking] No password in group '{}'",
+                                group.name
+                            );
+                        }
+                        Err(e) => {
+                            tracing::warn!(
+                                "[resolve_credentials_blocking] KeePass error for group '{}': {}",
+                                group.name,
+                                e
+                            );
+                        }
                     }
-
-                    // Move to parent group
-                    current_group_id = group.parent_id;
+                } else if group.password_source == Some(PasswordSource::Inherit) {
+                    // Continue to parent
+                    tracing::debug!(
+                        "[resolve_credentials_blocking] Group '{}' also inherits, continuing to parent",
+                        group.name
+                    );
                 }
 
-                tracing::debug!(
-                    "[resolve_credentials_blocking] No inherited credentials found in group hierarchy"
-                );
+                // Move to parent group
+                current_group_id = group.parent_id;
             }
+
+            tracing::debug!(
+                "[resolve_credentials_blocking] No inherited credentials found in group hierarchy"
+            );
         }
 
         // For Inherit password source with non-KeePass backends
@@ -1837,15 +1831,13 @@ impl AppState {
             // Determine target group
             let target_group_id = if let Some(group_name) = remmina_group {
                 // Create subgroup for Remmina group if not exists
-                if !subgroup_map.contains_key(&group_name) {
-                    if let Some(parent_id) = parent_group_id {
-                        if let Ok(id) = self
-                            .connection_manager
-                            .create_group_with_parent(group_name.clone(), parent_id)
-                        {
-                            subgroup_map.insert(group_name.clone(), id);
-                        }
-                    }
+                if !subgroup_map.contains_key(&group_name)
+                    && let Some(parent_id) = parent_group_id
+                    && let Ok(id) = self
+                        .connection_manager
+                        .create_group_with_parent(group_name.clone(), parent_id)
+                {
+                    subgroup_map.insert(group_name.clone(), id);
                 }
                 subgroup_map.get(&group_name).copied()
             } else if let Some(existing_group_id) = connection.group_id {
@@ -2256,10 +2248,10 @@ impl AppState {
         template: rustconn_core::ConnectionTemplate,
     ) -> Result<(), String> {
         // Add to active document if one exists
-        if let Some(doc_id) = self.active_document_id {
-            if let Some(doc) = self.document_manager.get_mut(doc_id) {
-                doc.add_template(template.clone());
-            }
+        if let Some(doc_id) = self.active_document_id
+            && let Some(doc) = self.document_manager.get_mut(doc_id)
+        {
+            doc.add_template(template.clone());
         }
 
         // Also save to config file for persistence
@@ -2276,11 +2268,11 @@ impl AppState {
         let id = template.id;
 
         // Update in active document if one exists
-        if let Some(doc_id) = self.active_document_id {
-            if let Some(doc) = self.document_manager.get_mut(doc_id) {
-                doc.remove_template(id);
-                doc.add_template(template.clone());
-            }
+        if let Some(doc_id) = self.active_document_id
+            && let Some(doc) = self.document_manager.get_mut(doc_id)
+        {
+            doc.remove_template(id);
+            doc.add_template(template.clone());
         }
 
         // Also update in config file
@@ -2296,10 +2288,10 @@ impl AppState {
     /// Deletes a template and saves to disk
     pub fn delete_template(&mut self, template_id: uuid::Uuid) -> Result<(), String> {
         // Remove from active document if one exists
-        if let Some(doc_id) = self.active_document_id {
-            if let Some(doc) = self.document_manager.get_mut(doc_id) {
-                doc.remove_template(template_id);
-            }
+        if let Some(doc_id) = self.active_document_id
+            && let Some(doc) = self.document_manager.get_mut(doc_id)
+        {
+            doc.remove_template(template_id);
         }
 
         // Also remove from config file
@@ -2765,17 +2757,16 @@ where
 fn show_vault_save_error_toast() {
     use gtk4::prelude::*;
     gtk4::glib::idle_add_local_once(|| {
-        if let Some(app) = gtk4::gio::Application::default() {
-            if let Some(gtk_app) = app.downcast_ref::<gtk4::Application>() {
-                if let Some(window) = gtk_app.active_window() {
-                    crate::toast::show_toast_on_window(
-                        &window,
-                        "Failed to save password to vault",
-                        crate::toast::ToastType::Error,
-                    );
-                    return;
-                }
-            }
+        if let Some(app) = gtk4::gio::Application::default()
+            && let Some(gtk_app) = app.downcast_ref::<gtk4::Application>()
+            && let Some(window) = gtk_app.active_window()
+        {
+            crate::toast::show_toast_on_window(
+                &window,
+                "Failed to save password to vault",
+                crate::toast::ToastType::Error,
+            );
+            return;
         }
         tracing::warn!("Could not show vault save error toast: no active window");
     });

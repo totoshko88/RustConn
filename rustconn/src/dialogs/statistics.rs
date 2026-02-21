@@ -5,8 +5,8 @@
 
 use crate::i18n::i18n;
 use adw::prelude::*;
-use gtk4::prelude::*;
 use gtk4::Box as GtkBox;
+use gtk4::prelude::*;
 use gtk4::{Label, Orientation, ScrolledWindow};
 use libadwaita as adw;
 use rustconn_core::models::ConnectionStatistics;

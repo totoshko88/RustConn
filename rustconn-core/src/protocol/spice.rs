@@ -64,18 +64,16 @@ impl Protocol for SpiceProtocol {
         }
 
         // Validate CA certificate path exists if TLS is enabled and path is specified
-        if spice_config.tls_enabled {
-            if let Some(ca_path) = &spice_config.ca_cert_path {
-                if !ca_path.as_os_str().is_empty()
-                    && !spice_config.skip_cert_verify
-                    && !ca_path.exists()
-                {
-                    return Err(ProtocolError::InvalidConfig(format!(
-                        "CA certificate file not found: {}",
-                        ca_path.display()
-                    )));
-                }
-            }
+        if spice_config.tls_enabled
+            && let Some(ca_path) = &spice_config.ca_cert_path
+            && !ca_path.as_os_str().is_empty()
+            && !spice_config.skip_cert_verify
+            && !ca_path.exists()
+        {
+            return Err(ProtocolError::InvalidConfig(format!(
+                "CA certificate file not found: {}",
+                ca_path.display()
+            )));
         }
 
         // Validate shared folders have non-empty paths and names

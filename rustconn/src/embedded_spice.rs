@@ -944,7 +944,7 @@ impl EmbeddedSpiceWidget {
 
     /// Connects using external SPICE viewer (fallback)
     fn connect_external(&self, config: &SpiceClientConfig) -> Result<(), SpiceClientError> {
-        use rustconn_core::spice_client::{launch_spice_viewer, SpiceViewerLaunchResult};
+        use rustconn_core::spice_client::{SpiceViewerLaunchResult, launch_spice_viewer};
 
         match launch_spice_viewer(config) {
             SpiceViewerLaunchResult::Launched { viewer, pid } => {

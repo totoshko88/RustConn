@@ -4,8 +4,8 @@
 
 use proptest::prelude::*;
 use rustconn_core::progress::{CallbackProgressReporter, NoOpProgressReporter, ProgressReporter};
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// Strategy for generating a reasonable number of items to process
 fn arb_item_count() -> impl Strategy<Value = usize> {

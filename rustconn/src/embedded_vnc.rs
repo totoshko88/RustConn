@@ -22,8 +22,8 @@
 
 // Re-export types for external use
 pub use crate::embedded_vnc_types::{
-    find_best_standard_resolution, EmbeddedVncError, ErrorCallback, FrameCallback, StateCallback,
-    VncConfig, VncConnectionState, VncPixelBuffer, VncWaylandSurface, STANDARD_RESOLUTIONS,
+    EmbeddedVncError, ErrorCallback, FrameCallback, STANDARD_RESOLUTIONS, StateCallback, VncConfig,
+    VncConnectionState, VncPixelBuffer, VncWaylandSurface, find_best_standard_resolution,
 };
 
 use crate::i18n::i18n;
@@ -1347,10 +1347,10 @@ impl EmbeddedVncWidget {
         *self.command_sender.borrow_mut() = None;
 
         // Disconnect native VNC client if running
-        if let Some(client) = self.vnc_client.borrow_mut().take() {
-            if let Ok(mut client_guard) = client.lock() {
-                client_guard.disconnect();
-            }
+        if let Some(client) = self.vnc_client.borrow_mut().take()
+            && let Ok(mut client_guard) = client.lock()
+        {
+            client_guard.disconnect();
         }
 
         // Kill external process if running

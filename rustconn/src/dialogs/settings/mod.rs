@@ -274,14 +274,12 @@ impl SettingsDialog {
                 match SshAgentManager::start_agent() {
                     Ok(socket_path) => {
                         tracing::info!("SSH agent started with socket: {socket_path}");
-                        // Update the process environment so child processes (ssh, sftp)
-                        // inherit the agent socket. This runs on the GTK main thread
-                        // before any concurrent reads. SEC-03: acceptable — required by
-                        // sftp.rs and ssh_agent/mod.rs which read SSH_AUTH_SOCK from env.
-                        // TODO: migrate to per-Command env passing when all SSH spawn
-                        // sites are consolidated.
-                        #[allow(clippy::disallowed_methods)]
-                        std::env::set_var("SSH_AUTH_SOCK", &socket_path);
+                        // Store agent info globally so that child processes
+                        // receive SSH_AUTH_SOCK via apply_agent_env().
+                        rustconn_core::sftp::set_agent_info(rustconn_core::sftp::SshAgentInfo {
+                            socket_path: socket_path.clone(),
+                            pid: None,
+                        });
                         // Update the manager with the new socket path
                         manager_clone
                             .borrow_mut()

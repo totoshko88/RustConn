@@ -9,7 +9,7 @@ use std::sync::LazyLock;
 use regex::Regex;
 use uuid::Uuid;
 
-use super::{Variable, VariableError, VariableResult, VariableScope, MAX_NESTING_DEPTH};
+use super::{MAX_NESTING_DEPTH, Variable, VariableError, VariableResult, VariableScope};
 
 /// Cached regex for variable extraction: matches `${var_name}` patterns
 static VARIABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -219,14 +219,13 @@ impl VariableManager {
                 }
 
                 // Then check document scope if connection is associated with a document
-                if let Some(doc_id) = self.connection_to_document.get(&conn_id) {
-                    if let Some(var) = self
+                if let Some(doc_id) = self.connection_to_document.get(&conn_id)
+                    && let Some(var) = self
                         .document_vars
                         .get(doc_id)
                         .and_then(|vars| vars.get(name))
-                    {
-                        return Some(var);
-                    }
+                {
+                    return Some(var);
                 }
 
                 // Finally check global scope

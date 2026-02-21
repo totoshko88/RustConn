@@ -41,6 +41,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Project-Id-Version` updated to `0.9.0` in all `.po` files
 - Duplicate `SessionResult` type alias removed from `session/manager.rs` — canonical definition in `error.rs`
 - Tray stub no longer allocates orphaned `mpsc` channel when `tray` feature is disabled
+- Migrated to Rust 2024 edition (167 files changed across all three crates):
+  - Eliminated all `unsafe` `set_var`/`remove_var` calls — SSH agent info stored in `OnceLock<SshAgentInfo>` with `apply_agent_env()` helper, language switching via process re-exec with sentinel guard, Bitwarden session token in `RwLock`
+  - Renamed `gen` keyword usages to `generator`/`pw_gen`/`counter` in password generator, dialog, and RDP modules
+  - Fixed `ref` binding patterns in match arms across source and test files (Rust 2024 match ergonomics)
+  - Hundreds of `collapsible_if` patterns rewritten as let-chains (`if let ... && let ...`)
+  - Import ordering updated to Rust 2024 `style_edition` rules via `cargo fmt`
 
 ## [0.8.9] - 2026-02-19
 

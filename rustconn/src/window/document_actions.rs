@@ -111,50 +111,45 @@ fn setup_save_document_action(window: &gtk4::ApplicationWindow, state: &SharedAp
     save_doc_action.connect_activate(move |_, _| {
         if let Some(win) = window_weak.upgrade() {
             let state_ref = state_clone.borrow();
-            if let Some(doc_id) = state_ref.active_document_id() {
-                if let Some(doc) = state_ref.get_document(doc_id) {
-                    let doc_name = doc.name.clone();
-                    let existing_path =
-                        state_ref.get_document_path(doc_id).map(|p| p.to_path_buf());
-                    drop(state_ref);
+            if let Some(doc_id) = state_ref.active_document_id()
+                && let Some(doc) = state_ref.get_document(doc_id)
+            {
+                let doc_name = doc.name.clone();
+                let existing_path = state_ref.get_document_path(doc_id).map(|p| p.to_path_buf());
+                drop(state_ref);
 
-                    if let Some(path) = existing_path {
-                        let mut state_ref = state_clone.borrow_mut();
-                        if let Err(e) = state_ref.save_document(
-                            doc_id,
-                            &path,
-                            None,
-                            EncryptionStrength::Standard,
-                        ) {
-                            drop(state_ref);
-                            tracing::error!(?e, "Failed to save document");
-                            groups::show_error_toast(&win, &i18n("Failed to save document."));
-                        }
-                    } else {
-                        let dialog = SaveDocumentDialog::new();
-                        let state_for_cb = state_clone.clone();
-                        let win_for_cb = win.clone();
-                        dialog.set_callback(move |result| {
-                            if let Some(DocumentDialogResult::Save { id, path, password }) = result
-                            {
-                                let mut state_ref = state_for_cb.borrow_mut();
-                                if let Err(e) = state_ref.save_document(
-                                    id,
-                                    &path,
-                                    password.as_deref(),
-                                    EncryptionStrength::Standard,
-                                ) {
-                                    drop(state_ref);
-                                    tracing::error!(?e, "Failed to save document");
-                                    groups::show_error_toast(
-                                        &win_for_cb,
-                                        &i18n("Failed to save document."),
-                                    );
-                                }
-                            }
-                        });
-                        dialog.present(Some(&win.clone().upcast()), doc_id, &doc_name);
+                if let Some(path) = existing_path {
+                    let mut state_ref = state_clone.borrow_mut();
+                    if let Err(e) =
+                        state_ref.save_document(doc_id, &path, None, EncryptionStrength::Standard)
+                    {
+                        drop(state_ref);
+                        tracing::error!(?e, "Failed to save document");
+                        groups::show_error_toast(&win, &i18n("Failed to save document."));
                     }
+                } else {
+                    let dialog = SaveDocumentDialog::new();
+                    let state_for_cb = state_clone.clone();
+                    let win_for_cb = win.clone();
+                    dialog.set_callback(move |result| {
+                        if let Some(DocumentDialogResult::Save { id, path, password }) = result {
+                            let mut state_ref = state_for_cb.borrow_mut();
+                            if let Err(e) = state_ref.save_document(
+                                id,
+                                &path,
+                                password.as_deref(),
+                                EncryptionStrength::Standard,
+                            ) {
+                                drop(state_ref);
+                                tracing::error!(?e, "Failed to save document");
+                                groups::show_error_toast(
+                                    &win_for_cb,
+                                    &i18n("Failed to save document."),
+                                );
+                            }
+                        }
+                    });
+                    dialog.present(Some(&win.clone().upcast()), doc_id, &doc_name);
                 }
             }
         }
@@ -231,49 +226,49 @@ fn setup_export_document_action(window: &gtk4::ApplicationWindow, state: &Shared
     export_doc_action.connect_activate(move |_, _| {
         if let Some(win) = window_weak.upgrade() {
             let state_ref = state_clone.borrow();
-            if let Some(doc_id) = state_ref.active_document_id() {
-                if let Some(doc) = state_ref.get_document(doc_id) {
-                    let doc_name = doc.name.clone();
-                    drop(state_ref);
+            if let Some(doc_id) = state_ref.active_document_id()
+                && let Some(doc) = state_ref.get_document(doc_id)
+            {
+                let doc_name = doc.name.clone();
+                drop(state_ref);
 
-                    let filter = gtk4::FileFilter::new();
-                    filter.add_pattern("*.json");
-                    filter.add_pattern("*.yaml");
-                    filter.set_name(Some(&i18n("Document Files")));
+                let filter = gtk4::FileFilter::new();
+                filter.add_pattern("*.json");
+                filter.add_pattern("*.yaml");
+                filter.set_name(Some(&i18n("Document Files")));
 
-                    let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
-                    filters.append(&filter);
+                let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
+                filters.append(&filter);
 
-                    let dialog = gtk4::FileDialog::builder()
-                        .title(i18n("Export Document"))
-                        .filters(&filters)
-                        .initial_name(format!("{doc_name}.json"))
-                        .modal(true)
-                        .build();
+                let dialog = gtk4::FileDialog::builder()
+                    .title(i18n("Export Document"))
+                    .filters(&filters)
+                    .initial_name(format!("{doc_name}.json"))
+                    .modal(true)
+                    .build();
 
-                    let state_for_cb = state_clone.clone();
-                    let win_for_cb = win.clone();
+                let state_for_cb = state_clone.clone();
+                let win_for_cb = win.clone();
 
-                    dialog.save(
-                        Some(&win.clone().upcast::<gtk4::Window>()),
-                        gtk4::gio::Cancellable::NONE,
-                        move |result| {
-                            if let Ok(file) = result {
-                                if let Some(path) = file.path() {
-                                    let state_ref = state_for_cb.borrow();
-                                    if let Err(e) = state_ref.export_document(doc_id, &path) {
-                                        drop(state_ref);
-                                        tracing::error!(?e, "Failed to export document");
-                                        groups::show_error_toast(
-                                            &win_for_cb,
-                                            &i18n("Failed to export document."),
-                                        );
-                                    }
-                                }
+                dialog.save(
+                    Some(&win.clone().upcast::<gtk4::Window>()),
+                    gtk4::gio::Cancellable::NONE,
+                    move |result| {
+                        if let Ok(file) = result
+                            && let Some(path) = file.path()
+                        {
+                            let state_ref = state_for_cb.borrow();
+                            if let Err(e) = state_ref.export_document(doc_id, &path) {
+                                drop(state_ref);
+                                tracing::error!(?e, "Failed to export document");
+                                groups::show_error_toast(
+                                    &win_for_cb,
+                                    &i18n("Failed to export document."),
+                                );
                             }
-                        },
-                    );
-                }
+                        }
+                    },
+                );
             }
         }
     });
@@ -315,21 +310,21 @@ fn setup_import_document_action(
                 Some(&win.clone().upcast::<gtk4::Window>()),
                 gtk4::gio::Cancellable::NONE,
                 move |result| {
-                    if let Ok(file) = result {
-                        if let Some(path) = file.path() {
-                            let mut state_ref = state_for_cb.borrow_mut();
-                            match state_ref.import_document(&path) {
-                                Ok(_doc_id) => {
-                                    drop(state_ref);
-                                }
-                                Err(e) => {
-                                    drop(state_ref);
-                                    tracing::error!(?e, "Failed to import document");
-                                    groups::show_error_toast(
-                                        &win_for_cb,
-                                        &i18n("Failed to import document."),
-                                    );
-                                }
+                    if let Ok(file) = result
+                        && let Some(path) = file.path()
+                    {
+                        let mut state_ref = state_for_cb.borrow_mut();
+                        match state_ref.import_document(&path) {
+                            Ok(_doc_id) => {
+                                drop(state_ref);
+                            }
+                            Err(e) => {
+                                drop(state_ref);
+                                tracing::error!(?e, "Failed to import document");
+                                groups::show_error_toast(
+                                    &win_for_cb,
+                                    &i18n("Failed to import document."),
+                                );
                             }
                         }
                     }

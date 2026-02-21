@@ -408,59 +408,57 @@ impl EmbeddedRdpWidget {
                 None::<&gtk4::Window>,
                 None::<&gtk4::gio::Cancellable>,
                 move |result| {
-                    if let Ok(folder) = result {
-                        if let Some(path) = folder.path() {
-                            // Set target directory and start downloads
-                            {
-                                let mut transfer = file_transfer_clone.borrow_mut();
-                                transfer.target_directory = Some(path.clone());
-                                transfer.total_files = files_clone.len();
-                                transfer.completed_count = 0;
-                            }
+                    if let Ok(folder) = result
+                        && let Some(path) = folder.path()
+                    {
+                        // Set target directory and start downloads
+                        {
+                            let mut transfer = file_transfer_clone.borrow_mut();
+                            transfer.target_directory = Some(path.clone());
+                            transfer.total_files = files_clone.len();
+                            transfer.completed_count = 0;
+                        }
 
-                            // Disable button during transfer
-                            save_btn_clone.set_sensitive(false);
-                            save_btn_clone.set_label(&i18n("Downloading..."));
+                        // Disable button during transfer
+                        save_btn_clone.set_sensitive(false);
+                        save_btn_clone.set_label(&i18n("Downloading..."));
 
-                            // Request file contents for each file
-                            if let Some(ref sender) = *ironrdp_tx_clone.borrow() {
-                                for (idx, file) in files_clone.iter().enumerate() {
-                                    let stream_id = {
-                                        let mut transfer = file_transfer_clone.borrow_mut();
-                                        transfer.start_download(idx as u32)
-                                    };
+                        // Request file contents for each file
+                        if let Some(ref sender) = *ironrdp_tx_clone.borrow() {
+                            for (idx, file) in files_clone.iter().enumerate() {
+                                let stream_id = {
+                                    let mut transfer = file_transfer_clone.borrow_mut();
+                                    transfer.start_download(idx as u32)
+                                };
 
-                                    if let Some(sid) = stream_id {
-                                        // First request size, then data
-                                        let _ =
-                                            sender.send(RdpClientCommand::RequestFileContents {
-                                                stream_id: sid,
-                                                file_index: file.index,
-                                                request_size: true,
-                                                offset: 0,
-                                                length: 0,
-                                            });
+                                if let Some(sid) = stream_id {
+                                    // First request size, then data
+                                    let _ = sender.send(RdpClientCommand::RequestFileContents {
+                                        stream_id: sid,
+                                        file_index: file.index,
+                                        request_size: true,
+                                        offset: 0,
+                                        length: 0,
+                                    });
 
-                                        // Then request actual data
-                                        let _ =
-                                            sender.send(RdpClientCommand::RequestFileContents {
-                                                stream_id: sid,
-                                                file_index: file.index,
-                                                request_size: false,
-                                                offset: 0,
-                                                length: u32::MAX, // Request all data
-                                            });
-                                    }
+                                    // Then request actual data
+                                    let _ = sender.send(RdpClientCommand::RequestFileContents {
+                                        stream_id: sid,
+                                        file_index: file.index,
+                                        request_size: false,
+                                        offset: 0,
+                                        length: u32::MAX, // Request all data
+                                    });
                                 }
                             }
+                        }
 
-                            // Show progress
-                            status_label_clone.set_text("Downloading files...");
-                            status_label_clone.set_visible(true);
+                        // Show progress
+                        status_label_clone.set_text("Downloading files...");
+                        status_label_clone.set_visible(true);
 
-                            if let Some(ref callback) = *on_progress_clone.borrow() {
-                                callback(0.0, "Starting download...");
-                            }
+                        if let Some(ref callback) = *on_progress_clone.borrow() {
+                            callback(0.0, "Starting download...");
                         }
                     }
                 },
@@ -894,13 +892,13 @@ impl EmbeddedRdpWidget {
                                 extended: scancode.extended,
                             });
                         }
-                    } else if let Some(ch) = keyval_to_unicode(gdk_keyval) {
-                        if let Some(ref tx) = *ironrdp_tx.borrow() {
-                            let _ = tx.send(RdpClientCommand::UnicodeEvent {
-                                character: ch,
-                                pressed: false,
-                            });
-                        }
+                    } else if let Some(ch) = keyval_to_unicode(gdk_keyval)
+                        && let Some(ref tx) = *ironrdp_tx.borrow()
+                    {
+                        let _ = tx.send(RdpClientCommand::UnicodeEvent {
+                            character: ch,
+                            pressed: false,
+                        });
                     }
                 } else if let Some(ref thread) = *freerdp_thread.borrow() {
                     let _ = thread.send_command(RdpCommand::KeyEvent {
@@ -1092,15 +1090,17 @@ impl EmbeddedRdpWidget {
             let embedded = *is_embedded.borrow();
             let using_ironrdp = *is_ironrdp.borrow();
 
-            if embedded && current_state == RdpConnectionState::Connected && using_ironrdp {
-                if let Some(ref tx) = *ironrdp_tx.borrow() {
-                    let wheel_delta = (-dy * 120.0) as i16;
-                    if wheel_delta != 0 {
-                        let _ = tx.send(RdpClientCommand::WheelEvent {
-                            horizontal: 0,
-                            vertical: wheel_delta,
-                        });
-                    }
+            if embedded
+                && current_state == RdpConnectionState::Connected
+                && using_ironrdp
+                && let Some(ref tx) = *ironrdp_tx.borrow()
+            {
+                let wheel_delta = (-dy * 120.0) as i16;
+                if wheel_delta != 0 {
+                    let _ = tx.send(RdpClientCommand::WheelEvent {
+                        horizontal: 0,
+                        vertical: wheel_delta,
+                    });
                 }
             }
 
@@ -1525,12 +1525,12 @@ impl EmbeddedRdpWidget {
             match self.connect_embedded(config) {
                 Ok(()) => {
                     // Check if fallback was triggered by the thread
-                    if let Some(ref thread) = *self.freerdp_thread.borrow() {
-                        if thread.fallback_triggered() {
-                            // Fallback was triggered, clean up and try external mode
-                            self.cleanup_embedded_mode();
-                            return self.connect_external_with_notification(config);
-                        }
+                    if let Some(ref thread) = *self.freerdp_thread.borrow()
+                        && thread.fallback_triggered()
+                    {
+                        // Fallback was triggered, clean up and try external mode
+                        self.cleanup_embedded_mode();
+                        return self.connect_external_with_notification(config);
                     }
                     return Ok(());
                 }
@@ -1571,9 +1571,9 @@ impl EmbeddedRdpWidget {
 
         // Increment connection generation to invalidate any stale polling loops
         let generation = {
-            let mut gen = self.connection_generation.borrow_mut();
-            *gen += 1;
-            *gen
+            let mut counter = self.connection_generation.borrow_mut();
+            *counter += 1;
+            *counter
         };
         tracing::debug!(
             "[EmbeddedRDP] Starting connection generation {}",
@@ -2050,39 +2050,39 @@ impl EmbeddedRdpWidget {
                                     if player_opt.is_none() {
                                         *player_opt = Some(crate::audio::RdpAudioPlayer::new());
                                     }
-                                    if let Some(ref mut player) = *player_opt {
-                                        if let Err(e) = player.configure(format) {
-                                            tracing::warn!("[Audio] Failed to configure: {}", e);
-                                        }
+                                    if let Some(ref mut player) = *player_opt
+                                        && let Err(e) = player.configure(format)
+                                    {
+                                        tracing::warn!("[Audio] Failed to configure: {}", e);
                                     }
                                 }
                             }
                             #[cfg(feature = "rdp-audio")]
                             RdpClientEvent::AudioData { data, .. } => {
                                 // Queue audio data for playback
-                                if let Ok(player_opt) = audio_player.try_borrow() {
-                                    if let Some(ref player) = *player_opt {
-                                        player.queue_data(&data);
-                                    }
+                                if let Ok(player_opt) = audio_player.try_borrow()
+                                    && let Some(ref player) = *player_opt
+                                {
+                                    player.queue_data(&data);
                                 }
                             }
                             #[cfg(feature = "rdp-audio")]
                             RdpClientEvent::AudioVolume { left, right } => {
                                 // Update audio volume
-                                if let Ok(player_opt) = audio_player.try_borrow() {
-                                    if let Some(ref player) = *player_opt {
-                                        player.set_volume(left, right);
-                                    }
+                                if let Ok(player_opt) = audio_player.try_borrow()
+                                    && let Some(ref player) = *player_opt
+                                {
+                                    player.set_volume(left, right);
                                 }
                             }
                             #[cfg(feature = "rdp-audio")]
                             RdpClientEvent::AudioClose => {
                                 // Stop audio playback
                                 tracing::debug!("[Audio] Channel closed");
-                                if let Ok(mut player_opt) = audio_player.try_borrow_mut() {
-                                    if let Some(ref mut player) = *player_opt {
-                                        player.stop();
-                                    }
+                                if let Ok(mut player_opt) = audio_player.try_borrow_mut()
+                                    && let Some(ref mut player) = *player_opt
+                                {
+                                    player.stop();
                                 }
                             }
                             #[cfg(not(feature = "rdp-audio"))]
@@ -2597,17 +2597,17 @@ impl EmbeddedRdpWidget {
         }
 
         // Check embedded mode thread
-        if *self.is_embedded.borrow() {
-            if let Some(ref thread) = *self.freerdp_thread.borrow() {
-                match thread.state() {
-                    FreeRdpThreadState::Error => {
-                        self.set_state(RdpConnectionState::Error);
-                    }
-                    FreeRdpThreadState::ShuttingDown => {
-                        self.set_state(RdpConnectionState::Disconnected);
-                    }
-                    _ => {}
+        if *self.is_embedded.borrow()
+            && let Some(ref thread) = *self.freerdp_thread.borrow()
+        {
+            match thread.state() {
+                FreeRdpThreadState::Error => {
+                    self.set_state(RdpConnectionState::Error);
                 }
+                FreeRdpThreadState::ShuttingDown => {
+                    self.set_state(RdpConnectionState::Disconnected);
+                }
+                _ => {}
             }
         }
     }

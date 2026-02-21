@@ -168,10 +168,10 @@ impl TabSplitManager {
         let adapter = self.layouts.remove(&tab_id);
 
         // Release the color back to the pool if the adapter had one
-        if let Some(ref adapter) = adapter {
-            if let Some(color_id) = adapter.model().borrow().color_id() {
-                self.color_pool.borrow_mut().release(color_id);
-            }
+        if let Some(ref adapter) = adapter
+            && let Some(color_id) = adapter.model().borrow().color_id()
+        {
+            self.color_pool.borrow_mut().release(color_id);
         }
 
         adapter

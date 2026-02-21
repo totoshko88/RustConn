@@ -183,10 +183,10 @@ impl AsbruExporter {
         }
 
         // parent (group membership)
-        if let Some(group_id) = connection.group_id {
-            if let Some(parent_uuid) = group_uuid_map.get(&group_id) {
-                lines.push(format!("  parent: \"{parent_uuid}\""));
-            }
+        if let Some(group_id) = connection.group_id
+            && let Some(parent_uuid) = group_uuid_map.get(&group_id)
+        {
+            lines.push(format!("  parent: \"{parent_uuid}\""));
         }
 
         // description - prefer direct field, fall back to tags
@@ -239,18 +239,18 @@ impl AsbruExporter {
         lines.push(format!("  name: \"{name}\""));
 
         // parent (for nested groups)
-        if let Some(parent_id) = group.parent_id {
-            if let Some(parent_uuid) = group_uuid_map.get(&parent_id) {
-                lines.push(format!("  parent: \"{parent_uuid}\""));
-            }
+        if let Some(parent_id) = group.parent_id
+            && let Some(parent_uuid) = group_uuid_map.get(&parent_id)
+        {
+            lines.push(format!("  parent: \"{parent_uuid}\""));
         }
 
         // description
-        if let Some(ref desc) = group.description {
-            if !desc.is_empty() {
-                let desc = escape_yaml_string(desc);
-                lines.push(format!("  description: \"{desc}\""));
-            }
+        if let Some(ref desc) = group.description
+            && !desc.is_empty()
+        {
+            let desc = escape_yaml_string(desc);
+            lines.push(format!("  description: \"{desc}\""));
         }
 
         // children (empty placeholder - actual children reference this group via parent)

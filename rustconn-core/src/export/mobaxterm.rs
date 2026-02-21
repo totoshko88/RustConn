@@ -278,11 +278,11 @@ impl MobaXtermExporter {
 
         // Build full paths for nested groups
         for group in groups {
-            if let Some(parent_id) = group.parent_id {
-                if let Some(parent_path) = paths.get(&parent_id).cloned() {
-                    let full_path = format!("{}\\{}", parent_path, group.name);
-                    paths.insert(group.id, full_path);
-                }
+            if let Some(parent_id) = group.parent_id
+                && let Some(parent_path) = paths.get(&parent_id).cloned()
+            {
+                let full_path = format!("{}\\{}", parent_path, group.name);
+                paths.insert(group.id, full_path);
             }
         }
 

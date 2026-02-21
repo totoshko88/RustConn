@@ -75,7 +75,7 @@ impl Default for TrayState {
 mod tray_impl {
     use super::*;
     use ksni::blocking::{Handle, TrayMethods};
-    use ksni::{menu::StandardItem, Icon, MenuItem, Tray};
+    use ksni::{Icon, MenuItem, Tray, menu::StandardItem};
     use std::sync::mpsc::Sender;
 
     /// Embedded SVG icon data
@@ -334,45 +334,45 @@ mod tray_impl {
         /// Trigger a menu update on the D-Bus service
         fn trigger_update(&self) {
             // Only update if there are actual changes
-            if let Ok(mut needs) = self.needs_update.lock() {
-                if *needs {
-                    let _ = self.handle.update(|_| {});
-                    *needs = false;
-                }
+            if let Ok(mut needs) = self.needs_update.lock()
+                && *needs
+            {
+                let _ = self.handle.update(|_| {});
+                *needs = false;
             }
         }
 
         pub fn set_active_sessions(&self, count: u32) {
-            if let Ok(mut state) = self.state.lock() {
-                if state.active_sessions != count {
-                    state.active_sessions = count;
-                    if let Ok(mut needs) = self.needs_update.lock() {
-                        *needs = true;
-                    }
+            if let Ok(mut state) = self.state.lock()
+                && state.active_sessions != count
+            {
+                state.active_sessions = count;
+                if let Ok(mut needs) = self.needs_update.lock() {
+                    *needs = true;
                 }
             }
             self.trigger_update();
         }
 
         pub fn set_recent_connections(&self, connections: Vec<(Uuid, String)>) {
-            if let Ok(mut state) = self.state.lock() {
-                if state.recent_connections != connections {
-                    state.recent_connections = connections;
-                    if let Ok(mut needs) = self.needs_update.lock() {
-                        *needs = true;
-                    }
+            if let Ok(mut state) = self.state.lock()
+                && state.recent_connections != connections
+            {
+                state.recent_connections = connections;
+                if let Ok(mut needs) = self.needs_update.lock() {
+                    *needs = true;
                 }
             }
             self.trigger_update();
         }
 
         pub fn set_window_visible(&self, visible: bool) {
-            if let Ok(mut state) = self.state.lock() {
-                if state.window_visible != visible {
-                    state.window_visible = visible;
-                    if let Ok(mut needs) = self.needs_update.lock() {
-                        *needs = true;
-                    }
+            if let Ok(mut state) = self.state.lock()
+                && state.window_visible != visible
+            {
+                state.window_visible = visible;
+                if let Ok(mut needs) = self.needs_update.lock() {
+                    *needs = true;
                 }
             }
             self.trigger_update();

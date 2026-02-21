@@ -226,12 +226,12 @@ pub fn load_ui_settings(
     let mut child = color_scheme_box.first_child();
     let mut index = 0;
     while let Some(widget) = child {
-        if let Some(btn) = widget.downcast_ref::<ToggleButton>() {
-            if index == target_index {
-                btn.set_active(true);
-                crate::app::apply_color_scheme(settings.color_scheme);
-                break;
-            }
+        if let Some(btn) = widget.downcast_ref::<ToggleButton>()
+            && index == target_index
+        {
+            btn.set_active(true);
+            crate::app::apply_color_scheme(settings.color_scheme);
+            break;
         }
         child = widget.next_sibling();
         index += 1;
@@ -274,16 +274,16 @@ pub fn collect_ui_settings(
     let mut child = color_scheme_box.first_child();
     let mut index = 0;
     while let Some(widget) = child {
-        if let Some(btn) = widget.downcast_ref::<ToggleButton>() {
-            if btn.is_active() {
-                selected_scheme = match index {
-                    0 => ColorScheme::System,
-                    1 => ColorScheme::Light,
-                    2 => ColorScheme::Dark,
-                    _ => ColorScheme::System,
-                };
-                break;
-            }
+        if let Some(btn) = widget.downcast_ref::<ToggleButton>()
+            && btn.is_active()
+        {
+            selected_scheme = match index {
+                0 => ColorScheme::System,
+                1 => ColorScheme::Light,
+                2 => ColorScheme::Dark,
+                _ => ColorScheme::System,
+            };
+            break;
         }
         child = widget.next_sibling();
         index += 1;

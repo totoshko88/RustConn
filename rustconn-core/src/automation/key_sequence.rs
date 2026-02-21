@@ -441,12 +441,12 @@ impl KeySequence {
     /// Returns an error if the sequence contains invalid elements.
     pub fn validate(&self) -> KeySequenceResult<()> {
         for element in &self.elements {
-            if let KeyElement::Variable(name) = element {
-                if !Self::is_valid_variable_name(name) {
-                    return Err(KeySequenceError::InvalidSyntax(format!(
-                        "Invalid variable name: {name}"
-                    )));
-                }
+            if let KeyElement::Variable(name) = element
+                && !Self::is_valid_variable_name(name)
+            {
+                return Err(KeySequenceError::InvalidSyntax(format!(
+                    "Invalid variable name: {name}"
+                )));
             }
         }
         Ok(())

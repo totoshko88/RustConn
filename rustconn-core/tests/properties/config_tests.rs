@@ -8,11 +8,11 @@
 
 use proptest::prelude::*;
 use rustconn_core::{
+    Connection, ConnectionGroup, HistorySettings, ProtocolConfig, RdpConfig, RdpGateway,
+    Resolution, Snippet, SnippetVariable, SshAuthMethod, SshConfig, SshKeySource, VncConfig,
     config::AppSettings, config::ColorScheme, config::ConfigManager, config::LoggingSettings,
     config::SecretBackendType, config::SecretSettings, config::SessionRestoreSettings,
-    config::TerminalSettings, config::UiSettings, Connection, ConnectionGroup, HistorySettings,
-    ProtocolConfig, RdpConfig, RdpGateway, Resolution, Snippet, SnippetVariable, SshAuthMethod,
-    SshConfig, SshKeySource, VncConfig,
+    config::TerminalSettings, config::UiSettings,
 };
 use std::collections::HashMap;
 use std::path::PathBuf;

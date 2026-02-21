@@ -39,12 +39,11 @@ impl ExternalWindow {
             .build();
 
         // Apply saved geometry if available and remember_window_position is enabled
-        if connection.remember_window_position {
-            if let Some(geometry) = &connection.window_geometry {
-                if geometry.is_valid() {
-                    window.set_default_size(geometry.width, geometry.height);
-                }
-            }
+        if connection.remember_window_position
+            && let Some(geometry) = &connection.window_geometry
+            && geometry.is_valid()
+        {
+            window.set_default_size(geometry.width, geometry.height);
         }
 
         // Create header bar

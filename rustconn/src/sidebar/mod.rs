@@ -15,8 +15,8 @@
 
 // Re-export types for external use
 pub use crate::sidebar_types::{
-    DropIndicator, DropPosition, SelectionModelWrapper, SessionStatusInfo, TreeState,
-    MAX_SEARCH_HISTORY,
+    DropIndicator, DropPosition, MAX_SEARCH_HISTORY, SelectionModelWrapper, SessionStatusInfo,
+    TreeState,
 };
 
 // Submodules
@@ -31,12 +31,12 @@ use crate::sidebar_ui;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::ObjectSubclassIsExt;
 use gtk4::{
-    gdk, gio, glib, Box as GtkBox, Button, DropTarget, EventControllerKey, GestureClick, Label,
-    ListItem, ListView, Orientation, PolicyType, ScrolledWindow, SearchEntry,
-    SignalListItemFactory, TreeExpander, TreeListModel, TreeListRow, Widget,
+    Box as GtkBox, Button, DropTarget, EventControllerKey, GestureClick, Label, ListItem, ListView,
+    Orientation, PolicyType, ScrolledWindow, SearchEntry, SignalListItemFactory, TreeExpander,
+    TreeListModel, TreeListRow, Widget, gdk, gio, glib,
 };
-use rustconn_core::connection::{LazyGroupLoader, SelectionState as CoreSelectionState};
 use rustconn_core::Debouncer;
+use rustconn_core::connection::{LazyGroupLoader, SelectionState as CoreSelectionState};
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
@@ -402,20 +402,19 @@ impl ConnectionSidebar {
 
             // Clear filter buttons when search is manually cleared
             // Only clear if text is empty and we have active filters
-            if text.is_empty() {
-                if let Ok(filters) = active_filters_for_clear.try_borrow() {
-                    if !filters.is_empty() {
-                        drop(filters); // Release the borrow before clearing
+            if text.is_empty()
+                && let Ok(filters) = active_filters_for_clear.try_borrow()
+                && !filters.is_empty()
+            {
+                drop(filters); // Release the borrow before clearing
 
-                        // Clear the active filters state
-                        active_filters_for_clear.borrow_mut().clear();
+                // Clear the active filters state
+                active_filters_for_clear.borrow_mut().clear();
 
-                        // Remove CSS classes from all buttons
-                        for button in buttons_for_clear.borrow().values() {
-                            button.remove_css_class("suggested-action");
-                            button.remove_css_class("filter-active-multiple");
-                        }
-                    }
+                // Remove CSS classes from all buttons
+                for button in buttons_for_clear.borrow().values() {
+                    button.remove_css_class("suggested-action");
+                    button.remove_css_class("filter-active-multiple");
                 }
             }
         });
@@ -1018,13 +1017,14 @@ impl ConnectionSidebar {
     pub fn update_document_dirty_state(&self, doc_id: Uuid, is_dirty: bool) {
         let n_items = self.store.n_items();
         for i in 0..n_items {
-            if let Some(item) = self.store.item(i).and_downcast::<ConnectionItem>() {
-                if item.is_document() && item.id() == doc_id.to_string() {
-                    item.set_dirty(is_dirty);
-                    // Trigger a refresh by notifying the model
-                    self.store.items_changed(i, 1, 1);
-                    break;
-                }
+            if let Some(item) = self.store.item(i).and_downcast::<ConnectionItem>()
+                && item.is_document()
+                && item.id() == doc_id.to_string()
+            {
+                item.set_dirty(is_dirty);
+                // Trigger a refresh by notifying the model
+                self.store.items_changed(i, 1, 1);
+                break;
             }
         }
     }
@@ -1167,12 +1167,11 @@ impl ConnectionSidebar {
                 }
 
                 // Check children if it's a group or document
-                if item.is_group() || item.is_document() {
-                    if let Some(children) = item.children() {
-                        if Self::update_item_status_recursive(&children, id, status) {
-                            return true;
-                        }
-                    }
+                if (item.is_group() || item.is_document())
+                    && let Some(children) = item.children()
+                    && Self::update_item_status_recursive(&children, id, status)
+                {
+                    return true;
                 }
             }
         }
@@ -1196,18 +1195,18 @@ impl ConnectionSidebar {
     pub fn get_document_for_item(&self, item_id: Uuid) -> Option<Uuid> {
         let n_items = self.store.n_items();
         for i in 0..n_items {
-            if let Some(doc_item) = self.store.item(i).and_downcast::<ConnectionItem>() {
-                if doc_item.is_document() {
-                    // Check if this document contains the item
-                    if doc_item.id() == item_id.to_string() {
-                        return Uuid::parse_str(&doc_item.id()).ok();
-                    }
-                    // Check children
-                    if let Some(children) = doc_item.children() {
-                        if Self::find_item_in_children(&children, &item_id.to_string()) {
-                            return Uuid::parse_str(&doc_item.id()).ok();
-                        }
-                    }
+            if let Some(doc_item) = self.store.item(i).and_downcast::<ConnectionItem>()
+                && doc_item.is_document()
+            {
+                // Check if this document contains the item
+                if doc_item.id() == item_id.to_string() {
+                    return Uuid::parse_str(&doc_item.id()).ok();
+                }
+                // Check children
+                if let Some(children) = doc_item.children()
+                    && Self::find_item_in_children(&children, &item_id.to_string())
+                {
+                    return Uuid::parse_str(&doc_item.id()).ok();
                 }
             }
         }
@@ -1225,10 +1224,10 @@ impl ConnectionSidebar {
                 if item.id() == item_id {
                     return true;
                 }
-                if let Some(children) = item.children() {
-                    if Self::find_item_in_children(&children, item_id) {
-                        return true;
-                    }
+                if let Some(children) = item.children()
+                    && Self::find_item_in_children(&children, item_id)
+                {
+                    return true;
                 }
             }
         }
@@ -1296,20 +1295,20 @@ impl ConnectionSidebar {
 
         let mut ids = Vec::new();
         for pos in positions {
-            if let Some(model) = selection.model() {
-                if let Some(item) = model.item(pos) {
-                    // Handle TreeListRow wrapping
-                    let conn_item = if let Some(row) = item.downcast_ref::<TreeListRow>() {
-                        row.item().and_downcast::<ConnectionItem>()
-                    } else {
-                        item.downcast::<ConnectionItem>().ok()
-                    };
+            if let Some(model) = selection.model()
+                && let Some(item) = model.item(pos)
+            {
+                // Handle TreeListRow wrapping
+                let conn_item = if let Some(row) = item.downcast_ref::<TreeListRow>() {
+                    row.item().and_downcast::<ConnectionItem>()
+                } else {
+                    item.downcast::<ConnectionItem>().ok()
+                };
 
-                    if let Some(conn_item) = conn_item {
-                        if let Ok(uuid) = Uuid::parse_str(&conn_item.id()) {
-                            ids.push(uuid);
-                        }
-                    }
+                if let Some(conn_item) = conn_item
+                    && let Ok(uuid) = Uuid::parse_str(&conn_item.id())
+                {
+                    ids.push(uuid);
                 }
             }
         }
@@ -1322,17 +1321,16 @@ impl ConnectionSidebar {
         let selection = self.selection_model.borrow();
         let positions = selection.get_selected_positions();
 
-        if let Some(&pos) = positions.first() {
-            if let Some(model) = selection.model() {
-                if let Some(item) = model.item(pos) {
-                    // Handle TreeListRow wrapping
-                    return if let Some(row) = item.downcast_ref::<TreeListRow>() {
-                        row.item().and_downcast::<ConnectionItem>()
-                    } else {
-                        item.downcast::<ConnectionItem>().ok()
-                    };
-                }
-            }
+        if let Some(&pos) = positions.first()
+            && let Some(model) = selection.model()
+            && let Some(item) = model.item(pos)
+        {
+            // Handle TreeListRow wrapping
+            return if let Some(row) = item.downcast_ref::<TreeListRow>() {
+                row.item().and_downcast::<ConnectionItem>()
+            } else {
+                item.downcast::<ConnectionItem>().ok()
+            };
         }
         None
     }
@@ -1398,10 +1396,10 @@ impl ConnectionSidebar {
                     return Some(widget);
                 }
                 // Also check for the content box inside TreeExpander
-                if let Some(parent) = widget.parent() {
-                    if parent.type_().name() == "GtkTreeExpander" {
-                        return Some(parent);
-                    }
+                if let Some(parent) = widget.parent()
+                    && parent.type_().name() == "GtkTreeExpander"
+                {
+                    return Some(parent);
                 }
                 current = widget.parent();
             }
@@ -1475,10 +1473,10 @@ impl ConnectionSidebar {
         // Walk up to find TreeExpander
         let mut current = Some(widget.clone());
         while let Some(w) = current {
-            if let Some(expander) = w.downcast_ref::<TreeExpander>() {
-                if let Some(row) = expander.list_row() {
-                    return row.item().and_then(|i| i.downcast::<ConnectionItem>().ok());
-                }
+            if let Some(expander) = w.downcast_ref::<TreeExpander>()
+                && let Some(row) = expander.list_row()
+            {
+                return row.item().and_then(|i| i.downcast::<ConnectionItem>().ok());
             }
             current = w.parent();
         }
@@ -1647,14 +1645,14 @@ impl ConnectionSidebar {
                 .tree_model
                 .item(i)
                 .and_then(|o| o.downcast::<TreeListRow>().ok())
+                && let Some(item) = row.item().and_then(|o| o.downcast::<ConnectionItem>().ok())
             {
-                if let Some(item) = row.item().and_then(|o| o.downcast::<ConnectionItem>().ok()) {
-                    // Include both groups and documents that are expanded
-                    if (item.is_group() || item.is_document()) && row.is_expanded() {
-                        if let Ok(id) = Uuid::parse_str(&item.id()) {
-                            expanded.insert(id);
-                        }
-                    }
+                // Include both groups and documents that are expanded
+                if (item.is_group() || item.is_document())
+                    && row.is_expanded()
+                    && let Ok(id) = Uuid::parse_str(&item.id())
+                {
+                    expanded.insert(id);
                 }
             }
         }
@@ -1695,21 +1693,15 @@ impl ConnectionSidebar {
                 if let Some(row) = tree_model
                     .item(i)
                     .and_then(|o| o.downcast::<TreeListRow>().ok())
+                    && row.is_expandable()
+                    && !row.is_expanded()
+                    && let Some(item) = row.item().and_then(|o| o.downcast::<ConnectionItem>().ok())
+                    && (item.is_group() || item.is_document())
+                    && let Ok(id) = Uuid::parse_str(&item.id())
+                    && expanded.contains(&id)
                 {
-                    if row.is_expandable() && !row.is_expanded() {
-                        if let Some(item) =
-                            row.item().and_then(|o| o.downcast::<ConnectionItem>().ok())
-                        {
-                            if item.is_group() || item.is_document() {
-                                if let Ok(id) = Uuid::parse_str(&item.id()) {
-                                    if expanded.contains(&id) {
-                                        row.set_expanded(true);
-                                        expanded_any = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    row.set_expanded(true);
+                    expanded_any = true;
                 }
             }
 
@@ -1736,24 +1728,21 @@ impl ConnectionSidebar {
                 if let Some(row) = tree_model
                     .item(i)
                     .and_then(|o| o.downcast::<TreeListRow>().ok())
+                    && let Some(item) = row.item().and_then(|o| o.downcast::<ConnectionItem>().ok())
+                    && item.id() == item_id_str
                 {
-                    if let Some(item) = row.item().and_then(|o| o.downcast::<ConnectionItem>().ok())
-                    {
-                        if item.id() == item_id_str {
-                            // Found the item, select it
-                            let sel = selection_model.borrow();
-                            match &*sel {
-                                SelectionModelWrapper::Single(s) => {
-                                    s.set_selected(i);
-                                }
-                                SelectionModelWrapper::Multi(m) => {
-                                    m.unselect_all();
-                                    m.select_item(i, false);
-                                }
-                            }
-                            return;
+                    // Found the item, select it
+                    let sel = selection_model.borrow();
+                    match &*sel {
+                        SelectionModelWrapper::Single(s) => {
+                            s.set_selected(i);
+                        }
+                        SelectionModelWrapper::Multi(m) => {
+                            m.unselect_all();
+                            m.select_item(i, false);
                         }
                     }
+                    return;
                 }
             }
         });
@@ -1837,9 +1826,9 @@ impl Default for ConnectionSidebar {
 
 mod imp {
     use super::{gio, glib};
+    use glib::Properties;
     use glib::prelude::*;
     use glib::subclass::prelude::*;
-    use glib::Properties;
     use std::cell::RefCell;
 
     #[derive(Default, Properties)]

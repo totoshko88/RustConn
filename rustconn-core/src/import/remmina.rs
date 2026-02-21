@@ -19,7 +19,7 @@ use crate::models::{
 };
 
 use super::normalize::parse_host_port;
-use super::traits::{read_import_file, ImportResult, ImportSource, SkippedEntry};
+use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 
 /// Importer for Remmina connection files.
 ///
@@ -133,11 +133,11 @@ impl RemminaImporter {
             self.convert_to_connection(remmina_section, source_path, &mut result)
         {
             // Assign group if present
-            if let Some(ref path) = group_path {
-                if !path.is_empty() {
-                    let group_id = Self::get_or_create_group(path, group_map, &mut result);
-                    connection.group_id = Some(group_id);
-                }
+            if let Some(ref path) = group_path
+                && !path.is_empty()
+            {
+                let group_id = Self::get_or_create_group(path, group_map, &mut result);
+                connection.group_id = Some(group_id);
             }
             result.add_connection(connection);
         }
@@ -342,10 +342,9 @@ impl RemminaImporter {
         if let Some(username) = config
             .get("username")
             .or_else(|| config.get("ssh_username"))
+            && !username.is_empty()
         {
-            if !username.is_empty() {
-                connection.username = Some(username.clone());
-            }
+            connection.username = Some(username.clone());
         }
 
         // Set domain for RDP connections
@@ -354,16 +353,16 @@ impl RemminaImporter {
         }
 
         // Try to import password from GNOME Keyring if enabled
-        if self.import_passwords {
-            if let Some(password) = Self::get_password_from_keyring(source_path) {
-                // Store credentials in the result for later persistence
-                let creds = Credentials::with_password(
-                    connection.username.clone().unwrap_or_default(),
-                    password,
-                );
-                result.add_credentials(connection.id, creds);
-                connection.password_source = PasswordSource::Vault;
-            }
+        if self.import_passwords
+            && let Some(password) = Self::get_password_from_keyring(source_path)
+        {
+            // Store credentials in the result for later persistence
+            let creds = Credentials::with_password(
+                connection.username.clone().unwrap_or_default(),
+                password,
+            );
+            result.add_credentials(connection.id, creds);
+            connection.password_source = PasswordSource::Vault;
         }
 
         // Return connection and group name for later processing
@@ -454,13 +453,13 @@ impl ImportSource for RemminaImporter {
 
         if let Some(data_dir) = dirs::data_local_dir() {
             let remmina_dir = data_dir.join("remmina");
-            if remmina_dir.is_dir() {
-                if let Ok(entries) = fs::read_dir(&remmina_dir) {
-                    for entry in entries.flatten() {
-                        let path = entry.path();
-                        if path.extension().is_some_and(|ext| ext == "remmina") {
-                            paths.push(path);
-                        }
+            if remmina_dir.is_dir()
+                && let Ok(entries) = fs::read_dir(&remmina_dir)
+            {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.extension().is_some_and(|ext| ext == "remmina") {
+                        paths.push(path);
                     }
                 }
             }
@@ -643,10 +642,12 @@ group=Production/Web Servers
         let web_servers = result.groups.iter().find(|g| g.name == "Web Servers");
         assert!(production.is_some());
         assert!(web_servers.is_some());
-        assert!(production
-            .as_ref()
-            .map(|g| g.parent_id.is_none())
-            .unwrap_or(false));
+        assert!(
+            production
+                .as_ref()
+                .map(|g| g.parent_id.is_none())
+                .unwrap_or(false)
+        );
         assert_eq!(
             web_servers.as_ref().and_then(|g| g.parent_id),
             production.map(|g| g.id)

@@ -6,8 +6,8 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use quick_xml::events::Event;
 use quick_xml::Reader;
+use quick_xml::events::Event;
 use uuid::Uuid;
 
 use crate::error::ImportError;
@@ -16,7 +16,7 @@ use crate::models::{
     SshConfig, VncConfig,
 };
 
-use super::traits::{read_import_file, ImportResult, ImportSource, SkippedEntry};
+use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 
 /// Royal TS SSH connection data
 #[derive(Debug, Clone, Default)]
@@ -236,10 +236,10 @@ impl RoyalTsImporter {
         // Convert SSH connections (skip trashed)
         for conn in &ssh_connections {
             // Skip connections in trash
-            if let Some(ref tid) = trash_id {
-                if conn.parent_id.as_ref() == Some(tid) {
-                    continue;
-                }
+            if let Some(ref tid) = trash_id
+                && conn.parent_id.as_ref() == Some(tid)
+            {
+                continue;
             }
             if let Some(c) = Self::convert_ssh(conn, &cred_map, &folder_map) {
                 result.add_connection(c);
@@ -255,10 +255,10 @@ impl RoyalTsImporter {
         // Convert RDP connections (skip trashed)
         for conn in &rdp_connections {
             // Skip connections in trash
-            if let Some(ref tid) = trash_id {
-                if conn.parent_id.as_ref() == Some(tid) {
-                    continue;
-                }
+            if let Some(ref tid) = trash_id
+                && conn.parent_id.as_ref() == Some(tid)
+            {
+                continue;
             }
             if let Some(c) = Self::convert_rdp(conn, &cred_map, &folder_map) {
                 result.add_connection(c);
@@ -274,10 +274,10 @@ impl RoyalTsImporter {
         // Convert VNC connections (skip trashed)
         for conn in &vnc_connections {
             // Skip connections in trash
-            if let Some(ref tid) = trash_id {
-                if conn.parent_id.as_ref() == Some(tid) {
-                    continue;
-                }
+            if let Some(ref tid) = trash_id
+                && conn.parent_id.as_ref() == Some(tid)
+            {
+                continue;
             }
             if let Some(c) = Self::convert_vnc(conn, &cred_map, &folder_map) {
                 result.add_connection(c);
@@ -428,17 +428,17 @@ impl RoyalTsImporter {
             ProtocolConfig::Ssh(ssh_config),
         );
 
-        if let Some(cred_id) = &conn.credential_id {
-            if let Some(cred) = credentials.get(cred_id) {
-                connection.username.clone_from(&cred.username);
-                connection.password_source = PasswordSource::Prompt;
-            }
+        if let Some(cred_id) = &conn.credential_id
+            && let Some(cred) = credentials.get(cred_id)
+        {
+            connection.username.clone_from(&cred.username);
+            connection.password_source = PasswordSource::Prompt;
         }
 
-        if let Some(parent_id) = &conn.parent_id {
-            if let Some(group_id) = folder_map.get(parent_id) {
-                connection.group_id = Some(*group_id);
-            }
+        if let Some(parent_id) = &conn.parent_id
+            && let Some(group_id) = folder_map.get(parent_id)
+        {
+            connection.group_id = Some(*group_id);
         }
 
         Some(connection)
@@ -459,18 +459,18 @@ impl RoyalTsImporter {
             ProtocolConfig::Rdp(RdpConfig::default()),
         );
 
-        if let Some(cred_id) = &conn.credential_id {
-            if let Some(cred) = credentials.get(cred_id) {
-                connection.username.clone_from(&cred.username);
-                connection.domain.clone_from(&cred.domain);
-                connection.password_source = PasswordSource::Prompt;
-            }
+        if let Some(cred_id) = &conn.credential_id
+            && let Some(cred) = credentials.get(cred_id)
+        {
+            connection.username.clone_from(&cred.username);
+            connection.domain.clone_from(&cred.domain);
+            connection.password_source = PasswordSource::Prompt;
         }
 
-        if let Some(parent_id) = &conn.parent_id {
-            if let Some(group_id) = folder_map.get(parent_id) {
-                connection.group_id = Some(*group_id);
-            }
+        if let Some(parent_id) = &conn.parent_id
+            && let Some(group_id) = folder_map.get(parent_id)
+        {
+            connection.group_id = Some(*group_id);
         }
 
         Some(connection)
@@ -491,16 +491,16 @@ impl RoyalTsImporter {
             ProtocolConfig::Vnc(VncConfig::default()),
         );
 
-        if let Some(cred_id) = &conn.credential_id {
-            if credentials.contains_key(cred_id) {
-                connection.password_source = PasswordSource::Prompt;
-            }
+        if let Some(cred_id) = &conn.credential_id
+            && credentials.contains_key(cred_id)
+        {
+            connection.password_source = PasswordSource::Prompt;
         }
 
-        if let Some(parent_id) = &conn.parent_id {
-            if let Some(group_id) = folder_map.get(parent_id) {
-                connection.group_id = Some(*group_id);
-            }
+        if let Some(parent_id) = &conn.parent_id
+            && let Some(group_id) = folder_map.get(parent_id)
+        {
+            connection.group_id = Some(*group_id);
         }
 
         Some(connection)

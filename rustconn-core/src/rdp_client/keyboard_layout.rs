@@ -39,15 +39,15 @@ pub fn detect_keyboard_layout() -> u32 {
     }
 
     // 2. Try localectl status
-    if let Some(layout) = detect_from_localectl() {
-        if let Some(klid) = xkb_name_to_klid(&layout) {
-            tracing::debug!(
-                "Keyboard layout from localectl: {} -> 0x{:04X}",
-                layout,
-                klid
-            );
-            return klid;
-        }
+    if let Some(layout) = detect_from_localectl()
+        && let Some(klid) = xkb_name_to_klid(&layout)
+    {
+        tracing::debug!(
+            "Keyboard layout from localectl: {} -> 0x{:04X}",
+            layout,
+            klid
+        );
+        return klid;
     }
 
     tracing::debug!("Keyboard layout detection failed, using US English (0x0409)");

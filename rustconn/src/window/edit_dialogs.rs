@@ -137,26 +137,26 @@ pub fn edit_selected_connection(
                     match state_mut.update_connection(id, updated_conn) {
                         Ok(()) => {
                             // Save password to vault if needed
-                            if password_source == PasswordSource::Vault {
-                                if let Some(pwd) = password {
-                                    let settings = state_mut.settings().clone();
-                                    let groups: Vec<_> =
-                                        state_mut.list_groups().into_iter().cloned().collect();
-                                    let conn_for_path = state_mut.get_connection(id).cloned();
-                                    let username = conn_username.unwrap_or_default();
+                            if password_source == PasswordSource::Vault
+                                && let Some(pwd) = password
+                            {
+                                let settings = state_mut.settings().clone();
+                                let groups: Vec<_> =
+                                    state_mut.list_groups().into_iter().cloned().collect();
+                                let conn_for_path = state_mut.get_connection(id).cloned();
+                                let username = conn_username.unwrap_or_default();
 
-                                    crate::state::save_password_to_vault(
-                                        &settings,
-                                        &groups,
-                                        conn_for_path.as_ref(),
-                                        &conn_name,
-                                        &conn_host,
-                                        protocol,
-                                        &username,
-                                        pwd.expose_secret(),
-                                        id,
-                                    );
-                                }
+                                crate::state::save_password_to_vault(
+                                    &settings,
+                                    &groups,
+                                    conn_for_path.as_ref(),
+                                    &conn_name,
+                                    &conn_host,
+                                    protocol,
+                                    &username,
+                                    pwd.expose_secret(),
+                                    id,
+                                );
                             }
 
                             drop(state_mut);
@@ -302,72 +302,69 @@ pub fn rename_selected_item(
             }
         } else {
             // Rename connection
-            if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
-                if let Some(existing) = state_mut.get_connection(id).cloned() {
-                    let old_name = existing.name.clone();
-                    let mut updated = existing.clone();
-                    updated.name = new_name.clone();
+            if let Ok(mut state_mut) = state_clone.try_borrow_mut()
+                && let Some(existing) = state_mut.get_connection(id).cloned()
+            {
+                let old_name = existing.name.clone();
+                let mut updated = existing.clone();
+                updated.name = new_name.clone();
 
-                    // Get data needed for credential rename before updating
-                    let password_source = updated.password_source.clone();
-                    let protocol = updated.protocol_config.protocol_type();
-                    let groups: Vec<rustconn_core::models::ConnectionGroup> =
-                        state_mut.list_groups().iter().cloned().cloned().collect();
-                    let settings = state_mut.settings().clone();
+                // Get data needed for credential rename before updating
+                let password_source = updated.password_source.clone();
+                let protocol = updated.protocol_config.protocol_type();
+                let groups: Vec<rustconn_core::models::ConnectionGroup> =
+                    state_mut.list_groups().iter().cloned().cloned().collect();
+                let settings = state_mut.settings().clone();
 
-                    match state_mut.update_connection(id, updated.clone()) {
-                        Ok(()) => {
-                            drop(state_mut);
+                match state_mut.update_connection(id, updated.clone()) {
+                    Ok(()) => {
+                        drop(state_mut);
 
-                            // Rename credentials in secret backend if needed
-                            match password_source {
-                                rustconn_core::models::PasswordSource::Vault => {
-                                    // Vault — rename in configured backend
-                                    let updated_conn = updated;
-                                    let groups_clone = groups;
-                                    let settings_clone = settings;
-                                    let protocol_str = protocol.as_str().to_lowercase();
+                        // Rename credentials in secret backend if needed
+                        match password_source {
+                            rustconn_core::models::PasswordSource::Vault => {
+                                // Vault — rename in configured backend
+                                let updated_conn = updated;
+                                let groups_clone = groups;
+                                let settings_clone = settings;
+                                let protocol_str = protocol.as_str().to_lowercase();
 
-                                    crate::utils::spawn_blocking_with_callback(
-                                        move || {
-                                            crate::state::rename_vault_credential(
-                                                &settings_clone,
-                                                &groups_clone,
-                                                &updated_conn,
-                                                &old_name,
-                                                &protocol_str,
-                                            )
-                                        },
-                                        |result: Result<(), String>| {
-                                            if let Err(e) = result {
-                                                tracing::warn!(
-                                                    "Failed to rename vault entry: {}",
-                                                    e
-                                                );
-                                            }
-                                        },
-                                    );
-                                }
-                                rustconn_core::models::PasswordSource::Variable(_)
-                                | rustconn_core::models::PasswordSource::Prompt
-                                | rustconn_core::models::PasswordSource::Inherit
-                                | rustconn_core::models::PasswordSource::None => {
-                                    // No credentials stored
-                                }
+                                crate::utils::spawn_blocking_with_callback(
+                                    move || {
+                                        crate::state::rename_vault_credential(
+                                            &settings_clone,
+                                            &groups_clone,
+                                            &updated_conn,
+                                            &old_name,
+                                            &protocol_str,
+                                        )
+                                    },
+                                    |result: Result<(), String>| {
+                                        if let Err(e) = result {
+                                            tracing::warn!("Failed to rename vault entry: {}", e);
+                                        }
+                                    },
+                                );
                             }
+                            rustconn_core::models::PasswordSource::Variable(_)
+                            | rustconn_core::models::PasswordSource::Prompt
+                            | rustconn_core::models::PasswordSource::Inherit
+                            | rustconn_core::models::PasswordSource::None => {
+                                // No credentials stored
+                            }
+                        }
 
-                            // Defer sidebar reload to prevent UI freeze
-                            let state = state_clone.clone();
-                            let sidebar = sidebar_clone.clone();
-                            let window = window_clone.clone();
-                            glib::idle_add_local_once(move || {
-                                MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
-                                window.close();
-                            });
-                        }
-                        Err(e) => {
-                            alert::show_error(&window_clone, &i18n("Error"), &e);
-                        }
+                        // Defer sidebar reload to prevent UI freeze
+                        let state = state_clone.clone();
+                        let sidebar = sidebar_clone.clone();
+                        let window = window_clone.clone();
+                        glib::idle_add_local_once(move || {
+                            MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+                            window.close();
+                        });
+                    }
+                    Err(e) => {
+                        alert::show_error(&window_clone, &i18n("Error"), &e);
                     }
                 }
             }
@@ -1377,7 +1374,7 @@ pub fn show_quick_connect_dialog_with_state(
                 port_spin_clone.set_value(f64::from(template.port));
 
                 // Set username if present
-                if let Some(ref username) = &template.username {
+                if let Some(username) = &template.username {
                     user_entry_clone.set_text(username);
                 }
             }

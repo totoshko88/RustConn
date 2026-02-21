@@ -34,17 +34,17 @@ pub fn sort_connections(state: &SharedAppState, sidebar: &SharedSidebar) {
     // Perform the appropriate sort operation
     if let Some(group_id) = selected_group_id {
         // Sort only the selected group
-        if let Ok(mut state_mut) = state.try_borrow_mut() {
-            if let Err(e) = state_mut.sort_group(group_id) {
-                tracing::error!(%e, "Failed to sort group");
-            }
+        if let Ok(mut state_mut) = state.try_borrow_mut()
+            && let Err(e) = state_mut.sort_group(group_id)
+        {
+            tracing::error!(%e, "Failed to sort group");
         }
     } else {
         // Sort all groups and connections
-        if let Ok(mut state_mut) = state.try_borrow_mut() {
-            if let Err(e) = state_mut.sort_all() {
-                tracing::error!(%e, "Failed to sort all");
-            }
+        if let Ok(mut state_mut) = state.try_borrow_mut()
+            && let Err(e) = state_mut.sort_all()
+        {
+            tracing::error!(%e, "Failed to sort all");
         }
     }
 
@@ -55,10 +55,10 @@ pub fn sort_connections(state: &SharedAppState, sidebar: &SharedSidebar) {
 /// Sorts connections by recent usage (most recently used first)
 pub fn sort_recent(state: &SharedAppState, sidebar: &SharedSidebar) {
     // Sort all connections by last_connected timestamp
-    if let Ok(mut state_mut) = state.try_borrow_mut() {
-        if let Err(e) = state_mut.sort_by_recent() {
-            tracing::error!(%e, "Failed to sort by recent");
-        }
+    if let Ok(mut state_mut) = state.try_borrow_mut()
+        && let Err(e) = state_mut.sort_by_recent()
+    {
+        tracing::error!(%e, "Failed to sort by recent");
     }
 
     // Rebuild the sidebar to reflect the new sort order
@@ -217,13 +217,12 @@ pub fn handle_drag_drop(state: &SharedAppState, sidebar: &SharedSidebar, data: &
                 // Target is a group - move connection into it
                 if position == "into" {
                     // Drop INTO group - move to the group
-                    if let Ok(mut state_mut) = state.try_borrow_mut() {
-                        if let Err(e) =
+                    if let Ok(mut state_mut) = state.try_borrow_mut()
+                        && let Err(e) =
                             state_mut.move_connection_to_group(item_uuid, Some(target_uuid))
-                        {
-                            tracing::error!(%e, "Failed to move connection to group");
-                            return;
-                        }
+                    {
+                        tracing::error!(%e, "Failed to move connection to group");
+                        return;
                     }
                 } else {
                     // Drop BEFORE/AFTER group - move to parent of that group (or root)
@@ -232,13 +231,12 @@ pub fn handle_drag_drop(state: &SharedAppState, sidebar: &SharedSidebar, data: &
                         state_ref.get_group(target_uuid).and_then(|g| g.parent_id)
                     };
 
-                    if let Ok(mut state_mut) = state.try_borrow_mut() {
-                        if let Err(e) =
+                    if let Ok(mut state_mut) = state.try_borrow_mut()
+                        && let Err(e) =
                             state_mut.move_connection_to_group(item_uuid, parent_group_id)
-                        {
-                            tracing::error!(%e, "Failed to move connection");
-                            return;
-                        }
+                    {
+                        tracing::error!(%e, "Failed to move connection");
+                        return;
                     }
                 }
             } else {
@@ -268,11 +266,11 @@ pub fn handle_drag_drop(state: &SharedAppState, sidebar: &SharedSidebar, data: &
         }
         "group" => {
             // Moving a group - reorder among groups
-            if let Ok(mut state_mut) = state.try_borrow_mut() {
-                if let Err(e) = state_mut.reorder_group(item_uuid, target_uuid) {
-                    tracing::error!(%e, "Failed to reorder group");
-                    return;
-                }
+            if let Ok(mut state_mut) = state.try_borrow_mut()
+                && let Err(e) = state_mut.reorder_group(item_uuid, target_uuid)
+            {
+                tracing::error!(%e, "Failed to reorder group");
+                return;
             }
         }
         _ => return,

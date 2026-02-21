@@ -2,8 +2,8 @@
 
 use proptest::prelude::*;
 use rustconn_core::password_generator::{
-    estimate_crack_time, CharacterSet, PasswordGenerator, PasswordGeneratorConfig,
-    PasswordGeneratorError, PasswordStrength,
+    CharacterSet, PasswordGenerator, PasswordGeneratorConfig, PasswordGeneratorError,
+    PasswordStrength, estimate_crack_time,
 };
 
 proptest! {

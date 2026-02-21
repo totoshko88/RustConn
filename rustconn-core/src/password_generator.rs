@@ -538,15 +538,15 @@ mod tests {
     fn test_password_strength() {
         // Short password should be weak
         let config = PasswordGeneratorConfig::new().with_length(4);
-        let gen = PasswordGenerator::new(config);
-        let short_pass = gen.generate().unwrap();
-        assert!(gen.evaluate_strength(&short_pass) <= PasswordStrength::Fair);
+        let generator = PasswordGenerator::new(config);
+        let short_pass = generator.generate().unwrap();
+        assert!(generator.evaluate_strength(&short_pass) <= PasswordStrength::Fair);
 
         // Long password should be strong
         let config = PasswordGeneratorConfig::new().with_length(32);
-        let gen = PasswordGenerator::new(config);
-        let long_pass = gen.generate().unwrap();
-        assert!(gen.evaluate_strength(&long_pass) >= PasswordStrength::Strong);
+        let generator = PasswordGenerator::new(config);
+        let long_pass = generator.generate().unwrap();
+        assert!(generator.evaluate_strength(&long_pass) >= PasswordStrength::Strong);
     }
 
     #[test]

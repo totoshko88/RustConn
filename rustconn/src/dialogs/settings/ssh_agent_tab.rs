@@ -537,17 +537,17 @@ pub fn show_add_key_file_chooser(
     let button_clone = button.clone();
 
     file_dialog.open(Some(window), gtk4::gio::Cancellable::NONE, move |result| {
-        if let Ok(file) = result {
-            if let Some(path) = file.path() {
-                add_key_with_passphrase_dialog(
-                    &button_clone,
-                    &path,
-                    &manager_clone,
-                    &keys_list_clone,
-                    &status_label_clone,
-                    &socket_label_clone,
-                );
-            }
+        if let Ok(file) = result
+            && let Some(path) = file.path()
+        {
+            add_key_with_passphrase_dialog(
+                &button_clone,
+                &path,
+                &manager_clone,
+                &keys_list_clone,
+                &status_label_clone,
+                &socket_label_clone,
+            );
         }
     });
 }

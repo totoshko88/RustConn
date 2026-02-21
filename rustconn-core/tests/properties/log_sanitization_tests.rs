@@ -1,7 +1,7 @@
 //! Property tests for log sanitization functionality
 
 use proptest::prelude::*;
-use rustconn_core::session::{contains_sensitive_prompt, sanitize_output, SanitizeConfig};
+use rustconn_core::session::{SanitizeConfig, contains_sensitive_prompt, sanitize_output};
 
 /// Strategy for generating safe text (no sensitive patterns)
 fn safe_text_strategy() -> impl Strategy<Value = String> {

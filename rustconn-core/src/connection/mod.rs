@@ -27,6 +27,6 @@ pub use interning::{
 };
 pub use lazy_loader::LazyGroupLoader;
 pub use manager::ConnectionManager;
-pub use port_check::{check_port, check_port_async, PortCheckError, PortCheckResult};
+pub use port_check::{PortCheckError, PortCheckResult, check_port, check_port_async};
 pub use retry::{RetryConfig, RetryState};
 pub use virtual_scroll::{SelectionState, VirtualScrollConfig};

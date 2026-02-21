@@ -70,8 +70,8 @@ pub use config::{
 };
 pub use error::RdpClientError;
 pub use event::{
-    convert_to_bgra, create_frame_update, create_frame_update_with_conversion, ClipboardFileInfo,
-    ClipboardFormatInfo, PixelFormat, RdpClientCommand, RdpClientEvent, RdpRect,
+    ClipboardFileInfo, ClipboardFormatInfo, PixelFormat, RdpClientCommand, RdpClientEvent, RdpRect,
+    convert_to_bgra, create_frame_update, create_frame_update_with_conversion,
 };
 pub use gateway::{GatewayAuthMethod, GatewayConfig, GatewayError, GatewayState};
 pub use graphics::{
@@ -80,7 +80,7 @@ pub use graphics::{
 pub use multimonitor::{MonitorArrangement, MonitorDefinition, MonitorLayout};
 pub use reconnect::{ConnectionQuality, DisconnectReason, ReconnectPolicy, ReconnectState};
 
-pub use keyboard_layout::{detect_keyboard_layout, xkb_name_to_klid, LAYOUT_US_ENGLISH};
+pub use keyboard_layout::{LAYOUT_US_ENGLISH, detect_keyboard_layout, xkb_name_to_klid};
 
 /// Check if embedded RDP support is available
 ///

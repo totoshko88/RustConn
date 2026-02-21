@@ -24,19 +24,19 @@ pub fn show_new_snippet_dialog(window: &gtk4::Window, state: SharedAppState) {
 
     let window_clone = window.clone();
     dialog.run(move |result| {
-        if let Some(snippet) = result {
-            if let Ok(mut state_mut) = state.try_borrow_mut() {
-                match state_mut.create_snippet(snippet) {
-                    Ok(_) => {
-                        alert::show_success(
-                            &window_clone,
-                            &i18n("Snippet Created"),
-                            &i18n("Snippet has been saved successfully."),
-                        );
-                    }
-                    Err(e) => {
-                        alert::show_error(&window_clone, &i18n("Error Creating Snippet"), &e);
-                    }
+        if let Some(snippet) = result
+            && let Ok(mut state_mut) = state.try_borrow_mut()
+        {
+            match state_mut.create_snippet(snippet) {
+                Ok(_) => {
+                    alert::show_success(
+                        &window_clone,
+                        &i18n("Snippet Created"),
+                        &i18n("Snippet has been saved successfully."),
+                    );
+                }
+                Err(e) => {
+                    alert::show_error(&window_clone, &i18n("Error Creating Snippet"), &e);
                 }
             }
         }
@@ -162,12 +162,12 @@ pub fn show_snippets_manager(
         let state_inner = state_clone.clone();
         let list_inner = list_clone.clone();
         dialog.run(move |result| {
-            if let Some(snippet) = result {
-                if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
-                    let _ = state_mut.create_snippet(snippet);
-                    drop(state_mut);
-                    populate_snippets_list(&state_inner, &list_inner, "");
-                }
+            if let Some(snippet) = result
+                && let Ok(mut state_mut) = state_inner.try_borrow_mut()
+            {
+                let _ = state_mut.create_snippet(snippet);
+                drop(state_mut);
+                populate_snippets_list(&state_inner, &list_inner, "");
             }
         });
     });
@@ -177,27 +177,26 @@ pub fn show_snippets_manager(
     let list_clone = snippets_list.clone();
     let manager_clone = manager_window.clone();
     edit_btn.connect_clicked(move |_| {
-        if let Some(row) = list_clone.selected_row() {
-            if let Some(id_str) = row.widget_name().as_str().strip_prefix("snippet-") {
-                if let Ok(id) = Uuid::parse_str(id_str) {
-                    let state_ref = state_clone.borrow();
-                    if let Some(snippet) = state_ref.get_snippet(id).cloned() {
-                        drop(state_ref);
-                        let dialog = SnippetDialog::new(Some(&manager_clone.clone().upcast()));
-                        dialog.set_snippet(&snippet);
-                        let state_inner = state_clone.clone();
-                        let list_inner = list_clone.clone();
-                        dialog.run(move |result| {
-                            if let Some(updated) = result {
-                                if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
-                                    let _ = state_mut.update_snippet(id, updated);
-                                    drop(state_mut);
-                                    populate_snippets_list(&state_inner, &list_inner, "");
-                                }
-                            }
-                        });
+        if let Some(row) = list_clone.selected_row()
+            && let Some(id_str) = row.widget_name().as_str().strip_prefix("snippet-")
+            && let Ok(id) = Uuid::parse_str(id_str)
+        {
+            let state_ref = state_clone.borrow();
+            if let Some(snippet) = state_ref.get_snippet(id).cloned() {
+                drop(state_ref);
+                let dialog = SnippetDialog::new(Some(&manager_clone.clone().upcast()));
+                dialog.set_snippet(&snippet);
+                let state_inner = state_clone.clone();
+                let list_inner = list_clone.clone();
+                dialog.run(move |result| {
+                    if let Some(updated) = result
+                        && let Ok(mut state_mut) = state_inner.try_borrow_mut()
+                    {
+                        let _ = state_mut.update_snippet(id, updated);
+                        drop(state_mut);
+                        populate_snippets_list(&state_inner, &list_inner, "");
                     }
-                }
+                });
             }
         }
     });
@@ -207,29 +206,26 @@ pub fn show_snippets_manager(
     let list_clone = snippets_list.clone();
     let manager_clone = manager_window.clone();
     delete_btn.connect_clicked(move |_| {
-        if let Some(row) = list_clone.selected_row() {
-            if let Some(id_str) = row.widget_name().as_str().strip_prefix("snippet-") {
-                if let Ok(id) = Uuid::parse_str(id_str) {
-                    let state_inner = state_clone.clone();
-                    let list_inner = list_clone.clone();
-                    alert::show_confirm(
-                        &manager_clone,
-                        &i18n("Delete Snippet?"),
-                        &i18n("Are you sure you want to delete this snippet?"),
-                        &i18n("Delete"),
-                        true,
-                        move |confirmed| {
-                            if confirmed {
-                                if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
-                                    let _ = state_mut.delete_snippet(id);
-                                    drop(state_mut);
-                                    populate_snippets_list(&state_inner, &list_inner, "");
-                                }
-                            }
-                        },
-                    );
-                }
-            }
+        if let Some(row) = list_clone.selected_row()
+            && let Some(id_str) = row.widget_name().as_str().strip_prefix("snippet-")
+            && let Ok(id) = Uuid::parse_str(id_str)
+        {
+            let state_inner = state_clone.clone();
+            let list_inner = list_clone.clone();
+            alert::show_confirm(
+                &manager_clone,
+                &i18n("Delete Snippet?"),
+                &i18n("Are you sure you want to delete this snippet?"),
+                &i18n("Delete"),
+                true,
+                move |confirmed| {
+                    if confirmed && let Ok(mut state_mut) = state_inner.try_borrow_mut() {
+                        let _ = state_mut.delete_snippet(id);
+                        drop(state_mut);
+                        populate_snippets_list(&state_inner, &list_inner, "");
+                    }
+                },
+            );
         }
     });
 
@@ -239,15 +235,14 @@ pub fn show_snippets_manager(
     let notebook_clone = notebook;
     let manager_clone = manager_window.clone();
     execute_btn.connect_clicked(move |_| {
-        if let Some(row) = list_clone.selected_row() {
-            if let Some(id_str) = row.widget_name().as_str().strip_prefix("snippet-") {
-                if let Ok(id) = Uuid::parse_str(id_str) {
-                    let state_ref = state_clone.borrow();
-                    if let Some(snippet) = state_ref.get_snippet(id).cloned() {
-                        drop(state_ref);
-                        execute_snippet(&manager_clone, &notebook_clone, &snippet);
-                    }
-                }
+        if let Some(row) = list_clone.selected_row()
+            && let Some(id_str) = row.widget_name().as_str().strip_prefix("snippet-")
+            && let Ok(id) = Uuid::parse_str(id_str)
+        {
+            let state_ref = state_clone.borrow();
+            if let Some(snippet) = state_ref.get_snippet(id).cloned() {
+                drop(state_ref);
+                execute_snippet(&manager_clone, &notebook_clone, &snippet);
             }
         }
     });
@@ -380,14 +375,14 @@ pub fn show_snippet_picker(window: &gtk4::Window, state: SharedAppState, noteboo
     let notebook_clone = notebook;
     let window_clone = picker_window.clone();
     snippets_list.connect_row_activated(move |_, row| {
-        if let Some(id_str) = row.widget_name().as_str().strip_prefix("snippet-") {
-            if let Ok(id) = Uuid::parse_str(id_str) {
-                let state_ref = state_clone.borrow();
-                if let Some(snippet) = state_ref.get_snippet(id).cloned() {
-                    drop(state_ref);
-                    execute_snippet(&window_clone, &notebook_clone, &snippet);
-                    window_clone.close();
-                }
+        if let Some(id_str) = row.widget_name().as_str().strip_prefix("snippet-")
+            && let Ok(id) = Uuid::parse_str(id_str)
+        {
+            let state_ref = state_clone.borrow();
+            if let Some(snippet) = state_ref.get_snippet(id).cloned() {
+                drop(state_ref);
+                execute_snippet(&window_clone, &notebook_clone, &snippet);
+                window_clone.close();
             }
         }
     });

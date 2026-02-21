@@ -11,8 +11,8 @@
 //! Components without checksums will fail to install.
 
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use thiserror::Error;
 
 /// Cancellation token for download operations
@@ -397,15 +397,15 @@ fn find_binary_in_dir_recursive(dir: &Path, binary_name: &str, max_depth: u32) -
     for entry in entries.flatten() {
         let path = entry.path();
         if path.is_file() {
-            if let Some(name) = path.file_name() {
-                if name == binary_name {
-                    return Some(path);
-                }
+            if let Some(name) = path.file_name()
+                && name == binary_name
+            {
+                return Some(path);
             }
-        } else if path.is_dir() {
-            if let Some(found) = find_binary_in_dir_recursive(&path, binary_name, max_depth - 1) {
-                return Some(found);
-            }
+        } else if path.is_dir()
+            && let Some(found) = find_binary_in_dir_recursive(&path, binary_name, max_depth - 1)
+        {
+            return Some(found);
         }
     }
     None
@@ -753,17 +753,16 @@ pub fn get_cli_path_dirs() -> Vec<PathBuf> {
 
     // Also check for versioned tailscale directory
     let tailscale_dir = cli_dir.join("tailscale");
-    if tailscale_dir.exists() {
-        if let Ok(entries) = std::fs::read_dir(&tailscale_dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.is_dir() {
-                    if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                        if name.starts_with("tailscale_") {
-                            dirs.push(path);
-                        }
-                    }
-                }
+    if tailscale_dir.exists()
+        && let Ok(entries) = std::fs::read_dir(&tailscale_dir)
+    {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir()
+                && let Some(name) = path.file_name().and_then(|n| n.to_str())
+                && name.starts_with("tailscale_")
+            {
+                dirs.push(path);
             }
         }
     }
@@ -912,7 +911,7 @@ async fn download_with_progress(
         downloaded += chunk.len() as u64;
         data.extend_from_slice(&chunk);
 
-        if let Some(ref cb) = progress_callback {
+        if let Some(cb) = progress_callback {
             cb(DownloadProgress {
                 downloaded,
                 total: total_size,
@@ -1108,15 +1107,15 @@ fn find_binary_recursive(dir: &Path, binary_name: &str, max_depth: u32) -> Optio
     for entry in entries.flatten() {
         let path = entry.path();
         if path.is_file() {
-            if let Some(name) = path.file_name() {
-                if name == binary_name {
-                    return Some(path);
-                }
+            if let Some(name) = path.file_name()
+                && name == binary_name
+            {
+                return Some(path);
             }
-        } else if path.is_dir() {
-            if let Some(found) = find_binary_recursive(&path, binary_name, max_depth - 1) {
-                return Some(found);
-            }
+        } else if path.is_dir()
+            && let Some(found) = find_binary_recursive(&path, binary_name, max_depth - 1)
+        {
+            return Some(found);
         }
     }
     None
@@ -1130,11 +1129,11 @@ async fn ensure_pip_available(python_dir: &Path) -> CliDownloadResult<PathBuf> {
         .output()
         .await;
 
-    if let Ok(output) = pip_check {
-        if output.status.success() {
-            tracing::debug!("System pip is available");
-            return Ok(PathBuf::from("pip")); // Use system pip
-        }
+    if let Ok(output) = pip_check
+        && output.status.success()
+    {
+        tracing::debug!("System pip is available");
+        return Ok(PathBuf::from("pip")); // Use system pip
     }
 
     // Check if we have pip installed in our python directory
@@ -1522,11 +1521,11 @@ async fn install_gcloud(
             }
         }
         let sdk_dir = cli_dir.join("google-cloud-sdk");
-        if sdk_dir.exists() {
-            if let Ok(entries) = std::fs::read_dir(&sdk_dir) {
-                for entry in entries.flatten() {
-                    tracing::debug!("  google-cloud-sdk contains: {:?}", entry.path());
-                }
+        if sdk_dir.exists()
+            && let Ok(entries) = std::fs::read_dir(&sdk_dir)
+        {
+            for entry in entries.flatten() {
+                tracing::debug!("  google-cloud-sdk contains: {:?}", entry.path());
             }
         }
         Err(CliDownloadError::ExtractionFailed(
@@ -1885,10 +1884,10 @@ fn extract_tar_gz(data: &[u8], dest: &Path) -> CliDownloadResult<()> {
     for entry in entries {
         let entry =
             entry.map_err(|e| CliDownloadError::ExtractionFailed(format!("bad entry: {e}")))?;
-        if let Ok(path) = entry.path() {
-            if let Some(std::path::Component::Normal(name)) = path.components().next() {
-                top_dirs.insert(name.to_string_lossy().to_string());
-            }
+        if let Ok(path) = entry.path()
+            && let Some(std::path::Component::Normal(name)) = path.components().next()
+        {
+            top_dirs.insert(name.to_string_lossy().to_string());
         }
     }
 
@@ -1909,20 +1908,20 @@ fn extract_tar_gz(data: &[u8], dest: &Path) -> CliDownloadResult<()> {
                     let file_name = entry.file_name();
                     let target = dest.join(&file_name);
                     // Don't overwrite if destination exists
-                    if !target.exists() {
-                        if let Err(e) = std::fs::rename(&src, &target) {
-                            tracing::debug!(
-                                "Could not move {:?} to {:?}: {}, trying copy",
-                                src,
-                                target,
-                                e
-                            );
-                            // Try copy instead
-                            if src.is_dir() {
-                                copy_dir_recursive(&src, &target)?;
-                            } else {
-                                std::fs::copy(&src, &target)?;
-                            }
+                    if !target.exists()
+                        && let Err(e) = std::fs::rename(&src, &target)
+                    {
+                        tracing::debug!(
+                            "Could not move {:?} to {:?}: {}, trying copy",
+                            src,
+                            target,
+                            e
+                        );
+                        // Try copy instead
+                        if src.is_dir() {
+                            copy_dir_recursive(&src, &target)?;
+                        } else {
+                            std::fs::copy(&src, &target)?;
                         }
                     }
                 }
@@ -2240,9 +2239,11 @@ mod tests {
     fn test_get_components_by_category() {
         let zero_trust = get_components_by_category(ComponentCategory::ZeroTrust);
         assert!(!zero_trust.is_empty());
-        assert!(zero_trust
-            .iter()
-            .all(|c| c.category == ComponentCategory::ZeroTrust));
+        assert!(
+            zero_trust
+                .iter()
+                .all(|c| c.category == ComponentCategory::ZeroTrust)
+        );
     }
 
     #[test]

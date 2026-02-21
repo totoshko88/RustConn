@@ -119,26 +119,26 @@ pub fn show_new_connection_dialog_internal(
                     Ok(conn_id) => {
                         // Save password to vault if password source is Vault
                         // and password was provided
-                        if password_source == PasswordSource::Vault {
-                            if let Some(pwd) = password {
-                                let settings = state_mut.settings().clone();
-                                let groups: Vec<_> =
-                                    state_mut.list_groups().into_iter().cloned().collect();
-                                let conn_for_path = state_mut.get_connection(conn_id).cloned();
-                                let username = conn_username.unwrap_or_default();
+                        if password_source == PasswordSource::Vault
+                            && let Some(pwd) = password
+                        {
+                            let settings = state_mut.settings().clone();
+                            let groups: Vec<_> =
+                                state_mut.list_groups().into_iter().cloned().collect();
+                            let conn_for_path = state_mut.get_connection(conn_id).cloned();
+                            let username = conn_username.unwrap_or_default();
 
-                                crate::state::save_password_to_vault(
-                                    &settings,
-                                    &groups,
-                                    conn_for_path.as_ref(),
-                                    &conn_name,
-                                    &conn_host,
-                                    protocol,
-                                    &username,
-                                    pwd.expose_secret(),
-                                    conn_id,
-                                );
-                            }
+                            crate::state::save_password_to_vault(
+                                &settings,
+                                &groups,
+                                conn_for_path.as_ref(),
+                                &conn_name,
+                                &conn_host,
+                                protocol,
+                                &username,
+                                pwd.expose_secret(),
+                                conn_id,
+                            );
                         }
 
                         // Release borrow before scheduling reload
@@ -619,37 +619,36 @@ pub fn show_new_group_dialog_with_parent(
             match result {
                 Ok(group_id) => {
                     // Update group with credentials/description if provided
-                    if has_username
+                    if (has_username
                         || has_domain
                         || has_password
                         || has_description
-                        || !matches!(new_password_source, PasswordSource::None)
+                        || !matches!(new_password_source, PasswordSource::None))
+                        && let Some(existing) = state_mut.get_group(group_id).cloned()
                     {
-                        if let Some(existing) = state_mut.get_group(group_id).cloned() {
-                            let mut updated = existing;
-                            if has_username {
-                                updated.username = Some(username.clone());
-                            }
-                            if has_domain {
-                                updated.domain = Some(domain.clone());
-                            }
-                            if has_description {
-                                updated.description = Some(description.clone());
-                            }
-                            // Set the selected password source
-                            updated.password_source = Some(new_password_source.clone());
+                        let mut updated = existing;
+                        if has_username {
+                            updated.username = Some(username.clone());
+                        }
+                        if has_domain {
+                            updated.domain = Some(domain.clone());
+                        }
+                        if has_description {
+                            updated.description = Some(description.clone());
+                        }
+                        // Set the selected password source
+                        updated.password_source = Some(new_password_source.clone());
 
-                            if let Err(e) = state_mut
-                                .connection_manager()
-                                .update_group(group_id, updated)
-                            {
-                                alert::show_error(
-                                    &window_clone,
-                                    &i18n("Error Updating Group"),
-                                    &e.to_string(),
-                                );
-                                // Don't return, allow closing window since group was created
-                            }
+                        if let Err(e) = state_mut
+                            .connection_manager()
+                            .update_group(group_id, updated)
+                        {
+                            alert::show_error(
+                                &window_clone,
+                                &i18n("Error Updating Group"),
+                                &e.to_string(),
+                            );
+                            // Don't return, allow closing window since group was created
                         }
                     }
 
@@ -706,42 +705,39 @@ pub fn show_import_dialog(window: &gtk4::Window, state: SharedAppState, sidebar:
 
     let window_clone = window.clone();
     dialog.run_with_source(move |result, source_name| {
-        if let Some(import_result) = result {
-            if let Ok(mut state_mut) = state.try_borrow_mut() {
-                match state_mut.import_connections_with_source(&import_result, &source_name) {
-                    Ok(count) => {
-                        // Merge snippets if present (native format)
-                        let snippet_count = import_result.snippets.len();
-                        for snippet in import_result.snippets {
-                            if let Err(e) = state_mut.create_snippet(snippet) {
-                                tracing::warn!("Failed to import snippet: {e}");
-                            }
+        if let Some(import_result) = result
+            && let Ok(mut state_mut) = state.try_borrow_mut()
+        {
+            match state_mut.import_connections_with_source(&import_result, &source_name) {
+                Ok(count) => {
+                    // Merge snippets if present (native format)
+                    let snippet_count = import_result.snippets.len();
+                    for snippet in import_result.snippets {
+                        if let Err(e) = state_mut.create_snippet(snippet) {
+                            tracing::warn!("Failed to import snippet: {e}");
                         }
-                        drop(state_mut);
-                        // Defer sidebar reload to prevent UI freeze
-                        let state_clone = state.clone();
-                        let sidebar_clone = sidebar.clone();
-                        let window = window_clone.clone();
-                        let source = source_name.clone();
-                        glib::idle_add_local_once(move || {
-                            MainWindow::reload_sidebar_preserving_state(
-                                &state_clone,
-                                &sidebar_clone,
-                            );
-                            let msg = if snippet_count > 0 {
-                                format!(
-                                    "Imported {count} connections and \
+                    }
+                    drop(state_mut);
+                    // Defer sidebar reload to prevent UI freeze
+                    let state_clone = state.clone();
+                    let sidebar_clone = sidebar.clone();
+                    let window = window_clone.clone();
+                    let source = source_name.clone();
+                    glib::idle_add_local_once(move || {
+                        MainWindow::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
+                        let msg = if snippet_count > 0 {
+                            format!(
+                                "Imported {count} connections and \
                                      {snippet_count} snippets to '{source}' group"
-                                )
-                            } else {
-                                format!("Imported {count} connections to '{source}' group")
-                            };
-                            alert::show_success(&window, &i18n("Import Successful"), &msg);
-                        });
-                    }
-                    Err(e) => {
-                        alert::show_error(&window_clone, &i18n("Import Failed"), &e);
-                    }
+                            )
+                        } else {
+                            format!("Imported {count} connections to '{source}' group")
+                        };
+                        alert::show_success(&window, &i18n("Import Successful"), &msg);
+                    });
+                }
+                Err(e) => {
+                    alert::show_error(&window_clone, &i18n("Import Failed"), &e);
                 }
             }
         }

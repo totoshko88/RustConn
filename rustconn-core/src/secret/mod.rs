@@ -27,44 +27,44 @@ mod status;
 mod verification;
 
 pub use async_resolver::{
-    resolve_with_callback, spawn_credential_resolution, AsyncCredentialResolver,
-    AsyncCredentialResult, CancellationToken, PendingCredentialResolution,
+    AsyncCredentialResolver, AsyncCredentialResult, CancellationToken, PendingCredentialResolution,
+    resolve_with_callback, spawn_credential_resolution,
 };
 pub use backend::SecretBackend;
 pub use bitwarden::{
-    auto_unlock, clear_session_key, configure_server, delete_api_credentials_from_keyring,
-    delete_master_password_from_keyring, get_api_credentials_from_keyring, get_bitwarden_version,
-    get_master_password_from_keyring, get_session_key, lock_vault, login_with_api_key, logout,
-    set_session_key, store_api_credentials_in_keyring, store_master_password_in_keyring,
-    unlock_vault, BitwardenBackend, BitwardenVersion,
+    BitwardenBackend, BitwardenVersion, auto_unlock, clear_session_key, configure_server,
+    delete_api_credentials_from_keyring, delete_master_password_from_keyring,
+    get_api_credentials_from_keyring, get_bitwarden_version, get_master_password_from_keyring,
+    get_session_key, lock_vault, login_with_api_key, logout, set_session_key,
+    store_api_credentials_in_keyring, store_master_password_in_keyring, unlock_vault,
 };
 pub use detection::{
-    detect_bitwarden, detect_gnome_secrets, detect_keepass, detect_keepassxc, detect_libsecret,
-    detect_onepassword, detect_passbolt, detect_password_managers,
-    get_password_manager_launch_command, open_password_manager, PasswordManagerInfo,
+    PasswordManagerInfo, detect_bitwarden, detect_gnome_secrets, detect_keepass, detect_keepassxc,
+    detect_libsecret, detect_onepassword, detect_passbolt, detect_password_managers,
+    get_password_manager_launch_command, open_password_manager,
 };
 pub use hierarchy::{
-    GroupCreationResult, KeePassHierarchy, GROUPS_SUBFOLDER, KEEPASS_ROOT_GROUP, PATH_SEPARATOR,
+    GROUPS_SUBFOLDER, GroupCreationResult, KEEPASS_ROOT_GROUP, KeePassHierarchy, PATH_SEPARATOR,
 };
 pub use kdbx::KdbxExporter;
 pub use keepassxc::{
-    delete_kdbx_password_from_keyring, get_kdbx_password_from_keyring,
-    store_kdbx_password_in_keyring, KeePassXcBackend,
+    KeePassXcBackend, delete_kdbx_password_from_keyring, get_kdbx_password_from_keyring,
+    store_kdbx_password_in_keyring,
 };
 pub use libsecret::LibSecretBackend;
 pub use manager::{BulkOperationResult, CredentialUpdate, SecretManager};
 pub use onepassword::{
-    delete_token_from_keyring, get_onepassword_status, get_onepassword_version,
-    get_token_from_keyring, signout as onepassword_signout, store_token_in_keyring,
-    OnePasswordBackend, OnePasswordStatus, OnePasswordVersion,
+    OnePasswordBackend, OnePasswordStatus, OnePasswordVersion, delete_token_from_keyring,
+    get_onepassword_status, get_onepassword_version, get_token_from_keyring,
+    signout as onepassword_signout, store_token_in_keyring,
 };
 pub use passbolt::{
-    delete_passphrase_from_keyring, get_passbolt_status, get_passbolt_version,
-    get_passphrase_from_keyring, store_passphrase_in_keyring, PassboltBackend, PassboltStatus,
-    PassboltVersion,
+    PassboltBackend, PassboltStatus, PassboltVersion, delete_passphrase_from_keyring,
+    get_passbolt_status, get_passbolt_version, get_passphrase_from_keyring,
+    store_passphrase_in_keyring,
 };
 pub use resolver::CredentialResolver;
-pub use status::{parse_keepassxc_version, KeePassStatus};
+pub use status::{KeePassStatus, parse_keepassxc_version};
 pub use verification::{
     CredentialStatus, CredentialVerificationManager, DialogPreFillData, VerifiedCredentials,
 };

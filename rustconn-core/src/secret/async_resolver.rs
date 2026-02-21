@@ -3,8 +3,8 @@
 //! This module provides async credential resolution that doesn't block the UI thread.
 //! It includes support for cancellation tokens and callback-based resolution.
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use tokio::sync::oneshot;
