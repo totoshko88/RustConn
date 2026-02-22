@@ -42,12 +42,48 @@ use async_trait::async_trait;
 use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 use std::process::Stdio;
+use std::sync::RwLock;
 use tokio::process::Command;
 
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
 
 use super::backend::SecretBackend;
+
+/// Thread-safe in-process storage for the Bitwarden session key.
+///
+/// Replaces `std::env::set_var("BW_SESSION", ...)` which is unsafe in
+/// multi-threaded contexts (Rust 1.66+, hard error in edition 2024).
+/// The session key is passed to `bw` commands via `--session` CLI arg
+/// in [`BitwardenBackend::build_command`], so child processes do not
+/// need the environment variable.
+static BW_SESSION_STORE: RwLock<Option<String>> = RwLock::new(None);
+
+/// Stores the Bitwarden session key in thread-safe in-process storage.
+///
+/// Call this instead of `std::env::set_var("BW_SESSION", ...)`.
+/// The key is used by [`get_session_key`] and passed to `bw` commands
+/// via `--session` argument.
+pub fn set_session_key(key: &str) {
+    if let Ok(mut guard) = BW_SESSION_STORE.write() {
+        *guard = Some(key.to_string());
+    }
+}
+
+/// Retrieves the Bitwarden session key from thread-safe in-process storage.
+///
+/// Returns `None` if no session key has been stored or if the lock is poisoned.
+#[must_use]
+pub fn get_session_key() -> Option<String> {
+    BW_SESSION_STORE.read().ok().and_then(|guard| guard.clone())
+}
+
+/// Clears the stored Bitwarden session key.
+pub fn clear_session_key() {
+    if let Ok(mut guard) = BW_SESSION_STORE.write() {
+        *guard = None;
+    }
+}
 
 /// Bitwarden CLI backend
 ///
@@ -604,12 +640,11 @@ fn extract_session_key(output: &str) -> Option<String> {
     for line in output.lines() {
         if line.contains("BW_SESSION=") {
             // Try quoted format: export BW_SESSION="<key>"
-            if let Some(start) = line.find('"') {
-                if let Some(end) = line.rfind('"') {
-                    if end > start {
-                        return Some(line[start + 1..end].to_string());
-                    }
-                }
+            if let Some(start) = line.find('"')
+                && let Some(end) = line.rfind('"')
+                && end > start
+            {
+                return Some(line[start + 1..end].to_string());
             }
             // Try unquoted format: BW_SESSION=<key>
             if let Some(pos) = line.find("BW_SESSION=") {
@@ -925,7 +960,7 @@ async fn try_relogin_and_unlock(
         )
     })?;
 
-    std::env::set_var("BW_SESSION", session_key.expose_secret());
+    set_session_key(session_key.expose_secret());
     tracing::info!("Bitwarden: re-login + unlock successful");
     Ok(())
 }
@@ -933,7 +968,7 @@ async fn try_relogin_and_unlock(
 /// Attempts to auto-unlock the Bitwarden vault using saved credentials.
 ///
 /// Tries the following strategies in order:
-/// 1. Existing `BW_SESSION` environment variable
+/// 1. Existing session key from in-process storage
 /// 2. Vault already unlocked (no session needed)
 /// 3. API key login if vault is unauthenticated
 /// 4. Master password from system keyring
@@ -944,16 +979,17 @@ async fn try_relogin_and_unlock(
 pub async fn auto_unlock(
     settings: &crate::config::SecretSettings,
 ) -> SecretResult<BitwardenBackend> {
-    // 1. Check if BW_SESSION env var is set (already unlocked externally)
-    if let Ok(session) = std::env::var("BW_SESSION") {
-        if !session.is_empty() {
-            let backend = BitwardenBackend::with_session(SecretString::from(session));
-            if backend.is_unlocked().await {
-                tracing::debug!("Bitwarden: using existing BW_SESSION");
-                return Ok(backend);
-            }
-            tracing::debug!("Bitwarden: BW_SESSION set but vault not unlocked");
+    // 1. Check in-process session store, then fall back to BW_SESSION env var
+    //    (supports externally unlocked vaults, e.g. `export BW_SESSION=...` in shell)
+    let stored_session =
+        get_session_key().or_else(|| std::env::var("BW_SESSION").ok().filter(|s| !s.is_empty()));
+    if let Some(session) = stored_session {
+        let backend = BitwardenBackend::with_session(SecretString::from(session));
+        if backend.is_unlocked().await {
+            tracing::debug!("Bitwarden: using existing session key");
+            return Ok(backend);
         }
+        tracing::debug!("Bitwarden: stored session key present but vault not unlocked");
     }
 
     // 2. Check if vault is already unlocked (no session needed)
@@ -984,25 +1020,23 @@ pub async fn auto_unlock(
     }
 
     // 3. Try master password from system keyring
-    if settings.bitwarden_save_to_keyring {
-        if let Ok(Some(password)) = get_master_password_from_keyring().await {
-            tracing::debug!("Bitwarden: attempting unlock with keyring password");
-            match unlock_vault(&password).await {
-                Ok(session_key) => {
-                    std::env::set_var("BW_SESSION", session_key.expose_secret());
-                    return Ok(BitwardenBackend::with_session(session_key));
-                }
-                Err(e) => {
-                    let is_key_type_error = e.to_string().contains("key type mismatch");
-                    tracing::warn!("Bitwarden: keyring password unlock failed: {e}");
-                    // If key type mismatch, try re-login before giving up
-                    if is_key_type_error
-                        && try_relogin_and_unlock(settings, &password).await.is_ok()
-                    {
-                        return Ok(BitwardenBackend::with_session(SecretString::from(
-                            std::env::var("BW_SESSION").unwrap_or_default(),
-                        )));
-                    }
+    if settings.bitwarden_save_to_keyring
+        && let Ok(Some(password)) = get_master_password_from_keyring().await
+    {
+        tracing::debug!("Bitwarden: attempting unlock with keyring password");
+        match unlock_vault(&password).await {
+            Ok(session_key) => {
+                set_session_key(session_key.expose_secret());
+                return Ok(BitwardenBackend::with_session(session_key));
+            }
+            Err(e) => {
+                let is_key_type_error = e.to_string().contains("key type mismatch");
+                tracing::warn!("Bitwarden: keyring password unlock failed: {e}");
+                // If key type mismatch, try re-login before giving up
+                if is_key_type_error && try_relogin_and_unlock(settings, &password).await.is_ok() {
+                    return Ok(BitwardenBackend::with_session(SecretString::from(
+                        get_session_key().unwrap_or_default(),
+                    )));
                 }
             }
         }
@@ -1020,7 +1054,7 @@ pub async fn auto_unlock(
             tracing::debug!("Bitwarden: attempting unlock with saved password");
             match unlock_vault(password).await {
                 Ok(session_key) => {
-                    std::env::set_var("BW_SESSION", session_key.expose_secret());
+                    set_session_key(session_key.expose_secret());
                     return Ok(BitwardenBackend::with_session(session_key));
                 }
                 Err(e) => {
@@ -1030,7 +1064,7 @@ pub async fn auto_unlock(
                     if is_key_type_error && try_relogin_and_unlock(settings, password).await.is_ok()
                     {
                         return Ok(BitwardenBackend::with_session(SecretString::from(
-                            std::env::var("BW_SESSION").unwrap_or_default(),
+                            get_session_key().unwrap_or_default(),
                         )));
                     }
                 }
@@ -1045,35 +1079,7 @@ pub async fn auto_unlock(
     ))
 }
 
-/// Base64 encode helper (standard base64 alphabet)
+/// Base64 encode helper (standard base64 with padding)
 fn base64_encode(data: &[u8]) -> String {
-    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-    let mut result = String::new();
-    let mut i = 0;
-
-    while i < data.len() {
-        let b0 = data[i];
-        let b1 = data.get(i + 1).copied().unwrap_or(0);
-        let b2 = data.get(i + 2).copied().unwrap_or(0);
-
-        result.push(ALPHABET[(b0 >> 2) as usize] as char);
-        result.push(ALPHABET[(((b0 & 0x03) << 4) | (b1 >> 4)) as usize] as char);
-
-        if i + 1 < data.len() {
-            result.push(ALPHABET[(((b1 & 0x0f) << 2) | (b2 >> 6)) as usize] as char);
-        } else {
-            result.push('=');
-        }
-
-        if i + 2 < data.len() {
-            result.push(ALPHABET[(b2 & 0x3f) as usize] as char);
-        } else {
-            result.push('=');
-        }
-
-        i += 3;
-    }
-
-    result
+    data_encoding::BASE64.encode(data)
 }

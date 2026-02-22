@@ -260,10 +260,10 @@ fn open_logs_directory(log_dir_entry: &Entry) {
     // Run directory creation in background to avoid blocking UI
     crate::utils::spawn_blocking_with_callback(
         move || {
-            if !log_path.exists() {
-                if let Err(e) = std::fs::create_dir_all(&log_path) {
-                    return Err(format!("Failed to create logs directory: {e}"));
-                }
+            if !log_path.exists()
+                && let Err(e) = std::fs::create_dir_all(&log_path)
+            {
+                return Err(format!("Failed to create logs directory: {e}"));
             }
             // open::that spawns a process and returns immediately, so it's safe here
             if let Err(e) = open::that(&log_path) {

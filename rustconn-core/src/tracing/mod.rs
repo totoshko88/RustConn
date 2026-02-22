@@ -5,14 +5,14 @@
 //! search execution, import/export, and credential resolution.
 
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use thiserror::Error;
 use tracing::Level;
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::EnvFilter;
 
 /// Global flag indicating whether tracing has been initialized
 static TRACING_INITIALIZED: AtomicBool = AtomicBool::new(false);

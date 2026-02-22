@@ -830,11 +830,11 @@ impl SshConfig {
             }
             SshKeySource::Default | SshKeySource::File { .. } => {
                 // Default or File with empty path - check legacy key_path field
-                if let Some(ref key_path) = self.key_path {
-                    if !key_path.as_os_str().is_empty() {
-                        args.push("-i".to_string());
-                        args.push(key_path.display().to_string());
-                    }
+                if let Some(ref key_path) = self.key_path
+                    && !key_path.as_os_str().is_empty()
+                {
+                    args.push("-i".to_string());
+                    args.push(key_path.display().to_string());
                 }
             }
         }
@@ -875,8 +875,20 @@ impl SshConfig {
             args.push("-C".to_string());
         }
 
-        // Add custom options
+        // Add custom options (filter out dangerous directives)
         for (key, value) in &self.custom_options {
+            // Block directives that could execute arbitrary commands
+            let key_lower = key.to_lowercase();
+            if matches!(
+                key_lower.as_str(),
+                "proxycommand" | "localcommand" | "permitlocalcommand" | "remotecommand" | "match"
+            ) {
+                tracing::warn!(
+                    option = %key,
+                    "Skipping dangerous SSH custom option"
+                );
+                continue;
+            }
             args.push("-o".to_string());
             args.push(format!("{key}={value}"));
         }

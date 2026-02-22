@@ -4,7 +4,7 @@
 //! for the WOL system (Requirements 5.x).
 
 use proptest::prelude::*;
-use rustconn_core::wol::{generate_magic_packet, MacAddress, WolConfig, MAGIC_PACKET_SIZE};
+use rustconn_core::wol::{MAGIC_PACKET_SIZE, MacAddress, WolConfig, generate_magic_packet};
 
 // ========== Strategies ==========
 
@@ -259,7 +259,7 @@ proptest! {
 
 #[cfg(test)]
 mod edge_case_tests {
-    use rustconn_core::wol::{generate_magic_packet, MacAddress, WolConfig, WolError};
+    use rustconn_core::wol::{MacAddress, WolConfig, WolError, generate_magic_packet};
 
     #[test]
     fn test_mac_address_all_zeros() {

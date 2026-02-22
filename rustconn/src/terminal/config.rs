@@ -82,8 +82,8 @@ fn setup_keyboard_shortcuts(terminal: &Terminal) {
 
 /// Sets up context menu for right-click
 fn setup_context_menu(terminal: &Terminal) {
-    use gtk4::gio;
     use gtk4::PopoverMenu;
+    use gtk4::gio;
 
     let click_controller = gtk4::GestureClick::new();
     click_controller.set_button(3); // Right click

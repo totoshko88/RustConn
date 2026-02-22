@@ -3,8 +3,8 @@
 //! This module contains functions for connection operations like delete,
 //! duplicate, copy, paste, and reload sidebar.
 
-use super::types::get_protocol_string;
 use super::MainWindow;
+use super::types::get_protocol_string;
 use crate::alert;
 use crate::i18n::{i18n, i18n_f};
 use crate::sidebar::{ConnectionItem, ConnectionSidebar};
@@ -78,44 +78,39 @@ pub fn delete_selected_connection(
         &i18n("Delete"),
         true,
         move |confirmed| {
-            if confirmed {
-                if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
-                    let delete_result = if is_group {
-                        // Use cascade delete to remove group and all its connections
-                        state_mut.delete_group_cascade(id)
-                    } else {
-                        state_mut.delete_connection(id)
-                    };
+            if confirmed && let Ok(mut state_mut) = state_clone.try_borrow_mut() {
+                let delete_result = if is_group {
+                    // Use cascade delete to remove group and all its connections
+                    state_mut.delete_group_cascade(id)
+                } else {
+                    state_mut.delete_connection(id)
+                };
 
-                    match delete_result {
-                        Ok(()) => {
-                            drop(state_mut);
-                            // Defer sidebar reload to prevent UI freeze
-                            let state = state_clone.clone();
-                            let sidebar = sidebar_clone.clone();
-                            let window = window_clone.clone();
-                            // Capture name for closure
-                            let name = name.clone(); // name was &str from outer scope, need to ensure it's captured
+                match delete_result {
+                    Ok(()) => {
+                        drop(state_mut);
+                        // Defer sidebar reload to prevent UI freeze
+                        let state = state_clone.clone();
+                        let sidebar = sidebar_clone.clone();
+                        let window = window_clone.clone();
+                        // Capture name for closure
+                        let name = name.clone(); // name was &str from outer scope, need to ensure it's captured
 
-                            glib::idle_add_local_once(move || {
-                                MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+                        glib::idle_add_local_once(move || {
+                            MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
 
-                                // Show undo toast
-                                let action_target = format!(
-                                    "{}:{}",
-                                    if is_group { "group" } else { "connection" },
-                                    id
-                                );
-                                crate::toast::show_undo_toast_on_window(
-                                    &window,
-                                    &i18n_f("Deleted '{}'", &[&name]),
-                                    &action_target,
-                                );
-                            });
-                        }
-                        Err(e) => {
-                            alert::show_error(&window_clone, &i18n("Error Deleting"), &e);
-                        }
+                            // Show undo toast
+                            let action_target =
+                                format!("{}:{}", if is_group { "group" } else { "connection" }, id);
+                            crate::toast::show_undo_toast_on_window(
+                                &window,
+                                &i18n_f("Deleted '{}'", &[&name]),
+                                &action_target,
+                            );
+                        });
+                    }
+                    Err(e) => {
+                        alert::show_error(&window_clone, &i18n("Error Deleting"), &e);
                     }
                 }
             }
@@ -376,8 +371,8 @@ fn create_bulk_delete_dialog(
     item_names: &[String],
     summary: &str,
 ) -> (adw::Window, gtk4::Button, gtk4::Button) {
-    use gtk4::prelude::*;
     use gtk4::Label;
+    use gtk4::prelude::*;
 
     let dialog = adw::Window::builder()
         .title(i18n("Delete Selected Items?"))

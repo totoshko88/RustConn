@@ -70,6 +70,104 @@ mod window;
 
 pub mod error;
 
+// CLI startup override, set in `main()` and consumed in `build_ui()`.
+// Uses `RefCell` because GTK is single-threaded and the value
+// is written once before `app.run()` and read once inside `connect_activate`.
+std::thread_local! {
+    static CLI_STARTUP_OVERRIDE: std::cell::RefCell<Option<rustconn_core::config::StartupAction>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+/// Stores a CLI-provided startup action for `build_ui` to consume.
+pub fn set_cli_startup_override(action: rustconn_core::config::StartupAction) {
+    CLI_STARTUP_OVERRIDE.with(|cell| {
+        *cell.borrow_mut() = Some(action);
+    });
+}
+
+/// Takes the CLI startup override (if any), leaving `None` behind.
+pub fn take_cli_startup_override() -> Option<rustconn_core::config::StartupAction> {
+    CLI_STARTUP_OVERRIDE.with(|cell| cell.borrow_mut().take())
+}
+
+/// Parses CLI arguments for the GUI binary.
+///
+/// Supported flags:
+/// - `--shell` — open a local shell on startup
+/// - `--connect <name-or-uuid>` — connect to a saved connection
+/// - `--help` / `-h` — print usage and exit
+/// - `--version` / `-V` — print version and exit
+fn parse_cli_args() -> Option<rustconn_core::config::StartupAction> {
+    use rustconn_core::config::StartupAction;
+
+    let args: Vec<String> = std::env::args().collect();
+    let mut i = 1; // skip binary name
+    while i < args.len() {
+        match args[i].as_str() {
+            "--shell" => return Some(StartupAction::LocalShell),
+            "--connect" => {
+                i += 1;
+                if i >= args.len() {
+                    eprintln!("Error: --connect requires a connection name or UUID");
+                    std::process::exit(1);
+                }
+                let value = &args[i];
+                // Try UUID first, then search by name
+                if let Ok(uuid) = uuid::Uuid::parse_str(value) {
+                    return Some(StartupAction::Connection(uuid));
+                }
+                // Defer name lookup — config isn't loaded yet. Store the name
+                // and resolve in build_ui after state is created.
+                // We use a special marker: store name in a second thread-local.
+                set_cli_connect_name(value.clone());
+                return None; // Signal that name resolution is needed
+            }
+            "--help" | "-h" => {
+                print_usage();
+                std::process::exit(0);
+            }
+            "--version" | "-V" => {
+                println!("RustConn {}", env!("CARGO_PKG_VERSION"));
+                std::process::exit(0);
+            }
+            _ => {
+                // Ignore unknown args (GTK may pass its own)
+            }
+        }
+        i += 1;
+    }
+    None
+}
+
+// Thread-local for `--connect <name>` that needs deferred resolution.
+std::thread_local! {
+    static CLI_CONNECT_NAME: std::cell::RefCell<Option<String>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+/// Stores a connection name from `--connect` for deferred resolution.
+pub fn set_cli_connect_name(name: String) {
+    CLI_CONNECT_NAME.with(|cell| {
+        *cell.borrow_mut() = Some(name);
+    });
+}
+
+/// Takes the CLI connect name (if any).
+pub fn take_cli_connect_name() -> Option<String> {
+    CLI_CONNECT_NAME.with(|cell| cell.borrow_mut().take())
+}
+
+fn print_usage() {
+    println!(
+        "Usage: rustconn [OPTIONS]\n\n\
+         Options:\n  \
+           --shell              Open a local shell on startup\n  \
+           --connect <NAME|UUID> Connect to a saved connection\n  \
+           -h, --help           Print this help message\n  \
+           -V, --version        Print version"
+    );
+}
+
 fn main() -> gtk4::glib::ExitCode {
     // Initialize internationalization (gettext)
     i18n::init();
@@ -97,7 +195,9 @@ fn main() -> gtk4::glib::ExitCode {
     // Ensure ssh-agent is running so that child processes (Dolphin,
     // mc, ssh-add) inherit SSH_AUTH_SOCK. On some DEs (KDE on
     // openSUSE Tumbleweed) ssh-agent is not started by default.
-    if !rustconn_core::sftp::ensure_ssh_agent() {
+    if let Some(info) = rustconn_core::sftp::ensure_ssh_agent() {
+        rustconn_core::sftp::set_agent_info(info);
+    } else {
         tracing::warn!(
             "Could not ensure ssh-agent is running; \
              SFTP via file managers may require manual setup"
@@ -108,6 +208,11 @@ fn main() -> gtk4::glib::ExitCode {
     // Note: Runtime creation failure at startup is unrecoverable
     let runtime = tokio::runtime::Runtime::new().expect("tokio runtime required for async ops");
     let _guard = runtime.enter();
+
+    // Parse CLI arguments for startup overrides (--shell, --connect)
+    if let Some(action) = parse_cli_args() {
+        set_cli_startup_override(action);
+    }
 
     app::run()
 }

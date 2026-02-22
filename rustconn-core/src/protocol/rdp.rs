@@ -8,7 +8,7 @@ use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 /// RDP protocol handler
 ///
 /// Implements the Protocol trait for RDP connections.
-/// Native embedding via gtk-frdp will be implemented in Phase 6.
+/// Native RDP embedding is available via IronRDP (`rdp-embedded` feature flag).
 pub struct RdpProtocol;
 
 impl RdpProtocol {
@@ -64,12 +64,12 @@ impl Protocol for RdpProtocol {
         }
 
         // Validate color depth if specified
-        if let Some(depth) = rdp_config.color_depth {
-            if !matches!(depth, 8 | 15 | 16 | 24 | 32) {
-                return Err(ProtocolError::InvalidConfig(format!(
-                    "Invalid color depth: {depth}. Must be 8, 15, 16, 24, or 32"
-                )));
-            }
+        if let Some(depth) = rdp_config.color_depth
+            && !matches!(depth, 8 | 15 | 16 | 24 | 32)
+        {
+            return Err(ProtocolError::InvalidConfig(format!(
+                "Invalid color depth: {depth}. Must be 8, 15, 16, 24, or 32"
+            )));
         }
 
         Ok(())

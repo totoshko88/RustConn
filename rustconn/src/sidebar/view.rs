@@ -1,8 +1,8 @@
 //! View logic for the sidebar (list items)
 use gtk4::prelude::*;
 use gtk4::{
-    gdk, glib, Box as GtkBox, DragSource, GestureClick, Image, Label, ListItem, ListView,
-    MultiSelection, Orientation, SignalListItemFactory, SingleSelection, TreeExpander, TreeListRow,
+    Box as GtkBox, DragSource, GestureClick, Image, Label, ListItem, ListView, MultiSelection,
+    Orientation, SignalListItemFactory, SingleSelection, TreeExpander, TreeListRow, gdk, glib,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -67,10 +67,10 @@ pub fn setup_list_item(
     // Requirement 7.4: Visual feedback during drag
     let list_item_weak_begin = list_item.downgrade();
     drag_source.connect_drag_begin(move |_source, _drag| {
-        if let Some(list_item) = list_item_weak_begin.upgrade() {
-            if let Some(expander) = list_item.child() {
-                expander.add_css_class("dragging");
-            }
+        if let Some(list_item) = list_item_weak_begin.upgrade()
+            && let Some(expander) = list_item.child()
+        {
+            expander.add_css_class("dragging");
         }
     });
 
@@ -78,19 +78,19 @@ pub fn setup_list_item(
     let list_item_weak_end = list_item.downgrade();
     drag_source.connect_drag_end(move |source, _drag, _delete_data| {
         // Remove dragging CSS class
-        if let Some(list_item) = list_item_weak_end.upgrade() {
-            if let Some(expander) = list_item.child() {
-                expander.remove_css_class("dragging");
-            }
+        if let Some(list_item) = list_item_weak_end.upgrade()
+            && let Some(expander) = list_item.child()
+        {
+            expander.remove_css_class("dragging");
         }
 
         // Find the sidebar and hide the drop indicator
-        if let Some(widget) = source.widget() {
-            if let Some(list_view) = widget.ancestor(ListView::static_type()) {
-                // Remove all drop-related CSS classes
-                list_view.remove_css_class("drop-active");
-                list_view.remove_css_class("drop-into-group");
-            }
+        if let Some(widget) = source.widget()
+            && let Some(list_view) = widget.ancestor(ListView::static_type())
+        {
+            // Remove all drop-related CSS classes
+            list_view.remove_css_class("drop-active");
+            list_view.remove_css_class("drop-into-group");
         }
     });
 
@@ -107,17 +107,16 @@ pub fn setup_list_item(
             if let Some(list_item) = list_item_weak.upgrade() {
                 // Get the position of this item and select it
                 let position = list_item.position();
-                if let Some(list_view) = widget.ancestor(ListView::static_type()) {
-                    if let Some(list_view) = list_view.downcast_ref::<ListView>() {
-                        if let Some(model) = list_view.model() {
-                            if let Some(selection) = model.downcast_ref::<SingleSelection>() {
-                                selection.set_selected(position);
-                            } else if let Some(selection) = model.downcast_ref::<MultiSelection>() {
-                                // In multi-selection mode, select only this item for context menu
-                                selection.unselect_all();
-                                selection.select_item(position, false);
-                            }
-                        }
+                if let Some(list_view) = widget.ancestor(ListView::static_type())
+                    && let Some(list_view) = list_view.downcast_ref::<ListView>()
+                    && let Some(model) = list_view.model()
+                {
+                    if let Some(selection) = model.downcast_ref::<SingleSelection>() {
+                        selection.set_selected(position);
+                    } else if let Some(selection) = model.downcast_ref::<MultiSelection>() {
+                        // In multi-selection mode, select only this item for context menu
+                        selection.unselect_all();
+                        selection.select_item(position, false);
                     }
                 }
             }
@@ -284,11 +283,10 @@ pub fn unbind_list_item(
     handlers: &Rc<RefCell<std::collections::HashMap<ListItem, glib::SignalHandlerId>>>,
 ) {
     // Remove signal handler if exists
-    if let Some(handler_id) = handlers.borrow_mut().remove(list_item) {
-        if let Some(row) = list_item.item().and_downcast::<TreeListRow>() {
-            if let Some(item) = row.item().and_downcast::<ConnectionItem>() {
-                item.disconnect(handler_id);
-            }
-        }
+    if let Some(handler_id) = handlers.borrow_mut().remove(list_item)
+        && let Some(row) = list_item.item().and_downcast::<TreeListRow>()
+        && let Some(item) = row.item().and_downcast::<ConnectionItem>()
+    {
+        item.disconnect(handler_id);
     }
 }

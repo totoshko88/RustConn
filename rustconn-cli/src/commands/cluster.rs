@@ -287,10 +287,10 @@ fn cmd_cluster_remove_connection(
 
 /// Find a cluster by name or ID
 fn find_cluster<'a>(clusters: &'a [Cluster], name_or_id: &str) -> Result<&'a Cluster, CliError> {
-    if let Ok(uuid) = uuid::Uuid::parse_str(name_or_id) {
-        if let Some(cluster) = clusters.iter().find(|c| c.id == uuid) {
-            return Ok(cluster);
-        }
+    if let Ok(uuid) = uuid::Uuid::parse_str(name_or_id)
+        && let Some(cluster) = clusters.iter().find(|c| c.id == uuid)
+    {
+        return Ok(cluster);
     }
 
     let matches: Vec<_> = clusters

@@ -76,12 +76,11 @@ pub async fn detect_keepassxc() -> PasswordManagerInfo {
         .arg("--version")
         .output()
         .await
+        && output.status.success()
     {
-        if output.status.success() {
-            let version_str = String::from_utf8_lossy(&output.stdout);
-            info.version = parse_version_line(&version_str);
-            info.installed = true;
-        }
+        let version_str = String::from_utf8_lossy(&output.stdout);
+        info.version = parse_version_line(&version_str);
+        info.installed = true;
     }
 
     // Check if KeePassXC is running (socket exists)
@@ -97,12 +96,12 @@ pub async fn detect_keepassxc() -> PasswordManagerInfo {
     }
 
     // Find executable path
-    if let Ok(output) = Command::new("which").arg("keepassxc").output().await {
-        if output.status.success() {
-            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            if !path.is_empty() {
-                info.path = Some(PathBuf::from(path));
-            }
+    if let Ok(output) = Command::new("which").arg("keepassxc").output().await
+        && output.status.success()
+    {
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !path.is_empty() {
+            info.path = Some(PathBuf::from(path));
         }
     }
 
@@ -127,42 +126,38 @@ pub async fn detect_gnome_secrets() -> PasswordManagerInfo {
         .args(["info", "org.gnome.World.Secrets"])
         .output()
         .await
+        && output.status.success()
     {
-        if output.status.success() {
-            let output_str = String::from_utf8_lossy(&output.stdout);
-            info.version = parse_flatpak_version(&output_str);
-            info.installed = true;
-            info.path = Some(PathBuf::from("flatpak:org.gnome.World.Secrets"));
-        }
+        let output_str = String::from_utf8_lossy(&output.stdout);
+        info.version = parse_flatpak_version(&output_str);
+        info.installed = true;
+        info.path = Some(PathBuf::from("flatpak:org.gnome.World.Secrets"));
     }
 
     // Check for native installation
-    if !info.installed {
-        if let Ok(output) = Command::new("which").arg("gnome-secrets").output().await {
-            if output.status.success() {
-                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                if !path.is_empty() {
-                    info.installed = true;
-                    info.path = Some(PathBuf::from(path));
-                }
-            }
+    if !info.installed
+        && let Ok(output) = Command::new("which").arg("gnome-secrets").output().await
+        && output.status.success()
+    {
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !path.is_empty() {
+            info.installed = true;
+            info.path = Some(PathBuf::from(path));
         }
     }
 
     // Also check for old name (gnome-passwordsafe)
-    if !info.installed {
-        if let Ok(output) = Command::new("which")
+    if !info.installed
+        && let Ok(output) = Command::new("which")
             .arg("gnome-passwordsafe")
             .output()
             .await
-        {
-            if output.status.success() {
-                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                if !path.is_empty() {
-                    info.installed = true;
-                    info.path = Some(PathBuf::from(path));
-                }
-            }
+        && output.status.success()
+    {
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !path.is_empty() {
+            info.installed = true;
+            info.path = Some(PathBuf::from(path));
         }
     }
 
@@ -187,30 +182,29 @@ pub async fn detect_libsecret() -> PasswordManagerInfo {
     };
 
     // Check secret-tool
-    if let Ok(output) = Command::new("secret-tool").arg("--version").output().await {
-        if output.status.success() {
-            let version_str = String::from_utf8_lossy(&output.stdout);
-            info.version = parse_version_line(&version_str);
-            info.installed = true;
-        }
+    if let Ok(output) = Command::new("secret-tool").arg("--version").output().await
+        && output.status.success()
+    {
+        let version_str = String::from_utf8_lossy(&output.stdout);
+        info.version = parse_version_line(&version_str);
+        info.installed = true;
     }
 
     // Check if gnome-keyring-daemon is running
-    if let Ok(output) = Command::new("pgrep").arg("gnome-keyring-d").output().await {
-        if output.status.success() {
-            info.running = true;
-            info.status_message = Some("GNOME Keyring daemon running".to_string());
-        }
+    if let Ok(output) = Command::new("pgrep").arg("gnome-keyring-d").output().await
+        && output.status.success()
+    {
+        info.running = true;
+        info.status_message = Some("GNOME Keyring daemon running".to_string());
     }
 
     // Check if kwalletd is running (KDE)
-    if !info.running {
-        if let Ok(output) = Command::new("pgrep").arg("kwalletd").output().await {
-            if output.status.success() {
-                info.running = true;
-                info.status_message = Some("KDE Wallet daemon running".to_string());
-            }
-        }
+    if !info.running
+        && let Ok(output) = Command::new("pgrep").arg("kwalletd").output().await
+        && output.status.success()
+    {
+        info.running = true;
+        info.status_message = Some("KDE Wallet daemon running".to_string());
     }
 
     if info.installed && !info.running {
@@ -248,14 +242,14 @@ pub async fn detect_bitwarden() -> PasswordManagerInfo {
 
     // Try standard paths first
     for path in &bw_paths {
-        if let Ok(output) = Command::new(path).arg("--version").output().await {
-            if output.status.success() {
-                let version_str = String::from_utf8_lossy(&output.stdout);
-                info.version = Some(version_str.trim().to_string());
-                info.installed = true;
-                bw_cmd = Some((*path).to_string());
-                break;
-            }
+        if let Ok(output) = Command::new(path).arg("--version").output().await
+            && output.status.success()
+        {
+            let version_str = String::from_utf8_lossy(&output.stdout);
+            info.version = Some(version_str.trim().to_string());
+            info.installed = true;
+            bw_cmd = Some((*path).to_string());
+            break;
         }
     }
 
@@ -266,40 +260,40 @@ pub async fn detect_bitwarden() -> PasswordManagerInfo {
             if path.contains('*') {
                 continue;
             }
-            if let Ok(output) = Command::new(path).arg("--version").output().await {
-                if output.status.success() {
-                    let version_str = String::from_utf8_lossy(&output.stdout);
-                    info.version = Some(version_str.trim().to_string());
-                    info.installed = true;
-                    bw_cmd = Some(path.clone());
-                    break;
-                }
+            if let Ok(output) = Command::new(path).arg("--version").output().await
+                && output.status.success()
+            {
+                let version_str = String::from_utf8_lossy(&output.stdout);
+                info.version = Some(version_str.trim().to_string());
+                info.installed = true;
+                bw_cmd = Some(path.clone());
+                break;
             }
         }
     }
 
     // Check login status
     if let Some(ref cmd) = bw_cmd {
-        if let Ok(output) = Command::new(cmd).arg("status").output().await {
-            if output.status.success() {
-                let status_str = String::from_utf8_lossy(&output.stdout);
-                if let Ok(status) = serde_json::from_str::<serde_json::Value>(&status_str) {
-                    if let Some(status_val) = status.get("status").and_then(|v| v.as_str()) {
-                        match status_val {
-                            "unlocked" => {
-                                info.running = true;
-                                info.status_message = Some("Vault unlocked".to_string());
-                            }
-                            "locked" => {
-                                info.status_message = Some("Vault locked".to_string());
-                            }
-                            "unauthenticated" => {
-                                info.status_message = Some("Not logged in".to_string());
-                            }
-                            _ => {
-                                info.status_message = Some(format!("Status: {status_val}"));
-                            }
-                        }
+        if let Ok(output) = Command::new(cmd).arg("status").output().await
+            && output.status.success()
+        {
+            let status_str = String::from_utf8_lossy(&output.stdout);
+            if let Ok(status) = serde_json::from_str::<serde_json::Value>(&status_str)
+                && let Some(status_val) = status.get("status").and_then(|v| v.as_str())
+            {
+                match status_val {
+                    "unlocked" => {
+                        info.running = true;
+                        info.status_message = Some("Vault unlocked".to_string());
+                    }
+                    "locked" => {
+                        info.status_message = Some("Vault locked".to_string());
+                    }
+                    "unauthenticated" => {
+                        info.status_message = Some("Not logged in".to_string());
+                    }
+                    _ => {
+                        info.status_message = Some(format!("Status: {status_val}"));
                     }
                 }
             }
@@ -308,21 +302,20 @@ pub async fn detect_bitwarden() -> PasswordManagerInfo {
     }
 
     // If still not found, try which command
-    if !info.installed {
-        if let Ok(output) = Command::new("which").arg("bw").output().await {
-            if output.status.success() {
-                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                if !path.is_empty() {
-                    info.path = Some(PathBuf::from(&path));
-                    // Try to get version from found path
-                    if let Ok(ver_output) = Command::new(&path).arg("--version").output().await {
-                        if ver_output.status.success() {
-                            let version_str = String::from_utf8_lossy(&ver_output.stdout);
-                            info.version = Some(version_str.trim().to_string());
-                            info.installed = true;
-                        }
-                    }
-                }
+    if !info.installed
+        && let Ok(output) = Command::new("which").arg("bw").output().await
+        && output.status.success()
+    {
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !path.is_empty() {
+            info.path = Some(PathBuf::from(&path));
+            // Try to get version from found path
+            if let Ok(ver_output) = Command::new(&path).arg("--version").output().await
+                && ver_output.status.success()
+            {
+                let version_str = String::from_utf8_lossy(&ver_output.stdout);
+                info.version = Some(version_str.trim().to_string());
+                info.installed = true;
             }
         }
     }
@@ -348,26 +341,25 @@ pub async fn detect_keepass() -> PasswordManagerInfo {
     };
 
     // Check kpcli (Perl CLI for KeePass)
-    if let Ok(output) = Command::new("kpcli").arg("--version").output().await {
-        if output.status.success() {
-            let version_str = String::from_utf8_lossy(&output.stdout);
-            info.version = parse_version_line(&version_str);
-            info.installed = true;
-            info.status_message = Some("kpcli available".to_string());
-        }
+    if let Ok(output) = Command::new("kpcli").arg("--version").output().await
+        && output.status.success()
+    {
+        let version_str = String::from_utf8_lossy(&output.stdout);
+        info.version = parse_version_line(&version_str);
+        info.installed = true;
+        info.status_message = Some("kpcli available".to_string());
     }
 
     // Check keepass2 (Mono/.NET version)
-    if !info.installed {
-        if let Ok(output) = Command::new("which").arg("keepass2").output().await {
-            if output.status.success() {
-                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                if !path.is_empty() {
-                    info.installed = true;
-                    info.path = Some(PathBuf::from(path));
-                    info.status_message = Some("KeePass 2 (Mono) available".to_string());
-                }
-            }
+    if !info.installed
+        && let Ok(output) = Command::new("which").arg("keepass2").output().await
+        && output.status.success()
+    {
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !path.is_empty() {
+            info.installed = true;
+            info.path = Some(PathBuf::from(path));
+            info.status_message = Some("KeePass 2 (Mono) available".to_string());
         }
     }
 
@@ -397,28 +389,28 @@ pub async fn detect_onepassword() -> PasswordManagerInfo {
 
     // Try standard paths first
     for path in &op_paths {
-        if let Ok(output) = Command::new(path).arg("--version").output().await {
-            if output.status.success() {
-                let version_str = String::from_utf8_lossy(&output.stdout);
-                info.version = Some(version_str.trim().to_string());
-                info.installed = true;
-                op_cmd = Some((*path).to_string());
-                break;
-            }
+        if let Ok(output) = Command::new(path).arg("--version").output().await
+            && output.status.success()
+        {
+            let version_str = String::from_utf8_lossy(&output.stdout);
+            info.version = Some(version_str.trim().to_string());
+            info.installed = true;
+            op_cmd = Some((*path).to_string());
+            break;
         }
     }
 
     // Try home-relative paths
     if !info.installed {
         for path in &extra_paths {
-            if let Ok(output) = Command::new(path).arg("--version").output().await {
-                if output.status.success() {
-                    let version_str = String::from_utf8_lossy(&output.stdout);
-                    info.version = Some(version_str.trim().to_string());
-                    info.installed = true;
-                    op_cmd = Some(path.clone());
-                    break;
-                }
+            if let Ok(output) = Command::new(path).arg("--version").output().await
+                && output.status.success()
+            {
+                let version_str = String::from_utf8_lossy(&output.stdout);
+                info.version = Some(version_str.trim().to_string());
+                info.installed = true;
+                op_cmd = Some(path.clone());
+                break;
             }
         }
     }
@@ -457,21 +449,20 @@ pub async fn detect_onepassword() -> PasswordManagerInfo {
     }
 
     // If still not found, try which command
-    if !info.installed {
-        if let Ok(output) = Command::new("which").arg("op").output().await {
-            if output.status.success() {
-                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                if !path.is_empty() {
-                    info.path = Some(PathBuf::from(&path));
-                    // Try to get version from found path
-                    if let Ok(ver_output) = Command::new(&path).arg("--version").output().await {
-                        if ver_output.status.success() {
-                            let version_str = String::from_utf8_lossy(&ver_output.stdout);
-                            info.version = Some(version_str.trim().to_string());
-                            info.installed = true;
-                        }
-                    }
-                }
+    if !info.installed
+        && let Ok(output) = Command::new("which").arg("op").output().await
+        && output.status.success()
+    {
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !path.is_empty() {
+            info.path = Some(PathBuf::from(&path));
+            // Try to get version from found path
+            if let Ok(ver_output) = Command::new(&path).arg("--version").output().await
+                && ver_output.status.success()
+            {
+                let version_str = String::from_utf8_lossy(&ver_output.stdout);
+                info.version = Some(version_str.trim().to_string());
+                info.installed = true;
             }
         }
     }
@@ -509,27 +500,27 @@ pub async fn detect_passbolt() -> PasswordManagerInfo {
     let mut pb_cmd: Option<String> = None;
 
     for path in &passbolt_paths {
-        if let Ok(output) = Command::new(path).arg("--version").output().await {
-            if output.status.success() {
-                let version_str = String::from_utf8_lossy(&output.stdout);
-                info.version = Some(version_str.trim().to_string());
-                info.installed = true;
-                pb_cmd = Some((*path).to_string());
-                break;
-            }
+        if let Ok(output) = Command::new(path).arg("--version").output().await
+            && output.status.success()
+        {
+            let version_str = String::from_utf8_lossy(&output.stdout);
+            info.version = Some(version_str.trim().to_string());
+            info.installed = true;
+            pb_cmd = Some((*path).to_string());
+            break;
         }
     }
 
     if !info.installed {
         for path in &extra_paths {
-            if let Ok(output) = Command::new(path).arg("--version").output().await {
-                if output.status.success() {
-                    let version_str = String::from_utf8_lossy(&output.stdout);
-                    info.version = Some(version_str.trim().to_string());
-                    info.installed = true;
-                    pb_cmd = Some(path.clone());
-                    break;
-                }
+            if let Ok(output) = Command::new(path).arg("--version").output().await
+                && output.status.success()
+            {
+                let version_str = String::from_utf8_lossy(&output.stdout);
+                info.version = Some(version_str.trim().to_string());
+                info.installed = true;
+                pb_cmd = Some(path.clone());
+                break;
             }
         }
     }
@@ -559,20 +550,19 @@ pub async fn detect_passbolt() -> PasswordManagerInfo {
     }
 
     // Try which as fallback
-    if !info.installed {
-        if let Ok(output) = Command::new("which").arg("passbolt").output().await {
-            if output.status.success() {
-                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                if !path.is_empty() {
-                    info.path = Some(PathBuf::from(&path));
-                    if let Ok(ver_output) = Command::new(&path).arg("--version").output().await {
-                        if ver_output.status.success() {
-                            let version_str = String::from_utf8_lossy(&ver_output.stdout);
-                            info.version = Some(version_str.trim().to_string());
-                            info.installed = true;
-                        }
-                    }
-                }
+    if !info.installed
+        && let Ok(output) = Command::new("which").arg("passbolt").output().await
+        && output.status.success()
+    {
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !path.is_empty() {
+            info.path = Some(PathBuf::from(&path));
+            if let Ok(ver_output) = Command::new(&path).arg("--version").output().await
+                && ver_output.status.success()
+            {
+                let version_str = String::from_utf8_lossy(&ver_output.stdout);
+                info.version = Some(version_str.trim().to_string());
+                info.installed = true;
             }
         }
     }

@@ -1,26 +1,13 @@
-//! Flatpak sandbox detection and host command execution
+//! Flatpak sandbox detection
 //!
 //! This module provides utilities for detecting if the application is running
-//! inside a Flatpak sandbox and executing host commands via `flatpak-spawn`.
+//! inside a Flatpak sandbox.
 //!
-//! **IMPORTANT:** As of version 0.7.7, the `--talk-name=org.freedesktop.Flatpak`
-//! permission has been removed from the Flatpak manifest per Flathub reviewer feedback.
-//! This means `flatpak-spawn --host` will NOT work, and these functions will fail.
-//!
-//! **Current approach:**
-//! - SSH: Available in Flatpak runtime (no host access needed)
-//! - RDP/VNC: Use embedded clients (IronRDP, vnc-rs) - preferred
-//! - External clients: Should be installed on host, but cannot be launched from Flatpak
-//! - Cloud CLIs: Should be installed on host, but cannot be launched from Flatpak
-//!
-//! **Future options:**
-//! 1. Bundle external clients in Flatpak (increases size significantly)
-//! 2. Use Flatpak extensions for optional clients
-//! 3. Keep embedded-only approach (current recommendation)
-//!
-//! This module is kept for backward compatibility and potential future use.
+//! **Note:** As of version 0.7.7, the `--talk-name=org.freedesktop.Flatpak`
+//! permission was removed from the Flatpak manifest per Flathub reviewer feedback.
+//! The deprecated `flatpak-spawn --host` wrapper functions were removed in 0.9.0.
+//! Use embedded clients (IronRDP, vnc-rs) instead of external host commands.
 
-use std::process::{Command, Output, Stdio};
 use std::sync::OnceLock;
 
 /// Cached result of Flatpak detection
@@ -52,149 +39,7 @@ pub fn is_flatpak() -> bool {
     })
 }
 
-/// Creates a command that will run on the host system if in Flatpak,
-/// or directly if not in Flatpak.
-///
-/// When in Flatpak, this wraps the command with `flatpak-spawn --host`.
-///
-/// # Arguments
-///
-/// * `program` - The program to execute
-///
-/// # Example
-///
-/// ```ignore
-/// use rustconn_core::flatpak::host_command;
-///
-/// let mut cmd = host_command("xfreerdp");
-/// cmd.arg("/v:server.example.com");
-/// let output = cmd.output()?;
-/// ```
-#[must_use]
-#[deprecated(
-    since = "0.8.7",
-    note = "flatpak-spawn --host disabled per Flathub policy since 0.7.7; use embedded clients instead"
-)]
-pub fn host_command(program: &str) -> Command {
-    if is_flatpak() {
-        let mut cmd = Command::new("flatpak-spawn");
-        cmd.arg("--host").arg(program);
-        cmd
-    } else {
-        Command::new(program)
-    }
-}
-
-/// Checks if a program exists on the host system.
-///
-/// Uses `which` command, wrapped with `flatpak-spawn --host` if in Flatpak.
-///
-/// # Arguments
-///
-/// * `program` - The program name to check
-///
-/// # Returns
-///
-/// `true` if the program is found, `false` otherwise
-#[must_use]
-#[deprecated(
-    since = "0.8.7",
-    note = "flatpak-spawn --host disabled per Flathub policy since 0.7.7; use embedded clients instead"
-)]
-#[allow(deprecated)]
-pub fn host_has_command(program: &str) -> bool {
-    let output = host_command("which")
-        .arg(program)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status();
-
-    output.is_ok_and(|s| s.success())
-}
-
-/// Gets the path of a program on the host system.
-///
-/// Uses `which` command, wrapped with `flatpak-spawn --host` if in Flatpak.
-///
-/// # Arguments
-///
-/// * `program` - The program name to find
-///
-/// # Returns
-///
-/// The full path to the program if found, `None` otherwise
-#[must_use]
-#[deprecated(
-    since = "0.8.7",
-    note = "flatpak-spawn --host disabled per Flathub policy since 0.7.7; use embedded clients instead"
-)]
-#[allow(deprecated)]
-pub fn host_which(program: &str) -> Option<String> {
-    let output = host_command("which").arg(program).output().ok()?;
-
-    if output.status.success() {
-        let path = String::from_utf8_lossy(&output.stdout);
-        let path = path.trim();
-        if !path.is_empty() {
-            return Some(path.to_string());
-        }
-    }
-
-    None
-}
-
-/// Executes a command on the host and returns its output.
-///
-/// This is a convenience function for simple command execution.
-///
-/// # Arguments
-///
-/// * `program` - The program to execute
-/// * `args` - Arguments to pass to the program
-///
-/// # Returns
-///
-/// The command output if successful
-///
-/// # Errors
-///
-/// Returns an error if the command fails to execute.
-#[deprecated(
-    since = "0.8.7",
-    note = "flatpak-spawn --host disabled per Flathub policy since 0.7.7; use embedded clients instead"
-)]
-#[allow(deprecated)]
-pub fn host_exec(program: &str, args: &[&str]) -> std::io::Result<Output> {
-    host_command(program).args(args).output()
-}
-
-/// Spawns a command on the host system without waiting for it.
-///
-/// Useful for launching GUI applications like xfreerdp or vncviewer.
-///
-/// # Arguments
-///
-/// * `program` - The program to execute
-/// * `args` - Arguments to pass to the program
-///
-/// # Returns
-///
-/// The child process handle if successful
-///
-/// # Errors
-///
-/// Returns an error if the command fails to spawn.
-#[deprecated(
-    since = "0.8.7",
-    note = "flatpak-spawn --host disabled per Flathub policy since 0.7.7; use embedded clients instead"
-)]
-#[allow(deprecated)]
-pub fn host_spawn(program: &str, args: &[&str]) -> std::io::Result<std::process::Child> {
-    host_command(program).args(args).spawn()
-}
-
 #[cfg(test)]
-#[allow(deprecated)]
 mod tests {
     use super::*;
 
@@ -206,23 +51,5 @@ mod tests {
         // Just verify it doesn't panic and returns a boolean
         // The result depends on the environment
         let _ = result;
-    }
-
-    #[test]
-    fn test_host_command_creates_command() {
-        let cmd = host_command("echo");
-        // Verify command was created (we can't easily test the actual command)
-        assert!(
-            format!("{cmd:?}").contains("echo") || format!("{cmd:?}").contains("flatpak-spawn")
-        );
-    }
-
-    #[test]
-    fn test_host_has_command_for_common_tools() {
-        // These should exist on most Linux systems
-        // Note: In Flatpak, this will check the host system
-        let has_sh = host_has_command("sh");
-        // sh should always exist
-        assert!(has_sh || is_flatpak()); // May fail in Flatpak if host doesn't have sh in PATH
     }
 }

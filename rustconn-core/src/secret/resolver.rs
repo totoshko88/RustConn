@@ -1002,11 +1002,11 @@ impl CredentialResolver {
                         let old_key =
                             Self::generate_hierarchical_lookup_key(&old_connection, groups);
                         let new_key = Self::generate_hierarchical_lookup_key(connection, groups);
-                        if old_key != new_key {
-                            if let Some(creds) = self.secret_manager.retrieve(&old_key).await? {
-                                self.secret_manager.store(&new_key, &creds).await?;
-                                let _ = self.secret_manager.delete(&old_key).await;
-                            }
+                        if old_key != new_key
+                            && let Some(creds) = self.secret_manager.retrieve(&old_key).await?
+                        {
+                            self.secret_manager.store(&new_key, &creds).await?;
+                            let _ = self.secret_manager.delete(&old_key).await;
                         }
                     }
                     SecretBackendType::LibSecret | SecretBackendType::Bitwarden => {
@@ -1014,11 +1014,11 @@ impl CredentialResolver {
                         let old_key = format!("{} ({})", old_name.replace('/', "-"), protocol_str);
                         let new_key =
                             format!("{} ({})", connection.name.replace('/', "-"), protocol_str);
-                        if old_key != new_key {
-                            if let Some(creds) = self.secret_manager.retrieve(&old_key).await? {
-                                self.secret_manager.store(&new_key, &creds).await?;
-                                let _ = self.secret_manager.delete(&old_key).await;
-                            }
+                        if old_key != new_key
+                            && let Some(creds) = self.secret_manager.retrieve(&old_key).await?
+                        {
+                            self.secret_manager.store(&new_key, &creds).await?;
+                            let _ = self.secret_manager.delete(&old_key).await;
                         }
                     }
                     SecretBackendType::OnePassword | SecretBackendType::Passbolt => {

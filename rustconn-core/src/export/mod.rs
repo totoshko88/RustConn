@@ -21,11 +21,11 @@ use std::path::{Path, PathBuf};
 pub use ansible::AnsibleExporter;
 pub use asbru::AsbruExporter;
 pub use batch::{
-    BatchExportCancelHandle, BatchExportResult, BatchExporter, BATCH_EXPORT_THRESHOLD,
+    BATCH_EXPORT_THRESHOLD, BatchExportCancelHandle, BatchExportResult, BatchExporter,
     DEFAULT_EXPORT_BATCH_SIZE,
 };
 pub use mobaxterm::MobaXtermExporter;
-pub use native::{NativeExport, NativeImportError, NATIVE_FILE_EXTENSION, NATIVE_FORMAT_VERSION};
+pub use native::{NATIVE_FILE_EXTENSION, NATIVE_FORMAT_VERSION, NativeExport, NativeImportError};
 pub use remmina::RemminaExporter;
 pub use royalts::RoyalTsExporter;
 pub use ssh_config::SshConfigExporter;
@@ -255,7 +255,7 @@ pub enum ExportError {
 }
 
 /// Result type alias for export operations
-pub type ExportResult2<T> = std::result::Result<T, ExportError>;
+pub type ExportOperationResult<T> = std::result::Result<T, ExportError>;
 
 /// Writes export content to a file using buffered I/O.
 ///
@@ -303,7 +303,7 @@ pub trait ExportTarget: Send + Sync {
         connections: &[Connection],
         groups: &[ConnectionGroup],
         options: &ExportOptions,
-    ) -> ExportResult2<ExportResult>;
+    ) -> ExportOperationResult<ExportResult>;
 
     /// Exports a single connection to a string representation
     ///
@@ -314,7 +314,7 @@ pub trait ExportTarget: Send + Sync {
     /// # Errors
     ///
     /// Returns an error if the connection cannot be exported.
-    fn export_connection(&self, connection: &Connection) -> ExportResult2<String>;
+    fn export_connection(&self, connection: &Connection) -> ExportOperationResult<String>;
 
     /// Exports connections with progress reporting
     ///
@@ -334,7 +334,7 @@ pub trait ExportTarget: Send + Sync {
         groups: &[ConnectionGroup],
         options: &ExportOptions,
         progress: Option<&dyn ProgressReporter>,
-    ) -> ExportResult2<ExportResult> {
+    ) -> ExportOperationResult<ExportResult> {
         // Default implementation delegates to export
         if let Some(reporter) = progress {
             reporter.report(0, 1, "Starting export...");

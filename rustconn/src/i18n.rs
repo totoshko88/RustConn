@@ -37,17 +37,62 @@ pub fn init() {
     gettextrs::textdomain(GETTEXT_DOMAIN).expect("textdomain");
 }
 
-/// Reads the saved language from `config.toml` and applies it early.
+/// Reads the saved language from `config.toml` and applies it at startup.
 ///
-/// This is called in `main()` right after `init()`, before GTK starts,
-/// so that all `i18n()` calls during UI construction use the correct locale.
-/// It reads the config file directly (without `ConfigManager`) to avoid
-/// pulling in heavy dependencies at this early stage.
+/// If a non-system language is configured and the `LANGUAGE` env var is
+/// not already set to it, this function re-executes the current process
+/// with `LANGUAGE` set. This is the only reliable way to make GNU gettext
+/// use a specific language without calling `std::env::set_var` (which is
+/// `unsafe` in Rust 2024 edition).
+///
+/// The re-exec happens before GTK or tokio start, so it is safe.
+/// A sentinel env var (`_RUSTCONN_LANG_SET`) prevents infinite re-exec loops.
 pub fn apply_language_from_config() {
+    use std::os::unix::process::CommandExt;
+
     let lang = read_language_from_config().unwrap_or_default();
-    if !lang.is_empty() && lang != "system" {
-        apply_language(&lang);
+    if lang.is_empty() || lang == "system" {
+        return;
     }
+
+    // Check if LANGUAGE is already set correctly (e.g. after re-exec
+    // or if the user/desktop set it). If so, nothing to do.
+    if std::env::var("LANGUAGE").ok().as_deref() == Some(lang.as_str()) {
+        return;
+    }
+
+    // Check sentinel to avoid infinite re-exec loop
+    if std::env::var("_RUSTCONN_LANG_SET").ok().as_deref() == Some("1") {
+        // We already re-execed once — don't loop. Fall through to
+        // best-effort setlocale below.
+        apply_language_setlocale(&lang);
+        return;
+    }
+
+    // Re-exec ourselves with LANGUAGE set. This replaces the current
+    // process image, so nothing after this line executes on success.
+    let exe = match std::env::current_exe() {
+        Ok(e) => e,
+        Err(e) => {
+            tracing::warn!(?e, "Cannot determine current exe for language re-exec");
+            apply_language_setlocale(&lang);
+            return;
+        }
+    };
+
+    let args: Vec<String> = std::env::args().collect();
+    let full_locale = lang_to_locale(&lang);
+
+    let err = std::process::Command::new(exe)
+        .args(&args[1..])
+        .env("LANGUAGE", &lang)
+        .env("LC_MESSAGES", &full_locale)
+        .env("_RUSTCONN_LANG_SET", "1")
+        .exec();
+
+    // exec() only returns on error
+    tracing::warn!(?err, "Language re-exec failed; using setlocale fallback");
+    apply_language_setlocale(&lang);
 }
 
 /// Reads just the `language` field from `~/.config/rustconn/config.toml`.
@@ -63,14 +108,12 @@ fn read_language_from_config() -> Option<String> {
             in_ui_section = trimmed == "[ui]";
             continue;
         }
-        if in_ui_section {
-            if let Some(rest) = trimmed.strip_prefix("language") {
-                let rest = rest.trim_start();
-                if let Some(rest) = rest.strip_prefix('=') {
-                    let val = rest.trim().trim_matches('"');
-                    if !val.is_empty() {
-                        return Some(val.to_string());
-                    }
+        if in_ui_section && let Some(rest) = trimmed.strip_prefix("language") {
+            let rest = rest.trim_start();
+            if let Some(rest) = rest.strip_prefix('=') {
+                let val = rest.trim().trim_matches('"');
+                if !val.is_empty() {
+                    return Some(val.to_string());
                 }
             }
         }
@@ -95,10 +138,11 @@ fn locale_dir() -> String {
     }
 
     // 2. Build-time locale dir (set by build.rs via cargo:rustc-env)
-    if let Some(build_locale) = option_env!("RUSTCONN_LOCALE_DIR") {
-        if !build_locale.is_empty() && std::path::Path::new(build_locale).exists() {
-            return build_locale.to_string();
-        }
+    if let Some(build_locale) = option_env!("RUSTCONN_LOCALE_DIR")
+        && !build_locale.is_empty()
+        && std::path::Path::new(build_locale).exists()
+    {
+        return build_locale.to_string();
     }
 
     // 3. Flatpak
@@ -234,50 +278,30 @@ fn lang_to_locale(lang: &str) -> String {
     format!("{full}.UTF-8")
 }
 
-/// Applies a language override by re-initializing gettext with the given locale.
+/// Applies a language override using `setlocale` only (best effort).
 ///
-/// Pass `"system"` to revert to system locale auto-detection.
-/// This takes effect for all subsequent `i18n()` / `ni18n()` calls.
-/// Note: already-rendered GTK labels are not updated — a restart is needed
-/// for full UI translation.
-///
-/// Uses the GNU gettext `LANGUAGE` environment variable as the primary mechanism,
-/// which works even when the target locale is not installed on the system.
-/// Falls back to `setlocale(LC_MESSAGES)` for completeness.
-pub fn apply_language(lang: &str) {
+/// This is the runtime fallback used when `set_var` is unavailable.
+/// It works when the target locale is installed on the system.
+/// For full gettext support (including uninstalled locales), the
+/// `LANGUAGE` env var must be set before process start — see
+/// [`apply_language_from_config`] which handles this via re-exec.
+fn apply_language_setlocale(lang: &str) {
     if lang == "system" || lang.is_empty() {
-        // Revert to system locale — remove LANGUAGE override
-        std::env::remove_var("LANGUAGE");
-        std::env::remove_var("LC_MESSAGES");
         gettextrs::setlocale(gettextrs::LocaleCategory::LcMessages, "");
     } else {
-        // Set LANGUAGE env var — this is the primary gettext lookup mechanism.
-        // Unlike setlocale, it does NOT require the locale to be installed.
-        // GNU gettext checks LANGUAGE first (before LC_MESSAGES) as long as
-        // LC_MESSAGES is not "C" or "POSIX".
-        std::env::set_var("LANGUAGE", lang);
-
-        // Try to set the full locale for plural forms, collation, etc.
         let full_locale = lang_to_locale(lang);
         let result =
             gettextrs::setlocale(gettextrs::LocaleCategory::LcMessages, full_locale.as_str());
         if result.is_none() {
-            // Locale not installed on the system. We need LC_MESSAGES to be
-            // something other than "C"/"POSIX" so that GNU gettext honors
-            // the LANGUAGE env var. Set LC_MESSAGES env var to the desired
-            // locale and call setlocale("") to pick it up. If that also fails,
-            // try en_US.UTF-8 as a safe non-C locale.
             tracing::info!(
                 lang,
-                "Locale {full_locale} not installed; trying fallback for gettext"
+                "Locale {full_locale} not installed; \
+                 translations may not take effect until restart"
             );
-            std::env::set_var("LC_MESSAGES", &full_locale);
-            let retry = gettextrs::setlocale(gettextrs::LocaleCategory::LcMessages, "");
-            if retry.is_none() {
-                // Last resort: use en_US.UTF-8 which is almost always installed
-                std::env::set_var("LC_MESSAGES", "en_US.UTF-8");
-                gettextrs::setlocale(gettextrs::LocaleCategory::LcMessages, "en_US.UTF-8");
-            }
+            // Try en_US.UTF-8 as a non-C locale so gettext doesn't
+            // fall back to msgids. The LANGUAGE env var (set at startup
+            // via re-exec) is the primary lookup mechanism.
+            gettextrs::setlocale(gettextrs::LocaleCategory::LcMessages, "en_US.UTF-8");
         }
     }
 
@@ -286,4 +310,20 @@ pub fn apply_language(lang: &str) {
     let _ = gettextrs::bindtextdomain(GETTEXT_DOMAIN, locale_dir);
     let _ = gettextrs::bind_textdomain_codeset(GETTEXT_DOMAIN, "UTF-8");
     let _ = gettextrs::textdomain(GETTEXT_DOMAIN);
+}
+
+/// Applies a language override by re-initializing gettext with the given locale.
+///
+/// Pass `"system"` to revert to system locale auto-detection.
+///
+/// At runtime (e.g. from the Settings dialog), this uses `setlocale` only.
+/// The `LANGUAGE` env var cannot be changed without `unsafe` in Rust 2024,
+/// so full locale switching (especially for locales not installed on the
+/// system) requires an application restart. The setting is persisted to
+/// `config.toml` and applied at next startup via [`apply_language_from_config`].
+///
+/// Note: already-rendered GTK labels are not updated — a restart is always
+/// needed for full UI translation.
+pub fn apply_language(lang: &str) {
+    apply_language_setlocale(lang);
 }

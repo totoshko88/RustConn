@@ -11,6 +11,7 @@ use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
 use gtk4::prelude::*;
 use rustconn_core::models::PasswordSource;
+use secrecy::ExposeSecret;
 
 use std::rc::Rc;
 use uuid::Uuid;
@@ -137,7 +138,7 @@ pub fn start_rdp_with_password_dialog(
                         &conn_host,
                         protocol,
                         &creds.username,
-                        &creds.password,
+                        creds.password.expose_secret(),
                         connection_id,
                     );
                 }
@@ -147,7 +148,7 @@ pub fn start_rdp_with_password_dialog(
                     state_mut.cache_credentials(
                         connection_id,
                         &creds.username,
-                        &creds.password,
+                        creds.password.expose_secret(),
                         &creds.domain,
                     );
                 }
@@ -161,7 +162,7 @@ pub fn start_rdp_with_password_dialog(
                 &sidebar_clone,
                 connection_id,
                 &creds.username,
-                &creds.password,
+                creds.password.expose_secret(),
                 &creds.domain,
             );
         }
@@ -381,12 +382,11 @@ fn start_embedded_rdp_session(
                 notebook_for_state.get_session_info(session_id).is_some(),
             );
             // Record connection end in history
-            if let Some(info) = notebook_for_state.get_session_info(session_id) {
-                if let Some(entry_id) = info.history_entry_id {
-                    if let Ok(mut state_mut) = state_for_callback.try_borrow_mut() {
-                        state_mut.record_connection_end(entry_id);
-                    }
-                }
+            if let Some(info) = notebook_for_state.get_session_info(session_id)
+                && let Some(entry_id) = info.history_entry_id
+                && let Ok(mut state_mut) = state_for_callback.try_borrow_mut()
+            {
+                state_mut.record_connection_end(entry_id);
             }
         }
         crate::embedded_rdp::RdpConnectionState::Connected => {
@@ -395,12 +395,11 @@ fn start_embedded_rdp_session(
         }
         crate::embedded_rdp::RdpConnectionState::Error => {
             // Record connection failure in history
-            if let Some(info) = notebook_for_state.get_session_info(session_id) {
-                if let Some(entry_id) = info.history_entry_id {
-                    if let Ok(mut state_mut) = state_for_callback.try_borrow_mut() {
-                        state_mut.record_connection_failed(entry_id, "RDP connection error");
-                    }
-                }
+            if let Some(info) = notebook_for_state.get_session_info(session_id)
+                && let Some(entry_id) = info.history_entry_id
+                && let Ok(mut state_mut) = state_for_callback.try_borrow_mut()
+            {
+                state_mut.record_connection_failed(entry_id, "RDP connection error");
             }
         }
         crate::embedded_rdp::RdpConnectionState::Connecting => {}
@@ -410,7 +409,7 @@ fn start_embedded_rdp_session(
     let widget_for_reconnect = embedded_widget.clone();
     embedded_widget.connect_reconnect(move || {
         if let Err(e) = widget_for_reconnect.reconnect() {
-            eprintln!("RDP reconnect failed: {}", e);
+            tracing::error!(%e, "RDP reconnect failed");
         }
     });
 
@@ -434,15 +433,13 @@ fn start_embedded_rdp_session(
     notebook.show_tab_view_content();
 
     // If Fullscreen mode, maximize the window
-    if matches!(window_mode, rustconn_core::models::WindowMode::Fullscreen) {
-        if let Some(window) = notebook
+    if matches!(window_mode, rustconn_core::models::WindowMode::Fullscreen)
+        && let Some(window) = notebook
             .widget()
             .ancestor(gtk4::ApplicationWindow::static_type())
-        {
-            if let Some(app_window) = window.downcast_ref::<gtk4::ApplicationWindow>() {
-                app_window.maximize();
-            }
-        }
+        && let Some(app_window) = window.downcast_ref::<gtk4::ApplicationWindow>()
+    {
+        app_window.maximize();
     }
 
     // Update last_connected timestamp
@@ -479,7 +476,7 @@ fn start_embedded_rdp_session(
 
         // Now connect with correct resolution
         if let Err(e) = widget_for_connect.connect(&final_config) {
-            eprintln!("RDP connection failed for '{}': {}", conn_name_owned, e);
+            tracing::error!(%e, connection = %conn_name_owned, "RDP connection failed");
             sidebar_for_connect.update_connection_status(&connection_id.to_string(), "failed");
         } else {
             sidebar_for_connect.update_connection_status(&connection_id.to_string(), "connecting");
@@ -541,23 +538,23 @@ fn start_external_rdp_session(
         false,
         &shared_folders,
     ) {
-        eprintln!("Failed to start RDP session '{}': {}", conn_name, e);
+        tracing::error!(%e, connection = %conn_name, "Failed to start RDP session");
         sidebar.update_connection_status(&connection_id.to_string(), "failed");
         // Record connection failure in history
-        if let Some(entry_id) = history_entry_id {
-            if let Ok(mut state_mut) = state.try_borrow_mut() {
-                state_mut.record_connection_failed(entry_id, &e.to_string());
-            }
+        if let Some(entry_id) = history_entry_id
+            && let Ok(mut state_mut) = state.try_borrow_mut()
+        {
+            state_mut.record_connection_failed(entry_id, &e.to_string());
         }
         true
     } else {
         sidebar.increment_session_count(&connection_id.to_string());
         // Record connection end when external process exits (we can't track this easily)
         // For external sessions, we record end immediately as we don't have state tracking
-        if let Some(entry_id) = history_entry_id {
-            if let Ok(mut state_mut) = state.try_borrow_mut() {
-                state_mut.record_connection_end(entry_id);
-            }
+        if let Some(entry_id) = history_entry_id
+            && let Ok(mut state_mut) = state.try_borrow_mut()
+        {
+            state_mut.record_connection_end(entry_id);
         }
         false
     };
@@ -639,7 +636,6 @@ pub fn start_vnc_with_password_dialog(
     // Try to load password from KeePass asynchronously
     {
         use crate::utils::spawn_blocking_with_callback;
-        use secrecy::ExposeSecret;
         let state_ref = state.borrow();
         let settings = state_ref.settings();
 
@@ -649,43 +645,39 @@ pub fn start_vnc_with_password_dialog(
                 rustconn_core::config::SecretBackendType::KeePassXc
                     | rustconn_core::config::SecretBackendType::KdbxFile
             )
+            && let Some(kdbx_path) = settings.secrets.kdbx_path.clone()
         {
-            if let Some(kdbx_path) = settings.secrets.kdbx_path.clone() {
-                let db_password = settings
-                    .secrets
-                    .kdbx_password
-                    .as_ref()
-                    .map(|p| p.expose_secret().to_string());
-                let key_file = settings.secrets.kdbx_key_file.clone();
+            let db_password = settings.secrets.kdbx_password.clone();
+            let key_file = settings.secrets.kdbx_key_file.clone();
 
-                // Use pre-built lookup key with hierarchical path
-                let lookup_key_clone = lookup_key.clone();
+            // Use pre-built lookup key with hierarchical path
+            let lookup_key_clone = lookup_key.clone();
 
-                // Get password entry for async callback
-                let password_entry = dialog.password_entry().clone();
+            // Get password entry for async callback
+            let password_entry = dialog.password_entry().clone();
 
-                // Drop state borrow before spawning
-                drop(state_ref);
+            // Drop state borrow before spawning
+            drop(state_ref);
 
-                // Run KeePass operation in background thread using utility function
-                spawn_blocking_with_callback(
-                    move || {
-                        rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
-                            &kdbx_path,
-                            db_password.as_deref(),
-                            key_file.as_deref(),
-                            &lookup_key_clone,
-                            None, // Protocol already included in lookup_key
-                        )
-                    },
-                    move |result: Result<Option<String>, String>| {
-                        if let Ok(Some(password)) = result {
-                            password_entry.set_text(&password);
-                        }
-                        // Silently ignore errors - just continue without pre-fill
-                    },
-                );
-            }
+            // Run KeePass operation in background thread using utility function
+            spawn_blocking_with_callback(
+                move || {
+                    rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
+                        &kdbx_path,
+                        db_password.as_ref(),
+                        key_file.as_deref(),
+                        &lookup_key_clone,
+                        None, // Protocol already included in lookup_key
+                    )
+                },
+                move |result: rustconn_core::error::SecretResult<Option<secrecy::SecretString>>| {
+                    if let Ok(Some(password)) = result {
+                        use secrecy::ExposeSecret;
+                        password_entry.set_text(password.expose_secret());
+                    }
+                    // Silently ignore errors - just continue without pre-fill
+                },
+            );
         }
     }
 
@@ -725,14 +717,19 @@ pub fn start_vnc_with_password_dialog(
                         &conn_host,
                         protocol,
                         "", // VNC doesn't use username
-                        &creds.password,
+                        creds.password.expose_secret(),
                         connection_id,
                     );
                 }
 
                 // Also cache for immediate use
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
-                    state_mut.cache_credentials(connection_id, "", &creds.password, "");
+                    state_mut.cache_credentials(
+                        connection_id,
+                        "",
+                        creds.password.expose_secret(),
+                        "",
+                    );
                 }
             }
 
@@ -743,7 +740,7 @@ pub fn start_vnc_with_password_dialog(
                 &split_view,
                 &sidebar_clone,
                 connection_id,
-                &creds.password,
+                creds.password.expose_secret(),
             );
         }
     });
@@ -846,12 +843,11 @@ fn start_vnc_session_internal(
                 notebook_for_state.mark_tab_disconnected(session_id);
                 sidebar_for_state.decrement_session_count(&connection_id.to_string(), false);
                 // Record connection end in history
-                if let Some(info) = notebook_for_state.get_session_info(session_id) {
-                    if let Some(entry_id) = info.history_entry_id {
-                        if let Ok(mut state_mut) = state_for_callback.try_borrow_mut() {
-                            state_mut.record_connection_end(entry_id);
-                        }
-                    }
+                if let Some(info) = notebook_for_state.get_session_info(session_id)
+                    && let Some(entry_id) = info.history_entry_id
+                    && let Ok(mut state_mut) = state_for_callback.try_borrow_mut()
+                {
+                    state_mut.record_connection_end(entry_id);
                 }
             } else if vnc_state == crate::session::SessionState::Connected {
                 notebook_for_state.mark_tab_connected(session_id);
@@ -863,13 +859,13 @@ fn start_vnc_session_internal(
         let widget_for_reconnect = vnc_widget.clone();
         vnc_widget.connect_reconnect(move || {
             if let Err(e) = widget_for_reconnect.reconnect() {
-                eprintln!("VNC reconnect failed: {}", e);
+                tracing::error!(%e, "VNC reconnect failed");
             }
         });
 
         // Initiate connection with VNC config
         if let Err(e) = vnc_widget.connect_with_config(&host, port, Some(password), &vnc_config) {
-            eprintln!("Failed to connect VNC session '{}': {}", conn_name, e);
+            tracing::error!(%e, connection = %conn_name, "Failed to connect VNC session");
             sidebar.update_connection_status(&connection_id.to_string(), "failed");
         } else {
             sidebar.update_connection_status(&connection_id.to_string(), "connecting");

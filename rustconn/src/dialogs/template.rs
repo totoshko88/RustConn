@@ -132,17 +132,9 @@ impl TemplateDialog {
 
         window.set_size_request(350, 300);
 
-        // Create header bar with Close/Create buttons (GNOME HIG)
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label(i18n("Close")).build();
-        let save_btn = Button::builder()
-            .label(i18n("Create"))
-            .css_classes(["suggested-action"])
-            .build();
-        header.pack_start(&close_btn);
-        header.pack_end(&save_btn);
+        // Header bar (GNOME HIG)
+        let (header, close_btn, save_btn) =
+            crate::dialogs::widgets::dialog_header("Close", "Create");
 
         // Close button handler
         let window_clone = window.clone();
@@ -2849,17 +2841,9 @@ impl TemplateManagerDialog {
 
         window.set_size_request(320, 280);
 
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label(i18n("Close")).build();
-        let create_conn_btn = Button::builder()
-            .label(i18n("Create"))
-            .css_classes(["suggested-action"])
-            .sensitive(false)
-            .build();
-        header.pack_start(&close_btn);
-        header.pack_end(&create_conn_btn);
+        let (header, close_btn, create_conn_btn) =
+            crate::dialogs::widgets::dialog_header("Close", "Create");
+        create_conn_btn.set_sensitive(false);
 
         // Close button handler
         let window_clone = window.clone();
@@ -2954,16 +2938,15 @@ impl TemplateManagerDialog {
         let state_templates_edit = state_templates.clone();
         let templates_list_edit = templates_list.clone();
         edit_btn.connect_clicked(move |_| {
-            if let Some(row) = templates_list_edit.selected_row() {
-                if let Some(id_str) = row.widget_name().as_str().strip_prefix("template-") {
-                    if let Ok(id) = Uuid::parse_str(id_str) {
-                        let templates = state_templates_edit.borrow();
-                        if let Some(template) = templates.iter().find(|t| t.id == id) {
-                            if let Some(ref cb) = *on_edit_clone.borrow() {
-                                cb(template.clone());
-                            }
-                        }
-                    }
+            if let Some(row) = templates_list_edit.selected_row()
+                && let Some(id_str) = row.widget_name().as_str().strip_prefix("template-")
+                && let Ok(id) = Uuid::parse_str(id_str)
+            {
+                let templates = state_templates_edit.borrow();
+                if let Some(template) = templates.iter().find(|t| t.id == id)
+                    && let Some(ref cb) = *on_edit_clone.borrow()
+                {
+                    cb(template.clone());
                 }
             }
         });
@@ -2971,14 +2954,12 @@ impl TemplateManagerDialog {
         let on_delete_clone = on_delete.clone();
         let templates_list_delete = templates_list.clone();
         delete_btn.connect_clicked(move |_| {
-            if let Some(row) = templates_list_delete.selected_row() {
-                if let Some(id_str) = row.widget_name().as_str().strip_prefix("template-") {
-                    if let Ok(id) = Uuid::parse_str(id_str) {
-                        if let Some(ref cb) = *on_delete_clone.borrow() {
-                            cb(id);
-                        }
-                    }
-                }
+            if let Some(row) = templates_list_delete.selected_row()
+                && let Some(id_str) = row.widget_name().as_str().strip_prefix("template-")
+                && let Ok(id) = Uuid::parse_str(id_str)
+                && let Some(ref cb) = *on_delete_clone.borrow()
+            {
+                cb(id);
             }
         });
 
@@ -2988,17 +2969,16 @@ impl TemplateManagerDialog {
         let templates_list_use = templates_list.clone();
         let window_use = window.clone();
         create_conn_btn.connect_clicked(move |_| {
-            if let Some(row) = templates_list_use.selected_row() {
-                if let Some(id_str) = row.widget_name().as_str().strip_prefix("template-") {
-                    if let Ok(id) = Uuid::parse_str(id_str) {
-                        let templates = state_templates_use.borrow();
-                        if let Some(template) = templates.iter().find(|t| t.id == id) {
-                            if let Some(ref cb) = *on_selected_clone.borrow() {
-                                cb(Some(template.clone()));
-                            }
-                            window_use.close();
-                        }
+            if let Some(row) = templates_list_use.selected_row()
+                && let Some(id_str) = row.widget_name().as_str().strip_prefix("template-")
+                && let Ok(id) = Uuid::parse_str(id_str)
+            {
+                let templates = state_templates_use.borrow();
+                if let Some(template) = templates.iter().find(|t| t.id == id) {
+                    if let Some(ref cb) = *on_selected_clone.borrow() {
+                        cb(Some(template.clone()));
                     }
+                    window_use.close();
                 }
             }
         });
@@ -3013,17 +2993,16 @@ impl TemplateManagerDialog {
         gesture.connect_pressed(move |gesture, n_press, _x, y| {
             if n_press == 2 {
                 // Double-click
-                if let Some(row) = templates_list_dblclick.row_at_y(y as i32) {
-                    if let Some(id_str) = row.widget_name().as_str().strip_prefix("template-") {
-                        if let Ok(id) = Uuid::parse_str(id_str) {
-                            let templates = state_templates_dblclick.borrow();
-                            if let Some(template) = templates.iter().find(|t| t.id == id) {
-                                if let Some(ref cb) = *on_selected_dblclick.borrow() {
-                                    cb(Some(template.clone()));
-                                }
-                                window_dblclick.close();
-                            }
+                if let Some(row) = templates_list_dblclick.row_at_y(y as i32)
+                    && let Some(id_str) = row.widget_name().as_str().strip_prefix("template-")
+                    && let Ok(id) = Uuid::parse_str(id_str)
+                {
+                    let templates = state_templates_dblclick.borrow();
+                    if let Some(template) = templates.iter().find(|t| t.id == id) {
+                        if let Some(ref cb) = *on_selected_dblclick.borrow() {
+                            cb(Some(template.clone()));
                         }
+                        window_dblclick.close();
                     }
                 }
                 gesture.set_state(gtk4::EventSequenceState::Claimed);
@@ -3062,10 +3041,10 @@ impl TemplateManagerDialog {
         let mut spice_templates: Vec<&ConnectionTemplate> = Vec::new();
 
         for template in templates.iter() {
-            if let Some(filter) = protocol_filter {
-                if template.protocol != filter {
-                    continue;
-                }
+            if let Some(filter) = protocol_filter
+                && template.protocol != filter
+            {
+                continue;
             }
             match template.protocol {
                 ProtocolType::Ssh | ProtocolType::ZeroTrust | ProtocolType::Telnet => {
@@ -3191,13 +3170,12 @@ impl TemplateManagerDialog {
     /// Gets the currently selected template
     #[must_use]
     pub fn get_selected_template(&self) -> Option<ConnectionTemplate> {
-        if let Some(row) = self.templates_list.selected_row() {
-            if let Some(id_str) = row.widget_name().as_str().strip_prefix("template-") {
-                if let Ok(id) = Uuid::parse_str(id_str) {
-                    let templates = self.state_templates.borrow();
-                    return templates.iter().find(|t| t.id == id).cloned();
-                }
-            }
+        if let Some(row) = self.templates_list.selected_row()
+            && let Some(id_str) = row.widget_name().as_str().strip_prefix("template-")
+            && let Ok(id) = Uuid::parse_str(id_str)
+        {
+            let templates = self.state_templates.borrow();
+            return templates.iter().find(|t| t.id == id).cloned();
         }
         None
     }

@@ -293,10 +293,10 @@ fn find_group<'a>(
     groups: &'a [ConnectionGroup],
     name_or_id: &str,
 ) -> Result<&'a ConnectionGroup, CliError> {
-    if let Ok(uuid) = uuid::Uuid::parse_str(name_or_id) {
-        if let Some(group) = groups.iter().find(|g| g.id == uuid) {
-            return Ok(group);
-        }
+    if let Ok(uuid) = uuid::Uuid::parse_str(name_or_id)
+        && let Some(group) = groups.iter().find(|g| g.id == uuid)
+    {
+        return Ok(group);
     }
 
     let matches: Vec<_> = groups

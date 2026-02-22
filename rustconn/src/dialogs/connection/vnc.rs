@@ -18,6 +18,8 @@ use gtk4::{Box as GtkBox, CheckButton, DropDown, Entry, SpinButton};
 use libadwaita as adw;
 use rustconn_core::models::{ScaleOverride, VncClientMode, VncPerformanceMode};
 
+use crate::i18n::i18n;
+
 /// Return type for VNC options creation
 #[allow(clippy::type_complexity)]
 pub type VncOptionsWidgets = (
@@ -78,7 +80,9 @@ pub fn create_vnc_options() -> VncOptionsWidgets {
 
 /// Creates the Display preferences group
 fn create_display_group() -> (adw::PreferencesGroup, DropDown, DropDown, Entry, DropDown) {
-    let display_group = adw::PreferencesGroup::builder().title("Display").build();
+    let display_group = adw::PreferencesGroup::builder()
+        .title(i18n("Display"))
+        .build();
 
     // Client mode dropdown
     let (client_mode_row, client_mode_dropdown) = DropdownRowBuilder::new("Client Mode")
@@ -138,7 +142,9 @@ fn create_display_group() -> (adw::PreferencesGroup, DropDown, DropDown, Entry, 
 
 /// Creates the Quality preferences group
 fn create_quality_group() -> (adw::PreferencesGroup, SpinButton, SpinButton) {
-    let quality_group = adw::PreferencesGroup::builder().title("Quality").build();
+    let quality_group = adw::PreferencesGroup::builder()
+        .title(i18n("Quality"))
+        .build();
 
     // Compression
     let (compression_row, compression_spin) = SpinRowBuilder::new("Compression")
@@ -161,7 +167,9 @@ fn create_quality_group() -> (adw::PreferencesGroup, SpinButton, SpinButton) {
 
 /// Creates the Features preferences group
 fn create_features_group() -> (adw::PreferencesGroup, CheckButton, CheckButton, CheckButton) {
-    let features_group = adw::PreferencesGroup::builder().title("Features").build();
+    let features_group = adw::PreferencesGroup::builder()
+        .title(i18n("Features"))
+        .build();
 
     // View-only mode
     let (view_only_row, view_only_check) = CheckboxRowBuilder::new("View-Only Mode")
@@ -193,7 +201,9 @@ fn create_features_group() -> (adw::PreferencesGroup, CheckButton, CheckButton, 
 
 /// Creates the Advanced preferences group
 fn create_advanced_group() -> (adw::PreferencesGroup, Entry) {
-    let advanced_group = adw::PreferencesGroup::builder().title("Advanced").build();
+    let advanced_group = adw::PreferencesGroup::builder()
+        .title(i18n("Advanced"))
+        .build();
 
     let (args_row, custom_args_entry) = EntryRowBuilder::new("Custom Arguments")
         .subtitle("Extra command-line options for vncviewer")

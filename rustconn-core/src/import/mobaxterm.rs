@@ -143,44 +143,39 @@ impl MobaXtermImporter {
             }
 
             // This is a session line
-            if let Some(ref section) = current_section {
-                if section.starts_with("Bookmarks") {
-                    // Determine group path
-                    let group_path = current_subrep.clone();
+            if let Some(ref section) = current_section
+                && section.starts_with("Bookmarks")
+            {
+                // Determine group path
+                let group_path = current_subrep.clone();
 
-                    // Create or get group
-                    let group_id = if let Some(ref path) = group_path {
-                        if let std::collections::hash_map::Entry::Vacant(e) =
-                            groups.entry(path.clone())
-                        {
-                            let group = ConnectionGroup::new(path.clone());
-                            let id = group.id;
-                            e.insert(group.clone());
-                            result.add_group(group);
-                            Some(id)
-                        } else {
-                            groups.get(path).map(|g| g.id)
-                        }
+                // Create or get group
+                let group_id = if let Some(ref path) = group_path {
+                    if let std::collections::hash_map::Entry::Vacant(e) = groups.entry(path.clone())
+                    {
+                        let group = ConnectionGroup::new(path.clone());
+                        let id = group.id;
+                        e.insert(group.clone());
+                        result.add_group(group);
+                        Some(id)
                     } else {
-                        None
-                    };
+                        groups.get(path).map(|g| g.id)
+                    }
+                } else {
+                    None
+                };
 
-                    // Parse session
-                    match self.parse_session(key, value, source_path) {
-                        Ok(Some(mut connection)) => {
-                            connection.group_id = group_id;
-                            result.add_connection(connection);
-                        }
-                        Ok(None) => {
-                            // Unsupported session type, already logged
-                        }
-                        Err(reason) => {
-                            result.add_skipped(SkippedEntry::with_location(
-                                key,
-                                reason,
-                                source_path,
-                            ));
-                        }
+                // Parse session
+                match self.parse_session(key, value, source_path) {
+                    Ok(Some(mut connection)) => {
+                        connection.group_id = group_id;
+                        result.add_connection(connection);
+                    }
+                    Ok(None) => {
+                        // Unsupported session type, already logged
+                    }
+                    Err(reason) => {
+                        result.add_skipped(SkippedEntry::with_location(key, reason, source_path));
                     }
                 }
             }

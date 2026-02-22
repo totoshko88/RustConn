@@ -3,8 +3,8 @@
 //! This module provides `BatchExporter` for processing large numbers of connections
 //! efficiently using configurable batch sizes and progress reporting.
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::models::Connection;
 use crate::progress::ProgressReporter;

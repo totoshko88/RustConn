@@ -3,8 +3,8 @@
 //! This module provides `BatchImporter` for processing large numbers of connections
 //! efficiently using configurable batch sizes and progress reporting.
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::error::ImportError;
 use crate::models::Connection;

@@ -4,8 +4,8 @@
 
 use gtk4::prelude::*;
 use gtk4::{
-    gio, CssProvider, MultiSelection, Orientation, Separator, SingleSelection, TreeListModel,
-    Widget,
+    CssProvider, MultiSelection, Orientation, Separator, SingleSelection, TreeListModel, Widget,
+    gio,
 };
 use std::cell::RefCell;
 use std::collections::HashSet;

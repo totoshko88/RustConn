@@ -12,6 +12,7 @@
 
 use super::buffer::PixelBuffer;
 use super::types::{EmbeddedRdpError, FreeRdpThreadState, RdpCommand, RdpConfig, RdpEvent};
+use secrecy::ExposeSecret;
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::PathBuf;
@@ -405,20 +406,22 @@ impl FreeRdpThread {
         // Do NOT set QT_QPA_PLATFORM — allow wlfreerdp to use native Wayland backend
 
         // Build connection arguments
-        if let Some(ref domain) = config.domain {
-            if !domain.is_empty() {
-                cmd.arg(format!("/d:{domain}"));
-            }
+        if let Some(ref domain) = config.domain
+            && !domain.is_empty()
+        {
+            cmd.arg(format!("/d:{domain}"));
         }
 
         if let Some(ref username) = config.username {
             cmd.arg(format!("/u:{username}"));
         }
 
-        if let Some(ref password) = config.password {
-            if !password.is_empty() {
-                cmd.arg(format!("/p:{password}"));
-            }
+        if let Some(ref password) = config.password
+            && !password.expose_secret().is_empty()
+        {
+            // Use /from-stdin to avoid exposing password in /proc/PID/cmdline
+            cmd.arg("/from-stdin");
+            cmd.stdin(Stdio::piped());
         }
 
         cmd.arg(format!("/w:{}", config.width));
@@ -444,7 +447,15 @@ impl FreeRdpThread {
         cmd.stderr(Stdio::null());
 
         match cmd.spawn() {
-            Ok(child) => {
+            Ok(mut child) => {
+                // Write password via stdin when /from-stdin is used
+                if let Some(ref password) = config.password
+                    && !password.expose_secret().is_empty()
+                    && let Some(mut stdin) = child.stdin.take()
+                {
+                    use std::io::Write;
+                    let _ = writeln!(stdin, "{}", password.expose_secret());
+                }
                 lock_or_recover(shared).process = Some(child);
                 Ok(())
             }

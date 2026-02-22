@@ -10,7 +10,7 @@ use uuid::Uuid;
 use crate::error::ImportError;
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig, SshConfig};
 
-use super::traits::{read_import_file, ImportResult, ImportSource, SkippedEntry};
+use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 
 /// Importer for Ansible inventory files.
 ///
@@ -97,13 +97,13 @@ impl AnsibleInventoryImporter {
 
             // Handle vars section
             if in_vars_section {
-                if let Some(ref group_name) = vars_group_name {
-                    if let Some((key, value)) = Self::parse_var_line(line) {
-                        group_vars
-                            .entry(group_name.clone())
-                            .or_default()
-                            .insert(key, value);
-                    }
+                if let Some(ref group_name) = vars_group_name
+                    && let Some((key, value)) = Self::parse_var_line(line)
+                {
+                    group_vars
+                        .entry(group_name.clone())
+                        .or_default()
+                        .insert(key, value);
                 }
                 continue;
             }

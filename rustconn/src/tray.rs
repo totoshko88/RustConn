@@ -75,7 +75,7 @@ impl Default for TrayState {
 mod tray_impl {
     use super::*;
     use ksni::blocking::{Handle, TrayMethods};
-    use ksni::{menu::StandardItem, Icon, MenuItem, Tray};
+    use ksni::{Icon, MenuItem, Tray, menu::StandardItem};
     use std::sync::mpsc::Sender;
 
     /// Embedded SVG icon data
@@ -334,45 +334,45 @@ mod tray_impl {
         /// Trigger a menu update on the D-Bus service
         fn trigger_update(&self) {
             // Only update if there are actual changes
-            if let Ok(mut needs) = self.needs_update.lock() {
-                if *needs {
-                    let _ = self.handle.update(|_| {});
-                    *needs = false;
-                }
+            if let Ok(mut needs) = self.needs_update.lock()
+                && *needs
+            {
+                let _ = self.handle.update(|_| {});
+                *needs = false;
             }
         }
 
         pub fn set_active_sessions(&self, count: u32) {
-            if let Ok(mut state) = self.state.lock() {
-                if state.active_sessions != count {
-                    state.active_sessions = count;
-                    if let Ok(mut needs) = self.needs_update.lock() {
-                        *needs = true;
-                    }
+            if let Ok(mut state) = self.state.lock()
+                && state.active_sessions != count
+            {
+                state.active_sessions = count;
+                if let Ok(mut needs) = self.needs_update.lock() {
+                    *needs = true;
                 }
             }
             self.trigger_update();
         }
 
         pub fn set_recent_connections(&self, connections: Vec<(Uuid, String)>) {
-            if let Ok(mut state) = self.state.lock() {
-                if state.recent_connections != connections {
-                    state.recent_connections = connections;
-                    if let Ok(mut needs) = self.needs_update.lock() {
-                        *needs = true;
-                    }
+            if let Ok(mut state) = self.state.lock()
+                && state.recent_connections != connections
+            {
+                state.recent_connections = connections;
+                if let Ok(mut needs) = self.needs_update.lock() {
+                    *needs = true;
                 }
             }
             self.trigger_update();
         }
 
         pub fn set_window_visible(&self, visible: bool) {
-            if let Ok(mut state) = self.state.lock() {
-                if state.window_visible != visible {
-                    state.window_visible = visible;
-                    if let Ok(mut needs) = self.needs_update.lock() {
-                        *needs = true;
-                    }
+            if let Ok(mut state) = self.state.lock()
+                && state.window_visible != visible
+            {
+                state.window_visible = visible;
+                if let Ok(mut needs) = self.needs_update.lock() {
+                    *needs = true;
                 }
             }
             self.trigger_update();
@@ -395,10 +395,8 @@ pub use tray_impl::TrayManager;
 mod tray_stub {
     use super::*;
 
-    pub struct TrayManager {
-        state: Arc<Mutex<TrayState>>,
-        receiver: Receiver<TrayMessage>,
-    }
+    /// No-op tray manager when the `tray` feature is disabled.
+    pub struct TrayManager;
 
     impl TrayManager {
         #[must_use]
@@ -406,35 +404,20 @@ mod tray_stub {
             None
         }
 
-        pub fn set_active_sessions(&self, count: u32) {
-            if let Ok(mut state) = self.state.lock() {
-                state.active_sessions = count;
-            }
-        }
+        pub fn set_active_sessions(&self, _count: u32) {}
 
-        pub fn set_recent_connections(&self, connections: Vec<(Uuid, String)>) {
-            if let Ok(mut state) = self.state.lock() {
-                state.recent_connections = connections;
-            }
-        }
+        pub fn set_recent_connections(&self, _connections: Vec<(Uuid, String)>) {}
 
-        pub fn set_window_visible(&self, visible: bool) {
-            if let Ok(mut state) = self.state.lock() {
-                state.window_visible = visible;
-            }
-        }
+        pub fn set_window_visible(&self, _visible: bool) {}
 
         pub fn try_recv(&self) -> Option<TrayMessage> {
-            self.receiver.try_recv().ok()
+            None
         }
     }
 
     impl Default for TrayManager {
         fn default() -> Self {
-            Self {
-                state: Arc::new(Mutex::new(TrayState::default())),
-                receiver: mpsc::channel().1,
-            }
+            Self
         }
     }
 }

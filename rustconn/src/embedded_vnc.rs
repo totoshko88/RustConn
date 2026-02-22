@@ -22,8 +22,8 @@
 
 // Re-export types for external use
 pub use crate::embedded_vnc_types::{
-    find_best_standard_resolution, EmbeddedVncError, ErrorCallback, FrameCallback, StateCallback,
-    VncConfig, VncConnectionState, VncPixelBuffer, VncWaylandSurface, STANDARD_RESOLUTIONS,
+    EmbeddedVncError, ErrorCallback, FrameCallback, STANDARD_RESOLUTIONS, StateCallback, VncConfig,
+    VncConnectionState, VncPixelBuffer, VncWaylandSurface, find_best_standard_resolution,
 };
 
 use crate::i18n::i18n;
@@ -1100,6 +1100,9 @@ impl EmbeddedVncWidget {
         // Store desired resolution from config for SetDesktopSize request after connect
         let desired_width = config.width;
         let desired_height = config.height;
+        // Capture config and process for auto-fallback to external viewer
+        let fallback_config = self.config.clone();
+        let fallback_process = self.process.clone();
 
         // Set up a GLib timeout to poll for VNC events (~60 FPS)
         glib::timeout_add_local(std::time::Duration::from_millis(16), move || {
@@ -1210,6 +1213,71 @@ impl EmbeddedVncWidget {
                             toolbar.set_visible(false);
                             if let Some(ref callback) = *on_state_changed.borrow() {
                                 callback(VncConnectionState::Disconnected);
+                            }
+                        } else if msg.contains("Unsupported security type")
+                            || msg.contains("Unknown VNC security type")
+                            || msg.contains("unknown security type")
+                        {
+                            // Unsupported security type (e.g. RSA-AES type 129)
+                            // Auto-fallback to external VNC viewer which may support it
+                            tracing::warn!(
+                                "[EmbeddedVNC] {msg} — attempting fallback to external viewer"
+                            );
+                            *is_embedded.borrow_mut() = false;
+
+                            let no_support_msg =
+                                i18n("VNC encryption not supported. Install TigerVNC.");
+
+                            // Try to launch external viewer with stored config
+                            let fallback_ok = fallback_config
+                                .borrow()
+                                .as_ref()
+                                .and_then(|cfg| {
+                                    let viewer = Self::detect_vnc_viewer()?;
+                                    let server = if cfg.port == 5900 {
+                                        format!("{}:0", cfg.host)
+                                    } else if cfg.port > 5900 && cfg.port < 6000 {
+                                        let display = cfg.port - 5900;
+                                        format!("{}:{display}", cfg.host)
+                                    } else {
+                                        format!("{}::{}", cfg.host, cfg.port)
+                                    };
+                                    Some((viewer, server))
+                                })
+                                .and_then(|(viewer, server)| {
+                                    match Command::new(&viewer).arg(&server).spawn() {
+                                        Ok(child) => {
+                                            tracing::info!(
+                                                viewer = %viewer,
+                                                "[EmbeddedVNC] Fallback to external viewer"
+                                            );
+                                            *fallback_process.borrow_mut() = Some(child);
+                                            Some(())
+                                        }
+                                        Err(e) => {
+                                            tracing::error!(
+                                                %e,
+                                                "[EmbeddedVNC] External viewer fallback failed"
+                                            );
+                                            None
+                                        }
+                                    }
+                                });
+
+                            if fallback_ok.is_some() {
+                                *state.borrow_mut() = VncConnectionState::Connected;
+                                if let Some(ref cb) = *on_state_changed.borrow() {
+                                    cb(VncConnectionState::Connected);
+                                }
+                                if let Some(ref cb) = *on_error.borrow() {
+                                    cb(&i18n("Using external viewer (unsupported encryption)"));
+                                }
+                            } else {
+                                *state.borrow_mut() = VncConnectionState::Error;
+                                toolbar.set_visible(false);
+                                if let Some(ref cb) = *on_error.borrow() {
+                                    cb(&no_support_msg);
+                                }
                             }
                         } else {
                             *state.borrow_mut() = VncConnectionState::Error;
@@ -1347,10 +1415,10 @@ impl EmbeddedVncWidget {
         *self.command_sender.borrow_mut() = None;
 
         // Disconnect native VNC client if running
-        if let Some(client) = self.vnc_client.borrow_mut().take() {
-            if let Ok(mut client_guard) = client.lock() {
-                client_guard.disconnect();
-            }
+        if let Some(client) = self.vnc_client.borrow_mut().take()
+            && let Ok(mut client_guard) = client.lock()
+        {
+            client_guard.disconnect();
         }
 
         // Kill external process if running

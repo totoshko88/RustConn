@@ -255,7 +255,7 @@ fn test_ssh_config_roundtrip() {
         );
 
         // Verify key path if set
-        if let (ProtocolConfig::Ssh(ref orig_ssh), ProtocolConfig::Ssh(ref reimp_ssh)) =
+        if let (ProtocolConfig::Ssh(orig_ssh), ProtocolConfig::Ssh(reimp_ssh)) =
             (&original.protocol_config, &reimported.protocol_config)
         {
             assert_eq!(

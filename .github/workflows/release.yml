@@ -49,8 +49,6 @@ jobs:
           mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/scalable/apps"
           mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/256x256/apps"
           mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/128x128/apps"
-          mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/64x64/apps"
-          mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/48x48/apps"
           mkdir -p "${PKG_DIR}/usr/share/doc/rustconn"
           
           # Binaries
@@ -64,7 +62,7 @@ jobs:
           # Icons
           cp rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
              "${PKG_DIR}/usr/share/icons/hicolor/scalable/apps/" || true
-          for size in 256 128 64 48; do
+          for size in 256 128; do
             cp "rustconn/assets/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png" \
                "${PKG_DIR}/usr/share/icons/hicolor/${size}x${size}/apps/" 2>/dev/null || true
           done
@@ -154,8 +152,6 @@ jobs:
           mkdir -p staging/usr/share/applications
           mkdir -p staging/usr/share/metainfo
           mkdir -p staging/usr/share/icons/hicolor/scalable/apps
-          mkdir -p staging/usr/share/icons/hicolor/48x48/apps
-          mkdir -p staging/usr/share/icons/hicolor/64x64/apps
           mkdir -p staging/usr/share/icons/hicolor/128x128/apps
           mkdir -p staging/usr/share/icons/hicolor/256x256/apps
           
@@ -170,7 +166,7 @@ jobs:
           # Copy icons
           cp rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
              staging/usr/share/icons/hicolor/scalable/apps/ 2>/dev/null || true
-          for size in 48 64 128 256; do
+          for size in 128 256; do
             cp "rustconn/assets/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png" \
                "staging/usr/share/icons/hicolor/${size}x${size}/apps/" 2>/dev/null || true
           done
@@ -244,8 +240,6 @@ jobs:
           mkdir -p AppDir/usr/share/icons/hicolor/scalable/apps
           mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
           mkdir -p AppDir/usr/share/icons/hicolor/128x128/apps
-          mkdir -p AppDir/usr/share/icons/hicolor/64x64/apps
-          mkdir -p AppDir/usr/share/icons/hicolor/48x48/apps
           mkdir -p AppDir/usr/share/metainfo
           
           cp target/release/rustconn AppDir/usr/bin/
@@ -256,7 +250,7 @@ jobs:
           # Copy icons
           cp rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
              AppDir/usr/share/icons/hicolor/scalable/apps/ || true
-          for size in 256 128 64 48; do
+          for size in 256 128; do
             cp "rustconn/assets/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png" \
                "AppDir/usr/share/icons/hicolor/${size}x${size}/apps/" 2>/dev/null || true
           done

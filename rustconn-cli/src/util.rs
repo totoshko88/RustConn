@@ -15,12 +15,12 @@ pub fn create_config_manager(config_path: Option<&Path>) -> Result<ConfigManager
         return Ok(ConfigManager::with_config_dir(path.to_path_buf()));
     }
 
-    if let Ok(env_dir) = std::env::var("RUSTCONN_CONFIG_DIR") {
-        if !env_dir.is_empty() {
-            return Ok(ConfigManager::with_config_dir(std::path::PathBuf::from(
-                env_dir,
-            )));
-        }
+    if let Ok(env_dir) = std::env::var("RUSTCONN_CONFIG_DIR")
+        && !env_dir.is_empty()
+    {
+        return Ok(ConfigManager::with_config_dir(std::path::PathBuf::from(
+            env_dir,
+        )));
     }
 
     ConfigManager::new().map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))
@@ -45,10 +45,10 @@ pub fn find_connection<'a>(
     }
 
     // Try to find by UUID
-    if let Ok(uuid) = uuid::Uuid::parse_str(name_or_id) {
-        if let Some(conn) = connections.iter().find(|c| c.id == uuid) {
-            return Ok(conn);
-        }
+    if let Ok(uuid) = uuid::Uuid::parse_str(name_or_id)
+        && let Some(conn) = connections.iter().find(|c| c.id == uuid)
+    {
+        return Ok(conn);
     }
 
     // Try case-insensitive name match

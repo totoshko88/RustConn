@@ -292,72 +292,6 @@ impl SplitViewAdapter {
     /// this method finds the panel containing that session and removes it from
     /// the split container.
     ///
-    /// # Requirements
-    /// - 13.1: Panel is removed when connection is closed
-    ///
-    /// # Arguments
-    ///
-    /// * `session_id` - The session that disconnected
-    ///
-    /// # Returns
-    ///
-    /// Returns `Ok(true)` if the session was found and removed, `Ok(false)` if
-    /// the session was not found in any panel, or an error if removal failed.
-    #[allow(dead_code)] // Will be used in window integration tasks
-    pub fn handle_session_disconnect(&mut self, session_id: SessionId) -> Result<bool, SplitError> {
-        // Find the panel containing this session
-        let panel_id = {
-            let model = self.model.borrow();
-            model
-                .panel_ids()
-                .into_iter()
-                .find(|&pid| model.get_panel_session(pid) == Some(session_id))
-        };
-
-        if let Some(panel_id) = panel_id {
-            tracing::debug!("Session {session_id} disconnected, removing panel {panel_id}");
-            self.remove_panel(panel_id)?;
-            Ok(true)
-        } else {
-            tracing::debug!("Session {session_id} disconnected but not found in any panel");
-            Ok(false)
-        }
-    }
-
-    /// Clears a session from its panel without removing the panel.
-    ///
-    /// This is useful when a session disconnects but you want to keep the
-    /// panel as an empty drop target.
-    ///
-    /// # Arguments
-    ///
-    /// * `session_id` - The session to clear
-    ///
-    /// # Returns
-    ///
-    /// Returns `Ok(true)` if the session was found and cleared, `Ok(false)` if
-    /// the session was not found in any panel.
-    #[allow(dead_code)] // Will be used in window integration tasks
-    pub fn clear_session(&mut self, session_id: SessionId) -> Result<bool, SplitError> {
-        // Find the panel containing this session
-        let panel_id = {
-            let model = self.model.borrow();
-            model
-                .panel_ids()
-                .into_iter()
-                .find(|&pid| model.get_panel_session(pid) == Some(session_id))
-        };
-
-        if let Some(panel_id) = panel_id {
-            tracing::debug!("Clearing session {session_id} from panel {panel_id}");
-            // Clear the panel content and show empty placeholder
-            self.clear_panel(panel_id);
-            Ok(true)
-        } else {
-            Ok(false)
-        }
-    }
-
     /// Handles a drop operation on a panel.
     ///
     /// This method processes a drag-and-drop operation, placing a session in the
@@ -1281,22 +1215,22 @@ impl SplitViewAdapter {
         click.connect_pressed(move |gesture, _, x, y| {
             // Check if the click is on a button widget - if so, let it propagate
             // to allow the button to handle the click (e.g., "Select Tab" button)
-            if let Some(gesture_widget) = gesture.widget() {
-                if let Some(target_widget) = gesture_widget.pick(x, y, gtk4::PickFlags::DEFAULT) {
-                    // Walk up the widget tree to check if we clicked on a button
-                    let mut current: Option<gtk4::Widget> = Some(target_widget);
-                    while let Some(widget) = current {
-                        if widget.downcast_ref::<Button>().is_some() {
-                            // Click is on a button - don't claim, let it propagate
-                            tracing::debug!(
-                                "Panel click handler: click on button in panel {}, not claiming",
-                                panel_id
-                            );
-                            gesture.set_state(gtk4::EventSequenceState::None);
-                            return;
-                        }
-                        current = widget.parent();
+            if let Some(gesture_widget) = gesture.widget()
+                && let Some(target_widget) = gesture_widget.pick(x, y, gtk4::PickFlags::DEFAULT)
+            {
+                // Walk up the widget tree to check if we clicked on a button
+                let mut current: Option<gtk4::Widget> = Some(target_widget);
+                while let Some(widget) = current {
+                    if widget.downcast_ref::<Button>().is_some() {
+                        // Click is on a button - don't claim, let it propagate
+                        tracing::debug!(
+                            "Panel click handler: click on button in panel {}, not claiming",
+                            panel_id
+                        );
+                        gesture.set_state(gtk4::EventSequenceState::None);
+                        return;
                     }
+                    current = widget.parent();
                 }
             }
 

@@ -6,6 +6,56 @@
 use crate::models::Connection;
 use crate::models::SshKeySource;
 use std::path::PathBuf;
+use std::sync::OnceLock;
+
+/// Information about a running ssh-agent instance.
+///
+/// Stored globally via [`set_agent_info`] so that any code spawning
+/// child processes can inject `SSH_AUTH_SOCK` (and optionally
+/// `SSH_AGENT_PID`) via [`apply_agent_env`].
+#[derive(Debug, Clone)]
+pub struct SshAgentInfo {
+    /// Path to the agent socket (value for `SSH_AUTH_SOCK`).
+    pub socket_path: String,
+    /// Agent process ID (value for `SSH_AGENT_PID`), if known.
+    pub pid: Option<String>,
+}
+
+/// Global storage for the ssh-agent info discovered or started at
+/// application startup. Initialised once from `main()`.
+static AGENT_INFO: OnceLock<SshAgentInfo> = OnceLock::new();
+
+/// Stores ssh-agent information globally.
+///
+/// Call this once from `main()` after [`ensure_ssh_agent`] returns
+/// agent info. Subsequent calls are silently ignored (first write wins).
+pub fn set_agent_info(info: SshAgentInfo) {
+    let _ = AGENT_INFO.set(info);
+}
+
+/// Returns the globally stored ssh-agent info, if any.
+#[must_use]
+pub fn get_agent_info() -> Option<&'static SshAgentInfo> {
+    AGENT_INFO.get()
+}
+
+/// Applies `SSH_AUTH_SOCK` (and `SSH_AGENT_PID` if available) to a
+/// [`std::process::Command`] so the child process can reach the agent.
+///
+/// Sources (in priority order):
+/// 1. Global [`SshAgentInfo`] stored via [`set_agent_info`]
+/// 2. Inherited process environment (no-op — already inherited)
+///
+/// This replaces the former `std::env::set_var("SSH_AUTH_SOCK", …)`
+/// pattern, which became `unsafe` in Rust 2024 edition.
+pub fn apply_agent_env(cmd: &mut std::process::Command) {
+    if let Some(info) = AGENT_INFO.get() {
+        cmd.env("SSH_AUTH_SOCK", &info.socket_path);
+        if let Some(ref pid) = info.pid {
+            cmd.env("SSH_AGENT_PID", pid);
+        }
+    }
+}
 
 /// Builds an SFTP URI for the given connection.
 ///
@@ -112,43 +162,53 @@ pub fn get_ssh_key_path(connection: &Connection) -> Option<PathBuf> {
     }
 }
 
-/// Checks whether ssh-agent is reachable via `SSH_AUTH_SOCK`.
+/// Checks whether ssh-agent is reachable.
+///
+/// Looks for a valid socket in two places:
+/// 1. The global [`SshAgentInfo`] (set by [`set_agent_info`])
+/// 2. The inherited `SSH_AUTH_SOCK` environment variable
 #[must_use]
 pub fn is_ssh_agent_available() -> bool {
+    if let Some(info) = AGENT_INFO.get()
+        && std::path::Path::new(&info.socket_path).exists()
+    {
+        return true;
+    }
     std::env::var("SSH_AUTH_SOCK")
         .ok()
         .filter(|s| !s.is_empty())
         .is_some_and(|sock| std::path::Path::new(&sock).exists())
 }
 
-/// Ensures an ssh-agent is running and `SSH_AUTH_SOCK` is set.
+/// Ensures an ssh-agent is running and returns its connection info.
 ///
 /// On some desktop environments (notably KDE on openSUSE Tumbleweed)
 /// ssh-agent is not started by default. This function:
 ///
 /// 1. Checks if `SSH_AUTH_SOCK` is already set and the socket exists
 /// 2. If not, starts `ssh-agent` and parses its output
-/// 3. Sets `SSH_AUTH_SOCK` and `SSH_AGENT_PID` in the process
-///    environment so all child processes (Dolphin, mc, ssh-add)
-///    inherit them
+/// 3. Returns [`SshAgentInfo`] so the caller can store it globally
+///    via [`set_agent_info`]
 ///
-/// # Thread Safety
-///
-/// This function calls `std::env::set_var()` which is not thread-safe.
-/// It must be called from `main()` before spawning any threads or
-/// starting the async runtime.
+/// The caller is responsible for calling [`set_agent_info`] with the
+/// returned value. Child processes then receive the agent socket via
+/// [`apply_agent_env`] or inherit it from the process environment.
 ///
 /// # Returns
 ///
-/// `true` if an agent is available after this call, `false` if
-/// we failed to start one.
-pub fn ensure_ssh_agent() -> bool {
-    if is_ssh_agent_available() {
-        tracing::debug!(
-            sock = %std::env::var("SSH_AUTH_SOCK").unwrap_or_default(),
-            "ssh-agent already available"
-        );
-        return true;
+/// `Some(SshAgentInfo)` if an agent is available (either pre-existing
+/// or freshly started), `None` if we failed to find or start one.
+pub fn ensure_ssh_agent() -> Option<SshAgentInfo> {
+    if let Ok(sock) = std::env::var("SSH_AUTH_SOCK")
+        && !sock.is_empty()
+        && std::path::Path::new(&sock).exists()
+    {
+        tracing::debug!(%sock, "ssh-agent already available");
+        let pid = std::env::var("SSH_AGENT_PID").ok();
+        return Some(SshAgentInfo {
+            socket_path: sock,
+            pid,
+        });
     }
 
     tracing::info!("SSH_AUTH_SOCK not set or socket missing; starting ssh-agent");
@@ -163,7 +223,7 @@ pub fn ensure_ssh_agent() -> bool {
         Ok(o) => o,
         Err(e) => {
             tracing::warn!(?e, "Failed to run ssh-agent");
-            return false;
+            return None;
         }
     };
 
@@ -173,13 +233,10 @@ pub fn ensure_ssh_agent() -> bool {
             %stderr,
             "ssh-agent exited with non-zero status"
         );
-        return false;
+        return None;
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    // ssh-agent -s output looks like:
-    //   SSH_AUTH_SOCK=/tmp/ssh-XXXX/agent.1234; export SSH_AUTH_SOCK;
-    //   SSH_AGENT_PID=1234; export SSH_AGENT_PID;
     let mut sock = None;
     let mut pid = None;
 
@@ -203,23 +260,19 @@ pub fn ensure_ssh_agent() -> bool {
             %stdout,
             "Could not parse SSH_AUTH_SOCK from ssh-agent output"
         );
-        return false;
+        return None;
     };
-
-    // set_var is safe in Rust 2021 edition. Called once at startup
-    // before any threads are spawned (from main() before tokio).
-    std::env::set_var("SSH_AUTH_SOCK", &sock_val);
-    if let Some(ref pid_val) = pid {
-        std::env::set_var("SSH_AGENT_PID", pid_val);
-    }
 
     tracing::info!(
         %sock_val,
         pid = pid.as_deref().unwrap_or("unknown"),
-        "Started ssh-agent and set environment"
+        "Started ssh-agent"
     );
 
-    is_ssh_agent_available()
+    Some(SshAgentInfo {
+        socket_path: sock_val,
+        pid,
+    })
 }
 
 /// Ensures the connection's SSH key is loaded in ssh-agent.
@@ -252,13 +305,13 @@ pub fn ensure_key_in_agent(connection: &Connection) -> bool {
     }
 
     tracing::info!(?key_path, "Adding SSH key to agent for SFTP");
-    match std::process::Command::new("ssh-add")
-        .arg(&key_path)
+    let mut cmd = std::process::Command::new("ssh-add");
+    cmd.arg(&key_path)
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::piped())
-        .output()
-    {
+        .stderr(std::process::Stdio::piped());
+    apply_agent_env(&mut cmd);
+    match cmd.output() {
         Ok(output) if output.status.success() => {
             tracing::info!(?key_path, "SSH key added to agent");
             true

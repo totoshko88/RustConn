@@ -22,7 +22,7 @@ use crate::models::{
     SshConfig, SshKeySource, TelnetConfig, VncConfig,
 };
 
-use super::traits::{read_import_file, ImportResult, ImportSource, SkippedEntry};
+use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 
 /// Importer for Asbru-CM configuration files.
 ///
@@ -141,31 +141,31 @@ impl AsbruImporter {
     /// (contain dots, are IP addresses, or contain dynamic variables).
     fn extract_hostname(&self, entry: &AsbruEntry) -> Option<String> {
         // Try ip field first
-        if let Some(ip) = &entry.ip {
-            if Self::is_valid_hostname(ip) {
-                return Some(ip.clone());
-            }
+        if let Some(ip) = &entry.ip
+            && Self::is_valid_hostname(ip)
+        {
+            return Some(ip.clone());
         }
 
         // Try host field
-        if let Some(host) = &entry.host {
-            if Self::is_valid_hostname(host) {
-                return Some(host.clone());
-            }
+        if let Some(host) = &entry.host
+            && Self::is_valid_hostname(host)
+        {
+            return Some(host.clone());
         }
 
         // Try extracting from name field if it looks like a hostname
-        if let Some(name) = &entry.name {
-            if Self::looks_like_hostname(name) {
-                return Some(name.clone());
-            }
+        if let Some(name) = &entry.name
+            && Self::looks_like_hostname(name)
+        {
+            return Some(name.clone());
         }
 
         // Try extracting from title field if it looks like a hostname
-        if let Some(title) = &entry.title {
-            if Self::looks_like_hostname(title) {
-                return Some(title.clone());
-            }
+        if let Some(title) = &entry.title
+            && Self::looks_like_hostname(title)
+        {
+            return Some(title.clone());
         }
 
         None
@@ -255,18 +255,18 @@ impl AsbruImporter {
         let mut config: HashMap<String, AsbruEntry> = HashMap::new();
 
         // Check if this is an installed Asbru config with "environments" key
-        if let Some(environments) = raw_config.get("environments") {
-            if let Some(env_map) = environments.as_mapping() {
-                for (key, value) in env_map {
-                    if let Some(key_str) = key.as_str() {
-                        // Skip special keys
-                        if key_str.starts_with("__") {
-                            continue;
-                        }
-                        // Try to deserialize as AsbruEntry
-                        if let Ok(entry) = serde_yaml::from_value(value.clone()) {
-                            config.insert(key_str.to_string(), entry);
-                        }
+        if let Some(environments) = raw_config.get("environments")
+            && let Some(env_map) = environments.as_mapping()
+        {
+            for (key, value) in env_map {
+                if let Some(key_str) = key.as_str() {
+                    // Skip special keys
+                    if key_str.starts_with("__") {
+                        continue;
+                    }
+                    // Try to deserialize as AsbruEntry
+                    if let Ok(entry) = serde_yaml::from_value(value.clone()) {
+                        config.insert(key_str.to_string(), entry);
                     }
                 }
             }
@@ -320,29 +320,28 @@ impl AsbruImporter {
         for (_key, (mut group, parent_key, description)) in groups_data {
             if let Some(ref parent_key) = parent_key {
                 // Skip special Asbru parent keys that don't map to real groups
-                if !parent_key.starts_with("__") {
-                    if let Some(&parent_uuid) = uuid_map.get(parent_key) {
-                        group.parent_id = Some(parent_uuid);
-                    }
+                if !parent_key.starts_with("__")
+                    && let Some(&parent_uuid) = uuid_map.get(parent_key)
+                {
+                    group.parent_id = Some(parent_uuid);
                 }
             }
             // Set description if present and not empty
-            if let Some(desc) = description {
-                if !desc.is_empty() {
-                    group.description = Some(desc);
-                }
+            if let Some(desc) = description
+                && !desc.is_empty()
+            {
+                group.description = Some(desc);
             }
             result.add_group(group);
         }
 
         // Third pass: process connections
         for (key, entry) in &config {
-            if entry.is_group != Some(1) {
-                if let Some(connection) =
+            if entry.is_group != Some(1)
+                && let Some(connection) =
                     self.convert_entry(key, entry, &uuid_map, source_path, &mut result)
-                {
-                    result.add_connection(connection);
-                }
+            {
+                result.add_connection(connection);
             }
         }
 
@@ -387,9 +386,12 @@ impl AsbruImporter {
 
         // Log protocol detection for debugging
         #[cfg(debug_assertions)]
-        eprintln!(
-            "Asbru import: {} - method={:?}, type={:?}, resolved={}",
-            name, entry.method, entry.protocol_type, protocol_type
+        tracing::debug!(
+            name = %name,
+            method = ?entry.method,
+            protocol_type = ?entry.protocol_type,
+            resolved = %protocol_type,
+            "Asbru import protocol detection"
         );
 
         let (protocol_config, default_port) = match protocol_type.as_str() {
@@ -526,17 +528,17 @@ impl AsbruImporter {
         }
 
         // Set parent group if exists
-        if let Some(parent_uuid) = &entry.parent {
-            if let Some(&group_id) = uuid_map.get(parent_uuid) {
-                connection.group_id = Some(group_id);
-            }
+        if let Some(parent_uuid) = &entry.parent
+            && let Some(&group_id) = uuid_map.get(parent_uuid)
+        {
+            connection.group_id = Some(group_id);
         }
 
         // Set description if present
-        if let Some(desc) = &entry.description {
-            if !desc.is_empty() {
-                connection.description = Some(desc.clone());
-            }
+        if let Some(desc) = &entry.description
+            && !desc.is_empty()
+        {
+            connection.description = Some(desc.clone());
         }
 
         Some(connection)
@@ -558,23 +560,20 @@ impl AsbruImporter {
         let raw_config: HashMap<String, serde_yaml::Value> = serde_yaml::from_str(content).ok()?;
 
         // Check environments first
-        if let Some(environments) = raw_config.get("environments") {
-            if let Some(env_map) = environments.as_mapping() {
-                if let Some(entry_value) =
-                    env_map.get(&serde_yaml::Value::String(entry_key.to_string()))
-                {
-                    if let Ok(entry) = serde_yaml::from_value::<AsbruEntry>(entry_value.clone()) {
-                        return entry.pass.or(entry.password).filter(|p| !p.is_empty());
-                    }
-                }
-            }
+        if let Some(environments) = raw_config.get("environments")
+            && let Some(env_map) = environments.as_mapping()
+            && let Some(entry_value) =
+                env_map.get(&serde_yaml::Value::String(entry_key.to_string()))
+            && let Ok(entry) = serde_yaml::from_value::<AsbruEntry>(entry_value.clone())
+        {
+            return entry.pass.or(entry.password).filter(|p| !p.is_empty());
         }
 
         // Check top-level
-        if let Some(entry_value) = raw_config.get(entry_key) {
-            if let Ok(entry) = serde_yaml::from_value::<AsbruEntry>(entry_value.clone()) {
-                return entry.pass.or(entry.password).filter(|p| !p.is_empty());
-            }
+        if let Some(entry_value) = raw_config.get(entry_key)
+            && let Ok(entry) = serde_yaml::from_value::<AsbruEntry>(entry_value.clone())
+        {
+            return entry.pass.or(entry.password).filter(|p| !p.is_empty());
         }
 
         None
@@ -1114,10 +1113,11 @@ dynamic-uuid:
         assert_eq!(conn.host, "${DB_HOST}");
         assert_eq!(conn.username, Some("${DB_USER}".to_string()));
         // Description with variable should be in description field (not tags)
-        assert!(conn
-            .description
-            .as_ref()
-            .is_some_and(|d| d.contains("${ENV}")));
+        assert!(
+            conn.description
+                .as_ref()
+                .is_some_and(|d| d.contains("${ENV}"))
+        );
     }
 
     #[test]

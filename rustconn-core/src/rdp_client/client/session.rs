@@ -1,17 +1,17 @@
 use super::super::{RdpClientCommand, RdpClientError, RdpClientEvent, RdpRect};
 use super::commands::process_command;
 use super::connection::UpgradedFramed;
-use ironrdp::connector::connection_activation::ConnectionActivationState;
 use ironrdp::connector::ConnectionResult;
+use ironrdp::connector::connection_activation::ConnectionActivationState;
 use ironrdp::graphics::image_processing::PixelFormat as IronPixelFormat;
 use ironrdp::pdu::WriteBuf;
 use ironrdp::session::image::DecodedImage;
-use ironrdp::session::{fast_path, ActiveStage, ActiveStageOutput};
+use ironrdp::session::{ActiveStage, ActiveStageOutput, fast_path};
 use ironrdp_tokio::{
-    single_sequence_step_read, split_tokio_framed, Framed, FramedRead, FramedWrite,
+    Framed, FramedRead, FramedWrite, single_sequence_step_read, split_tokio_framed,
 };
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 /// Runs the active RDP session, processing framebuffer updates and input
 // The future is not Send because IronRDP's AsyncNetworkClient is not Send.
@@ -198,11 +198,11 @@ where
                 }
             };
 
-        if written.size().is_some() {
-            if let Err(e) = writer.write_all(buf.filled()).await {
-                tracing::warn!("Failed to send reactivation response: {}", e);
-                break;
-            }
+        if written.size().is_some()
+            && let Err(e) = writer.write_all(buf.filled()).await
+        {
+            tracing::warn!("Failed to send reactivation response: {}", e);
+            break;
         }
 
         if let ConnectionActivationState::Finalized {

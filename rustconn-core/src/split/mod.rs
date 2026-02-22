@@ -53,7 +53,7 @@ pub use color::{ColorPool, SPLIT_COLORS};
 pub use error::{DropResult, SplitError};
 pub use model::SplitLayoutModel;
 pub use tree::{
-    LeafPanel, PanelNode, RemoveResult, SplitNode, DEFAULT_SPLIT_POSITION, MAX_SPLIT_POSITION,
-    MIN_SPLIT_POSITION,
+    DEFAULT_SPLIT_POSITION, LeafPanel, MAX_SPLIT_POSITION, MIN_SPLIT_POSITION, PanelNode,
+    RemoveResult, SplitNode,
 };
 pub use types::{ColorId, PanelId, SessionId, SplitDirection, TabId};

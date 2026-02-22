@@ -670,12 +670,12 @@ impl StringInterner {
         // Try read lock first for cache hit
         {
             let strings = self.strings.read().unwrap();
-            if let Some(existing) = strings.get(&hash) {
-                if &**existing == s {
-                    self.stats.hit_count.fetch_add(1, Ordering::Relaxed);
-                    self.stats.bytes_saved.fetch_add(s.len(), Ordering::Relaxed);
-                    return Arc::clone(existing);
-                }
+            if let Some(existing) = strings.get(&hash)
+                && &**existing == s
+            {
+                self.stats.hit_count.fetch_add(1, Ordering::Relaxed);
+                self.stats.bytes_saved.fetch_add(s.len(), Ordering::Relaxed);
+                return Arc::clone(existing);
             }
         }
 
@@ -683,12 +683,12 @@ impl StringInterner {
         let mut strings = self.strings.write().unwrap();
 
         // Double-check after acquiring write lock
-        if let Some(existing) = strings.get(&hash) {
-            if &**existing == s {
-                self.stats.hit_count.fetch_add(1, Ordering::Relaxed);
-                self.stats.bytes_saved.fetch_add(s.len(), Ordering::Relaxed);
-                return Arc::clone(existing);
-            }
+        if let Some(existing) = strings.get(&hash)
+            && &**existing == s
+        {
+            self.stats.hit_count.fetch_add(1, Ordering::Relaxed);
+            self.stats.bytes_saved.fetch_add(s.len(), Ordering::Relaxed);
+            return Arc::clone(existing);
         }
 
         // Insert new string
@@ -1978,15 +1978,19 @@ mod tests {
 
         // Test with large connection count
         let recommendations = optimizer.analyze(600, 10, 5);
-        assert!(recommendations
-            .iter()
-            .any(|r| r.category == OptimizationCategory::DataStructure));
+        assert!(
+            recommendations
+                .iter()
+                .any(|r| r.category == OptimizationCategory::DataStructure)
+        );
 
         // Test with many sessions
         let recommendations = optimizer.analyze(10, 5, 25);
-        assert!(recommendations
-            .iter()
-            .any(|r| r.category == OptimizationCategory::CacheManagement));
+        assert!(
+            recommendations
+                .iter()
+                .any(|r| r.category == OptimizationCategory::CacheManagement)
+        );
     }
 
     #[test]

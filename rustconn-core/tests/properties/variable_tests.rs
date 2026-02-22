@@ -646,11 +646,15 @@ mod edge_case_tests {
 
         // All scopes should return undefined for non-existent variable
         assert!(manager.resolve("var", VariableScope::Global).is_err());
-        assert!(manager
-            .resolve("var", VariableScope::Document(doc_id))
-            .is_err());
-        assert!(manager
-            .resolve("var", VariableScope::Connection(conn_id))
-            .is_err());
+        assert!(
+            manager
+                .resolve("var", VariableScope::Document(doc_id))
+                .is_err()
+        );
+        assert!(
+            manager
+                .resolve("var", VariableScope::Connection(conn_id))
+                .is_err()
+        );
     }
 }

@@ -5,6 +5,61 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-02-22
+
+### Added
+- **Startup action** — configure which session opens automatically when RustConn starts: local shell, or any saved connection. Set in Settings → Appearance → Startup, or override via CLI flags `--shell` / `--connect <name|uuid>` ([#30](https://github.com/totoshko88/RustConn/issues/30))
+
+### Security
+- All password fields (`FreeRdpConfig`, `RdpConfig`, `SpiceClientConfig`, `KdbxEntry`, `PasswordDialogResult`, `ConnectionDialogResult`) migrated to `SecretString` — credentials are now exposed only at point of use
+- FreeRDP embedded thread no longer passes password via CLI arg — uses `/from-stdin` + stdin pipe
+- Bitwarden `BW_SESSION` replaced with thread-safe in-process `RwLock` storage instead of `set_var`
+- KDBX functions migrated to `SecretString` + `SecretResult` throughout
+- SSH `custom_options` now filtered against dangerous directives (`ProxyCommand`, `LocalCommand`, etc.) before passing to `ssh -o`
+- Hand-rolled base64 in Bitwarden backend replaced with `data-encoding` crate
+
+### Improved
+- **Ukrainian translation** — 674 translations professionally reviewed by Mykola Zubkov for accuracy and modern orthography
+- SVG icon optimized and simplified per GNOME HIG; 48×48 and 64×64 PNG removed — GTK renders SVG at any size; 128×128 and 256×256 PNG regenerated from SVG
+- Welcome page logo now uses GTK themed icon lookup (same as About dialog) — renders SVG at native HiDPI resolution instead of fixed-size raster
+- Flathub metainfo.xml overhauled: description condensed, brand colors improved, screenshots replaced with HiDPI windowed captures with shadows, localized screenshots for uk/be/cs, added translate and contribute URLs
+- 8 dialogs migrated to `adw::Dialog` (libadwaita 1.5+) with adaptive sizing and proper modal behavior
+- Password field uses `PasswordEntry` with built-in peek icon
+- Screen reader support: accessible label relations added to password and connection dialogs
+- `adw::Clamp` added to dialogs to prevent content stretching on wide screens
+- Dialog header bar pattern deduplicated via shared `dialog_header()` helper
+- Clear History now requires confirmation via `adw::AlertDialog`
+- Search history popover items are now clickable
+- All `eprintln!` calls replaced with structured `tracing`
+
+### Fixed
+- **VNC RSA-AES auto-fallback** — servers using RSA-AES security type (type 129, e.g. wayvnc) now automatically fall back to external VNC viewer (TigerVNC) instead of showing a raw error. User sees a friendly toast message ([#31](https://github.com/totoshko88/RustConn/issues/31))
+- Embedded RDP cursor size corrected on HiDPI displays — server-sent device-pixel bitmaps now downscaled to logical pixels before GTK cursor creation
+- Pango markup warning on welcome page — ampersand in "Embedded & external clients" escaped for GTK label rendering
+- Variable password source (`PasswordSource::Variable`) now resolves correctly at connection time — `SecretManager` is initialized with backends from settings, and variable lookup uses the same backend as save
+- Locale `.mo` files now included in Debian, RPM, and local Flatpak packages
+- Debian build no longer enables `spice-embedded` feature without build dependencies
+- AppStream metainfo.xml: categories added explicitly (`Network`, `RemoteAccess`), generic `GTK` category removed
+- Debian `Recommends` updated for FreeRDP 3 / Wayland support
+- Build dependencies corrected for `gettext` across Debian and RPM
+
+### Removed
+- Dead code cleanup: unused credential caching, split view adapter methods, toast helpers, deprecated flatpak host command functions
+
+### Dependencies
+- **Updated**: deranged 0.5.6→0.5.8, js-sys 0.3.86→0.3.88, wasm-bindgen 0.2.109→0.2.111, wasm-bindgen-futures 0.4.59→0.4.61, web-sys 0.3.86→0.3.88
+
+### Internal
+- `Project-Id-Version` updated to `0.9.0` in all `.po` files
+- Duplicate `SessionResult` type alias removed from `session/manager.rs` — canonical definition in `error.rs`
+- Tray stub no longer allocates orphaned `mpsc` channel when `tray` feature is disabled
+- Migrated to Rust 2024 edition (167 files changed across all three crates):
+  - Eliminated all `unsafe` `set_var`/`remove_var` calls — SSH agent info stored in `OnceLock<SshAgentInfo>` with `apply_agent_env()` helper, language switching via process re-exec with sentinel guard, Bitwarden session token in `RwLock`
+  - Renamed `gen` keyword usages to `generator`/`pw_gen`/`counter` in password generator, dialog, and RDP modules
+  - Fixed `ref` binding patterns in match arms across source and test files (Rust 2024 match ergonomics)
+  - Hundreds of `collapsible_if` patterns rewritten as let-chains (`if let ... && let ...`)
+  - Import ordering updated to Rust 2024 `style_edition` rules via `cargo fmt`
+
 ## [0.8.9] - 2026-02-19
 
 ### Security
@@ -112,7 +167,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SPDX license** — `GPL-3.0+` → `GPL-3.0-or-later` in metainfo.xml
 
 ### Changed
-- **VTE updated to 0.83.90** — From 0.78.7 in all Flatpak manifests
+- **VTE** — Flatpak manifests use VTE 0.78.7 (LTS branch for GNOME 46/47); `vte4` Rust crate 0.9 with `v0_72` feature
 - **CLI modularized** — Split 5000+ line `main.rs` into 18 handler modules
 - **CLI structured logging** — `tracing` replaces `eprintln!` with `--verbose`/`--quiet` control
 - **VNC viewer list deduplicated** — Single `VNC_VIEWERS` constant shared across detection

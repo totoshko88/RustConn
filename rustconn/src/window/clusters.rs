@@ -43,19 +43,19 @@ pub fn show_new_cluster_dialog(
     let state_clone = state.clone();
     let notebook_clone = notebook.clone();
     dialog.run(move |result| {
-        if let Some(cluster) = result {
-            if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
-                match state_mut.create_cluster(cluster) {
-                    Ok(_) => {
-                        alert::show_success(
-                            &window_clone,
-                            "Cluster Created",
-                            "Cluster has been saved successfully.",
-                        );
-                    }
-                    Err(e) => {
-                        alert::show_error(&window_clone, "Error Creating Cluster", &e);
-                    }
+        if let Some(cluster) = result
+            && let Ok(mut state_mut) = state_clone.try_borrow_mut()
+        {
+            match state_mut.create_cluster(cluster) {
+                Ok(_) => {
+                    alert::show_success(
+                        &window_clone,
+                        "Cluster Created",
+                        "Cluster has been saved successfully.",
+                    );
+                }
+                Err(e) => {
+                    alert::show_error(&window_clone, "Error Creating Cluster", &e);
                 }
             }
         }

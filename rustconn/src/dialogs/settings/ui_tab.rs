@@ -4,7 +4,8 @@ use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, CheckButton, DropDown, StringList, ToggleButton};
 use libadwaita as adw;
-use rustconn_core::config::{ColorScheme, SessionRestoreSettings, UiSettings};
+use rustconn_core::config::{ColorScheme, SessionRestoreSettings, StartupAction, UiSettings};
+use rustconn_core::models::Connection;
 
 use crate::i18n::i18n;
 
@@ -20,6 +21,7 @@ pub fn create_ui_page() -> (
     CheckButton,
     CheckButton,
     adw::SpinRow,
+    DropDown,
 ) {
     let page = adw::PreferencesPage::builder()
         .title(i18n("Interface"))
@@ -117,6 +119,30 @@ pub fn create_ui_page() -> (
 
     page.add(&window_group);
 
+    // === Startup Group ===
+    let startup_group = adw::PreferencesGroup::builder()
+        .title(i18n("Startup"))
+        .description(i18n("Action to perform when the application starts"))
+        .build();
+
+    // Startup action dropdown — populated with connections in load_ui_settings
+    let startup_action_dropdown = DropDown::builder()
+        .model(&StringList::new(&[
+            &i18n("Do nothing"),
+            &i18n("Local Shell"),
+        ]))
+        .valign(gtk4::Align::Center)
+        .build();
+
+    let startup_action_row = adw::ActionRow::builder()
+        .title(i18n("On startup"))
+        .subtitle(i18n("Open session automatically"))
+        .build();
+    startup_action_row.add_suffix(&startup_action_dropdown);
+    startup_group.add(&startup_action_row);
+
+    page.add(&startup_group);
+
     // === System Tray Group ===
     let tray_group = adw::PreferencesGroup::builder()
         .title(i18n("System Tray"))
@@ -201,7 +227,34 @@ pub fn create_ui_page() -> (
         session_restore_enabled,
         prompt_on_restore,
         max_age_row,
+        startup_action_dropdown,
     )
+}
+
+/// Connection entry in the startup action dropdown.
+///
+/// Indices 0 and 1 are reserved for "Do nothing" and "Local Shell".
+/// Indices 2+ map to connections sorted alphabetically.
+struct StartupConnectionEntry {
+    id: uuid::Uuid,
+    display_name: String,
+}
+
+/// Builds the sorted list of connections for the startup dropdown.
+fn build_startup_entries(connections: &[&Connection]) -> Vec<StartupConnectionEntry> {
+    let mut entries: Vec<StartupConnectionEntry> = connections
+        .iter()
+        .map(|c| StartupConnectionEntry {
+            id: c.id,
+            display_name: format!("{} ({})", c.name, c.protocol),
+        })
+        .collect();
+    entries.sort_by(|a, b| {
+        a.display_name
+            .to_lowercase()
+            .cmp(&b.display_name.to_lowercase())
+    });
+    entries
 }
 
 /// Loads UI settings into UI controls
@@ -215,7 +268,9 @@ pub fn load_ui_settings(
     session_restore_enabled: &CheckButton,
     prompt_on_restore: &CheckButton,
     max_age_row: &adw::SpinRow,
+    startup_action_dropdown: &DropDown,
     settings: &UiSettings,
+    connections: &[&Connection],
 ) {
     let target_index = match settings.color_scheme {
         ColorScheme::System => 0,
@@ -226,12 +281,12 @@ pub fn load_ui_settings(
     let mut child = color_scheme_box.first_child();
     let mut index = 0;
     while let Some(widget) = child {
-        if let Some(btn) = widget.downcast_ref::<ToggleButton>() {
-            if index == target_index {
-                btn.set_active(true);
-                crate::app::apply_color_scheme(settings.color_scheme);
-                break;
-            }
+        if let Some(btn) = widget.downcast_ref::<ToggleButton>()
+            && index == target_index
+        {
+            btn.set_active(true);
+            crate::app::apply_color_scheme(settings.color_scheme);
+            break;
         }
         child = widget.next_sibling();
         index += 1;
@@ -256,6 +311,27 @@ pub fn load_ui_settings(
 
     prompt_on_restore.set_sensitive(settings.session_restore.enabled);
     max_age_row.set_sensitive(settings.session_restore.enabled);
+
+    // Populate startup action dropdown with connections
+    let entries = build_startup_entries(connections);
+    let mut labels: Vec<String> = vec![i18n("Do nothing"), i18n("Local Shell")];
+    for entry in &entries {
+        labels.push(entry.display_name.clone());
+    }
+    let label_refs: Vec<&str> = labels.iter().map(String::as_str).collect();
+    startup_action_dropdown.set_model(Some(&StringList::new(&label_refs)));
+
+    // Select the current startup action
+    let selected = match &settings.startup_action {
+        StartupAction::None => 0,
+        StartupAction::LocalShell => 1,
+        StartupAction::Connection(id) => entries
+            .iter()
+            .position(|e| e.id == *id)
+            .map_or(0, |pos| pos + 2),
+    };
+    #[allow(clippy::cast_possible_truncation)]
+    startup_action_dropdown.set_selected(selected as u32);
 }
 
 /// Collects UI settings from UI controls
@@ -269,21 +345,23 @@ pub fn collect_ui_settings(
     session_restore_enabled: &CheckButton,
     prompt_on_restore: &CheckButton,
     max_age_row: &adw::SpinRow,
+    startup_action_dropdown: &DropDown,
+    connections: &[&Connection],
 ) -> UiSettings {
     let mut selected_scheme = ColorScheme::System;
     let mut child = color_scheme_box.first_child();
     let mut index = 0;
     while let Some(widget) = child {
-        if let Some(btn) = widget.downcast_ref::<ToggleButton>() {
-            if btn.is_active() {
-                selected_scheme = match index {
-                    0 => ColorScheme::System,
-                    1 => ColorScheme::Light,
-                    2 => ColorScheme::Dark,
-                    _ => ColorScheme::System,
-                };
-                break;
-            }
+        if let Some(btn) = widget.downcast_ref::<ToggleButton>()
+            && btn.is_active()
+        {
+            selected_scheme = match index {
+                0 => ColorScheme::System,
+                1 => ColorScheme::Light,
+                2 => ColorScheme::Dark,
+                _ => ColorScheme::System,
+            };
+            break;
         }
         child = widget.next_sibling();
         index += 1;
@@ -295,6 +373,17 @@ pub fn collect_ui_settings(
     let language = languages
         .get(lang_idx)
         .map_or_else(|| "system".to_string(), |(code, _)| (*code).to_string());
+
+    // Resolve startup action from dropdown index
+    let entries = build_startup_entries(connections);
+    let startup_idx = startup_action_dropdown.selected() as usize;
+    let startup_action = match startup_idx {
+        0 => StartupAction::None,
+        1 => StartupAction::LocalShell,
+        n => entries
+            .get(n - 2)
+            .map_or(StartupAction::None, |e| StartupAction::Connection(e.id)),
+    };
 
     UiSettings {
         color_scheme: selected_scheme,
@@ -314,5 +403,6 @@ pub fn collect_ui_settings(
             saved_sessions: Vec::new(),
         },
         search_history: Vec::new(), // Preserve existing history from current settings
+        startup_action,
     }
 }

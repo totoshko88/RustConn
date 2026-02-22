@@ -189,7 +189,7 @@ fn cmd_template_create(
             return Err(CliError::Template(format!(
                 "Unknown protocol '{protocol}'. \
                  Supported: ssh, rdp, vnc, spice"
-            )))
+            )));
         }
     };
 
@@ -293,10 +293,10 @@ fn find_template<'a>(
     templates: &'a [ConnectionTemplate],
     name_or_id: &str,
 ) -> Result<&'a ConnectionTemplate, CliError> {
-    if let Ok(uuid) = uuid::Uuid::parse_str(name_or_id) {
-        if let Some(template) = templates.iter().find(|t| t.id == uuid) {
-            return Ok(template);
-        }
+    if let Ok(uuid) = uuid::Uuid::parse_str(name_or_id)
+        && let Some(template) = templates.iter().find(|t| t.id == uuid)
+    {
+        return Ok(template);
     }
 
     let matches: Vec<_> = templates

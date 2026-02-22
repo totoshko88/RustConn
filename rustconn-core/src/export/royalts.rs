@@ -12,7 +12,9 @@ use uuid::Uuid;
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
 use crate::tracing::span_names;
 
-use super::{ExportError, ExportFormat, ExportOptions, ExportResult, ExportResult2, ExportTarget};
+use super::{
+    ExportError, ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
+};
 
 /// Royal TS XML exporter.
 ///
@@ -101,10 +103,10 @@ impl RoyalTsExporter {
         let _ = writeln!(output, "    <ID>{id}</ID>");
         let _ = writeln!(output, "    <Name>{}</Name>", escape_xml(&group.name));
 
-        if let Some(parent_id) = group.parent_id {
-            if let Some(parent_royal_id) = group_map.get(&parent_id) {
-                let _ = writeln!(output, "    <ParentID>{parent_royal_id}</ParentID>");
-            }
+        if let Some(parent_id) = group.parent_id
+            && let Some(parent_royal_id) = group_map.get(&parent_id)
+        {
+            let _ = writeln!(output, "    <ParentID>{parent_royal_id}</ParentID>");
         }
 
         output.push_str("  </RoyalFolder>\n");
@@ -123,10 +125,10 @@ impl RoyalTsExporter {
         let _ = writeln!(output, "    <URI>{}</URI>", escape_xml(&conn.host));
         let _ = writeln!(output, "    <Port>{}</Port>", conn.port);
 
-        if let Some(group_id) = conn.group_id {
-            if let Some(royal_group_id) = group_map.get(&group_id) {
-                let _ = writeln!(output, "    <ParentID>{royal_group_id}</ParentID>");
-            }
+        if let Some(group_id) = conn.group_id
+            && let Some(royal_group_id) = group_map.get(&group_id)
+        {
+            let _ = writeln!(output, "    <ParentID>{royal_group_id}</ParentID>");
         }
 
         if let Some(ref username) = conn.username {
@@ -138,14 +140,14 @@ impl RoyalTsExporter {
         }
 
         // SSH-specific options
-        if let ProtocolConfig::Ssh(ref ssh_config) = conn.protocol_config {
-            if let Some(ref key_path) = ssh_config.key_path {
-                let _ = writeln!(
-                    output,
-                    "    <PrivateKeyFile>{}</PrivateKeyFile>",
-                    escape_xml(&key_path.display().to_string())
-                );
-            }
+        if let ProtocolConfig::Ssh(ref ssh_config) = conn.protocol_config
+            && let Some(ref key_path) = ssh_config.key_path
+        {
+            let _ = writeln!(
+                output,
+                "    <PrivateKeyFile>{}</PrivateKeyFile>",
+                escape_xml(&key_path.display().to_string())
+            );
         }
 
         output.push_str("  </RoyalSSHConnection>\n");
@@ -164,10 +166,10 @@ impl RoyalTsExporter {
         let _ = writeln!(output, "    <URI>{}</URI>", escape_xml(&conn.host));
         let _ = writeln!(output, "    <Port>{}</Port>", conn.port);
 
-        if let Some(group_id) = conn.group_id {
-            if let Some(royal_group_id) = group_map.get(&group_id) {
-                let _ = writeln!(output, "    <ParentID>{royal_group_id}</ParentID>");
-            }
+        if let Some(group_id) = conn.group_id
+            && let Some(royal_group_id) = group_map.get(&group_id)
+        {
+            let _ = writeln!(output, "    <ParentID>{royal_group_id}</ParentID>");
         }
 
         if let Some(ref username) = conn.username {
@@ -225,17 +227,17 @@ impl RoyalTsExporter {
         let _ = writeln!(output, "    <URI>{}</URI>", escape_xml(&conn.host));
         let _ = writeln!(output, "    <VNCPort>{}</VNCPort>", conn.port);
 
-        if let Some(group_id) = conn.group_id {
-            if let Some(royal_group_id) = group_map.get(&group_id) {
-                let _ = writeln!(output, "    <ParentID>{royal_group_id}</ParentID>");
-            }
+        if let Some(group_id) = conn.group_id
+            && let Some(royal_group_id) = group_map.get(&group_id)
+        {
+            let _ = writeln!(output, "    <ParentID>{royal_group_id}</ParentID>");
         }
 
         // VNC-specific options
-        if let ProtocolConfig::Vnc(ref vnc_config) = conn.protocol_config {
-            if vnc_config.view_only {
-                output.push_str("    <ViewOnly>true</ViewOnly>\n");
-            }
+        if let ProtocolConfig::Vnc(ref vnc_config) = conn.protocol_config
+            && vnc_config.view_only
+        {
+            output.push_str("    <ViewOnly>true</ViewOnly>\n");
         }
 
         output.push_str("  </RoyalVNCConnection>\n");
@@ -262,7 +264,7 @@ impl ExportTarget for RoyalTsExporter {
         connections: &[Connection],
         groups: &[ConnectionGroup],
         options: &ExportOptions,
-    ) -> ExportResult2<ExportResult> {
+    ) -> ExportOperationResult<ExportResult> {
         let mut result = ExportResult::new();
 
         // Filter supported connections and count skipped
@@ -304,7 +306,7 @@ impl ExportTarget for RoyalTsExporter {
         Ok(result)
     }
 
-    fn export_connection(&self, connection: &Connection) -> ExportResult2<String> {
+    fn export_connection(&self, connection: &Connection) -> ExportOperationResult<String> {
         if !matches!(
             connection.protocol,
             ProtocolType::Ssh | ProtocolType::Rdp | ProtocolType::Vnc

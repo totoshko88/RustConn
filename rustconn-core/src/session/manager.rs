@@ -9,15 +9,12 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
-use crate::error::SessionError;
+use crate::error::{SessionError, SessionResult};
 use crate::models::Connection;
 use crate::protocol::ProtocolRegistry;
 
 use super::logger::{LogConfig, LogContext, SessionLogger};
 use super::session::{Session, SessionState, SessionType};
-
-/// Result type for session operations
-pub type SessionResult<T> = Result<T, SessionError>;
 
 /// Default health check interval in seconds
 pub const DEFAULT_HEALTH_CHECK_INTERVAL_SECS: u64 = 30;
@@ -248,27 +245,27 @@ impl SessionManager {
                 match SessionLogger::new(config.clone(), &context, None) {
                     Ok(logger) => {
                         let log_path = logger.log_path().to_path_buf();
-                        eprintln!(
-                            "Session logging enabled for '{}': {}",
-                            connection.name,
-                            log_path.display()
+                        tracing::info!(
+                            connection = %connection.name,
+                            path = %log_path.display(),
+                            "Session logging enabled"
                         );
                         session.set_log_file(log_path);
                         self.session_loggers.insert(session_id, logger);
                     }
                     Err(e) => {
-                        // Log detailed error for debugging
-                        eprintln!(
-                            "Warning: Failed to create session logger for '{}': {}",
-                            connection.name, e
+                        tracing::warn!(
+                            %e,
+                            connection = %connection.name,
+                            path_template = %config.path_template,
+                            "Failed to create session logger"
                         );
-                        eprintln!("  Log config path template: {}", config.path_template);
                     }
                 }
             } else {
-                eprintln!(
-                    "Warning: Logging enabled but no log config set for session '{}'",
-                    connection.name
+                tracing::warn!(
+                    connection = %connection.name,
+                    "Logging enabled but no log config set for session"
                 );
             }
         }
@@ -314,10 +311,10 @@ impl SessionManager {
         })?;
 
         // Close the session logger (this will finalize the log file)
-        if let Some(mut logger) = self.session_loggers.remove(&session_id) {
-            if let Err(e) = logger.close() {
-                eprintln!("Warning: Failed to close session logger: {e}");
-            }
+        if let Some(mut logger) = self.session_loggers.remove(&session_id)
+            && let Err(e) = logger.close()
+        {
+            tracing::warn!(%e, "Failed to close session logger");
         }
 
         Ok(())
@@ -338,10 +335,10 @@ impl SessionManager {
             .map_err(|e| SessionError::TerminateFailed(format!("Failed to kill process: {e}")))?;
 
         // Close the session logger (this will finalize the log file)
-        if let Some(mut logger) = self.session_loggers.remove(&session_id) {
-            if let Err(e) = logger.close() {
-                eprintln!("Warning: Failed to close session logger: {e}");
-            }
+        if let Some(mut logger) = self.session_loggers.remove(&session_id)
+            && let Err(e) = logger.close()
+        {
+            tracing::warn!(%e, "Failed to close session logger");
         }
 
         Ok(())
@@ -419,10 +416,10 @@ impl SessionManager {
         let mut first_error: Option<SessionError> = None;
 
         for session_id in session_ids {
-            if let Err(e) = self.terminate_session(session_id) {
-                if first_error.is_none() {
-                    first_error = Some(e);
-                }
+            if let Err(e) = self.terminate_session(session_id)
+                && first_error.is_none()
+            {
+                first_error = Some(e);
             }
         }
 

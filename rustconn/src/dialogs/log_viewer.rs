@@ -17,34 +17,29 @@ use crate::i18n::i18n;
 
 /// Log viewer dialog for browsing and viewing session logs
 pub struct LogViewerDialog {
-    window: adw::Window,
+    dialog: adw::Dialog,
     log_list: ListBox,
     log_content: TextView,
     log_dir: PathBuf,
     selected_file: Rc<RefCell<Option<PathBuf>>>,
     /// Maps row index to file path
     file_paths: Rc<RefCell<Vec<PathBuf>>>,
+    parent: Option<gtk4::Widget>,
 }
 
 impl LogViewerDialog {
     /// Creates a new log viewer dialog
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
-        let window = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(i18n("Session Logs"))
-            .modal(true)
-            .default_width(600)
-            .default_height(500)
+            .content_width(600)
+            .content_height(500)
             .build();
-        window.set_size_request(350, 300);
-
-        if let Some(p) = parent {
-            window.set_transient_for(Some(p));
-        }
 
         // Create UI components
         let (toolbar_view, paned, close_btn, refresh_btn) = Self::create_header_and_layout();
-        window.set_content(Some(&toolbar_view));
+        dialog.set_child(Some(&toolbar_view));
 
         let (log_list, list_scrolled) = Self::create_log_list();
         let (log_content, content_scrolled) = Self::create_content_view();
@@ -58,33 +53,37 @@ impl LogViewerDialog {
         let file_paths: Rc<RefCell<Vec<PathBuf>>> = Rc::new(RefCell::new(Vec::new()));
 
         // Connect close button
-        let window_clone = window.clone();
+        let dialog_clone = dialog.clone();
         close_btn.connect_clicked(move |_| {
-            window_clone.close();
+            dialog_clone.close();
         });
 
-        let dialog = Self {
-            window,
+        let stored_parent: Option<gtk4::Widget> =
+            parent.map(|p| p.clone().upcast::<gtk4::Widget>());
+
+        let viewer = Self {
+            dialog,
             log_list,
             log_content,
             log_dir,
             selected_file,
             file_paths,
+            parent: stored_parent,
         };
 
         // Connect refresh button
-        let log_list_clone = dialog.log_list.clone();
-        let log_dir_clone = dialog.log_dir.clone();
-        let file_paths_clone = dialog.file_paths.clone();
+        let log_list_clone = viewer.log_list.clone();
+        let log_dir_clone = viewer.log_dir.clone();
+        let file_paths_clone = viewer.file_paths.clone();
         refresh_btn.connect_clicked(move |_| {
             Self::populate_log_list_static(&log_list_clone, &log_dir_clone, &file_paths_clone);
         });
 
         // Connect list selection
-        let content_clone = dialog.log_content.clone();
-        let selected_clone = dialog.selected_file.clone();
-        let file_paths_for_select = dialog.file_paths.clone();
-        dialog.log_list.connect_row_selected(move |_, row| {
+        let content_clone = viewer.log_content.clone();
+        let selected_clone = viewer.selected_file.clone();
+        let file_paths_for_select = viewer.file_paths.clone();
+        viewer.log_list.connect_row_selected(move |_, row| {
             if let Some(row) = row {
                 let index = row.index();
                 if index >= 0 {
@@ -99,24 +98,19 @@ impl LogViewerDialog {
         });
 
         // Initial population
-        dialog.populate_log_list();
+        viewer.populate_log_list();
 
-        dialog
+        viewer
     }
 
     /// Creates the header bar and main layout components
     fn create_header_and_layout() -> (adw::ToolbarView, Paned, Button, Button) {
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-
-        let close_btn = Button::builder().label(i18n("Close")).build();
-        let refresh_btn = Button::builder()
-            .icon_name("view-refresh-symbolic")
-            .tooltip_text(&i18n("Refresh log list"))
-            .build();
-        header.pack_start(&close_btn);
-        header.pack_end(&refresh_btn);
+        let (header, close_btn, refresh_btn) = super::widgets::dialog_header("Close", "Refresh");
+        // Override: refresh button uses icon instead of text label
+        refresh_btn.set_label("");
+        refresh_btn.set_icon_name("view-refresh-symbolic");
+        refresh_btn.set_tooltip_text(Some(&i18n("Refresh log list")));
+        refresh_btn.remove_css_class("suggested-action");
 
         let paned = Paned::new(Orientation::Horizontal);
         paned.set_position(250);
@@ -360,12 +354,13 @@ impl LogViewerDialog {
 
     /// Shows the dialog
     pub fn show(&self) {
-        self.window.present();
+        self.dialog
+            .present(self.parent.as_ref().map(|w| w as &gtk4::Widget));
     }
 
-    /// Returns a reference to the underlying window
+    /// Returns a reference to the underlying dialog
     #[must_use]
-    pub const fn window(&self) -> &adw::Window {
-        &self.window
+    pub const fn dialog(&self) -> &adw::Dialog {
+        &self.dialog
     }
 }

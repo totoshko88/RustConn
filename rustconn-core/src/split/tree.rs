@@ -453,26 +453,26 @@ impl PanelNode {
             }
             Self::Split(split) => {
                 // Check if the panel to remove is a direct child
-                if let Self::Leaf(first_panel) = split.first.as_ref() {
-                    if first_panel.id == panel_id {
-                        // Remove first child, promote second
-                        let session = first_panel.session;
-                        let second =
-                            std::mem::replace(split.second.as_mut(), Self::Leaf(LeafPanel::new()));
-                        *self = second;
-                        return RemoveResult::Removed(session);
-                    }
+                if let Self::Leaf(first_panel) = split.first.as_ref()
+                    && first_panel.id == panel_id
+                {
+                    // Remove first child, promote second
+                    let session = first_panel.session;
+                    let second =
+                        std::mem::replace(split.second.as_mut(), Self::Leaf(LeafPanel::new()));
+                    *self = second;
+                    return RemoveResult::Removed(session);
                 }
 
-                if let Self::Leaf(second_panel) = split.second.as_ref() {
-                    if second_panel.id == panel_id {
-                        // Remove second child, promote first
-                        let session = second_panel.session;
-                        let first =
-                            std::mem::replace(split.first.as_mut(), Self::Leaf(LeafPanel::new()));
-                        *self = first;
-                        return RemoveResult::Removed(session);
-                    }
+                if let Self::Leaf(second_panel) = split.second.as_ref()
+                    && second_panel.id == panel_id
+                {
+                    // Remove second child, promote first
+                    let session = second_panel.session;
+                    let first =
+                        std::mem::replace(split.first.as_mut(), Self::Leaf(LeafPanel::new()));
+                    *self = first;
+                    return RemoveResult::Removed(session);
                 }
 
                 // Recursively search in children

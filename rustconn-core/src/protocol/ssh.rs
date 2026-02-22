@@ -67,15 +67,14 @@ impl Protocol for SshProtocol {
         if matches!(
             ssh_config.auth_method,
             SshAuthMethod::PublicKey | SshAuthMethod::SecurityKey
-        ) {
-            if let Some(key_path) = &ssh_config.key_path {
-                if !key_path.as_os_str().is_empty() && !key_path.exists() {
-                    return Err(ProtocolError::InvalidConfig(format!(
-                        "SSH key file not found: {}",
-                        key_path.display()
-                    )));
-                }
-            }
+        ) && let Some(key_path) = &ssh_config.key_path
+            && !key_path.as_os_str().is_empty()
+            && !key_path.exists()
+        {
+            return Err(ProtocolError::InvalidConfig(format!(
+                "SSH key file not found: {}",
+                key_path.display()
+            )));
         }
 
         Ok(())

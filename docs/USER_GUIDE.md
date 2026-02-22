@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.8.9** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.9.0** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, SFTP, Telnet, Serial, Kubernetes protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -23,9 +23,10 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
     - [Wake-on-LAN](#wake-on-lan)
     - [Flatpak Components](#flatpak-components)
 11. [Settings](#settings)
-12. [Keyboard Shortcuts](#keyboard-shortcuts)
-13. [CLI Usage](#cli-usage)
-14. [Troubleshooting](#troubleshooting)
+12. [Startup Action](#startup-action)
+13. [Keyboard Shortcuts](#keyboard-shortcuts)
+14. [CLI Usage](#cli-usage)
+15. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -831,6 +832,60 @@ Searches PATH and user directories (`~/bin/`, `~/.local/bin/`, `~/.cargo/bin/`).
 
 ---
 
+## Startup Action
+
+Configure which session opens automatically when RustConn starts. Useful for users who always work with the same connection or want RustConn as their default terminal.
+
+### Settings (GUI)
+
+1. Open **Settings** (Ctrl+,)
+2. Go to **Appearance** tab
+3. Find the **Startup** group
+4. Select an action from the **On startup** dropdown:
+   - **Do nothing** — default behavior, no session opens
+   - **Local Shell** — open a local terminal tab
+   - **\<Connection Name\> (Protocol)** — connect to a specific saved connection
+
+The setting is persisted and applied on every launch.
+
+### CLI Override
+
+CLI flags override the persisted setting for a single launch:
+
+```bash
+# Open a local shell
+rustconn --shell
+
+# Connect by name (case-insensitive)
+rustconn --connect "Production Server"
+
+# Connect by UUID
+rustconn --connect 550e8400-e29b-41d4-a716-446655440000
+```
+
+### Use RustConn as Default Terminal
+
+Create a custom `.desktop` file that launches RustConn with a local shell:
+
+```ini
+[Desktop Entry]
+Name=RustConn Shell
+Exec=rustconn --shell
+Icon=io.github.totoshko88.RustConn
+Type=Application
+Categories=System;TerminalEmulator;
+```
+
+Save as `~/.local/share/applications/rustconn-shell.desktop`, then set it as the default terminal in your desktop environment settings.
+
+### Notes
+
+- CLI flags (`--shell`, `--connect`) take priority over the persisted setting
+- If `--connect` specifies a name that doesn't match any saved connection, a toast notification is shown
+- The startup action runs after the main window is presented, so the UI is fully loaded before the session opens
+
+---
+
 ## Adaptive UI
 
 RustConn adapts to different window sizes using `adw::Breakpoint` and responsive dialog sizing.
@@ -896,6 +951,20 @@ Press **Ctrl+?** or **F1** for searchable shortcuts dialog.
 ---
 
 ## CLI Usage
+
+### GUI Startup Flags
+
+The GUI binary (`rustconn`) accepts startup flags:
+
+```bash
+rustconn --shell                        # Open local shell on startup
+rustconn --connect "My Server"          # Connect by name (case-insensitive)
+rustconn --connect 550e8400-...         # Connect by UUID
+rustconn --version                      # Print version
+rustconn --help                         # Print usage
+```
+
+These flags override the startup action configured in Settings.
 
 ### Commands
 
@@ -986,7 +1055,7 @@ rustconn-cli var set my_var "my_value"
 rustconn-cli var set api_key "secret123" --secret
 rustconn-cli var delete "my_var"
 
-# Secret Management (New in 0.6.7)
+# Secret Management
 rustconn-cli secret status                    # Show backend status
 rustconn-cli secret get "My Server"           # Get credentials
 rustconn-cli secret get "My Server" --backend keepass

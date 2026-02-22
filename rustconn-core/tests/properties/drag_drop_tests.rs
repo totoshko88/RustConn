@@ -5,8 +5,8 @@
 
 use proptest::prelude::*;
 use rustconn_core::{
-    calculate_drop_position, calculate_indicator_y, calculate_row_index, is_valid_drop_position,
-    DropConfig, DropPosition, ItemType,
+    DropConfig, DropPosition, ItemType, calculate_drop_position, calculate_indicator_y,
+    calculate_row_index, is_valid_drop_position,
 };
 
 /// Strategy for generating item types

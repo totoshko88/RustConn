@@ -14,7 +14,7 @@ mod types;
 pub use types::{SessionWidgetStorage, TerminalSession};
 
 use gtk4::prelude::*;
-use gtk4::{gio, glib, Box as GtkBox, Orientation, Widget};
+use gtk4::{Box as GtkBox, Orientation, Widget, gio, glib};
 use libadwaita as adw;
 use regex::Regex;
 use rustconn_core::models::AutomationConfig;
@@ -166,10 +166,10 @@ impl TerminalNotebook {
                 }
 
                 // Call the on_page_closed callback to update sidebar status
-                if let Some(conn_id) = connection_id {
-                    if let Some(ref callback) = *on_page_closed.borrow() {
-                        callback(session_id, conn_id);
-                    }
+                if let Some(conn_id) = connection_id
+                    && let Some(ref callback) = *on_page_closed.borrow()
+                {
+                    callback(session_id, conn_id);
                 }
 
                 // Clean up split layout for this session's tab
@@ -275,28 +275,28 @@ impl TerminalNotebook {
         terminal.set_vexpand(true);
 
         // Setup automation if configured
-        if let Some(cfg) = automation {
-            if !cfg.expect_rules.is_empty() {
-                let mut triggers = Vec::new();
-                for rule in &cfg.expect_rules {
-                    if !rule.enabled {
-                        continue;
-                    }
-                    if let Ok(regex) = Regex::new(&rule.pattern) {
-                        triggers.push(Trigger {
-                            pattern: regex,
-                            response: rule.response.clone(),
-                            one_shot: true,
-                        });
-                    }
+        if let Some(cfg) = automation
+            && !cfg.expect_rules.is_empty()
+        {
+            let mut triggers = Vec::new();
+            for rule in &cfg.expect_rules {
+                if !rule.enabled {
+                    continue;
                 }
+                if let Ok(regex) = Regex::new(&rule.pattern) {
+                    triggers.push(Trigger {
+                        pattern: regex,
+                        response: rule.response.clone(),
+                        one_shot: true,
+                    });
+                }
+            }
 
-                if !triggers.is_empty() {
-                    let session = AutomationSession::new(terminal.clone(), triggers);
-                    self.automation_sessions
-                        .borrow_mut()
-                        .insert(session_id, session);
-                }
+            if !triggers.is_empty() {
+                let session = AutomationSession::new(terminal.clone(), triggers);
+                self.automation_sessions
+                    .borrow_mut()
+                    .insert(session_id, session);
             }
         }
 
@@ -687,7 +687,7 @@ impl TerminalNotebook {
             gio::Cancellable::NONE,
             |result| {
                 if let Err(e) = result {
-                    eprintln!("Failed to spawn command: {e}");
+                    tracing::error!(%e, "Failed to spawn command");
                 }
             },
         );
@@ -1138,12 +1138,11 @@ impl TerminalNotebook {
         };
 
         // Check if terminal is already in this container (via scrolled window)
-        if let Some(parent) = terminal.parent() {
-            if let Some(grandparent) = parent.parent() {
-                if grandparent == child {
-                    return; // Already in place
-                }
-            }
+        if let Some(parent) = terminal.parent()
+            && let Some(grandparent) = parent.parent()
+            && grandparent == child
+        {
+            return; // Already in place
         }
 
         // Remove terminal from current parent (if any)

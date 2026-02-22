@@ -13,6 +13,8 @@
 use super::dir_watcher::{DirectoryChange, DirectoryWatcher, WatchRequest};
 use ironrdp::core::impl_as_any;
 use ironrdp::pdu::PduResult;
+use ironrdp::rdpdr::RdpdrBackend;
+use ironrdp::rdpdr::pdu::RdpdrPdu;
 use ironrdp::rdpdr::pdu::efs::{
     Boolean, ClientDriveQueryDirectoryResponse, ClientDriveQueryInformationResponse,
     ClientDriveQueryVolumeInformationResponse, ClientDriveSetInformationResponse,
@@ -29,8 +31,6 @@ use ironrdp::rdpdr::pdu::efs::{
     ServerDriveQueryVolumeInformationRequest, ServerDriveSetInformationRequest,
 };
 use ironrdp::rdpdr::pdu::esc::{ScardCall, ScardIoCtlCode};
-use ironrdp::rdpdr::pdu::RdpdrPdu;
-use ironrdp::rdpdr::RdpdrBackend;
 use ironrdp::svc::SvcMessage;
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
@@ -105,7 +105,10 @@ impl RustConnRdpdrBackend {
                 Some(watcher)
             }
             Err(e) => {
-                warn!("Failed to initialize directory watcher: {}. Directory change notifications will be disabled.", e);
+                warn!(
+                    "Failed to initialize directory watcher: {}. Directory change notifications will be disabled.",
+                    e
+                );
                 None
             }
         };
@@ -343,21 +346,20 @@ impl RustConnRdpdrBackend {
                     if (req.create_disposition == CreateDisposition::FILE_CREATE
                         || req.create_disposition == CreateDisposition::FILE_OPEN_IF)
                         && std::fs::create_dir_all(&path).is_ok()
+                        && let Ok(file) = OpenOptions::new().read(true).open(&path)
                     {
-                        if let Ok(file) = OpenOptions::new().read(true).open(&path) {
-                            self.file_handles.insert(file_id, file);
-                            self.file_paths.insert(file_id, path);
-                            return Ok(vec![SvcMessage::from(RdpdrPdu::DeviceCreateResponse(
-                                DeviceCreateResponse {
-                                    device_io_reply: DeviceIoResponse::new(
-                                        req.device_io_request,
-                                        NtStatus::SUCCESS,
-                                    ),
-                                    file_id,
-                                    information: Information::FILE_SUPERSEDED,
-                                },
-                            ))]);
-                        }
+                        self.file_handles.insert(file_id, file);
+                        self.file_paths.insert(file_id, path);
+                        return Ok(vec![SvcMessage::from(RdpdrPdu::DeviceCreateResponse(
+                            DeviceCreateResponse {
+                                device_io_reply: DeviceIoResponse::new(
+                                    req.device_io_request,
+                                    NtStatus::SUCCESS,
+                                ),
+                                file_id,
+                                information: Information::FILE_SUPERSEDED,
+                            },
+                        ))]);
                     }
                 }
             }
@@ -451,25 +453,25 @@ impl RustConnRdpdrBackend {
     #[allow(clippy::unnecessary_wraps)]
     fn handle_read(&mut self, req: DeviceReadRequest) -> PduResult<Vec<SvcMessage>> {
         let file_id = req.device_io_request.file_id;
-        if let Some(file) = self.file_handles.get_mut(&file_id) {
-            if file.seek(SeekFrom::Start(req.offset)).is_ok() {
-                let mut buf = vec![0u8; req.length as usize];
-                match file.read(&mut buf) {
-                    Ok(n) => {
-                        buf.truncate(n);
-                        return Ok(vec![SvcMessage::from(RdpdrPdu::DeviceReadResponse(
-                            DeviceReadResponse {
-                                device_io_reply: DeviceIoResponse::new(
-                                    req.device_io_request,
-                                    NtStatus::SUCCESS,
-                                ),
-                                read_data: buf,
-                            },
-                        ))]);
-                    }
-                    Err(e) => {
-                        warn!("Read error: {}", e);
-                    }
+        if let Some(file) = self.file_handles.get_mut(&file_id)
+            && file.seek(SeekFrom::Start(req.offset)).is_ok()
+        {
+            let mut buf = vec![0u8; req.length as usize];
+            match file.read(&mut buf) {
+                Ok(n) => {
+                    buf.truncate(n);
+                    return Ok(vec![SvcMessage::from(RdpdrPdu::DeviceReadResponse(
+                        DeviceReadResponse {
+                            device_io_reply: DeviceIoResponse::new(
+                                req.device_io_request,
+                                NtStatus::SUCCESS,
+                            ),
+                            read_data: buf,
+                        },
+                    ))]);
+                }
+                Err(e) => {
+                    warn!("Read error: {}", e);
                 }
             }
         }
@@ -487,24 +489,24 @@ impl RustConnRdpdrBackend {
     #[allow(clippy::unnecessary_wraps)]
     fn handle_write(&mut self, req: DeviceWriteRequest) -> PduResult<Vec<SvcMessage>> {
         let file_id = req.device_io_request.file_id;
-        if let Some(file) = self.file_handles.get_mut(&file_id) {
-            if file.seek(SeekFrom::Start(req.offset)).is_ok() {
-                match file.write(&req.write_data) {
-                    Ok(n) => {
-                        let _ = file.flush();
-                        return Ok(vec![SvcMessage::from(RdpdrPdu::DeviceWriteResponse(
-                            DeviceWriteResponse {
-                                device_io_reply: DeviceIoResponse::new(
-                                    req.device_io_request,
-                                    NtStatus::SUCCESS,
-                                ),
-                                length: n as u32,
-                            },
-                        ))]);
-                    }
-                    Err(e) => {
-                        warn!("Write error: {}", e);
-                    }
+        if let Some(file) = self.file_handles.get_mut(&file_id)
+            && file.seek(SeekFrom::Start(req.offset)).is_ok()
+        {
+            match file.write(&req.write_data) {
+                Ok(n) => {
+                    let _ = file.flush();
+                    return Ok(vec![SvcMessage::from(RdpdrPdu::DeviceWriteResponse(
+                        DeviceWriteResponse {
+                            device_io_reply: DeviceIoResponse::new(
+                                req.device_io_request,
+                                NtStatus::SUCCESS,
+                            ),
+                            length: n as u32,
+                        },
+                    ))]);
+                }
+                Err(e) => {
+                    warn!("Write error: {}", e);
                 }
             }
         }

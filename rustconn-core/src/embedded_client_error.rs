@@ -64,6 +64,10 @@ pub enum EmbeddedClientError {
     #[error("Unsupported feature: {0}")]
     Unsupported(String),
 
+    /// Unsupported VNC security type — auto-fallback to external viewer recommended
+    #[error("Unsupported security type: {0}")]
+    UnsupportedSecurityType(String),
+
     // === TLS (RDP, SPICE) ===
     /// TLS/SSL error
     #[error("TLS error: {0}")]

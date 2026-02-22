@@ -8,13 +8,13 @@ use ironrdp::connector::{
 };
 use ironrdp::pdu::gcc::KeyboardType;
 use ironrdp::pdu::rdp::capability_sets::{
-    client_codecs_capabilities, BitmapCodecs, MajorPlatformType,
+    BitmapCodecs, MajorPlatformType, client_codecs_capabilities,
 };
 use ironrdp::pdu::rdp::client_info::{PerformanceFlags, TimezoneInfo};
 use ironrdp::rdpdr::Rdpdr;
 use ironrdp::rdpsnd::client::Rdpsnd;
-use ironrdp_tokio::reqwest::ReqwestNetworkClient;
 use ironrdp_tokio::TokioFramed;
+use ironrdp_tokio::reqwest::ReqwestNetworkClient;
 use secrecy::ExposeSecret;
 use std::net::SocketAddr;
 use tokio::net::TcpStream;
@@ -30,7 +30,7 @@ pub async fn establish_connection(
     config: &RdpClientConfig,
     event_tx: std::sync::mpsc::Sender<RdpClientEvent>,
 ) -> Result<(UpgradedFramed, ConnectionResult), RdpClientError> {
-    use tokio::time::{timeout, Duration};
+    use tokio::time::{Duration, timeout};
 
     let server_addr = config.server_address();
     let connect_timeout = Duration::from_secs(config.timeout_secs);

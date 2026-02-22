@@ -124,11 +124,11 @@ impl KubernetesProtocol {
         cmd.push(config.pod.as_ref()?.clone());
 
         // Container
-        if let Some(ref container) = config.container {
-            if !container.is_empty() {
-                cmd.push("-c".to_string());
-                cmd.push(container.clone());
-            }
+        if let Some(ref container) = config.container
+            && !container.is_empty()
+        {
+            cmd.push("-c".to_string());
+            cmd.push(container.clone());
         }
 
         // Custom args — filter out values with injection characters
@@ -205,18 +205,18 @@ impl KubernetesProtocol {
             cmd.push(kubeconfig.display().to_string());
         }
 
-        if let Some(ref context) = config.context {
-            if !context.is_empty() {
-                cmd.push("--context".to_string());
-                cmd.push(context.clone());
-            }
+        if let Some(ref context) = config.context
+            && !context.is_empty()
+        {
+            cmd.push("--context".to_string());
+            cmd.push(context.clone());
         }
 
-        if let Some(ref namespace) = config.namespace {
-            if !namespace.is_empty() {
-                cmd.push("--namespace".to_string());
-                cmd.push(namespace.clone());
-            }
+        if let Some(ref namespace) = config.namespace
+            && !namespace.is_empty()
+        {
+            cmd.push("--namespace".to_string());
+            cmd.push(namespace.clone());
         }
     }
 }

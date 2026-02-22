@@ -22,6 +22,8 @@ use rustconn_core::models::SharedFolder;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::i18n::i18n;
+
 /// Return type for SPICE options creation
 #[allow(clippy::type_complexity)]
 pub type SpiceOptionsWidgets = (
@@ -79,7 +81,9 @@ fn create_security_group() -> (
     Button,
     CheckButton,
 ) {
-    let security_group = adw::PreferencesGroup::builder().title("Security").build();
+    let security_group = adw::PreferencesGroup::builder()
+        .title(i18n("Security"))
+        .build();
 
     // TLS enabled
     let (tls_row, tls_check) = CheckboxRowBuilder::new("TLS Encryption")
@@ -102,8 +106,8 @@ fn create_security_group() -> (
     ca_cert_box.append(&ca_cert_button);
 
     let ca_cert_row = adw::ActionRow::builder()
-        .title("CA Certificate")
-        .subtitle("Certificate authority for TLS verification")
+        .title(i18n("CA Certificate"))
+        .subtitle(i18n("Certificate authority for TLS verification"))
         .build();
     ca_cert_row.add_suffix(&ca_cert_box);
     security_group.add(&ca_cert_row);
@@ -125,7 +129,9 @@ fn create_security_group() -> (
 
 /// Creates the Features preferences group
 fn create_features_group() -> (adw::PreferencesGroup, CheckButton, CheckButton, DropDown) {
-    let features_group = adw::PreferencesGroup::builder().title("Features").build();
+    let features_group = adw::PreferencesGroup::builder()
+        .title(i18n("Features"))
+        .build();
 
     // USB redirection
     let (usb_row, usb_check) = CheckboxRowBuilder::new("USB Redirection")
@@ -147,8 +153,8 @@ fn create_features_group() -> (adw::PreferencesGroup, CheckButton, CheckButton, 
     compression_dropdown.set_valign(gtk4::Align::Center);
 
     let compression_row = adw::ActionRow::builder()
-        .title("Image Compression")
-        .subtitle("Algorithm for image data")
+        .title(i18n("Image Compression"))
+        .subtitle(i18n("Algorithm for image data"))
         .build();
     compression_row.add_suffix(&compression_dropdown);
     features_group.add(&compression_row);

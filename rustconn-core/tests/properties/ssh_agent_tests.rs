@@ -3,7 +3,7 @@
 //! Tests correctness properties for SSH agent output parsing and key management.
 
 use proptest::prelude::*;
-use rustconn_core::ssh_agent::{parse_agent_output, AgentError};
+use rustconn_core::ssh_agent::{AgentError, parse_agent_output};
 
 /// Generates a valid socket path component (alphanumeric with some special chars)
 fn arb_socket_path_component() -> impl Strategy<Value = String> {

@@ -2,8 +2,8 @@
 
 use proptest::prelude::*;
 use rustconn_core::session::{
-    PanelRestoreData, SessionRestoreData, SessionRestoreState, SessionType, SplitLayoutRestoreData,
-    RESTORE_STATE_VERSION,
+    PanelRestoreData, RESTORE_STATE_VERSION, SessionRestoreData, SessionRestoreState, SessionType,
+    SplitLayoutRestoreData,
 };
 use uuid::Uuid;
 

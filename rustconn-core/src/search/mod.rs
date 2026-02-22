@@ -482,19 +482,17 @@ impl SearchEngine {
         }
 
         // Score against group name
-        if let Some(group_id) = connection.group_id {
-            if let Some(group) = groups.iter().find(|g| g.id == group_id) {
-                let group_score = self.fuzzy_score(&query.text, &group.name);
-                if group_score > 0.0 {
-                    max_score = max_score.max(group_score * 0.7);
-                    result.matched_fields.push("group".to_string());
-                    if let Some(highlight) = self.find_highlight(&query.text, &group.name) {
-                        result.highlights.push(MatchHighlight::new(
-                            "group",
-                            highlight.0,
-                            highlight.1,
-                        ));
-                    }
+        if let Some(group_id) = connection.group_id
+            && let Some(group) = groups.iter().find(|g| g.id == group_id)
+        {
+            let group_score = self.fuzzy_score(&query.text, &group.name);
+            if group_score > 0.0 {
+                max_score = max_score.max(group_score * 0.7);
+                result.matched_fields.push("group".to_string());
+                if let Some(highlight) = self.find_highlight(&query.text, &group.name) {
+                    result
+                        .highlights
+                        .push(MatchHighlight::new("group", highlight.0, highlight.1));
                 }
             }
         }
@@ -836,11 +834,11 @@ impl DebouncedSearchEngine {
         if self.debouncer.should_proceed() {
             // Check cache first
             {
-                if let Ok(cache) = self.search_cache.lock() {
-                    if let Some(cached_results) = cache.get(&query.text) {
-                        self.search_pending.store(false, Ordering::SeqCst);
-                        return Some(cached_results.to_vec());
-                    }
+                if let Ok(cache) = self.search_cache.lock()
+                    && let Some(cached_results) = cache.get(&query.text)
+                {
+                    self.search_pending.store(false, Ordering::SeqCst);
+                    return Some(cached_results.to_vec());
                 }
             }
 
@@ -1223,10 +1221,12 @@ mod tests {
         let results = engine.search(&query, &connections, &groups);
 
         assert_eq!(results.len(), 1);
-        assert!(results[0]
-            .matched_fields
-            .iter()
-            .any(|f| f.contains("custom_property")));
+        assert!(
+            results[0]
+                .matched_fields
+                .iter()
+                .any(|f| f.contains("custom_property"))
+        );
     }
 
     #[test]

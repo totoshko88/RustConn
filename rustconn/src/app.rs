@@ -11,7 +11,7 @@ use libadwaita as adw;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::state::{create_shared_state, SharedAppState};
+use crate::state::{SharedAppState, create_shared_state};
 use crate::tray::{TrayManager, TrayMessage};
 use crate::window::MainWindow;
 use gettextrs::gettext;
@@ -74,7 +74,7 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     let state = match create_shared_state() {
         Ok(state) => state,
         Err(e) => {
-            eprintln!("Failed to initialize application state: {e}");
+            tracing::error!(%e, "Failed to initialize application state");
             show_error_dialog(app, &gettext("Initialization Error"), &e);
             return;
         }
@@ -91,13 +91,11 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
 
     // Initialize tray icon if enabled in settings
     let enable_tray = state.borrow().settings().ui.enable_tray_icon;
-    if enable_tray {
-        if let Some(tray) = TrayManager::new() {
-            // Update tray with initial state
-            let mut initial_cache = TrayStateCache::default();
-            update_tray_state(&tray, &state, &mut initial_cache);
-            *tray_manager.borrow_mut() = Some(tray);
-        }
+    if enable_tray && let Some(tray) = TrayManager::new() {
+        // Update tray with initial state
+        let mut initial_cache = TrayStateCache::default();
+        update_tray_state(&tray, &state, &mut initial_cache);
+        *tray_manager.borrow_mut() = Some(tray);
     }
 
     // Set up application actions
@@ -110,12 +108,39 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     let state_shutdown = state.clone();
     app.connect_shutdown(move |_| {
         if let Err(e) = state_shutdown.borrow().flush_persistence() {
-            eprintln!("Failed to flush persistence on shutdown: {e}");
+            tracing::error!(%e, "Failed to flush persistence on shutdown");
         }
     });
 
     // Present window immediately — no waiting for secret backends
     window.present();
+
+    // Execute startup action (CLI override takes precedence over settings)
+    {
+        use rustconn_core::config::StartupAction;
+
+        // 1. Check CLI override (--shell or --connect <uuid>)
+        let cli_action = crate::take_cli_startup_override();
+
+        // 2. Check CLI --connect <name> (deferred name resolution)
+        let cli_name_action = crate::take_cli_connect_name().and_then(|name| {
+            let state_ref = state.borrow();
+            state_ref
+                .find_connection_by_name(&name)
+                .map(|conn| StartupAction::Connection(conn.id))
+                .or_else(|| {
+                    tracing::warn!(name, "CLI --connect: connection not found by name");
+                    None
+                })
+        });
+
+        // CLI args override persisted setting
+        let action = cli_action
+            .or(cli_name_action)
+            .unwrap_or_else(|| state.borrow().settings().ui.startup_action.clone());
+
+        window.execute_startup_action(&action);
+    }
 
     // Initialize secret backends in a background thread after the window is visible.
     // Decryption is fast and runs on the main thread; the slow Bitwarden vault

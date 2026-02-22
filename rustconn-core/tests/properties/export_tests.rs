@@ -174,7 +174,7 @@ proptest! {
             );
 
             // Key path should match (if set)
-            if let (ProtocolConfig::Ssh(reimported_ssh), Some(ref original_key)) =
+            if let (ProtocolConfig::Ssh(reimported_ssh), Some(original_key)) =
                 (&reimported.protocol_config, &original.key_path)
             {
                 prop_assert_eq!(
@@ -301,15 +301,14 @@ proptest! {
         }
 
         // Property: ansible_ssh_private_key_file should be present if key_path is set
-        if let ProtocolConfig::Ssh(ref ssh_config) = conn.protocol_config {
-            if let Some(ref key_path) = ssh_config.key_path {
+        if let ProtocolConfig::Ssh(ref ssh_config) = conn.protocol_config
+            && let Some(ref key_path) = ssh_config.key_path {
                 prop_assert!(
                     entry.contains(&format!("ansible_ssh_private_key_file={}", key_path.display())),
                     "ansible_ssh_private_key_file should be present when key_path is set. Entry: {}",
                     entry
                 );
             }
-        }
     }
 
     /// **Feature: ssh-agent-cli, Property 5: Ansible Export Completeness (Groups)**
@@ -516,7 +515,7 @@ proptest! {
             );
 
             // Key path should match (if set)
-            if let (ProtocolConfig::Ssh(reimported_ssh), Some(ref original_key)) =
+            if let (ProtocolConfig::Ssh(reimported_ssh), Some(original_key)) =
                 (&reimported.protocol_config, &original.key_path)
             {
                 prop_assert_eq!(
@@ -581,15 +580,14 @@ proptest! {
         }
 
         // Property: IdentityFile should be present if key_path is set
-        if let ProtocolConfig::Ssh(ref ssh_config) = conn.protocol_config {
-            if let Some(ref key_path) = ssh_config.key_path {
+        if let ProtocolConfig::Ssh(ref ssh_config) = conn.protocol_config
+            && let Some(ref key_path) = ssh_config.key_path {
                 prop_assert!(
                     entry.contains(&format!("IdentityFile {}", key_path.display())),
                     "IdentityFile should be present when key_path is set. Entry:\n{}",
                     entry
                 );
             }
-        }
     }
 
     /// **Feature: ssh-agent-cli, Property 7: SSH Config Export with ProxyJump**
@@ -916,15 +914,14 @@ proptest! {
         );
 
         // Property: If key_path is set, should contain ssh_privatekey
-        if let ProtocolConfig::Ssh(ref ssh_config) = conn.protocol_config {
-            if let Some(ref key_path) = ssh_config.key_path {
+        if let ProtocolConfig::Ssh(ref ssh_config) = conn.protocol_config
+            && let Some(ref key_path) = ssh_config.key_path {
                 prop_assert!(
                     exported.contains(&format!("ssh_privatekey={}", key_path.display())),
                     "SSH connection with key should have ssh_privatekey. Exported:\n{}",
                     exported
                 );
             }
-        }
 
         // Property: If username is set, should contain username field
         if let Some(ref username) = conn.username {

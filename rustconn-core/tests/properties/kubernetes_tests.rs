@@ -154,8 +154,8 @@ proptest! {
         prop_assert_eq!(conn.protocol, deserialized.protocol);
         prop_assert_eq!(conn.name, deserialized.name);
         if let (
-            ProtocolConfig::Kubernetes(ref orig),
-            ProtocolConfig::Kubernetes(ref deser),
+            ProtocolConfig::Kubernetes(orig),
+            ProtocolConfig::Kubernetes(deser),
         ) = (&conn.protocol_config, &deserialized.protocol_config)
         {
             prop_assert_eq!(orig, deser);
@@ -289,11 +289,10 @@ proptest! {
     #[test]
     fn prop_k8s_build_command_shell_is_last(conn in arb_k8s_connection()) {
         let protocol = KubernetesProtocol::new();
-        if let Some(cmd) = protocol.build_command(&conn) {
-            if let ProtocolConfig::Kubernetes(ref cfg) = conn.protocol_config {
+        if let Some(cmd) = protocol.build_command(&conn)
+            && let ProtocolConfig::Kubernetes(ref cfg) = conn.protocol_config {
                 prop_assert_eq!(cmd.last().unwrap(), &cfg.shell);
             }
-        }
     }
 }
 

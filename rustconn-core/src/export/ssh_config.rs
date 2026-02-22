@@ -9,7 +9,9 @@ use tracing::{debug, info_span};
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
 use crate::tracing::span_names;
 
-use super::{ExportError, ExportFormat, ExportOptions, ExportResult, ExportResult2, ExportTarget};
+use super::{
+    ExportError, ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
+};
 
 /// SSH config file exporter.
 ///
@@ -161,7 +163,7 @@ impl ExportTarget for SshConfigExporter {
         connections: &[Connection],
         _groups: &[ConnectionGroup],
         options: &ExportOptions,
-    ) -> ExportResult2<ExportResult> {
+    ) -> ExportOperationResult<ExportResult> {
         let mut result = ExportResult::new();
 
         // Filter SSH connections and count skipped
@@ -193,7 +195,7 @@ impl ExportTarget for SshConfigExporter {
         Ok(result)
     }
 
-    fn export_connection(&self, connection: &Connection) -> ExportResult2<String> {
+    fn export_connection(&self, connection: &Connection) -> ExportOperationResult<String> {
         if connection.protocol != ProtocolType::Ssh {
             return Err(ExportError::UnsupportedProtocol(format!(
                 "{}",

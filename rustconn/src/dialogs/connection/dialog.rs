@@ -30,7 +30,7 @@ use rustconn_core::models::{
 use rustconn_core::session::LogConfig;
 use rustconn_core::variables::Variable;
 use rustconn_core::wol::{
-    MacAddress, WolConfig, DEFAULT_BROADCAST_ADDRESS, DEFAULT_WOL_PORT, DEFAULT_WOL_WAIT_SECONDS,
+    DEFAULT_BROADCAST_ADDRESS, DEFAULT_WOL_PORT, DEFAULT_WOL_WAIT_SECONDS, MacAddress, WolConfig,
 };
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -430,22 +430,16 @@ impl ConnectionDialog {
 
         // Add port forwarding group to SSH options panel
         // Navigate: ssh_box → ScrolledWindow → Clamp → content Box
-        if let Some(scrolled) = ssh_box.first_child() {
-            if let Some(scrolled_win) = scrolled.downcast_ref::<ScrolledWindow>() {
-                if let Some(clamp) = scrolled_win.child() {
-                    if let Some(adw_clamp) = clamp.downcast_ref::<adw::Clamp>() {
-                        if let Some(content) = adw_clamp.child() {
-                            if let Some(content_box) = content.downcast_ref::<GtkBox>() {
-                                let pf_group = ssh::create_port_forwarding_group(
-                                    &ssh_port_forwards_list,
-                                    &ssh_port_forwards,
-                                );
-                                content_box.append(&pf_group);
-                            }
-                        }
-                    }
-                }
-            }
+        if let Some(scrolled) = ssh_box.first_child()
+            && let Some(scrolled_win) = scrolled.downcast_ref::<ScrolledWindow>()
+            && let Some(clamp) = scrolled_win.child()
+            && let Some(adw_clamp) = clamp.downcast_ref::<adw::Clamp>()
+            && let Some(content) = adw_clamp.child()
+            && let Some(content_box) = content.downcast_ref::<GtkBox>()
+        {
+            let pf_group =
+                ssh::create_port_forwarding_group(&ssh_port_forwards_list, &ssh_port_forwards);
+            content_box.append(&pf_group);
         }
 
         protocol_stack.add_named(&ssh_box, Some("ssh"));
@@ -994,22 +988,20 @@ impl ConnectionDialog {
                 // Auto-populate if fields are empty
                 if idx > 0 {
                     let groups = groups_data_clone.borrow();
-                    if let Some((Some(group_id), _)) = groups.get(idx as usize) {
-                        if let Some(group) = full_groups_data_clone.borrow().get(group_id) {
-                            if username_entry_clone.text().is_empty() {
-                                if let Some(username) = &group.username {
-                                    if !username.is_empty() {
-                                        username_entry_clone.set_text(username);
-                                    }
-                                }
-                            }
-                            if domain_entry_clone.text().is_empty() {
-                                if let Some(domain) = &group.domain {
-                                    if !domain.is_empty() {
-                                        domain_entry_clone.set_text(domain);
-                                    }
-                                }
-                            }
+                    if let Some((Some(group_id), _)) = groups.get(idx as usize)
+                        && let Some(group) = full_groups_data_clone.borrow().get(group_id)
+                    {
+                        if username_entry_clone.text().is_empty()
+                            && let Some(username) = &group.username
+                            && !username.is_empty()
+                        {
+                            username_entry_clone.set_text(username);
+                        }
+                        if domain_entry_clone.text().is_empty()
+                            && let Some(domain) = &group.domain
+                            && !domain.is_empty()
+                        {
+                            domain_entry_clone.set_text(domain);
                         }
                     }
                 }
@@ -1026,25 +1018,25 @@ impl ConnectionDialog {
                 let idx = group_dropdown_clone.selected();
                 if idx > 0 {
                     let groups = groups_data_clone.borrow();
-                    if let Some((Some(group_id), _)) = groups.get(idx as usize) {
-                        if let Some(group) = full_groups_data_clone.borrow().get(group_id) {
-                            if let Some(username) = &group.username {
-                                if !username.is_empty() {
-                                    username_entry_clone.set_text(username);
-                                    crate::toast::show_toast_on_window(
-                                        &window_clone,
-                                        "Username loaded from group",
-                                        crate::toast::ToastType::Success,
-                                    );
-                                    return;
-                                }
-                            }
+                    if let Some((Some(group_id), _)) = groups.get(idx as usize)
+                        && let Some(group) = full_groups_data_clone.borrow().get(group_id)
+                    {
+                        if let Some(username) = &group.username
+                            && !username.is_empty()
+                        {
+                            username_entry_clone.set_text(username);
                             crate::toast::show_toast_on_window(
                                 &window_clone,
-                                "Group has no username defined",
-                                crate::toast::ToastType::Info,
+                                "Username loaded from group",
+                                crate::toast::ToastType::Success,
                             );
+                            return;
                         }
+                        crate::toast::show_toast_on_window(
+                            &window_clone,
+                            "Group has no username defined",
+                            crate::toast::ToastType::Info,
+                        );
                     }
                 }
             });
@@ -1060,25 +1052,25 @@ impl ConnectionDialog {
                 let idx = group_dropdown_clone.selected();
                 if idx > 0 {
                     let groups = groups_data_clone.borrow();
-                    if let Some((Some(group_id), _)) = groups.get(idx as usize) {
-                        if let Some(group) = full_groups_data_clone.borrow().get(group_id) {
-                            if let Some(domain) = &group.domain {
-                                if !domain.is_empty() {
-                                    domain_entry_clone.set_text(domain);
-                                    crate::toast::show_toast_on_window(
-                                        &window_clone,
-                                        "Domain loaded from group",
-                                        crate::toast::ToastType::Success,
-                                    );
-                                    return;
-                                }
-                            }
+                    if let Some((Some(group_id), _)) = groups.get(idx as usize)
+                        && let Some(group) = full_groups_data_clone.borrow().get(group_id)
+                    {
+                        if let Some(domain) = &group.domain
+                            && !domain.is_empty()
+                        {
+                            domain_entry_clone.set_text(domain);
                             crate::toast::show_toast_on_window(
                                 &window_clone,
-                                "Group has no domain defined",
-                                crate::toast::ToastType::Info,
+                                "Domain loaded from group",
+                                crate::toast::ToastType::Success,
                             );
+                            return;
                         }
+                        crate::toast::show_toast_on_window(
+                            &window_clone,
+                            "Group has no domain defined",
+                            crate::toast::ToastType::Info,
+                        );
                     }
                 }
             });
@@ -2203,6 +2195,44 @@ impl ConnectionDialog {
         grid.attach(&desc_label, 0, row, 1, 1);
         grid.attach(&desc_scrolled, 1, row, 2, 1);
 
+        // Accessible label relations for screen readers (A11Y-01)
+        name_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            name_label.upcast_ref()
+        ])]);
+        protocol_dropdown.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            protocol_label_grid.upcast_ref(),
+        ])]);
+        host_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            host_label.upcast_ref()
+        ])]);
+        port_spin.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            port_label.upcast_ref()
+        ])]);
+        username_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            username_label.upcast_ref(),
+        ])]);
+        domain_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            domain_label.upcast_ref()
+        ])]);
+        password_source_dropdown.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            password_source_label.upcast_ref(),
+        ])]);
+        password_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            password_entry_label.upcast_ref(),
+        ])]);
+        variable_dropdown.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            variable_label.upcast_ref(),
+        ])]);
+        tags_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            tags_label.upcast_ref()
+        ])]);
+        group_dropdown.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            group_label.upcast_ref()
+        ])]);
+        description_view.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            desc_label.upcast_ref()
+        ])]);
+
         (
             vbox,
             name_entry,
@@ -2619,21 +2649,21 @@ impl ConnectionDialog {
                 parent.as_ref(),
                 gtk4::gio::Cancellable::NONE,
                 move |result| {
-                    if let Ok(file) = result {
-                        if let Some(path) = file.path() {
-                            let share_name = path.file_name().map_or_else(
-                                || "Share".to_string(),
-                                |n| n.to_string_lossy().to_string(),
-                            );
+                    if let Ok(file) = result
+                        && let Some(path) = file.path()
+                    {
+                        let share_name = path.file_name().map_or_else(
+                            || "Share".to_string(),
+                            |n| n.to_string_lossy().to_string(),
+                        );
 
-                            let folder = SharedFolder {
-                                local_path: path.clone(),
-                                share_name: share_name.clone(),
-                            };
+                        let folder = SharedFolder {
+                            local_path: path.clone(),
+                            share_name: share_name.clone(),
+                        };
 
-                            shared_folders.borrow_mut().push(folder);
-                            Self::add_folder_row_to_list(&folders_list, &path, &share_name);
-                        }
+                        shared_folders.borrow_mut().push(folder);
+                        Self::add_folder_row_to_list(&folders_list, &path, &share_name);
                     }
                 },
             );
@@ -2677,13 +2707,12 @@ impl ConnectionDialog {
         let folders_list_clone = folders_list.clone();
         let shared_folders_clone = shared_folders.clone();
         remove_btn.connect_clicked(move |_| {
-            if let Some(selected_row) = folders_list_clone.selected_row() {
-                if let Ok(index) = usize::try_from(selected_row.index()) {
-                    if index < shared_folders_clone.borrow().len() {
-                        shared_folders_clone.borrow_mut().remove(index);
-                        folders_list_clone.remove(&selected_row);
-                    }
-                }
+            if let Some(selected_row) = folders_list_clone.selected_row()
+                && let Ok(index) = usize::try_from(selected_row.index())
+                && index < shared_folders_clone.borrow().len()
+            {
+                shared_folders_clone.borrow_mut().remove(index);
+                folders_list_clone.remove(&selected_row);
             }
         });
     }
@@ -4364,10 +4393,10 @@ impl ConnectionDialog {
             let row_widget = prop_row.row.clone();
             prop_row.delete_button.connect_clicked(move |_| {
                 // Find and remove the property by matching the row index
-                if let Ok(idx) = usize::try_from(row_widget.index()) {
-                    if idx < props_for_delete.borrow().len() {
-                        props_for_delete.borrow_mut().remove(idx);
-                    }
+                if let Ok(idx) = usize::try_from(row_widget.index())
+                    && idx < props_for_delete.borrow().len()
+                {
+                    props_for_delete.borrow_mut().remove(idx);
                 }
                 list_for_delete.remove(&row_widget);
             });
@@ -4393,10 +4422,10 @@ impl ConnectionDialog {
         let row_for_name = row_widget.clone();
         prop_row.name_entry.connect_changed(move |entry| {
             let text = entry.text().to_string();
-            if let Ok(idx) = usize::try_from(row_for_name.index()) {
-                if let Some(prop) = props_for_name.borrow_mut().get_mut(idx) {
-                    prop.name = text;
-                }
+            if let Ok(idx) = usize::try_from(row_for_name.index())
+                && let Some(prop) = props_for_name.borrow_mut().get_mut(idx)
+            {
+                prop.name = text;
             }
         });
 
@@ -4411,10 +4440,10 @@ impl ConnectionDialog {
                     2 => PropertyType::Protected,
                     _ => PropertyType::Text,
                 };
-                if let Ok(idx) = usize::try_from(row_for_type.index()) {
-                    if let Some(prop) = props_for_type.borrow_mut().get_mut(idx) {
-                        prop.property_type = prop_type;
-                    }
+                if let Ok(idx) = usize::try_from(row_for_type.index())
+                    && let Some(prop) = props_for_type.borrow_mut().get_mut(idx)
+                {
+                    prop.property_type = prop_type;
                 }
             });
 
@@ -4423,12 +4452,11 @@ impl ConnectionDialog {
         let row_for_value = row_widget.clone();
         prop_row.value_entry.connect_changed(move |entry| {
             let text = entry.text().to_string();
-            if let Ok(idx) = usize::try_from(row_for_value.index()) {
-                if let Some(prop) = props_for_value.borrow_mut().get_mut(idx) {
-                    if !prop.is_protected() {
-                        prop.value = text;
-                    }
-                }
+            if let Ok(idx) = usize::try_from(row_for_value.index())
+                && let Some(prop) = props_for_value.borrow_mut().get_mut(idx)
+                && !prop.is_protected()
+            {
+                prop.value = text;
             }
         });
 
@@ -4437,12 +4465,11 @@ impl ConnectionDialog {
         let row_for_secret = row_widget;
         prop_row.secret_entry.connect_changed(move |entry| {
             let text = entry.text().to_string();
-            if let Ok(idx) = usize::try_from(row_for_secret.index()) {
-                if let Some(prop) = props_for_secret.borrow_mut().get_mut(idx) {
-                    if prop.is_protected() {
-                        prop.value = text;
-                    }
-                }
+            if let Ok(idx) = usize::try_from(row_for_secret.index())
+                && let Some(prop) = props_for_secret.borrow_mut().get_mut(idx)
+                && prop.is_protected()
+            {
+                prop.value = text;
             }
         });
 
@@ -5079,10 +5106,10 @@ impl ConnectionDialog {
                 parent.as_ref(),
                 gtk4::gio::Cancellable::NONE,
                 move |result| {
-                    if let Ok(file) = result {
-                        if let Some(path) = file.path() {
-                            entry.set_text(&path.to_string_lossy());
-                        }
+                    if let Ok(file) = result
+                        && let Some(path) = file.path()
+                    {
+                        entry.set_text(&path.to_string_lossy());
                     }
                 },
             );
@@ -5105,10 +5132,10 @@ impl ConnectionDialog {
                 parent.as_ref(),
                 gtk4::gio::Cancellable::NONE,
                 move |result| {
-                    if let Ok(file) = result {
-                        if let Some(path) = file.path() {
-                            entry.set_text(&path.to_string_lossy());
-                        }
+                    if let Ok(file) = result
+                        && let Some(path) = file.path()
+                    {
+                        entry.set_text(&path.to_string_lossy());
                     }
                 },
             );
@@ -5146,12 +5173,12 @@ impl ConnectionDialog {
         self.tags_entry.set_text(&display_tags.join(", "));
 
         // If connection has desc: tag but no description field, extract it
-        if conn.description.is_none() {
-            if let Some(desc_tag) = conn.tags.iter().find(|t| t.starts_with("desc:")) {
-                self.description_view
-                    .buffer()
-                    .set_text(desc_tag.strip_prefix("desc:").unwrap_or(""));
-            }
+        if conn.description.is_none()
+            && let Some(desc_tag) = conn.tags.iter().find(|t| t.starts_with("desc:"))
+        {
+            self.description_view
+                .buffer()
+                .set_text(desc_tag.strip_prefix("desc:").unwrap_or(""));
         }
 
         // Set group selection
@@ -5177,15 +5204,14 @@ impl ConnectionDialog {
             .set_selected(password_source_idx);
 
         // If Variable source, select the matching variable in dropdown
-        if let PasswordSource::Variable(ref var_name) = conn.password_source {
-            if let Some(model) = self.variable_dropdown.model() {
-                if let Some(sl) = model.downcast_ref::<gtk4::StringList>() {
-                    for i in 0..sl.n_items() {
-                        if sl.string(i).is_some_and(|s| s == *var_name) {
-                            self.variable_dropdown.set_selected(i);
-                            break;
-                        }
-                    }
+        if let PasswordSource::Variable(ref var_name) = conn.password_source
+            && let Some(model) = self.variable_dropdown.model()
+            && let Some(sl) = model.downcast_ref::<gtk4::StringList>()
+        {
+            for i in 0..sl.n_items() {
+                if sl.string(i).is_some_and(|s| s == *var_name) {
+                    self.variable_dropdown.set_selected(i);
+                    break;
                 }
             }
         }
@@ -5217,7 +5243,7 @@ impl ConnectionDialog {
                 self.protocol_stack.set_visible_child_name("zerotrust");
                 self.set_zerotrust_config(zt);
             }
-            ProtocolConfig::Telnet(ref telnet_config) => {
+            ProtocolConfig::Telnet(telnet_config) => {
                 self.protocol_dropdown.set_selected(5); // Telnet
                 self.protocol_stack.set_visible_child_name("telnet");
                 // Load custom args
@@ -5229,7 +5255,7 @@ impl ConnectionDialog {
                 self.telnet_delete_dropdown
                     .set_selected(telnet_config.delete_sends.index());
             }
-            ProtocolConfig::Serial(ref serial_config) => {
+            ProtocolConfig::Serial(serial_config) => {
                 self.protocol_dropdown.set_selected(6); // Serial
                 self.protocol_stack.set_visible_child_name("serial");
                 self.serial_device_entry.set_text(&serial_config.device);
@@ -5246,12 +5272,12 @@ impl ConnectionDialog {
                 let args_text = serial_config.custom_args.join(" ");
                 self.serial_custom_args_entry.set_text(&args_text);
             }
-            ProtocolConfig::Sftp(ref ssh) => {
+            ProtocolConfig::Sftp(ssh) => {
                 self.protocol_dropdown.set_selected(7); // SFTP
                 self.protocol_stack.set_visible_child_name("ssh");
                 self.set_ssh_config(ssh);
             }
-            ProtocolConfig::Kubernetes(ref k8s) => {
+            ProtocolConfig::Kubernetes(k8s) => {
                 self.protocol_dropdown.set_selected(8); // Kubernetes
                 self.protocol_stack.set_visible_child_name("kubernetes");
                 self.set_kubernetes_config(k8s);
@@ -5427,10 +5453,10 @@ impl ConnectionDialog {
         let row_widget = prop_row.row.clone();
         prop_row.delete_button.connect_clicked(move |_| {
             // Find and remove the property by matching the row index
-            if let Ok(idx) = usize::try_from(row_widget.index()) {
-                if idx < props_for_delete.borrow().len() {
-                    props_for_delete.borrow_mut().remove(idx);
-                }
+            if let Ok(idx) = usize::try_from(row_widget.index())
+                && idx < props_for_delete.borrow().len()
+            {
+                props_for_delete.borrow_mut().remove(idx);
             }
             list_for_delete.remove(&row_widget);
         });
@@ -5641,14 +5667,14 @@ impl ConnectionDialog {
         }
 
         // Also set key_path for backward compatibility
-        if let Some(ref key_path) = ssh.key_path {
-            if matches!(ssh.key_source, SshKeySource::Default) {
-                // If key_source is Default but key_path is set, use File source
-                self.ssh_key_source_dropdown.set_selected(1);
-                self.ssh_key_entry.set_text(&key_path.to_string_lossy());
-                self.ssh_key_entry.set_sensitive(true);
-                self.ssh_key_button.set_sensitive(true);
-            }
+        if let Some(ref key_path) = ssh.key_path
+            && matches!(ssh.key_source, SshKeySource::Default)
+        {
+            // If key_source is Default but key_path is set, use File source
+            self.ssh_key_source_dropdown.set_selected(1);
+            self.ssh_key_entry.set_text(&key_path.to_string_lossy());
+            self.ssh_key_entry.set_sensitive(true);
+            self.ssh_key_button.set_sensitive(true);
         }
 
         if let Some(agent_fingerprint) = &ssh.agent_key_fingerprint {
@@ -6238,7 +6264,9 @@ impl ConnectionDialog {
                     {
                         if let Some(ref kdbx_path) = kdbx_path {
                             let kdbx_path = kdbx_path.clone();
-                            let db_password = kdbx_password.clone();
+                            let db_password = kdbx_password
+                                .as_ref()
+                                .map(|p| secrecy::SecretString::from(p.clone()));
                             let key_file = kdbx_key_file.clone();
 
                             spawn_blocking_with_callback(
@@ -6246,19 +6274,22 @@ impl ConnectionDialog {
                                     rustconn_core::secret::KeePassStatus
                                         ::get_password_from_kdbx_with_key(
                                             &kdbx_path,
-                                            db_password.as_deref(),
+                                            db_password.as_ref(),
                                             key_file.as_deref(),
                                             &lookup_key,
                                             None,
                                         )
                                 },
-                                move |result: Result<Option<String>, String>| {
+                                move |result: rustconn_core::error::SecretResult<
+                                    Option<secrecy::SecretString>,
+                                >| {
                                     btn.set_sensitive(true);
                                     btn.set_icon_name("document-open-symbolic");
 
                                     match result {
                                         Ok(Some(password)) => {
-                                            password_entry.set_text(&password);
+                                            use secrecy::ExposeSecret;
+                                            password_entry.set_text(password.expose_secret());
                                         }
                                         Ok(None) => {
                                             alert::show_error(
@@ -6469,15 +6500,15 @@ impl ConnectionDialog {
         *self.global_variables.borrow_mut() = variables.to_vec();
 
         // Populate variable dropdown with secret global variables
-        if let Some(model) = self.variable_dropdown.model() {
-            if let Some(sl) = model.downcast_ref::<gtk4::StringList>() {
-                // Clear existing items
-                sl.splice(0, sl.n_items(), &[] as &[&str]);
-                // Add secret variables only
-                for var in variables {
-                    if var.is_secret {
-                        sl.append(&var.name);
-                    }
+        if let Some(model) = self.variable_dropdown.model()
+            && let Some(sl) = model.downcast_ref::<gtk4::StringList>()
+        {
+            // Clear existing items
+            sl.splice(0, sl.n_items(), &[] as &[&str]);
+            // Add secret variables only
+            for var in variables {
+                if var.is_secret {
+                    sl.append(&var.name);
                 }
             }
         }
@@ -6840,7 +6871,7 @@ impl ConnectionDialogData<'_> {
             if pwd.is_empty() {
                 None
             } else {
-                Some(pwd)
+                Some(secrecy::SecretString::from(pwd))
             }
         } else {
             None

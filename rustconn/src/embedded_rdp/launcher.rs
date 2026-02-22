@@ -9,6 +9,7 @@
 //! - Requirement 6.2: Wayland requestActivate warning suppression
 
 use super::types::{EmbeddedRdpError, RdpConfig};
+use secrecy::ExposeSecret;
 use std::process::{Child, Command, Stdio};
 
 /// Safe FreeRDP launcher with Qt error suppression
@@ -121,14 +122,13 @@ impl SafeFreeRdpLauncher {
             .map_err(|e| EmbeddedRdpError::FreeRdpInit(e.to_string()))?;
 
         // Write password via stdin when /from-stdin is used
-        if let Some(ref password) = config.password {
-            if !password.is_empty() {
-                if let Some(mut stdin) = child.stdin.take() {
-                    use std::io::Write;
-                    // FreeRDP /from-stdin reads the password from stdin
-                    let _ = writeln!(stdin, "{password}");
-                }
-            }
+        if let Some(ref password) = config.password
+            && !password.expose_secret().is_empty()
+            && let Some(mut stdin) = child.stdin.take()
+        {
+            use std::io::Write;
+            // FreeRDP /from-stdin reads the password from stdin
+            let _ = writeln!(stdin, "{}", password.expose_secret());
         }
 
         Ok(child)
@@ -143,22 +143,22 @@ impl SafeFreeRdpLauncher {
 
     /// Adds connection arguments to the command
     pub fn add_connection_args(cmd: &mut Command, config: &RdpConfig) {
-        if let Some(ref domain) = config.domain {
-            if !domain.is_empty() {
-                cmd.arg(format!("/d:{domain}"));
-            }
+        if let Some(ref domain) = config.domain
+            && !domain.is_empty()
+        {
+            cmd.arg(format!("/d:{domain}"));
         }
 
         if let Some(ref username) = config.username {
             cmd.arg(format!("/u:{username}"));
         }
 
-        if let Some(ref password) = config.password {
-            if !password.is_empty() {
-                // Use /from-stdin to avoid exposing password in /proc/PID/cmdline
-                cmd.arg("/from-stdin");
-                cmd.stdin(Stdio::piped());
-            }
+        if let Some(ref password) = config.password
+            && !password.expose_secret().is_empty()
+        {
+            // Use /from-stdin to avoid exposing password in /proc/PID/cmdline
+            cmd.arg("/from-stdin");
+            cmd.stdin(Stdio::piped());
         }
 
         cmd.arg(format!("/w:{}", config.width));
@@ -170,11 +170,11 @@ impl SafeFreeRdpLauncher {
         cmd.arg("/decorations");
 
         // Add window geometry if saved and remember_window_position is enabled
-        if config.remember_window_position {
-            if let Some((x, y, _width, _height)) = config.window_geometry {
-                cmd.arg(format!("/x:{x}"));
-                cmd.arg(format!("/y:{y}"));
-            }
+        if config.remember_window_position
+            && let Some((x, y, _width, _height)) = config.window_geometry
+        {
+            cmd.arg(format!("/x:{x}"));
+            cmd.arg(format!("/y:{y}"));
         }
 
         if config.clipboard_enabled {

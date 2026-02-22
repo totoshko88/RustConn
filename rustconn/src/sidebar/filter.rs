@@ -1,6 +1,6 @@
 //! Filter logic for the sidebar
-use gtk4::prelude::*;
 use gtk4::Button;
+use gtk4::prelude::*;
 
 /// Creates a protocol filter button with icon only (no text label)
 ///

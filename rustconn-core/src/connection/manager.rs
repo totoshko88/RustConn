@@ -583,11 +583,11 @@ impl ConnectionManager {
     pub fn restore_group(&mut self, id: Uuid) -> ConfigResult<()> {
         if let Some((mut group, _)) = self.trash_groups.remove(&id) {
             // Check if parent still exists
-            if let Some(parent_id) = group.parent_id {
-                if !self.groups.contains_key(&parent_id) {
-                    // Parent deleted, promote to root
-                    group.parent_id = None;
-                }
+            if let Some(parent_id) = group.parent_id
+                && !self.groups.contains_key(&parent_id)
+            {
+                // Parent deleted, promote to root
+                group.parent_id = None;
             }
 
             self.groups.insert(id, group);
@@ -705,13 +705,13 @@ impl ConnectionManager {
         group_id: Option<Uuid>,
     ) -> ConfigResult<()> {
         // Verify group exists (if specified)
-        if let Some(gid) = group_id {
-            if !self.groups.contains_key(&gid) {
-                return Err(ConfigError::Validation {
-                    field: "group_id".to_string(),
-                    reason: format!("Group with ID {gid} not found"),
-                });
-            }
+        if let Some(gid) = group_id
+            && !self.groups.contains_key(&gid)
+        {
+            return Err(ConfigError::Validation {
+                field: "group_id".to_string(),
+                reason: format!("Group with ID {gid} not found"),
+            });
         }
 
         // Calculate the new sort_order (append to end of target group)
@@ -816,12 +816,11 @@ impl ConnectionManager {
                 }
 
                 // Match group path
-                if let Some(group_id) = conn.group_id {
-                    if let Some(path) = self.get_group_path(group_id) {
-                        if path.to_lowercase().contains(&query_lower) {
-                            return true;
-                        }
-                    }
+                if let Some(group_id) = conn.group_id
+                    && let Some(path) = self.get_group_path(group_id)
+                    && path.to_lowercase().contains(&query_lower)
+                {
+                    return true;
                 }
 
                 false

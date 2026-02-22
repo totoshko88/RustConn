@@ -359,6 +359,19 @@ pub enum ColorScheme {
     Dark,
 }
 
+/// Action to perform when the application starts
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StartupAction {
+    /// Do nothing (show empty session area)
+    #[default]
+    None,
+    /// Open a local shell terminal
+    LocalShell,
+    /// Connect to a specific saved connection by UUID
+    Connection(uuid::Uuid),
+}
+
 /// Maximum number of search history entries to persist
 const MAX_SEARCH_HISTORY_ENTRIES: usize = 20;
 
@@ -398,6 +411,9 @@ pub struct UiSettings {
     /// Search history for sidebar (persisted across sessions)
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub search_history: Vec<String>,
+    /// Action to perform on application startup
+    #[serde(default)]
+    pub startup_action: StartupAction,
 }
 
 impl UiSettings {
@@ -494,6 +510,7 @@ impl Default for UiSettings {
             expanded_groups: std::collections::HashSet::new(),
             session_restore: SessionRestoreSettings::default(),
             search_history: Vec::new(),
+            startup_action: StartupAction::default(),
         }
     }
 }
@@ -561,15 +578,15 @@ impl SecretSettings {
     /// Transparently handles both AES-256-GCM (new) and XOR (legacy) formats.
     /// Returns true if decryption was successful.
     pub fn decrypt_password(&mut self) -> bool {
-        if let Some(ref encrypted) = self.kdbx_password_encrypted {
-            if let Some(decoded) = hex_decode(encrypted) {
-                let key = Self::get_machine_key();
-                if let Ok(plaintext) = decrypt_credential(&decoded, &key) {
-                    if let Ok(password_str) = String::from_utf8(plaintext) {
-                        self.kdbx_password = Some(SecretString::from(password_str));
-                        return true;
-                    }
-                }
+        if let Some(ref encrypted) = self.kdbx_password_encrypted
+            && let Some(decoded) = hex_decode(encrypted)
+        {
+            let key = Self::get_machine_key();
+            if let Ok(plaintext) = decrypt_credential(&decoded, &key)
+                && let Ok(password_str) = String::from_utf8(plaintext)
+            {
+                self.kdbx_password = Some(SecretString::from(password_str));
+                return true;
             }
         }
         false
@@ -599,15 +616,15 @@ impl SecretSettings {
     /// Transparently handles both AES-256-GCM (new) and XOR (legacy) formats.
     /// Returns true if decryption was successful.
     pub fn decrypt_bitwarden_password(&mut self) -> bool {
-        if let Some(ref encrypted) = self.bitwarden_password_encrypted {
-            if let Some(decoded) = hex_decode(encrypted) {
-                let key = Self::get_machine_key();
-                if let Ok(plaintext) = decrypt_credential(&decoded, &key) {
-                    if let Ok(password_str) = String::from_utf8(plaintext) {
-                        self.bitwarden_password = Some(SecretString::from(password_str));
-                        return true;
-                    }
-                }
+        if let Some(ref encrypted) = self.bitwarden_password_encrypted
+            && let Some(decoded) = hex_decode(encrypted)
+        {
+            let key = Self::get_machine_key();
+            if let Ok(plaintext) = decrypt_credential(&decoded, &key)
+                && let Ok(password_str) = String::from_utf8(plaintext)
+            {
+                self.bitwarden_password = Some(SecretString::from(password_str));
+                return true;
             }
         }
         false
@@ -623,17 +640,16 @@ impl SecretSettings {
     pub fn encrypt_bitwarden_api_credentials(&mut self) {
         use secrecy::ExposeSecret;
         let key = Self::get_machine_key();
-        if let Some(ref client_id) = self.bitwarden_client_id {
-            if let Ok(encrypted) = encrypt_credential(client_id.expose_secret().as_bytes(), &key) {
-                self.bitwarden_client_id_encrypted = Some(hex_encode(&encrypted));
-            }
+        if let Some(ref client_id) = self.bitwarden_client_id
+            && let Ok(encrypted) = encrypt_credential(client_id.expose_secret().as_bytes(), &key)
+        {
+            self.bitwarden_client_id_encrypted = Some(hex_encode(&encrypted));
         }
-        if let Some(ref client_secret) = self.bitwarden_client_secret {
-            if let Ok(encrypted) =
+        if let Some(ref client_secret) = self.bitwarden_client_secret
+            && let Ok(encrypted) =
                 encrypt_credential(client_secret.expose_secret().as_bytes(), &key)
-            {
-                self.bitwarden_client_secret_encrypted = Some(hex_encode(&encrypted));
-            }
+        {
+            self.bitwarden_client_secret_encrypted = Some(hex_encode(&encrypted));
         }
     }
 
@@ -643,28 +659,27 @@ impl SecretSettings {
     /// Returns true if at least one credential was decrypted successfully.
     pub fn decrypt_bitwarden_api_credentials(&mut self) -> bool {
         let key = Self::get_machine_key();
-        let mut any_decrypted = false;
-        if let Some(ref encrypted) = self.bitwarden_client_id_encrypted {
-            if let Some(decoded) = hex_decode(encrypted) {
-                if let Ok(plaintext) = decrypt_credential(&decoded, &key) {
-                    if let Ok(s) = String::from_utf8(plaintext) {
-                        self.bitwarden_client_id = Some(SecretString::from(s));
-                        any_decrypted = true;
-                    }
-                }
-            }
-        }
-        if let Some(ref encrypted) = self.bitwarden_client_secret_encrypted {
-            if let Some(decoded) = hex_decode(encrypted) {
-                if let Ok(plaintext) = decrypt_credential(&decoded, &key) {
-                    if let Ok(s) = String::from_utf8(plaintext) {
-                        self.bitwarden_client_secret = Some(SecretString::from(s));
-                        any_decrypted = true;
-                    }
-                }
-            }
-        }
-        any_decrypted
+        let id_ok = if let Some(ref encrypted) = self.bitwarden_client_id_encrypted
+            && let Some(decoded) = hex_decode(encrypted)
+            && let Ok(plaintext) = decrypt_credential(&decoded, &key)
+            && let Ok(s) = String::from_utf8(plaintext)
+        {
+            self.bitwarden_client_id = Some(SecretString::from(s));
+            true
+        } else {
+            false
+        };
+        let secret_ok = if let Some(ref encrypted) = self.bitwarden_client_secret_encrypted
+            && let Some(decoded) = hex_decode(encrypted)
+            && let Ok(plaintext) = decrypt_credential(&decoded, &key)
+            && let Ok(s) = String::from_utf8(plaintext)
+        {
+            self.bitwarden_client_secret = Some(SecretString::from(s));
+            true
+        } else {
+            false
+        };
+        id_ok || secret_ok
     }
 
     /// Encrypts the 1Password service account token for storage using AES-256-GCM
@@ -684,16 +699,15 @@ impl SecretSettings {
     /// Transparently handles both AES-256-GCM (new) and XOR (legacy) formats.
     /// Returns true if decryption was successful.
     pub fn decrypt_onepassword_token(&mut self) -> bool {
-        if let Some(ref encrypted) = self.onepassword_service_account_token_encrypted {
-            if let Some(decoded) = hex_decode(encrypted) {
-                let key = Self::get_machine_key();
-                if let Ok(plaintext) = decrypt_credential(&decoded, &key) {
-                    if let Ok(token_str) = String::from_utf8(plaintext) {
-                        self.onepassword_service_account_token =
-                            Some(SecretString::from(token_str));
-                        return true;
-                    }
-                }
+        if let Some(ref encrypted) = self.onepassword_service_account_token_encrypted
+            && let Some(decoded) = hex_decode(encrypted)
+        {
+            let key = Self::get_machine_key();
+            if let Ok(plaintext) = decrypt_credential(&decoded, &key)
+                && let Ok(token_str) = String::from_utf8(plaintext)
+            {
+                self.onepassword_service_account_token = Some(SecretString::from(token_str));
+                return true;
             }
         }
         false
@@ -717,15 +731,15 @@ impl SecretSettings {
     /// Transparently handles both AES-256-GCM (new) and XOR (legacy) formats.
     /// Returns true if decryption was successful.
     pub fn decrypt_passbolt_passphrase(&mut self) -> bool {
-        if let Some(ref encrypted) = self.passbolt_passphrase_encrypted {
-            if let Some(decoded) = hex_decode(encrypted) {
-                let key = Self::get_machine_key();
-                if let Ok(plaintext) = decrypt_credential(&decoded, &key) {
-                    if let Ok(pass_str) = String::from_utf8(plaintext) {
-                        self.passbolt_passphrase = Some(SecretString::from(pass_str));
-                        return true;
-                    }
-                }
+        if let Some(ref encrypted) = self.passbolt_passphrase_encrypted
+            && let Some(decoded) = hex_decode(encrypted)
+        {
+            let key = Self::get_machine_key();
+            if let Ok(plaintext) = decrypt_credential(&decoded, &key)
+                && let Ok(pass_str) = String::from_utf8(plaintext)
+            {
+                self.passbolt_passphrase = Some(SecretString::from(pass_str));
+                return true;
             }
         }
         false
@@ -782,7 +796,7 @@ impl SecretSettings {
 ///
 /// Output format: `RCSC` (4) + version (1) + salt (16) + nonce (12) + ciphertext + tag (16)
 fn encrypt_credential(plaintext: &[u8], machine_key: &[u8]) -> Result<Vec<u8>, String> {
-    use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
+    use ring::aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey};
     use ring::rand::{SecureRandom, SystemRandom};
 
     let rng = SystemRandom::new();
@@ -828,7 +842,7 @@ fn decrypt_credential(data: &[u8], machine_key: &[u8]) -> Result<Vec<u8>, String
 
 /// Decrypts AES-256-GCM encrypted credential data
 fn decrypt_credential_aes(data: &[u8], machine_key: &[u8]) -> Result<Vec<u8>, String> {
-    use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
+    use ring::aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey};
 
     if data.len() < SETTINGS_HEADER_LEN + 16 {
         return Err("Encrypted data too short".to_string());

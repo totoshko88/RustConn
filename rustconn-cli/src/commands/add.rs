@@ -45,23 +45,21 @@ pub fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Result<(), 
     );
 
     // Apply serial-specific settings
-    if protocol_type == ProtocolType::Serial {
-        if let rustconn_core::models::ProtocolConfig::Serial(ref mut config) =
+    if protocol_type == ProtocolType::Serial
+        && let rustconn_core::models::ProtocolConfig::Serial(ref mut config) =
             connection.protocol_config
-        {
-            if let Some(baud) = params.baud_rate {
-                config.baud_rate = match baud {
-                    9600 => rustconn_core::models::SerialBaudRate::B9600,
-                    19_200 => rustconn_core::models::SerialBaudRate::B19200,
-                    38_400 => rustconn_core::models::SerialBaudRate::B38400,
-                    57_600 => rustconn_core::models::SerialBaudRate::B57600,
-                    230_400 => rustconn_core::models::SerialBaudRate::B230400,
-                    460_800 => rustconn_core::models::SerialBaudRate::B460800,
-                    921_600 => rustconn_core::models::SerialBaudRate::B921600,
-                    _ => rustconn_core::models::SerialBaudRate::B115200,
-                };
-            }
-        }
+        && let Some(baud) = params.baud_rate
+    {
+        config.baud_rate = match baud {
+            9600 => rustconn_core::models::SerialBaudRate::B9600,
+            19_200 => rustconn_core::models::SerialBaudRate::B19200,
+            38_400 => rustconn_core::models::SerialBaudRate::B38400,
+            57_600 => rustconn_core::models::SerialBaudRate::B57600,
+            230_400 => rustconn_core::models::SerialBaudRate::B230400,
+            460_800 => rustconn_core::models::SerialBaudRate::B460800,
+            921_600 => rustconn_core::models::SerialBaudRate::B921600,
+            _ => rustconn_core::models::SerialBaudRate::B115200,
+        };
     }
 
     if let Some(username) = params.user {

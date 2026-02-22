@@ -18,8 +18,8 @@
 // #![allow(clippy::default_trait_access)]
 
 use super::{RdpClientCommand, RdpClientConfig, RdpClientError, RdpClientEvent};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::JoinHandle;
 
 mod commands;

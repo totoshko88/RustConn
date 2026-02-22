@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType, SshAuthMethod};
 
-use super::{ExportFormat, ExportOptions, ExportResult, ExportResult2, ExportTarget};
+use super::{ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget};
 
 /// Asbru-CM YAML exporter.
 ///
@@ -183,10 +183,10 @@ impl AsbruExporter {
         }
 
         // parent (group membership)
-        if let Some(group_id) = connection.group_id {
-            if let Some(parent_uuid) = group_uuid_map.get(&group_id) {
-                lines.push(format!("  parent: \"{parent_uuid}\""));
-            }
+        if let Some(group_id) = connection.group_id
+            && let Some(parent_uuid) = group_uuid_map.get(&group_id)
+        {
+            lines.push(format!("  parent: \"{parent_uuid}\""));
         }
 
         // description - prefer direct field, fall back to tags
@@ -239,18 +239,18 @@ impl AsbruExporter {
         lines.push(format!("  name: \"{name}\""));
 
         // parent (for nested groups)
-        if let Some(parent_id) = group.parent_id {
-            if let Some(parent_uuid) = group_uuid_map.get(&parent_id) {
-                lines.push(format!("  parent: \"{parent_uuid}\""));
-            }
+        if let Some(parent_id) = group.parent_id
+            && let Some(parent_uuid) = group_uuid_map.get(&parent_id)
+        {
+            lines.push(format!("  parent: \"{parent_uuid}\""));
         }
 
         // description
-        if let Some(ref desc) = group.description {
-            if !desc.is_empty() {
-                let desc = escape_yaml_string(desc);
-                lines.push(format!("  description: \"{desc}\""));
-            }
+        if let Some(ref desc) = group.description
+            && !desc.is_empty()
+        {
+            let desc = escape_yaml_string(desc);
+            lines.push(format!("  description: \"{desc}\""));
         }
 
         // children (empty placeholder - actual children reference this group via parent)
@@ -280,7 +280,7 @@ impl ExportTarget for AsbruExporter {
         connections: &[Connection],
         groups: &[ConnectionGroup],
         options: &ExportOptions,
-    ) -> ExportResult2<ExportResult> {
+    ) -> ExportOperationResult<ExportResult> {
         let mut result = ExportResult::new();
 
         // Filter groups if not including them
@@ -302,7 +302,7 @@ impl ExportTarget for AsbruExporter {
         Ok(result)
     }
 
-    fn export_connection(&self, connection: &Connection) -> ExportResult2<String> {
+    fn export_connection(&self, connection: &Connection) -> ExportOperationResult<String> {
         let group_uuid_map = HashMap::new();
         let asbru_uuid = generate_asbru_uuid();
         let entry = Self::connection_to_entry(connection, &group_uuid_map);

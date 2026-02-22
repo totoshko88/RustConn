@@ -142,13 +142,12 @@ pub fn show_sessions_manager(
     let list_clone = sessions_list.clone();
     let window_clone = manager_window.clone();
     switch_btn.connect_clicked(move |_| {
-        if let Some(row) = list_clone.selected_row() {
-            if let Some(id_str) = row.widget_name().as_str().strip_prefix("session-") {
-                if let Ok(id) = Uuid::parse_str(id_str) {
-                    notebook_clone.switch_to_tab(id);
-                    window_clone.close();
-                }
-            }
+        if let Some(row) = list_clone.selected_row()
+            && let Some(id_str) = row.widget_name().as_str().strip_prefix("session-")
+            && let Ok(id) = Uuid::parse_str(id_str)
+        {
+            notebook_clone.switch_to_tab(id);
+            window_clone.close();
         }
     });
 
@@ -157,12 +156,11 @@ pub fn show_sessions_manager(
     let list_clone = sessions_list.clone();
     let manager_clone = manager_window.clone();
     send_text_btn.connect_clicked(move |_| {
-        if let Some(row) = list_clone.selected_row() {
-            if let Some(id_str) = row.widget_name().as_str().strip_prefix("session-") {
-                if let Ok(session_id) = Uuid::parse_str(id_str) {
-                    show_send_text_dialog(&manager_clone, &notebook_clone, session_id);
-                }
-            }
+        if let Some(row) = list_clone.selected_row()
+            && let Some(id_str) = row.widget_name().as_str().strip_prefix("session-")
+            && let Ok(session_id) = Uuid::parse_str(id_str)
+        {
+            show_send_text_dialog(&manager_clone, &notebook_clone, session_id);
         }
     });
 
@@ -174,49 +172,46 @@ pub fn show_sessions_manager(
     let manager_clone = manager_window.clone();
     let sidebar_clone = sidebar;
     terminate_btn.connect_clicked(move |_| {
-        if let Some(row) = list_clone.selected_row() {
-            if let Some(id_str) = row.widget_name().as_str().strip_prefix("session-") {
-                if let Ok(id) = Uuid::parse_str(id_str) {
-                    let state_inner = state_clone.clone();
-                    let notebook_inner = notebook_clone.clone();
-                    let list_inner = list_clone.clone();
-                    let count_inner = count_clone.clone();
-                    let sidebar_inner = sidebar_clone.clone();
-                    alert::show_confirm(
-                        &manager_clone,
-                        &i18n("Terminate Session?"),
-                        &i18n("Are you sure you want to terminate this session?"),
-                        &i18n("Terminate"),
-                        true,
-                        move |confirmed| {
-                            if confirmed {
-                                // Terminate session in state manager
-                                if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
-                                    let _ = state_mut.terminate_session(id);
-                                }
+        if let Some(row) = list_clone.selected_row()
+            && let Some(id_str) = row.widget_name().as_str().strip_prefix("session-")
+            && let Ok(id) = Uuid::parse_str(id_str)
+        {
+            let state_inner = state_clone.clone();
+            let notebook_inner = notebook_clone.clone();
+            let list_inner = list_clone.clone();
+            let count_inner = count_clone.clone();
+            let sidebar_inner = sidebar_clone.clone();
+            alert::show_confirm(
+                &manager_clone,
+                &i18n("Terminate Session?"),
+                &i18n("Are you sure you want to terminate this session?"),
+                &i18n("Terminate"),
+                true,
+                move |confirmed| {
+                    if confirmed {
+                        // Terminate session in state manager
+                        if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
+                            let _ = state_mut.terminate_session(id);
+                        }
 
-                                // Decrement session count
-                                if let Some(info) = notebook_inner.get_session_info(id) {
-                                    sidebar_inner.decrement_session_count(
-                                        &info.connection_id.to_string(),
-                                        false,
-                                    );
-                                }
+                        // Decrement session count
+                        if let Some(info) = notebook_inner.get_session_info(id) {
+                            sidebar_inner
+                                .decrement_session_count(&info.connection_id.to_string(), false);
+                        }
 
-                                // Close the tab
-                                notebook_inner.close_tab(id);
-                                // Refresh the list
-                                populate_sessions_list(
-                                    &state_inner,
-                                    &notebook_inner,
-                                    &list_inner,
-                                    &count_inner,
-                                );
-                            }
-                        },
-                    );
-                }
-            }
+                        // Close the tab
+                        notebook_inner.close_tab(id);
+                        // Refresh the list
+                        populate_sessions_list(
+                            &state_inner,
+                            &notebook_inner,
+                            &list_inner,
+                            &count_inner,
+                        );
+                    }
+                },
+            );
         }
     });
 

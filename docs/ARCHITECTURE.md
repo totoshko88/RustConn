@@ -1,12 +1,12 @@
 # RustConn Architecture Guide
 
-**Version 0.8.9** | Last updated: February 2026
+**Version 0.9.0** | Last updated: February 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
 ## Crate Structure
 
-RustConn is a three-crate Cargo workspace with strict separation of concerns:
+RustConn is a three-crate Cargo workspace (Rust 2024 edition) with strict separation of concerns:
 
 ```
 rustconn/           # GTK4 GUI application

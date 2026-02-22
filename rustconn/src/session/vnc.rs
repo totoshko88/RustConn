@@ -368,7 +368,7 @@ impl VncSessionWidget {
                 // Connection will be handled by signal callbacks
                 return Ok(());
             }
-            eprintln!("Native VNC embedding failed, falling back to external viewer...");
+            tracing::warn!("Native VNC embedding failed, falling back to external viewer");
         }
 
         // Fall back to external VNC viewer
@@ -479,16 +479,14 @@ impl VncSessionWidget {
                     return Ok(());
                 }
                 Err(e) => {
-                    eprintln!(
-                        "Native VNC embedding failed: {e}, falling back to external viewer..."
-                    );
+                    tracing::warn!(%e, "Native VNC embedding failed, falling back to external viewer");
                 }
             }
         } else {
             // Native VNC not available - for Embedded mode, fall back to external
-            eprintln!(
+            tracing::info!(
                 "Native VNC embedding not available (vnc-embedded feature not enabled), \
-                 using external viewer..."
+                 using external viewer"
             );
         }
 

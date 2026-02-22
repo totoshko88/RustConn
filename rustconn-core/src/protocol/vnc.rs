@@ -8,7 +8,7 @@ use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 /// VNC protocol handler
 ///
 /// Implements the Protocol trait for VNC connections.
-/// Native embedding via gtk-vnc will be implemented in Phase 5.
+/// Native VNC embedding is available via vnc-rs (`vnc-embedded` feature flag).
 pub struct VncProtocol;
 
 impl VncProtocol {
@@ -64,21 +64,21 @@ impl Protocol for VncProtocol {
         }
 
         // Validate compression level if specified (0-9)
-        if let Some(compression) = vnc_config.compression {
-            if compression > 9 {
-                return Err(ProtocolError::InvalidConfig(format!(
-                    "Invalid compression level: {compression}. Must be 0-9"
-                )));
-            }
+        if let Some(compression) = vnc_config.compression
+            && compression > 9
+        {
+            return Err(ProtocolError::InvalidConfig(format!(
+                "Invalid compression level: {compression}. Must be 0-9"
+            )));
         }
 
         // Validate quality level if specified (0-9)
-        if let Some(quality) = vnc_config.quality {
-            if quality > 9 {
-                return Err(ProtocolError::InvalidConfig(format!(
-                    "Invalid quality level: {quality}. Must be 0-9"
-                )));
-            }
+        if let Some(quality) = vnc_config.quality
+            && quality > 9
+        {
+            return Err(ProtocolError::InvalidConfig(format!(
+                "Invalid quality level: {quality}. Must be 0-9"
+            )));
         }
 
         Ok(())

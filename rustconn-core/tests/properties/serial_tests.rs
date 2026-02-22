@@ -152,8 +152,8 @@ proptest! {
         prop_assert_eq!(conn.protocol, deserialized.protocol);
         prop_assert_eq!(conn.name, deserialized.name);
         if let (
-            ProtocolConfig::Serial(ref orig),
-            ProtocolConfig::Serial(ref deser),
+            ProtocolConfig::Serial(orig),
+            ProtocolConfig::Serial(deser),
         ) = (&conn.protocol_config, &deserialized.protocol_config)
         {
             prop_assert_eq!(&orig.device, &deser.device);

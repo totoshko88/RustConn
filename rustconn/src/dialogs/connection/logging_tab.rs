@@ -12,6 +12,8 @@ use libadwaita as adw;
 use libadwaita::prelude::*;
 use rustconn_core::session::LogConfig;
 
+use crate::i18n::i18n;
+
 /// Timestamp format options matching the dropdown order
 const TIMESTAMP_FORMATS: [&str; 5] = [
     "%Y-%m-%d %H:%M:%S",
@@ -54,15 +56,15 @@ impl LoggingTab {
 
         // Enable logging group
         let enable_group = adw::PreferencesGroup::builder()
-            .title("Session Logging")
-            .description("Record terminal output to files")
+            .title(i18n("Session Logging"))
+            .description(i18n("Record terminal output to files"))
             .build();
 
         let enabled_check = CheckButton::builder().valign(gtk4::Align::Center).build();
 
         let enable_row = adw::ActionRow::builder()
-            .title("Enable Logging")
-            .subtitle("Record session output to log files")
+            .title(i18n("Enable Logging"))
+            .subtitle(i18n("Record session output to log files"))
             .activatable_widget(&enabled_check)
             .build();
         enable_row.add_suffix(&enabled_check);
@@ -71,7 +73,7 @@ impl LoggingTab {
 
         // Log settings group
         let settings_group = adw::PreferencesGroup::builder()
-            .title("Log Settings")
+            .title(i18n("Log Settings"))
             .build();
 
         let path_entry = Entry::builder()
@@ -85,7 +87,7 @@ impl LoggingTab {
             .build();
 
         let path_row = adw::ActionRow::builder()
-            .title("Log Path")
+            .title(i18n("Log Path"))
             .subtitle(
                 "Variables: ${connection_name}, ${protocol}, \
                  ${date}, ${time}, ${datetime}, ${HOME}",
@@ -101,8 +103,8 @@ impl LoggingTab {
         timestamp_dropdown.set_sensitive(false);
 
         let timestamp_row = adw::ActionRow::builder()
-            .title("Timestamp Format")
-            .subtitle("Format for timestamps in log entries")
+            .title(i18n("Timestamp Format"))
+            .subtitle(i18n("Format for timestamps in log entries"))
             .build();
         timestamp_row.add_suffix(&timestamp_dropdown);
         settings_group.add(&timestamp_row);
@@ -117,8 +119,8 @@ impl LoggingTab {
             .build();
 
         let size_row = adw::ActionRow::builder()
-            .title("Max Size (MB)")
-            .subtitle("Maximum log file size (0 = no limit)")
+            .title(i18n("Max Size (MB)"))
+            .subtitle(i18n("Maximum log file size (0 = no limit)"))
             .build();
         size_row.add_suffix(&max_size_spin);
         settings_group.add(&size_row);
@@ -133,8 +135,8 @@ impl LoggingTab {
             .build();
 
         let retention_row = adw::ActionRow::builder()
-            .title("Retention (days)")
-            .subtitle("Days to keep old log files (0 = keep forever)")
+            .title(i18n("Retention (days)"))
+            .subtitle(i18n("Days to keep old log files (0 = keep forever)"))
             .build();
         retention_row.add_suffix(&retention_spin);
         settings_group.add(&retention_row);

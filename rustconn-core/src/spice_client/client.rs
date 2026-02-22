@@ -32,11 +32,11 @@
 
 use super::event::SpiceChannel;
 use super::{
-    launch_spice_viewer, SpiceClientCommand, SpiceClientConfig, SpiceClientError, SpiceClientEvent,
-    SpiceViewerLaunchResult,
+    SpiceClientCommand, SpiceClientConfig, SpiceClientError, SpiceClientEvent,
+    SpiceViewerLaunchResult, launch_spice_viewer,
 };
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::JoinHandle;
 
 /// Sender for commands to the SPICE client (thread-safe, non-async)
@@ -427,7 +427,7 @@ async fn run_spice_client(
     shutdown_signal: Arc<AtomicBool>,
 ) -> Result<(), SpiceClientError> {
     use spice_client::SpiceClient as NativeSpiceClient;
-    use tokio::time::{timeout, Duration};
+    use tokio::time::{Duration, timeout};
 
     let connect_timeout = Duration::from_secs(config.timeout_secs);
 
@@ -436,7 +436,8 @@ async fn run_spice_client(
 
     // Set password if provided
     if let Some(ref password) = config.password {
-        native_client.set_password(password.clone());
+        use secrecy::ExposeSecret;
+        native_client.set_password(password.expose_secret().to_string());
     }
 
     // Connect with timeout

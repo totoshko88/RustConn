@@ -144,14 +144,12 @@ fn create_loading_row(title: &str) -> adw::ActionRow {
 /// Updates a row with detected client info
 fn update_client_row(group: &adw::PreferencesGroup, row: &adw::ActionRow, client: &ClientInfo) {
     // Remove spinner prefix
-    if let Some(prefix) = row.first_child() {
-        if let Some(box_widget) = prefix.downcast_ref::<gtk4::Box>() {
-            if let Some(first) = box_widget.first_child() {
-                if first.downcast_ref::<Spinner>().is_some() {
-                    box_widget.remove(&first);
-                }
-            }
-        }
+    if let Some(prefix) = row.first_child()
+        && let Some(box_widget) = prefix.downcast_ref::<gtk4::Box>()
+        && let Some(first) = box_widget.first_child()
+        && first.downcast_ref::<Spinner>().is_some()
+    {
+        box_widget.remove(&first);
     }
 
     // Determine subtitle based on embedded support and external client availability
@@ -458,14 +456,13 @@ fn find_command(command: &str) -> Option<PathBuf> {
     }
 
     // Try standard which
-    if let Ok(output) = std::process::Command::new("which").arg(command).output() {
-        if output.status.success() {
-            if let Ok(path_str) = String::from_utf8(output.stdout) {
-                let path = path_str.trim();
-                if !path.is_empty() {
-                    return Some(PathBuf::from(path));
-                }
-            }
+    if let Ok(output) = std::process::Command::new("which").arg(command).output()
+        && output.status.success()
+        && let Ok(path_str) = String::from_utf8(output.stdout)
+    {
+        let path = path_str.trim();
+        if !path.is_empty() {
+            return Some(PathBuf::from(path));
         }
     }
 
@@ -493,10 +490,10 @@ fn find_in_flatpak_cli_dir(command: &str) -> Option<PathBuf> {
     let cli_dir = rustconn_core::cli_download::get_cli_install_dir()?;
 
     // Check if the component is registered and find its binary
-    if let Some(component) = rustconn_core::cli_download::get_component(command) {
-        if let Some(path) = component.find_installed_binary() {
-            return Some(path);
-        }
+    if let Some(component) = rustconn_core::cli_download::get_component(command)
+        && let Some(path) = component.find_installed_binary()
+    {
+        return Some(path);
     }
 
     // Also search common subdirectories in CLI dir
@@ -544,15 +541,15 @@ fn find_binary_recursive(
     for entry in entries.flatten() {
         let path = entry.path();
         if path.is_file() {
-            if let Some(name) = path.file_name() {
-                if name == binary_name {
-                    return Some(path);
-                }
+            if let Some(name) = path.file_name()
+                && name == binary_name
+            {
+                return Some(path);
             }
-        } else if path.is_dir() {
-            if let Some(found) = find_binary_recursive(&path, binary_name, max_depth - 1) {
-                return Some(found);
-            }
+        } else if path.is_dir()
+            && let Some(found) = find_binary_recursive(&path, binary_name, max_depth - 1)
+        {
+            return Some(found);
         }
     }
     None

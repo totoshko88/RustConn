@@ -29,4 +29,4 @@ pub use protocol::{
     ZeroTrustProvider, ZeroTrustProviderConfig,
 };
 pub use snippet::{Snippet, SnippetVariable};
-pub use template::{group_templates_by_protocol, ConnectionTemplate, TemplateError};
+pub use template::{ConnectionTemplate, TemplateError, group_templates_by_protocol};

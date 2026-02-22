@@ -9,7 +9,7 @@ override_dh_auto_build:
 	tar --zstd -xf vendor.tar.zst
 	mkdir -p .cargo
 	cp cargo_config .cargo/config.toml
-	cargo build --release --offline -p rustconn -p rustconn-cli --all-features
+	cargo build --release --offline -p rustconn -p rustconn-cli
 
 override_dh_auto_install:
 	# Binaries
@@ -21,19 +21,12 @@ override_dh_auto_install:
 	# Icons - hicolor theme (for desktop/launcher)
 	install -Dm644 rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
 		debian/rustconn/usr/share/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg
-	install -Dm644 rustconn/assets/icons/hicolor/48x48/apps/io.github.totoshko88.RustConn.png \
-		debian/rustconn/usr/share/icons/hicolor/48x48/apps/io.github.totoshko88.RustConn.png
-	install -Dm644 rustconn/assets/icons/hicolor/64x64/apps/io.github.totoshko88.RustConn.png \
-		debian/rustconn/usr/share/icons/hicolor/64x64/apps/io.github.totoshko88.RustConn.png
 	install -Dm644 rustconn/assets/icons/hicolor/128x128/apps/io.github.totoshko88.RustConn.png \
 		debian/rustconn/usr/share/icons/hicolor/128x128/apps/io.github.totoshko88.RustConn.png
 	install -Dm644 rustconn/assets/icons/hicolor/256x256/apps/io.github.totoshko88.RustConn.png \
 		debian/rustconn/usr/share/icons/hicolor/256x256/apps/io.github.totoshko88.RustConn.png
 	# AppStream cached icons (for GNOME Software)
-	install -d debian/rustconn/usr/share/app-info/icons/hicolor/64x64/apps
 	install -d debian/rustconn/usr/share/app-info/icons/hicolor/128x128/apps
-	install -Dm644 rustconn/assets/icons/hicolor/64x64/apps/io.github.totoshko88.RustConn.png \
-		debian/rustconn/usr/share/app-info/icons/hicolor/64x64/apps/io.github.totoshko88.RustConn.png
 	install -Dm644 rustconn/assets/icons/hicolor/128x128/apps/io.github.totoshko88.RustConn.png \
 		debian/rustconn/usr/share/app-info/icons/hicolor/128x128/apps/io.github.totoshko88.RustConn.png
 	# AppStream metainfo
@@ -47,6 +40,13 @@ override_dh_auto_install:
 		debian/rustconn/usr/share/app-info/screenshots/io.github.totoshko88.RustConn/split.png
 	install -Dm644 rustconn/assets/screenshots/rdp.png \
 		debian/rustconn/usr/share/app-info/screenshots/io.github.totoshko88.RustConn/rdp.png
+	# Locale files (compile .po to .mo)
+	for po_file in po/*.po; do \
+		[ -f "$$po_file" ] || continue; \
+		lang=$$(basename "$$po_file" .po); \
+		mkdir -p debian/rustconn/usr/share/locale/$$lang/LC_MESSAGES; \
+		msgfmt -o debian/rustconn/usr/share/locale/$$lang/LC_MESSAGES/rustconn.mo "$$po_file"; \
+	done
 	# Cleanup
 	rm -rf vendor .cargo
 

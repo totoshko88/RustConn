@@ -407,20 +407,20 @@ impl RdpLauncher {
 
         let mut cmd = Command::new(&binary);
 
-        if let Some(dom) = domain {
-            if !dom.is_empty() {
-                cmd.arg(format!("/d:{dom}"));
-            }
+        if let Some(dom) = domain
+            && !dom.is_empty()
+        {
+            cmd.arg(format!("/d:{dom}"));
         }
 
         if let Some(user) = username {
             cmd.arg(format!("/u:{user}"));
         }
 
-        if let Some(pass) = password {
-            if !pass.is_empty() {
-                cmd.arg(format!("/p:{pass}"));
-            }
+        if let Some(pass) = password
+            && !pass.is_empty()
+        {
+            cmd.arg(format!("/p:{pass}"));
         }
 
         if let Some((width, height)) = resolution {
@@ -441,11 +441,9 @@ impl RdpLauncher {
         cmd.arg("/decorations");
 
         // Add window geometry if saved and remember_window_position is enabled (Requirements 6.2, 6.3, 6.4)
-        if remember_window_position {
-            if let Some((x, y, _width, _height)) = window_geometry {
-                cmd.arg(format!("/x:{x}"));
-                cmd.arg(format!("/y:{y}"));
-            }
+        if remember_window_position && let Some((x, y, _width, _height)) = window_geometry {
+            cmd.arg(format!("/x:{x}"));
+            cmd.arg(format!("/y:{y}"));
         }
 
         // Add shared folders for drive redirection

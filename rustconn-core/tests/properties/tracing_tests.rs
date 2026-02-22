@@ -7,7 +7,7 @@
 //! **Validates: Requirements 4.2, 4.5**
 
 use proptest::prelude::*;
-use rustconn_core::{span_names, TracingConfig, TracingLevel, TracingOutput};
+use rustconn_core::{TracingConfig, TracingLevel, TracingOutput, span_names};
 
 // ========== Strategies ==========
 

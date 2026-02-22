@@ -72,6 +72,7 @@ use gtk4::{
     Box as GtkBox, Button, DrawingArea, EventControllerKey, EventControllerMotion,
     EventControllerScroll, EventControllerScrollFlags, GestureClick, Label, Orientation,
 };
+use secrecy::ExposeSecret;
 use std::cell::RefCell;
 use std::process::Child;
 use std::rc::Rc;
@@ -407,59 +408,57 @@ impl EmbeddedRdpWidget {
                 None::<&gtk4::Window>,
                 None::<&gtk4::gio::Cancellable>,
                 move |result| {
-                    if let Ok(folder) = result {
-                        if let Some(path) = folder.path() {
-                            // Set target directory and start downloads
-                            {
-                                let mut transfer = file_transfer_clone.borrow_mut();
-                                transfer.target_directory = Some(path.clone());
-                                transfer.total_files = files_clone.len();
-                                transfer.completed_count = 0;
-                            }
+                    if let Ok(folder) = result
+                        && let Some(path) = folder.path()
+                    {
+                        // Set target directory and start downloads
+                        {
+                            let mut transfer = file_transfer_clone.borrow_mut();
+                            transfer.target_directory = Some(path.clone());
+                            transfer.total_files = files_clone.len();
+                            transfer.completed_count = 0;
+                        }
 
-                            // Disable button during transfer
-                            save_btn_clone.set_sensitive(false);
-                            save_btn_clone.set_label(&i18n("Downloading..."));
+                        // Disable button during transfer
+                        save_btn_clone.set_sensitive(false);
+                        save_btn_clone.set_label(&i18n("Downloading..."));
 
-                            // Request file contents for each file
-                            if let Some(ref sender) = *ironrdp_tx_clone.borrow() {
-                                for (idx, file) in files_clone.iter().enumerate() {
-                                    let stream_id = {
-                                        let mut transfer = file_transfer_clone.borrow_mut();
-                                        transfer.start_download(idx as u32)
-                                    };
+                        // Request file contents for each file
+                        if let Some(ref sender) = *ironrdp_tx_clone.borrow() {
+                            for (idx, file) in files_clone.iter().enumerate() {
+                                let stream_id = {
+                                    let mut transfer = file_transfer_clone.borrow_mut();
+                                    transfer.start_download(idx as u32)
+                                };
 
-                                    if let Some(sid) = stream_id {
-                                        // First request size, then data
-                                        let _ =
-                                            sender.send(RdpClientCommand::RequestFileContents {
-                                                stream_id: sid,
-                                                file_index: file.index,
-                                                request_size: true,
-                                                offset: 0,
-                                                length: 0,
-                                            });
+                                if let Some(sid) = stream_id {
+                                    // First request size, then data
+                                    let _ = sender.send(RdpClientCommand::RequestFileContents {
+                                        stream_id: sid,
+                                        file_index: file.index,
+                                        request_size: true,
+                                        offset: 0,
+                                        length: 0,
+                                    });
 
-                                        // Then request actual data
-                                        let _ =
-                                            sender.send(RdpClientCommand::RequestFileContents {
-                                                stream_id: sid,
-                                                file_index: file.index,
-                                                request_size: false,
-                                                offset: 0,
-                                                length: u32::MAX, // Request all data
-                                            });
-                                    }
+                                    // Then request actual data
+                                    let _ = sender.send(RdpClientCommand::RequestFileContents {
+                                        stream_id: sid,
+                                        file_index: file.index,
+                                        request_size: false,
+                                        offset: 0,
+                                        length: u32::MAX, // Request all data
+                                    });
                                 }
                             }
+                        }
 
-                            // Show progress
-                            status_label_clone.set_text("Downloading files...");
-                            status_label_clone.set_visible(true);
+                        // Show progress
+                        status_label_clone.set_text("Downloading files...");
+                        status_label_clone.set_visible(true);
 
-                            if let Some(ref callback) = *on_progress_clone.borrow() {
-                                callback(0.0, "Starting download...");
-                            }
+                        if let Some(ref callback) = *on_progress_clone.borrow() {
+                            callback(0.0, "Starting download...");
                         }
                     }
                 },
@@ -893,13 +892,13 @@ impl EmbeddedRdpWidget {
                                 extended: scancode.extended,
                             });
                         }
-                    } else if let Some(ch) = keyval_to_unicode(gdk_keyval) {
-                        if let Some(ref tx) = *ironrdp_tx.borrow() {
-                            let _ = tx.send(RdpClientCommand::UnicodeEvent {
-                                character: ch,
-                                pressed: false,
-                            });
-                        }
+                    } else if let Some(ch) = keyval_to_unicode(gdk_keyval)
+                        && let Some(ref tx) = *ironrdp_tx.borrow()
+                    {
+                        let _ = tx.send(RdpClientCommand::UnicodeEvent {
+                            character: ch,
+                            pressed: false,
+                        });
                     }
                 } else if let Some(ref thread) = *freerdp_thread.borrow() {
                     let _ = thread.send_command(RdpCommand::KeyEvent {
@@ -1091,15 +1090,17 @@ impl EmbeddedRdpWidget {
             let embedded = *is_embedded.borrow();
             let using_ironrdp = *is_ironrdp.borrow();
 
-            if embedded && current_state == RdpConnectionState::Connected && using_ironrdp {
-                if let Some(ref tx) = *ironrdp_tx.borrow() {
-                    let wheel_delta = (-dy * 120.0) as i16;
-                    if wheel_delta != 0 {
-                        let _ = tx.send(RdpClientCommand::WheelEvent {
-                            horizontal: 0,
-                            vertical: wheel_delta,
-                        });
-                    }
+            if embedded
+                && current_state == RdpConnectionState::Connected
+                && using_ironrdp
+                && let Some(ref tx) = *ironrdp_tx.borrow()
+            {
+                let wheel_delta = (-dy * 120.0) as i16;
+                if wheel_delta != 0 {
+                    let _ = tx.send(RdpClientCommand::WheelEvent {
+                        horizontal: 0,
+                        vertical: wheel_delta,
+                    });
                 }
             }
 
@@ -1524,12 +1525,12 @@ impl EmbeddedRdpWidget {
             match self.connect_embedded(config) {
                 Ok(()) => {
                     // Check if fallback was triggered by the thread
-                    if let Some(ref thread) = *self.freerdp_thread.borrow() {
-                        if thread.fallback_triggered() {
-                            // Fallback was triggered, clean up and try external mode
-                            self.cleanup_embedded_mode();
-                            return self.connect_external_with_notification(config);
-                        }
+                    if let Some(ref thread) = *self.freerdp_thread.borrow()
+                        && thread.fallback_triggered()
+                    {
+                        // Fallback was triggered, clean up and try external mode
+                        self.cleanup_embedded_mode();
+                        return self.connect_external_with_notification(config);
                     }
                     return Ok(());
                 }
@@ -1570,9 +1571,9 @@ impl EmbeddedRdpWidget {
 
         // Increment connection generation to invalidate any stale polling loops
         let generation = {
-            let mut gen = self.connection_generation.borrow_mut();
-            *gen += 1;
-            *gen
+            let mut counter = self.connection_generation.borrow_mut();
+            *counter += 1;
+            *counter
         };
         tracing::debug!(
             "[EmbeddedRDP] Starting connection generation {}",
@@ -1679,7 +1680,7 @@ impl EmbeddedRdpWidget {
         }
 
         if let Some(ref password) = config.password {
-            client_config = client_config.with_password(password);
+            client_config = client_config.with_password(password.expose_secret());
         }
 
         if let Some(ref domain) = config.domain {
@@ -1754,6 +1755,12 @@ impl EmbeddedRdpWidget {
         let connection_generation = self.connection_generation.clone();
         #[cfg(feature = "rdp-audio")]
         let audio_player = self.audio_player.clone();
+
+        // Capture effective scale for cursor size correction
+        // RDP server sends cursor bitmaps in device pixels when desktop_scale_factor > 100%,
+        // but GTK's Cursor::from_texture interprets dimensions as logical pixels.
+        // We need to downscale cursor bitmaps to logical pixels.
+        let cursor_scale = effective_scale;
 
         // Store client in a shared reference for the polling closure
         let client = std::rc::Rc::new(std::cell::RefCell::new(Some(client)));
@@ -2017,22 +2024,96 @@ impl EmbeddedRdpWidget {
                                 height,
                                 data,
                             } => {
-                                // Create custom cursor from bitmap data
-                                let bytes = glib::Bytes::from(&data);
-                                let texture = gdk::MemoryTexture::new(
-                                    i32::from(width),
-                                    i32::from(height),
-                                    gdk::MemoryFormat::B8g8r8a8,
-                                    &bytes,
-                                    usize::from(width) * 4,
-                                );
-                                let cursor = gdk::Cursor::from_texture(
-                                    &texture,
-                                    i32::from(hotspot_x),
-                                    i32::from(hotspot_y),
-                                    None,
-                                );
-                                drawing_area.set_cursor(Some(&cursor));
+                                // RDP server sends cursor bitmaps in device pixels when
+                                // desktop_scale_factor > 100%, but GTK Cursor::from_texture
+                                // interprets texture dimensions as logical pixels. Downscale
+                                // the bitmap to logical size so GTK renders it correctly.
+                                let scale = cursor_scale;
+                                if scale > 1.01 {
+                                    #[allow(
+                                        clippy::cast_possible_truncation,
+                                        clippy::cast_sign_loss
+                                    )]
+                                    let logical_w =
+                                        (f64::from(width) / scale).round().max(1.0) as u16;
+                                    #[allow(
+                                        clippy::cast_possible_truncation,
+                                        clippy::cast_sign_loss
+                                    )]
+                                    let logical_h =
+                                        (f64::from(height) / scale).round().max(1.0) as u16;
+                                    #[allow(
+                                        clippy::cast_possible_truncation,
+                                        clippy::cast_sign_loss
+                                    )]
+                                    let hotspot_logical_x =
+                                        (f64::from(hotspot_x) / scale).round() as i32;
+                                    #[allow(
+                                        clippy::cast_possible_truncation,
+                                        clippy::cast_sign_loss
+                                    )]
+                                    let hotspot_logical_y =
+                                        (f64::from(hotspot_y) / scale).round() as i32;
+
+                                    // Nearest-neighbor downscale (BGRA, 4 bytes per pixel)
+                                    let src_w = usize::from(width);
+                                    let dst_w = usize::from(logical_w);
+                                    let dst_h = usize::from(logical_h);
+                                    let mut scaled = vec![0u8; dst_w * dst_h * 4];
+                                    for dy in 0..dst_h {
+                                        #[allow(
+                                            clippy::cast_possible_truncation,
+                                            clippy::cast_sign_loss
+                                        )]
+                                        let sy = (dy as f64 * scale) as usize;
+                                        for dx in 0..dst_w {
+                                            #[allow(
+                                                clippy::cast_possible_truncation,
+                                                clippy::cast_sign_loss
+                                            )]
+                                            let sx = (dx as f64 * scale) as usize;
+                                            let src_off = (sy * src_w + sx) * 4;
+                                            let dst_off = (dy * dst_w + dx) * 4;
+                                            if src_off + 4 <= data.len() {
+                                                scaled[dst_off..dst_off + 4]
+                                                    .copy_from_slice(&data[src_off..src_off + 4]);
+                                            }
+                                        }
+                                    }
+
+                                    let bytes = glib::Bytes::from(&scaled);
+                                    let texture = gdk::MemoryTexture::new(
+                                        i32::from(logical_w),
+                                        i32::from(logical_h),
+                                        gdk::MemoryFormat::B8g8r8a8,
+                                        &bytes,
+                                        usize::from(logical_w) * 4,
+                                    );
+                                    let cursor = gdk::Cursor::from_texture(
+                                        &texture,
+                                        hotspot_logical_x,
+                                        hotspot_logical_y,
+                                        None,
+                                    );
+                                    drawing_area.set_cursor(Some(&cursor));
+                                } else {
+                                    // No scaling needed (1x display)
+                                    let bytes = glib::Bytes::from(&data);
+                                    let texture = gdk::MemoryTexture::new(
+                                        i32::from(width),
+                                        i32::from(height),
+                                        gdk::MemoryFormat::B8g8r8a8,
+                                        &bytes,
+                                        usize::from(width) * 4,
+                                    );
+                                    let cursor = gdk::Cursor::from_texture(
+                                        &texture,
+                                        i32::from(hotspot_x),
+                                        i32::from(hotspot_y),
+                                        None,
+                                    );
+                                    drawing_area.set_cursor(Some(&cursor));
+                                }
                             }
                             RdpClientEvent::ServerMessage(msg) => {
                                 tracing::debug!("[IronRDP] Server message: {}", msg);
@@ -2049,39 +2130,39 @@ impl EmbeddedRdpWidget {
                                     if player_opt.is_none() {
                                         *player_opt = Some(crate::audio::RdpAudioPlayer::new());
                                     }
-                                    if let Some(ref mut player) = *player_opt {
-                                        if let Err(e) = player.configure(format) {
-                                            tracing::warn!("[Audio] Failed to configure: {}", e);
-                                        }
+                                    if let Some(ref mut player) = *player_opt
+                                        && let Err(e) = player.configure(format)
+                                    {
+                                        tracing::warn!("[Audio] Failed to configure: {}", e);
                                     }
                                 }
                             }
                             #[cfg(feature = "rdp-audio")]
                             RdpClientEvent::AudioData { data, .. } => {
                                 // Queue audio data for playback
-                                if let Ok(player_opt) = audio_player.try_borrow() {
-                                    if let Some(ref player) = *player_opt {
-                                        player.queue_data(&data);
-                                    }
+                                if let Ok(player_opt) = audio_player.try_borrow()
+                                    && let Some(ref player) = *player_opt
+                                {
+                                    player.queue_data(&data);
                                 }
                             }
                             #[cfg(feature = "rdp-audio")]
                             RdpClientEvent::AudioVolume { left, right } => {
                                 // Update audio volume
-                                if let Ok(player_opt) = audio_player.try_borrow() {
-                                    if let Some(ref player) = *player_opt {
-                                        player.set_volume(left, right);
-                                    }
+                                if let Ok(player_opt) = audio_player.try_borrow()
+                                    && let Some(ref player) = *player_opt
+                                {
+                                    player.set_volume(left, right);
                                 }
                             }
                             #[cfg(feature = "rdp-audio")]
                             RdpClientEvent::AudioClose => {
                                 // Stop audio playback
                                 tracing::debug!("[Audio] Channel closed");
-                                if let Ok(mut player_opt) = audio_player.try_borrow_mut() {
-                                    if let Some(ref mut player) = *player_opt {
-                                        player.stop();
-                                    }
+                                if let Ok(mut player_opt) = audio_player.try_borrow_mut()
+                                    && let Some(ref mut player) = *player_opt
+                                {
+                                    player.stop();
                                 }
                             }
                             #[cfg(not(feature = "rdp-audio"))]
@@ -2596,17 +2677,17 @@ impl EmbeddedRdpWidget {
         }
 
         // Check embedded mode thread
-        if *self.is_embedded.borrow() {
-            if let Some(ref thread) = *self.freerdp_thread.borrow() {
-                match thread.state() {
-                    FreeRdpThreadState::Error => {
-                        self.set_state(RdpConnectionState::Error);
-                    }
-                    FreeRdpThreadState::ShuttingDown => {
-                        self.set_state(RdpConnectionState::Disconnected);
-                    }
-                    _ => {}
+        if *self.is_embedded.borrow()
+            && let Some(ref thread) = *self.freerdp_thread.borrow()
+        {
+            match thread.state() {
+                FreeRdpThreadState::Error => {
+                    self.set_state(RdpConnectionState::Error);
                 }
+                FreeRdpThreadState::ShuttingDown => {
+                    self.set_state(RdpConnectionState::Disconnected);
+                }
+                _ => {}
             }
         }
     }

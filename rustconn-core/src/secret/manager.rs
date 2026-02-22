@@ -170,6 +170,72 @@ impl SecretManager {
         self.backends.push(backend);
     }
 
+    /// Builds a `SecretManager` with backends configured from settings
+    ///
+    /// Creates the preferred backend based on `SecretSettings.preferred_backend`
+    /// and optionally adds libsecret as a fallback. This ensures the manager
+    /// can resolve credentials (including variable-based passwords) without
+    /// requiring callers to manually construct backends.
+    #[must_use]
+    pub fn build_from_settings(settings: &crate::config::SecretSettings) -> Self {
+        use crate::config::SecretBackendType;
+
+        let mut backends: Vec<Arc<dyn SecretBackend>> = Vec::new();
+
+        match settings.preferred_backend {
+            SecretBackendType::Bitwarden => {
+                backends.push(Arc::new(super::BitwardenBackend::new()));
+            }
+            SecretBackendType::OnePassword => {
+                backends.push(Arc::new(super::OnePasswordBackend::new()));
+            }
+            SecretBackendType::Passbolt => {
+                backends.push(Arc::new(super::PassboltBackend::new()));
+            }
+            SecretBackendType::LibSecret => {
+                backends.push(Arc::new(super::LibSecretBackend::default_app()));
+            }
+            SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
+                // KeePass is handled via direct KDBX access in
+                // resolve_credentials_blocking, not through SecretManager.
+                // Add libsecret as the operational backend for non-KeePass
+                // lookups (e.g. variable resolution).
+                backends.push(Arc::new(super::LibSecretBackend::default_app()));
+            }
+        }
+
+        // Add libsecret as fallback if enabled and not already primary
+        if settings.enable_fallback
+            && !matches!(
+                settings.preferred_backend,
+                SecretBackendType::LibSecret
+                    | SecretBackendType::KeePassXc
+                    | SecretBackendType::KdbxFile
+            )
+        {
+            backends.push(Arc::new(super::LibSecretBackend::default_app()));
+        }
+
+        tracing::debug!(
+            backend_count = backends.len(),
+            preferred = ?settings.preferred_backend,
+            "SecretManager built from settings"
+        );
+
+        Self::new(backends)
+    }
+
+    /// Replaces all backends with a fresh set built from settings
+    ///
+    /// Call this after settings change (e.g. user switches secret backend
+    /// in Preferences) to ensure the manager uses the correct backends.
+    pub fn rebuild_from_settings(&mut self, settings: &crate::config::SecretSettings) {
+        let fresh = Self::build_from_settings(settings);
+        self.backends = fresh.backends;
+        // Keep existing cache — it will be invalidated naturally
+        tracing::debug!("SecretManager backends rebuilt from settings");
+    }
+
     /// Returns the list of available backends
     ///
     /// # Returns

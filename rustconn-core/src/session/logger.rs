@@ -415,13 +415,13 @@ impl SessionLogger {
         // Check for any remaining unsubstituted variables
         if result.contains("${") {
             // Extract the first unsubstituted variable for error message
-            if let Some(start) = result.find("${") {
-                if let Some(end) = result[start..].find('}') {
-                    let var_name = &result[start + 2..start + end];
-                    return Err(LogError::TemplateExpansion(format!(
-                        "Undefined variable: {var_name}"
-                    )));
-                }
+            if let Some(start) = result.find("${")
+                && let Some(end) = result[start..].find('}')
+            {
+                let var_name = &result[start + 2..start + end];
+                return Err(LogError::TemplateExpansion(format!(
+                    "Undefined variable: {var_name}"
+                )));
             }
         }
 
@@ -658,14 +658,12 @@ impl SessionLogger {
             let path = entry.path();
 
             // Only process log files
-            if path.extension().is_some_and(|ext| ext == "log") {
-                if let Ok(metadata) = fs::metadata(&path) {
-                    if let Ok(modified) = metadata.modified() {
-                        if modified < cutoff {
-                            let _ = fs::remove_file(&path);
-                        }
-                    }
-                }
+            if path.extension().is_some_and(|ext| ext == "log")
+                && let Ok(metadata) = fs::metadata(&path)
+                && let Ok(modified) = metadata.modified()
+                && modified < cutoff
+            {
+                let _ = fs::remove_file(&path);
             }
         }
 

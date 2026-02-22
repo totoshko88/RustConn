@@ -116,49 +116,49 @@ pub fn start_ssh_connection(
             }
 
             // Handle reference-based jump host (recursive resolution)
-            if let Some(jump_id) = ssh_config.jump_host_id {
-                if let Ok(state_ref) = state.try_borrow() {
-                    let mut current_id = Some(jump_id);
-                    let mut visited = std::collections::HashSet::new();
-                    visited.insert(connection_id); // Avoid self-reference loop
+            if let Some(jump_id) = ssh_config.jump_host_id
+                && let Ok(state_ref) = state.try_borrow()
+            {
+                let mut current_id = Some(jump_id);
+                let mut visited = std::collections::HashSet::new();
+                visited.insert(connection_id); // Avoid self-reference loop
 
-                    // Limit recursion depth to avoid infinite loops
-                    for _ in 0..10 {
-                        if let Some(jid) = current_id {
-                            if visited.contains(&jid) {
-                                break;
+                // Limit recursion depth to avoid infinite loops
+                for _ in 0..10 {
+                    if let Some(jid) = current_id {
+                        if visited.contains(&jid) {
+                            break;
+                        }
+                        visited.insert(jid);
+
+                        if let Some(jump_conn) = state_ref.get_connection(jid) {
+                            // Format: [user@]host[:port]
+                            let mut host_str = jump_conn.host.clone();
+                            if let Some(user) = &jump_conn.username {
+                                host_str = format!("{}@{}", user, host_str);
                             }
-                            visited.insert(jid);
+                            if jump_conn.port != 22 {
+                                host_str = format!("{}:{}", host_str, jump_conn.port);
+                            }
+                            jump_hosts.push(host_str);
 
-                            if let Some(jump_conn) = state_ref.get_connection(jid) {
-                                // Format: [user@]host[:port]
-                                let mut host_str = jump_conn.host.clone();
-                                if let Some(user) = &jump_conn.username {
-                                    host_str = format!("{}@{}", user, host_str);
+                            // Check if this jump host has its own jumper
+                            if let rustconn_core::ProtocolConfig::Ssh(jump_config) =
+                                &jump_conn.protocol_config
+                            {
+                                // Prepend manual proxy if exists on jump host (unlikely but possible)
+                                if let Some(p) = &jump_config.proxy_jump {
+                                    jump_hosts.insert(jump_hosts.len() - 1, p.clone());
                                 }
-                                if jump_conn.port != 22 {
-                                    host_str = format!("{}:{}", host_str, jump_conn.port);
-                                }
-                                jump_hosts.push(host_str);
-
-                                // Check if this jump host has its own jumper
-                                if let rustconn_core::ProtocolConfig::Ssh(jump_config) =
-                                    &jump_conn.protocol_config
-                                {
-                                    // Prepend manual proxy if exists on jump host (unlikely but possible)
-                                    if let Some(p) = &jump_config.proxy_jump {
-                                        jump_hosts.insert(jump_hosts.len() - 1, p.clone());
-                                    }
-                                    current_id = jump_config.jump_host_id;
-                                } else {
-                                    current_id = None;
-                                }
+                                current_id = jump_config.jump_host_id;
                             } else {
                                 current_id = None;
                             }
                         } else {
-                            break;
+                            current_id = None;
                         }
+                    } else {
+                        break;
                     }
                 }
             }
@@ -239,11 +239,7 @@ pub fn start_ssh_connection(
         .and_then(|c| {
             use secrecy::ExposeSecret;
             let pw = c.password.expose_secret().to_string();
-            if pw.is_empty() {
-                None
-            } else {
-                Some(pw)
-            }
+            if pw.is_empty() { None } else { Some(pw) }
         });
 
     // If we have a vault password and sshpass is available, use it
@@ -358,16 +354,16 @@ pub fn start_vnc_connection(
                         tracing::warn!("Port check failed for VNC connection: {e}");
                         sidebar_clone
                             .update_connection_status(&connection_id.to_string(), "failed");
-                        if let Some(root) = notebook_clone.widget().root() {
-                            if let Some(window) = root.downcast_ref::<gtk4::Window>() {
-                                crate::alert::show_error(
-                                    window,
-                                    "Connection Failed",
-                                    &format!(
-                                        "{e}\n\nThe host may be offline or the port may be blocked."
-                                    ),
-                                );
-                            }
+                        if let Some(root) = notebook_clone.widget().root()
+                            && let Some(window) = root.downcast_ref::<gtk4::Window>()
+                        {
+                            crate::alert::show_error(
+                                window,
+                                "Connection Failed",
+                                &format!(
+                                    "{e}\n\nThe host may be offline or the port may be blocked."
+                                ),
+                            );
                         }
                     }
                 }
@@ -449,12 +445,11 @@ fn start_vnc_connection_internal(
                 notebook_for_state.mark_tab_disconnected(session_id);
                 sidebar_for_state.decrement_session_count(&connection_id.to_string(), false);
                 // Record connection end in history
-                if let Some(info) = notebook_for_state.get_session_info(session_id) {
-                    if let Some(entry_id) = info.history_entry_id {
-                        if let Ok(mut state_mut) = state_for_callback.try_borrow_mut() {
-                            state_mut.record_connection_end(entry_id);
-                        }
-                    }
+                if let Some(info) = notebook_for_state.get_session_info(session_id)
+                    && let Some(entry_id) = info.history_entry_id
+                    && let Ok(mut state_mut) = state_for_callback.try_borrow_mut()
+                {
+                    state_mut.record_connection_end(entry_id);
                 }
             } else if vnc_state == crate::session::SessionState::Connected {
                 notebook_for_state.mark_tab_connected(session_id);
@@ -532,16 +527,16 @@ pub fn start_spice_connection(
                         tracing::warn!("Port check failed for SPICE connection: {e}");
                         sidebar_clone
                             .update_connection_status(&connection_id.to_string(), "failed");
-                        if let Some(root) = notebook_clone.widget().root() {
-                            if let Some(window) = root.downcast_ref::<gtk4::Window>() {
-                                crate::alert::show_error(
-                                    window,
-                                    "Connection Failed",
-                                    &format!(
-                                        "{e}\n\nThe host may be offline or the port may be blocked."
-                                    ),
-                                );
-                            }
+                        if let Some(root) = notebook_clone.widget().root()
+                            && let Some(window) = root.downcast_ref::<gtk4::Window>()
+                        {
+                            crate::alert::show_error(
+                                window,
+                                "Connection Failed",
+                                &format!(
+                                    "{e}\n\nThe host may be offline or the port may be blocked."
+                                ),
+                            );
                         }
                     }
                 }
@@ -635,16 +630,14 @@ fn start_spice_connection_internal(
                     spice_state == SpiceConnectionState::Error,
                 );
                 // Record connection end/failure in history
-                if let Some(info) = notebook_for_state.get_session_info(session_id) {
-                    if let Some(entry_id) = info.history_entry_id {
-                        if let Ok(mut state_mut) = state_for_callback.try_borrow_mut() {
-                            if spice_state == SpiceConnectionState::Error {
-                                state_mut
-                                    .record_connection_failed(entry_id, "SPICE connection error");
-                            } else {
-                                state_mut.record_connection_end(entry_id);
-                            }
-                        }
+                if let Some(info) = notebook_for_state.get_session_info(session_id)
+                    && let Some(entry_id) = info.history_entry_id
+                    && let Ok(mut state_mut) = state_for_callback.try_borrow_mut()
+                {
+                    if spice_state == SpiceConnectionState::Error {
+                        state_mut.record_connection_failed(entry_id, "SPICE connection error");
+                    } else {
+                        state_mut.record_connection_end(entry_id);
                     }
                 }
             } else if spice_state == SpiceConnectionState::Connected {
@@ -810,14 +803,14 @@ pub fn start_zerotrust_connection(
             // Validate configuration before launch
             if let Err(e) = zt_config.validate() {
                 tracing::error!(?e, "ZeroTrust config validation failed for {}", conn_name);
-                if let Some(root) = notebook.widget().root() {
-                    if let Some(window) = root.downcast_ref::<gtk4::Window>() {
-                        crate::toast::show_toast_on_window(
-                            window,
-                            &format!("Invalid config: {e}"),
-                            crate::toast::ToastType::Error,
-                        );
-                    }
+                if let Some(root) = notebook.widget().root()
+                    && let Some(window) = root.downcast_ref::<gtk4::Window>()
+                {
+                    crate::toast::show_toast_on_window(
+                        window,
+                        &format!("Invalid config: {e}"),
+                        crate::toast::ToastType::Error,
+                    );
                 }
                 return None;
             }
@@ -840,14 +833,14 @@ pub fn start_zerotrust_connection(
                         cli,
                         "ZeroTrust CLI tool not found"
                     );
-                    if let Some(root) = notebook.widget().root() {
-                        if let Some(window) = root.downcast_ref::<gtk4::Window>() {
-                            crate::toast::show_toast_on_window(
-                                window,
-                                &format!("{provider} requires '{cli}' CLI tool"),
-                                crate::toast::ToastType::Error,
-                            );
-                        }
+                    if let Some(root) = notebook.widget().root()
+                        && let Some(window) = root.downcast_ref::<gtk4::Window>()
+                    {
+                        crate::toast::show_toast_on_window(
+                            window,
+                            &format!("{provider} requires '{cli}' CLI tool"),
+                            crate::toast::ToastType::Error,
+                        );
                     }
                     return None;
                 }
@@ -956,7 +949,7 @@ pub fn start_serial_connection(
     logging_enabled: bool,
 ) -> Option<Uuid> {
     use rustconn_core::protocol::{
-        detect_picocom, format_command_message, format_connection_message, Protocol, SerialProtocol,
+        Protocol, SerialProtocol, detect_picocom, format_command_message, format_connection_message,
     };
 
     let conn_name = conn.name.clone();
@@ -1062,7 +1055,7 @@ pub fn start_kubernetes_connection(
     logging_enabled: bool,
 ) -> Option<Uuid> {
     use rustconn_core::protocol::{
-        format_command_message, format_connection_message, KubernetesProtocol, Protocol,
+        KubernetesProtocol, Protocol, format_command_message, format_connection_message,
     };
 
     let conn_name = conn.name.clone();

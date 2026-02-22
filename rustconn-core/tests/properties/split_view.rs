@@ -8,8 +8,8 @@
 
 use proptest::prelude::*;
 use rustconn_core::split::{
-    ColorId, ColorPool, DropResult, SessionId, SplitDirection, SplitError, SplitLayoutModel,
-    SPLIT_COLORS,
+    ColorId, ColorPool, DropResult, SPLIT_COLORS, SessionId, SplitDirection, SplitError,
+    SplitLayoutModel,
 };
 
 // ============================================================================

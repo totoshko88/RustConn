@@ -18,6 +18,8 @@ use libadwaita as adw;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::i18n::i18n;
+
 /// Return type for SSH options creation
 ///
 /// Contains all the widgets needed for SSH configuration:
@@ -110,7 +112,7 @@ fn create_authentication_group() -> (
     DropDown,
 ) {
     let auth_group = adw::PreferencesGroup::builder()
-        .title("Authentication")
+        .title(i18n("Authentication"))
         .build();
 
     // Auth method dropdown
@@ -125,8 +127,8 @@ fn create_authentication_group() -> (
     auth_dropdown.set_selected(0);
 
     let auth_row = adw::ActionRow::builder()
-        .title("Method")
-        .subtitle("How to authenticate with the server")
+        .title(i18n("Method"))
+        .subtitle(i18n("How to authenticate with the server"))
         .build();
     auth_row.add_suffix(&auth_dropdown);
     auth_group.add(&auth_row);
@@ -137,8 +139,8 @@ fn create_authentication_group() -> (
     key_source_dropdown.set_selected(0);
 
     let key_source_row = adw::ActionRow::builder()
-        .title("Key Source")
-        .subtitle("Where to get the SSH key from")
+        .title(i18n("Key Source"))
+        .subtitle(i18n("Where to get the SSH key from"))
         .build();
     key_source_row.add_suffix(&key_source_dropdown);
     auth_group.add(&key_source_row);
@@ -156,8 +158,8 @@ fn create_authentication_group() -> (
         .build();
 
     let key_file_row = adw::ActionRow::builder()
-        .title("Key File")
-        .subtitle("Path to private key file")
+        .title(i18n("Key File"))
+        .subtitle(i18n("Path to private key file"))
         .build();
     key_file_row.add_suffix(&key_entry);
     key_file_row.add_suffix(&key_button);
@@ -171,8 +173,8 @@ fn create_authentication_group() -> (
     agent_key_dropdown.set_hexpand(false);
 
     let agent_key_row = adw::ActionRow::builder()
-        .title("Key")
-        .subtitle("Select from SSH agent")
+        .title(i18n("Key"))
+        .subtitle(i18n("Select from SSH agent"))
         .build();
     agent_key_row.add_suffix(&agent_key_dropdown);
     auth_group.add(&agent_key_row);
@@ -313,7 +315,9 @@ fn create_connection_group() -> (
     CheckButton,
     CheckButton,
 ) {
-    let connection_group = adw::PreferencesGroup::builder().title("Connection").build();
+    let connection_group = adw::PreferencesGroup::builder()
+        .title(i18n("Connection"))
+        .build();
 
     // Jump Host dropdown
     let jump_host_list = StringList::new(&["(None)"]);
@@ -321,8 +325,8 @@ fn create_connection_group() -> (
     jump_host_dropdown.set_selected(0);
 
     let jump_host_row = adw::ActionRow::builder()
-        .title("Jump Host")
-        .subtitle("Connect via another SSH connection")
+        .title(i18n("Jump Host"))
+        .subtitle(i18n("Connect via another SSH connection"))
         .build();
     jump_host_row.add_suffix(&jump_host_dropdown);
     connection_group.add(&jump_host_row);
@@ -365,7 +369,9 @@ fn create_session_group() -> (
     Entry,
     Entry,
 ) {
-    let session_group = adw::PreferencesGroup::builder().title("Session").build();
+    let session_group = adw::PreferencesGroup::builder()
+        .title(i18n("Session"))
+        .build();
 
     // Agent Forwarding switch
     let (agent_forwarding_row, agent_forwarding) = CheckboxRowBuilder::new("Agent Forwarding")
@@ -419,8 +425,8 @@ pub fn create_port_forwarding_group(
     forwards_data: &Rc<RefCell<Vec<rustconn_core::models::PortForward>>>,
 ) -> adw::PreferencesGroup {
     let pf_group = adw::PreferencesGroup::builder()
-        .title("Port Forwarding")
-        .description("Forward ports through the SSH tunnel")
+        .title(i18n("Port Forwarding"))
+        .description(i18n("Forward ports through the SSH tunnel"))
         .build();
 
     // Direction dropdown
@@ -429,8 +435,8 @@ pub fn create_port_forwarding_group(
     direction_dropdown.set_selected(0);
 
     let direction_row = adw::ActionRow::builder()
-        .title("Direction")
-        .subtitle("Type of port forwarding")
+        .title(i18n("Direction"))
+        .subtitle(i18n("Type of port forwarding"))
         .build();
     direction_row.add_suffix(&direction_dropdown);
     pf_group.add(&direction_row);
@@ -443,8 +449,8 @@ pub fn create_port_forwarding_group(
         .valign(gtk4::Align::Center)
         .build();
     let local_port_row = adw::ActionRow::builder()
-        .title("Local Port")
-        .subtitle("Port to bind locally")
+        .title(i18n("Local Port"))
+        .subtitle(i18n("Port to bind locally"))
         .build();
     local_port_row.add_suffix(&local_port_entry);
     pf_group.add(&local_port_row);
@@ -455,8 +461,8 @@ pub fn create_port_forwarding_group(
         .valign(gtk4::Align::Center)
         .build();
     let remote_host_row = adw::ActionRow::builder()
-        .title("Remote Host")
-        .subtitle("Destination host on the remote side")
+        .title(i18n("Remote Host"))
+        .subtitle(i18n("Destination host on the remote side"))
         .build();
     remote_host_row.add_suffix(&remote_host_entry);
     pf_group.add(&remote_host_row);
@@ -469,8 +475,8 @@ pub fn create_port_forwarding_group(
         .valign(gtk4::Align::Center)
         .build();
     let remote_port_row = adw::ActionRow::builder()
-        .title("Remote Port")
-        .subtitle("Destination port on the remote side")
+        .title(i18n("Remote Port"))
+        .subtitle(i18n("Destination port on the remote side"))
         .build();
     remote_port_row.add_suffix(&remote_port_entry);
     pf_group.add(&remote_port_row);
@@ -486,7 +492,7 @@ pub fn create_port_forwarding_group(
 
     // Add button
     let add_button = Button::builder()
-        .label("Add Forward")
+        .label(i18n("Add Forward"))
         .css_classes(["suggested-action"])
         .build();
 

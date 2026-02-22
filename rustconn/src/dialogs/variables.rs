@@ -69,17 +69,15 @@ impl VariablesDialog {
 
         window.set_size_request(320, 280);
 
-        // Create header bar with Cancel/Save buttons (GNOME HIG)
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let cancel_btn = Button::builder().label(i18n("Cancel")).build();
-        let save_btn = Button::builder()
-            .label(i18n("Save"))
-            .css_classes(["suggested-action"])
-            .build();
-        header.pack_start(&cancel_btn);
-        header.pack_end(&save_btn);
+        // Header bar (GNOME HIG)
+        let (header, cancel_btn, save_btn) =
+            crate::dialogs::widgets::dialog_header("Cancel", "Save");
+
+        // Cancel button handler
+        let window_clone = window.clone();
+        cancel_btn.connect_clicked(move |_| {
+            window_clone.close();
+        });
 
         // Create main content area with clamp
         let clamp = adw::Clamp::builder()
@@ -309,7 +307,7 @@ impl VariablesDialog {
             crate::utils::spawn_blocking_with_callback(
                 move || {
                     if let Some(ref s) = settings_snap {
-                        crate::state::load_variable_from_vault(s, &var_name)
+                        crate::state::load_variable_from_vault(&s.secrets, &var_name)
                     } else {
                         // No settings — fall back to libsecret
                         let lookup_key = rustconn_core::variable_secret_key(&var_name);

@@ -4,8 +4,8 @@
 //! It reduces code duplication by defining shared behavior and types.
 
 use crate::i18n::i18n;
-use gtk4::prelude::*;
 use gtk4::Box as GtkBox;
+use gtk4::prelude::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 

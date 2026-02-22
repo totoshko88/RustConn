@@ -9,6 +9,7 @@ use gtk4::{
 };
 use libadwaita as adw;
 use rustconn_core::config::{SecretBackendType, SecretSettings};
+use rustconn_core::secret::set_session_key;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -72,13 +73,12 @@ fn detect_secret_backends() -> SecretCliDetection {
             break;
         }
     }
-    if !bitwarden_installed {
-        if let Ok(output) = std::process::Command::new("which").arg("bw").output() {
-            if output.status.success() {
-                bitwarden_installed = true;
-                bitwarden_cmd = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            }
-        }
+    if !bitwarden_installed
+        && let Ok(output) = std::process::Command::new("which").arg("bw").output()
+        && output.status.success()
+    {
+        bitwarden_installed = true;
+        bitwarden_cmd = String::from_utf8_lossy(&output.stdout).trim().to_string();
     }
     let bitwarden_version = if bitwarden_installed {
         get_cli_version(&bitwarden_cmd, &["--version"])
@@ -115,13 +115,12 @@ fn detect_secret_backends() -> SecretCliDetection {
             break;
         }
     }
-    if !onepassword_installed {
-        if let Ok(output) = std::process::Command::new("which").arg("op").output() {
-            if output.status.success() {
-                onepassword_installed = true;
-                onepassword_cmd = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            }
-        }
+    if !onepassword_installed
+        && let Ok(output) = std::process::Command::new("which").arg("op").output()
+        && output.status.success()
+    {
+        onepassword_installed = true;
+        onepassword_cmd = String::from_utf8_lossy(&output.stdout).trim().to_string();
     }
     let onepassword_version = if onepassword_installed {
         get_cli_version(&onepassword_cmd, &["--version"])
@@ -156,12 +155,11 @@ fn detect_secret_backends() -> SecretCliDetection {
             break;
         }
     }
-    if !passbolt_installed {
-        if let Ok(output) = std::process::Command::new("which").arg("passbolt").output() {
-            if output.status.success() {
-                passbolt_installed = true;
-            }
-        }
+    if !passbolt_installed
+        && let Ok(output) = std::process::Command::new("which").arg("passbolt").output()
+        && output.status.success()
+    {
+        passbolt_installed = true;
     }
     let passbolt_version = if passbolt_installed {
         get_cli_version("passbolt", &["--version"])
@@ -581,7 +579,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     session_key_len = session_key.len(),
                     "Bitwarden GUI: unlock succeeded"
                 );
-                std::env::set_var("BW_SESSION", &session_key);
+                set_session_key(&session_key);
                 update_status_label(&status_label, "Unlocked", "success");
                 // Don't clear password_entry — it's a PasswordEntry (hidden),
                 // and clearing it causes the encrypted settings to keep a stale
@@ -1219,10 +1217,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             window.as_ref(),
             gtk4::gio::Cancellable::NONE,
             move |result| {
-                if let Ok(file) = result {
-                    if let Some(path) = file.path() {
-                        entry.set_text(&path.display().to_string());
-                    }
+                if let Ok(file) = result
+                    && let Some(path) = file.path()
+                {
+                    entry.set_text(&path.display().to_string());
                 }
             },
         );
@@ -1259,10 +1257,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             window.as_ref(),
             gtk4::gio::Cancellable::NONE,
             move |result| {
-                if let Ok(file) = result {
-                    if let Some(path) = file.path() {
-                        entry.set_text(&path.display().to_string());
-                    }
+                if let Ok(file) = result
+                    && let Some(path) = file.path()
+                {
+                    entry.set_text(&path.display().to_string());
                 }
             },
         );
@@ -1306,9 +1304,11 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             None
         };
 
+        let password_secret = password.map(secrecy::SecretString::from);
+
         let result = rustconn_core::secret::KeePassStatus::verify_kdbx_credentials(
             kdbx_path,
-            password.as_deref(),
+            password_secret.as_ref(),
             key_file.as_deref(),
         );
 
@@ -1317,7 +1317,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 update_status_label(&kdbx_status_label_check, "Connected", "success");
             }
             Err(e) => {
-                update_status_label(&kdbx_status_label_check, &e, "error");
+                update_status_label(&kdbx_status_label_check, &e.to_string(), "error");
             }
         }
     });
@@ -1383,7 +1383,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 version_label.remove_css_class("success");
                 if selected == 1 {
                     version_row.set_visible(false);
-                } else if let Some(ref v) = cur_ver {
+                } else if let Some(v) = cur_ver {
                     version_label.set_text(&format!("v{v}"));
                     version_label.add_css_class("success");
                 } else {
@@ -1414,10 +1414,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 } else {
                     update_status_label(&pb_status_label, "Not installed", "error");
                 }
-                if pb_url_entry.text().is_empty() {
-                    if let Some(ref url) = det.passbolt_server_url {
-                        pb_url_entry.set_text(url);
-                    }
+                if pb_url_entry.text().is_empty()
+                    && let Some(ref url) = det.passbolt_server_url
+                {
+                    pb_url_entry.set_text(url);
                 }
                 glib::ControlFlow::Break
             }
@@ -1505,15 +1505,15 @@ fn check_bitwarden_status_sync(bw_cmd: &str) -> (String, &'static str) {
     match output {
         Ok(o) if o.status.success() => {
             let status_str = String::from_utf8_lossy(&o.stdout);
-            if let Ok(status) = serde_json::from_str::<serde_json::Value>(&status_str) {
-                if let Some(status_val) = status.get("status").and_then(|v| v.as_str()) {
-                    return match status_val {
-                        "unlocked" => ("Unlocked".to_string(), "success"),
-                        "locked" => ("Locked".to_string(), "warning"),
-                        "unauthenticated" => ("Not logged in".to_string(), "error"),
-                        _ => (format!("Status: {status_val}"), "dim-label"),
-                    };
-                }
+            if let Ok(status) = serde_json::from_str::<serde_json::Value>(&status_str)
+                && let Some(status_val) = status.get("status").and_then(|v| v.as_str())
+            {
+                return match status_val {
+                    "unlocked" => ("Unlocked".to_string(), "success"),
+                    "locked" => ("Locked".to_string(), "warning"),
+                    "unauthenticated" => ("Not logged in".to_string(), "error"),
+                    _ => (format!("Status: {status_val}"), "dim-label"),
+                };
             }
             ("Unknown".to_string(), "dim-label")
         }
@@ -1530,10 +1530,10 @@ fn check_onepassword_status_sync(op_cmd: &str) -> (String, &'static str) {
     match output {
         Ok(o) if o.status.success() => {
             let stdout = String::from_utf8_lossy(&o.stdout);
-            if let Ok(whoami) = serde_json::from_str::<serde_json::Value>(&stdout) {
-                if let Some(email) = whoami.get("email").and_then(|v| v.as_str()) {
-                    return (format!("Signed in: {email}"), "success");
-                }
+            if let Ok(whoami) = serde_json::from_str::<serde_json::Value>(&stdout)
+                && let Some(email) = whoami.get("email").and_then(|v| v.as_str())
+            {
+                return (format!("Signed in: {email}"), "success");
             }
             ("Signed in".to_string(), "success")
         }
@@ -1597,12 +1597,11 @@ fn extract_session_key(output: &str) -> Option<String> {
     for line in output.lines() {
         if line.contains("BW_SESSION=") {
             // Extract the value between quotes
-            if let Some(start) = line.find('"') {
-                if let Some(end) = line.rfind('"') {
-                    if end > start {
-                        return Some(line[start + 1..end].to_string());
-                    }
-                }
+            if let Some(start) = line.find('"')
+                && let Some(end) = line.rfind('"')
+                && end > start
+            {
+                return Some(line[start + 1..end].to_string());
             }
             // Try without quotes (BW_SESSION=value)
             if let Some(pos) = line.find("BW_SESSION=") {
@@ -1992,7 +1991,7 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
 
                 if let Some((text, css, session_key)) = result {
                     if let Some(key) = session_key {
-                        std::env::set_var("BW_SESSION", &key);
+                        set_session_key(&key);
                         tracing::info!("Bitwarden auto-unlocked from keyring");
                     }
                     update_status_label(&status_label, &text, css);
@@ -2020,7 +2019,8 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
             if let Some(token) = token {
                 tracing::debug!("1Password token loaded from keyring");
                 token_entry.set_text(&token);
-                std::env::set_var("OP_SERVICE_ACCOUNT_TOKEN", &token);
+                // Token is passed to `op` CLI via Command::env() in OnePasswordBackend,
+                // no need to set process-wide env var.
                 update_status_label(&status_label, "Token loaded from keyring", "success");
                 tracing::info!("1Password token set from keyring");
             } else {

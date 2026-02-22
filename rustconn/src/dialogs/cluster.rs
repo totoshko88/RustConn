@@ -63,17 +63,9 @@ impl ClusterDialog {
 
         window.set_size_request(320, 280);
 
-        // Create header bar with Close/Create buttons (GNOME HIG)
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label(i18n("Close")).build();
-        let save_btn = Button::builder()
-            .label(i18n("Create"))
-            .css_classes(["suggested-action"])
-            .build();
-        header.pack_start(&close_btn);
-        header.pack_end(&save_btn);
+        // Header bar (GNOME HIG)
+        let (header, close_btn, save_btn) =
+            crate::dialogs::widgets::dialog_header("Close", "Create");
 
         // Close button handler
         let window_clone = window.clone();
@@ -302,37 +294,32 @@ impl ClusterDialog {
 
         // Wire up select all / deselect all buttons
         // Find the buttons in the frame
-        if let Some(frame) = self.connections_list.parent() {
-            if let Some(scrolled) = frame.parent() {
-                if let Some(vbox) = scrolled.parent() {
-                    if let Some(button_box) = vbox.last_child() {
-                        if let Some(button_box) = button_box.downcast_ref::<GtkBox>() {
-                            let connection_rows_clone = self.connection_rows.clone();
-                            if let Some(select_all) = button_box.first_child() {
-                                if let Some(select_all_btn) = select_all.downcast_ref::<Button>() {
-                                    let rows = connection_rows_clone.clone();
-                                    select_all_btn.connect_clicked(move |_| {
-                                        for row in rows.borrow().iter() {
-                                            row.selected_check.set_active(true);
-                                        }
-                                    });
-                                }
-                            }
-                            if let Some(deselect_all) = button_box.last_child() {
-                                if let Some(deselect_all_btn) =
-                                    deselect_all.downcast_ref::<Button>()
-                                {
-                                    let rows = connection_rows_clone;
-                                    deselect_all_btn.connect_clicked(move |_| {
-                                        for row in rows.borrow().iter() {
-                                            row.selected_check.set_active(false);
-                                        }
-                                    });
-                                }
-                            }
-                        }
+        if let Some(frame) = self.connections_list.parent()
+            && let Some(scrolled) = frame.parent()
+            && let Some(vbox) = scrolled.parent()
+            && let Some(button_box) = vbox.last_child()
+            && let Some(button_box) = button_box.downcast_ref::<GtkBox>()
+        {
+            let connection_rows_clone = self.connection_rows.clone();
+            if let Some(select_all) = button_box.first_child()
+                && let Some(select_all_btn) = select_all.downcast_ref::<Button>()
+            {
+                let rows = connection_rows_clone.clone();
+                select_all_btn.connect_clicked(move |_| {
+                    for row in rows.borrow().iter() {
+                        row.selected_check.set_active(true);
                     }
-                }
+                });
+            }
+            if let Some(deselect_all) = button_box.last_child()
+                && let Some(deselect_all_btn) = deselect_all.downcast_ref::<Button>()
+            {
+                let rows = connection_rows_clone;
+                deselect_all_btn.connect_clicked(move |_| {
+                    for row in rows.borrow().iter() {
+                        row.selected_check.set_active(false);
+                    }
+                });
             }
         }
     }
@@ -413,17 +400,9 @@ impl ClusterListDialog {
 
         window.set_size_request(320, 280);
 
-        // Create header bar with Close/Create buttons (GNOME HIG)
-        let header = adw::HeaderBar::new();
-        header.set_show_end_title_buttons(false);
-        header.set_show_start_title_buttons(false);
-        let close_btn = Button::builder().label(i18n("Close")).build();
-        let new_btn = Button::builder()
-            .label(i18n("Create"))
-            .css_classes(["suggested-action"])
-            .build();
-        header.pack_start(&close_btn);
-        header.pack_end(&new_btn);
+        // Header bar (GNOME HIG)
+        let (header, close_btn, new_btn) =
+            crate::dialogs::widgets::dialog_header("Close", "Create");
 
         // Close button handler
         let window_clone = window.clone();

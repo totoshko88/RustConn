@@ -287,10 +287,10 @@ fn find_snippet<'a>(
     manager: &'a SnippetManager,
     name_or_id: &str,
 ) -> Result<&'a Snippet, CliError> {
-    if let Ok(uuid) = uuid::Uuid::parse_str(name_or_id) {
-        if let Some(snippet) = manager.get_snippet(uuid) {
-            return Ok(snippet);
-        }
+    if let Ok(uuid) = uuid::Uuid::parse_str(name_or_id)
+        && let Some(snippet) = manager.get_snippet(uuid)
+    {
+        return Ok(snippet);
     }
 
     let snippets = manager.list_snippets();

@@ -278,8 +278,8 @@ proptest! {
 
 // Import additional types for framebuffer tests
 use rustconn_core::{
-    convert_to_bgra, create_frame_update, create_frame_update_with_conversion, PixelFormat,
-    RdpClientEvent,
+    PixelFormat, RdpClientEvent, convert_to_bgra, create_frame_update,
+    create_frame_update_with_conversion,
 };
 
 // Strategy for generating pixel formats
@@ -620,8 +620,8 @@ mod resource_cleanup_tests {
 // ============================================================================
 
 use rustconn_core::{
-    find_best_standard_resolution, generate_resize_request, should_resize, CoordinateTransform,
-    MAX_RDP_HEIGHT, MAX_RDP_WIDTH, MIN_RDP_HEIGHT, MIN_RDP_WIDTH, STANDARD_RESOLUTIONS,
+    CoordinateTransform, MAX_RDP_HEIGHT, MAX_RDP_WIDTH, MIN_RDP_HEIGHT, MIN_RDP_WIDTH,
+    STANDARD_RESOLUTIONS, find_best_standard_resolution, generate_resize_request, should_resize,
 };
 
 // Strategy for generating valid widget dimensions
@@ -980,8 +980,8 @@ proptest! {
 // ============================================================================
 
 use rustconn_core::{
-    ctrl_alt_del_sequence, is_modifier_keyval, is_printable_keyval, keyval_to_scancode,
-    SCANCODE_ALT, SCANCODE_CTRL, SCANCODE_DELETE,
+    SCANCODE_ALT, SCANCODE_CTRL, SCANCODE_DELETE, ctrl_alt_del_sequence, is_modifier_keyval,
+    is_printable_keyval, keyval_to_scancode,
 };
 
 // GDK keyval constants for testing

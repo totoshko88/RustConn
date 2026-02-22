@@ -4,8 +4,8 @@
 //! **Validates: Requirements 5.5**
 
 use proptest::prelude::*;
-use rustconn_core::models::{Connection, ProtocolConfig, SshAuthMethod, SshConfig, SshKeySource};
 use rustconn_core::Credentials;
+use rustconn_core::models::{Connection, ProtocolConfig, SshAuthMethod, SshConfig, SshKeySource};
 use std::path::PathBuf;
 
 /// Generates arbitrary SSH key paths (file paths that look like SSH keys)

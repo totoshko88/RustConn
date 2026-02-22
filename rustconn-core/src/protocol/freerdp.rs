@@ -12,6 +12,7 @@
 //! - Requirement 6.4: Respect `remember_window_position` setting
 
 use crate::models::WindowGeometry;
+use secrecy::{ExposeSecret, SecretString};
 use std::path::PathBuf;
 
 /// A shared folder for RDP drive redirection
@@ -33,7 +34,7 @@ pub struct FreeRdpConfig {
     /// Username for authentication
     pub username: Option<String>,
     /// Password for authentication
-    pub password: Option<String>,
+    pub password: Option<SecretString>,
     /// Domain for authentication
     pub domain: Option<String>,
     /// Desired width in pixels
@@ -89,7 +90,7 @@ impl FreeRdpConfig {
     /// Sets the password
     #[must_use]
     pub fn with_password(mut self, password: impl Into<String>) -> Self {
-        self.password = Some(password.into());
+        self.password = Some(SecretString::from(password.into()));
         self
     }
 
@@ -171,10 +172,10 @@ pub fn build_freerdp_args(config: &FreeRdpConfig) -> Vec<String> {
     let mut args = Vec::new();
 
     // Domain
-    if let Some(ref domain) = config.domain {
-        if !domain.is_empty() {
-            args.push(format!("/d:{domain}"));
-        }
+    if let Some(ref domain) = config.domain
+        && !domain.is_empty()
+    {
+        args.push(format!("/d:{domain}"));
     }
 
     // Username
@@ -183,7 +184,11 @@ pub fn build_freerdp_args(config: &FreeRdpConfig) -> Vec<String> {
     }
 
     // Password — use /from-stdin to avoid /proc/PID/cmdline exposure
-    if config.password.as_ref().is_some_and(|p| !p.is_empty()) {
+    if config
+        .password
+        .as_ref()
+        .is_some_and(|p| !p.expose_secret().is_empty())
+    {
         args.push("/from-stdin".to_string());
     }
 
@@ -201,11 +206,11 @@ pub fn build_freerdp_args(config: &FreeRdpConfig) -> Vec<String> {
     args.push("/decorations".to_string());
 
     // Window geometry (Requirements 6.2, 6.3, 6.4)
-    if config.remember_window_position {
-        if let Some(ref geometry) = config.window_geometry {
-            args.push(format!("/x:{}", geometry.x));
-            args.push(format!("/y:{}", geometry.y));
-        }
+    if config.remember_window_position
+        && let Some(ref geometry) = config.window_geometry
+    {
+        args.push(format!("/x:{}", geometry.x));
+        args.push(format!("/y:{}", geometry.y));
     }
 
     // Clipboard

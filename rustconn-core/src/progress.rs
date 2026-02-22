@@ -3,8 +3,8 @@
 //! This module provides traits and implementations for reporting progress
 //! during operations like imports, exports, and bulk operations.
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 /// Trait for reporting progress during long operations.
 ///
