@@ -130,6 +130,10 @@ pub enum SecretError {
     /// Bitwarden-specific error
     #[error("Bitwarden error: {0}")]
     Bitwarden(String),
+
+    /// Pass (passwordstore)-specific error
+    #[error("Pass error: {0}")]
+    Pass(String),
 }
 
 /// Errors related to configuration import operations

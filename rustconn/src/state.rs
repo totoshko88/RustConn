@@ -1555,7 +1555,17 @@ impl AppState {
                                 })
                                 .and_then(|r| r)
                             }
-                            _ => {
+                            SecretBackendType::Pass => {
+                                let backend = rustconn_core::secret::PassBackend::new(
+                                    secret_settings.pass_store_dir.as_ref().map(|p| p.to_string_lossy().to_string())
+                                );
+                                crate::async_utils::with_runtime(|rt| {
+                                    rt.block_on(backend.retrieve(&group_key))
+                                        .map_err(|e| format!("{e}"))
+                                })
+                                .and_then(|r| r)
+                            }
+                            SecretBackendType::LibSecret | SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
                                 let backend =
                                     rustconn_core::secret::LibSecretBackend::new("rustconn");
                                 crate::async_utils::with_runtime(|rt| {
@@ -2889,7 +2899,16 @@ pub fn save_password_to_vault(
                                 .map_err(|e| format!("{e}"))
                         })?
                     }
-                    _ => {
+                    SecretBackendType::Pass => {
+                        let backend = rustconn_core::secret::PassBackend::new(
+                            secret_settings.pass_store_dir.as_ref().map(|p| p.to_string_lossy().to_string())
+                        );
+                        crate::async_utils::with_runtime(|rt| {
+                            rt.block_on(backend.store(&lookup_key, &creds))
+                                .map_err(|e| format!("{e}"))
+                        })?
+                    }
+                    SecretBackendType::LibSecret | SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
                         let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
                         crate::async_utils::with_runtime(|rt| {
                             rt.block_on(backend.store(&lookup_key, &creds))
@@ -2999,7 +3018,16 @@ pub fn save_group_password_to_vault(
                                 .map_err(|e| format!("{e}"))
                         })?
                     }
-                    _ => {
+                    SecretBackendType::Pass => {
+                        let backend = rustconn_core::secret::PassBackend::new(
+                            secret_settings.pass_store_dir.as_ref().map(|p| p.to_string_lossy().to_string())
+                        );
+                        crate::async_utils::with_runtime(|rt| {
+                            rt.block_on(backend.store(&lookup_key, &creds))
+                                .map_err(|e| format!("{e}"))
+                        })?
+                    }
+                    SecretBackendType::LibSecret | SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
                         let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
                         crate::async_utils::with_runtime(|rt| {
                             rt.block_on(backend.store(&lookup_key, &creds))
@@ -3206,6 +3234,15 @@ pub fn save_variable_to_vault(
                     .map_err(|e| format!("{e}"))
             })?
         }
+        SecretBackendType::Pass => {
+            let backend = rustconn_core::secret::PassBackend::new(
+                settings.pass_store_dir.as_ref().map(|p| p.to_string_lossy().to_string())
+            );
+            crate::async_utils::with_runtime(|rt| {
+                rt.block_on(backend.store(&lookup_key, &creds))
+                    .map_err(|e| format!("{e}"))
+            })?
+        }
         SecretBackendType::LibSecret => {
             let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
             crate::async_utils::with_runtime(|rt| {
@@ -3286,6 +3323,17 @@ pub fn load_variable_from_vault(
                 Ok(creds.and_then(|c| c.expose_password().map(String::from)))
             })?
         }
+        SecretBackendType::Pass => {
+            let backend = rustconn_core::secret::PassBackend::new(
+                settings.pass_store_dir.as_ref().map(|p| p.to_string_lossy().to_string())
+            );
+            crate::async_utils::with_runtime(|rt| {
+                let creds = rt
+                    .block_on(backend.retrieve(&lookup_key))
+                    .map_err(|e| format!("{e}"))?;
+                Ok(creds.and_then(|c| c.expose_password().map(String::from)))
+            })?
+        }
         SecretBackendType::LibSecret => {
             let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
             crate::async_utils::with_runtime(|rt| {
@@ -3311,6 +3359,7 @@ pub fn select_backend_for_load(
         SecretBackendType::Bitwarden => SecretBackendType::Bitwarden,
         SecretBackendType::OnePassword => SecretBackendType::OnePassword,
         SecretBackendType::Passbolt => SecretBackendType::Passbolt,
+        SecretBackendType::Pass => SecretBackendType::Pass,
         SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
             if secrets.kdbx_enabled && secrets.kdbx_path.is_some() {
                 SecretBackendType::KdbxFile

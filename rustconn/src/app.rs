@@ -408,7 +408,8 @@ fn refresh_sidebar_secret_status(
         rustconn_core::config::SecretBackendType::LibSecret
         | rustconn_core::config::SecretBackendType::Bitwarden
         | rustconn_core::config::SecretBackendType::OnePassword
-        | rustconn_core::config::SecretBackendType::Passbolt => (true, true),
+        | rustconn_core::config::SecretBackendType::Passbolt
+        | rustconn_core::config::SecretBackendType::Pass => (true, true),
         rustconn_core::config::SecretBackendType::KeePassXc
         | rustconn_core::config::SecretBackendType::KdbxFile => {
             let kdbx_enabled = settings.secrets.kdbx_enabled;

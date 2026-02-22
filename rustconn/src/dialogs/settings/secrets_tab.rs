@@ -272,13 +272,14 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .description(i18n("Choose how passwords are stored"))
         .build();
 
-    // Simplified: KeePassXC, libsecret, Bitwarden, 1Password, Passbolt
+    // Simplified: KeePassXC, libsecret, Bitwarden, 1Password, Passbolt, Pass
     let backend_strings = StringList::new(&[
         "KeePassXC",
         "libsecret",
         "Bitwarden",
         "1Password",
         "Passbolt",
+        "Pass",
     ]);
     let secret_backend_dropdown = DropDown::builder()
         .model(&backend_strings)
@@ -1118,8 +1119,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         glib::Propagation::Proceed
     });
 
-    // Setup visibility for Bitwarden, 1Password, and Passbolt groups based on backend
-    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password, 4=Passbolt
+    // Setup visibility for Bitwarden, 1Password, Passbolt, and Pass groups based on backend
+    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password, 4=Passbolt, 5=Pass
     let bitwarden_group_clone = bitwarden_group.clone();
     let onepassword_group_clone = onepassword_group.clone();
     let passbolt_group_clone = passbolt_group.clone();
@@ -1776,13 +1777,14 @@ fn get_kdbx_password_from_keyring() -> Option<String> {
 /// Loads secret settings into UI controls
 #[allow(clippy::too_many_arguments)]
 pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSettings) {
-    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password, 4=Passbolt
+    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password, 4=Passbolt, 5=Pass
     let backend_index = match settings.preferred_backend {
         SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => 0,
         SecretBackendType::LibSecret => 1,
         SecretBackendType::Bitwarden => 2,
         SecretBackendType::OnePassword => 3,
         SecretBackendType::Passbolt => 4,
+        SecretBackendType::Pass => 5,
     };
     widgets.secret_backend_dropdown.set_selected(backend_index);
     widgets.enable_fallback.set_active(settings.enable_fallback);
@@ -2085,13 +2087,14 @@ pub fn collect_secret_settings(
     widgets: &SecretsPageWidgets,
     settings: &Rc<RefCell<rustconn_core::config::AppSettings>>,
 ) -> SecretSettings {
-    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password, 4=Passbolt
+    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password, 4=Passbolt, 5=Pass
     let preferred_backend = match widgets.secret_backend_dropdown.selected() {
         0 => SecretBackendType::KeePassXc,
         1 => SecretBackendType::LibSecret,
         2 => SecretBackendType::Bitwarden,
         3 => SecretBackendType::OnePassword,
         4 => SecretBackendType::Passbolt,
+        5 => SecretBackendType::Pass,
         _ => SecretBackendType::default(),
     };
 
@@ -2329,5 +2332,6 @@ pub fn collect_secret_settings(
                 Some(url_text.to_string())
             }
         },
+        pass_store_dir: None,
     }
 }

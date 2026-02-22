@@ -147,6 +147,7 @@ impl CredentialResolver {
             SecretBackendType::Bitwarden => self.resolve_from_bitwarden(connection).await,
             SecretBackendType::OnePassword => self.resolve_from_onepassword(connection).await,
             SecretBackendType::Passbolt => self.resolve_from_passbolt(connection).await,
+            SecretBackendType::Pass => self.resolve_from_pass(connection).await,
         }
     }
 
@@ -297,6 +298,24 @@ impl CredentialResolver {
         self.secret_manager.retrieve(&alt_key).await
     }
 
+    /// Resolves credentials from Pass (Unix password manager)
+    async fn resolve_from_pass(
+        &self,
+        connection: &Connection,
+    ) -> SecretResult<Option<Credentials>> {
+        // Primary: use the same key format as store_unified: "rustconn/{name}"
+        let lookup_key = Self::generate_lookup_key(connection);
+        if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
+            return Ok(Some(creds));
+        }
+
+        // Fallback: "{name} ({protocol})" format
+        let protocol = connection.protocol_config.protocol_type();
+        let name = connection.name.replace('/', "-");
+        let alt_key = format!("{} ({})", name, protocol.as_str().to_lowercase());
+        self.secret_manager.retrieve(&alt_key).await
+    }
+
     /// Resolves credentials using the fallback chain
     ///
     /// Tries sources in order: `KeePass` (if enabled) -> Keyring
@@ -338,6 +357,7 @@ impl CredentialResolver {
             SecretBackendType::Bitwarden => SecretBackendType::Bitwarden,
             SecretBackendType::OnePassword => SecretBackendType::OnePassword,
             SecretBackendType::Passbolt => SecretBackendType::Passbolt,
+            SecretBackendType::Pass => SecretBackendType::Pass,
             SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
                 if self.settings.kdbx_enabled && self.settings.kdbx_path.is_some() {
                     SecretBackendType::KdbxFile
@@ -559,8 +579,9 @@ impl CredentialResolver {
             }
             SecretBackendType::Bitwarden
             | SecretBackendType::OnePassword
-            | SecretBackendType::Passbolt => {
-                // For Bitwarden/1Password/Passbolt, use connection name as identifier
+            | SecretBackendType::Passbolt
+            | SecretBackendType::Pass => {
+                // For Bitwarden/1Password/Passbolt/Pass, use connection name as identifier
                 let lookup_key = Self::generate_lookup_key(connection);
                 self.secret_manager.store(&lookup_key, credentials).await
             }
@@ -595,8 +616,9 @@ impl CredentialResolver {
             }
             SecretBackendType::Bitwarden
             | SecretBackendType::OnePassword
-            | SecretBackendType::Passbolt => {
-                // For Bitwarden/1Password/Passbolt, use hierarchical path as entry name
+            | SecretBackendType::Passbolt
+            | SecretBackendType::Pass => {
+                // For Bitwarden/1Password/Passbolt/Pass, use hierarchical path as entry name
                 let lookup_key = Self::generate_hierarchical_lookup_key(connection, groups);
                 self.secret_manager.store(&lookup_key, credentials).await
             }
@@ -847,6 +869,7 @@ impl CredentialResolver {
             SecretBackendType::Bitwarden => self.resolve_from_bitwarden(connection).await,
             SecretBackendType::OnePassword => self.resolve_from_onepassword(connection).await,
             SecretBackendType::Passbolt => self.resolve_from_passbolt(connection).await,
+            SecretBackendType::Pass => self.resolve_from_pass(connection).await,
         }
     }
 
@@ -1009,7 +1032,7 @@ impl CredentialResolver {
                             let _ = self.secret_manager.delete(&old_key).await;
                         }
                     }
-                    SecretBackendType::LibSecret | SecretBackendType::Bitwarden => {
+                    SecretBackendType::LibSecret | SecretBackendType::Bitwarden | SecretBackendType::Pass => {
                         // Uses "{name} ({protocol})" format
                         let old_key = format!("{} ({})", old_name.replace('/', "-"), protocol_str);
                         let new_key =

@@ -420,7 +420,8 @@ impl MainWindow {
             rustconn_core::config::SecretBackendType::LibSecret
             | rustconn_core::config::SecretBackendType::Bitwarden
             | rustconn_core::config::SecretBackendType::OnePassword
-            | rustconn_core::config::SecretBackendType::Passbolt => true,
+            | rustconn_core::config::SecretBackendType::Passbolt
+            | rustconn_core::config::SecretBackendType::Pass => true,
             rustconn_core::config::SecretBackendType::KeePassXc
             | rustconn_core::config::SecretBackendType::KdbxFile => {
                 settings.secrets.kdbx_enabled
@@ -3075,13 +3076,14 @@ impl MainWindow {
         let settings = state_ref.settings();
         let backend = settings.secrets.preferred_backend;
 
-        // For libsecret, Bitwarden, and 1Password, always enabled (no database file needed)
+        // For libsecret, Bitwarden, 1Password, Pass, and Passbolt, always enabled (no database file needed)
         // For KeePassXC/KdbxFile, check if enabled and database exists
         let (enabled, database_exists) = match backend {
             rustconn_core::config::SecretBackendType::LibSecret
             | rustconn_core::config::SecretBackendType::Bitwarden
             | rustconn_core::config::SecretBackendType::OnePassword
-            | rustconn_core::config::SecretBackendType::Passbolt => (true, true),
+            | rustconn_core::config::SecretBackendType::Passbolt
+            | rustconn_core::config::SecretBackendType::Pass => (true, true),
             rustconn_core::config::SecretBackendType::KeePassXc
             | rustconn_core::config::SecretBackendType::KdbxFile => {
                 let kdbx_enabled = settings.secrets.kdbx_enabled;
@@ -3333,7 +3335,7 @@ impl MainWindow {
                 let resolved_credentials = match result {
                     Ok(creds) => creds,
                     Err(e) => {
-                        tracing::warn!("Failed to resolve credentials: {e}");
+                        tracing::error!("Failed to resolve credentials: {e}");
                         None
                     }
                 };
@@ -3399,12 +3401,14 @@ impl MainWindow {
             | ProtocolType::Serial
             | ProtocolType::Kubernetes => {
                 // For SSH/SPICE, cache credentials if available and start connection
-                if let Some(ref creds) = resolved_credentials
-                    && let (Some(username), Some(password)) =
+                if let Some(ref creds) = resolved_credentials {
+                    if let (Some(username), Some(password)) =
                         (&creds.username, creds.expose_password())
-                    && let Ok(mut state_mut) = state.try_borrow_mut()
-                {
-                    state_mut.cache_credentials(connection_id, username, password, "");
+                    {
+                        if let Ok(mut state_mut) = state.try_borrow_mut() {
+                            state_mut.cache_credentials(connection_id, username, password, "");
+                        }
+                    }
                 }
                 Self::start_connection_with_split(
                     &state,
@@ -4454,7 +4458,8 @@ impl MainWindow {
                                 rustconn_core::config::SecretBackendType::LibSecret
                                 | rustconn_core::config::SecretBackendType::Bitwarden
                                 | rustconn_core::config::SecretBackendType::OnePassword
-                                | rustconn_core::config::SecretBackendType::Passbolt => true,
+                                | rustconn_core::config::SecretBackendType::Passbolt
+                                | rustconn_core::config::SecretBackendType::Pass => true,
                                 rustconn_core::config::SecretBackendType::KeePassXc
                                 | rustconn_core::config::SecretBackendType::KdbxFile => {
                                     keepass_enabled && kdbx_path_exists

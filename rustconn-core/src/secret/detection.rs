@@ -37,7 +37,7 @@ pub struct PasswordManagerInfo {
 
 /// Detects all available password managers on the system
 pub async fn detect_password_managers() -> Vec<PasswordManagerInfo> {
-    let (keepassxc, gnome_secrets, libsecret, bitwarden, onepassword, keepass, passbolt) = tokio::join!(
+    let (keepassxc, gnome_secrets, libsecret, bitwarden, onepassword, keepass, passbolt, pass) = tokio::join!(
         detect_keepassxc(),
         detect_gnome_secrets(),
         detect_libsecret(),
@@ -45,6 +45,7 @@ pub async fn detect_password_managers() -> Vec<PasswordManagerInfo> {
         detect_onepassword(),
         detect_keepass(),
         detect_passbolt(),
+        detect_pass(),
     );
 
     vec![
@@ -55,6 +56,7 @@ pub async fn detect_password_managers() -> Vec<PasswordManagerInfo> {
         onepassword,
         keepass,
         passbolt,
+        pass,
     ]
 }
 
@@ -578,6 +580,115 @@ pub async fn detect_passbolt() -> PasswordManagerInfo {
     info
 }
 
+/// Detects Pass (Unix password manager) installation
+pub async fn detect_pass() -> PasswordManagerInfo {
+    let mut info = PasswordManagerInfo {
+        id: "pass",
+        name: "Pass (passwordstore)",
+        version: None,
+        installed: false,
+        running: false,
+        path: None,
+        status_message: None,
+        formats: vec!["GPG-encrypted files"],
+    };
+
+    let pass_paths = ["pass", "/usr/bin/pass", "/usr/local/bin/pass"];
+
+    let home = std::env::var("HOME").unwrap_or_default();
+    let extra_paths = [
+        format!("{home}/.local/bin/pass"),
+    ];
+
+    let mut pass_cmd: Option<String> = None;
+
+    for path in &pass_paths {
+        if let Ok(output) = Command::new(path).arg("--version").output().await
+            && output.status.success()
+        {
+            let version_str = String::from_utf8_lossy(&output.stdout);
+            // Pass --version outputs a banner with version in the middle
+            // Look for a line containing "v" followed by version numbers
+            for line in version_str.lines() {
+                if let Some(version) = parse_version_line(line) {
+                    info.version = Some(version);
+                    break;
+                }
+            }
+            info.installed = true;
+            pass_cmd = Some((*path).to_string());
+            break;
+        }
+    }
+
+    if !info.installed {
+        for path in &extra_paths {
+            if let Ok(output) = Command::new(path).arg("--version").output().await
+                && output.status.success()
+            {
+                let version_str = String::from_utf8_lossy(&output.stdout);
+                // Look for a line containing version numbers
+                for line in version_str.lines() {
+                    if let Some(version) = parse_version_line(line) {
+                        info.version = Some(version);
+                        break;
+                    }
+                }
+                info.installed = true;
+                pass_cmd = Some(path.clone());
+                break;
+            }
+        }
+    }
+
+    // Check if password store is initialized
+    if let Some(ref cmd) = pass_cmd {
+        let store_dir = std::env::var("PASSWORD_STORE_DIR")
+            .unwrap_or_else(|_| format!("{home}/.password-store"));
+        
+        let store_path = PathBuf::from(&store_dir);
+        if store_path.exists() && store_path.join(".gpg-id").exists() {
+            info.running = true;
+            info.status_message = Some(format!("Initialized at {}", store_path.display()));
+        } else {
+            info.status_message = Some("Not initialized (run 'pass init <gpg-id>')".to_string());
+        }
+        info.path = Some(PathBuf::from(cmd));
+    }
+
+    // Try which as fallback
+    if !info.installed
+        && let Ok(output) = Command::new("which").arg("pass").output().await
+        && output.status.success()
+    {
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !path.is_empty() {
+            info.path = Some(PathBuf::from(&path));
+            if let Ok(ver_output) = Command::new(&path).arg("--version").output().await
+                && ver_output.status.success()
+            {
+                let version_str = String::from_utf8_lossy(&ver_output.stdout);
+                // Look for a line containing version numbers
+                for line in version_str.lines() {
+                    if let Some(version) = parse_version_line(line) {
+                        info.version = Some(version);
+                        break;
+                    }
+                }
+                info.installed = true;
+            }
+        }
+    }
+
+    if !info.installed {
+        info.status_message = Some(
+            "Install from https://www.passwordstore.org/".to_string(),
+        );
+    }
+
+    info
+}
+
 /// Parses version from a typical version output line
 fn parse_version_line(output: &str) -> Option<String> {
     VERSION_REGEX
@@ -717,6 +828,23 @@ pub fn get_password_manager_launch_command(
                 .filter(|u| !u.is_empty())
                 .unwrap_or("https://passbolt.local");
             Some(("xdg-open".to_string(), vec![url.to_string()]))
+        }
+        crate::config::SecretBackendType::Pass => {
+            // Pass doesn't have a GUI, but we can open a terminal or file manager
+            // to the password store directory
+            let home = std::env::var("HOME").unwrap_or_default();
+            let store_dir = std::env::var("PASSWORD_STORE_DIR")
+                .unwrap_or_else(|_| format!("{home}/.password-store"));
+            
+            // Try to open file manager to the password store
+            if std::process::Command::new("which")
+                .arg("xdg-open")
+                .output()
+                .is_ok_and(|o| o.status.success())
+            {
+                return Some(("xdg-open".to_string(), vec![store_dir]));
+            }
+            None
         }
     }
 }
