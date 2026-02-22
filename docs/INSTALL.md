@@ -4,7 +4,7 @@
 
 - **OS:** Linux (Wayland-first, X11 supported)
 - **GTK:** 4.14+
-- **libadwaita:** 1.6+
+- **libadwaita:** 1.5+
 - **Rust:** 1.88+ (for building from source)
 
 ## Flatpak (Recommended)
@@ -59,7 +59,7 @@ flatpak install flathub org.gnome.Platform//49
 #### Install
 
 ```bash
-flatpak install --user RustConn-0.8.8.flatpak
+flatpak install --user RustConn-0.9.0.flatpak
 ```
 
 Confirm runtime dependency installation if prompted.
@@ -191,7 +191,7 @@ This installs the desktop file and icon for application menu integration.
 ### Required Runtime
 - GTK4 (4.14+)
 - VTE4 (terminal emulation)
-- libadwaita (1.6+)
+- libadwaita (1.5+)
 - D-Bus
 
 ### Optional Protocol Clients

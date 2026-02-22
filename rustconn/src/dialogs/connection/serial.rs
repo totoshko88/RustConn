@@ -68,7 +68,9 @@ pub fn create_serial_options() -> SerialOptionsWidgets {
     // === Line Parameters Group ===
     let line_group = adw::PreferencesGroup::builder()
         .title(i18n("Line Parameters"))
-        .description(i18n("Standard serial line configuration (default: 115200 8N1)"))
+        .description(i18n(
+            "Standard serial line configuration (default: 115200 8N1)",
+        ))
         .build();
 
     // Baud rate dropdown

@@ -269,9 +269,23 @@ async fn run_vnc_client(
         .map_err(|e| VncClientError::ConnectionFailed(e.to_string()))?
         .try_start()
         .await
-        .map_err(|e| VncClientError::ConnectionFailed(e.to_string()))?
+        .map_err(|e| {
+            let msg = e.to_string();
+            if msg.contains("Unknown VNC security type") || msg.contains("unknown security type") {
+                VncClientError::UnsupportedSecurityType(msg)
+            } else {
+                VncClientError::ConnectionFailed(msg)
+            }
+        })?
         .finish()
-        .map_err(|e| VncClientError::AuthenticationFailed(e.to_string()))?;
+        .map_err(|e| {
+            let msg = e.to_string();
+            if msg.contains("Unknown VNC security type") || msg.contains("unknown security type") {
+                VncClientError::UnsupportedSecurityType(msg)
+            } else {
+                VncClientError::AuthenticationFailed(msg)
+            }
+        })?;
 
     // Notify connected
     let _ = event_tx.send(VncClientEvent::Connected);

@@ -6,7 +6,7 @@ This document describes the internal architecture of RustConn for contributors a
 
 ## Crate Structure
 
-RustConn is a three-crate Cargo workspace with strict separation of concerns:
+RustConn is a three-crate Cargo workspace (Rust 2024 edition) with strict separation of concerns:
 
 ```
 rustconn/           # GTK4 GUI application

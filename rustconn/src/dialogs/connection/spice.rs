@@ -81,7 +81,9 @@ fn create_security_group() -> (
     Button,
     CheckButton,
 ) {
-    let security_group = adw::PreferencesGroup::builder().title(i18n("Security")).build();
+    let security_group = adw::PreferencesGroup::builder()
+        .title(i18n("Security"))
+        .build();
 
     // TLS enabled
     let (tls_row, tls_check) = CheckboxRowBuilder::new("TLS Encryption")
@@ -127,7 +129,9 @@ fn create_security_group() -> (
 
 /// Creates the Features preferences group
 fn create_features_group() -> (adw::PreferencesGroup, CheckButton, CheckButton, DropDown) {
-    let features_group = adw::PreferencesGroup::builder().title(i18n("Features")).build();
+    let features_group = adw::PreferencesGroup::builder()
+        .title(i18n("Features"))
+        .build();
 
     // USB redirection
     let (usb_row, usb_check) = CheckboxRowBuilder::new("USB Redirection")

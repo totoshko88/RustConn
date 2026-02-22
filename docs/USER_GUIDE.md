@@ -1055,7 +1055,7 @@ rustconn-cli var set my_var "my_value"
 rustconn-cli var set api_key "secret123" --secret
 rustconn-cli var delete "my_var"
 
-# Secret Management (New in 0.6.7)
+# Secret Management
 rustconn-cli secret status                    # Show backend status
 rustconn-cli secret get "My Server"           # Get credentials
 rustconn-cli secret get "My Server" --backend keepass

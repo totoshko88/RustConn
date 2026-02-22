@@ -100,6 +100,7 @@
           <li>Migrated to Rust 2024 edition across all three crates</li>
           <li>Ukrainian translation professionally reviewed (674 strings)</li>
           <li>RDP cursor scaling fixed for HiDPI displays</li>
+          <li>VNC RSA-AES: auto-fallback to external viewer for unsupported encryption</li>
         </ul>
       </description>
     </release>

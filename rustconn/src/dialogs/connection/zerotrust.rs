@@ -163,7 +163,9 @@ pub fn create_zerotrust_options() -> ZeroTrustOptionsWidgets {
 
 /// Creates the provider selection group
 fn create_provider_selection() -> (adw::PreferencesGroup, DropDown) {
-    let provider_group = adw::PreferencesGroup::builder().title(i18n("Provider")).build();
+    let provider_group = adw::PreferencesGroup::builder()
+        .title(i18n("Provider"))
+        .build();
 
     let provider_list = StringList::new(&[
         &i18n("AWS Session Manager"),
@@ -193,7 +195,9 @@ fn create_provider_selection() -> (adw::PreferencesGroup, DropDown) {
 
 /// Creates the advanced options group
 fn create_advanced_group() -> (adw::PreferencesGroup, Entry) {
-    let advanced_group = adw::PreferencesGroup::builder().title(i18n("Advanced")).build();
+    let advanced_group = adw::PreferencesGroup::builder()
+        .title(i18n("Advanced"))
+        .build();
 
     let custom_args_entry = Entry::builder()
         .hexpand(true)
@@ -243,7 +247,9 @@ fn create_gcp_iap_fields() -> (GtkBox, adw::EntryRow, adw::EntryRow, adw::EntryR
         .description(i18n("Connect via Identity-Aware Proxy"))
         .build();
 
-    let instance_row = adw::EntryRow::builder().title(i18n("Instance Name")).build();
+    let instance_row = adw::EntryRow::builder()
+        .title(i18n("Instance Name"))
+        .build();
     instance_row.set_text("");
     group.add(&instance_row);
 
@@ -268,11 +274,15 @@ fn create_azure_bastion_fields() -> (GtkBox, adw::EntryRow, adw::EntryRow, adw::
         .description(i18n("Connect via Azure Bastion service"))
         .build();
 
-    let resource_id_row = adw::EntryRow::builder().title(i18n("Target Resource ID")).build();
+    let resource_id_row = adw::EntryRow::builder()
+        .title(i18n("Target Resource ID"))
+        .build();
     resource_id_row.set_text("");
     group.add(&resource_id_row);
 
-    let rg_row = adw::EntryRow::builder().title(i18n("Resource Group")).build();
+    let rg_row = adw::EntryRow::builder()
+        .title(i18n("Resource Group"))
+        .build();
     rg_row.set_text("");
     group.add(&rg_row);
 
@@ -297,7 +307,9 @@ fn create_azure_ssh_fields() -> (GtkBox, adw::EntryRow, adw::EntryRow) {
     vm_row.set_text("");
     group.add(&vm_row);
 
-    let rg_row = adw::EntryRow::builder().title(i18n("Resource Group")).build();
+    let rg_row = adw::EntryRow::builder()
+        .title(i18n("Resource Group"))
+        .build();
     rg_row.set_text("");
     group.add(&rg_row);
 
@@ -377,7 +389,9 @@ fn create_tailscale_fields() -> (GtkBox, adw::EntryRow) {
         .description(i18n("Connect via Tailscale network"))
         .build();
 
-    let host_row = adw::EntryRow::builder().title(i18n("Tailscale Host")).build();
+    let host_row = adw::EntryRow::builder()
+        .title(i18n("Tailscale Host"))
+        .build();
     host_row.set_text("");
     group.add(&host_row);
 
@@ -398,7 +412,9 @@ fn create_boundary_fields() -> (GtkBox, adw::EntryRow, adw::EntryRow) {
     target_row.set_text("");
     group.add(&target_row);
 
-    let addr_row = adw::EntryRow::builder().title(i18n("Controller Address")).build();
+    let addr_row = adw::EntryRow::builder()
+        .title(i18n("Controller Address"))
+        .build();
     addr_row.set_text("");
     group.add(&addr_row);
 
@@ -415,7 +431,9 @@ fn create_generic_fields() -> (GtkBox, adw::EntryRow) {
         .description(i18n("Custom command for unsupported providers"))
         .build();
 
-    let command_row = adw::EntryRow::builder().title(i18n("Command Template")).build();
+    let command_row = adw::EntryRow::builder()
+        .title(i18n("Command Template"))
+        .build();
     command_row.set_text("");
     group.add(&command_row);
 

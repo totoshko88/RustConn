@@ -315,7 +315,9 @@ fn create_connection_group() -> (
     CheckButton,
     CheckButton,
 ) {
-    let connection_group = adw::PreferencesGroup::builder().title(i18n("Connection")).build();
+    let connection_group = adw::PreferencesGroup::builder()
+        .title(i18n("Connection"))
+        .build();
 
     // Jump Host dropdown
     let jump_host_list = StringList::new(&["(None)"]);
@@ -367,7 +369,9 @@ fn create_session_group() -> (
     Entry,
     Entry,
 ) {
-    let session_group = adw::PreferencesGroup::builder().title(i18n("Session")).build();
+    let session_group = adw::PreferencesGroup::builder()
+        .title(i18n("Session"))
+        .build();
 
     // Agent Forwarding switch
     let (agent_forwarding_row, agent_forwarding) = CheckboxRowBuilder::new("Agent Forwarding")

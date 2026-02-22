@@ -116,7 +116,9 @@ pub fn create_kubernetes_options() -> KubernetesOptionsWidgets {
     content.append(&busybox_group);
 
     // === Advanced Group ===
-    let advanced_group = adw::PreferencesGroup::builder().title(i18n("Advanced")).build();
+    let advanced_group = adw::PreferencesGroup::builder()
+        .title(i18n("Advanced"))
+        .build();
 
     let (custom_args_row, custom_args_entry) = EntryRowBuilder::new("Custom Arguments")
         .subtitle("Additional kubectl arguments")

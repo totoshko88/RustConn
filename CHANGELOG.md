@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All `eprintln!` calls replaced with structured `tracing`
 
 ### Fixed
+- **VNC RSA-AES auto-fallback** — servers using RSA-AES security type (type 129, e.g. wayvnc) now automatically fall back to external VNC viewer (TigerVNC) instead of showing a raw error. User sees a friendly toast message ([#31](https://github.com/totoshko88/RustConn/issues/31))
 - Embedded RDP cursor size corrected on HiDPI displays — server-sent device-pixel bitmaps now downscaled to logical pixels before GTK cursor creation
 - Pango markup warning on welcome page — ampersand in "Embedded & external clients" escaped for GTK label rendering
 - Variable password source (`PasswordSource::Variable`) now resolves correctly at connection time — `SecretManager` is initialized with backends from settings, and variable lookup uses the same backend as save
@@ -44,6 +45,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Dead code cleanup: unused credential caching, split view adapter methods, toast helpers, deprecated flatpak host command functions
+
+### Dependencies
+- **Updated**: deranged 0.5.6→0.5.8, js-sys 0.3.86→0.3.88, wasm-bindgen 0.2.109→0.2.111, wasm-bindgen-futures 0.4.59→0.4.61, web-sys 0.3.86→0.3.88
 
 ### Internal
 - `Project-Id-Version` updated to `0.9.0` in all `.po` files
