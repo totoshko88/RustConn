@@ -34,12 +34,11 @@ override_dh_auto_install:
 		debian/rustconn/usr/share/metainfo/io.github.totoshko88.RustConn.metainfo.xml
 	# Screenshots in app-info for GNOME Software
 	install -d debian/rustconn/usr/share/app-info/screenshots/io.github.totoshko88.RustConn
-	install -Dm644 rustconn/assets/screenshots/main.png \
-		debian/rustconn/usr/share/app-info/screenshots/io.github.totoshko88.RustConn/main.png
-	install -Dm644 rustconn/assets/screenshots/split.png \
-		debian/rustconn/usr/share/app-info/screenshots/io.github.totoshko88.RustConn/split.png
-	install -Dm644 rustconn/assets/screenshots/rdp.png \
-		debian/rustconn/usr/share/app-info/screenshots/io.github.totoshko88.RustConn/rdp.png
+	for screenshot in rustconn/assets/screenshots/*.png; do \
+		[ -f "$$screenshot" ] || continue; \
+		install -Dm644 "$$screenshot" \
+			"debian/rustconn/usr/share/app-info/screenshots/io.github.totoshko88.RustConn/$$(basename $$screenshot)"; \
+	done
 	# Locale files (compile .po to .mo)
 	for po_file in po/*.po; do \
 		[ -f "$$po_file" ] || continue; \

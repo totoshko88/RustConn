@@ -279,8 +279,6 @@ Due to snap confinement, RustConn stores data in snap-specific locations:
 
 **Flatpak Components** — Flatpak users can download and install additional CLI tools (Zero Trust, password managers, TigerVNC) directly within the sandbox via Menu → Flatpak Components. See [User Guide — Flatpak Components](USER_GUIDE.md#flatpak-components) for details.
 
-![Flatpak Components](../rustconn/assets/screenshots/flatpak_components.png)
-
 **Recommendation:**
 - **Flatpak:** Recommended. Full functionality with embedded clients and on-demand CLI downloads via Flatpak Components
 - **Snap:** Good for users who prefer strict confinement; requires manual interface connections and host-installed CLIs

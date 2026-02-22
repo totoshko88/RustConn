@@ -25,14 +25,28 @@ override_dh_auto_build:
 	. "$$HOME/.cargo/env" && cargo build --release -p rustconn -p rustconn-cli
 
 override_dh_auto_install:
+	# Binaries
 	install -Dm755 target/release/rustconn debian/rustconn/usr/bin/rustconn
 	install -Dm755 target/release/rustconn-cli debian/rustconn/usr/bin/rustconn-cli
+	# Desktop file and metainfo
 	install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.desktop \
 		debian/rustconn/usr/share/applications/io.github.totoshko88.RustConn.desktop
 	install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml \
 		debian/rustconn/usr/share/metainfo/io.github.totoshko88.RustConn.metainfo.xml
+	# Icons
 	install -Dm644 rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
 		debian/rustconn/usr/share/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg
+	install -Dm644 rustconn/assets/icons/hicolor/128x128/apps/io.github.totoshko88.RustConn.png \
+		debian/rustconn/usr/share/icons/hicolor/128x128/apps/io.github.totoshko88.RustConn.png
+	install -Dm644 rustconn/assets/icons/hicolor/256x256/apps/io.github.totoshko88.RustConn.png \
+		debian/rustconn/usr/share/icons/hicolor/256x256/apps/io.github.totoshko88.RustConn.png
+	# Locale files (compile .po to .mo)
+	for po_file in po/*.po; do \
+		[ -f "$$po_file" ] || continue; \
+		lang=$$(basename "$$po_file" .po); \
+		mkdir -p debian/rustconn/usr/share/locale/$$lang/LC_MESSAGES; \
+		msgfmt -o debian/rustconn/usr/share/locale/$$lang/LC_MESSAGES/rustconn.mo "$$po_file"; \
+	done
 
 override_dh_auto_test:
 	# Skip tests during package build
