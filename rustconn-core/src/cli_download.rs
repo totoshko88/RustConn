@@ -615,21 +615,21 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::ZeroTrust,
         install_method: InstallMethod::Download,
         download_url: Some(
-            "https://releases.hashicorp.com/boundary/0.21.0/\
-             boundary_0.21.0_linux_amd64.zip",
+            "https://releases.hashicorp.com/boundary/0.21.1/\
+             boundary_0.21.1_linux_amd64.zip",
         ),
         aarch64_url: Some(
-            "https://releases.hashicorp.com/boundary/0.21.0/\
-             boundary_0.21.0_linux_arm64.zip",
+            "https://releases.hashicorp.com/boundary/0.21.1/\
+             boundary_0.21.1_linux_arm64.zip",
         ),
         checksum: ChecksumPolicy::Static(
-            "434d569818622b77b2849f20fe64992240df7d3cffba97e65d6913560a0c960a",
+            "ab9f2b2a7624ecd351a9e6f3ef85e61e37eaa3665a6e38a4036b3486e925f8b4",
         ),
         pip_package: None,
         size_hint: "~50 MB",
         binary_name: "boundary",
         install_subdir: "boundary",
-        pinned_version: Some("0.21.0"),
+        pinned_version: Some("0.21.1"),
         works_in_sandbox: true,
     },
     // Password manager CLIs

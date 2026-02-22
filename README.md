@@ -16,7 +16,8 @@ It brings SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust conne
 | **Organization** | Groups, tags, templates, connection history & statistics |
 | **Import/Export** | Asbru-CM, Remmina, SSH config, Ansible inventory, Royal TS, MobaXterm, virt-viewer (.vv), native (.rcn) |
 | **Security** | KeePassXC (KDBX), libsecret, Bitwarden CLI, 1Password CLI, Passbolt CLI integration |
-| **Productivity** | Split terminals, command snippets, cluster commands, Wake-on-LAN, SSH port forwarding |
+| **Productivity** | Split terminals, command snippets, cluster commands, Wake-on-LAN, SSH port forwarding, startup action |
+| **CLI** | `rustconn-cli` — headless management: list/add/update/delete connections, import/export, snippets, groups, templates, clusters, secrets, WoL, shell completions |
 
 | Protocol | Client | Type |
 |----------|--------|------|

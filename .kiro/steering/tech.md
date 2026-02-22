@@ -4,47 +4,49 @@ inclusion: always
 
 # RustConn Tech Stack
 
-Rust 2021 edition, MSRV 1.88, three-crate Cargo workspace.
+Rust 2024 edition, MSRV 1.88, three-crate Cargo workspace (`resolver = "2"`).
 
-## Crates
+## Crate Boundaries
 
-| Crate | Role | GUI imports allowed? |
-|-------|------|:--------------------:|
+| Crate | Role | May import GTK/adw/vte? |
+|-------|------|:-----------------------:|
 | `rustconn` | GTK4 binary | Yes |
-| `rustconn-core` | Business logic library | No — never import `gtk4`, `vte4`, `adw` |
-| `rustconn-cli` | CLI binary | No — depends on `rustconn-core` only |
+| `rustconn-core` | Business logic library | **No** — never import `gtk4`, `vte4`, `adw` |
+| `rustconn-cli` | CLI binary | **No** — depends on `rustconn-core` only |
 
-Placement rule: if it doesn't need GTK, it belongs in `rustconn-core`.
+**Decision rule:** if it doesn't need GTK, put it in `rustconn-core`.
 
 ## Key Dependencies
 
 | Domain | Crate(s) | Notes |
 |--------|----------|-------|
 | GUI | `gtk4` 0.10 (`v4_14`), `libadwaita` 0.8 (`v1_5`), `vte4` 0.9 (`v0_72`) | `rustconn` only |
-| Async | `tokio` 1.49 (full features) | All crates; sole async runtime |
-| Serialization | `serde` + `serde_json` + `serde_yaml` + `toml` | Derive feature enabled |
-| Errors | `thiserror` 2.0 | Every error enum |
-| Secrets | `secrecy` 0.10 (serde feature) | Every credential field |
+| Async | `tokio` 1.49 (full) | All crates — sole async runtime, never mix runtimes |
+| Serialization | `serde` (derive), `serde_json`, `serde_yaml` (actually `serde_yaml_ng`), `toml` | `serde_yaml` re-exported as `serde_yaml_ng` in workspace deps |
+| Errors | `thiserror` 2.0 | Every error enum must derive `thiserror::Error` |
+| Secrets | `secrecy` 0.10 (serde) | Every credential field — never plain `String` |
 | Crypto | `ring` 0.17, `argon2` 0.5 | `rustconn-core` only |
 | IDs | `uuid` 1.11 (v4 + serde) | All crates |
-| Time | `chrono` 0.4 (serde feature) | All crates |
+| Time | `chrono` 0.4 (serde) | All crates |
 | CLI | `clap` 4.5 (derive) | `rustconn-cli` only |
-| RDP | `ironrdp` 0.14 | Feature-gated (`rdp-embedded`) |
-| VNC | `vnc-rs` 0.5 | Feature-gated (`vnc-embedded`) |
+| RDP | `ironrdp` 0.14 | Feature-gated: `rdp-embedded` |
+| VNC | `vnc-rs` 0.5 | Feature-gated: `vnc-embedded` |
 | Testing | `proptest` 1.6, `tempfile` 3.15 | dev-dependencies in `rustconn-core` |
 
 ## Lints & Formatting
 
+All lint config lives in workspace `Cargo.toml` under `[workspace.lints.clippy]`.
+
 - `unsafe_code = "forbid"` — no unsafe code, ever.
-- Clippy: `all` + `pedantic` + `nursery` at warn level. Zero warnings required.
+- Clippy groups `all` + `pedantic` + `nursery` at warn level. **Zero warnings required.**
+- `.clippy.toml` thresholds: `cognitive-complexity-threshold = 25`, `too-many-arguments-threshold = 7`, `type-complexity-threshold = 250`.
 - Line width: 100 chars. Indentation: 4 spaces. Line endings: LF only.
-- `.clippy.toml` thresholds: cognitive-complexity 25, too-many-arguments 7, type-complexity 250.
-- Allowed clippy exceptions are declared in workspace `Cargo.toml`. Do not add new `#[allow(...)]` in source without justification.
-- Test entry points (`property_tests.rs`, `integration_tests.rs`) carry their own `#![allow(...)]` blocks for common test patterns — that is the only acceptable location for broad allows.
+- Allowed clippy exceptions (e.g. `cast_precision_loss`, `wildcard_imports`, `needless_pass_by_value`) are declared centrally in workspace `Cargo.toml` with justification comments. **Do not add new `#[allow(...)]` in source** without justification.
+- The only acceptable location for broad `#![allow(...)]` blocks is test entry points (`property_tests.rs`, `integration_tests.rs`).
 
 ## Required Code Patterns
 
-### Error types — always `thiserror`
+### Errors — always `thiserror`
 
 ```rust
 #[derive(Debug, thiserror::Error)]
@@ -54,7 +56,7 @@ pub enum MyError {
 }
 ```
 
-Use domain-specific Result aliases (`ConfigResult<T>`, `ProtocolResult<T>`, `SecretResult<T>`, `SessionResult<T>`, `ImportOperationResult<T>`) within their domain. Use `RustConnError` / `Result<T>` at crate API boundaries.
+Domain-specific `Result` aliases: `ConfigResult<T>`, `ProtocolResult<T>`, `SecretResult<T>`, `SessionResult<T>`, `ImportOperationResult<T>`. Use `RustConnError` / `Result<T>` at crate API boundaries.
 
 ### Credentials — always `SecretString`
 
@@ -63,17 +65,10 @@ use secrecy::SecretString;
 let password: SecretString = SecretString::new(value.into());
 ```
 
-Never store passwords, keys, or tokens as plain `String`.
-
-### Identifiers
+### IDs and timestamps
 
 ```rust
 let id = uuid::Uuid::new_v4();
-```
-
-### Timestamps
-
-```rust
 let now: chrono::DateTime<chrono::Utc> = chrono::Utc::now();
 ```
 
@@ -86,25 +81,35 @@ impl MyTrait for MyStruct {
 }
 ```
 
-### Public API docs
+### Public API documentation
 
 `#![warn(missing_docs)]` is enabled on `rustconn-core`. Document every public item with `///`.
 
 ### Re-exports
 
-All new public types in `rustconn-core` must be re-exported through `lib.rs`.
+All new public types in `rustconn-core` must be re-exported through `lib.rs`. Feature-gated types use matching `#[cfg(feature = "...")]` guards on the re-export.
 
-## Strict Rules
+### Logging
+
+Use `tracing` with structured fields. Never use `println!` / `eprintln!` for log output.
+
+```rust
+tracing::info!(protocol = "ssh", host = %host, port = %port, "Connection established");
+tracing::error!(?error, protocol = "rdp", host = %host, "Connection failed");
+```
+
+## Strict Rules (Quick Reference)
 
 | REQUIRED | FORBIDDEN |
 |----------|-----------|
-| `Result<T, Error>` from fallible functions | `unwrap()`/`expect()` except provably impossible states |
+| `Result<T, Error>` from fallible functions | `unwrap()` / `expect()` except provably impossible states |
 | `thiserror` for all error types | Error types without `#[derive(thiserror::Error)]` |
 | `SecretString` for all credentials | Plain `String` for passwords/keys/tokens |
 | `tokio` as sole async runtime | Mixing async runtimes |
 | GUI-free `rustconn-core` | `gtk4`/`vte4`/`adw` imports in `rustconn-core` or `rustconn-cli` |
 | `adw::` widgets over `gtk::` equivalents | Deprecated GTK patterns |
-| `tracing` for structured logging | `println!`/`eprintln!` for log output |
+| `tracing` for structured logging | `println!` / `eprintln!` for log output |
+| `#[cfg(feature = "...")]` for gated code | Unconditional use of feature-gated types |
 
 ## Feature Flags
 
@@ -117,11 +122,9 @@ All new public types in `rustconn-core` must be re-exported through `lib.rs`.
 | `rdp-audio` | `rustconn` | Yes | RDP audio playback (cpal) |
 | `wayland-native` | `rustconn` | Yes | Wayland surface support |
 
-Guard feature-gated code with `#[cfg(feature = "...")]`. Check before referencing embedded client types.
+Guard feature-gated code with `#[cfg(feature = "...")]`. Check feature availability before referencing embedded client types.
 
 ## Testing
-
-### Structure
 
 | Type | Location | Entry point | Registration |
 |------|----------|-------------|--------------|
@@ -130,10 +133,8 @@ Guard feature-gated code with `#[cfg(feature = "...")]`. Check before referencin
 | Fixtures | `rustconn-core/tests/fixtures/` | — | — |
 | Benchmarks | `rustconn-core/benches/` | — | — |
 
-### Rules
-
-- Property tests use `proptest` 1.6. Temp files use `tempfile` crate.
-- New property test modules must be registered in `tests/properties/mod.rs`.
+- Property tests use `proptest` 1.6. Temp files use `tempfile`.
+- New test modules must be registered in the corresponding `mod.rs`.
 - Full test suite runs ~1 minute. Wait for completion before running the next command.
 
 ## Build & Test Commands
