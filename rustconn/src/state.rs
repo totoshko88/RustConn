@@ -1556,9 +1556,7 @@ impl AppState {
                                 .and_then(|r| r)
                             }
                             SecretBackendType::Pass => {
-                                let backend = rustconn_core::secret::PassBackend::new(
-                                    secret_settings.pass_store_dir.as_ref().map(|p| p.to_string_lossy().to_string())
-                                );
+                                let backend = create_pass_backend_from_secret_settings(&secret_settings);
                                 crate::async_utils::with_runtime(|rt| {
                                     rt.block_on(backend.retrieve(&group_key))
                                         .map_err(|e| format!("{e}"))
@@ -2772,6 +2770,32 @@ where
 }
 
 /// Shows a toast notification for vault save errors on the active window.
+/// Creates a PassBackend from an optional store directory path
+///
+/// Helper to avoid code duplication when creating PassBackend instances.
+/// Converts PathBuf to String if present.
+fn create_pass_backend_from_path(pass_store_dir: Option<std::path::PathBuf>) -> rustconn_core::secret::PassBackend {
+    rustconn_core::secret::PassBackend::new(
+        pass_store_dir.as_ref().map(|p| p.to_string_lossy().to_string())
+    )
+}
+
+/// Creates a PassBackend from secret settings
+///
+/// Helper to avoid code duplication when creating PassBackend instances.
+/// Extracts and clones pass_store_dir from settings.
+pub fn create_pass_backend_from_secret_settings(settings: &rustconn_core::config::SecretSettings) -> rustconn_core::secret::PassBackend {
+    create_pass_backend_from_path(settings.pass_store_dir.clone())
+}
+
+/// Creates a PassBackend from app settings
+///
+/// Helper to avoid code duplication when creating PassBackend instances.
+/// Extracts and clones pass_store_dir from app settings.
+pub fn create_pass_backend(settings: &rustconn_core::config::AppSettings) -> rustconn_core::secret::PassBackend {
+    create_pass_backend_from_path(settings.secrets.pass_store_dir.clone())
+}
+
 ///
 /// Uses `glib::idle_add_local_once` to ensure the toast is shown on the GTK
 /// main thread. Falls back to stderr if no active window is found.
@@ -2900,9 +2924,7 @@ pub fn save_password_to_vault(
                         })?
                     }
                     SecretBackendType::Pass => {
-                        let backend = rustconn_core::secret::PassBackend::new(
-                            secret_settings.pass_store_dir.as_ref().map(|p| p.to_string_lossy().to_string())
-                        );
+                        let backend = create_pass_backend_from_secret_settings(&secret_settings);
                         crate::async_utils::with_runtime(|rt| {
                             rt.block_on(backend.store(&lookup_key, &creds))
                                 .map_err(|e| format!("{e}"))
@@ -3019,9 +3041,7 @@ pub fn save_group_password_to_vault(
                         })?
                     }
                     SecretBackendType::Pass => {
-                        let backend = rustconn_core::secret::PassBackend::new(
-                            secret_settings.pass_store_dir.as_ref().map(|p| p.to_string_lossy().to_string())
-                        );
+                        let backend = create_pass_backend_from_secret_settings(&secret_settings);
                         crate::async_utils::with_runtime(|rt| {
                             rt.block_on(backend.store(&lookup_key, &creds))
                                 .map_err(|e| format!("{e}"))
@@ -3235,9 +3255,7 @@ pub fn save_variable_to_vault(
             })?
         }
         SecretBackendType::Pass => {
-            let backend = rustconn_core::secret::PassBackend::new(
-                settings.pass_store_dir.as_ref().map(|p| p.to_string_lossy().to_string())
-            );
+            let backend = create_pass_backend_from_secret_settings(&settings);
             crate::async_utils::with_runtime(|rt| {
                 rt.block_on(backend.store(&lookup_key, &creds))
                     .map_err(|e| format!("{e}"))
@@ -3324,9 +3342,7 @@ pub fn load_variable_from_vault(
             })?
         }
         SecretBackendType::Pass => {
-            let backend = rustconn_core::secret::PassBackend::new(
-                settings.pass_store_dir.as_ref().map(|p| p.to_string_lossy().to_string())
-            );
+            let backend = create_pass_backend_from_secret_settings(&settings);
             crate::async_utils::with_runtime(|rt| {
                 let creds = rt
                     .block_on(backend.retrieve(&lookup_key))

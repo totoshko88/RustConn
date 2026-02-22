@@ -24,6 +24,12 @@ pub struct PassBackend {
     store_dir: Option<String>,
 }
 
+impl Default for PassBackend {
+    fn default() -> Self {
+        Self::new(None)
+    }
+}
+
 impl PassBackend {
     /// Creates a new Pass backend
     ///
@@ -35,12 +41,6 @@ impl PassBackend {
     #[must_use]
     pub fn new(store_dir: Option<String>) -> Self {
         Self { store_dir }
-    }
-
-    /// Creates a new Pass backend with default settings
-    #[must_use]
-    pub fn default() -> Self {
-        Self::new(None)
     }
 
     /// Builds the pass path for a connection's credential field
@@ -169,25 +169,26 @@ impl PassBackend {
 
     /// Deletes the entire connection directory if empty
     async fn cleanup_directory(&self, connection_id: &str) -> SecretResult<()> {
-        // Try to remove the connection directory (will only work if empty)
-        let dir_path = format!("rustconn/{connection_id}");
+        use std::path::PathBuf;
 
-        let _ = self
-            .setup_command()
-            .arg("rm")
-            .arg("--force")
-            .arg(&dir_path)
-            .output()
-            .await;
+        // Determine the password store directory
+        let store_dir = if let Some(ref custom_dir) = self.store_dir {
+            PathBuf::from(custom_dir)
+        } else if let Some(home) = dirs::home_dir() {
+            // Default is ~/.password-store
+            home.join(".password-store")
+        } else {
+            // Fallback if home directory cannot be determined
+            PathBuf::from(".password-store")
+        };
 
-        // Also try to remove rustconn directory if empty
-        let _ = self
-            .setup_command()
-            .arg("rm")
-            .arg("--force")
-            .arg("rustconn")
-            .output()
-            .await;
+        // Try to remove the connection directory (will only succeed if empty)
+        let conn_dir = store_dir.join("rustconn").join(connection_id);
+        let _ = tokio::fs::remove_dir(&conn_dir).await;
+
+        // Try to remove rustconn directory if empty
+        let rustconn_dir = store_dir.join("rustconn");
+        let _ = tokio::fs::remove_dir(&rustconn_dir).await;
 
         Ok(())
     }

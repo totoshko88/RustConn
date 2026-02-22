@@ -3335,7 +3335,7 @@ impl MainWindow {
                 let resolved_credentials = match result {
                     Ok(creds) => creds,
                     Err(e) => {
-                        tracing::error!("Failed to resolve credentials: {e}");
+                        tracing::warn!("Failed to resolve credentials: {e}");
                         None
                     }
                 };
@@ -3401,14 +3401,12 @@ impl MainWindow {
             | ProtocolType::Serial
             | ProtocolType::Kubernetes => {
                 // For SSH/SPICE, cache credentials if available and start connection
-                if let Some(ref creds) = resolved_credentials {
-                    if let (Some(username), Some(password)) =
+                if let Some(ref creds) = resolved_credentials
+                    && let (Some(username), Some(password)) =
                         (&creds.username, creds.expose_password())
-                    {
-                        if let Ok(mut state_mut) = state.try_borrow_mut() {
-                            state_mut.cache_credentials(connection_id, username, password, "");
-                        }
-                    }
+                    && let Ok(mut state_mut) = state.try_borrow_mut()
+                {
+                    state_mut.cache_credentials(connection_id, username, password, "");
                 }
                 Self::start_connection_with_split(
                     &state,

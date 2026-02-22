@@ -8,11 +8,11 @@
 
 use proptest::prelude::*;
 use rustconn_core::{
-    Connection, ConnectionGroup, HistorySettings, ProtocolConfig, RdpConfig, RdpGateway,
-    Resolution, Snippet, SnippetVariable, SshAuthMethod, SshConfig, SshKeySource, VncConfig,
     config::AppSettings, config::ColorScheme, config::ConfigManager, config::LoggingSettings,
     config::SecretBackendType, config::SecretSettings, config::SessionRestoreSettings,
-    config::TerminalSettings, config::UiSettings,
+    config::TerminalSettings, config::UiSettings, Connection, ConnectionGroup, HistorySettings,
+    ProtocolConfig, RdpConfig, RdpGateway, Resolution, Snippet, SnippetVariable, SshAuthMethod,
+    SshConfig, SshKeySource, VncConfig,
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -342,6 +342,7 @@ fn arb_secret_backend_type() -> impl Strategy<Value = SecretBackendType> {
         Just(SecretBackendType::Bitwarden),
         Just(SecretBackendType::OnePassword),
         Just(SecretBackendType::Passbolt),
+        Just(SecretBackendType::Pass),
     ]
 }
 
@@ -388,6 +389,7 @@ fn arb_secret_settings() -> impl Strategy<Value = SecretSettings> {
                 passbolt_passphrase_encrypted: None,
                 passbolt_save_to_keyring: false,
                 passbolt_server_url: None,
+                pass_store_dir: None,
             },
         )
 }
@@ -470,6 +472,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         passbolt_passphrase_encrypted: None,
                         passbolt_save_to_keyring: false,
                         passbolt_server_url: None,
+                        pass_store_dir: None,
                     },
                     ui: UiSettings {
                         color_scheme: ColorScheme::default(),

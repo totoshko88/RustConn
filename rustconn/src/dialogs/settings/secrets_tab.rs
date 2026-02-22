@@ -2332,6 +2332,7 @@ pub fn collect_secret_settings(
                 Some(url_text.to_string())
             }
         },
-        pass_store_dir: None,
+        // Keep existing pass_store_dir from settings (no UI to configure yet)
+        pass_store_dir: settings.borrow().secrets.pass_store_dir.clone(),
     }
 }

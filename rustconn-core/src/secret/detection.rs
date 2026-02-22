@@ -602,8 +602,9 @@ pub async fn detect_pass() -> PasswordManagerInfo {
 
     let mut pass_cmd: Option<String> = None;
 
-    for path in &pass_paths {
-        if let Ok(output) = Command::new(path).arg("--version").output().await
+    // Try all paths (standard paths + extra paths) in a single iterator chain
+    for path in pass_paths.iter().map(|s| s.to_string()).chain(extra_paths.iter().cloned()) {
+        if let Ok(output) = Command::new(&path).arg("--version").output().await
             && output.status.success()
         {
             let version_str = String::from_utf8_lossy(&output.stdout);
@@ -616,28 +617,8 @@ pub async fn detect_pass() -> PasswordManagerInfo {
                 }
             }
             info.installed = true;
-            pass_cmd = Some((*path).to_string());
+            pass_cmd = Some(path);
             break;
-        }
-    }
-
-    if !info.installed {
-        for path in &extra_paths {
-            if let Ok(output) = Command::new(path).arg("--version").output().await
-                && output.status.success()
-            {
-                let version_str = String::from_utf8_lossy(&output.stdout);
-                // Look for a line containing version numbers
-                for line in version_str.lines() {
-                    if let Some(version) = parse_version_line(line) {
-                        info.version = Some(version);
-                        break;
-                    }
-                }
-                info.installed = true;
-                pass_cmd = Some(path.clone());
-                break;
-            }
         }
     }
 
