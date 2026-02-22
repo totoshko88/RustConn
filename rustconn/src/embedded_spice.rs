@@ -478,13 +478,14 @@ impl EmbeddedSpiceWidget {
                 let current_state = *state_release.borrow();
                 let embedded = *is_embedded_release.borrow();
 
-                if embedded && current_state == SpiceConnectionState::Connected {
-                    if let Some(ref sender) = *cmd_sender_release.borrow() {
-                        let _ = sender.send(SpiceClientCommand::KeyEvent {
-                            scancode: keycode,
-                            pressed: false,
-                        });
-                    }
+                if embedded
+                    && current_state == SpiceConnectionState::Connected
+                    && let Some(ref sender) = *cmd_sender_release.borrow()
+                {
+                    let _ = sender.send(SpiceClientCommand::KeyEvent {
+                        scancode: keycode,
+                        pressed: false,
+                    });
                 }
             });
 
@@ -579,14 +580,15 @@ impl EmbeddedSpiceWidget {
                 let current_state = *state_release.borrow();
                 let embedded = *is_embedded_release.borrow();
 
-                if embedded && current_state == SpiceConnectionState::Connected {
-                    if let Some(ref sender) = *cmd_sender_release.borrow() {
-                        let _ = sender.send(SpiceClientCommand::PointerEvent {
-                            x: 0,
-                            y: 0,
-                            buttons: 0,
-                        });
-                    }
+                if embedded
+                    && current_state == SpiceConnectionState::Connected
+                    && let Some(ref sender) = *cmd_sender_release.borrow()
+                {
+                    let _ = sender.send(SpiceClientCommand::PointerEvent {
+                        x: 0,
+                        y: 0,
+                        buttons: 0,
+                    });
                 }
             });
 
