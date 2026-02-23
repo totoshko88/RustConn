@@ -479,9 +479,7 @@ pub fn show_new_group_dialog_with_parent(
                                 })?
                             }
                             SecretBackendType::Pass => {
-                                let backend = rustconn_core::secret::PassBackend::new(
-                                    secret_settings.pass_store_dir.as_ref().map(|p| p.to_string_lossy().to_string())
-                                );
+                                let backend = crate::state::create_pass_backend_from_secret_settings(&secret_settings);
                                 crate::async_utils::with_runtime(|rt| {
                                     rt.block_on(backend.retrieve(&lookup_key))
                                         .map_err(|e| format!("{e}"))

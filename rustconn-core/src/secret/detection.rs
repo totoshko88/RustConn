@@ -232,7 +232,7 @@ pub async fn detect_bitwarden() -> PasswordManagerInfo {
     // Try common paths for bw CLI
     let bw_paths = ["bw", "/usr/bin/bw", "/usr/local/bin/bw", "/snap/bin/bw"];
 
-    let home = std::env::var("HOME").unwrap_or_default();
+    let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
     let extra_paths = [
         format!("{home}/.local/bin/bw"),
         format!("{home}/.npm-global/bin/bw"),
@@ -384,7 +384,7 @@ pub async fn detect_onepassword() -> PasswordManagerInfo {
     // Try common paths for op CLI
     let op_paths = ["op", "/usr/bin/op", "/usr/local/bin/op"];
 
-    let home = std::env::var("HOME").unwrap_or_default();
+    let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
     let extra_paths = [format!("{home}/.local/bin/op"), format!("{home}/bin/op")];
 
     let mut op_cmd: Option<String> = None;
@@ -492,7 +492,7 @@ pub async fn detect_passbolt() -> PasswordManagerInfo {
 
     let passbolt_paths = ["passbolt", "/usr/bin/passbolt", "/usr/local/bin/passbolt"];
 
-    let home = std::env::var("HOME").unwrap_or_default();
+    let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
     let extra_paths = [
         format!("{home}/.local/bin/passbolt"),
         format!("{home}/go/bin/passbolt"),
@@ -595,7 +595,7 @@ pub async fn detect_pass() -> PasswordManagerInfo {
 
     let pass_paths = ["pass", "/usr/bin/pass", "/usr/local/bin/pass"];
 
-    let home = std::env::var("HOME").unwrap_or_default();
+    let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
     let extra_paths = [
         format!("{home}/.local/bin/pass"),
     ];
@@ -811,21 +811,19 @@ pub fn get_password_manager_launch_command(
             Some(("xdg-open".to_string(), vec![url.to_string()]))
         }
         crate::config::SecretBackendType::Pass => {
-            // Pass doesn't have a GUI, but we can open a terminal or file manager
-            // to the password store directory
-            let home = std::env::var("HOME").unwrap_or_default();
-            let store_dir = std::env::var("PASSWORD_STORE_DIR")
-                .unwrap_or_else(|_| format!("{home}/.password-store"));
-            
-            // Try to open file manager to the password store
+            // Try qtpass first (popular GUI for pass)
             if std::process::Command::new("which")
-                .arg("xdg-open")
+                .arg("qtpass")
                 .output()
                 .is_ok_and(|o| o.status.success())
             {
-                return Some(("xdg-open".to_string(), vec![store_dir]));
+                return Some(("qtpass".to_string(), vec![]));
             }
-            None
+            // Fallback: open store directory in file manager
+            let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+            let store_dir = std::env::var("PASSWORD_STORE_DIR")
+                .unwrap_or_else(|_| format!("{home}/.password-store"));
+            Some(("xdg-open".to_string(), vec![store_dir]))
         }
     }
 }

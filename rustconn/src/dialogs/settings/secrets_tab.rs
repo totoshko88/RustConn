@@ -31,6 +31,9 @@ struct SecretCliDetection {
     passbolt_version: Option<String>,
     passbolt_status: Option<(String, &'static str)>,
     passbolt_server_url: Option<String>,
+    pass_installed: bool,
+    pass_version: Option<String>,
+    pass_status: Option<(String, &'static str)>,
     /// Whether `secret-tool` binary is available (for keyring operations)
     secret_tool_available: bool,
 }
@@ -173,6 +176,58 @@ fn detect_secret_backends() -> SecretCliDetection {
     };
     let passbolt_server_url = read_passbolt_server_url_sync();
 
+    // Pass
+    let pass_installed = std::process::Command::new("pass")
+        .arg("--version")
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .output()
+        .is_ok_and(|output| output.status.success());
+    
+    let pass_version = if pass_installed {
+        if let Ok(output) = std::process::Command::new("pass")
+            .arg("--version")
+            .output()
+        {
+            let version_str = String::from_utf8_lossy(&output.stdout);
+            // Parse version from banner (look for line with version number)
+            version_str.lines()
+                .find_map(|line| {
+                    if line.contains("v") && line.chars().any(|c| c.is_ascii_digit()) {
+                        Some(line.trim().to_string())
+                    } else {
+                        None
+                    }
+                })
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    let pass_status = if pass_installed {
+        // Check if password store is initialized
+        let store_dir = std::env::var("PASSWORD_STORE_DIR")
+            .ok()
+            .or_else(|| {
+                dirs::home_dir().map(|h| h.join(".password-store").to_string_lossy().to_string())
+            });
+        
+        if let Some(dir) = store_dir {
+            let store_path = std::path::PathBuf::from(&dir);
+            if store_path.exists() && store_path.join(".gpg-id").exists() {
+                Some((format!("Initialized at {}", store_path.display()), "success"))
+            } else {
+                Some(("Not initialized (run 'pass init <gpg-id>')".to_string(), "warning"))
+            }
+        } else {
+            Some(("Cannot determine store directory".to_string(), "error"))
+        }
+    } else {
+        None
+    };
+
     // Check secret-tool availability (for system keyring operations)
     let secret_tool_available = std::process::Command::new("which")
         .arg("secret-tool")
@@ -195,6 +250,9 @@ fn detect_secret_backends() -> SecretCliDetection {
         passbolt_version,
         passbolt_status,
         passbolt_server_url,
+        pass_installed,
+        pass_version,
+        pass_status,
         secret_tool_available,
     }
 }
@@ -323,6 +381,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let bitwarden_version: Rc<RefCell<Option<String>>> = Rc::new(RefCell::new(None));
     let onepassword_version: Rc<RefCell<Option<String>>> = Rc::new(RefCell::new(None));
     let passbolt_version: Rc<RefCell<Option<String>>> = Rc::new(RefCell::new(None));
+    let pass_version: Rc<RefCell<Option<String>>> = Rc::new(RefCell::new(None));
 
     // Cached secret-tool availability — populated by background detection thread.
     // `None` = not yet checked, `Some(true/false)` = result known.
@@ -1134,6 +1193,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let bitwarden_version_clone = bitwarden_version.clone();
     let onepassword_version_clone = onepassword_version.clone();
     let passbolt_version_clone = passbolt_version.clone();
+    let pass_version_clone = pass_version.clone();
     let detection_complete_clone = detection_complete.clone();
     secret_backend_dropdown.connect_selected_notify(move |dropdown| {
         let selected = dropdown.selected();
@@ -1177,6 +1237,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             2 => set_ver(&bitwarden_version_clone.borrow()),
             3 => set_ver(&onepassword_version_clone.borrow()),
             4 => set_ver(&passbolt_version_clone.borrow()),
+            5 => set_ver(&pass_version_clone.borrow()),
             _ => version_row_clone.set_visible(false),
         }
     });
@@ -1343,6 +1404,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         let bw_ver = bitwarden_version.clone();
         let op_ver = onepassword_version.clone();
         let pb_ver = passbolt_version.clone();
+        let pass_ver = pass_version.clone();
         let det_complete = detection_complete.clone();
         let st_avail = secret_tool_available.clone();
 
@@ -1367,7 +1429,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 *bw_ver.borrow_mut() = det.bitwarden_version.clone();
                 *op_ver.borrow_mut() = det.onepassword_version.clone();
                 *pb_ver.borrow_mut() = det.passbolt_version.clone();
-                *det_complete.borrow_mut() = true;
+                *pass_ver.borrow_mut() = det.pass_version.clone();
+
                 *st_avail.borrow_mut() = Some(det.secret_tool_available);
 
                 // Update version label for currently selected backend
@@ -1377,6 +1440,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     2 => &det.bitwarden_version,
                     3 => &det.onepassword_version,
                     4 => &det.passbolt_version,
+                    5 => &det.pass_version,
                     _ => &None,
                 };
                 version_label.remove_css_class("dim-label");

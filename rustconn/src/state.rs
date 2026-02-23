@@ -2796,6 +2796,7 @@ pub fn create_pass_backend(settings: &rustconn_core::config::AppSettings) -> rus
     create_pass_backend_from_path(settings.secrets.pass_store_dir.clone())
 }
 
+/// Shows an error toast when saving to vault fails.
 ///
 /// Uses `glib::idle_add_local_once` to ensure the toast is shown on the GTK
 /// main thread. Falls back to stderr if no active window is found.
