@@ -550,6 +550,7 @@ impl SettingsDialog {
                 onepassword_group: adw::PreferencesGroup::new(),     // dummy
                 onepassword_status_label: Label::new(None),          // dummy
                 onepassword_signin_button: Button::new(),            // dummy
+                onepassword_cmd: Rc::new(RefCell::new(String::new())), // dummy, not used in collect
                 passbolt_group: adw::PreferencesGroup::new(),        // dummy
                 passbolt_status_label: Label::new(None),             // dummy
                 passbolt_server_url_entry: Entry::new(),             // dummy
@@ -562,6 +563,10 @@ impl SettingsDialog {
                 onepassword_save_password_check: CheckButton::new(), // dummy
                 onepassword_save_to_keyring_check: CheckButton::new(), // dummy
                 secret_tool_available: Rc::new(RefCell::new(None)),  // dummy
+                pass_group: adw::PreferencesGroup::new(),           // dummy
+                pass_store_dir_entry: Entry::new(),                 // dummy
+                pass_store_dir_browse_button: Button::new(),        // dummy
+                pass_status_label: Label::new(None),                // dummy
             };
             let secrets = collect_secret_settings(&secrets_widgets_for_collect, &settings_clone);
 

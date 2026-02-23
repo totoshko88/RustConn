@@ -31,10 +31,7 @@ struct SecretCliDetection {
     passbolt_version: Option<String>,
     passbolt_status: Option<(String, &'static str)>,
     passbolt_server_url: Option<String>,
-    #[allow(dead_code)] // Will be used when Pass UI preferences are implemented
-    pass_installed: bool,
     pass_version: Option<String>,
-    #[allow(dead_code)] // Will be used when Pass UI preferences are implemented
     pass_status: Option<(String, &'static str)>,
     /// Whether `secret-tool` binary is available (for keyring operations)
     secret_tool_available: bool,
@@ -179,27 +176,24 @@ fn detect_secret_backends() -> SecretCliDetection {
     let passbolt_server_url = read_passbolt_server_url_sync();
 
     // Pass
-    let pass_installed = std::process::Command::new("pass")
+    let pass_version = if let Ok(output) = std::process::Command::new("pass")
         .arg("--version")
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::null())
         .output()
-        .is_ok_and(|output| output.status.success());
-    
-    let pass_version = if pass_installed {
-        if let Ok(output) = std::process::Command::new("pass")
-            .arg("--version")
-            .output()
-        {
+    {
+        if output.status.success() {
             let version_str = String::from_utf8_lossy(&output.stdout);
-            // Parse version from banner (look for line with version number)
-            version_str.lines()
-                .find_map(|line| {
-                    if line.contains("v") && line.chars().any(|c| c.is_ascii_digit()) {
-                        Some(line.trim().to_string())
-                    } else {
-                        None
-                    }
+            // Extract version number from output like "v1.7.4"
+            // Find the line containing 'v' followed by digits
+            version_str
+                .lines()
+                .find(|line| line.contains('v') && line.chars().any(|c| c.is_ascii_digit()))
+                .and_then(|line| {
+                    // Extract just the version part: find 'v' and capture digits/dots after it
+                    line.split_whitespace()
+                        .find(|word| word.starts_with('v') && word[1..].chars().next().map_or(false, |c| c.is_ascii_digit()))
+                        .map(|v| v.trim_start_matches('v').to_string())
                 })
         } else {
             None
@@ -208,7 +202,7 @@ fn detect_secret_backends() -> SecretCliDetection {
         None
     };
 
-    let pass_status = if pass_installed {
+    let pass_status = if pass_version.is_some() {
         // Check if password store is initialized
         let store_dir = std::env::var("PASSWORD_STORE_DIR")
             .ok()
@@ -252,7 +246,6 @@ fn detect_secret_backends() -> SecretCliDetection {
         passbolt_version,
         passbolt_status,
         passbolt_server_url,
-        pass_installed,
         pass_version,
         pass_status,
         secret_tool_available,
@@ -316,6 +309,13 @@ pub struct SecretsPageWidgets {
     pub onepassword_save_to_keyring_check: CheckButton,
     /// Cached result of `which secret-tool` (populated by background detection)
     pub secret_tool_available: Rc<RefCell<Option<bool>>>,
+    /// Detected 1Password CLI command path (updated async)
+    pub onepassword_cmd: Rc<RefCell<String>>,
+    // Pass widgets
+    pub pass_group: adw::PreferencesGroup,
+    pub pass_store_dir_entry: Entry,
+    pub pass_store_dir_browse_button: Button,
+    pub pass_status_label: Label,
 }
 
 /// Creates the secrets settings page using AdwPreferencesPage
@@ -966,6 +966,79 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     page.add(&passbolt_group);
 
+    // === Pass (Unix Password Manager) Group ===
+    let pass_group = adw::PreferencesGroup::builder()
+        .title(i18n("Pass"))
+        .description(i18n("Configure Pass (passwordstore.org) integration"))
+        .build();
+
+    // Store directory entry with browse button
+    let pass_store_dir_entry = Entry::builder()
+        .placeholder_text(&i18n("~/.password-store"))
+        .hexpand(true)
+        .valign(gtk4::Align::Center)
+        .build();
+    
+    let pass_store_dir_browse_button = Button::builder()
+        .icon_name("folder-open-symbolic")
+        .valign(gtk4::Align::Center)
+        .tooltip_text(i18n("Choose password store directory"))
+        .build();
+    
+    let pass_dir_box = GtkBox::builder()
+        .orientation(Orientation::Horizontal)
+        .spacing(6)
+        .build();
+    pass_dir_box.append(&pass_store_dir_entry);
+    pass_dir_box.append(&pass_store_dir_browse_button);
+    
+    let pass_dir_row = adw::ActionRow::builder()
+        .title(i18n("Store Directory"))
+        .subtitle(i18n("Location of password-store (leave empty for default)"))
+        .build();
+    pass_dir_row.add_suffix(&pass_dir_box);
+    pass_group.add(&pass_dir_row);
+
+    // Status label showing initialization status
+    let pass_status_label = Label::builder()
+        .label(&i18n("Detecting..."))
+        .halign(gtk4::Align::End)
+        .valign(gtk4::Align::Center)
+        .css_classes(["dim-label"])
+        .build();
+    
+    let pass_status_row = adw::ActionRow::builder()
+        .title(i18n("Initialization Status"))
+        .subtitle(i18n("Run 'pass init <gpg-id>' to initialize"))
+        .build();
+    pass_status_row.add_suffix(&pass_status_label);
+    pass_group.add(&pass_status_row);
+
+    // Setup browse button for pass store directory
+    {
+        let entry = pass_store_dir_entry.clone();
+        pass_store_dir_browse_button.connect_clicked(move |button| {
+            let entry_clone = entry.clone();
+            let dialog = FileDialog::builder()
+                .title(i18n("Select Password Store Directory"))
+                .modal(true)
+                .build();
+
+            if let Some(window) = button.root().and_then(|r| r.downcast::<gtk4::Window>().ok()) {
+                dialog.select_folder(Some(&window), gtk4::gio::Cancellable::NONE, move |result| {
+                    if let Ok(file) = result {
+                        let path = file.path();
+                        if let Some(p) = path {
+                            entry_clone.set_text(&p.to_string_lossy());
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    page.add(&pass_group);
+
     // === KeePass Database Group ===
     let kdbx_group = adw::PreferencesGroup::builder()
         .title(i18n("KeePass Database"))
@@ -1185,6 +1258,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let bitwarden_group_clone = bitwarden_group.clone();
     let onepassword_group_clone = onepassword_group.clone();
     let passbolt_group_clone = passbolt_group.clone();
+    let pass_group_clone = pass_group.clone();
     let kdbx_group_clone = kdbx_group.clone();
     let auth_group_clone2 = auth_group.clone();
     let status_group_clone2 = status_group.clone();
@@ -1205,6 +1279,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         onepassword_group_clone.set_visible(selected == 3);
         // Show Passbolt group only when Passbolt is selected (index 4)
         passbolt_group_clone.set_visible(selected == 4);
+        // Show Pass group only when Pass is selected (index 5)
+        pass_group_clone.set_visible(selected == 5);
         // Show KDBX groups only when KeePassXC is selected (index 0)
         let show_kdbx = selected == 0;
         kdbx_group_clone.set_visible(show_kdbx);
@@ -1253,6 +1329,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     bitwarden_group.set_visible(false);
     onepassword_group.set_visible(false);
     passbolt_group.set_visible(false);
+    pass_group.set_visible(false);
 
     // Initial version display set above as "Detecting..."
 
@@ -1392,16 +1469,18 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     {
         let version_label = version_label.clone();
         let version_row = version_row.clone();
-        let dropdown = secret_backend_dropdown.clone();
         let bw_status_label = bitwarden_status_label.clone();
         let bw_unlock_btn = bitwarden_unlock_button.clone();
         let bw_cmd_rc = bitwarden_cmd.clone();
         let op_status_label = onepassword_status_label.clone();
         let op_signin_btn = onepassword_signin_button.clone();
         let op_cmd_rc = onepassword_cmd.clone();
+        let dropdown = secret_backend_dropdown.clone();
         let pb_status_label = passbolt_status_label.clone();
         let pb_vault_btn = passbolt_open_vault_button.clone();
+        let pb_open_button = passbolt_open_vault_button.clone();
         let pb_url_entry = passbolt_server_url_entry.clone();
+        let pass_status_label = pass_status_label.clone();
         let kpxc_ver = keepassxc_version.clone();
         let bw_ver = bitwarden_version.clone();
         let op_ver = onepassword_version.clone();
@@ -1478,14 +1557,23 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 pb_vault_btn.set_sensitive(det.passbolt_installed);
                 if let Some((text, css)) = det.passbolt_status {
                     update_status_label(&pb_status_label, &text, css);
-                } else {
-                    update_status_label(&pb_status_label, "Not installed", "error");
+                    if det.passbolt_installed {
+                        pb_open_button.set_sensitive(true);
+                    }
                 }
+
+                // Update Pass status label
+                if let Some((text, css)) = det.pass_status {
+                    update_status_label(&pass_status_label, &text, css);
+                }
+
+                // Update Passbolt URL from detection if empty
                 if pb_url_entry.text().is_empty()
                     && let Some(ref url) = det.passbolt_server_url
                 {
                     pb_url_entry.set_text(url);
                 }
+
                 glib::ControlFlow::Break
             }
             Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
@@ -1528,6 +1616,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         onepassword_group,
         onepassword_status_label,
         onepassword_signin_button,
+        onepassword_cmd,
         passbolt_group,
         passbolt_status_label,
         passbolt_server_url_entry,
@@ -1540,6 +1629,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         onepassword_save_password_check,
         onepassword_save_to_keyring_check,
         secret_tool_available,
+        pass_group,
+        pass_store_dir_entry,
+        pass_store_dir_browse_button,
+        pass_status_label,
     }
 }
 
@@ -1945,22 +2038,23 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
         .passbolt_save_to_keyring_check
         .set_active(settings.passbolt_save_to_keyring);
 
-    // Update visibility based on loaded settings
-    // Show KDBX groups only when KeePassXC is selected (index 0)
-    let show_kdbx = backend_index == 0;
-    widgets.kdbx_group.set_visible(show_kdbx);
-    widgets
-        .auth_group
-        .set_visible(show_kdbx && settings.kdbx_enabled);
-    widgets
-        .status_group
-        .set_visible(show_kdbx && settings.kdbx_enabled);
-    // Show Bitwarden group only when Bitwarden is selected (index 2)
+    // If Passbolt save_to_keyring is active, uncheck save_password (mutual exclusion)
+    if settings.passbolt_save_to_keyring {
+        widgets.passbolt_save_password_check.set_active(false);
+    }
+
+    // Load Pass store directory
+    if let Some(ref path) = settings.pass_store_dir {
+        widgets
+            .pass_store_dir_entry
+            .set_text(&path.display().to_string());
+    }
+
+    // Show/hide groups based on selected backend
     widgets.bitwarden_group.set_visible(backend_index == 2);
-    // Show 1Password group only when 1Password is selected (index 3)
     widgets.onepassword_group.set_visible(backend_index == 3);
-    // Show Passbolt group only when Passbolt is selected (index 4)
     widgets.passbolt_group.set_visible(backend_index == 4);
+    widgets.pass_group.set_visible(backend_index == 5);
     widgets.password_row.set_visible(settings.kdbx_use_password);
     widgets
         .save_password_row
@@ -2398,7 +2492,14 @@ pub fn collect_secret_settings(
                 Some(url_text.to_string())
             }
         },
-        // Keep existing pass_store_dir from settings (no UI to configure yet)
-        pass_store_dir: settings.borrow().secrets.pass_store_dir.clone(),
+        // Collect Pass store directory
+        pass_store_dir: {
+            let path_text = widgets.pass_store_dir_entry.text();
+            if path_text.is_empty() {
+                None
+            } else {
+                Some(std::path::PathBuf::from(path_text.as_str()))
+            }
+        },
     }
 }
