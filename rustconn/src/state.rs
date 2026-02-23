@@ -2792,6 +2792,7 @@ pub fn create_pass_backend_from_secret_settings(settings: &rustconn_core::config
 ///
 /// Helper to avoid code duplication when creating PassBackend instances.
 /// Extracts and clones pass_store_dir from app settings.
+#[allow(dead_code)] // Convenience API - use create_pass_backend_from_secret_settings if available
 pub fn create_pass_backend(settings: &rustconn_core::config::AppSettings) -> rustconn_core::secret::PassBackend {
     create_pass_backend_from_path(settings.secrets.pass_store_dir.clone())
 }

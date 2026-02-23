@@ -31,8 +31,10 @@ struct SecretCliDetection {
     passbolt_version: Option<String>,
     passbolt_status: Option<(String, &'static str)>,
     passbolt_server_url: Option<String>,
+    #[allow(dead_code)] // Will be used when Pass UI preferences are implemented
     pass_installed: bool,
     pass_version: Option<String>,
+    #[allow(dead_code)] // Will be used when Pass UI preferences are implemented
     pass_status: Option<(String, &'static str)>,
     /// Whether `secret-tool` binary is available (for keyring operations)
     secret_tool_available: bool,
@@ -1430,7 +1432,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 *op_ver.borrow_mut() = det.onepassword_version.clone();
                 *pb_ver.borrow_mut() = det.passbolt_version.clone();
                 *pass_ver.borrow_mut() = det.pass_version.clone();
-
+                *det_complete.borrow_mut() = true;
                 *st_avail.borrow_mut() = Some(det.secret_tool_available);
 
                 // Update version label for currently selected backend
