@@ -198,7 +198,7 @@ pub use secret::{
     AsyncCredentialResolver, AsyncCredentialResult, CancellationToken, CredentialResolver,
     CredentialStatus, CredentialVerificationManager, DialogPreFillData, GroupCreationResult,
     KEEPASS_ROOT_GROUP, KdbxExporter, KeePassHierarchy, KeePassStatus, KeePassXcBackend,
-    LibSecretBackend, PendingCredentialResolution, SecretBackend, SecretManager,
+    LibSecretBackend, PassBackend, PendingCredentialResolution, SecretBackend, SecretManager,
     VerifiedCredentials, parse_keepassxc_version, resolve_with_callback,
     spawn_credential_resolution,
 };

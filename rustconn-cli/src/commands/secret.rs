@@ -116,6 +116,21 @@ fn cmd_secret_status(config_path: Option<&Path>) -> Result<(), CliError> {
         println!("Passbolt CLI:         Not installed");
     }
 
+    let pass_output = std::process::Command::new("pass").arg("--version").output();
+    if let Ok(output) = pass_output {
+        if output.status.success() {
+            let version = String::from_utf8_lossy(&output.stdout);
+            println!(
+                "Pass (passwordstore):  Available ✓ (version {})",
+                version.lines().next().unwrap_or("").trim()
+            );
+        } else {
+            println!("Pass (passwordstore):  Not installed");
+        }
+    } else {
+        println!("Pass (passwordstore):  Not installed");
+    }
+
     let config_manager = create_config_manager(config_path)?;
 
     if let Ok(settings) = config_manager.load_settings() {
@@ -146,9 +161,10 @@ fn parse_backend(b: &str) -> Result<rustconn_core::config::SecretBackendType, Cl
         "bitwarden" | "bw" => Ok(SecretBackendType::Bitwarden),
         "1password" | "onepassword" | "op" => Ok(SecretBackendType::OnePassword),
         "passbolt" => Ok(SecretBackendType::Passbolt),
+        "pass" => Ok(SecretBackendType::Pass),
         _ => Err(CliError::Secret(format!(
             "Unknown backend: {b}. Use: keyring, keepass, bitwarden, \
-             1password, or passbolt"
+             1password, passbolt, or pass"
         ))),
     }
 }
@@ -360,6 +376,44 @@ fn cmd_secret_get(
                 Err(e) => Err(CliError::Secret(format!("Passbolt error: {e}"))),
             }
         }
+        SecretBackendType::Pass => {
+            use rustconn_core::secret::PassBackend;
+
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = PassBackend::new(
+                settings
+                    .secrets
+                    .pass_store_dir
+                    .as_ref()
+                    .map(|p| p.to_string_lossy().to_string()),
+            );
+            let result: Result<Option<Credentials>, _> = rt.block_on(backend.retrieve(&lookup_key));
+
+            match result {
+                Ok(Some(creds)) => {
+                    println!("Connection: {}", connection.name);
+                    if let Some(ref user) = creds.username {
+                        println!("Username:   {user}");
+                    }
+                    if creds.expose_password().is_some() {
+                        println!(
+                            "Password:   ******** \
+                             (stored in Pass)"
+                        );
+                    } else {
+                        println!("Password:   (not set)");
+                    }
+                    Ok(())
+                }
+                Ok(None) => Err(CliError::Secret(format!(
+                    "No credentials found in Pass for '{}'",
+                    connection.name
+                ))),
+                Err(e) => Err(CliError::Secret(format!("Pass error: {e}"))),
+            }
+        }
     }
 }
 
@@ -557,6 +611,37 @@ fn cmd_secret_set(
             );
             Ok(())
         }
+        SecretBackendType::Pass => {
+            use rustconn_core::models::Credentials;
+            use rustconn_core::secret::{PassBackend, SecretBackend};
+
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = PassBackend::new(
+                settings
+                    .secrets
+                    .pass_store_dir
+                    .as_ref()
+                    .map(|p| p.to_string_lossy().to_string()),
+            );
+            let creds = Credentials {
+                username: Some(username_value.clone()),
+                password: Some(secrecy::SecretString::from(password_value)),
+                key_passphrase: None,
+                domain: connection.domain.clone(),
+            };
+
+            rt.block_on(backend.store(&lookup_key, &creds))
+                .map_err(|e| CliError::Secret(format!("Pass error: {e}")))?;
+
+            println!(
+                "Stored credentials for '{}' in Pass \
+                 (user: {})",
+                connection.name, username_value
+            );
+            Ok(())
+        }
     }
 }
 
@@ -684,6 +769,25 @@ fn cmd_secret_delete(
                 "Deleted credentials for '{}' from Passbolt",
                 connection.name
             );
+            Ok(())
+        }
+        SecretBackendType::Pass => {
+            use rustconn_core::secret::PassBackend;
+
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = PassBackend::new(
+                settings
+                    .secrets
+                    .pass_store_dir
+                    .as_ref()
+                    .map(|p| p.to_string_lossy().to_string()),
+            );
+            rt.block_on(backend.delete(&lookup_key))
+                .map_err(|e| CliError::Secret(format!("Pass error: {e}")))?;
+
+            println!("Deleted credentials for '{}' from Pass", connection.name);
             Ok(())
         }
     }

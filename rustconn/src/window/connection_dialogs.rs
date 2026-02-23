@@ -478,7 +478,14 @@ pub fn show_new_group_dialog_with_parent(
                                         .map_err(|e| format!("{e}"))
                                 })?
                             }
-                            _ => {
+                            SecretBackendType::Pass => {
+                                let backend = crate::state::create_pass_backend_from_secret_settings(&secret_settings);
+                                crate::async_utils::with_runtime(|rt| {
+                                    rt.block_on(backend.retrieve(&lookup_key))
+                                        .map_err(|e| format!("{e}"))
+                                })?
+                            }
+                            SecretBackendType::LibSecret | SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
                                 let backend =
                                     rustconn_core::secret::LibSecretBackend::new("rustconn");
                                 crate::async_utils::with_runtime(|rt| {

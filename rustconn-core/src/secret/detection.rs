@@ -37,7 +37,7 @@ pub struct PasswordManagerInfo {
 
 /// Detects all available password managers on the system
 pub async fn detect_password_managers() -> Vec<PasswordManagerInfo> {
-    let (keepassxc, gnome_secrets, libsecret, bitwarden, onepassword, keepass, passbolt) = tokio::join!(
+    let (keepassxc, gnome_secrets, libsecret, bitwarden, onepassword, keepass, passbolt, pass) = tokio::join!(
         detect_keepassxc(),
         detect_gnome_secrets(),
         detect_libsecret(),
@@ -45,6 +45,7 @@ pub async fn detect_password_managers() -> Vec<PasswordManagerInfo> {
         detect_onepassword(),
         detect_keepass(),
         detect_passbolt(),
+        detect_pass(),
     );
 
     vec![
@@ -55,6 +56,7 @@ pub async fn detect_password_managers() -> Vec<PasswordManagerInfo> {
         onepassword,
         keepass,
         passbolt,
+        pass,
     ]
 }
 
@@ -230,7 +232,7 @@ pub async fn detect_bitwarden() -> PasswordManagerInfo {
     // Try common paths for bw CLI
     let bw_paths = ["bw", "/usr/bin/bw", "/usr/local/bin/bw", "/snap/bin/bw"];
 
-    let home = std::env::var("HOME").unwrap_or_default();
+    let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
     let extra_paths = [
         format!("{home}/.local/bin/bw"),
         format!("{home}/.npm-global/bin/bw"),
@@ -382,7 +384,7 @@ pub async fn detect_onepassword() -> PasswordManagerInfo {
     // Try common paths for op CLI
     let op_paths = ["op", "/usr/bin/op", "/usr/local/bin/op"];
 
-    let home = std::env::var("HOME").unwrap_or_default();
+    let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
     let extra_paths = [format!("{home}/.local/bin/op"), format!("{home}/bin/op")];
 
     let mut op_cmd: Option<String> = None;
@@ -490,7 +492,7 @@ pub async fn detect_passbolt() -> PasswordManagerInfo {
 
     let passbolt_paths = ["passbolt", "/usr/bin/passbolt", "/usr/local/bin/passbolt"];
 
-    let home = std::env::var("HOME").unwrap_or_default();
+    let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
     let extra_paths = [
         format!("{home}/.local/bin/passbolt"),
         format!("{home}/go/bin/passbolt"),
@@ -572,6 +574,96 @@ pub async fn detect_passbolt() -> PasswordManagerInfo {
             "Install from \
              https://github.com/passbolt/go-passbolt-cli"
                 .to_string(),
+        );
+    }
+
+    info
+}
+
+/// Detects Pass (Unix password manager) installation
+pub async fn detect_pass() -> PasswordManagerInfo {
+    let mut info = PasswordManagerInfo {
+        id: "pass",
+        name: "Pass (passwordstore)",
+        version: None,
+        installed: false,
+        running: false,
+        path: None,
+        status_message: None,
+        formats: vec!["GPG-encrypted files"],
+    };
+
+    let pass_paths = ["pass", "/usr/bin/pass", "/usr/local/bin/pass"];
+
+    let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+    let extra_paths = [
+        format!("{home}/.local/bin/pass"),
+    ];
+
+    let mut pass_cmd: Option<String> = None;
+
+    // Try all paths (standard paths + extra paths) in a single iterator chain
+    for path in pass_paths.iter().map(|s| s.to_string()).chain(extra_paths.iter().cloned()) {
+        if let Ok(output) = Command::new(&path).arg("--version").output().await
+            && output.status.success()
+        {
+            let version_str = String::from_utf8_lossy(&output.stdout);
+            // Pass --version outputs a banner with version in the middle
+            // Look for a line containing "v" followed by version numbers
+            for line in version_str.lines() {
+                if let Some(version) = parse_version_line(line) {
+                    info.version = Some(version);
+                    break;
+                }
+            }
+            info.installed = true;
+            pass_cmd = Some(path);
+            break;
+        }
+    }
+
+    // Check if password store is initialized
+    if let Some(ref cmd) = pass_cmd {
+        let store_dir = std::env::var("PASSWORD_STORE_DIR")
+            .unwrap_or_else(|_| format!("{home}/.password-store"));
+        
+        let store_path = PathBuf::from(&store_dir);
+        if store_path.exists() && store_path.join(".gpg-id").exists() {
+            info.running = true;
+            info.status_message = Some(format!("Initialized at {}", store_path.display()));
+        } else {
+            info.status_message = Some("Not initialized (run 'pass init <gpg-id>')".to_string());
+        }
+        info.path = Some(PathBuf::from(cmd));
+    }
+
+    // Try which as fallback
+    if !info.installed
+        && let Ok(output) = Command::new("which").arg("pass").output().await
+        && output.status.success()
+    {
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !path.is_empty() {
+            info.path = Some(PathBuf::from(&path));
+            if let Ok(ver_output) = Command::new(&path).arg("--version").output().await
+                && ver_output.status.success()
+            {
+                let version_str = String::from_utf8_lossy(&ver_output.stdout);
+                // Look for a line containing version numbers
+                for line in version_str.lines() {
+                    if let Some(version) = parse_version_line(line) {
+                        info.version = Some(version);
+                        break;
+                    }
+                }
+                info.installed = true;
+            }
+        }
+    }
+
+    if !info.installed {
+        info.status_message = Some(
+            "Install from https://www.passwordstore.org/".to_string(),
         );
     }
 
@@ -717,6 +809,21 @@ pub fn get_password_manager_launch_command(
                 .filter(|u| !u.is_empty())
                 .unwrap_or("https://passbolt.local");
             Some(("xdg-open".to_string(), vec![url.to_string()]))
+        }
+        crate::config::SecretBackendType::Pass => {
+            // Try qtpass first (popular GUI for pass)
+            if std::process::Command::new("which")
+                .arg("qtpass")
+                .output()
+                .is_ok_and(|o| o.status.success())
+            {
+                return Some(("qtpass".to_string(), vec![]));
+            }
+            // Fallback: open store directory in file manager
+            let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+            let store_dir = std::env::var("PASSWORD_STORE_DIR")
+                .unwrap_or_else(|_| format!("{home}/.password-store"));
+            Some(("xdg-open".to_string(), vec![store_dir]))
         }
     }
 }

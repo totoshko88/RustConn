@@ -21,6 +21,7 @@ pub mod keyring;
 mod libsecret;
 mod manager;
 mod onepassword;
+mod pass;
 mod passbolt;
 mod resolver;
 mod status;
@@ -40,7 +41,7 @@ pub use bitwarden::{
 };
 pub use detection::{
     PasswordManagerInfo, detect_bitwarden, detect_gnome_secrets, detect_keepass, detect_keepassxc,
-    detect_libsecret, detect_onepassword, detect_passbolt, detect_password_managers,
+    detect_libsecret, detect_onepassword, detect_pass, detect_passbolt, detect_password_managers,
     get_password_manager_launch_command, open_password_manager,
 };
 pub use hierarchy::{
@@ -53,6 +54,7 @@ pub use keepassxc::{
 };
 pub use libsecret::LibSecretBackend;
 pub use manager::{BulkOperationResult, CredentialUpdate, SecretManager};
+pub use pass::PassBackend;
 pub use onepassword::{
     OnePasswordBackend, OnePasswordStatus, OnePasswordVersion, delete_token_from_keyring,
     get_onepassword_status, get_onepassword_version, get_token_from_keyring,

@@ -269,6 +269,9 @@ pub struct SecretSettings {
     /// Passbolt server URL for web vault access
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub passbolt_server_url: Option<String>,
+    /// Pass password store directory (defaults to ~/.password-store)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pass_store_dir: Option<PathBuf>,
 }
 
 const fn default_true() -> bool {
@@ -303,6 +306,7 @@ impl Default for SecretSettings {
             passbolt_passphrase_encrypted: None,
             passbolt_save_to_keyring: false,
             passbolt_server_url: None,
+            pass_store_dir: None,
         }
     }
 }
@@ -320,6 +324,7 @@ impl PartialEq for SecretSettings {
             && self.onepassword_save_to_keyring == other.onepassword_save_to_keyring
             && self.passbolt_save_to_keyring == other.passbolt_save_to_keyring
             && self.passbolt_server_url == other.passbolt_server_url
+            && self.pass_store_dir == other.pass_store_dir
         // Note: kdbx_password is intentionally excluded from equality comparison
         // as it's a runtime-only field that shouldn't affect settings equality
     }
@@ -344,6 +349,8 @@ pub enum SecretBackendType {
     OnePassword,
     /// Passbolt CLI
     Passbolt,
+    /// Pass (Unix Password Manager)
+    Pass,
 }
 
 /// Color scheme preference

@@ -420,7 +420,8 @@ impl MainWindow {
             rustconn_core::config::SecretBackendType::LibSecret
             | rustconn_core::config::SecretBackendType::Bitwarden
             | rustconn_core::config::SecretBackendType::OnePassword
-            | rustconn_core::config::SecretBackendType::Passbolt => true,
+            | rustconn_core::config::SecretBackendType::Passbolt
+            | rustconn_core::config::SecretBackendType::Pass => true,
             rustconn_core::config::SecretBackendType::KeePassXc
             | rustconn_core::config::SecretBackendType::KdbxFile => {
                 settings.secrets.kdbx_enabled
@@ -3075,13 +3076,14 @@ impl MainWindow {
         let settings = state_ref.settings();
         let backend = settings.secrets.preferred_backend;
 
-        // For libsecret, Bitwarden, and 1Password, always enabled (no database file needed)
+        // For libsecret, Bitwarden, 1Password, Pass, and Passbolt, always enabled (no database file needed)
         // For KeePassXC/KdbxFile, check if enabled and database exists
         let (enabled, database_exists) = match backend {
             rustconn_core::config::SecretBackendType::LibSecret
             | rustconn_core::config::SecretBackendType::Bitwarden
             | rustconn_core::config::SecretBackendType::OnePassword
-            | rustconn_core::config::SecretBackendType::Passbolt => (true, true),
+            | rustconn_core::config::SecretBackendType::Passbolt
+            | rustconn_core::config::SecretBackendType::Pass => (true, true),
             rustconn_core::config::SecretBackendType::KeePassXc
             | rustconn_core::config::SecretBackendType::KdbxFile => {
                 let kdbx_enabled = settings.secrets.kdbx_enabled;
@@ -4454,7 +4456,8 @@ impl MainWindow {
                                 rustconn_core::config::SecretBackendType::LibSecret
                                 | rustconn_core::config::SecretBackendType::Bitwarden
                                 | rustconn_core::config::SecretBackendType::OnePassword
-                                | rustconn_core::config::SecretBackendType::Passbolt => true,
+                                | rustconn_core::config::SecretBackendType::Passbolt
+                                | rustconn_core::config::SecretBackendType::Pass => true,
                                 rustconn_core::config::SecretBackendType::KeePassXc
                                 | rustconn_core::config::SecretBackendType::KdbxFile => {
                                     keepass_enabled && kdbx_path_exists
