@@ -7,7 +7,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.9.0"
+version = "0.9.1"
 edition = "2024"
 authors = ["Anton Isaiev <totoshko88@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -32,7 +32,7 @@ vte4 = "0.9"
 libadwaita = { version = "0.8", features = ["v1_5"] }
 
 # Utilities
-uuid = { version = "1.11", features = ["v4", "serde"] }
+uuid = { version = "1.21", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "2.0"
 async-trait = "0.1"
@@ -61,8 +61,8 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Testing
-proptest = "1.6"
-tempfile = "3.15"
+proptest = "1.9"
+tempfile = "3.23"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

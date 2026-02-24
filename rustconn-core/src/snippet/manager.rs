@@ -122,6 +122,12 @@ impl SnippetManager {
         // Preserve original ID
         updated.id = id;
 
+        // Preserve original creation timestamp and update modification time
+        if let Some(existing) = self.snippets.get(&id) {
+            updated.created_at = existing.created_at;
+        }
+        updated.updated_at = chrono::Utc::now();
+
         ConfigManager::validate_snippet(&updated)?;
 
         self.snippets.insert(id, updated);

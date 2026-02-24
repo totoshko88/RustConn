@@ -87,7 +87,9 @@ pub use cluster::{
     ClusterSessionStatus, ClusterSessionSummary,
 };
 pub use config::{
-    AppSettings, ConfigManager, ConnectionSettings, SecretBackendType, StartupAction,
+    AppSettings, ConfigManager, ConnectionSettings, KeybindingCategory, KeybindingDef,
+    KeybindingSettings, SecretBackendType, StartupAction, default_keybindings,
+    is_valid_accelerator,
 };
 pub use connection::{
     ConnectionManager, LazyGroupLoader, PortCheckError, PortCheckResult, RetryConfig, RetryState,
@@ -149,13 +151,14 @@ pub use progress::{
     ProgressReporter,
 };
 pub use protocol::{
-    ClientDetectionResult, ClientInfo, CloudProvider, FreeRdpConfig, KubernetesProtocol, Protocol,
-    ProtocolCapabilities, ProtocolRegistry, ProviderIconCache, RdpProtocol, SerialProtocol,
-    SftpProtocol, SpiceProtocol, SshProtocol, TelnetProtocol, VncProtocol, build_freerdp_args,
-    detect_aws_cli, detect_azure_cli, detect_boundary, detect_cloudflared, detect_gcloud_cli,
-    detect_kubectl, detect_oci_cli, detect_picocom, detect_provider, detect_rdp_client,
-    detect_ssh_client, detect_tailscale, detect_teleport, detect_telnet_client, detect_vnc_client,
-    extract_geometry_from_args, get_protocol_icon_by_name, get_zero_trust_provider_icon,
+    ClientDetectionResult, ClientInfo, CloudProvider, FreeRdpConfig, KubernetesProtocol,
+    PROTOCOL_TAB_CSS_CLASSES, Protocol, ProtocolCapabilities, ProtocolRegistry, ProviderIconCache,
+    RdpProtocol, SerialProtocol, SftpProtocol, SpiceProtocol, SshProtocol, TelnetProtocol,
+    VncProtocol, build_freerdp_args, detect_aws_cli, detect_azure_cli, detect_boundary,
+    detect_cloudflared, detect_gcloud_cli, detect_kubectl, detect_oci_cli, detect_picocom,
+    detect_provider, detect_rdp_client, detect_ssh_client, detect_tailscale, detect_teleport,
+    detect_telnet_client, detect_vnc_client, extract_geometry_from_args, get_protocol_color_rgb,
+    get_protocol_icon_by_name, get_protocol_tab_css_class, get_zero_trust_provider_icon,
     has_decorations_flag,
 };
 pub use rdp_client::keyboard_layout::{
@@ -192,7 +195,11 @@ pub use rdp_client::{
 };
 pub use search::{
     ConnectionSearchResult, DebouncedSearchEngine, MatchHighlight, SearchEngine, SearchError,
-    SearchFilter, SearchQuery, SearchResult, benchmark, cache::SearchCache,
+    SearchFilter, SearchQuery, SearchResult, benchmark,
+    cache::SearchCache,
+    command_palette::{
+        CommandPaletteAction, PaletteItem, PaletteMode, builtin_commands, parse_palette_input,
+    },
 };
 pub use secret::{
     AsyncCredentialResolver, AsyncCredentialResult, CancellationToken, CredentialResolver,
@@ -226,7 +233,7 @@ pub use spice_client::{
 pub use split::SplitDirection;
 pub use split::{
     ColorId, ColorPool, DropResult, LeafPanel, PanelId, PanelNode, SPLIT_COLORS,
-    SessionId as SplitSessionId, SplitError, SplitLayoutModel, SplitNode, TabId,
+    SessionId as SplitSessionId, SplitError, SplitLayoutModel, SplitNode, TabGroupManager, TabId,
 };
 pub use ssh_agent::{
     AgentError, AgentKey, AgentResult, AgentStatus, SshAgentManager, parse_agent_output,

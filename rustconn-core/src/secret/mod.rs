@@ -54,12 +54,12 @@ pub use keepassxc::{
 };
 pub use libsecret::LibSecretBackend;
 pub use manager::{BulkOperationResult, CredentialUpdate, SecretManager};
-pub use pass::PassBackend;
 pub use onepassword::{
     OnePasswordBackend, OnePasswordStatus, OnePasswordVersion, delete_token_from_keyring,
     get_onepassword_status, get_onepassword_version, get_token_from_keyring,
     signout as onepassword_signout, store_token_in_keyring,
 };
+pub use pass::PassBackend;
 pub use passbolt::{
     PassboltBackend, PassboltStatus, PassboltVersion, delete_passphrase_from_keyring,
     get_passbolt_status, get_passbolt_version, get_passphrase_from_keyring,

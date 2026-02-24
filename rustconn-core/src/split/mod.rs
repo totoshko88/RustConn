@@ -46,12 +46,14 @@
 mod color;
 mod error;
 mod model;
+pub mod tab_groups;
 mod tree;
 mod types;
 
 pub use color::{ColorPool, SPLIT_COLORS};
 pub use error::{DropResult, SplitError};
 pub use model::SplitLayoutModel;
+pub use tab_groups::TabGroupManager;
 pub use tree::{
     DEFAULT_SPLIT_POSITION, LeafPanel, MAX_SPLIT_POSITION, MIN_SPLIT_POSITION, PanelNode,
     RemoveResult, SplitNode,

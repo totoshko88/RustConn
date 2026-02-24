@@ -196,12 +196,7 @@ impl SecretManager {
                 backends.push(Arc::new(super::LibSecretBackend::default_app()));
             }
             SecretBackendType::Pass => {
-                backends.push(Arc::new(super::PassBackend::new(
-                    settings
-                        .pass_store_dir
-                        .as_ref()
-                        .map(|p| p.to_string_lossy().to_string()),
-                )));
+                backends.push(Arc::new(super::PassBackend::from_secret_settings(settings)));
             }
             SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
                 // KeePass is handled via direct KDBX access in

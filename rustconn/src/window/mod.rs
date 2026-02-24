@@ -157,6 +157,12 @@ impl MainWindow {
         // Create terminal notebook for tab management (using adw::TabView)
         let terminal_notebook = Rc::new(TerminalNotebook::new());
 
+        // Apply initial protocol tab coloring setting
+        if let Ok(state_ref) = state.try_borrow() {
+            terminal_notebook
+                .set_color_tabs_by_protocol(state_ref.settings().ui.color_tabs_by_protocol);
+        }
+
         // Set up callback for when SSH tabs are closed via TabView
         // This ensures sidebar status is cleared when tabs are closed
         // Note: Split view cleanup is handled in connect_signals() where we have access to session_bridges
@@ -499,6 +505,15 @@ impl MainWindow {
             }
         });
         window.add_action(&duplicate_action);
+
+        // Toggle pin action
+        let toggle_pin_action = gio::SimpleAction::new("toggle-pin", None);
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        toggle_pin_action.connect_activate(move |_, _| {
+            Self::toggle_pin_selected(&state_clone, &sidebar_clone);
+        });
+        window.add_action(&toggle_pin_action);
 
         // Move to group action
         let move_to_group_action = gio::SimpleAction::new("move-to-group", None);
@@ -1053,6 +1068,39 @@ impl MainWindow {
             sidebar_clone.search_entry().grab_focus();
         });
         window.add_action(&search_action);
+
+        // Command palette action (Ctrl+P)
+        let command_palette_action = gio::SimpleAction::new("command-palette", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let notebook_clone = terminal_notebook.clone();
+        command_palette_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                Self::show_command_palette(&win, &state_clone, &sidebar_clone, &notebook_clone, "");
+            }
+        });
+        window.add_action(&command_palette_action);
+
+        // Command palette commands mode action (Ctrl+Shift+P)
+        let command_palette_commands_action =
+            gio::SimpleAction::new("command-palette-commands", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let notebook_clone = terminal_notebook.clone();
+        command_palette_commands_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                Self::show_command_palette(
+                    &win,
+                    &state_clone,
+                    &sidebar_clone,
+                    &notebook_clone,
+                    ">",
+                );
+            }
+        });
+        window.add_action(&command_palette_commands_action);
 
         // Copy action - works with split view's focused session for SSH
         let copy_action = gio::SimpleAction::new("copy", None);
@@ -4404,6 +4452,82 @@ impl MainWindow {
         connection_dialogs::show_new_group_dialog(window.upcast_ref(), state, sidebar);
     }
 
+    /// Shows the command palette dialog
+    fn show_command_palette(
+        window: &adw::ApplicationWindow,
+        state: &SharedAppState,
+        sidebar: &SharedSidebar,
+        notebook: &SharedNotebook,
+        prefix: &str,
+    ) {
+        let gtk_window: &gtk4::Window = window.upcast_ref();
+        let palette = crate::dialogs::CommandPaletteDialog::new(Some(gtk_window));
+
+        // Populate with current connections and groups
+        {
+            let state_ref = state.borrow();
+            let connections: Vec<_> = state_ref.list_connections().into_iter().cloned().collect();
+            let groups: Vec<_> = state_ref.get_root_groups().into_iter().cloned().collect();
+            palette.set_connections(connections);
+            palette.set_groups(groups);
+        }
+
+        // Wire action callback
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let notebook_clone = notebook.clone();
+        let window_weak = window.downgrade();
+        palette.connect_on_action(move |action| match action {
+            rustconn_core::search::command_palette::CommandPaletteAction::Connect(uuid) => {
+                Self::start_connection(&state_clone, &notebook_clone, &sidebar_clone, uuid);
+            }
+            rustconn_core::search::command_palette::CommandPaletteAction::GtkAction(name) => {
+                if let Some(win) = window_weak.upgrade() {
+                    gio::ActionGroup::activate_action(
+                        win.upcast_ref::<gio::ActionGroup>(),
+                        &name,
+                        None,
+                    );
+                }
+            }
+            other => {
+                let action_name = match other {
+                    rustconn_core::search::command_palette::CommandPaletteAction::OpenSettings => {
+                        "settings"
+                    }
+                    rustconn_core::search::command_palette::CommandPaletteAction::NewConnection => {
+                        "new-connection"
+                    }
+                    rustconn_core::search::command_palette::CommandPaletteAction::NewGroup => {
+                        "new-group"
+                    }
+                    rustconn_core::search::command_palette::CommandPaletteAction::Import => {
+                        "import"
+                    }
+                    rustconn_core::search::command_palette::CommandPaletteAction::Export => {
+                        "export"
+                    }
+                    rustconn_core::search::command_palette::CommandPaletteAction::LocalShell => {
+                        "local-shell"
+                    }
+                    rustconn_core::search::command_palette::CommandPaletteAction::QuickConnect => {
+                        "quick-connect"
+                    }
+                    _ => return,
+                };
+                if let Some(win) = window_weak.upgrade() {
+                    gio::ActionGroup::activate_action(
+                        win.upcast_ref::<gio::ActionGroup>(),
+                        action_name,
+                        None,
+                    );
+                }
+            }
+        });
+
+        palette.present_with_prefix(prefix);
+    }
+
     /// Shows the import dialog
     fn show_import_dialog(
         window: &adw::ApplicationWindow,
@@ -4443,6 +4567,9 @@ impl MainWindow {
 
                 // Apply terminal settings to existing terminals
                 notebook.apply_settings(&settings.terminal);
+
+                // Apply protocol tab coloring setting
+                notebook.set_color_tabs_by_protocol(settings.ui.color_tabs_by_protocol);
 
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
                     if let Err(e) = state_mut.update_settings(settings) {
@@ -4527,6 +4654,11 @@ impl MainWindow {
         operations::duplicate_selected_connection(window.upcast_ref(), state, sidebar);
     }
 
+    /// Toggles pin state of the selected connection
+    fn toggle_pin_selected(state: &SharedAppState, sidebar: &SharedSidebar) {
+        operations::toggle_pin_selected(state, sidebar);
+    }
+
     /// Copies the selected connection to the internal clipboard
     fn copy_selected_connection(
         window: &adw::ApplicationWindow,
@@ -4547,7 +4679,7 @@ impl MainWindow {
 
     /// Reloads the sidebar with current data (preserving hierarchy)
     fn reload_sidebar(state: &SharedAppState, sidebar: &SharedSidebar) {
-        operations::reload_sidebar(state, sidebar);
+        sorting::rebuild_sidebar_sorted(state, sidebar);
     }
 
     /// Reloads the sidebar while preserving tree state

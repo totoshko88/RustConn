@@ -3,6 +3,9 @@
 //! This module provides fuzzy search capabilities for connections with support
 //! for search operators, result ranking, and custom property search.
 //!
+//! The [`command_palette`] submodule provides types for a VS Code-style
+//! command palette (Ctrl+P / Ctrl+Shift+P).
+//!
 //! ## Performance Optimizations
 //!
 //! This module includes several optimizations for handling large datasets:
@@ -21,6 +24,7 @@
 #![allow(clippy::missing_panics_doc)]
 
 pub mod cache;
+pub mod command_palette;
 
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};

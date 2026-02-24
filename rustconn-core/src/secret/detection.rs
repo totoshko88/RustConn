@@ -232,7 +232,9 @@ pub async fn detect_bitwarden() -> PasswordManagerInfo {
     // Try common paths for bw CLI
     let bw_paths = ["bw", "/usr/bin/bw", "/usr/local/bin/bw", "/snap/bin/bw"];
 
-    let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+    let home = dirs::home_dir()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_default();
     let extra_paths = [
         format!("{home}/.local/bin/bw"),
         format!("{home}/.npm-global/bin/bw"),
@@ -384,7 +386,9 @@ pub async fn detect_onepassword() -> PasswordManagerInfo {
     // Try common paths for op CLI
     let op_paths = ["op", "/usr/bin/op", "/usr/local/bin/op"];
 
-    let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+    let home = dirs::home_dir()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_default();
     let extra_paths = [format!("{home}/.local/bin/op"), format!("{home}/bin/op")];
 
     let mut op_cmd: Option<String> = None;
@@ -492,7 +496,9 @@ pub async fn detect_passbolt() -> PasswordManagerInfo {
 
     let passbolt_paths = ["passbolt", "/usr/bin/passbolt", "/usr/local/bin/passbolt"];
 
-    let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+    let home = dirs::home_dir()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_default();
     let extra_paths = [
         format!("{home}/.local/bin/passbolt"),
         format!("{home}/go/bin/passbolt"),
@@ -595,15 +601,19 @@ pub async fn detect_pass() -> PasswordManagerInfo {
 
     let pass_paths = ["pass", "/usr/bin/pass", "/usr/local/bin/pass"];
 
-    let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
-    let extra_paths = [
-        format!("{home}/.local/bin/pass"),
-    ];
+    let home = dirs::home_dir()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let extra_paths = [format!("{home}/.local/bin/pass")];
 
     let mut pass_cmd: Option<String> = None;
 
     // Try all paths (standard paths + extra paths) in a single iterator chain
-    for path in pass_paths.iter().map(|s| s.to_string()).chain(extra_paths.iter().cloned()) {
+    for path in pass_paths
+        .iter()
+        .map(|s| s.to_string())
+        .chain(extra_paths.iter().cloned())
+    {
         if let Ok(output) = Command::new(&path).arg("--version").output().await
             && output.status.success()
         {
@@ -626,7 +636,7 @@ pub async fn detect_pass() -> PasswordManagerInfo {
     if let Some(ref cmd) = pass_cmd {
         let store_dir = std::env::var("PASSWORD_STORE_DIR")
             .unwrap_or_else(|_| format!("{home}/.password-store"));
-        
+
         let store_path = PathBuf::from(&store_dir);
         if store_path.exists() && store_path.join(".gpg-id").exists() {
             info.running = true;
@@ -662,9 +672,7 @@ pub async fn detect_pass() -> PasswordManagerInfo {
     }
 
     if !info.installed {
-        info.status_message = Some(
-            "Install from https://www.passwordstore.org/".to_string(),
-        );
+        info.status_message = Some("Install from https://www.passwordstore.org/".to_string());
     }
 
     info
@@ -696,6 +704,7 @@ fn parse_flatpak_version(output: &str) -> Option<String> {
 ///
 /// # Returns
 /// A tuple of (command, args) to launch the password manager, or None
+#[allow(clippy::too_many_lines)]
 pub fn get_password_manager_launch_command(
     backend: &crate::config::SecretBackendType,
     passbolt_server_url: Option<&str>,
@@ -820,7 +829,9 @@ pub fn get_password_manager_launch_command(
                 return Some(("qtpass".to_string(), vec![]));
             }
             // Fallback: open store directory in file manager
-            let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+            let home = dirs::home_dir()
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_default();
             let store_dir = std::env::var("PASSWORD_STORE_DIR")
                 .unwrap_or_else(|_| format!("{home}/.password-store"));
             Some(("xdg-open".to_string(), vec![store_dir]))

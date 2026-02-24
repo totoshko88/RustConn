@@ -228,6 +228,12 @@ pub struct Connection {
     /// Skip pre-connect port check for this connection (overrides global setting)
     #[serde(default)]
     pub skip_port_check: bool,
+    /// Whether this connection is pinned to favorites
+    #[serde(default)]
+    pub is_pinned: bool,
+    /// Sort order within pinned connections (lower values appear first)
+    #[serde(default)]
+    pub pin_order: i32,
 }
 
 impl Connection {
@@ -264,6 +270,8 @@ impl Connection {
             remember_window_position: false,
             window_geometry: None,
             skip_port_check: false,
+            is_pinned: false,
+            pin_order: 0,
         }
     }
 
@@ -739,6 +747,22 @@ impl Connection {
             self.window_geometry = Some(WindowGeometry::new(x, y, width, height));
             self.touch();
         }
+    }
+
+    /// Toggles the pinned state of this connection
+    pub fn toggle_pin(&mut self) {
+        self.is_pinned = !self.is_pinned;
+        if !self.is_pinned {
+            self.pin_order = 0;
+        }
+        self.touch();
+    }
+
+    /// Sets the pinned state and order
+    pub fn set_pinned(&mut self, pinned: bool, order: i32) {
+        self.is_pinned = pinned;
+        self.pin_order = order;
+        self.touch();
     }
 }
 

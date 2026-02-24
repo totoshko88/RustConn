@@ -13,7 +13,7 @@ use rustconn_core::secret::set_session_key;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 
 /// Results of background CLI detection for all secret backends
 #[allow(clippy::struct_excessive_bools)]
@@ -192,7 +192,10 @@ fn detect_secret_backends() -> SecretCliDetection {
                 .and_then(|line| {
                     // Extract just the version part: find 'v' and capture digits/dots after it
                     line.split_whitespace()
-                        .find(|word| word.starts_with('v') && word[1..].chars().next().map_or(false, |c| c.is_ascii_digit()))
+                        .find(|word| {
+                            word.starts_with('v')
+                                && word[1..].chars().next().is_some_and(|c| c.is_ascii_digit())
+                        })
                         .map(|v| v.trim_start_matches('v').to_string())
                 })
         } else {
@@ -204,21 +207,25 @@ fn detect_secret_backends() -> SecretCliDetection {
 
     let pass_status = if pass_version.is_some() {
         // Check if password store is initialized
-        let store_dir = std::env::var("PASSWORD_STORE_DIR")
-            .ok()
-            .or_else(|| {
-                dirs::home_dir().map(|h| h.join(".password-store").to_string_lossy().to_string())
-            });
-        
+        let store_dir = std::env::var("PASSWORD_STORE_DIR").ok().or_else(|| {
+            dirs::home_dir().map(|h| h.join(".password-store").to_string_lossy().to_string())
+        });
+
         if let Some(dir) = store_dir {
             let store_path = std::path::PathBuf::from(&dir);
             if store_path.exists() && store_path.join(".gpg-id").exists() {
-                Some((format!("Initialized at {}", store_path.display()), "success"))
+                Some((
+                    i18n_f("Initialized at {}", &[&store_path.display().to_string()]),
+                    "success",
+                ))
             } else {
-                Some(("Not initialized (run 'pass init <gpg-id>')".to_string(), "warning"))
+                Some((
+                    i18n("Not initialized (run 'pass init <gpg-id>')"),
+                    "warning",
+                ))
             }
         } else {
-            Some(("Cannot determine store directory".to_string(), "error"))
+            Some((i18n("Cannot determine store directory"), "error"))
         }
     } else {
         None
@@ -978,20 +985,20 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .hexpand(true)
         .valign(gtk4::Align::Center)
         .build();
-    
+
     let pass_store_dir_browse_button = Button::builder()
         .icon_name("folder-open-symbolic")
         .valign(gtk4::Align::Center)
         .tooltip_text(i18n("Choose password store directory"))
         .build();
-    
+
     let pass_dir_box = GtkBox::builder()
         .orientation(Orientation::Horizontal)
         .spacing(6)
         .build();
     pass_dir_box.append(&pass_store_dir_entry);
     pass_dir_box.append(&pass_store_dir_browse_button);
-    
+
     let pass_dir_row = adw::ActionRow::builder()
         .title(i18n("Store Directory"))
         .subtitle(i18n("Location of password-store (leave empty for default)"))
@@ -1006,7 +1013,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
         .build();
-    
+
     let pass_status_row = adw::ActionRow::builder()
         .title(i18n("Initialization Status"))
         .subtitle(i18n("Run 'pass init <gpg-id>' to initialize"))
@@ -1024,7 +1031,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 .modal(true)
                 .build();
 
-            if let Some(window) = button.root().and_then(|r| r.downcast::<gtk4::Window>().ok()) {
+            if let Some(window) = button
+                .root()
+                .and_then(|r| r.downcast::<gtk4::Window>().ok())
+            {
                 dialog.select_folder(Some(&window), gtk4::gio::Cancellable::NONE, move |result| {
                     if let Ok(file) = result {
                         let path = file.path();
@@ -1616,7 +1626,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         onepassword_group,
         onepassword_status_label,
         onepassword_signin_button,
-        onepassword_cmd,
         passbolt_group,
         passbolt_status_label,
         passbolt_server_url_entry,
@@ -1629,6 +1638,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         onepassword_save_password_check,
         onepassword_save_to_keyring_check,
         secret_tool_available,
+        onepassword_cmd,
         pass_group,
         pass_store_dir_entry,
         pass_store_dir_browse_button,
@@ -2051,6 +2061,14 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
     }
 
     // Show/hide groups based on selected backend
+    let show_kdbx = backend_index == 0;
+    widgets.kdbx_group.set_visible(show_kdbx);
+    widgets
+        .auth_group
+        .set_visible(show_kdbx && settings.kdbx_enabled);
+    widgets
+        .status_group
+        .set_visible(show_kdbx && settings.kdbx_enabled);
     widgets.bitwarden_group.set_visible(backend_index == 2);
     widgets.onepassword_group.set_visible(backend_index == 3);
     widgets.passbolt_group.set_visible(backend_index == 4);

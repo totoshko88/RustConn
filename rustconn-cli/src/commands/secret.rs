@@ -6,6 +6,13 @@ use crate::cli::SecretCommands;
 use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
 
+/// Creates a `PassBackend` from the current app settings.
+fn create_pass_backend(
+    settings: &rustconn_core::config::AppSettings,
+) -> rustconn_core::secret::PassBackend {
+    rustconn_core::secret::PassBackend::from_app_settings(settings)
+}
+
 /// Secret command handler
 pub fn cmd_secret(config_path: Option<&Path>, subcmd: SecretCommands) -> Result<(), CliError> {
     match subcmd {
@@ -36,6 +43,7 @@ pub fn cmd_secret(config_path: Option<&Path>, subcmd: SecretCommands) -> Result<
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn cmd_secret_status(config_path: Option<&Path>) -> Result<(), CliError> {
     use rustconn_core::secret::KeePassStatus;
 
@@ -377,18 +385,10 @@ fn cmd_secret_get(
             }
         }
         SecretBackendType::Pass => {
-            use rustconn_core::secret::PassBackend;
-
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 
-            let backend = PassBackend::new(
-                settings
-                    .secrets
-                    .pass_store_dir
-                    .as_ref()
-                    .map(|p| p.to_string_lossy().to_string()),
-            );
+            let backend = create_pass_backend(&settings);
             let result: Result<Option<Credentials>, _> = rt.block_on(backend.retrieve(&lookup_key));
 
             match result {
@@ -613,18 +613,12 @@ fn cmd_secret_set(
         }
         SecretBackendType::Pass => {
             use rustconn_core::models::Credentials;
-            use rustconn_core::secret::{PassBackend, SecretBackend};
+            use rustconn_core::secret::SecretBackend;
 
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 
-            let backend = PassBackend::new(
-                settings
-                    .secrets
-                    .pass_store_dir
-                    .as_ref()
-                    .map(|p| p.to_string_lossy().to_string()),
-            );
+            let backend = create_pass_backend(&settings);
             let creds = Credentials {
                 username: Some(username_value.clone()),
                 password: Some(secrecy::SecretString::from(password_value)),
@@ -772,18 +766,10 @@ fn cmd_secret_delete(
             Ok(())
         }
         SecretBackendType::Pass => {
-            use rustconn_core::secret::PassBackend;
-
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 
-            let backend = PassBackend::new(
-                settings
-                    .secrets
-                    .pass_store_dir
-                    .as_ref()
-                    .map(|p| p.to_string_lossy().to_string()),
-            );
+            let backend = create_pass_backend(&settings);
             rt.block_on(backend.delete(&lookup_key))
                 .map_err(|e| CliError::Secret(format!("Pass error: {e}")))?;
 

@@ -1850,6 +1850,8 @@ mod imp {
         host: RefCell<String>,
         #[property(get, set)]
         status: RefCell<String>,
+        #[property(get, set)]
+        is_pinned: RefCell<bool>,
         pub(super) children: RefCell<Option<gio::ListStore>>,
     }
 
@@ -1881,6 +1883,7 @@ impl ConnectionItem {
             .property("is-dirty", false)
             .property("host", host)
             .property("status", "disconnected")
+            .property("is-pinned", false)
             .build()
     }
 
@@ -1902,6 +1905,30 @@ impl ConnectionItem {
             .property("is-dirty", false)
             .property("host", host)
             .property("status", status)
+            .property("is-pinned", false)
+            .build()
+    }
+
+    /// Creates a new connection item with status and pin state
+    #[must_use]
+    pub fn new_connection_full(
+        id: &str,
+        name: &str,
+        protocol: &str,
+        host: &str,
+        status: &str,
+        is_pinned: bool,
+    ) -> Self {
+        glib::Object::builder()
+            .property("id", id)
+            .property("name", name)
+            .property("protocol", protocol)
+            .property("is-group", false)
+            .property("is-document", false)
+            .property("is-dirty", false)
+            .property("host", host)
+            .property("status", status)
+            .property("is-pinned", is_pinned)
             .build()
     }
 

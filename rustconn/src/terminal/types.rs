@@ -27,6 +27,10 @@ pub struct TerminalSession {
     pub log_file: Option<PathBuf>,
     /// History entry ID for tracking connection history
     pub history_entry_id: Option<Uuid>,
+    /// Tab group name (e.g., "Production", "Staging")
+    pub tab_group: Option<String>,
+    /// Color index from palette for visual grouping
+    pub tab_color_index: Option<usize>,
 }
 
 /// Session widget storage for non-SSH sessions

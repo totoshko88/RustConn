@@ -4,10 +4,9 @@
 //! duplicate, copy, paste, and reload sidebar.
 
 use super::MainWindow;
-use super::types::get_protocol_string;
 use crate::alert;
 use crate::i18n::{i18n, i18n_f};
-use crate::sidebar::{ConnectionItem, ConnectionSidebar};
+use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 use adw::prelude::*;
 use gtk4::glib;
@@ -190,6 +189,45 @@ pub fn duplicate_selected_connection(
     }
 }
 
+/// Toggles pin state of the selected connection
+pub fn toggle_pin_selected(state: &SharedAppState, sidebar: &SharedSidebar) {
+    let Some(conn_item) = sidebar.get_selected_item() else {
+        return;
+    };
+
+    if conn_item.is_group() {
+        return;
+    }
+
+    let id_str = conn_item.id();
+    let Ok(id) = Uuid::parse_str(&id_str) else {
+        return;
+    };
+
+    if let Ok(mut state_mut) = state.try_borrow_mut() {
+        let Some(mut conn) = state_mut.get_connection(id).cloned() else {
+            return;
+        };
+        conn.toggle_pin();
+        tracing::info!(
+            connection_id = %id,
+            is_pinned = conn.is_pinned,
+            "Connection pin state toggled"
+        );
+        if let Err(e) = state_mut.update_connection(id, conn) {
+            tracing::error!(%e, "Failed to update pin state");
+            return;
+        }
+    }
+
+    // Rebuild sidebar to reflect pin changes
+    let state = state.clone();
+    let sidebar = sidebar.clone();
+    glib::idle_add_local_once(move || {
+        MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+    });
+}
+
 /// Copies the selected connection to the internal clipboard
 pub fn copy_selected_connection(
     window: &gtk4::Window,
@@ -275,71 +313,6 @@ pub fn paste_connection(window: &gtk4::Window, state: &SharedAppState, sidebar: 
                 );
             }
         }
-    }
-}
-
-/// Reloads the sidebar with current data (preserving hierarchy)
-pub fn reload_sidebar(state: &SharedAppState, sidebar: &SharedSidebar) {
-    let store = sidebar.store();
-    store.remove_all();
-
-    let Ok(state_ref) = state.try_borrow() else {
-        tracing::warn!("Could not borrow state for sidebar reload");
-        return;
-    };
-
-    // Add root groups with their children
-    for group in state_ref.get_root_groups() {
-        let group_item = ConnectionItem::new_group(&group.id.to_string(), &group.name);
-        add_group_children_static(&state_ref, sidebar, &group_item, group.id);
-        store.append(&group_item);
-    }
-
-    // Add ungrouped connections
-    for conn in state_ref.get_ungrouped_connections() {
-        let protocol = get_protocol_string(&conn.protocol_config);
-        let status = sidebar
-            .get_connection_status(&conn.id.to_string())
-            .unwrap_or_else(|| "disconnected".to_string());
-        let item = ConnectionItem::new_connection_with_status(
-            &conn.id.to_string(),
-            &conn.name,
-            &protocol,
-            &conn.host,
-            &status,
-        );
-        store.append(&item);
-    }
-}
-
-/// Recursively adds children to a group item (static version)
-pub fn add_group_children_static(
-    state: &std::cell::Ref<crate::state::AppState>,
-    sidebar: &SharedSidebar,
-    parent_item: &ConnectionItem,
-    group_id: Uuid,
-) {
-    // Add child groups first
-    for child_group in state.get_child_groups(group_id) {
-        let child_item = ConnectionItem::new_group(&child_group.id.to_string(), &child_group.name);
-        add_group_children_static(state, sidebar, &child_item, child_group.id);
-        parent_item.add_child(&child_item);
-    }
-
-    // Add connections in this group
-    for conn in state.get_connections_by_group(group_id) {
-        let protocol = get_protocol_string(&conn.protocol_config);
-        let status = sidebar
-            .get_connection_status(&conn.id.to_string())
-            .unwrap_or_else(|| "disconnected".to_string());
-        let item = ConnectionItem::new_connection_with_status(
-            &conn.id.to_string(),
-            &conn.name,
-            &protocol,
-            &conn.host,
-            &status,
-        );
-        parent_item.add_child(&item);
     }
 }
 

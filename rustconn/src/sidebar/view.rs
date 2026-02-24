@@ -44,6 +44,13 @@ pub fn setup_list_item(
     label.set_hexpand(true);
     content_box.append(&label);
 
+    let pin_icon = Image::from_icon_name("starred-symbolic");
+    pin_icon.set_pixel_size(12);
+    pin_icon.set_visible(false);
+    pin_icon.add_css_class("pin-icon");
+    pin_icon.set_tooltip_text(Some("Pinned"));
+    content_box.append(&pin_icon);
+
     expander.set_child(Some(&content_box));
     list_item.set_child(Some(&expander));
 
@@ -186,6 +193,9 @@ pub fn bind_list_item(
         return;
     };
 
+    // Pin icon is after the label
+    let pin_icon = label.next_sibling().and_downcast::<Image>();
+
     // Helper to set text with highlighting
     let set_label_text = |label: &Label, text: &str| {
         if query.is_empty() {
@@ -201,6 +211,10 @@ pub fn bind_list_item(
         set_label_text(&label, &item.name());
         // Groups don't have connection status
         status_icon.set_visible(false);
+        // Groups don't show pin icon
+        if let Some(ref pin) = pin_icon {
+            pin.set_visible(false);
+        }
 
         // Add drop controller for dropping into groups
     } else {
@@ -211,6 +225,11 @@ pub fn bind_list_item(
         let icon_name = sidebar_ui::get_protocol_icon(&protocol);
         icon.set_icon_name(Some(icon_name));
         set_label_text(&label, &item.name());
+
+        // Show pin icon for pinned connections
+        if let Some(ref pin) = pin_icon {
+            pin.set_visible(item.is_pinned());
+        }
 
         // Setup status monitoring logic
         // Update status icon

@@ -2627,3 +2627,95 @@ proptest! {
         );
     }
 }
+
+// ========== Favorites/Pinning Property Tests ==========
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(100))]
+
+    /// **Feature: rustconn-favorites, Property 1: Pin State Serialization Round-Trip**
+    ///
+    /// For any connection with arbitrary pin state, serializing to TOML/JSON and
+    /// deserializing back should preserve `is_pinned` and `pin_order` fields.
+    #[test]
+    fn pin_state_toml_round_trip(
+        name in arb_name(),
+        host in arb_host(),
+        port in arb_port(),
+        protocol_config in arb_protocol_config(),
+        is_pinned in any::<bool>(),
+        pin_order in -100i32..100i32,
+    ) {
+        let mut conn = Connection::new(name, host, port, protocol_config);
+        conn.is_pinned = is_pinned;
+        conn.pin_order = pin_order;
+
+        // TOML round-trip
+        let toml_str = toml::to_string(&conn)
+            .expect("Connection should serialize to TOML");
+        let deserialized: Connection = toml::from_str(&toml_str)
+            .expect("TOML should deserialize back to Connection");
+
+        prop_assert_eq!(deserialized.is_pinned, is_pinned, "is_pinned should survive TOML round-trip");
+        prop_assert_eq!(deserialized.pin_order, pin_order, "pin_order should survive TOML round-trip");
+
+        // JSON round-trip
+        let json_str = serde_json::to_string(&conn)
+            .expect("Connection should serialize to JSON");
+        let deserialized_json: Connection = serde_json::from_str(&json_str)
+            .expect("JSON should deserialize back to Connection");
+
+        prop_assert_eq!(deserialized_json.is_pinned, is_pinned, "is_pinned should survive JSON round-trip");
+        prop_assert_eq!(deserialized_json.pin_order, pin_order, "pin_order should survive JSON round-trip");
+    }
+
+    /// **Feature: rustconn-favorites, Property 2: Pin State Toggle Idempotency**
+    ///
+    /// Toggling pin state twice should return to the original state.
+    #[test]
+    fn toggle_pin_twice_restores_original(
+        name in arb_name(),
+        host in arb_host(),
+        port in arb_port(),
+        protocol_config in arb_protocol_config(),
+    ) {
+        let mut conn = Connection::new(name, host, port, protocol_config);
+        let original_pinned = conn.is_pinned;
+
+        conn.toggle_pin();
+        conn.toggle_pin();
+
+        prop_assert_eq!(conn.is_pinned, original_pinned, "Double toggle should restore original pin state");
+    }
+
+    /// **Feature: rustconn-favorites, Property 3: Pin Default on Deserialization**
+    ///
+    /// Connections serialized without `is_pinned`/`pin_order` fields should
+    /// deserialize with defaults (`false` / `0`), ensuring backward compatibility.
+    /// We verify by serializing a fresh connection (is_pinned=false, pin_order=0),
+    /// stripping the pin fields from JSON, and deserializing back.
+    #[test]
+    fn missing_pin_fields_default_correctly(
+        name in arb_name(),
+        host in arb_host(),
+        port in arb_port(),
+        protocol_config in arb_protocol_config(),
+    ) {
+        let conn = Connection::new(name, host, port, protocol_config);
+
+        // Serialize to JSON, strip pin fields, deserialize back
+        let mut json_value: serde_json::Value = serde_json::to_value(&conn)
+            .expect("Connection should serialize to JSON Value");
+
+        if let serde_json::Value::Object(ref mut map) = json_value {
+            map.remove("is_pinned");
+            map.remove("pin_order");
+        }
+
+        let deserialized: Connection = serde_json::from_value(json_value)
+            .expect("JSON without pin fields should deserialize");
+
+        prop_assert!(!deserialized.is_pinned, "is_pinned should default to false");
+        prop_assert_eq!(deserialized.pin_order, 0, "pin_order should default to 0");
+    }
+}

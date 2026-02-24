@@ -90,6 +90,19 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.9.1" date="2026-02-24">
+      <description>
+        <p>Command Palette, Favorites, Pass backend, custom keybindings, and tab enhancements.</p>
+        <ul>
+          <li>Command Palette: VS Code-style quick launcher with fuzzy search (Ctrl+P)</li>
+          <li>Favorites: pin connections to a dedicated sidebar section</li>
+          <li>Pass (passwordstore.org) secret backend via GPG-encrypted password-store</li>
+          <li>Tab coloring by protocol and named tab groups with color indicators</li>
+          <li>Custom Keybindings: 30+ configurable shortcuts via Settings</li>
+          <li>Expanded i18n coverage for connection dialog tabs and content</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.9.0" date="2026-02-21">
       <description>
         <p>Security hardening, Rust 2024 edition, and translation quality improvements.</p>

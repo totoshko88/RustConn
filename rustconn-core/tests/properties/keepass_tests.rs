@@ -398,6 +398,8 @@ fn create_test_connection(name: &str, host: &str) -> Connection {
         remember_window_position: false,
         window_geometry: None,
         skip_port_check: false,
+        is_pinned: false,
+        pin_order: 0,
     }
 }
 
@@ -784,6 +786,8 @@ mod hierarchy_tests {
             remember_window_position: false,
             window_geometry: None,
             skip_port_check: false,
+            is_pinned: false,
+            pin_order: 0,
         }
     }
 

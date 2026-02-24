@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.9.0** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.9.1** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, SFTP, Telnet, Serial, Kubernetes protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -24,9 +24,14 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
     - [Flatpak Components](#flatpak-components)
 11. [Settings](#settings)
 12. [Startup Action](#startup-action)
-13. [Keyboard Shortcuts](#keyboard-shortcuts)
-14. [CLI Usage](#cli-usage)
-15. [Troubleshooting](#troubleshooting)
+13. [Command Palette](#command-palette)
+14. [Favorites](#favorites)
+15. [Tab Coloring](#tab-coloring)
+16. [Tab Grouping](#tab-grouping)
+17. [Custom Keybindings](#custom-keybindings)
+18. [Keyboard Shortcuts](#keyboard-shortcuts)
+19. [CLI Usage](#cli-usage)
+20. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -727,6 +732,7 @@ Access via **Ctrl+,** or Menu → **Settings**
 ### Appearance
 
 - **Theme** — System, Light, Dark (libadwaita StyleManager)
+- **Tab Coloring** — Show colored circle indicator on tabs by protocol (SSH=green, RDP=blue, VNC=purple, SPICE=orange, Serial=yellow, K8s=cyan)
 - **Remember Window Geometry**
 
 ### Terminal
@@ -753,7 +759,7 @@ Access via **Ctrl+,** or Menu → **Settings**
 
 ### Secrets
 
-- **Preferred Backend** — libsecret, KeePassXC, KDBX file, Bitwarden, 1Password, Passbolt
+- **Preferred Backend** — libsecret, KeePassXC, KDBX file, Bitwarden, 1Password, Passbolt, Pass (passwordstore.org)
 - **Enable Fallback** — Use libsecret if primary unavailable
 - **Credential Encryption** — Backend master passwords stored in settings are encrypted with AES-256-GCM + Argon2id key derivation (machine-specific key); legacy XOR format is migrated transparently on first save
 - **KDBX Path** — KeePass database file (for KDBX backend)
@@ -781,6 +787,12 @@ Access via **Ctrl+,** or Menu → **Settings**
   - Save passphrase encrypted in settings (machine-specific)
   - Server configuration status check (configured/not configured/auth failed)
   - Requires `passbolt configure` CLI setup before use
+- **Pass (passwordstore.org) Settings:**
+  - CLI detection and version display (`pass` binary)
+  - Custom `PASSWORD_STORE_DIR` path (defaults to `~/.password-store`)
+  - Credentials stored as `RustConn/<connection-name>` entries
+  - GPG-encrypted files — requires `gpg` and `pass` on PATH
+  - "Open Store" button to browse password store directory
 - **KeePassXC KDBX Settings:**
   - Database path and key file selection
   - Password and/or key file authentication
@@ -791,7 +803,7 @@ Access via **Ctrl+,** or Menu → **Settings**
   - Works with GNOME Keyring, KDE Wallet, and other Secret Service providers
   - "Save password" and "Save to system keyring" are mutually exclusive per backend
   - If `secret-tool` is not installed, toggling keyring option shows a warning
-- **Installed Password Managers** — Auto-detected managers with versions (GNOME Secrets, KeePassXC, KeePass2, Bitwarden CLI, 1Password CLI, Passbolt CLI)
+- **Installed Password Managers** — Auto-detected managers with versions (GNOME Secrets, KeePassXC, KeePass2, Bitwarden CLI, 1Password CLI, Passbolt CLI, Pass)
 
 **Password Source Defaults:**
 When creating a new connection, the password source dropdown shows:
@@ -884,6 +896,110 @@ Save as `~/.local/share/applications/rustconn-shell.desktop`, then set it as the
 
 ---
 
+## Command Palette
+
+Open with **Ctrl+P** (connections) or **Ctrl+Shift+P** (commands).
+
+A VS Code-style quick launcher with fuzzy search. Type to filter, then select with arrow keys and Enter.
+
+### Modes
+
+| Prefix | Mode | Description |
+|--------|------|-------------|
+| *(none)* | Connections | Fuzzy search saved connections; Enter to connect |
+| `>` | Commands | Application commands (New Connection, Import, Settings, etc.) |
+| `@` | Tags | Filter connections by tag |
+| `#` | Groups | Filter connections by group |
+
+### Usage
+
+1. Press **Ctrl+P** to open
+2. Start typing to filter connections
+3. Type `>` to switch to command mode
+4. Press **Enter** to execute, **Escape** to dismiss
+
+The palette shows up to 20 results with match highlighting. Results are ranked by fuzzy match score.
+
+---
+
+## Favorites
+
+Pin frequently used connections to a dedicated "Favorites" section at the top of the sidebar.
+
+### Pin a Connection
+
+- Right-click a connection → **Pin to Favorites**
+- The connection appears in the ★ Favorites group at the top of the sidebar
+
+### Unpin a Connection
+
+- Right-click a pinned connection → **Unpin from Favorites**
+- The connection returns to its original group
+
+Favorites persist across sessions. Pinned connections remain in their original group as well — the Favorites section shows a reference, not a move.
+
+---
+
+## Tab Coloring
+
+Optional colored circle indicators on terminal tabs to visually distinguish protocols at a glance.
+
+| Protocol | Color |
+|----------|-------|
+| SSH | 🟢 Green |
+| RDP | 🔵 Blue |
+| VNC | 🟣 Purple |
+| SPICE | 🟠 Orange |
+| Serial | 🟡 Yellow |
+| Kubernetes | 🔵 Cyan |
+
+### Enable/Disable
+
+Settings → Appearance → **Tab Coloring**
+
+---
+
+## Tab Grouping
+
+Organize open tabs into named groups with color-coded indicators.
+
+### Assign a Tab to a Group
+
+1. Right-click a tab in the tab bar
+2. Select **Assign to Group**
+3. Choose an existing group or type a new name (e.g. "Production", "Staging")
+
+### Remove from Group
+
+- Right-click a grouped tab → **Remove from Group**
+
+Groups are visual only — they add a colored label to the tab title. Each group gets a unique color from a rotating palette. Groups are session-scoped and not persisted.
+
+---
+
+## Custom Keybindings
+
+Customize all keyboard shortcuts via Settings → Keybindings.
+
+### Customize a Shortcut
+
+1. Open **Settings** (Ctrl+,) → **Keybindings** tab
+2. Find the action you want to change
+3. Click **Record** next to it
+4. Press the desired key combination
+5. The new shortcut is saved immediately
+
+### Reset a Shortcut
+
+- Click the ↩ (undo) button next to any shortcut to reset it to default
+- Click **Reset All to Defaults** at the bottom to reset everything
+
+### Available Actions
+
+Over 25 customizable actions across 6 categories: Application, Connections, Navigation, Terminal, Split View, and View. See the [Keyboard Shortcuts](#keyboard-shortcuts) section for the full default list.
+
+---
+
 ## Adaptive UI
 
 RustConn adapts to different window sizes using `adw::Breakpoint` and responsive dialog sizing.
@@ -924,6 +1040,18 @@ Press **Ctrl+?** or **F1** for searchable shortcuts dialog.
 | Ctrl+Tab | Next Tab |
 | Ctrl+Shift+Tab | Previous Tab |
 
+### Terminal Keybinding Modes
+
+RustConn uses the VTE terminal emulator, which passes all keystrokes directly to the running shell. To enable vim or emacs-style keybindings, configure your shell:
+
+| Shell | Vim Mode | Emacs Mode (default) |
+|-------|----------|---------------------|
+| Bash | `set -o vi` in `~/.bashrc` | `set -o emacs` in `~/.bashrc` |
+| Zsh | `bindkey -v` in `~/.zshrc` | `bindkey -e` in `~/.zshrc` |
+| Fish | `fish_vi_key_bindings` | `fish_default_key_bindings` |
+
+These settings apply to all terminal sessions (SSH, Telnet, Serial, Kubernetes, local shell). RustConn does not intercept or remap shell keybindings.
+
 ### Split View
 
 | Shortcut | Action |
@@ -938,6 +1066,8 @@ Press **Ctrl+?** or **F1** for searchable shortcuts dialog.
 | Shortcut | Action |
 |----------|--------|
 | Ctrl+F | Search |
+| Ctrl+P | Command Palette (Connections) |
+| Ctrl+Shift+P | Command Palette (Commands) |
 | Ctrl+I | Import |
 | Ctrl+Shift+E | Export |
 | Ctrl+, | Settings |
@@ -1162,6 +1292,15 @@ rustconn-cli secret verify-keepass -d ~/vault.kdbx -k ~/key.key
 3. Configure KDBX path in Settings → Secrets
 4. Provide password/key file
 5. For password source, select "KeePass" in connection dialog
+
+### Pass (passwordstore.org) Not Working
+
+1. Install `pass`: `sudo apt install pass` (Debian/Ubuntu) or `sudo dnf install pass` (Fedora)
+2. Initialize store: `pass init <gpg-id>`
+3. Verify: `pass ls`
+4. Select Pass backend in Settings → Secrets
+5. Optionally set custom `PASSWORD_STORE_DIR` if not using `~/.password-store`
+6. For password source, select "Vault" in connection dialog
 
 ### Embedded RDP/VNC Issues
 

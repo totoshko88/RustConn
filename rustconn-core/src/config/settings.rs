@@ -32,6 +32,9 @@ pub struct AppSettings {
     /// Connection history settings
     #[serde(default)]
     pub history: HistorySettings,
+    /// Custom keybinding overrides
+    #[serde(default)]
+    pub keybindings: super::keybindings::KeybindingSettings,
 }
 
 /// Terminal-related settings
@@ -384,6 +387,7 @@ const MAX_SEARCH_HISTORY_ENTRIES: usize = 20;
 
 /// UI settings
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct UiSettings {
     /// Color scheme preference
     #[serde(default)]
@@ -421,6 +425,9 @@ pub struct UiSettings {
     /// Action to perform on application startup
     #[serde(default)]
     pub startup_action: StartupAction,
+    /// Color tab indicators by protocol type
+    #[serde(default)]
+    pub color_tabs_by_protocol: bool,
 }
 
 impl UiSettings {
@@ -518,6 +525,7 @@ impl Default for UiSettings {
             session_restore: SessionRestoreSettings::default(),
             search_history: Vec::new(),
             startup_action: StartupAction::default(),
+            color_tabs_by_protocol: false,
         }
     }
 }

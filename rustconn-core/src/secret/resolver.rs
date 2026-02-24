@@ -1032,7 +1032,9 @@ impl CredentialResolver {
                             let _ = self.secret_manager.delete(&old_key).await;
                         }
                     }
-                    SecretBackendType::LibSecret | SecretBackendType::Bitwarden | SecretBackendType::Pass => {
+                    SecretBackendType::LibSecret
+                    | SecretBackendType::Bitwarden
+                    | SecretBackendType::Pass => {
                         // Uses "{name} ({protocol})" format
                         let old_key = format!("{} ({})", old_name.replace('/', "-"), protocol_str);
                         let new_key =
@@ -1171,6 +1173,8 @@ mod tests {
             remember_window_position: false,
             window_geometry: None,
             skip_port_check: false,
+            is_pinned: false,
+            pin_order: 0,
         }
     }
 
