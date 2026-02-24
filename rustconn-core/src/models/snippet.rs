@@ -1,5 +1,6 @@
 //! Snippet model for reusable command templates.
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -24,12 +25,19 @@ pub struct Snippet {
     /// Tags for filtering
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub tags: Vec<String>,
+    /// When the snippet was created
+    #[serde(default = "Utc::now")]
+    pub created_at: DateTime<Utc>,
+    /// When the snippet was last modified
+    #[serde(default = "Utc::now")]
+    pub updated_at: DateTime<Utc>,
 }
 
 impl Snippet {
     /// Creates a new snippet with the given name and command
     #[must_use]
     pub fn new(name: String, command: String) -> Self {
+        let now = Utc::now();
         Self {
             id: Uuid::new_v4(),
             name,
@@ -38,6 +46,8 @@ impl Snippet {
             variables: Vec::new(),
             category: None,
             tags: Vec::new(),
+            created_at: now,
+            updated_at: now,
         }
     }
 

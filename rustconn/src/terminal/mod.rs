@@ -16,6 +16,7 @@ pub use types::{SessionWidgetStorage, TerminalSession};
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Orientation, Widget, gio, glib};
 use libadwaita as adw;
+use libadwaita::prelude::*;
 use regex::Regex;
 use rustconn_core::models::AutomationConfig;
 use std::cell::RefCell;
@@ -29,9 +30,11 @@ use vte4::{PtyFlags, Terminal};
 use crate::automation::{AutomationSession, Trigger};
 use crate::embedded_rdp::EmbeddedRdpWidget;
 use crate::embedded_spice::EmbeddedSpiceWidget;
+use crate::i18n::i18n;
 use crate::session::{SessionState, SessionWidget, VncSessionWidget};
 use crate::split_view::TabSplitManager;
 use rustconn_core::split::TabId;
+use rustconn_core::split::tab_groups::TabGroupManager;
 
 /// Terminal notebook widget for managing multiple terminal sessions
 /// Now using adw::TabView for modern GNOME HIG compliance
@@ -62,6 +65,10 @@ pub struct TerminalNotebook {
     split_manager: Rc<RefCell<TabSplitManager>>,
     /// Map of session IDs to their TabId (for split layout tracking)
     session_tab_ids: Rc<RefCell<HashMap<Uuid, TabId>>>,
+    /// Whether to color tab indicators by protocol type
+    color_tabs_by_protocol: Rc<RefCell<bool>>,
+    /// Tab group manager for assigning colors to named groups
+    tab_group_manager: Rc<RefCell<TabGroupManager>>,
 }
 
 impl TerminalNotebook {
@@ -96,7 +103,7 @@ impl TerminalNotebook {
         // Add a welcome page
         let welcome = Self::create_welcome_tab();
         let welcome_page = tab_view.append(&welcome);
-        welcome_page.set_title("Welcome");
+        welcome_page.set_title(&i18n("Welcome"));
         welcome_page.set_icon(Some(&gio::ThemedIcon::new("go-home-symbolic")));
 
         let term_notebook = Self {
@@ -112,9 +119,12 @@ impl TerminalNotebook {
             session_info: Rc::new(RefCell::new(HashMap::new())),
             split_manager: Rc::new(RefCell::new(TabSplitManager::new())),
             session_tab_ids: Rc::new(RefCell::new(HashMap::new())),
+            color_tabs_by_protocol: Rc::new(RefCell::new(false)),
+            tab_group_manager: Rc::new(RefCell::new(TabGroupManager::new())),
         };
 
         term_notebook.setup_tab_view_signals();
+        term_notebook.setup_tab_context_menu();
         term_notebook
     }
 
@@ -201,12 +211,230 @@ impl TerminalNotebook {
             if sessions.borrow().is_empty() && tab_view.n_pages() == 0 {
                 let welcome = Self::create_welcome_tab();
                 let welcome_page = tab_view.append(&welcome);
-                welcome_page.set_title("Welcome");
+                welcome_page.set_title(&i18n("Welcome"));
                 welcome_page.set_icon(Some(&gio::ThemedIcon::new("go-home-symbolic")));
             }
 
             glib::Propagation::Stop
         });
+    }
+
+    /// Sets up the tab context menu with group management actions.
+    ///
+    /// The menu is shown on right-click via `adw::TabView::set_menu_model`.
+    /// The `setup-menu` signal stores the target page so actions can find it.
+    fn setup_tab_context_menu(&self) {
+        // Build the GMenu model for tab context menu
+        let menu = gio::Menu::new();
+
+        let group_section = gio::Menu::new();
+        group_section.append(Some(&i18n("Set Group...")), Some("tab.set-group"));
+        group_section.append(Some(&i18n("Remove from Group")), Some("tab.remove-group"));
+        menu.append_section(None, &group_section);
+
+        let close_section = gio::Menu::new();
+        close_section.append(Some(&i18n("Close Tab")), Some("tab.close"));
+        menu.append_section(None, &close_section);
+
+        self.tab_view.set_menu_model(Some(&menu));
+
+        // Shared cell to store the page that was right-clicked
+        let context_page: Rc<RefCell<Option<adw::TabPage>>> = Rc::new(RefCell::new(None));
+
+        // When the context menu is about to show, store the target page
+        let context_page_setup = context_page.clone();
+        self.tab_view.connect_setup_menu(move |_tab_view, page| {
+            *context_page_setup.borrow_mut() = page.cloned();
+        });
+
+        // Create action group
+        let action_group = gio::SimpleActionGroup::new();
+
+        // "Set Group..." action — shows an entry dialog
+        let set_group_action = gio::SimpleAction::new("set-group", None);
+        let context_page_set = context_page.clone();
+        let session_info = self.session_info.clone();
+        let sessions = self.sessions.clone();
+        let tab_group_manager = self.tab_group_manager.clone();
+        let split_manager = self.split_manager.clone();
+        let session_tab_ids = self.session_tab_ids.clone();
+
+        set_group_action.connect_activate(move |_, _| {
+            let target_page = context_page_set.borrow().clone();
+            let Some(target_page) = target_page else {
+                return;
+            };
+            let session_id = {
+                let sessions_ref = sessions.borrow();
+                sessions_ref
+                    .iter()
+                    .find(|(_, p)| *p == &target_page)
+                    .map(|(id, _)| *id)
+            };
+            let Some(session_id) = session_id else {
+                return;
+            };
+
+            // Build the group chooser dialog
+            let dialog = adw::AlertDialog::builder()
+                .heading(i18n("Set Tab Group"))
+                .body(i18n("Enter a group name for this tab"))
+                .build();
+
+            let entry = gtk4::Entry::builder()
+                .placeholder_text(i18n("e.g. Production, Staging"))
+                .hexpand(true)
+                .build();
+
+            // Pre-fill with current group if any
+            if let Some(info) = session_info.borrow().get(&session_id)
+                && let Some(ref group) = info.tab_group
+            {
+                entry.set_text(group);
+            }
+
+            dialog.set_extra_child(Some(&entry));
+            dialog.add_response("cancel", &i18n("Cancel"));
+            dialog.add_response("apply", &i18n("Apply"));
+            dialog.set_response_appearance("apply", adw::ResponseAppearance::Suggested);
+            dialog.set_default_response(Some("apply"));
+            dialog.set_close_response("cancel");
+
+            // Enter key triggers "apply" via set_default_response above
+
+            let session_info_clone = session_info.clone();
+            let tab_group_manager_clone = tab_group_manager.clone();
+            let sessions_clone = sessions.clone();
+            let split_manager_clone = split_manager.clone();
+            let session_tab_ids_clone = session_tab_ids.clone();
+
+            dialog.connect_response(None, move |_dialog, response| {
+                if response != "apply" {
+                    return;
+                }
+                let group_name = entry.text().trim().to_string();
+                if group_name.is_empty() {
+                    return;
+                }
+
+                let color_index = tab_group_manager_clone
+                    .borrow_mut()
+                    .get_or_assign_color(&group_name);
+
+                if let Some(info) = session_info_clone.borrow_mut().get_mut(&session_id) {
+                    info.tab_group = Some(group_name.clone());
+                    info.tab_color_index = Some(color_index);
+                }
+
+                // Apply visual indicator (check split color priority)
+                let has_split_color = session_tab_ids_clone
+                    .borrow()
+                    .get(&session_id)
+                    .and_then(|tab_id| split_manager_clone.borrow().get_tab_color(*tab_id))
+                    .is_some();
+
+                if !has_split_color
+                    && let Some(page) = sessions_clone.borrow().get(&session_id)
+                    && let Some((r, g, b)) = TabGroupManager::color_rgb(color_index)
+                    && let Some(icon) = Self::create_protocol_color_icon(r, g, b, 16)
+                {
+                    page.set_indicator_icon(Some(&icon));
+                    page.set_indicator_activatable(false);
+                }
+
+                tracing::debug!(
+                    session_id = %session_id,
+                    group = group_name,
+                    color_index,
+                    "Tab assigned to group via context menu"
+                );
+            });
+
+            // Present the dialog
+            if let Some(root) = target_page.child().root()
+                && let Some(window) = root.downcast_ref::<gtk4::Window>()
+            {
+                dialog.present(Some(window));
+            }
+        });
+        action_group.add_action(&set_group_action);
+
+        // "Remove from Group" action
+        let remove_group_action = gio::SimpleAction::new("remove-group", None);
+        let context_page_remove = context_page.clone();
+        let session_info = self.session_info.clone();
+        let sessions = self.sessions.clone();
+        let color_tabs_by_protocol = self.color_tabs_by_protocol.clone();
+        let split_manager = self.split_manager.clone();
+        let session_tab_ids = self.session_tab_ids.clone();
+
+        remove_group_action.connect_activate(move |_, _| {
+            let target_page = context_page_remove.borrow().clone();
+            let Some(target_page) = target_page else {
+                return;
+            };
+            let session_id = {
+                let sessions_ref = sessions.borrow();
+                sessions_ref
+                    .iter()
+                    .find(|(_, p)| *p == &target_page)
+                    .map(|(id, _)| *id)
+            };
+            let Some(session_id) = session_id else {
+                return;
+            };
+
+            // Clear group from session info
+            let protocol = {
+                let mut info_ref = session_info.borrow_mut();
+                if let Some(info) = info_ref.get_mut(&session_id) {
+                    info.tab_group = None;
+                    info.tab_color_index = None;
+                    Some(info.protocol.clone())
+                } else {
+                    None
+                }
+            };
+
+            // Restore appropriate indicator
+            let has_split_color = session_tab_ids
+                .borrow()
+                .get(&session_id)
+                .and_then(|tab_id| split_manager.borrow().get_tab_color(*tab_id))
+                .is_some();
+
+            if !has_split_color && let Some(page) = sessions.borrow().get(&session_id) {
+                if *color_tabs_by_protocol.borrow() {
+                    if let Some(ref proto) = protocol {
+                        let (r, g, b) = rustconn_core::get_protocol_color_rgb(proto);
+                        if let Some(icon) = Self::create_protocol_color_icon(r, g, b, 16) {
+                            page.set_indicator_icon(Some(&icon));
+                            page.set_indicator_activatable(false);
+                        }
+                    }
+                } else {
+                    page.set_indicator_icon(gio::Icon::NONE);
+                }
+            }
+
+            tracing::debug!(session_id = %session_id, "Tab removed from group via context menu");
+        });
+        action_group.add_action(&remove_group_action);
+
+        // "Close Tab" action
+        let close_action = gio::SimpleAction::new("close", None);
+        let context_page_close = context_page;
+        let tab_view_clone = self.tab_view.clone();
+        close_action.connect_activate(move |_, _| {
+            if let Some(page) = context_page_close.borrow().clone() {
+                tab_view_clone.close_page(&page);
+            }
+        });
+        action_group.add_action(&close_action);
+
+        // Attach action group to the TabView widget
+        self.tab_view
+            .insert_action_group("tab", Some(&action_group));
     }
 
     /// Creates the welcome tab content - uses the full welcome screen with features
@@ -232,7 +460,7 @@ impl TerminalNotebook {
             // Find and remove welcome page
             for i in 0..self.tab_view.n_pages() {
                 let page = self.tab_view.nth_page(i);
-                if page.title() == "Welcome" {
+                if page.title() == i18n("Welcome") {
                     self.tab_view.close_page(&page);
                     break;
                 }
@@ -340,11 +568,18 @@ impl TerminalNotebook {
                 is_embedded: true,
                 log_file: None,
                 history_entry_id: None,
+                tab_group: None,
+                tab_color_index: None,
             },
         );
 
         // Select the new page
         self.tab_view.set_selected_page(&page);
+
+        // Apply protocol color indicator if enabled
+        if *self.color_tabs_by_protocol.borrow() {
+            self.apply_protocol_color(session_id, protocol);
+        }
 
         session_id
     }
@@ -396,10 +631,16 @@ impl TerminalNotebook {
                 is_embedded: true,
                 log_file: None,
                 history_entry_id: None,
+                tab_group: None,
+                tab_color_index: None,
             },
         );
 
         self.tab_view.set_selected_page(&page);
+        // Apply protocol color indicator if enabled
+        if *self.color_tabs_by_protocol.borrow() {
+            self.apply_protocol_color(session_id, "vnc");
+        }
         session_id
     }
 
@@ -453,10 +694,16 @@ impl TerminalNotebook {
                 is_embedded: true,
                 log_file: None,
                 history_entry_id: None,
+                tab_group: None,
+                tab_color_index: None,
             },
         );
 
         self.tab_view.set_selected_page(&page);
+        // Apply protocol color indicator if enabled
+        if *self.color_tabs_by_protocol.borrow() {
+            self.apply_protocol_color(session_id, "spice");
+        }
         session_id
     }
 
@@ -495,10 +742,16 @@ impl TerminalNotebook {
                 is_embedded: true,
                 log_file: None,
                 history_entry_id: None,
+                tab_group: None,
+                tab_color_index: None,
             },
         );
 
         self.tab_view.set_selected_page(&page);
+        // Apply protocol color indicator if enabled
+        if *self.color_tabs_by_protocol.borrow() {
+            self.apply_protocol_color(session_id, "rdp");
+        }
     }
 
     /// Adds an embedded session tab (for RDP/VNC external processes)
@@ -530,10 +783,16 @@ impl TerminalNotebook {
                 is_embedded: false,
                 log_file: None,
                 history_entry_id: None,
+                tab_group: None,
+                tab_color_index: None,
             },
         );
 
         self.tab_view.set_selected_page(&page);
+        // Apply protocol color indicator if enabled
+        if *self.color_tabs_by_protocol.borrow() {
+            self.apply_protocol_color(session_id, protocol);
+        }
     }
 
     /// Gets the VNC session widget for a session
@@ -908,6 +1167,112 @@ impl TerminalNotebook {
         }
     }
 
+    /// Sets whether tabs should be colored by protocol type
+    pub fn set_color_tabs_by_protocol(&self, enabled: bool) {
+        *self.color_tabs_by_protocol.borrow_mut() = enabled;
+        // Apply or remove protocol colors on all existing sessions
+        let sessions: Vec<(Uuid, String)> = self
+            .session_info
+            .borrow()
+            .iter()
+            .map(|(id, info)| (*id, info.protocol.clone()))
+            .collect();
+        for (session_id, protocol) in sessions {
+            if enabled {
+                self.apply_protocol_color(session_id, &protocol);
+            } else {
+                self.clear_protocol_color(session_id);
+            }
+        }
+    }
+
+    /// Applies protocol-based color indicator to a tab
+    fn apply_protocol_color(&self, session_id: Uuid, protocol: &str) {
+        if let Some(page) = self.sessions.borrow().get(&session_id) {
+            // Don't override split colors — split takes priority
+            if self.get_session_split_color(session_id).is_some() {
+                return;
+            }
+            // Don't override group colors — group takes priority over protocol
+            if self
+                .session_info
+                .borrow()
+                .get(&session_id)
+                .and_then(|i| i.tab_group.as_ref())
+                .is_some()
+            {
+                return;
+            }
+            let (r, g, b) = rustconn_core::get_protocol_color_rgb(protocol);
+            if let Some(icon) = Self::create_protocol_color_icon(r, g, b, 16) {
+                page.set_indicator_icon(Some(&icon));
+                page.set_indicator_activatable(false);
+            }
+        }
+    }
+
+    /// Removes protocol color indicator from a tab
+    fn clear_protocol_color(&self, session_id: Uuid) {
+        if let Some(page) = self.sessions.borrow().get(&session_id) {
+            // Don't clear if split color is active
+            if self.get_session_split_color(session_id).is_some() {
+                return;
+            }
+            // Don't clear if group color is active
+            if self
+                .session_info
+                .borrow()
+                .get(&session_id)
+                .and_then(|i| i.tab_group.as_ref())
+                .is_some()
+            {
+                return;
+            }
+            page.set_indicator_icon(gio::Icon::NONE);
+        }
+    }
+
+    /// Creates a colored circle icon for protocol tab indicators
+    fn create_protocol_color_icon(r: u8, g: u8, b: u8, size: u32) -> Option<gio::Icon> {
+        // Reuse the same circle-drawing logic as split colors
+        let mut rgba_data = vec![0u8; (size * size * 4) as usize];
+        let center = size as f32 / 2.0;
+        let radius = center - 1.0;
+
+        for y in 0..size {
+            for x in 0..size {
+                let dx = x as f32 - center;
+                let dy = y as f32 - center;
+                let distance = dx.hypot(dy);
+                let idx = ((y * size + x) * 4) as usize;
+
+                if distance <= radius {
+                    let alpha = if distance > radius - 1.0 {
+                        ((radius - distance + 1.0) * 255.0) as u8
+                    } else {
+                        255
+                    };
+                    rgba_data[idx] = r;
+                    rgba_data[idx + 1] = g;
+                    rgba_data[idx + 2] = b;
+                    rgba_data[idx + 3] = alpha;
+                }
+            }
+        }
+
+        let pixbuf = gtk4::gdk_pixbuf::Pixbuf::from_bytes(
+            &glib::Bytes::from(&rgba_data),
+            gtk4::gdk_pixbuf::Colorspace::Rgb,
+            true,
+            8,
+            size as i32,
+            size as i32,
+            (size * 4) as i32,
+        );
+        let texture = gtk4::gdk::Texture::for_pixbuf(&pixbuf);
+        Some(texture.upcast::<gio::Icon>())
+    }
+
     /// Gets the terminal widget for a session
     #[must_use]
     pub fn get_terminal(&self, session_id: Uuid) -> Option<Terminal> {
@@ -1280,6 +1645,97 @@ impl TerminalNotebook {
                 .map(|c| c.index() as usize)
         } else {
             None
+        }
+    }
+
+    // ========================================================================
+    // Tab Group Management
+    // ========================================================================
+
+    /// Assigns a session to a named tab group.
+    ///
+    /// The group is assigned a color from the palette. The tab indicator is
+    /// updated to show the group color (unless a split color is active).
+    #[allow(dead_code)] // Public API for window-level tab group operations
+    pub fn set_tab_group(&self, session_id: Uuid, group_name: &str) {
+        let color_index = self
+            .tab_group_manager
+            .borrow_mut()
+            .get_or_assign_color(group_name);
+
+        if let Some(info) = self.session_info.borrow_mut().get_mut(&session_id) {
+            info.tab_group = Some(group_name.to_owned());
+            info.tab_color_index = Some(color_index);
+        }
+
+        // Apply visual indicator (group color takes priority over protocol color,
+        // but split color still takes priority over group color)
+        if self.get_session_split_color(session_id).is_none() {
+            self.apply_group_color(session_id, color_index);
+        }
+
+        tracing::debug!(session_id = %session_id, group = group_name, color_index, "Tab assigned to group");
+    }
+
+    /// Removes a session from its tab group.
+    #[allow(dead_code)] // Public API for window-level tab group operations
+    pub fn remove_tab_group(&self, session_id: Uuid) {
+        if let Some(info) = self.session_info.borrow_mut().get_mut(&session_id) {
+            info.tab_group = None;
+            info.tab_color_index = None;
+        }
+
+        // Restore protocol color or clear indicator
+        if self.get_session_split_color(session_id).is_none() {
+            if *self.color_tabs_by_protocol.borrow() {
+                if let Some(protocol) = self
+                    .session_info
+                    .borrow()
+                    .get(&session_id)
+                    .map(|i| i.protocol.clone())
+                {
+                    self.apply_protocol_color(session_id, &protocol);
+                }
+            } else {
+                self.clear_group_color(session_id);
+            }
+        }
+
+        tracing::debug!(session_id = %session_id, "Tab removed from group");
+    }
+
+    /// Returns the group name for a session, if any.
+    #[must_use]
+    #[allow(dead_code)] // Public API for window-level tab group operations
+    pub fn get_tab_group(&self, session_id: Uuid) -> Option<String> {
+        self.session_info
+            .borrow()
+            .get(&session_id)
+            .and_then(|i| i.tab_group.clone())
+    }
+
+    /// Returns all known group names from the tab group manager.
+    #[must_use]
+    #[allow(dead_code)] // Public API for window-level tab group operations
+    pub fn known_group_names(&self) -> Vec<String> {
+        self.tab_group_manager.borrow().group_names()
+    }
+
+    /// Applies a group color indicator to a tab.
+    fn apply_group_color(&self, session_id: Uuid, color_index: usize) {
+        if let Some(page) = self.sessions.borrow().get(&session_id)
+            && let Some((r, g, b)) = TabGroupManager::color_rgb(color_index)
+            && let Some(icon) = Self::create_protocol_color_icon(r, g, b, 16)
+        {
+            page.set_indicator_icon(Some(&icon));
+            page.set_indicator_activatable(false);
+        }
+    }
+
+    /// Clears a group color indicator from a tab.
+    fn clear_group_color(&self, session_id: Uuid) {
+        if let Some(page) = self.sessions.borrow().get(&session_id) {
+            page.set_indicator_icon(gio::Icon::NONE);
         }
     }
 

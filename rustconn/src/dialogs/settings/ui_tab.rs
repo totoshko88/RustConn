@@ -22,6 +22,7 @@ pub fn create_ui_page() -> (
     CheckButton,
     adw::SpinRow,
     DropDown,
+    CheckButton,
 ) {
     let page = adw::PreferencesPage::builder()
         .title(i18n("Interface"))
@@ -100,6 +101,18 @@ pub fn create_ui_page() -> (
         .build();
     language_row.add_suffix(&language_dropdown);
     appearance_group.add(&language_row);
+
+    // Color tabs by protocol toggle
+    let color_tabs_by_protocol = CheckButton::builder().valign(gtk4::Align::Center).build();
+    let color_tabs_row = adw::ActionRow::builder()
+        .title(i18n("Color tabs by protocol"))
+        .subtitle(i18n(
+            "Show colored indicator on tabs based on protocol type",
+        ))
+        .activatable_widget(&color_tabs_by_protocol)
+        .build();
+    color_tabs_row.add_prefix(&color_tabs_by_protocol);
+    appearance_group.add(&color_tabs_row);
 
     page.add(&appearance_group);
 
@@ -228,6 +241,7 @@ pub fn create_ui_page() -> (
         prompt_on_restore,
         max_age_row,
         startup_action_dropdown,
+        color_tabs_by_protocol,
     )
 }
 
@@ -269,6 +283,7 @@ pub fn load_ui_settings(
     prompt_on_restore: &CheckButton,
     max_age_row: &adw::SpinRow,
     startup_action_dropdown: &DropDown,
+    color_tabs_by_protocol: &CheckButton,
     settings: &UiSettings,
     connections: &[&Connection],
 ) {
@@ -312,6 +327,8 @@ pub fn load_ui_settings(
     prompt_on_restore.set_sensitive(settings.session_restore.enabled);
     max_age_row.set_sensitive(settings.session_restore.enabled);
 
+    color_tabs_by_protocol.set_active(settings.color_tabs_by_protocol);
+
     // Populate startup action dropdown with connections
     let entries = build_startup_entries(connections);
     let mut labels: Vec<String> = vec![i18n("Do nothing"), i18n("Local Shell")];
@@ -346,6 +363,7 @@ pub fn collect_ui_settings(
     prompt_on_restore: &CheckButton,
     max_age_row: &adw::SpinRow,
     startup_action_dropdown: &DropDown,
+    color_tabs_by_protocol: &CheckButton,
     connections: &[&Connection],
 ) -> UiSettings {
     let mut selected_scheme = ColorScheme::System;
@@ -404,5 +422,6 @@ pub fn collect_ui_settings(
         },
         search_history: Vec::new(), // Preserve existing history from current settings
         startup_action,
+        color_tabs_by_protocol: color_tabs_by_protocol.is_active(),
     }
 }

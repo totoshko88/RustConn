@@ -5,6 +5,36 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.9.1] - 2026-02-24
+
+### Added
+- **Command Palette** — VS Code-style quick launcher (`Ctrl+P` / `Ctrl+Shift+P`) with fuzzy search for connections and `>` / `@` / `#` prefixes for commands, tags, and groups
+- **Favorites / Pinning** — Pin connections to a dedicated "Favorites" section at the top of the sidebar via context menu
+- **Pass (passwordstore.org) secret backend** — Store and retrieve credentials via `pass` with GPG-encrypted files, custom `PASSWORD_STORE_DIR`, Settings UI, and CLI support ([#32](https://github.com/totoshko88/RustConn/pull/32), contributed by [@h3nnes](https://github.com/h3nnes))
+- **Tab coloring by protocol** — Optional colored circle indicator on terminal tabs (SSH=green, RDP=blue, VNC=purple, SPICE=orange, Serial=yellow, K8s=cyan); toggle in Settings → Appearance
+- **Snippet timestamps** — `created_at` and `updated_at` fields on `Snippet` model with backward-compatible deserialization
+- **Tab grouping** — Right-click context menu on tabs to assign named groups ("Production", "Staging") with color-coded indicators
+- **Custom Keybindings** — Fully customizable keyboard shortcuts via Settings → Keybindings with 30+ actions, Record button, per-shortcut Reset, and Reset All
+
+### Fixed
+- Command Palette not dismissible via Escape or click-outside
+- Favorites group not updating immediately on pin/unpin
+- KDBX group visibility regression when loading saved backend preference in Settings
+- Doc-comment misplacement in `state.rs` for Pass helper functions
+
+### Improved
+- **i18n coverage** — Connection dialog tabs (Basic, Protocol, Data, Logging, Automation, Advanced) and all their content strings now translatable; translations added to all 14 languages
+- **User Guide** — Added "Terminal Keybinding Modes" section (vim/emacs in Bash, Zsh, Fish)
+
+### Dependencies
+- **Updated**: uuid 1.11→1.21, proptest 1.6→1.9, tempfile 3.15→3.23, plus 18 transitive dependency bumps via `cargo update`
+
+### Internal
+- Deduplicated `PassBackend` construction in CLI and GUI
+- Cached `has_secret_backend()` result in `AppState` to avoid repeated `block_on` calls
+
 ## [0.9.0] - 2026-02-22
 
 ### Added

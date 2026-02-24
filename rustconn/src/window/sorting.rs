@@ -4,6 +4,7 @@
 //! drag-drop reordering operations.
 
 use super::types::get_protocol_string;
+use crate::i18n::i18n;
 use crate::sidebar::{ConnectionItem, ConnectionSidebar};
 use crate::state::SharedAppState;
 use std::rc::Rc;
@@ -110,6 +111,39 @@ pub fn rebuild_sidebar_sorted(state: &SharedAppState, sidebar: &SharedSidebar) {
 
     let state_ref = state.borrow();
 
+    // Collect pinned connections from ALL connections (including grouped)
+    let mut pinned: Vec<_> = state_ref
+        .list_connections()
+        .iter()
+        .filter(|c| c.is_pinned)
+        .map(|c| (*c).clone())
+        .collect();
+    pinned.sort_by(|a, b| match a.pin_order.cmp(&b.pin_order) {
+        std::cmp::Ordering::Equal => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+        other => other,
+    });
+
+    // Add pinned connections as a virtual "Favorites" group at the top
+    if !pinned.is_empty() {
+        let favorites_item = ConnectionItem::new_group("__pinned__", &i18n("Favorites"));
+        for conn in &pinned {
+            let protocol = get_protocol_string(&conn.protocol_config);
+            let status = sidebar
+                .get_connection_status(&conn.id.to_string())
+                .unwrap_or_else(|| "disconnected".to_string());
+            let item = ConnectionItem::new_connection_full(
+                &conn.id.to_string(),
+                &conn.name,
+                &protocol,
+                &conn.host,
+                &status,
+                true,
+            );
+            favorites_item.add_child(&item);
+        }
+        store.append(&favorites_item);
+    }
+
     // Add sorted groups with their sorted children
     for group in &groups {
         let group_item = ConnectionItem::new_group(&group.id.to_string(), &group.name);
@@ -123,12 +157,13 @@ pub fn rebuild_sidebar_sorted(state: &SharedAppState, sidebar: &SharedSidebar) {
         let status = sidebar
             .get_connection_status(&conn.id.to_string())
             .unwrap_or_else(|| "disconnected".to_string());
-        let item = ConnectionItem::new_connection_with_status(
+        let item = ConnectionItem::new_connection_full(
             &conn.id.to_string(),
             &conn.name,
             &protocol,
             &conn.host,
             &status,
+            conn.is_pinned,
         );
         store.append(&item);
     }
@@ -174,12 +209,13 @@ pub fn add_sorted_group_children(
         let status = sidebar
             .get_connection_status(&conn.id.to_string())
             .unwrap_or_else(|| "disconnected".to_string());
-        let item = ConnectionItem::new_connection_with_status(
+        let item = ConnectionItem::new_connection_full(
             &conn.id.to_string(),
             &conn.name,
             &protocol,
             &conn.host,
             &status,
+            conn.is_pinned,
         );
         parent_item.add_child(&item);
     }

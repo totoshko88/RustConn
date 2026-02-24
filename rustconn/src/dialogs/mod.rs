@@ -2,6 +2,7 @@
 
 mod adw_dialogs;
 mod cluster;
+mod command_palette;
 mod connection;
 mod document;
 mod export;
@@ -26,6 +27,7 @@ mod wol;
 pub use adw_dialogs::*;
 
 pub use cluster::{ClusterCallback, ClusterDialog, ClusterListDialog};
+pub use command_palette::CommandPaletteDialog;
 pub use connection::ConnectionDialog;
 pub use document::{
     CloseDocumentDialog, DocumentCallback, DocumentDialogResult, DocumentProtectionDialog,

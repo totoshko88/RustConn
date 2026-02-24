@@ -59,6 +59,20 @@ pub fn show_context_menu_for_item(
             }
         });
         menu_box.append(&connect_btn);
+
+        // Pin/Unpin toggle
+        let pin_btn = create_menu_button(&i18n("Pin / Unpin"));
+        let win = window_clone.clone();
+        let popover_c = popover_ref.clone();
+        pin_btn.connect_clicked(move |_| {
+            if let Some(p) = popover_c.upgrade() {
+                p.popdown();
+            }
+            if let Some(action) = win.lookup_action("toggle-pin") {
+                action.activate(None);
+            }
+        });
+        menu_box.append(&pin_btn);
     }
 
     let edit_btn = create_menu_button(&i18n("Edit"));

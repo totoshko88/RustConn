@@ -8,11 +8,11 @@
 
 use proptest::prelude::*;
 use rustconn_core::{
+    Connection, ConnectionGroup, HistorySettings, ProtocolConfig, RdpConfig, RdpGateway,
+    Resolution, Snippet, SnippetVariable, SshAuthMethod, SshConfig, SshKeySource, VncConfig,
     config::AppSettings, config::ColorScheme, config::ConfigManager, config::LoggingSettings,
     config::SecretBackendType, config::SecretSettings, config::SessionRestoreSettings,
-    config::TerminalSettings, config::UiSettings, Connection, ConnectionGroup, HistorySettings,
-    ProtocolConfig, RdpConfig, RdpGateway, Resolution, Snippet, SnippetVariable, SshAuthMethod,
-    SshConfig, SshKeySource, VncConfig,
+    config::TerminalSettings, config::UiSettings,
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -487,10 +487,12 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         session_restore: SessionRestoreSettings::default(),
                         search_history: Vec::new(),
                         startup_action: rustconn_core::config::StartupAction::default(),
+                        color_tabs_by_protocol: false,
                     },
                     connection: rustconn_core::ConnectionSettings::default(),
                     global_variables: Vec::new(),
                     history: HistorySettings::default(),
+                    keybindings: rustconn_core::config::keybindings::KeybindingSettings::default(),
                 }
             },
         )

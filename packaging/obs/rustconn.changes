@@ -1,4 +1,23 @@
 -------------------------------------------------------------------
+Mon Feb 24 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.1
+
+- Command Palette — VS Code-style quick launcher (Ctrl+P / Ctrl+Shift+P)
+  with fuzzy search for connections and prefix modes for commands, tags, groups
+- Favorites / Pinning — pin connections to a dedicated sidebar section
+- Pass (passwordstore.org) secret backend — GPG-encrypted credential storage
+  via pass CLI with Settings UI and CLI support (#32)
+- Tab coloring by protocol — optional colored indicators on terminal tabs
+- Snippet timestamps — created_at and updated_at fields
+- Tab grouping — right-click context menu to assign named groups with colors
+- Custom Keybindings — fully customizable shortcuts via Settings → Keybindings
+  with 30+ actions, Record button, per-shortcut Reset, and Reset All
+- Fixed Command Palette not dismissible via Escape or click-outside
+- Fixed Favorites group not updating immediately on pin/unpin
+- Fixed KDBX group visibility regression when loading saved backend preference
+- Improved i18n coverage — connection dialog tabs and content strings
+  now translatable across all 14 languages
+
+-------------------------------------------------------------------
 Sat Feb 21 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.0
 
 - Ukrainian translation reviewed by Mykola Zubkov — 674 translations

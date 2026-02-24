@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.9.0** | Last updated: February 2026
+**Version 0.9.1** | Last updated: February 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -575,6 +575,7 @@ pub trait SecretBackend: Send + Sync {
 - `BitwardenBackend`: Bitwarden via CLI
 - `OnePasswordBackend`: 1Password via CLI
 - `PassboltBackend`: Passbolt via CLI (`go-passbolt-cli`)
+- `PassBackend`: Pass (passwordstore.org) via `pass` CLI
 
 ### System Keyring Integration
 
@@ -602,7 +603,7 @@ Each backend wraps these generic functions with typed helpers:
 - Passbolt: `store_passphrase_in_keyring()` / `get_passphrase_from_keyring()`
 - KeePassXC: `store_kdbx_password_in_keyring()` / `get_kdbx_password_from_keyring()`
 
-On settings load, backends with "Save to system keyring" enabled automatically restore credentials from the keyring (auto-unlock for Bitwarden, token/passphrase/password pre-fill for others).
+On settings load, backends with "Save to system keyring" enabled automatically restore credentials from the keyring (auto-unlock for Bitwarden, token/passphrase/password pre-fill for others). Pass uses GPG encryption natively and does not require keyring integration.
 
 #### Flatpak Compatibility
 
@@ -876,9 +877,10 @@ rustconn/src/
 │   │   ├── kubernetes.rs  # Kubernetes options
 │   │   └── zerotrust.rs   # Zero Trust provider options
 │   ├── keyboard.rs        # Keyboard navigation helpers
+│   ├── command_palette.rs # Command palette dialog (Ctrl+P)
 │   ├── wol.rs             # Wake On LAN dialog (standalone + manual entry)
 │   ├── flatpak_components.rs  # Flatpak CLI download dialog
-│   ├── settings/          # Settings tabs
+│   ├── settings/          # Settings tabs (incl. keybindings_tab.rs)
 │   └── ...
 ├── embedded_rdp/          # Embedded RDP viewer (modular structure)
 │   ├── mod.rs             # Module exports
@@ -894,7 +896,7 @@ rustconn-core/src/
 ├── lib.rs                 # Public API re-exports
 ├── error.rs               # Error types
 ├── models/                # Data models
-├── config/                # Settings persistence
+├── config/                # Settings persistence, keybindings
 ├── connection/            # Connection management
 │   ├── mod.rs             # Module exports
 │   ├── manager.rs         # ConnectionManager with debounced persistence
@@ -914,6 +916,7 @@ rustconn-core/src/
 │   ├── bitwarden.rs       # Bitwarden backend (with keyring storage)
 │   ├── onepassword.rs     # 1Password backend (with keyring storage)
 │   ├── passbolt.rs        # Passbolt backend (with keyring storage)
+│   ├── pass.rs            # Pass (passwordstore.org) backend
 │   ├── detection.rs       # Password manager detection
 │   ├── status.rs          # KeePass status detection
 │   └── ...
@@ -928,6 +931,7 @@ rustconn-core/src/
 │   ├── traits.rs          # ImportSource trait, ImportStatistics
 │   └── ...
 ├── export/                # Format exporters
+├── search/                # Search engine, command palette
 ├── rdp_client/            # RDP client implementation
 │   ├── mod.rs             # Module exports
 │   ├── backend.rs         # RdpBackendSelector

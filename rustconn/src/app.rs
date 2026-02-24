@@ -213,12 +213,14 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
             glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
                 match rx.try_recv() {
                     Ok(_) => {
+                        state_for_poll.borrow_mut().refresh_secret_backend_cache();
                         refresh_sidebar_secret_status(&state_for_poll, &sidebar_for_poll);
                         tracing::info!("Secret backends initialized after window presentation");
                         glib::ControlFlow::Break
                     }
                     Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
                     Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                        state_for_poll.borrow_mut().refresh_secret_backend_cache();
                         refresh_sidebar_secret_status(&state_for_poll, &sidebar_for_poll);
                         tracing::warn!("Bitwarden unlock thread disconnected");
                         glib::ControlFlow::Break
@@ -227,6 +229,9 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
             });
         } else {
             // No Bitwarden — just refresh sidebar status immediately
+            state_for_secrets
+                .borrow_mut()
+                .refresh_secret_backend_cache();
             refresh_sidebar_secret_status(&state_for_secrets, &sidebar_for_secrets);
             tracing::info!("Secret backends initialized after window presentation");
         }
@@ -1066,54 +1071,29 @@ fn setup_app_actions(
     });
     app.add_action(&shortcuts_action);
 
-    // Set up keyboard shortcuts
-    // Application shortcuts
-    app.set_accels_for_action("app.quit", &["<Control>q"]);
-    app.set_accels_for_action("app.shortcuts", &["<Control>question", "F1"]);
+    // Set up keyboard shortcuts dynamically from settings
+    apply_keybindings(app, state);
+}
 
-    // Connection management shortcuts
-    app.set_accels_for_action("win.new-connection", &["<Control>n"]);
-    app.set_accels_for_action("win.new-group", &["<Control><Shift>n"]);
-    app.set_accels_for_action("win.import", &["<Control>i"]);
-    // Note: Enter key is NOT bound globally to avoid intercepting terminal input
-    // Use double-click on sidebar items to connect instead
-    // Note: Delete, Ctrl+E, Ctrl+D are NOT registered globally to avoid
-    // intercepting keys when VTE terminal or embedded viewers have focus.
-    // These are handled by the sidebar's EventControllerKey instead.
-    // See: https://github.com/totoshko88/RustConn/issues/4
+/// Applies keyboard shortcuts from settings, falling back to defaults.
+///
+/// Reads the keybinding registry from `rustconn_core::default_keybindings()` and
+/// applies user overrides from `AppSettings.keybindings`. This is the single
+/// source of truth for all application keyboard shortcuts.
+///
+/// Note: Enter, Delete, Ctrl+E, Ctrl+D are NOT registered globally to avoid
+/// intercepting keys when VTE terminal or embedded viewers have focus.
+/// These are handled by the sidebar's `EventControllerKey` instead.
+/// See: <https://github.com/totoshko88/RustConn/issues/4>
+pub fn apply_keybindings(app: &adw::Application, state: &SharedAppState) {
+    let keybinding_settings = state.borrow().settings().keybindings.clone();
+    let defaults = rustconn_core::default_keybindings();
 
-    // Navigation shortcuts
-    app.set_accels_for_action("win.search", &["<Control>f", "<Control>k"]);
-    app.set_accels_for_action("win.focus-sidebar", &["<Control>1", "<Alt>1"]);
-    app.set_accels_for_action("win.focus-terminal", &["<Control>2", "<Alt>2"]);
-
-    // Terminal shortcuts
-    app.set_accels_for_action("win.copy", &["<Control><Shift>c"]);
-    app.set_accels_for_action("win.paste", &["<Control><Shift>v"]);
-    app.set_accels_for_action("win.terminal-search", &["<Control><Shift>f"]);
-    app.set_accels_for_action("win.close-tab", &["<Control>w"]);
-    app.set_accels_for_action("win.next-tab", &["<Control>Tab", "<Control>Page_Down"]);
-    app.set_accels_for_action("win.prev-tab", &["<Control><Shift>Tab", "<Control>Page_Up"]);
-
-    // Settings
-    app.set_accels_for_action("win.settings", &["<Control>comma"]);
-
-    // New actions
-    app.set_accels_for_action("win.local-shell", &["<Control><Shift>t"]);
-    app.set_accels_for_action("win.quick-connect", &["<Control><Shift>q"]);
-    app.set_accels_for_action("win.export", &["<Control><Shift>e"]);
-
-    // Split view shortcuts
-    app.set_accels_for_action("win.split-horizontal", &["<Control><Shift>h"]);
-    app.set_accels_for_action("win.split-vertical", &["<Control><Shift>s"]);
-    app.set_accels_for_action("win.close-pane", &["<Control><Shift>w"]);
-    app.set_accels_for_action("win.focus-next-pane", &["<Control>grave"]); // Ctrl+`
-
-    // View shortcuts
-    app.set_accels_for_action("win.toggle-fullscreen", &["F11"]);
-
-    // Item management shortcuts
-    app.set_accels_for_action("win.move-to-group", &["<Control>m"]);
+    for def in &defaults {
+        let accel_str = keybinding_settings.get_accel(def);
+        let accels: Vec<&str> = accel_str.split('|').collect();
+        app.set_accels_for_action(&def.action, &accels);
+    }
 }
 
 /// Shows the about dialog

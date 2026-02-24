@@ -390,7 +390,7 @@ impl ConnectionDialog {
             .child(&basic_grid)
             .build();
         view_stack
-            .add_titled(&basic_scrolled, Some("basic"), "Basic")
+            .add_titled(&basic_scrolled, Some("basic"), &i18n("Basic"))
             .set_icon_name(Some("document-properties-symbolic"));
 
         // === Protocol-specific Tab ===
@@ -589,7 +589,7 @@ impl ConnectionDialog {
             add_custom_property_button,
         ) = Self::create_data_tab();
         view_stack
-            .add_titled(&data_tab, Some("data"), "Data")
+            .add_titled(&data_tab, Some("data"), &i18n("Data"))
             .set_icon_name(Some("accessories-text-editor-symbolic"));
 
         let variables_rows: Rc<RefCell<Vec<LocalVariableRow>>> = Rc::new(RefCell::new(Vec::new()));
@@ -599,7 +599,7 @@ impl ConnectionDialog {
         // === Logging Tab ===
         let (logging_tab_box, logging_tab_struct) = logging_tab::LoggingTab::new();
         view_stack
-            .add_titled(&logging_tab_box, Some("logging"), "Logging")
+            .add_titled(&logging_tab_box, Some("logging"), &i18n("Logging"))
             .set_icon_name(Some("document-save-symbolic"));
 
         // === Automation Tab (Expect Rules + Tasks) ===
@@ -620,7 +620,7 @@ impl ConnectionDialog {
             post_disconnect_last_only_check,
         ) = Self::create_automation_combined_tab();
         view_stack
-            .add_titled(&automation_tab, Some("automation"), "Automation")
+            .add_titled(&automation_tab, Some("automation"), &i18n("Automation"))
             .set_icon_name(Some("system-run-symbolic"));
 
         let expect_rules: Rc<RefCell<Vec<ExpectRule>>> = Rc::new(RefCell::new(Vec::new()));
@@ -637,7 +637,7 @@ impl ConnectionDialog {
             wol_wait_spin,
         ) = Self::create_advanced_tab();
         view_stack
-            .add_titled(&advanced_tab, Some("advanced"), "Advanced")
+            .add_titled(&advanced_tab, Some("advanced"), &i18n("Advanced"))
             .set_icon_name(Some("preferences-system-symbolic"));
 
         // Wire up add variable button
@@ -1390,7 +1390,7 @@ impl ConnectionDialog {
             .child(&protocol_stack)
             .build();
         view_stack
-            .add_titled(&scrolled, Some("protocol"), "Protocol")
+            .add_titled(&scrolled, Some("protocol"), &i18n("Protocol"))
             .set_icon_name(Some("network-server-symbolic"));
         protocol_stack
     }
@@ -3544,8 +3544,10 @@ impl ConnectionDialog {
 
         // === Variables Section ===
         let variables_group = adw::PreferencesGroup::builder()
-            .title("Local Variables")
-            .description("Use ${variable_name} syntax in connection fields")
+            .title(i18n("Local Variables"))
+            .description(i18n(
+                "Use ${variable_name} syntax in connection fields",
+            ))
             .build();
 
         let variables_scrolled = ScrolledWindow::builder()
@@ -3568,7 +3570,7 @@ impl ConnectionDialog {
         var_button_box.set_margin_top(8);
 
         let add_variable_button = Button::builder()
-            .label("Add Variable")
+            .label(&i18n("Add Variable"))
             .css_classes(["suggested-action"])
             .build();
         var_button_box.append(&add_variable_button);
@@ -3578,8 +3580,10 @@ impl ConnectionDialog {
 
         // === Custom Properties Section ===
         let properties_group = adw::PreferencesGroup::builder()
-            .title("Custom Properties")
-            .description("Text, URL (clickable), or Protected (masked) metadata")
+            .title(i18n("Custom Properties"))
+            .description(i18n(
+                "Text, URL (clickable), or Protected (masked) metadata",
+            ))
             .build();
 
         let properties_scrolled = ScrolledWindow::builder()
@@ -3602,7 +3606,7 @@ impl ConnectionDialog {
         prop_button_box.set_margin_top(8);
 
         let add_property_button = Button::builder()
-            .label("Add Property")
+            .label(&i18n("Add Property"))
             .css_classes(["suggested-action"])
             .build();
         prop_button_box.append(&add_property_button);
@@ -3662,8 +3666,8 @@ impl ConnectionDialog {
 
         // === Expect Rules Section ===
         let rules_group = adw::PreferencesGroup::builder()
-            .title("Expect Rules")
-            .description("Auto-respond to terminal patterns (priority order)")
+            .title(i18n("Expect Rules"))
+            .description(i18n("Auto-respond to terminal patterns (priority order)"))
             .build();
 
         let rules_scrolled = ScrolledWindow::builder()
@@ -3686,7 +3690,7 @@ impl ConnectionDialog {
         rules_button_box.set_margin_top(8);
 
         let add_rule_button = Button::builder()
-            .label("Add Rule")
+            .label(&i18n("Add Rule"))
             .css_classes(["suggested-action"])
             .build();
         rules_button_box.append(&add_rule_button);
@@ -3696,27 +3700,31 @@ impl ConnectionDialog {
 
         // Pattern tester
         let tester_group = adw::PreferencesGroup::builder()
-            .title("Pattern Tester")
+            .title(i18n("Pattern Tester"))
             .build();
 
         let test_entry = Entry::builder()
             .hexpand(true)
             .valign(gtk4::Align::Center)
-            .placeholder_text("Test text against patterns")
+            .placeholder_text(&i18n("Test text against patterns"))
             .build();
 
-        let test_row = adw::ActionRow::builder().title("Test Input").build();
+        let test_row = adw::ActionRow::builder()
+            .title(i18n("Test Input"))
+            .build();
         test_row.add_suffix(&test_entry);
         tester_group.add(&test_row);
 
         let result_label = Label::builder()
-            .label("Enter text to test")
+            .label(&i18n("Enter text to test"))
             .halign(gtk4::Align::Start)
             .wrap(true)
             .css_classes(["dim-label"])
             .build();
 
-        let result_row = adw::ActionRow::builder().title("Result").build();
+        let result_row = adw::ActionRow::builder()
+            .title(i18n("Result"))
+            .build();
         result_row.add_suffix(&result_label);
         tester_group.add(&result_row);
 
@@ -3730,7 +3738,7 @@ impl ConnectionDialog {
             pre_connect_timeout_spin,
             pre_connect_abort_check,
             pre_connect_first_only_check,
-        ) = Self::create_task_section("Pre-Connect Task", true);
+        ) = Self::create_task_section(&i18n("Pre-Connect Task"), true);
         content.append(&pre_connect_group);
 
         // === Post-Disconnect Task Section ===
@@ -3741,7 +3749,7 @@ impl ConnectionDialog {
             post_disconnect_timeout_spin,
             _post_disconnect_abort_check,
             post_disconnect_last_only_check,
-        ) = Self::create_task_section("Post-Disconnect Task", false);
+        ) = Self::create_task_section(&i18n("Post-Disconnect Task"), false);
         content.append(&post_disconnect_group);
 
         clamp.set_child(Some(&content));
@@ -3790,11 +3798,11 @@ impl ConnectionDialog {
 
         // Expect rules group
         let rules_group = adw::PreferencesGroup::builder()
-            .title("Expect Rules")
-            .description(
+            .title(i18n("Expect Rules"))
+            .description(i18n(
                 "Automatically respond to terminal patterns.\n\
                  Rules are matched in priority order (highest first).",
-            )
+            ))
             .build();
 
         let inner_scrolled = ScrolledWindow::builder()
@@ -3808,7 +3816,9 @@ impl ConnectionDialog {
             .selection_mode(gtk4::SelectionMode::None)
             .css_classes(["boxed-list"])
             .build();
-        expect_rules_list.set_placeholder(Some(&Label::new(Some("No expect rules configured"))));
+        expect_rules_list.set_placeholder(Some(&Label::new(Some(&i18n(
+            "No expect rules configured",
+        )))));
         inner_scrolled.set_child(Some(&expect_rules_list));
 
         rules_group.add(&inner_scrolled);
@@ -3818,7 +3828,7 @@ impl ConnectionDialog {
         button_box.set_margin_top(12);
 
         let add_button = Button::builder()
-            .label("Add Rule")
+            .label(&i18n("Add Rule"))
             .css_classes(["suggested-action"])
             .build();
         button_box.append(&add_button);
@@ -3829,28 +3839,32 @@ impl ConnectionDialog {
 
         // Pattern tester group
         let tester_group = adw::PreferencesGroup::builder()
-            .title("Pattern Tester")
-            .description("Test your patterns against sample input")
+            .title(i18n("Pattern Tester"))
+            .description(i18n("Test your patterns against sample input"))
             .build();
 
         let test_entry = Entry::builder()
             .hexpand(true)
             .valign(gtk4::Align::Center)
-            .placeholder_text("Enter text to test against patterns")
+            .placeholder_text(&i18n("Enter text to test against patterns"))
             .build();
 
-        let test_row = adw::ActionRow::builder().title("Test Input").build();
+        let test_row = adw::ActionRow::builder()
+            .title(i18n("Test Input"))
+            .build();
         test_row.add_suffix(&test_entry);
         tester_group.add(&test_row);
 
         let result_label = Label::builder()
-            .label("Enter text above to test patterns")
+            .label(&i18n("Enter text above to test patterns"))
             .halign(gtk4::Align::Start)
             .wrap(true)
             .css_classes(["dim-label"])
             .build();
 
-        let result_row = adw::ActionRow::builder().title("Result").build();
+        let result_row = adw::ActionRow::builder()
+            .title(i18n("Result"))
+            .build();
         result_row.add_suffix(&result_label);
         tester_group.add(&result_row);
 
@@ -3959,9 +3973,9 @@ impl ConnectionDialog {
         CheckButton,
     ) {
         let description = if is_pre_connect {
-            "Run command before connecting. Supports ${variable} substitution."
+            i18n("Run command before connecting. Supports ${variable} substitution.")
         } else {
-            "Run command after disconnecting. Supports ${variable} substitution."
+            i18n("Run command after disconnecting. Supports ${variable} substitution.")
         };
 
         let group = adw::PreferencesGroup::builder()
@@ -3973,7 +3987,7 @@ impl ConnectionDialog {
         let enabled_check = CheckButton::builder().valign(gtk4::Align::Center).build();
 
         let enable_row = adw::ActionRow::builder()
-            .title("Enable Task")
+            .title(i18n("Enable Task"))
             .activatable_widget(&enabled_check)
             .build();
         enable_row.add_suffix(&enabled_check);
@@ -3988,8 +4002,10 @@ impl ConnectionDialog {
             .build();
 
         let command_row = adw::ActionRow::builder()
-            .title("Command")
-            .subtitle("Shell command to execute (supports ${variable} syntax)")
+            .title(i18n("Command"))
+            .subtitle(i18n(
+                "Shell command to execute (supports ${variable} syntax)",
+            ))
             .build();
         command_row.add_suffix(&command_entry);
         group.add(&command_row);
@@ -4005,8 +4021,8 @@ impl ConnectionDialog {
             .build();
 
         let timeout_row = adw::ActionRow::builder()
-            .title("Timeout (ms)")
-            .subtitle("0 = no timeout")
+            .title(i18n("Timeout (ms)"))
+            .subtitle(i18n("0 = no timeout"))
             .build();
         timeout_row.add_suffix(&timeout_spin);
         group.add(&timeout_row);
@@ -4020,8 +4036,8 @@ impl ConnectionDialog {
 
         if is_pre_connect {
             let abort_row = adw::ActionRow::builder()
-                .title("Abort on Failure")
-                .subtitle("Cancel connection if this task fails")
+                .title(i18n("Abort on Failure"))
+                .subtitle(i18n("Cancel connection if this task fails"))
                 .activatable_widget(&abort_check)
                 .build();
             abort_row.add_suffix(&abort_check);
@@ -4036,13 +4052,13 @@ impl ConnectionDialog {
 
         let (condition_title, condition_subtitle) = if is_pre_connect {
             (
-                "First Connection Only",
-                "Only run when opening the first connection in a folder (useful for VPN setup)",
+                i18n("First Connection Only"),
+                i18n("Only run when opening the first connection in a folder (useful for VPN setup)"),
             )
         } else {
             (
-                "Last Connection Only",
-                "Only run when closing the last connection in a folder (useful for cleanup)",
+                i18n("Last Connection Only"),
+                i18n("Only run when closing the last connection in a folder (useful for cleanup)"),
             )
         };
 
@@ -4110,17 +4126,21 @@ impl ConnectionDialog {
 
         // === Window Mode Section ===
         let mode_group = adw::PreferencesGroup::builder()
-            .title("Window Mode")
+            .title(i18n("Window Mode"))
             .build();
 
-        let mode_list = StringList::new(&["Embedded", "External Window", "Fullscreen"]);
+        let mode_list = StringList::new(&[
+            &i18n("Embedded"),
+            &i18n("External Window"),
+            &i18n("Fullscreen"),
+        ]);
         let mode_dropdown = DropDown::new(Some(mode_list), gtk4::Expression::NONE);
         mode_dropdown.set_selected(0);
         mode_dropdown.set_valign(gtk4::Align::Center);
 
         let mode_row = adw::ActionRow::builder()
-            .title("Display Mode")
-            .subtitle("Embedded • External • Fullscreen")
+            .title(i18n("Display Mode"))
+            .subtitle(i18n("Embedded • External • Fullscreen"))
             .build();
         mode_row.add_suffix(&mode_dropdown);
         mode_group.add(&mode_row);
@@ -4131,8 +4151,8 @@ impl ConnectionDialog {
             .build();
 
         let remember_row = adw::ActionRow::builder()
-            .title("Remember Position")
-            .subtitle("Save window geometry (External mode only)")
+            .title(i18n("Remember Position"))
+            .subtitle(i18n("Save window geometry (External mode only)"))
             .activatable_widget(&remember_check)
             .build();
         remember_row.add_suffix(&remember_check);
@@ -4153,14 +4173,14 @@ impl ConnectionDialog {
 
         // === Wake On LAN Section ===
         let wol_group = adw::PreferencesGroup::builder()
-            .title("Wake On LAN")
+            .title(i18n("Wake On LAN"))
             .build();
 
         let wol_enabled_check = CheckButton::builder().valign(gtk4::Align::Center).build();
 
         let wol_enable_row = adw::ActionRow::builder()
-            .title("Enable WOL")
-            .subtitle("Send magic packet before connecting")
+            .title(i18n("Enable WOL"))
+            .subtitle(i18n("Send magic packet before connecting"))
             .activatable_widget(&wol_enabled_check)
             .build();
         wol_enable_row.add_suffix(&wol_enabled_check);
@@ -4170,7 +4190,7 @@ impl ConnectionDialog {
 
         // WOL Settings group
         let wol_settings_group = adw::PreferencesGroup::builder()
-            .title("WOL Settings")
+            .title(i18n("WOL Settings"))
             .sensitive(false)
             .build();
 
@@ -4180,7 +4200,9 @@ impl ConnectionDialog {
             .placeholder_text("AA:BB:CC:DD:EE:FF")
             .build();
 
-        let mac_row = adw::ActionRow::builder().title("MAC Address").build();
+        let mac_row = adw::ActionRow::builder()
+            .title(i18n("MAC Address"))
+            .build();
         mac_row.add_suffix(&mac_entry);
         wol_settings_group.add(&mac_row);
 
@@ -4190,7 +4212,9 @@ impl ConnectionDialog {
             .text(DEFAULT_BROADCAST_ADDRESS)
             .build();
 
-        let broadcast_row = adw::ActionRow::builder().title("Broadcast Address").build();
+        let broadcast_row = adw::ActionRow::builder()
+            .title(i18n("Broadcast Address"))
+            .build();
         broadcast_row.add_suffix(&broadcast_entry);
         wol_settings_group.add(&broadcast_row);
 
@@ -4203,8 +4227,8 @@ impl ConnectionDialog {
             .build();
 
         let port_row = adw::ActionRow::builder()
-            .title("UDP Port")
-            .subtitle("Default: 9")
+            .title(i18n("UDP Port"))
+            .subtitle(i18n("Default: 9"))
             .build();
         port_row.add_suffix(&port_spin);
         wol_settings_group.add(&port_row);
@@ -4224,8 +4248,8 @@ impl ConnectionDialog {
             .build();
 
         let wait_row = adw::ActionRow::builder()
-            .title("Wait Time (sec)")
-            .subtitle("Time to wait for boot")
+            .title(i18n("Wait Time (sec)"))
+            .subtitle(i18n("Time to wait for boot"))
             .build();
         wait_row.add_suffix(&wait_spin);
         wol_settings_group.add(&wait_row);
@@ -6361,13 +6385,18 @@ impl ConnectionDialog {
                                         })?
                                     }
                                     SecretBackendType::Pass => {
-                                        let backend = crate::state::create_pass_backend_from_secret_settings(&secret_settings);
+                                        let backend =
+                                            rustconn_core::secret::PassBackend::from_secret_settings(
+                                                &secret_settings,
+                                            );
                                         crate::async_utils::with_runtime(|rt| {
                                             rt.block_on(backend.retrieve(&flat_lookup_key))
                                                 .map_err(|e| format!("{e}"))
                                         })?
                                     }
-                                    SecretBackendType::LibSecret | SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
+                                    SecretBackendType::LibSecret
+                                    | SecretBackendType::KeePassXc
+                                    | SecretBackendType::KdbxFile => {
                                         let backend = rustconn_core::secret::LibSecretBackend::new(
                                             "rustconn",
                                         );

@@ -154,6 +154,51 @@ pub fn get_protocol_icon_by_name(protocol: &str) -> &'static str {
     }
 }
 
+/// RGB color values for protocol-based tab indicators.
+///
+/// Each protocol is assigned a distinct color for visual identification
+/// in the tab bar. Returns `(red, green, blue)` tuple.
+#[must_use]
+pub fn get_protocol_color_rgb(protocol: &str) -> (u8, u8, u8) {
+    match protocol.to_lowercase().as_str() {
+        "ssh" | "telnet" => (0x33, 0xd1, 0x7a), // Green
+        "rdp" => (0x35, 0x84, 0xe4),            // Blue
+        "vnc" => (0x91, 0x41, 0xac),            // Purple
+        "spice" => (0xff, 0x78, 0x00),          // Orange
+        "serial" => (0xf6, 0xd3, 0x2d),         // Yellow
+        "kubernetes" => (0x00, 0xb4, 0xd8),     // Cyan
+        "sftp" => (0x62, 0xa0, 0xea),           // Light blue
+        _ => (0x99, 0xc1, 0xf1),                // Default light blue
+    }
+}
+
+/// Returns the CSS class name for protocol-based tab coloring.
+#[must_use]
+pub fn get_protocol_tab_css_class(protocol: &str) -> &'static str {
+    match protocol.to_lowercase().as_str() {
+        "ssh" | "telnet" => "tab-protocol-ssh",
+        "rdp" => "tab-protocol-rdp",
+        "vnc" => "tab-protocol-vnc",
+        "spice" => "tab-protocol-spice",
+        "serial" => "tab-protocol-serial",
+        "kubernetes" => "tab-protocol-k8s",
+        "sftp" => "tab-protocol-sftp",
+        _ => "tab-protocol-default",
+    }
+}
+
+/// All protocol tab CSS class names, for cleanup purposes.
+pub const PROTOCOL_TAB_CSS_CLASSES: &[&str] = &[
+    "tab-protocol-ssh",
+    "tab-protocol-rdp",
+    "tab-protocol-vnc",
+    "tab-protocol-spice",
+    "tab-protocol-serial",
+    "tab-protocol-k8s",
+    "tab-protocol-sftp",
+    "tab-protocol-default",
+];
+
 /// Returns all protocol types with their corresponding icon names
 ///
 /// Useful for testing that all protocols have distinct icons.

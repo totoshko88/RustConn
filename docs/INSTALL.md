@@ -210,6 +210,7 @@ This installs the desktop file and icon for application menu integration.
 | Bitwarden | `bw` | `npm install -g @bitwarden/cli` or [bitwarden.com](https://bitwarden.com/help/cli/) |
 | 1Password | `op` | [1password.com/downloads/command-line](https://1password.com/downloads/command-line/) |
 | KeePassXC | `keepassxc-cli` | `keepassxc` package |
+| Pass | `pass` | `pass` package ([passwordstore.org](https://www.passwordstore.org/)) |
 
 ### Zero Trust CLI Tools
 

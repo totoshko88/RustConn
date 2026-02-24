@@ -28,7 +28,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 [dev-dependencies]
-tempfile = "3.15"
+tempfile = "3.23"
 
 [lints]
 workspace = true

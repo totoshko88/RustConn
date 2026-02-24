@@ -6,6 +6,7 @@
 //! Migrated to `PreferencesDialog` (libadwaita 1.5+) from deprecated `PreferencesWindow`.
 
 mod clients_tab;
+mod keybindings_tab;
 mod logging_tab;
 mod secrets_tab;
 mod ssh_agent_tab;
@@ -13,6 +14,7 @@ mod terminal_tab;
 mod ui_tab;
 
 pub use clients_tab::*;
+pub use keybindings_tab::*;
 pub use logging_tab::*;
 pub use secrets_tab::*;
 pub use ssh_agent_tab::*;
@@ -74,6 +76,8 @@ pub struct SettingsDialog {
     max_age_row: adw::SpinRow,
     // Startup action
     startup_action_dropdown: DropDown,
+    // Tab coloring
+    color_tabs_by_protocol: CheckButton,
     // SSH Agent settings
     ssh_agent_status_label: Label,
     ssh_agent_socket_label: Label,
@@ -85,6 +89,9 @@ pub struct SettingsDialog {
     ssh_agent_refresh_button: Button,
     ssh_agent_available_keys_list: gtk4::ListBox,
     ssh_agent_manager: Rc<RefCell<SshAgentManager>>,
+    // Keybinding settings
+    keybindings_overrides: Rc<RefCell<rustconn_core::config::keybindings::KeybindingSettings>>,
+    keybindings_page: adw::PreferencesPage,
     // Current settings
     settings: Rc<RefCell<AppSettings>>,
     // Connections list for startup action dropdown
@@ -142,6 +149,7 @@ impl SettingsDialog {
             prompt_on_restore,
             max_age_row,
             startup_action_dropdown,
+            color_tabs_by_protocol,
         ) = create_ui_page();
 
         let (
@@ -159,6 +167,8 @@ impl SettingsDialog {
 
         let clients_page = create_clients_page();
 
+        let (keybindings_page, keybindings_overrides) = create_keybindings_page();
+
         // Add pages to dialog
         dialog.add(&terminal_page);
         dialog.add(&logging_page);
@@ -166,6 +176,7 @@ impl SettingsDialog {
         dialog.add(&ui_page);
         dialog.add(&ssh_agent_page);
         dialog.add(&clients_page);
+        dialog.add(&keybindings_page);
 
         // Initialize settings
         let settings: Rc<RefCell<AppSettings>> = Rc::new(RefCell::new(AppSettings::default()));
@@ -204,6 +215,7 @@ impl SettingsDialog {
             prompt_on_restore,
             max_age_row,
             startup_action_dropdown,
+            color_tabs_by_protocol,
             ssh_agent_status_label,
             ssh_agent_socket_label,
             ssh_agent_start_button,
@@ -214,6 +226,8 @@ impl SettingsDialog {
             ssh_agent_refresh_button,
             ssh_agent_available_keys_list,
             ssh_agent_manager,
+            keybindings_overrides,
+            keybindings_page,
             settings,
             connections: Rc::new(RefCell::new(Vec::new())),
             on_save: None,
@@ -397,6 +411,7 @@ impl SettingsDialog {
             &self.prompt_on_restore,
             &self.max_age_row,
             &self.startup_action_dropdown,
+            &self.color_tabs_by_protocol,
             &settings.ui,
             &conn_refs,
         );
@@ -418,6 +433,13 @@ impl SettingsDialog {
             &self.ssh_agent_keys_list,
             &self.ssh_agent_status_label,
             &self.ssh_agent_socket_label,
+        );
+
+        // Load keybinding settings
+        load_keybinding_settings(
+            &self.keybindings_page,
+            &self.keybindings_overrides,
+            &settings.keybindings,
         );
     }
 
@@ -480,7 +502,9 @@ impl SettingsDialog {
         let prompt_on_restore_clone = self.prompt_on_restore.clone();
         let max_age_row_clone = self.max_age_row.clone();
         let startup_action_dropdown_clone = self.startup_action_dropdown.clone();
+        let color_tabs_by_protocol_clone = self.color_tabs_by_protocol.clone();
         let connections_clone = self.connections.clone();
+        let keybindings_overrides_clone = self.keybindings_overrides.clone();
 
         // Store callback reference
         let on_save_callback = self.on_save.clone();
@@ -563,10 +587,10 @@ impl SettingsDialog {
                 onepassword_save_password_check: CheckButton::new(), // dummy
                 onepassword_save_to_keyring_check: CheckButton::new(), // dummy
                 secret_tool_available: Rc::new(RefCell::new(None)),  // dummy
-                pass_group: adw::PreferencesGroup::new(),           // dummy
-                pass_store_dir_entry: Entry::new(),                 // dummy
-                pass_store_dir_browse_button: Button::new(),        // dummy
-                pass_status_label: Label::new(None),                // dummy
+                pass_group: adw::PreferencesGroup::new(),            // dummy
+                pass_store_dir_entry: Entry::new(),                  // dummy
+                pass_store_dir_browse_button: Button::new(),         // dummy
+                pass_status_label: Label::new(None),                 // dummy
             };
             let secrets = collect_secret_settings(&secrets_widgets_for_collect, &settings_clone);
 
@@ -583,6 +607,7 @@ impl SettingsDialog {
                 &prompt_on_restore_clone,
                 &max_age_row_clone,
                 &startup_action_dropdown_clone,
+                &color_tabs_by_protocol_clone,
                 &conn_refs,
             );
             drop(conn_refs);
@@ -597,6 +622,7 @@ impl SettingsDialog {
                 connection: settings_clone.borrow().connection.clone(),
                 global_variables: settings_clone.borrow().global_variables.clone(),
                 history: settings_clone.borrow().history.clone(),
+                keybindings: collect_keybinding_settings(&keybindings_overrides_clone),
             };
 
             // Update stored settings

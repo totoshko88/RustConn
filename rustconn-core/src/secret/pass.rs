@@ -43,6 +43,31 @@ impl PassBackend {
         Self { store_dir }
     }
 
+    /// Creates a `PassBackend` from an optional store directory path.
+    ///
+    /// Convenience constructor that converts `PathBuf` to `String`.
+    /// Avoids code duplication across GUI and CLI crates.
+    #[must_use]
+    pub fn from_path(store_dir: Option<&std::path::Path>) -> Self {
+        Self::new(store_dir.map(|p| p.to_string_lossy().to_string()))
+    }
+
+    /// Creates a `PassBackend` from secret settings.
+    ///
+    /// Extracts `pass_store_dir` from the provided settings.
+    #[must_use]
+    pub fn from_secret_settings(settings: &crate::config::SecretSettings) -> Self {
+        Self::from_path(settings.pass_store_dir.as_deref())
+    }
+
+    /// Creates a `PassBackend` from app settings.
+    ///
+    /// Extracts `pass_store_dir` from the app settings' secrets section.
+    #[must_use]
+    pub fn from_app_settings(settings: &crate::config::AppSettings) -> Self {
+        Self::from_secret_settings(&settings.secrets)
+    }
+
     /// Builds the pass path for a connection's credential field
     ///
     /// Structure: rustconn/<connection_id>/<field>
