@@ -1852,6 +1852,8 @@ mod imp {
         status: RefCell<String>,
         #[property(get, set)]
         is_pinned: RefCell<bool>,
+        #[property(get, set)]
+        icon: RefCell<String>,
         pub(super) children: RefCell<Option<gio::ListStore>>,
     }
 
@@ -1884,6 +1886,7 @@ impl ConnectionItem {
             .property("host", host)
             .property("status", "disconnected")
             .property("is-pinned", false)
+            .property("icon", "")
             .build()
     }
 
@@ -1906,6 +1909,7 @@ impl ConnectionItem {
             .property("host", host)
             .property("status", status)
             .property("is-pinned", false)
+            .property("icon", "")
             .build()
     }
 
@@ -1919,6 +1923,20 @@ impl ConnectionItem {
         status: &str,
         is_pinned: bool,
     ) -> Self {
+        Self::new_connection_full_with_icon(id, name, protocol, host, status, is_pinned, "")
+    }
+
+    /// Creates a new connection item with status, pin state, and custom icon
+    #[must_use]
+    pub fn new_connection_full_with_icon(
+        id: &str,
+        name: &str,
+        protocol: &str,
+        host: &str,
+        status: &str,
+        is_pinned: bool,
+        icon: &str,
+    ) -> Self {
         glib::Object::builder()
             .property("id", id)
             .property("name", name)
@@ -1929,12 +1947,19 @@ impl ConnectionItem {
             .property("host", host)
             .property("status", status)
             .property("is-pinned", is_pinned)
+            .property("icon", icon)
             .build()
     }
 
     /// Creates a new group item
     #[must_use]
     pub fn new_group(id: &str, name: &str) -> Self {
+        Self::new_group_with_icon(id, name, "")
+    }
+
+    /// Creates a new group item with a custom icon
+    #[must_use]
+    pub fn new_group_with_icon(id: &str, name: &str, icon: &str) -> Self {
         let item: Self = glib::Object::builder()
             .property("id", id)
             .property("name", name)
@@ -1943,6 +1968,7 @@ impl ConnectionItem {
             .property("is-document", false)
             .property("is-dirty", false)
             .property("host", "")
+            .property("icon", icon)
             .build();
 
         // Initialize children store for groups

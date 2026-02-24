@@ -105,6 +105,7 @@ pub struct ConnectionDialog {
     state: crate::state::SharedAppState,
     // Basic fields
     name_entry: Entry,
+    icon_entry: Entry,
     description_view: TextView,
     host_entry: Entry,
     port_spin: SpinButton,
@@ -358,6 +359,7 @@ impl ConnectionDialog {
         let (
             basic_grid,
             name_entry,
+            icon_entry,
             description_view,
             host_entry,
             host_label,
@@ -679,6 +681,7 @@ impl ConnectionDialog {
             &state,
             &editing_id,
             &name_entry,
+            &icon_entry,
             &description_view,
             &host_entry,
             &port_spin,
@@ -805,6 +808,7 @@ impl ConnectionDialog {
             test_button: test_btn,
             state,
             name_entry,
+            icon_entry,
             description_view,
             host_entry,
             port_spin,
@@ -1506,6 +1510,7 @@ impl ConnectionDialog {
         state: &crate::state::SharedAppState,
         editing_id: &Rc<RefCell<Option<Uuid>>>,
         name_entry: &Entry,
+        icon_entry: &Entry,
         description_view: &TextView,
         host_entry: &Entry,
         port_spin: &SpinButton,
@@ -1629,6 +1634,7 @@ impl ConnectionDialog {
         let on_save = on_save.clone();
         let _state = state.clone();
         let name_entry = name_entry.clone();
+        let icon_entry = icon_entry.clone();
         let description_view = description_view.clone();
         let host_entry = host_entry.clone();
         let port_spin = port_spin.clone();
@@ -1759,6 +1765,7 @@ impl ConnectionDialog {
             let collected_custom_properties = custom_properties.borrow().clone();
             let data = ConnectionDialogData {
                 name_entry: &name_entry,
+                icon_entry: &icon_entry,
                 description_view: &description_view,
                 host_entry: &host_entry,
                 port_spin: &port_spin,
@@ -1908,6 +1915,7 @@ impl ConnectionDialog {
     fn create_basic_tab() -> (
         GtkBox,
         Entry,
+        Entry,
         TextView,
         Entry,
         Label,
@@ -1955,6 +1963,23 @@ impl ConnectionDialog {
             .build();
         grid.attach(&name_label, 0, row, 1, 1);
         grid.attach(&name_entry, 1, row, 2, 1);
+        row += 1;
+
+        // Icon (emoji or GTK icon name)
+        let icon_label = Label::builder()
+            .label(i18n("Icon:"))
+            .halign(gtk4::Align::End)
+            .build();
+        let icon_entry = Entry::builder()
+            .placeholder_text(i18n("Emoji or icon name (optional)"))
+            .hexpand(true)
+            .max_width_chars(30)
+            .build();
+        icon_entry.set_tooltip_text(Some(&i18n(
+            "Enter an emoji (e.g. 🇺🇦) or GTK icon name (e.g. starred-symbolic)",
+        )));
+        grid.attach(&icon_label, 0, row, 1, 1);
+        grid.attach(&icon_entry, 1, row, 2, 1);
         row += 1;
 
         // Protocol
@@ -2196,6 +2221,9 @@ impl ConnectionDialog {
         grid.attach(&desc_scrolled, 1, row, 2, 1);
 
         // Accessible label relations for screen readers (A11Y-01)
+        icon_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            icon_label.upcast_ref()
+        ])]);
         name_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
             name_label.upcast_ref()
         ])]);
@@ -2236,6 +2264,7 @@ impl ConnectionDialog {
         (
             vbox,
             name_entry,
+            icon_entry,
             description_view,
             host_entry,
             host_label,
@@ -5163,6 +5192,7 @@ impl ConnectionDialog {
 
         // Basic fields
         self.name_entry.set_text(&conn.name);
+        self.icon_entry.set_text(conn.icon.as_deref().unwrap_or(""));
         if let Some(ref description) = conn.description {
             self.description_view.buffer().set_text(description);
         } else {
@@ -6580,6 +6610,7 @@ impl ConnectionDialog {
 /// Helper struct for validation and building in the response callback
 struct ConnectionDialogData<'a> {
     name_entry: &'a Entry,
+    icon_entry: &'a Entry,
     description_view: &'a TextView,
     host_entry: &'a Entry,
     port_spin: &'a SpinButton,
@@ -6780,6 +6811,10 @@ impl ConnectionDialogData<'_> {
             }
         }
 
+        // Icon validation
+        let icon_text = self.icon_entry.text();
+        rustconn_core::dialog_utils::validate_icon(icon_text.trim())?;
+
         Ok(())
     }
 
@@ -6800,6 +6835,12 @@ impl ConnectionDialogData<'_> {
 
         let mut conn = Connection::new(name, host, port, protocol_config);
         conn.description = description;
+
+        // Set custom icon if provided
+        let icon_text = self.icon_entry.text().trim().to_string();
+        if !icon_text.is_empty() {
+            conn.icon = Some(icon_text);
+        }
 
         let username = self.username_entry.text();
         if !username.trim().is_empty() {

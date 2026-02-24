@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.9.1
+Version:        0.9.2
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -201,6 +201,10 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Tue Feb 24 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.2-0
+- Custom Icons — set emoji/unicode or GTK icon names on connections and groups (#23)
+- Fixed new connections and groups appending to end of list instead of jumping to position 0
+
 * Mon Feb 24 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.1-0
 - Version bump to 0.9.1
 

@@ -234,6 +234,12 @@ pub struct Connection {
     /// Sort order within pinned connections (lower values appear first)
     #[serde(default)]
     pub pin_order: i32,
+    /// Custom icon for the connection (emoji/unicode character or GTK icon name)
+    ///
+    /// When `None`, the default protocol-based icon is used.
+    /// Examples: `"🇺🇦"`, `"🏢"`, `"starred-symbolic"`
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
 }
 
 impl Connection {
@@ -272,6 +278,7 @@ impl Connection {
             skip_port_check: false,
             is_pinned: false,
             pin_order: 0,
+            icon: None,
         }
     }
 

@@ -242,6 +242,7 @@ impl RdmImporter {
             domain: None,
             password_source: None,
             description: None,
+            icon: None,
         }
     }
 
@@ -357,6 +358,7 @@ impl RdmImporter {
             skip_port_check: false,
             is_pinned: false,
             pin_order: 0,
+            icon: None,
         })
     }
 }

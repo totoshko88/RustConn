@@ -212,6 +212,34 @@ impl ConnectionManager {
         }
     }
 
+    // ========== Sort Order Helpers ==========
+
+    /// Returns the next available `sort_order` for a connection in the given group.
+    ///
+    /// Computes `max(sort_order) + 1` among existing connections in the group,
+    /// or `0` if the group is empty.
+    fn next_connection_sort_order(&self, group_id: Option<Uuid>) -> i32 {
+        self.connections
+            .values()
+            .filter(|c| c.group_id == group_id)
+            .map(|c| c.sort_order)
+            .max()
+            .map_or(0, |max| max + 1)
+    }
+
+    /// Returns the next available `sort_order` for a group under the given parent.
+    ///
+    /// Computes `max(sort_order) + 1` among sibling groups,
+    /// or `0` if there are no siblings.
+    fn next_group_sort_order(&self, parent_id: Option<Uuid>) -> i32 {
+        self.groups
+            .values()
+            .filter(|g| g.parent_id == parent_id)
+            .map(|g| g.sort_order)
+            .max()
+            .map_or(0, |max| max + 1)
+    }
+
     // ========== Connection CRUD Operations ==========
 
     /// Creates a new connection and persists it
@@ -237,7 +265,9 @@ impl ConnectionManager {
         port: u16,
         protocol_config: ProtocolConfig,
     ) -> ConfigResult<Uuid> {
-        let connection = Connection::new(name, host, port, protocol_config);
+        let mut connection = Connection::new(name, host, port, protocol_config);
+        // Append to end of target group to preserve existing order
+        connection.sort_order = self.next_connection_sort_order(connection.group_id);
         ConfigManager::validate_connection(&connection)?;
 
         // Intern strings for memory efficiency
@@ -265,6 +295,9 @@ impl ConnectionManager {
         Self::intern_connection_strings(&connection);
 
         let id = connection.id;
+        let mut connection = connection;
+        // Append to end of target group to preserve existing order
+        connection.sort_order = self.next_connection_sort_order(connection.group_id);
         self.connections.insert(id, connection);
         self.is_sorted = false;
         self.persist_connections()?;
@@ -399,7 +432,9 @@ impl ConnectionManager {
     ///
     /// Returns an error if validation fails or persistence fails.
     pub fn create_group(&mut self, name: String) -> ConfigResult<Uuid> {
-        let group = ConnectionGroup::new(name);
+        let mut group = ConnectionGroup::new(name);
+        // Append to end of root groups to preserve existing order
+        group.sort_order = self.next_group_sort_order(None);
         ConfigManager::validate_group(&group)?;
 
         let id = group.id;
@@ -429,7 +464,9 @@ impl ConnectionManager {
             });
         }
 
-        let group = ConnectionGroup::with_parent(name, parent_id);
+        let mut group = ConnectionGroup::with_parent(name, parent_id);
+        // Append to end of sibling groups to preserve existing order
+        group.sort_order = self.next_group_sort_order(Some(parent_id));
         ConfigManager::validate_group(&group)?;
 
         let id = group.id;

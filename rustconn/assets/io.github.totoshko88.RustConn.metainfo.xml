@@ -90,6 +90,15 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.9.2" date="2026-02-24">
+      <description>
+        <p>Custom icons and sort order fix:</p>
+        <ul>
+          <li>Custom icons for connections and groups (emoji or GTK icon names)</li>
+          <li>New connections and groups now append to end of list correctly</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.9.1" date="2026-02-24">
       <description>
         <p>Command Palette, Favorites, Pass backend, custom keybindings, and tab enhancements.</p>

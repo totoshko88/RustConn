@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Tue Feb 24 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.2
+
+- Custom Icons — set emoji/unicode or GTK icon names on connections
+  and groups (#23)
+- Fixed new connections and groups appending to end of list instead
+  of jumping to position 0
+
+-------------------------------------------------------------------
 Mon Feb 24 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.1
 
 - Command Palette — VS Code-style quick launcher (Ctrl+P / Ctrl+Shift+P)

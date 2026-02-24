@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-02-24
+
+### Added
+- **Custom Icons** — Set emoji/unicode or GTK icon names on connections and groups ([#23](https://github.com/totoshko88/RustConn/issues/23))
+
+### Fixed
+- New connections and groups now append to end of list instead of jumping to position 0
+
 ## [0.9.1] - 2026-02-24
 
 ### Added

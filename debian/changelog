@@ -1,3 +1,12 @@
+rustconn (0.9.2-1) unstable; urgency=medium
+
+  * Custom Icons — set emoji/unicode or GTK icon names on connections
+    and groups (#23)
+  * Fixed new connections and groups appending to end of list instead
+    of jumping to position 0
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Tue, 24 Feb 2026 12:00:00 +0200
+
 rustconn (0.9.1-1) unstable; urgency=medium
 
   * Command Palette — VS Code-style quick launcher (Ctrl+P / Ctrl+Shift+P)

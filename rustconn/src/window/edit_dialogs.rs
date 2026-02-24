@@ -447,6 +447,16 @@ pub fn show_edit_group_dialog(
         .build();
     details_group.add(&name_row);
 
+    // Group icon using EntryRow
+    let icon_row = adw::EntryRow::builder()
+        .title(i18n("Icon"))
+        .text(group.icon.as_deref().unwrap_or(""))
+        .build();
+    icon_row.set_tooltip_text(Some(&i18n(
+        "Enter an emoji (e.g. 🇺🇦) or GTK icon name (e.g. starred-symbolic)",
+    )));
+    details_group.add(&icon_row);
+
     // Parent group dropdown
     let state_ref = state.borrow();
 
@@ -868,6 +878,7 @@ pub fn show_edit_group_dialog(
     let password_entry_clone = password_entry.clone();
     let password_source_clone = password_source_dropdown.clone();
     let domain_row_clone = domain_row;
+    let icon_row_clone = icon_row;
     let parent_row_clone = parent_row;
     let description_buffer = description_view.buffer();
     let old_name = group.name;
@@ -945,6 +956,20 @@ pub fn show_edit_group_dialog(
                 };
 
                 updated.password_source = Some(new_password_source.clone());
+
+                // Update icon
+                let icon_text = icon_row_clone.text().trim().to_string();
+                if !icon_text.is_empty()
+                    && let Err(e) = rustconn_core::dialog_utils::validate_icon(&icon_text)
+                {
+                    alert::show_validation_error(&window_clone, &i18n(&e));
+                    return;
+                }
+                updated.icon = if icon_text.is_empty() {
+                    None
+                } else {
+                    Some(icon_text)
+                };
 
                 if let Err(e) = state_mut
                     .connection_manager()

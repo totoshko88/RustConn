@@ -131,13 +131,15 @@ pub fn rebuild_sidebar_sorted(state: &SharedAppState, sidebar: &SharedSidebar) {
             let status = sidebar
                 .get_connection_status(&conn.id.to_string())
                 .unwrap_or_else(|| "disconnected".to_string());
-            let item = ConnectionItem::new_connection_full(
+            let icon = conn.icon.as_deref().unwrap_or("");
+            let item = ConnectionItem::new_connection_full_with_icon(
                 &conn.id.to_string(),
                 &conn.name,
                 &protocol,
                 &conn.host,
                 &status,
                 true,
+                icon,
             );
             favorites_item.add_child(&item);
         }
@@ -146,7 +148,9 @@ pub fn rebuild_sidebar_sorted(state: &SharedAppState, sidebar: &SharedSidebar) {
 
     // Add sorted groups with their sorted children
     for group in &groups {
-        let group_item = ConnectionItem::new_group(&group.id.to_string(), &group.name);
+        let icon = group.icon.as_deref().unwrap_or("");
+        let group_item =
+            ConnectionItem::new_group_with_icon(&group.id.to_string(), &group.name, icon);
         add_sorted_group_children(&state_ref, sidebar, &group_item, group.id);
         store.append(&group_item);
     }
@@ -157,13 +161,15 @@ pub fn rebuild_sidebar_sorted(state: &SharedAppState, sidebar: &SharedSidebar) {
         let status = sidebar
             .get_connection_status(&conn.id.to_string())
             .unwrap_or_else(|| "disconnected".to_string());
-        let item = ConnectionItem::new_connection_full(
+        let icon = conn.icon.as_deref().unwrap_or("");
+        let item = ConnectionItem::new_connection_full_with_icon(
             &conn.id.to_string(),
             &conn.name,
             &protocol,
             &conn.host,
             &status,
             conn.is_pinned,
+            icon,
         );
         store.append(&item);
     }
@@ -188,7 +194,12 @@ pub fn add_sorted_group_children(
     });
 
     for child_group in &child_groups {
-        let child_item = ConnectionItem::new_group(&child_group.id.to_string(), &child_group.name);
+        let icon = child_group.icon.as_deref().unwrap_or("");
+        let child_item = ConnectionItem::new_group_with_icon(
+            &child_group.id.to_string(),
+            &child_group.name,
+            icon,
+        );
         add_sorted_group_children(state, sidebar, &child_item, child_group.id);
         parent_item.add_child(&child_item);
     }
@@ -209,13 +220,15 @@ pub fn add_sorted_group_children(
         let status = sidebar
             .get_connection_status(&conn.id.to_string())
             .unwrap_or_else(|| "disconnected".to_string());
-        let item = ConnectionItem::new_connection_full(
+        let icon = conn.icon.as_deref().unwrap_or("");
+        let item = ConnectionItem::new_connection_full_with_icon(
             &conn.id.to_string(),
             &conn.name,
             &protocol,
             &conn.host,
             &status,
             conn.is_pinned,
+            icon,
         );
         parent_item.add_child(&item);
     }
