@@ -3545,9 +3545,7 @@ impl ConnectionDialog {
         // === Variables Section ===
         let variables_group = adw::PreferencesGroup::builder()
             .title(i18n("Local Variables"))
-            .description(i18n(
-                "Use ${variable_name} syntax in connection fields",
-            ))
+            .description(i18n("Use ${variable_name} syntax in connection fields"))
             .build();
 
         let variables_scrolled = ScrolledWindow::builder()
@@ -3709,9 +3707,7 @@ impl ConnectionDialog {
             .placeholder_text(&i18n("Test text against patterns"))
             .build();
 
-        let test_row = adw::ActionRow::builder()
-            .title(i18n("Test Input"))
-            .build();
+        let test_row = adw::ActionRow::builder().title(i18n("Test Input")).build();
         test_row.add_suffix(&test_entry);
         tester_group.add(&test_row);
 
@@ -3722,9 +3718,7 @@ impl ConnectionDialog {
             .css_classes(["dim-label"])
             .build();
 
-        let result_row = adw::ActionRow::builder()
-            .title(i18n("Result"))
-            .build();
+        let result_row = adw::ActionRow::builder().title(i18n("Result")).build();
         result_row.add_suffix(&result_label);
         tester_group.add(&result_row);
 
@@ -3816,9 +3810,8 @@ impl ConnectionDialog {
             .selection_mode(gtk4::SelectionMode::None)
             .css_classes(["boxed-list"])
             .build();
-        expect_rules_list.set_placeholder(Some(&Label::new(Some(&i18n(
-            "No expect rules configured",
-        )))));
+        expect_rules_list
+            .set_placeholder(Some(&Label::new(Some(&i18n("No expect rules configured")))));
         inner_scrolled.set_child(Some(&expect_rules_list));
 
         rules_group.add(&inner_scrolled);
@@ -3849,9 +3842,7 @@ impl ConnectionDialog {
             .placeholder_text(&i18n("Enter text to test against patterns"))
             .build();
 
-        let test_row = adw::ActionRow::builder()
-            .title(i18n("Test Input"))
-            .build();
+        let test_row = adw::ActionRow::builder().title(i18n("Test Input")).build();
         test_row.add_suffix(&test_entry);
         tester_group.add(&test_row);
 
@@ -3862,9 +3853,7 @@ impl ConnectionDialog {
             .css_classes(["dim-label"])
             .build();
 
-        let result_row = adw::ActionRow::builder()
-            .title(i18n("Result"))
-            .build();
+        let result_row = adw::ActionRow::builder().title(i18n("Result")).build();
         result_row.add_suffix(&result_label);
         tester_group.add(&result_row);
 
@@ -4053,7 +4042,9 @@ impl ConnectionDialog {
         let (condition_title, condition_subtitle) = if is_pre_connect {
             (
                 i18n("First Connection Only"),
-                i18n("Only run when opening the first connection in a folder (useful for VPN setup)"),
+                i18n(
+                    "Only run when opening the first connection in a folder (useful for VPN setup)",
+                ),
             )
         } else {
             (
@@ -4200,9 +4191,7 @@ impl ConnectionDialog {
             .placeholder_text("AA:BB:CC:DD:EE:FF")
             .build();
 
-        let mac_row = adw::ActionRow::builder()
-            .title(i18n("MAC Address"))
-            .build();
+        let mac_row = adw::ActionRow::builder().title(i18n("MAC Address")).build();
         mac_row.add_suffix(&mac_entry);
         wol_settings_group.add(&mac_row);
 
