@@ -16,3 +16,4 @@ pub use settings::{
     AppSettings, ColorScheme, ConnectionSettings, LoggingSettings, SavedSession, SecretBackendType,
     SecretSettings, SessionRestoreSettings, StartupAction, TerminalSettings, UiSettings,
 };
+// MonitoringSettings is re-exported from the monitoring module, not config

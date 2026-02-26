@@ -6,7 +6,7 @@
 //! Updated for GTK 4.10+ compatibility using Window instead of Dialog.
 //! Migrated to libadwaita components for GNOME HIG compliance.
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -94,10 +94,10 @@ impl ClusterDialog {
         clamp.set_child(Some(&content));
         scrolled.set_child(Some(&clamp));
 
-        let main_box = GtkBox::new(Orientation::Vertical, 0);
-        main_box.append(&header);
-        main_box.append(&scrolled);
-        window.set_content(Some(&main_box));
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header);
+        toolbar_view.set_content(Some(&scrolled));
+        window.set_content(Some(&toolbar_view));
 
         // === Cluster Details ===
         let details_group = adw::PreferencesGroup::builder()
@@ -261,6 +261,7 @@ impl ClusterDialog {
             .label(&format!("{} ({})", connection.name, connection.host))
             .halign(gtk4::Align::Start)
             .hexpand(true)
+            .ellipsize(gtk4::pango::EllipsizeMode::End)
             .build();
 
         hbox.append(&selected_check);
@@ -424,11 +425,11 @@ impl ClusterListDialog {
 
         clamp.set_child(Some(&content));
 
-        // Use ToolbarView for adw::Window
-        let main_box = GtkBox::new(Orientation::Vertical, 0);
-        main_box.append(&header);
-        main_box.append(&clamp);
-        window.set_content(Some(&main_box));
+        // Use ToolbarView for adw::Window (GNOME HIG)
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header);
+        toolbar_view.set_content(Some(&clamp));
+        window.set_content(Some(&toolbar_view));
 
         // Info label
         let info_label = Label::builder()
@@ -506,15 +507,17 @@ impl ClusterListDialog {
             .build();
 
         let broadcast_indicator = if cluster.broadcast_enabled {
-            " (broadcast enabled)"
+            i18n(" (broadcast enabled)")
         } else {
-            ""
+            String::new()
         };
         let count_label = Label::builder()
-            .label(&format!(
+            .label(&i18n_f(
                 "{} connections{}",
-                cluster.connection_count(),
-                broadcast_indicator
+                &[
+                    &cluster.connection_count().to_string(),
+                    &broadcast_indicator,
+                ],
             ))
             .halign(gtk4::Align::Start)
             .css_classes(["dim-label", "caption"])

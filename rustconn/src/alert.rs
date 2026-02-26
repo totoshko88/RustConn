@@ -7,10 +7,12 @@ use adw::prelude::*;
 use gtk4::prelude::*;
 use libadwaita as adw;
 
+use crate::i18n::i18n;
+
 /// Shows a simple info/error alert with OK button
 pub fn show_alert(parent: &impl IsA<gtk4::Widget>, heading: &str, body: &str) {
     let dialog = adw::AlertDialog::new(Some(heading), Some(body));
-    dialog.add_response("ok", "OK");
+    dialog.add_response("ok", &i18n("OK"));
     dialog.set_default_response(Some("ok"));
     dialog.present(Some(parent));
 }
@@ -28,7 +30,7 @@ pub fn show_confirm<F>(
     F: Fn(bool) + 'static,
 {
     let dialog = adw::AlertDialog::new(Some(heading), Some(body));
-    dialog.add_response("cancel", "Cancel");
+    dialog.add_response("cancel", &i18n("Cancel"));
     dialog.add_response("confirm", confirm_label);
     dialog.set_default_response(Some("cancel"));
     dialog.set_close_response("cancel");
@@ -58,7 +60,7 @@ pub fn show_success(parent: &impl IsA<gtk4::Widget>, heading: &str, body: &str) 
 
 /// Shows a validation error alert
 pub fn show_validation_error(parent: &impl IsA<gtk4::Widget>, body: &str) {
-    show_alert(parent, "Validation Error", body);
+    show_alert(parent, &i18n("Validation Error"), body);
 }
 
 /// Response type for save changes dialog
@@ -79,9 +81,9 @@ where
     F: Fn(SaveChangesResponse) + 'static,
 {
     let dialog = adw::AlertDialog::new(Some(heading), Some(body));
-    dialog.add_response("dont_save", "Don't Save");
-    dialog.add_response("cancel", "Cancel");
-    dialog.add_response("save", "Save");
+    dialog.add_response("dont_save", &i18n("Don't Save"));
+    dialog.add_response("cancel", &i18n("Cancel"));
+    dialog.add_response("save", &i18n("Save"));
     dialog.set_default_response(Some("save"));
     dialog.set_close_response("cancel");
     dialog.set_response_appearance("save", adw::ResponseAppearance::Suggested);

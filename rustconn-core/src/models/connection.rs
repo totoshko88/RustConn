@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use super::custom_property::CustomProperty;
 use super::protocol::{ProtocolConfig, ProtocolType};
 use crate::automation::{ConnectionTask, ExpectRule, KeySequence};
+use crate::monitoring::MonitoringConfig;
 use crate::session::LogConfig;
 use crate::variables::Variable;
 use crate::wol::WolConfig;
@@ -240,6 +241,11 @@ pub struct Connection {
     /// Examples: `"🇺🇦"`, `"🏢"`, `"starred-symbolic"`
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
+    /// Per-connection remote monitoring override
+    ///
+    /// When `None`, the global `MonitoringSettings` from `AppSettings` apply.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub monitoring_config: Option<MonitoringConfig>,
 }
 
 impl Connection {
@@ -279,6 +285,7 @@ impl Connection {
             is_pinned: false,
             pin_order: 0,
             icon: None,
+            monitoring_config: None,
         }
     }
 

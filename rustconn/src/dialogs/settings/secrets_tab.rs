@@ -220,7 +220,7 @@ fn detect_secret_backends() -> SecretCliDetection {
                 ))
             } else {
                 Some((
-                    i18n("Not initialized (run 'pass init <gpg-id>')"),
+                    i18n("Not initialized (run 'pass init &lt;gpg-id&gt;')"),
                     "warning",
                 ))
             }
@@ -415,7 +415,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // Password entry for unlocking
     let bitwarden_password_entry = PasswordEntry::builder()
-        .placeholder_text("Master password")
+        .placeholder_text(i18n("Master password"))
         .hexpand(true)
         .show_peek_icon(true)
         .valign(gtk4::Align::Center)
@@ -450,7 +450,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     bitwarden_group.add(&bw_save_to_keyring_row);
 
     let bitwarden_status_label = Label::builder()
-        .label("Detecting...")
+        .label(&i18n("Detecting..."))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -473,7 +473,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     check.set_active(false);
                     update_status_label(
                         &status_label,
-                        "Install libsecret-tools for keyring",
+                        &i18n("Install libsecret-tools for keyring"),
                         "warning",
                     );
                     tracing::warn!("secret-tool not found, cannot use system keyring");
@@ -498,7 +498,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // API Client ID entry
     let bitwarden_client_id_entry = Entry::builder()
-        .placeholder_text("client_id")
+        .placeholder_text(i18n("client_id"))
         .hexpand(true)
         .valign(gtk4::Align::Center)
         .build();
@@ -514,7 +514,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // API Client Secret entry
     let bitwarden_client_secret_entry = PasswordEntry::builder()
-        .placeholder_text("client_secret")
+        .placeholder_text(i18n("client_secret"))
         .hexpand(true)
         .show_peek_icon(true)
         .valign(gtk4::Align::Center)
@@ -544,7 +544,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .label(i18n("Unlock"))
         .valign(gtk4::Align::Center)
         .sensitive(false)
-        .tooltip_text("Unlock Bitwarden vault")
+        .tooltip_text(i18n("Unlock Bitwarden vault"))
         .build();
 
     let bw_status_box = GtkBox::builder()
@@ -577,18 +577,18 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 if let Some(val) = get_bw_password_from_keyring() {
                     val
                 } else {
-                    update_status_label(&status_label, "Enter password", "warning");
+                    update_status_label(&status_label, &i18n("Enter password"), "warning");
                     return;
                 }
             } else if password_text.is_empty() {
-                update_status_label(&status_label, "Enter password", "warning");
+                update_status_label(&status_label, &i18n("Enter password"), "warning");
                 return;
             } else {
                 password_text.to_string()
             };
 
             button.set_sensitive(false);
-            update_status_label(&status_label, "Unlocking...", "dim-label");
+            update_status_label(&status_label, &i18n("Unlocking..."), "dim-label");
 
             let bw_cmd_str = bw_cmd.borrow().clone();
 
@@ -649,7 +649,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     "Bitwarden GUI: unlock succeeded"
                 );
                 set_session_key(&session_key);
-                update_status_label(&status_label, "Unlocked", "success");
+                update_status_label(&status_label, &i18n("Unlocked"), "success");
                 // Don't clear password_entry — it's a PasswordEntry (hidden),
                 // and clearing it causes the encrypted settings to keep a stale
                 // password when the user saves settings with an empty field.
@@ -664,13 +664,13 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     "Bitwarden GUI: unlock failed"
                 );
                 let msg = if raw_stderr.contains("Invalid master password") {
-                    "Invalid password"
+                    i18n("Invalid password")
                 } else if raw_stderr.contains("not logged in") {
-                    "Not logged in"
+                    i18n("Not logged in")
                 } else {
-                    "Unlock failed"
+                    i18n("Unlock failed")
                 };
-                update_status_label(&status_label, msg, "error");
+                update_status_label(&status_label, &msg, "error");
             }
 
             button.set_sensitive(true);
@@ -687,7 +687,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // Service account token entry
     let onepassword_token_entry = PasswordEntry::builder()
-        .placeholder_text("Service account token")
+        .placeholder_text(i18n("Service account token"))
         .hexpand(true)
         .show_peek_icon(true)
         .valign(gtk4::Align::Center)
@@ -725,7 +725,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     onepassword_group.add(&op_save_to_keyring_row);
 
     let onepassword_status_label = Label::builder()
-        .label("Detecting...")
+        .label(&i18n("Detecting..."))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -748,7 +748,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     check.set_active(false);
                     update_status_label(
                         &status_label,
-                        "Install libsecret-tools for keyring",
+                        &i18n("Install libsecret-tools for keyring"),
                         "warning",
                     );
                     tracing::warn!("secret-tool not found, cannot use system keyring");
@@ -763,7 +763,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .label(i18n("Sign In"))
         .valign(gtk4::Align::Center)
         .sensitive(false)
-        .tooltip_text("Sign in to 1Password (opens terminal)")
+        .tooltip_text(i18n("Sign in to 1Password (opens terminal)"))
         .build();
 
     let op_status_box = GtkBox::builder()
@@ -789,7 +789,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         let op_cmd = onepassword_cmd.clone();
         onepassword_signin_button.connect_clicked(move |button| {
             button.set_sensitive(false);
-            update_status_label(&status_label, "Opening terminal...", "dim-label");
+            update_status_label(&status_label, &i18n("Opening terminal..."), "dim-label");
 
             // Try to open a terminal with op signin
             // This requires user interaction for biometric or password
@@ -814,13 +814,13 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                         .is_ok()
                 {
                     launched = true;
-                    update_status_label(&status_label, "Check terminal", "warning");
+                    update_status_label(&status_label, &i18n("Check terminal"), "warning");
                     break;
                 }
             }
 
             if !launched {
-                update_status_label(&status_label, "No terminal found", "error");
+                update_status_label(&status_label, &i18n("No terminal found"), "error");
             }
 
             button.set_sensitive(true);
@@ -851,7 +851,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // GPG Passphrase entry
     let passbolt_passphrase_entry = PasswordEntry::builder()
-        .placeholder_text("GPG private key passphrase")
+        .placeholder_text(i18n("GPG private key passphrase"))
         .hexpand(true)
         .show_peek_icon(true)
         .valign(gtk4::Align::Center)
@@ -885,7 +885,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     passbolt_group.add(&pb_save_to_keyring_row);
 
     let passbolt_status_label = Label::builder()
-        .label("Detecting...")
+        .label(&i18n("Detecting..."))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -908,7 +908,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     check.set_active(false);
                     update_status_label(
                         &status_label,
-                        "Install libsecret-tools for keyring",
+                        &i18n("Install libsecret-tools for keyring"),
                         "warning",
                     );
                     tracing::warn!("secret-tool not found, cannot use system keyring");
@@ -923,7 +923,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .label(i18n("Open Vault"))
         .valign(gtk4::Align::Center)
         .sensitive(false)
-        .tooltip_text("Open Passbolt web vault in browser")
+        .tooltip_text(i18n("Open Passbolt web vault in browser"))
         .build();
 
     let pb_status_box = GtkBox::builder()
@@ -959,12 +959,12 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     .arg(server_url)
                     .spawn();
                 if result.is_err() {
-                    update_status_label(&status_label, "Failed to open browser", "error");
+                    update_status_label(&status_label, &i18n("Failed to open browser"), "error");
                 }
             } else {
                 update_status_label(
                     &status_label,
-                    "Enter server URL or run 'passbolt configure'",
+                    &i18n("Enter server URL or run 'passbolt configure'"),
                     "warning",
                 );
             }
@@ -1016,7 +1016,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     let pass_status_row = adw::ActionRow::builder()
         .title(i18n("Initialization Status"))
-        .subtitle(i18n("Run 'pass init <gpg-id>' to initialize"))
+        .subtitle(i18n("Run 'pass init &lt;gpg-id&gt;' to initialize"))
         .build();
     pass_status_row.add_suffix(&pass_status_label);
     pass_group.add(&pass_status_row);
@@ -1068,14 +1068,14 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // Database path with browse button
     let kdbx_path_entry = Entry::builder()
-        .placeholder_text("Select .kdbx file")
+        .placeholder_text(i18n("Select .kdbx file"))
         .hexpand(true)
         .valign(gtk4::Align::Center)
         .build();
     let kdbx_browse_button = Button::builder()
         .icon_name("folder-open-symbolic")
         .valign(gtk4::Align::Center)
-        .tooltip_text("Browse for database file")
+        .tooltip_text(i18n("Browse for database file"))
         .build();
     let kdbx_path_box = GtkBox::builder()
         .orientation(Orientation::Horizontal)
@@ -1113,7 +1113,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // Password entry
     let kdbx_password_entry = PasswordEntry::builder()
-        .placeholder_text("Database password")
+        .placeholder_text(i18n("Database password"))
         .hexpand(true)
         .show_peek_icon(true)
         .valign(gtk4::Align::Center)
@@ -1167,7 +1167,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     check.set_active(false);
                     update_status_label(
                         &status_label,
-                        "Install libsecret-tools for keyring",
+                        &i18n("Install libsecret-tools for keyring"),
                         "warning",
                     );
                     tracing::warn!("secret-tool not found, cannot use system keyring");
@@ -1189,14 +1189,14 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // Key file path with browse button
     let kdbx_key_file_entry = Entry::builder()
-        .placeholder_text("Select .keyx or .key file")
+        .placeholder_text(i18n("Select .keyx or .key file"))
         .hexpand(true)
         .valign(gtk4::Align::Center)
         .build();
     let kdbx_key_file_browse_button = Button::builder()
         .icon_name("folder-open-symbolic")
         .valign(gtk4::Align::Center)
-        .tooltip_text("Browse for key file")
+        .tooltip_text(i18n("Browse for key file"))
         .build();
     let key_file_box = GtkBox::builder()
         .orientation(Orientation::Horizontal)
@@ -1219,9 +1219,9 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // Check connection button
     let kdbx_check_button = Button::builder()
-        .label("Check")
+        .label(i18n("Check"))
         .valign(gtk4::Align::Center)
-        .tooltip_text("Test database connection")
+        .tooltip_text(i18n("Test database connection"))
         .build();
 
     let status_box = GtkBox::builder()
@@ -1232,7 +1232,9 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     status_box.append(&kdbx_status_label);
     status_box.append(&kdbx_check_button);
 
-    let status_row = adw::ActionRow::builder().title("Connection Status").build();
+    let status_row = adw::ActionRow::builder()
+        .title(i18n("Connection Status"))
+        .build();
     status_row.add_suffix(&status_box);
     status_group.add(&status_row);
 
@@ -1310,10 +1312,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 version_label_clone.set_text(&format!("v{v}"));
                 version_label_clone.add_css_class("success");
             } else if detected {
-                version_label_clone.set_text("Not installed");
+                version_label_clone.set_text(&i18n("Not installed"));
                 version_label_clone.add_css_class("error");
             } else {
-                version_label_clone.set_text("Detecting...");
+                version_label_clone.set_text(&i18n("Detecting..."));
                 version_label_clone.add_css_class("dim-label");
             }
         };
@@ -1348,13 +1350,13 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     kdbx_browse_button.connect_clicked(move |button| {
         let entry = kdbx_path_entry_clone.clone();
         let dialog = FileDialog::builder()
-            .title("Select KeePass Database")
+            .title(i18n("Select KeePass Database"))
             .modal(true)
             .build();
 
         let filter = FileFilter::new();
         filter.add_pattern("*.kdbx");
-        filter.set_name(Some("KeePass Database (*.kdbx)"));
+        filter.set_name(Some(&i18n("KeePass Database (*.kdbx)")));
 
         let filters = gtk4::gio::ListStore::new::<FileFilter>();
         filters.append(&filter);
@@ -1382,18 +1384,18 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     kdbx_key_file_browse_button.connect_clicked(move |button| {
         let entry = kdbx_key_file_entry_clone.clone();
         let dialog = FileDialog::builder()
-            .title("Select Key File")
+            .title(i18n("Select Key File"))
             .modal(true)
             .build();
 
         let filter = FileFilter::new();
         filter.add_pattern("*.keyx");
         filter.add_pattern("*.key");
-        filter.set_name(Some("Key Files (*.keyx, *.key)"));
+        filter.set_name(Some(&i18n("Key Files (*.keyx, *.key)")));
 
         let all_filter = FileFilter::new();
         all_filter.add_pattern("*");
-        all_filter.set_name(Some("All Files"));
+        all_filter.set_name(Some(&i18n("All Files")));
 
         let filters = gtk4::gio::ListStore::new::<FileFilter>();
         filters.append(&filter);
@@ -1427,7 +1429,11 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     kdbx_check_button.connect_clicked(move |_| {
         let path_text = kdbx_path_entry_check.text();
         if path_text.is_empty() {
-            update_status_label(&kdbx_status_label_check, "No database selected", "warning");
+            update_status_label(
+                &kdbx_status_label_check,
+                &i18n("No database selected"),
+                "warning",
+            );
             return;
         }
 
@@ -1465,7 +1471,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
         match result {
             Ok(()) => {
-                update_status_label(&kdbx_status_label_check, "Connected", "success");
+                update_status_label(&kdbx_status_label_check, &i18n("Connected"), "success");
             }
             Err(e) => {
                 update_status_label(&kdbx_status_label_check, &e.to_string(), "error");
@@ -1512,7 +1518,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         glib::idle_add_local(move || match rx.try_recv() {
             Ok(det) => {
                 // Store detected command paths
-                *bw_cmd_rc.borrow_mut() = det.bitwarden_cmd;
+                *bw_cmd_rc.borrow_mut() = det.bitwarden_cmd.clone();
+                rustconn_core::secret::set_bw_cmd(&det.bitwarden_cmd);
                 *op_cmd_rc.borrow_mut() = det.onepassword_cmd;
 
                 // Store versions for dropdown callback
@@ -1543,7 +1550,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     version_label.set_text(&format!("v{v}"));
                     version_label.add_css_class("success");
                 } else {
-                    version_label.set_text("Not installed");
+                    version_label.set_text(&i18n("Not installed"));
                     version_label.add_css_class("error");
                 }
 
@@ -1552,7 +1559,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 if let Some((text, css)) = det.bitwarden_status {
                     update_status_label(&bw_status_label, &text, css);
                 } else {
-                    update_status_label(&bw_status_label, "Not installed", "error");
+                    update_status_label(&bw_status_label, &i18n("Not installed"), "error");
                 }
 
                 // Update 1Password status
@@ -1560,7 +1567,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 if let Some((text, css)) = det.onepassword_status {
                     update_status_label(&op_status_label, &text, css);
                 } else {
-                    update_status_label(&op_status_label, "Not installed", "error");
+                    update_status_label(&op_status_label, &i18n("Not installed"), "error");
                 }
 
                 // Update Passbolt status
@@ -1679,15 +1686,15 @@ fn check_bitwarden_status_sync(bw_cmd: &str) -> (String, &'static str) {
                 && let Some(status_val) = status.get("status").and_then(|v| v.as_str())
             {
                 return match status_val {
-                    "unlocked" => ("Unlocked".to_string(), "success"),
-                    "locked" => ("Locked".to_string(), "warning"),
-                    "unauthenticated" => ("Not logged in".to_string(), "error"),
-                    _ => (format!("Status: {status_val}"), "dim-label"),
+                    "unlocked" => (i18n("Unlocked"), "success"),
+                    "locked" => (i18n("Locked"), "warning"),
+                    "unauthenticated" => (i18n("Not logged in"), "error"),
+                    _ => (i18n_f("Status: {}", &[status_val]), "dim-label"),
                 };
             }
-            ("Unknown".to_string(), "dim-label")
+            (i18n("Unknown"), "dim-label")
         }
-        _ => ("Error checking status".to_string(), "error"),
+        _ => (i18n("Error checking status"), "error"),
     }
 }
 
@@ -1703,21 +1710,21 @@ fn check_onepassword_status_sync(op_cmd: &str) -> (String, &'static str) {
             if let Ok(whoami) = serde_json::from_str::<serde_json::Value>(&stdout)
                 && let Some(email) = whoami.get("email").and_then(|v| v.as_str())
             {
-                return (format!("Signed in: {email}"), "success");
+                return (i18n_f("Signed in: {}", &[email]), "success");
             }
-            ("Signed in".to_string(), "success")
+            (i18n("Signed in"), "success")
         }
         Ok(o) => {
             let stderr = String::from_utf8_lossy(&o.stderr);
             if stderr.contains("not signed in") || stderr.contains("sign in") {
-                ("Not signed in".to_string(), "error")
+                (i18n("Not signed in"), "error")
             } else if stderr.contains("session expired") {
-                ("Session expired".to_string(), "warning")
+                (i18n("Session expired"), "warning")
             } else {
-                ("Not signed in".to_string(), "error")
+                (i18n("Not signed in"), "error")
             }
         }
-        Err(_) => ("Error checking status".to_string(), "error"),
+        Err(_) => (i18n("Error checking status"), "error"),
     }
 }
 
@@ -1728,18 +1735,18 @@ fn check_passbolt_status_sync() -> (String, &'static str) {
         .output();
 
     match output {
-        Ok(o) if o.status.success() => ("Configured".to_string(), "success"),
+        Ok(o) if o.status.success() => (i18n("Configured"), "success"),
         Ok(o) => {
             let stderr = String::from_utf8_lossy(&o.stderr);
             if stderr.contains("no configuration") {
-                ("Not configured".to_string(), "error")
+                (i18n("Not configured"), "error")
             } else if stderr.contains("authentication") || stderr.contains("passphrase") {
-                ("Authentication failed".to_string(), "warning")
+                (i18n("Authentication failed"), "warning")
             } else {
-                ("Not configured".to_string(), "error")
+                (i18n("Not configured"), "error")
             }
         }
-        Err(_) => ("Error checking status".to_string(), "error"),
+        Err(_) => (i18n("Error checking status"), "error"),
     }
 }
 
@@ -2081,15 +2088,15 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
 
     let status_text = if settings.kdbx_enabled {
         if settings.kdbx_path.is_some() {
-            "Configured"
+            i18n("Configured")
         } else {
-            "Database path required"
+            i18n("Database path required")
         }
     } else {
-        "Disabled"
+        i18n("Disabled")
     };
 
-    widgets.kdbx_status_label.set_text(status_text);
+    widgets.kdbx_status_label.set_text(&status_text);
 
     widgets.kdbx_status_label.remove_css_class("success");
     widgets.kdbx_status_label.remove_css_class("warning");
@@ -2201,7 +2208,7 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
                 token_entry.set_text(&token);
                 // Token is passed to `op` CLI via Command::env() in OnePasswordBackend,
                 // no need to set process-wide env var.
-                update_status_label(&status_label, "Token loaded from keyring", "success");
+                update_status_label(&status_label, &i18n("Token loaded from keyring"), "success");
                 tracing::info!("1Password token set from keyring");
             } else {
                 tracing::debug!("No 1Password token found in keyring");

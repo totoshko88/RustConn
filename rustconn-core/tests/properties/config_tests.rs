@@ -493,6 +493,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                     global_variables: Vec::new(),
                     history: HistorySettings::default(),
                     keybindings: rustconn_core::config::keybindings::KeybindingSettings::default(),
+                    monitoring: rustconn_core::MonitoringSettings::default(),
                 }
             },
         )

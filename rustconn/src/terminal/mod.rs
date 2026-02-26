@@ -1290,6 +1290,17 @@ impl TerminalNotebook {
         self.session_info.borrow().get(&session_id).cloned()
     }
 
+    /// Gets the page container widget for a session
+    ///
+    /// Returns the `GtkBox` that holds the terminal scrolled window.
+    /// Used by monitoring to prepend the monitoring bar above the terminal.
+    #[must_use]
+    pub fn get_session_container(&self, session_id: Uuid) -> Option<GtkBox> {
+        let sessions = self.sessions.borrow();
+        let page = sessions.get(&session_id)?;
+        page.child().downcast::<GtkBox>().ok()
+    }
+
     /// Gets all active sessions
     #[must_use]
     #[allow(dead_code)]

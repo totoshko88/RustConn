@@ -11,7 +11,7 @@ use rustconn_core::protocol::ClientDetectionResult;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 
 /// Client detection info for async loading
 #[derive(Clone)]
@@ -128,8 +128,8 @@ pub fn create_clients_page() -> adw::PreferencesPage {
 /// Creates a loading placeholder row with spinner
 fn create_loading_row(title: &str) -> adw::ActionRow {
     let row = adw::ActionRow::builder()
-        .title(title)
-        .subtitle("Checking...")
+        .title(i18n(title))
+        .subtitle(i18n("Checking..."))
         .build();
 
     let spinner = Spinner::builder()
@@ -153,27 +153,28 @@ fn update_client_row(group: &adw::PreferencesGroup, row: &adw::ActionRow, client
     }
 
     // Determine subtitle based on embedded support and external client availability
+    // Translation happens here on the GTK main thread (background threads store raw English)
     let subtitle = if client.has_embedded {
         if client.installed {
-            // External client found
+            // External client found — path is not translatable
             client.path.clone().unwrap_or_else(|| client.name.clone())
         } else {
             // No external client, but embedded is available
-            format!(
+            i18n_f(
                 "Using embedded {} (external not found)",
-                client.embedded_name.as_deref().unwrap_or("client")
+                &[client.embedded_name.as_deref().unwrap_or("client")],
             )
         }
     } else if client.installed {
         client.path.clone().unwrap_or_else(|| client.name.clone())
     } else {
-        client.install_hint.clone()
+        i18n(&client.install_hint)
     };
     row.set_subtitle(&subtitle);
 
     // Create new row with proper styling (easier than modifying existing)
     let new_row = adw::ActionRow::builder()
-        .title(&client.title)
+        .title(i18n(&client.title))
         .subtitle(&subtitle)
         .build();
 
@@ -211,7 +212,7 @@ fn update_client_row(group: &adw::PreferencesGroup, row: &adw::ActionRow, client
     } else if client.has_embedded {
         // Show embedded indicator
         let embedded_label = Label::builder()
-            .label(i18n("Embedded"))
+            .label(&i18n("Embedded"))
             .valign(gtk4::Align::Center)
             .css_classes(["dim-label"])
             .build();

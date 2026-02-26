@@ -24,6 +24,16 @@ pub fn cmd_show(config_path: Option<&Path>, name: &str) -> Result<(), CliError> 
     println!("  Port:     {}", connection.port);
     println!("  Protocol: {}", connection.protocol);
 
+    if let Some(ref desc) = connection.description {
+        println!("  Description: {desc}");
+    }
+    if let Some(ref icon) = connection.icon {
+        println!("  Icon:     {icon}");
+    }
+    if connection.is_pinned {
+        println!("  Pinned:   yes");
+    }
+
     if let Some(ref user) = connection.username {
         println!("  Username: {user}");
     }
@@ -72,6 +82,16 @@ pub fn cmd_show(config_path: Option<&Path>, name: &str) -> Result<(), CliError> 
             );
         }
         _ => {}
+    }
+
+    if let Some(ref mon) = connection.monitoring_config {
+        let enabled = mon
+            .enabled
+            .map_or("global", |e| if e { "yes" } else { "no" });
+        println!("  Monitoring: {enabled}");
+        if let Some(interval) = mon.interval_secs {
+            println!("  Mon. interval: {interval}s");
+        }
     }
 
     Ok(())

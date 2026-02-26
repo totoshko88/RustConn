@@ -59,6 +59,16 @@ use super::backend::SecretBackend;
 /// need the environment variable.
 static BW_SESSION_STORE: RwLock<Option<String>> = RwLock::new(None);
 
+/// Thread-safe in-process storage for the resolved `bw` CLI command path.
+///
+/// In Flatpak sandboxes, `bw` is not on the default PATH. The UI layer
+/// detects the correct binary path (e.g.
+/// `~/.var/app/io.github.totoshko88.RustConn/cli/bitwarden/bw`) and
+/// stores it here so that all backend functions use the same resolved path.
+///
+/// Falls back to `"bw"` when no custom path has been stored.
+static BW_CMD_STORE: RwLock<Option<String>> = RwLock::new(None);
+
 /// Stores the Bitwarden session key in thread-safe in-process storage.
 ///
 /// Call this instead of `std::env::set_var("BW_SESSION", ...)`.
@@ -85,6 +95,79 @@ pub fn clear_session_key() {
     }
 }
 
+/// Stores the resolved `bw` CLI command path.
+///
+/// Call this from the UI layer after detecting the correct binary path.
+/// All backend functions will use this path instead of bare `"bw"`.
+pub fn set_bw_cmd(cmd: &str) {
+    if let Ok(mut guard) = BW_CMD_STORE.write() {
+        *guard = Some(cmd.to_string());
+        tracing::debug!(bw_cmd = %cmd, "Bitwarden: CLI command path stored");
+    }
+}
+
+/// Returns the stored `bw` CLI command path, or `"bw"` as default.
+#[must_use]
+pub fn get_bw_cmd() -> String {
+    BW_CMD_STORE
+        .read()
+        .ok()
+        .and_then(|guard| guard.clone())
+        .unwrap_or_else(|| "bw".to_string())
+}
+
+/// Resolves the `bw` CLI command path by probing known locations.
+///
+/// Checks (in order):
+/// 1. Previously stored path via [`set_bw_cmd`]
+/// 2. Flatpak CLI install directory (`~/.var/app/<app-id>/cli/bitwarden/bw`)
+/// 3. Bare `"bw"` on PATH
+///
+/// Stores and returns the first working path.
+#[must_use]
+pub fn resolve_bw_cmd() -> String {
+    // If already resolved, return cached value
+    if let Ok(guard) = BW_CMD_STORE.read()
+        && let Some(ref cmd) = *guard
+    {
+        return cmd.clone();
+    }
+
+    let mut candidates: Vec<String> = vec![];
+
+    // Flatpak CLI directory
+    if let Some(cli_dir) = crate::cli_download::get_cli_install_dir() {
+        let flatpak_bw = cli_dir.join("bitwarden").join("bw");
+        if flatpak_bw.exists() {
+            candidates.push(flatpak_bw.to_string_lossy().to_string());
+        }
+    }
+
+    // Non-Flatpak system paths
+    if !crate::flatpak::is_flatpak() {
+        candidates.extend(["/snap/bin/bw".to_string(), "/usr/local/bin/bw".to_string()]);
+    }
+
+    // Default bare command (relies on PATH)
+    candidates.push("bw".to_string());
+
+    for candidate in &candidates {
+        if std::process::Command::new(candidate)
+            .arg("--version")
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .is_ok_and(|s| s.success())
+        {
+            set_bw_cmd(candidate);
+            return candidate.clone();
+        }
+    }
+
+    // Nothing found — return "bw" as fallback (will produce clear error on use)
+    "bw".to_string()
+}
+
 /// Bitwarden CLI backend
 ///
 /// This backend uses the `bw` command-line utility to interact with
@@ -99,6 +182,8 @@ pub struct BitwardenBackend {
     organization_id: Option<String>,
     /// Folder name for RustConn entries
     folder_name: String,
+    /// Resolved path to the `bw` CLI binary
+    bw_cmd: String,
 }
 
 /// Bitwarden item structure for JSON parsing
@@ -170,6 +255,7 @@ impl BitwardenBackend {
             server_url: None,
             organization_id: None,
             folder_name: "RustConn".to_string(),
+            bw_cmd: get_bw_cmd(),
         }
     }
 
@@ -181,6 +267,7 @@ impl BitwardenBackend {
             server_url: None,
             organization_id: None,
             folder_name: "RustConn".to_string(),
+            bw_cmd: get_bw_cmd(),
         }
     }
 
@@ -217,7 +304,7 @@ impl BitwardenBackend {
 
     /// Builds command with session key if available
     fn build_command(&self, args: &[&str]) -> Command {
-        let mut cmd = Command::new("bw");
+        let mut cmd = Command::new(&self.bw_cmd);
         cmd.args(args);
 
         if let Some(ref session) = self.session_key {
@@ -464,7 +551,7 @@ impl SecretBackend for BitwardenBackend {
 
     async fn is_available(&self) -> bool {
         // Check if bw CLI is installed
-        let installed = Command::new("bw")
+        let installed = Command::new(&self.bw_cmd)
             .arg("--version")
             .output()
             .await
@@ -502,7 +589,8 @@ pub struct BitwardenVersion {
 
 /// Gets Bitwarden CLI version
 pub async fn get_bitwarden_version() -> Option<BitwardenVersion> {
-    let output = Command::new("bw").arg("--version").output().await.ok()?;
+    let bw_cmd = get_bw_cmd();
+    let output = Command::new(&bw_cmd).arg("--version").output().await.ok()?;
 
     if output.status.success() {
         let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
@@ -546,8 +634,10 @@ fn unlock_vault_sync(password: &str) -> SecretResult<SecretString> {
         "Bitwarden: unlock_vault_sync called"
     );
 
+    let bw_cmd = get_bw_cmd();
+
     // Strategy 1: --passwordenv with --raw (returns session key directly)
-    let output = std::process::Command::new("bw")
+    let output = std::process::Command::new(&bw_cmd)
         .args(["unlock", "--passwordenv", "BW_PASSWORD", "--raw"])
         .env("BW_PASSWORD", password)
         .stdout(std::process::Stdio::piped())
@@ -567,7 +657,7 @@ fn unlock_vault_sync(password: &str) -> SecretResult<SecretString> {
     tracing::debug!("Bitwarden: --raw unlock failed, trying verbose: {stderr_raw}");
 
     // Strategy 2: --passwordenv without --raw (parse session key from verbose output)
-    let output = std::process::Command::new("bw")
+    let output = std::process::Command::new(&bw_cmd)
         .args(["unlock", "--passwordenv", "BW_PASSWORD"])
         .env("BW_PASSWORD", password)
         .stdout(std::process::Stdio::piped())
@@ -588,7 +678,7 @@ fn unlock_vault_sync(password: &str) -> SecretResult<SecretString> {
     tracing::debug!("Bitwarden: verbose unlock failed: {stderr_verbose}");
 
     // Strategy 3: stdin pipe without --raw (for maximum compatibility)
-    let mut child = std::process::Command::new("bw")
+    let mut child = std::process::Command::new(&bw_cmd)
         .arg("unlock")
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
@@ -664,7 +754,8 @@ fn extract_session_key(output: &str) -> Option<String> {
 /// # Errors
 /// Returns `SecretError` if the lock command fails
 pub async fn lock_vault() -> SecretResult<()> {
-    let output = Command::new("bw")
+    let bw_cmd = get_bw_cmd();
+    let output = Command::new(&bw_cmd)
         .arg("lock")
         .output()
         .await
@@ -697,7 +788,8 @@ pub async fn login_with_api_key(
     client_id: &SecretString,
     client_secret: &SecretString,
 ) -> SecretResult<()> {
-    let output = Command::new("bw")
+    let bw_cmd = get_bw_cmd();
+    let output = Command::new(&bw_cmd)
         .args(["login", "--apikey"])
         .env("BW_CLIENTID", client_id.expose_secret())
         .env("BW_CLIENTSECRET", client_secret.expose_secret())
@@ -722,7 +814,8 @@ pub async fn login_with_api_key(
 /// # Errors
 /// Returns `SecretError` if logout fails
 pub async fn logout() -> SecretResult<()> {
-    let output = Command::new("bw")
+    let bw_cmd = get_bw_cmd();
+    let output = Command::new(&bw_cmd)
         .arg("logout")
         .output()
         .await
@@ -749,7 +842,8 @@ pub async fn logout() -> SecretResult<()> {
 /// # Errors
 /// Returns `SecretError` if configuration fails
 pub async fn configure_server(server_url: &str) -> SecretResult<()> {
-    let output = Command::new("bw")
+    let bw_cmd = get_bw_cmd();
+    let output = Command::new(&bw_cmd)
         .args(["config", "server", server_url])
         .output()
         .await

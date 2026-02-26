@@ -1100,12 +1100,8 @@ impl ConnectionDialog {
                 // Zero Trust - show info message about testing
                 alert::show_alert(
                     &window,
-                    "Zero Trust Connection Test",
-                    "Zero Trust connections require provider-specific authentication.\n\n\
-                     To test the connection:\n\
-                     1. Save the connection first\n\
-                     2. Use the Connect button to initiate the connection\n\
-                     3. The provider CLI will handle authentication",
+                    &i18n("Zero Trust Connection Test"),
+                    &i18n("Zero Trust connections require provider-specific authentication.\n\nTo test the connection:\n1. Save the connection first\n2. Use the Connect button to initiate the connection\n3. The provider CLI will handle authentication"),
                 );
                 return;
             }
@@ -1113,8 +1109,8 @@ impl ConnectionDialog {
             if name.trim().is_empty() || host.trim().is_empty() {
                 alert::show_error(
                     &window,
-                    "Connection Test Failed",
-                    "Please fill in required fields (name and host)",
+                    &i18n("Connection Test Failed"),
+                    &i18n(&i18n("Please fill in required fields (name and host)")),
                 );
                 return;
             }
@@ -1256,14 +1252,14 @@ impl ConnectionDialog {
                         Some(test_result) => {
                             let error = test_result
                                 .error
-                                .unwrap_or_else(|| "Unknown error".to_string());
-                            alert::show_error(&window_clone, "Connection Test Failed", &error);
+                                .unwrap_or_else(|| i18n("Unknown error"));
+                            alert::show_error(&window_clone, &i18n("Connection Test Failed"), &error);
                         }
                         None => {
                             alert::show_error(
                                 &window_clone,
-                                "Connection Test Failed",
-                                "Test timed out",
+                                &i18n("Connection Test Failed"),
+                                &i18n("Test timed out"),
                             );
                         }
                     }
@@ -1338,7 +1334,7 @@ impl ConnectionDialog {
         let close_btn = Button::builder().label(i18n("Close")).build();
         let test_btn = Button::builder()
             .label(i18n("Test"))
-            .tooltip_text("Test connection")
+            .tooltip_text(i18n("Test connection"))
             .build();
         let save_btn = Button::builder()
             .label(i18n("Create"))
@@ -1958,7 +1954,7 @@ impl ConnectionDialog {
             .halign(gtk4::Align::End)
             .build();
         let name_entry = Entry::builder()
-            .placeholder_text("Connection name")
+            .placeholder_text(i18n("Connection name"))
             .hexpand(true)
             .build();
         grid.attach(&name_label, 0, row, 1, 1);
@@ -1987,17 +1983,19 @@ impl ConnectionDialog {
             .label(i18n("Protocol:"))
             .halign(gtk4::Align::End)
             .build();
-        let protocol_list = StringList::new(&[
-            "SSH",
-            "RDP",
-            "VNC",
-            "SPICE",
-            "Zero Trust",
-            "Telnet",
-            "Serial",
-            "SFTP",
-            "Kubernetes",
-        ]);
+        let protocol_items: Vec<String> = vec![
+            "SSH".to_string(),
+            "RDP".to_string(),
+            "VNC".to_string(),
+            "SPICE".to_string(),
+            i18n("Zero Trust"),
+            "Telnet".to_string(),
+            "Serial".to_string(),
+            "SFTP".to_string(),
+            "Kubernetes".to_string(),
+        ];
+        let protocol_strs: Vec<&str> = protocol_items.iter().map(String::as_str).collect();
+        let protocol_list = StringList::new(&protocol_strs);
         let protocol_dropdown = DropDown::builder().model(&protocol_list).build();
         protocol_dropdown.set_selected(0);
         grid.attach(&protocol_label_grid, 0, row, 1, 1);
@@ -2010,7 +2008,7 @@ impl ConnectionDialog {
             .halign(gtk4::Align::End)
             .build();
         let host_entry = Entry::builder()
-            .placeholder_text("hostname or IP")
+            .placeholder_text(i18n("hostname or IP"))
             .hexpand(true)
             .build();
         grid.attach(&host_label, 0, row, 1, 1);
@@ -2029,7 +2027,7 @@ impl ConnectionDialog {
             .digits(0)
             .build();
         let port_desc = Label::builder()
-            .label("SSH, Well-Known")
+            .label(i18n("SSH, Well-Known"))
             .css_classes(["dim-label"])
             .build();
         let port_box = GtkBox::new(Orientation::Horizontal, 8);
@@ -2062,7 +2060,7 @@ impl ConnectionDialog {
 
         let username_load_button = Button::builder()
             .icon_name("folder-download-symbolic")
-            .tooltip_text("Load from selected group")
+            .tooltip_text(i18n("Load from selected group"))
             .sensitive(false)
             .build();
         let username_box = GtkBox::new(Orientation::Horizontal, 4);
@@ -2078,14 +2076,14 @@ impl ConnectionDialog {
             .halign(gtk4::Align::End)
             .build();
         let domain_entry = Entry::builder()
-            .placeholder_text("Optional (e.g., WORKGROUP)")
+            .placeholder_text(i18n("Optional (e.g., WORKGROUP)"))
             .hexpand(true)
             .build();
         grid.attach(&domain_label, 0, row, 1, 1);
 
         let domain_load_button = Button::builder()
             .icon_name("folder-download-symbolic")
-            .tooltip_text("Load from selected group")
+            .tooltip_text(i18n("Load from selected group"))
             .sensitive(false)
             .build();
         let domain_box = GtkBox::new(Orientation::Horizontal, 4);
@@ -2100,8 +2098,15 @@ impl ConnectionDialog {
             .label(i18n("Password:"))
             .halign(gtk4::Align::End)
             .build();
-        let password_source_list =
-            StringList::new(&["Prompt", "Vault", "Variable", "Inherit", "None"]);
+        let pw_src_items: Vec<String> = vec![
+            i18n("Prompt"),
+            i18n("Vault"),
+            i18n("Variable"),
+            i18n("Inherit"),
+            i18n("None"),
+        ];
+        let pw_src_strs: Vec<&str> = pw_src_items.iter().map(String::as_str).collect();
+        let password_source_list = StringList::new(&pw_src_strs);
         let password_source_dropdown = DropDown::builder().model(&password_source_list).build();
         password_source_dropdown.set_selected(0);
         grid.attach(&password_source_label, 0, row, 1, 1);
@@ -2110,21 +2115,21 @@ impl ConnectionDialog {
 
         // Password with visibility toggle - use grid row for proper alignment
         let password_entry_label = Label::builder()
-            .label("Value:")
+            .label(i18n("Value:"))
             .halign(gtk4::Align::End)
             .build();
         let password_entry = Entry::builder()
-            .placeholder_text("Password value")
+            .placeholder_text(i18n("Password value"))
             .hexpand(true)
             .visibility(false)
             .build();
         let password_visibility_button = Button::builder()
             .icon_name("view-reveal-symbolic")
-            .tooltip_text("Show/hide password")
+            .tooltip_text(i18n("Show/hide password"))
             .build();
         let password_load_button = Button::builder()
             .icon_name("document-open-symbolic")
-            .tooltip_text("Load password from vault")
+            .tooltip_text(i18n("Load password from vault"))
             .build();
         let password_box = GtkBox::new(Orientation::Horizontal, 4);
         password_box.append(&password_entry);
@@ -2151,7 +2156,7 @@ impl ConnectionDialog {
 
         // Variable name dropdown — shown when password source is Variable
         let variable_label = Label::builder()
-            .label("Variable:")
+            .label(i18n("Variable:"))
             .halign(gtk4::Align::End)
             .build();
         let variable_name_list = StringList::new(&[]);
@@ -2176,7 +2181,7 @@ impl ConnectionDialog {
             .halign(gtk4::Align::End)
             .build();
         let tags_entry = Entry::builder()
-            .placeholder_text("tag1, tag2, ...")
+            .placeholder_text(i18n("tag1, tag2, ..."))
             .hexpand(true)
             .build();
         grid.attach(&tags_label, 0, row, 1, 1);
@@ -2188,7 +2193,9 @@ impl ConnectionDialog {
             .label(i18n("Group:"))
             .halign(gtk4::Align::End)
             .build();
-        let group_list = StringList::new(&["(Root)"]);
+        let group_items: Vec<String> = vec![i18n("(Root)")];
+        let group_strs: Vec<&str> = group_items.iter().map(String::as_str).collect();
+        let group_list = StringList::new(&group_strs);
         let group_dropdown = DropDown::builder().model(&group_list).build();
         grid.attach(&group_label, 0, row, 1, 1);
         grid.attach(&group_dropdown, 1, row, 2, 1);
@@ -2196,7 +2203,7 @@ impl ConnectionDialog {
 
         // Description
         let desc_label = Label::builder()
-            .label("Description:")
+            .label(i18n("Description:"))
             .halign(gtk4::Align::End)
             .valign(gtk4::Align::Start)
             .build();
@@ -2370,31 +2377,39 @@ impl ConnectionDialog {
         content.set_margin_end(12);
 
         // === Display Group ===
-        let display_group = adw::PreferencesGroup::builder().title("Display").build();
+        let display_group = adw::PreferencesGroup::builder()
+            .title(i18n("Display"))
+            .build();
 
         // Client mode dropdown
-        let client_mode_list = StringList::new(&[
-            RdpClientMode::Embedded.display_name(),
-            RdpClientMode::External.display_name(),
-        ]);
+        let client_mode_items: Vec<String> = vec![
+            i18n(RdpClientMode::Embedded.display_name()),
+            i18n(RdpClientMode::External.display_name()),
+        ];
+        let client_mode_strs: Vec<&str> = client_mode_items.iter().map(String::as_str).collect();
+        let client_mode_list = StringList::new(&client_mode_strs);
         let client_mode_dropdown = DropDown::builder()
             .model(&client_mode_list)
             .valign(gtk4::Align::Center)
             .build();
 
         let client_mode_row = adw::ActionRow::builder()
-            .title("Client Mode")
-            .subtitle("Embedded renders in tab, External opens separate window")
+            .title(i18n("Client Mode"))
+            .subtitle(i18n(
+                "Embedded renders in tab, External opens separate window",
+            ))
             .build();
         client_mode_row.add_suffix(&client_mode_dropdown);
         display_group.add(&client_mode_row);
 
         // Performance mode dropdown
-        let performance_mode_list = StringList::new(&[
-            RdpPerformanceMode::Quality.display_name(),
-            RdpPerformanceMode::Balanced.display_name(),
-            RdpPerformanceMode::Speed.display_name(),
-        ]);
+        let perf_items: Vec<String> = vec![
+            i18n(RdpPerformanceMode::Quality.display_name()),
+            i18n(RdpPerformanceMode::Balanced.display_name()),
+            i18n(RdpPerformanceMode::Speed.display_name()),
+        ];
+        let perf_strs: Vec<&str> = perf_items.iter().map(String::as_str).collect();
+        let performance_mode_list = StringList::new(&perf_strs);
         let performance_mode_dropdown = DropDown::builder()
             .model(&performance_mode_list)
             .valign(gtk4::Align::Center)
@@ -2402,8 +2417,8 @@ impl ConnectionDialog {
         performance_mode_dropdown.set_selected(1); // Default to Balanced
 
         let performance_mode_row = adw::ActionRow::builder()
-            .title("Performance Mode")
-            .subtitle("Quality/speed tradeoff for image rendering")
+            .title(i18n("Performance Mode"))
+            .subtitle(i18n("Quality/speed tradeoff for image rendering"))
             .build();
         performance_mode_row.add_suffix(&performance_mode_dropdown);
         display_group.add(&performance_mode_row);
@@ -2429,27 +2444,29 @@ impl ConnectionDialog {
         res_box.append(&height_spin);
 
         let resolution_row = adw::ActionRow::builder()
-            .title("Resolution")
-            .subtitle("Width × Height in pixels")
+            .title(i18n("Resolution"))
+            .subtitle(i18n("Width × Height in pixels"))
             .build();
         resolution_row.add_suffix(&res_box);
         display_group.add(&resolution_row);
 
         // Color depth
-        let color_list = StringList::new(&[
-            "32-bit (True Color)",
-            "24-bit",
-            "16-bit (High Color)",
-            "15-bit",
-            "8-bit",
-        ]);
+        let color_items: Vec<String> = vec![
+            i18n("32-bit (True Color)"),
+            i18n("24-bit"),
+            i18n("16-bit (High Color)"),
+            i18n("15-bit"),
+            i18n("8-bit"),
+        ];
+        let color_strs: Vec<&str> = color_items.iter().map(String::as_str).collect();
+        let color_list = StringList::new(&color_strs);
         let color_dropdown = DropDown::new(Some(color_list), gtk4::Expression::NONE);
         color_dropdown.set_selected(0);
         color_dropdown.set_valign(gtk4::Align::Center);
 
         let color_row = adw::ActionRow::builder()
-            .title("Color Depth")
-            .subtitle("Higher values provide better quality")
+            .title(i18n("Color Depth"))
+            .subtitle(i18n("Higher values provide better quality"))
             .build();
         color_row.add_suffix(&color_dropdown);
         display_group.add(&color_row);
@@ -2465,8 +2482,8 @@ impl ConnectionDialog {
             .valign(gtk4::Align::Center)
             .build();
         let scale_row = adw::ActionRow::builder()
-            .title("Display Scale")
-            .subtitle("Override HiDPI scaling for embedded viewer")
+            .title(i18n("Display Scale"))
+            .subtitle(i18n("Override HiDPI scaling for embedded viewer"))
             .build();
         scale_row.add_suffix(&scale_override_dropdown);
         display_group.add(&scale_row);
@@ -2492,13 +2509,15 @@ impl ConnectionDialog {
         content.append(&display_group);
 
         // === Features Group ===
-        let features_group = adw::PreferencesGroup::builder().title("Features").build();
+        let features_group = adw::PreferencesGroup::builder()
+            .title(i18n("Features"))
+            .build();
 
         // Audio redirect
         let audio_check = CheckButton::new();
         let audio_row = adw::ActionRow::builder()
-            .title("Audio Redirection")
-            .subtitle("Play remote audio locally")
+            .title(i18n("Audio Redirection"))
+            .subtitle(i18n("Play remote audio locally"))
             .activatable_widget(&audio_check)
             .build();
         audio_row.add_suffix(&audio_check);
@@ -2507,13 +2526,13 @@ impl ConnectionDialog {
         // Gateway
         let gateway_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("gateway.example.com")
+            .placeholder_text(i18n("gateway.example.com"))
             .valign(gtk4::Align::Center)
             .build();
 
         let gateway_row = adw::ActionRow::builder()
-            .title("RDP Gateway")
-            .subtitle("Remote Desktop Gateway server")
+            .title(i18n("RDP Gateway"))
+            .subtitle(i18n("Remote Desktop Gateway server"))
             .build();
         gateway_row.add_suffix(&gateway_entry);
         features_group.add(&gateway_row);
@@ -2545,10 +2564,13 @@ impl ConnectionDialog {
         folders_buttons.set_halign(gtk4::Align::End);
         folders_buttons.set_margin_top(8);
         let add_folder_btn = Button::builder()
-            .label("Add")
+            .label(i18n("Add"))
             .css_classes(["suggested-action"])
             .build();
-        let remove_folder_btn = Button::builder().label("Remove").sensitive(false).build();
+        let remove_folder_btn = Button::builder()
+            .label(i18n("Remove"))
+            .sensitive(false)
+            .build();
         folders_buttons.append(&add_folder_btn);
         folders_buttons.append(&remove_folder_btn);
         folders_group.add(&folders_buttons);
@@ -2570,63 +2592,67 @@ impl ConnectionDialog {
         });
 
         // === Advanced Group ===
-        let advanced_group = adw::PreferencesGroup::builder().title("Advanced").build();
+        let advanced_group = adw::PreferencesGroup::builder()
+            .title(i18n("Advanced"))
+            .build();
 
         // Keyboard layout dropdown
-        let kb_layout_list = StringList::new(&[
-            "Auto (detect)",
-            "US English",
-            "German (de)",
-            "French (fr)",
-            "Spanish (es)",
-            "Italian (it)",
-            "Portuguese (pt)",
-            "Brazilian (br)",
-            "UK English (gb)",
-            "Swiss German (ch)",
-            "Austrian (at)",
-            "Belgian (be)",
-            "Dutch (nl)",
-            "Swedish (se)",
-            "Norwegian (no)",
-            "Danish (dk)",
-            "Finnish (fi)",
-            "Polish (pl)",
-            "Czech (cz)",
-            "Slovak (sk)",
-            "Hungarian (hu)",
-            "Romanian (ro)",
-            "Croatian (hr)",
-            "Slovenian (si)",
-            "Serbian (rs)",
-            "Bulgarian (bg)",
-            "Russian (ru)",
-            "Ukrainian (ua)",
-            "Turkish (tr)",
-            "Greek (gr)",
-            "Japanese (jp)",
-            "Korean (kr)",
-        ]);
+        let kb_items: Vec<String> = vec![
+            i18n("Auto (detect)"),
+            i18n("US English"),
+            i18n("German (de)"),
+            i18n("French (fr)"),
+            i18n("Spanish (es)"),
+            i18n("Italian (it)"),
+            i18n("Portuguese (pt)"),
+            i18n("Brazilian (br)"),
+            i18n("UK English (gb)"),
+            i18n("Swiss German (ch)"),
+            i18n("Austrian (at)"),
+            i18n("Belgian (be)"),
+            i18n("Dutch (nl)"),
+            i18n("Swedish (se)"),
+            i18n("Norwegian (no)"),
+            i18n("Danish (dk)"),
+            i18n("Finnish (fi)"),
+            i18n("Polish (pl)"),
+            i18n("Czech (cz)"),
+            i18n("Slovak (sk)"),
+            i18n("Hungarian (hu)"),
+            i18n("Romanian (ro)"),
+            i18n("Croatian (hr)"),
+            i18n("Slovenian (si)"),
+            i18n("Serbian (rs)"),
+            i18n("Bulgarian (bg)"),
+            i18n("Russian (ru)"),
+            i18n("Ukrainian (ua)"),
+            i18n("Turkish (tr)"),
+            i18n("Greek (gr)"),
+            i18n("Japanese (jp)"),
+            i18n("Korean (kr)"),
+        ];
+        let kb_strs: Vec<&str> = kb_items.iter().map(String::as_str).collect();
+        let kb_layout_list = StringList::new(&kb_strs);
         let kb_layout_dropdown = DropDown::builder()
             .model(&kb_layout_list)
             .valign(gtk4::Align::Center)
             .build();
         let kb_layout_row = adw::ActionRow::builder()
-            .title("Keyboard Layout")
-            .subtitle("Layout sent to RDP server (Auto uses system setting)")
+            .title(i18n("Keyboard Layout"))
+            .subtitle(i18n("Layout sent to RDP server (Auto uses system setting)"))
             .build();
         kb_layout_row.add_suffix(&kb_layout_dropdown);
         advanced_group.add(&kb_layout_row);
 
         let args_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Additional command-line arguments")
+            .placeholder_text(i18n("Additional command-line arguments"))
             .valign(gtk4::Align::Center)
             .build();
 
         let args_row = adw::ActionRow::builder()
-            .title("Custom Arguments")
-            .subtitle("Extra FreeRDP command-line options")
+            .title(i18n("Custom Arguments"))
+            .subtitle(i18n("Extra FreeRDP command-line options"))
             .build();
         args_row.add_suffix(&args_entry);
         advanced_group.add(&args_row);
@@ -2666,7 +2692,7 @@ impl ConnectionDialog {
         let shared_folders_clone = shared_folders.clone();
         add_btn.connect_clicked(move |btn| {
             let file_dialog = FileDialog::builder()
-                .title("Select Folder to Share")
+                .title(i18n("Select Folder to Share"))
                 .modal(true)
                 .build();
 
@@ -2779,31 +2805,39 @@ impl ConnectionDialog {
         content.set_margin_end(12);
 
         // === Display Group ===
-        let display_group = adw::PreferencesGroup::builder().title("Display").build();
+        let display_group = adw::PreferencesGroup::builder()
+            .title(i18n("Display"))
+            .build();
 
         // Client mode dropdown
-        let client_mode_list = StringList::new(&[
-            VncClientMode::Embedded.display_name(),
-            VncClientMode::External.display_name(),
-        ]);
+        let vnc_mode_items: Vec<String> = vec![
+            i18n(VncClientMode::Embedded.display_name()),
+            i18n(VncClientMode::External.display_name()),
+        ];
+        let vnc_mode_strs: Vec<&str> = vnc_mode_items.iter().map(String::as_str).collect();
+        let client_mode_list = StringList::new(&vnc_mode_strs);
         let client_mode_dropdown = DropDown::builder()
             .model(&client_mode_list)
             .valign(gtk4::Align::Center)
             .build();
 
         let client_mode_row = adw::ActionRow::builder()
-            .title("Client Mode")
-            .subtitle("Embedded renders in tab, External opens separate window")
+            .title(i18n("Client Mode"))
+            .subtitle(i18n(
+                "Embedded renders in tab, External opens separate window",
+            ))
             .build();
         client_mode_row.add_suffix(&client_mode_dropdown);
         display_group.add(&client_mode_row);
 
         // Performance mode dropdown
-        let performance_mode_list = StringList::new(&[
-            VncPerformanceMode::Quality.display_name(),
-            VncPerformanceMode::Balanced.display_name(),
-            VncPerformanceMode::Speed.display_name(),
-        ]);
+        let vnc_perf_items: Vec<String> = vec![
+            i18n(VncPerformanceMode::Quality.display_name()),
+            i18n(VncPerformanceMode::Balanced.display_name()),
+            i18n(VncPerformanceMode::Speed.display_name()),
+        ];
+        let vnc_perf_strs: Vec<&str> = vnc_perf_items.iter().map(String::as_str).collect();
+        let performance_mode_list = StringList::new(&vnc_perf_strs);
         let performance_mode_dropdown = DropDown::builder()
             .model(&performance_mode_list)
             .valign(gtk4::Align::Center)
@@ -2811,8 +2845,8 @@ impl ConnectionDialog {
         performance_mode_dropdown.set_selected(1); // Default to Balanced
 
         let performance_mode_row = adw::ActionRow::builder()
-            .title("Performance Mode")
-            .subtitle("Quality/speed tradeoff for image rendering")
+            .title(i18n("Performance Mode"))
+            .subtitle(i18n("Quality/speed tradeoff for image rendering"))
             .build();
         performance_mode_row.add_suffix(&performance_mode_dropdown);
         display_group.add(&performance_mode_row);
@@ -2825,8 +2859,8 @@ impl ConnectionDialog {
             .build();
 
         let encoding_row = adw::ActionRow::builder()
-            .title("Encoding")
-            .subtitle("Preferred encoding methods (comma-separated)")
+            .title(i18n("Encoding"))
+            .subtitle(i18n("Preferred encoding methods (comma-separated)"))
             .build();
         encoding_row.add_suffix(&encoding_entry);
         display_group.add(&encoding_row);
@@ -2842,8 +2876,8 @@ impl ConnectionDialog {
             .valign(gtk4::Align::Center)
             .build();
         let scale_row = adw::ActionRow::builder()
-            .title("Display Scale")
-            .subtitle("Override HiDPI scaling for embedded viewer")
+            .title(i18n("Display Scale"))
+            .subtitle(i18n("Override HiDPI scaling for embedded viewer"))
             .build();
         scale_row.add_suffix(&scale_override_dropdown);
         display_group.add(&scale_row);
@@ -2859,7 +2893,9 @@ impl ConnectionDialog {
         content.append(&display_group);
 
         // === Quality Group ===
-        let quality_group = adw::PreferencesGroup::builder().title("Quality").build();
+        let quality_group = adw::PreferencesGroup::builder()
+            .title(i18n("Quality"))
+            .build();
 
         // Compression
         let compression_adj = gtk4::Adjustment::new(6.0, 0.0, 9.0, 1.0, 1.0, 0.0);
@@ -2871,8 +2907,8 @@ impl ConnectionDialog {
             .build();
 
         let compression_row = adw::ActionRow::builder()
-            .title("Compression")
-            .subtitle("0 (none) to 9 (maximum)")
+            .title(i18n("Compression"))
+            .subtitle(i18n("0 (none) to 9 (maximum)"))
             .build();
         compression_row.add_suffix(&compression_spin);
         quality_group.add(&compression_row);
@@ -2887,8 +2923,8 @@ impl ConnectionDialog {
             .build();
 
         let quality_row = adw::ActionRow::builder()
-            .title("Quality")
-            .subtitle("0 (lowest) to 9 (highest)")
+            .title(i18n("Quality"))
+            .subtitle(i18n("0 (lowest) to 9 (highest)"))
             .build();
         quality_row.add_suffix(&quality_spin);
         quality_group.add(&quality_row);
@@ -2896,13 +2932,15 @@ impl ConnectionDialog {
         content.append(&quality_group);
 
         // === Features Group ===
-        let features_group = adw::PreferencesGroup::builder().title("Features").build();
+        let features_group = adw::PreferencesGroup::builder()
+            .title(i18n("Features"))
+            .build();
 
         // View-only mode
         let view_only_check = CheckButton::new();
         let view_only_row = adw::ActionRow::builder()
-            .title("View-Only Mode")
-            .subtitle("Disable keyboard and mouse input")
+            .title(i18n("View-Only Mode"))
+            .subtitle(i18n("Disable keyboard and mouse input"))
             .activatable_widget(&view_only_check)
             .build();
         view_only_row.add_suffix(&view_only_check);
@@ -2912,8 +2950,8 @@ impl ConnectionDialog {
         let scaling_check = CheckButton::new();
         scaling_check.set_active(true);
         let scaling_row = adw::ActionRow::builder()
-            .title("Scale Display")
-            .subtitle("Fit remote desktop to window size")
+            .title(i18n("Scale Display"))
+            .subtitle(i18n("Fit remote desktop to window size"))
             .activatable_widget(&scaling_check)
             .build();
         scaling_row.add_suffix(&scaling_check);
@@ -2923,8 +2961,8 @@ impl ConnectionDialog {
         let clipboard_check = CheckButton::new();
         clipboard_check.set_active(true);
         let clipboard_row = adw::ActionRow::builder()
-            .title("Clipboard Sharing")
-            .subtitle("Synchronize clipboard with remote")
+            .title(i18n("Clipboard Sharing"))
+            .subtitle(i18n("Synchronize clipboard with remote"))
             .activatable_widget(&clipboard_check)
             .build();
         clipboard_row.add_suffix(&clipboard_check);
@@ -2933,17 +2971,19 @@ impl ConnectionDialog {
         content.append(&features_group);
 
         // === Advanced Group ===
-        let advanced_group = adw::PreferencesGroup::builder().title("Advanced").build();
+        let advanced_group = adw::PreferencesGroup::builder()
+            .title(i18n("Advanced"))
+            .build();
 
         let custom_args_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Additional arguments for external client")
+            .placeholder_text(i18n("Additional arguments for external client"))
             .valign(gtk4::Align::Center)
             .build();
 
         let args_row = adw::ActionRow::builder()
-            .title("Custom Arguments")
-            .subtitle("Extra command-line options for vncviewer")
+            .title(i18n("Custom Arguments"))
+            .subtitle(i18n("Extra command-line options for vncviewer"))
             .build();
         args_row.add_suffix(&custom_args_entry);
         advanced_group.add(&args_row);
@@ -3003,13 +3043,15 @@ impl ConnectionDialog {
         content.set_margin_end(12);
 
         // === Security Group ===
-        let security_group = adw::PreferencesGroup::builder().title("Security").build();
+        let security_group = adw::PreferencesGroup::builder()
+            .title(i18n("Security"))
+            .build();
 
         // TLS enabled
         let tls_check = CheckButton::new();
         let tls_row = adw::ActionRow::builder()
-            .title("TLS Encryption")
-            .subtitle("Encrypt connection with TLS")
+            .title(i18n("TLS Encryption"))
+            .subtitle(i18n("Encrypt connection with TLS"))
             .activatable_widget(&tls_check)
             .build();
         tls_row.add_suffix(&tls_check);
@@ -3020,18 +3062,18 @@ impl ConnectionDialog {
         ca_cert_box.set_valign(gtk4::Align::Center);
         let ca_cert_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Path to CA certificate")
+            .placeholder_text(i18n("Path to CA certificate"))
             .build();
         let ca_cert_button = Button::builder()
             .icon_name("folder-open-symbolic")
-            .tooltip_text("Browse for certificate")
+            .tooltip_text(i18n("Browse for certificate"))
             .build();
         ca_cert_box.append(&ca_cert_entry);
         ca_cert_box.append(&ca_cert_button);
 
         let ca_cert_row = adw::ActionRow::builder()
-            .title("CA Certificate")
-            .subtitle("Certificate authority for TLS verification")
+            .title(i18n("CA Certificate"))
+            .subtitle(i18n("Certificate authority for TLS verification"))
             .build();
         ca_cert_row.add_suffix(&ca_cert_box);
         security_group.add(&ca_cert_row);
@@ -3039,8 +3081,8 @@ impl ConnectionDialog {
         // Skip certificate verification
         let skip_verify_check = CheckButton::new();
         let skip_verify_row = adw::ActionRow::builder()
-            .title("Skip Verification")
-            .subtitle("Disable certificate verification (insecure)")
+            .title(i18n("Skip Verification"))
+            .subtitle(i18n("Disable certificate verification (insecure)"))
             .activatable_widget(&skip_verify_check)
             .build();
         skip_verify_row.add_suffix(&skip_verify_check);
@@ -3049,13 +3091,15 @@ impl ConnectionDialog {
         content.append(&security_group);
 
         // === Features Group ===
-        let features_group = adw::PreferencesGroup::builder().title("Features").build();
+        let features_group = adw::PreferencesGroup::builder()
+            .title(i18n("Features"))
+            .build();
 
         // USB redirection
         let usb_check = CheckButton::new();
         let usb_row = adw::ActionRow::builder()
-            .title("USB Redirection")
-            .subtitle("Forward USB devices to remote")
+            .title(i18n("USB Redirection"))
+            .subtitle(i18n("Forward USB devices to remote"))
             .activatable_widget(&usb_check)
             .build();
         usb_row.add_suffix(&usb_check);
@@ -3065,22 +3109,30 @@ impl ConnectionDialog {
         let clipboard_check = CheckButton::new();
         clipboard_check.set_active(true);
         let clipboard_row = adw::ActionRow::builder()
-            .title("Clipboard Sharing")
-            .subtitle("Synchronize clipboard with remote")
+            .title(i18n("Clipboard Sharing"))
+            .subtitle(i18n("Synchronize clipboard with remote"))
             .activatable_widget(&clipboard_check)
             .build();
         clipboard_row.add_suffix(&clipboard_check);
         features_group.add(&clipboard_row);
 
         // Image compression
-        let compression_list = StringList::new(&["Auto", "Off", "GLZ", "LZ", "QUIC"]);
+        let comp_items: Vec<String> = vec![
+            i18n("Auto"),
+            i18n("Off"),
+            "GLZ".to_string(),
+            "LZ".to_string(),
+            "QUIC".to_string(),
+        ];
+        let comp_strs: Vec<&str> = comp_items.iter().map(String::as_str).collect();
+        let compression_list = StringList::new(&comp_strs);
         let compression_dropdown = DropDown::new(Some(compression_list), gtk4::Expression::NONE);
         compression_dropdown.set_selected(0);
         compression_dropdown.set_valign(gtk4::Align::Center);
 
         let compression_row = adw::ActionRow::builder()
-            .title("Image Compression")
-            .subtitle("Algorithm for image data")
+            .title(i18n("Image Compression"))
+            .subtitle(i18n("Algorithm for image data"))
             .build();
         compression_row.add_suffix(&compression_dropdown);
         features_group.add(&compression_row);
@@ -3112,10 +3164,13 @@ impl ConnectionDialog {
         folders_buttons.set_halign(gtk4::Align::End);
         folders_buttons.set_margin_top(8);
         let add_folder_btn = Button::builder()
-            .label("Add")
+            .label(i18n("Add"))
             .css_classes(["suggested-action"])
             .build();
-        let remove_folder_btn = Button::builder().label("Remove").sensitive(false).build();
+        let remove_folder_btn = Button::builder()
+            .label(i18n("Remove"))
+            .sensitive(false)
+            .build();
         folders_buttons.append(&add_folder_btn);
         folders_buttons.append(&remove_folder_btn);
         folders_group.add(&folders_buttons);
@@ -3203,27 +3258,31 @@ impl ConnectionDialog {
         content.set_margin_end(12);
 
         // === Provider Selection Group ===
-        let provider_group = adw::PreferencesGroup::builder().title("Provider").build();
+        let provider_group = adw::PreferencesGroup::builder()
+            .title(i18n("Provider"))
+            .build();
 
-        let provider_list = StringList::new(&[
-            "AWS Session Manager",
-            "GCP IAP Tunnel",
-            "Azure Bastion",
-            "Azure SSH (AAD)",
-            "OCI Bastion",
-            "Cloudflare Access",
-            "Teleport",
-            "Tailscale SSH",
-            "HashiCorp Boundary",
-            "Generic Command",
-        ]);
+        let zt_items: Vec<String> = vec![
+            i18n("AWS Session Manager"),
+            i18n("GCP IAP Tunnel"),
+            i18n("Azure Bastion"),
+            i18n("Azure SSH (AAD)"),
+            i18n("OCI Bastion"),
+            i18n("Cloudflare Access"),
+            i18n("Teleport"),
+            i18n("Tailscale SSH"),
+            i18n("HashiCorp Boundary"),
+            i18n("Generic Command"),
+        ];
+        let zt_strs: Vec<&str> = zt_items.iter().map(String::as_str).collect();
+        let provider_list = StringList::new(&zt_strs);
         let provider_dropdown = DropDown::new(Some(provider_list), gtk4::Expression::NONE);
         provider_dropdown.set_selected(0);
         provider_dropdown.set_valign(gtk4::Align::Center);
 
         let provider_row = adw::ActionRow::builder()
-            .title("Zero Trust Provider")
-            .subtitle("Select your identity-aware proxy service")
+            .title(i18n("Zero Trust Provider"))
+            .subtitle(i18n("Select your identity-aware proxy service"))
             .build();
         provider_row.add_suffix(&provider_dropdown);
         provider_group.add(&provider_row);
@@ -3303,17 +3362,19 @@ impl ConnectionDialog {
         });
 
         // === Advanced Group ===
-        let advanced_group = adw::PreferencesGroup::builder().title("Advanced").build();
+        let advanced_group = adw::PreferencesGroup::builder()
+            .title(i18n("Advanced"))
+            .build();
 
         let custom_args_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Additional command-line arguments")
+            .placeholder_text(i18n("Additional command-line arguments"))
             .valign(gtk4::Align::Center)
             .build();
 
         let args_row = adw::ActionRow::builder()
-            .title("Custom Arguments")
-            .subtitle("Extra CLI options for the provider command")
+            .title(i18n("Custom Arguments"))
+            .subtitle(i18n("Extra CLI options for the provider command"))
             .build();
         args_row.add_suffix(&custom_args_entry);
         advanced_group.add(&args_row);
@@ -3358,18 +3419,18 @@ impl ConnectionDialog {
     /// Creates AWS SSM provider fields using libadwaita
     fn create_aws_ssm_fields_adw() -> (GtkBox, adw::EntryRow, adw::EntryRow, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
-            .title("AWS Session Manager")
-            .description("Connect via AWS Systems Manager")
+            .title(i18n("AWS Session Manager"))
+            .description(i18n("Connect via AWS Systems Manager"))
             .build();
 
-        let target_row = adw::EntryRow::builder().title("Instance ID").build();
+        let target_row = adw::EntryRow::builder().title(i18n("Instance ID")).build();
         group.add(&target_row);
 
-        let profile_row = adw::EntryRow::builder().title("AWS Profile").build();
+        let profile_row = adw::EntryRow::builder().title(i18n("AWS Profile")).build();
         profile_row.set_text("default");
         group.add(&profile_row);
 
-        let region_row = adw::EntryRow::builder().title("Region").build();
+        let region_row = adw::EntryRow::builder().title(i18n("Region")).build();
         group.add(&region_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
@@ -3381,17 +3442,19 @@ impl ConnectionDialog {
     /// Creates GCP IAP provider fields using libadwaita
     fn create_gcp_iap_fields_adw() -> (GtkBox, adw::EntryRow, adw::EntryRow, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
-            .title("GCP IAP Tunnel")
-            .description("Connect via Identity-Aware Proxy")
+            .title(i18n("GCP IAP Tunnel"))
+            .description(i18n("Connect via Identity-Aware Proxy"))
             .build();
 
-        let instance_row = adw::EntryRow::builder().title("Instance Name").build();
+        let instance_row = adw::EntryRow::builder()
+            .title(i18n("Instance Name"))
+            .build();
         group.add(&instance_row);
 
-        let zone_row = adw::EntryRow::builder().title("Zone").build();
+        let zone_row = adw::EntryRow::builder().title(i18n("Zone")).build();
         group.add(&zone_row);
 
-        let project_row = adw::EntryRow::builder().title("Project").build();
+        let project_row = adw::EntryRow::builder().title(i18n("Project")).build();
         group.add(&project_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
@@ -3403,17 +3466,21 @@ impl ConnectionDialog {
     /// Creates Azure Bastion provider fields using libadwaita
     fn create_azure_bastion_fields_adw() -> (GtkBox, adw::EntryRow, adw::EntryRow, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
-            .title("Azure Bastion")
-            .description("Connect via Azure Bastion service")
+            .title(i18n("Azure Bastion"))
+            .description(i18n("Connect via Azure Bastion service"))
             .build();
 
-        let resource_id_row = adw::EntryRow::builder().title("Target Resource ID").build();
+        let resource_id_row = adw::EntryRow::builder()
+            .title(i18n("Target Resource ID"))
+            .build();
         group.add(&resource_id_row);
 
-        let rg_row = adw::EntryRow::builder().title("Resource Group").build();
+        let rg_row = adw::EntryRow::builder()
+            .title(i18n("Resource Group"))
+            .build();
         group.add(&rg_row);
 
-        let name_row = adw::EntryRow::builder().title("Bastion Name").build();
+        let name_row = adw::EntryRow::builder().title(i18n("Bastion Name")).build();
         group.add(&name_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
@@ -3425,14 +3492,16 @@ impl ConnectionDialog {
     /// Creates Azure SSH (AAD) provider fields using libadwaita
     fn create_azure_ssh_fields_adw() -> (GtkBox, adw::EntryRow, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
-            .title("Azure SSH (AAD)")
-            .description("Connect via Azure AD authentication")
+            .title(i18n("Azure SSH (AAD)"))
+            .description(i18n("Connect via Azure AD authentication"))
             .build();
 
-        let vm_row = adw::EntryRow::builder().title("VM Name").build();
+        let vm_row = adw::EntryRow::builder().title(i18n("VM Name")).build();
         group.add(&vm_row);
 
-        let rg_row = adw::EntryRow::builder().title("Resource Group").build();
+        let rg_row = adw::EntryRow::builder()
+            .title(i18n("Resource Group"))
+            .build();
         group.add(&rg_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
@@ -3444,17 +3513,17 @@ impl ConnectionDialog {
     /// Creates OCI Bastion provider fields using libadwaita
     fn create_oci_bastion_fields_adw() -> (GtkBox, adw::EntryRow, adw::EntryRow, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
-            .title("OCI Bastion")
-            .description("Connect via Oracle Cloud Bastion")
+            .title(i18n("OCI Bastion"))
+            .description(i18n("Connect via Oracle Cloud Bastion"))
             .build();
 
-        let bastion_id_row = adw::EntryRow::builder().title("Bastion OCID").build();
+        let bastion_id_row = adw::EntryRow::builder().title(i18n("Bastion OCID")).build();
         group.add(&bastion_id_row);
 
-        let target_id_row = adw::EntryRow::builder().title("Target OCID").build();
+        let target_id_row = adw::EntryRow::builder().title(i18n("Target OCID")).build();
         group.add(&target_id_row);
 
-        let target_ip_row = adw::EntryRow::builder().title("Target IP").build();
+        let target_ip_row = adw::EntryRow::builder().title(i18n("Target IP")).build();
         group.add(&target_ip_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
@@ -3466,11 +3535,11 @@ impl ConnectionDialog {
     /// Creates Cloudflare Access provider fields using libadwaita
     fn create_cloudflare_fields_adw() -> (GtkBox, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
-            .title("Cloudflare Access")
-            .description("Connect via Cloudflare Zero Trust")
+            .title(i18n("Cloudflare Access"))
+            .description(i18n("Connect via Cloudflare Zero Trust"))
             .build();
 
-        let hostname_row = adw::EntryRow::builder().title("Hostname").build();
+        let hostname_row = adw::EntryRow::builder().title(i18n("Hostname")).build();
         group.add(&hostname_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
@@ -3482,14 +3551,14 @@ impl ConnectionDialog {
     /// Creates Teleport provider fields using libadwaita
     fn create_teleport_fields_adw() -> (GtkBox, adw::EntryRow, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
-            .title("Teleport")
-            .description("Connect via Gravitational Teleport")
+            .title(i18n("Teleport"))
+            .description(i18n("Connect via Gravitational Teleport"))
             .build();
 
-        let host_row = adw::EntryRow::builder().title("Node Name").build();
+        let host_row = adw::EntryRow::builder().title(i18n("Node Name")).build();
         group.add(&host_row);
 
-        let cluster_row = adw::EntryRow::builder().title("Cluster").build();
+        let cluster_row = adw::EntryRow::builder().title(i18n("Cluster")).build();
         group.add(&cluster_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
@@ -3501,11 +3570,13 @@ impl ConnectionDialog {
     /// Creates Tailscale SSH provider fields using libadwaita
     fn create_tailscale_fields_adw() -> (GtkBox, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
-            .title("Tailscale SSH")
-            .description("Connect via Tailscale network")
+            .title(i18n("Tailscale SSH"))
+            .description(i18n("Connect via Tailscale network"))
             .build();
 
-        let host_row = adw::EntryRow::builder().title("Tailscale Host").build();
+        let host_row = adw::EntryRow::builder()
+            .title(i18n("Tailscale Host"))
+            .build();
         group.add(&host_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
@@ -3517,14 +3588,16 @@ impl ConnectionDialog {
     /// Creates HashiCorp Boundary provider fields using libadwaita
     fn create_boundary_fields_adw() -> (GtkBox, adw::EntryRow, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
-            .title("HashiCorp Boundary")
-            .description("Connect via Boundary proxy")
+            .title(i18n("HashiCorp Boundary"))
+            .description(i18n("Connect via Boundary proxy"))
             .build();
 
-        let target_row = adw::EntryRow::builder().title("Target ID").build();
+        let target_row = adw::EntryRow::builder().title(i18n("Target ID")).build();
         group.add(&target_row);
 
-        let addr_row = adw::EntryRow::builder().title("Controller Address").build();
+        let addr_row = adw::EntryRow::builder()
+            .title(i18n("Controller Address"))
+            .build();
         group.add(&addr_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
@@ -3536,11 +3609,13 @@ impl ConnectionDialog {
     /// Creates Generic Zero Trust provider fields using libadwaita
     fn create_generic_zt_fields_adw() -> (GtkBox, adw::EntryRow) {
         let group = adw::PreferencesGroup::builder()
-            .title("Generic Command")
-            .description("Custom command for unsupported providers")
+            .title(i18n("Generic Command"))
+            .description(i18n("Custom command for unsupported providers"))
             .build();
 
-        let command_row = adw::EntryRow::builder().title("Command Template").build();
+        let command_row = adw::EntryRow::builder()
+            .title(i18n("Command Template"))
+            .build();
         group.add(&command_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
@@ -4015,7 +4090,7 @@ impl ConnectionDialog {
         let command_entry = Entry::builder()
             .hexpand(true)
             .valign(gtk4::Align::Center)
-            .placeholder_text("e.g., /path/to/script.sh or vpn-connect ${host}")
+            .placeholder_text(i18n("e.g., /path/to/script.sh or vpn-connect ${host}"))
             .sensitive(false)
             .build();
 
@@ -4217,7 +4292,7 @@ impl ConnectionDialog {
         let mac_entry = Entry::builder()
             .hexpand(true)
             .valign(gtk4::Align::Center)
-            .placeholder_text("AA:BB:CC:DD:EE:FF")
+            .placeholder_text(i18n("AA:BB:CC:DD:EE:FF"))
             .build();
 
         let mac_row = adw::ActionRow::builder().title(i18n("MAC Address")).build();
@@ -4314,18 +4389,18 @@ impl ConnectionDialog {
 
         // Row 0: Name and delete button
         let name_label = Label::builder()
-            .label("Name:")
+            .label(i18n("Name:"))
             .halign(gtk4::Align::End)
             .build();
         let name_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Property name (e.g., asset_tag, docs_url)")
+            .placeholder_text(i18n("Property name (e.g., asset_tag, docs_url)"))
             .build();
 
         let delete_button = Button::builder()
             .icon_name("user-trash-symbolic")
             .css_classes(["destructive-action", "flat"])
-            .tooltip_text("Delete property")
+            .tooltip_text(i18n("Delete property"))
             .build();
 
         grid.attach(&name_label, 0, 0, 1, 1);
@@ -4334,33 +4409,33 @@ impl ConnectionDialog {
 
         // Row 1: Type dropdown
         let type_label = Label::builder()
-            .label("Type:")
+            .label(i18n("Type:"))
             .halign(gtk4::Align::End)
             .build();
-        let type_list = StringList::new(&["Text", "URL", "Protected"]);
+        let type_list = StringList::new(&[&i18n("Text"), &i18n("URL"), &i18n("Protected")]);
         let type_dropdown = DropDown::new(Some(type_list), gtk4::Expression::NONE);
         type_dropdown.set_selected(0);
-        type_dropdown.set_tooltip_text(Some(
+        type_dropdown.set_tooltip_text(Some(&i18n(
             "Text: Plain text\nURL: Clickable link\nProtected: Masked/encrypted value",
-        ));
+        )));
 
         grid.attach(&type_label, 0, 1, 1, 1);
         grid.attach(&type_dropdown, 1, 1, 2, 1);
 
         // Row 2: Value (regular entry)
         let value_label = Label::builder()
-            .label("Value:")
+            .label(i18n("Value:"))
             .halign(gtk4::Align::End)
             .build();
         let value_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Property value")
+            .placeholder_text(i18n("Property value"))
             .build();
 
         // Row 2: Value (password entry for protected type)
         let secret_entry = PasswordEntry::builder()
             .hexpand(true)
-            .placeholder_text("Protected value (masked)")
+            .placeholder_text(i18n("Protected value (masked)"))
             .show_peek_icon(true)
             .build();
 
@@ -4536,30 +4611,30 @@ impl ConnectionDialog {
 
         // Row 0: Pattern and action buttons
         let pattern_label = Label::builder()
-            .label("Pattern:")
+            .label(i18n("Pattern:"))
             .halign(gtk4::Align::End)
             .build();
         let pattern_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Regex pattern (e.g., password:\\s*$)")
-            .tooltip_text("Regular expression to match against terminal output")
+            .placeholder_text(i18n("Regex pattern (e.g., password:\\s*$)"))
+            .tooltip_text(i18n("Regular expression to match against terminal output"))
             .build();
 
         let button_box = GtkBox::new(Orientation::Horizontal, 4);
         let move_up_button = Button::builder()
             .icon_name("go-up-symbolic")
             .css_classes(["flat"])
-            .tooltip_text("Move up (higher priority)")
+            .tooltip_text(i18n("Move up (higher priority)"))
             .build();
         let move_down_button = Button::builder()
             .icon_name("go-down-symbolic")
             .css_classes(["flat"])
-            .tooltip_text("Move down (lower priority)")
+            .tooltip_text(i18n("Move down (lower priority)"))
             .build();
         let delete_button = Button::builder()
             .icon_name("user-trash-symbolic")
             .css_classes(["destructive-action", "flat"])
-            .tooltip_text("Delete rule")
+            .tooltip_text(i18n("Delete rule"))
             .build();
         button_box.append(&move_up_button);
         button_box.append(&move_down_button);
@@ -4571,13 +4646,13 @@ impl ConnectionDialog {
 
         // Row 1: Response
         let response_label = Label::builder()
-            .label("Response:")
+            .label(i18n("Response:"))
             .halign(gtk4::Align::End)
             .build();
         let response_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Text to send when pattern matches")
-            .tooltip_text("Response to send (supports ${variable} syntax)")
+            .placeholder_text(i18n("Text to send when pattern matches"))
+            .tooltip_text(i18n("Response to send (supports ${variable} syntax)"))
             .build();
 
         grid.attach(&response_label, 0, 1, 1, 1);
@@ -4585,7 +4660,7 @@ impl ConnectionDialog {
 
         // Row 2: Priority and Timeout
         let priority_label = Label::builder()
-            .label("Priority:")
+            .label(i18n("Priority:"))
             .halign(gtk4::Align::End)
             .build();
         let priority_adj = gtk4::Adjustment::new(0.0, -1000.0, 1000.0, 1.0, 10.0, 0.0);
@@ -4593,11 +4668,11 @@ impl ConnectionDialog {
             .adjustment(&priority_adj)
             .climb_rate(1.0)
             .digits(0)
-            .tooltip_text("Higher priority rules are checked first")
+            .tooltip_text(i18n("Higher priority rules are checked first"))
             .build();
 
         let timeout_label = Label::builder()
-            .label("Timeout (ms):")
+            .label(i18n("Timeout (ms):"))
             .halign(gtk4::Align::End)
             .build();
         let timeout_adj = gtk4::Adjustment::new(0.0, 0.0, 60000.0, 100.0, 1000.0, 0.0);
@@ -4605,7 +4680,7 @@ impl ConnectionDialog {
             .adjustment(&timeout_adj)
             .climb_rate(1.0)
             .digits(0)
-            .tooltip_text("Timeout in milliseconds (0 = no timeout)")
+            .tooltip_text(i18n("Timeout in milliseconds (0 = no timeout)"))
             .build();
 
         let settings_box = GtkBox::new(Orientation::Horizontal, 12);
@@ -4621,7 +4696,10 @@ impl ConnectionDialog {
         grid.attach(&settings_box, 1, 2, 2, 1);
 
         // Row 3: Enabled checkbox
-        let enabled_check = CheckButton::builder().label("Enabled").active(true).build();
+        let enabled_check = CheckButton::builder()
+            .label(i18n("Enabled"))
+            .active(true)
+            .build();
 
         grid.attach(&enabled_check, 1, 3, 2, 1);
 
@@ -4922,7 +5000,7 @@ impl ConnectionDialog {
 
         // Row 0: Name and Delete button
         let name_label = Label::builder()
-            .label("Name:")
+            .label(i18n("Name:"))
             .halign(gtk4::Align::End)
             .build();
         let name_entry = Entry::builder()
@@ -4951,12 +5029,12 @@ impl ConnectionDialog {
 
         // Row 1: Value (regular entry)
         let value_label = Label::builder()
-            .label("Value:")
+            .label(i18n("Value:"))
             .halign(gtk4::Align::End)
             .build();
         let value_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Variable value")
+            .placeholder_text(i18n("Variable value"))
             .build();
 
         grid.attach(&value_label, 0, 1, 1, 1);
@@ -4964,13 +5042,13 @@ impl ConnectionDialog {
 
         // Row 2: Secret value (password entry, initially hidden)
         let secret_label = Label::builder()
-            .label("Secret Value:")
+            .label(i18n("Secret Value:"))
             .halign(gtk4::Align::End)
             .visible(false)
             .build();
         let secret_entry = PasswordEntry::builder()
             .hexpand(true)
-            .placeholder_text("Secret value (masked)")
+            .placeholder_text(i18n("Secret value (masked)"))
             .show_peek_icon(true)
             .visible(false)
             .build();
@@ -4979,18 +5057,20 @@ impl ConnectionDialog {
         grid.attach(&secret_entry, 1, 2, 2, 1);
 
         // Row 3: Is Secret checkbox
-        let is_secret_check = CheckButton::builder().label("Secret (mask value)").build();
+        let is_secret_check = CheckButton::builder()
+            .label(i18n("Secret (mask value)"))
+            .build();
 
         grid.attach(&is_secret_check, 1, 3, 2, 1);
 
         // Row 4: Description
         let desc_label = Label::builder()
-            .label("Description:")
+            .label(i18n("Description:"))
             .halign(gtk4::Align::End)
             .build();
         let description_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Optional description")
+            .placeholder_text(i18n("Optional description"))
             .build();
 
         grid.attach(&desc_label, 0, 4, 1, 1);
@@ -4999,7 +5079,7 @@ impl ConnectionDialog {
         // Add inherited indicator if applicable
         if is_inherited {
             let inherited_label = Label::builder()
-                .label("(Inherited from global - override value below)")
+                .label(i18n("(Inherited from global - override value below)"))
                 .halign(gtk4::Align::Start)
                 .css_classes(["dim-label"])
                 .build();
@@ -5130,7 +5210,7 @@ impl ConnectionDialog {
 
         self.ssh_key_button.connect_clicked(move |_| {
             let file_dialog = FileDialog::builder()
-                .title("Select SSH Key")
+                .title(i18n("Select SSH Key"))
                 .modal(true)
                 .build();
 
@@ -5165,7 +5245,7 @@ impl ConnectionDialog {
 
         self.spice_ca_cert_button.connect_clicked(move |_| {
             let file_dialog = FileDialog::builder()
-                .title("Select CA Certificate")
+                .title(i18n("Select CA Certificate"))
                 .modal(true)
                 .build();
 
@@ -6225,8 +6305,8 @@ impl ConnectionDialog {
             if base_name.trim().is_empty() {
                 alert::show_error(
                     &window,
-                    "Cannot Load Password",
-                    "Please enter a connection name or host first.",
+                    &i18n("Cannot Load Password"),
+                    &i18n("Please enter a connection name or host first."),
                 );
                 return;
             }
@@ -6337,9 +6417,8 @@ impl ConnectionDialog {
                                         Ok(None) => {
                                             alert::show_error(
                                                 &window,
-                                                "Password Not Found",
-                                                "No password found in vault for this \
-                                                 connection.",
+                                                &i18n("Password Not Found"),
+                                                &i18n("No password found in vault for this connection."),
                                             );
                                         }
                                         Err(e) => {
@@ -6348,8 +6427,8 @@ impl ConnectionDialog {
                                             );
                                             alert::show_error(
                                                 &window,
-                                                "Failed to Load Password",
-                                                "Could not load password from vault.",
+                                                &i18n("Failed to Load Password"),
+                                                &i18n("Could not load password from vault."),
                                             );
                                         }
                                     }
@@ -6360,8 +6439,8 @@ impl ConnectionDialog {
                             btn.set_icon_name("document-open-symbolic");
                             alert::show_error(
                                 &window,
-                                "Vault Not Configured",
-                                "Please configure a secret backend in Settings → Secrets.",
+                                &i18n("Vault Not Configured"),
+                                &i18n("Please configure a secret backend in Settings → Secrets."),
                             );
                         }
                     } else {
@@ -6440,26 +6519,24 @@ impl ConnectionDialog {
                                         } else {
                                             alert::show_error(
                                                 &window,
-                                                "Password Not Found",
-                                                "No password found in vault for this \
-                                                 connection.",
+                                                &i18n("Password Not Found"),
+                                                &i18n("No password found in vault for this connection."),
                                             );
                                         }
                                     }
                                     Ok(None) => {
                                         alert::show_error(
                                             &window,
-                                            "Password Not Found",
-                                            "No password found in vault for this \
-                                             connection.",
+                                            &i18n("Password Not Found"),
+                                            &i18n("No password found in vault for this connection."),
                                         );
                                     }
                                     Err(e) => {
                                         tracing::error!("Failed to load password from vault: {e}");
                                         alert::show_error(
                                             &window,
-                                            "Failed to Load Password",
-                                            "Could not load password from vault.",
+                                            &i18n("Failed to Load Password"),
+                                            &i18n("Could not load password from vault."),
                                         );
                                     }
                                 }
@@ -6471,8 +6548,8 @@ impl ConnectionDialog {
                     // Prompt(0), Variable(2), Inherit(3), None(4)
                     alert::show_error(
                         &window,
-                        "Cannot Load Password",
-                        "Password loading is only available for Vault source.",
+                        &i18n("Cannot Load Password"),
+                        &i18n("Password loading is only available for Vault source."),
                     );
                 }
             }

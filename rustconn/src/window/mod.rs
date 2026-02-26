@@ -37,6 +37,7 @@ use crate::toast::ToastOverlay;
 
 use crate::dialogs::{ExportDialog, SettingsDialog};
 use crate::external_window::ExternalWindowManager;
+use crate::monitoring::MonitoringCoordinator;
 use crate::sidebar::{ConnectionItem, ConnectionSidebar};
 use crate::split_view::{SplitDirection, SplitViewBridge};
 use crate::state::SharedAppState;
@@ -70,6 +71,7 @@ pub struct MainWindow {
     overlay_split_view: adw::OverlaySplitView,
     external_window_manager: SharedExternalWindowManager,
     toast_overlay: SharedToastOverlay,
+    monitoring: Rc<MonitoringCoordinator>,
 }
 
 impl MainWindow {
@@ -167,7 +169,10 @@ impl MainWindow {
         // This ensures sidebar status is cleared when tabs are closed
         // Note: Split view cleanup is handled in connect_signals() where we have access to session_bridges
         let sidebar_for_close = sidebar.clone();
-        terminal_notebook.set_on_page_closed(move |_session_id, connection_id| {
+        let monitoring = Rc::new(MonitoringCoordinator::new());
+        let monitoring_for_close = monitoring.clone();
+        terminal_notebook.set_on_page_closed(move |session_id, connection_id| {
+            monitoring_for_close.stop_monitoring(session_id);
             sidebar_for_close.decrement_session_count(&connection_id.to_string(), false);
         });
 
@@ -276,6 +281,7 @@ impl MainWindow {
             overlay_split_view,
             external_window_manager,
             toast_overlay,
+            monitoring,
         };
 
         // Set up window actions
@@ -377,12 +383,14 @@ impl MainWindow {
         let window_weak = window.downgrade();
         let state_clone = state.clone();
         let notebook_clone = notebook.clone();
+        let monitoring_clone = self.monitoring.clone();
         settings_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
                 Self::show_settings_dialog(
                     win.upcast_ref(),
                     state_clone.clone(),
                     notebook_clone.clone(),
+                    monitoring_clone.clone(),
                 );
             }
         });
@@ -465,8 +473,14 @@ impl MainWindow {
         let state_clone = state.clone();
         let sidebar_clone = sidebar.clone();
         let notebook_clone = self.terminal_notebook.clone();
+        let monitoring_clone = self.monitoring.clone();
         connect_action.connect_activate(move |_, _| {
-            Self::connect_selected(&state_clone, &sidebar_clone, &notebook_clone);
+            Self::connect_selected(
+                &state_clone,
+                &sidebar_clone,
+                &notebook_clone,
+                &monitoring_clone,
+            );
         });
         window.add_action(&connect_action);
 
@@ -1075,9 +1089,17 @@ impl MainWindow {
         let state_clone = state.clone();
         let sidebar_clone = sidebar.clone();
         let notebook_clone = terminal_notebook.clone();
+        let monitoring_clone = self.monitoring.clone();
         command_palette_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
-                Self::show_command_palette(&win, &state_clone, &sidebar_clone, &notebook_clone, "");
+                Self::show_command_palette(
+                    &win,
+                    &state_clone,
+                    &sidebar_clone,
+                    &notebook_clone,
+                    &monitoring_clone,
+                    "",
+                );
             }
         });
         window.add_action(&command_palette_action);
@@ -1089,6 +1111,7 @@ impl MainWindow {
         let state_clone = state.clone();
         let sidebar_clone = sidebar.clone();
         let notebook_clone = terminal_notebook.clone();
+        let monitoring_clone = self.monitoring.clone();
         command_palette_commands_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
                 Self::show_command_palette(
@@ -1096,6 +1119,7 @@ impl MainWindow {
                     &state_clone,
                     &sidebar_clone,
                     &notebook_clone,
+                    &monitoring_clone,
                     ">",
                 );
             }
@@ -1559,6 +1583,7 @@ impl MainWindow {
         let notebook_clone = terminal_notebook.clone();
         let sidebar_clone = sidebar.clone();
         let split_view_clone = self.split_view.clone();
+        let monitoring_clone = self.monitoring.clone();
         run_snippet_for_conn_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
                 // Get selected connection from sidebar
@@ -1594,6 +1619,7 @@ impl MainWindow {
                             &notebook_clone,
                             &split_view_clone,
                             &sidebar_clone,
+                            &monitoring_clone,
                             id,
                         );
 
@@ -1666,6 +1692,7 @@ impl MainWindow {
         let state_clone = state.clone();
         let notebook_clone = terminal_notebook.clone();
         let sidebar_clone = sidebar.clone();
+        let monitoring_clone = self.monitoring.clone();
         manage_clusters_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
                 clusters::show_clusters_manager(
@@ -1673,6 +1700,7 @@ impl MainWindow {
                     state_clone.clone(),
                     notebook_clone.clone(),
                     sidebar_clone.clone(),
+                    monitoring_clone.clone(),
                 );
             }
         });
@@ -1805,6 +1833,7 @@ impl MainWindow {
         let notebook_clone = self.terminal_notebook.clone();
         let sidebar_clone = self.sidebar.clone();
         let split_view_clone = self.split_view.clone();
+        let monitoring_clone = self.monitoring.clone();
         show_history_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
                 let state_ref = state_clone.borrow();
@@ -1819,6 +1848,7 @@ impl MainWindow {
                 let notebook_for_connect = notebook_clone.clone();
                 let sidebar_for_connect = sidebar_clone.clone();
                 let split_view_for_connect = split_view_clone.clone();
+                let monitoring_for_connect = monitoring_clone.clone();
                 dialog.connect_on_connect(move |entry| {
                     if entry.is_quick_connect() {
                         tracing::warn!("Cannot reconnect to quick connect from history");
@@ -1833,6 +1863,7 @@ impl MainWindow {
                             notebook_for_connect.clone(),
                             split_view_for_connect.clone(),
                             sidebar_for_connect.clone(),
+                            monitoring_for_connect.clone(),
                             entry.connection_id,
                         );
                     }
@@ -2959,12 +2990,14 @@ impl MainWindow {
         let sidebar_clone = sidebar.clone();
         let notebook_clone = terminal_notebook.clone();
         let split_view_clone = split_view.clone();
+        let monitoring_clone = self.monitoring.clone();
         sidebar.list_view().connect_activate(move |_, position| {
             Self::connect_at_position_with_split(
                 &state_clone,
                 &sidebar_clone,
                 &notebook_clone,
                 &split_view_clone,
+                &monitoring_clone,
                 position,
             );
         });
@@ -3260,6 +3293,7 @@ impl MainWindow {
         state: &SharedAppState,
         sidebar: &SharedSidebar,
         notebook: &SharedNotebook,
+        monitoring: &types::SharedMonitoring,
     ) {
         // Get selected item from sidebar using the sidebar's method
         let Some(conn_item) = sidebar.get_selected_item() else {
@@ -3273,7 +3307,7 @@ impl MainWindow {
 
         let id_str = conn_item.id();
         if let Ok(conn_id) = Uuid::parse_str(&id_str) {
-            Self::start_connection(state, notebook, sidebar, conn_id);
+            Self::start_connection(state, notebook, sidebar, monitoring, conn_id);
         }
     }
 
@@ -3283,6 +3317,7 @@ impl MainWindow {
         sidebar: &SharedSidebar,
         notebook: &SharedNotebook,
         split_view: &SharedSplitView,
+        monitoring: &types::SharedMonitoring,
         position: u32,
     ) {
         // Get the item at position from the tree model (not the flat store)
@@ -3301,6 +3336,7 @@ impl MainWindow {
                         notebook.clone(),
                         split_view.clone(),
                         sidebar.clone(),
+                        monitoring.clone(),
                         conn_id,
                     );
                 }
@@ -3322,6 +3358,7 @@ impl MainWindow {
         notebook: SharedNotebook,
         split_view: SharedSplitView,
         sidebar: SharedSidebar,
+        monitoring: types::SharedMonitoring,
         connection_id: Uuid,
     ) {
         // Get connection info and cached credentials (fast, non-blocking)
@@ -3357,6 +3394,7 @@ impl MainWindow {
                 notebook,
                 split_view,
                 sidebar,
+                monitoring,
                 connection_id,
                 protocol_type,
                 Some(rustconn_core::Credentials::with_password(
@@ -3372,6 +3410,7 @@ impl MainWindow {
         let notebook_clone = notebook.clone();
         let split_view_clone = split_view.clone();
         let sidebar_clone = sidebar.clone();
+        let monitoring_clone = monitoring.clone();
 
         {
             let Ok(state_ref) = state.try_borrow() else {
@@ -3393,6 +3432,7 @@ impl MainWindow {
                     notebook_clone,
                     split_view_clone,
                     sidebar_clone,
+                    monitoring_clone,
                     connection_id,
                     protocol_type,
                     resolved_credentials,
@@ -3412,6 +3452,7 @@ impl MainWindow {
         notebook: SharedNotebook,
         split_view: SharedSplitView,
         sidebar: SharedSidebar,
+        monitoring: types::SharedMonitoring,
         connection_id: Uuid,
         protocol_type: rustconn_core::ProtocolType,
         resolved_credentials: Option<rustconn_core::Credentials>,
@@ -3437,6 +3478,7 @@ impl MainWindow {
                     notebook,
                     split_view,
                     sidebar,
+                    monitoring,
                     connection_id,
                     resolved_credentials,
                     cached_credentials,
@@ -3461,6 +3503,7 @@ impl MainWindow {
                     &notebook,
                     &split_view,
                     &sidebar,
+                    &monitoring,
                     connection_id,
                 );
             }
@@ -3631,6 +3674,7 @@ impl MainWindow {
         notebook: SharedNotebook,
         split_view: SharedSplitView,
         sidebar: SharedSidebar,
+        monitoring: types::SharedMonitoring,
         connection_id: Uuid,
         resolved_credentials: Option<rustconn_core::Credentials>,
         cached_credentials: Option<(String, String, String)>,
@@ -3659,6 +3703,7 @@ impl MainWindow {
             let notebook_clone = notebook.clone();
             let split_view_clone = split_view.clone();
             let sidebar_clone = sidebar.clone();
+            let monitoring_clone = monitoring.clone();
 
             crate::utils::spawn_blocking_with_callback(
                 move || rustconn_core::check_port(&host, port, timeout),
@@ -3671,6 +3716,7 @@ impl MainWindow {
                                 notebook_clone,
                                 split_view_clone,
                                 sidebar_clone,
+                                monitoring_clone,
                                 connection_id,
                                 resolved_credentials,
                                 cached_credentials,
@@ -3704,6 +3750,7 @@ impl MainWindow {
                 notebook,
                 split_view,
                 sidebar,
+                monitoring,
                 connection_id,
                 resolved_credentials,
                 cached_credentials,
@@ -3718,6 +3765,7 @@ impl MainWindow {
         notebook: SharedNotebook,
         split_view: SharedSplitView,
         sidebar: SharedSidebar,
+        monitoring: types::SharedMonitoring,
         connection_id: Uuid,
         resolved_credentials: Option<rustconn_core::Credentials>,
         cached_credentials: Option<(String, String, String)>,
@@ -3734,6 +3782,7 @@ impl MainWindow {
                 &notebook,
                 &split_view,
                 &sidebar,
+                &monitoring,
                 connection_id,
             );
             return;
@@ -3746,6 +3795,7 @@ impl MainWindow {
                 &notebook,
                 &split_view,
                 &sidebar,
+                &monitoring,
                 connection_id,
             );
             return;
@@ -3836,12 +3886,14 @@ impl MainWindow {
         notebook: &SharedNotebook,
         split_view: &SharedSplitView,
         sidebar: &SharedSidebar,
+        monitoring: &types::SharedMonitoring,
         connection_id: Uuid,
     ) -> Option<Uuid> {
         // Update status to connecting
         sidebar.update_connection_status(&connection_id.to_string(), "connecting");
 
-        let session_id = Self::start_connection(state, notebook, sidebar, connection_id)?;
+        let session_id =
+            Self::start_connection(state, notebook, sidebar, monitoring, connection_id)?;
 
         // Get session info to check protocol
         if let Some(info) = notebook.get_session_info(session_id) {
@@ -3920,6 +3972,7 @@ impl MainWindow {
         state: &SharedAppState,
         notebook: &SharedNotebook,
         sidebar: &SharedSidebar,
+        monitoring: &types::SharedMonitoring,
         connection_id: Uuid,
     ) -> Option<Uuid> {
         let state_ref = state.borrow();
@@ -3951,14 +4004,70 @@ impl MainWindow {
         drop(state_ref);
 
         match protocol.as_str() {
-            "ssh" => protocols::start_ssh_connection(
-                state,
-                notebook,
-                sidebar,
-                connection_id,
-                &conn_clone,
-                logging_enabled,
-            ),
+            "ssh" => {
+                let session_id = protocols::start_ssh_connection(
+                    state,
+                    notebook,
+                    sidebar,
+                    connection_id,
+                    &conn_clone,
+                    logging_enabled,
+                );
+
+                // Start remote monitoring for SSH sessions
+                if let Some(sid) = session_id
+                    && let Ok(state_ref) = state.try_borrow()
+                {
+                    let settings = state_ref.settings().monitoring.clone();
+                    let mon_enabled = conn_clone
+                        .monitoring_config
+                        .as_ref()
+                        .map_or(settings.enabled, |mc| mc.is_enabled(&settings));
+                    if mon_enabled {
+                        let effective = rustconn_core::MonitoringSettings {
+                            enabled: true,
+                            interval_secs: conn_clone.monitoring_config.as_ref().map_or_else(
+                                || settings.effective_interval_secs(),
+                                |mc| mc.effective_interval(&settings),
+                            ),
+                            ..settings
+                        };
+                        if let Some(container) = notebook.get_session_container(sid) {
+                            let identity_file =
+                                if let rustconn_core::ProtocolConfig::Ssh(ref ssh_cfg) =
+                                    conn_clone.protocol_config
+                                {
+                                    ssh_cfg
+                                        .key_path
+                                        .as_ref()
+                                        .map(|p| p.to_string_lossy().to_string())
+                                } else {
+                                    None
+                                };
+                            // Retrieve cached password for sshpass-based monitoring
+                            let cached_pw = state_ref
+                                .get_cached_credentials(connection_id)
+                                .and_then(|c| {
+                                    use secrecy::ExposeSecret;
+                                    let pw = c.password.expose_secret().to_string();
+                                    if pw.is_empty() { None } else { Some(pw) }
+                                });
+                            monitoring.start_monitoring(
+                                sid,
+                                &container,
+                                &effective,
+                                &conn_clone.host,
+                                conn_clone.port,
+                                conn_clone.username.as_deref(),
+                                identity_file.as_deref(),
+                                cached_pw.as_deref(),
+                            );
+                        }
+                    }
+                }
+
+                session_id
+            }
             "vnc" => protocols::start_vnc_connection(
                 state,
                 notebook,
@@ -4458,6 +4567,7 @@ impl MainWindow {
         state: &SharedAppState,
         sidebar: &SharedSidebar,
         notebook: &SharedNotebook,
+        monitoring: &types::SharedMonitoring,
         prefix: &str,
     ) {
         let gtk_window: &gtk4::Window = window.upcast_ref();
@@ -4476,10 +4586,17 @@ impl MainWindow {
         let state_clone = state.clone();
         let sidebar_clone = sidebar.clone();
         let notebook_clone = notebook.clone();
+        let monitoring_clone = monitoring.clone();
         let window_weak = window.downgrade();
         palette.connect_on_action(move |action| match action {
             rustconn_core::search::command_palette::CommandPaletteAction::Connect(uuid) => {
-                Self::start_connection(&state_clone, &notebook_clone, &sidebar_clone, uuid);
+                Self::start_connection(
+                    &state_clone,
+                    &notebook_clone,
+                    &sidebar_clone,
+                    &monitoring_clone,
+                    uuid,
+                );
             }
             rustconn_core::search::command_palette::CommandPaletteAction::GtkAction(name) => {
                 if let Some(win) = window_weak.upgrade() {
@@ -4542,6 +4659,7 @@ impl MainWindow {
         window: &adw::ApplicationWindow,
         state: SharedAppState,
         notebook: SharedNotebook,
+        monitoring: Rc<crate::monitoring::MonitoringCoordinator>,
     ) {
         let mut dialog = SettingsDialog::new(None);
 
@@ -4570,6 +4688,9 @@ impl MainWindow {
 
                 // Apply protocol tab coloring setting
                 notebook.set_color_tabs_by_protocol(settings.ui.color_tabs_by_protocol);
+
+                // Apply monitoring settings to active bars
+                monitoring.apply_settings_to_all(&settings.monitoring);
 
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
                     if let Err(e) = state_mut.update_settings(settings) {
@@ -4787,6 +4908,7 @@ impl MainWindow {
                         &self.terminal_notebook,
                         &self.split_view,
                         &self.sidebar,
+                        &self.monitoring,
                         *id,
                     );
                 } else {

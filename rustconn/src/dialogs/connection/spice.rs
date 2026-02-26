@@ -96,11 +96,11 @@ fn create_security_group() -> (
     ca_cert_box.set_valign(gtk4::Align::Center);
     let ca_cert_entry = Entry::builder()
         .hexpand(true)
-        .placeholder_text("Path to CA certificate")
+        .placeholder_text(i18n("Path to CA certificate"))
         .build();
     let ca_cert_button = Button::builder()
         .icon_name("folder-open-symbolic")
-        .tooltip_text("Browse for certificate")
+        .tooltip_text(i18n("Browse for certificate"))
         .build();
     ca_cert_box.append(&ca_cert_entry);
     ca_cert_box.append(&ca_cert_button);
@@ -147,7 +147,7 @@ fn create_features_group() -> (adw::PreferencesGroup, CheckButton, CheckButton, 
     features_group.add(&clipboard_row);
 
     // Image compression
-    let compression_list = StringList::new(&["Auto", "Off", "GLZ", "LZ", "QUIC"]);
+    let compression_list = StringList::new(&[&i18n("Auto"), &i18n("Off"), "GLZ", "LZ", "QUIC"]);
     let compression_dropdown = DropDown::new(Some(compression_list), gtk4::Expression::NONE);
     compression_dropdown.set_selected(0);
     compression_dropdown.set_valign(gtk4::Align::Center);

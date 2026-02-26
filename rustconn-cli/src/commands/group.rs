@@ -18,11 +18,13 @@ pub fn cmd_group(config_path: Option<&Path>, subcmd: GroupCommands) -> Result<()
             name,
             parent,
             description,
+            icon,
         } => cmd_group_create(
             config_path,
             &name,
             parent.as_deref(),
             description.as_deref(),
+            icon.as_deref(),
         ),
         GroupCommands::Delete { name } => cmd_group_delete(config_path, &name),
         GroupCommands::AddConnection { group, connection } => {
@@ -118,6 +120,13 @@ fn cmd_group_show(config_path: Option<&Path>, name: &str) -> Result<(), CliError
     println!("  ID:   {}", group.id);
     println!("  Name: {}", group.name);
 
+    if let Some(ref desc) = group.description {
+        println!("  Description: {desc}");
+    }
+    if let Some(ref icon) = group.icon {
+        println!("  Icon: {icon}");
+    }
+
     if let Some(parent_id) = group.parent_id {
         let parent_name = groups
             .iter()
@@ -143,7 +152,8 @@ fn cmd_group_create(
     config_path: Option<&Path>,
     name: &str,
     parent: Option<&str>,
-    _description: Option<&str>,
+    description: Option<&str>,
+    icon: Option<&str>,
 ) -> Result<(), CliError> {
     let config_manager = create_config_manager(config_path)?;
 
@@ -157,12 +167,19 @@ fn cmd_group_create(
         )));
     }
 
-    let group = if let Some(parent_name) = parent {
+    let mut group = if let Some(parent_name) = parent {
         let parent_group = find_group(&groups, parent_name)?;
         ConnectionGroup::with_parent(name.to_string(), parent_group.id)
     } else {
         ConnectionGroup::new(name.to_string())
     };
+
+    if let Some(desc) = description {
+        group.description = Some(desc.to_string());
+    }
+    if let Some(ic) = icon {
+        group.icon = Some(ic.to_string());
+    }
 
     let id = group.id;
     groups.push(group);

@@ -12,7 +12,7 @@ use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 
 /// Creates the SSH Agent settings page using AdwPreferencesPage
 #[allow(clippy::type_complexity)]
@@ -68,7 +68,7 @@ pub fn create_ssh_agent_page() -> (
     let ssh_agent_refresh_button = Button::builder()
         .icon_name("view-refresh-symbolic")
         .valign(gtk4::Align::Center)
-        .tooltip_text("Refresh status")
+        .tooltip_text(i18n("Refresh status"))
         .build();
 
     let buttons_box = GtkBox::builder()
@@ -156,7 +156,7 @@ pub fn load_ssh_agent_settings(
     ssh_agent_manager: &Rc<RefCell<SshAgentManager>>,
 ) {
     // Show loading state immediately
-    ssh_agent_status_label.set_text("Checking...");
+    ssh_agent_status_label.set_text(&i18n("Checking..."));
     ssh_agent_status_label.remove_css_class("error");
     ssh_agent_status_label.remove_css_class("success");
     ssh_agent_status_label.add_css_class("dim-label");
@@ -202,7 +202,7 @@ pub fn load_ssh_agent_settings(
             if let Some(ref socket_path) = socket_path_clone {
                 socket_label.set_text(socket_path);
             } else {
-                socket_label.set_text("Not available");
+                socket_label.set_text(&i18n("Not available"));
             }
 
             // Clear loading row
@@ -212,11 +212,11 @@ pub fn load_ssh_agent_settings(
 
             if let Ok(agent_status) = status {
                 let status_text = if agent_status.running {
-                    "Running"
+                    i18n("Running")
                 } else {
-                    "Not running"
+                    i18n("Not running")
                 };
-                status_label.set_text(status_text);
+                status_label.set_text(&status_text);
                 status_label.remove_css_class("error");
                 status_label.remove_css_class("dim-label");
 
@@ -327,7 +327,7 @@ pub fn populate_available_keys_list(
                     let load_button = Button::builder()
                         .icon_name("list-add-symbolic")
                         .valign(gtk4::Align::Center)
-                        .tooltip_text("Load this key")
+                        .tooltip_text(i18n("Load this key"))
                         .build();
 
                     // Connect load button handler
@@ -390,7 +390,7 @@ fn add_key_with_passphrase_dialog(
 
     // Create passphrase dialog using adw::Window
     let dialog = adw::Window::builder()
-        .title(&format!("Add Key: {key_name}"))
+        .title(&i18n_f("Add Key: {}", &[&key_name]))
         .transient_for(parent_window)
         .modal(true)
         .default_width(400)
@@ -423,7 +423,7 @@ fn add_key_with_passphrase_dialog(
         .build();
 
     let passphrase_entry = gtk4::PasswordEntry::builder()
-        .placeholder_text("Passphrase (optional)")
+        .placeholder_text(i18n("Passphrase (optional)"))
         .show_peek_icon(true)
         .hexpand(true)
         .build();
@@ -517,7 +517,7 @@ pub fn show_add_key_file_chooser(
     };
 
     let file_dialog = gtk4::FileDialog::builder()
-        .title("Select SSH Key File")
+        .title(i18n("Select SSH Key File"))
         .modal(true)
         .build();
 
@@ -574,7 +574,7 @@ fn create_loaded_key_row(
     let remove_button = Button::builder()
         .icon_name("user-trash-symbolic")
         .valign(gtk4::Align::Center)
-        .tooltip_text("Remove from agent")
+        .tooltip_text(i18n("Remove from agent"))
         .css_classes(["destructive-action", "flat"])
         .build();
 

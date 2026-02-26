@@ -153,6 +153,15 @@ fn cmd_snippet_show(config_path: Option<&Path>, name: &str) -> Result<(), CliErr
         println!("  Tags:     {}", snippet.tags.join(", "));
     }
 
+    println!(
+        "  Created:  {}",
+        snippet.created_at.format("%Y-%m-%d %H:%M")
+    );
+    println!(
+        "  Updated:  {}",
+        snippet.updated_at.format("%Y-%m-%d %H:%M")
+    );
+
     let variables = SnippetManager::extract_variables(&snippet.command);
     if !variables.is_empty() {
         println!("\nVariables:");

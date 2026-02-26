@@ -39,6 +39,7 @@ pub mod ffi;
 pub mod flatpak;
 pub mod import;
 pub mod models;
+pub mod monitoring;
 pub mod password_generator;
 pub mod performance;
 pub mod progress;
@@ -259,4 +260,11 @@ pub use vnc_client::{
 pub use wol::{
     DEFAULT_BROADCAST_ADDRESS, DEFAULT_WOL_PORT, DEFAULT_WOL_WAIT_SECONDS, MAGIC_PACKET_SIZE,
     MacAddress, WolConfig, WolError, WolResult, generate_magic_packet, send_magic_packet, send_wol,
+};
+
+pub use monitoring::{
+    CollectorHandle, CpuSnapshot, DiskMetrics, LoadAverage, METRICS_COMMAND, MemoryMetrics,
+    MetricsComputer, MetricsEvent, MetricsParser, MonitoringConfig, MonitoringError,
+    MonitoringResult, MonitoringSettings, NetworkMetrics, NetworkSnapshot, RemoteMetrics,
+    RemoteOsType, SYSTEM_INFO_COMMAND, SystemInfo, ssh_exec_factory, start_collector,
 };

@@ -54,6 +54,7 @@ pub mod embedded_vnc_types;
 pub mod embedded_vnc_ui;
 pub mod external_window;
 pub mod i18n;
+pub mod monitoring;
 pub mod session;
 mod sidebar;
 mod sidebar_types;

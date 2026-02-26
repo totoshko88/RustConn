@@ -890,6 +890,7 @@ rustconn/src/
 │   ├── thread.rs          # FreeRDP thread with consolidated mutex
 │   ├── types.rs           # Shared types
 │   └── ui.rs              # RDP widget
+├── monitoring.rs           # MonitoringBar widget, MonitoringCoordinator
 └── utils.rs               # Async helpers, utilities
 
 rustconn-core/src/
@@ -926,6 +927,13 @@ rustconn-core/src/
 │   ├── logger.rs          # Session logging with sanitization
 │   ├── restore.rs         # Session state persistence
 │   └── ...
+├── monitoring/            # Remote host metrics (agentless)
+│   ├── mod.rs             # Module exports, re-exports
+│   ├── metrics.rs         # Data models (RemoteMetrics, SystemInfo, LoadAverage)
+│   ├── parser.rs          # Shell command output parsing
+│   ├── collector.rs       # MetricsComputer, CollectorHandle, async polling
+│   ├── settings.rs        # MonitoringSettings, MonitoringConfig
+│   └── ssh_exec.rs        # SSH command execution factory
 ├── import/                # Format importers
 │   ├── mod.rs             # Module exports
 │   ├── traits.rs          # ImportSource trait, ImportStatistics
@@ -941,6 +949,77 @@ rustconn-core/src/
 ├── snap.rs                # Snap environment detection and paths
 └── ...
 ```
+
+## Remote Monitoring Architecture
+
+Agentless system metrics collection for SSH, Telnet, and Kubernetes sessions. Parses `/proc/*` and `df` output from remote Linux hosts without installing any agent.
+
+### Data Flow
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ rustconn-core/src/monitoring/                                    │
+│                                                                  │
+│  METRICS_COMMAND (shell)  ──▶  MetricsParser::parse_metrics()    │
+│  SYSTEM_INFO_COMMAND      ──▶  MetricsParser::parse_system_info()│
+│                                                                  │
+│  CollectorHandle ◀── start_collector() ──▶ MetricsComputer       │
+│       │                                        │                 │
+│       │  MetricsEvent::Metrics(RemoteMetrics)  │                 │
+│       │  MetricsEvent::SystemInfo(SystemInfo)  │                 │
+│       ▼                                        │                 │
+│  tokio::sync::mpsc channel                     │                 │
+└──────────────────────────────────────────────────────────────────┘
+                        │
+                        ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ rustconn/src/monitoring.rs                                       │
+│                                                                  │
+│  MonitoringCoordinator                                           │
+│       │  manages per-session MonitoringBar instances              │
+│       │  starts/stops collectors per session                     │
+│       ▼                                                          │
+│  MonitoringBar (GTK widget)                                      │
+│       [CPU ██░░ 45%] [RAM ██░░ 62%] [Disk ██░░ 78%]            │
+│       [1.23 0.98 0.76] [↓ 1.2 MB/s ↑ 0.3 MB/s]                │
+│       [Ubuntu 24.04 (6.8.0) · x86_64 · 15.6 GiB · 8C/16T]    │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Core Layer (`rustconn-core/src/monitoring/`)
+
+| File | Purpose |
+|------|---------|
+| `metrics.rs` | Data models: `RemoteMetrics`, `MemoryMetrics`, `DiskMetrics`, `NetworkMetrics`, `LoadAverage`, `SystemInfo`, `CpuSnapshot`, `NetworkSnapshot` |
+| `parser.rs` | `MetricsParser` — parses shell output into metric structs; `METRICS_COMMAND` and `SYSTEM_INFO_COMMAND` shell one-liners |
+| `collector.rs` | `MetricsComputer` — computes deltas between snapshots (CPU%, network throughput); `CollectorHandle` — async polling loop; `MetricsEvent` enum |
+| `settings.rs` | `MonitoringSettings` — global toggles (enabled, interval, show_cpu/memory/disk/network/load/system_info); `MonitoringConfig` — per-connection override |
+| `ssh_exec.rs` | Factory for executing shell commands over the existing session |
+
+### GUI Layer (`rustconn/src/monitoring.rs`)
+
+| Type | Purpose |
+|------|---------|
+| `MonitoringBar` | GTK widget with `LevelBar` + `Label` for each metric; `update()` for periodic metrics, `update_system_info()` for one-time static info |
+| `MonitoringCoordinator` | Manages per-session `MonitoringBar` instances; starts/stops collectors; applies settings changes to all active bars |
+
+### Shell Commands
+
+Two shell one-liners are sent to the remote host:
+
+- `METRICS_COMMAND` — runs every polling interval; reads `/proc/stat`, `/proc/meminfo`, `/proc/net/dev`, `/proc/loadavg`, and `df /`
+- `SYSTEM_INFO_COMMAND` — runs once at monitoring start; reads `/etc/os-release`, `uname -r`, `/proc/uptime`, `/proc/meminfo` (total RAM), `/proc/cpuinfo` (cores/threads), and `uname -m` (architecture)
+
+### Settings
+
+Global settings in `MonitoringSettings` (stored in `config.toml` under `[monitoring]`):
+- `enabled` — global toggle (default: false)
+- `interval_secs` — polling interval 1–60s (default: 3)
+- `show_cpu`, `show_memory`, `show_disk`, `show_network`, `show_load`, `show_system_info` — per-metric visibility toggles
+
+Per-connection override via `MonitoringConfig` on the `Connection` model:
+- `enabled: Option<bool>` — override global toggle
+- `interval_secs: Option<u8>` — override polling interval
 
 ## Testing
 

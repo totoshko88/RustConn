@@ -3,7 +3,7 @@
 //! Provides a simple dialog for entering credentials when connecting
 //! to RDP/VNC sessions that require authentication.
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -155,7 +155,7 @@ impl PasswordDialog {
             .build();
         let domain_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("(optional)")
+            .placeholder_text(i18n("(optional)"))
             .build();
         domain_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
             domain_label.upcast_ref()
@@ -171,7 +171,7 @@ impl PasswordDialog {
             .build();
         let username_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("username")
+            .placeholder_text(i18n("username"))
             .build();
         username_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
             username_label.upcast_ref(),
@@ -206,7 +206,7 @@ impl PasswordDialog {
         // Save to KeePass button (hidden by default)
         let migrate_button = Button::builder()
             .label(i18n("Save to KeePass"))
-            .tooltip_text("Migrate credentials from system keyring to KeePass")
+            .tooltip_text(i18n("Migrate credentials from system keyring to KeePass"))
             .visible(false)
             .build();
         grid.attach(&migrate_button, 1, row, 1, 1);
@@ -297,7 +297,7 @@ impl PasswordDialog {
 
     /// Sets the connection name in the title
     pub fn set_connection_name(&self, name: &str) {
-        self.dialog.set_title(&format!("Connect to {name}"));
+        self.dialog.set_title(&i18n_f("Connect to {}", &[name]));
     }
 
     /// Shows or hides the "Save to KeePass" migration button
@@ -367,7 +367,8 @@ impl PasswordDialog {
     /// # Requirements Coverage
     /// - Requirement 9.3: Show loading indicator during async resolution
     pub fn show_loading(&self, message: Option<&str>) {
-        let msg = message.unwrap_or("Resolving credentials...");
+        let default_msg = i18n("Resolving credentials...");
+        let msg = message.unwrap_or(&default_msg);
         self.spinner_label.set_text(msg);
         self.spinner.set_spinning(true);
         self.spinner_box.set_visible(true);

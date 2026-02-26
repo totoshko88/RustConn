@@ -71,7 +71,6 @@ proptest! {
             let options = ExportOptions::new(*format, PathBuf::from(&path));
             prop_assert_eq!(options.format, *format);
             prop_assert_eq!(options.output_path, PathBuf::from(&path));
-            prop_assert!(!options.include_passwords); // Default
             prop_assert!(options.include_groups); // Default
         }
     }
@@ -79,14 +78,11 @@ proptest! {
     /// Property: ExportOptions builder methods work correctly
     #[test]
     fn export_options_builder_works(
-        include_passwords in proptest::bool::ANY,
         include_groups in proptest::bool::ANY,
     ) {
         let options = ExportOptions::new(ExportFormat::Ansible, PathBuf::from("/tmp/test.ini"))
-            .with_passwords(include_passwords)
             .with_groups(include_groups);
 
-        prop_assert_eq!(options.include_passwords, include_passwords);
         prop_assert_eq!(options.include_groups, include_groups);
     }
 
@@ -242,8 +238,7 @@ fn test_export_format_debug() {
 fn test_export_options_default_values() {
     let options = ExportOptions::new(ExportFormat::Asbru, PathBuf::from("/tmp/test.yml"));
 
-    // Default: no passwords, include groups
-    assert!(!options.include_passwords);
+    // Default: include groups
     assert!(options.include_groups);
 }
 

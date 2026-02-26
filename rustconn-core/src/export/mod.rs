@@ -117,8 +117,6 @@ impl std::fmt::Display for ExportFormat {
 pub struct ExportOptions {
     /// The export format to use
     pub format: ExportFormat,
-    /// Whether to include passwords in the export (if supported)
-    pub include_passwords: bool,
     /// Whether to include group hierarchy in the export
     pub include_groups: bool,
     /// Output path (file or directory depending on format)
@@ -131,17 +129,9 @@ impl ExportOptions {
     pub const fn new(format: ExportFormat, output_path: PathBuf) -> Self {
         Self {
             format,
-            include_passwords: false,
             include_groups: true,
             output_path,
         }
-    }
-
-    /// Sets whether to include passwords
-    #[must_use]
-    pub const fn with_passwords(mut self, include: bool) -> Self {
-        self.include_passwords = include;
-        self
     }
 
     /// Sets whether to include groups
@@ -410,7 +400,6 @@ mod tests {
     fn test_export_options_new() {
         let options = ExportOptions::new(ExportFormat::Ansible, PathBuf::from("/tmp/test.ini"));
         assert_eq!(options.format, ExportFormat::Ansible);
-        assert!(!options.include_passwords);
         assert!(options.include_groups);
         assert_eq!(options.output_path, PathBuf::from("/tmp/test.ini"));
     }
@@ -418,10 +407,8 @@ mod tests {
     #[test]
     fn test_export_options_builder() {
         let options = ExportOptions::new(ExportFormat::SshConfig, PathBuf::from("/tmp/config"))
-            .with_passwords(true)
             .with_groups(false);
 
-        assert!(options.include_passwords);
         assert!(!options.include_groups);
     }
 

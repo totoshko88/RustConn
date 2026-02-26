@@ -3,6 +3,7 @@
 //! This module defines the application-wide settings stored in config.toml.
 
 use crate::models::HistorySettings;
+use crate::monitoring::MonitoringSettings;
 use crate::variables::Variable;
 use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
@@ -35,6 +36,9 @@ pub struct AppSettings {
     /// Custom keybinding overrides
     #[serde(default)]
     pub keybindings: super::keybindings::KeybindingSettings,
+    /// Remote host monitoring settings
+    #[serde(default)]
+    pub monitoring: MonitoringSettings,
 }
 
 /// Terminal-related settings

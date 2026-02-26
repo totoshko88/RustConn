@@ -103,23 +103,27 @@ fn create_display_group() -> (
         .build();
 
     // Client mode dropdown
+    let client_mode_items: Vec<String> = vec![
+        i18n(RdpClientMode::Embedded.display_name()),
+        i18n(RdpClientMode::External.display_name()),
+    ];
+    let client_mode_strs: Vec<&str> = client_mode_items.iter().map(String::as_str).collect();
     let (client_mode_row, client_mode_dropdown) = DropdownRowBuilder::new("Client Mode")
         .subtitle("Embedded renders in tab, External opens separate window")
-        .items(&[
-            RdpClientMode::Embedded.display_name(),
-            RdpClientMode::External.display_name(),
-        ])
+        .items(&client_mode_strs)
         .build();
     display_group.add(&client_mode_row);
 
     // Performance mode dropdown
+    let perf_items: Vec<String> = vec![
+        i18n(RdpPerformanceMode::Quality.display_name()),
+        i18n(RdpPerformanceMode::Balanced.display_name()),
+        i18n(RdpPerformanceMode::Speed.display_name()),
+    ];
+    let perf_strs: Vec<&str> = perf_items.iter().map(String::as_str).collect();
     let (perf_row, performance_mode_dropdown) = DropdownRowBuilder::new("Performance Mode")
         .subtitle("Quality/speed tradeoff for image rendering")
-        .items(&[
-            RdpPerformanceMode::Quality.display_name(),
-            RdpPerformanceMode::Balanced.display_name(),
-            RdpPerformanceMode::Speed.display_name(),
-        ])
+        .items(&perf_strs)
         .selected(1) // Default to Balanced
         .build();
     display_group.add(&perf_row);
@@ -152,26 +156,29 @@ fn create_display_group() -> (
     display_group.add(&resolution_row);
 
     // Color depth
+    let color_items: Vec<String> = vec![
+        i18n("32-bit (True Color)"),
+        i18n("24-bit"),
+        i18n("16-bit (High Color)"),
+        i18n("15-bit"),
+        i18n("8-bit"),
+    ];
+    let color_strs: Vec<&str> = color_items.iter().map(String::as_str).collect();
     let (color_row, color_dropdown) = DropdownRowBuilder::new("Color Depth")
         .subtitle("Higher values provide better quality")
-        .items(&[
-            "32-bit (True Color)",
-            "24-bit",
-            "16-bit (High Color)",
-            "15-bit",
-            "8-bit",
-        ])
+        .items(&color_strs)
         .build();
     display_group.add(&color_row);
 
     // Scale override dropdown (for embedded mode)
-    let scale_items: Vec<&str> = ScaleOverride::all()
+    let scale_items: Vec<String> = ScaleOverride::all()
         .iter()
-        .map(|s| s.display_name())
+        .map(|s| i18n(s.display_name()))
         .collect();
+    let scale_strs: Vec<&str> = scale_items.iter().map(String::as_str).collect();
     let (scale_row, scale_override_dropdown) = DropdownRowBuilder::new("Display Scale")
         .subtitle("Override HiDPI scaling for embedded viewer")
-        .items(&scale_items)
+        .items(&scale_strs)
         .build();
     display_group.add(&scale_row);
 

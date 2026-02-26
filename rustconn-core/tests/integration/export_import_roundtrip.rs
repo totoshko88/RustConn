@@ -538,7 +538,6 @@ fn test_export_options_creation() {
 
     assert_eq!(options.format, ExportFormat::Ansible);
     assert_eq!(options.output_path, output_path);
-    assert!(!options.include_passwords);
     assert!(options.include_groups);
 }
 

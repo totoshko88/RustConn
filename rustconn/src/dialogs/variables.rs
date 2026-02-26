@@ -200,7 +200,7 @@ impl VariablesDialog {
             .build();
         let name_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("variable_name")
+            .placeholder_text(i18n("variable_name"))
             .build();
         let delete_button = Button::builder()
             .icon_name("user-trash-symbolic")
@@ -220,12 +220,12 @@ impl VariablesDialog {
         // Plain value entry (visible when not secret)
         let value_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Variable value")
+            .placeholder_text(i18n("Variable value"))
             .build();
         // Secret value entry (visible when secret, with masked input)
         let secret_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Password value")
+            .placeholder_text(i18n("Password value"))
             .visibility(false)
             .build();
         // Show/Hide toggle button (secret mode only)
@@ -264,7 +264,7 @@ impl VariablesDialog {
             .build();
         let description_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Optional description")
+            .placeholder_text(i18n("Optional description"))
             .build();
 
         grid.attach(&desc_label, 0, 3, 1, 1);
@@ -344,9 +344,9 @@ impl VariablesDialog {
                             if let Some(window) = btn_clone.root().and_downcast::<gtk4::Window>() {
                                 crate::toast::show_toast_on_window(
                                     &window,
-                                    "Failed to load secret from \
-                                     vault. Check secret backend \
-                                     in Settings.",
+                                    &i18n(
+                                        "Failed to load secret. Check secret backend in Settings.",
+                                    ),
                                     crate::toast::ToastType::Error,
                                 );
                             } else {

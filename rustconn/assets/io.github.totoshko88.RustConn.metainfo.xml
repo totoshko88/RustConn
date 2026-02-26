@@ -90,12 +90,15 @@
     <control>touch</control>
   </supports>
   <releases>
-    <release version="0.9.2" date="2026-02-24">
+    <release version="0.9.2" date="2026-02-26">
       <description>
-        <p>Custom icons and sort order fix:</p>
+        <p>Remote monitoring, custom icons, Bitwarden Flatpak fix, and dependency updates.</p>
         <ul>
           <li>Custom icons for connections and groups (emoji or GTK icon names)</li>
-          <li>New connections and groups now append to end of list correctly</li>
+          <li>Remote monitoring bar for SSH/Telnet/K8s terminals (CPU, memory, disk, network)</li>
+          <li>IronRDP auto-fallback to FreeRDP on protocol negotiation failure</li>
+          <li>Bitwarden CLI path resolved dynamically for Flatpak sandbox compatibility</li>
+          <li>Monitoring SSH password auth and error spam fixes</li>
         </ul>
       </description>
     </release>

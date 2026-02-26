@@ -116,13 +116,15 @@ fn create_authentication_group() -> (
         .build();
 
     // Auth method dropdown
-    let auth_list = StringList::new(&[
-        "Password",
-        "Public Key",
-        "Keyboard Interactive",
-        "SSH Agent",
-        "Security Key (FIDO2)",
-    ]);
+    let auth_items: Vec<String> = vec![
+        i18n("Password"),
+        i18n("Public Key"),
+        i18n("Keyboard Interactive"),
+        i18n("SSH Agent"),
+        i18n("Security Key (FIDO2)"),
+    ];
+    let auth_refs: Vec<&str> = auth_items.iter().map(String::as_str).collect();
+    let auth_list = StringList::new(&auth_refs);
     let auth_dropdown = DropDown::new(Some(auth_list), gtk4::Expression::NONE);
     auth_dropdown.set_selected(0);
 
@@ -134,7 +136,9 @@ fn create_authentication_group() -> (
     auth_group.add(&auth_row);
 
     // Key source dropdown
-    let key_source_list = StringList::new(&["Default", "File", "Agent"]);
+    let key_source_items: Vec<String> = vec![i18n("Default"), i18n("File"), i18n("Agent")];
+    let key_source_refs: Vec<&str> = key_source_items.iter().map(String::as_str).collect();
+    let key_source_list = StringList::new(&key_source_refs);
     let key_source_dropdown = DropDown::new(Some(key_source_list), gtk4::Expression::NONE);
     key_source_dropdown.set_selected(0);
 
@@ -148,12 +152,12 @@ fn create_authentication_group() -> (
     // Key file entry with browse button
     let key_entry = Entry::builder()
         .hexpand(true)
-        .placeholder_text("Path to SSH key")
+        .placeholder_text(i18n("Path to SSH key"))
         .valign(gtk4::Align::Center)
         .build();
     let key_button = Button::builder()
         .icon_name("folder-open-symbolic")
-        .tooltip_text("Browse for key file")
+        .tooltip_text(i18n("Browse for key file"))
         .valign(gtk4::Align::Center)
         .build();
 
@@ -166,7 +170,9 @@ fn create_authentication_group() -> (
     auth_group.add(&key_file_row);
 
     // Agent key dropdown
-    let agent_key_list = StringList::new(&["(No keys loaded)"]);
+    let no_keys_items: Vec<String> = vec![i18n("(No keys loaded)")];
+    let no_keys_refs: Vec<&str> = no_keys_items.iter().map(String::as_str).collect();
+    let agent_key_list = StringList::new(&no_keys_refs);
     let agent_key_dropdown = DropDown::new(Some(agent_key_list), gtk4::Expression::NONE);
     agent_key_dropdown.set_selected(0);
     agent_key_dropdown.set_sensitive(false);
@@ -320,7 +326,9 @@ fn create_connection_group() -> (
         .build();
 
     // Jump Host dropdown
-    let jump_host_list = StringList::new(&["(None)"]);
+    let none_items: Vec<String> = vec![i18n("(None)")];
+    let none_refs: Vec<&str> = none_items.iter().map(String::as_str).collect();
+    let jump_host_list = StringList::new(&none_refs);
     let jump_host_dropdown = DropDown::new(Some(jump_host_list), gtk4::Expression::NONE);
     jump_host_dropdown.set_selected(0);
 
@@ -430,7 +438,13 @@ pub fn create_port_forwarding_group(
         .build();
 
     // Direction dropdown
-    let direction_list = StringList::new(&["Local (-L)", "Remote (-R)", "Dynamic (-D)"]);
+    let direction_items: Vec<String> = vec![
+        i18n("Local (-L)"),
+        i18n("Remote (-R)"),
+        i18n("Dynamic (-D)"),
+    ];
+    let direction_refs: Vec<&str> = direction_items.iter().map(String::as_str).collect();
+    let direction_list = StringList::new(&direction_refs);
     let direction_dropdown = DropDown::new(Some(direction_list), gtk4::Expression::NONE);
     direction_dropdown.set_selected(0);
 
@@ -588,7 +602,7 @@ pub fn add_port_forward_row_to_list(
     let remove_button = Button::builder()
         .icon_name("user-trash-symbolic")
         .css_classes(["flat"])
-        .tooltip_text("Remove this port forward")
+        .tooltip_text(i18n("Remove this port forward"))
         .build();
 
     let data_clone = data.clone();
