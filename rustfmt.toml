@@ -1,5 +1,5 @@
 # RustConn formatting configuration
-edition = "2021"
+edition = "2024"
 max_width = 100
 tab_spaces = 4
 newline_style = "Unix"

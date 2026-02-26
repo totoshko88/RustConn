@@ -3,7 +3,7 @@
 //! Provides dialogs for creating, opening, saving, and managing documents.
 
 use crate::alert::{self, SaveChangesResponse};
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -102,7 +102,9 @@ impl NewDocumentDialog {
             .build();
         content.append(&name_label);
 
-        let name_entry = Entry::builder().placeholder_text("My Connections").build();
+        let name_entry = Entry::builder()
+            .placeholder_text(i18n("My Connections"))
+            .build();
         name_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
             name_label.upcast_ref()
         ])]);
@@ -272,7 +274,7 @@ impl OpenDocumentDialog {
         filter.add_pattern("*.json");
         filter.add_pattern("*.yaml");
         filter.add_pattern("*.yml");
-        filter.set_name(Some("RustConn Documents"));
+        filter.set_name(Some(&i18n("RustConn Documents")));
 
         let filters = gtk4::gio::ListStore::new::<FileFilter>();
         filters.append(&filter);
@@ -417,7 +419,7 @@ impl SaveDocumentDialog {
     pub fn present(&self, parent: Option<&gtk4::Window>, doc_id: Uuid, suggested_name: &str) {
         let filter = FileFilter::new();
         filter.add_pattern("*.rcdb");
-        filter.set_name(Some("RustConn Documents"));
+        filter.set_name(Some(&i18n("RustConn Documents")));
 
         let filters = gtk4::gio::ListStore::new::<FileFilter>();
         filters.append(&filter);
@@ -496,10 +498,10 @@ impl CloseDocumentDialog {
 
         alert::show_save_changes(
             parent_window,
-            "Save changes?",
-            &format!(
-                "Document \"{doc_name}\" has unsaved changes. \
-                 Do you want to save before closing?"
+            &i18n("Save changes?"),
+            &i18n_f(
+                "Document \"{}\" has unsaved changes. Do you want to save before closing?",
+                &[doc_name],
             ),
             move |response| match response {
                 SaveChangesResponse::DontSave => {

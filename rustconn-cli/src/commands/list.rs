@@ -197,6 +197,8 @@ pub struct ConnectionOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub username: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub auth_method: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub device: Option<String>,
@@ -237,6 +239,7 @@ impl From<&Connection> for ConnectionOutput {
             port: conn.port,
             protocol: conn.protocol.as_str().to_string(),
             username: conn.username.clone(),
+            icon: conn.icon.clone(),
             auth_method,
             device,
             baud_rate,

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-02-24
+
+### Added
+- **Custom Icons** — Set emoji/unicode or GTK icon names on connections and groups ([#23](https://github.com/totoshko88/RustConn/issues/23))
+- **Remote Monitoring** — MobaXterm-style monitoring bar below SSH/Telnet/K8s terminals showing CPU, memory, disk, and network usage from remote Linux hosts; agentless via `/proc/*` parsing; per-connection and global toggle in Settings ([#26](https://github.com/totoshko88/RustConn/issues/26))
+
+### Fixed
+- New connections and groups now append to end of list instead of jumping to position 0
+- **IronRDP fallback to FreeRDP** — When IronRDP fails during RDP protocol negotiation (e.g. xrdp `ServerDemandActive` incompatibility), the session now auto-falls back to external FreeRDP instead of showing a raw error; shows a user-friendly toast on fallback ([#33](https://github.com/totoshko88/RustConn/issues/33))
+- **Monitoring SSH password auth** — Remote monitoring now works with password-authenticated SSH connections via `sshpass`; previously `BatchMode=yes` blocked password auth causing "Permission denied" errors
+- **Monitoring error spam** — Monitoring collector now stops after 3 consecutive failures instead of retrying indefinitely and flooding logs
+- **Bitwarden CLI not found in Flatpak** — All `bw` command invocations now use a dynamically resolved path instead of hardcoded `"bw"`; `resolve_bw_cmd()` probes Flatpak CLI dir, Snap, `/usr/local/bin`, and `PATH` at startup ([#28](https://github.com/totoshko88/RustConn/issues/28))
+
+### Improved
+- **Documentation** — Added User Guide sections for Remote Monitoring and Custom Icons; added monitoring architecture to ARCHITECTURE.md; updated README features table; rewrote Settings section to match the current 4-page `PreferencesDialog` layout (Terminal, Interface, Secrets, Connection); fixed all cross-references to old tab names throughout User Guide; added `docs/BITWARDEN_SETUP.md` step-by-step guide covering Flatpak sandbox, self-hosted servers, API key auth, and troubleshooting
+- **Translations** — Completed all 14 language translations to 100% coverage (de, fr, es, it, pl, cs, sk, da, sv, nl, pt, be, kk, uz); added Uzbek (uz) as a new language; fixed corrupted .po file formatting from previous patching
+
 ## [0.9.1] - 2026-02-24
 
 ### Added

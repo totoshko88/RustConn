@@ -92,6 +92,8 @@ fn create_test_connection(id: Uuid, name: &str, host: &str) -> Connection {
         skip_port_check: false,
         is_pinned: false,
         pin_order: 0,
+        icon: None,
+        monitoring_config: None,
     }
 }
 

@@ -22,7 +22,7 @@ use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 
 /// Callback type for export dialog completion
 pub type ExportCallback = Rc<RefCell<Option<Box<dyn Fn(Option<ExportResult>)>>>>;
@@ -30,7 +30,7 @@ pub type ExportCallback = Rc<RefCell<Option<Box<dyn Fn(Option<ExportResult>)>>>>
 /// Export dialog for exporting connections to external formats
 #[allow(dead_code)] // Fields kept for GTK widget lifecycle
 pub struct ExportDialog {
-    dialog: adw::Dialog,
+    dialog: adw::Window,
     stack: Stack,
     // Format selection
     format_dropdown: DropDown,
@@ -38,7 +38,6 @@ pub struct ExportDialog {
     output_path_entry: Entry,
     browse_button: Button,
     // Options
-    include_passwords_row: adw::SwitchRow,
     include_groups_row: adw::SwitchRow,
     // Progress
     progress_bar: ProgressBar,
@@ -63,11 +62,16 @@ impl ExportDialog {
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
         // Create dialog
-        let dialog = adw::Dialog::builder()
+        let dialog = adw::Window::builder()
             .title(i18n("Export Connections"))
-            .content_width(600)
-            .content_height(500)
+            .modal(true)
+            .default_width(600)
+            .default_height(500)
             .build();
+
+        if let Some(p) = parent {
+            dialog.set_transient_for(Some(p));
+        }
 
         // Header bar (GNOME HIG)
         let (header, close_btn, export_button) = super::widgets::dialog_header("Close", "Export");
@@ -90,21 +94,15 @@ impl ExportDialog {
         stack.set_vexpand(true);
         content.append(&stack);
 
-        // Use ToolbarView for adw::Dialog
+        // Use ToolbarView for adw::Window
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
         toolbar_view.set_content(Some(&content));
-        dialog.set_child(Some(&toolbar_view));
+        dialog.set_content(Some(&toolbar_view));
 
         // === Options Page ===
-        let (
-            options_page,
-            format_dropdown,
-            output_path_entry,
-            browse_button,
-            include_passwords_row,
-            include_groups_row,
-        ) = Self::create_options_page();
+        let (options_page, format_dropdown, output_path_entry, browse_button, include_groups_row) =
+            Self::create_options_page();
         stack.add_named(&options_page, Some("options"));
 
         // === Progress Page ===
@@ -127,7 +125,6 @@ impl ExportDialog {
             format_dropdown,
             output_path_entry,
             browse_button,
-            include_passwords_row,
             include_groups_row,
             progress_bar,
             progress_label,
@@ -146,14 +143,7 @@ impl ExportDialog {
 
     /// Creates the options page with format selection and output path
     #[allow(clippy::type_complexity)]
-    fn create_options_page() -> (
-        ScrolledWindow,
-        DropDown,
-        Entry,
-        Button,
-        adw::SwitchRow,
-        adw::SwitchRow,
-    ) {
+    fn create_options_page() -> (ScrolledWindow, DropDown, Entry, Button, adw::SwitchRow) {
         let scrolled = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
             .vscrollbar_policy(gtk4::PolicyType::Automatic)
@@ -179,13 +169,13 @@ impl ExportDialog {
 
         // Create format dropdown with all available formats
         let format_list = StringList::new(&[
-            "Ansible Inventory",
-            "SSH Config",
-            "Remmina",
-            "Asbru-CM",
-            "RustConn Native (.rcn)",
-            "Royal TS (.rtsz)",
-            "MobaXterm (.mxtsessions)",
+            &i18n("Ansible Inventory"),
+            &i18n("SSH Config"),
+            &i18n("Remmina"),
+            &i18n("Asbru-CM"),
+            &i18n("RustConn Native (.rcn)"),
+            &i18n("Royal TS (.rtsz)"),
+            &i18n("MobaXterm (.mxtsessions)"),
         ]);
         let format_dropdown = DropDown::new(Some(format_list), gtk4::Expression::NONE);
         format_dropdown.set_selected(0);
@@ -236,14 +226,6 @@ impl ExportDialog {
             .title(i18n("Options"))
             .build();
 
-        // Include passwords switch row
-        let include_passwords_row = adw::SwitchRow::builder()
-            .title(i18n("Include passwords"))
-            .subtitle(i18n("If supported by format"))
-            .active(false)
-            .build();
-        options_group.add(&include_passwords_row);
-
         // Include groups switch row
         let include_groups_row = adw::SwitchRow::builder()
             .title(i18n("Include group hierarchy"))
@@ -252,21 +234,10 @@ impl ExportDialog {
             .build();
         options_group.add(&include_groups_row);
 
-        // Security warning row
-        let warning_row = adw::ActionRow::builder()
-            .title(i18n("⚠ Security Warning"))
-            .subtitle(i18n("Including passwords may expose sensitive data. Only enable if you trust the destination."))
-            .build();
-        let warning_icon = gtk4::Image::from_icon_name("dialog-warning-symbolic");
-        warning_icon.set_valign(gtk4::Align::Center);
-        warning_icon.add_css_class("warning");
-        warning_row.add_prefix(&warning_icon);
-        options_group.add(&warning_row);
-
         // Credentials info row
         let creds_info_row = adw::ActionRow::builder()
             .title(i18n("ℹ Credentials Storage"))
-            .subtitle(i18n("Passwords are stored in your password manager and not included in exports by default. Export your credential structure separately if needed."))
+            .subtitle(i18n("Passwords are stored in your password manager and not included in exports. Export your credential structure separately if needed."))
             .build();
         let info_icon = gtk4::Image::from_icon_name("dialog-information-symbolic");
         info_icon.set_valign(gtk4::Align::Center);
@@ -283,7 +254,6 @@ impl ExportDialog {
             format_dropdown,
             output_path_entry,
             browse_button,
-            include_passwords_row,
             include_groups_row,
         )
     }
@@ -401,7 +371,6 @@ impl ExportDialog {
     pub fn get_export_options(&self) -> Option<ExportOptions> {
         self.get_output_path().map(|output_path| {
             ExportOptions::new(self.get_selected_format(), output_path)
-                .with_passwords(self.include_passwords_row.is_active())
                 .with_groups(self.include_groups_row.is_active())
         })
     }
@@ -489,16 +458,19 @@ impl ExportDialog {
 
     /// Formats the result summary message
     fn format_result_summary(result: &ExportResult, format: ExportFormat) -> String {
-        let summary = format!(
+        let summary = i18n_f(
             "Successfully exported {} connection(s) to {} format.",
-            result.exported_count,
-            format.display_name()
+            &[&result.exported_count.to_string(), format.display_name()],
         );
 
         if result.skipped_count > 0 {
             format!(
-                "{}\n\n{} connection(s) were skipped (unsupported protocol).",
-                summary, result.skipped_count
+                "{}\n\n{}",
+                summary,
+                i18n_f(
+                    "{} connection(s) were skipped (unsupported protocol).",
+                    &[&result.skipped_count.to_string()]
+                )
             )
         } else {
             summary
@@ -513,7 +485,8 @@ impl ExportDialog {
 
         // List output files
         if !result.output_files.is_empty() {
-            details.push_str("Output files:\n");
+            details.push_str(&i18n("Output files:"));
+            details.push('\n');
             for file in &result.output_files {
                 let _ = writeln!(details, "  • {}", file.display());
             }
@@ -521,21 +494,26 @@ impl ExportDialog {
         }
 
         // Summary
-        let _ = writeln!(details, "Summary:");
-        let _ = writeln!(details, "  • Exported: {}", result.exported_count);
-        let _ = writeln!(details, "  • Skipped: {}", result.skipped_count);
+        let _ = writeln!(details, "{}:", i18n("Summary"));
+        let _ = writeln!(
+            details,
+            "  • {}: {}",
+            i18n("Exported"),
+            result.exported_count
+        );
+        let _ = writeln!(details, "  • {}: {}", i18n("Skipped"), result.skipped_count);
 
         // List warnings
         if !result.warnings.is_empty() {
             details.push('\n');
-            let _ = writeln!(details, "Warnings ({}):", result.warnings.len());
+            let _ = writeln!(details, "{} ({}):", i18n("Warnings"), result.warnings.len());
             for warning in &result.warnings {
                 let _ = writeln!(details, "  • {warning}");
             }
         }
 
         if details.is_empty() {
-            details = "No connections were exported.".to_string();
+            details = i18n("No connections were exported.");
         }
 
         details
@@ -555,8 +533,7 @@ impl ExportDialog {
         // Connect export button
         self.connect_export_button();
 
-        self.dialog
-            .present(self.parent.as_ref().map(|w| w.upcast_ref::<gtk4::Widget>()));
+        self.dialog.present();
     }
 
     /// Connects the browse button to show file/folder dialog
@@ -615,33 +592,33 @@ impl ExportDialog {
                         filter.add_pattern("*.ini");
                         filter.add_pattern("*.yml");
                         filter.add_pattern("*.yaml");
-                        filter.set_name(Some("Ansible Inventory (*.ini, *.yml)"));
+                        filter.set_name(Some(&i18n("Ansible Inventory (*.ini, *.yml)")));
                     }
                     ExportFormat::SshConfig => {
                         filter.add_pattern("*");
-                        filter.set_name(Some("SSH Config"));
+                        filter.set_name(Some(&i18n("SSH Config")));
                     }
                     ExportFormat::Asbru => {
                         filter.add_pattern("*.yml");
                         filter.add_pattern("*.yaml");
-                        filter.set_name(Some("Asbru-CM YAML (*.yml)"));
+                        filter.set_name(Some(&i18n("Asbru-CM YAML (*.yml)")));
                     }
                     ExportFormat::Remmina => {
                         // Should not reach here
                         filter.add_pattern("*.remmina");
-                        filter.set_name(Some("Remmina (*.remmina)"));
+                        filter.set_name(Some(&i18n("Remmina (*.remmina)")));
                     }
                     ExportFormat::Native => {
                         filter.add_pattern("*.rcn");
-                        filter.set_name(Some("RustConn Native (*.rcn)"));
+                        filter.set_name(Some(&i18n("RustConn Native (*.rcn)")));
                     }
                     ExportFormat::RoyalTs => {
                         filter.add_pattern("*.rtsz");
-                        filter.set_name(Some("Royal TS (*.rtsz)"));
+                        filter.set_name(Some(&i18n("Royal TS (*.rtsz)")));
                     }
                     ExportFormat::MobaXterm => {
                         filter.add_pattern("*.mxtsessions");
-                        filter.set_name(Some("MobaXterm Sessions (*.mxtsessions)"));
+                        filter.set_name(Some(&i18n("MobaXterm Sessions (*.mxtsessions)")));
                     }
                 }
 
@@ -701,7 +678,6 @@ impl ExportDialog {
         let stack = self.stack.clone();
         let format_dropdown = self.format_dropdown.clone();
         let output_path_entry = self.output_path_entry.clone();
-        let include_passwords = self.include_passwords_row.clone();
         let include_groups = self.include_groups_row.clone();
         let progress_bar = self.progress_bar.clone();
         let progress_label = self.progress_label.clone();
@@ -754,7 +730,6 @@ impl ExportDialog {
             };
 
             let options = ExportOptions::new(format, output_path.clone())
-                .with_passwords(include_passwords.is_active())
                 .with_groups(include_groups.is_active());
 
             // Show progress page
@@ -762,7 +737,7 @@ impl ExportDialog {
             btn.set_sensitive(false);
             progress_bar.set_fraction(0.0);
             progress_spinner.set_spinning(true);
-            progress_label.set_text(&format!("Exporting to {}...", format.display_name()));
+            progress_label.set_text(&i18n_f("Exporting to {}...", &[format.display_name()]));
 
             // Perform export
             let conns = connections.borrow();
@@ -770,7 +745,7 @@ impl ExportDialog {
             let snips = snippets.borrow();
 
             progress_bar.set_fraction(0.5);
-            progress_label.set_text("Writing output files...");
+            progress_label.set_text(&i18n("Writing output files..."));
 
             let export_result = Self::do_export(&conns, &grps, &snips, &options);
 

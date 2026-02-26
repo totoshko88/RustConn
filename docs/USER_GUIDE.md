@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.9.1** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.9.2** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, SFTP, Telnet, Serial, Kubernetes protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -28,10 +28,12 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 14. [Favorites](#favorites)
 15. [Tab Coloring](#tab-coloring)
 16. [Tab Grouping](#tab-grouping)
-17. [Custom Keybindings](#custom-keybindings)
-18. [Keyboard Shortcuts](#keyboard-shortcuts)
-19. [CLI Usage](#cli-usage)
-20. [Troubleshooting](#troubleshooting)
+17. [Custom Icons](#custom-icons)
+18. [Remote Monitoring](#remote-monitoring)
+19. [Custom Keybindings](#custom-keybindings)
+20. [Keyboard Shortcuts](#keyboard-shortcuts)
+21. [CLI Usage](#cli-usage)
+22. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -184,7 +186,7 @@ In connection dialog, click **Test** to verify connectivity before saving.
 
 For RDP, VNC, and SPICE connections, RustConn performs a fast TCP port check before connecting:
 - Provides faster feedback (2-3s vs 30-60s timeout) when hosts are unreachable
-- Configurable globally in Settings → Connection
+- Configurable globally in Settings → Connection page
 - Per-connection "Skip port check" option for special cases (firewalls, port knocking, VPN)
 
 ---
@@ -279,7 +281,7 @@ Sidebar shows connection status:
 
 ### Session Restore
 
-Enable in Settings → Session:
+Enable in Settings → Interface page → Session Restore:
 - Sessions saved on app close
 - Restored on next startup
 - Optional prompt before restore
@@ -287,12 +289,12 @@ Enable in Settings → Session:
 
 ### Session Logging
 
-Three logging modes (Settings → Logging):
+Three logging modes (Settings → Terminal page → Logging):
 - **Activity** — Track session activity changes
 - **User Input** — Capture typed commands
 - **Terminal Output** — Full transcript
 
-Optional timestamps (Settings → Logging → Session Logging):
+Optional timestamps (Settings → Terminal page → Logging):
 - Enable "Timestamps" to prepend `[HH:MM:SS]` to each line in log files
 
 ### Terminal Search
@@ -439,7 +441,7 @@ If `UriLauncher` fails, RustConn falls back to `xdg-open`, then `nautilus --new-
 
 **SFTP via Midnight Commander:**
 
-Settings → Terminal → Behavior → enable "SFTP via mc". When enabled, "Open SFTP" opens a local shell tab with Midnight Commander connected to the remote server via `sh://user@host:port` FISH VFS panel.
+Settings → Terminal page → Behavior → enable "SFTP via mc". When enabled, "Open SFTP" opens a local shell tab with Midnight Commander connected to the remote server via `sh://user@host:port` FISH VFS panel.
 
 Requirements for mc mode:
 - Midnight Commander must be installed (`mc` in PATH). RustConn checks availability before launch.
@@ -721,7 +723,7 @@ Download and install additional CLI tools directly within the Flatpak sandbox:
 
 **Installation Location:** `~/.var/app/io.github.totoshko88.RustConn/cli/`
 
-**Note:** Installed CLIs are automatically detected in Settings → Clients.
+**Note:** Installed CLIs are automatically detected in Settings → Connection page → Clients.
 
 ---
 
@@ -729,41 +731,64 @@ Download and install additional CLI tools directly within the Flatpak sandbox:
 
 Access via **Ctrl+,** or Menu → **Settings**
 
-### Appearance
+The settings dialog uses `adw::PreferencesDialog` with built-in search. Settings are organized into 4 pages:
 
-- **Theme** — System, Light, Dark (libadwaita StyleManager)
-- **Tab Coloring** — Show colored circle indicator on tabs by protocol (SSH=green, RDP=blue, VNC=purple, SPICE=orange, Serial=yellow, K8s=cyan)
-- **Remember Window Geometry**
+| Page | Icon | Contents |
+|------|------|----------|
+| Terminal | `utilities-terminal-symbolic` | Terminal + Logging |
+| Interface | `applications-graphics-symbolic` | Appearance, Window, Startup, System Tray, Session Restore + Keybindings |
+| Secrets | `channel-secure-symbolic` | Secret backends + SSH Agent |
+| Connection | `network-server-symbolic` | Clients + Monitoring |
 
-### Terminal
+### Terminal page
 
+**Terminal group:**
 - **Font** — Family and size
 - **Scrollback** — History buffer lines
 - **Color Theme** — Dark, Light, Solarized, Monokai, Dracula
 - **Cursor** — Shape (Block/IBeam/Underline) and blink mode
 - **Behavior** — Scroll on output/keystroke, hyperlinks, mouse autohide, bell, SFTP via mc
 
-### Session
-
-- **Enable Session Restore**
-- **Prompt Before Restore**
-- **Maximum Session Age** (hours)
-
-### Logging
-
-- **Enable Logging**
-- **Log Directory**
-- **Retention Days**
+**Logging group:**
+- **Enable Logging** — Global toggle
+- **Log Directory** — Path for session log files
+- **Retention Days** — Auto-cleanup period
 - **Logging Modes** — Activity, user input, terminal output
-- **Session Logging** — Timestamps toggle: prepend `[HH:MM:SS]` to each line in session log files
+- **Timestamps** — Prepend `[HH:MM:SS]` to each line in session log files
 
-### Secrets
+### Interface page
 
+**Appearance group:**
+- **Theme** — System, Light, Dark (libadwaita `StyleManager`)
+- **Language** — UI language selector (restart required)
+- **Color tabs by protocol** — Colored circle indicator on tabs (SSH=green, RDP=blue, VNC=purple, SPICE=orange, Serial=yellow, K8s=cyan)
+
+**Window group:**
+- **Remember size** — Restore window geometry on startup
+
+**Startup group:**
+- **On startup** — Do nothing, Local Shell, or connect to a specific saved connection
+
+**System Tray group:**
+- **Show icon** — Display icon in system tray
+- **Minimize to tray** — Hide window instead of closing (requires tray icon enabled)
+
+**Session Restore group:**
+- **Enabled** — Reconnect to previous sessions on startup
+- **Ask first** — Prompt before restoring sessions
+- **Max age** — Hours before sessions expire (1–168)
+
+**Keybindings group:**
+- Customizable keyboard shortcuts for 30+ actions across 6 categories
+- Record button to capture key combinations
+- Per-shortcut Reset and Reset All to Defaults
+
+### Secrets page
+
+**Secret backend group:**
 - **Preferred Backend** — libsecret, KeePassXC, KDBX file, Bitwarden, 1Password, Passbolt, Pass (passwordstore.org)
 - **Enable Fallback** — Use libsecret if primary unavailable
-- **Credential Encryption** — Backend master passwords stored in settings are encrypted with AES-256-GCM + Argon2id key derivation (machine-specific key); legacy XOR format is migrated transparently on first save
-- **KDBX Path** — KeePass database file (for KDBX backend)
-- **KDBX Authentication** — Password and/or key file
+- **Credential Encryption** — Backend master passwords encrypted with AES-256-GCM + Argon2id (machine-specific key); legacy XOR migrated transparently
 - **Bitwarden Settings:**
   - Vault status and unlock button
   - Master password persistence (encrypted in settings)
@@ -813,32 +838,27 @@ When creating a new connection, the password source dropdown shows:
 - **Inherit** — Use credentials from parent group
 - **None** — No password (key-based auth)
 
-### SSH Agent
+**SSH Agent group:**
+- **Status** — Agent running/stopped indicator with socket path
+- **Loaded Keys** — Currently loaded SSH keys with remove option
+- **Available Keys** — Keys in `~/.ssh/` with add option
 
-- **Loaded Keys** — Currently loaded SSH keys
-- **Available Keys** — Keys in ~/.ssh/
-- **Add/Remove Keys** — Manage agent keys
+### Connection page
 
-### Clients
+**Clients group:**
 
 Auto-detected CLI tools with versions:
 
-**Protocol Clients:** SSH, RDP (FreeRDP), VNC (TigerVNC), SPICE (remote-viewer), Telnet, Serial (picocom), Kubernetes (kubectl)
+Protocol Clients: SSH, RDP (FreeRDP), VNC (TigerVNC), SPICE (remote-viewer), Telnet, Serial (picocom), Kubernetes (kubectl)
 
-**Zero Trust:** AWS, GCP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary
+Zero Trust: AWS, GCP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary
 
 Searches PATH and user directories (`~/bin/`, `~/.local/bin/`, `~/.cargo/bin/`).
 
-### Tray Icon
-
-- **Enable Tray Icon**
-- **Minimize to Tray**
-- **Start Minimized**
-
-### Connection
-
-- **Pre-connect Port Check** — Enable/disable TCP port check before RDP/VNC/SPICE
-- **Port Check Timeout** — Timeout in seconds (default: 3)
+**Monitoring group:**
+- **Enable monitoring** — Global toggle for remote host metrics collection
+- **Polling interval** — Seconds between metric updates (1–60, default: 3)
+- **Visible Metrics** — Toggle individual metrics: CPU, Memory, Disk, Network, Load Average, System Info
 
 ---
 
@@ -849,7 +869,7 @@ Configure which session opens automatically when RustConn starts. Useful for use
 ### Settings (GUI)
 
 1. Open **Settings** (Ctrl+,)
-2. Go to **Appearance** tab
+2. Go to **Interface** page
 3. Find the **Startup** group
 4. Select an action from the **On startup** dropdown:
    - **Do nothing** — default behavior, no session opens
@@ -955,7 +975,7 @@ Optional colored circle indicators on terminal tabs to visually distinguish prot
 
 ### Enable/Disable
 
-Settings → Appearance → **Tab Coloring**
+Settings → Interface page → Appearance → **Color tabs by protocol**
 
 ---
 
@@ -977,9 +997,81 @@ Groups are visual only — they add a colored label to the tab title. Each group
 
 ---
 
+## Custom Icons
+
+Set custom emoji or GTK icon names on connections and groups to visually distinguish them in the sidebar.
+
+### Supported Icon Types
+
+| Type | Example | How It Renders |
+|------|---------|----------------|
+| Emoji / Unicode | `🇺🇦`, `🏢`, `🔒`, `🐳` | Displayed as text next to the name |
+| GTK icon name | `starred-symbolic`, `network-server-symbolic` | Rendered as a symbolic icon |
+
+### Set a Custom Icon
+
+1. Edit a connection or group
+2. Enter an emoji or GTK icon name in the **Icon** field
+3. Save
+
+Leave the field empty to use the default icon (folder for groups, protocol-based for connections).
+
+### Tips
+
+- Emoji icons work with 1–2 character Unicode sequences (flags, objects, symbols)
+- GTK icon names must match installed icon theme entries (e.g. `computer-symbolic`, `folder-remote-symbolic`)
+- Icons appear in the sidebar tree, making it easy to spot important connections at a glance
+
+---
+
+## Remote Monitoring
+
+MobaXterm-style monitoring bar below SSH, Telnet, and Kubernetes terminals showing real-time system metrics from remote Linux hosts. Agentless — collects data by parsing `/proc/*` and `df` output over the existing session.
+
+### Monitoring Bar
+
+When enabled, a compact bar appears below the terminal:
+
+```
+[CPU: ████░░ 45%] [RAM: ██░░ 62%] [Disk: ██░░ 78%] [1.23 0.98 0.76] [↓ 1.2 MB/s ↑ 0.3 MB/s] [Ubuntu 24.04 (6.8.0) · x86_64 · 15.6 GiB · 8C/16T]
+```
+
+### Displayed Metrics
+
+| Metric | Source | Details |
+|--------|--------|---------|
+| CPU usage | `/proc/stat` | Percentage with level bar |
+| Memory usage | `/proc/meminfo` | Percentage with level bar; swap shown in tooltip |
+| Disk usage | `df /` | Root filesystem percentage with level bar |
+| Load average | `/proc/loadavg` | 1, 5, 15 min values; process count in tooltip |
+| Network throughput | `/proc/net/dev` | Download/upload rates (auto-scaled: B/s, KB/s, MB/s) |
+| System info | One-time collection | Distro, kernel, architecture, total RAM, CPU cores/threads; uptime in tooltip |
+
+### Enable Monitoring
+
+1. Open **Settings** (Ctrl+,) → **Connection** page → **Monitoring** group
+2. Toggle **Enable monitoring**
+3. Configure polling interval (1–60 seconds, default: 3)
+4. Select which metrics to display (CPU, Memory, Disk, Network, Load, System Info)
+
+### Per-Connection Override
+
+Each connection can override the global monitoring setting:
+1. Edit connection → **Advanced** tab
+2. Set monitoring to **Enabled**, **Disabled**, or **Use global setting**
+3. Optionally override the polling interval
+
+### Requirements
+
+- Remote host must be Linux (reads `/proc/*`)
+- No agent installation needed — uses the existing terminal session
+- Works with SSH, Telnet, and Kubernetes connections
+
+---
+
 ## Custom Keybindings
 
-Customize all keyboard shortcuts via Settings → Keybindings.
+Customize all keyboard shortcuts via Settings → Interface page → Keybindings.
 
 ### Customize a Shortcut
 
@@ -1256,17 +1348,27 @@ rustconn-cli secret verify-keepass -d ~/vault.kdbx -k ~/key.key
 
 ### Bitwarden Not Working
 
-1. Install Bitwarden CLI: `npm install -g @bitwarden/cli` or download from bitwarden.com
-2. Login: `bw login`
-3. Unlock vault: `bw unlock`
-4. Select Bitwarden backend in Settings → Secrets
-5. Check vault status indicator
-6. For 2FA methods not supported by CLI (FIDO2, Duo), use API key authentication:
+See [BITWARDEN_SETUP.md](BITWARDEN_SETUP.md) for a detailed step-by-step guide.
+
+**Quick checklist:**
+
+1. Install Bitwarden CLI:
+   - **Flatpak:** Menu → Flatpak Components → Install Bitwarden CLI (host-installed `bw` is NOT accessible inside the sandbox)
+   - **Native:** `npm install -g @bitwarden/cli` or download from bitwarden.com
+2. For self-hosted servers: `bw config server https://your-server` **before** logging in
+3. Login: `bw login`
+4. Unlock vault: `bw unlock`
+5. Select Bitwarden backend in Settings → Secrets
+6. Check vault status indicator
+7. For 2FA methods not supported by CLI (FIDO2, Duo), use API key authentication:
    - Get API key from Bitwarden web vault → Settings → Security → Keys
    - Enable "Use API key authentication" in Settings → Secrets
    - Enter Client ID and Client Secret
-7. Enable "Save to system keyring" for automatic vault unlock on startup
-8. For password source, select "Bitwarden" in connection dialog
+8. Enable "Save to system keyring" for automatic vault unlock on startup
+9. For password source, select "Vault" in connection dialog
+
+**Common error — "Failed to run bw: No such file or directory":**
+This means `bw` is not found in PATH. Flatpak users must install `bw` via Flatpak Components — the host system `bw` binary is not visible inside the sandbox.
 
 ### System Keyring Not Working
 
@@ -1312,7 +1414,7 @@ rustconn-cli secret verify-keepass -d ~/vault.kdbx -k ~/key.key
 
 ### Session Restore Issues
 
-1. Enable in Settings → Session
+1. Enable in Settings → Interface page → Session Restore
 2. Check maximum age setting
 3. Ensure normal app close (not killed)
 

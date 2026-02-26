@@ -232,6 +232,16 @@ pub fn show_new_group_dialog_with_parent(
     let name_row = adw::EntryRow::builder().title(i18n("Name")).build();
     details_group.add(&name_row);
 
+    // Group icon using EntryRow
+    let icon_row = adw::EntryRow::builder()
+        .title(i18n("Icon"))
+        .text("")
+        .build();
+    icon_row.set_tooltip_text(Some(&i18n(
+        "Enter an emoji (e.g. 🇺🇦) or GTK icon name (e.g. starred-symbolic)",
+    )));
+    details_group.add(&icon_row);
+
     // Parent group dropdown
     let state_ref = state.borrow();
 
@@ -572,6 +582,7 @@ pub fn show_new_group_dialog_with_parent(
     let sidebar_clone = sidebar;
     let window_clone = group_window.clone();
     let name_row_clone = name_row;
+    let icon_row_clone = icon_row;
     let dropdown_clone = parent_dropdown;
     let username_row_clone = username_row;
     let password_entry_clone2 = password_entry.clone();
@@ -621,6 +632,16 @@ pub fn show_new_group_dialog_with_parent(
         let has_password = !password.is_empty() && password_source_idx == 1;
         let has_domain = !domain.trim().is_empty();
 
+        // Capture icon
+        let icon_text = icon_row_clone.text().trim().to_string();
+        let has_icon = !icon_text.is_empty();
+
+        // Validate icon
+        if has_icon && let Err(e) = rustconn_core::dialog_utils::validate_icon(&icon_text) {
+            alert::show_validation_error(&window_clone, &i18n(&e));
+            return;
+        }
+
         if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
             let result = if let Some(pid) = parent_id {
                 state_mut.create_group_with_parent(name, pid)
@@ -630,11 +651,12 @@ pub fn show_new_group_dialog_with_parent(
 
             match result {
                 Ok(group_id) => {
-                    // Update group with credentials/description if provided
+                    // Update group with credentials/description/icon if provided
                     if (has_username
                         || has_domain
                         || has_password
                         || has_description
+                        || has_icon
                         || !matches!(new_password_source, PasswordSource::None))
                         && let Some(existing) = state_mut.get_group(group_id).cloned()
                     {
@@ -647,6 +669,9 @@ pub fn show_new_group_dialog_with_parent(
                         }
                         if has_description {
                             updated.description = Some(description.clone());
+                        }
+                        if has_icon {
+                            updated.icon = Some(icon_text.clone());
                         }
                         // Set the selected password source
                         updated.password_source = Some(new_password_source.clone());

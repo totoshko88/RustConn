@@ -13,7 +13,8 @@ It brings SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust conne
 |----------|---------|
 | **Protocols** | SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust |
 | **File Transfer** | SFTP file browser via system file manager (sftp:// URI, D-Bus portal) |
-| **Organization** | Groups, tags, templates, connection history & statistics |
+| **Organization** | Groups, tags, templates, custom icons (emoji/GTK), connection history & statistics |
+| **Monitoring** | Remote host metrics bar (CPU, RAM, disk, network, load, system info) — agentless, per-connection toggle |
 | **Import/Export** | Asbru-CM, Remmina, SSH config, Ansible inventory, Royal TS, MobaXterm, virt-viewer (.vv), native (.rcn) |
 | **Security** | KeePassXC (KDBX), libsecret, Bitwarden CLI, 1Password CLI, Passbolt CLI integration |
 | **Productivity** | Split terminals, command snippets, cluster commands, Wake-on-LAN, SSH port forwarding, startup action |

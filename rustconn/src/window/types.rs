@@ -14,6 +14,7 @@
 //! For interior mutability, `RefCell` is used instead of `Mutex` for the same reasons.
 
 use crate::external_window::ExternalWindowManager;
+use crate::monitoring::MonitoringCoordinator;
 use crate::sidebar::ConnectionSidebar;
 use crate::split_view::SplitViewBridge;
 use crate::terminal::TerminalNotebook;
@@ -49,6 +50,11 @@ pub type SessionSplitBridges = Rc<RefCell<HashMap<Uuid, Rc<SplitViewBridge>>>>;
 ///
 /// Uses `Rc` because GTK is single-threaded; no need for `Arc`.
 pub type SharedExternalWindowManager = Rc<ExternalWindowManager>;
+
+/// Shared monitoring coordinator type
+///
+/// Uses `Rc` because GTK is single-threaded; no need for `Arc`.
+pub type SharedMonitoring = Rc<MonitoringCoordinator>;
 
 /// Returns the protocol string for a connection, including provider info for ZeroTrust
 ///

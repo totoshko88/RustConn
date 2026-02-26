@@ -26,7 +26,7 @@ use crate::i18n::i18n;
 
 /// Import dialog for importing connections from external sources
 pub struct ImportDialog {
-    dialog: adw::Dialog,
+    dialog: adw::Window,
     stack: Stack,
     source_list: ListBox,
     progress_bar: ProgressBar,
@@ -47,11 +47,16 @@ impl ImportDialog {
     /// Creates a new import dialog
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
-        let dialog = adw::Dialog::builder()
+        let dialog = adw::Window::builder()
             .title(i18n("Import Connections"))
-            .content_width(600)
-            .content_height(500)
+            .modal(true)
+            .default_width(600)
+            .default_height(500)
             .build();
+
+        if let Some(p) = parent {
+            dialog.set_transient_for(Some(p));
+        }
 
         // Header bar (GNOME HIG)
         let (header, close_btn, import_button) = super::widgets::dialog_header("Close", "Import");
@@ -85,7 +90,7 @@ impl ImportDialog {
 
         clamp.set_child(Some(&content));
         toolbar_view.set_content(Some(&clamp));
-        dialog.set_child(Some(&toolbar_view));
+        dialog.set_content(Some(&toolbar_view));
 
         // === Source Selection Page ===
         let source_page = Self::create_source_page();
@@ -178,83 +183,83 @@ impl ImportDialog {
             .build();
 
         // Add import sources
-        let sources: Vec<(&str, &str, &str, bool)> = vec![
+        let sources: Vec<(&str, String, String, bool)> = vec![
             (
                 "ssh_config",
-                "SSH Config",
-                "Import from ~/.ssh/config",
+                i18n("SSH Config"),
+                i18n("Import from ~/.ssh/config"),
                 SshConfigImporter::new().is_available(),
             ),
             (
                 "ssh_config_file",
-                "SSH Config File",
-                "Import from a specific SSH config file",
+                i18n("SSH Config File"),
+                i18n("Import from a specific SSH config file"),
                 true,
             ),
             (
                 "asbru",
-                "Asbru-CM",
-                "Import from Asbru-CM/PAC Manager config",
+                i18n("Asbru-CM"),
+                i18n("Import from Asbru-CM/PAC Manager config"),
                 AsbruImporter::new().is_available(),
             ),
             (
                 "asbru_file",
-                "Asbru-CM YAML File",
-                "Import from a specific Asbru-CM YAML file",
+                i18n("Asbru-CM YAML File"),
+                i18n("Import from a specific Asbru-CM YAML file"),
                 true,
             ),
             (
                 "remmina",
-                "Remmina",
-                "Import from Remmina connection files",
+                i18n("Remmina"),
+                i18n("Import from Remmina connection files"),
                 RemminaImporter::new().is_available(),
             ),
             (
                 "ansible",
-                "Ansible Inventory",
-                "Import from Ansible inventory files",
+                i18n("Ansible Inventory"),
+                i18n("Import from Ansible inventory files"),
                 AnsibleInventoryImporter::new().is_available(),
             ),
             (
                 "ansible_file",
-                "Ansible Inventory File",
-                "Import from a specific Ansible inventory file",
+                i18n("Ansible Inventory File"),
+                i18n("Import from a specific Ansible inventory file"),
                 true,
             ),
             (
                 "native_file",
-                "RustConn Native (.rcn)",
-                "Import from a RustConn native export file",
+                i18n("RustConn Native (.rcn)"),
+                i18n("Import from a RustConn native export file"),
                 true,
             ),
             (
                 "royalts_file",
-                "Royal TS (.rtsz)",
-                "Import from a Royal TS export file",
+                i18n("Royal TS (.rtsz)"),
+                i18n("Import from a Royal TS export file"),
                 true,
             ),
             (
                 "rdm_file",
-                "Remote Desktop Manager (JSON)",
-                "Import from a Remote Desktop Manager JSON export file",
+                i18n("Remote Desktop Manager (JSON)"),
+                i18n("Import from a Remote Desktop Manager JSON export file"),
                 true,
             ),
             (
                 "mobaxterm_file",
-                "MobaXterm (.mxtsessions)",
-                "Import from a MobaXterm session export file",
+                i18n("MobaXterm (.mxtsessions)"),
+                i18n("Import from a MobaXterm session export file"),
                 true,
             ),
             (
                 "vv_file",
-                "Virt-Viewer (.vv)",
-                "Import SPICE/VNC connection from a virt-viewer file",
+                i18n("Virt-Viewer (.vv)"),
+                i18n("Import SPICE/VNC connection from a virt-viewer file"),
                 true,
             ),
         ];
 
-        for (id, name, desc, available) in sources {
-            let row = Self::create_source_row(id, name, desc, available);
+        for (id, name, desc, available) in &sources {
+            let row = Self::create_source_row(id, name, desc, *available);
             list_box.append(&row);
         }
 
@@ -622,8 +627,7 @@ impl ImportDialog {
             }
         });
 
-        self.dialog
-            .present(self.parent.as_ref().map(|w| w.upcast_ref::<gtk4::Widget>()));
+        self.dialog.present();
     }
 
     /// Runs the dialog and calls the callback with the result and source name
@@ -857,8 +861,7 @@ impl ImportDialog {
         });
         self.source_list.add_controller(gesture);
 
-        self.dialog
-            .present(self.parent.as_ref().map(|w| w.upcast_ref::<gtk4::Widget>()));
+        self.dialog.present();
     }
 
     /// Handles the special case of importing from an SSH config file
@@ -891,7 +894,7 @@ impl ImportDialog {
         filter.add_pattern("config");
         filter.add_pattern("config.*");
         filter.add_pattern("*");
-        filter.set_name(Some("SSH config files"));
+        filter.set_name(Some(&i18n("SSH config files")));
         let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
         filters.append(&filter);
         file_dialog.set_filters(Some(&filters));
@@ -980,7 +983,7 @@ impl ImportDialog {
         let filter = gtk4::FileFilter::new();
         filter.add_pattern("*.yml");
         filter.add_pattern("*.yaml");
-        filter.set_name(Some("YAML files"));
+        filter.set_name(Some(&i18n("YAML files")));
         let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
         filters.append(&filter);
         file_dialog.set_filters(Some(&filters));
@@ -1072,7 +1075,7 @@ impl ImportDialog {
         filter.add_pattern("hosts");
         filter.add_pattern("inventory");
         filter.add_pattern("*");
-        filter.set_name(Some("Ansible inventory files"));
+        filter.set_name(Some(&i18n("Ansible inventory files")));
         let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
         filters.append(&filter);
         file_dialog.set_filters(Some(&filters));
@@ -1139,7 +1142,7 @@ impl ImportDialog {
 
     /// Returns a reference to the underlying dialog
     #[must_use]
-    pub const fn dialog(&self) -> &adw::Dialog {
+    pub const fn dialog(&self) -> &adw::Window {
         &self.dialog
     }
 
@@ -1304,7 +1307,7 @@ impl ImportDialog {
         // Set filter for .rcn files
         let filter = gtk4::FileFilter::new();
         filter.add_pattern("*.rcn");
-        filter.set_name(Some("RustConn Native (*.rcn)"));
+        filter.set_name(Some(&i18n("RustConn Native (*.rcn)")));
         let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
         filters.append(&filter);
         file_dialog.set_filters(Some(&filters));
@@ -1345,7 +1348,7 @@ impl ImportDialog {
 
                                 // Extract filename for display
                                 let filename = path.file_name().map_or_else(
-                                    || "RustConn Native".to_string(),
+                                    || i18n("RustConn Native"),
                                     |n| n.to_string_lossy().to_string(),
                                 );
 
@@ -1411,7 +1414,7 @@ impl ImportDialog {
         let filter = gtk4::FileFilter::new();
         filter.add_pattern("*.rtsz");
         filter.add_pattern("*.json");
-        filter.set_name(Some("Royal TS files (*.rtsz, *.json)"));
+        filter.set_name(Some(&i18n("Royal TS files (*.rtsz, *.json)")));
         let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
         filters.append(&filter);
         file_dialog.set_filters(Some(&filters));
@@ -1496,7 +1499,7 @@ impl ImportDialog {
 
         let filter = gtk4::FileFilter::new();
         filter.add_pattern("*.json");
-        filter.set_name(Some("JSON files"));
+        filter.set_name(Some(&i18n("JSON files")));
         let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
         filters.append(&filter);
         file_dialog.set_filters(Some(&filters));
@@ -1583,7 +1586,7 @@ impl ImportDialog {
 
         let filter = gtk4::FileFilter::new();
         filter.add_pattern("*.mxtsessions");
-        filter.set_name(Some("MobaXterm Sessions (*.mxtsessions)"));
+        filter.set_name(Some(&i18n("MobaXterm Sessions (*.mxtsessions)")));
         let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
         filters.append(&filter);
         file_dialog.set_filters(Some(&filters));
@@ -1670,7 +1673,7 @@ impl ImportDialog {
 
         let filter = gtk4::FileFilter::new();
         filter.add_pattern("*.vv");
-        filter.set_name(Some("Virt-Viewer files (*.vv)"));
+        filter.set_name(Some(&i18n("Virt-Viewer files (*.vv)")));
         let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
         filters.append(&filter);
         file_dialog.set_filters(Some(&filters));

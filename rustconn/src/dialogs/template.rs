@@ -175,7 +175,7 @@ impl TemplateDialog {
             tags_entry,
         ) = Self::create_basic_tab();
         view_stack
-            .add_titled(&basic_scrolled, Some("basic"), "Basic")
+            .add_titled(&basic_scrolled, Some("basic"), &i18n("Basic"))
             .set_icon_name(Some("document-properties-symbolic"));
 
         // === Protocol Tab ===
@@ -186,7 +186,7 @@ impl TemplateDialog {
             .child(&protocol_stack)
             .build();
         view_stack
-            .add_titled(&protocol_scrolled, Some("protocol"), "Protocol")
+            .add_titled(&protocol_scrolled, Some("protocol"), &i18n("Protocol"))
             .set_icon_name(Some("network-server-symbolic"));
 
         // SSH options
@@ -283,9 +283,9 @@ impl TemplateDialog {
         telnet_box.set_margin_bottom(12);
         telnet_box.set_margin_start(12);
         telnet_box.set_margin_end(12);
-        let telnet_label = Label::new(Some(
+        let telnet_label = Label::new(Some(&i18n(
             "Telnet uses an external client. No additional options.",
-        ));
+        )));
         telnet_label.add_css_class("dim-label");
         telnet_box.append(&telnet_label);
         protocol_stack.add_named(&telnet_box, Some("telnet"));
@@ -487,15 +487,15 @@ impl TemplateDialog {
 
         // === Template Info Group ===
         let info_group = adw::PreferencesGroup::builder()
-            .title("Template Info")
+            .title(i18n("Template Info"))
             .build();
 
         // Name - use EntryRow for proper width
-        let name_entry = adw::EntryRow::builder().title("Name").build();
+        let name_entry = adw::EntryRow::builder().title(i18n("Name")).build();
         info_group.add(&name_entry);
 
         // Description - use EntryRow for proper width
-        let description_entry = adw::EntryRow::builder().title("Description").build();
+        let description_entry = adw::EntryRow::builder().title(i18n("Description")).build();
         info_group.add(&description_entry);
 
         // Protocol
@@ -506,8 +506,8 @@ impl TemplateDialog {
             .build();
 
         let protocol_row = adw::ActionRow::builder()
-            .title("Protocol")
-            .subtitle("Connection protocol type")
+            .title(i18n("Protocol"))
+            .subtitle(i18n("Connection protocol type"))
             .build();
         protocol_row.add_suffix(&protocol_dropdown);
         info_group.add(&protocol_row);
@@ -516,12 +516,14 @@ impl TemplateDialog {
 
         // === Default Values Group ===
         let defaults_group = adw::PreferencesGroup::builder()
-            .title("Default Values")
-            .description("Pre-filled when creating connections from this template")
+            .title(i18n("Default Values"))
+            .description(i18n(
+                "Pre-filled when creating connections from this template",
+            ))
             .build();
 
         // Host - use EntryRow for proper width
-        let host_entry = adw::EntryRow::builder().title("Host").build();
+        let host_entry = adw::EntryRow::builder().title(i18n("Host")).build();
         defaults_group.add(&host_entry);
 
         // Port
@@ -530,22 +532,22 @@ impl TemplateDialog {
         port_spin.set_valign(gtk4::Align::Center);
 
         let port_row = adw::ActionRow::builder()
-            .title("Port")
-            .subtitle("Default connection port")
+            .title(i18n("Port"))
+            .subtitle(i18n("Default connection port"))
             .build();
         port_row.add_suffix(&port_spin);
         defaults_group.add(&port_row);
 
         // Username - use EntryRow for proper width
-        let username_entry = adw::EntryRow::builder().title("Username").build();
+        let username_entry = adw::EntryRow::builder().title(i18n("Username")).build();
         defaults_group.add(&username_entry);
 
         // Domain - use EntryRow for proper width
-        let domain_entry = adw::EntryRow::builder().title("Domain").build();
+        let domain_entry = adw::EntryRow::builder().title(i18n("Domain")).build();
         defaults_group.add(&domain_entry);
 
         // Tags - use EntryRow for proper width
-        let tags_entry = adw::EntryRow::builder().title("Tags").build();
+        let tags_entry = adw::EntryRow::builder().title(i18n("Tags")).build();
         defaults_group.add(&tags_entry);
 
         content.append(&defaults_group);
@@ -598,17 +600,19 @@ impl TemplateDialog {
 
         // === Authentication Group ===
         let auth_group = adw::PreferencesGroup::builder()
-            .title("Authentication")
+            .title(i18n("Authentication"))
             .build();
 
         // Auth method dropdown
-        let auth_list = StringList::new(&[
-            "Password",
-            "Public Key",
-            "Keyboard Interactive",
-            "SSH Agent",
-            "Security Key (FIDO2)",
-        ]);
+        let auth_items: Vec<String> = vec![
+            i18n("Password"),
+            i18n("Public Key"),
+            i18n("Keyboard Interactive"),
+            i18n("SSH Agent"),
+            i18n("Security Key (FIDO2)"),
+        ];
+        let auth_strs: Vec<&str> = auth_items.iter().map(String::as_str).collect();
+        let auth_list = StringList::new(&auth_strs);
         let auth_dropdown = DropDown::builder()
             .model(&auth_list)
             .valign(gtk4::Align::Center)
@@ -616,14 +620,16 @@ impl TemplateDialog {
         auth_dropdown.set_selected(0);
 
         let auth_row = adw::ActionRow::builder()
-            .title("Method")
-            .subtitle("How to authenticate with the server")
+            .title(i18n("Method"))
+            .subtitle(i18n("How to authenticate with the server"))
             .build();
         auth_row.add_suffix(&auth_dropdown);
         auth_group.add(&auth_row);
 
         // Key source dropdown
-        let key_source_list = StringList::new(&["Default", "File", "Agent"]);
+        let ks_items: Vec<String> = vec![i18n("Default"), i18n("File"), i18n("Agent")];
+        let ks_strs: Vec<&str> = ks_items.iter().map(String::as_str).collect();
+        let key_source_list = StringList::new(&ks_strs);
         let key_source_dropdown = DropDown::builder()
             .model(&key_source_list)
             .valign(gtk4::Align::Center)
@@ -631,8 +637,8 @@ impl TemplateDialog {
         key_source_dropdown.set_selected(0);
 
         let key_source_row = adw::ActionRow::builder()
-            .title("Key Source")
-            .subtitle("Where to get the SSH key from")
+            .title(i18n("Key Source"))
+            .subtitle(i18n("Where to get the SSH key from"))
             .build();
         key_source_row.add_suffix(&key_source_dropdown);
         auth_group.add(&key_source_row);
@@ -640,13 +646,13 @@ impl TemplateDialog {
         // Key file entry
         let key_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Path to SSH key")
+            .placeholder_text(i18n("Path to SSH key"))
             .valign(gtk4::Align::Center)
             .build();
 
         let key_file_row = adw::ActionRow::builder()
-            .title("Key File")
-            .subtitle("Path to private key file")
+            .title(i18n("Key File"))
+            .subtitle(i18n("Path to private key file"))
             .build();
         key_file_row.add_suffix(&key_entry);
         auth_group.add(&key_file_row);
@@ -654,7 +660,9 @@ impl TemplateDialog {
         content.append(&auth_group);
 
         // === Connection Options Group ===
-        let connection_group = adw::PreferencesGroup::builder().title("Connection").build();
+        let connection_group = adw::PreferencesGroup::builder()
+            .title(i18n("Connection"))
+            .build();
 
         // ProxyJump entry
         let proxy_entry = Entry::builder()
@@ -664,8 +672,8 @@ impl TemplateDialog {
             .build();
 
         let proxy_row = adw::ActionRow::builder()
-            .title("ProxyJump")
-            .subtitle("Jump host for tunneling (-J)")
+            .title(i18n("ProxyJump"))
+            .subtitle(i18n("Jump host for tunneling (-J)"))
             .build();
         proxy_row.add_suffix(&proxy_entry);
         connection_group.add(&proxy_row);
@@ -673,8 +681,8 @@ impl TemplateDialog {
         // IdentitiesOnly switch
         let identities_only = CheckButton::new();
         let identities_row = adw::ActionRow::builder()
-            .title("Use Only Specified Key")
-            .subtitle("Prevents trying other keys (IdentitiesOnly)")
+            .title(i18n("Use Only Specified Key"))
+            .subtitle(i18n("Prevents trying other keys (IdentitiesOnly)"))
             .activatable_widget(&identities_only)
             .build();
         identities_row.add_suffix(&identities_only);
@@ -683,8 +691,8 @@ impl TemplateDialog {
         // ControlMaster switch
         let control_master = CheckButton::new();
         let control_master_row = adw::ActionRow::builder()
-            .title("Connection Multiplexing")
-            .subtitle("Reuse connections (ControlMaster)")
+            .title(i18n("Connection Multiplexing"))
+            .subtitle(i18n("Reuse connections (ControlMaster)"))
             .activatable_widget(&control_master)
             .build();
         control_master_row.add_suffix(&control_master);
@@ -693,13 +701,15 @@ impl TemplateDialog {
         content.append(&connection_group);
 
         // === Session Group ===
-        let session_group = adw::PreferencesGroup::builder().title("Session").build();
+        let session_group = adw::PreferencesGroup::builder()
+            .title(i18n("Session"))
+            .build();
 
         // Agent Forwarding switch
         let agent_forwarding = CheckButton::new();
         let agent_forwarding_row = adw::ActionRow::builder()
-            .title("Agent Forwarding")
-            .subtitle("Forward SSH agent to remote host (-A)")
+            .title(i18n("Agent Forwarding"))
+            .subtitle(i18n("Forward SSH agent to remote host (-A)"))
             .activatable_widget(&agent_forwarding)
             .build();
         agent_forwarding_row.add_suffix(&agent_forwarding);
@@ -708,13 +718,13 @@ impl TemplateDialog {
         // Startup command entry
         let startup_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Command to run on connect")
+            .placeholder_text(i18n("Command to run on connect"))
             .valign(gtk4::Align::Center)
             .build();
 
         let startup_row = adw::ActionRow::builder()
-            .title("Startup Command")
-            .subtitle("Execute after connection established")
+            .title(i18n("Startup Command"))
+            .subtitle(i18n("Execute after connection established"))
             .build();
         startup_row.add_suffix(&startup_entry);
         session_group.add(&startup_row);
@@ -722,13 +732,13 @@ impl TemplateDialog {
         // Custom options entry
         let options_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Key=Value, Key2=Value2")
+            .placeholder_text(i18n("Key=Value, Key2=Value2"))
             .valign(gtk4::Align::Center)
             .build();
 
         let options_row = adw::ActionRow::builder()
-            .title("Custom Options")
-            .subtitle("Additional SSH options")
+            .title(i18n("Custom Options"))
+            .subtitle(i18n("Additional SSH options"))
             .build();
         options_row.add_suffix(&options_entry);
         session_group.add(&options_row);
@@ -784,7 +794,9 @@ impl TemplateDialog {
         content.set_margin_end(12);
 
         // === Display Group ===
-        let display_group = adw::PreferencesGroup::builder().title("Display").build();
+        let display_group = adw::PreferencesGroup::builder()
+            .title(i18n("Display"))
+            .build();
 
         // Client mode dropdown
         let client_mode_list = StringList::new(&[
@@ -797,8 +809,10 @@ impl TemplateDialog {
             .build();
 
         let client_mode_row = adw::ActionRow::builder()
-            .title("Client Mode")
-            .subtitle("Embedded renders in tab, External opens separate window")
+            .title(i18n("Client Mode"))
+            .subtitle(i18n(
+                "Embedded renders in tab, External opens separate window",
+            ))
             .build();
         client_mode_row.add_suffix(&client_mode_dropdown);
         display_group.add(&client_mode_row);
@@ -824,27 +838,29 @@ impl TemplateDialog {
         res_box.append(&height_spin);
 
         let resolution_row = adw::ActionRow::builder()
-            .title("Resolution")
-            .subtitle("Width × Height in pixels")
+            .title(i18n("Resolution"))
+            .subtitle(i18n("Width × Height in pixels"))
             .build();
         resolution_row.add_suffix(&res_box);
         display_group.add(&resolution_row);
 
         // Color depth
-        let color_list = StringList::new(&[
-            "32-bit (True Color)",
-            "24-bit",
-            "16-bit (High Color)",
-            "15-bit",
-            "8-bit",
-        ]);
+        let color_items: Vec<String> = vec![
+            i18n("32-bit (True Color)"),
+            i18n("24-bit"),
+            i18n("16-bit (High Color)"),
+            i18n("15-bit"),
+            i18n("8-bit"),
+        ];
+        let color_strs: Vec<&str> = color_items.iter().map(String::as_str).collect();
+        let color_list = StringList::new(&color_strs);
         let color_dropdown = DropDown::new(Some(color_list), gtk4::Expression::NONE);
         color_dropdown.set_selected(0);
         color_dropdown.set_valign(gtk4::Align::Center);
 
         let color_row = adw::ActionRow::builder()
-            .title("Color Depth")
-            .subtitle("Higher values provide better quality")
+            .title(i18n("Color Depth"))
+            .subtitle(i18n("Higher values provide better quality"))
             .build();
         color_row.add_suffix(&color_dropdown);
         display_group.add(&color_row);
@@ -865,13 +881,15 @@ impl TemplateDialog {
         content.append(&display_group);
 
         // === Features Group ===
-        let features_group = adw::PreferencesGroup::builder().title("Features").build();
+        let features_group = adw::PreferencesGroup::builder()
+            .title(i18n("Features"))
+            .build();
 
         // Audio redirect
         let audio_check = CheckButton::new();
         let audio_row = adw::ActionRow::builder()
-            .title("Audio Redirection")
-            .subtitle("Play remote audio locally")
+            .title(i18n("Audio Redirection"))
+            .subtitle(i18n("Play remote audio locally"))
             .activatable_widget(&audio_check)
             .build();
         audio_row.add_suffix(&audio_check);
@@ -885,8 +903,8 @@ impl TemplateDialog {
             .build();
 
         let gateway_row = adw::ActionRow::builder()
-            .title("RDP Gateway")
-            .subtitle("Remote Desktop Gateway server")
+            .title(i18n("RDP Gateway"))
+            .subtitle(i18n("Remote Desktop Gateway server"))
             .build();
         gateway_row.add_suffix(&gateway_entry);
         features_group.add(&gateway_row);
@@ -894,17 +912,19 @@ impl TemplateDialog {
         content.append(&features_group);
 
         // === Advanced Group ===
-        let advanced_group = adw::PreferencesGroup::builder().title("Advanced").build();
+        let advanced_group = adw::PreferencesGroup::builder()
+            .title(i18n("Advanced"))
+            .build();
 
         let custom_args_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Additional command-line arguments")
+            .placeholder_text(i18n("Additional command-line arguments"))
             .valign(gtk4::Align::Center)
             .build();
 
         let args_row = adw::ActionRow::builder()
-            .title("Custom Arguments")
-            .subtitle("Extra FreeRDP command-line options")
+            .title(i18n("Custom Arguments"))
+            .subtitle(i18n("Extra FreeRDP command-line options"))
             .build();
         args_row.add_suffix(&custom_args_entry);
         advanced_group.add(&args_row);
@@ -959,7 +979,9 @@ impl TemplateDialog {
         content.set_margin_end(12);
 
         // === Display Group ===
-        let display_group = adw::PreferencesGroup::builder().title("Display").build();
+        let display_group = adw::PreferencesGroup::builder()
+            .title(i18n("Display"))
+            .build();
 
         // Client mode dropdown
         let client_mode_list = StringList::new(&[
@@ -972,8 +994,10 @@ impl TemplateDialog {
             .build();
 
         let client_mode_row = adw::ActionRow::builder()
-            .title("Client Mode")
-            .subtitle("Embedded renders in tab, External opens separate window")
+            .title(i18n("Client Mode"))
+            .subtitle(i18n(
+                "Embedded renders in tab, External opens separate window",
+            ))
             .build();
         client_mode_row.add_suffix(&client_mode_dropdown);
         display_group.add(&client_mode_row);
@@ -981,8 +1005,8 @@ impl TemplateDialog {
         // Scaling
         let scaling_check = CheckButton::builder().active(true).build();
         let scaling_row = adw::ActionRow::builder()
-            .title("Scale Display")
-            .subtitle("Scale display to fit window")
+            .title(i18n("Scale Display"))
+            .subtitle(i18n("Scale display to fit window"))
             .activatable_widget(&scaling_check)
             .build();
         scaling_row.add_suffix(&scaling_check);
@@ -991,7 +1015,9 @@ impl TemplateDialog {
         content.append(&display_group);
 
         // === Encoding Group ===
-        let encoding_group = adw::PreferencesGroup::builder().title("Encoding").build();
+        let encoding_group = adw::PreferencesGroup::builder()
+            .title(i18n("Encoding"))
+            .build();
 
         // Encoding entry
         let encoding_entry = Entry::builder()
@@ -1001,8 +1027,8 @@ impl TemplateDialog {
             .build();
 
         let encoding_row = adw::ActionRow::builder()
-            .title("Encoding")
-            .subtitle("Preferred encoding methods")
+            .title(i18n("Encoding"))
+            .subtitle(i18n("Preferred encoding methods"))
             .build();
         encoding_row.add_suffix(&encoding_entry);
         encoding_group.add(&encoding_row);
@@ -1017,8 +1043,8 @@ impl TemplateDialog {
             .build();
 
         let compression_row = adw::ActionRow::builder()
-            .title("Compression Level")
-            .subtitle("0 (fastest) to 9 (best compression)")
+            .title(i18n("Compression Level"))
+            .subtitle(i18n("0 (fastest) to 9 (best compression)"))
             .build();
         compression_row.add_suffix(&compression_spin);
         encoding_group.add(&compression_row);
@@ -1033,8 +1059,8 @@ impl TemplateDialog {
             .build();
 
         let quality_row = adw::ActionRow::builder()
-            .title("Quality Level")
-            .subtitle("0 (lowest) to 9 (best quality)")
+            .title(i18n("Quality Level"))
+            .subtitle(i18n("0 (lowest) to 9 (best quality)"))
             .build();
         quality_row.add_suffix(&quality_spin);
         encoding_group.add(&quality_row);
@@ -1042,13 +1068,15 @@ impl TemplateDialog {
         content.append(&encoding_group);
 
         // === Features Group ===
-        let features_group = adw::PreferencesGroup::builder().title("Features").build();
+        let features_group = adw::PreferencesGroup::builder()
+            .title(i18n("Features"))
+            .build();
 
         // View only
         let view_only_check = CheckButton::new();
         let view_only_row = adw::ActionRow::builder()
-            .title("View Only")
-            .subtitle("Disable keyboard and mouse input")
+            .title(i18n("View Only"))
+            .subtitle(i18n("Disable keyboard and mouse input"))
             .activatable_widget(&view_only_check)
             .build();
         view_only_row.add_suffix(&view_only_check);
@@ -1057,8 +1085,8 @@ impl TemplateDialog {
         // Clipboard sharing
         let clipboard_check = CheckButton::builder().active(true).build();
         let clipboard_row = adw::ActionRow::builder()
-            .title("Clipboard Sharing")
-            .subtitle("Share clipboard between local and remote")
+            .title(i18n("Clipboard Sharing"))
+            .subtitle(i18n("Share clipboard between local and remote"))
             .activatable_widget(&clipboard_check)
             .build();
         clipboard_row.add_suffix(&clipboard_check);
@@ -1067,17 +1095,19 @@ impl TemplateDialog {
         content.append(&features_group);
 
         // === Advanced Group ===
-        let advanced_group = adw::PreferencesGroup::builder().title("Advanced").build();
+        let advanced_group = adw::PreferencesGroup::builder()
+            .title(i18n("Advanced"))
+            .build();
 
         let custom_args_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Additional arguments")
+            .placeholder_text(i18n("Additional arguments"))
             .valign(gtk4::Align::Center)
             .build();
 
         let args_row = adw::ActionRow::builder()
-            .title("Custom Arguments")
-            .subtitle("Extra TigerVNC command-line options")
+            .title(i18n("Custom Arguments"))
+            .subtitle(i18n("Extra TigerVNC command-line options"))
             .build();
         args_row.add_suffix(&custom_args_entry);
         advanced_group.add(&args_row);
@@ -1131,13 +1161,15 @@ impl TemplateDialog {
         content.set_margin_end(12);
 
         // === Security Group ===
-        let security_group = adw::PreferencesGroup::builder().title("Security").build();
+        let security_group = adw::PreferencesGroup::builder()
+            .title(i18n("Security"))
+            .build();
 
         // TLS encryption
         let tls_check = CheckButton::new();
         let tls_row = adw::ActionRow::builder()
-            .title("TLS Encryption")
-            .subtitle("Enable encrypted connection")
+            .title(i18n("TLS Encryption"))
+            .subtitle(i18n("Enable encrypted connection"))
             .activatable_widget(&tls_check)
             .build();
         tls_row.add_suffix(&tls_check);
@@ -1146,13 +1178,13 @@ impl TemplateDialog {
         // CA Certificate
         let ca_cert_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Path to CA certificate (optional)")
+            .placeholder_text(i18n("Path to CA certificate (optional)"))
             .valign(gtk4::Align::Center)
             .build();
 
         let ca_cert_row = adw::ActionRow::builder()
-            .title("CA Certificate")
-            .subtitle("Certificate authority file for TLS")
+            .title(i18n("CA Certificate"))
+            .subtitle(i18n("Certificate authority file for TLS"))
             .build();
         ca_cert_row.add_suffix(&ca_cert_entry);
         security_group.add(&ca_cert_row);
@@ -1160,8 +1192,8 @@ impl TemplateDialog {
         // Skip verification
         let skip_verify_check = CheckButton::new();
         let skip_verify_row = adw::ActionRow::builder()
-            .title("Skip Certificate Verification")
-            .subtitle("Insecure: do not verify server certificate")
+            .title(i18n("Skip Certificate Verification"))
+            .subtitle(i18n("Insecure: do not verify server certificate"))
             .activatable_widget(&skip_verify_check)
             .build();
         skip_verify_row.add_suffix(&skip_verify_check);
@@ -1183,13 +1215,15 @@ impl TemplateDialog {
         content.append(&security_group);
 
         // === Features Group ===
-        let features_group = adw::PreferencesGroup::builder().title("Features").build();
+        let features_group = adw::PreferencesGroup::builder()
+            .title(i18n("Features"))
+            .build();
 
         // USB redirection
         let usb_check = CheckButton::new();
         let usb_row = adw::ActionRow::builder()
-            .title("USB Redirection")
-            .subtitle("Redirect USB devices to remote")
+            .title(i18n("USB Redirection"))
+            .subtitle(i18n("Redirect USB devices to remote"))
             .activatable_widget(&usb_check)
             .build();
         usb_row.add_suffix(&usb_check);
@@ -1198,8 +1232,8 @@ impl TemplateDialog {
         // Clipboard sharing
         let clipboard_check = CheckButton::builder().active(true).build();
         let clipboard_row = adw::ActionRow::builder()
-            .title("Clipboard Sharing")
-            .subtitle("Share clipboard between local and remote")
+            .title(i18n("Clipboard Sharing"))
+            .subtitle(i18n("Share clipboard between local and remote"))
             .activatable_widget(&clipboard_check)
             .build();
         clipboard_row.add_suffix(&clipboard_check);
@@ -1209,18 +1243,26 @@ impl TemplateDialog {
 
         // === Performance Group ===
         let performance_group = adw::PreferencesGroup::builder()
-            .title("Performance")
+            .title(i18n("Performance"))
             .build();
 
         // Image compression
-        let compression_list = StringList::new(&["Auto", "Off", "GLZ", "LZ", "QUIC"]);
+        let compression_items: Vec<String> = vec![
+            i18n("Auto"),
+            i18n("Off"),
+            "GLZ".to_string(),
+            "LZ".to_string(),
+            "QUIC".to_string(),
+        ];
+        let compression_strs: Vec<&str> = compression_items.iter().map(String::as_str).collect();
+        let compression_list = StringList::new(&compression_strs);
         let compression_dropdown = DropDown::new(Some(compression_list), gtk4::Expression::NONE);
         compression_dropdown.set_selected(0);
         compression_dropdown.set_valign(gtk4::Align::Center);
 
         let compression_row = adw::ActionRow::builder()
-            .title("Image Compression")
-            .subtitle("Algorithm for image data compression")
+            .title(i18n("Image Compression"))
+            .subtitle(i18n("Algorithm for image data compression"))
             .build();
         compression_row.add_suffix(&compression_dropdown);
         performance_group.add(&compression_row);
@@ -1290,7 +1332,9 @@ impl TemplateDialog {
         content.set_margin_end(12);
 
         // === Provider Selection Group ===
-        let provider_group = adw::PreferencesGroup::builder().title("Provider").build();
+        let provider_group = adw::PreferencesGroup::builder()
+            .title(i18n("Provider"))
+            .build();
 
         let provider_list = StringList::new(&[
             "AWS Session Manager",
@@ -1302,15 +1346,15 @@ impl TemplateDialog {
             "Teleport",
             "Tailscale SSH",
             "HashiCorp Boundary",
-            "Generic Command",
+            i18n("Generic Command").as_str(),
         ]);
         let provider_dropdown = DropDown::new(Some(provider_list), gtk4::Expression::NONE);
         provider_dropdown.set_selected(0);
         provider_dropdown.set_valign(gtk4::Align::Center);
 
         let provider_row = adw::ActionRow::builder()
-            .title("Zero Trust Provider")
-            .subtitle("Select your identity-aware proxy service")
+            .title(i18n("Zero Trust Provider"))
+            .subtitle(i18n("Select your identity-aware proxy service"))
             .build();
         provider_row.add_suffix(&provider_dropdown);
         provider_group.add(&provider_row);
@@ -1386,17 +1430,19 @@ impl TemplateDialog {
         });
 
         // === Advanced Group ===
-        let advanced_group = adw::PreferencesGroup::builder().title("Advanced").build();
+        let advanced_group = adw::PreferencesGroup::builder()
+            .title(i18n("Advanced"))
+            .build();
 
         let custom_args_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("Additional command-line arguments")
+            .placeholder_text(i18n("Additional command-line arguments"))
             .valign(gtk4::Align::Center)
             .build();
 
         let args_row = adw::ActionRow::builder()
-            .title("Custom Arguments")
-            .subtitle("Extra provider CLI options")
+            .title(i18n("Custom Arguments"))
+            .subtitle(i18n("Extra provider CLI options"))
             .build();
         args_row.add_suffix(&custom_args_entry);
         advanced_group.add(&args_row);
@@ -1442,7 +1488,7 @@ impl TemplateDialog {
         let content = GtkBox::new(Orientation::Vertical, 12);
 
         let group = adw::PreferencesGroup::builder()
-            .title("AWS Session Manager")
+            .title(i18n("AWS Session Manager"))
             .build();
 
         let target_entry = Entry::builder()
@@ -1451,8 +1497,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let target_row = adw::ActionRow::builder()
-            .title("Instance ID")
-            .subtitle("EC2 instance ID to connect to")
+            .title(i18n("Instance ID"))
+            .subtitle(i18n("EC2 instance ID to connect to"))
             .build();
         target_row.add_suffix(&target_entry);
         group.add(&target_row);
@@ -1464,8 +1510,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let profile_row = adw::ActionRow::builder()
-            .title("AWS Profile")
-            .subtitle("Named profile from ~/.aws/credentials")
+            .title(i18n("AWS Profile"))
+            .subtitle(i18n("Named profile from ~/.aws/credentials"))
             .build();
         profile_row.add_suffix(&profile_entry);
         group.add(&profile_row);
@@ -1476,8 +1522,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let region_row = adw::ActionRow::builder()
-            .title("Region")
-            .subtitle("AWS region (uses profile default if empty)")
+            .title(i18n("Region"))
+            .subtitle(i18n("AWS region (uses profile default if empty)"))
             .build();
         region_row.add_suffix(&region_entry);
         group.add(&region_row);
@@ -1491,7 +1537,7 @@ impl TemplateDialog {
         let content = GtkBox::new(Orientation::Vertical, 12);
 
         let group = adw::PreferencesGroup::builder()
-            .title("GCP IAP Tunnel")
+            .title(i18n("GCP IAP Tunnel"))
             .build();
 
         let instance_entry = Entry::builder()
@@ -1500,8 +1546,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let instance_row = adw::ActionRow::builder()
-            .title("Instance")
-            .subtitle("Compute Engine instance name")
+            .title(i18n("Instance"))
+            .subtitle(i18n("Compute Engine instance name"))
             .build();
         instance_row.add_suffix(&instance_entry);
         group.add(&instance_row);
@@ -1512,8 +1558,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let zone_row = adw::ActionRow::builder()
-            .title("Zone")
-            .subtitle("GCP zone where instance is located")
+            .title(i18n("Zone"))
+            .subtitle(i18n("GCP zone where instance is located"))
             .build();
         zone_row.add_suffix(&zone_entry);
         group.add(&zone_row);
@@ -1524,8 +1570,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let project_row = adw::ActionRow::builder()
-            .title("Project")
-            .subtitle("GCP project ID (uses default if empty)")
+            .title(i18n("Project"))
+            .subtitle(i18n("GCP project ID (uses default if empty)"))
             .build();
         project_row.add_suffix(&project_entry);
         group.add(&project_row);
@@ -1539,7 +1585,7 @@ impl TemplateDialog {
         let content = GtkBox::new(Orientation::Vertical, 12);
 
         let group = adw::PreferencesGroup::builder()
-            .title("Azure Bastion")
+            .title(i18n("Azure Bastion"))
             .build();
 
         let resource_id_entry = Entry::builder()
@@ -1548,8 +1594,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let resource_id_row = adw::ActionRow::builder()
-            .title("Target Resource ID")
-            .subtitle("Full Azure resource ID of target VM")
+            .title(i18n("Target Resource ID"))
+            .subtitle(i18n("Full Azure resource ID of target VM"))
             .build();
         resource_id_row.add_suffix(&resource_id_entry);
         group.add(&resource_id_row);
@@ -1560,8 +1606,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let rg_row = adw::ActionRow::builder()
-            .title("Resource Group")
-            .subtitle("Resource group containing the Bastion")
+            .title(i18n("Resource Group"))
+            .subtitle(i18n("Resource group containing the Bastion"))
             .build();
         rg_row.add_suffix(&rg_entry);
         group.add(&rg_row);
@@ -1572,8 +1618,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let bastion_row = adw::ActionRow::builder()
-            .title("Bastion Name")
-            .subtitle("Name of the Azure Bastion host")
+            .title(i18n("Bastion Name"))
+            .subtitle(i18n("Name of the Azure Bastion host"))
             .build();
         bastion_row.add_suffix(&bastion_entry);
         group.add(&bastion_row);
@@ -1587,7 +1633,7 @@ impl TemplateDialog {
         let content = GtkBox::new(Orientation::Vertical, 12);
 
         let group = adw::PreferencesGroup::builder()
-            .title("Azure SSH (AAD)")
+            .title(i18n("Azure SSH (AAD)"))
             .build();
 
         let vm_entry = Entry::builder()
@@ -1596,8 +1642,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let vm_row = adw::ActionRow::builder()
-            .title("VM Name")
-            .subtitle("Azure virtual machine name")
+            .title(i18n("VM Name"))
+            .subtitle(i18n("Azure virtual machine name"))
             .build();
         vm_row.add_suffix(&vm_entry);
         group.add(&vm_row);
@@ -1608,8 +1654,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let rg_row = adw::ActionRow::builder()
-            .title("Resource Group")
-            .subtitle("Resource group containing the VM")
+            .title(i18n("Resource Group"))
+            .subtitle(i18n("Resource group containing the VM"))
             .build();
         rg_row.add_suffix(&rg_entry);
         group.add(&rg_row);
@@ -1624,7 +1670,7 @@ impl TemplateDialog {
         let content = GtkBox::new(Orientation::Vertical, 12);
 
         let group = adw::PreferencesGroup::builder()
-            .title("OCI Bastion")
+            .title(i18n("OCI Bastion"))
             .build();
 
         let bastion_id_entry = Entry::builder()
@@ -1633,8 +1679,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let bastion_id_row = adw::ActionRow::builder()
-            .title("Bastion OCID")
-            .subtitle("Oracle Cloud bastion service OCID")
+            .title(i18n("Bastion OCID"))
+            .subtitle(i18n("Oracle Cloud bastion service OCID"))
             .build();
         bastion_id_row.add_suffix(&bastion_id_entry);
         group.add(&bastion_id_row);
@@ -1645,8 +1691,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let target_id_row = adw::ActionRow::builder()
-            .title("Target OCID")
-            .subtitle("Target compute instance OCID")
+            .title(i18n("Target OCID"))
+            .subtitle(i18n("Target compute instance OCID"))
             .build();
         target_id_row.add_suffix(&target_id_entry);
         group.add(&target_id_row);
@@ -1657,8 +1703,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let target_ip_row = adw::ActionRow::builder()
-            .title("Target IP")
-            .subtitle("Private IP address of target instance")
+            .title(i18n("Target IP"))
+            .subtitle(i18n("Private IP address of target instance"))
             .build();
         target_ip_row.add_suffix(&target_ip_entry);
         group.add(&target_ip_row);
@@ -1672,7 +1718,7 @@ impl TemplateDialog {
         let content = GtkBox::new(Orientation::Vertical, 12);
 
         let group = adw::PreferencesGroup::builder()
-            .title("Cloudflare Access")
+            .title(i18n("Cloudflare Access"))
             .build();
 
         let hostname_entry = Entry::builder()
@@ -1681,8 +1727,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let hostname_row = adw::ActionRow::builder()
-            .title("Hostname")
-            .subtitle("Cloudflare Access protected hostname")
+            .title(i18n("Hostname"))
+            .subtitle(i18n("Cloudflare Access protected hostname"))
             .build();
         hostname_row.add_suffix(&hostname_entry);
         group.add(&hostname_row);
@@ -1695,7 +1741,9 @@ impl TemplateDialog {
     fn create_teleport_fields() -> (GtkBox, Entry, Entry) {
         let content = GtkBox::new(Orientation::Vertical, 12);
 
-        let group = adw::PreferencesGroup::builder().title("Teleport").build();
+        let group = adw::PreferencesGroup::builder()
+            .title(i18n("Teleport"))
+            .build();
 
         let host_entry = Entry::builder()
             .hexpand(true)
@@ -1703,8 +1751,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let host_row = adw::ActionRow::builder()
-            .title("Host")
-            .subtitle("Teleport node name or hostname")
+            .title(i18n("Host"))
+            .subtitle(i18n("Teleport node name or hostname"))
             .build();
         host_row.add_suffix(&host_entry);
         group.add(&host_row);
@@ -1715,8 +1763,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let cluster_row = adw::ActionRow::builder()
-            .title("Cluster")
-            .subtitle("Teleport cluster proxy address")
+            .title(i18n("Cluster"))
+            .subtitle(i18n("Teleport cluster proxy address"))
             .build();
         cluster_row.add_suffix(&cluster_entry);
         group.add(&cluster_row);
@@ -1730,17 +1778,17 @@ impl TemplateDialog {
         let content = GtkBox::new(Orientation::Vertical, 12);
 
         let group = adw::PreferencesGroup::builder()
-            .title("Tailscale SSH")
+            .title(i18n("Tailscale SSH"))
             .build();
 
         let host_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text("hostname or IP")
+            .placeholder_text(i18n("hostname or IP"))
             .valign(gtk4::Align::Center)
             .build();
         let host_row = adw::ActionRow::builder()
-            .title("Tailscale Host")
-            .subtitle("Tailnet hostname or MagicDNS name")
+            .title(i18n("Tailscale Host"))
+            .subtitle(i18n("Tailnet hostname or MagicDNS name"))
             .build();
         host_row.add_suffix(&host_entry);
         group.add(&host_row);
@@ -1754,7 +1802,7 @@ impl TemplateDialog {
         let content = GtkBox::new(Orientation::Vertical, 12);
 
         let group = adw::PreferencesGroup::builder()
-            .title("HashiCorp Boundary")
+            .title(i18n("HashiCorp Boundary"))
             .build();
 
         let target_entry = Entry::builder()
@@ -1763,8 +1811,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let target_row = adw::ActionRow::builder()
-            .title("Target ID")
-            .subtitle("Boundary target identifier")
+            .title(i18n("Target ID"))
+            .subtitle(i18n("Boundary target identifier"))
             .build();
         target_row.add_suffix(&target_entry);
         group.add(&target_row);
@@ -1775,8 +1823,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let addr_row = adw::ActionRow::builder()
-            .title("Boundary Address")
-            .subtitle("Boundary controller URL")
+            .title(i18n("Boundary Address"))
+            .subtitle(i18n("Boundary controller URL"))
             .build();
         addr_row.add_suffix(&addr_entry);
         group.add(&addr_row);
@@ -1790,7 +1838,7 @@ impl TemplateDialog {
         let content = GtkBox::new(Orientation::Vertical, 12);
 
         let group = adw::PreferencesGroup::builder()
-            .title("Generic Command")
+            .title(i18n("Generic Command"))
             .build();
 
         let command_entry = Entry::builder()
@@ -1799,8 +1847,8 @@ impl TemplateDialog {
             .valign(gtk4::Align::Center)
             .build();
         let command_row = adw::ActionRow::builder()
-            .title("Command")
-            .subtitle("Custom SSH command with proxy settings")
+            .title(i18n("Command"))
+            .subtitle(i18n("Custom SSH command with proxy settings"))
             .build();
         command_row.add_suffix(&command_entry);
         group.add(&command_row);
@@ -1952,7 +2000,7 @@ impl TemplateDialog {
             if name.trim().is_empty() {
                 crate::toast::show_toast_on_window(
                     &window,
-                    "Template name is required",
+                    &i18n("Template name is required"),
                     crate::toast::ToastType::Warning,
                 );
                 return;
@@ -2866,7 +2914,15 @@ impl TemplateManagerDialog {
 
         let filter_box = GtkBox::new(Orientation::Horizontal, 8);
         let filter_label = Label::new(Some(&i18n("Filter by protocol:")));
-        let protocols = StringList::new(&["All", "SSH", "RDP", "VNC", "SPICE"]);
+        let filter_items: Vec<String> = vec![
+            i18n("All"),
+            i18n("SSH"),
+            i18n("RDP"),
+            i18n("VNC"),
+            i18n("SPICE"),
+        ];
+        let filter_refs: Vec<&str> = filter_items.iter().map(String::as_str).collect();
+        let protocols = StringList::new(&filter_refs);
         let filter_dropdown = DropDown::builder().model(&protocols).build();
         filter_box.append(&filter_label);
         filter_box.append(&filter_dropdown);
@@ -2888,10 +2944,16 @@ impl TemplateManagerDialog {
         let button_box = GtkBox::new(Orientation::Horizontal, 8);
         button_box.set_halign(gtk4::Align::End);
 
-        let edit_btn = Button::builder().label("Edit").sensitive(false).build();
-        let delete_btn = Button::builder().label("Delete").sensitive(false).build();
+        let edit_btn = Button::builder()
+            .label(i18n("Edit"))
+            .sensitive(false)
+            .build();
+        let delete_btn = Button::builder()
+            .label(i18n("Delete"))
+            .sensitive(false)
+            .build();
         let new_template_btn = Button::builder()
-            .label("Create Template")
+            .label(i18n("Create Template"))
             .sensitive(true)
             .css_classes(["suggested-action"])
             .build();
@@ -3063,28 +3125,28 @@ impl TemplateManagerDialog {
         }
 
         if !ssh_templates.is_empty() && protocol_filter.is_none() {
-            self.add_section_header("SSH Templates");
+            self.add_section_header(&i18n("SSH Templates"));
         }
         for template in ssh_templates {
             self.add_template_row(template);
         }
 
         if !rdp_templates.is_empty() && protocol_filter.is_none() {
-            self.add_section_header("RDP Templates");
+            self.add_section_header(&i18n("RDP Templates"));
         }
         for template in rdp_templates {
             self.add_template_row(template);
         }
 
         if !vnc_templates.is_empty() && protocol_filter.is_none() {
-            self.add_section_header("VNC Templates");
+            self.add_section_header(&i18n("VNC Templates"));
         }
         for template in vnc_templates {
             self.add_template_row(template);
         }
 
         if !spice_templates.is_empty() && protocol_filter.is_none() {
-            self.add_section_header("SPICE Templates");
+            self.add_section_header(&i18n("SPICE Templates"));
         }
         for template in spice_templates {
             self.add_template_row(template);

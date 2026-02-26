@@ -137,6 +137,106 @@ pub fn validate_port(port: u16) -> Result<(), String> {
     Ok(())
 }
 
+/// Maximum length for a custom icon value.
+const ICON_MAX_LEN: usize = 64;
+
+/// Returns `true` if the character is likely an emoji or pictographic symbol.
+///
+/// Checks Unicode general categories commonly used by emoji: symbols (So),
+/// modifier symbols, regional indicators, variation selectors, ZWJ, and
+/// skin-tone modifiers.
+fn is_emoji_char(c: char) -> bool {
+    matches!(c,
+        '\u{00A9}'                   // Copyright
+        | '\u{00AE}'                 // Registered
+        | '\u{200D}'                 // ZWJ
+        | '\u{20E3}'                 // Combining enclosing keycap
+        | '\u{2122}'                 // Trademark
+        | '\u{2194}'..='\u{21AA}'    // Arrows used as emoji
+        | '\u{2300}'..='\u{23FF}'    // Misc technical
+        | '\u{25AA}'..='\u{25FE}'    // Geometric shapes
+        | '\u{2600}'..='\u{27BF}'    // Misc symbols + dingbats
+        | '\u{2934}'..='\u{2935}'    // Arrows
+        | '\u{2B05}'..='\u{2B07}'    // Arrows
+        | '\u{2B1B}'..='\u{2B1C}'    // Squares
+        | '\u{2B50}'..='\u{2B55}'    // Stars, circles
+        | '\u{3030}'                 // Wavy dash
+        | '\u{303D}'                 // Part alternation mark
+        | '\u{3297}'                 // Circled ideograph congratulation
+        | '\u{3299}'                 // Circled ideograph secret
+        | '\u{FE00}'..='\u{FE0F}'    // Variation selectors
+        | '\u{E0020}'..='\u{E007F}'  // Tags (flag sequences)
+        | '\u{1F000}'..='\u{1FAFF}'  // Main emoji blocks
+    )
+}
+
+/// Returns `true` if the string looks like an emoji sequence.
+///
+/// An emoji sequence is 1-10 codepoints where every character passes
+/// [`is_emoji_char`].  The grapheme cluster count is at most 2 (to allow
+/// flag sequences and family emoji that are a single visual glyph but
+/// many codepoints).
+fn is_emoji_sequence(s: &str) -> bool {
+    let chars: Vec<char> = s.chars().collect();
+    if chars.is_empty() || chars.len() > 10 {
+        return false;
+    }
+    chars.iter().all(|c| is_emoji_char(*c))
+}
+
+/// Returns `true` if the string is a valid GTK icon name.
+///
+/// Valid GTK icon names consist of ASCII lowercase letters, digits,
+/// hyphens, and underscores.  They must not be empty and must not
+/// exceed [`ICON_MAX_LEN`] characters.
+fn is_valid_gtk_icon_name(s: &str) -> bool {
+    if s.is_empty() || s.len() > ICON_MAX_LEN {
+        return false;
+    }
+    s.chars()
+        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')
+        && !s.starts_with('-')
+        && !s.starts_with('_')
+}
+
+/// Validates a custom icon value for a connection or group.
+///
+/// Accepted formats:
+/// - Empty string (no icon)
+/// - Emoji sequence (1-2 visible glyphs, e.g. "🇺🇦", "🖥️", "⚡")
+/// - GTK icon name (lowercase ASCII + hyphens, e.g. "starred-symbolic")
+///
+/// # Errors
+///
+/// Returns `Err` with a human-readable message (English, suitable for
+/// wrapping with `gettext` on the GUI side) when the value is invalid.
+pub fn validate_icon(icon: &str) -> Result<(), String> {
+    let icon = icon.trim();
+    if icon.is_empty() {
+        return Ok(());
+    }
+
+    // Try emoji first
+    if is_emoji_sequence(icon) {
+        return Ok(());
+    }
+
+    // Try GTK icon name
+    if is_valid_gtk_icon_name(icon) {
+        return Ok(());
+    }
+
+    // Neither — produce a helpful error
+    if icon.len() > ICON_MAX_LEN {
+        return Err("Icon value is too long (max 64 characters)".to_string());
+    }
+
+    Err(
+        "Icon must be an emoji or a valid GTK icon name (lowercase letters, digits, hyphens)"
+            .to_string(),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -178,5 +278,53 @@ mod tests {
     fn test_parse_args_multiple() {
         let args = parse_args("/fullscreen /sound:sys:alsa");
         assert_eq!(args, vec!["/fullscreen", "/sound:sys:alsa"]);
+    }
+
+    #[test]
+    fn test_validate_icon_empty() {
+        assert!(validate_icon("").is_ok());
+        assert!(validate_icon("  ").is_ok());
+    }
+
+    #[test]
+    fn test_validate_icon_emoji() {
+        assert!(validate_icon("⚡").is_ok());
+        assert!(validate_icon("🖥️").is_ok());
+        assert!(validate_icon("🇺🇦").is_ok());
+        assert!(validate_icon("🔒").is_ok());
+    }
+
+    #[test]
+    fn test_validate_icon_gtk_name() {
+        assert!(validate_icon("starred-symbolic").is_ok());
+        assert!(validate_icon("network-server-symbolic").is_ok());
+        assert!(validate_icon("computer-symbolic").is_ok());
+        assert!(validate_icon("folder-symbolic").is_ok());
+    }
+
+    #[test]
+    fn test_validate_icon_rejects_arbitrary_text() {
+        assert!(validate_icon("hello world").is_err());
+        assert!(validate_icon("Ж").is_err());
+        assert!(validate_icon("abc DEF").is_err());
+        assert!(validate_icon("My Icon").is_err());
+        assert!(validate_icon("<script>").is_err());
+    }
+
+    #[test]
+    fn test_validate_icon_rejects_uppercase() {
+        assert!(validate_icon("Starred-Symbolic").is_err());
+        assert!(validate_icon("ICON").is_err());
+    }
+
+    #[test]
+    fn test_validate_icon_rejects_too_long() {
+        let long = "a".repeat(65);
+        assert!(validate_icon(&long).is_err());
+    }
+
+    #[test]
+    fn test_validate_icon_rejects_leading_hyphen() {
+        assert!(validate_icon("-symbolic").is_err());
     }
 }

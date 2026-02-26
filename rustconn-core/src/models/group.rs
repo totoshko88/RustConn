@@ -37,6 +37,12 @@ pub struct ConnectionGroup {
     /// Optional description/notes for the group
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Custom icon for the group (emoji/unicode character or GTK icon name)
+    ///
+    /// When `None`, the default folder icon is used.
+    /// Examples: `"🇺🇦"`, `"🏢"`, `"starred-symbolic"`
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
 }
 
 impl ConnectionGroup {
@@ -54,6 +60,7 @@ impl ConnectionGroup {
             domain: None,
             password_source: None,
             description: None,
+            icon: None,
         }
     }
 
@@ -71,6 +78,7 @@ impl ConnectionGroup {
             domain: None,
             password_source: None,
             description: None,
+            icon: None,
         }
     }
 

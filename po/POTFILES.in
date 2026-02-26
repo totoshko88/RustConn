@@ -35,6 +35,8 @@ rustconn/src/dialogs/settings/clients_tab.rs
 rustconn/src/dialogs/settings/secrets_tab.rs
 rustconn/src/dialogs/settings/ssh_agent_tab.rs
 rustconn/src/dialogs/settings/logging_tab.rs
+rustconn/src/dialogs/settings/monitoring_tab.rs
+rustconn/src/dialogs/settings/keybindings_tab.rs
 rustconn/src/dialogs/export.rs
 rustconn/src/dialogs/import.rs
 rustconn/src/dialogs/history.rs
@@ -60,3 +62,4 @@ rustconn/src/validation.rs
 rustconn/src/empty_state.rs
 rustconn/src/dashboard.rs
 rustconn/src/automation.rs
+rustconn/src/monitoring.rs

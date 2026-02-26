@@ -1175,6 +1175,8 @@ mod tests {
             skip_port_check: false,
             is_pinned: false,
             pin_order: 0,
+            icon: None,
+            monitoring_config: None,
         }
     }
 

@@ -413,6 +413,20 @@ fn start_embedded_rdp_session(
         }
     });
 
+    // Connect fallback callback — shows toast when IronRDP falls back to FreeRDP
+    // (e.g. xrdp protocol incompatibility — IronRDP issue #139)
+    let notebook_for_fallback = notebook.clone();
+    embedded_widget.connect_fallback(move |reason| {
+        tracing::warn!(protocol = "rdp", reason = %reason, "RDP fallback triggered");
+        if let Some(window) = notebook_for_fallback
+            .widget()
+            .ancestor(gtk4::Window::static_type())
+            .and_then(|w| w.downcast::<gtk4::Window>().ok())
+        {
+            crate::toast::show_toast_on_window(&window, reason, crate::toast::ToastType::Warning);
+        }
+    });
+
     // Add tab first, then connect after widget is realized
     notebook.add_embedded_rdp_tab(
         session_id,

@@ -70,6 +70,7 @@ pub fn show_clusters_manager(
     state: SharedAppState,
     notebook: SharedNotebook,
     sidebar: SharedSidebar,
+    monitoring: super::types::SharedMonitoring,
 ) {
     let dialog = ClusterListDialog::new(Some(&window.clone().upcast()));
 
@@ -98,7 +99,14 @@ pub fn show_clusters_manager(
     });
 
     // Set up all dialog callbacks
-    setup_cluster_dialog_callbacks(&dialog_ref, window, &state, &notebook, &sidebar);
+    setup_cluster_dialog_callbacks(
+        &dialog_ref,
+        window,
+        &state,
+        &notebook,
+        &sidebar,
+        &monitoring,
+    );
 
     dialog_ref.show();
 }
@@ -110,6 +118,7 @@ fn setup_cluster_dialog_callbacks(
     state: &SharedAppState,
     notebook: &SharedNotebook,
     sidebar: &SharedSidebar,
+    monitoring: &super::types::SharedMonitoring,
 ) {
     // Helper to create refresh callback
     let create_refresh_callback = |dialog_ref: std::rc::Rc<ClusterListDialog>| {
@@ -123,12 +132,14 @@ fn setup_cluster_dialog_callbacks(
     let notebook_clone = notebook.clone();
     let window_clone = window.clone();
     let sidebar_clone = sidebar.clone();
+    let monitoring_clone = monitoring.clone();
     dialog_ref.set_on_connect(move |cluster_id| {
         connect_cluster(
             &state_clone,
             &notebook_clone,
             &window_clone,
             &sidebar_clone,
+            &monitoring_clone,
             cluster_id,
         );
     });
@@ -231,6 +242,7 @@ fn connect_cluster(
     notebook: &SharedNotebook,
     _window: &gtk4::Window,
     sidebar: &SharedSidebar,
+    monitoring: &super::types::SharedMonitoring,
     cluster_id: Uuid,
 ) {
     let connection_ids: Vec<Uuid> = if let Ok(state_ref) = state.try_borrow() {
@@ -245,7 +257,7 @@ fn connect_cluster(
 
     // Connect to each connection in the cluster
     for conn_id in connection_ids {
-        MainWindow::start_connection(state, notebook, sidebar, conn_id);
+        MainWindow::start_connection(state, notebook, sidebar, monitoring, conn_id);
     }
 }
 

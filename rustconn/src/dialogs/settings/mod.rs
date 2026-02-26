@@ -8,6 +8,7 @@
 mod clients_tab;
 mod keybindings_tab;
 mod logging_tab;
+mod monitoring_tab;
 mod secrets_tab;
 mod ssh_agent_tab;
 mod terminal_tab;
@@ -16,6 +17,7 @@ mod ui_tab;
 pub use clients_tab::*;
 pub use keybindings_tab::*;
 pub use logging_tab::*;
+pub use monitoring_tab::*;
 pub use secrets_tab::*;
 pub use ssh_agent_tab::*;
 pub use terminal_tab::*;
@@ -34,8 +36,39 @@ use rustconn_core::ssh_agent::SshAgentManager;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::i18n::i18n;
+
 /// Callback type for settings save
 pub type SettingsCallback = Option<Rc<dyn Fn(AppSettings)>>;
+
+/// Moves all `PreferencesGroup` children from `source` page to `target` page.
+fn move_groups(source: &adw::PreferencesPage, target: &adw::PreferencesPage) {
+    // PreferencesPage stores groups inside an internal GtkBox/ListBox.
+    // We walk the widget tree to find PreferencesGroup children.
+    let mut groups: Vec<adw::PreferencesGroup> = Vec::new();
+    let mut child = source.first_child();
+    while let Some(widget) = child {
+        collect_groups(&widget, &mut groups);
+        child = widget.next_sibling();
+    }
+    for group in groups {
+        source.remove(&group);
+        target.add(&group);
+    }
+}
+
+/// Recursively collects `PreferencesGroup` widgets from a widget tree.
+fn collect_groups(widget: &gtk4::Widget, groups: &mut Vec<adw::PreferencesGroup>) {
+    if let Some(group) = widget.downcast_ref::<adw::PreferencesGroup>() {
+        groups.push(group.clone());
+        return;
+    }
+    let mut child = widget.first_child();
+    while let Some(w) = child {
+        collect_groups(&w, groups);
+        child = w.next_sibling();
+    }
+}
 
 /// Main settings dialog using AdwPreferencesDialog (libadwaita 1.5+)
 #[allow(dead_code)] // Fields kept for GTK widget lifecycle
@@ -89,6 +122,8 @@ pub struct SettingsDialog {
     ssh_agent_refresh_button: Button,
     ssh_agent_available_keys_list: gtk4::ListBox,
     ssh_agent_manager: Rc<RefCell<SshAgentManager>>,
+    // Monitoring settings
+    monitoring_widgets: MonitoringPageWidgets,
     // Keybinding settings
     keybindings_overrides: Rc<RefCell<rustconn_core::config::keybindings::KeybindingSettings>>,
     keybindings_page: adw::PreferencesPage,
@@ -169,14 +204,37 @@ impl SettingsDialog {
 
         let (keybindings_page, keybindings_overrides) = create_keybindings_page();
 
-        // Add pages to dialog
+        let monitoring_widgets = MonitoringPageWidgets::new();
+
+        // === GNOME HIG: 4 combined pages ===
+        //
+        // 1. Terminal   = Terminal + Logging
+        // 2. Interface  = UI + Keybindings
+        // 3. Secrets    = Secrets + SSH Agent
+        // 4. Connection = Clients + Monitoring
+
+        // 1. Terminal page already has terminal groups; add logging groups
+        move_groups(&logging_page, &terminal_page);
+
+        // 2. UI page already has UI groups; add keybinding groups
+        move_groups(&keybindings_page, &ui_page);
+
+        // 3. Secrets page already has secrets groups; add SSH agent groups
+        move_groups(&ssh_agent_page, &secrets_widgets.page);
+
+        // 4. Create a combined Connection page for clients + monitoring
+        let connection_page = adw::PreferencesPage::builder()
+            .title(i18n("Connection"))
+            .icon_name("network-server-symbolic")
+            .build();
+        move_groups(&clients_page, &connection_page);
+        move_groups(&monitoring_widgets.page, &connection_page);
+
+        // Add only the 4 combined pages
         dialog.add(&terminal_page);
-        dialog.add(&logging_page);
-        dialog.add(&secrets_widgets.page);
         dialog.add(&ui_page);
-        dialog.add(&ssh_agent_page);
-        dialog.add(&clients_page);
-        dialog.add(&keybindings_page);
+        dialog.add(&secrets_widgets.page);
+        dialog.add(&connection_page);
 
         // Initialize settings
         let settings: Rc<RefCell<AppSettings>> = Rc::new(RefCell::new(AppSettings::default()));
@@ -226,6 +284,7 @@ impl SettingsDialog {
             ssh_agent_refresh_button,
             ssh_agent_available_keys_list,
             ssh_agent_manager,
+            monitoring_widgets,
             keybindings_overrides,
             keybindings_page,
             settings,
@@ -441,6 +500,9 @@ impl SettingsDialog {
             &self.keybindings_overrides,
             &settings.keybindings,
         );
+
+        // Load monitoring settings
+        self.monitoring_widgets.load(&settings.monitoring);
     }
 
     /// Sets up the close handler to collect and save settings
@@ -505,6 +567,9 @@ impl SettingsDialog {
         let color_tabs_by_protocol_clone = self.color_tabs_by_protocol.clone();
         let connections_clone = self.connections.clone();
         let keybindings_overrides_clone = self.keybindings_overrides.clone();
+
+        // Monitoring controls
+        let monitoring_widgets_clone = self.monitoring_widgets.clone();
 
         // Store callback reference
         let on_save_callback = self.on_save.clone();
@@ -623,6 +688,7 @@ impl SettingsDialog {
                 global_variables: settings_clone.borrow().global_variables.clone(),
                 history: settings_clone.borrow().history.clone(),
                 keybindings: collect_keybinding_settings(&keybindings_overrides_clone),
+                monitoring: monitoring_widgets_clone.collect(),
             };
 
             // Update stored settings

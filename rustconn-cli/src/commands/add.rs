@@ -19,6 +19,7 @@ pub struct AddParams<'a> {
     pub auth_method: Option<&'a str>,
     pub device: Option<&'a str>,
     pub baud_rate: Option<u32>,
+    pub icon: Option<&'a str>,
 }
 
 /// Add connection command handler
@@ -64,6 +65,10 @@ pub fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Result<(), 
 
     if let Some(username) = params.user {
         connection.username = Some(username.to_string());
+    }
+
+    if let Some(icon) = params.icon {
+        connection.icon = Some(icon.to_string());
     }
 
     let config_manager = create_config_manager(config_path)?;

@@ -3,7 +3,7 @@
 //! Provides a dialog for generating secure passwords with configurable options.
 //! Migrated to use libadwaita components for GNOME HIG compliance.
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -84,7 +84,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
         .build();
     let generate_btn = Button::builder()
         .icon_name("view-refresh-symbolic")
-        .tooltip_text("Generate new password")
+        .tooltip_text(i18n("Generate new password"))
         .valign(gtk4::Align::Center)
         .build();
     password_box.append(&password_entry);
@@ -112,7 +112,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
     strength_bar.add_offset_value("very-strong", 5.0);
 
     let strength_label = Label::builder()
-        .label("Strong")
+        .label(i18n("Strong"))
         .width_chars(12)
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
@@ -125,7 +125,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
 
     // Entropy row
     let entropy_label = Label::builder()
-        .label("0 bits")
+        .label(i18n("0 bits"))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -139,7 +139,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
 
     // Crack time row
     let crack_time_label = Label::builder()
-        .label("instant")
+        .label(i18n("instant"))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -335,11 +335,11 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
                 PasswordStrength::VeryStrong => 5.0,
             };
             strength_bar.set_value(level);
-            strength_label.set_text(strength.description());
-            entropy_label.set_text(&format!("{entropy:.0} bits"));
+            strength_label.set_text(&i18n(strength.description()));
+            entropy_label.set_text(&i18n_f("{} bits", &[&format!("{entropy:.0}")]));
 
             let crack_time = estimate_crack_time(entropy, 10_000_000_000.0);
-            crack_time_label.set_text(&crack_time);
+            crack_time_label.set_text(&i18n(&crack_time));
         })
     };
 
@@ -367,8 +367,8 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
                     password_entry.set_text("");
                     strength_label.set_text(&e.to_string());
                     strength_bar.set_value(0.0);
-                    entropy_label.set_text("0 bits");
-                    crack_time_label.set_text("N/A");
+                    entropy_label.set_text(&i18n("0 bits"));
+                    crack_time_label.set_text(&i18n("N/A"));
                 }
             }
         })

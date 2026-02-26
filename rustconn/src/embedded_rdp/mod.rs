@@ -1756,6 +1756,12 @@ impl EmbeddedRdpWidget {
         #[cfg(feature = "rdp-audio")]
         let audio_player = self.audio_player.clone();
 
+        // Capture fallback-related state for auto-fallback on protocol errors
+        // (e.g. xrdp ServerDemandActive incompatibility — IronRDP issue #139)
+        let on_fallback = self.on_fallback.clone();
+        let fallback_config = self.config.clone();
+        let fallback_process = self.process.clone();
+
         // Capture effective scale for cursor size correction
         // RDP server sends cursor bitmaps in device pixels when desktop_scale_factor > 100%,
         // but GTK's Cursor::from_texture interprets dimensions as logical pixels.
@@ -1850,11 +1856,117 @@ impl EmbeddedRdpWidget {
                                 }
                             }
                             RdpClientEvent::Error(msg) => {
-                                tracing::error!("[IronRDP] Error: {}", msg);
-                                *state.borrow_mut() = RdpConnectionState::Error;
-                                toolbar.set_visible(false);
-                                if let Some(ref callback) = *on_error.borrow() {
-                                    callback(&msg);
+                                tracing::error!(
+                                    protocol = "rdp",
+                                    error = %msg,
+                                    "[IronRDP] Protocol error during session"
+                                );
+
+                                // Detect protocol-level errors that indicate server
+                                // incompatibility (e.g. xrdp — IronRDP issue #139).
+                                // These errors happen AFTER TCP connect succeeds, so the
+                                // synchronous fallback in connect() never fires.
+                                let is_protocol_error = msg.contains("ServerDemandActive")
+                                    || msg.contains("connect_finalize")
+                                    || msg.contains("unexpected")
+                                    || msg.contains("Unsupported")
+                                    || msg.contains("negotiation");
+
+                                if is_protocol_error {
+                                    tracing::warn!(
+                                        protocol = "rdp",
+                                        error = %msg,
+                                        "[IronRDP] Protocol incompatibility — \
+                                         attempting fallback to FreeRDP"
+                                    );
+
+                                    // Clean up IronRDP state
+                                    *is_embedded.borrow_mut() = false;
+                                    *is_ironrdp.borrow_mut() = false;
+                                    *ironrdp_tx.borrow_mut() = None;
+                                    toolbar.set_visible(false);
+
+                                    // Disconnect the IronRDP client
+                                    if let Some(mut c) = client_ref.borrow_mut().take() {
+                                        c.disconnect();
+                                    }
+
+                                    // Attempt FreeRDP external fallback
+                                    let fallback_ok = fallback_config
+                                        .borrow()
+                                        .as_ref()
+                                        .and_then(|cfg| {
+                                            let xfreerdp =
+                                                crate::embedded_rdp::detect::detect_xfreerdp()?;
+                                            Some((xfreerdp, cfg.clone()))
+                                        })
+                                        .and_then(|(xfreerdp, cfg)| {
+                                            let mut cmd = std::process::Command::new(&xfreerdp);
+                                            cmd.arg(format!("/v:{}:{}", cfg.host, cfg.port));
+                                            if let Some(ref u) = cfg.username {
+                                                cmd.arg(format!("/u:{u}"));
+                                            }
+                                            if let Some(ref p) = cfg.password {
+                                                cmd.arg(format!("/p:{}", p.expose_secret()));
+                                            }
+                                            if let Some(ref d) = cfg.domain {
+                                                cmd.arg(format!("/d:{d}"));
+                                            }
+                                            cmd.arg(format!("/w:{}", cfg.width));
+                                            cmd.arg(format!("/h:{}", cfg.height));
+                                            cmd.arg("/cert:ignore");
+                                            // Suppress Qt/Wayland warnings
+                                            cmd.env("QT_LOGGING_RULES", "*.warning=false");
+                                            match cmd.spawn() {
+                                                Ok(child) => {
+                                                    tracing::info!(
+                                                        protocol = "rdp",
+                                                        client = %xfreerdp,
+                                                        host = %cfg.host,
+                                                        "[IronRDP] Fallback to external FreeRDP"
+                                                    );
+                                                    *fallback_process.borrow_mut() = Some(child);
+                                                    Some(())
+                                                }
+                                                Err(e) => {
+                                                    tracing::error!(
+                                                        protocol = "rdp",
+                                                        error = %e,
+                                                        "[IronRDP] External FreeRDP fallback failed"
+                                                    );
+                                                    None
+                                                }
+                                            }
+                                        });
+
+                                    if fallback_ok.is_some() {
+                                        // Fallback succeeded — mark as connected (external)
+                                        *state.borrow_mut() = RdpConnectionState::Connected;
+                                        if let Some(ref cb) = *on_state_changed.borrow() {
+                                            cb(RdpConnectionState::Connected);
+                                        }
+                                        // Notify via fallback callback (shows toast)
+                                        let fb_cb = on_fallback.borrow_mut().take();
+                                        if let Some(cb) = fb_cb {
+                                            cb(&i18n(
+                                                "Using external RDP client (server incompatible)",
+                                            ));
+                                            *on_fallback.borrow_mut() = Some(cb);
+                                        }
+                                    } else {
+                                        // No FreeRDP available — report error
+                                        *state.borrow_mut() = RdpConnectionState::Error;
+                                        if let Some(ref cb) = *on_error.borrow() {
+                                            cb(&i18n("RDP server incompatible. Install FreeRDP."));
+                                        }
+                                    }
+                                } else {
+                                    // Non-protocol error — report normally
+                                    *state.borrow_mut() = RdpConnectionState::Error;
+                                    toolbar.set_visible(false);
+                                    if let Some(ref callback) = *on_error.borrow() {
+                                        callback(&msg);
+                                    }
                                 }
                                 needs_redraw = true;
                                 should_break = true;

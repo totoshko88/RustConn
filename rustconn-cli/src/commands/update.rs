@@ -19,6 +19,7 @@ pub struct UpdateParams<'a> {
     pub auth_method: Option<&'a str>,
     pub device: Option<&'a str>,
     pub baud_rate: Option<u32>,
+    pub icon: Option<&'a str>,
 }
 
 /// Update connection command handler
@@ -101,6 +102,10 @@ pub fn cmd_update(config_path: Option<&Path>, params: UpdateParams<'_>) -> Resul
     }
 
     connection.updated_at = chrono::Utc::now();
+
+    if let Some(icon) = params.icon {
+        connection.icon = Some(icon.to_string());
+    }
 
     ConfigManager::validate_connection(connection)
         .map_err(|e| CliError::Config(format!("Invalid connection: {e}")))?;

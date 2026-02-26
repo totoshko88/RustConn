@@ -35,9 +35,10 @@ pub use backend::SecretBackend;
 pub use bitwarden::{
     BitwardenBackend, BitwardenVersion, auto_unlock, clear_session_key, configure_server,
     delete_api_credentials_from_keyring, delete_master_password_from_keyring,
-    get_api_credentials_from_keyring, get_bitwarden_version, get_master_password_from_keyring,
-    get_session_key, lock_vault, login_with_api_key, logout, set_session_key,
-    store_api_credentials_in_keyring, store_master_password_in_keyring, unlock_vault,
+    get_api_credentials_from_keyring, get_bitwarden_version, get_bw_cmd,
+    get_master_password_from_keyring, get_session_key, lock_vault, login_with_api_key, logout,
+    resolve_bw_cmd, set_bw_cmd, set_session_key, store_api_credentials_in_keyring,
+    store_master_password_in_keyring, unlock_vault,
 };
 pub use detection::{
     PasswordManagerInfo, detect_bitwarden, detect_gnome_secrets, detect_keepass, detect_keepassxc,

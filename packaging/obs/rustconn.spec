@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.9.1
+Version:        0.9.2
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -201,6 +201,17 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Thu Feb 26 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.2-0
+- Custom Icons — set emoji/unicode or GTK icon names on connections and groups (#23)
+- Remote Monitoring — monitoring bar below SSH/Telnet/K8s terminals (#26)
+- Fixed new connections and groups appending to end of list
+- Fixed IronRDP fallback to FreeRDP on protocol negotiation failure (#33)
+- Fixed monitoring SSH password auth via sshpass
+- Fixed monitoring error spam — collector stops after 3 consecutive failures
+- Fixed Bitwarden CLI not found in Flatpak — dynamic bw path resolution (#28)
+- CLI downloads: Teleport 18.7.0→18.7.1
+- Dependencies: vnc-rs 0.5.2→0.5.3, rustls 0.23.36→0.23.37
+
 * Mon Feb 24 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.1-0
 - Version bump to 0.9.1
 

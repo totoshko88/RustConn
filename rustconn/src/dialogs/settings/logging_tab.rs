@@ -45,7 +45,7 @@ pub fn create_logging_page() -> (
     // Log directory
     let log_dir_entry = Entry::builder()
         .text("logs")
-        .placeholder_text("Relative to config dir or absolute path")
+        .placeholder_text(i18n("Relative to config dir or absolute path"))
         .hexpand(true)
         .valign(gtk4::Align::Center)
         .sensitive(false)
@@ -76,7 +76,7 @@ pub fn create_logging_page() -> (
     let open_logs_btn = Button::builder()
         .icon_name("folder-open-symbolic")
         .valign(gtk4::Align::Center)
-        .tooltip_text("Open logs directory")
+        .tooltip_text(i18n("Open logs directory"))
         .sensitive(false)
         .build();
     let open_logs_row = adw::ActionRow::builder()

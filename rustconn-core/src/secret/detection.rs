@@ -642,7 +642,8 @@ pub async fn detect_pass() -> PasswordManagerInfo {
             info.running = true;
             info.status_message = Some(format!("Initialized at {}", store_path.display()));
         } else {
-            info.status_message = Some("Not initialized (run 'pass init <gpg-id>')".to_string());
+            info.status_message =
+                Some("Not initialized (run 'pass init &lt;gpg-id&gt;')".to_string());
         }
         info.path = Some(PathBuf::from(cmd));
     }

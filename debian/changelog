@@ -1,3 +1,23 @@
+rustconn (0.9.2-1) unstable; urgency=medium
+
+  * Custom Icons — set emoji/unicode or GTK icon names on connections
+    and groups (#23)
+  * Remote Monitoring — MobaXterm-style monitoring bar below SSH/Telnet/K8s
+    terminals showing CPU, memory, disk, and network usage (#26)
+  * Fixed new connections and groups appending to end of list instead
+    of jumping to position 0
+  * Fixed IronRDP fallback to FreeRDP on protocol negotiation failure (#33)
+  * Fixed monitoring SSH password auth via sshpass
+  * Fixed monitoring error spam — collector stops after 3 consecutive failures
+  * Fixed Bitwarden CLI not found in Flatpak — bw command path now resolved
+    dynamically instead of hardcoded (#28)
+  * Added Bitwarden setup documentation (docs/BITWARDEN_SETUP.md)
+  * CLI downloads: Teleport 18.7.0→18.7.1
+  * Dependencies: vnc-rs 0.5.2→0.5.3, rustls 0.23.36→0.23.37,
+    js-sys 0.3.89→0.3.90, wasm-bindgen 0.2.112→0.2.113
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Thu, 26 Feb 2026 12:00:00 +0200
+
 rustconn (0.9.1-1) unstable; urgency=medium
 
   * Command Palette — VS Code-style quick launcher (Ctrl+P / Ctrl+Shift+P)

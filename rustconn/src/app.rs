@@ -181,6 +181,9 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
             // Clone settings for the background thread (Send + 'static)
             let secret_settings = state_for_secrets.borrow().settings().secrets.clone();
 
+            // Resolve bw CLI path before background unlock (probes Flatpak dirs, PATH)
+            let _ = rustconn_core::secret::resolve_bw_cmd();
+
             // Channel to receive the result on the GTK main thread
             let (tx, rx) = std::sync::mpsc::channel::<bool>();
 

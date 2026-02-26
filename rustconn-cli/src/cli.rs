@@ -109,6 +109,11 @@ pub enum Commands {
         /// Serial baud rate (default: 115200)
         #[arg(long, default_value = "115200")]
         baud_rate: Option<u32>,
+
+        /// Custom icon (emoji/unicode or GTK icon name, e.g. "🏢",
+        /// "starred-symbolic")
+        #[arg(long)]
+        icon: Option<String>,
     },
 
     /// Export connections to external format
@@ -201,6 +206,11 @@ pub enum Commands {
         /// Serial baud rate
         #[arg(long)]
         baud_rate: Option<u32>,
+
+        /// Custom icon (emoji/unicode or GTK icon name, e.g. "🏢",
+        /// "starred-symbolic")
+        #[arg(long)]
+        icon: Option<String>,
     },
 
     /// Send Wake-on-LAN magic packet
@@ -455,6 +465,11 @@ pub enum GroupCommands {
         /// Description
         #[arg(short, long)]
         description: Option<String>,
+
+        /// Custom icon (emoji/unicode or GTK icon name, e.g. "🏢",
+        /// "starred-symbolic")
+        #[arg(long)]
+        icon: Option<String>,
     },
 
     /// Delete a group
