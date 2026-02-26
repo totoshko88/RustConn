@@ -121,6 +121,29 @@ fn read_language_from_config() -> Option<String> {
     None
 }
 
+/// Checks whether a build-time locale directory actually contains at least
+/// one compiled `.mo` file for the `rustconn` domain.
+///
+/// This prevents stale build-time paths (baked in via `cargo:rustc-env`) from
+/// shadowing the real system locale directory in packaged installs.
+fn build_locale_has_translations(dir: &str) -> bool {
+    let path = std::path::Path::new(dir);
+    if !path.is_dir() {
+        return false;
+    }
+    // Expect structure: <dir>/<lang>/LC_MESSAGES/rustconn.mo
+    let Ok(entries) = std::fs::read_dir(path) else {
+        return false;
+    };
+    entries.flatten().any(|entry| {
+        entry
+            .path()
+            .join("LC_MESSAGES")
+            .join("rustconn.mo")
+            .is_file()
+    })
+}
+
 /// Returns the locale directory path.
 ///
 /// Resolution order:
@@ -138,9 +161,13 @@ fn locale_dir() -> String {
     }
 
     // 2. Build-time locale dir (set by build.rs via cargo:rustc-env)
+    //    Only use it if the directory actually contains .mo files —
+    //    packaged installs (deb/rpm/flatpak) place translations in
+    //    /usr/share/locale or /app/share/locale, so the stale build-time
+    //    path must not shadow the real system locale directory.
     if let Some(build_locale) = option_env!("RUSTCONN_LOCALE_DIR")
         && !build_locale.is_empty()
-        && std::path::Path::new(build_locale).exists()
+        && build_locale_has_translations(build_locale)
     {
         return build_locale.to_string();
     }
