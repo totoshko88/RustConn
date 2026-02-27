@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-02-28
+
+### Added
+- **Connection History Search** — Filter history entries by name, host, protocol, or username via search field in the History dialog
+- **Connection History Per-Entry Delete** — Remove individual history entries with a delete button on each row; callbacks for single-entry deletion and clear-all
+- **Encrypted Documents User Guide** — New section documenting document creation, protection, and management
+- **Automation & Tasks User Guide** — Detailed examples for Expect rules (auto-login, sudo, menu navigation) and pre/post connection tasks (VPN, key loading)
+- **FIDO2/Security Key User Guide** — Requirements and setup for hardware security key SSH authentication
+- **Import Formats User Guide** — Added Remote Desktop Manager (JSON) and Virt-Viewer (.vv) to documented import sources; added merge strategy and import preview documentation
+- **Custom Properties User Guide** — Added usage examples for arbitrary key-value metadata on connections
+
+### Fixed
+- **Alert dialog visual distinction** — `show_error()` now uses destructive-styled OK button, `show_success()` uses suggested-styled OK button, replacing identical `show_alert()` calls for both
+- **Toast severity indicators** — Error and warning toasts now display an icon + label custom title widget (e.g., ⚠ Warning, ✕ Error) for immediate visual distinction via `set_custom_title()`
+- **Toast fallback on missing overlay** — `show_toast_on_window()` now falls back to `adw::AlertDialog` instead of silently logging when no `ToastOverlay` is found in the widget hierarchy
+- **WoL dialog i18n** — Replaced `format!("Magic packet sent to {mac}")` with `i18n_f("Magic packet sent to {mac}", &[&mac])` for proper translation support
+
+### Improved
+- **Documentation** — User Guide updated to version 0.9.4; added Table of Contents entry for Encrypted Documents; expanded Connection History, Import/Export, and Advanced Tabs sections with detailed examples and options
+- **UX Audit** — Created `docs/UX_AUDIT_TASKS.md` with 26 prioritized tasks across 10 categories (error handling, CRUD completeness, dialog standardization, protocol validation, GNOME HIG, Flatpak, i18n)
+
 ## [0.9.3] - 2026-02-27
 
 ### Added

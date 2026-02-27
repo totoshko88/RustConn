@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.9.3** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.9.4** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, SFTP, Telnet, Serial, Kubernetes protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -31,9 +31,10 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 17. [Custom Icons](#custom-icons)
 18. [Remote Monitoring](#remote-monitoring)
 19. [Custom Keybindings](#custom-keybindings)
-20. [Keyboard Shortcuts](#keyboard-shortcuts)
-21. [CLI Usage](#cli-usage)
-22. [Troubleshooting](#troubleshooting)
+20. [Encrypted Documents](#encrypted-documents)
+21. [Keyboard Shortcuts](#keyboard-shortcuts)
+22. [CLI Usage](#cli-usage)
+23. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -134,6 +135,13 @@ Shows integration status in sidebar toolbar:
 | Protocol | Options |
 |----------|---------|
 | SSH | Auth method (password, publickey, keyboard-interactive, agent, security-key/FIDO2), proxy jump (Jump Host), agent forwarding, X11 forwarding, compression, startup command, port forwarding (local/remote/dynamic) |
+
+**Security Key / FIDO2 Authentication (SSH):**
+SSH connections support hardware security keys (YubiKey, SoloKey, etc.) via the `security-key` auth method. Requirements:
+- OpenSSH 8.2+ on both client and server
+- `libfido2` installed on the client (`sudo apt install libfido2-1`)
+- An `ed25519-sk` or `ecdsa-sk` key generated with `ssh-keygen -t ed25519-sk`
+- The key file path configured in the connection's SSH key field
 | RDP | Resolution, color depth, audio, gateway, shared folders, scale override |
 | VNC | Encoding, compression, quality, view-only, scaling |
 | SPICE | TLS, USB redirection, clipboard, image compression |
@@ -147,9 +155,55 @@ Shows integration status in sidebar toolbar:
 - **Logging** — Session logging configuration
 - **WOL** — Wake-on-LAN MAC address
 - **Variables** — Local variables for automation
-- **Automation** — Expect rules for auto-login
-- **Tasks** — Pre/post connection commands
-- **Custom Properties** — Metadata fields
+- **Automation** — Expect rules for auto-login (see below)
+- **Tasks** — Pre/post connection commands (see below)
+- **Custom Properties** — Metadata key-value fields for organization
+
+### Automation (Expect Rules)
+
+Expect rules automate interactive prompts during connection. Each rule matches a pattern in terminal output and sends a response.
+
+**Configure Expect Rules:**
+1. Edit connection → **Automation** tab
+2. Click **Add Rule**
+3. Enter pattern (text or regex) and response
+4. Set priority (lower number = higher priority)
+5. Use the **Test** button to verify pattern matching
+
+**Examples:**
+| Pattern | Response | Use Case |
+|---------|----------|----------|
+| `password:` | `${password}` | Auto-login with vault password |
+| `\[sudo\] password` | `${password}` | Sudo password prompt |
+| `Are you sure.*continue` | `yes` | SSH host key confirmation |
+| `Select option:` | `2` | Menu navigation |
+
+Rules execute in priority order. After matching, the response is sent followed by Enter.
+
+### Pre/Post Connection Tasks
+
+Run commands automatically before connecting or after disconnecting.
+
+**Configure Tasks:**
+1. Edit connection → **Tasks** tab
+2. Add a **Pre-connect** task (runs before the connection is established)
+3. Add a **Post-disconnect** task (runs after the session ends)
+4. Set the command and optional working directory
+
+**Examples:**
+- Pre-connect: `nmcli con up VPN-Work` (connect VPN before SSH)
+- Pre-connect: `ssh-add ~/.ssh/special_key` (load a specific key)
+- Post-disconnect: `nmcli con down VPN-Work` (disconnect VPN after session)
+- Post-disconnect: `notify-send "Session ended"` (desktop notification)
+
+### Custom Properties
+
+Add arbitrary key-value metadata to connections for organization and scripting.
+
+1. Edit connection → **Advanced** tab → **Custom Properties** section
+2. Click **Add Property**
+3. Enter key and value (e.g., `environment` = `production`, `team` = `backend`)
+4. Properties are searchable and visible in connection details
 
 ### Quick Connect (Ctrl+K)
 
@@ -614,9 +668,20 @@ Enable broadcast switch to send input to all cluster members.
 - Ansible inventory (INI/YAML)
 - Royal TS (.rtsz XML)
 - MobaXterm sessions (.mxtsessions)
+- Remote Desktop Manager (JSON)
+- Virt-Viewer (.vv files — SPICE/VNC from libvirt, Proxmox VE)
 - RustConn Native (.rcn)
 
 Double-click source to start import immediately.
+
+**Merge Strategies:**
+When importing connections that already exist, choose a merge strategy:
+- **Skip Existing** — Keep current connections, skip duplicates
+- **Overwrite** — Replace existing connections with imported data
+- **Rename** — Import as new connections with a suffix
+
+**Import Preview:**
+For large imports (10+ connections), a preview is shown before applying. You can review which connections will be created, updated, or skipped, and change the action for individual entries.
 
 ### Export (Ctrl+Shift+E)
 
@@ -704,9 +769,10 @@ Features:
 
 Menu → Tools → **Connection History**
 
-- Search and filter past connections
+- Search and filter past connections by name, host, protocol, or username
 - Connect directly from history
-- Reset history
+- Delete individual entries with the ✕ button on each row
+- Clear all history (with confirmation dialog)
 
 ### Connection Statistics
 
@@ -1162,6 +1228,51 @@ RustConn adapts to different window sizes using `adw::Breakpoint` and responsive
 - Below 400sp: sidebar collapses to overlay mode (toggle with F9 or swipe gesture)
 
 **Dialogs:** All dialogs have minimum size constraints and scroll their content. They can be resized down to ~350px width without clipping.
+
+---
+
+## Encrypted Documents
+
+Store sensitive notes, certificates, and credentials in AES-256-GCM encrypted documents within RustConn.
+
+### Create a Document
+
+1. Menu → File → **New Document** (or use the sidebar Documents section)
+2. Enter document name
+3. Set a protection password (optional — unprotected documents are still encrypted at rest with the app master key)
+4. Write content in the editor
+5. Save with **Ctrl+S**
+
+### Open a Document
+
+1. Click a document in the sidebar Documents section
+2. If password-protected, enter the password when prompted
+3. The document opens in an editor tab
+
+### Document Protection
+
+- **Set Protection** — Right-click document → Set Protection; enter a password
+- **Remove Protection** — Right-click document → Remove Protection; confirm with current password
+- Protected documents require the password each time they are opened
+- Unprotected documents are encrypted with the application master key (transparent to the user)
+
+### Document Operations
+
+| Action | Method |
+|--------|--------|
+| Create | Menu → File → New Document |
+| Open | Click in sidebar |
+| Save | Ctrl+S or close prompt |
+| Close | Close tab (prompts to save if modified) |
+| Delete | Right-click → Delete |
+| Set/Remove Protection | Right-click → Set/Remove Protection |
+
+### Tips
+
+- Documents are stored encrypted in the RustConn configuration directory
+- Use documents to store SSH keys, API tokens, connection notes, or runbooks
+- The dirty indicator (●) in the sidebar shows unsaved changes
+- Documents persist across sessions
 
 ---
 

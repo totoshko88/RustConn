@@ -90,6 +90,19 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.9.4" date="2026-02-28">
+      <description>
+        <p>UX audit improvements: error handling, history dialog, documentation, and i18n fixes.</p>
+        <ul>
+          <li>Alert dialogs now visually distinguish errors from success</li>
+          <li>Toast notifications show icon+label for warnings and errors</li>
+          <li>Toast fallback via AlertDialog when overlay is unavailable</li>
+          <li>Connection History: search filtering and per-entry deletion</li>
+          <li>User Guide: added Encrypted Documents, Automation, Tasks, FIDO2, import formats</li>
+          <li>Fixed untranslatable string in Wake-on-LAN dialog</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.9.3" date="2026-02-27">
       <description>
         <p>Waypipe support, RDP clipboard integration, icon fixes, and libsecret reliability.</p>

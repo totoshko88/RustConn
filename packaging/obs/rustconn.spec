@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.9.3
+Version:        0.9.4
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -201,6 +201,9 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Sat Feb 28 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.4-0
+- Version bump to 0.9.4
+
 * Fri Feb 27 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.3-0
 - Added Waypipe Support — Wayland application forwarding for SSH (#36)
 - Added IronRDP Clipboard Integration — Bidirectional clipboard sync

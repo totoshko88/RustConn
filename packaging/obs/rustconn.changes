@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Sat Feb 28 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.4
+
+- Version bump to 0.9.4
+
+-------------------------------------------------------------------
 Fri Feb 27 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.3
 
 - Added Waypipe Support — Wayland application forwarding for SSH
