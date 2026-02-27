@@ -140,7 +140,7 @@ pub fn builtin_commands() -> Vec<PaletteItem> {
             .with_description("Ctrl+Shift+E")
             .with_priority(55),
         PaletteItem::new("Settings", CommandPaletteAction::OpenSettings)
-            .with_icon("emblem-system-symbolic")
+            .with_icon("preferences-system-symbolic")
             .with_description("Ctrl+,")
             .with_priority(50),
         PaletteItem::new(

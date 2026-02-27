@@ -276,7 +276,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
             .subtitle(subtitle)
             .build();
 
-        let icon = gtk4::Image::from_icon_name("emblem-ok-symbolic");
+        let icon = gtk4::Image::from_icon_name("object-select-symbolic");
         icon.set_valign(gtk4::Align::Center);
         icon.add_css_class("success");
         tip_row.add_prefix(&icon);

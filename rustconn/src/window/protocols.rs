@@ -4,6 +4,7 @@
 //! SSH, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust.
 
 use super::MainWindow;
+use crate::i18n::i18n;
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
@@ -100,7 +101,7 @@ pub fn start_ssh_connection(
         .map(|u| substitute_variables(u, &global_variables));
 
     // Get SSH-specific options
-    let (identity_file, extra_args) =
+    let (identity_file, extra_args, use_waypipe) =
         if let rustconn_core::ProtocolConfig::Ssh(ssh_config) = &conn.protocol_config {
             let key = ssh_config
                 .key_path
@@ -165,12 +166,6 @@ pub fn start_ssh_connection(
 
             if !jump_hosts.is_empty() {
                 args.push("-J".to_string());
-                // SSH expects comma-separated list: jump1,jump2,dest
-                // But -J option takes jumps to reach dest.
-                // If we chain: A -> B -> C -> Dest.
-                // We need `ssh -J B,C Dest` (from A).
-                // My recursion pushed B then C. So `jump_hosts` is [B, C].
-                // Join with comma.
                 args.push(jump_hosts.join(","));
             }
 
@@ -188,9 +183,26 @@ pub fn start_ssh_connection(
                 args.push(format!("{k}={v}"));
             }
 
-            (key, args)
+            // Check waypipe: enabled in config + binary available on PATH
+            let waypipe = ssh_config.waypipe && rustconn_core::protocol::detect_waypipe().installed;
+            if ssh_config.waypipe && !waypipe {
+                tracing::warn!(
+                    protocol = "ssh",
+                    host = %host,
+                    "Waypipe enabled but not found on PATH, falling back to direct SSH"
+                );
+            }
+            if waypipe {
+                tracing::info!(
+                    protocol = "ssh",
+                    host = %host,
+                    "Using waypipe for Wayland application forwarding"
+                );
+            }
+
+            (key, args, waypipe)
         } else {
-            (None, Vec::new())
+            (None, Vec::new(), false)
         };
 
     // Update last_connected timestamp
@@ -207,7 +219,11 @@ pub fn start_ssh_connection(
     MainWindow::setup_child_exited_handler(state, notebook, sidebar, session_id, connection_id);
 
     // Build SSH command string for display
-    let mut ssh_cmd_parts = vec!["ssh".to_string()];
+    let mut ssh_cmd_parts = if use_waypipe {
+        vec!["waypipe".to_string(), "ssh".to_string()]
+    } else {
+        vec!["ssh".to_string()]
+    };
     if port != 22 {
         ssh_cmd_parts.push("-p".to_string());
         ssh_cmd_parts.push(port.to_string());
@@ -253,8 +269,12 @@ pub fn start_ssh_connection(
                 .is_ok();
 
         if sshpass_available {
-            // Build argv: sshpass -e ssh [args...] user@host
-            let mut argv: Vec<String> = vec!["sshpass".into(), "-e".into(), "ssh".into()];
+            // Build argv: sshpass -e [waypipe] ssh [args...] user@host
+            let mut argv: Vec<String> = vec!["sshpass".into(), "-e".into()];
+            if use_waypipe {
+                argv.push("waypipe".into());
+            }
+            argv.push("ssh".into());
             let port_str = port.to_string();
             if port != 22 {
                 argv.push("-p".into());
@@ -290,6 +310,7 @@ pub fn start_ssh_connection(
                 username.as_deref(),
                 identity_file.as_deref(),
                 &extra_refs,
+                use_waypipe,
             );
         }
     } else {
@@ -302,6 +323,7 @@ pub fn start_ssh_connection(
             username.as_deref(),
             identity_file.as_deref(),
             &extra_refs,
+            use_waypipe,
         );
     }
 
@@ -961,6 +983,15 @@ pub fn start_serial_connection(
             connection = %conn_name,
             "picocom not found for Serial connection"
         );
+        if let Some(root) = notebook.widget().root()
+            && let Some(window) = root.downcast_ref::<gtk4::Window>()
+        {
+            crate::toast::show_toast_on_window(
+                window,
+                &i18n("Install picocom for Serial connections"),
+                crate::toast::ToastType::Error,
+            );
+        }
         return None;
     }
 
@@ -1055,10 +1086,30 @@ pub fn start_kubernetes_connection(
     logging_enabled: bool,
 ) -> Option<Uuid> {
     use rustconn_core::protocol::{
-        KubernetesProtocol, Protocol, format_command_message, format_connection_message,
+        KubernetesProtocol, Protocol, detect_kubectl, format_command_message,
+        format_connection_message,
     };
 
     let conn_name = conn.name.clone();
+
+    // Check kubectl availability before attempting to launch
+    let kubectl_info = detect_kubectl();
+    if !kubectl_info.installed {
+        tracing::warn!(
+            connection = %conn_name,
+            "kubectl not found for Kubernetes connection"
+        );
+        if let Some(root) = notebook.widget().root()
+            && let Some(window) = root.downcast_ref::<gtk4::Window>()
+        {
+            crate::toast::show_toast_on_window(
+                window,
+                &i18n("Install kubectl for Kubernetes connections"),
+                crate::toast::ToastType::Error,
+            );
+        }
+        return None;
+    }
 
     // Build kubectl command via KubernetesProtocol
     let k8s = KubernetesProtocol::new();
@@ -1067,6 +1118,15 @@ pub fn start_kubernetes_connection(
             connection = %conn_name,
             "Failed to build kubectl command for Kubernetes connection"
         );
+        if let Some(root) = notebook.widget().root()
+            && let Some(window) = root.downcast_ref::<gtk4::Window>()
+        {
+            crate::toast::show_toast_on_window(
+                window,
+                &i18n("Configure pod and container for Kubernetes"),
+                crate::toast::ToastType::Error,
+            );
+        }
         return None;
     };
 

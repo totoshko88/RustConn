@@ -109,6 +109,7 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
                     jump_host_id: None,
                     sftp_enabled: false,
                     port_forwards: Vec::new(),
+                    waypipe: false,
                 }
             },
         )

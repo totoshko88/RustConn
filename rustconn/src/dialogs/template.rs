@@ -2300,6 +2300,7 @@ impl TemplateDialog {
             custom_options: std::collections::HashMap::new(),
             sftp_enabled: true,
             port_forwards: Vec::new(),
+            waypipe: false,
         };
 
         if !custom_options_text.is_empty() {
@@ -3177,17 +3178,7 @@ impl TemplateManagerDialog {
         hbox.set_margin_start(8);
         hbox.set_margin_end(8);
 
-        let icon_name = match template.protocol {
-            ProtocolType::Ssh => "utilities-terminal-symbolic",
-            ProtocolType::Rdp => "computer-symbolic",
-            ProtocolType::Vnc => "video-display-symbolic",
-            ProtocolType::Spice => "video-display-symbolic",
-            ProtocolType::ZeroTrust => "security-high-symbolic",
-            ProtocolType::Telnet => "call-start-symbolic",
-            ProtocolType::Serial => "modem-symbolic",
-            ProtocolType::Sftp => "folder-remote-symbolic",
-            ProtocolType::Kubernetes => "application-x-executable-symbolic",
-        };
+        let icon_name = rustconn_core::get_protocol_icon(template.protocol);
         let icon = gtk4::Image::from_icon_name(icon_name);
         hbox.append(&icon);
 

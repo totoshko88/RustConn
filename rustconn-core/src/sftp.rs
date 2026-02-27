@@ -368,20 +368,34 @@ pub fn build_mc_sftp_command(connection: &Connection) -> Option<Vec<String>> {
         return None;
     }
 
+    // Append /~ so mc opens the remote user's home directory
+    // instead of the filesystem root.
     let target = if let Some(ref user) = connection.username {
         if connection.port == 22 {
-            format!("sh://{user}@{}", connection.host)
+            format!("sh://{user}@{}/~", connection.host)
         } else {
-            format!("sh://{user}@{}:{}", connection.host, connection.port)
+            format!("sh://{user}@{}:{}/~", connection.host, connection.port)
         }
     } else if connection.port == 22 {
-        format!("sh://{}", connection.host)
+        format!("sh://{}/~", connection.host)
     } else {
-        format!("sh://{}:{}", connection.host, connection.port)
+        format!("sh://{}:{}/~", connection.host, connection.port)
     };
 
     let local_dir = get_downloads_dir();
-    Some(vec!["mc".to_string(), local_dir, target])
+
+    // Wrap in a shell invocation so that VTE's PTY correctly
+    // propagates terminal dimensions to mc (SIGWINCH handling).
+    let mc_cmd = format!("mc {} {}", shell_escape(&local_dir), shell_escape(&target),);
+    Some(vec!["sh".to_string(), "-c".to_string(), mc_cmd])
+}
+
+/// Wraps a string in single quotes for safe use in `sh -c` commands.
+///
+/// Single quotes inside the value are escaped as `'\''` (end quote,
+/// escaped literal quote, start quote).
+fn shell_escape(s: &str) -> String {
+    format!("'{}'", s.replace('\'', "'\\''"))
 }
 
 #[cfg(test)]
@@ -455,10 +469,19 @@ mod tests {
 
         let cmd = build_mc_sftp_command(&conn).unwrap();
         assert_eq!(cmd.len(), 3);
-        assert_eq!(cmd[0], "mc");
-        // Second arg is the XDG Downloads directory (varies per system)
-        assert!(!cmd[1].is_empty(), "local dir should not be empty");
-        assert_eq!(cmd[2], "sh://admin@server.example.com");
+        assert_eq!(cmd[0], "sh");
+        assert_eq!(cmd[1], "-c");
+        // The third arg is the full mc command with shell-escaped paths
+        assert!(
+            cmd[2].contains("sh://admin@server.example.com/~"),
+            "should contain remote URI with /~: {}",
+            cmd[2]
+        );
+        assert!(
+            cmd[2].starts_with("mc "),
+            "should start with 'mc ': {}",
+            cmd[2]
+        );
     }
 
     #[test]
@@ -468,14 +491,28 @@ mod tests {
 
         let cmd = build_mc_sftp_command(&conn).unwrap();
         assert_eq!(cmd.len(), 3);
-        assert_eq!(cmd[0], "mc");
-        assert!(!cmd[1].is_empty(), "local dir should not be empty");
-        assert_eq!(cmd[2], "sh://root@host.local:2222");
+        assert_eq!(cmd[0], "sh");
+        assert_eq!(cmd[1], "-c");
+        assert!(
+            cmd[2].contains("sh://root@host.local:2222/~"),
+            "should contain remote URI with port and /~: {}",
+            cmd[2]
+        );
     }
 
     #[test]
     fn test_build_mc_sftp_command_non_ssh() {
         let conn = Connection::new_rdp("Test".to_string(), "server.example.com".to_string(), 3389);
         assert!(build_mc_sftp_command(&conn).is_none());
+    }
+
+    #[test]
+    fn test_shell_escape_simple() {
+        assert_eq!(shell_escape("hello"), "'hello'");
+    }
+
+    #[test]
+    fn test_shell_escape_with_single_quote() {
+        assert_eq!(shell_escape("it's"), "'it'\\''s'");
     }
 }

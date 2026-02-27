@@ -76,7 +76,7 @@ pub fn create_header_bar() -> adw::HeaderBar {
     header_bar.pack_end(&menu_button);
 
     // Add settings button
-    let settings_button = Button::from_icon_name("emblem-system-symbolic");
+    let settings_button = Button::from_icon_name("preferences-system-symbolic");
     settings_button.set_tooltip_text(Some(&i18n("Settings (Ctrl+,)")));
     settings_button.set_action_name(Some("win.settings"));
     settings_button.update_property(&[gtk4::accessible::Property::Label("Settings")]);

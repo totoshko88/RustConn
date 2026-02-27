@@ -150,43 +150,53 @@ impl ConnectionSidebar {
         protocol_group.set_halign(gtk4::Align::Fill);
 
         // Protocol filter buttons with icons — aligned with icons.rs
+        use rustconn_core::models::ProtocolType;
         let ssh_filter = filter::create_filter_button(
             "SSH",
-            "utilities-terminal-symbolic",
+            rustconn_core::get_protocol_icon(ProtocolType::Ssh),
             "Filter SSH connections",
         );
         ssh_filter.set_hexpand(true);
-        let rdp_filter =
-            filter::create_filter_button("RDP", "computer-symbolic", "Filter RDP connections");
+        let rdp_filter = filter::create_filter_button(
+            "RDP",
+            rustconn_core::get_protocol_icon(ProtocolType::Rdp),
+            "Filter RDP connections",
+        );
         rdp_filter.set_hexpand(true);
-        let vnc_filter =
-            filter::create_filter_button("VNC", "video-display-symbolic", "Filter VNC connections");
+        let vnc_filter = filter::create_filter_button(
+            "VNC",
+            rustconn_core::get_protocol_icon(ProtocolType::Vnc),
+            "Filter VNC connections",
+        );
         vnc_filter.set_hexpand(true);
         let spice_filter = filter::create_filter_button(
             "SPICE",
-            "preferences-desktop-remote-desktop-symbolic",
+            rustconn_core::get_protocol_icon(ProtocolType::Spice),
             "Filter SPICE connections",
         );
         spice_filter.set_hexpand(true);
         let telnet_filter = filter::create_filter_button(
             "Telnet",
-            "call-start-symbolic",
+            rustconn_core::get_protocol_icon(ProtocolType::Telnet),
             "Filter Telnet connections",
         );
         telnet_filter.set_hexpand(true);
-        let serial_filter =
-            filter::create_filter_button("Serial", "modem-symbolic", "Filter Serial connections");
+        let serial_filter = filter::create_filter_button(
+            "Serial",
+            rustconn_core::get_protocol_icon(ProtocolType::Serial),
+            "Filter Serial connections",
+        );
         serial_filter.set_hexpand(true);
         let zerotrust_filter = filter::create_filter_button(
             "ZeroTrust",
-            "security-high-symbolic",
+            rustconn_core::get_protocol_icon(ProtocolType::ZeroTrust),
             "Filter ZeroTrust connections",
         );
         zerotrust_filter.add_css_class("filter-button");
         zerotrust_filter.set_hexpand(true);
         let kubernetes_filter = filter::create_filter_button(
             "K8s",
-            "application-x-executable-symbolic",
+            rustconn_core::get_protocol_icon(ProtocolType::Kubernetes),
             "Filter Kubernetes connections",
         );
         kubernetes_filter.set_hexpand(true);

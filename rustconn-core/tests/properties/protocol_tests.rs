@@ -57,6 +57,7 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
                     jump_host_id: None,
                     sftp_enabled: false,
                     port_forwards: Vec::new(),
+                    waypipe: false,
                 }
             },
         )
@@ -802,6 +803,7 @@ fn arb_ssh_config_with_identities_only() -> impl Strategy<Value = SshConfig> {
                     jump_host_id: None,
                     sftp_enabled: false,
                     port_forwards: Vec::new(),
+                    waypipe: false,
                 }
             },
         )
@@ -838,6 +840,7 @@ fn arb_ssh_config_with_agent_fingerprint() -> impl Strategy<Value = SshConfig> {
                 jump_host_id: None,
                 sftp_enabled: false,
                 port_forwards: Vec::new(),
+                waypipe: false,
             }
         })
 }
@@ -994,6 +997,7 @@ fn arb_ssh_config_with_file_key_source() -> impl Strategy<Value = SshConfig> {
                     jump_host_id: None,
                     sftp_enabled: false,
                     port_forwards: Vec::new(),
+                    waypipe: false,
                 }
             },
         )
@@ -1029,6 +1033,7 @@ fn arb_ssh_config_with_agent_key_source() -> impl Strategy<Value = SshConfig> {
                     jump_host_id: None,
                     sftp_enabled: false,
                     port_forwards: Vec::new(),
+                    waypipe: false,
                 }
             },
         )
@@ -1399,8 +1404,8 @@ fn test_protocol_icons_match_requirements() {
     // Requirements 7.2: VNC should show video display icon
     assert_eq!(
         get_protocol_icon(ProtocolType::Vnc),
-        "video-display-symbolic",
-        "VNC should use video display icon (Requirement 7.2)"
+        "video-joined-displays-symbolic",
+        "VNC should use joined displays icon (Requirement 7.2)"
     );
 
     // Requirements 7.1: RDP should show computer/monitor icon

@@ -43,7 +43,7 @@ impl ToastType {
     pub const fn icon_name(&self) -> &'static str {
         match self {
             Self::Info => "dialog-information-symbolic",
-            Self::Success => "emblem-ok-symbolic",
+            Self::Success => "object-select-symbolic",
             Self::Warning => "dialog-warning-symbolic",
             Self::Error => "dialog-error-symbolic",
         }
@@ -182,22 +182,23 @@ pub fn show_toast_on_window(window: &impl IsA<gui::Window>, message: &str, _toas
     tracing::warn!(toast_message = %message, "Could not find ToastOverlay in window hierarchy");
 }
 
-/// Helper to recursively find a ToastOverlay
+/// Helper to recursively find a `ToastOverlay` in the widget tree
+///
+/// Walks the tree using `first_child()` / `next_sibling()` which works
+/// regardless of internal `adw::ApplicationWindow` wrapper widgets.
 fn find_toast_overlay(widget: &gui::Widget) -> Option<adw::ToastOverlay> {
     if let Some(overlay) = widget.downcast_ref::<adw::ToastOverlay>() {
         return Some(overlay.clone());
     }
 
-    // Special handling for ToolbarView which is common root
-    if let Some(toolbar_view) = widget.downcast_ref::<adw::ToolbarView>()
-        && let Some(content) = toolbar_view.content()
-        && let Some(found) = find_toast_overlay(&content)
-    {
-        return Some(found);
+    // Walk children: GTK4 uses first_child / next_sibling linked list
+    let mut child = widget.first_child();
+    while let Some(c) = child {
+        if let Some(found) = find_toast_overlay(&c) {
+            return Some(found);
+        }
+        child = c.next_sibling();
     }
-
-    // General child walking could be expensive and GTK4 doesn't have a simple "get_children"
-    // like GTK3. We rely on standard structure.
 
     None
 }

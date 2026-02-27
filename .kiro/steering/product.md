@@ -80,6 +80,7 @@ Optional features must never break core functionality. Degrade silently or show 
 | Embedded RDP | IronRDP connection attempt | Launch `xfreerdp` |
 | Embedded VNC | vnc-rs connection attempt | Launch `vncviewer` |
 | Audio playback | `rdp-audio` feature + audio device | Silent mode |
+| Waypipe | `waypipe` on `PATH` | Direct SSH (no Wayland forwarding) |
 
 When adding a new optional feature:
 

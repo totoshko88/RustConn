@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.9.2** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.9.3** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, SFTP, Telnet, Serial, Kubernetes protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -253,6 +253,8 @@ RustConn/
 | RDP | Embedded IronRDP or external FreeRDP |
 
 **RDP HiDPI Support:** On HiDPI/4K displays, the embedded IronRDP client automatically sends the correct scale factor to the Windows server (e.g. 200% on a 2× display), so remote UI elements render at the correct logical size. The Scale Override setting in the connection dialog allows manual adjustment if needed.
+
+**RDP Clipboard:** The embedded IronRDP client provides bidirectional clipboard sync via the CLIPRDR channel. Text copied on the remote desktop is automatically available locally (Ctrl+V), and local clipboard changes are announced to the server. The Copy/Paste toolbar buttons remain available as manual fallback. Clipboard sync requires the "Clipboard" option enabled in the RDP connection settings.
 | VNC | Embedded vnc-rs or external TigerVNC |
 | SPICE | Embedded spice-client or external remote-viewer |
 | Telnet | Embedded VTE terminal tab (external `telnet` client) |
@@ -383,6 +385,65 @@ Port forwarding rules are automatically imported from:
 - Remmina SSH profiles
 - Asbru-CM configurations
 - MobaXterm sessions
+
+### Waypipe (Wayland Forwarding)
+
+Waypipe forwards Wayland GUI applications from a remote host to your local
+Wayland session — the Wayland equivalent of X11 forwarding (`ssh -X`).
+When enabled, RustConn wraps the SSH command as `waypipe ssh user@host`,
+creating a transparent Wayland proxy between the machines.
+
+**Requirements:**
+
+- `waypipe` installed on **both** local and remote hosts
+  (`sudo apt install waypipe` / `sudo dnf install waypipe`)
+- A running **Wayland** session locally (not X11)
+- The remote host does not need a running display server
+
+**Setup:**
+
+1. Open the connection dialog for an SSH connection
+2. In the **Session** options group, enable the **Waypipe** checkbox
+3. Save and connect
+
+RustConn will execute `waypipe ssh user@host` (or `sshpass -e waypipe ssh …`
+for vault-authenticated connections). If `waypipe` is not found on PATH, the
+connection falls back to a standard SSH session with a log warning.
+
+You can verify waypipe availability in **Settings → Clients**.
+
+**Example — running a remote GUI application:**
+
+After connecting with Waypipe enabled, launch any Wayland-native application
+in the SSH terminal:
+
+```bash
+# Run Firefox from the remote host — the window appears on your local desktop
+firefox &
+
+# Run a file manager
+nautilus &
+
+# Run any GTK4/Qt6 Wayland app
+gnome-text-editor &
+```
+
+The remote application window opens on your local Wayland desktop as if it
+were a local window. Clipboard, keyboard input, and window resizing work
+transparently.
+
+**Tips:**
+
+- The remote application must support Wayland natively. X11-only apps will
+  not work through waypipe (use X11 Forwarding for those).
+- For best performance over slow links, waypipe compresses the Wayland
+  protocol traffic automatically. You can pass extra flags via SSH custom
+  options if needed (e.g., `--compress=lz4`).
+- If the remote host uses GNOME, most bundled apps (Files, Text Editor,
+  Terminal, Eye of GNOME) work out of the box.
+- Qt6 apps work if `QT_QPA_PLATFORM=wayland` is set on the remote host.
+- To check which display protocol your local session uses:
+  `echo $XDG_SESSION_TYPE` (should print `wayland`).
 
 ### Kubernetes Shell
 
@@ -1411,6 +1472,7 @@ This means `bw` is not found in PATH. Flatpak users must install `bw` via Flatpa
 3. Wayland vs X11 compatibility
 4. HiDPI/4K: IronRDP sends scale factor automatically; use Scale Override in connection dialog if remote UI is too small or too large
 5. FreeRDP passwords are passed via stdin (`/from-stdin`), not command-line arguments
+6. Clipboard not syncing: ensure "Clipboard" is enabled in RDP connection settings; text is synced automatically via CLIPRDR channel, Copy/Paste buttons are manual fallback
 
 ### Session Restore Issues
 

@@ -756,6 +756,10 @@ pub struct SshConfig {
     /// Port forwarding rules (local, remote, dynamic)
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub port_forwards: Vec<PortForward>,
+    /// Enable Wayland application forwarding via `waypipe`
+    /// Wraps the SSH command with `waypipe ssh` for Wayland display forwarding
+    #[serde(default)]
+    pub waypipe: bool,
 }
 
 fn default_true() -> bool {
@@ -1539,7 +1543,7 @@ impl ZeroTrustProvider {
             Self::AzureSsh => "weather-showers-symbolic", // Azure SSH - showers
             Self::OciBastion => "drive-harddisk-symbolic", // OCI - harddisk
             Self::CloudflareAccess => "security-high-symbolic", // Cloudflare - security
-            Self::Teleport => "emblem-system-symbolic",   // Teleport - system/gear
+            Self::Teleport => "preferences-system-symbolic", // Teleport - system/gear
             Self::TailscaleSsh => "network-vpn-symbolic", // Tailscale - VPN
             Self::Boundary => "dialog-password-symbolic", // Boundary - password/lock
             Self::Generic => "system-run-symbolic",       // Generic - run command

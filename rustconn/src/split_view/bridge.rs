@@ -1725,17 +1725,14 @@ impl SplitViewBridge {
                 "utilities-terminal-symbolic",
                 i18n("Embedded SSH terminals"),
             ),
-            ("channel-secure-symbolic", i18n("Secure credential storage")),
+            ("security-high-symbolic", i18n("Secure credential storage")),
             ("dialog-password-symbolic", i18n("Password Generator")),
             ("view-refresh-symbolic", i18n("Session Restore")),
             ("system-run-symbolic", i18n("Expect automation")),
             ("folder-symbolic", i18n("Groups and tags")),
             ("network-workgroup-symbolic", i18n("Zero Trust tunnels")),
             ("preferences-system-symbolic", i18n("Customizable settings")),
-            (
-                "application-x-executable-symbolic",
-                i18n("Embedded and external clients"),
-            ),
+            ("system-run-symbolic", i18n("Embedded and external clients")),
         ];
 
         for (icon, description) in &features {
@@ -1792,7 +1789,10 @@ impl SplitViewBridge {
             ("edit-find-symbolic", i18n("Smart search caching")),
             ("folder-symbolic", i18n("Lazy loading for trees")),
             ("view-list-symbolic", i18n("Virtual scrolling")),
-            ("video-display-symbolic", i18n("Embedded VNC/RDP/SPICE")),
+            (
+                "video-joined-displays-symbolic",
+                i18n("Embedded VNC/RDP/SPICE"),
+            ),
         ];
 
         for (icon, description) in &perf_features {

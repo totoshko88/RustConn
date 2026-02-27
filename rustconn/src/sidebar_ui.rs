@@ -320,7 +320,7 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     toolbar.append(&sort_button);
 
     // Sort by recent usage button
-    let sort_recent_button = Button::from_icon_name("appointment-soon-symbolic");
+    let sort_recent_button = Button::from_icon_name("document-open-recent-symbolic");
     sort_recent_button.set_tooltip_text(Some(&i18n("Sort by Recent Usage")));
     sort_recent_button.set_action_name(Some("win.sort-recent"));
     sort_recent_button.update_property(&[gtk4::accessible::Property::Label(

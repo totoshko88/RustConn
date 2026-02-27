@@ -1082,6 +1082,7 @@ fn start_quick_ssh(
         params.username.as_deref(),
         None,
         &[],
+        false,
     );
 }
 

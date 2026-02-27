@@ -34,6 +34,7 @@ pub fn sample_ssh_connection_with_key() -> Connection {
         jump_host_id: None,
         sftp_enabled: false,
         port_forwards: Vec::new(),
+        waypipe: false,
     };
 
     let mut conn = Connection::new(
@@ -69,6 +70,7 @@ pub fn sample_ssh_connection_custom_port() -> Connection {
         jump_host_id: None,
         sftp_enabled: false,
         port_forwards: Vec::new(),
+        waypipe: false,
     };
 
     let mut conn = Connection::new(
@@ -102,6 +104,7 @@ pub fn sample_ssh_connection_with_proxy() -> Connection {
         jump_host_id: None,
         sftp_enabled: false,
         port_forwards: Vec::new(),
+        waypipe: false,
     };
 
     let mut conn = Connection::new(

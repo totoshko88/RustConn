@@ -37,7 +37,7 @@ impl MonitoringPageWidgets {
     pub fn new() -> Self {
         let page = adw::PreferencesPage::builder()
             .title(i18n("Monitoring"))
-            .icon_name("utilities-system-monitor-symbolic")
+            .icon_name("preferences-system-symbolic")
             .build();
 
         // === General Group ===

@@ -280,7 +280,7 @@ impl FlatpakComponentsDialog {
 
         // Update button (visible only when installed and downloadable)
         let update_button = Button::builder()
-            .icon_name("emblem-synchronizing-symbolic")
+            .icon_name("view-refresh-symbolic")
             .tooltip_text(&i18n("Update"))
             .valign(Align::Center)
             .visible(is_installed && component.is_downloadable())

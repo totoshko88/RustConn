@@ -139,6 +139,7 @@ pub struct ConnectionDialog {
     ssh_identities_only: CheckButton,
     ssh_control_master: CheckButton,
     ssh_agent_forwarding: CheckButton,
+    ssh_waypipe: CheckButton,
     ssh_x11_forwarding: CheckButton,
     ssh_compression: CheckButton,
     ssh_startup_entry: Entry,
@@ -424,6 +425,7 @@ impl ConnectionDialog {
             ssh_identities_only,
             ssh_control_master,
             ssh_agent_forwarding,
+            ssh_waypipe,
             ssh_x11_forwarding,
             ssh_compression,
             ssh_startup_entry,
@@ -704,6 +706,7 @@ impl ConnectionDialog {
             &ssh_identities_only,
             &ssh_control_master,
             &ssh_agent_forwarding,
+            &ssh_waypipe,
             &ssh_x11_forwarding,
             &ssh_compression,
             &ssh_startup_entry,
@@ -838,6 +841,7 @@ impl ConnectionDialog {
             ssh_identities_only,
             ssh_control_master,
             ssh_agent_forwarding,
+            ssh_waypipe,
             ssh_x11_forwarding,
             ssh_compression,
             ssh_startup_entry,
@@ -1529,6 +1533,7 @@ impl ConnectionDialog {
         ssh_identities_only: &CheckButton,
         ssh_control_master: &CheckButton,
         ssh_agent_forwarding: &CheckButton,
+        ssh_waypipe: &CheckButton,
         ssh_x11_forwarding: &CheckButton,
         ssh_compression: &CheckButton,
         ssh_startup_entry: &Entry,
@@ -1653,6 +1658,7 @@ impl ConnectionDialog {
         let ssh_identities_only = ssh_identities_only.clone();
         let ssh_control_master = ssh_control_master.clone();
         let ssh_agent_forwarding = ssh_agent_forwarding.clone();
+        let ssh_waypipe = ssh_waypipe.clone();
         let ssh_x11_forwarding = ssh_x11_forwarding.clone();
         let ssh_compression = ssh_compression.clone();
         let ssh_startup_entry = ssh_startup_entry.clone();
@@ -1785,6 +1791,7 @@ impl ConnectionDialog {
                 ssh_identities_only: &ssh_identities_only,
                 ssh_control_master: &ssh_control_master,
                 ssh_agent_forwarding: &ssh_agent_forwarding,
+                ssh_waypipe: &ssh_waypipe,
                 ssh_x11_forwarding: &ssh_x11_forwarding,
                 ssh_compression: &ssh_compression,
                 ssh_startup_entry: &ssh_startup_entry,
@@ -5827,6 +5834,7 @@ impl ConnectionDialog {
         self.ssh_identities_only.set_active(ssh.identities_only);
         self.ssh_control_master.set_active(ssh.use_control_master);
         self.ssh_agent_forwarding.set_active(ssh.agent_forwarding);
+        self.ssh_waypipe.set_active(ssh.waypipe);
         self.ssh_x11_forwarding.set_active(ssh.x11_forwarding);
         self.ssh_compression.set_active(ssh.compression);
         if let Some(ref cmd) = ssh.startup_command {
@@ -6709,6 +6717,7 @@ struct ConnectionDialogData<'a> {
     ssh_identities_only: &'a CheckButton,
     ssh_control_master: &'a CheckButton,
     ssh_agent_forwarding: &'a CheckButton,
+    ssh_waypipe: &'a CheckButton,
     ssh_x11_forwarding: &'a CheckButton,
     ssh_compression: &'a CheckButton,
     ssh_startup_entry: &'a Entry,
@@ -7476,6 +7485,7 @@ impl ConnectionDialogData<'_> {
             jump_host_id, // Add this field
             use_control_master: self.ssh_control_master.is_active(),
             agent_forwarding: self.ssh_agent_forwarding.is_active(),
+            waypipe: self.ssh_waypipe.is_active(),
             x11_forwarding: self.ssh_x11_forwarding.is_active(),
             compression: self.ssh_compression.is_active(),
             custom_options,

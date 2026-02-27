@@ -70,6 +70,24 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     // Load CSS styles for split view panes
     load_css_styles();
 
+    // Force Adwaita icon theme on non-GNOME desktops (KDE, XFCE, etc.).
+    // Libadwaita already renders all widgets in Adwaita style, but icon lookups
+    // still go through the system icon theme. Many standard symbolic icons are
+    // missing in Breeze/other themes.
+    // GtkSettings::gtk-icon-theme-name controls the icon theme globally and
+    // unlike IconTheme::set_theme_name, works on the display singleton.
+    if let Some(display) = gtk4::gdk::Display::default() {
+        let settings = gtk4::Settings::for_display(&display);
+        let current = settings.gtk_icon_theme_name().unwrap_or_default();
+        if current != "Adwaita" {
+            settings.set_gtk_icon_theme_name(Some("Adwaita"));
+            tracing::info!(
+                previous_theme = %current,
+                "Forced Adwaita icon theme for consistent icon availability"
+            );
+        }
+    }
+
     // Create shared application state (fast — secret backends deferred)
     let state = match create_shared_state() {
         Ok(state) => state,

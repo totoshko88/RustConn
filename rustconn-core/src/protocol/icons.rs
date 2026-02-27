@@ -51,7 +51,7 @@ impl CloudProvider {
             Self::Azure => "weather-few-clouds-symbolic", // Azure - clouds
             Self::Oci => "drive-harddisk-symbolic",    // OCI - harddisk
             Self::Cloudflare => "security-high-symbolic", // Cloudflare - security
-            Self::Teleport => "emblem-system-symbolic", // Teleport - system/gear
+            Self::Teleport => "preferences-system-symbolic", // Teleport - system/gear
             Self::Tailscale => "network-vpn-symbolic", // Tailscale - VPN
             Self::Boundary => "dialog-password-symbolic", // Boundary - password/lock
             Self::Generic => "system-run-symbolic",    // Generic - run command
@@ -109,7 +109,7 @@ impl CloudProvider {
 ///
 /// assert_eq!(get_protocol_icon(ProtocolType::Ssh), "utilities-terminal-symbolic");
 /// assert_eq!(get_protocol_icon(ProtocolType::Rdp), "computer-symbolic");
-/// assert_eq!(get_protocol_icon(ProtocolType::Vnc), "video-display-symbolic");
+/// assert_eq!(get_protocol_icon(ProtocolType::Vnc), "video-joined-displays-symbolic");
 /// assert_eq!(get_protocol_icon(ProtocolType::Spice), "preferences-desktop-remote-desktop-symbolic");
 /// ```
 #[must_use]
@@ -117,13 +117,13 @@ pub const fn get_protocol_icon(protocol: ProtocolType) -> &'static str {
     match protocol {
         ProtocolType::Ssh => "utilities-terminal-symbolic",
         ProtocolType::Rdp => "computer-symbolic",
-        ProtocolType::Vnc => "video-display-symbolic",
+        ProtocolType::Vnc => "video-joined-displays-symbolic",
         ProtocolType::Spice => "preferences-desktop-remote-desktop-symbolic",
-        ProtocolType::Telnet => "call-start-symbolic",
+        ProtocolType::Telnet => "network-transmit-symbolic",
         ProtocolType::ZeroTrust => "security-high-symbolic",
-        ProtocolType::Serial => "modem-symbolic",
+        ProtocolType::Serial => "network-wired-symbolic",
         ProtocolType::Sftp => "folder-remote-symbolic",
-        ProtocolType::Kubernetes => "application-x-executable-symbolic",
+        ProtocolType::Kubernetes => "system-run-symbolic",
     }
 }
 
@@ -143,12 +143,12 @@ pub fn get_protocol_icon_by_name(protocol: &str) -> &'static str {
     match protocol.to_lowercase().as_str() {
         "ssh" => "utilities-terminal-symbolic",
         "rdp" => "computer-symbolic",
-        "vnc" => "video-display-symbolic",
+        "vnc" => "video-joined-displays-symbolic",
         "spice" => "preferences-desktop-remote-desktop-symbolic",
-        "telnet" => "call-start-symbolic",
-        "serial" => "modem-symbolic",
+        "telnet" => "network-transmit-symbolic",
+        "serial" => "network-wired-symbolic",
         "sftp" => "folder-remote-symbolic",
-        "kubernetes" => "application-x-executable-symbolic",
+        "kubernetes" => "system-run-symbolic",
         "info" => "dialog-information-symbolic",
         _ => "network-server-symbolic",
     }
@@ -207,18 +207,16 @@ pub const fn all_protocol_icons() -> &'static [(ProtocolType, &'static str)] {
     &[
         (ProtocolType::Ssh, "utilities-terminal-symbolic"),
         (ProtocolType::Rdp, "computer-symbolic"),
-        (ProtocolType::Vnc, "video-display-symbolic"),
+        (ProtocolType::Vnc, "video-joined-displays-symbolic"),
         (
             ProtocolType::Spice,
             "preferences-desktop-remote-desktop-symbolic",
         ),
-        (ProtocolType::Telnet, "call-start-symbolic"),
+        (ProtocolType::Telnet, "network-transmit-symbolic"),
         (ProtocolType::ZeroTrust, "security-high-symbolic"),
         (ProtocolType::Sftp, "folder-remote-symbolic"),
-        (
-            ProtocolType::Kubernetes,
-            "application-x-executable-symbolic",
-        ),
+        (ProtocolType::Serial, "network-wired-symbolic"),
+        (ProtocolType::Kubernetes, "system-run-symbolic"),
     ]
 }
 

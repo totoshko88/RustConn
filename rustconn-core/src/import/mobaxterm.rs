@@ -313,6 +313,7 @@ impl MobaXtermImporter {
             startup_command,
             sftp_enabled: false,
             port_forwards: Vec::new(),
+            waypipe: false,
         };
 
         let mut connection = Connection::new(

@@ -99,6 +99,8 @@ pub struct ClientDetectionResult {
     pub spice: ClientInfo,
     /// Telnet client information
     pub telnet: ClientInfo,
+    /// Waypipe (Wayland application forwarding) information
+    pub waypipe: ClientInfo,
 }
 
 impl ClientDetectionResult {
@@ -111,6 +113,7 @@ impl ClientDetectionResult {
             vnc: detect_vnc_client(),
             spice: detect_spice_client(),
             telnet: detect_telnet_client(),
+            waypipe: detect_waypipe(),
         }
     }
 
@@ -432,6 +435,17 @@ pub fn detect_picocom() -> ClientInfo {
         return info;
     }
     ClientInfo::not_installed("picocom", "Install picocom package")
+}
+
+/// Detects waypipe (Wayland application forwarding proxy)
+///
+/// Waypipe forwards Wayland clients over SSH, similar to `ssh -X` for X11.
+/// It wraps the SSH command: `waypipe ssh user@host`.
+pub fn detect_waypipe() -> ClientInfo {
+    if let Some(info) = try_detect_client("waypipe", "waypipe", &["--version"]) {
+        return info;
+    }
+    ClientInfo::not_installed("waypipe", "Install waypipe package")
 }
 
 /// Attempts to detect a specific client binary

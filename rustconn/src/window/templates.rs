@@ -254,17 +254,7 @@ pub fn refresh_templates_list(
             hbox.set_margin_end(8);
 
             // Protocol icon
-            let icon_name = match template.protocol {
-                ProtocolType::Ssh => "utilities-terminal-symbolic",
-                ProtocolType::Rdp => "computer-symbolic",
-                ProtocolType::Vnc => "video-display-symbolic",
-                ProtocolType::Spice => "video-display-symbolic",
-                ProtocolType::ZeroTrust => "security-high-symbolic",
-                ProtocolType::Telnet => "call-start-symbolic",
-                ProtocolType::Serial => "modem-symbolic",
-                ProtocolType::Sftp => "folder-remote-symbolic",
-                ProtocolType::Kubernetes => "application-x-executable-symbolic",
-            };
+            let icon_name = rustconn_core::get_protocol_icon(template.protocol);
             let icon = gtk4::Image::from_icon_name(icon_name);
             hbox.append(&icon);
 

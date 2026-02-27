@@ -72,9 +72,9 @@ impl MonitoringBar {
             .build();
 
         let (cpu_section, cpu_bar, cpu_label) =
-            Self::create_metric_section(&i18n("CPU"), "power-profile-performance-symbolic");
+            Self::create_metric_section(&i18n("CPU"), "preferences-system-symbolic");
         let (mem_section, mem_bar, mem_label) =
-            Self::create_metric_section(&i18n("RAM"), "drive-harddisk-solidstate-symbolic");
+            Self::create_metric_section(&i18n("RAM"), "drive-harddisk-symbolic");
         let (disk_section, disk_bar, disk_label) =
             Self::create_metric_section(&i18n("Disk"), "drive-harddisk-symbolic");
 

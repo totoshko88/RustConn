@@ -1,3 +1,33 @@
+rustconn (0.9.3-1) unstable; urgency=medium
+
+  * Added Waypipe Support — Wayland application forwarding for SSH
+    connections via waypipe; auto-detected on Wayland sessions; per-connection
+    toggle; graceful fallback to direct SSH (#36)
+  * Added IronRDP Clipboard Integration — Bidirectional clipboard sync
+    between local desktop and remote RDP session via cliprdr channel;
+    feedback loop prevention via suppression flag
+  * Fixed missing icons on KDE and non-GNOME desktops — replaced non-standard
+    icon names with freedesktop equivalents; forced Adwaita icon theme;
+    unified protocol icons via icons.rs (#35)
+  * Fixed Serial/Kubernetes connection creation — no longer require host/port
+    validation
+  * Fixed Serial/Kubernetes missing client toast — shows user-friendly toast
+    when picocom or kubectl is not installed
+  * Fixed libsecret password storage panic — debug_assert crash on non-UUID
+    lookup keys (#34)
+  * Fixed libsecret password retrieval — is_available() check always returned
+    false because secret-tool exits with code 2 without args
+  * Fixed VNC/RDP identical icons — VNC now uses video-joined-displays-symbolic
+  * Fixed SFTP via mc opens root instead of home — mc FISH VFS URI now
+    includes /~ suffix; mc launched via sh -c for correct terminal sizing
+  * Fixed SSH agent not inherited by VTE terminals — spawn_command now injects
+    SSH_AUTH_SOCK from OnceLock into VTE-spawned processes
+  * Added waypipe to Settings Clients detection tab
+  * Dependencies: deflate64 0.1.10→0.1.11, dispatch2 0.3.0→0.3.1,
+    objc2 0.6.3→0.6.4, zerocopy 0.8.39→0.8.40
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Fri, 27 Feb 2026 14:00:00 +0200
+
 rustconn (0.9.2-1) unstable; urgency=medium
 
   * Custom Icons — set emoji/unicode or GTK icon names on connections

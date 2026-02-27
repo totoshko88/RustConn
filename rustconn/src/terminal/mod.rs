@@ -608,7 +608,9 @@ impl TerminalNotebook {
 
         let page = self.tab_view.append(&container);
         page.set_title(title);
-        page.set_icon(Some(&gio::ThemedIcon::new("video-display-symbolic")));
+        page.set_icon(Some(&gio::ThemedIcon::new(
+            "video-joined-displays-symbolic",
+        )));
         let tooltip = if host.is_empty() {
             title.to_string()
         } else {
@@ -921,6 +923,21 @@ impl TerminalNotebook {
             env_vec.push(glib::GString::from(format!("PATH={extended_path}")));
         }
 
+        // Inject SSH agent env from OnceLock if RustConn started its
+        // own agent (Rust 2024 forbids set_var, so the process env may
+        // not contain the correct SSH_AUTH_SOCK).
+        if let Some(agent_info) = rustconn_core::sftp::get_agent_info() {
+            env_vec.retain(|e| !e.starts_with("SSH_AUTH_SOCK="));
+            env_vec.push(glib::GString::from(format!(
+                "SSH_AUTH_SOCK={}",
+                agent_info.socket_path
+            )));
+            if let Some(ref pid) = agent_info.pid {
+                env_vec.retain(|e| !e.starts_with("SSH_AGENT_PID="));
+                env_vec.push(glib::GString::from(format!("SSH_AGENT_PID={pid}")));
+            }
+        }
+
         // Layer caller-provided variables (override parent values)
         if let Some(user_env) = envv {
             for e in user_env {
@@ -955,6 +972,7 @@ impl TerminalNotebook {
     }
 
     /// Spawns an SSH command in the terminal
+    #[allow(clippy::too_many_arguments)]
     pub fn spawn_ssh(
         &self,
         session_id: Uuid,
@@ -963,8 +981,13 @@ impl TerminalNotebook {
         username: Option<&str>,
         identity_file: Option<&str>,
         extra_args: &[&str],
+        use_waypipe: bool,
     ) -> bool {
-        let mut argv = vec!["ssh"];
+        let mut argv = if use_waypipe {
+            vec!["waypipe", "ssh"]
+        } else {
+            vec!["ssh"]
+        };
 
         let port_str;
         if port != 22 {

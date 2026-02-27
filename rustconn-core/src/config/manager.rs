@@ -583,17 +583,22 @@ impl ConfigManager {
         }
 
         // Host and port are optional for Zero Trust connections
-        // (the target is defined in the provider config)
+        // (the target is defined in the provider config), Serial connections
+        // (the target is a local device path, not a network host), and Kubernetes
+        // connections (the target is a pod/container, not a network host).
         let is_zerotrust = matches!(connection.protocol_config, ProtocolConfig::ZeroTrust(_));
+        let is_serial = matches!(connection.protocol_config, ProtocolConfig::Serial(_));
+        let is_kubernetes = matches!(connection.protocol_config, ProtocolConfig::Kubernetes(_));
+        let skip_host_port = is_zerotrust || is_serial || is_kubernetes;
 
-        if !is_zerotrust && connection.host.trim().is_empty() {
+        if !skip_host_port && connection.host.trim().is_empty() {
             return Err(ConfigError::Validation {
                 field: "host".to_string(),
                 reason: "Host cannot be empty".to_string(),
             });
         }
 
-        if !is_zerotrust && connection.port == 0 {
+        if !skip_host_port && connection.port == 0 {
             return Err(ConfigError::Validation {
                 field: "port".to_string(),
                 reason: "Port must be greater than 0".to_string(),

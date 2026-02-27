@@ -1,4 +1,22 @@
 -------------------------------------------------------------------
+Fri Feb 27 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.3
+
+- Added Waypipe Support — Wayland application forwarding for SSH
+  connections via waypipe (#36)
+- Added IronRDP Clipboard Integration — Bidirectional clipboard sync
+  via cliprdr channel
+- Fixed missing icons on KDE and non-GNOME desktops (#35)
+- Fixed Serial/Kubernetes connection creation validation
+- Fixed Serial/Kubernetes missing client toast
+- Fixed libsecret password storage panic on non-UUID keys (#34)
+- Fixed libsecret password retrieval — is_available() always false
+- Fixed VNC/RDP identical icons
+- Fixed SFTP via mc opens root instead of home directory
+- Fixed SSH agent not inherited by VTE terminals
+- Dependencies: deflate64 0.1.10→0.1.11, dispatch2 0.3.0→0.3.1,
+  objc2 0.6.3→0.6.4, zerocopy 0.8.39→0.8.40
+
+-------------------------------------------------------------------
 Thu Feb 26 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.2
 
 - Custom Icons — set emoji/unicode or GTK icon names on connections

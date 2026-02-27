@@ -47,11 +47,13 @@ pub fn create_clients_page() -> adw::PreferencesPage {
     let rdp_row = create_loading_row("RDP Client");
     let vnc_row = create_loading_row("VNC Client");
     let spice_row = create_loading_row("SPICE Client");
+    let waypipe_row = create_loading_row("Waypipe");
 
     core_group.add(&ssh_row);
     core_group.add(&rdp_row);
     core_group.add(&vnc_row);
     core_group.add(&spice_row);
+    core_group.add(&waypipe_row);
 
     page.add(&core_group);
 
@@ -89,6 +91,7 @@ pub fn create_clients_page() -> adw::PreferencesPage {
     let rdp_row_clone = rdp_row.clone();
     let vnc_row_clone = vnc_row.clone();
     let spice_row_clone = spice_row.clone();
+    let waypipe_row_clone = waypipe_row.clone();
     let zerotrust_rows = Rc::new(zerotrust_rows);
     let zerotrust_rows_clone = zerotrust_rows.clone();
 
@@ -104,11 +107,12 @@ pub fn create_clients_page() -> adw::PreferencesPage {
     // Poll the channel from the main thread; GTK widgets stay here.
     glib::idle_add_local(move || match rx.try_recv() {
         Ok((core_clients, zerotrust_clients)) => {
-            if core_clients.len() >= 4 {
+            if core_clients.len() >= 5 {
                 update_client_row(&core_group_clone, &ssh_row_clone, &core_clients[0]);
                 update_client_row(&core_group_clone, &rdp_row_clone, &core_clients[1]);
                 update_client_row(&core_group_clone, &vnc_row_clone, &core_clients[2]);
                 update_client_row(&core_group_clone, &spice_row_clone, &core_clients[3]);
+                update_client_row(&core_group_clone, &waypipe_row_clone, &core_clients[4]);
             }
 
             for (i, client) in zerotrust_clients.iter().enumerate() {
@@ -275,11 +279,11 @@ fn detect_all_clients() -> (Vec<ClientInfo>, Vec<ClientInfo>) {
     })
 }
 
-/// Detects core protocol clients (SSH, RDP, VNC, SPICE)
+/// Detects core protocol clients (SSH, RDP, VNC, SPICE, Waypipe)
 fn detect_core_clients() -> Vec<ClientInfo> {
     let detection_result = ClientDetectionResult::detect_all();
 
-    let mut core_clients = Vec::with_capacity(4);
+    let mut core_clients = Vec::with_capacity(5);
 
     // SSH - always embedded via VTE terminal
     core_clients.push(ClientInfo {
@@ -363,6 +367,22 @@ fn detect_core_clients() -> Vec<ClientInfo> {
         install_hint: "Optional: Install virt-viewer package".to_string(),
         has_embedded: true,
         embedded_name: Some("spice-gtk".to_string()),
+    });
+
+    // Waypipe - Wayland application forwarding for SSH
+    core_clients.push(ClientInfo {
+        title: "Waypipe".to_string(),
+        name: detection_result.waypipe.name.clone(),
+        installed: detection_result.waypipe.installed,
+        version: detection_result.waypipe.version.clone(),
+        path: detection_result
+            .waypipe
+            .path
+            .as_ref()
+            .map(|p| p.display().to_string()),
+        install_hint: "Optional: Install waypipe package for Wayland forwarding".to_string(),
+        has_embedded: false,
+        embedded_name: None,
     });
 
     core_clients

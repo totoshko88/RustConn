@@ -91,13 +91,35 @@ pub async fn process_command<W: FramedWrite>(
             tracing::debug!("Screen refresh requested");
         }
         RdpClientCommand::ClipboardText(text) => {
-            tracing::debug!("Pasting {} chars via Unicode key events", text.len());
-            for ch in text.chars() {
-                let event_press = create_unicode_event(ch, true);
-                let event_release = create_unicode_event(ch, false);
-                send_input_events(active_stage, image, writer, &[event_press]).await;
-                send_input_events(active_stage, image, writer, &[event_release]).await;
+            // Announce CF_UNICODETEXT to the server via cliprdr, then store
+            // the UTF-16LE payload so the backend can serve it when the
+            // server requests the data (on_format_data_request).
+            tracing::debug!(
+                chars = text.len(),
+                "Setting local clipboard via cliprdr channel"
+            );
+            let utf16_data: Vec<u8> = text
+                .encode_utf16()
+                .flat_map(u16::to_le_bytes)
+                .chain([0, 0]) // null terminator
+                .collect();
+
+            // Store pending data in the backend so on_format_data_request
+            // can serve it immediately.
+            if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>()
+                && let Some(backend) = cliprdr
+                    .downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
+            {
+                backend.set_pending_copy_data(
+                    ironrdp::cliprdr::pdu::ClipboardFormatId::CF_UNICODETEXT.value(),
+                    utf16_data,
+                );
             }
+
+            // Announce the format list to the server — it will then request
+            // the data via FormatDataRequest.
+            let formats = vec![super::super::ClipboardFormatInfo::unicode_text()];
+            handle_clipboard_copy(active_stage, writer, formats).await;
         }
         RdpClientCommand::Authenticate { .. } => {}
         RdpClientCommand::ClipboardData { format_id, data } => {

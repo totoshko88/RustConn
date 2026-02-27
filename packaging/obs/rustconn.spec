@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.9.2
+Version:        0.9.3
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -201,6 +201,19 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Fri Feb 27 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.3-0
+- Added Waypipe Support — Wayland application forwarding for SSH (#36)
+- Added IronRDP Clipboard Integration — Bidirectional clipboard sync
+- Fixed missing icons on KDE and non-GNOME desktops (#35)
+- Fixed Serial/Kubernetes connection creation validation
+- Fixed Serial/Kubernetes missing client toast
+- Fixed libsecret password storage panic on non-UUID keys (#34)
+- Fixed libsecret password retrieval — is_available() always false
+- Fixed VNC/RDP identical icons
+- Fixed SFTP via mc opens root instead of home directory
+- Fixed SSH agent not inherited by VTE terminals
+- Dependencies: deflate64 0.1.10→0.1.11, zerocopy 0.8.39→0.8.40
+
 * Thu Feb 26 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.2-0
 - Custom Icons — set emoji/unicode or GTK icon names on connections and groups (#23)
 - Remote Monitoring — monitoring bar below SSH/Telnet/K8s terminals (#26)

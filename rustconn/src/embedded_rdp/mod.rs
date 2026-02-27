@@ -194,6 +194,9 @@ pub struct EmbeddedRdpWidget {
     widget_id: u64,
     /// Signal handler ID for the drawing area resize handler
     resize_handler_id: Rc<RefCell<Option<glib::SignalHandlerId>>>,
+    /// Signal handler ID for local clipboard change monitoring (Phase 3)
+    #[cfg(feature = "rdp-embedded")]
+    clipboard_handler_id: Rc<RefCell<Option<glib::SignalHandlerId>>>,
 }
 
 impl EmbeddedRdpWidget {
@@ -337,6 +340,8 @@ impl EmbeddedRdpWidget {
                 WIDGET_COUNTER.fetch_add(1, Ordering::SeqCst)
             },
             resize_handler_id: Rc::new(RefCell::new(None)),
+            #[cfg(feature = "rdp-embedded")]
+            clipboard_handler_id: Rc::new(RefCell::new(None)),
         };
 
         widget.setup_drawing();
@@ -1755,6 +1760,11 @@ impl EmbeddedRdpWidget {
         let connection_generation = self.connection_generation.clone();
         #[cfg(feature = "rdp-audio")]
         let audio_player = self.audio_player.clone();
+        let clipboard_handler_id = self.clipboard_handler_id.clone();
+
+        // Flag to suppress clipboard change events when we set the clipboard
+        // ourselves (Phase 2 auto-sync), preventing feedback loops.
+        let clipboard_sync_suppressed: Rc<RefCell<bool>> = Rc::new(RefCell::new(false));
 
         // Capture fallback-related state for auto-fallback on protocol errors
         // (e.g. xrdp ServerDemandActive incompatibility — IronRDP issue #139)
@@ -1791,6 +1801,12 @@ impl EmbeddedRdpWidget {
                     if let Some(mut c) = client_ref.borrow_mut().take() {
                         c.disconnect();
                     }
+                    // Clean up clipboard monitor
+                    if let Some(handler_id) = clipboard_handler_id.borrow_mut().take() {
+                        let display = drawing_area.display();
+                        let cb = display.clipboard();
+                        cb.disconnect(handler_id);
+                    }
                     return glib::ControlFlow::Break;
                 }
 
@@ -1802,6 +1818,12 @@ impl EmbeddedRdpWidget {
                     }
                     *ironrdp_tx.borrow_mut() = None;
                     toolbar.set_visible(false);
+                    // Clean up clipboard monitor
+                    if let Some(handler_id) = clipboard_handler_id.borrow_mut().take() {
+                        let display = drawing_area.display();
+                        let cb = display.clipboard();
+                        cb.disconnect(handler_id);
+                    }
                     return glib::ControlFlow::Break;
                 }
 
@@ -1828,6 +1850,49 @@ impl EmbeddedRdpWidget {
                                     buffer.resize(server_w, server_h);
                                     buffer.clear();
                                 }
+
+                                // Phase 3: Monitor local clipboard changes and
+                                // announce to server via cliprdr
+                                {
+                                    let display = drawing_area.display();
+                                    let clipboard = display.clipboard();
+                                    let tx = ironrdp_tx.clone();
+                                    let suppressed = clipboard_sync_suppressed.clone();
+                                    let handler_id = clipboard.connect_changed(move |cb| {
+                                        // Skip if this change was triggered by our own
+                                        // server→client sync (Phase 2)
+                                        if *suppressed.borrow() {
+                                            return;
+                                        }
+                                        tracing::debug!(
+                                            "[Clipboard] Local clipboard changed, \
+                                             announcing to server"
+                                        );
+                                        // Read local clipboard text and send to server
+                                        let tx_inner = tx.clone();
+                                        cb.read_text_async(
+                                            None::<&gtk4::gio::Cancellable>,
+                                            move |result| {
+                                                if let Ok(Some(text)) = result
+                                                    && let Some(ref sender) = *tx_inner.borrow()
+                                                {
+                                                    let _ = sender.send(
+                                                        RdpClientCommand::ClipboardText(
+                                                            text.to_string(),
+                                                        ),
+                                                    );
+                                                    tracing::debug!(
+                                                        chars = text.len(),
+                                                        "[Clipboard] Sent local clipboard \
+                                                         to server"
+                                                    );
+                                                }
+                                            },
+                                        );
+                                    });
+                                    *clipboard_handler_id.borrow_mut() = Some(handler_id);
+                                }
+
                                 if let Some(ref callback) = *on_state_changed.borrow() {
                                     callback(RdpConnectionState::Connected);
                                 }
@@ -1838,6 +1903,12 @@ impl EmbeddedRdpWidget {
                                     "[IronRDP] Disconnected event in generation {}",
                                     generation
                                 );
+                                // Clean up clipboard monitor
+                                if let Some(handler_id) = clipboard_handler_id.borrow_mut().take() {
+                                    let display = drawing_area.display();
+                                    let cb = display.clipboard();
+                                    cb.disconnect(handler_id);
+                                }
                                 // Check if this polling loop is still current before firing callback
                                 if *connection_generation.borrow() == generation {
                                     *state.borrow_mut() = RdpConnectionState::Disconnected;
@@ -1861,6 +1932,13 @@ impl EmbeddedRdpWidget {
                                     error = %msg,
                                     "[IronRDP] Protocol error during session"
                                 );
+
+                                // Clean up clipboard monitor on any error
+                                if let Some(handler_id) = clipboard_handler_id.borrow_mut().take() {
+                                    let display = drawing_area.display();
+                                    let cb = display.clipboard();
+                                    cb.disconnect(handler_id);
+                                }
 
                                 // Detect protocol-level errors that indicate server
                                 // incompatibility (e.g. xrdp — IronRDP issue #139).
@@ -2037,13 +2115,34 @@ impl EmbeddedRdpWidget {
                                 tracing::debug!("[IronRDP] Authentication required");
                             }
                             RdpClientEvent::ClipboardText(text) => {
-                                // Server sent clipboard text - store it and enable Copy button
+                                // Server sent clipboard text - store it, enable Copy button,
+                                // and auto-sync to local GTK clipboard
                                 tracing::debug!("[Clipboard] Received text from server");
-                                *remote_clipboard_text.borrow_mut() = Some(text);
+                                *remote_clipboard_text.borrow_mut() = Some(text.clone());
                                 copy_button.set_sensitive(true);
                                 copy_button.set_tooltip_text(Some(&i18n(
                                     "Copy remote clipboard to local",
                                 )));
+
+                                // Phase 2: Auto-sync server clipboard to local GTK clipboard
+                                // Suppress the clipboard change handler to avoid feedback loop
+                                *clipboard_sync_suppressed.borrow_mut() = true;
+                                let display = drawing_area.display();
+                                let clipboard = display.clipboard();
+                                clipboard.set_text(&text);
+                                // Reset suppression after a short delay to allow the
+                                // changed signal to fire and be ignored
+                                let suppressed = clipboard_sync_suppressed.clone();
+                                glib::timeout_add_local_once(
+                                    std::time::Duration::from_millis(100),
+                                    move || {
+                                        *suppressed.borrow_mut() = false;
+                                    },
+                                );
+                                tracing::debug!(
+                                    chars = text.len(),
+                                    "[Clipboard] Auto-synced server text to local clipboard"
+                                );
                             }
                             RdpClientEvent::ClipboardFormatsAvailable(formats) => {
                                 // Server has clipboard data available
@@ -2452,6 +2551,13 @@ impl EmbeddedRdpWidget {
     fn cleanup_embedded_mode(&self) {
         if let Some(handler_id) = self.resize_handler_id.borrow_mut().take() {
             self.drawing_area.disconnect(handler_id);
+        }
+        #[cfg(feature = "rdp-embedded")]
+        if let Some(handler_id) = self.clipboard_handler_id.borrow_mut().take() {
+            let display = self.drawing_area.display();
+            let clipboard = display.clipboard();
+            clipboard.disconnect(handler_id);
+            tracing::debug!("[Clipboard] Disconnected local clipboard monitor");
         }
         if let Some(mut thread) = self.freerdp_thread.borrow_mut().take() {
             thread.shutdown();

@@ -200,7 +200,7 @@ impl HistoryDialog {
 
         // Status indicator
         let status_icon = if entry.successful {
-            "emblem-ok-symbolic"
+            "object-select-symbolic"
         } else {
             "dialog-error-symbolic"
         };

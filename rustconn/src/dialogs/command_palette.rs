@@ -303,7 +303,7 @@ impl CommandPaletteDialog {
                         format!("@{tag}"),
                         CommandPaletteAction::GtkAction(format!("win.search:@{tag}")),
                     )
-                    .with_icon("tag-symbolic")
+                    .with_icon("bookmark-new-symbolic")
                 })
                 .collect();
         }

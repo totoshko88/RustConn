@@ -7,7 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.9.2] - 2026-02-24
+## [0.9.3] - 2026-02-27
+
+### Added
+- **Waypipe Support** — Wayland application forwarding for SSH connections via `waypipe`; auto-detected on Wayland sessions when `waypipe` binary is available on PATH; per-connection toggle in SSH Session options; graceful fallback to direct SSH when unavailable ([#36](https://github.com/totoshko88/RustConn/issues/36))
+- **IronRDP Clipboard Integration** — Bidirectional clipboard sync between local desktop and remote RDP session via cliprdr channel; server→client text is auto-synced to local GTK clipboard; local clipboard changes are automatically announced to the server; Copy/Paste buttons remain as manual fallback; feedback loop prevention via suppression flag
+
+### Fixed
+- **Missing icons on KDE and non-GNOME desktops** — Replaced all non-standard icon names (`emblem-ok-symbolic`, `emblem-system-symbolic`, `call-start-symbolic`, `modem-symbolic`, `application-x-executable-symbolic`, etc.) with freedesktop-standard equivalents; replaced icons missing from Adwaita (`emblem-default-symbolic`, `emblem-synchronizing-symbolic`, `utilities-system-monitor-symbolic`, `view-sidebar-start-symbolic`, `tag-symbolic`) with available alternatives; forced Adwaita icon theme via `GtkSettings` for consistent icon availability on all desktops; unified protocol icons via single source of truth in `icons.rs`, eliminating hardcoded duplicates across sidebar, tabs, dialogs, templates, and cluster views ([#35](https://github.com/totoshko88/RustConn/issues/35))
+- **Serial connection creation failed** — Serial and Kubernetes connections no longer require host/port validation (they use device path / pod name instead); previously "Host cannot be empty" error blocked saving these connections
+- **Serial/Kubernetes missing client toast** — Shows user-friendly toast when picocom (Serial) or kubectl (Kubernetes) is not installed, and when Kubernetes pod/container configuration is incomplete; fixed toast overlay discovery that failed on `adw::ApplicationWindow` internal widget hierarchy
+- **libsecret password storage panic** — Fixed `debug_assert` crash in libsecret backend that rejected non-UUID lookup keys (e.g. `"test (vnc)"`); libsecret uses `name (protocol)` format, not UUIDs
+- **libsecret password retrieval** — Fixed `is_available()` check that always returned `false` because `secret-tool --version` is not a valid subcommand (exits with code 2); the store path bypassed this check but the retrieve path went through `SecretManager` which skipped the backend, causing saved passwords to never be found on connection
+- **VNC/RDP identical icons** — VNC now uses `video-joined-displays-symbolic` (two monitors) instead of `video-display-symbolic` which was identical to RDP's `computer-symbolic` in Adwaita
+- **SFTP via mc opens root instead of home** — mc FISH VFS URI now includes `/~` suffix to open the remote user's home directory; mc is launched via `sh -c` wrapper for correct terminal sizing
+- **SSH agent not inherited by VTE terminals** — `spawn_command` now injects `SSH_AUTH_SOCK`/`SSH_AGENT_PID` from the global `OnceLock<SshAgentInfo>` into VTE-spawned processes; previously mc, ssh, and other terminal commands could not reach the SSH agent when RustConn started its own agent (Rust 2024 edition forbids `set_var`)
+
+### Improved
+- **Client Detection** — Added waypipe to Settings → Clients detection tab
+- **Documentation** — Added Waypipe section to User Guide and Architecture docs
+- **Translations** — Added waypipe-related strings to all 18 languages
+
+### Dependencies
+- **Updated**: deflate64 0.1.10→0.1.11, dispatch2 0.3.0→0.3.1, objc2 0.6.3→0.6.4, zerocopy 0.8.39→0.8.40
+
+## [0.9.2] - 2026-02-25
 
 ### Added
 - **Custom Icons** — Set emoji/unicode or GTK icon names on connections and groups ([#23](https://github.com/totoshko88/RustConn/issues/23))

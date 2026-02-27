@@ -465,6 +465,7 @@ impl AsbruImporter {
                         startup_command: None,
                         sftp_enabled: false,
                         port_forwards: Vec::new(),
+                        waypipe: false,
                     }),
                     22u16,
                 )

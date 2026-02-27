@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.9.2** | Last updated: February 2026
+**Version 0.9.3** | Last updated: February 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -739,6 +739,8 @@ pub struct PortForward {
 
 Rules are stored in `SshConfig::port_forwards: Vec<PortForward>` and converted to SSH arguments via `PortForward::to_ssh_arg()`. The GUI provides an inline editor in the SSH tab for adding/removing rules. Import from SSH config (`LocalForward`, `RemoteForward`, `DynamicForward`), Remmina, Asbru-CM, and MobaXterm is supported.
 
+**Waypipe Integration:** SSH connections optionally support Wayland application forwarding via `waypipe`. When enabled in the connection config (`SshConfig.waypipe`) and the `waypipe` binary is detected on PATH, the SSH command is wrapped as `waypipe ssh ...` (or `sshpass -e waypipe ssh ...` for vault-authenticated connections). Detection is handled by `detect_waypipe()` in `rustconn-core/src/protocol/detection.rs`.
+
 ### Zero Trust Integration
 
 Zero Trust connections (AWS SSM, GCP IAP, Teleport, Tailscale, Cloudflare, Boundary) have provider-specific validation and CLI detection:
@@ -768,6 +770,63 @@ let best = detect_best_freerdp();
 **Security:** FreeRDP passwords are passed via `/from-stdin` instead of `/p:{password}` command-line argument, preventing exposure via `/proc/PID/cmdline`.
 
 **HiDPI:** IronRDP sends `desktop_scale_factor` to the Windows server (e.g. 200 for 2× display), and mouse coordinates use CSS pixels matching GTK event coordinates.
+
+### RDP Clipboard Integration
+
+Bidirectional clipboard sync between local desktop and remote RDP session via the CLIPRDR virtual channel (MS-RDPECLIP).
+
+**Architecture:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ rustconn-core/src/rdp_client/                               │
+│                                                             │
+│  clipboard.rs                                               │
+│    RustConnClipboardBackend (implements CliprdrBackend)      │
+│      on_remote_copy()  ──▶  ClipboardText event             │
+│      on_format_data_request()  ──▶  ClipboardDataReady      │
+│      on_format_data_response() ──▶  ClipboardText event     │
+│                                                             │
+│  client/commands.rs                                         │
+│    ClipboardText cmd  ──▶  set_pending_copy_data()          │
+│                       ──▶  handle_clipboard_copy()          │
+└─────────────────────────────────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│ rustconn/src/embedded_rdp/mod.rs                            │
+│                                                             │
+│  Phase 1: Paste via cliprdr                                 │
+│    Paste button → ClipboardText cmd → cliprdr announce      │
+│                                                             │
+│  Phase 2: Auto-sync server→client                           │
+│    ClipboardText event → clipboard.set_text()               │
+│    (suppression flag prevents feedback loop)                │
+│                                                             │
+│  Phase 3: Local clipboard monitoring                        │
+│    gdk::Clipboard::connect_changed() → ClipboardText cmd    │
+│    (handler disconnected on session end/error)              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Data Flow — Client→Server (Paste):**
+1. User copies text locally (or clicks Paste button)
+2. `connect_changed` handler fires → sends `ClipboardText` command
+3. Command handler encodes text as UTF-16LE, stores in backend via `set_pending_copy_data()`
+4. `handle_clipboard_copy()` announces `CF_UNICODETEXT` format to server
+5. Server requests data via `FormatDataRequest` → backend serves pending data via `ClipboardDataReady` event
+
+**Data Flow — Server→Client (Copy):**
+1. Server copies text → `on_remote_copy()` fires with format list
+2. Backend auto-requests `CF_UNICODETEXT` via `initiate_paste()`
+3. Server responds → `on_format_data_response()` decodes UTF-16LE → `ClipboardText` event
+4. GUI handler sets local GTK clipboard via `clipboard.set_text()` (with suppression flag)
+
+**Feedback Loop Prevention:**
+A `clipboard_sync_suppressed` flag is set before `clipboard.set_text()` in Phase 2 and cleared after 100ms. The Phase 3 `connect_changed` handler checks this flag and skips announcing when suppressed.
+
+**Cleanup:**
+The clipboard `connect_changed` handler is disconnected on: normal disconnect, protocol error, stale generation, and embedded mode exit (via `cleanup_embedded_mode()`).
 
 ## GTK4/Libadwaita Patterns
 

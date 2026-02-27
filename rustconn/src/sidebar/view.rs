@@ -33,7 +33,7 @@ pub fn setup_list_item(
     let icon = Image::from_icon_name("network-server-symbolic");
     content_box.append(&icon);
 
-    let status_icon = Image::from_icon_name("emblem-default-symbolic");
+    let status_icon = Image::from_icon_name("object-select-symbolic");
     status_icon.set_pixel_size(10);
     status_icon.set_visible(false);
     status_icon.add_css_class("status-icon");
@@ -326,7 +326,7 @@ pub fn bind_list_item(
                 icon.remove_css_class("status-failed");
 
                 if status == "connected" {
-                    icon.set_icon_name(Some("emblem-default-symbolic"));
+                    icon.set_icon_name(Some("object-select-symbolic"));
                     icon.set_visible(true);
                     icon.add_css_class("status-connected");
                     // Accessibility: announce status change

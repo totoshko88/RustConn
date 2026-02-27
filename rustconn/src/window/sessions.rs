@@ -258,9 +258,7 @@ pub fn populate_sessions_list(
             // Protocol icon
             let icon_name = match info.protocol.as_str() {
                 "ssh" | "local" => "utilities-terminal-symbolic",
-                "rdp" => "computer-symbolic",
-                "vnc" => "video-display-symbolic",
-                _ => "network-server-symbolic",
+                other => rustconn_core::get_protocol_icon_by_name(other),
             };
             let icon = gtk4::Image::from_icon_name(icon_name);
             hbox.append(&icon);

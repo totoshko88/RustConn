@@ -45,6 +45,7 @@ pub type SshOptionsWidgets = (
     CheckButton, // identities_only
     CheckButton, // control_master
     CheckButton, // agent_forwarding
+    CheckButton, // waypipe
     CheckButton, // x11_forwarding
     CheckButton, // compression
     Entry,       // startup_entry
@@ -75,6 +76,7 @@ pub fn create_ssh_options() -> SshOptionsWidgets {
     let (
         session_group,
         agent_forwarding,
+        waypipe,
         x11_forwarding,
         compression,
         startup_entry,
@@ -94,6 +96,7 @@ pub fn create_ssh_options() -> SshOptionsWidgets {
         identities_only,
         control_master,
         agent_forwarding,
+        waypipe,
         x11_forwarding,
         compression,
         startup_entry,
@@ -374,6 +377,7 @@ fn create_session_group() -> (
     CheckButton,
     CheckButton,
     CheckButton,
+    CheckButton,
     Entry,
     Entry,
 ) {
@@ -386,6 +390,12 @@ fn create_session_group() -> (
         .subtitle("Forward SSH agent to remote host (-A)")
         .build();
     session_group.add(&agent_forwarding_row);
+
+    // Waypipe (Wayland application forwarding)
+    let (waypipe_row, waypipe) = CheckboxRowBuilder::new("Waypipe")
+        .subtitle("Wayland application forwarding via waypipe")
+        .build();
+    session_group.add(&waypipe_row);
 
     // X11 Forwarding switch
     let (x11_forwarding_row, x11_forwarding) = CheckboxRowBuilder::new("X11 Forwarding")
@@ -416,6 +426,7 @@ fn create_session_group() -> (
     (
         session_group,
         agent_forwarding,
+        waypipe,
         x11_forwarding,
         compression,
         startup_entry,

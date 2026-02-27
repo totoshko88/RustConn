@@ -204,6 +204,7 @@ impl SshConfigImporter {
             startup_command: None,
             sftp_enabled: false,
             port_forwards: Vec::new(),
+            waypipe: false,
         };
 
         // Create connection

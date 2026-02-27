@@ -242,19 +242,8 @@ impl ClusterDialog {
         let selected_check = CheckButton::new();
 
         // Protocol icon
-        let icon_name = match connection.protocol_config {
-            rustconn_core::models::ProtocolConfig::Ssh(_) => "utilities-terminal-symbolic",
-            rustconn_core::models::ProtocolConfig::Rdp(_) => "computer-symbolic",
-            rustconn_core::models::ProtocolConfig::Vnc(_) => "video-display-symbolic",
-            rustconn_core::models::ProtocolConfig::Spice(_) => "video-display-symbolic",
-            rustconn_core::models::ProtocolConfig::ZeroTrust(_) => "security-high-symbolic",
-            rustconn_core::models::ProtocolConfig::Telnet(_) => "call-start-symbolic",
-            rustconn_core::models::ProtocolConfig::Serial(_) => "modem-symbolic",
-            rustconn_core::models::ProtocolConfig::Sftp(_) => "folder-remote-symbolic",
-            rustconn_core::models::ProtocolConfig::Kubernetes(_) => {
-                "application-x-executable-symbolic"
-            }
-        };
+        let icon_name =
+            rustconn_core::get_protocol_icon(connection.protocol_config.protocol_type());
         let icon = gtk4::Image::from_icon_name(icon_name);
 
         let label = Label::builder()

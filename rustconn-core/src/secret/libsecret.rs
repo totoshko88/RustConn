@@ -48,13 +48,6 @@ impl LibSecretBackend {
 
     /// Builds the attribute map for a connection
     fn build_attributes(&self, connection_id: &str) -> HashMap<String, String> {
-        // Validate connection_id to prevent injection via secret-tool arguments
-        debug_assert!(
-            connection_id
-                .chars()
-                .all(|c| c.is_alphanumeric() || c == '-'),
-            "connection_id should be a UUID: {connection_id}"
-        );
         let mut attrs = HashMap::new();
         attrs.insert("application".to_string(), self.application_id.clone());
         attrs.insert("connection_id".to_string(), connection_id.to_string());
@@ -235,13 +228,15 @@ impl SecretBackend for LibSecretBackend {
     }
 
     async fn is_available(&self) -> bool {
-        // Check if secret-tool is available
+        // Check if secret-tool binary exists on PATH.
+        // Note: secret-tool does not support --version (exits with code 2),
+        // so we only check whether the process can be spawned at all.
         Command::new("secret-tool")
-            .arg("--version")
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .output()
             .await
-            .map(|o| o.status.success())
-            .unwrap_or(false)
+            .is_ok()
     }
 
     fn backend_id(&self) -> &'static str {

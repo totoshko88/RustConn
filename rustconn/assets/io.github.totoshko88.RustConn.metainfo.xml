@@ -90,6 +90,20 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.9.3" date="2026-02-27">
+      <description>
+        <p>Waypipe support, RDP clipboard integration, icon fixes, and libsecret reliability.</p>
+        <ul>
+          <li>Waypipe: Wayland application forwarding for SSH connections</li>
+          <li>IronRDP bidirectional clipboard sync via cliprdr channel</li>
+          <li>Fixed missing icons on KDE and non-GNOME desktops</li>
+          <li>Fixed libsecret password storage and retrieval</li>
+          <li>Fixed Serial/Kubernetes connection creation</li>
+          <li>Fixed SFTP via mc opening root instead of home directory</li>
+          <li>Fixed SSH agent not inherited by VTE terminal processes</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.9.2" date="2026-02-26">
       <description>
         <p>Remote monitoring, custom icons, Bitwarden Flatpak fix, and dependency updates.</p>

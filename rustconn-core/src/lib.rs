@@ -159,8 +159,8 @@ pub use protocol::{
     detect_cloudflared, detect_gcloud_cli, detect_kubectl, detect_oci_cli, detect_picocom,
     detect_provider, detect_rdp_client, detect_ssh_client, detect_tailscale, detect_teleport,
     detect_telnet_client, detect_vnc_client, extract_geometry_from_args, get_protocol_color_rgb,
-    get_protocol_icon_by_name, get_protocol_tab_css_class, get_zero_trust_provider_icon,
-    has_decorations_flag,
+    get_protocol_icon, get_protocol_icon_by_name, get_protocol_tab_css_class,
+    get_zero_trust_provider_icon, has_decorations_flag,
 };
 pub use rdp_client::keyboard_layout::{
     LAYOUT_US_ENGLISH, detect_keyboard_layout, xkb_name_to_klid,
