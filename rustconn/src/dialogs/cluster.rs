@@ -328,6 +328,14 @@ impl ClusterDialog {
         }
     }
 
+    /// Pre-selects connections by their IDs (for creating cluster from sidebar selection)
+    pub fn pre_select_connections(&self, selected_ids: &[Uuid]) {
+        for row in self.connection_rows.borrow().iter() {
+            let is_selected = selected_ids.contains(&row.connection_id);
+            row.selected_check.set_active(is_selected);
+        }
+    }
+
     /// Runs the dialog and calls the callback with the result
     pub fn run<F: Fn(Option<Cluster>) + 'static>(&self, cb: F) {
         *self.on_save.borrow_mut() = Some(Box::new(cb));

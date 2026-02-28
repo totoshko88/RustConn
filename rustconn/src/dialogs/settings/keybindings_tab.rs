@@ -15,6 +15,8 @@ use rustconn_core::config::keybindings::{
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::i18n::i18n_f;
+
 /// Creates the keybindings preferences page.
 ///
 /// Returns `(page, overrides_cell)` where `overrides_cell` holds the current
@@ -124,7 +126,21 @@ pub fn create_keybindings_page() -> (adw::PreferencesPage, Rc<RefCell<Keybinding
                     // Build accelerator string
                     let accel = gtk4::accelerator_name(keyval, modifier);
                     if is_valid_accelerator(&accel) {
-                        label.set_label(&accel);
+                        // Check for conflicts with other actions
+                        let conflict = find_accel_conflict(&accel, &action, &overrides.borrow());
+                        if let Some(conflict_label) = &conflict {
+                            // Show conflict warning but still allow the assignment
+                            let warning = i18n_f("Conflicts with: {}", &[conflict_label]);
+                            label.set_label(&format!("{accel}  \u{26A0}"));
+                            label.set_tooltip_text(Some(&warning));
+                            label.remove_css_class("dim-label");
+                            label.add_css_class("warning");
+                        } else {
+                            label.set_label(&accel);
+                            label.set_tooltip_text(None);
+                            label.remove_css_class("warning");
+                            label.add_css_class("dim-label");
+                        }
                         overrides
                             .borrow_mut()
                             .overrides
@@ -221,6 +237,30 @@ pub fn collect_keybinding_settings(
     overrides_cell: &Rc<RefCell<KeybindingSettings>>,
 ) -> KeybindingSettings {
     overrides_cell.borrow().clone()
+}
+
+/// Checks whether `accel` conflicts with another action's shortcut.
+///
+/// Returns the human-readable label of the conflicting action, or `None`.
+fn find_accel_conflict(
+    accel: &str,
+    current_action: &str,
+    overrides: &KeybindingSettings,
+) -> Option<String> {
+    let defaults = default_keybindings();
+    for def in &defaults {
+        if def.action == current_action {
+            continue;
+        }
+        let effective = overrides.get_accel(def);
+        // Check each pipe-separated accelerator
+        for existing in effective.split('|') {
+            if existing == accel {
+                return Some(def.label.clone());
+            }
+        }
+    }
+    None
 }
 
 /// Returns `true` if the keyval is a modifier key (Shift, Control, Alt, Super).

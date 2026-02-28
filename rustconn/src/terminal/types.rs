@@ -31,6 +31,28 @@ pub struct TerminalSession {
     pub tab_group: Option<String>,
     /// Color index from palette for visual grouping
     pub tab_color_index: Option<usize>,
+    /// Timestamp when the session was created/connected
+    pub connected_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl TerminalSession {
+    /// Formats the session duration as a human-readable string.
+    pub fn format_duration(&self) -> String {
+        let elapsed = chrono::Utc::now()
+            .signed_duration_since(self.connected_at)
+            .num_seconds()
+            .max(0);
+        let hours = elapsed / 3600;
+        let minutes = (elapsed % 3600) / 60;
+        let seconds = elapsed % 60;
+        if hours > 0 {
+            format!("{hours}h {minutes:02}m")
+        } else if minutes > 0 {
+            format!("{minutes}m {seconds:02}s")
+        } else {
+            format!("{seconds}s")
+        }
+    }
 }
 
 /// Session widget storage for non-SSH sessions

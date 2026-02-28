@@ -249,10 +249,18 @@ impl FlatpakComponentsDialog {
             .build();
         row.add_suffix(&size_label);
 
-        // Status label
-        let installed_text = i18n("Installed");
+        // Status label — show version when installed and available
+        let installed_text = if is_installed {
+            if let Some(ver) = component.pinned_version {
+                format!("{} ({})", i18n("Installed"), ver)
+            } else {
+                i18n("Installed")
+            }
+        } else {
+            String::new()
+        };
         let status_label = Label::builder()
-            .label(if is_installed { &installed_text } else { "" })
+            .label(&installed_text)
             .css_classes(if is_installed {
                 vec!["success"]
             } else {
@@ -454,12 +462,16 @@ impl FlatpakComponentsDialog {
             match result {
                 Ok(()) => {
                     let is_now_installed = was_install;
-                    let installed_label = i18n("Installed");
-                    info.status_label.set_label(if is_now_installed {
-                        &installed_label
+                    let installed_label = if is_now_installed {
+                        if let Some(ver) = component.and_then(|c| c.pinned_version) {
+                            format!("{} ({})", i18n("Installed"), ver)
+                        } else {
+                            i18n("Installed")
+                        }
                     } else {
-                        ""
-                    });
+                        String::new()
+                    };
+                    info.status_label.set_label(&installed_label);
                     info.status_label.remove_css_class("error");
 
                     if is_now_installed {

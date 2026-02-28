@@ -10,25 +10,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.4] - 2026-02-28
 
 ### Added
-- **Connection History Search** — Filter history entries by name, host, protocol, or username via search field in the History dialog
-- **Connection History Per-Entry Delete** — Remove individual history entries with a delete button on each row; callbacks for single-entry deletion and clear-all
-- **Encrypted Documents User Guide** — New section documenting document creation, protection, and management
-- **Automation & Tasks User Guide** — Detailed examples for Expect rules (auto-login, sudo, menu navigation) and pre/post connection tasks (VPN, key loading)
-- **FIDO2/Security Key User Guide** — Requirements and setup for hardware security key SSH authentication
-- **Import Formats User Guide** — Added Remote Desktop Manager (JSON) and Virt-Viewer (.vv) to documented import sources; added merge strategy and import preview documentation
-- **Custom Properties User Guide** — Added usage examples for arbitrary key-value metadata on connections
+- **Session Reconnect** — disconnected VTE tabs (SSH, Telnet, Serial, Kubernetes) show a "Reconnect" banner that re-launches the connection in one click
+- **Recursive Group Delete** — three-option dialog: keep children, cascade delete, or cancel
+- **Connection History improvements** — search by name/host/protocol/username; per-entry delete button
+- **Cluster from sidebar selection** — "Create Cluster" button in Group Operations toolbar pre-selects checked connections
+- **Shortcut conflict detection** — ⚠ warning when recording a keybinding already assigned to another action
+- **Settings Backup/Restore** — export/import all config files as a ZIP archive via Settings → Interface
+- **Secret backend unavailable toast** — one-time warning at startup when the preferred backend is unreachable
+- **Session duration in tab tooltip** — elapsed time (e.g. "2h 15m") shown in tab tooltips, updated every 30 s
+- **Flatpak component version display** — pinned version shown next to "Installed" label in Flatpak Components
+- **Automation templates** — 5 built-in expect rule presets (Sudo Password, SSH Host Key, Login Prompt, Press Enter, MOTD Pager) via `builtin_templates()` API
 
 ### Fixed
-- **Password inheritance from groups with Variable source** — `resolve_inherited_credentials()` now handles `PasswordSource::Variable` in the group hierarchy traversal; previously variable-based group passwords were silently ignored ([#37](https://github.com/totoshko88/RustConn/issues/37))
-- **New connection not placed in selected group** — Added "New Connection in Group" context menu item for groups in the sidebar; the connection dialog now pre-selects the target group, preventing connections from ending up ungrouped ([#37](https://github.com/totoshko88/RustConn/issues/37))
-- **Alert dialog visual distinction** — `show_error()` now uses destructive-styled OK button, `show_success()` uses suggested-styled OK button, replacing identical `show_alert()` calls for both
-- **Toast severity indicators** — Error and warning toasts now display an icon + label custom title widget (e.g., ⚠ Warning, ✕ Error) for immediate visual distinction via `set_custom_title()`
-- **Toast fallback on missing overlay** — `show_toast_on_window()` now falls back to `adw::AlertDialog` instead of silently logging when no `ToastOverlay` is found in the widget hierarchy
-- **WoL dialog i18n** — Replaced `format!("Magic packet sent to {mac}")` with `i18n_f("Magic packet sent to {mac}", &[&mac])` for proper translation support
+- **Password inheritance** — `resolve_inherited_credentials()` now handles `PasswordSource::Variable` in group hierarchy ([#37](https://github.com/totoshko88/RustConn/issues/37))
+- **New connection placed in wrong group** — "New Connection in Group" context menu pre-selects the target group ([#37](https://github.com/totoshko88/RustConn/issues/37))
+- **Toast system** — severity icons (⚠/✕) on error/warning toasts; "Retry" button on port-check failures for RDP/VNC/SPICE; fallback to `AlertDialog` when no `ToastOverlay` found; i18n for toast titles
+- **Flatpak missing-CLI toast** — "Install" button opens Flatpak Components when picocom/kubectl/ZeroTrust CLI is missing
+- **SSH key path inline validation** — real-time validation with error style and tooltip; tilde expansion supported
+- **Alert dialog styling** — destructive OK for errors, suggested OK for success
+- **WoL dialog i18n** — magic packet toast now uses `i18n_f()` for translation
+- **VTE spawn failure handling** — when a command (telnet, ssh, picocom) is not found, the tab now shows a "Command not found" banner with Reconnect button and an error toast instead of a silent empty terminal
 
 ### Improved
-- **Documentation** — User Guide updated to version 0.9.4; added Table of Contents entry for Encrypted Documents; expanded Connection History, Import/Export, and Advanced Tabs sections with detailed examples and options
-- **UX Audit** — Created `docs/UX_AUDIT_TASKS.md` with 26 prioritized tasks across 10 categories (error handling, CRUD completeness, dialog standardization, protocol validation, GNOME HIG, Flatpak, i18n)
+- **User Guide** — major update: Zero Trust Providers (10 providers), Security Best Practices, FAQ, Migration Guide (Remmina/MobaXterm/Royal TS/SSH Config/Ansible), expanded Templates, Snippets, Clusters, Group Operations Mode, Encrypted Documents, Automation & Tasks, FIDO2, Import/Export, Connection Statistics; fixed Quick Connect shortcut
+- **Sidebar** — group tooltip shows child connection count
 
 ## [0.9.3] - 2026-02-27
 

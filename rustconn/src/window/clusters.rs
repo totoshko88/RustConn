@@ -64,6 +64,54 @@ pub fn show_new_cluster_dialog(
     });
 }
 
+/// Shows the new cluster dialog with pre-selected connections from sidebar selection
+pub fn show_new_cluster_dialog_with_selection(
+    window: &gtk4::Window,
+    state: SharedAppState,
+    notebook: SharedNotebook,
+    selected_ids: Vec<Uuid>,
+) {
+    let dialog = ClusterDialog::new(Some(&window.clone().upcast()));
+
+    // Populate available connections
+    if let Ok(state_ref) = state.try_borrow() {
+        let connections: Vec<_> = state_ref
+            .list_connections()
+            .iter()
+            .cloned()
+            .cloned()
+            .collect();
+        dialog.set_connections(&connections);
+    }
+
+    // Pre-select the connections chosen in sidebar
+    dialog.pre_select_connections(&selected_ids);
+
+    let window_clone = window.clone();
+    let state_clone = state.clone();
+    let notebook_clone = notebook.clone();
+    dialog.run(move |result| {
+        if let Some(cluster) = result
+            && let Ok(mut state_mut) = state_clone.try_borrow_mut()
+        {
+            match state_mut.create_cluster(cluster) {
+                Ok(_) => {
+                    alert::show_success(
+                        &window_clone,
+                        "Cluster Created",
+                        "Cluster has been saved successfully.",
+                    );
+                }
+                Err(e) => {
+                    alert::show_error(&window_clone, "Error Creating Cluster", &e);
+                }
+            }
+        }
+        // Keep notebook reference alive
+        let _ = &notebook_clone;
+    });
+}
+
 /// Shows the clusters manager dialog
 pub fn show_clusters_manager(
     window: &gtk4::Window,

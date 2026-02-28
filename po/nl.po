@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.9.3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-28 02:00+0200\n"
+"POT-Creation-Date: 2026-02-28 16:36+0200\n"
 "PO-Revision-Date: 2026-02-17 00:00+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Dutch\n"
@@ -21,15 +21,16 @@ msgid "OK"
 msgstr "OK"
 
 #: rustconn/src/alert.rs:33 rustconn/src/alert.rs:93
-#: rustconn/src/dialogs/flatpak_components.rs:274
+#: rustconn/src/dialogs/flatpak_components.rs:282
 #: rustconn/src/dialogs/history.rs:187 rustconn/src/dialogs/progress.rs:64
 #: rustconn/src/dialogs/progress.rs:184
+#: rustconn/src/dialogs/settings/mod.rs:361
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:437
-#: rustconn/src/terminal/mod.rs:297 rustconn/src/window/edit_dialogs.rs:219
+#: rustconn/src/terminal/mod.rs:300 rustconn/src/window/edit_dialogs.rs:219
 #: rustconn/src/window/edit_dialogs.rs:410 rustconn/src/window/groups.rs:60
-#: rustconn/src/window/operations.rs:359 rustconn/src/window/operations.rs:590
-#: rustconn/src/window/sessions.rs:323 rustconn/src/window/snippets.rs:325
-#: rustconn/src/window/snippets.rs:436
+#: rustconn/src/window/operations.rs:81 rustconn/src/window/operations.rs:417
+#: rustconn/src/window/operations.rs:648 rustconn/src/window/sessions.rs:323
+#: rustconn/src/window/snippets.rs:325 rustconn/src/window/snippets.rs:436
 msgid "Cancel"
 msgstr "Annuleren"
 
@@ -51,7 +52,11 @@ msgstr "Opslaan"
 msgid "Initialization Error"
 msgstr "Initialisatiefout"
 
-#: rustconn/src/app.rs:1123
+#: rustconn/src/app.rs:476
+msgid "{} backend unavailable. Using fallback."
+msgstr ""
+
+#: rustconn/src/app.rs:1152
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -62,35 +67,35 @@ msgstr ""
 "verbindingen vanuit één applicatie."
 
 #. Translators: Replace this with your name and language, e.g. "John Doe (German)"
-#: rustconn/src/app.rs:1159
+#: rustconn/src/app.rs:1188
 msgid "translator-credits"
 msgstr "RustConn-team (Nederlands)"
 
-#: rustconn/src/app.rs:1166
+#: rustconn/src/app.rs:1195
 msgid "User Guide"
 msgstr "Gebruikershandleiding"
 
-#: rustconn/src/app.rs:1170
+#: rustconn/src/app.rs:1199
 msgid "Installation"
 msgstr "Installatie"
 
-#: rustconn/src/app.rs:1174
+#: rustconn/src/app.rs:1203
 msgid "Releases"
 msgstr "Releases"
 
-#: rustconn/src/app.rs:1178
+#: rustconn/src/app.rs:1207
 msgid "Changelog"
 msgstr "Wijzigingslogboek"
 
-#: rustconn/src/app.rs:1189
+#: rustconn/src/app.rs:1218
 msgid "Special Thanks"
 msgstr "Speciale dank"
 
-#: rustconn/src/app.rs:1204
+#: rustconn/src/app.rs:1233
 msgid "Made in Ukraine"
 msgstr "Made in Ukraine"
 
-#: rustconn/src/app.rs:1205
+#: rustconn/src/app.rs:1234
 msgid "All contributors and supporters"
 msgstr "Alle bijdragers en ondersteuners"
 
@@ -118,7 +123,7 @@ msgstr "Verbindingen"
 msgid "Select connections to include in this cluster"
 msgstr "Selecteer verbindingen om in dit cluster op te nemen"
 
-#: rustconn/src/dialogs/cluster.rs:224 rustconn/src/sidebar_ui.rs:274
+#: rustconn/src/dialogs/cluster.rs:224 rustconn/src/sidebar_ui.rs:283
 msgid "Select All"
 msgstr "Alles selecteren"
 
@@ -130,11 +135,11 @@ msgstr "Alles deselecteren"
 msgid "Edit Cluster"
 msgstr "Cluster bewerken"
 
-#: rustconn/src/dialogs/cluster.rs:381
+#: rustconn/src/dialogs/cluster.rs:389
 msgid "Manage Clusters"
 msgstr "Clusters beheren"
 
-#: rustconn/src/dialogs/cluster.rs:425
+#: rustconn/src/dialogs/cluster.rs:433
 msgid ""
 "Clusters allow you to connect to multiple servers simultaneously and "
 "optionally broadcast input to all sessions."
@@ -142,27 +147,27 @@ msgstr ""
 "Met clusters kunt u tegelijkertijd verbinding maken met meerdere servers en "
 "optioneel invoer naar alle sessies uitzenden."
 
-#: rustconn/src/dialogs/cluster.rs:499
+#: rustconn/src/dialogs/cluster.rs:507
 msgid " (broadcast enabled)"
 msgstr " (broadcast ingeschakeld)"
 
-#: rustconn/src/dialogs/cluster.rs:505
+#: rustconn/src/dialogs/cluster.rs:513
 msgid "{} connections{}"
 msgstr "{} verbindingen{}"
 
-#: rustconn/src/dialogs/cluster.rs:522
+#: rustconn/src/dialogs/cluster.rs:530
 msgid "Connect to cluster"
 msgstr "Verbinden met cluster"
 
-#: rustconn/src/dialogs/cluster.rs:528
+#: rustconn/src/dialogs/cluster.rs:536
 msgid "Edit cluster"
 msgstr "Cluster bewerken"
 
-#: rustconn/src/dialogs/cluster.rs:534
+#: rustconn/src/dialogs/cluster.rs:542
 msgid "Delete cluster"
 msgstr "Cluster verwijderen"
 
-#: rustconn/src/dialogs/cluster.rs:567
+#: rustconn/src/dialogs/cluster.rs:575
 msgid "No clusters defined. Click 'New Cluster' to create one."
 msgstr ""
 "Geen clusters gedefinieerd. Klik op 'Nieuw cluster' om er een aan te maken."
@@ -258,7 +263,7 @@ msgid "Test timed out"
 msgstr "Test-timeout"
 
 #: rustconn/src/dialogs/connection/dialog.rs:1323
-#: rustconn/src/sidebar_ui.rs:420 rustconn/src/split_view/bridge.rs:1692
+#: rustconn/src/sidebar_ui.rs:429 rustconn/src/split_view/bridge.rs:1692
 #: rustconn/src/window/ui.rs:116
 msgid "New Connection"
 msgstr "Nieuwe verbinding"
@@ -605,9 +610,9 @@ msgstr "Toevoegen"
 #: rustconn/src/dialogs/connection/dialog.rs:2578
 #: rustconn/src/dialogs/connection/dialog.rs:3178
 #: rustconn/src/dialogs/connection/shared_folders.rs:56
-#: rustconn/src/dialogs/flatpak_components.rs:295
-#: rustconn/src/dialogs/flatpak_components.rs:331
-#: rustconn/src/dialogs/flatpak_components.rs:467
+#: rustconn/src/dialogs/flatpak_components.rs:303
+#: rustconn/src/dialogs/flatpak_components.rs:339
+#: rustconn/src/dialogs/flatpak_components.rs:479
 msgid "Remove"
 msgstr "Verwijderen"
 
@@ -1860,7 +1865,11 @@ msgstr "Sleutel"
 msgid "Select from SSH agent"
 msgstr "Selecteren uit SSH-agent"
 
-#: rustconn/src/dialogs/connection/ssh.rs:328
+#: rustconn/src/dialogs/connection/ssh.rs:227
+msgid "Key file not found"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/ssh.rs:359
 #: rustconn/src/dialogs/connection/telnet.rs:36
 #: rustconn/src/dialogs/settings/mod.rs:227
 #: rustconn/src/dialogs/template.rs:664 rustconn/src/dialogs/wol.rs:65
@@ -1868,81 +1877,81 @@ msgstr "Selecteren uit SSH-agent"
 msgid "Connection"
 msgstr "Verbinding"
 
-#: rustconn/src/dialogs/connection/ssh.rs:332
+#: rustconn/src/dialogs/connection/ssh.rs:363
 #: rustconn/src/window/edit_dialogs.rs:1276
 msgid "(None)"
 msgstr "(Geen)"
 
-#: rustconn/src/dialogs/connection/ssh.rs:339
+#: rustconn/src/dialogs/connection/ssh.rs:370
 msgid "Jump Host"
 msgstr "Tussenhost"
 
-#: rustconn/src/dialogs/connection/ssh.rs:340
+#: rustconn/src/dialogs/connection/ssh.rs:371
 msgid "Connect via another SSH connection"
 msgstr "Verbinding via een andere SSH-verbinding"
 
-#: rustconn/src/dialogs/connection/ssh.rs:385
+#: rustconn/src/dialogs/connection/ssh.rs:416
 #: rustconn/src/dialogs/template.rs:705
 msgid "Session"
 msgstr "Sessie"
 
-#: rustconn/src/dialogs/connection/ssh.rs:447
+#: rustconn/src/dialogs/connection/ssh.rs:478
 msgid "Port Forwarding"
 msgstr "Poortdoorschakeling"
 
-#: rustconn/src/dialogs/connection/ssh.rs:448
+#: rustconn/src/dialogs/connection/ssh.rs:479
 msgid "Forward ports through the SSH tunnel"
 msgstr "Poorten doorschakelen via de SSH-tunnel"
 
-#: rustconn/src/dialogs/connection/ssh.rs:453
+#: rustconn/src/dialogs/connection/ssh.rs:484
 msgid "Local (-L)"
 msgstr "Local (-L)"
 
-#: rustconn/src/dialogs/connection/ssh.rs:454
+#: rustconn/src/dialogs/connection/ssh.rs:485
 msgid "Remote (-R)"
 msgstr "Remote (-R)"
 
-#: rustconn/src/dialogs/connection/ssh.rs:455
+#: rustconn/src/dialogs/connection/ssh.rs:486
 msgid "Dynamic (-D)"
 msgstr "Dynamic (-D)"
 
-#: rustconn/src/dialogs/connection/ssh.rs:463
+#: rustconn/src/dialogs/connection/ssh.rs:494
 msgid "Direction"
 msgstr "Richting"
 
-#: rustconn/src/dialogs/connection/ssh.rs:464
+#: rustconn/src/dialogs/connection/ssh.rs:495
 msgid "Type of port forwarding"
 msgstr "Type poortdoorschakeling"
 
-#: rustconn/src/dialogs/connection/ssh.rs:477
+#: rustconn/src/dialogs/connection/ssh.rs:508
 msgid "Local Port"
 msgstr "Lokale poort"
 
-#: rustconn/src/dialogs/connection/ssh.rs:478
+#: rustconn/src/dialogs/connection/ssh.rs:509
 msgid "Port to bind locally"
 msgstr "Poort om lokaal te binden"
 
-#: rustconn/src/dialogs/connection/ssh.rs:489
+#: rustconn/src/dialogs/connection/ssh.rs:520
 msgid "Remote Host"
 msgstr "Externe host"
 
-#: rustconn/src/dialogs/connection/ssh.rs:490
+#: rustconn/src/dialogs/connection/ssh.rs:521
 msgid "Destination host on the remote side"
 msgstr "Bestemmingshost aan de externe zijde"
 
-#: rustconn/src/dialogs/connection/ssh.rs:503
+#: rustconn/src/dialogs/connection/ssh.rs:534
 msgid "Remote Port"
 msgstr "Externe poort"
 
-#: rustconn/src/dialogs/connection/ssh.rs:504
+#: rustconn/src/dialogs/connection/ssh.rs:535
 msgid "Destination port on the remote side"
 msgstr "Bestemmingspoort aan de externe zijde"
 
-#: rustconn/src/dialogs/connection/ssh.rs:520
+#: rustconn/src/dialogs/connection/ssh.rs:551
 msgid "Add Forward"
 msgstr "Doorschakeling toevoegen"
 
-#: rustconn/src/dialogs/connection/ssh.rs:616
+#: rustconn/src/dialogs/connection/ssh.rs:647
 msgid "Remove this port forward"
 msgstr "Deze portdoorschakeling verwijderen"
 
@@ -2057,7 +2066,7 @@ msgstr "Nieuw wachtwoord"
 msgid "Use a strong password that you can remember."
 msgstr "Gebruik een sterk wachtwoord dat u kunt onthouden."
 
-#: rustconn/src/dialogs/export.rs:66 rustconn/src/sidebar_ui.rs:358
+#: rustconn/src/dialogs/export.rs:66 rustconn/src/sidebar_ui.rs:367
 msgid "Export Connections"
 msgstr "Verbindingen exporteren"
 
@@ -2330,36 +2339,38 @@ msgstr "Containerorkestratie"
 msgid "Required for Kubernetes pod shell connections"
 msgstr "Vereist voor Kubernetes pod shell-verbindingen"
 
-#: rustconn/src/dialogs/flatpak_components.rs:253
-#: rustconn/src/dialogs/flatpak_components.rs:457
+#: rustconn/src/dialogs/flatpak_components.rs:255
+#: rustconn/src/dialogs/flatpak_components.rs:257
+#: rustconn/src/dialogs/flatpak_components.rs:467
+#: rustconn/src/dialogs/flatpak_components.rs:469
 msgid "Installed"
 msgstr "Geïnstalleerd"
 
-#: rustconn/src/dialogs/flatpak_components.rs:284
+#: rustconn/src/dialogs/flatpak_components.rs:292
 msgid "Update"
 msgstr "Bijwerken"
 
-#: rustconn/src/dialogs/flatpak_components.rs:298
-#: rustconn/src/dialogs/flatpak_components.rs:475
+#: rustconn/src/dialogs/flatpak_components.rs:306
+#: rustconn/src/dialogs/flatpak_components.rs:487 rustconn/src/toast.rs:254
 msgid "Install"
 msgstr "Installeren"
 
-#: rustconn/src/dialogs/flatpak_components.rs:301
+#: rustconn/src/dialogs/flatpak_components.rs:309
 #: rustconn/src/dialogs/password_generator.rs:371
 msgid "N/A"
 msgstr "N.v.t."
 
-#: rustconn/src/dialogs/flatpak_components.rs:303
+#: rustconn/src/dialogs/flatpak_components.rs:311
 msgid "Not available for download"
 msgstr "Niet beschikbaar voor download"
 
-#: rustconn/src/dialogs/flatpak_components.rs:488
+#: rustconn/src/dialogs/flatpak_components.rs:500
 #: rustconn/src/dialogs/statistics.rs:138
 #: rustconn/src/dialogs/statistics.rs:238
 msgid "Failed"
 msgstr "Mislukt"
 
-#: rustconn/src/dialogs/history.rs:31 rustconn/src/sidebar_ui.rs:324
+#: rustconn/src/dialogs/history.rs:31 rustconn/src/sidebar_ui.rs:333
 msgid "Connection History"
 msgstr "Verbindingsgeschiedenis"
 
@@ -2387,7 +2398,7 @@ msgstr "Geschiedenis wissen?"
 msgid "All connection history entries will be permanently removed."
 msgstr "Alle verbindingsgeschiedenisvermeldingen worden permanent verwijderd."
 
-#: rustconn/src/dialogs/history.rs:188 rustconn/src/sidebar_ui.rs:282
+#: rustconn/src/dialogs/history.rs:188 rustconn/src/sidebar_ui.rs:291
 msgid "Clear"
 msgstr "Wissen"
 
@@ -2767,29 +2778,33 @@ msgstr "Controleren..."
 msgid "Using embedded {} (external not found)"
 msgstr "Gebruik ingebedde {} (extern niet gevonden)"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:25
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:27
 msgid "Keybindings"
 msgstr "Sneltoetsen"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:63
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:116
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:134
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:65
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:118
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:150
 msgid "Record"
 msgstr "Opnemen"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:65
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:67
 msgid "Press a key combination to set a new shortcut"
 msgstr "Druk op een toetsencombinatie om een nieuwe sneltoets in te stellen"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:72
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:74
 msgid "Reset to default"
 msgstr "Standaard herstellen"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:89
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:91
 msgid "Press keys..."
 msgstr "Druk op toetsen..."
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:167
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:133
+msgid "Conflicts with: {}"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:183
 msgid "Reset All to Defaults"
 msgstr "Alles naar standaard herstellen"
 
@@ -2873,6 +2888,67 @@ msgstr "Tijdstempels"
 #: rustconn/src/dialogs/settings/logging_tab.rs:158
 msgid "Prepend [HH:MM:SS] to each line in session logs"
 msgstr "[HH:MM:SS] voor elke regel in sessielogboeken plaatsen"
+
+#: rustconn/src/dialogs/settings/mod.rs:247
+msgid "Backup & Restore"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/mod.rs:248
+msgid "Export or import all settings as a ZIP archive"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/mod.rs:252
+msgid "Backup Settings…"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/mod.rs:253
+msgid "Save all configuration files to a ZIP archive"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/mod.rs:256
+msgid "Restore Settings…"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/mod.rs:258
+msgid "Load configuration from a ZIP archive (restart required)"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/mod.rs:286
+msgid "Save Backup"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/mod.rs:304
+msgid "Backup saved ({} files)"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/mod.rs:317
+msgid "Backup Error"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/mod.rs:340
+msgid "Open Backup"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/mod.rs:356
+msgid "Restore Settings?"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/mod.rs:358
+msgid ""
+"This will overwrite current settings. A restart is required to apply changes."
+msgstr ""
+
+#: rustconn/src/dialogs/settings/mod.rs:362
+msgid "Restore"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/mod.rs:377
+msgid "Restored {} files. Restart to apply."
+msgstr ""
+
+#: rustconn/src/dialogs/settings/mod.rs:390
+msgid "Restore Error"
+msgstr ""
 
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:39
 msgid "Monitoring"
@@ -3516,7 +3592,8 @@ msgstr "Agent niet actief"
 msgid "Start the agent to manage keys"
 msgstr "Start de agent om sleutels te beheren"
 
-#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:253
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:253 rustconn/src/toast.rs:73
+#: rustconn/src/toast.rs:250 rustconn/src/toast.rs:279
 #: rustconn/src/window/connection_dialogs.rs:746
 #: rustconn/src/window/edit_dialogs.rs:289
 #: rustconn/src/window/edit_dialogs.rs:367
@@ -4242,7 +4319,7 @@ msgid "Edit"
 msgstr "Bewerken"
 
 #: rustconn/src/dialogs/template.rs:2953 rustconn/src/sidebar_ui.rs:193
-#: rustconn/src/sidebar_ui.rs:289 rustconn/src/window/operations.rs:77
+#: rustconn/src/sidebar_ui.rs:298 rustconn/src/window/operations.rs:136
 #: rustconn/src/window/snippets.rs:114 rustconn/src/window/snippets.rs:219
 #: rustconn/src/window/templates.rs:148
 msgid "Delete"
@@ -4419,6 +4496,7 @@ msgstr "Bestanden opslaan van extern klembord"
 
 #: rustconn/src/embedded_rdp/mod.rs:260 rustconn/src/embedded_spice.rs:262
 #: rustconn/src/embedded_trait.rs:224 rustconn/src/embedded_vnc.rs:179
+#: rustconn/src/terminal/mod.rs:1017 rustconn/src/terminal/mod.rs:1204
 msgid "Reconnect"
 msgstr "Opnieuw verbinden"
 
@@ -4557,7 +4635,7 @@ msgstr "Fragment uitvoeren..."
 msgid "Open SFTP"
 msgstr "SFTP openen"
 
-#: rustconn/src/sidebar_ui.rs:257 rustconn/src/sidebar_ui.rs:434
+#: rustconn/src/sidebar_ui.rs:257 rustconn/src/sidebar_ui.rs:443
 #: rustconn/src/window/connection_dialogs.rs:197 rustconn/src/window/ui.rs:117
 msgid "New Group"
 msgstr "Nieuwe groep"
@@ -4570,48 +4648,56 @@ msgstr "Een nieuwe groep aanmaken"
 msgid "Move selected items to a group"
 msgstr "Geselecteerde items naar een groep verplaatsen"
 
+#: rustconn/src/sidebar_ui.rs:274
+msgid "Create Cluster"
+msgstr ""
+
 #: rustconn/src/sidebar_ui.rs:275
+msgid "Create a cluster from selected connections"
+msgstr ""
+
+#: rustconn/src/sidebar_ui.rs:284
 msgid "Select all items (Ctrl+A)"
 msgstr "Alle items selecteren (Ctrl+A)"
 
-#: rustconn/src/sidebar_ui.rs:283
+#: rustconn/src/sidebar_ui.rs:292
 msgid "Clear selection (Escape)"
 msgstr "Selectie wissen (Escape)"
 
-#: rustconn/src/sidebar_ui.rs:290
+#: rustconn/src/sidebar_ui.rs:299
 msgid "Delete all selected items"
 msgstr "Alle geselecteerde items verwijderen"
 
-#: rustconn/src/sidebar_ui.rs:315
+#: rustconn/src/sidebar_ui.rs:324
 msgid "Group Operations Mode"
 msgstr "Groepsbewerkingsmodus"
 
-#: rustconn/src/sidebar_ui.rs:331
+#: rustconn/src/sidebar_ui.rs:340
 msgid "Sort Alphabetically"
 msgstr "Alfabetisch sorteren"
 
-#: rustconn/src/sidebar_ui.rs:340
+#: rustconn/src/sidebar_ui.rs:349
 msgid "Sort by Recent Usage"
 msgstr "Sorteren op recent gebruik"
 
-#: rustconn/src/sidebar_ui.rs:349
+#: rustconn/src/sidebar_ui.rs:358
 msgid "Import Connections (Ctrl+I)"
 msgstr "Verbindingen importeren (Ctrl+I)"
 
-#: rustconn/src/sidebar_ui.rs:367
+#: rustconn/src/sidebar_ui.rs:376
 msgid "Open Password Vault"
 msgstr "Wachtwoordkluis openen"
 
-#: rustconn/src/sidebar_ui.rs:406 rustconn/src/split_view/bridge.rs:1699
+#: rustconn/src/sidebar_ui.rs:415 rustconn/src/split_view/bridge.rs:1699
 #: rustconn/src/window/edit_dialogs.rs:1230 rustconn/src/window/ui.rs:118
 msgid "Quick Connect"
 msgstr "Snelverbinding"
 
-#: rustconn/src/sidebar_ui.rs:454
+#: rustconn/src/sidebar_ui.rs:463
 msgid "Import..."
 msgstr "Importeren..."
 
-#: rustconn/src/sidebar_ui.rs:468
+#: rustconn/src/sidebar_ui.rs:477
 msgid "Export..."
 msgstr "Exporteren..."
 
@@ -4748,38 +4834,66 @@ msgstr "Selecteer een tabblad om weer te geven"
 msgid "Failed to save password to vault"
 msgstr "Kan wachtwoord niet opslaan in kluis"
 
-#: rustconn/src/terminal/mod.rs:106 rustconn/src/terminal/mod.rs:214
-#: rustconn/src/terminal/mod.rs:463
+#: rustconn/src/terminal/mod.rs:108 rustconn/src/terminal/mod.rs:217
+#: rustconn/src/terminal/mod.rs:466
 msgid "Welcome"
 msgstr "Welkom"
 
-#: rustconn/src/terminal/mod.rs:231
+#: rustconn/src/terminal/mod.rs:234
 msgid "Set Group..."
 msgstr "Groep instellen..."
 
-#: rustconn/src/terminal/mod.rs:232
+#: rustconn/src/terminal/mod.rs:235
 msgid "Remove from Group"
 msgstr "Uit groep verwijderen"
 
-#: rustconn/src/terminal/mod.rs:236
+#: rustconn/src/terminal/mod.rs:239
 msgid "Close Tab"
 msgstr "Tabblad sluiten"
 
-#: rustconn/src/terminal/mod.rs:280
+#: rustconn/src/terminal/mod.rs:283
 msgid "Set Tab Group"
 msgstr "Tabgroep instellen"
 
-#: rustconn/src/terminal/mod.rs:281
+#: rustconn/src/terminal/mod.rs:284
 msgid "Enter a group name for this tab"
 msgstr "Voer een groepsnaam in voor dit tabblad"
 
-#: rustconn/src/terminal/mod.rs:285
+#: rustconn/src/terminal/mod.rs:288
 msgid "e.g. Production, Staging"
 msgstr "bijv. Production, Staging"
 
-#: rustconn/src/terminal/mod.rs:298
+#: rustconn/src/terminal/mod.rs:301
 msgid "Apply"
 msgstr "Toepassen"
+
+#: rustconn/src/terminal/mod.rs:1013
+msgid "Command not found: {}"
+msgstr "Opdracht niet gevonden: {}"
+
+#: rustconn/src/terminal/mod.rs:1019 rustconn/src/terminal/mod.rs:1206
+msgid "Reconnect to this session"
+msgstr ""
+
+#: rustconn/src/terminal/mod.rs:1035
+msgid "'{}' is not installed"
+msgstr "“{}” is niet geïnstalleerd"
+
+#: rustconn/src/terminal/mod.rs:1201
+msgid "Session disconnected"
+msgstr ""
+
+#: rustconn/src/toast.rs:72
+msgid "Warning"
+msgstr ""
+
+#: rustconn/src/toast.rs:193
+msgid "Info"
+msgstr ""
+
+#: rustconn/src/toast.rs:275
+msgid "Retry"
+msgstr ""
 
 #: rustconn/src/validation.rs:65
 msgid "{} is required"
@@ -4999,7 +5113,7 @@ msgid "Template"
 msgstr "Sjabloon"
 
 #: rustconn/src/window/groups.rs:53 rustconn/src/window/groups.rs:62
-#: rustconn/src/window/operations.rs:583 rustconn/src/window/operations.rs:592
+#: rustconn/src/window/operations.rs:641 rustconn/src/window/operations.rs:650
 msgid "Move"
 msgstr "Verplaatsen"
 
@@ -5007,7 +5121,7 @@ msgstr "Verplaatsen"
 msgid "Move '{}' to:"
 msgstr "'{}' verplaatsen naar:"
 
-#: rustconn/src/window/groups.rs:113 rustconn/src/window/operations.rs:672
+#: rustconn/src/window/groups.rs:113 rustconn/src/window/operations.rs:730
 msgid "(Root Level)"
 msgstr "(Hoofdniveau)"
 
@@ -5019,7 +5133,12 @@ msgstr "(Ongegroepeerd)"
 msgid "Error Moving Item"
 msgstr "Fout bij het verplaatsen van item"
 
-#: rustconn/src/window/mod.rs:4945
+#: rustconn/src/window/mod.rs:3690 rustconn/src/window/mod.rs:3837
+#: rustconn/src/window/protocols.rs:384 rustconn/src/window/protocols.rs:555
+msgid "Connection failed. Host unreachable."
+msgstr ""
+
+#: rustconn/src/window/mod.rs:5020
 msgid "Startup connection not found"
 msgstr "Opstartverbinding niet gevonden"
 
@@ -5031,169 +5150,171 @@ msgstr "groep"
 msgid "connection"
 msgstr "verbinding"
 
-#: rustconn/src/window/operations.rs:54
-msgid ""
-"Are you sure you want to delete the group '{}'?\n"
-"\n"
-"This will also delete {} connection(s) in this group."
+#: rustconn/src/window/operations.rs:57
+msgid "This group contains {} connection(s)."
 msgstr ""
-"Weet u zeker dat u de groep '{}' wilt verwijderen?\n"
-"\n"
-"Dit verwijdert ook {} verbinding(en) in deze groep."
 
-#: rustconn/src/window/operations.rs:59
+#: rustconn/src/window/operations.rs:62
 msgid "Are you sure you want to delete the empty group '{}'?"
 msgstr "Weet u zeker dat u de lege groep '{}' wilt verwijderen?"
 
-#: rustconn/src/window/operations.rs:65
+#: rustconn/src/window/operations.rs:68
 msgid "Are you sure you want to delete the connection '{}'?"
 msgstr "Weet u zeker dat u de verbinding '{}' wilt verwijderen?"
 
-#: rustconn/src/window/operations.rs:75
-msgid "Delete {}?"
-msgstr "{} verwijderen?"
+#: rustconn/src/window/operations.rs:80
+msgid "Delete group '{}'?"
+msgstr ""
 
-#: rustconn/src/window/operations.rs:106
-msgid "Deleted '{}'"
-msgstr "'{}' verwijderd"
+#: rustconn/src/window/operations.rs:82
+msgid "Keep Connections"
+msgstr ""
 
-#: rustconn/src/window/operations.rs:112
-msgid "Error Deleting"
-msgstr "Fout bij verwijderen"
-
-#: rustconn/src/window/operations.rs:175
-msgid "Connection duplicated"
-msgstr "Verbinding gedupliceerd"
-
-#: rustconn/src/window/operations.rs:184
-msgid "Failed to duplicate connection"
-msgstr "Kan verbinding niet dupliceren"
-
-#: rustconn/src/window/operations.rs:257
-msgid "Connection copied to clipboard"
-msgstr "Verbinding gekopieerd naar klembord"
-
-#: rustconn/src/window/operations.rs:265
-msgid "Failed to copy connection"
-msgstr "Kan verbinding niet kopiëren"
-
-#: rustconn/src/window/operations.rs:284
-msgid "Nothing to paste - copy a connection first"
-msgstr "Niets om te plakken - kopieer eerst een verbinding"
-
-#: rustconn/src/window/operations.rs:302
-msgid "Connection pasted"
-msgstr "Verbinding geplakt"
-
-#: rustconn/src/window/operations.rs:311
-msgid "Failed to paste connection"
-msgstr "Kan verbinding niet plakken"
-
-#: rustconn/src/window/operations.rs:331
-msgid "• {} (connection)"
-msgstr "• {} (verbinding)"
-
-#: rustconn/src/window/operations.rs:334
-msgid "• {} (group)"
-msgstr "• {} (groep)"
-
-#: rustconn/src/window/operations.rs:351
-msgid "Delete Selected Items?"
-msgstr "Geselecteerde items verwijderen?"
-
-#: rustconn/src/window/operations.rs:361
+#: rustconn/src/window/operations.rs:83 rustconn/src/window/operations.rs:419
 msgid "Delete All"
 msgstr "Alles verwijderen"
 
-#: rustconn/src/window/operations.rs:375
+#: rustconn/src/window/operations.rs:117 rustconn/src/window/operations.rs:163
+msgid "Deleted '{}'"
+msgstr "'{}' verwijderd"
+
+#: rustconn/src/window/operations.rs:123 rustconn/src/window/operations.rs:169
+msgid "Error Deleting"
+msgstr "Fout bij verwijderen"
+
+#: rustconn/src/window/operations.rs:134
+msgid "Delete {}?"
+msgstr "{} verwijderen?"
+
+#: rustconn/src/window/operations.rs:233
+msgid "Connection duplicated"
+msgstr "Verbinding gedupliceerd"
+
+#: rustconn/src/window/operations.rs:242
+msgid "Failed to duplicate connection"
+msgstr "Kan verbinding niet dupliceren"
+
+#: rustconn/src/window/operations.rs:315
+msgid "Connection copied to clipboard"
+msgstr "Verbinding gekopieerd naar klembord"
+
+#: rustconn/src/window/operations.rs:323
+msgid "Failed to copy connection"
+msgstr "Kan verbinding niet kopiëren"
+
+#: rustconn/src/window/operations.rs:342
+msgid "Nothing to paste - copy a connection first"
+msgstr "Niets om te plakken - kopieer eerst een verbinding"
+
+#: rustconn/src/window/operations.rs:360
+msgid "Connection pasted"
+msgstr "Verbinding geplakt"
+
+#: rustconn/src/window/operations.rs:369
+msgid "Failed to paste connection"
+msgstr "Kan verbinding niet plakken"
+
+#: rustconn/src/window/operations.rs:389
+msgid "• {} (connection)"
+msgstr "• {} (verbinding)"
+
+#: rustconn/src/window/operations.rs:392
+msgid "• {} (group)"
+msgstr "• {} (groep)"
+
+#: rustconn/src/window/operations.rs:409
+msgid "Delete Selected Items?"
+msgstr "Geselecteerde items verwijderen?"
+
+#: rustconn/src/window/operations.rs:433
 msgid "Are you sure you want to delete {}?"
 msgstr "Weet u zeker dat u {} wilt verwijderen?"
 
-#: rustconn/src/window/operations.rs:402
+#: rustconn/src/window/operations.rs:460
 msgid "Connections in deleted groups will become ungrouped."
 msgstr "Verbindingen in verwijderde groepen worden ongegroepeerd."
 
-#: rustconn/src/window/operations.rs:453
+#: rustconn/src/window/operations.rs:511
 msgid "Deletion Complete"
 msgstr "Verwijdering voltooid"
 
-#: rustconn/src/window/operations.rs:455
+#: rustconn/src/window/operations.rs:513
 msgid "Successfully deleted {} item(s)."
 msgstr "{} item(s) succesvol verwijderd."
 
-#: rustconn/src/window/operations.rs:462
+#: rustconn/src/window/operations.rs:520
 msgid "Deletion Partially Complete"
 msgstr "Verwijdering gedeeltelijk voltooid"
 
-#: rustconn/src/window/operations.rs:465
+#: rustconn/src/window/operations.rs:523
 msgid "Deleted {} item(s)."
 msgstr "{} item(s) verwijderd."
 
-#: rustconn/src/window/operations.rs:467
+#: rustconn/src/window/operations.rs:525
 msgid "Failed to delete {} item(s):"
 msgstr "Kan {} item(s) niet verwijderen:"
 
-#: rustconn/src/window/operations.rs:490 rustconn/src/window/operations.rs:553
+#: rustconn/src/window/operations.rs:548 rustconn/src/window/operations.rs:611
 msgid "No Selection"
 msgstr "Geen selectie"
 
-#: rustconn/src/window/operations.rs:491
+#: rustconn/src/window/operations.rs:549
 msgid "Please select one or more items to delete."
 msgstr "Selecteer een of meer items om te verwijderen."
 
-#: rustconn/src/window/operations.rs:503
+#: rustconn/src/window/operations.rs:561
 msgid "{} connection(s)"
 msgstr "{} verbinding(en)"
 
-#: rustconn/src/window/operations.rs:504
+#: rustconn/src/window/operations.rs:562
 msgid "{} group(s)"
 msgstr "{} groep(en)"
 
-#: rustconn/src/window/operations.rs:506
+#: rustconn/src/window/operations.rs:564
 msgid "{} connection(s) and {} group(s)"
 msgstr "{} verbinding(en) en {} groep(en)"
 
-#: rustconn/src/window/operations.rs:554
+#: rustconn/src/window/operations.rs:612
 msgid "Please select one or more items to move."
 msgstr "Selecteer een of meer items om te verplaatsen."
 
-#: rustconn/src/window/operations.rs:606
+#: rustconn/src/window/operations.rs:664
 msgid "Select destination for {} connection(s) and {} group(s):"
 msgstr "Selecteer bestemming voor {} verbinding(en) en {} groep(en):"
 
-#: rustconn/src/window/operations.rs:614
+#: rustconn/src/window/operations.rs:672
 msgid "Select a group for {} connection(s):"
 msgstr "Selecteer een groep voor {} verbinding(en):"
 
-#: rustconn/src/window/operations.rs:619
+#: rustconn/src/window/operations.rs:677
 msgid "Select parent for {} group(s):"
 msgstr "Selecteer bovenliggende voor {} groep(en):"
 
-#: rustconn/src/window/operations.rs:670
+#: rustconn/src/window/operations.rs:728
 msgid "(No Group)"
 msgstr "(Geen groep)"
 
-#: rustconn/src/window/operations.rs:754
+#: rustconn/src/window/operations.rs:812
 msgid "Move Partially Complete"
 msgstr "Verplaatsing gedeeltelijk voltooid"
 
-#: rustconn/src/window/operations.rs:757
+#: rustconn/src/window/operations.rs:815
 msgid "Moved {} item(s)."
 msgstr "{} item(s) verplaatst."
 
-#: rustconn/src/window/operations.rs:759
+#: rustconn/src/window/operations.rs:817
 msgid "Failed to move {} item(s):"
 msgstr "Kan {} item(s) niet verplaatsen:"
 
-#: rustconn/src/window/protocols.rs:991
+#: rustconn/src/window/protocols.rs:986
 msgid "Install picocom for Serial connections"
 msgstr "Installeer picocom voor seriële verbindingen"
 
-#: rustconn/src/window/protocols.rs:1107
+#: rustconn/src/window/protocols.rs:1101
 msgid "Install kubectl for Kubernetes connections"
 msgstr "Installeer kubectl voor Kubernetes-verbindingen"
 
-#: rustconn/src/window/protocols.rs:1126
+#: rustconn/src/window/protocols.rs:1119
 msgid "Configure pod and container for Kubernetes"
 msgstr "Configureer pod en container voor Kubernetes"
 
@@ -5428,6 +5549,15 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:9
 msgid "ssh;rdp;vnc;spice;telnet;zerotrust;connection;terminal;remote;"
 msgstr "ssh;rdp;vnc;spice;telnet;zerotrust;verbinding;terminal;extern;"
+
+#~ msgid ""
+#~ "Are you sure you want to delete the group '{}'?\n"
+#~ "\n"
+#~ "This will also delete {} connection(s) in this group."
+#~ msgstr ""
+#~ "Weet u zeker dat u de groep '{}' wilt verwijderen?\n"
+#~ "\n"
+#~ "Dit verwijdert ook {} verbinding(en) in deze groep."
 
 #~ msgid ""
 #~ "Including passwords may expose sensitive data. Only enable if you trust "

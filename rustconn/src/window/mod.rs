@@ -176,6 +176,35 @@ impl MainWindow {
             sidebar_for_close.decrement_session_count(&connection_id.to_string(), false);
         });
 
+        // Set up reconnect callback for VTE sessions
+        // When user clicks "Reconnect" in a disconnected tab, close the old tab
+        // and launch a new connection to the same host
+        {
+            let state_for_reconnect = state.clone();
+            let notebook_for_reconnect = terminal_notebook.clone();
+            let split_view_for_reconnect = split_view.clone();
+            let sidebar_for_reconnect = sidebar.clone();
+            let monitoring_for_reconnect = monitoring.clone();
+            terminal_notebook.set_on_reconnect(move |session_id, connection_id| {
+                tracing::info!(
+                    %session_id,
+                    %connection_id,
+                    "Reconnecting session from tab"
+                );
+                // Close the disconnected tab
+                notebook_for_reconnect.close_tab(session_id);
+                // Launch a new connection
+                Self::start_connection_with_credential_resolution(
+                    state_for_reconnect.clone(),
+                    notebook_for_reconnect.clone(),
+                    split_view_for_reconnect.clone(),
+                    sidebar_for_reconnect.clone(),
+                    monitoring_for_reconnect.clone(),
+                    connection_id,
+                );
+            });
+        }
+
         // TabView/TabBar configuration is handled internally
         // Don't let notebook expand - it should only show tabs
         terminal_notebook.widget().set_vexpand(false);
@@ -311,7 +340,7 @@ impl MainWindow {
         self.setup_edit_actions(window, &state, &sidebar);
         self.setup_terminal_actions(window, &terminal_notebook, &sidebar, &state);
         self.setup_navigation_actions(window, &terminal_notebook, &sidebar);
-        self.setup_group_operations_actions(window, &state, &sidebar);
+        self.setup_group_operations_actions(window, &state, &terminal_notebook, &sidebar);
         self.setup_snippet_actions(window, &state, &terminal_notebook, &sidebar);
         self.setup_cluster_actions(window, &state, &terminal_notebook, &sidebar);
         self.setup_template_actions(window, &state, &sidebar);
@@ -656,6 +685,31 @@ impl MainWindow {
             }
         });
         window.add_action(&undo_delete_action);
+
+        // Retry connect action — retries a failed connection from toast button
+        let retry_action = gio::SimpleAction::new("retry-connect", Some(glib::VariantTy::STRING));
+        let state_clone = state.clone();
+        let notebook_clone = self.terminal_notebook.clone();
+        let split_view_clone = self.split_view.clone();
+        let sidebar_clone = sidebar.clone();
+        let monitoring_clone = self.monitoring.clone();
+        retry_action.connect_activate(move |_, param| {
+            if let Some(param) = param
+                && let Some(id_str) = param.get::<String>()
+                && let Ok(conn_id) = Uuid::parse_str(&id_str)
+            {
+                tracing::info!(%conn_id, "Retrying connection from toast");
+                Self::start_connection_with_credential_resolution(
+                    state_clone.clone(),
+                    notebook_clone.clone(),
+                    split_view_clone.clone(),
+                    sidebar_clone.clone(),
+                    monitoring_clone.clone(),
+                    conn_id,
+                );
+            }
+        });
+        window.add_action(&retry_action);
 
         // Wake On LAN action — sends WoL packet for selected connection
         let wol_action = gio::SimpleAction::new("wake-on-lan", None);
@@ -1470,6 +1524,7 @@ impl MainWindow {
         &self,
         window: &adw::ApplicationWindow,
         state: &SharedAppState,
+        terminal_notebook: &SharedNotebook,
         sidebar: &SharedSidebar,
     ) {
         // Group operations action (toggle mode)
@@ -1549,6 +1604,28 @@ impl MainWindow {
             Self::sort_recent(&state_clone, &sidebar_clone);
         });
         window.add_action(&sort_recent_action);
+
+        // Create cluster from sidebar selection
+        let cluster_from_selection_action = gio::SimpleAction::new("cluster-from-selection", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let notebook_clone = terminal_notebook.clone();
+        let sidebar_clone = sidebar.clone();
+        cluster_from_selection_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                let selected_ids = sidebar_clone.get_selected_ids();
+                if selected_ids.is_empty() {
+                    return;
+                }
+                clusters::show_new_cluster_dialog_with_selection(
+                    win.upcast_ref(),
+                    state_clone.clone(),
+                    notebook_clone.clone(),
+                    selected_ids,
+                );
+            }
+        });
+        window.add_action(&cluster_from_selection_action);
     }
 
     /// Sets up snippet-related actions
@@ -3601,20 +3678,17 @@ impl MainWindow {
                             );
                         }
                         Err(e) => {
-                            // Port check failed, show error and update sidebar
+                            // Port check failed, show error with retry and update sidebar
                             tracing::warn!("Port check failed for RDP connection: {e}");
                             sidebar_clone
                                 .update_connection_status(&connection_id.to_string(), "failed");
                             if let Some(root) = notebook_clone.widget().root()
                                 && let Some(window) = root.downcast_ref::<gtk4::Window>()
                             {
-                                crate::alert::show_error(
+                                crate::toast::show_retry_toast_on_window(
                                     window,
-                                    "Connection Failed",
-                                    &format!(
-                                        "{e}\n\n\
-                                            The host may be offline or the port may be blocked."
-                                    ),
+                                    &crate::i18n::i18n("Connection failed. Host unreachable."),
+                                    &connection_id.to_string(),
                                 );
                             }
                         }
@@ -3751,20 +3825,17 @@ impl MainWindow {
                             );
                         }
                         Err(e) => {
-                            // Port check failed, show error and update sidebar
+                            // Port check failed, show error with retry and update sidebar
                             tracing::warn!("Port check failed for VNC connection: {e}");
                             sidebar_clone
                                 .update_connection_status(&connection_id.to_string(), "failed");
                             if let Some(root) = notebook_clone.widget().root()
                                 && let Some(window) = root.downcast_ref::<gtk4::Window>()
                             {
-                                crate::alert::show_error(
+                                crate::toast::show_retry_toast_on_window(
                                     window,
-                                    "Connection Failed",
-                                    &format!(
-                                        "{e}\n\n\
-                                            The host may be offline or the port may be blocked."
-                                    ),
+                                    &crate::i18n::i18n("Connection failed. Host unreachable."),
+                                    &connection_id.to_string(),
                                 );
                             }
                         }
@@ -4364,6 +4435,10 @@ impl MainWindow {
             if is_failure {
                 tracing::error!(%session_id, exit_status, term_sig, exit_code, "Session exited with failure");
             }
+
+            // Mark tab as disconnected and show reconnect overlay
+            notebook_clone.mark_tab_disconnected(session_id);
+            notebook_clone.show_reconnect_overlay(session_id);
 
             // Decrement session count - status changes only if no other sessions active
             sidebar_clone.decrement_session_count(&connection_id_str, is_failure);

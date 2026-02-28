@@ -11,30 +11,35 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 3. [Connections](#connections)
 4. [Groups](#groups)
 5. [Sessions](#sessions)
-6. [Templates](#templates)
-7. [Snippets](#snippets)
-8. [Clusters](#clusters)
-9. [Import/Export](#importexport)
-10. [Tools](#tools)
+6. [Zero Trust Providers](#zero-trust-providers)
+7. [Templates](#templates)
+8. [Snippets](#snippets)
+9. [Clusters](#clusters)
+10. [Import/Export](#importexport)
+11. [Tools](#tools)
     - [Global Variables](#global-variables)
     - [Password Generator](#password-generator)
     - [Connection History](#connection-history)
     - [Connection Statistics](#connection-statistics)
     - [Wake-on-LAN](#wake-on-lan)
     - [Flatpak Components](#flatpak-components)
-11. [Settings](#settings)
-12. [Startup Action](#startup-action)
-13. [Command Palette](#command-palette)
-14. [Favorites](#favorites)
-15. [Tab Coloring](#tab-coloring)
-16. [Tab Grouping](#tab-grouping)
-17. [Custom Icons](#custom-icons)
-18. [Remote Monitoring](#remote-monitoring)
-19. [Custom Keybindings](#custom-keybindings)
-20. [Encrypted Documents](#encrypted-documents)
-21. [Keyboard Shortcuts](#keyboard-shortcuts)
-22. [CLI Usage](#cli-usage)
-23. [Troubleshooting](#troubleshooting)
+12. [Settings](#settings)
+13. [Startup Action](#startup-action)
+14. [Command Palette](#command-palette)
+15. [Favorites](#favorites)
+16. [Tab Coloring](#tab-coloring)
+17. [Tab Grouping](#tab-grouping)
+18. [Custom Icons](#custom-icons)
+19. [Remote Monitoring](#remote-monitoring)
+20. [Custom Keybindings](#custom-keybindings)
+21. [Adaptive UI](#adaptive-ui)
+22. [Encrypted Documents](#encrypted-documents)
+23. [Keyboard Shortcuts](#keyboard-shortcuts)
+24. [CLI Usage](#cli-usage)
+25. [Frequently Asked Questions](#frequently-asked-questions)
+26. [Migration Guide](#migration-guide)
+27. [Troubleshooting](#troubleshooting)
+28. [Security Best Practices](#security-best-practices)
 
 ---
 
@@ -205,7 +210,7 @@ Add arbitrary key-value metadata to connections for organization and scripting.
 3. Enter key and value (e.g., `environment` = `production`, `team` = `backend`)
 4. Properties are searchable and visible in connection details
 
-### Quick Connect (Ctrl+K)
+### Quick Connect (Ctrl+Shift+Q)
 
 Temporary connection without saving:
 - Supports SSH, RDP, VNC, Telnet
@@ -257,7 +262,34 @@ For RDP, VNC, and SPICE connections, RustConn performs a fast TCP port check bef
 
 - **Rename** — F2 or right-click → Rename
 - **Move** — Drag-drop or right-click → Move to Group
-- **Delete** — Delete key (moves children to root)
+- **Delete** — Delete key (shows choice dialog: Keep Connections, Delete All, or Cancel)
+
+### Group Operations Mode (Bulk Actions)
+
+The sidebar toolbar has a **list icon** button (view-list-symbolic) that activates Group Operations Mode for bulk actions on multiple connections at once.
+
+**Activate:** Click the list icon in the sidebar toolbar (or right-click → Group Operations)
+
+**Available actions in the toolbar:**
+
+| Button | Action |
+|--------|--------|
+| New Group | Create a new group |
+| Move to Group | Move all selected connections to a chosen group |
+| Select All | Select all visible connections |
+| Clear | Deselect all |
+| Delete | Delete all selected connections (with confirmation) |
+
+**Workflow:**
+
+1. Click the list icon to enter Group Operations Mode
+2. Checkboxes appear next to each connection in the sidebar
+3. Select individual connections by clicking their checkboxes, or use **Select All**
+4. Choose an action: **Move to Group** or **Delete**
+5. Confirm the action in the dialog
+6. Click the list icon again (or press Escape) to exit Group Operations Mode
+
+This is useful for reorganizing large numbers of connections, cleaning up after an import, or bulk-deleting obsolete entries.
 
 ### Group Credentials
 
@@ -595,65 +627,366 @@ rustconn-cli connect "File Server"
 
 ---
 
+## Zero Trust Providers
+
+RustConn supports connecting through identity-aware proxy services (Zero Trust). Instead of direct SSH/RDP to a host, the connection is tunneled through a provider's CLI tool that handles authentication and authorization.
+
+### Setup
+
+1. Create or edit a connection (Ctrl+N or Ctrl+E)
+2. Go to the **Zero Trust** tab
+3. Select your provider from the dropdown
+4. Fill in the provider-specific fields
+5. Optionally add custom CLI arguments in the **Advanced** section
+
+The Zero Trust tab is available for SSH connections. RustConn constructs the appropriate CLI command and runs it in a VTE terminal.
+
+### Providers
+
+#### AWS Session Manager
+
+Connects via `aws ssm start-session`. Requires the AWS CLI and Session Manager plugin.
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| Instance ID | EC2 instance ID | `i-0abc123def456` |
+| AWS Profile | Named profile from `~/.aws/credentials` | `default`, `production` |
+| Region | AWS region | `us-east-1` |
+
+**Prerequisites:** `aws` CLI, `session-manager-plugin`, configured AWS credentials.
+
+#### GCP IAP Tunnel
+
+Connects via `gcloud compute ssh --tunnel-through-iap`. Requires the Google Cloud SDK.
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| Instance Name | Compute Engine VM name | `web-server-01` |
+| Zone | GCP zone | `us-central1-a` |
+| Project | GCP project ID | `my-project-123` |
+
+**Prerequisites:** `gcloud` CLI, authenticated (`gcloud auth login`), IAP-enabled firewall rule.
+
+#### Azure Bastion
+
+Connects via `az network bastion ssh`. Requires the Azure CLI with bastion extension.
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| Target Resource ID | Full ARM resource ID of the target VM | `/subscriptions/.../vm-name` |
+| Resource Group | Resource group containing the Bastion | `my-rg` |
+| Bastion Name | Name of the Bastion host | `my-bastion` |
+
+**Prerequisites:** `az` CLI, `az extension add --name bastion`, authenticated (`az login`).
+
+#### Azure SSH (AAD)
+
+Connects via `az ssh vm` using Azure Active Directory authentication. No SSH keys needed.
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| VM Name | Azure VM name | `my-vm` |
+| Resource Group | Resource group containing the VM | `my-rg` |
+
+**Prerequisites:** `az` CLI, `az extension add --name ssh`, AAD-enabled VM, authenticated.
+
+#### OCI Bastion
+
+Connects via Oracle Cloud Infrastructure Bastion service.
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| Bastion OCID | OCID of the Bastion resource | `ocid1.bastion.oc1...` |
+| Target OCID | OCID of the target compute instance | `ocid1.instance.oc1...` |
+| Target IP | Private IP of the target | `10.0.1.5` |
+
+**Prerequisites:** `oci` CLI, configured OCI credentials (`~/.oci/config`).
+
+#### Cloudflare Access
+
+Connects through Cloudflare Zero Trust tunnel.
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| Hostname | Cloudflare Access hostname | `ssh.example.com` |
+
+**Prerequisites:** `cloudflared` installed, Cloudflare Access application configured for the hostname.
+
+#### Teleport
+
+Connects via Gravitational Teleport.
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| Node Name | Teleport node name | `web-01` |
+| Cluster | Teleport cluster name (optional) | `production` |
+
+**Prerequisites:** `tsh` CLI, authenticated (`tsh login`).
+
+#### Tailscale SSH
+
+Connects via Tailscale's built-in SSH.
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| Tailscale Host | Machine name or Tailscale IP | `my-server` or `100.64.0.1` |
+
+**Prerequisites:** `tailscale` installed and connected (`tailscale up`), SSH enabled on the target node.
+
+#### HashiCorp Boundary
+
+Connects via HashiCorp Boundary proxy.
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| Target ID | Boundary target identifier | `ttcp_1234567890` |
+| Controller Address | Boundary controller URL | `https://boundary.example.com` |
+
+**Prerequisites:** `boundary` CLI, authenticated (`boundary authenticate`).
+
+#### Generic Command
+
+For providers not listed above. Enter a custom command template that RustConn will execute.
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| Command Template | Full command to execute | `my-proxy connect ${host}` |
+
+### Custom Arguments
+
+All providers support an **Additional CLI arguments** field in the Advanced section. These arguments are appended to the generated command. Use this for provider-specific flags not covered by the UI fields.
+
+---
+
 ## Templates
 
-Templates are connection presets for quick creation.
+Templates are connection presets that store protocol settings, authentication defaults, tags, custom properties, and automation tasks. When you create a connection from a template, all configured fields are copied into the new connection.
 
 ### Manage Templates
 
-Menu → Tools → **Manage Templates**
+Menu → Tools → **Manage Templates** (or `rustconn-cli template list`)
+
+The dialog lists all templates grouped by protocol. Each row shows the template name, protocol, and default host/port.
 
 ### Create Template
 
+**From scratch:**
+
 1. Open Manage Templates
 2. Click **Create Template**
-3. Configure protocol and settings
-4. Save
+3. Enter a name and optional description
+4. Select protocol (SSH, RDP, VNC, SPICE)
+5. Configure default settings: host, port, username, domain, tags
+6. Optionally set protocol-specific options (e.g., SSH key path, RDP resolution)
+7. Optionally add pre/post connection tasks and WoL configuration
+8. Save
+
+**From an existing connection:**
+
+1. Right-click a connection in the sidebar → **Create Template from Connection**
+2. Enter a template name
+3. All settings from the connection are copied into the template
+4. Edit any fields you want to change as defaults
+5. Save
+
+### Edit Template
+
+1. Open Manage Templates
+2. Select a template from the list
+3. Click **Edit** (or double-click)
+4. Modify any fields
+5. Save — existing connections created from this template are not affected
+
+### Delete Template
+
+1. Open Manage Templates → select template → **Delete**
+2. Or: `rustconn-cli template delete "Template Name"`
+
+Deleting a template does not affect connections previously created from it.
 
 ### Use Template
 
-- **Quick Connect** — Select template from dropdown
-- **Manage Templates** — Select → **Create** to make connection
+**From Quick Connect (Ctrl+Shift+Q):**
+- Select a template from the dropdown at the top of the Quick Connect dialog
+- Template fields pre-fill the form; override host and other fields as needed
 
-Double-click template to create connection from it.
+**From Manage Templates:**
+- Select a template → click **Create Connection**
+- Enter a connection name and host → the rest is pre-filled from the template
+
+**From CLI:**
+```bash
+rustconn-cli template apply "SSH Template" --name "New Server" --host "10.0.0.5"
+```
+
+### Template Fields
+
+Templates support all connection fields:
+
+| Field | Description |
+|-------|-------------|
+| Protocol | SSH, RDP, VNC, or SPICE |
+| Host / Port | Default remote endpoint (can be left empty) |
+| Username / Domain | Default authentication identity |
+| Password Source | None, KeePass, Keyring, Bitwarden, etc. |
+| Tags | Default tags for organization |
+| Protocol Config | All protocol-specific options (SSH key, RDP resolution, etc.) |
+| Custom Properties | Arbitrary key-value metadata |
+| Pre/Post Tasks | Automation tasks to run before/after connection |
+| WoL Config | Wake-on-LAN settings |
 
 ---
 
 ## Snippets
 
-Reusable command templates with variable substitution.
+Reusable command templates with variable substitution. Snippets let you define frequently used commands once and execute them in any active terminal session with one action.
 
 ### Syntax
 
+Snippets use `${variable}` placeholders that are resolved at execution time. Variables can have default values and descriptions.
+
 ```bash
+# Simple variable
 ssh ${user}@${host} -p ${port}
+
+# Service management
 sudo systemctl restart ${service}
+
+# Log tailing with filter
+journalctl -u ${service} -f --since "${since}"
+
+# Database backup
+pg_dump -h ${host} -U ${user} -d ${database} > /tmp/${database}_backup.sql
 ```
+
+### Variable Features
+
+Each variable in a snippet can have:
+
+| Property | Description |
+|----------|-------------|
+| Name | Used in `${name}` placeholders |
+| Description | Shown as hint in the execution dialog |
+| Default Value | Pre-filled when executing; user can override |
 
 ### Manage Snippets
 
-Menu → Tools → **Manage Snippets**
+Menu → Tools → **Manage Snippets** (or `rustconn-cli snippet list`)
+
+The dialog shows all snippets with name, command preview, category, and tags. You can:
+
+- **Create** — Click **+** to add a new snippet with name, command, description, category, and tags
+- **Edit** — Select a snippet and click **Edit** (or double-click)
+- **Delete** — Select a snippet and click **Delete**
+- **Search** — Filter snippets by name or command text
 
 ### Execute Snippet
 
-1. Select active terminal
-2. Menu → Tools → **Execute Snippet**
-3. Select snippet, fill variables
-4. Command sent to terminal
+**From GUI:**
+
+1. Connect to a terminal session (SSH, Telnet, Serial, Kubernetes, or local shell)
+2. Menu → Tools → **Execute Snippet** (or use Command Palette → Snippets)
+3. Select a snippet from the list
+4. Fill in variable values (defaults are pre-filled)
+5. Click **Execute** — the resolved command is sent to the active terminal
+
+**From CLI:**
+
+```bash
+# List available snippets
+rustconn-cli snippet list
+
+# Show snippet details
+rustconn-cli snippet show "Deploy Script"
+
+# Execute with variable substitution
+rustconn-cli snippet run "Restart Service" --var service=nginx --execute
+
+# Add a new snippet
+rustconn-cli snippet add --name "Restart" --command "sudo systemctl restart \${service}"
+
+# Delete a snippet
+rustconn-cli snippet delete "Old Snippet"
+```
+
+### Organization
+
+Snippets support categories and tags for filtering:
+
+- **Category** — Group related snippets (e.g., "Deployment", "Monitoring", "Database")
+- **Tags** — Additional labels for cross-cutting concerns (e.g., "production", "sudo")
 
 ---
 
 ## Clusters
 
-Execute commands on multiple connections simultaneously.
+Clusters group multiple connections for simultaneous management. The primary use case is broadcast mode: type a command once and it is sent to all connected cluster members at the same time.
 
 ### Create Cluster
 
-Menu → Tools → **Manage Clusters** → Create
+**From GUI:**
+
+1. Menu → Tools → **Manage Clusters**
+2. Click **Create**
+3. Enter a cluster name
+4. Add connections by selecting from the list
+5. Optionally enable **Broadcast by default**
+6. Save
+
+**From CLI:**
+
+```bash
+rustconn-cli cluster create --name "Web Servers" --broadcast
+```
+
+### Add / Remove Members
+
+**From Manage Clusters dialog:**
+
+1. Select a cluster → click **Edit**
+2. Use **Add Connection** to pick connections from the sidebar list
+3. Use the **Remove** button next to a member to remove it
+4. Save
+
+**From CLI:**
+
+```bash
+rustconn-cli cluster add-connection --cluster "Web Servers" --connection "Web-01"
+rustconn-cli cluster add-connection --cluster "Web Servers" --connection "Web-02"
+rustconn-cli cluster remove-connection --cluster "Web Servers" --connection "Web-01"
+```
+
+### Connect Cluster
+
+1. Open Manage Clusters → select a cluster → **Connect All**
+2. RustConn opens a terminal tab for each member connection
+3. Each member shows its connection status (Pending → Connecting → Connected)
+4. If a member fails, the error is shown per-member; other members continue
 
 ### Broadcast Mode
 
-Enable broadcast switch to send input to all cluster members.
+When broadcast is enabled, every keystroke you type in the focused terminal is sent to all connected cluster members simultaneously.
+
+- **Enable:** Toggle the broadcast switch in the cluster toolbar
+- **Disable:** Toggle it off to return to single-session input
+- Only connected members receive broadcast input; disconnected or errored members are skipped
+
+Use cases:
+- Rolling out configuration changes across multiple servers
+- Running the same diagnostic command on all nodes
+- Updating packages on a fleet of machines
+
+### Disconnect Cluster
+
+- **Disconnect All** — Closes all member sessions at once
+- Individual members can be disconnected independently without affecting the cluster
+
+### Delete Cluster
+
+1. Manage Clusters → select → **Delete**
+2. Or: `rustconn-cli cluster delete "Web Servers"`
+
+Deleting a cluster does not delete the underlying connections.
 
 ---
 
@@ -697,6 +1030,27 @@ For large imports (10+ connections), a preview is shown before applying. You can
 Options:
 - Include passwords (where supported)
 - Export selected only
+
+**Format Limitations:**
+
+| Format | Protocols | Passwords | Groups | Notes |
+|--------|-----------|-----------|--------|-------|
+| SSH Config | SSH only | Key paths only | No | Standard `~/.ssh/config` format |
+| Remmina | SSH, RDP, VNC, SFTP | Encrypted | No | One `.remmina` file per connection |
+| Asbru-CM | SSH, VNC, RDP | Encrypted | Yes | YAML-based, supports variables |
+| Ansible | SSH only | No | Yes (groups) | INI or YAML inventory format |
+| Royal TS | All | Encrypted | Yes | XML `.rtsz` archive |
+| MobaXterm | SSH, RDP, VNC, Telnet | Encrypted | Yes | INI-based `.mxtsessions` |
+| RustConn Native | All | Encrypted | Yes | Full-fidelity backup format |
+
+**Batch Workflow:**
+1. Open Export dialog (Ctrl+Shift+E)
+2. Select format
+3. Choose output path
+4. Toggle "Include passwords" if needed
+5. Click Export — progress bar shows status
+6. Result summary shows exported/skipped counts
+7. "Open Location" button opens the output directory
 
 ---
 
@@ -778,9 +1132,16 @@ Menu → Tools → **Connection History**
 
 Menu → Tools → **Connection Statistics**
 
-- Success rate visualization
-- Connection duration tracking
-- Reset statistics
+Tracks usage patterns across all connections:
+
+- **Total connections** — number of connection attempts
+- **Success rate** — percentage of successful connections vs failures
+- **Connection duration** — average and total time spent connected
+- **Most used connections** — ranked by frequency
+- **Protocol breakdown** — usage distribution across SSH, RDP, VNC, etc.
+- **Last connected** — timestamp of most recent session per connection
+
+Use the **Reset** button to clear all statistics. Statistics are stored locally and not included in exports.
 
 ### Wake-on-LAN
 
@@ -1274,6 +1635,21 @@ Store sensitive notes, certificates, and credentials in AES-256-GCM encrypted do
 - The dirty indicator (●) in the sidebar shows unsaved changes
 - Documents persist across sessions
 
+### Use Cases
+
+- **Runbooks** — Step-by-step procedures for incident response or maintenance tasks
+- **API Tokens** — Store tokens for services accessed via SSH tunnels
+- **SSH Key Passphrases** — Keep passphrases for keys not stored in the SSH agent
+- **Network Diagrams** — Text-based network topology notes (ASCII art, Mermaid syntax)
+- **Compliance Notes** — Audit trail documentation for regulated environments
+
+### Backup Considerations
+
+- Documents are stored as encrypted files in `~/.config/rustconn/documents/`
+- The Settings Backup/Restore feature (Settings → Interface) includes documents
+- RustConn Native export (.rcn) does NOT include documents — back them up separately
+- If you lose the master key or document password, the content cannot be recovered
+
 ---
 
 ## Keyboard Shortcuts
@@ -1500,6 +1876,143 @@ rustconn-cli secret verify-keepass -d ~/vault.kdbx -k ~/key.key
 
 ---
 
+## Frequently Asked Questions
+
+### Where are my passwords stored?
+
+RustConn never stores passwords in plain text. Depending on your configured secret backend:
+
+- **libsecret** (default): Stored in your desktop keyring (GNOME Keyring, KDE Wallet)
+- **KeePassXC**: Stored in your KeePassXC database via browser integration protocol
+- **KDBX file**: Stored in a local KeePass-format database encrypted with your master password
+- **Bitwarden / 1Password / Passbolt**: Stored in the respective cloud vault; RustConn retrieves them on demand
+- **Pass**: Stored in GPG-encrypted files under `~/.password-store/`
+
+Connection files themselves (in `~/.config/rustconn/connections/`) contain only metadata and credential references, never actual passwords.
+
+### How do I migrate RustConn to another machine?
+
+The simplest approach is Settings Backup/Restore:
+
+1. On the old machine: **Settings > Interface > Backup & Restore > Backup**
+2. Copy the resulting ZIP file to the new machine
+3. On the new machine: **Settings > Interface > Backup & Restore > Restore**
+4. Restart RustConn
+
+This exports connections, groups, snippets, clusters, templates, history, and settings. Passwords are not included in the backup since they live in your secret backend. You will need to re-enter credentials or configure the same secret backend on the new machine.
+
+Alternatively, copy `~/.config/rustconn/` manually.
+
+### Can I use RustConn without a secret backend?
+
+Yes. If no external backend is configured, RustConn uses libsecret (your desktop keyring) by default. If libsecret is unavailable (e.g., headless or minimal desktop), you can use a local KDBX file as a fully offline backend.
+
+### How do I share connections with my team?
+
+1. Select the connections or group you want to share
+2. **File > Export** and choose a format (Native `.rcn` preserves all fields; SSH Config or CSV for interoperability)
+3. Send the exported file to your colleagues
+4. They import it via **File > Import**
+
+Passwords are never included in exports. Each team member configures their own credentials.
+
+### Why does RustConn ask for my keyring password on startup?
+
+Your desktop keyring (GNOME Keyring, KDE Wallet) may be locked. RustConn requests access to retrieve stored credentials. To avoid this prompt, configure your keyring to unlock automatically on login, or switch to a different secret backend (e.g., KeePassXC, KDBX file).
+
+### How do I connect to a host behind a jump server?
+
+In the SSH connection dialog, go to the **Advanced** tab and set the **Proxy Jump** field to your bastion host (e.g., `user@bastion.example.com`). RustConn passes this as `-J` to the SSH command. You can chain multiple jump hosts separated by commas.
+
+### Can I run RustConn in Flatpak?
+
+Yes. RustConn is available as a Flatpak. Some external CLI tools (xfreerdp, vncviewer, picocom) are not bundled but can be downloaded via **Tools > Flatpak Components**. Serial device access requires additional Flatpak permissions. See [Flatpak Components](#flatpak-components) for details.
+
+### How do I reset RustConn to default settings?
+
+Remove or rename the configuration directory:
+
+```bash
+mv ~/.config/rustconn ~/.config/rustconn.backup
+```
+
+On next launch, RustConn creates fresh defaults. Your backup remains available if you need to restore specific files.
+
+---
+
+## Migration Guide
+
+This guide covers end-to-end migration from other connection managers to RustConn.
+
+### From Remmina
+
+Remmina stores connections as individual `.remmina` files in `~/.local/share/remmina/`.
+
+1. **File > Import > Remmina**
+2. Select the Remmina data directory or individual `.remmina` files
+3. Review the import preview: protocol, host, port, and username are mapped automatically
+4. Choose a merge strategy if you have existing connections (Skip, Overwrite, or Rename)
+5. Click **Import**
+
+Mapped fields: protocol (SSH, RDP, VNC, SFTP), host, port, username, SSH key path, color depth, resolution. Fields not mapped: Remmina-specific plugins, custom scripts.
+
+After import, re-enter passwords (Remmina encrypts them with its own key) and verify SSH key paths.
+
+### From MobaXterm
+
+MobaXterm stores sessions in its configuration file (`MobaXterm.ini`) or the Windows registry.
+
+1. Export sessions from MobaXterm: **Settings > Configuration > Export**
+2. Copy the `.mxtsessions` file to your Linux machine
+3. **File > Import > MobaXterm**
+4. Select the exported file
+5. Review and import
+
+Mapped fields: protocol (SSH, RDP, VNC, Telnet, Serial), host, port, username, SSH key. Fields not mapped: MobaXterm macros, X11 forwarding settings, tunnels (configure manually in RustConn).
+
+### From Royal TS
+
+Royal TS uses `.rtsz` (JSON-based) export files.
+
+1. In Royal TS: **File > Export > Royal TS Document (.rtsz)**
+2. Copy the file to your Linux machine
+3. **File > Import > Royal TS**
+4. Select the `.rtsz` file
+5. Review the import preview: folder structure is preserved as RustConn groups
+
+Mapped fields: protocol, host, port, username, description, folder hierarchy. Fields not mapped: Royal TS credentials (re-enter in RustConn), custom plugins, tasks.
+
+### From SSH Config
+
+If you already have an `~/.ssh/config` file with your hosts defined:
+
+1. **File > Import > SSH Config**
+2. Select your SSH config file (default: `~/.ssh/config`)
+3. Each `Host` block becomes an SSH connection in RustConn
+
+Mapped fields: HostName, Port, User, IdentityFile, ProxyJump. Fields not mapped: Match blocks, LocalForward, RemoteForward (configure manually).
+
+### From Ansible Inventory
+
+1. **File > Import > Ansible**
+2. Select your inventory file (INI or YAML format)
+3. Host groups become RustConn groups; hosts become SSH connections
+
+Mapped fields: ansible_host, ansible_port, ansible_user, ansible_ssh_private_key_file. Group variables are applied to all hosts in the group.
+
+### Post-Migration Checklist
+
+After importing from any source:
+
+- [ ] Re-enter passwords (no import format includes plaintext credentials)
+- [ ] Verify SSH key paths (may differ between Windows and Linux)
+- [ ] Test a connection from each protocol type
+- [ ] Organize imported connections into groups if the source format did not preserve hierarchy
+- [ ] Set up your preferred secret backend if you have not already
+- [ ] Delete the import source file if it contains sensitive data
+
+---
+
 ## Troubleshooting
 
 ### Connection Issues
@@ -1606,6 +2119,110 @@ RUST_LOG=debug rustconn 2> rustconn.log
 RUST_LOG=rustconn_core::connection=debug rustconn
 RUST_LOG=rustconn_core::secret=debug rustconn
 ```
+
+### Serial Device Access
+
+1. Add your user to the `dialout` group: `sudo usermod -aG dialout $USER`
+2. Log out and back in for group changes to take effect
+3. Verify device permissions: `ls -la /dev/ttyUSB0`
+4. **Flatpak users:** Serial devices require the `--device=all` permission. If using the Flathub build, file a request if serial access is blocked
+5. Ensure `picocom` is installed: `sudo apt install picocom` (Debian/Ubuntu) or `sudo dnf install picocom` (Fedora)
+
+### Kubernetes Connection Issues
+
+1. Verify `kubectl` is installed and in PATH
+2. Check cluster access: `kubectl cluster-info`
+3. Verify pod exists: `kubectl get pods -n <namespace>`
+4. Check container name if pod has multiple containers
+5. For busybox mode: ensure the target container has `/bin/sh` available
+6. **Flatpak users:** `kubectl` must be installed via Flatpak Components — the host binary is not accessible inside the sandbox
+
+### Flatpak Permissions
+
+If features are not working in the Flatpak build:
+
+1. **File access:** Flatpak has limited filesystem access. Use `flatpak override --user --filesystem=home io.github.totoshko88.RustConn` for broader access
+2. **SSH agent:** The Flatpak build forwards `SSH_AUTH_SOCK` from the host. Ensure your SSH agent is running before launching RustConn
+3. **Serial devices:** Requires `--device=all` permission
+4. **CLI tools:** Host-installed binaries (bw, kubectl, pass, op) are NOT visible inside the sandbox. Use Menu → Flatpak Components to install them
+5. **Secret Service:** GNOME Keyring / KDE Wallet access works via D-Bus portal
+
+### Monitoring Issues
+
+1. Verify SSH connection works normally before enabling monitoring
+2. Check that the remote host has `uptime`, `free`, `df`, and `cat /proc/loadavg` available
+3. Monitoring uses a separate SSH session — ensure `MaxSessions` in `sshd_config` allows multiple sessions
+4. If metrics show "N/A", the remote command may have timed out — increase the polling interval in Settings → Connection → Monitoring
+
+---
+
+## Security Best Practices
+
+### Choosing a Secret Backend
+
+RustConn supports 7 secret backends. Choose based on your environment:
+
+| Backend | Best For | Security Level |
+|---------|----------|---------------|
+| System Keyring (libsecret) | Desktop Linux with GNOME Keyring or KDE Wallet | High — OS-managed, session-locked |
+| KeePassXC | Users who already use KeePassXC | High — AES-256 encrypted database |
+| Bitwarden | Teams using Bitwarden | High — cloud-synced, E2E encrypted |
+| 1Password | Teams using 1Password | High — cloud-synced, E2E encrypted |
+| Passbolt | Self-hosted team password management | High — GPG-based |
+| Pass (passwordstore.org) | CLI-oriented users, git-synced passwords | High — GPG-encrypted files |
+| KDBX File | Offline/air-gapped environments | High — AES-256, local file only |
+
+Configure your preferred backend in Settings → Secrets. RustConn falls back to the system keyring if the preferred backend is unavailable.
+
+### Master Password
+
+RustConn can encrypt its configuration with a master password:
+
+- Set via Settings → Secrets → **Master Password**
+- Protects the local connection database (`connections.json`)
+- Uses Argon2 key derivation + AES-256-GCM encryption
+- You will be prompted for the master password on startup
+
+If you forget the master password, the encrypted configuration cannot be recovered. Keep a backup of your unencrypted export (`.rcn` file) in a secure location.
+
+### Credential Hygiene
+
+- Use **SSH keys** instead of passwords whenever possible (Ed25519 or ECDSA recommended)
+- Use **FIDO2/Security Keys** for the strongest SSH authentication (requires OpenSSH 8.2+)
+- Set **Password Source** to a vault backend (KeePass, Bitwarden, etc.) rather than storing passwords in the RustConn config
+- Use **Group Credentials** to avoid duplicating the same password across multiple connections
+- Enable **Inherit from Group** on child connections to centralize credential management
+- Rotate credentials regularly; RustConn resolves passwords from the vault at connection time, so updating the vault entry is sufficient
+
+### Configuration Backup
+
+RustConn stores its data in `~/.config/rustconn/`:
+
+| File | Contents |
+|------|----------|
+| `connections.json` | All connections and groups |
+| `settings.json` | Application settings |
+| `templates.json` | Connection templates |
+| `snippets.json` | Command snippets |
+| `clusters.json` | Cluster definitions |
+| `keybindings.json` | Custom keyboard shortcuts |
+| `variables.json` | Global variables |
+
+**Backup options:**
+
+1. **Native export** — `rustconn-cli export --format native --output backup.rcn` (includes connections, groups, credentials references)
+2. **Copy config directory** — `cp -r ~/.config/rustconn/ ~/backup/rustconn/`
+3. **Flatpak path** — `~/.var/app/io.github.totoshko88.RustConn/config/rustconn/`
+
+Passwords stored in external vaults (KeePass, Bitwarden, etc.) are not included in the config backup — back up those separately.
+
+### Network Security
+
+- RustConn performs a **pre-connect port check** before establishing connections (disable per-connection with "Skip Port Check")
+- SSH connections verify host keys via the system `known_hosts` file
+- Use **SSH Proxy Jump** for connections behind bastion hosts instead of exposing internal hosts
+- Use **Zero Trust providers** (AWS SSM, Teleport, Boundary, etc.) to eliminate direct SSH exposure
+- Enable **session logging** for audit trails (Settings → Connection → Session Logging)
 
 ---
 

@@ -71,9 +71,10 @@ pub mod wol;
 // =============================================================================
 
 pub use automation::{
-    CompiledRule, ConnectionTask, ExpectEngine, ExpectError, ExpectResult, ExpectRule,
-    FolderConnectionTracker, KeyElement, KeySequence, KeySequenceError, KeySequenceResult,
-    SpecialKey, TaskCondition, TaskError, TaskExecutor, TaskResult, TaskTiming,
+    AutomationTemplate, CompiledRule, ConnectionTask, ExpectEngine, ExpectError, ExpectResult,
+    ExpectRule, FolderConnectionTracker, KeyElement, KeySequence, KeySequenceError,
+    KeySequenceResult, SpecialKey, TaskCondition, TaskError, TaskExecutor, TaskResult, TaskTiming,
+    builtin_templates, templates_for_protocol,
 };
 pub use cli_download::{
     ChecksumPolicy, CliDownloadError, CliDownloadResult, ComponentCategory,

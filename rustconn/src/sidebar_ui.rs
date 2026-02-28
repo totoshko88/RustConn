@@ -270,6 +270,15 @@ pub fn create_bulk_actions_bar() -> GtkBox {
     )]);
     bar.append(&move_button);
 
+    // Create Cluster button
+    let cluster_button = Button::with_label(&i18n("Create Cluster"));
+    cluster_button.set_tooltip_text(Some(&i18n("Create a cluster from selected connections")));
+    cluster_button.set_action_name(Some("win.cluster-from-selection"));
+    cluster_button.update_property(&[gtk4::accessible::Property::Label(
+        "Create cluster from selected connections",
+    )]);
+    bar.append(&cluster_button);
+
     // Select All button
     let select_all_button = Button::with_label(&i18n("Select All"));
     select_all_button.set_tooltip_text(Some(&i18n("Select all items (Ctrl+A)")));

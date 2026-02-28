@@ -30,7 +30,7 @@ use vte4::{PtyFlags, Terminal};
 use crate::automation::{AutomationSession, Trigger};
 use crate::embedded_rdp::EmbeddedRdpWidget;
 use crate::embedded_spice::EmbeddedSpiceWidget;
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 use crate::session::{SessionState, SessionWidget, VncSessionWidget};
 use crate::split_view::TabSplitManager;
 use rustconn_core::split::TabId;
@@ -69,6 +69,8 @@ pub struct TerminalNotebook {
     color_tabs_by_protocol: Rc<RefCell<bool>>,
     /// Tab group manager for assigning colors to named groups
     tab_group_manager: Rc<RefCell<TabGroupManager>>,
+    /// Callback for reconnect button clicks (session_id, connection_id)
+    on_reconnect: Rc<RefCell<Option<Box<dyn Fn(Uuid, Uuid)>>>>,
 }
 
 impl TerminalNotebook {
@@ -121,6 +123,7 @@ impl TerminalNotebook {
             session_tab_ids: Rc::new(RefCell::new(HashMap::new())),
             color_tabs_by_protocol: Rc::new(RefCell::new(false)),
             tab_group_manager: Rc::new(RefCell::new(TabGroupManager::new())),
+            on_reconnect: Rc::new(RefCell::new(None)),
         };
 
         term_notebook.setup_tab_view_signals();
@@ -570,6 +573,7 @@ impl TerminalNotebook {
                 history_entry_id: None,
                 tab_group: None,
                 tab_color_index: None,
+                connected_at: chrono::Utc::now(),
             },
         );
 
@@ -635,6 +639,7 @@ impl TerminalNotebook {
                 history_entry_id: None,
                 tab_group: None,
                 tab_color_index: None,
+                connected_at: chrono::Utc::now(),
             },
         );
 
@@ -698,6 +703,7 @@ impl TerminalNotebook {
                 history_entry_id: None,
                 tab_group: None,
                 tab_color_index: None,
+                connected_at: chrono::Utc::now(),
             },
         );
 
@@ -746,6 +752,7 @@ impl TerminalNotebook {
                 history_entry_id: None,
                 tab_group: None,
                 tab_color_index: None,
+                connected_at: chrono::Utc::now(),
             },
         );
 
@@ -787,6 +794,7 @@ impl TerminalNotebook {
                 history_entry_id: None,
                 tab_group: None,
                 tab_color_index: None,
+                connected_at: chrono::Utc::now(),
             },
         );
 
@@ -952,6 +960,14 @@ impl TerminalNotebook {
 
         let env_refs: Vec<&str> = env_vec.iter().map(gtk4::glib::GString::as_str).collect();
 
+        // Capture command name for error reporting
+        let command_name = argv.first().unwrap_or(&"").to_string();
+
+        // Capture Rc references for the spawn error callback
+        let sessions_rc = self.sessions.clone();
+        let session_info_rc = self.session_info.clone();
+        let on_reconnect_rc = self.on_reconnect.clone();
+
         terminal.spawn_async(
             PtyFlags::DEFAULT,
             working_directory,
@@ -961,9 +977,63 @@ impl TerminalNotebook {
             || {},
             -1,
             gio::Cancellable::NONE,
-            |result| {
+            move |result| {
                 if let Err(e) = result {
-                    tracing::error!(%e, "Failed to spawn command");
+                    tracing::error!(
+                        command = %command_name,
+                        %session_id,
+                        %e,
+                        "Failed to spawn command"
+                    );
+
+                    // Mark tab as disconnected and show reconnect overlay
+                    if let Some(page) = sessions_rc.borrow().get(&session_id) {
+                        page.set_indicator_icon(Some(&gio::ThemedIcon::new(
+                            "network-offline-symbolic",
+                        )));
+                        page.set_indicator_activatable(false);
+
+                        // Build reconnect banner inside the tab container
+                        if let Ok(container) = page.child().downcast::<GtkBox>() {
+                            let info = session_info_rc.borrow();
+                            let connection_id = info
+                                .get(&session_id)
+                                .map(|i| i.connection_id)
+                                .unwrap_or(Uuid::nil());
+                            drop(info);
+
+                            let banner = GtkBox::new(Orientation::Horizontal, 6);
+                            banner.set_margin_start(12);
+                            banner.set_margin_end(12);
+                            banner.set_margin_top(6);
+                            banner.set_margin_bottom(6);
+                            banner.set_halign(gtk4::Align::Center);
+                            banner.set_widget_name("reconnect-banner");
+
+                            let msg = i18n_f("Command not found: {}", &[&command_name]);
+                            let label = gtk4::Label::new(Some(&msg));
+                            label.add_css_class("dim-label");
+
+                            let button = gtk4::Button::with_label(&i18n("Reconnect"));
+                            button.add_css_class("suggested-action");
+                            button.set_tooltip_text(Some(&i18n("Reconnect to this session")));
+
+                            banner.append(&label);
+                            banner.append(&button);
+                            container.append(&banner);
+
+                            let on_reconnect = on_reconnect_rc.clone();
+                            button.connect_clicked(move |_| {
+                                if let Some(ref cb) = *on_reconnect.borrow() {
+                                    cb(session_id, connection_id);
+                                }
+                            });
+                        }
+                    }
+
+                    // Show toast on the nearest window
+                    let msg = i18n_f("'{}' is not installed", &[&command_name]);
+                    crate::toast::show_error_toast_on_active_window(&msg);
                 }
             },
         );
@@ -1094,6 +1164,75 @@ impl TerminalNotebook {
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             page.set_indicator_icon(gio::Icon::NONE);
         }
+    }
+
+    /// Shows a reconnect overlay banner at the bottom of a disconnected VTE tab
+    ///
+    /// Appends a horizontal bar with a "Session disconnected" label and a
+    /// "Reconnect" button to the tab's container. The button triggers the
+    /// `on_reconnect` callback with the session's connection ID.
+    pub fn show_reconnect_overlay(&self, session_id: Uuid) {
+        let Some(page) = self.sessions.borrow().get(&session_id).cloned() else {
+            return;
+        };
+        let Some(info) = self.session_info.borrow().get(&session_id).cloned() else {
+            return;
+        };
+
+        // Only for VTE-based protocols (SSH, Telnet, Serial, Kubernetes)
+        if matches!(info.protocol.as_str(), "rdp" | "vnc" | "spice") {
+            return;
+        }
+
+        let container = page.child().downcast::<GtkBox>().ok();
+        let Some(container) = container else {
+            return;
+        };
+
+        // Build the reconnect banner
+        let banner = GtkBox::new(Orientation::Horizontal, 6);
+        banner.set_margin_start(12);
+        banner.set_margin_end(12);
+        banner.set_margin_top(6);
+        banner.set_margin_bottom(6);
+        banner.set_halign(gtk4::Align::Center);
+        banner.set_widget_name("reconnect-banner");
+
+        let label = gtk4::Label::new(Some(&i18n("Session disconnected")));
+        label.add_css_class("dim-label");
+
+        let button = gtk4::Button::with_label(&i18n("Reconnect"));
+        button.add_css_class("suggested-action");
+        button.set_tooltip_text(Some(&i18n("Reconnect to this session")));
+
+        banner.append(&label);
+        banner.append(&button);
+        container.append(&banner);
+
+        // Wire up the reconnect button
+        let on_reconnect = self.on_reconnect.clone();
+        let connection_id = info.connection_id;
+        button.connect_clicked(move |_| {
+            if let Some(ref callback) = *on_reconnect.borrow() {
+                callback(session_id, connection_id);
+            }
+        });
+
+        tracing::info!(
+            %session_id,
+            protocol = %info.protocol,
+            "Reconnect overlay shown for disconnected session"
+        );
+    }
+
+    /// Sets the callback invoked when a reconnect button is clicked
+    ///
+    /// The callback receives `(session_id, connection_id)`.
+    pub fn set_on_reconnect<F>(&self, callback: F)
+    where
+        F: Fn(Uuid, Uuid) + 'static,
+    {
+        *self.on_reconnect.borrow_mut() = Some(Box::new(callback));
     }
 
     /// Sets a color indicator on a tab to show it's in a split pane

@@ -66,11 +66,11 @@ impl ToastType {
     /// Error and warning toasts get a short prefix so users can quickly
     /// distinguish severity at a glance.
     #[must_use]
-    pub const fn custom_title(&self) -> Option<&'static str> {
+    pub fn custom_title(&self) -> Option<String> {
         match self {
             Self::Info | Self::Success => None,
-            Self::Warning => Some("Warning"),
-            Self::Error => Some("Error"),
+            Self::Warning => Some(crate::i18n::i18n("Warning")),
+            Self::Error => Some(crate::i18n::i18n("Error")),
         }
     }
 }
@@ -116,7 +116,7 @@ impl ToastOverlay {
         let toast = adw::Toast::new(message);
         toast.set_priority(toast_type.priority());
         if let Some(title) = toast_type.custom_title() {
-            toast.set_custom_title(Some(&Self::build_toast_title_widget(title, toast_type)));
+            toast.set_custom_title(Some(&Self::build_toast_title_widget(&title, toast_type)));
         }
         self.overlay.add_toast(toast);
     }
@@ -188,8 +188,10 @@ pub fn show_toast_on_window(window: &impl IsA<gui::Window>, message: &str, toast
 
     // Fallback: show an AlertDialog so the user still sees the message
     tracing::warn!(toast_message = %message, "ToastOverlay not found, falling back to AlertDialog");
-    let heading = toast_type.custom_title().unwrap_or("Info");
-    let dialog = adw::AlertDialog::new(Some(heading), Some(message));
+    let heading = toast_type
+        .custom_title()
+        .unwrap_or_else(|| crate::i18n::i18n("Info"));
+    let dialog = adw::AlertDialog::new(Some(&heading), Some(message));
     dialog.add_response("ok", "OK");
     dialog.set_default_response(Some("ok"));
     let widget = window.as_ref().upcast_ref::<gui::Widget>();
@@ -232,4 +234,71 @@ pub fn show_undo_toast_on_window(
         toast.set_action_target_value(Some(&glib::Variant::from(action_target)));
         overlay.add_toast(toast);
     }
+}
+
+/// Helper to show a missing CLI tool toast
+///
+/// In Flatpak, adds an "Install" button that opens the Flatpak Components dialog.
+/// Outside Flatpak, shows a plain error toast.
+pub fn show_missing_cli_toast(window: &impl IsA<gui::Window>, message: &str) {
+    if let Some(child) = window.child()
+        && let Some(overlay) = find_toast_overlay(&child)
+    {
+        let toast = adw::Toast::new(message);
+        toast.set_priority(adw::ToastPriority::High);
+        toast.set_custom_title(Some(&ToastOverlay::build_toast_title_widget(
+            &crate::i18n::i18n("Error"),
+            ToastType::Error,
+        )));
+        if rustconn_core::flatpak::is_flatpak() {
+            toast.set_button_label(Some(&crate::i18n::i18n("Install")));
+            toast.set_action_name(Some("win.flatpak-components"));
+        }
+        overlay.add_toast(toast);
+        return;
+    }
+
+    show_toast_on_window(window, message, ToastType::Error);
+}
+
+/// Helper to show a connection failure toast with a Retry button
+pub fn show_retry_toast_on_window(
+    window: &impl IsA<gui::Window>,
+    message: &str,
+    connection_id: &str,
+) {
+    if let Some(child) = window.child()
+        && let Some(overlay) = find_toast_overlay(&child)
+    {
+        let toast = adw::Toast::new(message);
+        toast.set_priority(adw::ToastPriority::High);
+        toast.set_button_label(Some(&crate::i18n::i18n("Retry")));
+        toast.set_action_name(Some("win.retry-connect"));
+        toast.set_action_target_value(Some(&glib::Variant::from(connection_id)));
+        toast.set_custom_title(Some(&ToastOverlay::build_toast_title_widget(
+            &crate::i18n::i18n("Error"),
+            ToastType::Error,
+        )));
+        overlay.add_toast(toast);
+    }
+}
+
+/// Shows an error toast on the currently active application window.
+///
+/// Useful in callbacks (e.g. VTE `spawn_async`) where no window reference
+/// is available. Falls back to a log message if no active window is found.
+pub fn show_error_toast_on_active_window(message: &str) {
+    let Some(app) = gui::gio::Application::default() else {
+        tracing::warn!(toast_message = %message, "No default application, cannot show toast");
+        return;
+    };
+    let Some(gtk_app) = app.downcast_ref::<gui::Application>() else {
+        tracing::warn!(toast_message = %message, "Application is not a GtkApplication");
+        return;
+    };
+    let Some(window) = gtk_app.active_window() else {
+        tracing::warn!(toast_message = %message, "No active window, cannot show toast");
+        return;
+    };
+    show_toast_on_window(&window, message, ToastType::Error);
 }
