@@ -43,16 +43,19 @@ pub fn delete_selected_connection(
     } else {
         i18n("connection")
     };
-    let detail = if is_group {
-        let connection_count = state
+    let connection_count = if is_group {
+        state
             .try_borrow()
             .map(|s| s.count_connections_in_group(id))
-            .unwrap_or(0);
-
+            .unwrap_or(0)
+    } else {
+        0
+    };
+    let detail = if is_group {
         if connection_count > 0 {
             i18n_f(
-                "Are you sure you want to delete the group '{}'?\n\nThis will also delete {} connection(s) in this group.",
-                &[&name, &connection_count.to_string()],
+                "This group contains {} connection(s).",
+                &[&connection_count.to_string()],
             )
         } else {
             i18n_f(
@@ -70,37 +73,45 @@ pub fn delete_selected_connection(
     let state_clone = state.clone();
     let sidebar_clone = sidebar.clone();
     let window_clone = window.clone();
-    alert::show_confirm(
-        window,
-        &i18n_f("Delete {}?", &[&item_type]),
-        &detail,
-        &i18n("Delete"),
-        true,
-        move |confirmed| {
-            if confirmed && let Ok(mut state_mut) = state_clone.try_borrow_mut() {
-                let delete_result = if is_group {
-                    // Use cascade delete to remove group and all its connections
+
+    if is_group && connection_count > 0 {
+        // Group with connections: offer choice between move-to-root and cascade delete
+        let dialog =
+            adw::AlertDialog::new(Some(&i18n_f("Delete group '{}'?", &[&name])), Some(&detail));
+        dialog.add_response("cancel", &i18n("Cancel"));
+        dialog.add_response("move", &i18n("Keep Connections"));
+        dialog.add_response("delete", &i18n("Delete All"));
+        dialog.set_default_response(Some("cancel"));
+        dialog.set_close_response("cancel");
+        dialog.set_response_appearance("delete", adw::ResponseAppearance::Destructive);
+        dialog.set_response_appearance("move", adw::ResponseAppearance::Suggested);
+
+        let name_clone = name.clone();
+        dialog.connect_response(None, move |_, response| {
+            let cascade = match response {
+                "delete" => true,
+                "move" => false,
+                _ => return,
+            };
+
+            if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
+                let delete_result = if cascade {
                     state_mut.delete_group_cascade(id)
                 } else {
-                    state_mut.delete_connection(id)
+                    state_mut.delete_group(id)
                 };
 
                 match delete_result {
                     Ok(()) => {
                         drop(state_mut);
-                        // Defer sidebar reload to prevent UI freeze
                         let state = state_clone.clone();
                         let sidebar = sidebar_clone.clone();
                         let window = window_clone.clone();
-                        // Capture name for closure
-                        let name = name.clone(); // name was &str from outer scope, need to ensure it's captured
+                        let name = name_clone.clone();
 
                         glib::idle_add_local_once(move || {
                             MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
-
-                            // Show undo toast
-                            let action_target =
-                                format!("{}:{}", if is_group { "group" } else { "connection" }, id);
+                            let action_target = format!("group:{id}");
                             crate::toast::show_undo_toast_on_window(
                                 &window,
                                 &i18n_f("Deleted '{}'", &[&name]),
@@ -113,8 +124,55 @@ pub fn delete_selected_connection(
                     }
                 }
             }
-        },
-    );
+        });
+
+        dialog.present(Some(window));
+    } else {
+        // Simple confirmation for connections or empty groups
+        alert::show_confirm(
+            window,
+            &i18n_f("Delete {}?", &[&item_type]),
+            &detail,
+            &i18n("Delete"),
+            true,
+            move |confirmed| {
+                if confirmed && let Ok(mut state_mut) = state_clone.try_borrow_mut() {
+                    let delete_result = if is_group {
+                        state_mut.delete_group(id)
+                    } else {
+                        state_mut.delete_connection(id)
+                    };
+
+                    match delete_result {
+                        Ok(()) => {
+                            drop(state_mut);
+                            let state = state_clone.clone();
+                            let sidebar = sidebar_clone.clone();
+                            let window = window_clone.clone();
+                            let name = name.clone();
+
+                            glib::idle_add_local_once(move || {
+                                MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+                                let action_target = format!(
+                                    "{}:{}",
+                                    if is_group { "group" } else { "connection" },
+                                    id
+                                );
+                                crate::toast::show_undo_toast_on_window(
+                                    &window,
+                                    &i18n_f("Deleted '{}'", &[&name]),
+                                    &action_target,
+                                );
+                            });
+                        }
+                        Err(e) => {
+                            alert::show_error(&window_clone, &i18n("Error Deleting"), &e);
+                        }
+                    }
+                }
+            },
+        );
+    }
 }
 
 /// Duplicates the selected connection

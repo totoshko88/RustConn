@@ -271,6 +271,16 @@ fn cmd_snippet_run(
     let command = SnippetManager::substitute_with_defaults(snippet, &values);
 
     if execute {
+        // Warn about potentially dangerous shell metacharacters in variable values
+        let unsafe_vars = SnippetManager::check_shell_safety(&values);
+        if !unsafe_vars.is_empty() {
+            eprintln!(
+                "Warning: variables contain shell metacharacters: {}. \
+                 Review the command before execution.",
+                unsafe_vars.join(", ")
+            );
+        }
+
         println!("Executing: {command}");
         let status = std::process::Command::new("sh")
             .arg("-c")

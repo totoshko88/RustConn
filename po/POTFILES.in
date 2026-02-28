@@ -54,10 +54,13 @@ rustconn/src/dialogs/document.rs
 rustconn/src/dialogs/flatpak_components.rs
 rustconn/src/dialogs/log_viewer.rs
 rustconn/src/dialogs/terminal_search.rs
+rustconn/src/dialogs/wol.rs
 rustconn/src/sidebar/mod.rs
 rustconn/src/sidebar/view.rs
 rustconn/src/sidebar/search.rs
 rustconn/src/sidebar/filter.rs
+rustconn/src/sidebar_ui.rs
+rustconn/src/terminal/mod.rs
 rustconn/src/validation.rs
 rustconn/src/empty_state.rs
 rustconn/src/dashboard.rs

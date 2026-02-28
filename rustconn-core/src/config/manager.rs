@@ -728,6 +728,109 @@ impl ConfigManager {
             .filter_map(|(i, template)| Self::validate_template(template).err().map(|e| (i, e)))
             .collect()
     }
+
+    // ========== Backup / Restore ==========
+
+    /// Files included in a settings backup archive.
+    const BACKUP_FILES: &[&str] = &[
+        CONNECTIONS_FILE,
+        GROUPS_FILE,
+        SNIPPETS_FILE,
+        CLUSTERS_FILE,
+        TEMPLATES_FILE,
+        HISTORY_FILE,
+        CONFIG_FILE,
+    ];
+
+    /// Creates a ZIP backup of all configuration files.
+    ///
+    /// Only files that exist on disk are included. The archive can be
+    /// restored with [`restore_from_archive`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the archive cannot be created or written.
+    pub fn backup_to_archive(&self, dest: &Path) -> ConfigResult<u32> {
+        let file = fs::File::create(dest).map_err(|e| {
+            ConfigError::Write(format!(
+                "Failed to create backup file {}: {e}",
+                dest.display()
+            ))
+        })?;
+        let mut zip = zip::ZipWriter::new(file);
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
+
+        let mut count = 0u32;
+        for name in Self::BACKUP_FILES {
+            let path = self.config_dir.join(name);
+            if path.exists() {
+                let content = fs::read(&path).map_err(|e| {
+                    ConfigError::Parse(format!("Failed to read {}: {e}", path.display()))
+                })?;
+                zip.start_file(*name, options).map_err(|e| {
+                    ConfigError::Write(format!("Failed to add {name} to archive: {e}"))
+                })?;
+                std::io::Write::write_all(&mut zip, &content).map_err(|e| {
+                    ConfigError::Write(format!("Failed to write {name} to archive: {e}"))
+                })?;
+                count += 1;
+            }
+        }
+
+        zip.finish()
+            .map_err(|e| ConfigError::Write(format!("Failed to finalize backup archive: {e}")))?;
+
+        tracing::info!(path = %dest.display(), files = count, "Settings backup created");
+        Ok(count)
+    }
+
+    /// Restores configuration files from a ZIP backup archive.
+    ///
+    /// Only known configuration file names are extracted; unknown entries
+    /// are silently skipped. Existing files are overwritten.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the archive cannot be read or files cannot be written.
+    pub fn restore_from_archive(&self, src: &Path) -> ConfigResult<u32> {
+        self.ensure_config_dir()?;
+
+        let file = fs::File::open(src).map_err(|e| {
+            ConfigError::Parse(format!("Failed to open backup file {}: {e}", src.display()))
+        })?;
+        let mut archive = zip::ZipArchive::new(file).map_err(|e| {
+            ConfigError::Deserialize(format!("Invalid backup archive {}: {e}", src.display()))
+        })?;
+
+        let allowed: std::collections::HashSet<&str> = Self::BACKUP_FILES.iter().copied().collect();
+
+        let mut count = 0u32;
+        for i in 0..archive.len() {
+            let mut entry = archive.by_index(i).map_err(|e| {
+                ConfigError::Parse(format!("Failed to read archive entry {i}: {e}"))
+            })?;
+            let Some(name) = entry.enclosed_name() else {
+                continue;
+            };
+            let name_str = name.to_string_lossy();
+            if !allowed.contains(name_str.as_ref()) {
+                continue;
+            }
+            let dest_path = self.config_dir.join(&*name_str);
+            let mut content = Vec::new();
+            std::io::Read::read_to_end(&mut entry, &mut content).map_err(|e| {
+                ConfigError::Parse(format!("Failed to read {name_str} from archive: {e}"))
+            })?;
+            fs::write(&dest_path, &content).map_err(|e| {
+                ConfigError::Write(format!("Failed to write {}: {e}", dest_path.display()))
+            })?;
+            count += 1;
+        }
+
+        tracing::info!(path = %src.display(), files = count, "Settings restored from backup");
+        Ok(count)
+    }
 }
 
 #[cfg(test)]

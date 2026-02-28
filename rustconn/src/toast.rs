@@ -60,6 +60,19 @@ impl ToastType {
             Self::Error => adw::ToastPriority::High,
         }
     }
+
+    /// Returns an optional custom title for the toast
+    ///
+    /// Error and warning toasts get a short prefix so users can quickly
+    /// distinguish severity at a glance.
+    #[must_use]
+    pub fn custom_title(&self) -> Option<String> {
+        match self {
+            Self::Info | Self::Success => None,
+            Self::Warning => Some(crate::i18n::i18n("Warning")),
+            Self::Error => Some(crate::i18n::i18n("Error")),
+        }
+    }
 }
 
 /// Toast overlay widget that wraps `adw::ToastOverlay`
@@ -94,14 +107,30 @@ impl ToastOverlay {
         self.overlay.add_toast(toast);
     }
 
-    /// Shows a toast type with appropriate priority
+    /// Shows a typed toast with appropriate priority and custom title
     ///
     /// Uses `adw::ToastPriority` to ensure important messages (warnings, errors)
-    /// are shown before less important ones.
+    /// are shown before less important ones. Applies a custom title prefix
+    /// for error/warning toasts to improve scannability.
     pub fn show_toast_with_type(&self, message: &str, toast_type: ToastType) {
         let toast = adw::Toast::new(message);
         toast.set_priority(toast_type.priority());
+        if let Some(title) = toast_type.custom_title() {
+            toast.set_custom_title(Some(&Self::build_toast_title_widget(&title, toast_type)));
+        }
         self.overlay.add_toast(toast);
+    }
+
+    /// Builds a small icon + label widget for custom toast titles
+    fn build_toast_title_widget(label_text: &str, toast_type: ToastType) -> gui::Widget {
+        let hbox = gui::Box::new(gui::Orientation::Horizontal, 6);
+        hbox.set_halign(gui::Align::Center);
+        let icon = gui::Image::from_icon_name(toast_type.icon_name());
+        icon.set_pixel_size(16);
+        let label = gui::Label::new(Some(label_text));
+        hbox.append(&icon);
+        hbox.append(&label);
+        hbox.upcast()
     }
 
     /// Shows a success toast message
@@ -143,43 +172,30 @@ impl Default for ToastOverlay {
     }
 }
 
-/// Helper function to show a toast on a window (legacy support)
+/// Helper function to show a toast on a window
 ///
-/// Tries to find an `adw::ToastOverlay` in the window structure or falls back to
-/// standard overlay injection if possible (though less ideal with adw).
-pub fn show_toast_on_window(window: &impl IsA<gui::Window>, message: &str, _toast_type: ToastType) {
-    // This is a "best effort" helper. Ideally we should pass the overlay explicitly.
-    // If the window is an adw::ApplicationWindow or similar that exposes an overlay...
-    // But currently we don't have a direct way to find the main overlay unless we walk the hierarchy.
-
-    // For now, if we can't find the overlay, we might just log it or (better)
-    // upgrading call sites to use the proper overlay.
-    // However, to keep existing code working without massive refactoring:
-    // We can try to create a transient overlay? No, that won't work.
-
-    // Instead of complex hierarchy walking, let's rely on the fact that
-    // most call sites using this function are likely in dialogs or windows
-    // where we might want to attach a toast overlay.
-
-    // Since we are refactoring, let's fix the call sites to use the overlay if possible.
-    // But for this helper, let's leave it as a no-op or simple print for safety during migration
-    // if we can't easily hook into adw::ToastOverlay.
-
-    // Actually, `adw::ToastOverlay` is usually the root content.
-    // If we can get it, we use it.
-    // But `window.child()` might be `adw::ToolbarView`.
-
-    // Let's implement a hierarchy check
+/// Tries to find an `adw::ToastOverlay` in the window structure. If no overlay
+/// is found, falls back to an `adw::AlertDialog` so the message is never lost.
+pub fn show_toast_on_window(window: &impl IsA<gui::Window>, message: &str, toast_type: ToastType) {
     if let Some(child) = window.child()
         && let Some(overlay) = find_toast_overlay(&child)
     {
         let toast = adw::Toast::new(message);
+        toast.set_priority(toast_type.priority());
         overlay.add_toast(toast);
         return;
     }
 
-    // Fallback: log so we don't silently lose messages during dev
-    tracing::warn!(toast_message = %message, "Could not find ToastOverlay in window hierarchy");
+    // Fallback: show an AlertDialog so the user still sees the message
+    tracing::warn!(toast_message = %message, "ToastOverlay not found, falling back to AlertDialog");
+    let heading = toast_type
+        .custom_title()
+        .unwrap_or_else(|| crate::i18n::i18n("Info"));
+    let dialog = adw::AlertDialog::new(Some(&heading), Some(message));
+    dialog.add_response("ok", "OK");
+    dialog.set_default_response(Some("ok"));
+    let widget = window.as_ref().upcast_ref::<gui::Widget>();
+    dialog.present(Some(widget));
 }
 
 /// Helper to recursively find a `ToastOverlay` in the widget tree
@@ -218,4 +234,71 @@ pub fn show_undo_toast_on_window(
         toast.set_action_target_value(Some(&glib::Variant::from(action_target)));
         overlay.add_toast(toast);
     }
+}
+
+/// Helper to show a missing CLI tool toast
+///
+/// In Flatpak, adds an "Install" button that opens the Flatpak Components dialog.
+/// Outside Flatpak, shows a plain error toast.
+pub fn show_missing_cli_toast(window: &impl IsA<gui::Window>, message: &str) {
+    if let Some(child) = window.child()
+        && let Some(overlay) = find_toast_overlay(&child)
+    {
+        let toast = adw::Toast::new(message);
+        toast.set_priority(adw::ToastPriority::High);
+        toast.set_custom_title(Some(&ToastOverlay::build_toast_title_widget(
+            &crate::i18n::i18n("Error"),
+            ToastType::Error,
+        )));
+        if rustconn_core::flatpak::is_flatpak() {
+            toast.set_button_label(Some(&crate::i18n::i18n("Install")));
+            toast.set_action_name(Some("win.flatpak-components"));
+        }
+        overlay.add_toast(toast);
+        return;
+    }
+
+    show_toast_on_window(window, message, ToastType::Error);
+}
+
+/// Helper to show a connection failure toast with a Retry button
+pub fn show_retry_toast_on_window(
+    window: &impl IsA<gui::Window>,
+    message: &str,
+    connection_id: &str,
+) {
+    if let Some(child) = window.child()
+        && let Some(overlay) = find_toast_overlay(&child)
+    {
+        let toast = adw::Toast::new(message);
+        toast.set_priority(adw::ToastPriority::High);
+        toast.set_button_label(Some(&crate::i18n::i18n("Retry")));
+        toast.set_action_name(Some("win.retry-connect"));
+        toast.set_action_target_value(Some(&glib::Variant::from(connection_id)));
+        toast.set_custom_title(Some(&ToastOverlay::build_toast_title_widget(
+            &crate::i18n::i18n("Error"),
+            ToastType::Error,
+        )));
+        overlay.add_toast(toast);
+    }
+}
+
+/// Shows an error toast on the currently active application window.
+///
+/// Useful in callbacks (e.g. VTE `spawn_async`) where no window reference
+/// is available. Falls back to a log message if no active window is found.
+pub fn show_error_toast_on_active_window(message: &str) {
+    let Some(app) = gui::gio::Application::default() else {
+        tracing::warn!(toast_message = %message, "No default application, cannot show toast");
+        return;
+    };
+    let Some(gtk_app) = app.downcast_ref::<gui::Application>() else {
+        tracing::warn!(toast_message = %message, "Application is not a GtkApplication");
+        return;
+    };
+    let Some(window) = gtk_app.active_window() else {
+        tracing::warn!(toast_message = %message, "No active window, cannot show toast");
+        return;
+    };
+    show_toast_on_window(&window, message, ToastType::Error);
 }

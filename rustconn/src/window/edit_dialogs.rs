@@ -1221,7 +1221,7 @@ pub fn show_quick_connect_dialog_with_state(
     let templates: Vec<rustconn_core::models::ConnectionTemplate> = state
         .map(|s| {
             let state_ref = s.borrow();
-            state_ref.load_templates().unwrap_or_default()
+            state_ref.get_all_templates()
         })
         .unwrap_or_default();
 

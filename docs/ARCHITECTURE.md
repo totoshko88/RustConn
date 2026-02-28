@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.9.3** | Last updated: February 2026
+**Version 0.9.4** | Last updated: February 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -59,6 +59,7 @@ pub struct AppState {
     connection_manager: ConnectionManager,
     session_manager: SessionManager,
     snippet_manager: SnippetManager,
+    template_manager: TemplateManager,
     secret_manager: SecretManager,
     config_manager: ConfigManager,
     document_manager: DocumentManager,
@@ -127,6 +128,7 @@ Each domain has a dedicated manager in `rustconn-core`:
 | `ConfigManager` | Settings persistence |
 | `DocumentManager` | Multi-document support |
 | `SnippetManager` | Command snippets |
+| `TemplateManager` | Connection template CRUD, search, import/export |
 | `ClusterManager` | Connection clusters |
 
 ### Connection Retry
@@ -1084,7 +1086,7 @@ Per-connection override via `MonitoringConfig` on the `Connection` model:
 
 ### Property Tests
 
-Located in `rustconn-core/tests/properties/` (1250+ tests):
+Located in `rustconn-core/tests/properties/` (1300+ tests):
 
 ```rust
 proptest! {

@@ -4,7 +4,7 @@
 //! the Tools menu. Allows picking a connection with WoL configured
 //! or entering MAC address manually.
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Orientation};
@@ -185,7 +185,7 @@ impl WolDialog {
                             port,
                             "WoL packet sent from dialog",
                         );
-                        status_ok.set_text(&format!("Magic packet sent to {mac_display}"));
+                        status_ok.set_text(&i18n_f("Magic packet sent to {mac}", &[&mac_display]));
                         status_ok.remove_css_class("error");
                         status_ok.add_css_class("success");
                     }

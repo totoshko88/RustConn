@@ -372,19 +372,17 @@ pub fn start_vnc_connection(
                         );
                     }
                     Err(e) => {
-                        // Port check failed, show error
+                        // Port check failed, show error with retry
                         tracing::warn!("Port check failed for VNC connection: {e}");
                         sidebar_clone
                             .update_connection_status(&connection_id.to_string(), "failed");
                         if let Some(root) = notebook_clone.widget().root()
                             && let Some(window) = root.downcast_ref::<gtk4::Window>()
                         {
-                            crate::alert::show_error(
+                            crate::toast::show_retry_toast_on_window(
                                 window,
-                                "Connection Failed",
-                                &format!(
-                                    "{e}\n\nThe host may be offline or the port may be blocked."
-                                ),
+                                &crate::i18n::i18n("Connection failed. Host unreachable."),
+                                &connection_id.to_string(),
                             );
                         }
                     }
@@ -545,19 +543,17 @@ pub fn start_spice_connection(
                         );
                     }
                     Err(e) => {
-                        // Port check failed, show error
+                        // Port check failed, show error with retry
                         tracing::warn!("Port check failed for SPICE connection: {e}");
                         sidebar_clone
                             .update_connection_status(&connection_id.to_string(), "failed");
                         if let Some(root) = notebook_clone.widget().root()
                             && let Some(window) = root.downcast_ref::<gtk4::Window>()
                         {
-                            crate::alert::show_error(
+                            crate::toast::show_retry_toast_on_window(
                                 window,
-                                "Connection Failed",
-                                &format!(
-                                    "{e}\n\nThe host may be offline or the port may be blocked."
-                                ),
+                                &crate::i18n::i18n("Connection failed. Host unreachable."),
+                                &connection_id.to_string(),
                             );
                         }
                     }
@@ -858,10 +854,9 @@ pub fn start_zerotrust_connection(
                     if let Some(root) = notebook.widget().root()
                         && let Some(window) = root.downcast_ref::<gtk4::Window>()
                     {
-                        crate::toast::show_toast_on_window(
+                        crate::toast::show_missing_cli_toast(
                             window,
                             &format!("{provider} requires '{cli}' CLI tool"),
-                            crate::toast::ToastType::Error,
                         );
                     }
                     return None;
@@ -986,10 +981,9 @@ pub fn start_serial_connection(
         if let Some(root) = notebook.widget().root()
             && let Some(window) = root.downcast_ref::<gtk4::Window>()
         {
-            crate::toast::show_toast_on_window(
+            crate::toast::show_missing_cli_toast(
                 window,
                 &i18n("Install picocom for Serial connections"),
-                crate::toast::ToastType::Error,
             );
         }
         return None;
@@ -1102,10 +1096,9 @@ pub fn start_kubernetes_connection(
         if let Some(root) = notebook.widget().root()
             && let Some(window) = root.downcast_ref::<gtk4::Window>()
         {
-            crate::toast::show_toast_on_window(
+            crate::toast::show_missing_cli_toast(
                 window,
                 &i18n("Install kubectl for Kubernetes connections"),
-                crate::toast::ToastType::Error,
             );
         }
         return None;

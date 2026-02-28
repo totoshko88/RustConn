@@ -15,8 +15,9 @@ use gtk4::{
 use libadwaita as adw;
 use rustconn_core::export::NativeExport;
 use rustconn_core::import::{
-    AnsibleInventoryImporter, AsbruImporter, ImportResult, ImportSource, MobaXtermImporter,
-    RdmImporter, RemminaImporter, RoyalTsImporter, SshConfigImporter, VirtViewerImporter,
+    AnsibleInventoryImporter, AsbruImporter, ImportResult, ImportSource, LibvirtXmlImporter,
+    MobaXtermImporter, RdmImporter, RemminaImporter, RoyalTsImporter, SshConfigImporter,
+    VirtViewerImporter,
 };
 use rustconn_core::progress::LocalProgressReporter;
 use std::cell::{Cell, RefCell};
@@ -256,6 +257,18 @@ impl ImportDialog {
                 i18n("Import SPICE/VNC connection from a virt-viewer file"),
                 true,
             ),
+            (
+                "libvirt",
+                i18n("Libvirt / GNOME Boxes"),
+                i18n("Import VMs from libvirt domain XML files"),
+                LibvirtXmlImporter::new().is_available(),
+            ),
+            (
+                "libvirt_file",
+                i18n("Libvirt XML File"),
+                i18n("Import from a libvirt domain XML or virsh dumpxml output"),
+                true,
+            ),
         ];
 
         for (id, name, desc, available) in &sources {
@@ -431,6 +444,8 @@ impl ImportDialog {
             "rdm_file" => "Remote Desktop Manager",
             "mobaxterm_file" => "MobaXterm",
             "vv_file" => "Virt-Viewer",
+            "libvirt" => "Libvirt / GNOME Boxes",
+            "libvirt_file" => "Libvirt XML",
             _ => "Unknown",
         }
     }
@@ -783,6 +798,21 @@ impl ImportDialog {
 
                 if source_id == "mobaxterm_file" {
                     Self::handle_mobaxterm_file_import(
+                        parent_window.as_ref(),
+                        &stack,
+                        &progress_bar,
+                        &progress_label,
+                        &result_label,
+                        &result_details,
+                        &result_cell,
+                        &source_name_cell,
+                        btn,
+                    );
+                    return;
+                }
+
+                if source_id == "libvirt_file" {
+                    Self::handle_libvirt_file_import(
                         parent_window.as_ref(),
                         &stack,
                         &progress_bar,
@@ -1271,6 +1301,20 @@ impl ImportDialog {
 
                 Self::import_or_error(importer.import(), "Ansible inventory")
             }
+            "libvirt" => {
+                let importer = LibvirtXmlImporter::new();
+                let paths = importer.default_paths();
+                let total = paths.len().max(1);
+
+                for (i, path) in paths.iter().enumerate() {
+                    reporter.report(i, total, &format!("Importing from {}...", path.display()));
+                    if reporter.is_cancelled() {
+                        return ImportResult::default();
+                    }
+                }
+
+                Self::import_or_error(importer.import(), "Libvirt")
+            }
             _ => ImportResult::default(),
         };
 
@@ -1646,6 +1690,95 @@ impl ImportDialog {
                     }
                 } else {
                     // User cancelled file selection - return to source page
+                    stack_clone.set_visible_child_name("source");
+                    btn_clone.set_sensitive(true);
+                }
+            },
+        );
+    }
+
+    /// Handles importing from a libvirt domain XML file
+    #[allow(clippy::too_many_arguments)]
+    fn handle_libvirt_file_import(
+        parent_window: Option<&gtk4::Window>,
+        stack: &Stack,
+        progress_bar: &ProgressBar,
+        progress_label: &Label,
+        result_label: &Label,
+        result_details: &Label,
+        result_cell: &Rc<RefCell<Option<ImportResult>>>,
+        source_name_cell: &Rc<RefCell<String>>,
+        btn: &Button,
+    ) {
+        let file_dialog = gtk4::FileDialog::builder()
+            .title(i18n("Select Libvirt Domain XML File"))
+            .modal(true)
+            .build();
+
+        let filter = gtk4::FileFilter::new();
+        filter.add_pattern("*.xml");
+        filter.set_name(Some(&i18n("XML files (*.xml)")));
+        let all_filter = gtk4::FileFilter::new();
+        all_filter.add_pattern("*");
+        all_filter.set_name(Some(&i18n("All files")));
+        let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
+        filters.append(&filter);
+        filters.append(&all_filter);
+        file_dialog.set_filters(Some(&filters));
+
+        let stack_clone = stack.clone();
+        let progress_bar_clone = progress_bar.clone();
+        let progress_label_clone = progress_label.clone();
+        let result_label_clone = result_label.clone();
+        let result_details_clone = result_details.clone();
+        let result_cell_clone = result_cell.clone();
+        let source_name_cell_clone = source_name_cell.clone();
+        let btn_clone = btn.clone();
+
+        file_dialog.open(
+            parent_window,
+            gtk4::gio::Cancellable::NONE,
+            move |file_result| {
+                if let Ok(file) = file_result {
+                    if let Some(path) = file.path() {
+                        stack_clone.set_visible_child_name("progress");
+                        btn_clone.set_sensitive(false);
+                        progress_bar_clone.set_fraction(0.5);
+                        progress_label_clone
+                            .set_text(&format!("Importing from {}...", path.display()));
+
+                        let importer = LibvirtXmlImporter::new();
+                        let result =
+                            Self::import_or_error(importer.import_from_path(&path), "Libvirt XML");
+
+                        let filename = path.file_name().map_or_else(
+                            || "Libvirt XML".to_string(),
+                            |n| n.to_string_lossy().to_string(),
+                        );
+
+                        source_name_cell_clone.borrow_mut().clone_from(&filename);
+
+                        progress_bar_clone.set_fraction(1.0);
+
+                        let conn_count = result.connections.len();
+                        let group_count = result.groups.len();
+                        let summary = format!(
+                            "Successfully imported {conn_count} connection(s) \
+                             and {group_count} group(s).\n\
+                             Connections will be added to \
+                             '{filename} Import' group."
+                        );
+                        result_label_clone.set_text(&summary);
+
+                        let details = Self::format_import_details(&result);
+                        result_details_clone.set_text(&details);
+
+                        *result_cell_clone.borrow_mut() = Some(result);
+                        stack_clone.set_visible_child_name("result");
+                        btn_clone.set_label(&i18n("Done"));
+                        btn_clone.set_sensitive(true);
+                    }
+                } else {
                     stack_clone.set_visible_child_name("source");
                     btn_clone.set_sensitive(true);
                 }

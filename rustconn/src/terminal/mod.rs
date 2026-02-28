@@ -30,9 +30,10 @@ use vte4::{PtyFlags, Terminal};
 use crate::automation::{AutomationSession, Trigger};
 use crate::embedded_rdp::EmbeddedRdpWidget;
 use crate::embedded_spice::EmbeddedSpiceWidget;
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 use crate::session::{SessionState, SessionWidget, VncSessionWidget};
 use crate::split_view::TabSplitManager;
+use rustconn_core::automation::{KeyElement, KeySequence};
 use rustconn_core::split::TabId;
 use rustconn_core::split::tab_groups::TabGroupManager;
 
@@ -69,6 +70,14 @@ pub struct TerminalNotebook {
     color_tabs_by_protocol: Rc<RefCell<bool>>,
     /// Tab group manager for assigning colors to named groups
     tab_group_manager: Rc<RefCell<TabGroupManager>>,
+    /// Callback for reconnect button clicks (session_id, connection_id)
+    on_reconnect: Rc<RefCell<Option<Box<dyn Fn(Uuid, Uuid)>>>>,
+    /// Cluster terminal tracking: cluster_id → Vec<session_id>
+    cluster_sessions: Rc<RefCell<HashMap<Uuid, Vec<Uuid>>>>,
+    /// Reverse lookup: session_id → cluster_id
+    session_to_cluster: Rc<RefCell<HashMap<Uuid, Uuid>>>,
+    /// Broadcast mode flags per cluster: cluster_id → broadcast enabled
+    cluster_broadcast_flags: Rc<RefCell<HashMap<Uuid, Rc<std::cell::Cell<bool>>>>>,
 }
 
 impl TerminalNotebook {
@@ -121,6 +130,10 @@ impl TerminalNotebook {
             session_tab_ids: Rc::new(RefCell::new(HashMap::new())),
             color_tabs_by_protocol: Rc::new(RefCell::new(false)),
             tab_group_manager: Rc::new(RefCell::new(TabGroupManager::new())),
+            on_reconnect: Rc::new(RefCell::new(None)),
+            cluster_sessions: Rc::new(RefCell::new(HashMap::new())),
+            session_to_cluster: Rc::new(RefCell::new(HashMap::new())),
+            cluster_broadcast_flags: Rc::new(RefCell::new(HashMap::new())),
         };
 
         term_notebook.setup_tab_view_signals();
@@ -507,6 +520,7 @@ impl TerminalNotebook {
             && !cfg.expect_rules.is_empty()
         {
             let mut triggers = Vec::new();
+            let now = std::time::Instant::now();
             for rule in &cfg.expect_rules {
                 if !rule.enabled {
                     continue;
@@ -515,8 +529,15 @@ impl TerminalNotebook {
                     triggers.push(Trigger {
                         pattern: regex,
                         response: rule.response.clone(),
-                        one_shot: true,
+                        one_shot: rule.one_shot,
+                        timeout_ms: rule.timeout_ms,
+                        created_at: now,
                     });
+                } else {
+                    tracing::warn!(
+                        pattern = %rule.pattern,
+                        "Skipping expect rule with invalid regex"
+                    );
                 }
             }
 
@@ -570,6 +591,7 @@ impl TerminalNotebook {
                 history_entry_id: None,
                 tab_group: None,
                 tab_color_index: None,
+                connected_at: chrono::Utc::now(),
             },
         );
 
@@ -635,6 +657,7 @@ impl TerminalNotebook {
                 history_entry_id: None,
                 tab_group: None,
                 tab_color_index: None,
+                connected_at: chrono::Utc::now(),
             },
         );
 
@@ -698,6 +721,7 @@ impl TerminalNotebook {
                 history_entry_id: None,
                 tab_group: None,
                 tab_color_index: None,
+                connected_at: chrono::Utc::now(),
             },
         );
 
@@ -746,6 +770,7 @@ impl TerminalNotebook {
                 history_entry_id: None,
                 tab_group: None,
                 tab_color_index: None,
+                connected_at: chrono::Utc::now(),
             },
         );
 
@@ -787,6 +812,7 @@ impl TerminalNotebook {
                 history_entry_id: None,
                 tab_group: None,
                 tab_color_index: None,
+                connected_at: chrono::Utc::now(),
             },
         );
 
@@ -952,6 +978,14 @@ impl TerminalNotebook {
 
         let env_refs: Vec<&str> = env_vec.iter().map(gtk4::glib::GString::as_str).collect();
 
+        // Capture command name for error reporting
+        let command_name = argv.first().unwrap_or(&"").to_string();
+
+        // Capture Rc references for the spawn error callback
+        let sessions_rc = self.sessions.clone();
+        let session_info_rc = self.session_info.clone();
+        let on_reconnect_rc = self.on_reconnect.clone();
+
         terminal.spawn_async(
             PtyFlags::DEFAULT,
             working_directory,
@@ -961,9 +995,63 @@ impl TerminalNotebook {
             || {},
             -1,
             gio::Cancellable::NONE,
-            |result| {
+            move |result| {
                 if let Err(e) = result {
-                    tracing::error!(%e, "Failed to spawn command");
+                    tracing::error!(
+                        command = %command_name,
+                        %session_id,
+                        %e,
+                        "Failed to spawn command"
+                    );
+
+                    // Mark tab as disconnected and show reconnect overlay
+                    if let Some(page) = sessions_rc.borrow().get(&session_id) {
+                        page.set_indicator_icon(Some(&gio::ThemedIcon::new(
+                            "network-offline-symbolic",
+                        )));
+                        page.set_indicator_activatable(false);
+
+                        // Build reconnect banner inside the tab container
+                        if let Ok(container) = page.child().downcast::<GtkBox>() {
+                            let info = session_info_rc.borrow();
+                            let connection_id = info
+                                .get(&session_id)
+                                .map(|i| i.connection_id)
+                                .unwrap_or(Uuid::nil());
+                            drop(info);
+
+                            let banner = GtkBox::new(Orientation::Horizontal, 6);
+                            banner.set_margin_start(12);
+                            banner.set_margin_end(12);
+                            banner.set_margin_top(6);
+                            banner.set_margin_bottom(6);
+                            banner.set_halign(gtk4::Align::Center);
+                            banner.set_widget_name("reconnect-banner");
+
+                            let msg = i18n_f("Command not found: {}", &[&command_name]);
+                            let label = gtk4::Label::new(Some(&msg));
+                            label.add_css_class("dim-label");
+
+                            let button = gtk4::Button::with_label(&i18n("Reconnect"));
+                            button.add_css_class("suggested-action");
+                            button.set_tooltip_text(Some(&i18n("Reconnect to this session")));
+
+                            banner.append(&label);
+                            banner.append(&button);
+                            container.append(&banner);
+
+                            let on_reconnect = on_reconnect_rc.clone();
+                            button.connect_clicked(move |_| {
+                                if let Some(ref cb) = *on_reconnect.borrow() {
+                                    cb(session_id, connection_id);
+                                }
+                            });
+                        }
+                    }
+
+                    // Show toast on the nearest window
+                    let msg = i18n_f("'{}' is not installed", &[&command_name]);
+                    crate::toast::show_error_toast_on_active_window(&msg);
                 }
             },
         );
@@ -1094,6 +1182,75 @@ impl TerminalNotebook {
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             page.set_indicator_icon(gio::Icon::NONE);
         }
+    }
+
+    /// Shows a reconnect overlay banner at the bottom of a disconnected VTE tab
+    ///
+    /// Appends a horizontal bar with a "Session disconnected" label and a
+    /// "Reconnect" button to the tab's container. The button triggers the
+    /// `on_reconnect` callback with the session's connection ID.
+    pub fn show_reconnect_overlay(&self, session_id: Uuid) {
+        let Some(page) = self.sessions.borrow().get(&session_id).cloned() else {
+            return;
+        };
+        let Some(info) = self.session_info.borrow().get(&session_id).cloned() else {
+            return;
+        };
+
+        // Only for VTE-based protocols (SSH, Telnet, Serial, Kubernetes)
+        if matches!(info.protocol.as_str(), "rdp" | "vnc" | "spice") {
+            return;
+        }
+
+        let container = page.child().downcast::<GtkBox>().ok();
+        let Some(container) = container else {
+            return;
+        };
+
+        // Build the reconnect banner
+        let banner = GtkBox::new(Orientation::Horizontal, 6);
+        banner.set_margin_start(12);
+        banner.set_margin_end(12);
+        banner.set_margin_top(6);
+        banner.set_margin_bottom(6);
+        banner.set_halign(gtk4::Align::Center);
+        banner.set_widget_name("reconnect-banner");
+
+        let label = gtk4::Label::new(Some(&i18n("Session disconnected")));
+        label.add_css_class("dim-label");
+
+        let button = gtk4::Button::with_label(&i18n("Reconnect"));
+        button.add_css_class("suggested-action");
+        button.set_tooltip_text(Some(&i18n("Reconnect to this session")));
+
+        banner.append(&label);
+        banner.append(&button);
+        container.append(&banner);
+
+        // Wire up the reconnect button
+        let on_reconnect = self.on_reconnect.clone();
+        let connection_id = info.connection_id;
+        button.connect_clicked(move |_| {
+            if let Some(ref callback) = *on_reconnect.borrow() {
+                callback(session_id, connection_id);
+            }
+        });
+
+        tracing::info!(
+            %session_id,
+            protocol = %info.protocol,
+            "Reconnect overlay shown for disconnected session"
+        );
+    }
+
+    /// Sets the callback invoked when a reconnect button is clicked
+    ///
+    /// The callback receives `(session_id, connection_id)`.
+    pub fn set_on_reconnect<F>(&self, callback: F)
+    where
+        F: Fn(Uuid, Uuid) + 'static,
+    {
+        *self.on_reconnect.borrow_mut() = Some(Box::new(callback));
     }
 
     /// Sets a color indicator on a tab to show it's in a split pane
@@ -1300,6 +1457,73 @@ impl TerminalNotebook {
     #[must_use]
     pub fn get_terminal(&self, session_id: Uuid) -> Option<Terminal> {
         self.terminals.borrow().get(&session_id).cloned()
+    }
+
+    /// Executes a key sequence on a terminal session
+    ///
+    /// Sends text, special keys (as VTE escape codes), and handles
+    /// `{WAIT:ms}` delays using glib timers.
+    pub fn execute_key_sequence(&self, session_id: Uuid, sequence: &KeySequence) {
+        let Some(terminal) = self.get_terminal(session_id) else {
+            tracing::warn!(%session_id, "Cannot execute key sequence: terminal not found");
+            return;
+        };
+
+        tracing::info!(
+            %session_id,
+            elements = sequence.len(),
+            "Executing key sequence"
+        );
+
+        // Collect elements and schedule them with cumulative delay
+        let elements: Vec<KeyElement> = sequence.elements.clone();
+        let mut cumulative_delay_ms: u64 = 0;
+
+        for element in elements {
+            if let KeyElement::Wait(ms) = &element {
+                cumulative_delay_ms += u64::from(*ms);
+            } else {
+                let terminal_clone = terminal.clone();
+                let delay = cumulative_delay_ms;
+
+                match &element {
+                    KeyElement::Text(text) => {
+                        let text = text.clone();
+                        if delay == 0 {
+                            terminal_clone.feed_child(text.as_bytes());
+                        } else {
+                            glib::timeout_add_local_once(
+                                std::time::Duration::from_millis(delay),
+                                move || {
+                                    terminal_clone.feed_child(text.as_bytes());
+                                },
+                            );
+                        }
+                    }
+                    KeyElement::SpecialKey(key) => {
+                        let bytes = key.to_vte_bytes();
+                        if delay == 0 {
+                            terminal_clone.feed_child(bytes);
+                        } else {
+                            glib::timeout_add_local_once(
+                                std::time::Duration::from_millis(delay),
+                                move || {
+                                    terminal_clone.feed_child(bytes);
+                                },
+                            );
+                        }
+                    }
+                    KeyElement::Variable(name) => {
+                        // Variables should be substituted before reaching here
+                        tracing::warn!(
+                            variable = %name,
+                            "Unresolved variable in key sequence"
+                        );
+                    }
+                    KeyElement::Wait(_) => unreachable!(),
+                }
+            }
+        }
     }
 
     /// Gets the cursor row of a terminal session
@@ -1801,6 +2025,77 @@ impl TerminalNotebook {
         F: Fn(Uuid) + 'static,
     {
         *self.on_split_cleanup.borrow_mut() = Some(Box::new(callback));
+    }
+
+    // === Cluster terminal tracking ===
+
+    /// Registers a terminal session as part of a cluster
+    pub fn register_cluster_terminal(&self, cluster_id: Uuid, session_id: Uuid) {
+        self.cluster_sessions
+            .borrow_mut()
+            .entry(cluster_id)
+            .or_default()
+            .push(session_id);
+        self.session_to_cluster
+            .borrow_mut()
+            .insert(session_id, cluster_id);
+    }
+
+    /// Unregisters all terminals for a cluster
+    pub fn unregister_cluster(&self, cluster_id: Uuid) {
+        if let Some(sessions) = self.cluster_sessions.borrow_mut().remove(&cluster_id) {
+            let mut reverse = self.session_to_cluster.borrow_mut();
+            for sid in &sessions {
+                reverse.remove(sid);
+            }
+        }
+        self.cluster_broadcast_flags
+            .borrow_mut()
+            .remove(&cluster_id);
+    }
+
+    /// Gets all terminal session IDs for a cluster
+    pub fn get_cluster_sessions(&self, cluster_id: Uuid) -> Vec<Uuid> {
+        self.cluster_sessions
+            .borrow()
+            .get(&cluster_id)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    /// Gets the cluster ID for a terminal session, if any
+    #[allow(dead_code)] // Public API for future cluster status UI
+    pub fn get_session_cluster(&self, session_id: Uuid) -> Option<Uuid> {
+        self.session_to_cluster.borrow().get(&session_id).copied()
+    }
+
+    /// Sets broadcast mode for a cluster
+    pub fn set_cluster_broadcast(&self, cluster_id: Uuid, enabled: bool) {
+        let flag = self
+            .cluster_broadcast_flags
+            .borrow_mut()
+            .entry(cluster_id)
+            .or_insert_with(|| Rc::new(std::cell::Cell::new(false)))
+            .clone();
+        flag.set(enabled);
+    }
+
+    /// Gets the broadcast flag `Rc<Cell<bool>>` for a cluster (for use in closures)
+    pub fn get_cluster_broadcast_flag(&self, cluster_id: Uuid) -> Rc<std::cell::Cell<bool>> {
+        self.cluster_broadcast_flags
+            .borrow_mut()
+            .entry(cluster_id)
+            .or_insert_with(|| Rc::new(std::cell::Cell::new(false)))
+            .clone()
+    }
+
+    /// Checks if a cluster has any active terminal sessions
+    #[allow(dead_code)] // Public API for future cluster status UI
+    pub fn has_active_cluster_sessions(&self, cluster_id: Uuid) -> bool {
+        self.cluster_sessions
+            .borrow()
+            .get(&cluster_id)
+            .is_some_and(|sessions| !sessions.is_empty())
     }
 }
 

@@ -43,9 +43,9 @@ Directories (each uses `mod.rs` as entry point):
 | `config/` | `AppSettings`, `ConfigManager`, persistence |
 | `connection/` | Connection CRUD, lazy loading, virtual scroll, retry, selection, port checking, string interning |
 | `protocol/` | `Protocol` trait, `ProtocolRegistry`, per-protocol impls, client detection |
-| `import/` | Format importers (Remmina, Asbru-CM, SSH config, Ansible, MobaXterm, Royal TS, virt-viewer) |
+| `import/` | Format importers (Remmina, Asbru-CM, SSH config, Ansible, MobaXterm, Royal TS, virt-viewer, libvirt XML) |
 | `export/` | Format exporters, native format, batch export |
-| `secret/` | `SecretBackend` trait, `SecretManager`, KeePassXC, libsecret, Bitwarden, async credential resolution |
+| `secret/` | `SecretBackend` trait, `SecretManager`, KeePassXC, libsecret, Bitwarden, 1Password, Passbolt, Pass, async credential resolution |
 | `session/` | Session state, `SessionManager`, logging (`LogConfig`, `LogContext`) |
 | `automation/` | Expect scripts, key sequences, connection tasks |
 | `search/` | `SearchEngine`, fuzzy search with `SearchCache` and debouncing |
@@ -62,6 +62,7 @@ Directories (each uses `mod.rs` as entry point):
 | `performance/` | Memory optimization, metrics, string interning, object pooling, batch processing |
 | `testing/` | Connection testing framework |
 | `snippet/` | `SnippetManager` |
+| `template/` | `TemplateManager` — template CRUD, protocol filtering, search, import/export |
 | `ffi/` | FFI display types for embedded clients |
 
 Standalone files in `rustconn-core/src/`:
@@ -125,7 +126,7 @@ pub type SharedAppState = Rc<RefCell<AppState>>;
 
 - Pass `&SharedAppState` to functions needing mutable access.
 - Access via helpers: `with_state()`, `with_state_mut()`, `try_with_state()`, `try_with_state_mut()`.
-- Manager structs (`ConnectionManager`, `SessionManager`, `SecretManager`, `DocumentManager`, `ClusterManager`, `SnippetManager`) own data and handle I/O.
+- Manager structs (`ConnectionManager`, `SessionManager`, `SecretManager`, `ConfigManager`, `DocumentManager`, `ClusterManager`, `SnippetManager`, `TemplateManager`) own data and handle I/O.
 - `AppState` delegates to managers and provides convenience methods.
 - Credential cache uses `CachedCredentials` with TTL-based expiry (default 5 min).
 

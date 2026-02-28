@@ -248,6 +248,18 @@ pub fn bind_list_item(
             pin.set_visible(false);
         }
 
+        // Show connection count in tooltip
+        let child_count = if let Some(children) = row.children() {
+            children.n_items()
+        } else {
+            0
+        };
+        if child_count > 0 {
+            expander.set_tooltip_text(Some(&format!("{} ({child_count})", item.name())));
+        } else {
+            expander.set_tooltip_text(Some(&item.name().clone()));
+        }
+
         // Hide stale emoji label if icon is not emoji
         if let Some(first) = content_box.first_child()
             && first.css_classes().iter().any(|c| c == "emoji-icon")
@@ -306,6 +318,9 @@ pub fn bind_list_item(
         }
 
         set_label_text(&label, &item.name());
+
+        // Clear group tooltip for connections
+        expander.set_tooltip_text(None::<&str>);
 
         // Show pin icon for pinned connections
         if let Some(ref pin) = pin_icon {

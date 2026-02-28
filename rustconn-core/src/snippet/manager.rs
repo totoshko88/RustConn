@@ -430,6 +430,30 @@ impl SnippetManager {
         Self::substitute_variables(&snippet.command, &combined_values)
     }
 
+    /// Checks variable values for dangerous shell metacharacters
+    ///
+    /// Returns a list of variable names whose values contain potentially
+    /// dangerous shell metacharacters (`;`, `|`, `&`, `` ` ``, `$()`, etc.)
+    /// that could lead to command injection when executed via `sh -c`.
+    ///
+    /// This is a best-effort check — it does not guarantee safety.
+    /// Use it as a warning mechanism before shell execution.
+    #[must_use]
+    pub fn check_shell_safety(values: &HashMap<String, String>) -> Vec<String> {
+        /// Characters and patterns that are dangerous in shell context
+        const SHELL_METACHARACTERS: &[char] = &[';', '|', '&', '`', '$', '>', '<'];
+
+        values
+            .iter()
+            .filter(|(_, value)| {
+                value.chars().any(|c| SHELL_METACHARACTERS.contains(&c))
+                    || value.contains("$(")
+                    || value.contains("${")
+            })
+            .map(|(name, _)| name.clone())
+            .collect()
+    }
+
     /// Validates that all required variables have values
     ///
     /// # Arguments

@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.9.3
+Version:        0.9.4
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -201,6 +201,21 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Sun Mar 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.4-0
+- Session Reconnect — disconnected VTE tabs show a Reconnect banner
+- Recursive Group Delete — keep children, cascade, or cancel
+- Cluster broadcast mode wired — keyboard input broadcasts to all terminals
+- Libvirt / GNOME Boxes import — VNC, SPICE, RDP from domain XML (#38)
+- TemplateManager — centralized template CRUD with search, import/export
+- Snippet shell safety check before --execute
+- Settings Backup/Restore as ZIP archive
+- Automation templates — 5 built-in expect rule presets
+- Fixed password inheritance for PasswordSource::Variable (#37)
+- Fixed VTE spawn failure — banner + toast instead of silent empty terminal
+- Fixed cluster session lifecycle and disconnect-all
+- Automation engine: one-shot rules, template picker, pre/post-connect tasks
+- User Guide major rewrite
+
 * Fri Feb 27 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.3-0
 - Added Waypipe Support — Wayland application forwarding for SSH (#36)
 - Added IronRDP Clipboard Integration — Bidirectional clipboard sync

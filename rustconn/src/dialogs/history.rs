@@ -1,6 +1,7 @@
 //! Connection history dialog
 //!
-//! This module provides a dialog for viewing connection history.
+//! This module provides a dialog for viewing, searching, and managing
+//! connection history with per-entry deletion.
 
 use crate::i18n::i18n;
 use adw::prelude::*;
@@ -17,6 +18,8 @@ pub struct HistoryDialog {
     list_box: ListBox,
     entries: Rc<RefCell<Vec<ConnectionHistoryEntry>>>,
     on_connect: Rc<RefCell<Option<Box<dyn Fn(&ConnectionHistoryEntry) + 'static>>>>,
+    on_delete_entry: Rc<RefCell<Option<Box<dyn Fn(&ConnectionHistoryEntry) + 'static>>>>,
+    on_clear_all: Rc<RefCell<Option<Box<dyn Fn() + 'static>>>>,
     parent: Option<gtk4::Widget>,
 }
 
@@ -43,6 +46,18 @@ impl HistoryDialog {
         // Main content
         let content = GtkBox::new(Orientation::Vertical, 0);
 
+        // Search entry
+        let search_entry = gtk4::SearchEntry::builder()
+            .placeholder_text(i18n("Search history…"))
+            .hexpand(true)
+            .margin_top(12)
+            .margin_start(12)
+            .margin_end(12)
+            .margin_bottom(6)
+            .build();
+        search_entry.set_tooltip_text(Some(&i18n("Filter history by name, host, or protocol")));
+        content.append(&search_entry);
+
         // History list in scrolled window with clamp
         let scrolled = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -58,7 +73,7 @@ impl HistoryDialog {
         let list_box = ListBox::builder()
             .selection_mode(gtk4::SelectionMode::Single)
             .css_classes(["boxed-list"])
-            .margin_top(12)
+            .margin_top(6)
             .margin_bottom(12)
             .margin_start(12)
             .margin_end(12)
@@ -104,9 +119,12 @@ impl HistoryDialog {
             list_box: list_box.clone(),
             entries: Rc::new(RefCell::new(Vec::new())),
             on_connect: Rc::new(RefCell::new(None)),
+            on_delete_entry: Rc::new(RefCell::new(None)),
+            on_clear_all: Rc::new(RefCell::new(None)),
             parent: stored_parent,
         };
 
+        // Selection → enable Connect button
         let connect_btn_clone = connect_btn.clone();
         list_box.connect_row_selected(move |_, row| {
             connect_btn_clone.set_sensitive(row.is_some());
@@ -133,9 +151,31 @@ impl HistoryDialog {
             }
         });
 
+        // Search filtering
+        let list_box_search = hist.list_box.clone();
+        let entries_search = hist.entries.clone();
+        search_entry.connect_search_changed(move |entry| {
+            let query = entry.text().to_string().to_lowercase();
+            let entries_ref = entries_search.borrow();
+            #[allow(clippy::cast_possible_wrap)]
+            for (idx, e) in entries_ref.iter().enumerate() {
+                if let Some(row) = list_box_search.row_at_index(idx as i32) {
+                    let visible = query.is_empty()
+                        || e.connection_name.to_lowercase().contains(&query)
+                        || e.host.to_lowercase().contains(&query)
+                        || e.protocol.to_lowercase().contains(&query)
+                        || e.username
+                            .as_deref()
+                            .is_some_and(|u| u.to_lowercase().contains(&query));
+                    row.set_visible(visible);
+                }
+            }
+        });
+
         // Clear history button — show confirmation dialog before destructive action
         let entries_clear = hist.entries.clone();
         let list_box_clear = list_box;
+        let on_clear_all = hist.on_clear_all.clone();
         let dialog_weak = dialog.downgrade();
         clear_btn.connect_clicked(move |_| {
             let alert = adw::AlertDialog::builder()
@@ -152,11 +192,15 @@ impl HistoryDialog {
 
             let entries_ref = entries_clear.clone();
             let list_ref = list_box_clear.clone();
+            let on_clear = on_clear_all.clone();
             alert.connect_response(None, move |_, response| {
                 if response == "clear" {
                     entries_ref.borrow_mut().clear();
                     while let Some(row) = list_ref.row_at_index(0) {
                         list_ref.remove(&row);
+                    }
+                    if let Some(ref callback) = *on_clear.borrow() {
+                        callback();
                     }
                 }
             });
@@ -188,7 +232,7 @@ impl HistoryDialog {
         *self.entries.borrow_mut() = entries;
     }
 
-    /// Creates a list row for a history entry
+    /// Creates a list row for a history entry with a delete button
     fn create_history_row(&self, entry: &ConnectionHistoryEntry) -> ListBoxRow {
         let row = ListBoxRow::new();
 
@@ -246,9 +290,42 @@ impl HistoryDialog {
         let time_label = Label::builder()
             .label(&time_str)
             .halign(gtk4::Align::End)
+            .valign(gtk4::Align::Center)
             .css_classes(["dim-label", "caption"])
             .build();
         content.append(&time_label);
+
+        // Delete button for individual entry
+        let delete_btn = Button::builder()
+            .icon_name("edit-delete-symbolic")
+            .css_classes(["flat", "circular"])
+            .valign(gtk4::Align::Center)
+            .tooltip_text(i18n("Remove from history"))
+            .build();
+
+        let entries_ref = self.entries.clone();
+        let list_box_ref = self.list_box.clone();
+        let on_delete = self.on_delete_entry.clone();
+        let row_weak = row.downgrade();
+        delete_btn.connect_clicked(move |_| {
+            if let Some(r) = row_weak.upgrade() {
+                let index = r.index();
+                if index >= 0 {
+                    #[allow(clippy::cast_sign_loss)]
+                    let idx = index as usize;
+                    let mut entries = entries_ref.borrow_mut();
+                    if idx < entries.len() {
+                        let removed = entries.remove(idx);
+                        list_box_ref.remove(&r);
+                        drop(entries);
+                        if let Some(ref callback) = *on_delete.borrow() {
+                            callback(&removed);
+                        }
+                    }
+                }
+            }
+        });
+        content.append(&delete_btn);
 
         row.set_child(Some(&content));
         row
@@ -260,6 +337,22 @@ impl HistoryDialog {
         F: Fn(&ConnectionHistoryEntry) + 'static,
     {
         *self.on_connect.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// Connects a callback for when a single history entry is deleted
+    pub fn connect_on_delete_entry<F>(&self, callback: F)
+    where
+        F: Fn(&ConnectionHistoryEntry) + 'static,
+    {
+        *self.on_delete_entry.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// Connects a callback for when all history is cleared
+    pub fn connect_on_clear_all<F>(&self, callback: F)
+    where
+        F: Fn() + 'static,
+    {
+        *self.on_clear_all.borrow_mut() = Some(Box::new(callback));
     }
 
     /// Shows the dialog

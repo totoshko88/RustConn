@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-03-01
+
+### Added
+- **Session Reconnect** — disconnected VTE tabs show a "Reconnect" banner to re-launch in one click
+- **Recursive Group Delete** — three-option dialog: keep children, cascade delete, or cancel
+- **Connection History** — search/filter by name/host/protocol; per-entry delete
+- **Cluster from sidebar** — "Create Cluster" pre-selects checked connections
+- **Shortcut conflict detection** — warning when a keybinding is already assigned
+- **Settings Backup/Restore** — export/import all config as ZIP via Settings → Interface
+- **Libvirt / GNOME Boxes import** — VNC, SPICE, RDP from domain XML; auto-scans qemu dirs ([#38](https://github.com/totoshko88/RustConn/issues/38))
+- **Automation templates** — 5 built-in expect rule presets (Sudo, SSH Host Key, Login, etc.)
+- **TemplateManager** — centralized template CRUD with search, protocol filtering, import/export
+- **Snippet shell safety** — warns about dangerous metacharacters in variable values before `--execute`
+
+### Fixed
+- **Password inheritance** — `PasswordSource::Variable` now resolved in group hierarchy ([#37](https://github.com/totoshko88/RustConn/issues/37))
+- **New connection in wrong group** — context menu now pre-selects the target group ([#37](https://github.com/totoshko88/RustConn/issues/37))
+- **Toast system** — severity icons, "Retry" on port-check failures, `AlertDialog` fallback, i18n
+- **VTE spawn failure** — missing command shows "Command not found" banner + error toast instead of silent empty terminal
+- **Cluster broadcast** — keyboard input now actually broadcasts to all cluster terminals; session lifecycle wired; disconnect-all button; full i18n
+- **Pango markup** — escaped ampersand in "Backup & Restore" settings title
+- **Adwaita dark theme warning** — suppressed on KDE/XFCE desktops
+
+### Improved
+- **User Guide** — major rewrite: Zero Trust, Security, FAQ, Migration Guide, expanded all sections
+- **Automation engine** — one-shot rules, per-rule timeout, regex validation, template picker, pre-connect/post-disconnect tasks, key sequences on connect
+- **Template management** — CLI and GUI migrated to `TemplateManager`; GUI keeps document integration
+
+### Dependencies
+- **Updated**: js-sys 0.3.90→0.3.91, pin-project-lite 0.2.16→0.2.17, wasm-bindgen 0.2.113→0.2.114, web-sys 0.3.90→0.3.91
+
 ## [0.9.3] - 2026-02-27
 
 ### Added

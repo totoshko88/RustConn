@@ -242,6 +242,167 @@ impl SettingsDialog {
         // Initialize SSH Agent manager from environment
         let ssh_agent_manager = Rc::new(RefCell::new(SshAgentManager::from_env()));
 
+        // === Backup / Restore group on the UI page ===
+        let backup_group = adw::PreferencesGroup::builder()
+            .title(gtk4::glib::markup_escape_text(&i18n("Backup & Restore")))
+            .description(i18n("Export or import all settings as a ZIP archive"))
+            .build();
+
+        let backup_btn = Button::builder()
+            .label(i18n("Backup Settings…"))
+            .tooltip_text(i18n("Save all configuration files to a ZIP archive"))
+            .build();
+        let restore_btn = Button::builder()
+            .label(i18n("Restore Settings…"))
+            .tooltip_text(i18n(
+                "Load configuration from a ZIP archive (restart required)",
+            ))
+            .css_classes(["destructive-action"])
+            .build();
+
+        let btn_box = GtkBox::builder()
+            .orientation(gtk4::Orientation::Horizontal)
+            .spacing(12)
+            .halign(gtk4::Align::Center)
+            .margin_top(6)
+            .margin_bottom(6)
+            .build();
+        btn_box.append(&backup_btn);
+        btn_box.append(&restore_btn);
+        backup_group.add(&btn_box);
+        ui_page.add(&backup_group);
+
+        // Backup handler
+        let dialog_weak = dialog.downgrade();
+        backup_btn.connect_clicked(move |_| {
+            let Some(dlg) = dialog_weak.upgrade() else {
+                return;
+            };
+            let Some(root) = dlg.root() else { return };
+            let Some(win) = root.downcast_ref::<gtk4::Window>() else {
+                return;
+            };
+            let file_dialog = gtk4::FileDialog::builder()
+                .title(i18n("Save Backup"))
+                .initial_name("rustconn-backup.zip")
+                .build();
+            let filter = gtk4::FileFilter::new();
+            filter.add_pattern("*.zip");
+            filter.set_name(Some("ZIP archives"));
+            let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
+            filters.append(&filter);
+            file_dialog.set_filters(Some(&filters));
+
+            let win_clone = win.clone();
+            file_dialog.save(Some(win), None::<&gtk4::gio::Cancellable>, move |result| {
+                let Ok(file) = result else { return };
+                let Some(path) = file.path() else { return };
+                match rustconn_core::config::ConfigManager::new() {
+                    Ok(mgr) => match mgr.backup_to_archive(&path) {
+                        Ok(count) => {
+                            let msg = crate::i18n::i18n_f(
+                                "Backup saved ({} files)",
+                                &[&count.to_string()],
+                            );
+                            crate::toast::show_toast_on_window(
+                                &win_clone,
+                                &msg,
+                                crate::toast::ToastType::Success,
+                            );
+                        }
+                        Err(e) => {
+                            tracing::error!(?e, "Settings backup failed");
+                            crate::alert::show_error(
+                                &win_clone,
+                                &crate::i18n::i18n("Backup Error"),
+                                &e.to_string(),
+                            );
+                        }
+                    },
+                    Err(e) => {
+                        tracing::error!(?e, "Cannot create ConfigManager for backup");
+                    }
+                }
+            });
+        });
+
+        // Restore handler
+        let dialog_weak = dialog.downgrade();
+        restore_btn.connect_clicked(move |_| {
+            let Some(dlg) = dialog_weak.upgrade() else {
+                return;
+            };
+            let Some(root) = dlg.root() else { return };
+            let Some(win) = root.downcast_ref::<gtk4::Window>() else {
+                return;
+            };
+            let file_dialog = gtk4::FileDialog::builder()
+                .title(i18n("Open Backup"))
+                .build();
+            let filter = gtk4::FileFilter::new();
+            filter.add_pattern("*.zip");
+            filter.set_name(Some("ZIP archives"));
+            let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
+            filters.append(&filter);
+            file_dialog.set_filters(Some(&filters));
+
+            let win_clone = win.clone();
+            file_dialog.open(Some(win), None::<&gtk4::gio::Cancellable>, move |result| {
+                let Ok(file) = result else { return };
+                let Some(path) = file.path() else { return };
+
+                // Confirm before overwriting
+                let confirm = adw::AlertDialog::new(
+                    Some(&crate::i18n::i18n("Restore Settings?")),
+                    Some(&crate::i18n::i18n(
+                        "This will overwrite current settings. A restart is required to apply changes.",
+                    )),
+                );
+                confirm.add_response("cancel", &crate::i18n::i18n("Cancel"));
+                confirm.add_response("restore", &crate::i18n::i18n("Restore"));
+                confirm.set_response_appearance("restore", adw::ResponseAppearance::Destructive);
+                confirm.set_default_response(Some("cancel"));
+                confirm.set_close_response("cancel");
+
+                let win_inner = win_clone.clone();
+                let path_clone = path.clone();
+                confirm.connect_response(None, move |_, response| {
+                    if response != "restore" {
+                        return;
+                    }
+                    match rustconn_core::config::ConfigManager::new() {
+                        Ok(mgr) => match mgr.restore_from_archive(&path_clone) {
+                            Ok(count) => {
+                                let msg = crate::i18n::i18n_f(
+                                    "Restored {} files. Restart to apply.",
+                                    &[&count.to_string()],
+                                );
+                                crate::toast::show_toast_on_window(
+                                    &win_inner,
+                                    &msg,
+                                    crate::toast::ToastType::Success,
+                                );
+                            }
+                            Err(e) => {
+                                tracing::error!(?e, "Settings restore failed");
+                                crate::alert::show_error(
+                                    &win_inner,
+                                    &crate::i18n::i18n("Restore Error"),
+                                    &e.to_string(),
+                                );
+                            }
+                        },
+                        Err(e) => {
+                            tracing::error!(?e, "Cannot create ConfigManager for restore");
+                        }
+                    }
+                });
+
+                let widget = win_clone.upcast_ref::<gtk4::Widget>();
+                confirm.present(Some(widget));
+            });
+        });
+
         Self {
             dialog,
             font_family_entry,

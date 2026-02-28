@@ -198,6 +198,37 @@ fn create_authentication_group() -> (
         &agent_key_dropdown,
     );
 
+    // Inline validation: check key file exists when path is entered manually
+    {
+        let entry_clone = key_entry.clone();
+        key_entry.connect_changed(move |_| {
+            let path_text = entry_clone.text();
+            let path_str = path_text.trim();
+            if path_str.is_empty() {
+                entry_clone.remove_css_class("error");
+                entry_clone.set_tooltip_text(None);
+                return;
+            }
+            // Expand ~ to home directory
+            let expanded = if let Some(rest) = path_str.strip_prefix("~/") {
+                if let Some(home) = std::env::var_os("HOME") {
+                    std::path::PathBuf::from(home).join(rest)
+                } else {
+                    std::path::PathBuf::from(path_str)
+                }
+            } else {
+                std::path::PathBuf::from(path_str)
+            };
+            if expanded.exists() {
+                entry_clone.remove_css_class("error");
+                entry_clone.set_tooltip_text(None);
+            } else {
+                entry_clone.add_css_class("error");
+                entry_clone.set_tooltip_text(Some(&i18n("Key file not found")));
+            }
+        });
+    }
+
     // Connect auth method dropdown to show/hide key-related rows
     connect_auth_method_visibility(
         &auth_dropdown,

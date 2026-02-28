@@ -112,8 +112,10 @@ impl ClusterDialog {
         details_group.add(&name_row);
 
         // Broadcast mode switch row
-        let broadcast_row = super::widgets::SwitchRowBuilder::new("Broadcast mode")
-            .subtitle("Send keyboard input to all cluster sessions simultaneously")
+        let broadcast_row = super::widgets::SwitchRowBuilder::new(&i18n("Broadcast mode"))
+            .subtitle(&i18n(
+                "Send keyboard input to all cluster sessions simultaneously",
+            ))
             .active(false)
             .build();
         details_group.add(&broadcast_row);
@@ -328,6 +330,14 @@ impl ClusterDialog {
         }
     }
 
+    /// Pre-selects connections by their IDs (for creating cluster from sidebar selection)
+    pub fn pre_select_connections(&self, selected_ids: &[Uuid]) {
+        for row in self.connection_rows.borrow().iter() {
+            let is_selected = selected_ids.contains(&row.connection_id);
+            row.selected_check.set_active(is_selected);
+        }
+    }
+
     /// Runs the dialog and calls the callback with the result
     pub fn run<F: Fn(Option<Cluster>) + 'static>(&self, cb: F) {
         *self.on_save.borrow_mut() = Some(Box::new(cb));
@@ -347,6 +357,7 @@ pub struct ClusterListDialog {
     clusters_list: ListBox,
     cluster_rows: Rc<RefCell<Vec<ClusterListRow>>>,
     on_connect: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>,
+    on_disconnect: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>,
     on_edit: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>,
     on_delete: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>,
     on_new: Rc<RefCell<Option<Box<dyn Fn()>>>>,
@@ -367,6 +378,8 @@ struct ClusterListRow {
     count_label: Label,
     /// Connect button
     connect_button: Button,
+    /// Disconnect button
+    disconnect_button: Button,
     /// Edit button
     edit_button: Button,
     /// Delete button
@@ -446,6 +459,7 @@ impl ClusterListDialog {
         content.append(&scrolled);
 
         let on_connect: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>> = Rc::new(RefCell::new(None));
+        let on_disconnect: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>> = Rc::new(RefCell::new(None));
         let on_edit: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>> = Rc::new(RefCell::new(None));
         let on_delete: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>> = Rc::new(RefCell::new(None));
         let on_new: Rc<RefCell<Option<Box<dyn Fn()>>>> = Rc::new(RefCell::new(None));
@@ -466,6 +480,7 @@ impl ClusterListDialog {
             clusters_list,
             cluster_rows,
             on_connect,
+            on_disconnect,
             on_edit,
             on_delete,
             on_new,
@@ -523,6 +538,12 @@ impl ClusterListDialog {
             .css_classes(["flat"])
             .build();
 
+        let disconnect_button = Button::builder()
+            .icon_name("media-playback-stop-symbolic")
+            .tooltip_text(&i18n("Disconnect all cluster sessions"))
+            .css_classes(["flat"])
+            .build();
+
         let edit_button = Button::builder()
             .icon_name("document-edit-symbolic")
             .tooltip_text(&i18n("Edit cluster"))
@@ -536,6 +557,7 @@ impl ClusterListDialog {
             .build();
 
         hbox.append(&connect_button);
+        hbox.append(&disconnect_button);
         hbox.append(&edit_button);
         hbox.append(&delete_button);
 
@@ -547,6 +569,7 @@ impl ClusterListDialog {
             name_label,
             count_label,
             connect_button,
+            disconnect_button,
             edit_button,
             delete_button,
         }
@@ -592,6 +615,13 @@ impl ClusterListDialog {
                 }
             });
 
+            let on_disconnect_clone = self.on_disconnect.clone();
+            cluster_row.disconnect_button.connect_clicked(move |_| {
+                if let Some(ref cb) = *on_disconnect_clone.borrow() {
+                    cb(cluster_id);
+                }
+            });
+
             let on_edit_clone = self.on_edit.clone();
             cluster_row.edit_button.connect_clicked(move |_| {
                 if let Some(ref cb) = *on_edit_clone.borrow() {
@@ -614,6 +644,11 @@ impl ClusterListDialog {
     /// Sets the callback for connecting to a cluster
     pub fn set_on_connect<F: Fn(Uuid) + 'static>(&self, cb: F) {
         *self.on_connect.borrow_mut() = Some(Box::new(cb));
+    }
+
+    /// Sets the callback for disconnecting all sessions in a cluster
+    pub fn set_on_disconnect<F: Fn(Uuid) + 'static>(&self, cb: F) {
+        *self.on_disconnect.borrow_mut() = Some(Box::new(cb));
     }
 
     /// Sets the callback for editing a cluster

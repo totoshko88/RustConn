@@ -48,14 +48,22 @@ pub fn show_confirm<F>(
     dialog.present(Some(parent));
 }
 
-/// Shows an error alert
+/// Shows an error alert with error heading prefix
 pub fn show_error(parent: &impl IsA<gtk4::Widget>, heading: &str, body: &str) {
-    show_alert(parent, heading, body);
+    let dialog = adw::AlertDialog::new(Some(heading), Some(body));
+    dialog.add_response("ok", &i18n("OK"));
+    dialog.set_default_response(Some("ok"));
+    dialog.set_response_appearance("ok", adw::ResponseAppearance::Destructive);
+    dialog.present(Some(parent));
 }
 
-/// Shows a success alert
+/// Shows a success alert — prefer `Toast` for non-blocking success feedback
 pub fn show_success(parent: &impl IsA<gtk4::Widget>, heading: &str, body: &str) {
-    show_alert(parent, heading, body);
+    let dialog = adw::AlertDialog::new(Some(heading), Some(body));
+    dialog.add_response("ok", &i18n("OK"));
+    dialog.set_default_response(Some("ok"));
+    dialog.set_response_appearance("ok", adw::ResponseAppearance::Suggested);
+    dialog.present(Some(parent));
 }
 
 /// Shows a validation error alert

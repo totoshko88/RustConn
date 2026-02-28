@@ -70,6 +70,14 @@ pub struct ExpectRule {
     pub timeout_ms: Option<u32>,
     /// Whether this rule is enabled
     pub enabled: bool,
+    /// Whether this rule should only fire once (default: true)
+    #[serde(default = "default_one_shot")]
+    pub one_shot: bool,
+}
+
+/// Default value for `one_shot` — true for backward compatibility
+const fn default_one_shot() -> bool {
+    true
 }
 
 impl ExpectRule {
@@ -88,6 +96,7 @@ impl ExpectRule {
             priority: 0,
             timeout_ms: None,
             enabled: true,
+            one_shot: true,
         }
     }
 
@@ -101,6 +110,7 @@ impl ExpectRule {
             priority: 0,
             timeout_ms: None,
             enabled: true,
+            one_shot: true,
         }
     }
 
@@ -122,6 +132,13 @@ impl ExpectRule {
     #[must_use]
     pub const fn with_enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
+        self
+    }
+
+    /// Sets whether this rule fires only once
+    #[must_use]
+    pub const fn with_one_shot(mut self, one_shot: bool) -> Self {
+        self.one_shot = one_shot;
         self
     }
 
@@ -159,6 +176,7 @@ impl PartialEq for ExpectRule {
             && self.priority == other.priority
             && self.timeout_ms == other.timeout_ms
             && self.enabled == other.enabled
+            && self.one_shot == other.one_shot
     }
 }
 

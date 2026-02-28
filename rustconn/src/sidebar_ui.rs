@@ -75,6 +75,22 @@ pub fn show_context_menu_for_item(
         menu_box.append(&pin_btn);
     }
 
+    // New Connection in Group (groups only)
+    if is_group {
+        let new_conn_btn = create_menu_button(&i18n("New Connection in Group"));
+        let win = window_clone.clone();
+        let popover_c = popover_ref.clone();
+        new_conn_btn.connect_clicked(move |_| {
+            if let Some(p) = popover_c.upgrade() {
+                p.popdown();
+            }
+            if let Some(action) = win.lookup_action("new-connection-in-group") {
+                action.activate(None);
+            }
+        });
+        menu_box.append(&new_conn_btn);
+    }
+
     let edit_btn = create_menu_button(&i18n("Edit"));
     let win = window_clone.clone();
     let popover_c = popover_ref.clone();
@@ -253,6 +269,15 @@ pub fn create_bulk_actions_bar() -> GtkBox {
         "Move selected connections to group",
     )]);
     bar.append(&move_button);
+
+    // Create Cluster button
+    let cluster_button = Button::with_label(&i18n("Create Cluster"));
+    cluster_button.set_tooltip_text(Some(&i18n("Create a cluster from selected connections")));
+    cluster_button.set_action_name(Some("win.cluster-from-selection"));
+    cluster_button.update_property(&[gtk4::accessible::Property::Label(
+        "Create cluster from selected connections",
+    )]);
+    bar.append(&cluster_button);
 
     // Select All button
     let select_all_button = Button::with_label(&i18n("Select All"));

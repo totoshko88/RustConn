@@ -204,6 +204,51 @@ impl SpecialKey {
     }
 }
 
+impl SpecialKey {
+    /// Returns the VTE/ANSI escape sequence bytes for this special key
+    ///
+    /// These are standard terminal escape codes compatible with VTE and
+    /// most terminal emulators.
+    #[must_use]
+    pub const fn to_vte_bytes(&self) -> &'static [u8] {
+        match self {
+            Self::Enter => b"\r",
+            Self::Tab => b"\t",
+            Self::Escape => b"\x1b",
+            Self::Backspace => b"\x7f",
+            Self::Delete => b"\x1b[3~",
+            Self::Up => b"\x1b[A",
+            Self::Down => b"\x1b[B",
+            Self::Left => b"\x1b[D",
+            Self::Right => b"\x1b[C",
+            Self::Home => b"\x1b[H",
+            Self::End => b"\x1b[F",
+            Self::PageUp => b"\x1b[5~",
+            Self::PageDown => b"\x1b[6~",
+            Self::Insert => b"\x1b[2~",
+            Self::F1 => b"\x1bOP",
+            Self::F2 => b"\x1bOQ",
+            Self::F3 => b"\x1bOR",
+            Self::F4 => b"\x1bOS",
+            Self::F5 => b"\x1b[15~",
+            Self::F6 => b"\x1b[17~",
+            Self::F7 => b"\x1b[18~",
+            Self::F8 => b"\x1b[19~",
+            Self::F9 => b"\x1b[20~",
+            Self::F10 => b"\x1b[21~",
+            Self::F11 => b"\x1b[23~",
+            Self::F12 => b"\x1b[24~",
+            Self::CtrlC => b"\x03",
+            Self::CtrlD => b"\x04",
+            Self::CtrlZ => b"\x1a",
+            Self::CtrlA => b"\x01",
+            Self::CtrlE => b"\x05",
+            Self::CtrlL => b"\x0c",
+            Self::Space => b" ",
+        }
+    }
+}
+
 impl fmt::Display for SpecialKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{{}}}", self.as_str())

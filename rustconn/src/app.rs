@@ -86,6 +86,17 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
                 "Forced Adwaita icon theme for consistent icon availability"
             );
         }
+
+        // Suppress the libadwaita warning about gtk-application-prefer-dark-theme.
+        // Some desktop environments (KDE, XFCE) set this property globally.
+        // Libadwaita uses AdwStyleManager::color-scheme instead, so we clear
+        // the deprecated property to avoid the runtime warning.
+        if settings.is_gtk_application_prefer_dark_theme() {
+            settings.set_gtk_application_prefer_dark_theme(false);
+            tracing::debug!(
+                "Cleared deprecated gtk-application-prefer-dark-theme (using AdwStyleManager)"
+            );
+        }
     }
 
     // Create shared application state (fast — secret backends deferred)
@@ -165,6 +176,7 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     // unlock runs in a background thread to avoid blocking the GTK main loop.
     let state_for_secrets = state.clone();
     let sidebar_for_secrets = window.sidebar_rc();
+    let window_for_secrets = window.gtk_window().downgrade();
     glib::idle_add_local_once(move || {
         // Phase 1: Decrypt stored credentials (fast, needs &mut self)
         {
@@ -231,11 +243,13 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
             // Poll for the result on the GTK main thread (non-blocking)
             let state_for_poll = state_for_secrets.clone();
             let sidebar_for_poll = sidebar_for_secrets.clone();
+            let window_for_poll = window_for_secrets.clone();
             glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
                 match rx.try_recv() {
                     Ok(_) => {
                         state_for_poll.borrow_mut().refresh_secret_backend_cache();
                         refresh_sidebar_secret_status(&state_for_poll, &sidebar_for_poll);
+                        check_secret_backend_available(&state_for_poll, &window_for_poll);
                         tracing::info!("Secret backends initialized after window presentation");
                         glib::ControlFlow::Break
                     }
@@ -243,6 +257,7 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
                     Err(std::sync::mpsc::TryRecvError::Disconnected) => {
                         state_for_poll.borrow_mut().refresh_secret_backend_cache();
                         refresh_sidebar_secret_status(&state_for_poll, &sidebar_for_poll);
+                        check_secret_backend_available(&state_for_poll, &window_for_poll);
                         tracing::warn!("Bitwarden unlock thread disconnected");
                         glib::ControlFlow::Break
                     }
@@ -254,6 +269,7 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
                 .borrow_mut()
                 .refresh_secret_backend_cache();
             refresh_sidebar_secret_status(&state_for_secrets, &sidebar_for_secrets);
+            check_secret_backend_available(&state_for_secrets, &window_for_secrets);
             tracing::info!("Secret backends initialized after window presentation");
         }
     });
@@ -448,6 +464,30 @@ fn refresh_sidebar_secret_status(
         }
     };
     sidebar.update_keepass_status(enabled, database_exists);
+}
+
+/// Shows a one-time warning toast if the preferred secret backend is unavailable.
+fn check_secret_backend_available(
+    state: &SharedAppState,
+    window_weak: &glib::WeakRef<adw::ApplicationWindow>,
+) {
+    let state_ref = state.borrow();
+    let backend = state_ref.settings().secrets.preferred_backend;
+
+    // Only warn for non-default backends (LibSecret is always the fallback)
+    if matches!(backend, rustconn_core::config::SecretBackendType::LibSecret) {
+        return;
+    }
+
+    let available = state_ref.has_secret_backend();
+    drop(state_ref);
+
+    if !available && let Some(win) = window_weak.upgrade() {
+        let backend_name = format!("{backend:?}");
+        let msg = crate::i18n::i18n_f("{} backend unavailable. Using fallback.", &[&backend_name]);
+        tracing::warn!(backend = %backend_name, "Preferred secret backend unavailable at startup");
+        crate::toast::show_toast_on_window(&win, &msg, crate::toast::ToastType::Warning);
+    }
 }
 
 /// Loads CSS styles for the application

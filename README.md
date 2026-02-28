@@ -5,7 +5,7 @@ Manage remote connections easily.
 RustConn is a connection orchestrator for Linux with a GTK4/Wayland-native interface.
 It brings SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust connections under one roof — with embedded Rust clients where possible and seamless integration with external tools where needed.
 
-[![Demo](https://img.youtube.com/vi/DpYM0UbR9TM/maxresdefault.jpg)](https://youtu.be/DpYM0UbR9TM)
+[![Demo](https://img.youtube.com/vi/qpHmBGrsAU0/maxresdefault.jpg)](https://youtu.be/qpHmBGrsAU0)
 
 ## Features
 
@@ -15,9 +15,9 @@ It brings SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust conne
 | **File Transfer** | SFTP file browser via system file manager (sftp:// URI, D-Bus portal) |
 | **Organization** | Groups, tags, templates, custom icons (emoji/GTK), connection history & statistics |
 | **Monitoring** | Remote host metrics bar (CPU, RAM, disk, network, load, system info) — agentless, per-connection toggle |
-| **Import/Export** | Asbru-CM, Remmina, SSH config, Ansible inventory, Royal TS, MobaXterm, virt-viewer (.vv), native (.rcn) |
+| **Import/Export** | Asbru-CM, Remmina, SSH config, Ansible inventory, Royal TS, MobaXterm, virt-viewer (.vv), libvirt XML, native (.rcn) |
 | **Security** | KeePassXC (KDBX), libsecret, Bitwarden CLI, 1Password CLI, Passbolt CLI integration |
-| **Productivity** | Split terminals, command snippets, cluster commands, Wake-on-LAN, SSH port forwarding, startup action |
+| **Productivity** | Split terminals, command snippets, cluster broadcast, Wake-on-LAN, SSH port forwarding, automation (expect rules, key sequences, pre/post-connect tasks), session reconnect, settings backup/restore |
 | **CLI** | `rustconn-cli` — headless management: list/add/update/delete connections, import/export, snippets, groups, templates, clusters, secrets, WoL, shell completions |
 
 | Protocol | Client | Type |
