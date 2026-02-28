@@ -28,7 +28,17 @@ pub fn show_new_connection_dialog(
     sidebar: SharedSidebar,
 ) {
     // Always show regular connection dialog (no template picker)
-    show_new_connection_dialog_internal(window, state, sidebar, None);
+    show_new_connection_dialog_internal(window, state, sidebar, None, None);
+}
+
+/// Shows the new connection dialog with a pre-selected group
+pub fn show_new_connection_dialog_in_group(
+    window: &gtk4::Window,
+    state: SharedAppState,
+    sidebar: SharedSidebar,
+    group_id: Uuid,
+) {
+    show_new_connection_dialog_internal(window, state, sidebar, None, Some(group_id));
 }
 
 /// Internal function to show the new connection dialog with optional template
@@ -38,6 +48,7 @@ pub fn show_new_connection_dialog_internal(
     state: SharedAppState,
     sidebar: SharedSidebar,
     template: Option<rustconn_core::models::ConnectionTemplate>,
+    group_id: Option<Uuid>,
 ) {
     let dialog = ConnectionDialog::new(Some(&window.clone().upcast()), state.clone());
     dialog.setup_key_file_chooser(Some(&window.clone().upcast()));
@@ -99,6 +110,11 @@ pub fn show_new_connection_dialog_internal(
         dialog
             .window()
             .set_title(Some(&i18n("New Connection from Template")));
+    }
+
+    // Pre-select group if specified (e.g. from "New Connection in Group" context menu)
+    if let Some(gid) = group_id {
+        dialog.set_selected_group(gid);
     }
 
     let window_clone = window.clone();

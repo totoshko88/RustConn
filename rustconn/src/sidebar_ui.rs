@@ -75,6 +75,22 @@ pub fn show_context_menu_for_item(
         menu_box.append(&pin_btn);
     }
 
+    // New Connection in Group (groups only)
+    if is_group {
+        let new_conn_btn = create_menu_button(&i18n("New Connection in Group"));
+        let win = window_clone.clone();
+        let popover_c = popover_ref.clone();
+        new_conn_btn.connect_clicked(move |_| {
+            if let Some(p) = popover_c.upgrade() {
+                p.popdown();
+            }
+            if let Some(action) = win.lookup_action("new-connection-in-group") {
+                action.activate(None);
+            }
+        });
+        menu_box.append(&new_conn_btn);
+    }
+
     let edit_btn = create_menu_button(&i18n("Edit"));
     let win = window_clone.clone();
     let popover_c = popover_ref.clone();

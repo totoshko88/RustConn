@@ -346,6 +346,34 @@ impl MainWindow {
         });
         window.add_action(&new_conn_action);
 
+        // New connection in group action (pre-selects the currently selected group)
+        let new_conn_in_group_action = gio::SimpleAction::new("new-connection-in-group", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        new_conn_in_group_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                if let Some(item) = sidebar_clone.get_selected_item()
+                    && let Ok(group_id) = uuid::Uuid::parse_str(&item.id())
+                {
+                    connection_dialogs::show_new_connection_dialog_in_group(
+                        win.upcast_ref(),
+                        state_clone.clone(),
+                        sidebar_clone.clone(),
+                        group_id,
+                    );
+                    return;
+                }
+                // Fallback: open without group pre-selection
+                connection_dialogs::show_new_connection_dialog(
+                    win.upcast_ref(),
+                    state_clone.clone(),
+                    sidebar_clone.clone(),
+                );
+            }
+        });
+        window.add_action(&new_conn_in_group_action);
+
         // New group action
         let new_group_action = gio::SimpleAction::new("new-group", None);
         let window_weak = window.downgrade();

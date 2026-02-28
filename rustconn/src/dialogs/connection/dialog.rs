@@ -5528,6 +5528,15 @@ impl ConnectionDialog {
         *self.groups_data.borrow_mut() = groups_data.to_vec();
     }
 
+    /// Pre-selects a group in the group dropdown by its UUID
+    pub fn set_selected_group(&self, group_id: Uuid) {
+        let groups_data = self.groups_data.borrow();
+        if let Some(idx) = groups_data.iter().position(|(id, _)| *id == Some(group_id)) {
+            #[allow(clippy::cast_possible_truncation)]
+            self.group_dropdown.set_selected(idx as u32);
+        }
+    }
+
     /// Sets the WOL configuration fields
     fn set_wol_config(&self, config: Option<&WolConfig>) {
         // Note: individual widget sensitivity is controlled by wol_settings_group

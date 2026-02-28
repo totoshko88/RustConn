@@ -1107,6 +1107,11 @@ impl CredentialResolver {
                             }
                         }
                     }
+                    PasswordSource::Variable(name) => {
+                        if let Some(creds) = self.resolve_from_variable(name).await? {
+                            return Ok(Some(self.merge_group_credentials(creds, group)));
+                        }
+                    }
                     PasswordSource::Inherit => {
                         // explicitly continue to parent
                     }

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.9.3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-28 01:37+0200\n"
+"POT-Creation-Date: 2026-02-28 02:00+0200\n"
 "PO-Revision-Date: 2026-02-17 00:00+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Portuguese\n"
@@ -118,7 +118,7 @@ msgstr "Ligações"
 msgid "Select connections to include in this cluster"
 msgstr "Selecionar ligações a incluir neste cluster"
 
-#: rustconn/src/dialogs/cluster.rs:224 rustconn/src/sidebar_ui.rs:258
+#: rustconn/src/dialogs/cluster.rs:224 rustconn/src/sidebar_ui.rs:274
 msgid "Select All"
 msgstr "Selecionar Tudo"
 
@@ -257,7 +257,7 @@ msgid "Test timed out"
 msgstr "Tempo limite do teste"
 
 #: rustconn/src/dialogs/connection/dialog.rs:1323
-#: rustconn/src/sidebar_ui.rs:404 rustconn/src/split_view/bridge.rs:1692
+#: rustconn/src/sidebar_ui.rs:420 rustconn/src/split_view/bridge.rs:1692
 #: rustconn/src/window/ui.rs:116
 msgid "New Connection"
 msgstr "Nova Ligação"
@@ -267,7 +267,7 @@ msgstr "Nova Ligação"
 #: rustconn/src/dialogs/flatpak_components.rs:98
 #: rustconn/src/dialogs/import.rs:1382
 #: rustconn/src/dialogs/terminal_search.rs:54
-#: rustconn/src/window/connection_dialogs.rs:192
+#: rustconn/src/window/connection_dialogs.rs:208
 #: rustconn/src/window/edit_dialogs.rs:1243 rustconn/src/window/sessions.rs:47
 #: rustconn/src/window/snippets.rs:65
 msgid "Close"
@@ -278,7 +278,7 @@ msgid "Test connection"
 msgstr "Testar ligação"
 
 #: rustconn/src/dialogs/connection/dialog.rs:1344
-#: rustconn/src/window/connection_dialogs.rs:194
+#: rustconn/src/window/connection_dialogs.rs:210
 #: rustconn/src/window/snippets.rs:67
 msgid "Create"
 msgstr "Criar"
@@ -310,7 +310,7 @@ msgid "Emoji or icon name (optional)"
 msgstr "Emoji ou nome de ícone (opcional)"
 
 #: rustconn/src/dialogs/connection/dialog.rs:1982
-#: rustconn/src/window/connection_dialogs.rs:241
+#: rustconn/src/window/connection_dialogs.rs:257
 #: rustconn/src/window/edit_dialogs.rs:456
 msgid "Enter an emoji (e.g. 🇺🇦) or GTK icon name (e.g. starred-symbolic)"
 msgstr ""
@@ -367,31 +367,31 @@ msgid "Password:"
 msgstr "Palavra-passe:"
 
 #: rustconn/src/dialogs/connection/dialog.rs:2109
-#: rustconn/src/window/connection_dialogs.rs:307
+#: rustconn/src/window/connection_dialogs.rs:323
 #: rustconn/src/window/edit_dialogs.rs:573
 msgid "Prompt"
 msgstr "Solicitar"
 
 #: rustconn/src/dialogs/connection/dialog.rs:2110
-#: rustconn/src/window/connection_dialogs.rs:308
+#: rustconn/src/window/connection_dialogs.rs:324
 #: rustconn/src/window/edit_dialogs.rs:574
 msgid "Vault"
 msgstr "Cofre"
 
 #: rustconn/src/dialogs/connection/dialog.rs:2111
-#: rustconn/src/window/connection_dialogs.rs:309
+#: rustconn/src/window/connection_dialogs.rs:325
 #: rustconn/src/window/edit_dialogs.rs:575
 msgid "Variable"
 msgstr "Variável"
 
 #: rustconn/src/dialogs/connection/dialog.rs:2112
-#: rustconn/src/window/connection_dialogs.rs:310
+#: rustconn/src/window/connection_dialogs.rs:326
 #: rustconn/src/window/edit_dialogs.rs:576
 msgid "Inherit"
 msgstr "Herdar"
 
 #: rustconn/src/dialogs/connection/dialog.rs:2113
-#: rustconn/src/window/connection_dialogs.rs:311
+#: rustconn/src/window/connection_dialogs.rs:327
 #: rustconn/src/window/edit_dialogs.rs:577
 msgid "None"
 msgstr "Nenhum"
@@ -405,21 +405,21 @@ msgstr "Valor:"
 
 #: rustconn/src/dialogs/connection/dialog.rs:2129
 #: rustconn/src/dialogs/variables.rs:228
-#: rustconn/src/window/connection_dialogs.rs:327
+#: rustconn/src/window/connection_dialogs.rs:343
 #: rustconn/src/window/edit_dialogs.rs:599
 msgid "Password value"
 msgstr "Valor da palavra-passe"
 
 #: rustconn/src/dialogs/connection/dialog.rs:2135
 #: rustconn/src/dialogs/variables.rs:234
-#: rustconn/src/window/connection_dialogs.rs:333
+#: rustconn/src/window/connection_dialogs.rs:349
 #: rustconn/src/window/edit_dialogs.rs:605
 msgid "Show/hide password"
 msgstr "Mostrar/ocultar palavra-passe"
 
 #: rustconn/src/dialogs/connection/dialog.rs:2139
 #: rustconn/src/dialogs/variables.rs:239
-#: rustconn/src/window/connection_dialogs.rs:338
+#: rustconn/src/window/connection_dialogs.rs:354
 #: rustconn/src/window/edit_dialogs.rs:610
 msgid "Load password from vault"
 msgstr "Carregar palavra-passe do cofre"
@@ -1385,7 +1385,7 @@ msgid "Save window geometry (External mode only)"
 msgstr "Guardar geometria da janela (apenas modo externo)"
 
 #: rustconn/src/dialogs/connection/dialog.rs:4278
-#: rustconn/src/dialogs/wol.rs:29 rustconn/src/sidebar_ui.rs:147
+#: rustconn/src/dialogs/wol.rs:29 rustconn/src/sidebar_ui.rs:163
 msgid "Wake On LAN"
 msgstr "Wake On LAN"
 
@@ -1569,46 +1569,46 @@ msgstr "Selecionar certificado CA"
 msgid "Edit Connection"
 msgstr "Editar ligação"
 
-#: rustconn/src/dialogs/connection/dialog.rs:6316
-#: rustconn/src/dialogs/connection/dialog.rs:6559
+#: rustconn/src/dialogs/connection/dialog.rs:6325
+#: rustconn/src/dialogs/connection/dialog.rs:6568
 msgid "Cannot Load Password"
 msgstr "Não é possível carregar a palavra-passe"
 
-#: rustconn/src/dialogs/connection/dialog.rs:6317
+#: rustconn/src/dialogs/connection/dialog.rs:6326
 msgid "Please enter a connection name or host first."
 msgstr "Introduza primeiro um nome de ligação ou anfitrião."
 
-#: rustconn/src/dialogs/connection/dialog.rs:6428
-#: rustconn/src/dialogs/connection/dialog.rs:6530
-#: rustconn/src/dialogs/connection/dialog.rs:6538
+#: rustconn/src/dialogs/connection/dialog.rs:6437
+#: rustconn/src/dialogs/connection/dialog.rs:6539
+#: rustconn/src/dialogs/connection/dialog.rs:6547
 msgid "Password Not Found"
 msgstr "Palavra-passe não encontrada"
 
-#: rustconn/src/dialogs/connection/dialog.rs:6429
-#: rustconn/src/dialogs/connection/dialog.rs:6531
-#: rustconn/src/dialogs/connection/dialog.rs:6539
+#: rustconn/src/dialogs/connection/dialog.rs:6438
+#: rustconn/src/dialogs/connection/dialog.rs:6540
+#: rustconn/src/dialogs/connection/dialog.rs:6548
 msgid "No password found in vault for this connection."
 msgstr "Nenhuma palavra-passe encontrada no cofre para esta ligação."
 
-#: rustconn/src/dialogs/connection/dialog.rs:6438
-#: rustconn/src/dialogs/connection/dialog.rs:6546
+#: rustconn/src/dialogs/connection/dialog.rs:6447
+#: rustconn/src/dialogs/connection/dialog.rs:6555
 msgid "Failed to Load Password"
 msgstr "Falha ao carregar a palavra-passe"
 
-#: rustconn/src/dialogs/connection/dialog.rs:6439
-#: rustconn/src/dialogs/connection/dialog.rs:6547
+#: rustconn/src/dialogs/connection/dialog.rs:6448
+#: rustconn/src/dialogs/connection/dialog.rs:6556
 msgid "Could not load password from vault."
 msgstr "Não foi possível carregar a palavra-passe do cofre."
 
-#: rustconn/src/dialogs/connection/dialog.rs:6450
+#: rustconn/src/dialogs/connection/dialog.rs:6459
 msgid "Vault Not Configured"
 msgstr "Cofre não configurado"
 
-#: rustconn/src/dialogs/connection/dialog.rs:6451
+#: rustconn/src/dialogs/connection/dialog.rs:6460
 msgid "Please configure a secret backend in Settings → Secrets."
 msgstr "Configure um backend de segredos em Definições → Segredos."
 
-#: rustconn/src/dialogs/connection/dialog.rs:6560
+#: rustconn/src/dialogs/connection/dialog.rs:6569
 msgid "Password loading is only available for Vault source."
 msgstr ""
 "O carregamento de palavra-passe está disponível apenas para a fonte Cofre."
@@ -1761,7 +1761,7 @@ msgstr "Autenticação"
 #: rustconn/src/dialogs/document.rs:125
 #: rustconn/src/dialogs/settings/secrets_tab.rs:1121
 #: rustconn/src/dialogs/template.rs:608
-#: rustconn/src/window/connection_dialogs.rs:321
+#: rustconn/src/window/connection_dialogs.rs:337
 #: rustconn/src/window/edit_dialogs.rs:593
 #: rustconn/src/window/edit_dialogs.rs:1344
 msgid "Password"
@@ -2053,7 +2053,7 @@ msgstr "Nova palavra-passe"
 msgid "Use a strong password that you can remember."
 msgstr "Use uma palavra-passe forte que consiga memorizar."
 
-#: rustconn/src/dialogs/export.rs:66 rustconn/src/sidebar_ui.rs:342
+#: rustconn/src/dialogs/export.rs:66 rustconn/src/sidebar_ui.rs:358
 msgid "Export Connections"
 msgstr "Exportar Ligações"
 
@@ -2356,7 +2356,7 @@ msgstr "Não disponível para transferência"
 msgid "Failed"
 msgstr "Falhou"
 
-#: rustconn/src/dialogs/history.rs:31 rustconn/src/sidebar_ui.rs:308
+#: rustconn/src/dialogs/history.rs:31 rustconn/src/sidebar_ui.rs:324
 msgid "Connection History"
 msgstr "Histórico de Ligações"
 
@@ -2385,7 +2385,7 @@ msgid "All connection history entries will be permanently removed."
 msgstr ""
 "Todas as entradas do histórico de ligações serão removidas permanentemente."
 
-#: rustconn/src/dialogs/history.rs:188 rustconn/src/sidebar_ui.rs:266
+#: rustconn/src/dialogs/history.rs:188 rustconn/src/sidebar_ui.rs:282
 msgid "Clear"
 msgstr "Limpar"
 
@@ -3512,7 +3512,7 @@ msgid "Start the agent to manage keys"
 msgstr "Iniciar o agente para gerir chaves"
 
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:253
-#: rustconn/src/window/connection_dialogs.rs:730
+#: rustconn/src/window/connection_dialogs.rs:746
 #: rustconn/src/window/edit_dialogs.rs:289
 #: rustconn/src/window/edit_dialogs.rs:367
 #: rustconn/src/window/edit_dialogs.rs:978 rustconn/src/window/groups.rs:218
@@ -3915,14 +3915,14 @@ msgid "Template Info"
 msgstr "Info do modelo"
 
 #: rustconn/src/dialogs/template.rs:494
-#: rustconn/src/window/connection_dialogs.rs:232
+#: rustconn/src/window/connection_dialogs.rs:248
 #: rustconn/src/window/edit_dialogs.rs:236
 #: rustconn/src/window/edit_dialogs.rs:445
 msgid "Name"
 msgstr "Nome"
 
 #: rustconn/src/dialogs/template.rs:498
-#: rustconn/src/window/connection_dialogs.rs:555
+#: rustconn/src/window/connection_dialogs.rs:571
 #: rustconn/src/window/edit_dialogs.rs:839
 msgid "Description"
 msgstr "Descrição"
@@ -3955,14 +3955,14 @@ msgid "Default connection port"
 msgstr "Porta de ligação predefinida"
 
 #: rustconn/src/dialogs/template.rs:542 rustconn/src/split_view/bridge.rs:1472
-#: rustconn/src/window/connection_dialogs.rs:302
+#: rustconn/src/window/connection_dialogs.rs:318
 #: rustconn/src/window/edit_dialogs.rs:566
 #: rustconn/src/window/edit_dialogs.rs:1333
 msgid "Username"
 msgstr "Nome de utilizador"
 
 #: rustconn/src/dialogs/template.rs:546
-#: rustconn/src/window/connection_dialogs.rs:548
+#: rustconn/src/window/connection_dialogs.rs:564
 #: rustconn/src/window/edit_dialogs.rs:830
 msgid "Domain"
 msgstr "Domínio"
@@ -4231,13 +4231,13 @@ msgstr "VNC"
 msgid "SPICE"
 msgstr "SPICE"
 
-#: rustconn/src/dialogs/template.rs:2949 rustconn/src/sidebar_ui.rs:78
+#: rustconn/src/dialogs/template.rs:2949 rustconn/src/sidebar_ui.rs:94
 #: rustconn/src/window/snippets.rs:110
 msgid "Edit"
 msgstr "Editar"
 
-#: rustconn/src/dialogs/template.rs:2953 rustconn/src/sidebar_ui.rs:177
-#: rustconn/src/sidebar_ui.rs:273 rustconn/src/window/operations.rs:77
+#: rustconn/src/dialogs/template.rs:2953 rustconn/src/sidebar_ui.rs:193
+#: rustconn/src/sidebar_ui.rs:289 rustconn/src/window/operations.rs:77
 #: rustconn/src/window/snippets.rs:114 rustconn/src/window/snippets.rs:219
 #: rustconn/src/window/templates.rs:148
 msgid "Delete"
@@ -4529,81 +4529,85 @@ msgstr "Ligar"
 msgid "Pin / Unpin"
 msgstr "Fixar / Desafixar"
 
-#: rustconn/src/sidebar_ui.rs:92 rustconn/src/window/edit_dialogs.rs:221
+#: rustconn/src/sidebar_ui.rs:80
+msgid "New Connection in Group"
+msgstr "Nova conexão no grupo"
+
+#: rustconn/src/sidebar_ui.rs:108 rustconn/src/window/edit_dialogs.rs:221
 msgid "Rename"
 msgstr "Renomear"
 
-#: rustconn/src/sidebar_ui.rs:106
+#: rustconn/src/sidebar_ui.rs:122
 msgid "Duplicate"
 msgstr "Duplicar"
 
-#: rustconn/src/sidebar_ui.rs:119 rustconn/src/sidebar_ui.rs:249
+#: rustconn/src/sidebar_ui.rs:135 rustconn/src/sidebar_ui.rs:265
 msgid "Move to Group..."
 msgstr "Mover para grupo..."
 
-#: rustconn/src/sidebar_ui.rs:133
+#: rustconn/src/sidebar_ui.rs:149
 msgid "Run Snippet..."
 msgstr "Executar fragmento..."
 
-#: rustconn/src/sidebar_ui.rs:162
+#: rustconn/src/sidebar_ui.rs:178
 msgid "Open SFTP"
 msgstr "Abrir SFTP"
 
-#: rustconn/src/sidebar_ui.rs:241 rustconn/src/sidebar_ui.rs:418
-#: rustconn/src/window/connection_dialogs.rs:181 rustconn/src/window/ui.rs:117
+#: rustconn/src/sidebar_ui.rs:257 rustconn/src/sidebar_ui.rs:434
+#: rustconn/src/window/connection_dialogs.rs:197 rustconn/src/window/ui.rs:117
 msgid "New Group"
 msgstr "Novo Grupo"
 
-#: rustconn/src/sidebar_ui.rs:242
+#: rustconn/src/sidebar_ui.rs:258
 msgid "Create a new group"
 msgstr "Criar um novo grupo"
 
-#: rustconn/src/sidebar_ui.rs:250
+#: rustconn/src/sidebar_ui.rs:266
 msgid "Move selected items to a group"
 msgstr "Mover itens selecionados para um grupo"
 
-#: rustconn/src/sidebar_ui.rs:259
+#: rustconn/src/sidebar_ui.rs:275
 msgid "Select all items (Ctrl+A)"
 msgstr "Selecionar todos os itens (Ctrl+A)"
 
-#: rustconn/src/sidebar_ui.rs:267
+#: rustconn/src/sidebar_ui.rs:283
 msgid "Clear selection (Escape)"
 msgstr "Limpar seleção (Escape)"
 
-#: rustconn/src/sidebar_ui.rs:274
+#: rustconn/src/sidebar_ui.rs:290
 msgid "Delete all selected items"
 msgstr "Eliminar todos os itens selecionados"
 
-#: rustconn/src/sidebar_ui.rs:299
+#: rustconn/src/sidebar_ui.rs:315
 msgid "Group Operations Mode"
 msgstr "Modo de operações de grupo"
 
-#: rustconn/src/sidebar_ui.rs:315
+#: rustconn/src/sidebar_ui.rs:331
 msgid "Sort Alphabetically"
 msgstr "Ordenar alfabeticamente"
 
-#: rustconn/src/sidebar_ui.rs:324
+#: rustconn/src/sidebar_ui.rs:340
 msgid "Sort by Recent Usage"
 msgstr "Ordenar por utilização recente"
 
-#: rustconn/src/sidebar_ui.rs:333
+#: rustconn/src/sidebar_ui.rs:349
 msgid "Import Connections (Ctrl+I)"
 msgstr "Importar ligações (Ctrl+I)"
 
-#: rustconn/src/sidebar_ui.rs:351
+#: rustconn/src/sidebar_ui.rs:367
 msgid "Open Password Vault"
 msgstr "Abrir cofre de palavras-passe"
 
-#: rustconn/src/sidebar_ui.rs:390 rustconn/src/split_view/bridge.rs:1699
+#: rustconn/src/sidebar_ui.rs:406 rustconn/src/split_view/bridge.rs:1699
 #: rustconn/src/window/edit_dialogs.rs:1230 rustconn/src/window/ui.rs:118
 msgid "Quick Connect"
 msgstr "Ligação Rápida"
 
-#: rustconn/src/sidebar_ui.rs:438
+#: rustconn/src/sidebar_ui.rs:454
 msgid "Import..."
 msgstr "Importar..."
 
-#: rustconn/src/sidebar_ui.rs:452
+#: rustconn/src/sidebar_ui.rs:468
 msgid "Export..."
 msgstr "Exportar..."
 
@@ -4805,66 +4809,66 @@ msgstr "A porta é obrigatória"
 msgid "Port must be greater than 0"
 msgstr "A porta deve ser superior a 0"
 
-#: rustconn/src/window/connection_dialogs.rs:101
+#: rustconn/src/window/connection_dialogs.rs:112
 #: rustconn/src/window/templates.rs:398
 msgid "New Connection from Template"
 msgstr "Nova ligação a partir de modelo"
 
-#: rustconn/src/window/connection_dialogs.rs:159
+#: rustconn/src/window/connection_dialogs.rs:175
 #: rustconn/src/window/templates.rs:451
 msgid "Error Creating Connection"
 msgstr "Erro ao criar ligação"
 
-#: rustconn/src/window/connection_dialogs.rs:228
+#: rustconn/src/window/connection_dialogs.rs:244
 #: rustconn/src/window/edit_dialogs.rs:440
 msgid "Group Details"
 msgstr "Detalhes do grupo"
 
-#: rustconn/src/window/connection_dialogs.rs:237
+#: rustconn/src/window/connection_dialogs.rs:253
 #: rustconn/src/window/edit_dialogs.rs:452
 msgid "Icon"
 msgstr "Ícone"
 
-#: rustconn/src/window/connection_dialogs.rs:263
+#: rustconn/src/window/connection_dialogs.rs:279
 #: rustconn/src/window/edit_dialogs.rs:523
 msgid "(None - Root Level)"
 msgstr "(Nenhum - Nível raiz)"
 
-#: rustconn/src/window/connection_dialogs.rs:288
+#: rustconn/src/window/connection_dialogs.rs:304
 #: rustconn/src/window/edit_dialogs.rs:550
 msgid "Parent"
 msgstr "Superior"
 
-#: rustconn/src/window/connection_dialogs.rs:289
+#: rustconn/src/window/connection_dialogs.rs:305
 msgid "Optional - leave empty for root level"
 msgstr "Opcional - deixe vazio para o nível raiz"
 
-#: rustconn/src/window/connection_dialogs.rs:298
+#: rustconn/src/window/connection_dialogs.rs:314
 #: rustconn/src/window/edit_dialogs.rs:561
 msgid "Default Credentials"
 msgstr "Credenciais predefinidas"
 
-#: rustconn/src/window/connection_dialogs.rs:299
+#: rustconn/src/window/connection_dialogs.rs:315
 #: rustconn/src/window/edit_dialogs.rs:562
 msgid "Credentials inherited by connections in this group"
 msgstr "Credenciais herdadas pelas ligações neste grupo"
 
-#: rustconn/src/window/connection_dialogs.rs:342
+#: rustconn/src/window/connection_dialogs.rs:358
 #: rustconn/src/window/edit_dialogs.rs:614
 msgid "Value"
 msgstr "Valor"
 
-#: rustconn/src/window/connection_dialogs.rs:385
+#: rustconn/src/window/connection_dialogs.rs:401
 msgid "Enter group name first"
 msgstr "Introduza primeiro o nome do grupo"
 
-#: rustconn/src/window/connection_dialogs.rs:413
+#: rustconn/src/window/connection_dialogs.rs:429
 msgid "Vault not configured"
 msgstr "Cofre não configurado"
 
-#: rustconn/src/window/connection_dialogs.rs:445
-#: rustconn/src/window/connection_dialogs.rs:523
-#: rustconn/src/window/connection_dialogs.rs:530
+#: rustconn/src/window/connection_dialogs.rs:461
+#: rustconn/src/window/connection_dialogs.rs:539
+#: rustconn/src/window/connection_dialogs.rs:546
 #: rustconn/src/window/edit_dialogs.rs:728
 #: rustconn/src/window/edit_dialogs.rs:761
 #: rustconn/src/window/edit_dialogs.rs:768
@@ -4873,37 +4877,37 @@ msgstr "Cofre não configurado"
 msgid "No password found for this group"
 msgstr "Nenhuma palavra-passe encontrada para este grupo"
 
-#: rustconn/src/window/connection_dialogs.rs:451
-#: rustconn/src/window/connection_dialogs.rs:535
+#: rustconn/src/window/connection_dialogs.rs:467
+#: rustconn/src/window/connection_dialogs.rs:551
 #: rustconn/src/window/edit_dialogs.rs:734
 #: rustconn/src/window/edit_dialogs.rs:773
 #: rustconn/src/window/edit_dialogs.rs:812
 msgid "Load Error"
 msgstr "Erro de carregamento"
 
-#: rustconn/src/window/connection_dialogs.rs:544
+#: rustconn/src/window/connection_dialogs.rs:560
 msgid "Select Vault to load password"
 msgstr "Selecione o cofre para carregar a palavra-passe"
 
-#: rustconn/src/window/connection_dialogs.rs:556
+#: rustconn/src/window/connection_dialogs.rs:572
 #: rustconn/src/window/edit_dialogs.rs:840
 msgid "Notes, contacts, project info"
 msgstr "Notas, contactos, informações do projeto"
 
-#: rustconn/src/window/connection_dialogs.rs:596
+#: rustconn/src/window/connection_dialogs.rs:612
 #: rustconn/src/window/edit_dialogs.rs:889
 msgid "Group name cannot be empty"
 msgstr "O nome do grupo não pode estar vazio"
 
-#: rustconn/src/window/connection_dialogs.rs:685
+#: rustconn/src/window/connection_dialogs.rs:701
 msgid "Error Updating Group"
 msgstr "Erro ao atualizar grupo"
 
-#: rustconn/src/window/connection_dialogs.rs:773
+#: rustconn/src/window/connection_dialogs.rs:789
 msgid "Import Successful"
 msgstr "Importação bem-sucedida"
 
-#: rustconn/src/window/connection_dialogs.rs:777
+#: rustconn/src/window/connection_dialogs.rs:793
 msgid "Import Failed"
 msgstr "Importação falhou"
 
@@ -5012,7 +5016,7 @@ msgstr "(Sem grupo)"
 msgid "Error Moving Item"
 msgstr "Erro ao mover item"
 
-#: rustconn/src/window/mod.rs:4917
+#: rustconn/src/window/mod.rs:4945
 msgid "Startup connection not found"
 msgstr "Ligação de arranque não encontrada"
 

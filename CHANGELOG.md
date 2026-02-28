@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Custom Properties User Guide** — Added usage examples for arbitrary key-value metadata on connections
 
 ### Fixed
+- **Password inheritance from groups with Variable source** — `resolve_inherited_credentials()` now handles `PasswordSource::Variable` in the group hierarchy traversal; previously variable-based group passwords were silently ignored ([#37](https://github.com/totoshko88/RustConn/issues/37))
+- **New connection not placed in selected group** — Added "New Connection in Group" context menu item for groups in the sidebar; the connection dialog now pre-selects the target group, preventing connections from ending up ungrouped ([#37](https://github.com/totoshko88/RustConn/issues/37))
 - **Alert dialog visual distinction** — `show_error()` now uses destructive-styled OK button, `show_success()` uses suggested-styled OK button, replacing identical `show_alert()` calls for both
 - **Toast severity indicators** — Error and warning toasts now display an icon + label custom title widget (e.g., ⚠ Warning, ✕ Error) for immediate visual distinction via `set_custom_title()`
 - **Toast fallback on missing overlay** — `show_toast_on_window()` now falls back to `adw::AlertDialog` instead of silently logging when no `ToastOverlay` is found in the widget hierarchy

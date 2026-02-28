@@ -59,6 +59,7 @@ rustconn/src/sidebar/mod.rs
 rustconn/src/sidebar/view.rs
 rustconn/src/sidebar/search.rs
 rustconn/src/sidebar/filter.rs
+rustconn/src/sidebar_ui.rs
 rustconn/src/validation.rs
 rustconn/src/empty_state.rs
 rustconn/src/dashboard.rs
