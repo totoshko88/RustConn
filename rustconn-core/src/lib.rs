@@ -126,7 +126,8 @@ pub use flatpak::is_flatpak;
 pub use import::{
     AnsibleInventoryImporter, AsbruImporter, BATCH_IMPORT_THRESHOLD, BatchCancelHandle,
     BatchImportResult, BatchImporter, DEFAULT_IMPORT_BATCH_SIZE, ImportResult, ImportSource,
-    RemminaImporter, RoyalTsImporter, SkippedEntry, SshConfigImporter, VirtViewerImporter,
+    LibvirtXmlImporter, RemminaImporter, RoyalTsImporter, SkippedEntry, SshConfigImporter,
+    VirtViewerImporter,
 };
 pub use models::{
     Connection, ConnectionGroup, ConnectionHistoryEntry, ConnectionStatistics, ConnectionTemplate,

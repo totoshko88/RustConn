@@ -1003,6 +1003,7 @@ Deleting a cluster does not delete the underlying connections.
 - MobaXterm sessions (.mxtsessions)
 - Remote Desktop Manager (JSON)
 - Virt-Viewer (.vv files — SPICE/VNC from libvirt, Proxmox VE)
+- Libvirt / GNOME Boxes (domain XML — VNC, SPICE, RDP from QEMU/KVM VMs)
 - RustConn Native (.rcn)
 
 Double-click source to start import immediately.
@@ -1015,6 +1016,32 @@ When importing connections that already exist, choose a merge strategy:
 
 **Import Preview:**
 For large imports (10+ connections), a preview is shown before applying. You can review which connections will be created, updated, or skipped, and change the action for individual entries.
+
+**Import Source Details:**
+
+| Source | Auto-scan | File picker | Protocols | Notes |
+|--------|:---------:|:-----------:|-----------|-------|
+| SSH Config | `~/.ssh/config` | Any file | SSH | Host blocks → connections |
+| Remmina | `~/.local/share/remmina/` | — | SSH, RDP, VNC, SFTP | One `.remmina` per connection |
+| Asbru-CM | `~/.config/pac/` | YAML file | SSH, VNC, RDP | Variables converted to `${VAR}` |
+| Ansible | `/etc/ansible/hosts` | INI/YAML file | SSH | Groups preserved |
+| Royal TS | — | `.rtsz` file | All | Folder hierarchy → groups |
+| MobaXterm | — | `.mxtsessions` | SSH, RDP, VNC, Telnet, Serial | INI-based sessions |
+| Remote Desktop Manager | — | JSON file | SSH, RDP, VNC | Devolutions JSON export |
+| Virt-Viewer | — | `.vv` file | SPICE, VNC | From libvirt, Proxmox VE, oVirt |
+| Libvirt / GNOME Boxes | `/etc/libvirt/qemu/`, `~/.config/libvirt/qemu/` | XML file | VNC, SPICE, RDP | Domain XML `<graphics>` elements |
+| RustConn Native | — | `.rcn` file | All | Full-fidelity backup |
+
+**Libvirt / GNOME Boxes import:**
+
+Two import modes are available:
+
+- **Auto-scan** ("Libvirt / GNOME Boxes") — scans standard libvirt directories for domain XML files. Covers both system-level QEMU/KVM VMs (`/etc/libvirt/qemu/`, may require root read access) and user-session VMs (`~/.config/libvirt/qemu/`). GNOME Boxes stores its VMs in the same user-session directory, so they are imported automatically.
+- **Single file** ("Libvirt XML File") — import from a specific `.xml` file. Useful for `virsh dumpxml <domain>` output or XML files copied from another host.
+
+Each `<graphics>` element in the domain XML becomes a separate connection. If a VM has both VNC and SPICE consoles, two connections are created (e.g. "myvm (VNC)", "myvm (SPICE)").
+
+Imported fields: VM name, UUID (stored as tag), description, graphics type, listen address, port, TLS port (SPICE), password. VMs with `autoport="yes"` and no resolved port use the protocol default (5900 for VNC/SPICE, 3389 for RDP) — edit the port after starting the VM. Headless VMs (no `<graphics>` element) are skipped with a note.
 
 ### Export (Ctrl+Shift+E)
 
@@ -1999,6 +2026,29 @@ Mapped fields: HostName, Port, User, IdentityFile, ProxyJump. Fields not mapped:
 3. Host groups become RustConn groups; hosts become SSH connections
 
 Mapped fields: ansible_host, ansible_port, ansible_user, ansible_ssh_private_key_file. Group variables are applied to all hosts in the group.
+
+### From Libvirt / GNOME Boxes
+
+Libvirt stores VM definitions as XML files in `/etc/libvirt/qemu/` (system) and `~/.config/libvirt/qemu/` (user session). GNOME Boxes uses the same user-session directory.
+
+**Auto-scan (recommended):**
+
+1. **File > Import > Libvirt / GNOME Boxes**
+2. RustConn scans both directories automatically
+3. Review the import preview: each VM with a graphical console becomes a VNC, SPICE, or RDP connection
+4. Click **Import**
+
+**Single file (for remote hosts or `virsh dumpxml`):**
+
+1. On the remote host, run: `virsh dumpxml <domain-name> > myvm.xml`
+2. Copy the XML file to your machine
+3. **File > Import > Libvirt XML File**
+4. Select the XML file
+5. Review and import
+
+Mapped fields: VM name, UUID (tag), description, graphics type (VNC/SPICE/RDP), listen address, port, TLS port, password. Fields not mapped: disk images, network interfaces, CPU/memory (these are hypervisor settings, not connection parameters).
+
+After import: if VMs use `autoport`, the actual port is assigned at VM startup — edit the connection port after starting the VM. Passwords from XML are stored in your configured secret backend.
 
 ### Post-Migration Checklist
 

@@ -8,6 +8,7 @@
 //! - Royal TS rJSON files
 //! - MobaXterm session files
 //! - Virt-viewer (.vv) files (SPICE/VNC from libvirt, Proxmox VE)
+//! - Libvirt domain XML files (VNC/SPICE/RDP from QEMU/KVM, GNOME Boxes)
 //!
 //! For large imports (more than 10 connections), use `BatchImporter` for
 //! efficient batch processing with progress reporting and cancellation support.
@@ -41,6 +42,7 @@
 mod ansible;
 mod asbru;
 pub mod batch;
+mod libvirt;
 mod mobaxterm;
 mod normalize;
 mod preview;
@@ -57,6 +59,7 @@ pub use batch::{
     BATCH_IMPORT_THRESHOLD, BatchCancelHandle, BatchImportResult, BatchImporter,
     DEFAULT_IMPORT_BATCH_SIZE,
 };
+pub use libvirt::LibvirtXmlImporter;
 pub use mobaxterm::MobaXtermImporter;
 pub use normalize::{
     ImportNormalizer, NormalizeOptions, is_valid_hostname, looks_like_hostname, parse_host_port,

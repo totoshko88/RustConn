@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Session duration in tab tooltip** — elapsed time (e.g. "2h 15m") shown in tab tooltips, updated every 30 s
 - **Flatpak component version display** — pinned version shown next to "Installed" label in Flatpak Components
 - **Automation templates** — 5 built-in expect rule presets (Sudo Password, SSH Host Key, Login Prompt, Press Enter, MOTD Pager) via `builtin_templates()` API
+- **Libvirt / GNOME Boxes import** — import VNC, SPICE, and RDP connections from libvirt domain XML files; auto-scans `/etc/libvirt/qemu/` and `~/.config/libvirt/qemu/` (covers GNOME Boxes); single-file import for `virsh dumpxml` output; handles autoport, TLS, passwords ([#38](https://github.com/totoshko88/RustConn/issues/38))
 
 ### Fixed
 - **Password inheritance** — `resolve_inherited_credentials()` now handles `PasswordSource::Variable` in group hierarchy ([#37](https://github.com/totoshko88/RustConn/issues/37))

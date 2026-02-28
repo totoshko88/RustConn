@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.9.3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-28 16:36+0200\n"
+"POT-Creation-Date: 2026-02-28 17:04+0200\n"
 "PO-Revision-Date: 2026-02-20 00:00+0000\n"
 "Last-Translator: Mykola Zubkov <zubkov139@ukr.net>\n"
 "Language-Team: Ukrainian\n"
@@ -274,7 +274,7 @@ msgstr "Новий з'єднок"
 #: rustconn/src/dialogs/connection/dialog.rs:1338
 #: rustconn/src/dialogs/export.rs:778
 #: rustconn/src/dialogs/flatpak_components.rs:98
-#: rustconn/src/dialogs/import.rs:1382
+#: rustconn/src/dialogs/import.rs:1426
 #: rustconn/src/dialogs/terminal_search.rs:54
 #: rustconn/src/window/connection_dialogs.rs:208
 #: rustconn/src/window/edit_dialogs.rs:1243 rustconn/src/window/sessions.rs:47
@@ -2076,32 +2076,32 @@ msgstr "Формат експортування"
 msgid "Select the format to export your connections to"
 msgstr "Обери формат для експортування з'єднувань"
 
-#: rustconn/src/dialogs/export.rs:172 rustconn/src/dialogs/import.rs:219
+#: rustconn/src/dialogs/export.rs:172 rustconn/src/dialogs/import.rs:220
 msgid "Ansible Inventory"
 msgstr "Ansible Inventory"
 
 #: rustconn/src/dialogs/export.rs:173 rustconn/src/dialogs/export.rs:599
-#: rustconn/src/dialogs/import.rs:189
+#: rustconn/src/dialogs/import.rs:190
 msgid "SSH Config"
 msgstr "SSH Config"
 
-#: rustconn/src/dialogs/export.rs:174 rustconn/src/dialogs/import.rs:213
+#: rustconn/src/dialogs/export.rs:174 rustconn/src/dialogs/import.rs:214
 msgid "Remmina"
 msgstr "Remmina"
 
-#: rustconn/src/dialogs/export.rs:175 rustconn/src/dialogs/import.rs:201
+#: rustconn/src/dialogs/export.rs:175 rustconn/src/dialogs/import.rs:202
 msgid "Asbru-CM"
 msgstr "Asbru-CM"
 
-#: rustconn/src/dialogs/export.rs:176 rustconn/src/dialogs/import.rs:231
+#: rustconn/src/dialogs/export.rs:176 rustconn/src/dialogs/import.rs:232
 msgid "RustConn Native (.rcn)"
 msgstr "RustConn Native (.rcn)"
 
-#: rustconn/src/dialogs/export.rs:177 rustconn/src/dialogs/import.rs:237
+#: rustconn/src/dialogs/export.rs:177 rustconn/src/dialogs/import.rs:238
 msgid "Royal TS (.rtsz)"
 msgstr "Royal TS (.rtsz)"
 
-#: rustconn/src/dialogs/export.rs:178 rustconn/src/dialogs/import.rs:249
+#: rustconn/src/dialogs/export.rs:178 rustconn/src/dialogs/import.rs:250
 msgid "MobaXterm (.mxtsessions)"
 msgstr "MobaXterm (.mxtsessions)"
 
@@ -2178,7 +2178,7 @@ msgstr "Підготовка (до) експортування..."
 msgid "Export Complete"
 msgstr "Експортування завершено"
 
-#: rustconn/src/dialogs/export.rs:317 rustconn/src/dialogs/import.rs:376
+#: rustconn/src/dialogs/export.rs:317 rustconn/src/dialogs/import.rs:389
 msgid "Details"
 msgstr "Деталі"
 
@@ -2234,7 +2234,7 @@ msgstr "Asbru-CM YAML (*.yml)"
 msgid "Remmina (*.remmina)"
 msgstr "Remmina (*.remmina)"
 
-#: rustconn/src/dialogs/export.rs:613 rustconn/src/dialogs/import.rs:1310
+#: rustconn/src/dialogs/export.rs:613 rustconn/src/dialogs/import.rs:1354
 msgid "RustConn Native (*.rcn)"
 msgstr "RustConn Native (*.rcn)"
 
@@ -2242,7 +2242,7 @@ msgstr "RustConn Native (*.rcn)"
 msgid "Royal TS (*.rtsz)"
 msgstr "Royal TS (*.rtsz)"
 
-#: rustconn/src/dialogs/export.rs:621 rustconn/src/dialogs/import.rs:1589
+#: rustconn/src/dialogs/export.rs:621 rustconn/src/dialogs/import.rs:1633
 msgid "MobaXterm Sessions (*.mxtsessions)"
 msgstr "Сеанси MobaXterm (*.mxtsessions)"
 
@@ -2270,12 +2270,12 @@ msgstr "Записування файлів виведення..."
 msgid "Export complete"
 msgstr "Експортування завершено"
 
-#: rustconn/src/dialogs/export.rs:768 rustconn/src/dialogs/import.rs:625
-#: rustconn/src/dialogs/import.rs:840 rustconn/src/dialogs/import.rs:951
-#: rustconn/src/dialogs/import.rs:1039 rustconn/src/dialogs/import.rs:1131
-#: rustconn/src/dialogs/import.rs:1372 rustconn/src/dialogs/import.rs:1470
-#: rustconn/src/dialogs/import.rs:1557 rustconn/src/dialogs/import.rs:1644
-#: rustconn/src/dialogs/import.rs:1730
+#: rustconn/src/dialogs/export.rs:768 rustconn/src/dialogs/import.rs:640
+#: rustconn/src/dialogs/import.rs:870 rustconn/src/dialogs/import.rs:981
+#: rustconn/src/dialogs/import.rs:1069 rustconn/src/dialogs/import.rs:1161
+#: rustconn/src/dialogs/import.rs:1416 rustconn/src/dialogs/import.rs:1514
+#: rustconn/src/dialogs/import.rs:1601 rustconn/src/dialogs/import.rs:1688
+#: rustconn/src/dialogs/import.rs:1778 rustconn/src/dialogs/import.rs:1863
 msgid "Done"
 msgstr "Готово"
 
@@ -2403,167 +2403,195 @@ msgstr "Очисть"
 msgid "Remove from history"
 msgstr "Видалити з історії"
 
-#: rustconn/src/dialogs/import.rs:51
+#: rustconn/src/dialogs/import.rs:52
 msgid "Import Connections"
 msgstr "Імпортування з'єднувань"
 
-#: rustconn/src/dialogs/import.rs:166
+#: rustconn/src/dialogs/import.rs:167
 msgid "Select Import Source"
 msgstr "Обери джерело імпортування"
 
-#: rustconn/src/dialogs/import.rs:173
+#: rustconn/src/dialogs/import.rs:174
 msgid "Choose the source from which to import connections:"
 msgstr "Обери джерело для імпортування з'єднувань:"
 
-#: rustconn/src/dialogs/import.rs:190
+#: rustconn/src/dialogs/import.rs:191
 msgid "Import from ~/.ssh/config"
 msgstr "Імпортуй з ~/.ssh/config"
 
-#: rustconn/src/dialogs/import.rs:195
+#: rustconn/src/dialogs/import.rs:196
 msgid "SSH Config File"
 msgstr "Файл конфігурації SSH"
 
-#: rustconn/src/dialogs/import.rs:196
+#: rustconn/src/dialogs/import.rs:197
 msgid "Import from a specific SSH config file"
 msgstr "Імпортуй із конкретного файлу конфігурації SSH"
 
-#: rustconn/src/dialogs/import.rs:202
+#: rustconn/src/dialogs/import.rs:203
 msgid "Import from Asbru-CM/PAC Manager config"
 msgstr "Імпортуй із конфігурації Asbru-CM/PAC Manager"
 
-#: rustconn/src/dialogs/import.rs:207
+#: rustconn/src/dialogs/import.rs:208
 msgid "Asbru-CM YAML File"
 msgstr "Файл YAML Asbru-CM"
 
-#: rustconn/src/dialogs/import.rs:208
+#: rustconn/src/dialogs/import.rs:209
 msgid "Import from a specific Asbru-CM YAML file"
 msgstr "Імпортуй із конкретного файлу YAML Asbru-CM"
 
-#: rustconn/src/dialogs/import.rs:214
+#: rustconn/src/dialogs/import.rs:215
 msgid "Import from Remmina connection files"
 msgstr "Імпортуй із файлів з'єднанків Remmina"
 
-#: rustconn/src/dialogs/import.rs:220
+#: rustconn/src/dialogs/import.rs:221
 msgid "Import from Ansible inventory files"
 msgstr "Імпортуй із файлів інвентарю Ansible"
 
-#: rustconn/src/dialogs/import.rs:225
+#: rustconn/src/dialogs/import.rs:226
 msgid "Ansible Inventory File"
 msgstr "Файл інвентарю Ansible"
 
-#: rustconn/src/dialogs/import.rs:226
+#: rustconn/src/dialogs/import.rs:227
 msgid "Import from a specific Ansible inventory file"
 msgstr "Імпортуй із конкретного файлу інвентарю Ansible"
 
-#: rustconn/src/dialogs/import.rs:232
+#: rustconn/src/dialogs/import.rs:233
 msgid "Import from a RustConn native export file"
 msgstr "Імпортуй із нативного файлу експорту RustConn"
 
-#: rustconn/src/dialogs/import.rs:238
+#: rustconn/src/dialogs/import.rs:239
 msgid "Import from a Royal TS export file"
 msgstr "Імпортуй із файлу експорту Royal TS"
 
-#: rustconn/src/dialogs/import.rs:243
+#: rustconn/src/dialogs/import.rs:244
 msgid "Remote Desktop Manager (JSON)"
 msgstr "Remote Desktop Manager (JSON)"
 
-#: rustconn/src/dialogs/import.rs:244
+#: rustconn/src/dialogs/import.rs:245
 msgid "Import from a Remote Desktop Manager JSON export file"
 msgstr "Імпортуй із файлу експорту JSON Remote Desktop Manager"
 
-#: rustconn/src/dialogs/import.rs:250
+#: rustconn/src/dialogs/import.rs:251
 msgid "Import from a MobaXterm session export file"
 msgstr "Імпортуй із файлу експорту сеансу MobaXterm"
 
-#: rustconn/src/dialogs/import.rs:255
+#: rustconn/src/dialogs/import.rs:256
 msgid "Virt-Viewer (.vv)"
 msgstr "Virt-Viewer (.vv)"
 
-#: rustconn/src/dialogs/import.rs:256
+#: rustconn/src/dialogs/import.rs:257
 msgid "Import SPICE/VNC connection from a virt-viewer file"
 msgstr "Імпортуй з'єднок SPICE/VNC із файлу virt-viewer"
 
-#: rustconn/src/dialogs/import.rs:313
+#: rustconn/src/dialogs/import.rs:262
+msgid "Libvirt / GNOME Boxes"
+msgstr "Libvirt / GNOME Boxes"
+
+#: rustconn/src/dialogs/import.rs:263
+msgid "Import VMs from libvirt domain XML files"
+msgstr "Імпорт ВМ із XML-файлів доменів libvirt"
+
+#: rustconn/src/dialogs/import.rs:268
+msgid "Libvirt XML File"
+msgstr "XML-файл Libvirt"
+
+#: rustconn/src/dialogs/import.rs:269
+msgid "Import from a libvirt domain XML or virsh dumpxml output"
+msgstr "Імпорт із XML домену libvirt або виводу virsh dumpxml"
+
+#: rustconn/src/dialogs/import.rs:326
 msgid "Available"
 msgstr "Доступно"
 
-#: rustconn/src/dialogs/import.rs:318
+#: rustconn/src/dialogs/import.rs:331
 msgid "Not Found"
 msgstr "Не знайдено"
 
-#: rustconn/src/dialogs/import.rs:336
+#: rustconn/src/dialogs/import.rs:349
 msgid "Importing..."
 msgstr "Імпортування..."
 
-#: rustconn/src/dialogs/import.rs:349
+#: rustconn/src/dialogs/import.rs:362
 msgid "Scanning for connections..."
 msgstr "Пошук з'єднувань..."
 
-#: rustconn/src/dialogs/import.rs:361
+#: rustconn/src/dialogs/import.rs:374
 msgid "Import Complete"
 msgstr "Імпортування завершено"
 
-#: rustconn/src/dialogs/import.rs:610 rustconn/src/dialogs/import.rs:825
+#: rustconn/src/dialogs/import.rs:625 rustconn/src/dialogs/import.rs:855
 msgid "Import complete"
 msgstr "Імпортування завершено"
 
-#: rustconn/src/dialogs/import.rs:888
+#: rustconn/src/dialogs/import.rs:918
 msgid "Select SSH Config File"
 msgstr "Обери файла конфіґурації SSH"
 
-#: rustconn/src/dialogs/import.rs:897
+#: rustconn/src/dialogs/import.rs:927
 msgid "SSH config files"
 msgstr "Файли конфігурації SSH"
 
-#: rustconn/src/dialogs/import.rs:978
+#: rustconn/src/dialogs/import.rs:1008
 msgid "Select Asbru-CM YAML File"
 msgstr "Обери YAML-файла Asbru-CM"
 
-#: rustconn/src/dialogs/import.rs:986
+#: rustconn/src/dialogs/import.rs:1016
 msgid "YAML files"
 msgstr "Файли YAML"
 
-#: rustconn/src/dialogs/import.rs:1066
+#: rustconn/src/dialogs/import.rs:1096
 msgid "Select Ansible Inventory File"
 msgstr "Обери файла інвентарю Ansible"
 
-#: rustconn/src/dialogs/import.rs:1078
+#: rustconn/src/dialogs/import.rs:1108
 msgid "Ansible inventory files"
 msgstr "Файли інвентарю Ansible"
 
-#: rustconn/src/dialogs/import.rs:1303
+#: rustconn/src/dialogs/import.rs:1347
 msgid "Select RustConn Native File"
 msgstr "Обери файла RustConn"
 
-#: rustconn/src/dialogs/import.rs:1351
+#: rustconn/src/dialogs/import.rs:1395
 msgid "RustConn Native"
 msgstr "Нативний RustConn"
 
-#: rustconn/src/dialogs/import.rs:1410
+#: rustconn/src/dialogs/import.rs:1454
 msgid "Select Royal TS File"
 msgstr "Обери файла Royal TS"
 
-#: rustconn/src/dialogs/import.rs:1417
+#: rustconn/src/dialogs/import.rs:1461
 msgid "Royal TS files (*.rtsz, *.json)"
 msgstr "Файли Royal TS (*.rtsz, *.json)"
 
-#: rustconn/src/dialogs/import.rs:1496
+#: rustconn/src/dialogs/import.rs:1540
 msgid "Select RDM JSON File"
 msgstr "Обери JSON-файла RDM"
 
-#: rustconn/src/dialogs/import.rs:1502
+#: rustconn/src/dialogs/import.rs:1546
 msgid "JSON files"
 msgstr "Файли JSON"
 
-#: rustconn/src/dialogs/import.rs:1583
+#: rustconn/src/dialogs/import.rs:1627
 msgid "Select MobaXterm Session File"
 msgstr "Обери файла сеансу MobaXterm"
 
-#: rustconn/src/dialogs/import.rs:1670
+#: rustconn/src/dialogs/import.rs:1714
+msgid "Select Libvirt Domain XML File"
+msgstr "Виберіть XML-файл домену Libvirt"
+
+#: rustconn/src/dialogs/import.rs:1720
+msgid "XML files (*.xml)"
+msgstr "XML-файли (*.xml)"
+
+#: rustconn/src/dialogs/import.rs:1723
+msgid "All files"
+msgstr "Усі файли"
+
+#: rustconn/src/dialogs/import.rs:1803
 msgid "Select Virt-Viewer File"
 msgstr "Обери файла Virt-Viewer"
 
-#: rustconn/src/dialogs/import.rs:1676
+#: rustconn/src/dialogs/import.rs:1809
 msgid "Virt-Viewer files (*.vv)"
 msgstr "Файли Virt-Viewer (*.vv)"
 

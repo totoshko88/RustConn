@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.9.3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-28 16:36+0200\n"
+"POT-Creation-Date: 2026-02-28 17:04+0200\n"
 "PO-Revision-Date: 2026-02-17 00:00+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Danish\n"
@@ -270,7 +270,7 @@ msgstr "Ny forbindelse"
 #: rustconn/src/dialogs/connection/dialog.rs:1338
 #: rustconn/src/dialogs/export.rs:778
 #: rustconn/src/dialogs/flatpak_components.rs:98
-#: rustconn/src/dialogs/import.rs:1382
+#: rustconn/src/dialogs/import.rs:1426
 #: rustconn/src/dialogs/terminal_search.rs:54
 #: rustconn/src/window/connection_dialogs.rs:208
 #: rustconn/src/window/edit_dialogs.rs:1243 rustconn/src/window/sessions.rs:47
@@ -2072,32 +2072,32 @@ msgstr "Eksportformat"
 msgid "Select the format to export your connections to"
 msgstr "Vælg formatet til eksport af dine forbindelser"
 
-#: rustconn/src/dialogs/export.rs:172 rustconn/src/dialogs/import.rs:219
+#: rustconn/src/dialogs/export.rs:172 rustconn/src/dialogs/import.rs:220
 msgid "Ansible Inventory"
 msgstr "Ansible Inventory"
 
 #: rustconn/src/dialogs/export.rs:173 rustconn/src/dialogs/export.rs:599
-#: rustconn/src/dialogs/import.rs:189
+#: rustconn/src/dialogs/import.rs:190
 msgid "SSH Config"
 msgstr "SSH Config"
 
-#: rustconn/src/dialogs/export.rs:174 rustconn/src/dialogs/import.rs:213
+#: rustconn/src/dialogs/export.rs:174 rustconn/src/dialogs/import.rs:214
 msgid "Remmina"
 msgstr "Remmina"
 
-#: rustconn/src/dialogs/export.rs:175 rustconn/src/dialogs/import.rs:201
+#: rustconn/src/dialogs/export.rs:175 rustconn/src/dialogs/import.rs:202
 msgid "Asbru-CM"
 msgstr "Asbru-CM"
 
-#: rustconn/src/dialogs/export.rs:176 rustconn/src/dialogs/import.rs:231
+#: rustconn/src/dialogs/export.rs:176 rustconn/src/dialogs/import.rs:232
 msgid "RustConn Native (.rcn)"
 msgstr "RustConn Native (.rcn)"
 
-#: rustconn/src/dialogs/export.rs:177 rustconn/src/dialogs/import.rs:237
+#: rustconn/src/dialogs/export.rs:177 rustconn/src/dialogs/import.rs:238
 msgid "Royal TS (.rtsz)"
 msgstr "Royal TS (.rtsz)"
 
-#: rustconn/src/dialogs/export.rs:178 rustconn/src/dialogs/import.rs:249
+#: rustconn/src/dialogs/export.rs:178 rustconn/src/dialogs/import.rs:250
 msgid "MobaXterm (.mxtsessions)"
 msgstr "MobaXterm (.mxtsessions)"
 
@@ -2174,7 +2174,7 @@ msgstr "Forbereder eksport..."
 msgid "Export Complete"
 msgstr "Eksport fuldført"
 
-#: rustconn/src/dialogs/export.rs:317 rustconn/src/dialogs/import.rs:376
+#: rustconn/src/dialogs/export.rs:317 rustconn/src/dialogs/import.rs:389
 msgid "Details"
 msgstr "Detaljer"
 
@@ -2230,7 +2230,7 @@ msgstr "Asbru-CM YAML (*.yml)"
 msgid "Remmina (*.remmina)"
 msgstr "Remmina (*.remmina)"
 
-#: rustconn/src/dialogs/export.rs:613 rustconn/src/dialogs/import.rs:1310
+#: rustconn/src/dialogs/export.rs:613 rustconn/src/dialogs/import.rs:1354
 msgid "RustConn Native (*.rcn)"
 msgstr "RustConn Native (*.rcn)"
 
@@ -2238,7 +2238,7 @@ msgstr "RustConn Native (*.rcn)"
 msgid "Royal TS (*.rtsz)"
 msgstr "Royal TS (*.rtsz)"
 
-#: rustconn/src/dialogs/export.rs:621 rustconn/src/dialogs/import.rs:1589
+#: rustconn/src/dialogs/export.rs:621 rustconn/src/dialogs/import.rs:1633
 msgid "MobaXterm Sessions (*.mxtsessions)"
 msgstr "MobaXterm Sessions (*.mxtsessions)"
 
@@ -2266,12 +2266,12 @@ msgstr "Skriver outputfiler..."
 msgid "Export complete"
 msgstr "Eksport fuldført"
 
-#: rustconn/src/dialogs/export.rs:768 rustconn/src/dialogs/import.rs:625
-#: rustconn/src/dialogs/import.rs:840 rustconn/src/dialogs/import.rs:951
-#: rustconn/src/dialogs/import.rs:1039 rustconn/src/dialogs/import.rs:1131
-#: rustconn/src/dialogs/import.rs:1372 rustconn/src/dialogs/import.rs:1470
-#: rustconn/src/dialogs/import.rs:1557 rustconn/src/dialogs/import.rs:1644
-#: rustconn/src/dialogs/import.rs:1730
+#: rustconn/src/dialogs/export.rs:768 rustconn/src/dialogs/import.rs:640
+#: rustconn/src/dialogs/import.rs:870 rustconn/src/dialogs/import.rs:981
+#: rustconn/src/dialogs/import.rs:1069 rustconn/src/dialogs/import.rs:1161
+#: rustconn/src/dialogs/import.rs:1416 rustconn/src/dialogs/import.rs:1514
+#: rustconn/src/dialogs/import.rs:1601 rustconn/src/dialogs/import.rs:1688
+#: rustconn/src/dialogs/import.rs:1778 rustconn/src/dialogs/import.rs:1863
 msgid "Done"
 msgstr "Færdig"
 
@@ -2400,167 +2400,195 @@ msgstr "Ryd"
 msgid "Remove from history"
 msgstr "Fjern fra historik"
 
-#: rustconn/src/dialogs/import.rs:51
+#: rustconn/src/dialogs/import.rs:52
 msgid "Import Connections"
 msgstr "Importér forbindelser"
 
-#: rustconn/src/dialogs/import.rs:166
+#: rustconn/src/dialogs/import.rs:167
 msgid "Select Import Source"
 msgstr "Vælg importkilde"
 
-#: rustconn/src/dialogs/import.rs:173
+#: rustconn/src/dialogs/import.rs:174
 msgid "Choose the source from which to import connections:"
 msgstr "Vælg kilden til import af forbindelser:"
 
-#: rustconn/src/dialogs/import.rs:190
+#: rustconn/src/dialogs/import.rs:191
 msgid "Import from ~/.ssh/config"
 msgstr "Importer fra ~/.ssh/config"
 
-#: rustconn/src/dialogs/import.rs:195
+#: rustconn/src/dialogs/import.rs:196
 msgid "SSH Config File"
 msgstr "SSH Config-fil"
 
-#: rustconn/src/dialogs/import.rs:196
+#: rustconn/src/dialogs/import.rs:197
 msgid "Import from a specific SSH config file"
 msgstr "Importer fra en specifik SSH config-fil"
 
-#: rustconn/src/dialogs/import.rs:202
+#: rustconn/src/dialogs/import.rs:203
 msgid "Import from Asbru-CM/PAC Manager config"
 msgstr "Importer fra Asbru-CM/PAC Manager-konfiguration"
 
-#: rustconn/src/dialogs/import.rs:207
+#: rustconn/src/dialogs/import.rs:208
 msgid "Asbru-CM YAML File"
 msgstr "Asbru-CM YAML-fil"
 
-#: rustconn/src/dialogs/import.rs:208
+#: rustconn/src/dialogs/import.rs:209
 msgid "Import from a specific Asbru-CM YAML file"
 msgstr "Importer fra en specifik Asbru-CM YAML-fil"
 
-#: rustconn/src/dialogs/import.rs:214
+#: rustconn/src/dialogs/import.rs:215
 msgid "Import from Remmina connection files"
 msgstr "Importer fra Remmina-forbindelsesfiler"
 
-#: rustconn/src/dialogs/import.rs:220
+#: rustconn/src/dialogs/import.rs:221
 msgid "Import from Ansible inventory files"
 msgstr "Importer fra Ansible-inventarfiler"
 
-#: rustconn/src/dialogs/import.rs:225
+#: rustconn/src/dialogs/import.rs:226
 msgid "Ansible Inventory File"
 msgstr "Ansible-inventarfil"
 
-#: rustconn/src/dialogs/import.rs:226
+#: rustconn/src/dialogs/import.rs:227
 msgid "Import from a specific Ansible inventory file"
 msgstr "Importer fra en specifik Ansible-inventarfil"
 
-#: rustconn/src/dialogs/import.rs:232
+#: rustconn/src/dialogs/import.rs:233
 msgid "Import from a RustConn native export file"
 msgstr "Importer fra en RustConn-nativ eksportfil"
 
-#: rustconn/src/dialogs/import.rs:238
+#: rustconn/src/dialogs/import.rs:239
 msgid "Import from a Royal TS export file"
 msgstr "Importer fra en Royal TS-eksportfil"
 
-#: rustconn/src/dialogs/import.rs:243
+#: rustconn/src/dialogs/import.rs:244
 msgid "Remote Desktop Manager (JSON)"
 msgstr "Remote Desktop Manager (JSON)"
 
-#: rustconn/src/dialogs/import.rs:244
+#: rustconn/src/dialogs/import.rs:245
 msgid "Import from a Remote Desktop Manager JSON export file"
 msgstr "Importer fra en Remote Desktop Manager JSON-eksportfil"
 
-#: rustconn/src/dialogs/import.rs:250
+#: rustconn/src/dialogs/import.rs:251
 msgid "Import from a MobaXterm session export file"
 msgstr "Importer fra en MobaXterm-sessionseksportfil"
 
-#: rustconn/src/dialogs/import.rs:255
+#: rustconn/src/dialogs/import.rs:256
 msgid "Virt-Viewer (.vv)"
 msgstr "Virt-Viewer (.vv)"
 
-#: rustconn/src/dialogs/import.rs:256
+#: rustconn/src/dialogs/import.rs:257
 msgid "Import SPICE/VNC connection from a virt-viewer file"
 msgstr "Importer SPICE/VNC-forbindelse fra en virt-viewer-fil"
 
-#: rustconn/src/dialogs/import.rs:313
+#: rustconn/src/dialogs/import.rs:262
+msgid "Libvirt / GNOME Boxes"
+msgstr "Libvirt / GNOME Boxes"
+
+#: rustconn/src/dialogs/import.rs:263
+msgid "Import VMs from libvirt domain XML files"
+msgstr "Importér VM'er fra libvirt-domæne-XML-filer"
+
+#: rustconn/src/dialogs/import.rs:268
+msgid "Libvirt XML File"
+msgstr "Libvirt XML-fil"
+
+#: rustconn/src/dialogs/import.rs:269
+msgid "Import from a libvirt domain XML or virsh dumpxml output"
+msgstr "Importér fra en libvirt-domæne-XML eller virsh dumpxml-output"
+
+#: rustconn/src/dialogs/import.rs:326
 msgid "Available"
 msgstr "Tilgængelig"
 
-#: rustconn/src/dialogs/import.rs:318
+#: rustconn/src/dialogs/import.rs:331
 msgid "Not Found"
 msgstr "Ikke fundet"
 
-#: rustconn/src/dialogs/import.rs:336
+#: rustconn/src/dialogs/import.rs:349
 msgid "Importing..."
 msgstr "Importerer..."
 
-#: rustconn/src/dialogs/import.rs:349
+#: rustconn/src/dialogs/import.rs:362
 msgid "Scanning for connections..."
 msgstr "Scanner efter forbindelser..."
 
-#: rustconn/src/dialogs/import.rs:361
+#: rustconn/src/dialogs/import.rs:374
 msgid "Import Complete"
 msgstr "Import fuldført"
 
-#: rustconn/src/dialogs/import.rs:610 rustconn/src/dialogs/import.rs:825
+#: rustconn/src/dialogs/import.rs:625 rustconn/src/dialogs/import.rs:855
 msgid "Import complete"
 msgstr "Import fuldført"
 
-#: rustconn/src/dialogs/import.rs:888
+#: rustconn/src/dialogs/import.rs:918
 msgid "Select SSH Config File"
 msgstr "Vælg SSH-konfigurationsfil"
 
-#: rustconn/src/dialogs/import.rs:897
+#: rustconn/src/dialogs/import.rs:927
 msgid "SSH config files"
 msgstr "SSH config-filer"
 
-#: rustconn/src/dialogs/import.rs:978
+#: rustconn/src/dialogs/import.rs:1008
 msgid "Select Asbru-CM YAML File"
 msgstr "Vælg Asbru-CM YAML-fil"
 
-#: rustconn/src/dialogs/import.rs:986
+#: rustconn/src/dialogs/import.rs:1016
 msgid "YAML files"
 msgstr "YAML-filer"
 
-#: rustconn/src/dialogs/import.rs:1066
+#: rustconn/src/dialogs/import.rs:1096
 msgid "Select Ansible Inventory File"
 msgstr "Vælg Ansible-inventarfil"
 
-#: rustconn/src/dialogs/import.rs:1078
+#: rustconn/src/dialogs/import.rs:1108
 msgid "Ansible inventory files"
 msgstr "Ansible-inventarfiler"
 
-#: rustconn/src/dialogs/import.rs:1303
+#: rustconn/src/dialogs/import.rs:1347
 msgid "Select RustConn Native File"
 msgstr "Vælg RustConn-fil"
 
-#: rustconn/src/dialogs/import.rs:1351
+#: rustconn/src/dialogs/import.rs:1395
 msgid "RustConn Native"
 msgstr "RustConn Native"
 
-#: rustconn/src/dialogs/import.rs:1410
+#: rustconn/src/dialogs/import.rs:1454
 msgid "Select Royal TS File"
 msgstr "Vælg Royal TS-fil"
 
-#: rustconn/src/dialogs/import.rs:1417
+#: rustconn/src/dialogs/import.rs:1461
 msgid "Royal TS files (*.rtsz, *.json)"
 msgstr "Royal TS-filer (*.rtsz, *.json)"
 
-#: rustconn/src/dialogs/import.rs:1496
+#: rustconn/src/dialogs/import.rs:1540
 msgid "Select RDM JSON File"
 msgstr "Vælg RDM JSON-fil"
 
-#: rustconn/src/dialogs/import.rs:1502
+#: rustconn/src/dialogs/import.rs:1546
 msgid "JSON files"
 msgstr "JSON-filer"
 
-#: rustconn/src/dialogs/import.rs:1583
+#: rustconn/src/dialogs/import.rs:1627
 msgid "Select MobaXterm Session File"
 msgstr "Vælg MobaXterm-sessionsfil"
 
-#: rustconn/src/dialogs/import.rs:1670
+#: rustconn/src/dialogs/import.rs:1714
+msgid "Select Libvirt Domain XML File"
+msgstr "Vælg Libvirt-domæne-XML-fil"
+
+#: rustconn/src/dialogs/import.rs:1720
+msgid "XML files (*.xml)"
+msgstr "XML-filer (*.xml)"
+
+#: rustconn/src/dialogs/import.rs:1723
+msgid "All files"
+msgstr "Alle filer"
+
+#: rustconn/src/dialogs/import.rs:1803
 msgid "Select Virt-Viewer File"
 msgstr "Vælg Virt-Viewer-fil"
 
-#: rustconn/src/dialogs/import.rs:1676
+#: rustconn/src/dialogs/import.rs:1809
 msgid "Virt-Viewer files (*.vv)"
 msgstr "Virt-Viewer-filer (*.vv)"
 
