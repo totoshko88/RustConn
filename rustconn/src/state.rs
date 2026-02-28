@@ -2259,6 +2259,19 @@ impl AppState {
         self.cluster_manager.get_all_clusters()
     }
 
+    /// Starts a cluster session for tracking connection states
+    pub fn start_cluster_session(&mut self, cluster_id: Uuid) -> Result<(), String> {
+        self.cluster_manager
+            .start_session(cluster_id)
+            .map(|_| ())
+            .map_err(|e| format!("Failed to start cluster session: {e}"))
+    }
+
+    /// Ends a cluster session
+    pub fn end_cluster_session(&mut self, cluster_id: Uuid) {
+        self.cluster_manager.end_session(cluster_id);
+    }
+
     /// Saves clusters to disk
     fn save_clusters(&self) -> Result<(), String> {
         let clusters = self.cluster_manager.clusters_to_vec();

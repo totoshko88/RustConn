@@ -67,11 +67,10 @@ fn main() {
         }
     }
 
+    // Informational only — not a warning. Use DEP_* or just skip.
+    // cargo:warning= would show as a build warning, which is misleading.
     if count > 0 {
-        println!(
-            "cargo:warning=Compiled {count} locale(s) into {}",
-            locale_out.display()
-        );
+        eprintln!("  Compiled {count} locale(s) into {}", locale_out.display());
     }
 
     // Export the locale path so i18n.rs can find it at runtime

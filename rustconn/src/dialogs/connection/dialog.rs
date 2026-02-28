@@ -18,7 +18,7 @@ use gtk4::{
     TextView, WrapMode,
 };
 use libadwaita as adw;
-use rustconn_core::automation::{ConnectionTask, ExpectRule, TaskCondition};
+use rustconn_core::automation::{ConnectionTask, ExpectRule, TaskCondition, builtin_templates};
 use rustconn_core::models::{
     AwsSsmConfig, AzureBastionConfig, AzureSshConfig, BoundaryConfig, CloudflareAccessConfig,
     Connection, CustomProperty, GcpIapConfig, GenericZeroTrustConfig, OciBastionConfig,
@@ -324,6 +324,8 @@ struct ExpectRuleRow {
     timeout_spin: SpinButton,
     /// Checkbox for enabled state
     enabled_check: CheckButton,
+    /// Checkbox for one-shot mode
+    one_shot_check: CheckButton,
     /// Delete button
     delete_button: Button,
     /// Move up button
@@ -611,6 +613,7 @@ impl ConnectionDialog {
             automation_tab,
             expect_rules_list,
             add_expect_rule_button,
+            template_list_box,
             expect_pattern_test_entry,
             expect_test_result_label,
             pre_connect_enabled_check,
@@ -653,6 +656,9 @@ impl ConnectionDialog {
             &expect_rules_list,
             &expect_rules,
         );
+
+        // Wire up template picker buttons
+        Self::wire_template_buttons(&template_list_box, &expect_rules_list, &expect_rules);
 
         // Wire up pattern tester
         Self::wire_pattern_tester(
@@ -3744,6 +3750,7 @@ impl ConnectionDialog {
         GtkBox,
         ListBox,
         Button,
+        GtkBox,
         Entry,
         Label,
         CheckButton,
@@ -3798,10 +3805,34 @@ impl ConnectionDialog {
         rules_button_box.set_halign(gtk4::Align::End);
         rules_button_box.set_margin_top(8);
 
+        let template_menu_button = gtk4::MenuButton::builder()
+            .label(&i18n("From Template"))
+            .tooltip_text(i18n("Add rules from a built-in template"))
+            .build();
+
+        let template_popover = gtk4::Popover::new();
+        let template_list_box = GtkBox::new(Orientation::Vertical, 4);
+        template_list_box.set_margin_top(8);
+        template_list_box.set_margin_bottom(8);
+        template_list_box.set_margin_start(8);
+        template_list_box.set_margin_end(8);
+
+        for template in builtin_templates() {
+            let btn = Button::builder()
+                .label(template.name)
+                .css_classes(["flat"])
+                .tooltip_text(template.description)
+                .build();
+            template_list_box.append(&btn);
+        }
+        template_popover.set_child(Some(&template_list_box));
+        template_menu_button.set_popover(Some(&template_popover));
+
         let add_rule_button = Button::builder()
             .label(&i18n("Add Rule"))
             .css_classes(["suggested-action"])
             .build();
+        rules_button_box.append(&template_menu_button);
         rules_button_box.append(&add_rule_button);
 
         rules_group.add(&rules_button_box);
@@ -3867,6 +3898,7 @@ impl ConnectionDialog {
             vbox,
             expect_rules_list,
             add_rule_button,
+            template_list_box,
             test_entry,
             result_label,
             pre_connect_enabled_check,
@@ -4702,15 +4734,55 @@ impl ConnectionDialog {
 
         grid.attach(&settings_box, 1, 2, 2, 1);
 
-        // Row 3: Enabled checkbox
+        // Row 3: Enabled and One-shot checkboxes
         let enabled_check = CheckButton::builder()
             .label(i18n("Enabled"))
             .active(true)
             .build();
 
-        grid.attach(&enabled_check, 1, 3, 2, 1);
+        let one_shot_check = CheckButton::builder()
+            .label(i18n("One-shot"))
+            .active(true)
+            .tooltip_text(i18n("Fire only once, then remove the rule"))
+            .build();
+
+        let checks_box = GtkBox::new(Orientation::Horizontal, 12);
+        checks_box.append(&enabled_check);
+        checks_box.append(&one_shot_check);
+
+        grid.attach(&checks_box, 1, 3, 2, 1);
+
+        // Row 4: Regex validation label
+        let validation_label = Label::builder()
+            .halign(gtk4::Align::Start)
+            .css_classes(["error"])
+            .visible(false)
+            .build();
+        grid.attach(&validation_label, 1, 4, 2, 1);
 
         main_box.append(&grid);
+
+        // Wire regex validation on pattern entry
+        let validation_label_clone = validation_label.clone();
+        pattern_entry.connect_changed(move |entry| {
+            let text = entry.text().to_string();
+            if text.is_empty() {
+                validation_label_clone.set_visible(false);
+                entry.remove_css_class("error");
+            } else {
+                match regex::Regex::new(&text) {
+                    Ok(_) => {
+                        validation_label_clone.set_visible(false);
+                        entry.remove_css_class("error");
+                    }
+                    Err(e) => {
+                        validation_label_clone.set_text(&e.to_string());
+                        validation_label_clone.set_visible(true);
+                        entry.add_css_class("error");
+                    }
+                }
+            }
+        });
 
         // Populate from existing rule if provided
         let id = rule.map_or_else(Uuid::new_v4, |r| {
@@ -4719,6 +4791,7 @@ impl ConnectionDialog {
             priority_spin.set_value(f64::from(r.priority));
             timeout_spin.set_value(f64::from(r.timeout_ms.unwrap_or(0)));
             enabled_check.set_active(r.enabled);
+            one_shot_check.set_active(r.one_shot);
             r.id
         });
 
@@ -4732,6 +4805,7 @@ impl ConnectionDialog {
             priority_spin,
             timeout_spin,
             enabled_check,
+            one_shot_check,
             delete_button,
             move_up_button,
             move_down_button,
@@ -4788,6 +4862,89 @@ impl ConnectionDialog {
 
             list_clone.append(&rule_row.row);
         });
+    }
+
+    /// Wires up template picker buttons to add preset rules
+    fn wire_template_buttons(
+        template_list_box: &GtkBox,
+        expect_rules_list: &ListBox,
+        expect_rules: &Rc<RefCell<Vec<ExpectRule>>>,
+    ) {
+        let templates = builtin_templates();
+        let mut child = template_list_box.first_child();
+        let mut idx = 0;
+
+        while let Some(widget) = child {
+            let next = widget.next_sibling();
+            if let Some(btn) = widget.downcast_ref::<Button>()
+                && idx < templates.len()
+            {
+                let list_clone = expect_rules_list.clone();
+                let rules_clone = expect_rules.clone();
+                let template_idx = idx;
+
+                btn.connect_clicked(move |btn| {
+                    let templates = builtin_templates();
+                    if template_idx >= templates.len() {
+                        return;
+                    }
+                    let template = &templates[template_idx];
+                    let new_rules = template.rules();
+
+                    for rule in &new_rules {
+                        let rule_row = Self::create_expect_rule_row(Some(rule));
+
+                        // Connect delete button
+                        let list_for_delete = list_clone.clone();
+                        let rules_for_delete = rules_clone.clone();
+                        let row_widget = rule_row.row.clone();
+                        let delete_id = rule_row.id;
+                        rule_row.delete_button.connect_clicked(move |_| {
+                            list_for_delete.remove(&row_widget);
+                            rules_for_delete.borrow_mut().retain(|r| r.id != delete_id);
+                        });
+
+                        // Connect move buttons
+                        let list_for_up = list_clone.clone();
+                        let rules_for_up = rules_clone.clone();
+                        let row_for_up = rule_row.row.clone();
+                        let up_id = rule_row.id;
+                        rule_row.move_up_button.connect_clicked(move |_| {
+                            Self::move_rule_up(&list_for_up, &rules_for_up, &row_for_up, up_id);
+                        });
+
+                        let list_for_down = list_clone.clone();
+                        let rules_for_down = rules_clone.clone();
+                        let row_for_down = rule_row.row.clone();
+                        let down_id = rule_row.id;
+                        rule_row.move_down_button.connect_clicked(move |_| {
+                            Self::move_rule_down(
+                                &list_for_down,
+                                &rules_for_down,
+                                &row_for_down,
+                                down_id,
+                            );
+                        });
+
+                        Self::connect_rule_entry_changes(&rule_row, &rules_clone);
+
+                        rules_clone.borrow_mut().push(rule.clone());
+                        list_clone.append(&rule_row.row);
+                    }
+
+                    // Close the popover
+                    if let Some(popover) = btn
+                        .ancestor(gtk4::Popover::static_type())
+                        .and_then(|w| w.downcast::<gtk4::Popover>().ok())
+                    {
+                        popover.popdown();
+                    }
+                });
+
+                idx += 1;
+            }
+            child = next;
+        }
     }
 
     /// Connects entry changes to update the rule in the list
@@ -4866,6 +5023,20 @@ impl ConnectionDialog {
                 .find(|r| r.id == enabled_id)
             {
                 rule.enabled = enabled;
+            }
+        });
+
+        // One-shot checkbox
+        let rules_for_one_shot = expect_rules.clone();
+        let one_shot_id = rule_id;
+        rule_row.one_shot_check.connect_toggled(move |check| {
+            let one_shot = check.is_active();
+            if let Some(rule) = rules_for_one_shot
+                .borrow_mut()
+                .iter_mut()
+                .find(|r| r.id == one_shot_id)
+            {
+                rule.one_shot = one_shot;
             }
         });
     }

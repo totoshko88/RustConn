@@ -86,6 +86,17 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
                 "Forced Adwaita icon theme for consistent icon availability"
             );
         }
+
+        // Suppress the libadwaita warning about gtk-application-prefer-dark-theme.
+        // Some desktop environments (KDE, XFCE) set this property globally.
+        // Libadwaita uses AdwStyleManager::color-scheme instead, so we clear
+        // the deprecated property to avoid the runtime warning.
+        if settings.is_gtk_application_prefer_dark_theme() {
+            settings.set_gtk_application_prefer_dark_theme(false);
+            tracing::debug!(
+                "Cleared deprecated gtk-application-prefer-dark-theme (using AdwStyleManager)"
+            );
+        }
     }
 
     // Create shared application state (fast — secret backends deferred)

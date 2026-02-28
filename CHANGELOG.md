@@ -31,10 +31,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Alert dialog styling** — destructive OK for errors, suggested OK for success
 - **WoL dialog i18n** — magic packet toast now uses `i18n_f()` for translation
 - **VTE spawn failure handling** — when a command (telnet, ssh, picocom) is not found, the tab now shows a "Command not found" banner with Reconnect button and an error toast instead of a silent empty terminal
+- **Pango markup in Settings** — escaped ampersand in "Backup & Restore" group title that caused Gtk-WARNING about unparseable markup
+- **Build warning noise** — locale compilation count no longer emits a cargo warning; informational message moved to stderr
+- **Adwaita dark theme warning** — cleared deprecated `gtk-application-prefer-dark-theme` property at startup to suppress libadwaita runtime warning on KDE/XFCE desktops
+
+### Fixed (Clusters)
+- **Cluster broadcast mode wired** — `connect_cluster()` now creates a `ClusterSession`, registers terminal sessions, and wires VTE `commit` signal to broadcast keyboard input to all connected cluster terminals when broadcast mode is enabled
+- **Cluster session lifecycle** — `ClusterManager::start_session()` called from GUI on cluster connect; terminal-to-cluster mapping tracked in `TerminalNotebook`
+- **Disconnect all cluster sessions** — new stop button in Manage Clusters dialog closes all tabs belonging to a cluster at once
+- **Cluster dialog i18n** — all alert strings in `window/clusters.rs` wrapped with `i18n()`/`i18n_f()`; "Broadcast mode" label and subtitle in cluster dialog now translatable; 15 new strings translated in 15 languages
 
 ### Improved
 - **User Guide** — major update: Zero Trust Providers (10 providers), Security Best Practices, FAQ, Migration Guide (Remmina/MobaXterm/Royal TS/SSH Config/Ansible), expanded Templates, Snippets, Clusters, Group Operations Mode, Encrypted Documents, Automation & Tasks, FIDO2, Import/Export, Connection Statistics; fixed Quick Connect shortcut
 - **Sidebar** — group tooltip shows child connection count
+- **Automation engine** — expect rules now support one-shot mode (fire once then auto-remove), per-rule timeout, regex validation in dialog, template picker button ("From Template") with 5 built-in presets; pre-connect/post-disconnect tasks wired to connection lifecycle; key sequences executed after connection with 500 ms delay; variable syntax unified to `${variable}`
 
 ## [0.9.3] - 2026-02-27
 

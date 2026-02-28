@@ -4,6 +4,7 @@
 //! including cluster dialogs and related functionality.
 
 use crate::alert;
+use crate::i18n::{i18n, i18n_f};
 use gtk4::prelude::*;
 use std::rc::Rc;
 use uuid::Uuid;
@@ -50,12 +51,12 @@ pub fn show_new_cluster_dialog(
                 Ok(_) => {
                     alert::show_success(
                         &window_clone,
-                        "Cluster Created",
-                        "Cluster has been saved successfully.",
+                        &i18n("Cluster Created"),
+                        &i18n("Cluster has been saved successfully."),
                     );
                 }
                 Err(e) => {
-                    alert::show_error(&window_clone, "Error Creating Cluster", &e);
+                    alert::show_error(&window_clone, &i18n("Error Creating Cluster"), &e);
                 }
             }
         }
@@ -98,12 +99,12 @@ pub fn show_new_cluster_dialog_with_selection(
                 Ok(_) => {
                     alert::show_success(
                         &window_clone,
-                        "Cluster Created",
-                        "Cluster has been saved successfully.",
+                        &i18n("Cluster Created"),
+                        &i18n("Cluster has been saved successfully."),
                     );
                 }
                 Err(e) => {
-                    alert::show_error(&window_clone, "Error Creating Cluster", &e);
+                    alert::show_error(&window_clone, &i18n("Error Creating Cluster"), &e);
                 }
             }
         }
@@ -192,6 +193,12 @@ fn setup_cluster_dialog_callbacks(
         );
     });
 
+    // Disconnect callback
+    let notebook_clone = notebook.clone();
+    dialog_ref.set_on_disconnect(move |cluster_id| {
+        disconnect_cluster(&notebook_clone, cluster_id);
+    });
+
     // Edit callback
     let state_clone = state.clone();
     let notebook_clone = notebook.clone();
@@ -275,8 +282,8 @@ fn show_new_cluster_dialog_from_manager(
                 Err(e) => {
                     alert::show_error(
                         &parent_clone,
-                        "Error Creating Cluster",
-                        &format!("Failed to save cluster: {e}"),
+                        &i18n("Error Creating Cluster"),
+                        &i18n_f("Failed to save cluster: {}", &[&e]),
                     );
                 }
             }
@@ -284,7 +291,7 @@ fn show_new_cluster_dialog_from_manager(
     });
 }
 
-/// Connects to all connections in a cluster
+/// Connects to all connections in a cluster with session tracking and broadcast
 fn connect_cluster(
     state: &SharedAppState,
     notebook: &SharedNotebook,
@@ -293,20 +300,122 @@ fn connect_cluster(
     monitoring: &super::types::SharedMonitoring,
     cluster_id: Uuid,
 ) {
-    let connection_ids: Vec<Uuid> = if let Ok(state_ref) = state.try_borrow() {
-        if let Some(cluster) = state_ref.get_cluster(cluster_id) {
-            cluster.connection_ids.clone()
+    // Get cluster info
+    let (connection_ids, broadcast_enabled, cluster_name) =
+        if let Ok(state_ref) = state.try_borrow() {
+            if let Some(cluster) = state_ref.get_cluster(cluster_id) {
+                (
+                    cluster.connection_ids.clone(),
+                    cluster.broadcast_enabled,
+                    cluster.name.clone(),
+                )
+            } else {
+                return;
+            }
         } else {
             return;
-        }
-    } else {
-        return;
-    };
+        };
 
-    // Connect to each connection in the cluster
-    for conn_id in connection_ids {
-        MainWindow::start_connection(state, notebook, sidebar, monitoring, conn_id);
+    if connection_ids.is_empty() {
+        crate::toast::show_error_toast_on_active_window(&i18n("Cluster has no connections"));
+        return;
     }
+
+    tracing::info!(
+        cluster = %cluster_name,
+        cluster_id = %cluster_id,
+        connections = connection_ids.len(),
+        broadcast = broadcast_enabled,
+        "Connecting cluster"
+    );
+
+    // Start cluster session in state
+    if let Ok(mut state_mut) = state.try_borrow_mut()
+        && let Err(e) = state_mut.start_cluster_session(cluster_id)
+    {
+        tracing::error!(?e, cluster = %cluster_name, "Failed to start cluster session");
+    }
+
+    // Connect each connection and collect session IDs
+    let mut session_ids: Vec<Uuid> = Vec::new();
+    for conn_id in &connection_ids {
+        if let Some(session_id) =
+            MainWindow::start_connection(state, notebook, sidebar, monitoring, *conn_id)
+        {
+            session_ids.push(session_id);
+            // Register this terminal in the cluster tracking
+            notebook.register_cluster_terminal(cluster_id, session_id);
+        }
+    }
+
+    if session_ids.is_empty() {
+        tracing::warn!(cluster = %cluster_name, "No connections started for cluster");
+        return;
+    }
+
+    tracing::info!(
+        cluster = %cluster_name,
+        sessions = session_ids.len(),
+        "Cluster connections started"
+    );
+
+    // Wire broadcast mode if enabled
+    if broadcast_enabled {
+        notebook.set_cluster_broadcast(cluster_id, true);
+        wire_cluster_broadcast(notebook, cluster_id);
+    }
+}
+
+/// Wires broadcast input for all terminals in a cluster
+fn wire_cluster_broadcast(notebook: &SharedNotebook, cluster_id: Uuid) {
+    let session_ids = notebook.get_cluster_sessions(cluster_id);
+
+    for &source_session_id in &session_ids {
+        let notebook_clone = notebook.clone();
+        let other_sessions: Vec<Uuid> = session_ids
+            .iter()
+            .copied()
+            .filter(|&id| id != source_session_id)
+            .collect();
+
+        // Use Rc<Cell<bool>> to track broadcast state without borrowing AppState
+        let broadcast_flag = notebook.get_cluster_broadcast_flag(cluster_id);
+
+        notebook.connect_commit(source_session_id, move |text| {
+            if broadcast_flag.get() {
+                for &target_id in &other_sessions {
+                    notebook_clone.send_text_to_session(target_id, text);
+                }
+            }
+        });
+    }
+
+    tracing::info!(
+        cluster_id = %cluster_id,
+        sessions = session_ids.len(),
+        "Broadcast input wired for cluster"
+    );
+}
+
+/// Disconnects all connections in a cluster
+fn disconnect_cluster(notebook: &SharedNotebook, cluster_id: Uuid) {
+    let session_ids = notebook.get_cluster_sessions(cluster_id);
+
+    if session_ids.is_empty() {
+        return;
+    }
+
+    tracing::info!(
+        cluster_id = %cluster_id,
+        sessions = session_ids.len(),
+        "Disconnecting cluster"
+    );
+
+    for session_id in &session_ids {
+        notebook.close_tab(*session_id);
+    }
+
+    notebook.unregister_cluster(cluster_id);
 }
 
 /// Edits a cluster
@@ -348,13 +457,17 @@ fn edit_cluster(
                     Err(e) => {
                         alert::show_error(
                             &parent_clone,
-                            "Error Updating Cluster",
-                            &format!("Failed to save cluster: {e}"),
+                            &i18n("Error Updating Cluster"),
+                            &i18n_f("Failed to save cluster: {}", &[&e]),
                         );
                     }
                 }
             } else {
-                alert::show_error(&parent_clone, "Error", "Could not access application state");
+                alert::show_error(
+                    &parent_clone,
+                    &i18n("Error"),
+                    &i18n("Could not access application state"),
+                );
             }
         }
     });
@@ -381,12 +494,12 @@ fn delete_cluster(
     let parent_clone = parent.clone();
     alert::show_confirm(
         parent,
-        "Delete Cluster?",
-        &format!(
-            "Are you sure you want to delete the cluster '{cluster_name}'?\n\
-            This will not delete the connections in the cluster."
+        &i18n("Delete Cluster?"),
+        &i18n_f(
+            "Are you sure you want to delete the cluster '{}'?\nThis will not delete the connections in the cluster.",
+            &[&cluster_name],
         ),
-        "Delete",
+        &i18n("Delete"),
         true,
         move |confirmed| {
             if confirmed {
@@ -406,8 +519,8 @@ fn delete_cluster(
                     Err(e) => {
                         alert::show_error(
                             &parent_clone,
-                            "Error Deleting Cluster",
-                            &format!("Failed to delete cluster: {e}"),
+                            &i18n("Error Deleting Cluster"),
+                            &i18n_f("Failed to delete cluster: {}", &[&e]),
                         );
                     }
                 }

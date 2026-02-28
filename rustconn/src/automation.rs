@@ -8,7 +8,7 @@ use gtk4::glib::ControlFlow;
 use regex::Regex;
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use vte4::prelude::*;
 use vte4::{Format, Terminal};
 
@@ -21,6 +21,10 @@ pub struct Trigger {
     pub response: String,
     /// Whether this trigger should only fire once
     pub one_shot: bool,
+    /// Optional timeout in milliseconds (None = no timeout)
+    pub timeout_ms: Option<u32>,
+    /// When this trigger was created
+    pub created_at: Instant,
 }
 
 /// Shared state for automation triggers
@@ -146,6 +150,36 @@ impl AutomationSession {
         }
 
         state_ref.poll_count += 1;
+
+        // Remove expired triggers (those past their timeout)
+        let now = Instant::now();
+        let expired_count = state_ref.triggers.len();
+        state_ref.triggers.retain(|trigger| {
+            if let Some(timeout_ms) = trigger.timeout_ms {
+                let elapsed = now.duration_since(trigger.created_at);
+                if elapsed > Duration::from_millis(u64::from(timeout_ms)) {
+                    tracing::debug!(
+                        "AutomationSession: Trigger '{}' expired after {}ms",
+                        trigger.pattern,
+                        elapsed.as_millis()
+                    );
+                    return false;
+                }
+            }
+            true
+        });
+        let removed = expired_count - state_ref.triggers.len();
+        if removed > 0 {
+            tracing::info!(
+                "AutomationSession: Removed {} expired triggers, {} remaining",
+                removed,
+                state_ref.triggers.len()
+            );
+        }
+
+        if state_ref.triggers.is_empty() {
+            return;
+        }
 
         // Get terminal dimensions and cursor position
         let (cursor_row, cursor_col) = terminal.cursor_position();

@@ -4102,7 +4102,57 @@ impl MainWindow {
         let conn_clone = conn.clone();
         drop(state_ref);
 
-        match protocol.as_str() {
+        // Execute pre-connect task if configured
+        if let Some(ref task) = conn_clone.pre_connect_task {
+            tracing::info!(
+                connection = %conn_clone.name,
+                command = %task.command,
+                "Executing pre-connect task"
+            );
+            match std::process::Command::new("sh")
+                .arg("-c")
+                .arg(&task.command)
+                .status()
+            {
+                Ok(status) if status.success() => {
+                    tracing::info!(
+                        connection = %conn_clone.name,
+                        "Pre-connect task completed successfully"
+                    );
+                }
+                Ok(status) => {
+                    let code = status.code().unwrap_or(-1);
+                    tracing::error!(
+                        connection = %conn_clone.name,
+                        command = %task.command,
+                        exit_code = code,
+                        "Pre-connect task failed"
+                    );
+                    if task.abort_on_failure {
+                        crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
+                            "Pre-connect task failed. Connection aborted.",
+                        ));
+                        return None;
+                    }
+                }
+                Err(e) => {
+                    tracing::error!(
+                        connection = %conn_clone.name,
+                        command = %task.command,
+                        ?e,
+                        "Failed to execute pre-connect task"
+                    );
+                    if task.abort_on_failure {
+                        crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
+                            "Pre-connect task failed. Connection aborted.",
+                        ));
+                        return None;
+                    }
+                }
+            }
+        }
+
+        let session_id = match protocol.as_str() {
             "ssh" => {
                 let session_id = protocols::start_ssh_connection(
                     state,
@@ -4233,7 +4283,27 @@ impl MainWindow {
                 // Unknown protocol
                 None
             }
+        };
+
+        // Execute key sequence after connection is established (terminal protocols only)
+        if let Some(sid) = session_id
+            && let Some(ref seq) = conn_clone.key_sequence
+            && !seq.is_empty()
+        {
+            tracing::info!(
+                connection = %conn_clone.name,
+                elements = seq.len(),
+                "Scheduling key sequence after connection"
+            );
+            // Delay key sequence to allow terminal to initialize
+            let notebook_clone = notebook.clone();
+            let seq_clone = seq.clone();
+            glib::timeout_add_local_once(std::time::Duration::from_millis(500), move || {
+                notebook_clone.execute_key_sequence(sid, &seq_clone);
+            });
         }
+
+        session_id
     }
 
     /// Sets up session logging for a terminal session
@@ -4376,7 +4446,52 @@ impl MainWindow {
         let notebook_clone = notebook.clone();
         let connection_id_str = connection_id.to_string();
 
+        // Capture post-disconnect task before entering the closure
+        let post_disconnect_task = state
+            .try_borrow()
+            .ok()
+            .and_then(|s| s.get_connection(connection_id).cloned())
+            .and_then(|c| c.post_disconnect_task);
+
         notebook.connect_child_exited(session_id, move |exit_status| {
+            // Execute post-disconnect task if configured
+            if let Some(ref task) = post_disconnect_task {
+                tracing::info!(
+                    %connection_id,
+                    command = %task.command,
+                    "Executing post-disconnect task"
+                );
+                match std::process::Command::new("sh")
+                    .arg("-c")
+                    .arg(&task.command)
+                    .status()
+                {
+                    Ok(status) if status.success() => {
+                        tracing::info!(
+                            %connection_id,
+                            "Post-disconnect task completed successfully"
+                        );
+                    }
+                    Ok(status) => {
+                        let code = status.code().unwrap_or(-1);
+                        tracing::warn!(
+                            %connection_id,
+                            command = %task.command,
+                            exit_code = code,
+                            "Post-disconnect task failed"
+                        );
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            %connection_id,
+                            command = %task.command,
+                            ?e,
+                            "Failed to execute post-disconnect task"
+                        );
+                    }
+                }
+            }
+
             // Get history entry ID before session info is removed
             let history_entry_id = notebook_clone
                 .get_session_info(session_id)

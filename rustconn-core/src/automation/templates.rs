@@ -47,11 +47,11 @@ static TEMPLATES: [AutomationTemplate; 5] = [
     AutomationTemplate {
         id: "sudo_password",
         name: "Sudo Password",
-        description: "Auto-respond to sudo password prompt with {{password}}",
+        description: "Auto-respond to sudo password prompt with ${password}",
         protocol_hint: "ssh",
         rules_fn: || {
             vec![
-                ExpectRule::new(r"\[sudo\] password for \w+:", "{{password}}\n")
+                ExpectRule::new(r"\[sudo\] password for \w+:", "${password}\n")
                     .with_priority(10)
                     .with_timeout(30_000),
             ]
@@ -79,8 +79,8 @@ static TEMPLATES: [AutomationTemplate; 5] = [
         protocol_hint: "",
         rules_fn: || {
             vec![
-                ExpectRule::new(r"(?i)login:\s*$", "{{username}}\n").with_priority(10),
-                ExpectRule::new(r"(?i)password:\s*$", "{{password}}\n").with_priority(9),
+                ExpectRule::new(r"(?i)login:\s*$", "${username}\n").with_priority(10),
+                ExpectRule::new(r"(?i)password:\s*$", "${password}\n").with_priority(9),
             ]
         },
     },

@@ -244,7 +244,7 @@ impl SettingsDialog {
 
         // === Backup / Restore group on the UI page ===
         let backup_group = adw::PreferencesGroup::builder()
-            .title(i18n("Backup & Restore"))
+            .title(gtk4::glib::markup_escape_text(&i18n("Backup & Restore")))
             .description(i18n("Export or import all settings as a ZIP archive"))
             .build();
 
