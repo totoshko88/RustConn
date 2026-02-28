@@ -4,7 +4,9 @@
 # Translator: Mykola Zubkov <zubkov139@ukr.net>
 #   https://uk.wikipedia.org/wiki/Зубков_Микола_Григорович
 #   https://science.lpnu.ua/uk/all-authors-journals/mykola-zubkov
-#
+# References: 
+#   https://zakon.isu.net.ua/sites/default/files/normdocs/dstu_3966_2009.pdf
+#   https://slovnyk.ua/pravopys.php
 msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.9.3\n"
