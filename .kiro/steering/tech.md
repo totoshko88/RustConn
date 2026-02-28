@@ -26,12 +26,12 @@ Rust 2024 edition, MSRV 1.88, three-crate Cargo workspace (`resolver = "2"`).
 | Errors | `thiserror` 2.0 | Every error enum must derive `thiserror::Error` |
 | Secrets | `secrecy` 0.10 (serde) | Every credential field — never plain `String` |
 | Crypto | `ring` 0.17, `argon2` 0.5 | `rustconn-core` only |
-| IDs | `uuid` 1.11 (v4 + serde) | All crates |
+| IDs | `uuid` 1.21 (v4 + serde) | All crates |
 | Time | `chrono` 0.4 (serde) | All crates |
-| CLI | `clap` 4.5 (derive) | `rustconn-cli` only |
+| CLI | `clap` 4.5.60 (derive) | `rustconn-cli` only |
 | RDP | `ironrdp` 0.14 | Feature-gated: `rdp-embedded` |
 | VNC | `vnc-rs` 0.5 | Feature-gated: `vnc-embedded` |
-| Testing | `proptest` 1.6, `tempfile` 3.15 | dev-dependencies in `rustconn-core` |
+| Testing | `proptest` 1.9, `tempfile` 3.23 | dev-dependencies in `rustconn-core` |
 
 ## Lints & Formatting
 
@@ -133,9 +133,9 @@ Guard feature-gated code with `#[cfg(feature = "...")]`. Check feature availabil
 | Fixtures | `rustconn-core/tests/fixtures/` | — | — |
 | Benchmarks | `rustconn-core/benches/` | — | — |
 
-- Property tests use `proptest` 1.6. Temp files use `tempfile`.
+- Property tests use `proptest` 1.9. Temp files use `tempfile`.
 - New test modules must be registered in the corresponding `mod.rs`.
-- Full test suite runs ~1 minute. Wait for completion before running the next command.
+- Full test suite runs ~2 minutes (argon2 property tests are slow in debug mode). Wait for completion before running the next command.
 
 ## Build & Test Commands
 

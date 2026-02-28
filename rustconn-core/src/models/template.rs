@@ -220,6 +220,11 @@ impl ConnectionTemplate {
     /// - All template fields copied over
     /// - Fresh timestamps
     /// - A reference to this template's ID
+    ///
+    /// Note: `log_config`, `key_sequence`, `monitoring_config`, `window_mode`,
+    /// and `window_geometry` are intentionally not part of the template model.
+    /// These are per-connection runtime settings that should be configured
+    /// individually after creation.
     #[must_use]
     pub fn apply(&self, name: Option<String>) -> Connection {
         let now = Utc::now();

@@ -7,7 +7,7 @@ use rustconn_core::models::ConnectionTemplate;
 use crate::cli::{OutputFormat, TemplateCommands};
 use crate::error::CliError;
 use crate::format::escape_csv_field;
-use crate::util::create_config_manager;
+use crate::util::{create_config_manager, create_template_manager};
 
 /// Template command handler
 pub fn cmd_template(config_path: Option<&Path>, subcmd: TemplateCommands) -> Result<(), CliError> {
@@ -55,20 +55,13 @@ fn cmd_template_list(
     format: OutputFormat,
     protocol: Option<&str>,
 ) -> Result<(), CliError> {
-    let config_manager = create_config_manager(config_path)?;
-
-    let templates = config_manager
-        .load_templates()
-        .map_err(|e| CliError::Template(format!("Failed to load templates: {e}")))?;
+    let manager = create_template_manager(config_path)?;
 
     let filtered: Vec<&ConnectionTemplate> = if let Some(proto) = protocol {
-        let proto_lower = proto.to_lowercase();
-        templates
-            .iter()
-            .filter(|t| t.protocol.as_str() == proto_lower)
-            .collect()
+        let proto_type = parse_protocol(proto)?;
+        manager.get_by_protocol(proto_type)
     } else {
-        templates.iter().collect()
+        manager.list_templates()
     };
 
     match format {
@@ -135,13 +128,8 @@ fn print_template_csv(templates: &[&ConnectionTemplate]) {
 }
 
 fn cmd_template_show(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
-    let config_manager = create_config_manager(config_path)?;
-
-    let templates = config_manager
-        .load_templates()
-        .map_err(|e| CliError::Template(format!("Failed to load templates: {e}")))?;
-
-    let template = find_template(&templates, name)?;
+    let manager = create_template_manager(config_path)?;
+    let template = find_template_in_manager(&manager, name)?;
 
     println!("Template Details:");
     println!("  ID:       {}", template.id);
@@ -174,11 +162,7 @@ fn cmd_template_create(
     user: Option<&str>,
     description: Option<&str>,
 ) -> Result<(), CliError> {
-    let config_manager = create_config_manager(config_path)?;
-
-    let mut templates = config_manager
-        .load_templates()
-        .map_err(|e| CliError::Template(format!("Failed to load templates: {e}")))?;
+    let mut manager = create_template_manager(config_path)?;
 
     let mut template = match protocol.to_lowercase().as_str() {
         "ssh" => ConnectionTemplate::new_ssh(name.to_string()),
@@ -206,12 +190,9 @@ fn cmd_template_create(
         template = template.with_description(d);
     }
 
-    let id = template.id;
-    templates.push(template);
-
-    config_manager
-        .save_templates(&templates)
-        .map_err(|e| CliError::Template(format!("Failed to save templates: {e}")))?;
+    let id = manager
+        .create_template(template)
+        .map_err(|e| CliError::Template(format!("Failed to create template: {e}")))?;
 
     println!("Created template '{name}' with ID {id}");
 
@@ -219,21 +200,14 @@ fn cmd_template_create(
 }
 
 fn cmd_template_delete(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
-    let config_manager = create_config_manager(config_path)?;
-
-    let mut templates = config_manager
-        .load_templates()
-        .map_err(|e| CliError::Template(format!("Failed to load templates: {e}")))?;
-
-    let template = find_template(&templates, name)?;
+    let mut manager = create_template_manager(config_path)?;
+    let template = find_template_in_manager(&manager, name)?;
     let id = template.id;
     let template_name = template.name.clone();
 
-    templates.retain(|t| t.id != id);
-
-    config_manager
-        .save_templates(&templates)
-        .map_err(|e| CliError::Template(format!("Failed to save templates: {e}")))?;
+    manager
+        .delete_template(id)
+        .map_err(|e| CliError::Template(format!("Failed to delete template: {e}")))?;
 
     println!("Deleted template '{template_name}' (ID: {id})");
 
@@ -248,13 +222,10 @@ fn cmd_template_apply(
     port: Option<u16>,
     user: Option<&str>,
 ) -> Result<(), CliError> {
+    let manager = create_template_manager(config_path)?;
     let config_manager = create_config_manager(config_path)?;
 
-    let templates = config_manager
-        .load_templates()
-        .map_err(|e| CliError::Template(format!("Failed to load templates: {e}")))?;
-
-    let template = find_template(&templates, template_name)?;
+    let template = find_template_in_manager(&manager, template_name)?;
 
     let mut connection = template.apply(conn_name.map(String::from));
 
@@ -288,29 +259,43 @@ fn cmd_template_apply(
     Ok(())
 }
 
-/// Find a template by name or ID
-fn find_template<'a>(
-    templates: &'a [ConnectionTemplate],
+/// Find a template by name or ID using `TemplateManager`
+fn find_template_in_manager<'a>(
+    manager: &'a rustconn_core::TemplateManager,
     name_or_id: &str,
 ) -> Result<&'a ConnectionTemplate, CliError> {
+    // Try UUID first
     if let Ok(uuid) = uuid::Uuid::parse_str(name_or_id)
-        && let Some(template) = templates.iter().find(|t| t.id == uuid)
+        && let Some(template) = manager.get_template(uuid)
     {
         return Ok(template);
     }
 
-    let matches: Vec<_> = templates
-        .iter()
-        .filter(|t| t.name.eq_ignore_ascii_case(name_or_id))
-        .collect();
+    // Try name lookup
+    if let Some(template) = manager.find_by_name(name_or_id) {
+        return Ok(template);
+    }
 
-    match matches.len() {
-        0 => Err(CliError::Template(format!(
-            "Template not found: {name_or_id}"
-        ))),
-        1 => Ok(matches[0]),
+    Err(CliError::Template(format!(
+        "Template not found: {name_or_id}"
+    )))
+}
+
+/// Parse a protocol string into `ProtocolType`
+fn parse_protocol(proto: &str) -> Result<rustconn_core::models::ProtocolType, CliError> {
+    use rustconn_core::models::ProtocolType;
+    match proto.to_lowercase().as_str() {
+        "ssh" => Ok(ProtocolType::Ssh),
+        "rdp" => Ok(ProtocolType::Rdp),
+        "vnc" => Ok(ProtocolType::Vnc),
+        "spice" => Ok(ProtocolType::Spice),
+        "telnet" => Ok(ProtocolType::Telnet),
+        "serial" => Ok(ProtocolType::Serial),
+        "sftp" => Ok(ProtocolType::Sftp),
+        "kubernetes" | "k8s" => Ok(ProtocolType::Kubernetes),
         _ => Err(CliError::Template(format!(
-            "Ambiguous template name: {name_or_id}"
+            "Unknown protocol '{proto}'. \
+             Supported: ssh, rdp, vnc, spice, telnet, serial, sftp, kubernetes"
         ))),
     }
 }

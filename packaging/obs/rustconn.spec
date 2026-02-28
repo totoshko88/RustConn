@@ -202,7 +202,19 @@ done
 
 %changelog
 * Sat Feb 28 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.4-0
-- Version bump to 0.9.4
+- Session Reconnect — disconnected VTE tabs show a Reconnect banner
+- Recursive Group Delete — keep children, cascade, or cancel
+- Cluster broadcast mode wired — keyboard input broadcasts to all terminals
+- Libvirt / GNOME Boxes import — VNC, SPICE, RDP from domain XML (#38)
+- TemplateManager — centralized template CRUD with search, import/export
+- Snippet shell safety check before --execute
+- Settings Backup/Restore as ZIP archive
+- Automation templates — 5 built-in expect rule presets
+- Fixed password inheritance for PasswordSource::Variable (#37)
+- Fixed VTE spawn failure — banner + toast instead of silent empty terminal
+- Fixed cluster session lifecycle and disconnect-all
+- Automation engine: one-shot rules, template picker, pre/post-connect tasks
+- User Guide major rewrite
 
 * Fri Feb 27 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.3-0
 - Added Waypipe Support — Wayland application forwarding for SSH (#36)

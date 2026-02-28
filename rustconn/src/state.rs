@@ -21,6 +21,7 @@ use rustconn_core::secret::{
 };
 use rustconn_core::session::{Session, SessionManager};
 use rustconn_core::snippet::SnippetManager;
+use rustconn_core::template::TemplateManager;
 use secrecy::SecretString;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -164,6 +165,8 @@ pub struct AppState {
     session_manager: SessionManager,
     /// Snippet manager for command snippets
     snippet_manager: SnippetManager,
+    /// Template manager for connection templates
+    template_manager: TemplateManager,
     /// Secret manager for credentials
     secret_manager: SecretManager,
     /// Configuration manager for persistence
@@ -265,6 +268,10 @@ impl AppState {
         let snippet_manager = SnippetManager::new(config_manager.clone())
             .map_err(|e| format!("Failed to initialize snippet manager: {e}"))?;
 
+        // Initialize template manager
+        let template_manager = TemplateManager::new(config_manager.clone())
+            .map_err(|e| format!("Failed to initialize template manager: {e}"))?;
+
         // Initialize secret manager with backends from settings
         let secret_manager = SecretManager::build_from_settings(&settings.secrets);
 
@@ -284,6 +291,7 @@ impl AppState {
             connection_manager,
             session_manager,
             snippet_manager,
+            template_manager,
             secret_manager,
             config_manager,
             document_manager,
@@ -2282,24 +2290,7 @@ impl AppState {
 
     // ========== Template Operations ==========
 
-    /// Loads templates from disk
-    pub fn load_templates(&self) -> Result<Vec<rustconn_core::ConnectionTemplate>, String> {
-        self.config_manager
-            .load_templates()
-            .map_err(|e| format!("Failed to load templates: {e}"))
-    }
-
-    /// Saves templates to disk
-    pub fn save_templates(
-        &self,
-        templates: &[rustconn_core::ConnectionTemplate],
-    ) -> Result<(), String> {
-        self.config_manager
-            .save_templates(templates)
-            .map_err(|e| format!("Failed to save templates: {e}"))
-    }
-
-    /// Adds a template and saves to disk
+    /// Adds a template and persists via `TemplateManager`
     pub fn add_template(
         &mut self,
         template: rustconn_core::ConnectionTemplate,
@@ -2311,13 +2302,14 @@ impl AppState {
             doc.add_template(template.clone());
         }
 
-        // Also save to config file for persistence
-        let mut templates = self.load_templates().unwrap_or_default();
-        templates.push(template);
-        self.save_templates(&templates)
+        // Persist via template manager
+        self.template_manager
+            .create_template(template)
+            .map(|_| ())
+            .map_err(|e| format!("Failed to add template: {e}"))
     }
 
-    /// Updates a template and saves to disk
+    /// Updates a template and persists via `TemplateManager`
     pub fn update_template(
         &mut self,
         template: rustconn_core::ConnectionTemplate,
@@ -2332,17 +2324,20 @@ impl AppState {
             doc.add_template(template.clone());
         }
 
-        // Also update in config file
-        let mut templates = self.load_templates().unwrap_or_default();
-        if let Some(pos) = templates.iter().position(|t| t.id == id) {
-            templates[pos] = template;
+        // Persist via template manager (create if not found, update if exists)
+        if self.template_manager.get_template(id).is_some() {
+            self.template_manager
+                .update_template(id, template)
+                .map_err(|e| format!("Failed to update template: {e}"))
         } else {
-            templates.push(template);
+            self.template_manager
+                .create_template(template)
+                .map(|_| ())
+                .map_err(|e| format!("Failed to add template: {e}"))
         }
-        self.save_templates(&templates)
     }
 
-    /// Deletes a template and saves to disk
+    /// Deletes a template and persists via `TemplateManager`
     pub fn delete_template(&mut self, template_id: uuid::Uuid) -> Result<(), String> {
         // Remove from active document if one exists
         if let Some(doc_id) = self.active_document_id
@@ -2351,15 +2346,24 @@ impl AppState {
             doc.remove_template(template_id);
         }
 
-        // Also remove from config file
-        let mut templates = self.load_templates().unwrap_or_default();
-        templates.retain(|t| t.id != template_id);
-        self.save_templates(&templates)
+        // Remove via template manager (ignore not-found — may only exist in document)
+        if self.template_manager.get_template(template_id).is_some() {
+            self.template_manager
+                .delete_template(template_id)
+                .map_err(|e| format!("Failed to delete template: {e}"))
+        } else {
+            Ok(())
+        }
     }
 
-    /// Gets all templates (from config file and active document)
+    /// Gets all templates (from `TemplateManager` and active document)
     pub fn get_all_templates(&self) -> Vec<rustconn_core::ConnectionTemplate> {
-        let mut templates = self.load_templates().unwrap_or_default();
+        let mut templates: Vec<rustconn_core::ConnectionTemplate> = self
+            .template_manager
+            .list_templates()
+            .into_iter()
+            .cloned()
+            .collect();
 
         // Also include templates from active document
         if let Some(doc) = self.active_document() {

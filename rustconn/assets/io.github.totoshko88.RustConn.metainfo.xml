@@ -92,14 +92,17 @@
   <releases>
     <release version="0.9.4" date="2026-02-28">
       <description>
-        <p>UX audit improvements: error handling, history dialog, documentation, and i18n fixes.</p>
+        <p>Session reconnect, cluster broadcast, libvirt import, template manager, and UX fixes.</p>
         <ul>
-          <li>Alert dialogs now visually distinguish errors from success</li>
-          <li>Toast notifications show icon+label for warnings and errors</li>
-          <li>Toast fallback via AlertDialog when overlay is unavailable</li>
-          <li>Connection History: search filtering and per-entry deletion</li>
-          <li>User Guide: added Encrypted Documents, Automation, Tasks, FIDO2, import formats</li>
-          <li>Fixed untranslatable string in Wake-on-LAN dialog</li>
+          <li>Session Reconnect banner on disconnected VTE tabs</li>
+          <li>Cluster broadcast mode wired — keyboard input broadcasts to all terminals</li>
+          <li>Libvirt / GNOME Boxes import — VNC, SPICE, RDP from domain XML</li>
+          <li>TemplateManager — centralized template CRUD with search and import/export</li>
+          <li>Snippet shell safety check before --execute</li>
+          <li>Settings Backup/Restore as ZIP archive</li>
+          <li>Automation engine: one-shot rules, template picker, pre/post-connect tasks</li>
+          <li>Fixed password inheritance for PasswordSource::Variable</li>
+          <li>Fixed VTE spawn failure — shows banner instead of silent empty terminal</li>
         </ul>
       </description>
     </release>

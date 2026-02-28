@@ -9,11 +9,11 @@ author: "Anton Isaiev"
 # RustConn Development Power
 
 Linux connection manager для SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust.
-GTK4/libadwaita GUI, Wayland-first. Rust 2021 edition, MSRV 1.88, three-crate Cargo workspace.
+GTK4/libadwaita GUI, Wayland-first. Rust 2024 edition, MSRV 1.88, three-crate Cargo workspace.
 
 ## Available Steering Files
 
-- **release.md** — Повний процес релізу: оновлення версій у всіх packaging файлах, конвертація changelog, чеклист
+- **release.md** — Повний процес релізу: оновлення версій, залежностей, CLI, changelog, packaging, чеклист
 
 ## Development Flow
 
@@ -22,8 +22,9 @@ GTK4/libadwaita GUI, Wayland-first. Rust 2021 edition, MSRV 1.88, three-crate Ca
 3. Поступово реалізувати фічі
 4. Після кожної фічі — автоматичні перевірки через хук `rustconn-checks` (agentStop)
 5. Ручне тестування GUI
-6. Merge в main
-7. `git tag -a vX.Y.Z -m "Release X.Y.Z" && git push origin main --tags` — тригерить CI
+6. Перед merge — оновити залежності та CLI версії (див. steering `release.md`)
+7. Merge в main
+8. `git tag -a vX.Y.Z -m "Release X.Y.Z" && git push origin main --tags` — тригерить CI
 
 ## Automated Checks
 
@@ -70,13 +71,16 @@ GTK4/libadwaita GUI, Wayland-first. Rust 2021 edition, MSRV 1.88, three-crate Ca
 
 | Тип фічі | Локація | Дія |
 |----------|---------|-----|
-| Data model | `rustconn-core/src/models/` | Re-export в `models.rs` |
+| Data model | `rustconn-core/src/models/` | Re-export в `models.rs` і `lib.rs` |
 | Protocol | `rustconn-core/src/protocol/` | Implement `Protocol` trait |
 | Import format | `rustconn-core/src/import/` | Implement `ImportSource` trait |
 | Export format | `rustconn-core/src/export/` | Implement `ExportTarget` trait |
 | Secret backend | `rustconn-core/src/secret/` | Implement `SecretBackend` trait |
+| Template mgmt | `rustconn-core/src/template/` | Через `TemplateManager` |
+| Snippet mgmt | `rustconn-core/src/snippet/` | Через `SnippetManager` |
 | Dialog | `rustconn/src/dialogs/` | Register в `dialogs/mod.rs` |
 | Property test | `rustconn-core/tests/properties/` | Register в `properties/mod.rs` |
+| Integration test | `rustconn-core/tests/integration/` | Register в `integration/mod.rs` |
 
 ## Strict Rules
 
@@ -88,8 +92,10 @@ GTK4/libadwaita GUI, Wayland-first. Rust 2021 edition, MSRV 1.88, three-crate Ca
 | `tokio` для async | Змішування async runtimes |
 | GUI-free `rustconn-core` | `gtk4`/`vte4`/`adw` в `rustconn-core` |
 | `adw::` widgets | Deprecated GTK patterns |
+| `tracing` для structured logging | `println!`/`eprintln!` для log output |
 | Line width 100 chars, 4 spaces, LF | Tabs, CRLF, long lines |
 | `unsafe_code = "forbid"` | Будь-який unsafe код |
+| Rust 2024 edition patterns (let-chains) | Старі `if let` + `collapsible_if` |
 
 ## Code Patterns
 
@@ -126,6 +132,17 @@ impl MyTrait for MyStruct {
 }
 ```
 
+### Rust 2024 Edition Patterns
+```rust
+// Let-chains замість collapsible_if
+if let Some(x) = opt && x > 0 {
+    // ...
+}
+
+// Ніколи set_var/remove_var (unsafe в Rust 2024)
+// Використовуй OnceLock, RwLock, або process re-exec
+```
+
 ## Testing
 
 ### Property Tests
@@ -145,10 +162,11 @@ Temp files — завжди `tempfile` crate.
 | Pattern | Implementation |
 |---------|----------------|
 | Widgets | `adw::` over `gtk::` equivalents |
-| Toasts | `adw::ToastOverlay` |
+| Toasts | `adw::ToastOverlay` з severity icons |
 | Dialogs | `adw::Dialog` або `gtk::Window` + `set_modal(true)` |
 | Spacing | 12px margins, 6px між related elements (GNOME HIG) |
 | Wayland | Уникати X11-specific APIs |
+| i18n | `gettext`/`ngettext`, `i18n_f()` з `{}` placeholders |
 
 ## State Management
 
@@ -157,9 +175,35 @@ pub type SharedAppState = Rc<RefCell<AppState>>;
 ```
 
 - Pass `&SharedAppState` для mutable access
-- Manager structs own data і handle I/O
+- Manager structs: `ConnectionManager`, `SessionManager`, `SecretManager`, `DocumentManager`, `ClusterManager`, `SnippetManager`, `TemplateManager`
 - Async: `with_runtime()` для thread-local tokio runtime
 - Ніколи не тримати borrow через async boundary або GTK callbacks
+
+## i18n Notes
+
+- User-visible strings: `gettext("...")` або `i18n("...")`
+- З параметрами: `i18n_f("{} connections", &[&count.to_string()])` — позиційні `{}`
+- В `window/mod.rs`: використовуй `crate::i18n::i18n(...)` (повний шлях)
+- Після додавання нових рядків: `po/update-pot.sh`, потім merge в усі `.po` файли
+- 15 мов: uk, de, fr, es, it, pl, cs, sk, da, sv, nl, pt, be, kk, uz
+
+## CLI Downloads (`rustconn-core/src/cli_download.rs`)
+
+Pinned CLI versions для Flatpak sandbox:
+
+| Component | ID | Current Version |
+|-----------|----|-----------------|
+| TigerVNC | `vncviewer` | 1.16.0 |
+| Teleport | `tsh` | 18.7.1 |
+| Tailscale | `tailscale` | 1.94.2 |
+| Boundary | `boundary` | 0.21.1 |
+| Bitwarden CLI | `bw` | 2026.1.0 |
+| 1Password CLI | `op` | 2.32.1 |
+| kubectl | `kubectl` | 1.35.1 |
+
+"Latest" URL (без pinned version): AWS CLI, SSM Plugin, gcloud, Azure CLI, OCI CLI, cloudflared.
+
+При оновленні pinned version — оновити `pinned_version`, `download_url`, `aarch64_url`, та `checksum` (якщо `Static`).
 
 ## Clippy Troubleshooting
 

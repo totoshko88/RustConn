@@ -25,6 +25,17 @@ pub fn create_config_manager(config_path: Option<&Path>) -> Result<ConfigManager
 
     ConfigManager::new().map_err(|e| CliError::Config(format!("Failed to initialize config: {e}")))
 }
+/// Creates a `TemplateManager` using the optional custom config directory.
+///
+/// Convenience wrapper that builds a `ConfigManager` and initializes
+/// a `TemplateManager` from it.
+pub fn create_template_manager(
+    config_path: Option<&Path>,
+) -> Result<rustconn_core::TemplateManager, CliError> {
+    let config_manager = create_config_manager(config_path)?;
+    rustconn_core::TemplateManager::new(config_manager)
+        .map_err(|e| CliError::Template(format!("Failed to initialize template manager: {e}")))
+}
 
 /// Parse a key=value pair for variable substitution
 pub fn parse_key_val(s: &str) -> Result<(String, String), String> {

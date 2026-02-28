@@ -10,41 +10,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.4] - 2026-02-28
 
 ### Added
-- **Session Reconnect** — disconnected VTE tabs (SSH, Telnet, Serial, Kubernetes) show a "Reconnect" banner that re-launches the connection in one click
+- **Session Reconnect** — disconnected VTE tabs show a "Reconnect" banner to re-launch in one click
 - **Recursive Group Delete** — three-option dialog: keep children, cascade delete, or cancel
-- **Connection History improvements** — search by name/host/protocol/username; per-entry delete button
-- **Cluster from sidebar selection** — "Create Cluster" button in Group Operations toolbar pre-selects checked connections
-- **Shortcut conflict detection** — ⚠ warning when recording a keybinding already assigned to another action
-- **Settings Backup/Restore** — export/import all config files as a ZIP archive via Settings → Interface
-- **Secret backend unavailable toast** — one-time warning at startup when the preferred backend is unreachable
-- **Session duration in tab tooltip** — elapsed time (e.g. "2h 15m") shown in tab tooltips, updated every 30 s
-- **Flatpak component version display** — pinned version shown next to "Installed" label in Flatpak Components
-- **Automation templates** — 5 built-in expect rule presets (Sudo Password, SSH Host Key, Login Prompt, Press Enter, MOTD Pager) via `builtin_templates()` API
-- **Libvirt / GNOME Boxes import** — import VNC, SPICE, and RDP connections from libvirt domain XML files; auto-scans `/etc/libvirt/qemu/` and `~/.config/libvirt/qemu/` (covers GNOME Boxes); single-file import for `virsh dumpxml` output; handles autoport, TLS, passwords ([#38](https://github.com/totoshko88/RustConn/issues/38))
+- **Connection History** — search/filter by name/host/protocol; per-entry delete
+- **Cluster from sidebar** — "Create Cluster" pre-selects checked connections
+- **Shortcut conflict detection** — warning when a keybinding is already assigned
+- **Settings Backup/Restore** — export/import all config as ZIP via Settings → Interface
+- **Libvirt / GNOME Boxes import** — VNC, SPICE, RDP from domain XML; auto-scans qemu dirs ([#38](https://github.com/totoshko88/RustConn/issues/38))
+- **Automation templates** — 5 built-in expect rule presets (Sudo, SSH Host Key, Login, etc.)
+- **TemplateManager** — centralized template CRUD with search, protocol filtering, import/export
+- **Snippet shell safety** — warns about dangerous metacharacters in variable values before `--execute`
 
 ### Fixed
-- **Password inheritance** — `resolve_inherited_credentials()` now handles `PasswordSource::Variable` in group hierarchy ([#37](https://github.com/totoshko88/RustConn/issues/37))
-- **New connection placed in wrong group** — "New Connection in Group" context menu pre-selects the target group ([#37](https://github.com/totoshko88/RustConn/issues/37))
-- **Toast system** — severity icons (⚠/✕) on error/warning toasts; "Retry" button on port-check failures for RDP/VNC/SPICE; fallback to `AlertDialog` when no `ToastOverlay` found; i18n for toast titles
-- **Flatpak missing-CLI toast** — "Install" button opens Flatpak Components when picocom/kubectl/ZeroTrust CLI is missing
-- **SSH key path inline validation** — real-time validation with error style and tooltip; tilde expansion supported
-- **Alert dialog styling** — destructive OK for errors, suggested OK for success
-- **WoL dialog i18n** — magic packet toast now uses `i18n_f()` for translation
-- **VTE spawn failure handling** — when a command (telnet, ssh, picocom) is not found, the tab now shows a "Command not found" banner with Reconnect button and an error toast instead of a silent empty terminal
-- **Pango markup in Settings** — escaped ampersand in "Backup & Restore" group title that caused Gtk-WARNING about unparseable markup
-- **Build warning noise** — locale compilation count no longer emits a cargo warning; informational message moved to stderr
-- **Adwaita dark theme warning** — cleared deprecated `gtk-application-prefer-dark-theme` property at startup to suppress libadwaita runtime warning on KDE/XFCE desktops
-
-### Fixed (Clusters)
-- **Cluster broadcast mode wired** — `connect_cluster()` now creates a `ClusterSession`, registers terminal sessions, and wires VTE `commit` signal to broadcast keyboard input to all connected cluster terminals when broadcast mode is enabled
-- **Cluster session lifecycle** — `ClusterManager::start_session()` called from GUI on cluster connect; terminal-to-cluster mapping tracked in `TerminalNotebook`
-- **Disconnect all cluster sessions** — new stop button in Manage Clusters dialog closes all tabs belonging to a cluster at once
-- **Cluster dialog i18n** — all alert strings in `window/clusters.rs` wrapped with `i18n()`/`i18n_f()`; "Broadcast mode" label and subtitle in cluster dialog now translatable; 15 new strings translated in 15 languages
+- **Password inheritance** — `PasswordSource::Variable` now resolved in group hierarchy ([#37](https://github.com/totoshko88/RustConn/issues/37))
+- **New connection in wrong group** — context menu now pre-selects the target group ([#37](https://github.com/totoshko88/RustConn/issues/37))
+- **Toast system** — severity icons, "Retry" on port-check failures, `AlertDialog` fallback, i18n
+- **VTE spawn failure** — missing command shows "Command not found" banner + error toast instead of silent empty terminal
+- **Cluster broadcast** — keyboard input now actually broadcasts to all cluster terminals; session lifecycle wired; disconnect-all button; full i18n
+- **Pango markup** — escaped ampersand in "Backup & Restore" settings title
+- **Adwaita dark theme warning** — suppressed on KDE/XFCE desktops
 
 ### Improved
-- **User Guide** — major update: Zero Trust Providers (10 providers), Security Best Practices, FAQ, Migration Guide (Remmina/MobaXterm/Royal TS/SSH Config/Ansible), expanded Templates, Snippets, Clusters, Group Operations Mode, Encrypted Documents, Automation & Tasks, FIDO2, Import/Export, Connection Statistics; fixed Quick Connect shortcut
-- **Sidebar** — group tooltip shows child connection count
-- **Automation engine** — expect rules now support one-shot mode (fire once then auto-remove), per-rule timeout, regex validation in dialog, template picker button ("From Template") with 5 built-in presets; pre-connect/post-disconnect tasks wired to connection lifecycle; key sequences executed after connection with 500 ms delay; variable syntax unified to `${variable}`
+- **User Guide** — major rewrite: Zero Trust, Security, FAQ, Migration Guide, expanded all sections
+- **Automation engine** — one-shot rules, per-rule timeout, regex validation, template picker, pre-connect/post-disconnect tasks, key sequences on connect
+- **Template management** — CLI and GUI migrated to `TemplateManager`; GUI keeps document integration
+
+### Dependencies
+- **Updated**: js-sys 0.3.90→0.3.91, pin-project-lite 0.2.16→0.2.17, wasm-bindgen 0.2.113→0.2.114, web-sys 0.3.90→0.3.91
 
 ## [0.9.3] - 2026-02-27
 

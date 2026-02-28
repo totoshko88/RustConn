@@ -54,6 +54,7 @@ pub mod snippet;
 pub mod spice_client;
 pub mod split;
 pub mod ssh_agent;
+pub mod template;
 pub mod terminal_themes;
 pub mod testing;
 pub mod tracing;
@@ -232,6 +233,7 @@ pub use spice_client::{
     SpiceRect, SpiceSecurityProtocol, SpiceSharedFolder, SpiceViewerLaunchResult,
     build_spice_viewer_args, detect_spice_viewer, is_embedded_spice_available, launch_spice_viewer,
 };
+pub use template::TemplateManager;
 // Split view types (tab-scoped layouts)
 pub use split::SplitDirection;
 pub use split::{
