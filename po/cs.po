@@ -51,7 +51,7 @@ msgstr "Chyba inicializace"
 
 #: rustconn/src/app.rs:476
 msgid "{} backend unavailable. Using fallback."
-msgstr ""
+msgstr "Backend {} nedostupný. Používám záložní."
 
 #: rustconn/src/app.rs:1152
 msgid ""
@@ -1890,7 +1890,7 @@ msgstr "Vybrat z SSH agenta"
 
 #: rustconn/src/dialogs/connection/ssh.rs:227
 msgid "Key file not found"
-msgstr ""
+msgstr "Soubor klíče nenalezen"
 
 #: rustconn/src/dialogs/connection/ssh.rs:359
 #: rustconn/src/dialogs/connection/telnet.rs:36
@@ -2850,7 +2850,7 @@ msgstr "Stiskněte klávesy..."
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:133
 msgid "Conflicts with: {}"
-msgstr ""
+msgstr "Konflikt s: {}"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:183
 msgid "Reset All to Defaults"
@@ -2939,64 +2939,64 @@ msgstr "Přidat [HH:MM:SS] na začátek každého řádku záznamů"
 
 #: rustconn/src/dialogs/settings/mod.rs:247
 msgid "Backup & Restore"
-msgstr ""
+msgstr "Záloha a obnovení"
 
 #: rustconn/src/dialogs/settings/mod.rs:248
 msgid "Export or import all settings as a ZIP archive"
-msgstr ""
+msgstr "Exportovat nebo importovat všechna nastavení jako ZIP archiv"
 
 #: rustconn/src/dialogs/settings/mod.rs:252
 msgid "Backup Settings…"
-msgstr ""
+msgstr "Zálohovat nastavení…"
 
 #: rustconn/src/dialogs/settings/mod.rs:253
 msgid "Save all configuration files to a ZIP archive"
-msgstr ""
+msgstr "Uložit všechny konfigurační soubory do ZIP archivu"
 
 #: rustconn/src/dialogs/settings/mod.rs:256
 msgid "Restore Settings…"
-msgstr ""
+msgstr "Obnovit nastavení…"
 
 #: rustconn/src/dialogs/settings/mod.rs:258
 msgid "Load configuration from a ZIP archive (restart required)"
-msgstr ""
+msgstr "Načíst konfiguraci ze ZIP archivu (vyžadován restart)"
 
 #: rustconn/src/dialogs/settings/mod.rs:286
 msgid "Save Backup"
-msgstr ""
+msgstr "Uložit zálohu"
 
 #: rustconn/src/dialogs/settings/mod.rs:304
 msgid "Backup saved ({} files)"
-msgstr ""
+msgstr "Záloha uložena ({} souborů)"
 
 #: rustconn/src/dialogs/settings/mod.rs:317
 msgid "Backup Error"
-msgstr ""
+msgstr "Chyba zálohy"
 
 #: rustconn/src/dialogs/settings/mod.rs:340
 msgid "Open Backup"
-msgstr ""
+msgstr "Otevřít zálohu"
 
 #: rustconn/src/dialogs/settings/mod.rs:356
 msgid "Restore Settings?"
-msgstr ""
+msgstr "Obnovit nastavení?"
 
 #: rustconn/src/dialogs/settings/mod.rs:358
 msgid ""
 "This will overwrite current settings. A restart is required to apply changes."
-msgstr ""
+msgstr "Toto přepíše aktuální nastavení. Pro použití změn je nutný restart."
 
 #: rustconn/src/dialogs/settings/mod.rs:362
 msgid "Restore"
-msgstr ""
+msgstr "Obnovit"
 
 #: rustconn/src/dialogs/settings/mod.rs:377
 msgid "Restored {} files. Restart to apply."
-msgstr ""
+msgstr "Obnoveno {} souborů. Restartujte pro použití."
 
 #: rustconn/src/dialogs/settings/mod.rs:390
 msgid "Restore Error"
-msgstr ""
+msgstr "Chyba obnovení"
 
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:39
 msgid "Monitoring"
@@ -4696,11 +4696,11 @@ msgstr "Přesunout vybrané položky do skupiny"
 
 #: rustconn/src/sidebar_ui.rs:274
 msgid "Create Cluster"
-msgstr ""
+msgstr "Vytvořit cluster"
 
 #: rustconn/src/sidebar_ui.rs:275
 msgid "Create a cluster from selected connections"
-msgstr ""
+msgstr "Vytvořit cluster z vybraných připojení"
 
 #: rustconn/src/sidebar_ui.rs:284
 msgid "Select all items (Ctrl+A)"
@@ -4919,7 +4919,7 @@ msgstr "Příkaz nenalezen: {}"
 
 #: rustconn/src/terminal/mod.rs:1037 rustconn/src/terminal/mod.rs:1224
 msgid "Reconnect to this session"
-msgstr ""
+msgstr "Znovu připojit k této relaci"
 
 #: rustconn/src/terminal/mod.rs:1053
 msgid "'{}' is not installed"
@@ -4927,19 +4927,19 @@ msgstr "„{}“ není nainstalovanáno"
 
 #: rustconn/src/terminal/mod.rs:1219
 msgid "Session disconnected"
-msgstr ""
+msgstr "Relace odpojena"
 
 #: rustconn/src/toast.rs:72
 msgid "Warning"
-msgstr ""
+msgstr "Varování"
 
 #: rustconn/src/toast.rs:193
 msgid "Info"
-msgstr ""
+msgstr "Informace"
 
 #: rustconn/src/toast.rs:275
 msgid "Retry"
-msgstr ""
+msgstr "Opakovat"
 
 #: rustconn/src/validation.rs:65
 msgid "{} is required"
@@ -5231,7 +5231,7 @@ msgstr "Chyba při přesunu položky"
 #: rustconn/src/window/mod.rs:3690 rustconn/src/window/mod.rs:3837
 #: rustconn/src/window/protocols.rs:384 rustconn/src/window/protocols.rs:555
 msgid "Connection failed. Host unreachable."
-msgstr ""
+msgstr "Připojení selhalo. Hostitel nedostupný."
 
 #: rustconn/src/window/mod.rs:4133 rustconn/src/window/mod.rs:4147
 msgid "Pre-connect task failed. Connection aborted."
@@ -5251,7 +5251,7 @@ msgstr "připojení"
 
 #: rustconn/src/window/operations.rs:57
 msgid "This group contains {} connection(s)."
-msgstr ""
+msgstr "Tato skupina obsahuje {} připojení."
 
 #: rustconn/src/window/operations.rs:62
 msgid "Are you sure you want to delete the empty group '{}'?"
@@ -5263,11 +5263,11 @@ msgstr "Opravdu chcete připojení „{}“?"
 
 #: rustconn/src/window/operations.rs:80
 msgid "Delete group '{}'?"
-msgstr ""
+msgstr "Smazat skupinu «{}»?"
 
 #: rustconn/src/window/operations.rs:82
 msgid "Keep Connections"
-msgstr ""
+msgstr "Ponechat připojení"
 
 #: rustconn/src/window/operations.rs:83 rustconn/src/window/operations.rs:419
 msgid "Delete All"
@@ -5648,288 +5648,3 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:9
 msgid "ssh;rdp;vnc;spice;telnet;zerotrust;connection;terminal;remote;"
 msgstr "ssh;rdp;vnc;spice;telnet;zerotrust;připojení;terminál;vzdálený;"
-
-#~ msgid ""
-#~ "Are you sure you want to delete the group '{}'?\n"
-#~ "\n"
-#~ "This will also delete {} connection(s) in this group."
-#~ msgstr ""
-#~ "Opravdu chcete skupinu „{}“ smazat?\n"
-#~ "\n"
-#~ "Tím budou smazáno i {} připojení v této skupině."
-
-#~ msgid ""
-#~ "Including passwords may expose sensitive data. Only enable if you trust "
-#~ "the destination."
-#~ msgstr ""
-#~ "Zahrnutí hesel může odhalit citlivé údaje. Povolte pouze pokud důvěřujete "
-#~ "cíli."
-
-#~ msgid ""
-#~ "Passwords are stored in your password manager and not included in exports "
-#~ "by default. Export your credential structure separately if needed."
-#~ msgstr ""
-#~ "Hesla jsou uložena ve správci hesel a ve výchozím nastavení nejsou "
-#~ "zahrnuta v exportech."
-
-#~ msgid "Not initialized (run 'pass init <gpg-id>')"
-#~ msgstr "Neinicializováno (spusťte 'pass init <gpg-id>')"
-
-#~ msgid "More tabs"
-#~ msgstr "Více karet"
-
-#~ msgid "All Protocols"
-#~ msgstr "Všechny protokoly"
-
-#~ msgid "Status:"
-#~ msgstr "Stav:"
-
-#~ msgid "All Statuses"
-#~ msgstr "Všechny stavy"
-
-#~ msgid "Starting"
-#~ msgstr "Spouštění"
-
-#~ msgid "Refresh Dashboard"
-#~ msgstr "Znovu načíst přehled"
-
-#~ msgid "No active sessions"
-#~ msgstr "Žádné aktivní relace"
-
-#~ msgid "Duration"
-#~ msgstr "Doba trvání"
-
-#~ msgid "Focus Session"
-#~ msgstr "Zaměřit relaci"
-
-#~ msgid "Connection Dashboard"
-#~ msgstr "Přehled připojení"
-
-#~ msgid "Open"
-#~ msgstr "Otevřít"
-
-#~ msgid "Reset"
-#~ msgstr "Resetovat"
-
-#~ msgid "No Connections"
-#~ msgstr "Žádná připojení"
-
-#~ msgid "Create your first connection to get started"
-#~ msgstr "Začněte vytvořením svého prvního připojení"
-
-#~ msgid "No Results Found"
-#~ msgstr "Nic nenalezeno"
-
-#~ msgid "No connections match"
-#~ msgstr "Žádné připojení neodpovídá"
-
-#~ msgid "No Active Sessions"
-#~ msgstr "Žádné aktivní relace"
-
-#~ msgid "Connect to a server to start a session"
-#~ msgstr "Připojit se k serveru a zahájit relaci"
-
-#~ msgid "No Groups"
-#~ msgstr "Žádné skupiny"
-
-#~ msgid "Create groups to organize your connections"
-#~ msgstr "Vytvářejte skupiny a škatulkujte si jimi svá připojení"
-
-#~ msgid "No Snippets"
-#~ msgstr "Žádné útržky příkazů"
-
-#~ msgid "Create command snippets for quick access"
-#~ msgstr "Vytvářejte si útržky příkazů pro rychlý přístup"
-
-#~ msgid "No Templates"
-#~ msgstr "Žádné šablony"
-
-#~ msgid "Create templates for common connection configurations"
-#~ msgstr "Vytvářejte si šablony pro opakující se uspořádání připojení"
-
-#~ msgid "No Connection History"
-#~ msgstr "Žádná historie připojení"
-
-#~ msgid "Your recent connections will appear here"
-#~ msgstr "Vaše nedávná připojení se zobrazí zde"
-
-#~ msgid "Session Settings"
-#~ msgstr "Nastavení relace"
-
-#~ msgid "Exit Fullscreen"
-#~ msgstr "Ukončit celou obrazovku"
-
-#~ msgid "Failed to initialize application state"
-#~ msgstr "Nepodařilo se inicializovat stav aplikace"
-
-#~ msgid "_About RustConn"
-#~ msgstr "_O aplikaci RustConn"
-
-#~ msgid "_Quit"
-#~ msgstr "_Ukončit"
-
-#~ msgid "Opening mc SFTP..."
-#~ msgstr "Otevírání mc SFTP…"
-
-#~ msgid "Undo"
-#~ msgstr "Zpět"
-
-#~ msgid "Create a new connection to get started"
-#~ msgstr "Vytvořte nové připojení"
-
-#~ msgid "Color Scheme"
-#~ msgstr "Schéma barev"
-
-#~ msgid "Telnet"
-#~ msgstr "Telnet"
-
-#~ msgid "Serial"
-#~ msgstr "Sériový"
-
-#~ msgid "K8s"
-#~ msgstr "K8s"
-
-#~ msgid "{} connection imported"
-#~ msgid_plural "{} connections imported"
-#~ msgstr[0] "{} připojení naimportováno"
-#~ msgstr[1] "{} připojení naimportována"
-#~ msgstr[2] "{} připojení naimportováno"
-
-#~ msgid "Modern Connection Manager for Linux"
-#~ msgstr "Moderní správce připojení pro Linux"
-
-#~ msgid "Filter RDP connections"
-#~ msgstr "Filtrovat RDP připojení"
-
-#~ msgid "Filter VNC connections"
-#~ msgstr "Filtrovat VNC připojení"
-
-#~ msgid "Open local shell terminal"
-#~ msgstr "Otevřít lokální terminál"
-
-#~ msgid ""
-#~ "Automatically respond to terminal patterns.\n"
-#~ "Rules are matched in priority order (highest first)."
-#~ msgstr ""
-#~ "Automaticky odpovídat na vzory terminálu.\n"
-#~ "Pravidla se kontrolují v pořadí priority (nejvyšší první)."
-
-#~ msgid "X11 Forwarding"
-#~ msgstr "Přesměrování X11"
-
-#~ msgid "Forward X11 display to local host (-X)"
-#~ msgstr "Přesměrovat zobrazení X11 na místní hostitel (-X)"
-
-#~ msgid "Enable compression for slow connections (-C)"
-#~ msgstr "Povolit kompresi pro pomalá připojení (-C)"
-
-#~ msgid "Additional SSH command-line options"
-#~ msgstr "Další možnosti příkazového řádku SSH"
-
-#~ msgid "Device Path"
-#~ msgstr "Cesta k zařízení"
-
-#~ msgid "Path to the serial device"
-#~ msgstr "Cesta k sériovému zařízení"
-
-#~ msgid "Additional picocom command-line arguments"
-#~ msgstr "Další argumenty příkazového řádku picocom"
-
-#~ msgid "Kubeconfig"
-#~ msgstr "Kubeconfig"
-
-#~ msgid "Path to kubeconfig file (default if empty)"
-#~ msgstr "Cesta k souboru kubeconfig (výchozí pokud prázdné)"
-
-#~ msgid "Context"
-#~ msgstr "Kontext"
-
-#~ msgid "Kubernetes context (current-context if empty)"
-#~ msgstr "Kontext Kubernetes (aktuální pokud prázdný)"
-
-#~ msgid "Namespace"
-#~ msgstr "Jmenný prostor"
-
-#~ msgid "Target namespace (default if empty)"
-#~ msgstr "Cílový jmenný prostor (výchozí pokud prázdný)"
-
-#~ msgid "Pod"
-#~ msgstr "Pod"
-
-#~ msgid "Pod name to exec into"
-#~ msgstr "Název Podu pro exec"
-
-#~ msgid "Container"
-#~ msgstr "Kontejner"
-
-#~ msgid "Container name (optional for single-container)"
-#~ msgstr "Název kontejneru (volitelné pro jeden kontejner)"
-
-#~ msgid "Image"
-#~ msgstr "Obraz"
-
-#~ msgid "Container image for temporary pod"
-#~ msgstr "Obraz kontejneru pro dočasný Pod"
-
-#~ msgid "Additional kubectl arguments"
-#~ msgstr "Další argumenty kubectl"
-
-#~ msgid "Application"
-#~ msgstr "Aplikace"
-
-#~ msgid "Navigation"
-#~ msgstr "Navigace"
-
-#~ msgid "Split View"
-#~ msgstr "Rozdělené zobrazení"
-
-#~ msgid "View"
-#~ msgstr "Zobrazení"
-
-#~ msgid "Import"
-#~ msgstr "Importovat"
-
-#~ msgid "Export"
-#~ msgstr "Exportovat"
-
-#~ msgid "Move to Group"
-#~ msgstr "Přesunout do skupiny"
-
-#~ msgid "Focus Sidebar"
-#~ msgstr "Zaměřit postranní panel"
-
-#~ msgid "Focus Terminal"
-#~ msgstr "Zaměřit terminál"
-
-#~ msgid "Command Palette (Commands)"
-#~ msgstr "Paleta příkazů (příkazy)"
-
-#~ msgid "Find in Terminal"
-#~ msgstr "Najít v terminálu"
-
-#~ msgid "Next Tab"
-#~ msgstr "Další karta"
-
-#~ msgid "Previous Tab"
-#~ msgstr "Předchozí karta"
-
-#~ msgid "Split Horizontal"
-#~ msgstr "Rozdělit vodorovně"
-
-#~ msgid "Split Vertical"
-#~ msgstr "Rozdělit svisle"
-
-#~ msgid "Close Pane"
-#~ msgstr "Zavřít panel"
-
-#~ msgid "Focus Next Pane"
-#~ msgstr "Zaměřit další panel"
-
-#~ msgid "Waypipe"
-#~ msgstr "Waypipe"
-
-#~ msgid "Wayland application forwarding via waypipe"
-#~ msgstr "Přesměrování aplikací Wayland přes waypipe"
-
-#~ msgid "Optional: Install waypipe package for Wayland forwarding"
-#~ msgstr "Volitelné: Nainstalujte balíček waypipe pro přesměrování Wayland"

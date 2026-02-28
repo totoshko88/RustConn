@@ -54,7 +54,7 @@ msgstr "Инициализация қатесі"
 
 #: rustconn/src/app.rs:476
 msgid "{} backend unavailable. Using fallback."
-msgstr ""
+msgstr "{} бэкенді қолжетімсіз. Қосалқы пайдаланылуда."
 
 #: rustconn/src/app.rs:1152
 msgid ""
@@ -1888,7 +1888,7 @@ msgstr "SSH агентінен таңдау"
 
 #: rustconn/src/dialogs/connection/ssh.rs:227
 msgid "Key file not found"
-msgstr ""
+msgstr "Кілт файлы табылмады"
 
 #: rustconn/src/dialogs/connection/ssh.rs:359
 #: rustconn/src/dialogs/connection/telnet.rs:36
@@ -2849,7 +2849,7 @@ msgstr "Пернелерді басыңыз..."
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:133
 msgid "Conflicts with: {}"
-msgstr ""
+msgstr "Қайшылық: {}"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:183
 msgid "Reset All to Defaults"
@@ -2938,64 +2938,64 @@ msgstr "Сеанс журналындағы әр жолдың алдына [HH:M
 
 #: rustconn/src/dialogs/settings/mod.rs:247
 msgid "Backup & Restore"
-msgstr ""
+msgstr "Сақтық көшірме және қалпына келтіру"
 
 #: rustconn/src/dialogs/settings/mod.rs:248
 msgid "Export or import all settings as a ZIP archive"
-msgstr ""
+msgstr "Барлық параметрлерді ZIP мұрағаты ретінде экспорттау немесе импорттау"
 
 #: rustconn/src/dialogs/settings/mod.rs:252
 msgid "Backup Settings…"
-msgstr ""
+msgstr "Параметрлерді сақтық көшірмелеу…"
 
 #: rustconn/src/dialogs/settings/mod.rs:253
 msgid "Save all configuration files to a ZIP archive"
-msgstr ""
+msgstr "Барлық конфигурация файлдарын ZIP мұрағатына сақтау"
 
 #: rustconn/src/dialogs/settings/mod.rs:256
 msgid "Restore Settings…"
-msgstr ""
+msgstr "Параметрлерді қалпына келтіру…"
 
 #: rustconn/src/dialogs/settings/mod.rs:258
 msgid "Load configuration from a ZIP archive (restart required)"
-msgstr ""
+msgstr "ZIP мұрағатынан конфигурацияны жүктеу (қайта іске қосу қажет)"
 
 #: rustconn/src/dialogs/settings/mod.rs:286
 msgid "Save Backup"
-msgstr ""
+msgstr "Сақтық көшірмені сақтау"
 
 #: rustconn/src/dialogs/settings/mod.rs:304
 msgid "Backup saved ({} files)"
-msgstr ""
+msgstr "Сақтық көшірме сақталды ({} файл)"
 
 #: rustconn/src/dialogs/settings/mod.rs:317
 msgid "Backup Error"
-msgstr ""
+msgstr "Сақтық көшірме қатесі"
 
 #: rustconn/src/dialogs/settings/mod.rs:340
 msgid "Open Backup"
-msgstr ""
+msgstr "Сақтық көшірмені ашу"
 
 #: rustconn/src/dialogs/settings/mod.rs:356
 msgid "Restore Settings?"
-msgstr ""
+msgstr "Параметрлерді қалпына келтіру керек пе?"
 
 #: rustconn/src/dialogs/settings/mod.rs:358
 msgid ""
 "This will overwrite current settings. A restart is required to apply changes."
-msgstr ""
+msgstr "Бұл ағымдағы параметрлерді қайта жазады. Өзгерістерді қолдану үшін қайта іске қосу қажет."
 
 #: rustconn/src/dialogs/settings/mod.rs:362
 msgid "Restore"
-msgstr ""
+msgstr "Қалпына келтіру"
 
 #: rustconn/src/dialogs/settings/mod.rs:377
 msgid "Restored {} files. Restart to apply."
-msgstr ""
+msgstr "{} файл қалпына келтірілді. Қолдану үшін қайта іске қосыңыз."
 
 #: rustconn/src/dialogs/settings/mod.rs:390
 msgid "Restore Error"
-msgstr ""
+msgstr "Қалпына келтіру қатесі"
 
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:39
 msgid "Monitoring"
@@ -4696,11 +4696,11 @@ msgstr "Таңдалған элементтерді топқа жылжыту"
 
 #: rustconn/src/sidebar_ui.rs:274
 msgid "Create Cluster"
-msgstr ""
+msgstr "Кластер құру"
 
 #: rustconn/src/sidebar_ui.rs:275
 msgid "Create a cluster from selected connections"
-msgstr ""
+msgstr "Таңдалған қосылымдардан кластер құру"
 
 #: rustconn/src/sidebar_ui.rs:284
 msgid "Select all items (Ctrl+A)"
@@ -4919,7 +4919,7 @@ msgstr "Команда табылмады: {}"
 
 #: rustconn/src/terminal/mod.rs:1037 rustconn/src/terminal/mod.rs:1224
 msgid "Reconnect to this session"
-msgstr ""
+msgstr "Бұл сеансқа қайта қосылу"
 
 #: rustconn/src/terminal/mod.rs:1053
 msgid "'{}' is not installed"
@@ -4927,19 +4927,19 @@ msgstr "«{}» орнатылмаған"
 
 #: rustconn/src/terminal/mod.rs:1219
 msgid "Session disconnected"
-msgstr ""
+msgstr "Сеанс ажыратылды"
 
 #: rustconn/src/toast.rs:72
 msgid "Warning"
-msgstr ""
+msgstr "Ескерту"
 
 #: rustconn/src/toast.rs:193
 msgid "Info"
-msgstr ""
+msgstr "Ақпарат"
 
 #: rustconn/src/toast.rs:275
 msgid "Retry"
-msgstr ""
+msgstr "Қайталау"
 
 #: rustconn/src/validation.rs:65
 msgid "{} is required"
@@ -5231,7 +5231,7 @@ msgstr "Элементті жылжыту қатесі"
 #: rustconn/src/window/mod.rs:3690 rustconn/src/window/mod.rs:3837
 #: rustconn/src/window/protocols.rs:384 rustconn/src/window/protocols.rs:555
 msgid "Connection failed. Host unreachable."
-msgstr ""
+msgstr "Қосылу сәтсіз. Хост қолжетімсіз."
 
 #: rustconn/src/window/mod.rs:4133 rustconn/src/window/mod.rs:4147
 msgid "Pre-connect task failed. Connection aborted."
@@ -5251,7 +5251,7 @@ msgstr "қосылым"
 
 #: rustconn/src/window/operations.rs:57
 msgid "This group contains {} connection(s)."
-msgstr ""
+msgstr "Бұл топта {} қосылым бар."
 
 #: rustconn/src/window/operations.rs:62
 msgid "Are you sure you want to delete the empty group '{}'?"
@@ -5263,11 +5263,11 @@ msgstr "'{}' қосылымын жоюға сенімдісіз бе?"
 
 #: rustconn/src/window/operations.rs:80
 msgid "Delete group '{}'?"
-msgstr ""
+msgstr "«{}» тобын жою керек пе?"
 
 #: rustconn/src/window/operations.rs:82
 msgid "Keep Connections"
-msgstr ""
+msgstr "Қосылымдарды сақтау"
 
 #: rustconn/src/window/operations.rs:83 rustconn/src/window/operations.rs:419
 msgid "Delete All"
@@ -5648,241 +5648,3 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:9
 msgid "ssh;rdp;vnc;spice;telnet;zerotrust;connection;terminal;remote;"
 msgstr "ssh;rdp;vnc;spice;telnet;zerotrust;қосылым;терминал;қашықтағы;"
-
-#~ msgid ""
-#~ "Are you sure you want to delete the group '{}'?\n"
-#~ "\n"
-#~ "This will also delete {} connection(s) in this group."
-#~ msgstr ""
-#~ "'{}' тобын жоюға сенімдісіз бе?\n"
-#~ "\n"
-#~ "Бұл осы топтағы {} қосылымды да жояды."
-
-#~ msgid ""
-#~ "Including passwords may expose sensitive data. Only enable if you trust "
-#~ "the destination."
-#~ msgstr ""
-#~ "Құпия сөздерді қосу құпия деректерді ашуы мүмкін. Тағайындау орнына "
-#~ "сенсеңіз ғана қосыңыз."
-
-#~ msgid ""
-#~ "Passwords are stored in your password manager and not included in exports "
-#~ "by default. Export your credential structure separately if needed."
-#~ msgstr ""
-#~ "Құпия сөздер құпия сөз менеджерінде сақталады және әдепкі бойынша "
-#~ "экспортқа қосылмайды. Қажет болса, тіркелгі деректерінің құрылымын бөлек "
-#~ "экспорттаңыз."
-
-#~ msgid "Not initialized (run 'pass init <gpg-id>')"
-#~ msgstr "Баптандырылмаған ('pass init <gpg-id>' орындаңыз)"
-
-#~ msgid "More tabs"
-#~ msgstr "Көбірек қойындылар"
-
-#~ msgid "All Protocols"
-#~ msgstr "Барлық хаттамалар"
-
-#~ msgid "Status:"
-#~ msgstr "Күй:"
-
-#~ msgid "All Statuses"
-#~ msgstr "Барлық күйлер"
-
-#~ msgid "Starting"
-#~ msgstr "Іске қосылуда"
-
-#~ msgid "Refresh Dashboard"
-#~ msgstr "Тақтаны жаңарту"
-
-#~ msgid "No active sessions"
-#~ msgstr "Белсенді сеанстар жоқ"
-
-#~ msgid "Duration"
-#~ msgstr "Ұзақтығы"
-
-#~ msgid "Focus Session"
-#~ msgstr "Сеансқа фокустау"
-
-#~ msgid "Connection Dashboard"
-#~ msgstr "Қосылымдар тақтасы"
-
-#~ msgid "Open"
-#~ msgstr "Ашу"
-
-#~ msgid "Reset"
-#~ msgstr "Қалпына келтіру"
-
-#~ msgid "No Connections"
-#~ msgstr "Қосылымдар жоқ"
-
-#~ msgid "Create your first connection to get started"
-#~ msgstr "Бастау үшін алғашқы қосылымды жасаңыз"
-
-#~ msgid "No Results Found"
-#~ msgstr "Нәтижелер табылмады"
-
-#~ msgid "No connections match"
-#~ msgstr "Сәйкес қосылымдар жоқ"
-
-#~ msgid "No Active Sessions"
-#~ msgstr "Белсенді сеанстар жоқ"
-
-#~ msgid "Connect to a server to start a session"
-#~ msgstr "Сеансты бастау үшін серверге қосылыңыз"
-
-#~ msgid "No Groups"
-#~ msgstr "Топтар жоқ"
-
-#~ msgid "Create groups to organize your connections"
-#~ msgstr "Қосылымдарды ұйымдастыру үшін топтар жасаңыз"
-
-#~ msgid "No Snippets"
-#~ msgstr "Үзінділер жоқ"
-
-#~ msgid "Create command snippets for quick access"
-#~ msgstr "Жылдам қол жеткізу үшін команда үзінділерін жасаңыз"
-
-#~ msgid "No Templates"
-#~ msgstr "Үлгілер жоқ"
-
-#~ msgid "Create templates for common connection configurations"
-#~ msgstr "Жиі қолданылатын қосылым конфигурациялары үшін үлгілер жасаңыз"
-
-#~ msgid "No Connection History"
-#~ msgstr "Қосылым тарихы жоқ"
-
-#~ msgid "Your recent connections will appear here"
-#~ msgstr "Соңғы қосылымдарыңыз осында көрсетіледі"
-
-#~ msgid "Session Settings"
-#~ msgstr "Сеанс параметрлері"
-
-#~ msgid "Exit Fullscreen"
-#~ msgstr "Толық экраннан шығу"
-
-#~ msgid ""
-#~ "Automatically respond to terminal patterns.\n"
-#~ "Rules are matched in priority order (highest first)."
-#~ msgstr ""
-#~ "Терминал үлгілеріне автоматты жауап беру.\n"
-#~ "Ережелер басымдық ретімен тексеріледі (ең жоғары бірінші)."
-
-#~ msgid "X11 Forwarding"
-#~ msgstr "X11 бағыттау"
-
-#~ msgid "Forward X11 display to local host (-X)"
-#~ msgstr "X11 дисплейін жергілікті хостқа бағыттау (-X)"
-
-#~ msgid "Enable compression for slow connections (-C)"
-#~ msgstr "Баяу қосылыстар үшін сығымдауды қосу (-C)"
-
-#~ msgid "Additional SSH command-line options"
-#~ msgstr "Қосымша SSH пәрмен жолы параметрлері"
-
-#~ msgid "Device Path"
-#~ msgstr "Құрылғы жолы"
-
-#~ msgid "Path to the serial device"
-#~ msgstr "Сериялық құрылғыға жол"
-
-#~ msgid "Additional picocom command-line arguments"
-#~ msgstr "Қосымша picocom пәрмен жолы аргументтері"
-
-#~ msgid "Kubeconfig"
-#~ msgstr "Kubeconfig"
-
-#~ msgid "Path to kubeconfig file (default if empty)"
-#~ msgstr "kubeconfig файлына жол (бос болса әдепкі)"
-
-#~ msgid "Context"
-#~ msgstr "Контекст"
-
-#~ msgid "Kubernetes context (current-context if empty)"
-#~ msgstr "Kubernetes контексті (бос болса ағымдағы)"
-
-#~ msgid "Namespace"
-#~ msgstr "Атаулар кеңістігі"
-
-#~ msgid "Target namespace (default if empty)"
-#~ msgstr "Мақсатты атаулар кеңістігі (бос болса әдепкі)"
-
-#~ msgid "Pod"
-#~ msgstr "Pod"
-
-#~ msgid "Pod name to exec into"
-#~ msgstr "exec үшін Pod атауы"
-
-#~ msgid "Container"
-#~ msgstr "Контейнер"
-
-#~ msgid "Container name (optional for single-container)"
-#~ msgstr "Контейнер атауы (жалғыз контейнер үшін міндетті емес)"
-
-#~ msgid "Image"
-#~ msgstr "Бейне"
-
-#~ msgid "Container image for temporary pod"
-#~ msgstr "Уақытша Pod үшін контейнер бейнесі"
-
-#~ msgid "Additional kubectl arguments"
-#~ msgstr "Қосымша kubectl аргументтері"
-
-#~ msgid "Application"
-#~ msgstr "Қолданба"
-
-#~ msgid "Navigation"
-#~ msgstr "Навигация"
-
-#~ msgid "Split View"
-#~ msgstr "Бөлінген көрініс"
-
-#~ msgid "View"
-#~ msgstr "Көрініс"
-
-#~ msgid "Import"
-#~ msgstr "Импорттау"
-
-#~ msgid "Export"
-#~ msgstr "Экспорттау"
-
-#~ msgid "Move to Group"
-#~ msgstr "Топқа жылжыту"
-
-#~ msgid "Focus Sidebar"
-#~ msgstr "Бүйір панеліне фокус"
-
-#~ msgid "Focus Terminal"
-#~ msgstr "Терминалға фокус"
-
-#~ msgid "Command Palette (Commands)"
-#~ msgstr "Команда палитрасы (командалар)"
-
-#~ msgid "Find in Terminal"
-#~ msgstr "Терминалдан іздеу"
-
-#~ msgid "Next Tab"
-#~ msgstr "Келесі қойынды"
-
-#~ msgid "Previous Tab"
-#~ msgstr "Алдыңғы қойынды"
-
-#~ msgid "Split Horizontal"
-#~ msgstr "Көлденеңінен бөлу"
-
-#~ msgid "Split Vertical"
-#~ msgstr "Тігінен бөлу"
-
-#~ msgid "Close Pane"
-#~ msgstr "Панельді жабу"
-
-#~ msgid "Focus Next Pane"
-#~ msgstr "Келесі панельге фокус"
-
-#~ msgid "Waypipe"
-#~ msgstr "Waypipe"
-
-#~ msgid "Wayland application forwarding via waypipe"
-#~ msgstr "Wayland қолданбаларын waypipe арқылы бағыттау"
-
-#~ msgid "Optional: Install waypipe package for Wayland forwarding"
-#~ msgstr "Қосымша: Wayland бағыттау үшін waypipe бумасын орнатыңыз"

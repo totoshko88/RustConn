@@ -55,7 +55,7 @@ msgstr "Памылка ініцыялізацыі"
 
 #: rustconn/src/app.rs:476
 msgid "{} backend unavailable. Using fallback."
-msgstr ""
+msgstr "Бэкенд {} недаступны. Выкарыстоўваецца запасны."
 
 #: rustconn/src/app.rs:1152
 msgid ""
@@ -1896,7 +1896,7 @@ msgstr "Выбраць з SSH-агента"
 
 #: rustconn/src/dialogs/connection/ssh.rs:227
 msgid "Key file not found"
-msgstr ""
+msgstr "Файл ключа не знойдзены"
 
 #: rustconn/src/dialogs/connection/ssh.rs:359
 #: rustconn/src/dialogs/connection/telnet.rs:36
@@ -2856,7 +2856,7 @@ msgstr "Націсніце клавішы..."
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:133
 msgid "Conflicts with: {}"
-msgstr ""
+msgstr "Канфлікт з: {}"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:183
 msgid "Reset All to Defaults"
@@ -2945,64 +2945,64 @@ msgstr "Дадаваць [HH:MM:SS] да кожнага радка ў журна
 
 #: rustconn/src/dialogs/settings/mod.rs:247
 msgid "Backup & Restore"
-msgstr ""
+msgstr "Рэзервовае капіраванне і аднаўленне"
 
 #: rustconn/src/dialogs/settings/mod.rs:248
 msgid "Export or import all settings as a ZIP archive"
-msgstr ""
+msgstr "Экспартаваць або імпартаваць усе налады як ZIP-архіў"
 
 #: rustconn/src/dialogs/settings/mod.rs:252
 msgid "Backup Settings…"
-msgstr ""
+msgstr "Рэзервовае капіраванне налад…"
 
 #: rustconn/src/dialogs/settings/mod.rs:253
 msgid "Save all configuration files to a ZIP archive"
-msgstr ""
+msgstr "Захаваць усе файлы канфігурацыі ў ZIP-архіў"
 
 #: rustconn/src/dialogs/settings/mod.rs:256
 msgid "Restore Settings…"
-msgstr ""
+msgstr "Аднавіць налады…"
 
 #: rustconn/src/dialogs/settings/mod.rs:258
 msgid "Load configuration from a ZIP archive (restart required)"
-msgstr ""
+msgstr "Загрузіць канфігурацыю з ZIP-архіва (патрабуецца перазапуск)"
 
 #: rustconn/src/dialogs/settings/mod.rs:286
 msgid "Save Backup"
-msgstr ""
+msgstr "Захаваць рэзервовую копію"
 
 #: rustconn/src/dialogs/settings/mod.rs:304
 msgid "Backup saved ({} files)"
-msgstr ""
+msgstr "Рэзервовую копію захавана ({} файлаў)"
 
 #: rustconn/src/dialogs/settings/mod.rs:317
 msgid "Backup Error"
-msgstr ""
+msgstr "Памылка рэзервовага капіравання"
 
 #: rustconn/src/dialogs/settings/mod.rs:340
 msgid "Open Backup"
-msgstr ""
+msgstr "Адкрыць рэзервовую копію"
 
 #: rustconn/src/dialogs/settings/mod.rs:356
 msgid "Restore Settings?"
-msgstr ""
+msgstr "Аднавіць налады?"
 
 #: rustconn/src/dialogs/settings/mod.rs:358
 msgid ""
 "This will overwrite current settings. A restart is required to apply changes."
-msgstr ""
+msgstr "Гэта перазапіша бягучыя налады. Для прымянення змен патрабуецца перазапуск."
 
 #: rustconn/src/dialogs/settings/mod.rs:362
 msgid "Restore"
-msgstr ""
+msgstr "Аднавіць"
 
 #: rustconn/src/dialogs/settings/mod.rs:377
 msgid "Restored {} files. Restart to apply."
-msgstr ""
+msgstr "Адноўлена {} файлаў. Перазапусціце для прымянення."
 
 #: rustconn/src/dialogs/settings/mod.rs:390
 msgid "Restore Error"
-msgstr ""
+msgstr "Памылка аднаўлення"
 
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:39
 msgid "Monitoring"
@@ -4703,11 +4703,11 @@ msgstr "Перамясціць абраныя элементы ў групу"
 
 #: rustconn/src/sidebar_ui.rs:274
 msgid "Create Cluster"
-msgstr ""
+msgstr "Стварыць кластар"
 
 #: rustconn/src/sidebar_ui.rs:275
 msgid "Create a cluster from selected connections"
-msgstr ""
+msgstr "Стварыць кластар з абраных злучэнняў"
 
 #: rustconn/src/sidebar_ui.rs:284
 msgid "Select all items (Ctrl+A)"
@@ -4926,7 +4926,7 @@ msgstr "Каманда не знойдзена: {}"
 
 #: rustconn/src/terminal/mod.rs:1037 rustconn/src/terminal/mod.rs:1224
 msgid "Reconnect to this session"
-msgstr ""
+msgstr "Перазлучыцца з гэтым сеансам"
 
 #: rustconn/src/terminal/mod.rs:1053
 msgid "'{}' is not installed"
@@ -4934,19 +4934,19 @@ msgstr "«{}» не ўсталявана"
 
 #: rustconn/src/terminal/mod.rs:1219
 msgid "Session disconnected"
-msgstr ""
+msgstr "Сеанс адлучаны"
 
 #: rustconn/src/toast.rs:72
 msgid "Warning"
-msgstr ""
+msgstr "Папярэджанне"
 
 #: rustconn/src/toast.rs:193
 msgid "Info"
-msgstr ""
+msgstr "Інфармацыя"
 
 #: rustconn/src/toast.rs:275
 msgid "Retry"
-msgstr ""
+msgstr "Паўтарыць"
 
 #: rustconn/src/validation.rs:65
 msgid "{} is required"
@@ -5238,7 +5238,7 @@ msgstr "Памылка перамяшчэння элемента"
 #: rustconn/src/window/mod.rs:3690 rustconn/src/window/mod.rs:3837
 #: rustconn/src/window/protocols.rs:384 rustconn/src/window/protocols.rs:555
 msgid "Connection failed. Host unreachable."
-msgstr ""
+msgstr "Злучэнне не ўдалося. Хост недасяжны."
 
 #: rustconn/src/window/mod.rs:4133 rustconn/src/window/mod.rs:4147
 msgid "Pre-connect task failed. Connection aborted."
@@ -5258,7 +5258,7 @@ msgstr "злучэнне"
 
 #: rustconn/src/window/operations.rs:57
 msgid "This group contains {} connection(s)."
-msgstr ""
+msgstr "Гэтая група змяшчае {} злучэнняў."
 
 #: rustconn/src/window/operations.rs:62
 msgid "Are you sure you want to delete the empty group '{}'?"
@@ -5270,11 +5270,11 @@ msgstr "Вы ўпэўнены, што хочаце выдаліць злучэн
 
 #: rustconn/src/window/operations.rs:80
 msgid "Delete group '{}'?"
-msgstr ""
+msgstr "Выдаліць групу «{}»?"
 
 #: rustconn/src/window/operations.rs:82
 msgid "Keep Connections"
-msgstr ""
+msgstr "Захаваць злучэнні"
 
 #: rustconn/src/window/operations.rs:83 rustconn/src/window/operations.rs:419
 msgid "Delete All"
@@ -5656,240 +5656,3 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:9
 msgid "ssh;rdp;vnc;spice;telnet;zerotrust;connection;terminal;remote;"
 msgstr "ssh;rdp;vnc;spice;telnet;zerotrust;злучэнне;тэрмінал;аддалены;"
-
-#~ msgid ""
-#~ "Are you sure you want to delete the group '{}'?\n"
-#~ "\n"
-#~ "This will also delete {} connection(s) in this group."
-#~ msgstr ""
-#~ "Вы ўпэўнены, што хочаце выдаліць групу '{}'?\n"
-#~ "\n"
-#~ "Гэта таксама выдаліць {} злучэнне(яў) у гэтай групе."
-
-#~ msgid ""
-#~ "Including passwords may expose sensitive data. Only enable if you trust "
-#~ "the destination."
-#~ msgstr ""
-#~ "Уключэнне пароляў можа раскрыць канфідэнцыяльныя даныя. Уключайце толькі "
-#~ "калі давяраеце прызначэнню."
-
-#~ msgid ""
-#~ "Passwords are stored in your password manager and not included in exports "
-#~ "by default. Export your credential structure separately if needed."
-#~ msgstr ""
-#~ "Паролі захоўваюцца ў вашым менеджары пароляў і не ўключаюцца ў экспарт па "
-#~ "змаўчанні. Экспартуйце структуру ўліковых даных асобна пры неабходнасці."
-
-#~ msgid "Not initialized (run 'pass init <gpg-id>')"
-#~ msgstr "Не ініцыялізавана (выканайце 'pass init <gpg-id>')"
-
-#~ msgid "More tabs"
-#~ msgstr "Больш укладак"
-
-#~ msgid "All Protocols"
-#~ msgstr "Усе пратаколы"
-
-#~ msgid "Status:"
-#~ msgstr "Стан:"
-
-#~ msgid "All Statuses"
-#~ msgstr "Усе станы"
-
-#~ msgid "Starting"
-#~ msgstr "Запуск"
-
-#~ msgid "Refresh Dashboard"
-#~ msgstr "Абнавіць панэль"
-
-#~ msgid "No active sessions"
-#~ msgstr "Няма актыўных сеансаў"
-
-#~ msgid "Duration"
-#~ msgstr "Працягласць"
-
-#~ msgid "Focus Session"
-#~ msgstr "Фокус на сеансе"
-
-#~ msgid "Connection Dashboard"
-#~ msgstr "Панэль злучэнняў"
-
-#~ msgid "Open"
-#~ msgstr "Адкрыць"
-
-#~ msgid "Reset"
-#~ msgstr "Скінуць"
-
-#~ msgid "No Connections"
-#~ msgstr "Няма злучэнняў"
-
-#~ msgid "Create your first connection to get started"
-#~ msgstr "Стварыце першае злучэнне, каб пачаць"
-
-#~ msgid "No Results Found"
-#~ msgstr "Нічога не знойдзена"
-
-#~ msgid "No connections match"
-#~ msgstr "Злучэнні не знойдзены"
-
-#~ msgid "No Active Sessions"
-#~ msgstr "Няма актыўных сеансаў"
-
-#~ msgid "Connect to a server to start a session"
-#~ msgstr "Злучыцеся з серверам, каб пачаць сеанс"
-
-#~ msgid "No Groups"
-#~ msgstr "Няма груп"
-
-#~ msgid "Create groups to organize your connections"
-#~ msgstr "Стварыце групы для арганізацыі злучэнняў"
-
-#~ msgid "No Snippets"
-#~ msgstr "Няма фрагментаў"
-
-#~ msgid "Create command snippets for quick access"
-#~ msgstr "Стварыце фрагменты каманд для хуткага доступу"
-
-#~ msgid "No Templates"
-#~ msgstr "Няма шаблонаў"
-
-#~ msgid "Create templates for common connection configurations"
-#~ msgstr "Стварыце шаблоны для тыповых канфігурацый злучэнняў"
-
-#~ msgid "No Connection History"
-#~ msgstr "Няма гісторыі злучэнняў"
-
-#~ msgid "Your recent connections will appear here"
-#~ msgstr "Вашы апошнія злучэнні з'явяцца тут"
-
-#~ msgid "Session Settings"
-#~ msgstr "Налады сеансу"
-
-#~ msgid "Exit Fullscreen"
-#~ msgstr "Выйсці з поўнаэкраннага рэжыму"
-
-#~ msgid ""
-#~ "Automatically respond to terminal patterns.\n"
-#~ "Rules are matched in priority order (highest first)."
-#~ msgstr ""
-#~ "Аўтаматычна адказваць на шаблоны тэрмінала.\n"
-#~ "Правілы правяраюцца па прыярытэце (найвышэйшы першым)."
-
-#~ msgid "X11 Forwarding"
-#~ msgstr "Перанакіраванне X11"
-
-#~ msgid "Forward X11 display to local host (-X)"
-#~ msgstr "Перанакіраваць дысплей X11 на лакальны хост (-X)"
-
-#~ msgid "Enable compression for slow connections (-C)"
-#~ msgstr "Уключыць сціск для павольных злучэнняў (-C)"
-
-#~ msgid "Additional SSH command-line options"
-#~ msgstr "Дадатковыя параметры каманднага радка SSH"
-
-#~ msgid "Device Path"
-#~ msgstr "Шлях да прылады"
-
-#~ msgid "Path to the serial device"
-#~ msgstr "Шлях да паслядоўнай прылады"
-
-#~ msgid "Additional picocom command-line arguments"
-#~ msgstr "Дадатковыя аргументы каманднага радка picocom"
-
-#~ msgid "Kubeconfig"
-#~ msgstr "Kubeconfig"
-
-#~ msgid "Path to kubeconfig file (default if empty)"
-#~ msgstr "Шлях да файла kubeconfig (тыповы, калі пусты)"
-
-#~ msgid "Context"
-#~ msgstr "Кантэкст"
-
-#~ msgid "Kubernetes context (current-context if empty)"
-#~ msgstr "Кантэкст Kubernetes (бягучы, калі пусты)"
-
-#~ msgid "Namespace"
-#~ msgstr "Прастора імёнаў"
-
-#~ msgid "Target namespace (default if empty)"
-#~ msgstr "Мэтавая прастора імёнаў (тыповая, калі пустая)"
-
-#~ msgid "Pod"
-#~ msgstr "Pod"
-
-#~ msgid "Pod name to exec into"
-#~ msgstr "Назва Pod для exec"
-
-#~ msgid "Container"
-#~ msgstr "Кантэйнер"
-
-#~ msgid "Container name (optional for single-container)"
-#~ msgstr "Назва кантэйнера (неабавязкова для аднаго кантэйнера)"
-
-#~ msgid "Image"
-#~ msgstr "Вобраз"
-
-#~ msgid "Container image for temporary pod"
-#~ msgstr "Вобраз кантэйнера для часовага Pod"
-
-#~ msgid "Additional kubectl arguments"
-#~ msgstr "Дадатковыя аргументы kubectl"
-
-#~ msgid "Application"
-#~ msgstr "Праграма"
-
-#~ msgid "Navigation"
-#~ msgstr "Навігацыя"
-
-#~ msgid "Split View"
-#~ msgstr "Падзелены выгляд"
-
-#~ msgid "View"
-#~ msgstr "Выгляд"
-
-#~ msgid "Import"
-#~ msgstr "Імпартуй"
-
-#~ msgid "Export"
-#~ msgstr "Экспартуй"
-
-#~ msgid "Move to Group"
-#~ msgstr "Перанясі ў групу"
-
-#~ msgid "Focus Sidebar"
-#~ msgstr "Фокус на бакавую панэль"
-
-#~ msgid "Focus Terminal"
-#~ msgstr "Фокус на тэрмінал"
-
-#~ msgid "Command Palette (Commands)"
-#~ msgstr "Палітра каманд (каманды)"
-
-#~ msgid "Find in Terminal"
-#~ msgstr "Знайдзі ў тэрмінале"
-
-#~ msgid "Next Tab"
-#~ msgstr "Наступная ўкладка"
-
-#~ msgid "Previous Tab"
-#~ msgstr "Папярэдняя ўкладка"
-
-#~ msgid "Split Horizontal"
-#~ msgstr "Падзялі гарызантальна"
-
-#~ msgid "Split Vertical"
-#~ msgstr "Падзялі вертыкальна"
-
-#~ msgid "Close Pane"
-#~ msgstr "Закрый панэль"
-
-#~ msgid "Focus Next Pane"
-#~ msgstr "Фокус на наступную панэль"
-
-#~ msgid "Waypipe"
-#~ msgstr "Waypipe"
-
-#~ msgid "Wayland application forwarding via waypipe"
-#~ msgstr "Пераадрасацыя праграм Wayland праз waypipe"
-
-#~ msgid "Optional: Install waypipe package for Wayland forwarding"
-#~ msgstr "Неабавязкова: усталюйце пакет waypipe для пераадрасацыі Wayland"

@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.9.4] - 2026-02-28
+## [0.9.4] - 2026-03-01
 
 ### Added
 - **Session Reconnect** — disconnected VTE tabs show a "Reconnect" banner to re-launch in one click

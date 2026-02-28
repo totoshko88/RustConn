@@ -54,7 +54,7 @@ msgstr "Chyba inicializácie"
 
 #: rustconn/src/app.rs:476
 msgid "{} backend unavailable. Using fallback."
-msgstr ""
+msgstr "Backend {} nedostupný. Používam záložný."
 
 #: rustconn/src/app.rs:1152
 msgid ""
@@ -1893,7 +1893,7 @@ msgstr "Vybrať z SSH agenta"
 
 #: rustconn/src/dialogs/connection/ssh.rs:227
 msgid "Key file not found"
-msgstr ""
+msgstr "Súbor kľúča nenájdený"
 
 #: rustconn/src/dialogs/connection/ssh.rs:359
 #: rustconn/src/dialogs/connection/telnet.rs:36
@@ -2854,7 +2854,7 @@ msgstr "Stlačte klávesy..."
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:133
 msgid "Conflicts with: {}"
-msgstr ""
+msgstr "Konflikt s: {}"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:183
 msgid "Reset All to Defaults"
@@ -2943,64 +2943,64 @@ msgstr "Pridať [HH:MM:SS] pred každý riadok v protokoloch relácií"
 
 #: rustconn/src/dialogs/settings/mod.rs:247
 msgid "Backup & Restore"
-msgstr ""
+msgstr "Záloha a obnovenie"
 
 #: rustconn/src/dialogs/settings/mod.rs:248
 msgid "Export or import all settings as a ZIP archive"
-msgstr ""
+msgstr "Exportovať alebo importovať všetky nastavenia ako ZIP archív"
 
 #: rustconn/src/dialogs/settings/mod.rs:252
 msgid "Backup Settings…"
-msgstr ""
+msgstr "Zálohovať nastavenia…"
 
 #: rustconn/src/dialogs/settings/mod.rs:253
 msgid "Save all configuration files to a ZIP archive"
-msgstr ""
+msgstr "Uložiť všetky konfiguračné súbory do ZIP archívu"
 
 #: rustconn/src/dialogs/settings/mod.rs:256
 msgid "Restore Settings…"
-msgstr ""
+msgstr "Obnoviť nastavenia…"
 
 #: rustconn/src/dialogs/settings/mod.rs:258
 msgid "Load configuration from a ZIP archive (restart required)"
-msgstr ""
+msgstr "Načítať konfiguráciu zo ZIP archívu (vyžadovaný reštart)"
 
 #: rustconn/src/dialogs/settings/mod.rs:286
 msgid "Save Backup"
-msgstr ""
+msgstr "Uložiť zálohu"
 
 #: rustconn/src/dialogs/settings/mod.rs:304
 msgid "Backup saved ({} files)"
-msgstr ""
+msgstr "Záloha uložená ({} súborov)"
 
 #: rustconn/src/dialogs/settings/mod.rs:317
 msgid "Backup Error"
-msgstr ""
+msgstr "Chyba zálohy"
 
 #: rustconn/src/dialogs/settings/mod.rs:340
 msgid "Open Backup"
-msgstr ""
+msgstr "Otvoriť zálohu"
 
 #: rustconn/src/dialogs/settings/mod.rs:356
 msgid "Restore Settings?"
-msgstr ""
+msgstr "Obnoviť nastavenia?"
 
 #: rustconn/src/dialogs/settings/mod.rs:358
 msgid ""
 "This will overwrite current settings. A restart is required to apply changes."
-msgstr ""
+msgstr "Toto prepíše aktuálne nastavenia. Na použitie zmien je potrebný reštart."
 
 #: rustconn/src/dialogs/settings/mod.rs:362
 msgid "Restore"
-msgstr ""
+msgstr "Obnoviť"
 
 #: rustconn/src/dialogs/settings/mod.rs:377
 msgid "Restored {} files. Restart to apply."
-msgstr ""
+msgstr "Obnovených {} súborov. Reštartujte na použitie."
 
 #: rustconn/src/dialogs/settings/mod.rs:390
 msgid "Restore Error"
-msgstr ""
+msgstr "Chyba obnovenia"
 
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:39
 msgid "Monitoring"
@@ -4701,11 +4701,11 @@ msgstr "Presunúť vybrané položky do skupiny"
 
 #: rustconn/src/sidebar_ui.rs:274
 msgid "Create Cluster"
-msgstr ""
+msgstr "Vytvoriť cluster"
 
 #: rustconn/src/sidebar_ui.rs:275
 msgid "Create a cluster from selected connections"
-msgstr ""
+msgstr "Vytvoriť cluster z vybraných pripojení"
 
 #: rustconn/src/sidebar_ui.rs:284
 msgid "Select all items (Ctrl+A)"
@@ -4924,7 +4924,7 @@ msgstr "Príkaz nenájdený: {}"
 
 #: rustconn/src/terminal/mod.rs:1037 rustconn/src/terminal/mod.rs:1224
 msgid "Reconnect to this session"
-msgstr ""
+msgstr "Znovu pripojiť k tejto relácii"
 
 #: rustconn/src/terminal/mod.rs:1053
 msgid "'{}' is not installed"
@@ -4932,19 +4932,19 @@ msgstr "„{}“ nie je nainštalované"
 
 #: rustconn/src/terminal/mod.rs:1219
 msgid "Session disconnected"
-msgstr ""
+msgstr "Relácia odpojená"
 
 #: rustconn/src/toast.rs:72
 msgid "Warning"
-msgstr ""
+msgstr "Varovanie"
 
 #: rustconn/src/toast.rs:193
 msgid "Info"
-msgstr ""
+msgstr "Informácia"
 
 #: rustconn/src/toast.rs:275
 msgid "Retry"
-msgstr ""
+msgstr "Opakovať"
 
 #: rustconn/src/validation.rs:65
 msgid "{} is required"
@@ -5236,7 +5236,7 @@ msgstr "Chyba pri presúvaní položky"
 #: rustconn/src/window/mod.rs:3690 rustconn/src/window/mod.rs:3837
 #: rustconn/src/window/protocols.rs:384 rustconn/src/window/protocols.rs:555
 msgid "Connection failed. Host unreachable."
-msgstr ""
+msgstr "Pripojenie zlyhalo. Hostiteľ nedostupný."
 
 #: rustconn/src/window/mod.rs:4133 rustconn/src/window/mod.rs:4147
 msgid "Pre-connect task failed. Connection aborted."
@@ -5256,7 +5256,7 @@ msgstr "pripojenie"
 
 #: rustconn/src/window/operations.rs:57
 msgid "This group contains {} connection(s)."
-msgstr ""
+msgstr "Táto skupina obsahuje {} pripojení."
 
 #: rustconn/src/window/operations.rs:62
 msgid "Are you sure you want to delete the empty group '{}'?"
@@ -5268,11 +5268,11 @@ msgstr "Naozaj chcete odstrániť pripojenie '{}'?"
 
 #: rustconn/src/window/operations.rs:80
 msgid "Delete group '{}'?"
-msgstr ""
+msgstr "Odstrániť skupinu «{}»?"
 
 #: rustconn/src/window/operations.rs:82
 msgid "Keep Connections"
-msgstr ""
+msgstr "Ponechať pripojenia"
 
 #: rustconn/src/window/operations.rs:83 rustconn/src/window/operations.rs:419
 msgid "Delete All"
@@ -5653,241 +5653,3 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:9
 msgid "ssh;rdp;vnc;spice;telnet;zerotrust;connection;terminal;remote;"
 msgstr "ssh;rdp;vnc;spice;telnet;zerotrust;pripojenie;terminál;vzdialené;"
-
-#~ msgid ""
-#~ "Are you sure you want to delete the group '{}'?\n"
-#~ "\n"
-#~ "This will also delete {} connection(s) in this group."
-#~ msgstr ""
-#~ "Naozaj chcete odstrániť skupinu '{}'?\n"
-#~ "\n"
-#~ "Tým sa tiež odstráni {} pripojení v tejto skupine."
-
-#~ msgid ""
-#~ "Including passwords may expose sensitive data. Only enable if you trust "
-#~ "the destination."
-#~ msgstr ""
-#~ "Zahrnutie hesiel môže odhaliť citlivé údaje. Povoľte len ak dôverujete "
-#~ "cieľu."
-
-#~ msgid ""
-#~ "Passwords are stored in your password manager and not included in exports "
-#~ "by default. Export your credential structure separately if needed."
-#~ msgstr ""
-#~ "Heslá sú uložené vo vašom správcovi hesiel a štandardne nie sú zahrnuté v "
-#~ "exportoch. V prípade potreby exportujte štruktúru prihlasovacích údajov "
-#~ "samostatne."
-
-#~ msgid "Not initialized (run 'pass init <gpg-id>')"
-#~ msgstr "Neinicializované (spustite 'pass init <gpg-id>')"
-
-#~ msgid "More tabs"
-#~ msgstr "Ďalšie karty"
-
-#~ msgid "All Protocols"
-#~ msgstr "Všetky protokoly"
-
-#~ msgid "Status:"
-#~ msgstr "Stav:"
-
-#~ msgid "All Statuses"
-#~ msgstr "Všetky stavy"
-
-#~ msgid "Starting"
-#~ msgstr "Spúšťanie"
-
-#~ msgid "Refresh Dashboard"
-#~ msgstr "Obnoviť prehľad"
-
-#~ msgid "No active sessions"
-#~ msgstr "Žiadne aktívne relácie"
-
-#~ msgid "Duration"
-#~ msgstr "Trvanie"
-
-#~ msgid "Focus Session"
-#~ msgstr "Zamerať reláciu"
-
-#~ msgid "Connection Dashboard"
-#~ msgstr "Prehľad pripojení"
-
-#~ msgid "Open"
-#~ msgstr "Otvoriť"
-
-#~ msgid "Reset"
-#~ msgstr "Resetovať"
-
-#~ msgid "No Connections"
-#~ msgstr "Žiadne pripojenia"
-
-#~ msgid "Create your first connection to get started"
-#~ msgstr "Vytvorte prvé pripojenie na začatie práce"
-
-#~ msgid "No Results Found"
-#~ msgstr "Žiadne výsledky"
-
-#~ msgid "No connections match"
-#~ msgstr "Žiadne zodpovedajúce pripojenia"
-
-#~ msgid "No Active Sessions"
-#~ msgstr "Žiadne aktívne relácie"
-
-#~ msgid "Connect to a server to start a session"
-#~ msgstr "Pripojte sa k serveru na spustenie relácie"
-
-#~ msgid "No Groups"
-#~ msgstr "Žiadne skupiny"
-
-#~ msgid "Create groups to organize your connections"
-#~ msgstr "Vytvorte skupiny na organizáciu pripojení"
-
-#~ msgid "No Snippets"
-#~ msgstr "Žiadne úryvky"
-
-#~ msgid "Create command snippets for quick access"
-#~ msgstr "Vytvorte úryvky príkazov pre rýchly prístup"
-
-#~ msgid "No Templates"
-#~ msgstr "Žiadne šablóny"
-
-#~ msgid "Create templates for common connection configurations"
-#~ msgstr "Vytvorte šablóny pre bežné konfigurácie pripojení"
-
-#~ msgid "No Connection History"
-#~ msgstr "Žiadna história pripojení"
-
-#~ msgid "Your recent connections will appear here"
-#~ msgstr "Vaše posledné pripojenia sa zobrazia tu"
-
-#~ msgid "Session Settings"
-#~ msgstr "Nastavenia relácie"
-
-#~ msgid "Exit Fullscreen"
-#~ msgstr "Ukončiť celú obrazovku"
-
-#~ msgid ""
-#~ "Automatically respond to terminal patterns.\n"
-#~ "Rules are matched in priority order (highest first)."
-#~ msgstr ""
-#~ "Automaticky odpovedať na vzory terminálu.\n"
-#~ "Pravidlá sa kontrolujú v poradí priority (najvyššia prvá)."
-
-#~ msgid "X11 Forwarding"
-#~ msgstr "Presmerovanie X11"
-
-#~ msgid "Forward X11 display to local host (-X)"
-#~ msgstr "Presmerovať zobrazenie X11 na miestny hostiteľ (-X)"
-
-#~ msgid "Enable compression for slow connections (-C)"
-#~ msgstr "Povoliť kompresiu pre pomalé pripojenia (-C)"
-
-#~ msgid "Additional SSH command-line options"
-#~ msgstr "Ďalšie možnosti príkazového riadku SSH"
-
-#~ msgid "Device Path"
-#~ msgstr "Cesta k zariadeniu"
-
-#~ msgid "Path to the serial device"
-#~ msgstr "Cesta k sériovému zariadeniu"
-
-#~ msgid "Additional picocom command-line arguments"
-#~ msgstr "Ďalšie argumenty príkazového riadku picocom"
-
-#~ msgid "Kubeconfig"
-#~ msgstr "Kubeconfig"
-
-#~ msgid "Path to kubeconfig file (default if empty)"
-#~ msgstr "Cesta k súboru kubeconfig (predvolená ak prázdne)"
-
-#~ msgid "Context"
-#~ msgstr "Kontext"
-
-#~ msgid "Kubernetes context (current-context if empty)"
-#~ msgstr "Kontext Kubernetes (aktuálny ak prázdny)"
-
-#~ msgid "Namespace"
-#~ msgstr "Menný priestor"
-
-#~ msgid "Target namespace (default if empty)"
-#~ msgstr "Cieľový menný priestor (predvolený ak prázdny)"
-
-#~ msgid "Pod"
-#~ msgstr "Pod"
-
-#~ msgid "Pod name to exec into"
-#~ msgstr "Názov Podu pre exec"
-
-#~ msgid "Container"
-#~ msgstr "Kontajner"
-
-#~ msgid "Container name (optional for single-container)"
-#~ msgstr "Názov kontajnera (voliteľné pre jeden kontajner)"
-
-#~ msgid "Image"
-#~ msgstr "Obraz"
-
-#~ msgid "Container image for temporary pod"
-#~ msgstr "Obraz kontajnera pre dočasný Pod"
-
-#~ msgid "Additional kubectl arguments"
-#~ msgstr "Ďalšie argumenty kubectl"
-
-#~ msgid "Application"
-#~ msgstr "Aplikácia"
-
-#~ msgid "Navigation"
-#~ msgstr "Navigácia"
-
-#~ msgid "Split View"
-#~ msgstr "Rozdelené zobrazenie"
-
-#~ msgid "View"
-#~ msgstr "Zobrazenie"
-
-#~ msgid "Import"
-#~ msgstr "Importovať"
-
-#~ msgid "Export"
-#~ msgstr "Exportovať"
-
-#~ msgid "Move to Group"
-#~ msgstr "Presunúť do skupiny"
-
-#~ msgid "Focus Sidebar"
-#~ msgstr "Zamerať bočný panel"
-
-#~ msgid "Focus Terminal"
-#~ msgstr "Zamerať terminál"
-
-#~ msgid "Command Palette (Commands)"
-#~ msgstr "Paleta príkazov (príkazy)"
-
-#~ msgid "Find in Terminal"
-#~ msgstr "Nájsť v termináli"
-
-#~ msgid "Next Tab"
-#~ msgstr "Ďalšia karta"
-
-#~ msgid "Previous Tab"
-#~ msgstr "Predchádzajúca karta"
-
-#~ msgid "Split Horizontal"
-#~ msgstr "Rozdeliť vodorovne"
-
-#~ msgid "Split Vertical"
-#~ msgstr "Rozdeliť zvisle"
-
-#~ msgid "Close Pane"
-#~ msgstr "Zavrieť panel"
-
-#~ msgid "Focus Next Pane"
-#~ msgstr "Zamerať ďalší panel"
-
-#~ msgid "Waypipe"
-#~ msgstr "Waypipe"
-
-#~ msgid "Wayland application forwarding via waypipe"
-#~ msgstr "Presmerovanie aplikácií Wayland cez waypipe"
-
-#~ msgid "Optional: Install waypipe package for Wayland forwarding"
-#~ msgstr "Voliteľné: Nainštalujte balík waypipe pre presmerovanie Wayland"

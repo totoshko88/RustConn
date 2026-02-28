@@ -54,7 +54,7 @@ msgstr "Error de inicialización"
 
 #: rustconn/src/app.rs:476
 msgid "{} backend unavailable. Using fallback."
-msgstr ""
+msgstr "Backend {} no disponible. Usando alternativa."
 
 #: rustconn/src/app.rs:1152
 msgid ""
@@ -1895,7 +1895,7 @@ msgstr "Seleccionar del agente SSH"
 
 #: rustconn/src/dialogs/connection/ssh.rs:227
 msgid "Key file not found"
-msgstr ""
+msgstr "Archivo de clave no encontrado"
 
 #: rustconn/src/dialogs/connection/ssh.rs:359
 #: rustconn/src/dialogs/connection/telnet.rs:36
@@ -2860,7 +2860,7 @@ msgstr "Pulse teclas..."
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:133
 msgid "Conflicts with: {}"
-msgstr ""
+msgstr "Conflicto con: {}"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:183
 msgid "Reset All to Defaults"
@@ -2949,64 +2949,64 @@ msgstr "Anteponer [HH:MM:SS] a cada línea en los registros de sesión"
 
 #: rustconn/src/dialogs/settings/mod.rs:247
 msgid "Backup & Restore"
-msgstr ""
+msgstr "Copia de seguridad y restauración"
 
 #: rustconn/src/dialogs/settings/mod.rs:248
 msgid "Export or import all settings as a ZIP archive"
-msgstr ""
+msgstr "Exportar o importar todos los ajustes como archivo ZIP"
 
 #: rustconn/src/dialogs/settings/mod.rs:252
 msgid "Backup Settings…"
-msgstr ""
+msgstr "Copia de seguridad…"
 
 #: rustconn/src/dialogs/settings/mod.rs:253
 msgid "Save all configuration files to a ZIP archive"
-msgstr ""
+msgstr "Guardar todos los archivos de configuración en un archivo ZIP"
 
 #: rustconn/src/dialogs/settings/mod.rs:256
 msgid "Restore Settings…"
-msgstr ""
+msgstr "Restaurar ajustes…"
 
 #: rustconn/src/dialogs/settings/mod.rs:258
 msgid "Load configuration from a ZIP archive (restart required)"
-msgstr ""
+msgstr "Cargar configuración desde un archivo ZIP (requiere reinicio)"
 
 #: rustconn/src/dialogs/settings/mod.rs:286
 msgid "Save Backup"
-msgstr ""
+msgstr "Guardar copia"
 
 #: rustconn/src/dialogs/settings/mod.rs:304
 msgid "Backup saved ({} files)"
-msgstr ""
+msgstr "Copia guardada ({} archivos)"
 
 #: rustconn/src/dialogs/settings/mod.rs:317
 msgid "Backup Error"
-msgstr ""
+msgstr "Error de copia de seguridad"
 
 #: rustconn/src/dialogs/settings/mod.rs:340
 msgid "Open Backup"
-msgstr ""
+msgstr "Abrir copia"
 
 #: rustconn/src/dialogs/settings/mod.rs:356
 msgid "Restore Settings?"
-msgstr ""
+msgstr "¿Restaurar ajustes?"
 
 #: rustconn/src/dialogs/settings/mod.rs:358
 msgid ""
 "This will overwrite current settings. A restart is required to apply changes."
-msgstr ""
+msgstr "Esto sobrescribirá los ajustes actuales. Se requiere un reinicio para aplicar los cambios."
 
 #: rustconn/src/dialogs/settings/mod.rs:362
 msgid "Restore"
-msgstr ""
+msgstr "Restaurar"
 
 #: rustconn/src/dialogs/settings/mod.rs:377
 msgid "Restored {} files. Restart to apply."
-msgstr ""
+msgstr "{} archivos restaurados. Reinicie para aplicar."
 
 #: rustconn/src/dialogs/settings/mod.rs:390
 msgid "Restore Error"
-msgstr ""
+msgstr "Error de restauración"
 
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:39
 msgid "Monitoring"
@@ -4705,11 +4705,11 @@ msgstr "Mover elementos seleccionados a un grupo"
 
 #: rustconn/src/sidebar_ui.rs:274
 msgid "Create Cluster"
-msgstr ""
+msgstr "Crear clúster"
 
 #: rustconn/src/sidebar_ui.rs:275
 msgid "Create a cluster from selected connections"
-msgstr ""
+msgstr "Crear un clúster a partir de las conexiones seleccionadas"
 
 #: rustconn/src/sidebar_ui.rs:284
 msgid "Select all items (Ctrl+A)"
@@ -4928,7 +4928,7 @@ msgstr "Comando no encontrado: {}"
 
 #: rustconn/src/terminal/mod.rs:1037 rustconn/src/terminal/mod.rs:1224
 msgid "Reconnect to this session"
-msgstr ""
+msgstr "Reconectar a esta sesión"
 
 #: rustconn/src/terminal/mod.rs:1053
 msgid "'{}' is not installed"
@@ -4936,19 +4936,19 @@ msgstr "«{}» no está instalado"
 
 #: rustconn/src/terminal/mod.rs:1219
 msgid "Session disconnected"
-msgstr ""
+msgstr "Sesión desconectada"
 
 #: rustconn/src/toast.rs:72
 msgid "Warning"
-msgstr ""
+msgstr "Advertencia"
 
 #: rustconn/src/toast.rs:193
 msgid "Info"
-msgstr ""
+msgstr "Información"
 
 #: rustconn/src/toast.rs:275
 msgid "Retry"
-msgstr ""
+msgstr "Reintentar"
 
 #: rustconn/src/validation.rs:65
 msgid "{} is required"
@@ -5240,7 +5240,7 @@ msgstr "Error al mover el elemento"
 #: rustconn/src/window/mod.rs:3690 rustconn/src/window/mod.rs:3837
 #: rustconn/src/window/protocols.rs:384 rustconn/src/window/protocols.rs:555
 msgid "Connection failed. Host unreachable."
-msgstr ""
+msgstr "Conexión fallida. Host inaccesible."
 
 #: rustconn/src/window/mod.rs:4133 rustconn/src/window/mod.rs:4147
 msgid "Pre-connect task failed. Connection aborted."
@@ -5260,7 +5260,7 @@ msgstr "conexión"
 
 #: rustconn/src/window/operations.rs:57
 msgid "This group contains {} connection(s)."
-msgstr ""
+msgstr "Este grupo contiene {} conexión(es)."
 
 #: rustconn/src/window/operations.rs:62
 msgid "Are you sure you want to delete the empty group '{}'?"
@@ -5272,11 +5272,11 @@ msgstr "¿Está seguro de que desea eliminar la conexión «{}»?"
 
 #: rustconn/src/window/operations.rs:80
 msgid "Delete group '{}'?"
-msgstr ""
+msgstr "¿Eliminar grupo «{}»?"
 
 #: rustconn/src/window/operations.rs:82
 msgid "Keep Connections"
-msgstr ""
+msgstr "Conservar conexiones"
 
 #: rustconn/src/window/operations.rs:83 rustconn/src/window/operations.rs:419
 msgid "Delete All"
@@ -5657,241 +5657,3 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:9
 msgid "ssh;rdp;vnc;spice;telnet;zerotrust;connection;terminal;remote;"
 msgstr "ssh;rdp;vnc;spice;telnet;zerotrust;conexión;terminal;remoto;"
-
-#~ msgid ""
-#~ "Are you sure you want to delete the group '{}'?\n"
-#~ "\n"
-#~ "This will also delete {} connection(s) in this group."
-#~ msgstr ""
-#~ "¿Está seguro de que desea eliminar el grupo «{}»?\n"
-#~ "\n"
-#~ "Esto también eliminará {} conexión(es) en este grupo."
-
-#~ msgid ""
-#~ "Including passwords may expose sensitive data. Only enable if you trust "
-#~ "the destination."
-#~ msgstr ""
-#~ "Incluir contraseñas puede exponer datos sensibles. Active solo si confía "
-#~ "en el destino."
-
-#~ msgid ""
-#~ "Passwords are stored in your password manager and not included in exports "
-#~ "by default. Export your credential structure separately if needed."
-#~ msgstr ""
-#~ "Las contraseñas se almacenan en su gestor de contraseñas y no se incluyen "
-#~ "en las exportaciones por defecto. Exporte su estructura de credenciales "
-#~ "por separado si es necesario."
-
-#~ msgid "Not initialized (run 'pass init <gpg-id>')"
-#~ msgstr "No inicializado (ejecute 'pass init <gpg-id>')"
-
-#~ msgid "More tabs"
-#~ msgstr "Más pestañas"
-
-#~ msgid "All Protocols"
-#~ msgstr "Todos los protocolos"
-
-#~ msgid "Status:"
-#~ msgstr "Estado:"
-
-#~ msgid "All Statuses"
-#~ msgstr "Todos los estados"
-
-#~ msgid "Starting"
-#~ msgstr "Iniciando"
-
-#~ msgid "Refresh Dashboard"
-#~ msgstr "Actualizar panel"
-
-#~ msgid "No active sessions"
-#~ msgstr "Sin sesiones activas"
-
-#~ msgid "Duration"
-#~ msgstr "Duración"
-
-#~ msgid "Focus Session"
-#~ msgstr "Enfocar sesión"
-
-#~ msgid "Connection Dashboard"
-#~ msgstr "Panel de conexiones"
-
-#~ msgid "Open"
-#~ msgstr "Abrir"
-
-#~ msgid "Reset"
-#~ msgstr "Restablecer"
-
-#~ msgid "No Connections"
-#~ msgstr "Sin conexiones"
-
-#~ msgid "Create your first connection to get started"
-#~ msgstr "Cree su primera conexión para comenzar"
-
-#~ msgid "No Results Found"
-#~ msgstr "Sin resultados"
-
-#~ msgid "No connections match"
-#~ msgstr "Ninguna conexión coincide"
-
-#~ msgid "No Active Sessions"
-#~ msgstr "Sin sesiones activas"
-
-#~ msgid "Connect to a server to start a session"
-#~ msgstr "Conéctese a un servidor para iniciar una sesión"
-
-#~ msgid "No Groups"
-#~ msgstr "Sin grupos"
-
-#~ msgid "Create groups to organize your connections"
-#~ msgstr "Crear grupos para organizar sus conexiones"
-
-#~ msgid "No Snippets"
-#~ msgstr "Sin fragmentos"
-
-#~ msgid "Create command snippets for quick access"
-#~ msgstr "Crear fragmentos de comandos para acceso rápido"
-
-#~ msgid "No Templates"
-#~ msgstr "Sin plantillas"
-
-#~ msgid "Create templates for common connection configurations"
-#~ msgstr "Crear plantillas para configuraciones de conexión comunes"
-
-#~ msgid "No Connection History"
-#~ msgstr "Sin historial de conexiones"
-
-#~ msgid "Your recent connections will appear here"
-#~ msgstr "Sus conexiones recientes aparecerán aquí"
-
-#~ msgid "Session Settings"
-#~ msgstr "Configuración de sesión"
-
-#~ msgid "Exit Fullscreen"
-#~ msgstr "Salir de pantalla completa"
-
-#~ msgid ""
-#~ "Automatically respond to terminal patterns.\n"
-#~ "Rules are matched in priority order (highest first)."
-#~ msgstr ""
-#~ "Responder automáticamente a patrones del terminal.\n"
-#~ "Las reglas se verifican por orden de prioridad (la más alta primero)."
-
-#~ msgid "X11 Forwarding"
-#~ msgstr "Reenvío X11"
-
-#~ msgid "Forward X11 display to local host (-X)"
-#~ msgstr "Reenviar pantalla X11 al host local (-X)"
-
-#~ msgid "Enable compression for slow connections (-C)"
-#~ msgstr "Activar compresión para conexiones lentas (-C)"
-
-#~ msgid "Additional SSH command-line options"
-#~ msgstr "Opciones adicionales de línea de comandos SSH"
-
-#~ msgid "Device Path"
-#~ msgstr "Ruta del dispositivo"
-
-#~ msgid "Path to the serial device"
-#~ msgstr "Ruta al dispositivo serie"
-
-#~ msgid "Additional picocom command-line arguments"
-#~ msgstr "Argumentos adicionales de línea de comandos de picocom"
-
-#~ msgid "Kubeconfig"
-#~ msgstr "Kubeconfig"
-
-#~ msgid "Path to kubeconfig file (default if empty)"
-#~ msgstr "Ruta al archivo kubeconfig (predeterminado si vacío)"
-
-#~ msgid "Context"
-#~ msgstr "Contexto"
-
-#~ msgid "Kubernetes context (current-context if empty)"
-#~ msgstr "Contexto de Kubernetes (contexto actual si vacío)"
-
-#~ msgid "Namespace"
-#~ msgstr "Espacio de nombres"
-
-#~ msgid "Target namespace (default if empty)"
-#~ msgstr "Espacio de nombres destino (predeterminado si vacío)"
-
-#~ msgid "Pod"
-#~ msgstr "Pod"
-
-#~ msgid "Pod name to exec into"
-#~ msgstr "Nombre del Pod para exec"
-
-#~ msgid "Container"
-#~ msgstr "Contenedor"
-
-#~ msgid "Container name (optional for single-container)"
-#~ msgstr "Nombre del contenedor (opcional para contenedor único)"
-
-#~ msgid "Image"
-#~ msgstr "Imagen"
-
-#~ msgid "Container image for temporary pod"
-#~ msgstr "Imagen de contenedor para Pod temporal"
-
-#~ msgid "Additional kubectl arguments"
-#~ msgstr "Argumentos adicionales de kubectl"
-
-#~ msgid "Application"
-#~ msgstr "Aplicación"
-
-#~ msgid "Navigation"
-#~ msgstr "Navegación"
-
-#~ msgid "Split View"
-#~ msgstr "Vista dividida"
-
-#~ msgid "View"
-#~ msgstr "Vista"
-
-#~ msgid "Import"
-#~ msgstr "Importar"
-
-#~ msgid "Export"
-#~ msgstr "Exportar"
-
-#~ msgid "Move to Group"
-#~ msgstr "Mover al grupo"
-
-#~ msgid "Focus Sidebar"
-#~ msgstr "Enfocar barra lateral"
-
-#~ msgid "Focus Terminal"
-#~ msgstr "Enfocar terminal"
-
-#~ msgid "Command Palette (Commands)"
-#~ msgstr "Paleta de comandos (comandos)"
-
-#~ msgid "Find in Terminal"
-#~ msgstr "Buscar en terminal"
-
-#~ msgid "Next Tab"
-#~ msgstr "Pestaña siguiente"
-
-#~ msgid "Previous Tab"
-#~ msgstr "Pestaña anterior"
-
-#~ msgid "Split Horizontal"
-#~ msgstr "Dividir horizontalmente"
-
-#~ msgid "Split Vertical"
-#~ msgstr "Dividir verticalmente"
-
-#~ msgid "Close Pane"
-#~ msgstr "Cerrar panel"
-
-#~ msgid "Focus Next Pane"
-#~ msgstr "Enfocar siguiente panel"
-
-#~ msgid "Waypipe"
-#~ msgstr "Waypipe"
-
-#~ msgid "Wayland application forwarding via waypipe"
-#~ msgstr "Reenvío de aplicaciones Wayland mediante waypipe"
-
-#~ msgid "Optional: Install waypipe package for Wayland forwarding"
-#~ msgstr "Opcional: Instale el paquete waypipe para reenvío de Wayland"

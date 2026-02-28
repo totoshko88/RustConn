@@ -54,7 +54,7 @@ msgstr "Ishga tushirish xatosi"
 
 #: rustconn/src/app.rs:476
 msgid "{} backend unavailable. Using fallback."
-msgstr ""
+msgstr "{} backend mavjud emas. Zaxira ishlatilmoqda."
 
 #: rustconn/src/app.rs:1152
 msgid ""
@@ -1897,7 +1897,7 @@ msgstr "SSH agentdan tanlash"
 
 #: rustconn/src/dialogs/connection/ssh.rs:227
 msgid "Key file not found"
-msgstr ""
+msgstr "Kalit fayli topilmadi"
 
 #: rustconn/src/dialogs/connection/ssh.rs:359
 #: rustconn/src/dialogs/connection/telnet.rs:36
@@ -2861,7 +2861,7 @@ msgstr "Tugmalarni bosing..."
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:133
 msgid "Conflicts with: {}"
-msgstr ""
+msgstr "Ziddiyat: {}"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:183
 msgid "Reset All to Defaults"
@@ -2950,64 +2950,64 @@ msgstr "Sessiya jurnallarida har bir satrga [HH:MM:SS] qo'shish"
 
 #: rustconn/src/dialogs/settings/mod.rs:247
 msgid "Backup & Restore"
-msgstr ""
+msgstr "Zaxira nusxa va tiklash"
 
 #: rustconn/src/dialogs/settings/mod.rs:248
 msgid "Export or import all settings as a ZIP archive"
-msgstr ""
+msgstr "Barcha sozlamalarni ZIP arxiv sifatida eksport yoki import qilish"
 
 #: rustconn/src/dialogs/settings/mod.rs:252
 msgid "Backup Settings…"
-msgstr ""
+msgstr "Sozlamalarni zaxiralash…"
 
 #: rustconn/src/dialogs/settings/mod.rs:253
 msgid "Save all configuration files to a ZIP archive"
-msgstr ""
+msgstr "Barcha konfiguratsiya fayllarini ZIP arxivga saqlash"
 
 #: rustconn/src/dialogs/settings/mod.rs:256
 msgid "Restore Settings…"
-msgstr ""
+msgstr "Sozlamalarni tiklash…"
 
 #: rustconn/src/dialogs/settings/mod.rs:258
 msgid "Load configuration from a ZIP archive (restart required)"
-msgstr ""
+msgstr "ZIP arxivdan konfiguratsiyani yuklash (qayta ishga tushirish kerak)"
 
 #: rustconn/src/dialogs/settings/mod.rs:286
 msgid "Save Backup"
-msgstr ""
+msgstr "Zaxirani saqlash"
 
 #: rustconn/src/dialogs/settings/mod.rs:304
 msgid "Backup saved ({} files)"
-msgstr ""
+msgstr "Zaxira saqlandi ({} fayl)"
 
 #: rustconn/src/dialogs/settings/mod.rs:317
 msgid "Backup Error"
-msgstr ""
+msgstr "Zaxira xatosi"
 
 #: rustconn/src/dialogs/settings/mod.rs:340
 msgid "Open Backup"
-msgstr ""
+msgstr "Zaxirani ochish"
 
 #: rustconn/src/dialogs/settings/mod.rs:356
 msgid "Restore Settings?"
-msgstr ""
+msgstr "Sozlamalarni tiklashmi?"
 
 #: rustconn/src/dialogs/settings/mod.rs:358
 msgid ""
 "This will overwrite current settings. A restart is required to apply changes."
-msgstr ""
+msgstr "Bu joriy sozlamalarni qayta yozadi. O'zgarishlarni qo'llash uchun qayta ishga tushirish kerak."
 
 #: rustconn/src/dialogs/settings/mod.rs:362
 msgid "Restore"
-msgstr ""
+msgstr "Tiklash"
 
 #: rustconn/src/dialogs/settings/mod.rs:377
 msgid "Restored {} files. Restart to apply."
-msgstr ""
+msgstr "{} fayl tiklandi. Qo'llash uchun qayta ishga tushiring."
 
 #: rustconn/src/dialogs/settings/mod.rs:390
 msgid "Restore Error"
-msgstr ""
+msgstr "Tiklash xatosi"
 
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:39
 msgid "Monitoring"
@@ -4711,11 +4711,11 @@ msgstr "Tanlangan elementlarni guruhga ko'chirish"
 
 #: rustconn/src/sidebar_ui.rs:274
 msgid "Create Cluster"
-msgstr ""
+msgstr "Klaster yaratish"
 
 #: rustconn/src/sidebar_ui.rs:275
 msgid "Create a cluster from selected connections"
-msgstr ""
+msgstr "Tanlangan ulanishlardan klaster yaratish"
 
 #: rustconn/src/sidebar_ui.rs:284
 msgid "Select all items (Ctrl+A)"
@@ -4934,7 +4934,7 @@ msgstr "Buyruq topilmadi: {}"
 
 #: rustconn/src/terminal/mod.rs:1037 rustconn/src/terminal/mod.rs:1224
 msgid "Reconnect to this session"
-msgstr ""
+msgstr "Bu seansga qayta ulanish"
 
 #: rustconn/src/terminal/mod.rs:1053
 msgid "'{}' is not installed"
@@ -4942,19 +4942,19 @@ msgstr "«{}» oʻrnatilmagan"
 
 #: rustconn/src/terminal/mod.rs:1219
 msgid "Session disconnected"
-msgstr ""
+msgstr "Seans uzildi"
 
 #: rustconn/src/toast.rs:72
 msgid "Warning"
-msgstr ""
+msgstr "Ogohlantirish"
 
 #: rustconn/src/toast.rs:193
 msgid "Info"
-msgstr ""
+msgstr "Ma'lumot"
 
 #: rustconn/src/toast.rs:275
 msgid "Retry"
-msgstr ""
+msgstr "Qayta urinish"
 
 #: rustconn/src/validation.rs:65
 msgid "{} is required"
@@ -5246,7 +5246,7 @@ msgstr "Elementni ko'chirishda xato"
 #: rustconn/src/window/mod.rs:3690 rustconn/src/window/mod.rs:3837
 #: rustconn/src/window/protocols.rs:384 rustconn/src/window/protocols.rs:555
 msgid "Connection failed. Host unreachable."
-msgstr ""
+msgstr "Ulanish muvaffaqiyatsiz. Xost mavjud emas."
 
 #: rustconn/src/window/mod.rs:4133 rustconn/src/window/mod.rs:4147
 msgid "Pre-connect task failed. Connection aborted."
@@ -5266,7 +5266,7 @@ msgstr "ulanish"
 
 #: rustconn/src/window/operations.rs:57
 msgid "This group contains {} connection(s)."
-msgstr ""
+msgstr "Bu guruhda {} ta ulanish bor."
 
 #: rustconn/src/window/operations.rs:62
 msgid "Are you sure you want to delete the empty group '{}'?"
@@ -5278,11 +5278,11 @@ msgstr "'{}' ulanishini o'chirishga ishonchingiz komilmi?"
 
 #: rustconn/src/window/operations.rs:80
 msgid "Delete group '{}'?"
-msgstr ""
+msgstr "«{}» guruhini o'chirishmi?"
 
 #: rustconn/src/window/operations.rs:82
 msgid "Keep Connections"
-msgstr ""
+msgstr "Ulanishlarni saqlash"
 
 #: rustconn/src/window/operations.rs:83 rustconn/src/window/operations.rs:419
 msgid "Delete All"
@@ -5663,43 +5663,3 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:9
 msgid "ssh;rdp;vnc;spice;telnet;zerotrust;connection;terminal;remote;"
 msgstr "ssh;rdp;vnc;spice;telnet;zerotrust;ulanish;terminal;masofaviy;"
-
-#~ msgid ""
-#~ "Are you sure you want to delete the group '{}'?\n"
-#~ "\n"
-#~ "This will also delete {} connection(s) in this group."
-#~ msgstr ""
-#~ "'{}' guruhini o'chirishga ishonchingiz komilmi?\n"
-#~ "\n"
-#~ "Bu guruhdagi {} ta ulanish ham o'chiriladi."
-
-#~ msgid ""
-#~ "Including passwords may expose sensitive data. Only enable if you trust "
-#~ "the destination."
-#~ msgstr ""
-#~ "Das Einbeziehen von Passwörtern kann sensible Daten offenlegen. Nur "
-#~ "aktivieren, wenn Sie dem Ziel vertrauen."
-
-#~ msgid ""
-#~ "Passwords are stored in your password manager and not included in exports "
-#~ "by default. Export your credential structure separately if needed."
-#~ msgstr ""
-#~ "Passwörter werden in Ihrem Passwortmanager gespeichert und standardmäßig "
-#~ "nicht exportiert. Exportieren Sie Ihre Anmeldedatenstruktur bei Bedarf "
-#~ "separat."
-
-#~ msgid ""
-#~ "Automatically respond to terminal patterns.\n"
-#~ "Rules are matched in priority order (highest first)."
-#~ msgstr ""
-#~ "Automatisch auf Terminalmuster antworten.\n"
-#~ "Regeln werden in Prioritätsreihenfolge abgeglichen (höchste zuerst)."
-
-#~ msgid "Waypipe"
-#~ msgstr "Waypipe"
-
-#~ msgid "Wayland application forwarding via waypipe"
-#~ msgstr "Wayland ilovalarini waypipe orqali yo'naltirish"
-
-#~ msgid "Optional: Install waypipe package for Wayland forwarding"
-#~ msgstr "Ixtiyoriy: Wayland yo'naltirish uchun waypipe paketini o'rnating"

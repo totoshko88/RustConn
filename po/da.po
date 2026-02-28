@@ -54,7 +54,7 @@ msgstr "Initialiseringsfejl"
 
 #: rustconn/src/app.rs:476
 msgid "{} backend unavailable. Using fallback."
-msgstr ""
+msgstr "Backend {} utilgængelig. Bruger reserve."
 
 #: rustconn/src/app.rs:1152
 msgid ""
@@ -1892,7 +1892,7 @@ msgstr "Vælg fra SSH-agent"
 
 #: rustconn/src/dialogs/connection/ssh.rs:227
 msgid "Key file not found"
-msgstr ""
+msgstr "Nøglefil ikke fundet"
 
 #: rustconn/src/dialogs/connection/ssh.rs:359
 #: rustconn/src/dialogs/connection/telnet.rs:36
@@ -2852,7 +2852,7 @@ msgstr "Tryk på taster..."
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:133
 msgid "Conflicts with: {}"
-msgstr ""
+msgstr "Konflikt med: {}"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:183
 msgid "Reset All to Defaults"
@@ -2941,64 +2941,64 @@ msgstr "Tilføj [HH:MM:SS] foran hver linje i sessionslogfiler"
 
 #: rustconn/src/dialogs/settings/mod.rs:247
 msgid "Backup & Restore"
-msgstr ""
+msgstr "Sikkerhedskopiering og gendannelse"
 
 #: rustconn/src/dialogs/settings/mod.rs:248
 msgid "Export or import all settings as a ZIP archive"
-msgstr ""
+msgstr "Eksportér eller importér alle indstillinger som ZIP-arkiv"
 
 #: rustconn/src/dialogs/settings/mod.rs:252
 msgid "Backup Settings…"
-msgstr ""
+msgstr "Sikkerhedskopiér indstillinger…"
 
 #: rustconn/src/dialogs/settings/mod.rs:253
 msgid "Save all configuration files to a ZIP archive"
-msgstr ""
+msgstr "Gem alle konfigurationsfiler i et ZIP-arkiv"
 
 #: rustconn/src/dialogs/settings/mod.rs:256
 msgid "Restore Settings…"
-msgstr ""
+msgstr "Gendan indstillinger…"
 
 #: rustconn/src/dialogs/settings/mod.rs:258
 msgid "Load configuration from a ZIP archive (restart required)"
-msgstr ""
+msgstr "Indlæs konfiguration fra et ZIP-arkiv (genstart påkrævet)"
 
 #: rustconn/src/dialogs/settings/mod.rs:286
 msgid "Save Backup"
-msgstr ""
+msgstr "Gem sikkerhedskopi"
 
 #: rustconn/src/dialogs/settings/mod.rs:304
 msgid "Backup saved ({} files)"
-msgstr ""
+msgstr "Sikkerhedskopi gemt ({} filer)"
 
 #: rustconn/src/dialogs/settings/mod.rs:317
 msgid "Backup Error"
-msgstr ""
+msgstr "Sikkerhedskopieringsfejl"
 
 #: rustconn/src/dialogs/settings/mod.rs:340
 msgid "Open Backup"
-msgstr ""
+msgstr "Åbn sikkerhedskopi"
 
 #: rustconn/src/dialogs/settings/mod.rs:356
 msgid "Restore Settings?"
-msgstr ""
+msgstr "Gendan indstillinger?"
 
 #: rustconn/src/dialogs/settings/mod.rs:358
 msgid ""
 "This will overwrite current settings. A restart is required to apply changes."
-msgstr ""
+msgstr "Dette overskriver de aktuelle indstillinger. En genstart er påkrævet."
 
 #: rustconn/src/dialogs/settings/mod.rs:362
 msgid "Restore"
-msgstr ""
+msgstr "Gendan"
 
 #: rustconn/src/dialogs/settings/mod.rs:377
 msgid "Restored {} files. Restart to apply."
-msgstr ""
+msgstr "{} filer gendannet. Genstart for at anvende."
 
 #: rustconn/src/dialogs/settings/mod.rs:390
 msgid "Restore Error"
-msgstr ""
+msgstr "Gendannelsesfejl"
 
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:39
 msgid "Monitoring"
@@ -4698,11 +4698,11 @@ msgstr "Flyt valgte elementer til en gruppe"
 
 #: rustconn/src/sidebar_ui.rs:274
 msgid "Create Cluster"
-msgstr ""
+msgstr "Opret klynge"
 
 #: rustconn/src/sidebar_ui.rs:275
 msgid "Create a cluster from selected connections"
-msgstr ""
+msgstr "Opret en klynge fra valgte forbindelser"
 
 #: rustconn/src/sidebar_ui.rs:284
 msgid "Select all items (Ctrl+A)"
@@ -4921,7 +4921,7 @@ msgstr "Kommando ikke fundet: {}"
 
 #: rustconn/src/terminal/mod.rs:1037 rustconn/src/terminal/mod.rs:1224
 msgid "Reconnect to this session"
-msgstr ""
+msgstr "Genopret forbindelse til denne session"
 
 #: rustconn/src/terminal/mod.rs:1053
 msgid "'{}' is not installed"
@@ -4929,19 +4929,19 @@ msgstr "„{}” er ikke installeret"
 
 #: rustconn/src/terminal/mod.rs:1219
 msgid "Session disconnected"
-msgstr ""
+msgstr "Session afbrudt"
 
 #: rustconn/src/toast.rs:72
 msgid "Warning"
-msgstr ""
+msgstr "Advarsel"
 
 #: rustconn/src/toast.rs:193
 msgid "Info"
-msgstr ""
+msgstr "Info"
 
 #: rustconn/src/toast.rs:275
 msgid "Retry"
-msgstr ""
+msgstr "Prøv igen"
 
 #: rustconn/src/validation.rs:65
 msgid "{} is required"
@@ -5233,7 +5233,7 @@ msgstr "Fejl ved flytning af element"
 #: rustconn/src/window/mod.rs:3690 rustconn/src/window/mod.rs:3837
 #: rustconn/src/window/protocols.rs:384 rustconn/src/window/protocols.rs:555
 msgid "Connection failed. Host unreachable."
-msgstr ""
+msgstr "Forbindelse mislykkedes. Vært utilgængelig."
 
 #: rustconn/src/window/mod.rs:4133 rustconn/src/window/mod.rs:4147
 msgid "Pre-connect task failed. Connection aborted."
@@ -5253,7 +5253,7 @@ msgstr "forbindelse"
 
 #: rustconn/src/window/operations.rs:57
 msgid "This group contains {} connection(s)."
-msgstr ""
+msgstr "Denne gruppe indeholder {} forbindelse(r)."
 
 #: rustconn/src/window/operations.rs:62
 msgid "Are you sure you want to delete the empty group '{}'?"
@@ -5265,11 +5265,11 @@ msgstr "Er du sikker på, at du vil slette forbindelsen '{}'?"
 
 #: rustconn/src/window/operations.rs:80
 msgid "Delete group '{}'?"
-msgstr ""
+msgstr "Slet gruppen «{}»?"
 
 #: rustconn/src/window/operations.rs:82
 msgid "Keep Connections"
-msgstr ""
+msgstr "Behold forbindelser"
 
 #: rustconn/src/window/operations.rs:83 rustconn/src/window/operations.rs:419
 msgid "Delete All"
@@ -5650,241 +5650,3 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:9
 msgid "ssh;rdp;vnc;spice;telnet;zerotrust;connection;terminal;remote;"
 msgstr "ssh;rdp;vnc;spice;telnet;zerotrust;forbindelse;terminal;fjern;"
-
-#~ msgid ""
-#~ "Are you sure you want to delete the group '{}'?\n"
-#~ "\n"
-#~ "This will also delete {} connection(s) in this group."
-#~ msgstr ""
-#~ "Er du sikker på, at du vil slette gruppen '{}'?\n"
-#~ "\n"
-#~ "Dette vil også slette {} forbindelse(r) i denne gruppe."
-
-#~ msgid ""
-#~ "Including passwords may expose sensitive data. Only enable if you trust "
-#~ "the destination."
-#~ msgstr ""
-#~ "Medtagelse af adgangskoder kan afsløre følsomme data. Aktivér kun, hvis "
-#~ "du stoler på destinationen."
-
-#~ msgid ""
-#~ "Passwords are stored in your password manager and not included in exports "
-#~ "by default. Export your credential structure separately if needed."
-#~ msgstr ""
-#~ "Adgangskoder gemmes i din adgangskodehåndtering og medtages ikke i "
-#~ "eksporter som standard. Eksportér din legitimationsstruktur separat, hvis "
-#~ "det er nødvendigt."
-
-#~ msgid "Not initialized (run 'pass init <gpg-id>')"
-#~ msgstr "Ikke initialiseret (kør 'pass init <gpg-id>')"
-
-#~ msgid "More tabs"
-#~ msgstr "Flere faner"
-
-#~ msgid "All Protocols"
-#~ msgstr "Alle protokoller"
-
-#~ msgid "Status:"
-#~ msgstr "Status:"
-
-#~ msgid "All Statuses"
-#~ msgstr "Alle statusser"
-
-#~ msgid "Starting"
-#~ msgstr "Starter"
-
-#~ msgid "Refresh Dashboard"
-#~ msgstr "Opdatér oversigt"
-
-#~ msgid "No active sessions"
-#~ msgstr "Ingen aktive sessioner"
-
-#~ msgid "Duration"
-#~ msgstr "Varighed"
-
-#~ msgid "Focus Session"
-#~ msgstr "Fokusér session"
-
-#~ msgid "Connection Dashboard"
-#~ msgstr "Forbindelsesoversigt"
-
-#~ msgid "Open"
-#~ msgstr "Åbn"
-
-#~ msgid "Reset"
-#~ msgstr "Nulstil"
-
-#~ msgid "No Connections"
-#~ msgstr "Ingen forbindelser"
-
-#~ msgid "Create your first connection to get started"
-#~ msgstr "Opret din første forbindelse for at komme i gang"
-
-#~ msgid "No Results Found"
-#~ msgstr "Ingen resultater fundet"
-
-#~ msgid "No connections match"
-#~ msgstr "Ingen forbindelser matcher"
-
-#~ msgid "No Active Sessions"
-#~ msgstr "Ingen aktive sessioner"
-
-#~ msgid "Connect to a server to start a session"
-#~ msgstr "Forbind til en server for at starte en session"
-
-#~ msgid "No Groups"
-#~ msgstr "Ingen grupper"
-
-#~ msgid "Create groups to organize your connections"
-#~ msgstr "Opret grupper til at organisere dine forbindelser"
-
-#~ msgid "No Snippets"
-#~ msgstr "Ingen stumper"
-
-#~ msgid "Create command snippets for quick access"
-#~ msgstr "Opret kommandostumper til hurtig adgang"
-
-#~ msgid "No Templates"
-#~ msgstr "Ingen skabeloner"
-
-#~ msgid "Create templates for common connection configurations"
-#~ msgstr "Opret skabeloner til almindelige forbindelseskonfigurationer"
-
-#~ msgid "No Connection History"
-#~ msgstr "Ingen forbindelseshistorik"
-
-#~ msgid "Your recent connections will appear here"
-#~ msgstr "Dine seneste forbindelser vises her"
-
-#~ msgid "Session Settings"
-#~ msgstr "Sessionsindstillinger"
-
-#~ msgid "Exit Fullscreen"
-#~ msgstr "Afslut fuldskærm"
-
-#~ msgid ""
-#~ "Automatically respond to terminal patterns.\n"
-#~ "Rules are matched in priority order (highest first)."
-#~ msgstr ""
-#~ "Svar automatisk på terminalmønstre.\n"
-#~ "Regler kontrolleres i prioritetsrækkefølge (højeste først)."
-
-#~ msgid "X11 Forwarding"
-#~ msgstr "X11-videresendelse"
-
-#~ msgid "Forward X11 display to local host (-X)"
-#~ msgstr "Videresend X11-visning til lokal vært (-X)"
-
-#~ msgid "Enable compression for slow connections (-C)"
-#~ msgstr "Aktiver komprimering for langsomme forbindelser (-C)"
-
-#~ msgid "Additional SSH command-line options"
-#~ msgstr "Yderligere SSH-kommandolinjeindstillinger"
-
-#~ msgid "Device Path"
-#~ msgstr "Enhedssti"
-
-#~ msgid "Path to the serial device"
-#~ msgstr "Sti til den serielle enhed"
-
-#~ msgid "Additional picocom command-line arguments"
-#~ msgstr "Yderligere picocom-kommandolinjeargumenter"
-
-#~ msgid "Kubeconfig"
-#~ msgstr "Kubeconfig"
-
-#~ msgid "Path to kubeconfig file (default if empty)"
-#~ msgstr "Sti til kubeconfig-fil (standard hvis tom)"
-
-#~ msgid "Context"
-#~ msgstr "Kontekst"
-
-#~ msgid "Kubernetes context (current-context if empty)"
-#~ msgstr "Kubernetes-kontekst (nuværende hvis tom)"
-
-#~ msgid "Namespace"
-#~ msgstr "Navnerum"
-
-#~ msgid "Target namespace (default if empty)"
-#~ msgstr "Målnavnerum (standard hvis tomt)"
-
-#~ msgid "Pod"
-#~ msgstr "Pod"
-
-#~ msgid "Pod name to exec into"
-#~ msgstr "Pod-navn til exec"
-
-#~ msgid "Container"
-#~ msgstr "Container"
-
-#~ msgid "Container name (optional for single-container)"
-#~ msgstr "Containernavn (valgfrit for enkelt container)"
-
-#~ msgid "Image"
-#~ msgstr "Image"
-
-#~ msgid "Container image for temporary pod"
-#~ msgstr "Container-image til midlertidig Pod"
-
-#~ msgid "Additional kubectl arguments"
-#~ msgstr "Yderligere kubectl-argumenter"
-
-#~ msgid "Application"
-#~ msgstr "Program"
-
-#~ msgid "Navigation"
-#~ msgstr "Navigation"
-
-#~ msgid "Split View"
-#~ msgstr "Delt visning"
-
-#~ msgid "View"
-#~ msgstr "Visning"
-
-#~ msgid "Import"
-#~ msgstr "Importér"
-
-#~ msgid "Export"
-#~ msgstr "Eksportér"
-
-#~ msgid "Move to Group"
-#~ msgstr "Flyt til gruppe"
-
-#~ msgid "Focus Sidebar"
-#~ msgstr "Fokusér sidebjælke"
-
-#~ msgid "Focus Terminal"
-#~ msgstr "Fokusér terminal"
-
-#~ msgid "Command Palette (Commands)"
-#~ msgstr "Kommandopalette (kommandoer)"
-
-#~ msgid "Find in Terminal"
-#~ msgstr "Find i terminal"
-
-#~ msgid "Next Tab"
-#~ msgstr "Næste fane"
-
-#~ msgid "Previous Tab"
-#~ msgstr "Forrige fane"
-
-#~ msgid "Split Horizontal"
-#~ msgstr "Del vandret"
-
-#~ msgid "Split Vertical"
-#~ msgstr "Del lodret"
-
-#~ msgid "Close Pane"
-#~ msgstr "Luk panel"
-
-#~ msgid "Focus Next Pane"
-#~ msgstr "Fokusér næste panel"
-
-#~ msgid "Waypipe"
-#~ msgstr "Waypipe"
-
-#~ msgid "Wayland application forwarding via waypipe"
-#~ msgstr "Videresendelse af Wayland-applikationer via waypipe"
-
-#~ msgid "Optional: Install waypipe package for Wayland forwarding"
-#~ msgstr "Valgfrit: Installér waypipe-pakken til Wayland-videresendelse"

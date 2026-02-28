@@ -201,7 +201,7 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
-* Sat Feb 28 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.4-0
+* Sun Mar 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.4-0
 - Session Reconnect — disconnected VTE tabs show a Reconnect banner
 - Recursive Group Delete — keep children, cascade, or cancel
 - Cluster broadcast mode wired — keyboard input broadcasts to all terminals

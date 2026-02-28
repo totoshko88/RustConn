@@ -90,7 +90,7 @@
     <control>touch</control>
   </supports>
   <releases>
-    <release version="0.9.4" date="2026-02-28">
+    <release version="0.9.4" date="2026-03-01">
       <description>
         <p>Session reconnect, cluster broadcast, libvirt import, template manager, and UX fixes.</p>
         <ul>
