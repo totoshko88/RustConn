@@ -7,47 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.9.5] - 2026-03-01
+## [0.9.5] - 2026-03-02
 
 ### Fixed
-- **SSH/Telnet pre-connect port check** — SSH and Telnet connections now perform the same TCP port reachability check as RDP, VNC, and SPICE before spawning the terminal process; unreachable hosts fail fast with a retry toast instead of hanging in "Connecting" state
-- **Orphaned vault credentials on delete** — emptying trash now cleans up associated credentials from the configured secret backend; soft-deleted (trashed) connections retain credentials until permanently removed so that restore works without re-entering passwords
-- **Clipboard paste loses credentials** — pasting a copied connection now duplicates vault credentials under the new connection's key
-- **Inconsistent credential lookup keys** — unified key generation between store and resolve operations across all backends via `generate_store_key()` helper; LibSecret uses `"{name} ({protocol})"`, all others use `"rustconn/{name}"`
-- **SecretManager cache without TTL** — credential cache entries now expire after 5 minutes, preventing stale credentials after external password changes
-- **Inherit cycle protection** — group hierarchy traversal during credential inheritance now detects cycles via `HashSet<Uuid>` visited guard in both KeePass and non-KeePass branches
-- **Inherit without hierarchy silently ignored** — `CredentialResolver::resolve()` now logs a warning when called with `PasswordSource::Inherit` instead of silently returning `None`
-- **Group change ignored in connection dialog** — Selecting a different group (including Root) when editing a connection now correctly updates the group; previously the old group was silently preserved on save.
-- **Password lost after moving connection to another group** — Vault credentials (KeePass) are now automatically migrated when a connection is moved between groups via drag-and-drop or "Move to Group" dialog; previously the KeePass entry path included the group hierarchy, so moving a connection made the password unreachable under the new path.
-- **Secret backend parity** — All vault backends (KeePass, LibSecret, Bitwarden, 1Password, Passbolt, Pass) now use consistent key formats for store, rename, and move operations; previously non-KeePass backends stored credentials under hierarchical keys but looked them up with flat keys, causing silent lookup failures.
-- **Credential rename for non-KeePass backends** — Bitwarden and Pass now use the correct `rustconn/{name}` key format on rename; 1Password and Passbolt no longer silently skip the rename.
-- **Group rename/move breaks vault passwords** — Renaming or moving a group now migrates all KeePass entries (group credentials + descendant connection credentials) to the new hierarchical paths; previously only individual connection moves were handled.
-- **Monitoring starts before SSH connection established** — Remote monitoring now waits for the SSH session to actually connect before opening its own SSH channel; previously it started immediately and failed with "Connection timed out" while the primary connection was still in handshake.
+- **SSH/Telnet pre-connect port check** — fail fast with retry toast instead of hanging in "Connecting" state
+- **Vault credential lifecycle** — orphaned credentials cleaned on trash empty; paste duplicates credentials; group rename/move migrates KeePass entries
+- **Consistent credential keys** — unified `generate_store_key()` across all backends; fixed silent lookup failures from key format mismatch
+- **SecretManager cache TTL** — entries expire after 5 minutes, preventing stale credentials
+- **Inherit cycle protection** — `HashSet<Uuid>` visited guard prevents infinite loops in group hierarchy
+- **Group change in connection dialog** — selecting a different group now correctly persists on save
+- **Monitoring race condition** — waits for SSH handshake before opening monitoring channel
 
 ### Security
-- **RDP/SPICE event credentials** — `Authenticate` event variants in RDP and SPICE clients now use `SecretString` instead of plain `String`; credentials are zeroized on drop
-- **Variable zeroize on Drop** — `Variable` struct now implements `Drop` to zeroize secret values (`is_secret == true`) when they go out of scope
-- **GUI credential structs** — `VncConfig.password`, `DocumentDialogResult`, `QuickConnectParams.password`, and `start_monitoring()` password parameter migrated to `SecretString`
-- **CLI secret input** — `rpassword::read_password()` result is now converted to `SecretString` immediately, eliminating plain `String` intermediate
+- **SecretString migration** — RDP/SPICE event credentials, GUI password structs, CLI input, and `Variable` (zeroize on Drop) all use `SecretString`
 
 ### Changed
-- **Backend dispatch consolidation** — replaced ~200 lines of duplicated `match backend_type` blocks with a single `dispatch_vault_op()` helper and `VaultOp` enum
-- **Inherit resolution deduplication** — non-KeePass Inherit branch in `resolve_credentials_blocking()` now uses `dispatch_vault_op()` with cross-reference comments to `CredentialResolver::resolve_inherited_credentials()`
-- **Backend migration logging** — `SecretManager::rebuild_from_settings()` now logs old/new backend counts and clears the credential cache on backend change
-- **Legacy credentials documented** — `move_connection_to_group()` documents that `PasswordSource::None` connections with legacy credentials are not migrated as a known limitation
-- **Mutex lock safety** — ~50 `unwrap()` calls on `Mutex::lock()` in the performance module replaced with `lock_or_log()` helper that logs poisoned mutex errors and returns `Option<MutexGuard>`
-- **Silently ignored errors** — `let _ =` on state persistence operations (`save_settings`, `update_expanded_groups`, `terminate_session`) replaced with `if let Err(e)` + `tracing::warn!` across `window/mod.rs`, `snippets.rs`, `document_actions.rs`, `rdp_vnc.rs`
-- **CSS extraction** — 595-line inline CSS string literal moved from `app.rs` to `rustconn/assets/style.css`, loaded via `include_str!`
-- **i18n consistency** — replaced `gettext()` calls with `i18n()` in keybindings settings tab; wrapped 8 hardcoded English toast strings in `window/mod.rs` with `i18n()` / `i18n_f()`
-- **CI test coverage** — added `--all-features` to `test`, `test-core`, and `property-tests` CI jobs to ensure feature-gated code (RDP/VNC/SPICE) is tested
+- **Backend dispatch consolidation** — `VaultOp` enum + `dispatch_vault_op()` replaces ~200 lines of duplicated match blocks
+- **Mutex lock safety** — ~50 `unwrap()` on `Mutex::lock()` replaced with `lock_or_log()` helper
+- **Error logging** — `let _ =` on persistence ops replaced with `tracing::warn!`; remaining `eprintln!` migrated
+- **CSS extraction** — 595-line inline CSS moved to `rustconn/assets/style.css`
+- **i18n consistency** — hardcoded English strings wrapped with `i18n()` / `i18n_f()`
+- **CI** — `--all-features` added to test jobs for feature-gated code coverage
 
 ### Removed
-- **Dead code cleanup** — removed `StateAccessError` enum and 4 unused state accessor functions from `state.rs`; removed `create_automation_tab()` and `create_tasks_tab()` legacy functions from connection dialog; removed ~30 unused sidebar methods (lazy loading wrappers, selection state wrappers, document API, widget accessors, protocol filters)
+- Dead code: `StateAccessError`, unused state accessors, legacy dialog tabs, ~30 unused sidebar methods
 
-### Improved
-- **`eprintln!` migration** — replaced remaining `eprintln!` in `app.rs` with `tracing::error!`
-- **Collapsible if cleanup** — 18 `collapsible_if` patterns auto-fixed across performance, protocols, RDP/VNC, sessions, snippets, and window modules
-- **Documentation** — updated `ARCHITECTURE.md` version to 0.9.5 / March 2026
+### Dependencies
+- js-sys 0.3.90→0.3.91, pin-project-lite 0.2.16→0.2.17, wasm-bindgen 0.2.113→0.2.114, web-sys 0.3.90→0.3.91
 
 ## [0.9.4] - 2026-03-01
 

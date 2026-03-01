@@ -202,7 +202,18 @@ done
 
 %changelog
 * Sun Mar 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.5-0
-- Version bump to 0.9.5
+- SSH/Telnet pre-connect port check — fail fast with retry toast
+- Vault credential lifecycle — orphaned cleanup, paste duplication,
+  group rename/move migrates KeePass entries
+- Consistent credential keys across all secret backends
+- SecretManager cache TTL — entries expire after 5 minutes
+- Inherit cycle protection via HashSet visited guard
+- Group change in connection dialog now correctly persists on save
+- Monitoring waits for SSH handshake before opening channel
+- SecretString migration for RDP/SPICE events, GUI structs, CLI input
+- VaultOp dispatch consolidation, mutex lock safety, error logging
+- CSS extraction, i18n consistency, CI --all-features coverage
+- Dead code removal: StateAccessError, unused sidebar methods
 
 * Sun Mar 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.4-0
 - Session Reconnect — disconnected VTE tabs show a Reconnect banner
