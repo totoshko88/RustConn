@@ -51,6 +51,86 @@ pub fn start_ssh_connection(
     conn: &rustconn_core::Connection,
     logging_enabled: bool,
 ) -> Option<Uuid> {
+    // Check if port check is needed
+    let settings = state.borrow().settings().clone();
+    let should_check = settings.connection.pre_connect_port_check && !conn.skip_port_check;
+
+    if should_check {
+        let host = conn.host.clone();
+        let port = conn.port;
+        let timeout = settings.connection.port_check_timeout_secs;
+        let state_clone = state.clone();
+        let notebook_clone = notebook.clone();
+        let sidebar_clone = sidebar.clone();
+        let conn_clone = conn.clone();
+
+        // Run port check in background thread
+        spawn_blocking_with_callback(
+            move || check_port(&host, port, timeout),
+            move |result| {
+                match result {
+                    Ok(_) => {
+                        // Port is open, proceed with connection
+                        start_ssh_connection_internal(
+                            &state_clone,
+                            &notebook_clone,
+                            &sidebar_clone,
+                            connection_id,
+                            &conn_clone,
+                            logging_enabled,
+                        );
+                    }
+                    Err(e) => {
+                        // Port check failed, show error with retry
+                        tracing::warn!(
+                            protocol = "ssh",
+                            host = %conn_clone.host,
+                            port = conn_clone.port,
+                            error = %e,
+                            "Port check failed for SSH connection"
+                        );
+                        sidebar_clone
+                            .update_connection_status(&connection_id.to_string(), "failed");
+                        if let Some(root) = notebook_clone.widget().root()
+                            && let Some(window) = root.downcast_ref::<gtk4::Window>()
+                        {
+                            crate::toast::show_retry_toast_on_window(
+                                window,
+                                &crate::i18n::i18n("Connection failed. Host unreachable."),
+                                &connection_id.to_string(),
+                            );
+                        }
+                    }
+                }
+            },
+        );
+        // Return None since the actual session will be created asynchronously
+        None
+    } else {
+        // Port check disabled, proceed directly
+        start_ssh_connection_internal(
+            state,
+            notebook,
+            sidebar,
+            connection_id,
+            conn,
+            logging_enabled,
+        )
+    }
+}
+
+/// Internal function to start SSH connection (after port check).
+///
+/// Creates a terminal tab and spawns the SSH process with the given configuration.
+#[allow(clippy::too_many_arguments)]
+fn start_ssh_connection_internal(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    connection_id: Uuid,
+    conn: &rustconn_core::Connection,
+    logging_enabled: bool,
+) -> Option<Uuid> {
     use rustconn_core::protocol::{format_command_message, format_connection_message};
 
     let conn_name = conn.name.clone();
@@ -691,6 +771,79 @@ fn start_spice_connection_internal(
 /// Creates a terminal tab and spawns the telnet process.
 #[allow(clippy::too_many_arguments)]
 pub fn start_telnet_connection(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    connection_id: Uuid,
+    conn: &rustconn_core::Connection,
+    logging_enabled: bool,
+) -> Option<Uuid> {
+    // Check if port check is needed
+    let settings = state.borrow().settings().clone();
+    let should_check = settings.connection.pre_connect_port_check && !conn.skip_port_check;
+
+    if should_check {
+        let host = conn.host.clone();
+        let port = conn.port;
+        let timeout = settings.connection.port_check_timeout_secs;
+        let state_clone = state.clone();
+        let notebook_clone = notebook.clone();
+        let sidebar_clone = sidebar.clone();
+        let conn_clone = conn.clone();
+
+        // Run port check in background thread
+        spawn_blocking_with_callback(
+            move || check_port(&host, port, timeout),
+            move |result| match result {
+                Ok(_) => {
+                    start_telnet_connection_internal(
+                        &state_clone,
+                        &notebook_clone,
+                        &sidebar_clone,
+                        connection_id,
+                        &conn_clone,
+                        logging_enabled,
+                    );
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        protocol = "telnet",
+                        host = %conn_clone.host,
+                        port = conn_clone.port,
+                        error = %e,
+                        "Port check failed for Telnet connection"
+                    );
+                    sidebar_clone.update_connection_status(&connection_id.to_string(), "failed");
+                    if let Some(root) = notebook_clone.widget().root()
+                        && let Some(window) = root.downcast_ref::<gtk4::Window>()
+                    {
+                        crate::toast::show_retry_toast_on_window(
+                            window,
+                            &crate::i18n::i18n("Connection failed. Host unreachable."),
+                            &connection_id.to_string(),
+                        );
+                    }
+                }
+            },
+        );
+        None
+    } else {
+        start_telnet_connection_internal(
+            state,
+            notebook,
+            sidebar,
+            connection_id,
+            conn,
+            logging_enabled,
+        )
+    }
+}
+
+/// Internal function to start Telnet connection (after port check).
+///
+/// Creates a terminal tab and spawns the telnet process.
+#[allow(clippy::too_many_arguments)]
+fn start_telnet_connection_internal(
     state: &SharedAppState,
     notebook: &SharedNotebook,
     sidebar: &SharedSidebar,

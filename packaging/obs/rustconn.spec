@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.9.4
+Version:        0.9.5
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -201,6 +201,9 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Sun Mar 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.5-0
+- Version bump to 0.9.5
+
 * Sun Mar 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.4-0
 - Session Reconnect — disconnected VTE tabs show a Reconnect banner
 - Recursive Group Delete — keep children, cascade, or cancel

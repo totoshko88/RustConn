@@ -322,13 +322,11 @@ impl ConnectionManager {
                 reason: format!("Connection with ID {id} not found"),
             })?;
 
-        // Preserve original ID, creation timestamp, and group_id (unless explicitly changed)
+        // Preserve original ID and creation timestamp
         updated.id = existing.id;
         updated.created_at = existing.created_at;
-        // Preserve group_id if not explicitly set in the update
-        if updated.group_id.is_none() {
-            updated.group_id = existing.group_id;
-        }
+        // group_id is always taken from the updated connection — callers must set it explicitly
+        // (None means "root/ungrouped", not "unchanged")
         updated.touch();
 
         ConfigManager::validate_connection(&updated)?;
@@ -638,6 +636,18 @@ impl ConnectionManager {
                 reason: format!("Group with ID {id} not found in trash"),
             })
         }
+    }
+
+    /// Returns all trashed connections (for credential cleanup before permanent deletion).
+    #[must_use]
+    pub fn list_trash_connections(&self) -> Vec<&Connection> {
+        self.trash_connections.values().map(|(c, _)| c).collect()
+    }
+
+    /// Returns all trashed groups (for credential cleanup before permanent deletion).
+    #[must_use]
+    pub fn list_trash_groups(&self) -> Vec<&ConnectionGroup> {
+        self.trash_groups.values().map(|(g, _)| g).collect()
     }
 
     /// Permanently deletes all items in trash

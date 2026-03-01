@@ -4163,7 +4163,10 @@ impl MainWindow {
                     logging_enabled,
                 );
 
-                // Start remote monitoring for SSH sessions
+                // Defer monitoring start until SSH connection is actually established.
+                // The VTE terminal spawns the SSH process asynchronously; starting
+                // monitoring immediately would open a second SSH connection that
+                // races (and usually fails) before the primary one completes.
                 if let Some(sid) = session_id
                     && let Ok(state_ref) = state.try_borrow()
                 {
@@ -4181,37 +4184,59 @@ impl MainWindow {
                             ),
                             ..settings
                         };
-                        if let Some(container) = notebook.get_session_container(sid) {
-                            let identity_file =
-                                if let rustconn_core::ProtocolConfig::Ssh(ref ssh_cfg) =
-                                    conn_clone.protocol_config
-                                {
-                                    ssh_cfg
-                                        .key_path
-                                        .as_ref()
-                                        .map(|p| p.to_string_lossy().to_string())
-                                } else {
-                                    None
-                                };
-                            // Retrieve cached password for sshpass-based monitoring
-                            let cached_pw = state_ref
+                        let identity_file = if let rustconn_core::ProtocolConfig::Ssh(ref ssh_cfg) =
+                            conn_clone.protocol_config
+                        {
+                            ssh_cfg
+                                .key_path
+                                .as_ref()
+                                .map(|p| p.to_string_lossy().to_string())
+                        } else {
+                            None
+                        };
+                        let cached_pw =
+                            state_ref
                                 .get_cached_credentials(connection_id)
                                 .and_then(|c| {
                                     use secrecy::ExposeSecret;
                                     let pw = c.password.expose_secret().to_string();
                                     if pw.is_empty() { None } else { Some(pw) }
                                 });
-                            monitoring.start_monitoring(
-                                sid,
-                                &container,
-                                &effective,
-                                &conn_clone.host,
-                                conn_clone.port,
-                                conn_clone.username.as_deref(),
-                                identity_file.as_deref(),
-                                cached_pw.as_deref(),
-                            );
-                        }
+
+                        // Capture values for the deferred closure
+                        let monitoring_clone = Rc::clone(monitoring);
+                        let notebook_clone = notebook.clone();
+                        let host = conn_clone.host.clone();
+                        let port = conn_clone.port;
+                        let username = conn_clone.username.clone();
+                        let monitoring_started = std::rc::Rc::new(std::cell::Cell::new(false));
+                        let monitoring_started_clone = monitoring_started.clone();
+
+                        notebook.connect_contents_changed(sid, move || {
+                            if monitoring_started_clone.get() {
+                                return;
+                            }
+                            // Wait for SSH to actually connect (cursor past header lines)
+                            let Some(row) = notebook_clone.get_terminal_cursor_row(sid) else {
+                                return;
+                            };
+                            if row <= 2 {
+                                return;
+                            }
+                            monitoring_started_clone.set(true);
+                            if let Some(container) = notebook_clone.get_session_container(sid) {
+                                monitoring_clone.start_monitoring(
+                                    sid,
+                                    &container,
+                                    &effective,
+                                    &host,
+                                    port,
+                                    username.as_deref(),
+                                    identity_file.as_deref(),
+                                    cached_pw.as_deref(),
+                                );
+                            }
+                        });
                     }
                 }
 

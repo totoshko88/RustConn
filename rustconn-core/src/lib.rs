@@ -206,11 +206,11 @@ pub use search::{
     },
 };
 pub use secret::{
-    AsyncCredentialResolver, AsyncCredentialResult, CancellationToken, CredentialResolver,
-    CredentialStatus, CredentialVerificationManager, DialogPreFillData, GroupCreationResult,
-    KEEPASS_ROOT_GROUP, KdbxExporter, KeePassHierarchy, KeePassStatus, KeePassXcBackend,
-    LibSecretBackend, PassBackend, PendingCredentialResolution, SecretBackend, SecretManager,
-    VerifiedCredentials, parse_keepassxc_version, resolve_with_callback,
+    AsyncCredentialResolver, AsyncCredentialResult, CACHE_TTL_SECONDS, CancellationToken,
+    CredentialResolver, CredentialStatus, CredentialVerificationManager, DialogPreFillData,
+    GroupCreationResult, KEEPASS_ROOT_GROUP, KdbxExporter, KeePassHierarchy, KeePassStatus,
+    KeePassXcBackend, LibSecretBackend, PassBackend, PendingCredentialResolution, SecretBackend,
+    SecretManager, VerifiedCredentials, parse_keepassxc_version, resolve_with_callback,
     spawn_credential_resolution,
 };
 pub use session::{

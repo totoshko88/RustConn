@@ -54,7 +54,7 @@ pub use keepassxc::{
     store_kdbx_password_in_keyring,
 };
 pub use libsecret::LibSecretBackend;
-pub use manager::{BulkOperationResult, CredentialUpdate, SecretManager};
+pub use manager::{BulkOperationResult, CACHE_TTL_SECONDS, CredentialUpdate, SecretManager};
 pub use onepassword::{
     OnePasswordBackend, OnePasswordStatus, OnePasswordVersion, delete_token_from_keyring,
     get_onepassword_status, get_onepassword_version, get_token_from_keyring,

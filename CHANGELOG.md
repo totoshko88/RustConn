@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.5] - 2026-03-01
+
+### Fixed
+- **SSH/Telnet pre-connect port check** — SSH and Telnet connections now perform the same TCP port reachability check as RDP, VNC, and SPICE before spawning the terminal process; unreachable hosts fail fast with a retry toast instead of hanging in "Connecting" state
+- **Orphaned vault credentials on delete** — emptying trash now cleans up associated credentials from the configured secret backend; soft-deleted (trashed) connections retain credentials until permanently removed so that restore works without re-entering passwords
+- **Clipboard paste loses credentials** — pasting a copied connection now duplicates vault credentials under the new connection's key
+- **Inconsistent credential lookup keys** — unified key generation between store and resolve operations across all backends via `generate_store_key()` helper; LibSecret uses `"{name} ({protocol})"`, all others use `"rustconn/{name}"`
+- **SecretManager cache without TTL** — credential cache entries now expire after 5 minutes, preventing stale credentials after external password changes
+- **Inherit cycle protection** — group hierarchy traversal during credential inheritance now detects cycles via `HashSet<Uuid>` visited guard in both KeePass and non-KeePass branches
+- **Inherit without hierarchy silently ignored** — `CredentialResolver::resolve()` now logs a warning when called with `PasswordSource::Inherit` instead of silently returning `None`
+- **Group change ignored in connection dialog** — Selecting a different group (including Root) when editing a connection now correctly updates the group; previously the old group was silently preserved on save.
+- **Password lost after moving connection to another group** — Vault credentials (KeePass) are now automatically migrated when a connection is moved between groups via drag-and-drop or "Move to Group" dialog; previously the KeePass entry path included the group hierarchy, so moving a connection made the password unreachable under the new path.
+- **Secret backend parity** — All vault backends (KeePass, LibSecret, Bitwarden, 1Password, Passbolt, Pass) now use consistent key formats for store, rename, and move operations; previously non-KeePass backends stored credentials under hierarchical keys but looked them up with flat keys, causing silent lookup failures.
+- **Credential rename for non-KeePass backends** — Bitwarden and Pass now use the correct `rustconn/{name}` key format on rename; 1Password and Passbolt no longer silently skip the rename.
+- **Group rename/move breaks vault passwords** — Renaming or moving a group now migrates all KeePass entries (group credentials + descendant connection credentials) to the new hierarchical paths; previously only individual connection moves were handled.
+- **Monitoring starts before SSH connection established** — Remote monitoring now waits for the SSH session to actually connect before opening its own SSH channel; previously it started immediately and failed with "Connection timed out" while the primary connection was still in handshake.
+
+### Changed
+- **Backend dispatch consolidation** — replaced ~200 lines of duplicated `match backend_type` blocks with a single `dispatch_vault_op()` helper and `VaultOp` enum
+- **Inherit resolution deduplication** — non-KeePass Inherit branch in `resolve_credentials_blocking()` now uses `dispatch_vault_op()` with cross-reference comments to `CredentialResolver::resolve_inherited_credentials()`
+- **Backend migration logging** — `SecretManager::rebuild_from_settings()` now logs old/new backend counts and clears the credential cache on backend change
+- **Legacy credentials documented** — `move_connection_to_group()` documents that `PasswordSource::None` connections with legacy credentials are not migrated as a known limitation
+
 ## [0.9.4] - 2026-03-01
 
 ### Added
