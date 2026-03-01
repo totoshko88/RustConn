@@ -20,8 +20,36 @@
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex, OnceLock, RwLock};
+use std::sync::{Arc, Mutex, MutexGuard, OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::time::{Duration, Instant};
+
+/// Acquires a `Mutex` lock, logging and returning `None` on poison.
+fn lock_mutex<'a, T>(mutex: &'a Mutex<T>, name: &str) -> Option<MutexGuard<'a, T>> {
+    mutex
+        .lock()
+        .map_err(|e| {
+            tracing::error!(mutex = name, "Mutex poisoned: {e}");
+        })
+        .ok()
+}
+
+/// Acquires a `RwLock` read lock, logging and returning `None` on poison.
+fn read_rwlock<'a, T>(lock: &'a RwLock<T>, name: &str) -> Option<RwLockReadGuard<'a, T>> {
+    lock.read()
+        .map_err(|e| {
+            tracing::error!(rwlock = name, "RwLock poisoned (read): {e}");
+        })
+        .ok()
+}
+
+/// Acquires a `RwLock` write lock, logging and returning `None` on poison.
+fn write_rwlock<'a, T>(lock: &'a RwLock<T>, name: &str) -> Option<RwLockWriteGuard<'a, T>> {
+    lock.write()
+        .map_err(|e| {
+            tracing::error!(rwlock = name, "RwLock poisoned (write): {e}");
+        })
+        .ok()
+}
 
 /// Global performance metrics instance
 static METRICS: OnceLock<PerformanceMetrics> = OnceLock::new();
@@ -72,8 +100,10 @@ impl PerformanceMetrics {
 
     /// Marks the start of application startup
     pub fn start_startup(&self) {
-        if self.is_profiling_enabled() {
-            *self.startup_start.lock().unwrap() = Some(Instant::now());
+        if self.is_profiling_enabled()
+            && let Some(mut guard) = lock_mutex(&self.startup_start, "startup_start")
+        {
+            *guard = Some(Instant::now());
         }
     }
 
@@ -83,12 +113,12 @@ impl PerformanceMetrics {
             return;
         }
 
-        if let Some(start) = *self.startup_start.lock().unwrap() {
+        let start = lock_mutex(&self.startup_start, "startup_start").and_then(|g| *g);
+        if let Some(start) = start {
             let elapsed = start.elapsed();
-            self.startup_timings
-                .lock()
-                .unwrap()
-                .insert(phase.to_string(), elapsed);
+            if let Some(mut timings) = lock_mutex(&self.startup_timings, "startup_timings") {
+                timings.insert(phase.to_string(), elapsed);
+            }
         }
     }
 
@@ -98,34 +128,33 @@ impl PerformanceMetrics {
             return;
         }
 
-        self.operation_timings
-            .lock()
-            .unwrap()
-            .entry(operation.to_string())
-            .or_default()
-            .push(duration);
+        if let Some(mut timings) = lock_mutex(&self.operation_timings, "operation_timings") {
+            timings
+                .entry(operation.to_string())
+                .or_default()
+                .push(duration);
+        }
     }
 
     /// Gets the total startup time
     #[must_use]
     pub fn total_startup_time(&self) -> Option<Duration> {
-        self.startup_timings
-            .lock()
-            .unwrap()
-            .get("complete")
-            .copied()
+        lock_mutex(&self.startup_timings, "startup_timings")
+            .and_then(|t| t.get("complete").copied())
     }
 
     /// Gets all startup phase timings
     #[must_use]
     pub fn startup_phases(&self) -> HashMap<String, Duration> {
-        self.startup_timings.lock().unwrap().clone()
+        lock_mutex(&self.startup_timings, "startup_timings")
+            .map(|t| t.clone())
+            .unwrap_or_default()
     }
 
     /// Gets average duration for an operation
     #[must_use]
     pub fn average_operation_time(&self, operation: &str) -> Option<Duration> {
-        let timings = self.operation_timings.lock().unwrap();
+        let timings = lock_mutex(&self.operation_timings, "operation_timings")?;
         timings.get(operation).and_then(|durations| {
             if durations.is_empty() {
                 None
@@ -139,7 +168,7 @@ impl PerformanceMetrics {
     /// Gets operation statistics
     #[must_use]
     pub fn operation_stats(&self, operation: &str) -> Option<OperationStats> {
-        let timings = self.operation_timings.lock().unwrap();
+        let timings = lock_mutex(&self.operation_timings, "operation_timings")?;
         timings.get(operation).and_then(|durations| {
             if durations.is_empty() {
                 return None;
@@ -170,9 +199,15 @@ impl PerformanceMetrics {
 
     /// Clears all recorded metrics
     pub fn clear(&self) {
-        self.startup_timings.lock().unwrap().clear();
-        self.operation_timings.lock().unwrap().clear();
-        *self.startup_start.lock().unwrap() = None;
+        if let Some(mut t) = lock_mutex(&self.startup_timings, "startup_timings") {
+            t.clear();
+        }
+        if let Some(mut t) = lock_mutex(&self.operation_timings, "operation_timings") {
+            t.clear();
+        }
+        if let Some(mut s) = lock_mutex(&self.startup_start, "startup_start") {
+            *s = None;
+        }
     }
 
     /// Creates a timing guard for measuring operation duration
@@ -273,7 +308,9 @@ impl Debouncer {
     #[must_use]
     pub fn should_proceed(&self) -> bool {
         let now = Instant::now();
-        let mut last = self.last_operation.lock().unwrap();
+        let Some(mut last) = lock_mutex(&self.last_operation, "debouncer_last_op") else {
+            return true;
+        };
 
         match *last {
             None => {
@@ -306,7 +343,9 @@ impl Debouncer {
 
     /// Resets the debouncer state
     pub fn reset(&self) {
-        *self.last_operation.lock().unwrap() = None;
+        if let Some(mut last) = lock_mutex(&self.last_operation, "debouncer_last_op") {
+            *last = None;
+        }
         self.pending.store(false, Ordering::SeqCst);
     }
 
@@ -371,21 +410,28 @@ impl MemoryTracker {
 
     /// Records an allocation
     pub fn record_allocation(&self, category: &str, size: usize) {
-        let mut allocations = self.allocations.lock().unwrap();
+        let Some(mut allocations) = lock_mutex(&self.allocations, "allocations") else {
+            return;
+        };
         let current = allocations.entry(category.to_string()).or_insert(0);
         *current += size;
 
-        let mut peak = self.peak_usage.lock().unwrap();
-        let peak_val = peak.entry(category.to_string()).or_insert(0);
-        if *current > *peak_val {
-            *peak_val = *current;
+        let current_val = *current;
+        drop(allocations);
+
+        if let Some(mut peak) = lock_mutex(&self.peak_usage, "peak_usage") {
+            let peak_val = peak.entry(category.to_string()).or_insert(0);
+            if current_val > *peak_val {
+                *peak_val = current_val;
+            }
         }
     }
 
     /// Records a deallocation
     pub fn record_deallocation(&self, category: &str, size: usize) {
-        let mut allocations = self.allocations.lock().unwrap();
-        if let Some(current) = allocations.get_mut(category) {
+        if let Some(mut allocations) = lock_mutex(&self.allocations, "allocations")
+            && let Some(current) = allocations.get_mut(category)
+        {
             *current = current.saturating_sub(size);
         }
     }
@@ -393,36 +439,36 @@ impl MemoryTracker {
     /// Gets current allocation for a category
     #[must_use]
     pub fn current_allocation(&self, category: &str) -> usize {
-        self.allocations
-            .lock()
-            .unwrap()
-            .get(category)
-            .copied()
+        lock_mutex(&self.allocations, "allocations")
+            .and_then(|a| a.get(category).copied())
             .unwrap_or(0)
     }
 
     /// Gets peak allocation for a category
     #[must_use]
     pub fn peak_allocation(&self, category: &str) -> usize {
-        self.peak_usage
-            .lock()
-            .unwrap()
-            .get(category)
-            .copied()
+        lock_mutex(&self.peak_usage, "peak_usage")
+            .and_then(|p| p.get(category).copied())
             .unwrap_or(0)
     }
 
     /// Gets total current allocation across all categories
     #[must_use]
     pub fn total_allocation(&self) -> usize {
-        self.allocations.lock().unwrap().values().sum()
+        lock_mutex(&self.allocations, "allocations")
+            .map(|a| a.values().sum())
+            .unwrap_or(0)
     }
 
     /// Gets all allocation statistics
     #[must_use]
     pub fn all_stats(&self) -> HashMap<String, AllocationStats> {
-        let allocations = self.allocations.lock().unwrap();
-        let peak = self.peak_usage.lock().unwrap();
+        let Some(allocations) = lock_mutex(&self.allocations, "allocations") else {
+            return HashMap::new();
+        };
+        let Some(peak) = lock_mutex(&self.peak_usage, "peak_usage") else {
+            return HashMap::new();
+        };
 
         allocations
             .iter()
@@ -441,8 +487,12 @@ impl MemoryTracker {
 
     /// Clears all tracking data
     pub fn clear(&self) {
-        self.allocations.lock().unwrap().clear();
-        self.peak_usage.lock().unwrap().clear();
+        if let Some(mut a) = lock_mutex(&self.allocations, "allocations") {
+            a.clear();
+        }
+        if let Some(mut p) = lock_mutex(&self.peak_usage, "peak_usage") {
+            p.clear();
+        }
     }
 }
 
@@ -491,15 +541,19 @@ impl<T> BatchProcessor<T> {
     ///
     /// Returns `Some(Vec<T>)` if the batch should be processed now.
     pub fn add(&self, item: T) -> Option<Vec<T>> {
-        let mut items = self.items.lock().unwrap();
+        let mut items = lock_mutex(&self.items, "batch_items")?;
         items.push(item);
 
-        let should_flush = items.len() >= self.max_batch_size
-            || self.last_flush.lock().unwrap().elapsed() >= self.max_wait;
+        let time_exceeded = lock_mutex(&self.last_flush, "batch_flush")
+            .is_some_and(|lf| lf.elapsed() >= self.max_wait);
+        let should_flush = items.len() >= self.max_batch_size || time_exceeded;
 
         if should_flush {
             let batch = std::mem::take(&mut *items);
-            *self.last_flush.lock().unwrap() = Instant::now();
+            drop(items);
+            if let Some(mut lf) = lock_mutex(&self.last_flush, "batch_flush") {
+                *lf = Instant::now();
+            }
             Some(batch)
         } else {
             None
@@ -509,22 +563,27 @@ impl<T> BatchProcessor<T> {
     /// Forces a flush of all pending items
     #[must_use]
     pub fn flush(&self) -> Vec<T> {
-        let mut items = self.items.lock().unwrap();
-        let batch = std::mem::take(&mut *items);
-        *self.last_flush.lock().unwrap() = Instant::now();
+        let batch = lock_mutex(&self.items, "batch_items")
+            .map(|mut items| std::mem::take(&mut *items))
+            .unwrap_or_default();
+        if let Some(mut lf) = lock_mutex(&self.last_flush, "batch_flush") {
+            *lf = Instant::now();
+        }
         batch
     }
 
     /// Returns the number of pending items
     #[must_use]
     pub fn pending_count(&self) -> usize {
-        self.items.lock().unwrap().len()
+        lock_mutex(&self.items, "batch_items")
+            .map(|i| i.len())
+            .unwrap_or(0)
     }
 
     /// Checks if there are pending items
     #[must_use]
     pub fn has_pending(&self) -> bool {
-        !self.items.lock().unwrap().is_empty()
+        lock_mutex(&self.items, "batch_items").is_some_and(|i| !i.is_empty())
     }
 }
 
@@ -669,8 +728,8 @@ impl StringInterner {
 
         // Try read lock first for cache hit
         {
-            let strings = self.strings.read().unwrap();
-            if let Some(existing) = strings.get(&hash)
+            if let Some(strings) = read_rwlock(&self.strings, "interner_strings")
+                && let Some(existing) = strings.get(&hash)
                 && &**existing == s
             {
                 self.stats.hit_count.fetch_add(1, Ordering::Relaxed);
@@ -680,7 +739,10 @@ impl StringInterner {
         }
 
         // Need write lock to insert
-        let mut strings = self.strings.write().unwrap();
+        let Some(mut strings) = write_rwlock(&self.strings, "interner_strings") else {
+            // Fallback: return a fresh Arc without caching
+            return Arc::from(s);
+        };
 
         // Double-check after acquiring write lock
         if let Some(existing) = strings.get(&hash)
@@ -707,18 +769,24 @@ impl StringInterner {
     /// Returns the number of unique strings stored
     #[must_use]
     pub fn len(&self) -> usize {
-        self.strings.read().unwrap().len()
+        read_rwlock(&self.strings, "interner_strings")
+            .map(|s| s.len())
+            .unwrap_or(0)
     }
 
     /// Returns true if no strings are interned
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.strings.read().unwrap().is_empty()
+        read_rwlock(&self.strings, "interner_strings")
+            .map(|s| s.is_empty())
+            .unwrap_or(true)
     }
 
     /// Clears all interned strings
     pub fn clear(&self) {
-        self.strings.write().unwrap().clear();
+        if let Some(mut s) = write_rwlock(&self.strings, "interner_strings") {
+            s.clear();
+        }
         self.stats.unique_count.store(0, Ordering::Relaxed);
     }
 
@@ -888,7 +956,9 @@ impl MemoryOptimizer {
             session_count,
         };
 
-        let mut snapshots = self.snapshots.lock().unwrap();
+        let Some(mut snapshots) = lock_mutex(&self.snapshots, "snapshots") else {
+            return;
+        };
         if snapshots.len() >= self.max_snapshots {
             snapshots.remove(0);
         }
@@ -898,12 +968,16 @@ impl MemoryOptimizer {
     /// Gets all memory snapshots
     #[must_use]
     pub fn snapshots(&self) -> Vec<MemorySnapshot> {
-        self.snapshots.lock().unwrap().clone()
+        lock_mutex(&self.snapshots, "snapshots")
+            .map(|s| s.clone())
+            .unwrap_or_default()
     }
 
     /// Clears all snapshots
     pub fn clear_snapshots(&self) {
-        self.snapshots.lock().unwrap().clear();
+        if let Some(mut s) = lock_mutex(&self.snapshots, "snapshots") {
+            s.clear();
+        }
     }
 
     /// Estimates current heap usage based on data counts
@@ -1004,8 +1078,9 @@ impl MemoryOptimizer {
         }
 
         // Check snapshots for memory growth
-        let snapshots = self.snapshots.lock().unwrap();
-        if snapshots.len() >= 2 {
+        if let Some(snapshots) = lock_mutex(&self.snapshots, "snapshots")
+            && snapshots.len() >= 2
+        {
             let first = &snapshots[0];
             let last = &snapshots[snapshots.len() - 1];
             let growth = last.heap_estimate.saturating_sub(first.heap_estimate);
@@ -1311,32 +1386,34 @@ impl<T: Default> ObjectPool<T> {
     pub fn acquire(&self) -> T {
         self.stats.acquired.fetch_add(1, Ordering::Relaxed);
 
-        let mut pool = self.pool.lock().unwrap();
-        if let Some(obj) = pool.pop() {
-            obj
-        } else {
-            self.stats.created.fetch_add(1, Ordering::Relaxed);
-            T::default()
+        if let Some(mut pool) = lock_mutex(&self.pool, "object_pool")
+            && let Some(obj) = pool.pop()
+        {
+            return obj;
         }
+        self.stats.created.fetch_add(1, Ordering::Relaxed);
+        T::default()
     }
 
     /// Returns an object to the pool for reuse
     pub fn release(&self, obj: T) {
         self.stats.returned.fetch_add(1, Ordering::Relaxed);
 
-        let mut pool = self.pool.lock().unwrap();
-        if pool.len() < self.max_size {
-            pool.push(obj);
-        } else {
-            self.stats.dropped.fetch_add(1, Ordering::Relaxed);
-            // Object is dropped here
+        if let Some(mut pool) = lock_mutex(&self.pool, "object_pool") {
+            if pool.len() < self.max_size {
+                pool.push(obj);
+            } else {
+                self.stats.dropped.fetch_add(1, Ordering::Relaxed);
+            }
         }
     }
 
     /// Returns the current pool size
     #[must_use]
     pub fn size(&self) -> usize {
-        self.pool.lock().unwrap().len()
+        lock_mutex(&self.pool, "object_pool")
+            .map(|p| p.len())
+            .unwrap_or(0)
     }
 
     /// Returns pool statistics
@@ -1347,15 +1424,18 @@ impl<T: Default> ObjectPool<T> {
 
     /// Clears the pool
     pub fn clear(&self) {
-        self.pool.lock().unwrap().clear();
+        if let Some(mut p) = lock_mutex(&self.pool, "object_pool") {
+            p.clear();
+        }
     }
 
     /// Pre-populates the pool with objects
     pub fn warm(&self, count: usize) {
-        let mut pool = self.pool.lock().unwrap();
-        let to_add = count.min(self.max_size).saturating_sub(pool.len());
-        for _ in 0..to_add {
-            pool.push(T::default());
+        if let Some(mut pool) = lock_mutex(&self.pool, "object_pool") {
+            let to_add = count.min(self.max_size).saturating_sub(pool.len());
+            for _ in 0..to_add {
+                pool.push(T::default());
+            }
         }
     }
 }

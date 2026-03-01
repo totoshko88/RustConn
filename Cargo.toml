@@ -40,6 +40,7 @@ secrecy = { version = "0.10", features = ["serde"] }
 dirs = "6.0"
 shellexpand = "3.1"
 regex = "1.11"
+zeroize = "1.8"
 
 # Encryption
 ring = "0.17"

@@ -4812,6 +4812,7 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "vnc-rs",
+ "zeroize",
  "zip",
 ]
 

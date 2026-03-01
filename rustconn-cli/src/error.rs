@@ -1,10 +1,7 @@
 //! CLI error types and exit codes.
 
 /// Exit codes for CLI operations
-#[allow(dead_code)]
 pub mod exit_codes {
-    /// Success - operation completed successfully
-    pub const SUCCESS: i32 = 0;
     /// General error - configuration, validation, or other non-connection errors
     pub const GENERAL_ERROR: i32 = 1;
     /// Connection failure - connection test failed or connection could not be
@@ -118,15 +115,5 @@ impl CliError {
             | Self::Secret(_)
             | Self::Protocol(_) => exit_codes::GENERAL_ERROR,
         }
-    }
-
-    /// Returns true if this is a connection-related failure.
-    #[must_use]
-    #[allow(dead_code)]
-    pub const fn is_connection_failure(&self) -> bool {
-        matches!(
-            self,
-            Self::TestFailed(_) | Self::ConnectionNotFound(_) | Self::Connection(_)
-        )
     }
 }

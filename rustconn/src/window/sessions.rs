@@ -190,8 +190,10 @@ pub fn show_sessions_manager(
                 move |confirmed| {
                     if confirmed {
                         // Terminate session in state manager
-                        if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
-                            let _ = state_mut.terminate_session(id);
+                        if let Ok(mut state_mut) = state_inner.try_borrow_mut()
+                            && let Err(e) = state_mut.terminate_session(id)
+                        {
+                            tracing::warn!(?e, "Failed to terminate session");
                         }
 
                         // Decrement session count

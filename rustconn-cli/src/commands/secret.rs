@@ -458,13 +458,13 @@ fn cmd_secret_set(
         .transpose()?
         .unwrap_or(settings.secrets.preferred_backend);
 
-    let password_value = if let Some(pwd) = password {
+    let password_value = secrecy::SecretString::from(if let Some(pwd) = password {
         pwd.to_string()
     } else {
         eprint!("Enter password for '{}': ", connection.name);
         rpassword::read_password()
             .map_err(|e| CliError::Secret(format!("Failed to read password: {e}")))?
-    };
+    });
 
     let username_value = username
         .map(String::from)
@@ -482,7 +482,7 @@ fn cmd_secret_set(
             let backend = LibSecretBackend::new("rustconn");
             let creds = Credentials {
                 username: Some(username_value.clone()),
-                password: Some(secrecy::SecretString::from(password_value)),
+                password: Some(password_value.clone()),
                 key_passphrase: None,
                 domain: connection.domain.clone(),
             };
@@ -518,7 +518,10 @@ fn cmd_secret_set(
                 key_file,
                 &keepass_key,
                 &username_value,
-                &password_value,
+                {
+                    use secrecy::ExposeSecret;
+                    password_value.expose_secret()
+                },
                 Some(&format!(
                     "{}://{}:{}",
                     connection.protocol.as_str().to_lowercase(),
@@ -544,7 +547,7 @@ fn cmd_secret_set(
             let backend = BitwardenBackend::new();
             let creds = Credentials {
                 username: Some(username_value.clone()),
-                password: Some(secrecy::SecretString::from(password_value)),
+                password: Some(password_value.clone()),
                 key_passphrase: None,
                 domain: connection.domain.clone(),
             };
@@ -569,7 +572,7 @@ fn cmd_secret_set(
             let backend = OnePasswordBackend::new();
             let creds = Credentials {
                 username: Some(username_value.clone()),
-                password: Some(secrecy::SecretString::from(password_value)),
+                password: Some(password_value.clone()),
                 key_passphrase: None,
                 domain: connection.domain.clone(),
             };
@@ -595,7 +598,7 @@ fn cmd_secret_set(
             let backend = PassboltBackend::new();
             let creds = Credentials {
                 username: Some(username_value.clone()),
-                password: Some(secrecy::SecretString::from(password_value)),
+                password: Some(password_value.clone()),
                 key_passphrase: None,
                 domain: connection.domain.clone(),
             };
@@ -621,7 +624,7 @@ fn cmd_secret_set(
             let backend = create_pass_backend(&settings);
             let creds = Credentials {
                 username: Some(username_value.clone()),
-                password: Some(secrecy::SecretString::from(password_value)),
+                password: Some(password_value.clone()),
                 key_passphrase: None,
                 domain: connection.domain.clone(),
             };

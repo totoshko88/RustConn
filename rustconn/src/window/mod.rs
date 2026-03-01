@@ -676,7 +676,7 @@ impl MainWindow {
                         if let Some(win) = window_weak.upgrade() {
                             crate::toast::show_toast_on_window(
                                 &win,
-                                "Item restored",
+                                &crate::i18n::i18n("Item restored"),
                                 crate::toast::ToastType::Success,
                             );
                         }
@@ -754,14 +754,16 @@ impl MainWindow {
                             "WoL packet sent for connection {}",
                             id_for_cb,
                         );
-                        toast_for_cb.show_success(&format!("Wake On LAN sent to {mac_for_cb}"));
+                        toast_for_cb.show_success(&crate::i18n::i18n_f(
+                            "Wake On LAN sent to {}",
+                            &[&mac_for_cb],
+                        ));
                     }
                     Err(e) => {
                         tracing::error!(?e, "Failed to send WoL for connection {}", id_for_cb,);
-                        toast_for_cb.show_error(
-                            "Failed to send Wake On LAN packet. \
-                             Check network permissions.",
-                        );
+                        toast_for_cb.show_error(&crate::i18n::i18n(
+                            "Failed to send Wake On LAN packet. Check network permissions.",
+                        ));
                     }
                 },
             );
@@ -816,7 +818,9 @@ impl MainWindow {
                 drop(state_ref);
 
                 let Some(mc_args) = mc_cmd else {
-                    toast_clone.show_warning("SFTP is only available for SSH connections.");
+                    toast_clone.show_warning(&crate::i18n::i18n(
+                        "SFTP is only available for SSH connections.",
+                    ));
                     return;
                 };
 
@@ -871,11 +875,13 @@ impl MainWindow {
                     .status()
                     .map_or(true, |s| !s.success())
                 {
-                    toast_clone.show_error("Midnight Commander (mc) is not installed.");
+                    toast_clone.show_error(&crate::i18n::i18n(
+                        "Midnight Commander (mc) is not installed.",
+                    ));
                     return;
                 }
 
-                toast_clone.show_toast("Opening mc SFTP...");
+                toast_clone.show_toast(&crate::i18n::i18n("Opening mc SFTP..."));
 
                 let tab_name = format!("mc: {conn_name}");
                 let session_id = notebook_clone.create_terminal_tab_with_settings(
@@ -900,14 +906,16 @@ impl MainWindow {
             } else {
                 // Open file manager with sftp:// URI
                 let Some(uri) = rustconn_core::sftp::build_sftp_uri_from_connection(conn) else {
-                    toast_clone.show_warning("SFTP is only available for SSH connections.");
+                    toast_clone.show_warning(&crate::i18n::i18n(
+                        "SFTP is only available for SSH connections.",
+                    ));
                     drop(state_ref);
                     return;
                 };
                 drop(state_ref);
 
                 tracing::info!(%uri, "Opening SFTP file browser");
-                toast_clone.show_toast("Opening SFTP...");
+                toast_clone.show_toast(&crate::i18n::i18n("Opening SFTP..."));
 
                 // Add SSH key to agent in background, then open URI
                 let toast_cb = toast_clone.clone();
@@ -2101,7 +2109,7 @@ impl MainWindow {
                     if let Some(win) = window_weak_h.upgrade() {
                         crate::toast::show_toast_on_window(
                             &win,
-                            "Split view is only available for SSH and Local Shell tabs",
+                            &crate::i18n::i18n("Split view is only available for SSH and Local Shell tabs"),
                             crate::toast::ToastType::Warning,
                         );
                     }
@@ -2367,7 +2375,7 @@ impl MainWindow {
                     if let Some(win) = window_weak_v.upgrade() {
                         crate::toast::show_toast_on_window(
                             &win,
-                            "Split view is only available for SSH and Local Shell tabs",
+                            &crate::i18n::i18n("Split view is only available for SSH and Local Shell tabs"),
                             crate::toast::ToastType::Warning,
                         );
                     }
@@ -3066,7 +3074,9 @@ impl MainWindow {
                 // Persist to settings
                 if let Ok(mut state_mut) = state_for_history.try_borrow_mut() {
                     state_mut.settings_mut().ui.add_search_history(&query);
-                    let _ = state_mut.save_settings();
+                    if let Err(e) = state_mut.save_settings() {
+                        tracing::warn!(?e, "Failed to save settings");
+                    }
                 }
             }
         });
@@ -3084,7 +3094,9 @@ impl MainWindow {
                         // Persist to settings
                         if let Ok(mut state_mut) = state_for_focus.try_borrow_mut() {
                             state_mut.settings_mut().ui.add_search_history(&query);
-                            let _ = state_mut.save_settings();
+                            if let Err(e) = state_mut.save_settings() {
+                                tracing::warn!(?e, "Failed to save settings");
+                            }
                         }
                     }
                 }
@@ -3223,14 +3235,18 @@ impl MainWindow {
 
             if let Ok(mut state) = state_clone.try_borrow_mut() {
                 // Update expanded groups
-                let _ = state.update_expanded_groups(expanded);
+                if let Err(e) = state.update_expanded_groups(expanded) {
+                    tracing::warn!(?e, "Failed to update expanded groups");
+                }
 
                 let mut settings = state.settings().clone();
                 if settings.ui.remember_window_geometry {
                     settings.ui.window_width = Some(width);
                     settings.ui.window_height = Some(height);
                     settings.ui.sidebar_width = Some(sidebar_width);
-                    let _ = state.update_settings(settings.clone());
+                    if let Err(e) = state.update_settings(settings.clone()) {
+                        tracing::warn!(?e, "Failed to update settings");
+                    }
                 }
 
                 // Check if we should minimize to tray instead of closing
@@ -4524,9 +4540,8 @@ impl MainWindow {
 
             // Update session status in state manager
             // This also closes the session logger and finalizes the log file
-            if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
-                let _ = state_mut.terminate_session(session_id);
-            }
+            if let Ok(mut state_mut) = state_clone.try_borrow_mut()
+                && let Err(e) = state_mut.terminate_session(session_id) { tracing::warn!(?e, %session_id, "Failed to terminate session"); }
 
             // Check if session still exists in notebook
             // If it doesn't, the tab was closed by user
@@ -5178,8 +5193,10 @@ impl MainWindow {
     #[allow(dead_code)]
     pub fn save_expanded_groups(&self) {
         let expanded = self.sidebar.get_expanded_groups();
-        if let Ok(mut state) = self.state.try_borrow_mut() {
-            let _ = state.update_expanded_groups(expanded);
+        if let Ok(mut state) = self.state.try_borrow_mut()
+            && let Err(e) = state.update_expanded_groups(expanded)
+        {
+            tracing::warn!(?e, "Failed to update expanded groups");
         }
     }
 

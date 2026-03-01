@@ -24,11 +24,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Group rename/move breaks vault passwords** — Renaming or moving a group now migrates all KeePass entries (group credentials + descendant connection credentials) to the new hierarchical paths; previously only individual connection moves were handled.
 - **Monitoring starts before SSH connection established** — Remote monitoring now waits for the SSH session to actually connect before opening its own SSH channel; previously it started immediately and failed with "Connection timed out" while the primary connection was still in handshake.
 
+### Security
+- **RDP/SPICE event credentials** — `Authenticate` event variants in RDP and SPICE clients now use `SecretString` instead of plain `String`; credentials are zeroized on drop
+- **Variable zeroize on Drop** — `Variable` struct now implements `Drop` to zeroize secret values (`is_secret == true`) when they go out of scope
+- **GUI credential structs** — `VncConfig.password`, `DocumentDialogResult`, `QuickConnectParams.password`, and `start_monitoring()` password parameter migrated to `SecretString`
+- **CLI secret input** — `rpassword::read_password()` result is now converted to `SecretString` immediately, eliminating plain `String` intermediate
+
 ### Changed
 - **Backend dispatch consolidation** — replaced ~200 lines of duplicated `match backend_type` blocks with a single `dispatch_vault_op()` helper and `VaultOp` enum
 - **Inherit resolution deduplication** — non-KeePass Inherit branch in `resolve_credentials_blocking()` now uses `dispatch_vault_op()` with cross-reference comments to `CredentialResolver::resolve_inherited_credentials()`
 - **Backend migration logging** — `SecretManager::rebuild_from_settings()` now logs old/new backend counts and clears the credential cache on backend change
 - **Legacy credentials documented** — `move_connection_to_group()` documents that `PasswordSource::None` connections with legacy credentials are not migrated as a known limitation
+- **Mutex lock safety** — ~50 `unwrap()` calls on `Mutex::lock()` in the performance module replaced with `lock_or_log()` helper that logs poisoned mutex errors and returns `Option<MutexGuard>`
+- **Silently ignored errors** — `let _ =` on state persistence operations (`save_settings`, `update_expanded_groups`, `terminate_session`) replaced with `if let Err(e)` + `tracing::warn!` across `window/mod.rs`, `snippets.rs`, `document_actions.rs`, `rdp_vnc.rs`
+- **CSS extraction** — 595-line inline CSS string literal moved from `app.rs` to `rustconn/assets/style.css`, loaded via `include_str!`
+- **i18n consistency** — replaced `gettext()` calls with `i18n()` in keybindings settings tab; wrapped 8 hardcoded English toast strings in `window/mod.rs` with `i18n()` / `i18n_f()`
+- **CI test coverage** — added `--all-features` to `test`, `test-core`, and `property-tests` CI jobs to ensure feature-gated code (RDP/VNC/SPICE) is tested
+
+### Removed
+- **Dead code cleanup** — removed `StateAccessError` enum and 4 unused state accessor functions from `state.rs`; removed `create_automation_tab()` and `create_tasks_tab()` legacy functions from connection dialog; removed ~30 unused sidebar methods (lazy loading wrappers, selection state wrappers, document API, widget accessors, protocol filters)
+
+### Improved
+- **`eprintln!` migration** — replaced remaining `eprintln!` in `app.rs` with `tracing::error!`
+- **Collapsible if cleanup** — 18 `collapsible_if` patterns auto-fixed across performance, protocols, RDP/VNC, sessions, snippets, and window modules
+- **Documentation** — updated `ARCHITECTURE.md` version to 0.9.5 / March 2026
 
 ## [0.9.4] - 2026-03-01
 

@@ -13,6 +13,7 @@ pub use manager::VariableManager;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
+use zeroize::Zeroize;
 
 /// Maximum depth for nested variable resolution
 pub const MAX_NESTING_DEPTH: usize = 10;
@@ -26,12 +27,25 @@ pub struct Variable {
     /// The variable name (used in `${name}` references)
     pub name: String,
     /// The variable value.
-    /// TODO: For `is_secret == true`, consider using `SecretString` or zeroize on Drop.
+    ///
+    /// When `is_secret` is `true`, this value is zeroized on drop to prevent
+    /// credential leakage in memory. A full migration to `SecretString` is not
+    /// feasible here because `Variable` must remain `Serialize + Deserialize`
+    /// for settings persistence, and `SecretString` intentionally blocks
+    /// serialization. The `Drop` impl below ensures secret values are scrubbed.
     pub value: String,
     /// Whether this variable contains sensitive data
     pub is_secret: bool,
     /// Optional description for documentation
     pub description: Option<String>,
+}
+
+impl Drop for Variable {
+    fn drop(&mut self) {
+        if self.is_secret {
+            self.value.zeroize();
+        }
+    }
 }
 
 impl Variable {

@@ -286,8 +286,10 @@ fn start_ssh_connection_internal(
         };
 
     // Update last_connected timestamp
-    if let Ok(mut state_mut) = state.try_borrow_mut() {
-        let _ = state_mut.update_last_connected(connection_id);
+    if let Ok(mut state_mut) = state.try_borrow_mut()
+        && let Err(e) = state_mut.update_last_connected(connection_id)
+    {
+        tracing::warn!(?e, "Failed to update last_connected");
     }
 
     // Set up session logging if enabled
@@ -577,8 +579,10 @@ fn start_vnc_connection_internal(
     }
 
     // Update last_connected timestamp
-    if let Ok(mut state_mut) = state.try_borrow_mut() {
-        let _ = state_mut.update_last_connected(connection_id);
+    if let Ok(mut state_mut) = state.try_borrow_mut()
+        && let Err(e) = state_mut.update_last_connected(connection_id)
+    {
+        tracing::warn!(?e, "Failed to update last_connected");
     }
 
     Some(session_id)
@@ -759,8 +763,10 @@ fn start_spice_connection_internal(
     }
 
     // Update last_connected timestamp
-    if let Ok(mut state_mut) = state.try_borrow_mut() {
-        let _ = state_mut.update_last_connected(connection_id);
+    if let Ok(mut state_mut) = state.try_borrow_mut()
+        && let Err(e) = state_mut.update_last_connected(connection_id)
+    {
+        tracing::warn!(?e, "Failed to update last_connected");
     }
 
     Some(session_id)
@@ -909,8 +915,10 @@ fn start_telnet_connection_internal(
         };
 
     // Update last_connected timestamp
-    if let Ok(mut state_mut) = state.try_borrow_mut() {
-        let _ = state_mut.update_last_connected(connection_id);
+    if let Ok(mut state_mut) = state.try_borrow_mut()
+        && let Err(e) = state_mut.update_last_connected(connection_id)
+    {
+        tracing::warn!(?e, "Failed to update last_connected");
     }
 
     // Set up session logging if enabled
@@ -1073,8 +1081,10 @@ pub fn start_zerotrust_connection(
     }
 
     // Update last_connected timestamp
-    if let Ok(mut state_mut) = state.try_borrow_mut() {
-        let _ = state_mut.update_last_connected(connection_id);
+    if let Ok(mut state_mut) = state.try_borrow_mut()
+        && let Err(e) = state_mut.update_last_connected(connection_id)
+    {
+        tracing::warn!(?e, "Failed to update last_connected");
     }
 
     // Set up session logging if enabled
@@ -1186,8 +1196,10 @@ pub fn start_serial_connection(
     }
 
     // Update last_connected timestamp
-    if let Ok(mut state_mut) = state.try_borrow_mut() {
-        let _ = state_mut.update_last_connected(connection_id);
+    if let Ok(mut state_mut) = state.try_borrow_mut()
+        && let Err(e) = state_mut.update_last_connected(connection_id)
+    {
+        tracing::warn!(?e, "Failed to update last_connected");
     }
 
     // Set up session logging if enabled
@@ -1310,8 +1322,10 @@ pub fn start_kubernetes_connection(
     }
 
     // Update last_connected timestamp
-    if let Ok(mut state_mut) = state.try_borrow_mut() {
-        let _ = state_mut.update_last_connected(connection_id);
+    if let Ok(mut state_mut) = state.try_borrow_mut()
+        && let Err(e) = state_mut.update_last_connected(connection_id)
+    {
+        tracing::warn!(?e, "Failed to update last_connected");
     }
 
     // Set up session logging if enabled

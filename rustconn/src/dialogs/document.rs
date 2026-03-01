@@ -10,6 +10,7 @@ use gtk4::{
     Box as GtkBox, CheckButton, Entry, FileDialog, FileFilter, Label, Orientation, PasswordEntry,
 };
 use libadwaita as adw;
+use secrecy::SecretString;
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -24,18 +25,18 @@ pub enum DocumentDialogResult {
     /// Create a new document
     Create {
         name: String,
-        password: Option<String>,
+        password: Option<SecretString>,
     },
     /// Open an existing document
     Open {
         path: PathBuf,
-        password: Option<String>,
+        password: Option<SecretString>,
     },
     /// Save document
     Save {
         id: Uuid,
         path: PathBuf,
-        password: Option<String>,
+        password: Option<SecretString>,
     },
     /// Close document (with save prompt result)
     Close { id: Uuid, save: bool },
@@ -206,7 +207,7 @@ impl NewDocumentDialog {
         create_btn.connect_clicked(move |_| {
             let name = name_entry_clone.text().to_string();
             let password = if password_check_clone.is_active() {
-                Some(password_entry_clone.text().to_string())
+                Some(SecretString::from(password_entry_clone.text().to_string()))
             } else {
                 None
             };
@@ -373,7 +374,7 @@ impl OpenDocumentDialog {
         let window_clone = window.clone();
         let path_clone = path;
         open_btn.connect_clicked(move |_| {
-            let password = password_entry.text().to_string();
+            let password = SecretString::from(password_entry.text().to_string());
             if let Some(ref cb) = *on_complete.borrow() {
                 cb(Some(DocumentDialogResult::Open {
                     path: path_clone.clone(),
@@ -685,7 +686,7 @@ impl DocumentProtectionDialog {
         let doc_id_clone = doc_id.clone();
         apply_btn.connect_clicked(move |_| {
             let password = if enable_check_clone.is_active() {
-                Some(password_entry_clone.text().to_string())
+                Some(SecretString::from(password_entry_clone.text().to_string()))
             } else {
                 None
             };

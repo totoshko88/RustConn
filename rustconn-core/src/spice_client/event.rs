@@ -254,8 +254,8 @@ pub enum SpiceClientCommand {
 
     /// Provide authentication credentials
     Authenticate {
-        /// Password
-        password: String,
+        /// Password (stored securely, zeroized on drop)
+        password: secrecy::SecretString,
     },
 
     /// Enable/disable USB redirection

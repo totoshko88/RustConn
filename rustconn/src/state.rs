@@ -15,10 +15,7 @@ use rustconn_core::models::{
     Connection, ConnectionGroup, ConnectionHistoryEntry, ConnectionStatistics, Credentials,
     PasswordSource, Snippet,
 };
-use rustconn_core::secret::{
-    AsyncCredentialResolver, AsyncCredentialResult, CancellationToken, CredentialResolver,
-    SecretManager,
-};
+use rustconn_core::secret::{AsyncCredentialResolver, CredentialResolver, SecretManager};
 use rustconn_core::session::{Session, SessionManager};
 use rustconn_core::snippet::SnippetManager;
 use rustconn_core::template::TemplateManager;
@@ -28,7 +25,6 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::Arc;
-use std::time::Duration;
 use uuid::Uuid;
 
 /// Internal clipboard for connection copy/paste operations
@@ -102,13 +98,6 @@ impl ConnectionClipboard {
     #[must_use]
     pub fn original_connection(&self) -> Option<&Connection> {
         self.connection.as_ref()
-    }
-
-    /// Clears the clipboard
-    #[allow(dead_code)] // May be used in future for clipboard management
-    pub fn clear(&mut self) {
-        self.connection = None;
-        self.source_group = None;
     }
 }
 
@@ -836,26 +825,6 @@ impl AppState {
 
     // ========== Session Operations ==========
 
-    /// Starts a session for a connection
-    ///
-    /// Note: Part of session management API.
-    #[allow(dead_code)]
-    pub fn start_session(
-        &mut self,
-        connection_id: Uuid,
-        _credentials: Option<&Credentials>,
-    ) -> Result<Uuid, String> {
-        let connection = self
-            .connection_manager
-            .get_connection(connection_id)
-            .ok_or_else(|| format!("Connection not found: {connection_id}"))?
-            .clone();
-
-        self.session_manager
-            .start_session(&connection)
-            .map_err(|e| format!("Failed to start session: {e}"))
-    }
-
     /// Terminates a session
     pub fn terminate_session(&mut self, session_id: Uuid) -> Result<(), String> {
         self.session_manager
@@ -863,33 +832,9 @@ impl AppState {
             .map_err(|e| format!("Failed to terminate session: {e}"))
     }
 
-    /// Gets a session by ID
-    ///
-    /// Note: Part of session management API.
-    #[allow(dead_code)]
-    pub fn get_session(&self, session_id: Uuid) -> Option<&Session> {
-        self.session_manager.get_session(session_id)
-    }
-
     /// Gets active sessions
     pub fn active_sessions(&self) -> Vec<&Session> {
         self.session_manager.active_sessions()
-    }
-
-    /// Gets the session manager (for building commands)
-    ///
-    /// Note: Part of session management API.
-    #[allow(dead_code)]
-    pub const fn session_manager(&self) -> &SessionManager {
-        &self.session_manager
-    }
-
-    /// Gets mutable session manager
-    ///
-    /// Note: Part of session management API.
-    #[allow(dead_code)]
-    pub fn session_manager_mut(&mut self) -> &mut SessionManager {
-        &mut self.session_manager
     }
 
     // ========== Snippet Operations ==========
@@ -932,26 +877,9 @@ impl AppState {
 
     // ========== Secret/Credential Operations ==========
 
-    /// Gets a reference to the secret manager
-    ///
-    /// Note: Part of secret management API.
-    #[allow(dead_code)]
-    pub const fn secret_manager(&self) -> &SecretManager {
-        &self.secret_manager
-    }
-
-    /// Gets a mutable reference to the secret manager
-    ///
-    /// Note: Part of secret management API.
-    #[allow(dead_code)]
-    pub fn secret_manager_mut(&mut self) -> &mut SecretManager {
-        &mut self.secret_manager
-    }
-
     /// Checks if any secret backend is available (uses cache if available)
     ///
-    /// Note: Used internally by resolve_credentials_blocking and should_prompt_for_credentials.
-    #[allow(dead_code)]
+    /// Used internally by `resolve_credentials_blocking` and `resolve_credentials_gtk`.
     pub fn has_secret_backend(&self) -> bool {
         if let Some(cached) = self.secret_backend_available {
             return cached;
@@ -974,293 +902,6 @@ impl AppState {
         );
     }
 
-    /// Resolves credentials for a connection using the credential resolution chain
-    ///
-    /// This method implements the credential resolution flow based on the connection's
-    /// `password_source` setting:
-    /// - `PasswordSource::KeePass` - Try `KeePass` first, fallback if enabled
-    /// - `PasswordSource::Keyring` - Try system keyring (libsecret)
-    /// - `PasswordSource::Bitwarden` - Try Bitwarden vault
-    /// - `PasswordSource::Prompt` - Return None (caller prompts user)
-    /// - `PasswordSource::None` - Try fallback chain if enabled
-    ///
-    /// # Returns
-    /// - `Ok(Some(Credentials))` - Credentials found from a backend
-    /// - `Ok(None)` - No credentials found, caller should prompt user
-    /// - `Err(String)` - Error during resolution
-    ///
-    /// Note: This is a blocking method. Prefer `resolve_credentials_gtk` for GUI code.
-    #[allow(dead_code)]
-    pub fn resolve_credentials(
-        &self,
-        connection: &Connection,
-    ) -> Result<Option<Credentials>, String> {
-        use rustconn_core::secret::{KeePassHierarchy, KeePassStatus};
-        use secrecy::ExposeSecret;
-
-        let groups: Vec<ConnectionGroup> = self
-            .connection_manager
-            .list_groups()
-            .iter()
-            .cloned()
-            .cloned()
-            .collect();
-
-        // For Variable password source — resolve directly via vault backend
-        if let PasswordSource::Variable(ref var_name) = connection.password_source {
-            tracing::debug!(
-                var_name,
-                "[resolve_credentials] Resolving variable password"
-            );
-            match load_variable_from_vault(&self.settings.secrets, var_name) {
-                Ok(Some(password)) => {
-                    tracing::debug!(var_name, "[resolve_credentials] Variable resolved");
-                    let creds = if let Some(ref username) = connection.username {
-                        Credentials::with_password(username, &password)
-                    } else {
-                        Credentials {
-                            username: None,
-                            password: Some(secrecy::SecretString::from(password)),
-                            key_passphrase: None,
-                            domain: None,
-                        }
-                    };
-                    return Ok(Some(creds));
-                }
-                Ok(None) => {
-                    tracing::warn!(
-                        var_name,
-                        "[resolve_credentials] No secret found for variable"
-                    );
-                }
-                Err(e) => {
-                    tracing::error!(
-                        var_name,
-                        error = %e,
-                        "[resolve_credentials] Failed to load variable from vault"
-                    );
-                }
-            }
-        }
-
-        // For Vault password source with KeePass backend, directly use
-        // KeePassStatus to retrieve password. This bypasses the
-        // SecretManager which requires registered backends.
-        if connection.password_source == PasswordSource::Vault
-            && self.settings.secrets.kdbx_enabled
-            && matches!(
-                self.settings.secrets.preferred_backend,
-                rustconn_core::config::SecretBackendType::KeePassXc
-                    | rustconn_core::config::SecretBackendType::KdbxFile
-            )
-            && let Some(ref kdbx_path) = self.settings.secrets.kdbx_path
-        {
-            // Build hierarchical entry path using KeePassHierarchy
-            // This matches how passwords are saved with group structure
-            let entry_path = KeePassHierarchy::build_entry_path(connection, &groups);
-
-            // Add protocol suffix for uniqueness
-            let protocol = connection.protocol_config.protocol_type();
-            let protocol_str = protocol.as_str();
-
-            // Strip RustConn/ prefix since get_password_from_kdbx_with_key adds it back
-            let entry_name = entry_path.strip_prefix("RustConn/").unwrap_or(&entry_path);
-            let lookup_key = format!("{entry_name} ({protocol_str})");
-
-            // Get credentials - password and key file can be used together
-            let db_password = self.settings.secrets.kdbx_password.as_ref();
-
-            let key_file = self.settings.secrets.kdbx_key_file.as_deref();
-
-            tracing::debug!(
-                "[resolve_credentials] KeePass lookup: key='{}', has_password={}, has_key_file={}",
-                lookup_key,
-                db_password.is_some(),
-                key_file.is_some()
-            );
-
-            match KeePassStatus::get_password_from_kdbx_with_key(
-                kdbx_path,
-                db_password,
-                key_file,
-                &lookup_key,
-                None, // Protocol already included in lookup_key
-            ) {
-                Ok(Some(password)) => {
-                    tracing::debug!("[resolve_credentials] Found password in KeePass");
-                    // Build credentials with optional username and password
-                    let mut creds = if let Some(ref username) = connection.username {
-                        Credentials::with_password(username, password.expose_secret())
-                    } else {
-                        Credentials {
-                            username: None,
-                            password: Some(password),
-                            key_passphrase: None,
-                            domain: None,
-                        }
-                    };
-                    // Preserve key_passphrase if needed
-                    creds.key_passphrase = None;
-                    return Ok(Some(creds));
-                }
-                Ok(None) => {
-                    tracing::debug!("[resolve_credentials] No password found in KeePass");
-                }
-                Err(e) => {
-                    tracing::error!("[resolve_credentials] KeePass error: {}", e);
-                }
-            }
-        }
-
-        // For Inherit password source, traverse parent groups to find credentials
-        if connection.password_source == PasswordSource::Inherit
-            && self.settings.secrets.kdbx_enabled
-            && matches!(
-                self.settings.secrets.preferred_backend,
-                rustconn_core::config::SecretBackendType::KeePassXc
-                    | rustconn_core::config::SecretBackendType::KdbxFile
-            )
-            && let Some(ref kdbx_path) = self.settings.secrets.kdbx_path
-        {
-            let db_password = self.settings.secrets.kdbx_password.as_ref();
-            let key_file = self.settings.secrets.kdbx_key_file.as_deref();
-
-            // Traverse up the group hierarchy
-            let mut current_group_id = connection.group_id;
-            while let Some(group_id) = current_group_id {
-                let Some(group) = groups.iter().find(|g| g.id == group_id) else {
-                    break;
-                };
-
-                // Check if this group has Vault credentials configured
-                if group.password_source == Some(PasswordSource::Vault) {
-                    let group_path = KeePassHierarchy::build_group_entry_path(group, &groups);
-
-                    tracing::debug!(
-                        "[resolve_credentials] Inherit: checking group '{}' at path '{}'",
-                        group.name,
-                        group_path
-                    );
-
-                    match KeePassStatus::get_password_from_kdbx_with_key(
-                        kdbx_path,
-                        db_password,
-                        key_file,
-                        &group_path,
-                        None,
-                    ) {
-                        Ok(Some(password)) => {
-                            tracing::debug!(
-                                "[resolve_credentials] Found inherited password from group '{}'",
-                                group.name
-                            );
-                            let username = connection
-                                .username
-                                .clone()
-                                .or_else(|| group.username.clone());
-                            let creds = if let Some(ref uname) = username {
-                                Credentials::with_password(uname, password.expose_secret())
-                            } else {
-                                Credentials {
-                                    username: None,
-                                    password: Some(password),
-                                    key_passphrase: None,
-                                    domain: None,
-                                }
-                            };
-                            return Ok(Some(creds));
-                        }
-                        Ok(None) => {
-                            tracing::debug!(
-                                "[resolve_credentials] No password in group '{}'",
-                                group.name
-                            );
-                        }
-                        Err(e) => {
-                            tracing::warn!(
-                                "[resolve_credentials] KeePass error for group '{}': {}",
-                                group.name,
-                                e
-                            );
-                        }
-                    }
-                } else if group.password_source == Some(PasswordSource::Inherit) {
-                }
-
-                current_group_id = group.parent_id;
-            }
-
-            tracing::debug!(
-                "[resolve_credentials] No inherited credentials found in group hierarchy"
-            );
-        }
-
-        // Fall back to the standard resolver for other password sources
-        let secret_manager = self.secret_manager.clone();
-        let resolver =
-            CredentialResolver::new(Arc::new(secret_manager), self.settings.secrets.clone());
-        let connection = connection.clone();
-
-        with_runtime(|rt| {
-            rt.block_on(async {
-                resolver
-                    .resolve_with_hierarchy(&connection, &groups)
-                    .await
-                    .map_err(|e| format!("Failed to resolve credentials: {e}"))
-            })
-        })?
-    }
-
-    /// Resolves credentials for a connection by ID
-    ///
-    /// Convenience method that looks up the connection and resolves credentials.
-    ///
-    /// Note: This is a blocking method. Prefer `resolve_credentials_gtk` for GUI code.
-    #[allow(dead_code)]
-    pub fn resolve_credentials_for_connection(
-        &self,
-        connection_id: Uuid,
-    ) -> Result<Option<Credentials>, String> {
-        let connection = self
-            .get_connection(connection_id)
-            .ok_or_else(|| format!("Connection not found: {connection_id}"))?
-            .clone();
-
-        self.resolve_credentials(&connection)
-    }
-
-    /// Determines if credentials should be prompted for a connection
-    ///
-    /// Returns `true` if the connection's password source requires user input
-    /// and no credentials are available from other sources.
-    ///
-    /// Note: Part of credential resolution API - used internally.
-    #[allow(dead_code)]
-    pub fn should_prompt_for_credentials(&self, connection: &Connection) -> bool {
-        match connection.password_source {
-            PasswordSource::Prompt => true,
-            PasswordSource::None => {
-                // Check if fallback is enabled and backends are available
-                !self.settings.secrets.enable_fallback || !self.has_secret_backend()
-            }
-            PasswordSource::Vault => {
-                // Check if the configured backend is available
-                match self.settings.secrets.preferred_backend {
-                    rustconn_core::config::SecretBackendType::KeePassXc
-                    | rustconn_core::config::SecretBackendType::KdbxFile => {
-                        !self.settings.secrets.kdbx_enabled
-                    }
-                    rustconn_core::config::SecretBackendType::LibSecret => {
-                        !self.has_secret_backend()
-                    }
-                    _ => false, // Bitwarden/1Password/Passbolt handle auth
-                }
-            }
-            PasswordSource::Variable(_) => false, // Resolved from vault
-            PasswordSource::Inherit => false,
-        }
-    }
-
     // ========== Async Credential Operations ==========
 
     /// Creates an async credential resolver for non-blocking credential resolution
@@ -1276,131 +917,6 @@ impl AppState {
             Arc::new(SecretManager::empty()),
             self.settings.secrets.clone(),
         )
-    }
-
-    /// Resolves credentials asynchronously without blocking the UI
-    ///
-    /// This method spawns an async task to resolve credentials and returns
-    /// immediately. The result is delivered via the provided callback.
-    ///
-    /// # Arguments
-    /// * `connection` - The connection to resolve credentials for
-    /// * `callback` - Function called with the result when resolution completes
-    ///
-    /// # Returns
-    /// A `CancellationToken` that can be used to cancel the operation
-    ///
-    /// # Requirements Coverage
-    /// - Requirement 9.1: Async operations instead of blocking calls
-    /// - Requirement 9.2: Avoid `block_on()` in GUI code
-    ///
-    /// Note: Part of async credential resolution API.
-    #[allow(dead_code)]
-    pub fn resolve_credentials_with_callback<F>(
-        &self,
-        connection: Connection,
-        callback: F,
-    ) -> CancellationToken
-    where
-        F: FnOnce(AsyncCredentialResult) + Send + 'static,
-    {
-        let resolver = Arc::new(self.create_async_resolver());
-        rustconn_core::resolve_with_callback(resolver, connection, callback)
-    }
-
-    /// Resolves credentials asynchronously with timeout
-    ///
-    /// This method spawns an async task to resolve credentials with a timeout.
-    /// The result is delivered via the provided callback.
-    ///
-    /// # Arguments
-    /// * `connection` - The connection to resolve credentials for
-    /// * `timeout` - Maximum time to wait for resolution
-    /// * `callback` - Function called with the result when resolution completes
-    ///
-    /// # Returns
-    /// A `CancellationToken` that can be used to cancel the operation
-    ///
-    /// # Requirements Coverage
-    /// - Requirement 9.1: Async operations instead of blocking calls
-    /// - Requirement 9.5: Support cancellation of pending requests
-    ///
-    /// Note: Part of async credential resolution API.
-    #[allow(dead_code)]
-    pub fn resolve_credentials_with_timeout<F>(
-        &self,
-        connection: Connection,
-        timeout: Duration,
-        callback: F,
-    ) -> CancellationToken
-    where
-        F: FnOnce(AsyncCredentialResult) + Send + 'static,
-    {
-        let resolver = Arc::new(self.create_async_resolver());
-        let cancel_token = CancellationToken::new();
-        let token_clone = cancel_token.clone();
-
-        tokio::spawn(async move {
-            let result = resolver
-                .resolve_with_cancellation_and_timeout(&connection, &token_clone, timeout)
-                .await;
-            callback(result);
-        });
-
-        cancel_token
-    }
-
-    /// Resolves credentials asynchronously and returns a future
-    ///
-    /// This method is for use in async contexts where you want to await
-    /// the result directly rather than using a callback.
-    ///
-    /// # Arguments
-    /// * `connection` - The connection to resolve credentials for
-    ///
-    /// # Returns
-    /// A `PendingCredentialResolution` that can be awaited or cancelled
-    ///
-    /// # Requirements Coverage
-    /// - Requirement 9.1: Async operations instead of blocking calls
-    /// - Requirement 9.5: Support cancellation of pending requests
-    ///
-    /// Note: Part of async credential resolution API.
-    #[allow(dead_code)]
-    pub fn resolve_credentials_async(
-        &self,
-        connection: Connection,
-    ) -> rustconn_core::PendingCredentialResolution {
-        let resolver = Arc::new(self.create_async_resolver());
-        rustconn_core::spawn_credential_resolution(resolver, connection, None)
-    }
-
-    /// Resolves credentials asynchronously with timeout and returns a future
-    ///
-    /// # Arguments
-    /// * `connection` - The connection to resolve credentials for
-    /// * `timeout` - Maximum time to wait for resolution
-    ///
-    /// # Returns
-    /// A `PendingCredentialResolution` that can be awaited or cancelled
-    ///
-    /// Note: Part of async credential resolution API.
-    #[allow(dead_code)]
-    pub fn resolve_credentials_async_with_timeout(
-        &self,
-        connection: Connection,
-        timeout: Duration,
-    ) -> rustconn_core::PendingCredentialResolution {
-        let resolver = Arc::new(self.create_async_resolver());
-        rustconn_core::spawn_credential_resolution(resolver, connection, Some(timeout))
-    }
-
-    /// Checks if `KeePass` integration is currently active
-    ///
-    /// Note: Part of KeePass integration API.
-    #[allow(dead_code)]
-    pub const fn is_keepass_active(&self) -> bool {
-        self.settings.secrets.kdbx_enabled && self.settings.secrets.kdbx_path.is_some()
     }
 
     // ========== GTK-Friendly Async Credential Operations ==========
@@ -2221,57 +1737,9 @@ impl AppState {
         self.document_manager.get(id)
     }
 
-    /// Gets a mutable reference to a document by ID
-    ///
-    /// Note: Part of document management API.
-    #[allow(dead_code)]
-    pub fn get_document_mut(&mut self, id: Uuid) -> Option<&mut Document> {
-        self.document_manager.get_mut(id)
-    }
-
-    /// Lists all document IDs
-    ///
-    /// Note: Part of document management API.
-    #[allow(dead_code)]
-    pub fn list_document_ids(&self) -> Vec<Uuid> {
-        self.document_manager.document_ids()
-    }
-
-    /// Returns the number of loaded documents
-    ///
-    /// Note: Part of document management API.
-    #[allow(dead_code)]
-    pub fn document_count(&self) -> usize {
-        self.document_manager.document_count()
-    }
-
     /// Returns true if the document has unsaved changes
     pub fn is_document_dirty(&self, id: Uuid) -> bool {
         self.document_manager.is_dirty(id)
-    }
-
-    /// Marks a document as dirty
-    ///
-    /// Note: Part of document management API.
-    #[allow(dead_code)]
-    pub fn mark_document_dirty(&mut self, id: Uuid) {
-        self.document_manager.mark_dirty(id);
-    }
-
-    /// Returns true if any document has unsaved changes
-    ///
-    /// Note: Part of document management API.
-    #[allow(dead_code)]
-    pub fn has_dirty_documents(&self) -> bool {
-        self.document_manager.has_dirty_documents()
-    }
-
-    /// Returns IDs of all dirty documents
-    ///
-    /// Note: Part of document management API.
-    #[allow(dead_code)]
-    pub fn dirty_document_ids(&self) -> Vec<Uuid> {
-        self.document_manager.dirty_document_ids()
     }
 
     /// Gets the file path for a document if it has been saved
@@ -2282,14 +1750,6 @@ impl AppState {
     /// Gets the currently active document ID
     pub const fn active_document_id(&self) -> Option<Uuid> {
         self.active_document_id
-    }
-
-    /// Sets the active document
-    ///
-    /// Note: Part of document management API.
-    #[allow(dead_code)]
-    pub fn set_active_document(&mut self, id: Option<Uuid>) {
-        self.active_document_id = id;
     }
 
     /// Gets the currently active document
@@ -2320,39 +1780,7 @@ impl AppState {
             .map_err(|e| format!("Failed to import document: {e}"))
     }
 
-    /// Gets the document manager
-    ///
-    /// Note: Part of document management API.
-    #[allow(dead_code)]
-    pub const fn document_manager(&self) -> &DocumentManager {
-        &self.document_manager
-    }
-
-    /// Gets a mutable reference to the document manager
-    ///
-    /// Note: Part of document management API.
-    #[allow(dead_code)]
-    pub fn document_manager_mut(&mut self) -> &mut DocumentManager {
-        &mut self.document_manager
-    }
-
     // ========== Cluster Operations ==========
-
-    /// Gets the cluster manager
-    ///
-    /// Note: Part of cluster management API.
-    #[allow(dead_code)]
-    pub const fn cluster_manager(&self) -> &ClusterManager {
-        &self.cluster_manager
-    }
-
-    /// Gets a mutable reference to the cluster manager
-    ///
-    /// Note: Part of cluster management API.
-    #[allow(dead_code)]
-    pub fn cluster_manager_mut(&mut self) -> &mut ClusterManager {
-        &mut self.cluster_manager
-    }
 
     /// Creates a new cluster
     pub fn create_cluster(&mut self, cluster: Cluster) -> Result<Uuid, String> {
@@ -2525,31 +1953,6 @@ impl AppState {
         entry_id
     }
 
-    /// Adds a new history entry for a quick connect
-    #[allow(dead_code)]
-    pub fn record_quick_connect_start(
-        &mut self,
-        host: &str,
-        port: u16,
-        protocol: &str,
-        username: Option<&str>,
-    ) -> Uuid {
-        if !self.settings.history.track_quick_connect {
-            return Uuid::nil();
-        }
-        let entry = ConnectionHistoryEntry::new_quick_connect(
-            host.to_string(),
-            port,
-            protocol.to_string(),
-            username.map(String::from),
-        );
-        let entry_id = entry.id;
-        self.history_entries.push(entry);
-        self.trim_history();
-        let _ = self.save_history();
-        entry_id
-    }
-
     /// Marks a history entry as ended (successful)
     pub fn record_connection_end(&mut self, entry_id: Uuid) {
         if let Some(entry) = self.history_entries.iter_mut().find(|e| e.id == entry_id) {
@@ -2564,26 +1967,6 @@ impl AppState {
             entry.fail(error);
             let _ = self.save_history();
         }
-    }
-
-    /// Clears all history entries
-    #[allow(dead_code)]
-    pub fn clear_history(&mut self) {
-        self.history_entries.clear();
-        let _ = self.save_history();
-    }
-
-    /// Gets statistics for a specific connection
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn get_connection_statistics(&self, connection_id: Uuid) -> ConnectionStatistics {
-        let mut stats = ConnectionStatistics::new(connection_id);
-        for entry in &self.history_entries {
-            if entry.connection_id == connection_id {
-                stats.update_from_entry(entry);
-            }
-        }
-        stats
     }
 
     /// Gets statistics for all connections
@@ -2613,7 +1996,6 @@ impl AppState {
     }
 
     /// Trims history to max entries and retention period
-    #[allow(dead_code)]
     fn trim_history(&mut self) {
         let max_entries = self.settings.history.max_entries;
         let retention_days = self.settings.history.retention_days;
@@ -2638,22 +2020,6 @@ impl AppState {
     }
 
     // ========== Clipboard Operations ==========
-
-    /// Gets a reference to the connection clipboard
-    ///
-    /// Note: Part of clipboard API for connection copy/paste.
-    #[allow(dead_code)]
-    pub const fn clipboard(&self) -> &ConnectionClipboard {
-        &self.clipboard
-    }
-
-    /// Gets a mutable reference to the connection clipboard
-    ///
-    /// Note: Part of clipboard API for connection copy/paste.
-    #[allow(dead_code)]
-    pub fn clipboard_mut(&mut self) -> &mut ConnectionClipboard {
-        &mut self.clipboard
-    }
 
     /// Copies a connection to the clipboard
     ///
@@ -2736,120 +2102,6 @@ impl AppState {
     pub const fn has_clipboard_content(&self) -> bool {
         self.clipboard.has_content()
     }
-
-    // ========== Session Restore Operations ==========
-
-    /// Saves active sessions for later restoration
-    ///
-    /// This method collects information about currently active sessions
-    /// and stores them in settings for restoration on next startup.
-    ///
-    /// # Arguments
-    /// * `sessions` - List of active terminal sessions to save
-    ///
-    /// Note: Part of session restore API - called on app shutdown.
-    #[allow(dead_code)]
-    pub fn save_active_sessions(
-        &mut self,
-        sessions: &[crate::terminal::TerminalSession],
-    ) -> Result<(), String> {
-        use rustconn_core::config::SavedSession;
-
-        let now = Utc::now();
-        let saved: Vec<SavedSession> = sessions
-            .iter()
-            .filter_map(|session| {
-                // Get connection details
-                self.get_connection(session.connection_id)
-                    .map(|conn| SavedSession {
-                        connection_id: conn.id,
-                        connection_name: conn.name.clone(),
-                        protocol: session.protocol.clone(),
-                        host: conn.host.clone(),
-                        port: conn.port,
-                        saved_at: now,
-                    })
-            })
-            .collect();
-
-        self.settings.ui.session_restore.saved_sessions = saved;
-        self.config_manager
-            .save_settings(&self.settings)
-            .map_err(|e| format!("Failed to save session restore settings: {e}"))
-    }
-
-    /// Gets sessions that should be restored based on settings
-    ///
-    /// Filters saved sessions by max_age_hours and returns only those
-    /// whose connections still exist.
-    ///
-    /// # Returns
-    /// List of saved sessions that are eligible for restoration
-    ///
-    /// Note: Part of session restore API - called on app startup.
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn get_sessions_to_restore(&self) -> Vec<rustconn_core::config::SavedSession> {
-        if !self.settings.ui.session_restore.enabled {
-            return Vec::new();
-        }
-
-        let max_age = self.settings.ui.session_restore.max_age_hours;
-        let now = Utc::now();
-
-        self.settings
-            .ui
-            .session_restore
-            .saved_sessions
-            .iter()
-            .filter(|session| {
-                // Check if connection still exists
-                if self.get_connection(session.connection_id).is_none() {
-                    return false;
-                }
-
-                // Check age limit (0 = no limit)
-                if max_age > 0 {
-                    let age_hours = (now - session.saved_at).num_hours();
-                    if age_hours > i64::from(max_age) {
-                        return false;
-                    }
-                }
-
-                true
-            })
-            .cloned()
-            .collect()
-    }
-
-    /// Clears saved sessions
-    ///
-    /// Note: Part of session restore API.
-    #[allow(dead_code)]
-    pub fn clear_saved_sessions(&mut self) -> Result<(), String> {
-        self.settings.ui.session_restore.saved_sessions.clear();
-        self.config_manager
-            .save_settings(&self.settings)
-            .map_err(|e| format!("Failed to clear saved sessions: {e}"))
-    }
-
-    /// Checks if session restore is enabled
-    ///
-    /// Note: Part of session restore API.
-    #[must_use]
-    #[allow(dead_code)]
-    pub const fn is_session_restore_enabled(&self) -> bool {
-        self.settings.ui.session_restore.enabled
-    }
-
-    /// Checks if prompt should be shown before restoring sessions
-    ///
-    /// Note: Part of session restore API.
-    #[must_use]
-    #[allow(dead_code)]
-    pub const fn should_prompt_on_restore(&self) -> bool {
-        self.settings.ui.session_restore.prompt_on_restore
-    }
 }
 
 /// Shared application state type
@@ -2858,104 +2110,6 @@ pub type SharedAppState = Rc<RefCell<AppState>>;
 /// Creates a new shared application state
 pub fn create_shared_state() -> Result<SharedAppState, String> {
     AppState::new().map(|state| Rc::new(RefCell::new(state)))
-}
-
-// ========== Safe State Access Helpers ==========
-
-/// Error type for state access failures
-#[derive(Debug, Clone, thiserror::Error)]
-#[allow(dead_code)] // Part of safe state access API
-pub enum StateAccessError {
-    /// State is already borrowed mutably
-    #[error("State is already borrowed")]
-    AlreadyBorrowed,
-    /// State is already borrowed immutably (for mutable access)
-    #[error("State is already borrowed immutably")]
-    AlreadyBorrowedImmutably,
-}
-
-/// Safely accesses the state for reading
-///
-/// Returns `None` if the state is already borrowed mutably.
-/// Use this instead of `state.borrow()` to avoid panics.
-///
-/// # Example
-/// ```ignore
-/// if let Some(state_ref) = with_state(&state, |s| s.list_connections().len()) {
-///     println!("Connection count: {}", state_ref);
-/// }
-/// ```
-#[must_use]
-#[allow(dead_code)] // Part of safe state access API
-pub fn with_state<F, R>(state: &SharedAppState, f: F) -> Option<R>
-where
-    F: FnOnce(&AppState) -> R,
-{
-    state.try_borrow().ok().map(|s| f(&s))
-}
-
-/// Safely accesses the state for reading, with error handling
-///
-/// Returns `Err(StateAccessError)` if the state is already borrowed mutably.
-///
-/// # Example
-/// ```ignore
-/// match try_with_state(&state, |s| s.get_connection(id).cloned()) {
-///     Ok(Some(conn)) => { /* use connection */ }
-///     Ok(None) => { /* connection not found */ }
-///     Err(e) => tracing::warn!("State access failed: {}", e),
-/// }
-/// ```
-#[allow(dead_code)] // Part of safe state access API
-pub fn try_with_state<F, R>(state: &SharedAppState, f: F) -> Result<R, StateAccessError>
-where
-    F: FnOnce(&AppState) -> R,
-{
-    state
-        .try_borrow()
-        .map(|s| f(&s))
-        .map_err(|_| StateAccessError::AlreadyBorrowed)
-}
-
-/// Safely accesses the state for mutation
-///
-/// Returns `None` if the state is already borrowed.
-/// Use this instead of `state.borrow_mut()` to avoid panics.
-///
-/// # Example
-/// ```ignore
-/// if with_state_mut(&state, |s| s.update_last_connected(conn_id)).is_none() {
-///     tracing::warn!("Could not update last connected - state busy");
-/// }
-/// ```
-#[must_use]
-#[allow(dead_code)] // Part of safe state access API
-pub fn with_state_mut<F, R>(state: &SharedAppState, f: F) -> Option<R>
-where
-    F: FnOnce(&mut AppState) -> R,
-{
-    state.try_borrow_mut().ok().map(|mut s| f(&mut s))
-}
-
-/// Safely accesses the state for mutation, with error handling
-///
-/// Returns `Err(StateAccessError)` if the state is already borrowed.
-///
-/// # Example
-/// ```ignore
-/// if let Err(e) = try_with_state_mut(&state, |s| s.cache_credentials(id, user, pass, domain)) {
-///     tracing::warn!("Could not cache credentials: {}", e);
-/// }
-/// ```
-#[allow(dead_code)] // Part of safe state access API
-pub fn try_with_state_mut<F, R>(state: &SharedAppState, f: F) -> Result<R, StateAccessError>
-where
-    F: FnOnce(&mut AppState) -> R,
-{
-    state
-        .try_borrow_mut()
-        .map(|mut s| f(&mut s))
-        .map_err(|_| StateAccessError::AlreadyBorrowedImmutably)
 }
 
 /// Shows an error toast when saving to vault fails.

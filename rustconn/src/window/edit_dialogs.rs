@@ -1087,7 +1087,7 @@ struct QuickConnectParams {
     host: String,
     port: u16,
     username: Option<String>,
-    password: Option<String>,
+    password: Option<secrecy::SecretString>,
 }
 
 /// Starts a quick Telnet connection
@@ -1156,7 +1156,8 @@ fn start_quick_rdp(
     }
 
     if let Some(ref pass) = params.password {
-        embedded_config = embedded_config.with_password(pass);
+        use secrecy::ExposeSecret;
+        embedded_config = embedded_config.with_password(pass.expose_secret());
     }
 
     let embedded_widget = Rc::new(embedded_widget);
@@ -1243,10 +1244,14 @@ fn start_quick_vnc(
         });
 
         // Initiate connection with password if provided
+        let pw_exposed = params.password.as_ref().map(|s| {
+            use secrecy::ExposeSecret;
+            s.expose_secret().to_string()
+        });
         if let Err(e) = vnc_widget.connect_with_config(
             &params.host,
             params.port,
-            params.password.as_deref(),
+            pw_exposed.as_deref(),
             &vnc_config,
         ) {
             tracing::error!("Failed to connect VNC session '{}': {}", params.host, e);
@@ -1513,7 +1518,7 @@ pub fn show_quick_connect_dialog_with_state(
             if text.trim().is_empty() {
                 None
             } else {
-                Some(text.to_string())
+                Some(secrecy::SecretString::from(text.to_string()))
             }
         };
 

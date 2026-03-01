@@ -165,7 +165,9 @@ pub fn show_snippets_manager(
             if let Some(snippet) = result
                 && let Ok(mut state_mut) = state_inner.try_borrow_mut()
             {
-                let _ = state_mut.create_snippet(snippet);
+                if let Err(e) = state_mut.create_snippet(snippet) {
+                    tracing::warn!(?e, "Failed to create snippet");
+                }
                 drop(state_mut);
                 populate_snippets_list(&state_inner, &list_inner, "");
             }
@@ -192,7 +194,9 @@ pub fn show_snippets_manager(
                     if let Some(updated) = result
                         && let Ok(mut state_mut) = state_inner.try_borrow_mut()
                     {
-                        let _ = state_mut.update_snippet(id, updated);
+                        if let Err(e) = state_mut.update_snippet(id, updated) {
+                            tracing::warn!(?e, "Failed to update snippet");
+                        }
                         drop(state_mut);
                         populate_snippets_list(&state_inner, &list_inner, "");
                     }
@@ -220,7 +224,9 @@ pub fn show_snippets_manager(
                 true,
                 move |confirmed| {
                     if confirmed && let Ok(mut state_mut) = state_inner.try_borrow_mut() {
-                        let _ = state_mut.delete_snippet(id);
+                        if let Err(e) = state_mut.delete_snippet(id) {
+                            tracing::warn!(?e, "Failed to delete snippet");
+                        }
                         drop(state_mut);
                         populate_snippets_list(&state_inner, &list_inner, "");
                     }
