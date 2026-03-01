@@ -20,6 +20,7 @@ chrono = { workspace = true }
 thiserror = { workspace = true }
 async-trait = { workspace = true }
 secrecy = { workspace = true }
+zeroize = { workspace = true }
 dirs = { workspace = true }
 shellexpand = { workspace = true }
 regex = { workspace = true }

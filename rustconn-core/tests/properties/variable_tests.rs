@@ -455,7 +455,7 @@ proptest! {
         let parsed: Variable = serde_json::from_str(&json).unwrap();
 
         prop_assert_eq!(
-            var.description, parsed.description,
+            var.description.clone(), parsed.description.clone(),
             "Description should be preserved through serialization"
         );
     }

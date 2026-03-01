@@ -757,14 +757,6 @@ impl ConnectionSidebar {
     }
 
     /// Returns the search spinner widget
-    ///
-    /// Note: Spinner is typically accessed via `show_search_pending`/`hide_search_pending`.
-    #[must_use]
-    #[allow(dead_code)]
-    pub const fn search_spinner(&self) -> &gtk4::Spinner {
-        &self.search_spinner
-    }
-
     /// Shows the search pending indicator
     pub fn show_search_pending(&self) {
         self.search_spinner.set_visible(true);
@@ -804,239 +796,6 @@ impl ConnectionSidebar {
     #[must_use]
     pub const fn tree_model(&self) -> &TreeListModel {
         &self.tree_model
-    }
-
-    /// Returns a reference to the lazy group loader
-    ///
-    /// Note: Part of lazy loading API for large connection lists.
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn lazy_loader(&self) -> std::cell::Ref<'_, LazyGroupLoader> {
-        self.lazy_loader.borrow()
-    }
-
-    /// Returns a mutable reference to the lazy group loader
-    ///
-    /// Note: Part of lazy loading API for large connection lists.
-    #[allow(dead_code)]
-    pub fn lazy_loader_mut(&self) -> std::cell::RefMut<'_, LazyGroupLoader> {
-        self.lazy_loader.borrow_mut()
-    }
-
-    /// Checks if a group needs to be loaded
-    ///
-    /// Returns true if the group's children have not been loaded yet.
-    ///
-    /// Note: Part of lazy loading API for large connection lists.
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn needs_group_loading(&self, group_id: Uuid) -> bool {
-        self.lazy_loader.borrow().needs_loading(group_id)
-    }
-
-    /// Marks a group as loaded
-    ///
-    /// Call this after loading a group's children to prevent re-loading.
-    ///
-    /// Note: Part of lazy loading API for large connection lists.
-    #[allow(dead_code)]
-    pub fn mark_group_loaded(&self, group_id: Uuid) {
-        self.lazy_loader.borrow_mut().mark_group_loaded(group_id);
-    }
-
-    /// Marks root items as loaded
-    ///
-    /// Call this after the initial sidebar population.
-    ///
-    /// Note: Part of lazy loading API for large connection lists.
-    #[allow(dead_code)]
-    pub fn mark_root_loaded(&self) {
-        self.lazy_loader.borrow_mut().mark_root_loaded();
-    }
-
-    /// Checks if root items have been loaded
-    ///
-    /// Note: Part of lazy loading API for large connection lists.
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn is_root_loaded(&self) -> bool {
-        self.lazy_loader.borrow().is_root_loaded()
-    }
-
-    /// Resets the lazy loading state
-    ///
-    /// Call this when the connection database is reloaded.
-    ///
-    /// Note: Part of lazy loading API for large connection lists.
-    #[allow(dead_code)]
-    pub fn reset_lazy_loading(&self) {
-        self.lazy_loader.borrow_mut().reset();
-    }
-
-    // ========== Virtual Scrolling Methods ==========
-
-    /// Initializes virtual scrolling if the item count exceeds the threshold
-    ///
-    /// Call this after populating the sidebar to enable virtual scrolling
-    /// for large connection lists.
-    ///
-    /// Returns a reference to the selection state for virtual scrolling
-    ///
-    /// Note: Part of selection state API for virtual scrolling.
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn selection_state(&self) -> std::cell::Ref<'_, CoreSelectionState> {
-        self.selection_state.borrow()
-    }
-
-    /// Returns a mutable reference to the selection state
-    ///
-    /// Note: Part of selection state API for virtual scrolling.
-    #[allow(dead_code)]
-    pub fn selection_state_mut(&self) -> std::cell::RefMut<'_, CoreSelectionState> {
-        self.selection_state.borrow_mut()
-    }
-
-    /// Selects an item by ID in the persistent selection state
-    ///
-    /// This preserves the selection across virtual scrolling operations.
-    ///
-    /// Note: Part of selection state API for virtual scrolling.
-    #[allow(dead_code)]
-    pub fn persist_selection(&self, id: Uuid) {
-        self.selection_state.borrow_mut().select(id);
-    }
-
-    /// Deselects an item by ID from the persistent selection state
-    ///
-    /// Note: Part of selection state API for virtual scrolling.
-    #[allow(dead_code)]
-    pub fn unpersist_selection(&self, id: Uuid) {
-        self.selection_state.borrow_mut().deselect(id);
-    }
-
-    /// Toggles selection for an item in the persistent selection state
-    ///
-    /// Note: Part of selection state API for virtual scrolling.
-    #[allow(dead_code)]
-    pub fn toggle_persisted_selection(&self, id: Uuid) {
-        self.selection_state.borrow_mut().toggle(id);
-    }
-
-    /// Checks if an item is in the persistent selection state
-    ///
-    /// Note: Part of selection state API for virtual scrolling.
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn is_selection_persisted(&self, id: Uuid) -> bool {
-        self.selection_state.borrow().is_selected(id)
-    }
-
-    /// Clears all selections
-    ///
-    /// Note: Part of selection state API for virtual scrolling.
-    #[allow(dead_code)]
-    pub fn clear_selection_state(&self) {
-        self.selection_state.borrow_mut().clear();
-    }
-
-    /// Returns the count of selected items
-    ///
-    /// Note: Part of selection state API for virtual scrolling.
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn selection_count(&self) -> usize {
-        self.selection_state.borrow().selection_count()
-    }
-
-    /// Populates the sidebar with documents and their contents
-    ///
-    /// This method clears the current store and repopulates it with
-    /// document headers followed by their groups and connections.
-    ///
-    /// Note: Part of document-based sidebar API.
-    #[allow(dead_code)]
-    pub fn populate_with_documents(
-        &self,
-        documents: &[(Uuid, String, bool)], // (id, name, is_dirty)
-        get_document_contents: impl Fn(
-            Uuid,
-        ) -> (
-            Vec<(Uuid, String)>,
-            Vec<(Uuid, String, String, String, Option<Uuid>)>,
-        ),
-        // Returns (groups, connections) where connections are (id, name, protocol, host, group_id)
-    ) {
-        self.store.remove_all();
-
-        for (doc_id, doc_name, is_dirty) in documents {
-            let doc_item = ConnectionItem::new_document(&doc_id.to_string(), doc_name, *is_dirty);
-
-            let (groups, connections) = get_document_contents(*doc_id);
-
-            // Create a map of group items for nesting connections
-            let mut group_items: std::collections::HashMap<Uuid, ConnectionItem> =
-                std::collections::HashMap::new();
-
-            // Add groups to document
-            for (group_id, group_name) in &groups {
-                let group_item = ConnectionItem::new_group(&group_id.to_string(), group_name);
-                group_items.insert(*group_id, group_item.clone());
-                doc_item.add_child(&group_item);
-            }
-
-            // Add connections to their groups or directly to document
-            for (conn_id, conn_name, protocol, host, group_id) in &connections {
-                // Check if we have a stored status for this connection
-                let status = self
-                    .connection_statuses
-                    .borrow()
-                    .get(&conn_id.to_string())
-                    .map(|info| info.status.clone())
-                    .unwrap_or_else(|| "disconnected".to_string());
-
-                let conn_item = ConnectionItem::new_connection_with_status(
-                    &conn_id.to_string(),
-                    conn_name,
-                    protocol,
-                    host,
-                    &status,
-                );
-
-                if let Some(gid) = group_id {
-                    if let Some(group_item) = group_items.get(gid) {
-                        group_item.add_child(&conn_item);
-                    } else {
-                        // Group not found, add to document root
-                        doc_item.add_child(&conn_item);
-                    }
-                } else {
-                    // No group, add to document root
-                    doc_item.add_child(&conn_item);
-                }
-            }
-
-            self.store.append(&doc_item);
-        }
-    }
-
-    /// Updates the dirty indicator for a document in the sidebar
-    ///
-    /// Note: Part of document-based sidebar API.
-    #[allow(dead_code)]
-    pub fn update_document_dirty_state(&self, doc_id: Uuid, is_dirty: bool) {
-        let n_items = self.store.n_items();
-        for i in 0..n_items {
-            if let Some(item) = self.store.item(i).and_downcast::<ConnectionItem>()
-                && item.is_document()
-                && item.id() == doc_id.to_string()
-            {
-                item.set_dirty(is_dirty);
-                // Trigger a refresh by notifying the model
-                self.store.items_changed(i, 1, 1);
-                break;
-            }
-        }
     }
 
     /// Updates the status of a connection item
@@ -1149,18 +908,6 @@ impl ConnectionSidebar {
         status
     }
 
-    /// Gets the active session count for a connection
-    ///
-    /// Note: Part of session status tracking API.
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn get_session_count(&self, id: &str) -> usize {
-        self.connection_statuses
-            .borrow()
-            .get(id)
-            .map_or(0, |info| info.active_count)
-    }
-
     /// Helper to recursively find and update item status in the tree
     fn update_item_status_recursive(model: &gio::ListModel, id: &str, status: &str) -> bool {
         let n_items = model.n_items();
@@ -1194,64 +941,6 @@ impl ConnectionSidebar {
             .borrow()
             .get(id)
             .map(|info| info.status.clone())
-    }
-
-    /// Gets the document ID for a selected item
-    ///
-    /// Traverses up the tree to find the parent document
-    ///
-    /// Note: Part of document-based sidebar API.
-    #[allow(dead_code)]
-    pub fn get_document_for_item(&self, item_id: Uuid) -> Option<Uuid> {
-        let n_items = self.store.n_items();
-        for i in 0..n_items {
-            if let Some(doc_item) = self.store.item(i).and_downcast::<ConnectionItem>()
-                && doc_item.is_document()
-            {
-                // Check if this document contains the item
-                if doc_item.id() == item_id.to_string() {
-                    return Uuid::parse_str(&doc_item.id()).ok();
-                }
-                // Check children
-                if let Some(children) = doc_item.children()
-                    && Self::find_item_in_children(&children, &item_id.to_string())
-                {
-                    return Uuid::parse_str(&doc_item.id()).ok();
-                }
-            }
-        }
-        None
-    }
-
-    /// Helper to find an item in children recursively
-    ///
-    /// Note: Part of document-based sidebar API.
-    #[allow(dead_code)]
-    fn find_item_in_children(model: &gio::ListModel, item_id: &str) -> bool {
-        let n_items = model.n_items();
-        for i in 0..n_items {
-            if let Some(item) = model.item(i).and_downcast::<ConnectionItem>() {
-                if item.id() == item_id {
-                    return true;
-                }
-                if let Some(children) = item.children()
-                    && Self::find_item_in_children(&children, item_id)
-                {
-                    return true;
-                }
-            }
-        }
-        false
-    }
-
-    /// Returns the bulk actions bar
-    /// Returns the bulk actions bar
-    ///
-    /// Note: Part of group operations mode API.
-    #[must_use]
-    #[allow(dead_code)]
-    pub const fn bulk_actions_bar(&self) -> &GtkBox {
-        &self.bulk_actions_bar
     }
 
     /// Returns whether group operations mode is active
@@ -1353,32 +1042,6 @@ impl ConnectionSidebar {
     /// Clears all selections
     pub fn clear_selection(&self) {
         self.selection_model.borrow().clear_selection();
-    }
-
-    /// Returns the selection model wrapper
-    ///
-    /// Note: Part of selection model API.
-    #[allow(dead_code)]
-    pub fn selection_model(&self) -> Rc<RefCell<SelectionModelWrapper>> {
-        self.selection_model.clone()
-    }
-
-    /// Returns the drop indicator
-    ///
-    /// Note: Part of drag-drop API.
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn drop_indicator(&self) -> Rc<DropIndicator> {
-        self.drop_indicator.clone()
-    }
-
-    /// Returns the scrolled window containing the list view
-    ///
-    /// Note: Part of scroll management API.
-    #[must_use]
-    #[allow(dead_code)]
-    pub const fn scrolled_window(&self) -> &ScrolledWindow {
-        &self.scrolled_window
     }
 
     /// Updates the drop indicator position based on drag coordinates
@@ -1493,15 +1156,6 @@ impl ConnectionSidebar {
         None
     }
 
-    /// Highlights a group row to indicate drop-into action
-    /// Now handled by CSS classes on the row widget itself
-    ///
-    /// Note: Part of drag-drop visual feedback API.
-    #[allow(dead_code)]
-    fn highlight_group_at_index(_list_view: &ListView, drop_indicator: &DropIndicator, index: u32) {
-        drop_indicator.set_highlighted_group(Some(index));
-    }
-
     /// Clears highlight from all group rows
     /// CSS classes are now managed by DropIndicator
     fn clear_group_highlights(_list_view: &ListView, drop_indicator: &DropIndicator) {
@@ -1515,26 +1169,8 @@ impl ConnectionSidebar {
     }
 
     /// Adds a query to search history
-    #[allow(dead_code)]
     pub fn add_to_search_history(&self, query: &str) {
         search::add_to_history(&self.search_history, query);
-    }
-
-    /// Gets the search history
-    ///
-    /// Note: Part of search history API.
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn get_search_history(&self) -> Vec<String> {
-        self.search_history.borrow().clone()
-    }
-
-    /// Clears the search history
-    ///
-    /// Note: Part of search history API.
-    #[allow(dead_code)]
-    pub fn clear_search_history(&self) {
-        self.search_history.borrow_mut().clear();
     }
 
     /// Loads search history from persisted settings
@@ -1545,29 +1181,6 @@ impl ConnectionSidebar {
         current.clear();
         current.extend(history.iter().cloned());
         current.truncate(MAX_SEARCH_HISTORY);
-    }
-
-    /// Gets the active protocol filters
-    ///
-    /// Returns a set of currently active protocol filter names.
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn get_active_protocol_filters(&self) -> HashSet<String> {
-        self.active_protocol_filters.borrow().clone()
-    }
-
-    /// Checks if any protocol filters are active
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn has_active_protocol_filters(&self) -> bool {
-        !self.active_protocol_filters.borrow().is_empty()
-    }
-
-    /// Gets the count of active protocol filters
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn active_protocol_filter_count(&self) -> usize {
-        self.active_protocol_filters.borrow().len()
     }
 
     /// Saves the current tree state before starting a search
@@ -1585,15 +1198,6 @@ impl ConnectionSidebar {
         if let Some(state) = self.pre_search_state.borrow_mut().take() {
             self.restore_state(&state);
         }
-    }
-
-    /// Checks if there is a saved pre-search state
-    ///
-    /// Note: Part of search state preservation API.
-    #[must_use]
-    #[allow(dead_code)]
-    pub fn has_pre_search_state(&self) -> bool {
-        self.pre_search_state.borrow().is_some()
     }
 
     /// Saves the current tree state for later restoration
@@ -1758,39 +1362,6 @@ impl ConnectionSidebar {
         });
     }
 
-    /// Refreshes the tree while preserving the current state
-    ///
-    /// This is a convenience method that saves the current state,
-    /// calls the provided refresh function, and then restores the state.
-    /// Use this when you need to refresh the tree contents but want to
-    /// maintain the user's expanded groups, scroll position, and selection.
-    ///
-    /// # Arguments
-    /// * `refresh_fn` - A closure that performs the actual refresh operation
-    ///
-    /// # Example
-    /// ```ignore
-    /// sidebar.refresh_preserving_state(|| {
-    ///     sidebar.populate_with_documents(&documents, get_contents);
-    /// });
-    /// ```
-    ///
-    /// Note: Part of tree state preservation API.
-    #[allow(dead_code)]
-    pub fn refresh_preserving_state<F>(&self, refresh_fn: F)
-    where
-        F: FnOnce(),
-    {
-        // Save current state before refresh
-        let state = self.save_state();
-
-        // Perform the refresh
-        refresh_fn();
-
-        // Restore state after refresh
-        self.restore_state(&state);
-    }
-
     /// Updates the KeePass button status based on integration state
     ///
     /// When KeePass integration is enabled and database exists, the button
@@ -1814,13 +1385,6 @@ impl ConnectionSidebar {
                     .set_tooltip_text(Some(&i18n("Password Vault Disabled")));
             }
         }
-    }
-
-    /// Returns the KeePass button widget
-    #[must_use]
-    #[allow(dead_code)] // Part of KeePass integration API
-    pub const fn keepass_button(&self) -> &Button {
-        &self.keepass_button
     }
 }
 

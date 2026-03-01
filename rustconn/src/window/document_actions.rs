@@ -81,7 +81,11 @@ fn setup_open_document_action(
             dialog.set_callback(move |result| {
                 if let Some(DocumentDialogResult::Open { path, password }) = result {
                     let mut state_ref = state_for_cb.borrow_mut();
-                    match state_ref.open_document(&path, password.as_deref()) {
+                    let pw_str = password.as_ref().map(|s| {
+                        use secrecy::ExposeSecret;
+                        s.expose_secret().to_string()
+                    });
+                    match state_ref.open_document(&path, pw_str.as_deref()) {
                         Ok(_doc_id) => {
                             drop(state_ref);
                         }
@@ -134,10 +138,14 @@ fn setup_save_document_action(window: &gtk4::ApplicationWindow, state: &SharedAp
                     dialog.set_callback(move |result| {
                         if let Some(DocumentDialogResult::Save { id, path, password }) = result {
                             let mut state_ref = state_for_cb.borrow_mut();
+                            let pw_str = password.as_ref().map(|s| {
+                                use secrecy::ExposeSecret;
+                                s.expose_secret().to_string()
+                            });
                             if let Err(e) = state_ref.save_document(
                                 id,
                                 &path,
-                                password.as_deref(),
+                                pw_str.as_deref(),
                                 EncryptionStrength::Standard,
                             ) {
                                 drop(state_ref);
@@ -193,18 +201,20 @@ fn setup_close_document_action(
 
                             if let Some(path) = existing_path {
                                 let mut state_ref = state_for_cb.borrow_mut();
-                                let _ = state_ref.save_document(
+                                if let Err(e) = state_ref.save_document(
                                     id,
                                     &path,
                                     None,
                                     EncryptionStrength::Standard,
-                                );
-                                let _ = state_ref.close_document(id);
+                                ) {
+                                    tracing::warn!(?e, "Failed to save document before close");
+                                }
+                                state_ref.close_document(id);
                             }
                         }
                         Some(DocumentDialogResult::Close { id, save: false }) => {
                             let mut state_ref = state_for_cb.borrow_mut();
-                            let _ = state_ref.close_document(id);
+                            state_ref.close_document(id);
                         }
                         _ => {}
                     });

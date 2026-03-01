@@ -4725,7 +4725,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.9.4"
+version = "0.9.5"
 dependencies = [
  "chrono",
  "cpal",
@@ -4752,7 +4752,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.9.4"
+version = "0.9.5"
 dependencies = [
  "chrono",
  "clap",
@@ -4773,7 +4773,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.9.4"
+version = "0.9.5"
 dependencies = [
  "ar",
  "argon2",
@@ -4812,6 +4812,7 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "vnc-rs",
+ "zeroize",
  "zip",
 ]
 

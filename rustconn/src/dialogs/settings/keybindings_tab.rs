@@ -5,7 +5,6 @@
 //! to record a new accelerator or reset to the default.
 
 use adw::prelude::*;
-use gettextrs::gettext;
 use gtk4::prelude::*;
 use gtk4::{Button, EventControllerKey, Label};
 use libadwaita as adw;
@@ -15,7 +14,7 @@ use rustconn_core::config::keybindings::{
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::i18n::i18n_f;
+use crate::i18n::{i18n, i18n_f};
 
 /// Creates the keybindings preferences page.
 ///
@@ -24,7 +23,7 @@ use crate::i18n::i18n_f;
 #[allow(clippy::too_many_lines)]
 pub fn create_keybindings_page() -> (adw::PreferencesPage, Rc<RefCell<KeybindingSettings>>) {
     let page = adw::PreferencesPage::builder()
-        .title(&gettext("Keybindings"))
+        .title(&i18n("Keybindings"))
         .icon_name("preferences-desktop-keyboard-symbolic")
         .build();
 
@@ -44,12 +43,12 @@ pub fn create_keybindings_page() -> (adw::PreferencesPage, Rc<RefCell<Keybinding
         }
 
         let group = adw::PreferencesGroup::builder()
-            .title(&gettext(category.label()))
+            .title(&i18n(category.label()))
             .build();
 
         for def in &cat_defs {
             let row = adw::ActionRow::builder()
-                .title(&gettext(&def.label))
+                .title(&i18n(&def.label))
                 .subtitle(&def.action)
                 .build();
 
@@ -62,16 +61,16 @@ pub fn create_keybindings_page() -> (adw::PreferencesPage, Rc<RefCell<Keybinding
 
             // Record button
             let record_btn = Button::builder()
-                .label(&gettext("Record"))
+                .label(&i18n("Record"))
                 .valign(gtk4::Align::Center)
-                .tooltip_text(&gettext("Press a key combination to set a new shortcut"))
+                .tooltip_text(&i18n("Press a key combination to set a new shortcut"))
                 .build();
 
             // Reset button
             let reset_btn = Button::builder()
                 .icon_name("edit-undo-symbolic")
                 .valign(gtk4::Align::Center)
-                .tooltip_text(&gettext("Reset to default"))
+                .tooltip_text(&i18n("Reset to default"))
                 .css_classes(["flat"])
                 .build();
 
@@ -88,7 +87,7 @@ pub fn create_keybindings_page() -> (adw::PreferencesPage, Rc<RefCell<Keybinding
 
             record_btn.connect_clicked(move |btn| {
                 // Switch to "recording" mode
-                btn.set_label(&gettext("Press keys..."));
+                btn.set_label(&i18n("Press keys..."));
                 btn.set_sensitive(false);
 
                 // Create a temporary key controller on the button's toplevel
@@ -115,7 +114,7 @@ pub fn create_keybindings_page() -> (adw::PreferencesPage, Rc<RefCell<Keybinding
                                 .cloned()
                                 .unwrap_or_else(|| defaults_str.clone()),
                         );
-                        record.set_label(&gettext("Record"));
+                        record.set_label(&i18n("Record"));
                         record.set_sensitive(true);
                         if let Some(widget) = ctrl.widget() {
                             widget.remove_controller(ctrl);
@@ -147,7 +146,7 @@ pub fn create_keybindings_page() -> (adw::PreferencesPage, Rc<RefCell<Keybinding
                             .insert(action.clone(), accel.to_string());
                     }
 
-                    record.set_label(&gettext("Record"));
+                    record.set_label(&i18n("Record"));
                     record.set_sensitive(true);
                     if let Some(widget) = ctrl.widget() {
                         widget.remove_controller(ctrl);
@@ -180,7 +179,7 @@ pub fn create_keybindings_page() -> (adw::PreferencesPage, Rc<RefCell<Keybinding
     // Reset All button at the bottom
     let reset_all_group = adw::PreferencesGroup::new();
     let reset_all_btn = Button::builder()
-        .label(&gettext("Reset All to Defaults"))
+        .label(&i18n("Reset All to Defaults"))
         .css_classes(["destructive-action"])
         .halign(gtk4::Align::Center)
         .build();

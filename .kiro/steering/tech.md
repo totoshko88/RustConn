@@ -92,6 +92,7 @@ All new public types in `rustconn-core` must be re-exported through `lib.rs`. Fe
 ### Logging
 
 Use `tracing` with structured fields. Never use `println!` / `eprintln!` for log output.
+**Exception:** `rustconn-cli` uses `println!` for user-facing CLI output (lists, status messages, confirmations). Only diagnostic/log output must use `tracing`.
 
 ```rust
 tracing::info!(protocol = "ssh", host = %host, port = %port, "Connection established");
@@ -108,7 +109,7 @@ tracing::error!(?error, protocol = "rdp", host = %host, "Connection failed");
 | `tokio` as sole async runtime | Mixing async runtimes |
 | GUI-free `rustconn-core` | `gtk4`/`vte4`/`adw` imports in `rustconn-core` or `rustconn-cli` |
 | `adw::` widgets over `gtk::` equivalents | Deprecated GTK patterns |
-| `tracing` for structured logging | `println!` / `eprintln!` for log output |
+| `tracing` for structured logging | `println!` / `eprintln!` for log output (CLI user-facing `println!` is OK) |
 | `#[cfg(feature = "...")]` for gated code | Unconditional use of feature-gated types |
 
 ## Feature Flags

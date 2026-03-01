@@ -106,7 +106,15 @@ impl CredentialResolver {
             PasswordSource::Vault => self.resolve_from_vault(connection).await,
             PasswordSource::Variable(ref name) => self.resolve_from_variable(name).await,
             PasswordSource::Prompt | PasswordSource::Inherit => {
-                // Caller handles these cases
+                // Caller handles these cases.
+                // Inherit requires group hierarchy — use resolve_with_hierarchy() instead.
+                if matches!(connection.password_source, PasswordSource::Inherit) {
+                    warn!(
+                        connection_id = %connection.id,
+                        connection_name = %connection.name,
+                        "resolve() called with PasswordSource::Inherit — use resolve_with_hierarchy() instead"
+                    );
+                }
                 debug!("Password source requires caller handling");
                 Ok(None)
             }
@@ -618,8 +626,9 @@ impl CredentialResolver {
             | SecretBackendType::OnePassword
             | SecretBackendType::Passbolt
             | SecretBackendType::Pass => {
-                // For Bitwarden/1Password/Passbolt/Pass, use hierarchical path as entry name
-                let lookup_key = Self::generate_hierarchical_lookup_key(connection, groups);
+                // Non-KeePass backends use flat keys — group hierarchy is not
+                // encoded in the lookup key, so moves/renames don't break lookups.
+                let lookup_key = Self::generate_lookup_key(connection);
                 self.secret_manager.store(&lookup_key, credentials).await
             }
         }
@@ -969,21 +978,36 @@ impl CredentialResolver {
         old_group_id: Option<uuid::Uuid>,
         groups: &[ConnectionGroup],
     ) -> SecretResult<()> {
-        // Build old path
-        let mut old_connection = connection.clone();
-        old_connection.group_id = old_group_id;
-        let old_key = Self::generate_hierarchical_lookup_key(&old_connection, groups);
+        let backend = self.select_storage_backend();
 
-        // Retrieve from old location
-        let credentials = self.secret_manager.retrieve(&old_key).await?;
+        // Only KeePass backends encode group hierarchy in the lookup key.
+        // All other backends use flat keys that don't change on group move.
+        match backend {
+            SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
+                // Build old path
+                let mut old_connection = connection.clone();
+                old_connection.group_id = old_group_id;
+                let old_key = Self::generate_hierarchical_lookup_key(&old_connection, groups);
 
-        if let Some(creds) = credentials {
-            // Store at new location
-            let new_key = Self::generate_hierarchical_lookup_key(connection, groups);
-            self.secret_manager.store(&new_key, &creds).await?;
+                // Retrieve from old location
+                let credentials = self.secret_manager.retrieve(&old_key).await?;
 
-            // Delete from old location
-            let _ = self.secret_manager.delete(&old_key).await;
+                if let Some(creds) = credentials {
+                    // Store at new location
+                    let new_key = Self::generate_hierarchical_lookup_key(connection, groups);
+                    if old_key != new_key {
+                        self.secret_manager.store(&new_key, &creds).await?;
+                        let _ = self.secret_manager.delete(&old_key).await;
+                    }
+                }
+            }
+            SecretBackendType::LibSecret
+            | SecretBackendType::Bitwarden
+            | SecretBackendType::OnePassword
+            | SecretBackendType::Passbolt
+            | SecretBackendType::Pass => {
+                // Flat keys — no rename needed on group move
+            }
         }
 
         Ok(())
@@ -1011,9 +1035,6 @@ impl CredentialResolver {
         let mut old_connection = connection.clone();
         old_connection.name = old_name.to_string();
 
-        let protocol = connection.protocol_config.protocol_type();
-        let protocol_str = protocol.as_str().to_lowercase();
-
         match connection.password_source {
             PasswordSource::Vault => {
                 // Vault uses the configured backend — rename based on
@@ -1032,13 +1053,10 @@ impl CredentialResolver {
                             let _ = self.secret_manager.delete(&old_key).await;
                         }
                     }
-                    SecretBackendType::LibSecret
-                    | SecretBackendType::Bitwarden
-                    | SecretBackendType::Pass => {
-                        // Uses "{name} ({protocol})" format
-                        let old_key = format!("{} ({})", old_name.replace('/', "-"), protocol_str);
-                        let new_key =
-                            format!("{} ({})", connection.name.replace('/', "-"), protocol_str);
+                    SecretBackendType::LibSecret => {
+                        // LibSecret uses "{name} ({protocol})" format
+                        let old_key = Self::generate_keyring_key(&old_connection);
+                        let new_key = Self::generate_keyring_key(connection);
                         if old_key != new_key
                             && let Some(creds) = self.secret_manager.retrieve(&old_key).await?
                         {
@@ -1046,8 +1064,19 @@ impl CredentialResolver {
                             let _ = self.secret_manager.delete(&old_key).await;
                         }
                     }
-                    SecretBackendType::OnePassword | SecretBackendType::Passbolt => {
-                        // Use connection ID — no rename needed
+                    SecretBackendType::Bitwarden
+                    | SecretBackendType::OnePassword
+                    | SecretBackendType::Passbolt
+                    | SecretBackendType::Pass => {
+                        // These backends use "rustconn/{name}" flat key
+                        let old_key = Self::generate_lookup_key(&old_connection);
+                        let new_key = Self::generate_lookup_key(connection);
+                        if old_key != new_key
+                            && let Some(creds) = self.secret_manager.retrieve(&old_key).await?
+                        {
+                            self.secret_manager.store(&new_key, &creds).await?;
+                            let _ = self.secret_manager.delete(&old_key).await;
+                        }
                     }
                 }
             }
@@ -1062,16 +1091,30 @@ impl CredentialResolver {
         Ok(())
     }
 
-    /// Resolves credentials by inheriting from parent groups
+    /// Resolves credentials by inheriting from parent groups.
+    ///
+    /// See also: `resolve_credentials_blocking()` in `rustconn/src/state.rs`
+    /// for the synchronous (blocking) equivalent used in the GUI crate.
     async fn resolve_inherited_credentials(
         &self,
         connection: &Connection,
         groups: &[ConnectionGroup],
     ) -> SecretResult<Option<Credentials>> {
         let mut current_group_id = connection.group_id;
+        let mut visited = std::collections::HashSet::new();
 
         // Traverse up the hierarchy
         while let Some(group_id) = current_group_id {
+            // Cycle detection
+            if !visited.insert(group_id) {
+                warn!(
+                    group_id = %group_id,
+                    connection_id = %connection.id,
+                    "Cycle detected in group hierarchy during Inherit resolution"
+                );
+                break;
+            }
+
             // Find the group
             let Some(group) = groups.iter().find(|g| g.id == group_id) else {
                 break;

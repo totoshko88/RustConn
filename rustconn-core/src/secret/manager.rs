@@ -15,6 +15,32 @@ use crate::models::Credentials;
 
 use super::backend::SecretBackend;
 
+/// Default TTL for cached credentials in seconds (5 minutes).
+pub const CACHE_TTL_SECONDS: i64 = 300;
+
+/// A cache entry with a timestamp for TTL-based expiry.
+#[derive(Debug, Clone)]
+struct CacheEntry {
+    credentials: Credentials,
+    cached_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl CacheEntry {
+    fn new(credentials: Credentials) -> Self {
+        Self {
+            credentials,
+            cached_at: chrono::Utc::now(),
+        }
+    }
+
+    fn is_expired(&self) -> bool {
+        let age = chrono::Utc::now()
+            .signed_duration_since(self.cached_at)
+            .num_seconds();
+        age > CACHE_TTL_SECONDS
+    }
+}
+
 /// Result of a bulk credential operation
 #[derive(Debug, Clone)]
 pub struct BulkOperationResult {
@@ -119,8 +145,8 @@ pub struct CredentialUpdate {
 pub struct SecretManager {
     /// Backends in priority order (first = highest priority)
     backends: Vec<Arc<dyn SecretBackend>>,
-    /// Session cache for retrieved credentials
-    cache: Arc<RwLock<HashMap<String, Credentials>>>,
+    /// Session cache for retrieved credentials (with TTL-based expiry)
+    cache: Arc<RwLock<HashMap<String, CacheEntry>>>,
     /// Whether caching is enabled
     cache_enabled: bool,
 }
@@ -234,10 +260,19 @@ impl SecretManager {
     /// Call this after settings change (e.g. user switches secret backend
     /// in Preferences) to ensure the manager uses the correct backends.
     pub fn rebuild_from_settings(&mut self, settings: &crate::config::SecretSettings) {
+        let old_backend_count = self.backends.len();
         let fresh = Self::build_from_settings(settings);
         self.backends = fresh.backends;
-        // Keep existing cache — it will be invalidated naturally
-        tracing::debug!("SecretManager backends rebuilt from settings");
+        // Clear cache on rebuild — backend change may invalidate cached entries
+        if let Ok(mut cache) = self.cache.try_write() {
+            cache.clear();
+        }
+        tracing::info!(
+            old_backends = old_backend_count,
+            new_backends = self.backends.len(),
+            preferred = ?settings.preferred_backend,
+            "SecretManager backends rebuilt from settings"
+        );
     }
 
     /// Returns the list of available backends
@@ -281,10 +316,13 @@ impl SecretManager {
         let backend = self.get_available_backend().await?;
         backend.store(connection_id, credentials).await?;
 
-        // Update cache
+        // Update cache with fresh timestamp
         if self.cache_enabled {
             let mut cache = self.cache.write().await;
-            cache.insert(connection_id.to_string(), credentials.clone());
+            cache.insert(
+                connection_id.to_string(),
+                CacheEntry::new(credentials.clone()),
+            );
         }
 
         Ok(())
@@ -304,12 +342,15 @@ impl SecretManager {
     /// # Errors
     /// Returns `SecretError` if no backend is available or retrieval fails
     pub async fn retrieve(&self, connection_id: &str) -> SecretResult<Option<Credentials>> {
-        // Check cache first
+        // Check cache first (with TTL)
         if self.cache_enabled {
             let cache = self.cache.read().await;
-            if let Some(creds) = cache.get(connection_id) {
-                return Ok(Some(creds.clone()));
+            if let Some(entry) = cache.get(connection_id)
+                && !entry.is_expired()
+            {
+                return Ok(Some(entry.credentials.clone()));
             }
+            // Expired entries fall through to backend lookup
         }
 
         // Try each backend in order
@@ -322,7 +363,7 @@ impl SecretManager {
                 // Cache the result
                 if self.cache_enabled {
                     let mut cache = self.cache.write().await;
-                    cache.insert(connection_id.to_string(), creds.clone());
+                    cache.insert(connection_id.to_string(), CacheEntry::new(creds.clone()));
                 }
                 return Ok(Some(creds));
             }

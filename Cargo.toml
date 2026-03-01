@@ -7,7 +7,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.9.4"
+version = "0.9.5"
 edition = "2024"
 authors = ["Anton Isaiev <totoshko88@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -40,6 +40,7 @@ secrecy = { version = "0.10", features = ["serde"] }
 dirs = "6.0"
 shellexpand = "3.1"
 regex = "1.11"
+zeroize = "1.8"
 
 # Encryption
 ring = "0.17"

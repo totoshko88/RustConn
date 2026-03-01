@@ -622,8 +622,8 @@ pub enum RdpClientCommand {
     Authenticate {
         /// Username
         username: String,
-        /// Password
-        password: String,
+        /// Password (stored securely, zeroized on drop)
+        password: secrecy::SecretString,
         /// Domain (optional)
         domain: Option<String>,
     },

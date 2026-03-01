@@ -457,8 +457,10 @@ fn start_embedded_rdp_session(
     }
 
     // Update last_connected timestamp
-    if let Ok(mut state_mut) = state.try_borrow_mut() {
-        let _ = state_mut.update_last_connected(connection_id);
+    if let Ok(mut state_mut) = state.try_borrow_mut()
+        && let Err(e) = state_mut.update_last_connected(connection_id)
+    {
+        tracing::warn!(?e, "Failed to update last_connected");
     }
 
     // Connect after a short delay to let GTK layout the widget
@@ -586,8 +588,10 @@ fn start_external_rdp_session(
     }
 
     // Update last_connected
-    if let Ok(mut state_mut) = state.try_borrow_mut() {
-        let _ = state_mut.update_last_connected(connection_id);
+    if let Ok(mut state_mut) = state.try_borrow_mut()
+        && let Err(e) = state_mut.update_last_connected(connection_id)
+    {
+        tracing::warn!(?e, "Failed to update last_connected");
     }
 }
 
@@ -893,7 +897,9 @@ fn start_vnc_session_internal(
     notebook.show_tab_view_content();
 
     // Update last_connected timestamp
-    if let Ok(mut state_mut) = state.try_borrow_mut() {
-        let _ = state_mut.update_last_connected(connection_id);
+    if let Ok(mut state_mut) = state.try_borrow_mut()
+        && let Err(e) = state_mut.update_last_connected(connection_id)
+    {
+        tracing::warn!(?e, "Failed to update last_connected");
     }
 }

@@ -42,7 +42,8 @@ struct CachedEntry {
 ///
 /// // Retrieve cached results
 /// if let Some(results) = cache.get("server") {
-///     println!("Found {} cached results", results.len());
+///     // Use cached results
+///     assert!(results.is_empty());
 /// }
 ///
 /// // Invalidate all entries when data changes

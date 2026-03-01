@@ -118,7 +118,7 @@ jobs:
           key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run tests
-        run: cargo test --workspace
+        run: cargo test --workspace --all-features
 
   test-core:
     name: Test Core (no GUI)
@@ -139,7 +139,7 @@ jobs:
           key: ${{ runner.os }}-cargo-core-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run core tests
-        run: cargo test -p rustconn-core
+        run: cargo test -p rustconn-core --all-features
 
   property-tests:
     name: Property Tests
@@ -160,7 +160,7 @@ jobs:
           key: ${{ runner.os }}-cargo-proptest-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run property tests
-        run: cargo test -p rustconn-core --test property_tests
+        run: cargo test -p rustconn-core --all-features --test property_tests
 
   msrv:
     name: MSRV (1.88)

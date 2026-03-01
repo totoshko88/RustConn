@@ -283,11 +283,37 @@ pub fn rename_selected_item(
 
             if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
                 if let Some(existing) = state_mut.get_group(id).cloned() {
+                    let old_name_val = existing.name.clone();
                     let mut updated = existing;
                     updated.name = new_name.clone();
+
+                    // Capture old groups snapshot before update for vault migration
+                    let old_groups_snapshot: Vec<rustconn_core::models::ConnectionGroup> =
+                        if old_name_val == new_name {
+                            Vec::new()
+                        } else {
+                            state_mut.list_groups().into_iter().cloned().collect()
+                        };
+
                     if let Err(e) = state_mut.connection_manager().update_group(id, updated) {
                         alert::show_error(&window_clone, &i18n("Error"), &format!("{e}"));
                         return;
+                    }
+
+                    // Migrate vault entries if name changed (KeePass paths affected)
+                    if old_name_val != new_name {
+                        let new_groups: Vec<_> =
+                            state_mut.list_groups().into_iter().cloned().collect();
+                        let connections: Vec<_> =
+                            state_mut.list_connections().into_iter().cloned().collect();
+                        let settings = state_mut.settings().clone();
+                        crate::state::migrate_vault_entries_on_group_change(
+                            &settings,
+                            &old_groups_snapshot,
+                            &new_groups,
+                            &connections,
+                            id,
+                        );
                     }
                 }
                 drop(state_mut);
@@ -930,7 +956,7 @@ pub fn show_edit_group_dialog(
 
         if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
             if let Some(existing) = state_mut.get_group(group_id).cloned() {
-                let mut updated = existing;
+                let mut updated = existing.clone();
                 updated.name = new_name;
                 updated.parent_id = new_parent_id;
 
@@ -971,12 +997,37 @@ pub fn show_edit_group_dialog(
                     Some(icon_text)
                 };
 
+                // Capture old groups snapshot before update for vault migration
+                let name_changed = existing.name != updated.name;
+                let parent_changed = existing.parent_id != updated.parent_id;
+                let old_groups_snapshot: Vec<rustconn_core::models::ConnectionGroup> =
+                    if name_changed || parent_changed {
+                        state_mut.list_groups().into_iter().cloned().collect()
+                    } else {
+                        Vec::new()
+                    };
+
                 if let Err(e) = state_mut
                     .connection_manager()
                     .update_group(group_id, updated)
                 {
                     alert::show_error(&window_clone, &i18n("Error"), &format!("{e}"));
                     return;
+                }
+
+                // Migrate vault entries if group name or parent changed (KeePass paths affected)
+                if name_changed || parent_changed {
+                    let new_groups: Vec<_> = state_mut.list_groups().into_iter().cloned().collect();
+                    let connections: Vec<_> =
+                        state_mut.list_connections().into_iter().cloned().collect();
+                    let settings = state_mut.settings().clone();
+                    crate::state::migrate_vault_entries_on_group_change(
+                        &settings,
+                        &old_groups_snapshot,
+                        &new_groups,
+                        &connections,
+                        group_id,
+                    );
                 }
 
                 // Save password if provided and source requires it
@@ -1036,7 +1087,7 @@ struct QuickConnectParams {
     host: String,
     port: u16,
     username: Option<String>,
-    password: Option<String>,
+    password: Option<secrecy::SecretString>,
 }
 
 /// Starts a quick Telnet connection
@@ -1105,7 +1156,8 @@ fn start_quick_rdp(
     }
 
     if let Some(ref pass) = params.password {
-        embedded_config = embedded_config.with_password(pass);
+        use secrecy::ExposeSecret;
+        embedded_config = embedded_config.with_password(pass.expose_secret());
     }
 
     let embedded_widget = Rc::new(embedded_widget);
@@ -1192,10 +1244,14 @@ fn start_quick_vnc(
         });
 
         // Initiate connection with password if provided
+        let pw_exposed = params.password.as_ref().map(|s| {
+            use secrecy::ExposeSecret;
+            s.expose_secret().to_string()
+        });
         if let Err(e) = vnc_widget.connect_with_config(
             &params.host,
             params.port,
-            params.password.as_deref(),
+            pw_exposed.as_deref(),
             &vnc_config,
         ) {
             tracing::error!("Failed to connect VNC session '{}': {}", params.host, e);
@@ -1462,7 +1518,7 @@ pub fn show_quick_connect_dialog_with_state(
             if text.trim().is_empty() {
                 None
             } else {
-                Some(text.to_string())
+                Some(secrecy::SecretString::from(text.to_string()))
             }
         };
 

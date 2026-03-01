@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.5] - 2026-03-02
+
+### Fixed
+- **SSH/Telnet pre-connect port check** — fail fast with retry toast instead of hanging in "Connecting" state
+- **Vault credential lifecycle** — orphaned credentials cleaned on trash empty; paste duplicates credentials; group rename/move migrates KeePass entries
+- **Consistent credential keys** — unified `generate_store_key()` across all backends; fixed silent lookup failures from key format mismatch
+- **SecretManager cache TTL** — entries expire after 5 minutes, preventing stale credentials
+- **Inherit cycle protection** — `HashSet<Uuid>` visited guard prevents infinite loops in group hierarchy
+- **Group change in connection dialog** — selecting a different group now correctly persists on save
+- **Monitoring race condition** — waits for SSH handshake before opening monitoring channel
+
+### Security
+- **SecretString migration** — RDP/SPICE event credentials, GUI password structs, CLI input, and `Variable` (zeroize on Drop) all use `SecretString`
+
+### Changed
+- **Backend dispatch consolidation** — `VaultOp` enum + `dispatch_vault_op()` replaces ~200 lines of duplicated match blocks
+- **Mutex lock safety** — ~50 `unwrap()` on `Mutex::lock()` replaced with `lock_or_log()` helper
+- **Error logging** — `let _ =` on persistence ops replaced with `tracing::warn!`; remaining `eprintln!` migrated
+- **CSS extraction** — 595-line inline CSS moved to `rustconn/assets/style.css`
+- **i18n consistency** — hardcoded English strings wrapped with `i18n()` / `i18n_f()`
+- **CI** — `--all-features` added to test jobs for feature-gated code coverage
+
+### Removed
+- Dead code: `StateAccessError`, unused state accessors, legacy dialog tabs, ~30 unused sidebar methods
+
+### Dependencies
+- js-sys 0.3.90→0.3.91, pin-project-lite 0.2.16→0.2.17, wasm-bindgen 0.2.113→0.2.114, web-sys 0.3.90→0.3.91
+
 ## [0.9.4] - 2026-03-01
 
 ### Added

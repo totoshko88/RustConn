@@ -26,7 +26,7 @@
 //!
 //! // Connect signals
 //! display.connect_vnc_connected(|_| {
-//!     println!("Connected!");
+//!     tracing::info!("Connected!");
 //! });
 //!
 //! display.connect_vnc_auth_credential(|display, creds| {
