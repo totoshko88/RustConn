@@ -1113,6 +1113,50 @@ impl AppState {
             }
         }
 
+        // For Vault password source with non-KeePass backends (Bitwarden, 1Password, etc.)
+        // Use dispatch_vault_op which calls auto_unlock to ensure the vault is accessible.
+        if connection.password_source == PasswordSource::Vault
+            && !matches!(
+                secret_settings.preferred_backend,
+                rustconn_core::config::SecretBackendType::KeePassXc
+                    | rustconn_core::config::SecretBackendType::KdbxFile
+            )
+        {
+            let backend_type = select_backend_for_load(&secret_settings);
+            let lookup_key = generate_store_key(
+                &connection.name,
+                &connection.host,
+                &connection.protocol_config.protocol_type().as_str().to_lowercase(),
+                backend_type,
+            );
+
+            tracing::debug!(
+                lookup_key = %lookup_key,
+                ?backend_type,
+                "[resolve_credentials_blocking] Vault (non-KeePass): resolving"
+            );
+
+            match dispatch_vault_op(&secret_settings, &lookup_key, VaultOp::Retrieve) {
+                Ok(Some(creds)) => {
+                    tracing::debug!(
+                        "[resolve_credentials_blocking] Found password in vault"
+                    );
+                    return Ok(Some(creds));
+                }
+                Ok(None) => {
+                    tracing::debug!(
+                        "[resolve_credentials_blocking] No password found in vault"
+                    );
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        error = %e,
+                        "[resolve_credentials_blocking] Vault lookup failed"
+                    );
+                }
+            }
+        }
+
         // For Inherit password source, traverse parent groups to find credentials
         if connection.password_source == PasswordSource::Inherit
             && kdbx_enabled
@@ -1215,7 +1259,13 @@ impl AppState {
 
         // For Inherit password source with non-KeePass backends
         // See also: CredentialResolver::resolve_inherited_credentials() in resolver.rs
-        if connection.password_source == PasswordSource::Inherit && !kdbx_enabled {
+        if connection.password_source == PasswordSource::Inherit
+            && !matches!(
+                secret_settings.preferred_backend,
+                rustconn_core::config::SecretBackendType::KeePassXc
+                    | rustconn_core::config::SecretBackendType::KdbxFile
+            )
+        {
             let mut current_group_id = connection.group_id;
             let mut visited = std::collections::HashSet::new();
 
@@ -2204,6 +2254,14 @@ pub fn save_password_to_vault(
         // so that store and resolve are consistent.
         let backend_type = select_backend_for_load(&settings.secrets);
         let lookup_key = generate_store_key(conn_name, conn_host, &protocol_str, backend_type);
+        tracing::debug!(
+            %lookup_key,
+            ?backend_type,
+            conn_name,
+            conn_host,
+            protocol_str,
+            "save_password_to_vault: storing with key"
+        );
         let username = username.to_string();
         let pwd = password.to_string();
         let secret_settings = settings.secrets.clone();
@@ -2960,13 +3018,32 @@ pub fn dispatch_vault_op(
 
         match op {
             VaultOp::Store(creds) => {
+                tracing::debug!(
+                    %lookup_key,
+                    ?backend_type,
+                    "dispatch_vault_op: storing credentials"
+                );
                 rt.block_on(backend.store(lookup_key, creds))
                     .map_err(|e| format!("{e}"))?;
+                tracing::debug!(%lookup_key, "dispatch_vault_op: store succeeded");
                 Ok(None)
             }
-            VaultOp::Retrieve => rt
-                .block_on(backend.retrieve(lookup_key))
-                .map_err(|e| format!("{e}")),
+            VaultOp::Retrieve => {
+                tracing::debug!(
+                    %lookup_key,
+                    ?backend_type,
+                    "dispatch_vault_op: retrieving credentials"
+                );
+                let result = rt
+                    .block_on(backend.retrieve(lookup_key))
+                    .map_err(|e| format!("{e}"))?;
+                tracing::debug!(
+                    %lookup_key,
+                    found = result.is_some(),
+                    "dispatch_vault_op: retrieve completed"
+                );
+                Ok(result)
+            }
             VaultOp::Delete => {
                 rt.block_on(backend.delete(lookup_key))
                     .map_err(|e| format!("{e}"))?;

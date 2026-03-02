@@ -20,7 +20,7 @@ use libadwaita::prelude::*;
 use regex::Regex;
 use rustconn_core::models::AutomationConfig;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::rc::Rc;
 use uuid::Uuid;
@@ -72,6 +72,8 @@ pub struct TerminalNotebook {
     tab_group_manager: Rc<RefCell<TabGroupManager>>,
     /// Callback for reconnect button clicks (session_id, connection_id)
     on_reconnect: Rc<RefCell<Option<Box<dyn Fn(Uuid, Uuid)>>>>,
+    /// Sessions that already have a reconnect banner (prevents duplicates)
+    reconnect_shown: Rc<RefCell<HashSet<Uuid>>>,
     /// Cluster terminal tracking: cluster_id → Vec<session_id>
     cluster_sessions: Rc<RefCell<HashMap<Uuid, Vec<Uuid>>>>,
     /// Reverse lookup: session_id → cluster_id
@@ -131,6 +133,7 @@ impl TerminalNotebook {
             color_tabs_by_protocol: Rc::new(RefCell::new(false)),
             tab_group_manager: Rc::new(RefCell::new(TabGroupManager::new())),
             on_reconnect: Rc::new(RefCell::new(None)),
+            reconnect_shown: Rc::new(RefCell::new(HashSet::new())),
             cluster_sessions: Rc::new(RefCell::new(HashMap::new())),
             session_to_cluster: Rc::new(RefCell::new(HashMap::new())),
             cluster_broadcast_flags: Rc::new(RefCell::new(HashMap::new())),
@@ -1089,6 +1092,20 @@ impl TerminalNotebook {
             argv.push(key);
         }
 
+        // In Flatpak, ~/.ssh is read-only — use a writable known_hosts path
+        // unless the caller already set UserKnownHostsFile via extra_args
+        let kh_option;
+        let has_known_hosts_opt = extra_args
+            .iter()
+            .any(|a| a.contains("UserKnownHostsFile"));
+        if !has_known_hosts_opt
+            && let Some(kh_path) = rustconn_core::get_flatpak_known_hosts_path()
+        {
+            kh_option = format!("UserKnownHostsFile={}", kh_path.display());
+            argv.push("-o");
+            argv.push(&kh_option);
+        }
+
         argv.extend(extra_args);
 
         let destination = if let Some(user) = username {
@@ -1164,6 +1181,7 @@ impl TerminalNotebook {
 
     /// Closes a terminal tab by session ID
     pub fn close_tab(&self, session_id: Uuid) {
+        self.reconnect_shown.borrow_mut().remove(&session_id);
         if let Some(page) = self.sessions.borrow().get(&session_id).cloned() {
             self.tab_view.close_page(&page);
         }
@@ -1190,6 +1208,11 @@ impl TerminalNotebook {
     /// "Reconnect" button to the tab's container. The button triggers the
     /// `on_reconnect` callback with the session's connection ID.
     pub fn show_reconnect_overlay(&self, session_id: Uuid) {
+        // Guard: child-exited can fire twice for the same session; show only one banner
+        if !self.reconnect_shown.borrow_mut().insert(session_id) {
+            return;
+        }
+
         let Some(page) = self.sessions.borrow().get(&session_id).cloned() else {
             return;
         };

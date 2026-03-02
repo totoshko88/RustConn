@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.9.5
+Version:        0.9.6
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -201,6 +201,17 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Mon Mar 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.6-0
+- Bitwarden Flatpak: build_command falls back to global session store (#28)
+- Bitwarden Settings auto-unlock uses resolved bw CLI path (#28)
+- Connection dialog credential download uses generate_store_key (UUID-based)
+- Vault credential resolve for non-KeePass backends via dispatch_vault_op
+- Inherit condition no longer blocked by kdbx_enabled for Bitwarden/1Password
+- Group password load dispatches to configured default secret backend
+- SSH known_hosts persists in Flatpak via writable UserKnownHostsFile path
+- Duplicate reconnect banner prevented via per-session tracking
+- SSH dialog hides key fields for Keyboard Interactive auth method
+
 * Sun Mar 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.5-0
 - SSH/Telnet pre-connect port check — fail fast with retry toast
 - Vault credential lifecycle — orphaned cleanup, paste duplication,

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.6] - 2026-03-02
+
+### Fixed
+- **Bitwarden Flatpak session key** — `build_command` now falls back to the global in-process session store when the instance-level key is absent, so `SecretManager.is_available()` correctly sees an unlocked vault after `auto_unlock` ([#28](https://github.com/totoshko88/RustConn/issues/28))
+- **Bitwarden Settings auto-unlock path** — secrets tab auto-unlock now uses `get_bw_cmd()` (globally resolved path) instead of the local `Rc<RefCell>` which may still hold the bare `"bw"` before detection completes
+- **Connection dialog credential download** — lookup key now uses `generate_store_key()` (UUID-based) instead of `"{name} ({protocol})"` format, matching the key used by Bitwarden/1Password/Passbolt store operations
+- **Vault credential resolve for non-KeePass backends** — `resolve_credentials_blocking` now has a direct `PasswordSource::Vault` block that calls `dispatch_vault_op` with `auto_unlock` for Bitwarden and other backends, instead of falling through to `CredentialResolver` which created a fresh `BitwardenBackend` without session
+- **Inherit condition for non-KeePass backends** — group password inheritance no longer blocked when `kdbx_enabled=true` but preferred backend is Bitwarden/1Password/Passbolt/Pass; condition changed from `!kdbx_enabled` to `!matches!(preferred_backend, KeePassXc | KdbxFile)`
+- **Group password load from any backend** — group edit dialog password load button now dispatches to the configured default secret backend via `select_backend_for_load` + `dispatch_vault_op`, instead of hardcoded KeePass/Keyring-only branches
+- **SSH known_hosts not persisting in Flatpak** — SSH connections now use `-o UserKnownHostsFile=~/.var/app/<app-id>/.ssh/known_hosts` in Flatpak sandbox where `~/.ssh` is mounted read-only; directory is auto-created; applies to interactive SSH, sshpass, Quick Connect, and monitoring; respects user-set `UserKnownHostsFile` in custom options
+- **Duplicate reconnect banner** — `TerminalNotebook` now tracks shown reconnect banners per session to prevent duplicates on repeated child-exit signals
+- **SSH dialog key fields for Keyboard Interactive** — auth method visibility now correctly hides key path/passphrase fields for Keyboard Interactive (index 2), same as Password (index 0)
+
+### Changed
+- **Dependency updates** — moka 0.12.13→0.12.14, pxfm 0.1.27→0.1.28, zlib-rs 0.6.2→0.6.3; kubectl pinned 1.35.1→1.35.2
+
 ## [0.9.5] - 2026-03-02
 
 ### Fixed

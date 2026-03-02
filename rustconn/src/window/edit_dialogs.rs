@@ -707,148 +707,109 @@ pub fn show_edit_group_dialog(
         btn.set_sensitive(false);
         btn.set_icon_name("content-loading-symbolic");
 
-        match password_source_idx {
-            1 => {
-                // KeePass
-                if !settings.secrets.kdbx_enabled {
-                    alert::show_validation_error(&window_clone, &i18n("KeePass is not enabled"));
-                    btn_clone.set_sensitive(true);
-                    btn_clone.set_icon_name("folder-symbolic");
-                    return;
-                }
-                let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
-                    alert::show_validation_error(
-                        &window_clone,
-                        &i18n("KeePass database not configured"),
-                    );
-                    btn_clone.set_sensitive(true);
-                    btn_clone.set_icon_name("folder-symbolic");
-                    return;
-                };
-                let key_file = settings.secrets.kdbx_key_file.clone();
+        // Index 1 = "Vault" — dispatch to the configured default backend
+        if password_source_idx != 1 {
+            btn.set_sensitive(true);
+            btn.set_icon_name("folder-symbolic");
+            alert::show_validation_error(
+                &window_clone,
+                &i18n("Select Vault to load password"),
+            );
+            return;
+        }
 
-                crate::utils::spawn_blocking_with_callback(
-                    move || {
-                        let key_file_path = key_file.as_ref().map(std::path::Path::new);
-                        rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
-                            std::path::Path::new(&kdbx_path),
-                            None,
-                            key_file_path,
-                            &group_path,
-                            None, // No protocol for groups
-                        )
-                    },
-                    move |result: rustconn_core::error::SecretResult<
-                        Option<secrecy::SecretString>,
-                    >| {
-                        btn_clone.set_sensitive(true);
-                        btn_clone.set_icon_name("folder-symbolic");
-                        match result {
-                            Ok(Some(pwd)) => {
-                                use secrecy::ExposeSecret;
-                                password_entry_clone.set_text(pwd.expose_secret());
-                            }
-                            Ok(None) => {
-                                alert::show_validation_error(
-                                    &window_clone,
-                                    &i18n("No password found for this group"),
-                                );
-                            }
-                            Err(e) => {
-                                let msg = e.to_string();
-                                tracing::error!("Failed to load password: {}", msg);
-                                alert::show_error(&window_clone, &i18n("Load Error"), &msg);
-                            }
-                        }
-                    },
-                );
-            }
-            2 => {
-                // Keyring
-                crate::utils::spawn_blocking_with_callback(
-                    move || {
-                        use rustconn_core::secret::SecretBackend;
-                        let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
-                        crate::async_utils::with_runtime(|rt| {
-                            rt.block_on(backend.retrieve(&lookup_key))
-                                .map_err(|e| format!("{e}"))
-                        })?
-                    },
-                    move |result: Result<Option<Credentials>, String>| {
-                        btn_clone.set_sensitive(true);
-                        btn_clone.set_icon_name("folder-symbolic");
-                        match result {
-                            Ok(Some(creds)) => {
-                                if let Some(pwd) = creds.expose_password() {
-                                    password_entry_clone.set_text(pwd);
-                                } else {
-                                    alert::show_validation_error(
-                                        &window_clone,
-                                        &i18n("No password found for this group"),
-                                    );
-                                }
-                            }
-                            Ok(None) => {
-                                alert::show_validation_error(
-                                    &window_clone,
-                                    &i18n("No password found for this group"),
-                                );
-                            }
-                            Err(e) => {
-                                tracing::error!("Failed to load password: {}", e);
-                                alert::show_error(&window_clone, &i18n("Load Error"), &e);
-                            }
-                        }
-                    },
-                );
-            }
-            3 => {
-                // Bitwarden
-                crate::utils::spawn_blocking_with_callback(
-                    move || {
-                        use rustconn_core::secret::SecretBackend;
-                        let backend = rustconn_core::secret::BitwardenBackend::new();
-                        crate::async_utils::with_runtime(|rt| {
-                            rt.block_on(backend.retrieve(&lookup_key))
-                                .map_err(|e| format!("{e}"))
-                        })?
-                    },
-                    move |result: Result<Option<Credentials>, String>| {
-                        btn_clone.set_sensitive(true);
-                        btn_clone.set_icon_name("folder-symbolic");
-                        match result {
-                            Ok(Some(creds)) => {
-                                if let Some(pwd) = creds.expose_password() {
-                                    password_entry_clone.set_text(pwd);
-                                } else {
-                                    alert::show_validation_error(
-                                        &window_clone,
-                                        &i18n("No password found for this group"),
-                                    );
-                                }
-                            }
-                            Ok(None) => {
-                                alert::show_validation_error(
-                                    &window_clone,
-                                    &i18n("No password found for this group"),
-                                );
-                            }
-                            Err(e) => {
-                                tracing::error!("Failed to load password: {}", e);
-                                alert::show_error(&window_clone, &i18n("Load Error"), &e);
-                            }
-                        }
-                    },
-                );
-            }
-            _ => {
-                btn.set_sensitive(true);
-                btn.set_icon_name("folder-symbolic");
+        let backend_type =
+            crate::state::select_backend_for_load(&settings.secrets);
+
+        // KeePass/KDBX uses direct file access with group_path
+        if matches!(
+            backend_type,
+            rustconn_core::config::SecretBackendType::KdbxFile
+        ) {
+            let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
                 alert::show_validation_error(
                     &window_clone,
-                    &i18n("Select KeePass, Keyring, or Bitwarden to load password"),
+                    &i18n("KeePass database not configured"),
                 );
-            }
+                btn_clone.set_sensitive(true);
+                btn_clone.set_icon_name("folder-symbolic");
+                return;
+            };
+            let key_file = settings.secrets.kdbx_key_file.clone();
+
+            crate::utils::spawn_blocking_with_callback(
+                move || {
+                    let key_file_path = key_file.as_ref().map(std::path::Path::new);
+                    rustconn_core::secret::KeePassStatus::get_password_from_kdbx_with_key(
+                        std::path::Path::new(&kdbx_path),
+                        None,
+                        key_file_path,
+                        &group_path,
+                        None, // No protocol for groups
+                    )
+                },
+                move |result: rustconn_core::error::SecretResult<
+                    Option<secrecy::SecretString>,
+                >| {
+                    btn_clone.set_sensitive(true);
+                    btn_clone.set_icon_name("folder-symbolic");
+                    match result {
+                        Ok(Some(pwd)) => {
+                            use secrecy::ExposeSecret;
+                            password_entry_clone.set_text(pwd.expose_secret());
+                        }
+                        Ok(None) => {
+                            alert::show_validation_error(
+                                &window_clone,
+                                &i18n("No password found for this group"),
+                            );
+                        }
+                        Err(e) => {
+                            let msg = e.to_string();
+                            tracing::error!("Failed to load group password: {}", msg);
+                            alert::show_error(&window_clone, &i18n("Load Error"), &msg);
+                        }
+                    }
+                },
+            );
+        } else {
+            // All other backends — dispatch via dispatch_vault_op
+            let secret_settings = settings.secrets.clone();
+            crate::utils::spawn_blocking_with_callback(
+                move || {
+                    crate::state::dispatch_vault_op(
+                        &secret_settings,
+                        &lookup_key,
+                        crate::state::VaultOp::Retrieve,
+                    )
+                },
+                move |result: Result<Option<Credentials>, String>| {
+                    btn_clone.set_sensitive(true);
+                    btn_clone.set_icon_name("folder-symbolic");
+                    match result {
+                        Ok(Some(creds)) => {
+                            if let Some(pwd) = creds.expose_password() {
+                                password_entry_clone.set_text(pwd);
+                            } else {
+                                alert::show_validation_error(
+                                    &window_clone,
+                                    &i18n("No password found for this group"),
+                                );
+                            }
+                        }
+                        Ok(None) => {
+                            alert::show_validation_error(
+                                &window_clone,
+                                &i18n("No password found for this group"),
+                            );
+                        }
+                        Err(e) => {
+                            tracing::error!("Failed to load group password: {}", e);
+                            alert::show_error(&window_clone, &i18n("Load Error"), &e);
+                        }
+                    }
+                },
+            );
         }
     });
 

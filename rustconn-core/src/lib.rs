@@ -121,7 +121,7 @@ pub use export::{
 pub use ffi::{
     ConnectionState, FfiDisplay, FfiError, FfiResult, VncCredentialType, VncDisplay, VncError,
 };
-pub use flatpak::is_flatpak;
+pub use flatpak::{get_flatpak_known_hosts_path, get_flatpak_ssh_dir, is_flatpak};
 // Deprecated flatpak-spawn functions (host_command, host_exec, host_has_command,
 // host_spawn, host_which) are no longer re-exported since Flathub policy change in v0.7.7.
 pub use import::{

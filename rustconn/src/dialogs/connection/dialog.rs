@@ -6362,13 +6362,19 @@ impl ConnectionDialog {
                 }
             };
 
-            // Flat lookup key for Keyring/Bitwarden — matches the format
-            // used by resolve_from_keyring and import credential storage:
-            // "{name} ({protocol})"
+            // Flat lookup key — must match the format used by
+            // `generate_store_key` so that store and retrieve are consistent.
+            // LibSecret uses "{name} ({protocol})", while Bitwarden and other
+            // backends use "rustconn/{name}".
             let flat_lookup_key = {
-                let sanitized = base_name.trim().replace('/', "-");
-                let sanitized = rustconn_core::import::sanitize_imported_value(&sanitized);
-                format!("{sanitized} ({protocol_suffix})")
+                let backend_type =
+                    crate::state::select_backend_for_load(&secret_settings);
+                crate::state::generate_store_key(
+                    &conn_name,
+                    &conn_host,
+                    protocol_suffix,
+                    backend_type,
+                )
             };
 
             match selected {

@@ -302,13 +302,21 @@ impl BitwardenBackend {
         self.session_key = None;
     }
 
-    /// Builds command with session key if available
+    /// Builds command with session key if available.
+    ///
+    /// Checks the instance-level session key first, then falls back to the
+    /// global in-process session store set by [`set_session_key`] (module-level).
+    /// This ensures that backends created via `BitwardenBackend::new()` (which
+    /// have no instance session key) still pick up a session established by
+    /// [`auto_unlock`].
     fn build_command(&self, args: &[&str]) -> Command {
         let mut cmd = Command::new(&self.bw_cmd);
         cmd.args(args);
 
         if let Some(ref session) = self.session_key {
             cmd.arg("--session").arg(session.expose_secret());
+        } else if let Some(global_session) = get_session_key() {
+            cmd.arg("--session").arg(global_session);
         }
 
         cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
@@ -317,6 +325,13 @@ impl BitwardenBackend {
 
     /// Runs a bw command and returns stdout
     async fn run_command(&self, args: &[&str]) -> SecretResult<String> {
+        tracing::debug!(
+            args = ?args,
+            has_session = self.session_key.is_some(),
+            has_global_session = get_session_key().is_some(),
+            "Bitwarden run_command"
+        );
+
         let output = self
             .build_command(args)
             .output()
@@ -325,12 +340,23 @@ impl BitwardenBackend {
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
+            tracing::debug!(
+                args = ?args,
+                stderr = %stderr,
+                "Bitwarden run_command: failed"
+            );
             return Err(SecretError::ConnectionFailed(format!(
                 "bw command failed: {stderr}"
             )));
         }
 
-        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        tracing::debug!(
+            args = ?args,
+            output_len = stdout.len(),
+            "Bitwarden run_command: success"
+        );
+        Ok(stdout)
     }
 
     /// Gets the vault status
@@ -399,6 +425,12 @@ impl BitwardenBackend {
     /// Finds an item by connection ID
     async fn find_item(&self, connection_id: &str) -> SecretResult<Option<BitwardenItem>> {
         let search_term = Self::entry_name(connection_id);
+        tracing::debug!(
+            search_term = %search_term,
+            connection_id = %connection_id,
+            "Bitwarden find_item: searching vault"
+        );
+
         let output = self
             .run_command(&["list", "items", "--search", &search_term])
             .await?;
@@ -406,8 +438,23 @@ impl BitwardenBackend {
         let items: Vec<BitwardenItem> = serde_json::from_str(&output)
             .map_err(|e| SecretError::RetrieveFailed(format!("Failed to parse items: {e}")))?;
 
+        tracing::debug!(
+            items_count = items.len(),
+            search_term = %search_term,
+            "Bitwarden find_item: parsed results"
+        );
+
         // Find exact match by name
-        Ok(items.into_iter().find(|item| item.name == search_term))
+        let result = items.into_iter().find(|item| item.name == search_term);
+
+        if result.is_none() {
+            tracing::debug!(
+                search_term = %search_term,
+                "Bitwarden find_item: no exact match found"
+            );
+        }
+
+        Ok(result)
     }
 }
 
@@ -420,8 +467,18 @@ impl Default for BitwardenBackend {
 #[async_trait]
 impl SecretBackend for BitwardenBackend {
     async fn store(&self, connection_id: &str, credentials: &Credentials) -> SecretResult<()> {
+        let entry_name = Self::entry_name(connection_id);
+        tracing::debug!(
+            connection_id = %connection_id,
+            entry_name = %entry_name,
+            has_session = self.session_key.is_some(),
+            has_global_session = get_session_key().is_some(),
+            "Bitwarden store: starting"
+        );
+
         // Check if vault is unlocked
         if !self.is_unlocked().await {
+            tracing::error!("Bitwarden store: vault is locked");
             return Err(SecretError::BackendUnavailable(
                 "Bitwarden vault is locked. Please unlock with 'bw unlock'".to_string(),
             ));
@@ -503,6 +560,11 @@ impl SecretBackend for BitwardenBackend {
     }
 
     async fn retrieve(&self, connection_id: &str) -> SecretResult<Option<Credentials>> {
+        tracing::debug!(
+            connection_id = %connection_id,
+            "Bitwarden retrieve: starting"
+        );
+
         // Check if vault is unlocked
         if !self.is_unlocked().await {
             return Err(SecretError::BackendUnavailable(
@@ -514,9 +576,19 @@ impl SecretBackend for BitwardenBackend {
         // This ensures we have the most recent credentials
         let _ = self.sync().await; // Ignore sync errors, proceed with local data
 
-        let item = match self.find_item(connection_id).await? {
-            Some(item) => item,
-            None => return Ok(None),
+        let item = if let Some(item) = self.find_item(connection_id).await? {
+            tracing::debug!(
+                item_id = %item.id,
+                item_name = %item.name,
+                "Bitwarden retrieve: item found"
+            );
+            item
+        } else {
+            tracing::debug!(
+                connection_id = %connection_id,
+                "Bitwarden retrieve: no item found"
+            );
+            return Ok(None);
         };
 
         let login = match item.login {

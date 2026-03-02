@@ -319,8 +319,8 @@ fn connect_auth_method_visibility(
     auth_dropdown.connect_selected_notify(move |dropdown| {
         let selected = dropdown.selected();
         match selected {
-            0 => {
-                // Password - hide all key-related rows
+            0 | 2 => {
+                // Password / Keyboard Interactive - hide all key-related rows
                 key_source_row_clone.set_visible(false);
                 key_file_row_clone.set_visible(false);
                 agent_key_row_clone.set_visible(false);
@@ -339,7 +339,7 @@ fn connect_auth_method_visibility(
                 agent_key_row_clone.set_visible(false);
             }
             _ => {
-                // Public Key, Keyboard Interactive - show key source row
+                // Public Key - show key source row
                 key_source_row_clone.set_visible(true);
                 // Key file/agent rows visibility is controlled by key_source_dropdown
             }

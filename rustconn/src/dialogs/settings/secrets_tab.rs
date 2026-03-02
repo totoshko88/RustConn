@@ -2117,15 +2117,17 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
     // Auto-unlock Bitwarden from keyring if configured
     if settings.bitwarden_save_to_keyring {
         let status_label = widgets.bitwarden_status_label.clone();
-        let bw_cmd_rc = widgets.bitwarden_cmd.clone();
         tracing::debug!("Scheduling Bitwarden auto-unlock from keyring (async)");
         glib::spawn_future_local({
             let status_label = status_label.clone();
-            let bw_cmd = bw_cmd_rc.borrow().clone();
             async move {
                 let t_bw = std::time::Instant::now();
                 let result = glib::spawn_future(async move {
-                    let bw_cmd = bw_cmd;
+                    // Use the globally resolved bw command path (set by
+                    // detect_secret_backends / resolve_bw_cmd at startup).
+                    // The local Rc<RefCell<String>> may still hold the default
+                    // "bw" if detection hasn't completed yet.
+                    let bw_cmd = rustconn_core::secret::get_bw_cmd();
                     let password = get_bw_password_from_keyring();
                     let password = if let Some(p) = password {
                         p

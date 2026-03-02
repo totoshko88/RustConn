@@ -90,6 +90,20 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.9.6" date="2026-03-02">
+      <description>
+        <p>Bitwarden integration fixes, universal secret backend support, and Flatpak SSH improvements:</p>
+        <ul>
+          <li>Bitwarden session key and auto-unlock path fixes in Flatpak</li>
+          <li>Connection dialog credential download uses correct vault lookup key</li>
+          <li>Vault credential resolve works for all non-KeePass backends</li>
+          <li>Group password load dispatches to configured default secret backend</li>
+          <li>Password inheritance works with Bitwarden/1Password/Passbolt/Pass</li>
+          <li>SSH known_hosts persists in Flatpak sandbox via writable path</li>
+          <li>Duplicate reconnect banner and SSH dialog auth field visibility fixes</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.9.5" date="2026-03-02">
       <description>
         <p>Secret backend hardening, SSH/Telnet pre-connect port check, and code quality improvements.</p>

@@ -69,6 +69,13 @@ pub fn ssh_exec_factory(
 
             // Suppress known_hosts warnings
             cmd.arg("-o").arg("StrictHostKeyChecking=no");
+
+            // In Flatpak, ~/.ssh is read-only — use writable known_hosts path
+            if let Some(kh_path) = crate::flatpak::get_flatpak_known_hosts_path() {
+                let kh_opt = format!("UserKnownHostsFile={}", kh_path.display());
+                cmd.arg("-o").arg(kh_opt);
+            }
+
             // Short connection timeout
             cmd.arg("-o").arg("ConnectTimeout=5");
 

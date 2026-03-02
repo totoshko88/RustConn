@@ -681,15 +681,15 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         description: "Kubernetes CLI for pod shell connections",
         category: ComponentCategory::ContainerOrchestration,
         install_method: InstallMethod::Download,
-        download_url: Some("https://dl.k8s.io/release/v1.35.1/bin/linux/amd64/kubectl"),
-        aarch64_url: Some("https://dl.k8s.io/release/v1.35.1/bin/linux/arm64/kubectl"),
+        download_url: Some("https://dl.k8s.io/release/v1.35.2/bin/linux/amd64/kubectl"),
+        aarch64_url: Some("https://dl.k8s.io/release/v1.35.2/bin/linux/arm64/kubectl"),
         // kubectl is a single binary — checksum changes per release
         checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~50 MB",
         binary_name: "kubectl",
         install_subdir: "kubectl",
-        pinned_version: Some("1.35.1"),
+        pinned_version: Some("1.35.2"),
         works_in_sandbox: true,
     },
 ];

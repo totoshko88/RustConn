@@ -263,6 +263,23 @@ fn start_ssh_connection_internal(
                 args.push(format!("{k}={v}"));
             }
 
+            // In Flatpak, ~/.ssh is read-only — point known_hosts to a writable path
+            let user_set_known_hosts = ssh_config
+                .custom_options
+                .keys()
+                .any(|k| k.eq_ignore_ascii_case("UserKnownHostsFile"));
+            if !user_set_known_hosts
+                && let Some(kh_path) = rustconn_core::get_flatpak_known_hosts_path()
+            {
+                tracing::debug!(
+                    protocol = "ssh",
+                    path = %kh_path.display(),
+                    "Using Flatpak-writable known_hosts"
+                );
+                args.push("-o".to_string());
+                args.push(format!("UserKnownHostsFile={}", kh_path.display()));
+            }
+
             // Check waypipe: enabled in config + binary available on PATH
             let waypipe = ssh_config.waypipe && rustconn_core::protocol::detect_waypipe().installed;
             if ssh_config.waypipe && !waypipe {

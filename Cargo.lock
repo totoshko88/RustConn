@@ -3259,9 +3259,9 @@ dependencies = [
 
 [[package]]
 name = "moka"
-version = "0.12.13"
+version = "0.12.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4ac832c50ced444ef6be0767a008b02c106a909ba79d1d830501e94b96f6b7e"
+checksum = "85f8024e1c8e71c778968af91d43700ce1d11b219d127d79fb2934153b82b42b"
 dependencies = [
  "crossbeam-channel",
  "crossbeam-epoch",
@@ -4266,12 +4266,9 @@ dependencies = [
 
 [[package]]
 name = "pxfm"
-version = "0.1.27"
+version = "0.1.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7186d3822593aa4393561d186d1393b3923e9d6163d3fbfd6e825e3e6cf3e6a8"
-dependencies = [
- "num-traits",
-]
+checksum = "b5a041e753da8b807c9255f28de81879c78c876392ff2469cde94799b2896b9d"
 
 [[package]]
 name = "quick-error"
@@ -4725,7 +4722,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.9.5"
+version = "0.9.6"
 dependencies = [
  "chrono",
  "cpal",
@@ -4752,7 +4749,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.9.5"
+version = "0.9.6"
 dependencies = [
  "chrono",
  "clap",
@@ -4773,7 +4770,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.9.5"
+version = "0.9.6"
 dependencies = [
  "ar",
  "argon2",
@@ -7304,9 +7301,9 @@ dependencies = [
 
 [[package]]
 name = "zlib-rs"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c745c48e1007337ed136dc99df34128b9faa6ed542d80a1c673cf55a6d7236c8"
+checksum = "3be3d40e40a133f9c916ee3f9f4fa2d9d63435b5fbe1bfc6d9dae0aa0ada1513"
 
 [[package]]
 name = "zmij"
