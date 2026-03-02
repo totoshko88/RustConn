@@ -55,7 +55,6 @@ pub fn get_flatpak_known_hosts_path() -> Option<std::path::PathBuf> {
     Some(ssh_dir.join("known_hosts"))
 }
 
-
 /// Checks if the application is running inside a Flatpak sandbox.
 ///
 /// This function caches the result for performance.

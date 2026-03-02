@@ -1126,7 +1126,11 @@ impl AppState {
             let lookup_key = generate_store_key(
                 &connection.name,
                 &connection.host,
-                &connection.protocol_config.protocol_type().as_str().to_lowercase(),
+                &connection
+                    .protocol_config
+                    .protocol_type()
+                    .as_str()
+                    .to_lowercase(),
                 backend_type,
             );
 
@@ -1138,15 +1142,11 @@ impl AppState {
 
             match dispatch_vault_op(&secret_settings, &lookup_key, VaultOp::Retrieve) {
                 Ok(Some(creds)) => {
-                    tracing::debug!(
-                        "[resolve_credentials_blocking] Found password in vault"
-                    );
+                    tracing::debug!("[resolve_credentials_blocking] Found password in vault");
                     return Ok(Some(creds));
                 }
                 Ok(None) => {
-                    tracing::debug!(
-                        "[resolve_credentials_blocking] No password found in vault"
-                    );
+                    tracing::debug!("[resolve_credentials_blocking] No password found in vault");
                 }
                 Err(e) => {
                     tracing::warn!(

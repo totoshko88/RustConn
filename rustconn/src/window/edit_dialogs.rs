@@ -711,15 +711,11 @@ pub fn show_edit_group_dialog(
         if password_source_idx != 1 {
             btn.set_sensitive(true);
             btn.set_icon_name("folder-symbolic");
-            alert::show_validation_error(
-                &window_clone,
-                &i18n("Select Vault to load password"),
-            );
+            alert::show_validation_error(&window_clone, &i18n("Select Vault to load password"));
             return;
         }
 
-        let backend_type =
-            crate::state::select_backend_for_load(&settings.secrets);
+        let backend_type = crate::state::select_backend_for_load(&settings.secrets);
 
         // KeePass/KDBX uses direct file access with group_path
         if matches!(
@@ -748,9 +744,7 @@ pub fn show_edit_group_dialog(
                         None, // No protocol for groups
                     )
                 },
-                move |result: rustconn_core::error::SecretResult<
-                    Option<secrecy::SecretString>,
-                >| {
+                move |result: rustconn_core::error::SecretResult<Option<secrecy::SecretString>>| {
                     btn_clone.set_sensitive(true);
                     btn_clone.set_icon_name("folder-symbolic");
                     match result {

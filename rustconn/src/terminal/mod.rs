@@ -1095,11 +1095,8 @@ impl TerminalNotebook {
         // In Flatpak, ~/.ssh is read-only — use a writable known_hosts path
         // unless the caller already set UserKnownHostsFile via extra_args
         let kh_option;
-        let has_known_hosts_opt = extra_args
-            .iter()
-            .any(|a| a.contains("UserKnownHostsFile"));
-        if !has_known_hosts_opt
-            && let Some(kh_path) = rustconn_core::get_flatpak_known_hosts_path()
+        let has_known_hosts_opt = extra_args.iter().any(|a| a.contains("UserKnownHostsFile"));
+        if !has_known_hosts_opt && let Some(kh_path) = rustconn_core::get_flatpak_known_hosts_path()
         {
             kh_option = format!("UserKnownHostsFile={}", kh_path.display());
             argv.push("-o");
