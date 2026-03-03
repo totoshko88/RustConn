@@ -325,8 +325,28 @@ impl ConnectionManager {
         // Preserve original ID and creation timestamp
         updated.id = existing.id;
         updated.created_at = existing.created_at;
+
+        // Preserve fields that the edit dialog does not expose
+        updated.last_connected = existing.last_connected;
+        updated.key_sequence = existing.key_sequence.clone();
+        updated.window_geometry = existing.window_geometry;
+        updated.skip_port_check = existing.skip_port_check;
+        updated.is_pinned = existing.is_pinned;
+        updated.pin_order = existing.pin_order;
+        updated.monitoring_config = existing.monitoring_config.clone();
+
         // group_id is always taken from the updated connection — callers must set it explicitly
         // (None means "root/ungrouped", not "unchanged")
+        let group_changed = existing.group_id != updated.group_id;
+        if group_changed {
+            // Moving to a new group — append to end so it doesn't collide with
+            // existing sort_order values in the target group
+            updated.sort_order = self.next_connection_sort_order(updated.group_id);
+        } else {
+            // Staying in the same group — keep original position
+            updated.sort_order = existing.sort_order;
+        }
+
         updated.touch();
 
         ConfigManager::validate_connection(&updated)?;

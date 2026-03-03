@@ -1,0 +1,11 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.14s
+     Running unittests src/lib.rs (target/debug/deps/rustconn_core-497f25045546026a)
+
+running 4 tests
+test cli_download::tests::test_cli_install_dir_not_flatpak ... ok
+test flatpak::tests::test_is_flatpak_detection ... ok
+test cli_download::tests::test_get_available_components_outside_flatpak ... ok
+test secret::detection::tests::test_parse_flatpak_version ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 1210 filtered out; finished in 0.00s
+

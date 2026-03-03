@@ -1,4 +1,16 @@
 -------------------------------------------------------------------
+Wed Mar 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.7
+
+- Connection group not saved — dialog used separate Rc for groups_data
+  in save closure, so selected subgroup was always lost on save
+- Secret variable values lost after settings reopen — values cleared
+  before disk persist but never restored from vault on dialog open
+  or ${VAR} substitution in connections
+- Crash on session reconnect — close_tab held immutable borrow on
+  sessions while close_page synchronously fired signal handler needing
+  mutable borrow; separated borrow from close call (#39)
+
+-------------------------------------------------------------------
 Mon Mar 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.6
 
 - Bitwarden Flatpak: build_command falls back to global session store (#28)

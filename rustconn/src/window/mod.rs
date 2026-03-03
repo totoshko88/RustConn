@@ -1857,9 +1857,11 @@ impl MainWindow {
             if let Some(win) = window_weak.upgrade() {
                 // Get current global variables and settings snapshot
                 let state_ref = state_clone.borrow();
-                let current_vars = state_ref.settings().global_variables.clone();
                 let settings_snapshot = state_ref.settings().clone();
                 drop(state_ref);
+
+                // Restore secret variable values from vault before showing dialog
+                let current_vars = crate::state::resolve_global_variables(&settings_snapshot);
 
                 let dialog = VariablesDialog::new(Some(win.upcast_ref()));
                 dialog.set_variables(&current_vars);

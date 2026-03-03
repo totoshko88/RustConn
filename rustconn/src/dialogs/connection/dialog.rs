@@ -834,7 +834,7 @@ impl ConnectionDialog {
             variable_dropdown,
             variable_row,
             group_dropdown,
-            groups_data: Rc::new(RefCell::new(vec![(None, "(Root)".to_string())])),
+            groups_data,
             full_groups_data: Rc::new(RefCell::new(HashMap::new())),
             ssh_auth_dropdown,
             ssh_key_source_dropdown,

@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.9.6
+Version:        0.9.7
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -201,6 +201,16 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Wed Mar 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.7-0
+- Connection group not saved — dialog used separate Rc for groups_data
+  in save closure, so selected subgroup was always lost on save
+- Secret variable values lost after settings reopen — values cleared
+  before disk persist but never restored from vault on dialog open
+  or ${VAR} substitution in connections
+- Crash on session reconnect — close_tab held immutable borrow on
+  sessions while close_page synchronously fired signal handler needing
+  mutable borrow; separated borrow from close call (#39)
+
 * Mon Mar 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.6-0
 - Bitwarden Flatpak: build_command falls back to global session store (#28)
 - Bitwarden Settings auto-unlock uses resolved bw CLI path (#28)

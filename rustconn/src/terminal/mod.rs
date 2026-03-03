@@ -1179,7 +1179,8 @@ impl TerminalNotebook {
     /// Closes a terminal tab by session ID
     pub fn close_tab(&self, session_id: Uuid) {
         self.reconnect_shown.borrow_mut().remove(&session_id);
-        if let Some(page) = self.sessions.borrow().get(&session_id).cloned() {
+        let page = self.sessions.borrow().get(&session_id).cloned();
+        if let Some(page) = page {
             self.tab_view.close_page(&page);
         }
     }

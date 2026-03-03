@@ -90,6 +90,16 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.9.7" date="2026-03-04">
+      <description>
+        <p>Bug fixes: connection group selection and secret variable persistence.</p>
+        <ul>
+          <li>Connection dialog used a separate data store for the save handler, so the selected group was always lost — connections now land in the correct subgroup</li>
+          <li>Secret variable values lost after settings reopen — vault-stored values now restored when reopening Variables dialog or substituting variables in connections</li>
+          <li>Crash on session reconnect — RefCell double-borrow in close_tab fixed by separating the borrow from the close_page call</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.9.6" date="2026-03-02">
       <description>
         <p>Bitwarden integration fixes, universal secret backend support, and Flatpak SSH improvements:</p>

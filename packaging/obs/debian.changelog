@@ -1,3 +1,16 @@
+rustconn (0.9.7-1) unstable; urgency=medium
+
+  * Connection group not saved — dialog used separate Rc for groups_data
+    in save closure, so selected subgroup was always lost on save
+  * Secret variable values lost after settings reopen — values stored in
+    vault were never restored when reopening Variables dialog or
+    substituting ${VAR} in connections; added resolve_global_variables()
+  * Crash on session reconnect — close_tab held immutable borrow on
+    sessions while close_page synchronously fired signal handler needing
+    mutable borrow; separated borrow from close call (#39)
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 04 Mar 2026 12:00:00 +0200
+
 rustconn (0.9.6-1) unstable; urgency=medium
 
   * Bitwarden Flatpak: build_command falls back to global session store (#28)

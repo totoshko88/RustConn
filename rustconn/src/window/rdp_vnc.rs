@@ -83,7 +83,7 @@ pub fn start_rdp_with_password_dialog(
     let (conn_name, username, domain) = {
         let state_ref = state.borrow();
         if let Some(conn) = state_ref.get_connection(connection_id) {
-            let global_variables = state_ref.settings().global_variables.clone();
+            let global_variables = crate::state::resolve_global_variables(state_ref.settings());
             let raw_username = conn.username.clone().unwrap_or_default();
             let raw_domain = conn.domain.clone().unwrap_or_default();
             (
@@ -219,8 +219,8 @@ fn start_rdp_session_internal(
     let port = conn.port;
     let window_mode = conn.window_mode;
 
-    // Get global variables for substitution
-    let global_variables = state_ref.settings().global_variables.clone();
+    // Get global variables for substitution (secret values resolved from vault)
+    let global_variables = crate::state::resolve_global_variables(state_ref.settings());
 
     // Helper function to substitute variables
     let substitute = |input: &str| -> String {
@@ -804,8 +804,8 @@ fn start_vnc_session_internal(
     let conn_name = conn.name.clone();
     let port = conn.port;
 
-    // Get global variables for substitution
-    let global_variables = state_ref.settings().global_variables.clone();
+    // Get global variables for substitution (secret values resolved from vault)
+    let global_variables = crate::state::resolve_global_variables(state_ref.settings());
 
     // Apply variable substitution to host
     let host = if conn.host.contains("${") {

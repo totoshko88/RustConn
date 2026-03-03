@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.7] - 2026-03-04
+
+### Fixed
+- **Connection group not saved** — connection dialog used a separate `Rc` for `groups_data` in the save closure vs the struct field, so `set_groups()` updated the struct but the save handler always read the initial `[(None, "(Root)")]`; connections now correctly land in the selected subgroup on both create and edit ([#40](https://github.com/totoshko88/RustConn/issues/40))
+- **Secret variable values lost after settings reopen** — secret variables had their values cleared before persisting to disk (stored in vault), but were never restored from vault when reopening the Variables dialog or substituting `${VAR}` in connections; added `resolve_global_variables()` that loads secret values from the configured vault backend
+- **Crash on session reconnect** — `close_tab` held an immutable borrow on `sessions` while `tab_view.close_page()` synchronously fired the `close-page` signal handler which needed a mutable borrow, causing a `BorrowMutError` panic; separated the borrow from the close call ([#39](https://github.com/totoshko88/RustConn/issues/39))
+
 ## [0.9.6] - 2026-03-02
 
 ### Fixed

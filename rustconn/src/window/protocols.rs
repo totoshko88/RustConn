@@ -166,11 +166,11 @@ fn start_ssh_connection_internal(
     // Build and spawn SSH command
     let port = conn.port;
 
-    // Get global variables for substitution
+    // Get global variables for substitution (secret values resolved from vault)
     let global_variables = state
         .try_borrow()
         .ok()
-        .map(|s| s.settings().global_variables.clone())
+        .map(|s| crate::state::resolve_global_variables(s.settings()))
         .unwrap_or_default();
 
     // Apply variable substitution to host and username (e.g., ${VAR_NAME} -> actual value)
@@ -507,11 +507,11 @@ fn start_vnc_connection_internal(
     let conn_name = conn.name.clone();
     let port = conn.port;
 
-    // Get global variables for substitution
+    // Get global variables for substitution (secret values resolved from vault)
     let global_variables = state
         .try_borrow()
         .ok()
-        .map(|s| s.settings().global_variables.clone())
+        .map(|s| crate::state::resolve_global_variables(s.settings()))
         .unwrap_or_default();
 
     // Apply variable substitution to host
@@ -680,11 +680,11 @@ fn start_spice_connection_internal(
     let conn_name = conn.name.clone();
     let port = conn.port;
 
-    // Get global variables for substitution
+    // Get global variables for substitution (secret values resolved from vault)
     let global_variables = state
         .try_borrow()
         .ok()
-        .map(|s| s.settings().global_variables.clone())
+        .map(|s| crate::state::resolve_global_variables(s.settings()))
         .unwrap_or_default();
 
     // Apply variable substitution to host
@@ -906,11 +906,11 @@ fn start_telnet_connection_internal(
         notebook.set_history_entry_id(session_id, entry_id);
     }
 
-    // Get global variables for substitution
+    // Get global variables for substitution (secret values resolved from vault)
     let global_variables = state
         .try_borrow()
         .ok()
-        .map(|s| s.settings().global_variables.clone())
+        .map(|s| crate::state::resolve_global_variables(s.settings()))
         .unwrap_or_default();
 
     let host = substitute_variables(&conn.host, &global_variables);

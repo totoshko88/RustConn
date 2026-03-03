@@ -2739,6 +2739,30 @@ pub fn load_variable_from_vault(
     }
 }
 
+/// Returns global variables with secret values restored from vault.
+///
+/// Non-secret variables are returned as-is. Secret variables with empty
+/// values have their values loaded from the configured vault backend.
+/// Vault load failures are logged but do not prevent other variables
+/// from being returned.
+pub fn resolve_global_variables(settings: &rustconn_core::config::AppSettings) -> Vec<rustconn_core::Variable> {
+    let mut vars = settings.global_variables.clone();
+    for var in &mut vars {
+        if var.is_secret && var.value.is_empty() {
+            match load_variable_from_vault(&settings.secrets, &var.name) {
+                Ok(Some(pwd)) => var.value = pwd,
+                Ok(None) => {
+                    tracing::debug!(var_name = %var.name, "No secret found in vault for variable");
+                }
+                Err(e) => {
+                    tracing::warn!(var_name = %var.name, error = %e, "Failed to load secret variable from vault");
+                }
+            }
+        }
+    }
+    vars
+}
+
 /// Deletes a connection's vault credentials from the configured backend.
 ///
 /// For KeePass backends, deletes the hierarchical entry. For flat backends,
