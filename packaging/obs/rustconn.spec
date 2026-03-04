@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.9.7
+Version:        0.9.8
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -201,6 +201,13 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Wed Mar 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.8-0
+- Code decomposition — connection dialog and embedded RDP module
+  split into focused submodules for maintainability (RUST-03)
+
+* Wed Mar 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.8-0
+- Version bump to 0.9.8
+
 * Wed Mar 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.7-0
 - Connection group not saved — dialog used separate Rc for groups_data
   in save closure, so selected subgroup was always lost on save

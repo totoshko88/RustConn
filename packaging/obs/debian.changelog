@@ -1,3 +1,16 @@
+rustconn (0.9.8-1) unstable; urgency=medium
+
+  * Code decomposition — connection dialog and embedded RDP module
+    split into focused submodules for maintainability (RUST-03)
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 04 Mar 2026 18:00:00 +0200
+
+rustconn (0.9.8-1) unstable; urgency=medium
+
+  * Version bump to 0.9.8
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 04 Mar 2026 12:00:00 +0200
+
 rustconn (0.9.7-1) unstable; urgency=medium
 
   * Connection group not saved — dialog used separate Rc for groups_data

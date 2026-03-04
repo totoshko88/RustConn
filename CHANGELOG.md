@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8] - 2026-03-04
+
+### Improved
+- **Connection dialog decomposition** — extracted `general_tab.rs`, `automation_tab.rs`, `advanced_tab.rs`, and `data_tab.rs` from monolithic `dialog.rs` (~7500→~1500 lines); each tab is now a self-contained module (RUST-03 §6.1)
+- **Embedded RDP decomposition** — extracted `clipboard.rs`, `connection.rs`, `drawing.rs`, `input.rs`, and `resize.rs` from monolithic `mod.rs` (~2900→~500 lines); each concern is now a focused module (RUST-03 §6.2)
+
 ## [0.9.7] - 2026-03-04
 
 ### Fixed

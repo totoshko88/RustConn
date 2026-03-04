@@ -90,6 +90,15 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.9.8" date="2026-03-04">
+      <description>
+        <p>Code decomposition for maintainability — connection dialog and embedded RDP module split into focused submodules.</p>
+        <ul>
+          <li>Connection dialog split into general_tab, automation_tab, advanced_tab, and data_tab modules</li>
+          <li>Embedded RDP widget split into clipboard, connection, drawing, input, and resize modules</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.9.7" date="2026-03-04">
       <description>
         <p>Bug fixes: connection group selection, secret variable persistence, reconnect crash, and Bitwarden performance.</p>

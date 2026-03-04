@@ -15,7 +15,11 @@
 //! Updated for GTK 4.10+ compatibility using `DropDown` instead of `ComboBoxText`
 //! and Window instead of Dialog.
 
+mod advanced_tab;
+mod automation_tab;
+mod data_tab;
 mod dialog;
+mod general_tab;
 pub mod kubernetes;
 mod logging_tab;
 mod protocol_layout;
