@@ -90,6 +90,14 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.9.9" date="2026-03-06">
+      <description>
+        <p>Bug fix: sshpass detection in Flatpak.</p>
+        <ul>
+          <li>Fixed sshpass not installed error in Flatpak SSH connections</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.9.8" date="2026-03-05">
       <description>
         <p>Security fix, SSH status detection, protocol dialog improvements, and code decomposition.</p>

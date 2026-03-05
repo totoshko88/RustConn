@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.9] - 2026-03-06
+
+### Fixed
+- **sshpass not installed in Flatpak** — SSH password-authenticated connections broken in Flatpak 0.9.8 ([#42](https://github.com/totoshko88/RustConn/issues/42))
+
 ## [0.9.8] - 2026-03-05
 
 ### Security

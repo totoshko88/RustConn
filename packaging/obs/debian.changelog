@@ -1,3 +1,9 @@
+rustconn (0.9.9-1) unstable; urgency=medium
+
+  * Fixed sshpass not installed in Flatpak (#42)
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Fri, 06 Mar 2026 12:00:00 +0200
+
 rustconn (0.9.8-1) unstable; urgency=medium
 
   * Security: RDP password no longer exposed on command line (uses /from-stdin)

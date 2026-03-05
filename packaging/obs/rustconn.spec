@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.9.8
+Version:        0.9.9
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -201,6 +201,9 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Fri Mar 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.9-0
+- Fixed sshpass not installed in Flatpak (#42)
+
 * Thu Mar 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.8-0
 - Security: RDP password no longer exposed on command line (uses /from-stdin)
 - Fixed SSH connection status, automation cursor, RDP keyboard duplication

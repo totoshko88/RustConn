@@ -364,13 +364,12 @@ fn start_ssh_connection_internal(
 
     // If we have a vault password and sshpass is available, use it
     if let Some(ref password) = cached_password {
-        let sshpass_available = rustconn_core::flatpak::is_flatpak()
-            || std::process::Command::new("sshpass")
-                .arg("-V")
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null())
-                .status()
-                .is_ok();
+        let sshpass_available = std::process::Command::new("sshpass")
+            .arg("-V")
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .is_ok();
 
         if sshpass_available {
             // Build argv: sshpass -e [waypipe] ssh [args...] user@host
