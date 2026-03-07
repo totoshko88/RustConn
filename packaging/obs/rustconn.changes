@@ -1,7 +1,13 @@
 -------------------------------------------------------------------
 Sat Mar 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.10
 
-- Version bump to 0.9.10
+- Fixed Remmina import in Flatpak — now checks host path ~/.local/share/remmina/
+- Fixed connection dialog Basic tab clipped by nested ScrolledWindow
+- Fixed missing minimum sizes on Import, Export, and Shortcuts dialogs
+- Connection dialog default height increased from 500→670px
+- Dependencies: serde_yaml_ng 0.9→0.10, cfg-expr 0.20.6→0.20.7,
+  inotify 0.11.0→0.11.1, socket2 0.6.2→0.6.3, toml 1.0.4→1.0.6
+- CLI downloads: Teleport 18.7.1→18.7.2
 
 -------------------------------------------------------------------
 Fri Mar 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.9

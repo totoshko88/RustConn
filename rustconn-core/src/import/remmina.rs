@@ -461,23 +461,23 @@ impl ImportSource for RemminaImporter {
         // In Flatpak, dirs::data_local_dir() returns the sandbox path
         // (~/.var/app/<app-id>/data). Also check the host path so users
         // can grant access via `flatpak override --filesystem`.
-        if crate::flatpak::is_flatpak() {
-            if let Some(home) = dirs::home_dir() {
-                let host_remmina = home.join(".local/share/remmina");
-                if !scanned_dirs.contains(&host_remmina) {
-                    scanned_dirs.push(host_remmina);
-                }
+        if crate::flatpak::is_flatpak()
+            && let Some(home) = dirs::home_dir()
+        {
+            let host_remmina = home.join(".local/share/remmina");
+            if !scanned_dirs.contains(&host_remmina) {
+                scanned_dirs.push(host_remmina);
             }
         }
 
         for remmina_dir in &scanned_dirs {
-            if remmina_dir.is_dir() {
-                if let Ok(entries) = fs::read_dir(remmina_dir) {
-                    for entry in entries.flatten() {
-                        let path = entry.path();
-                        if path.extension().is_some_and(|ext| ext == "remmina") {
-                            paths.push(path);
-                        }
+            if remmina_dir.is_dir()
+                && let Ok(entries) = fs::read_dir(remmina_dir)
+            {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.extension().is_some_and(|ext| ext == "remmina") {
+                        paths.push(path);
                     }
                 }
             }

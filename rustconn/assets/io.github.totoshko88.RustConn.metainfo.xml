@@ -92,7 +92,14 @@
   <releases>
     <release version="0.9.10" date="2026-03-07">
       <description>
-        <p>Version 0.9.10</p>
+        <p>Flatpak Remmina import fix, dialog sizing, and dependency updates.</p>
+        <ul>
+          <li>Fixed Remmina import in Flatpak — now checks host path ~/.local/share/remmina/</li>
+          <li>Fixed connection dialog Basic tab clipped by nested ScrolledWindow</li>
+          <li>Fixed missing minimum sizes on Import, Export, and Shortcuts dialogs</li>
+          <li>Connection dialog default height increased for better field visibility</li>
+          <li>Dependencies: serde_yaml_ng 0.10, Teleport 18.7.2, plus patch updates</li>
+        </ul>
       </description>
     </release>
     <release version="0.9.9" date="2026-03-06">
