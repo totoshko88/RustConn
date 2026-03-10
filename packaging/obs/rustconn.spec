@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.9.13
+Version:        0.9.14
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -199,6 +199,15 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Wed Mar 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.14-0
+- Fixed SSH connection fails in Flatpak on KDE — host SSH_ASKPASS
+  (e.g. ksshaskpass) stripped from VTE child environment (#48)
+- Fixed header bar buttons clipped when sidebar + monitoring enabled —
+  ellipsize on variable-length labels, overflow hidden on monitoring bar (#47)
+- Dependencies: tokio 1.49→1.50, uuid 1.21→1.22, regex 1.11→1.12,
+  proptest 1.9→1.10, tempfile 3.23→3.26, zip 8.1→8.2,
+  criterion 0.8.1→0.8.2, rpassword 7.3→7.4
+
 * Mon Mar 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.9.13-0
 - Fixed RDP handshake timeout on heavily loaded servers — Phase 3
   (TLS upgrade + NLA + connect_finalize) wrapped in tokio timeout

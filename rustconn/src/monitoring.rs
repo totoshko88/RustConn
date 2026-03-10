@@ -77,6 +77,7 @@ impl MonitoringBar {
             .height_request(BAR_HEIGHT)
             .halign(Align::Fill)
             .hexpand(true)
+            .overflow(gtk4::Overflow::Hidden)
             .css_classes(["monitoring-bar"])
             .margin_start(6)
             .margin_end(6)
@@ -98,6 +99,7 @@ impl MonitoringBar {
         let net_label = gtk4::Label::builder()
             .label("↓ — ↑ —")
             .css_classes(["caption", "monitoring-net"])
+            .ellipsize(gtk4::pango::EllipsizeMode::End)
             .build();
         net_section.append(&net_icon);
         net_section.append(&net_label);
@@ -128,6 +130,7 @@ impl MonitoringBar {
         let info_label = gtk4::Label::builder()
             .label("")
             .css_classes(["caption", "monitoring-info"])
+            .ellipsize(gtk4::pango::EllipsizeMode::End)
             .build();
         info_section.append(&info_icon);
         info_section.append(&info_label);

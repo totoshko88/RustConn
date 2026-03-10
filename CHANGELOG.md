@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.14] - 2026-03-10
+
+### Fixed
+- **SSH connection fails in Flatpak on KDE** — host `SSH_ASKPASS` environment variable (e.g. `ksshaskpass`) was inherited by the VTE child process but not available inside the sandbox, causing `Permission denied` before the password prompt appeared; now stripped from the terminal environment since RustConn uses native VTE password injection ([#48](https://github.com/totoshko88/RustConn/issues/48))
+- **Header bar buttons clipped when sidebar + monitoring enabled** — monitoring bar's system info label could request more width than available in the content area, causing overflow that pushed header bar buttons out of bounds; fixed by adding `ellipsize` to variable-length labels and `overflow: hidden` on the monitoring bar container ([#47](https://github.com/totoshko88/RustConn/issues/47))
+
+### Dependencies
+- tokio 1.49→1.50, uuid 1.21→1.22, regex 1.11→1.12, proptest 1.9→1.10, tempfile 3.23→3.26, zip 8.1→8.2, criterion 0.8.1→0.8.2, rpassword 7.3→7.4
+- Transitive: hybrid-array 0.4.7→0.4.8, image 0.25.9→0.25.10, libc 0.2.182→0.2.183, libz-sys 1.1.24→1.1.25, moxcms 0.7.11→0.8.1, quinn-proto 0.11.13→0.11.14, schannel 0.1.28→0.1.29, zerocopy 0.8.40→0.8.42
+
 ## [0.9.13] - 2026-03-09
 
 ### Fixed

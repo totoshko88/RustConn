@@ -90,6 +90,16 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.9.14" date="2026-03-11">
+      <description>
+        <p>Flatpak KDE fix, monitoring bar overflow fix, and dependency updates:</p>
+        <ul>
+          <li>Fixed SSH connection fails in Flatpak on KDE — host SSH_ASKPASS stripped from child environment</li>
+          <li>Fixed header bar buttons clipped when sidebar + monitoring enabled — ellipsize and overflow hidden</li>
+          <li>Dependencies: tokio 1.50, uuid 1.22, regex 1.12, proptest 1.10, tempfile 3.26, zip 8.2</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.9.13" date="2026-03-09">
       <description>
         <p>RDP reliability improvements and Quick Actions menu:</p>

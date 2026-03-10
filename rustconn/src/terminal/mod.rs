@@ -967,6 +967,12 @@ impl TerminalNotebook {
             }
         }
 
+        // Strip host SSH_ASKPASS — RustConn handles password input via
+        // VTE feed_child() injection, so the host askpass program (e.g.
+        // ksshaskpass on KDE) is never needed and may not exist inside
+        // sandboxed environments like Flatpak (#48).
+        env_vec.retain(|e| !e.starts_with("SSH_ASKPASS="));
+
         // Layer caller-provided variables (override parent values)
         if let Some(user_env) = envv {
             for e in user_env {

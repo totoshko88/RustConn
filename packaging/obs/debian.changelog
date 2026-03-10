@@ -1,3 +1,17 @@
+rustconn (0.9.14-1) unstable; urgency=medium
+
+  * Fixed SSH connection fails in Flatpak on KDE — host SSH_ASKPASS
+    environment variable (e.g. ksshaskpass) stripped from VTE child
+    environment since RustConn uses native VTE password injection (#48)
+  * Fixed header bar buttons clipped when sidebar + monitoring enabled —
+    added ellipsize to variable-length labels and overflow hidden on
+    monitoring bar container (#47)
+  * Dependencies: tokio 1.49→1.50, uuid 1.21→1.22, regex 1.11→1.12,
+    proptest 1.9→1.10, tempfile 3.23→3.26, zip 8.1→8.2,
+    criterion 0.8.1→0.8.2, rpassword 7.3→7.4
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 11 Mar 2026 12:00:00 +0200
+
 rustconn (0.9.13-1) unstable; urgency=medium
 
   * Fixed RDP handshake timeout on heavily loaded servers — Phase 3

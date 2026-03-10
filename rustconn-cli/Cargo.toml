@@ -22,13 +22,13 @@ clap = { version = "4.5.60", features = ["derive", "env"] }
 clap_complete = "4.5"
 clap_mangen = "0.2"
 chrono = { workspace = true }
-rpassword = "7.3"
+rpassword = "7.4"
 secrecy = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 [dev-dependencies]
-tempfile = "3.23"
+tempfile = "3.26"
 
 [lints]
 workspace = true
