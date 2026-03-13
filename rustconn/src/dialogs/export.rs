@@ -115,13 +115,10 @@ impl ExportDialog {
         // Create spinner with cfg guard — adw::Spinner always spins (visibility-controlled),
         // gtk4::Spinner uses set_spinning()
         #[cfg(feature = "adw-1-6")]
-        let progress_spinner = {
-            let s = adw::Spinner::builder()
-                .width_request(48)
-                .height_request(48)
-                .build();
-            s
-        };
+        let progress_spinner = adw::Spinner::builder()
+            .width_request(48)
+            .height_request(48)
+            .build();
         #[cfg(not(feature = "adw-1-6"))]
         let progress_spinner = gtk4::Spinner::builder()
             .spinning(true)
@@ -696,6 +693,7 @@ impl ExportDialog {
         let include_groups = self.include_groups_row.clone();
         let progress_bar = self.progress_bar.clone();
         let progress_label = self.progress_label.clone();
+        #[cfg(not(feature = "adw-1-6"))]
         let progress_spinner = self.progress_spinner.clone();
         let result_label = self.result_label.clone();
         let result_details = self.result_details.clone();

@@ -4,7 +4,7 @@ inclusion: always
 
 # RustConn Tech Stack
 
-Rust 2024 edition, MSRV 1.88, three-crate Cargo workspace (`resolver = "2"`).
+Rust 2024 edition, MSRV 1.92, three-crate Cargo workspace (`resolver = "2"`).
 
 ## Crate Boundaries
 

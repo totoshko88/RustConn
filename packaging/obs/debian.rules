@@ -7,8 +7,8 @@ export CARGO_HOME = $(CURDIR)/debian/cargo_home
 	dh $@
 
 override_dh_auto_configure:
-	# Install rustup with Rust 1.88
-	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.88.0 --profile minimal
+	# Install rustup with Rust 1.92
+	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.92.0 --profile minimal
 	# Setup vendor config
 	mkdir -p .cargo
 	echo '[source.crates-io]' > .cargo/config.toml
@@ -22,7 +22,8 @@ override_dh_auto_configure:
 	echo 'directory = "vendor"' >> .cargo/config.toml
 
 override_dh_auto_build:
-	. "$$HOME/.cargo/env" && cargo build --release -p rustconn -p rustconn-cli
+	# Ubuntu 26.04+ has GNOME 50 (libadwaita 1.9) — enable adw-1-8 features
+	. "$$HOME/.cargo/env" && cargo build --release -p rustconn --features adw-1-8 -p rustconn-cli
 
 override_dh_auto_install:
 	# Binaries
@@ -42,10 +43,10 @@ override_dh_auto_install:
 		debian/rustconn/usr/share/icons/hicolor/256x256/apps/io.github.totoshko88.RustConn.png
 	# Locale files (compile .po to .mo)
 	for po_file in po/*.po; do \
-		[ -f "$$po_file" ] || continue; \
-		lang=$$(basename "$$po_file" .po); \
-		mkdir -p debian/rustconn/usr/share/locale/$$lang/LC_MESSAGES; \
-		msgfmt -o debian/rustconn/usr/share/locale/$$lang/LC_MESSAGES/rustconn.mo "$$po_file"; \
+		[ -f "$po_file" ] || continue; \
+		lang=$(basename "$po_file" .po); \
+		mkdir -p debian/rustconn/usr/share/locale/$lang/LC_MESSAGES; \
+		msgfmt -o debian/rustconn/usr/share/locale/$lang/LC_MESSAGES/rustconn.mo "$po_file"; \
 	done
 
 override_dh_auto_test:

@@ -163,14 +163,14 @@ jobs:
         run: cargo test -p rustconn-core --all-features --test property_tests
 
   msrv:
-    name: MSRV (1.88)
+    name: MSRV (1.92)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install Rust 1.88
+      - name: Install Rust 1.92
         run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.88.0 --profile minimal
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.92.0 --profile minimal
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Install dependencies

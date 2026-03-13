@@ -291,25 +291,25 @@ New API to evaluate:
 `.suggested-action`) to work correctly with non-blue accent colors.
 No code changes needed — automatic with the upgrade.
 
-## 7. CSS Migration Checklist
+## 7. CSS Migration Decision
 
-| Pattern | Count | Action |
+**Status: NOT MIGRATING** — `@named_color` syntax works on all libadwaita versions
+(1.5 through 1.9). CSS variables (`var(--accent-color)`) require libadwaita ≥ 1.6
+and would break Ubuntu 24.04 LTS native packages. The visual result is identical.
+The only benefit of `var()` is `color-mix()` and CSS media queries for theme
+variants, which are not used in RustConn's stylesheet.
+
+If CSS variables are needed in the future, use progressive enhancement (double
+declarations) or a cfg-gated second CSS file.
+
+| Pattern | Count | Status |
 |---------|-------|--------|
-| `@accent_color` | ~20 | Migrate to `var(--accent-color)` |
-| `@accent_bg_color` | ~5 | Migrate to `var(--accent-bg-color)` |
-| `@accent_fg_color` | ~3 | Migrate to `var(--accent-fg-color)` |
-| `@theme_fg_color` | ~4 | Migrate to `var(--window-fg-color)` |
-| `@theme_bg_color` | ~1 | Migrate to `var(--window-bg-color)` |
-| `@view_bg_color` | ~3 | Migrate to `var(--view-bg-color)` |
-| `@window_bg_color` | ~1 | Migrate to `var(--window-bg-color)` |
-| `@error_color` | ~10 | Migrate to `var(--error-color)` |
-| `@success_color` | ~5 | Migrate to `var(--success-color)` |
-| `@warning_color` | ~4 | Migrate to `var(--warning-color)` |
-| `@borders` | ~4 | Migrate to `var(--borders)` |
-| `.keycap` custom CSS | 1 block | Replace with `AdwShortcutLabel` |
-
-Note: old `@named_color` syntax continues to work. Migration is recommended
-but not required for correctness.
+| `@accent_color` | ~20 | Keeping — works on all versions |
+| `@error_color` | ~10 | Keeping — works on all versions |
+| `@success_color` | ~5 | Keeping — works on all versions |
+| `@warning_color` | ~4 | Keeping — works on all versions |
+| `@borders` | ~4 | Keeping — works on all versions |
+| `.keycap` custom CSS | 1 block | Replaced by `AdwShortcutLabel` when `adw-1-8` enabled |
 
 ## 8. Risk Assessment
 
@@ -326,23 +326,56 @@ but not required for correctness.
 | VTE 0.80 source module in Flatpak | Medium | If runtime 50 bundles VTE 0.80, remove the custom VTE module from manifests; otherwise update URL to `vte-0.80.x.tar.xz` |
 | Flathub x-checker-data VTE version cap | Low | Update `versions: <: '0.79.0'` → `<: '0.81.0'` in Flathub manifest |
 
-## 9. Distro Compatibility
+## 9. Distro Compatibility & Feature Flag Strategy
 
-| Distro | GTK4 | libadwaita | VTE | Status |
-|--------|------|------------|-----|--------|
-| Flatpak (GNOME 50) | 4.22 | 1.9 | 0.80 | ✅ Full support (all features) |
-| Flatpak (GNOME 49) | 4.20 | 1.8 | 0.78 | ⚠️ Fallback; no v1_9 features |
-| Fedora 44 (GNOME 50) | 4.22 | 1.9 | 0.80 | ✅ Full support |
-| Ubuntu 26.04 LTS (GNOME 50) | 4.22 | 1.9 | 0.80 | ✅ Full support |
-| Fedora 42+ | 4.18+ | 1.7+ | 0.78 | ✅ Full support |
-| openSUSE Tumbleweed | 4.18+ | 1.7+ | 0.78 | ✅ Full support |
-| Ubuntu 24.04 LTS | 4.14 | 1.5 | 0.76 | ⚠️ Works with v4_14 feature minimum |
-| Ubuntu 24.10+ | 4.16+ | 1.6+ | 0.76+ | ✅ Full support |
-| Debian 13 (trixie) | 4.16 | 1.6 | 0.78 | ✅ Full support |
+### Tiered delivery model
 
-The `v4_14` feature flag in `gtk4` ensures runtime compatibility with GTK 4.14+.
-New features gated behind `v1_6`/`v1_7`/`v1_8` require corresponding C library
-versions at runtime — use `#[cfg]` or runtime checks if needed for Ubuntu 24.04.
+**Tier 1 — Full features (GNOME 50+, `adw-1-8`):**
+All new libadwaita widgets enabled (AdwSpinner, AdwShortcutsDialog).
+
+| Distro | libadwaita | VTE | Feature flags | Delivery |
+|--------|-----------|-----|---------------|----------|
+| Flatpak (GNOME 50) | 1.9 | 0.80 | `adw-1-8` | Flathub |
+| Ubuntu 26.04 LTS (GNOME 50) | 1.9 | 0.80 | `adw-1-8` | GitHub .deb |
+| openSUSE Tumbleweed (GNOME 50) | 1.9 | 0.82 | `adw-1-8` | OBS |
+| openSUSE Slowroll | 1.8→1.9 | 0.78+ | `adw-1-8` | OBS |
+| Fedora 44 (GNOME 50) | 1.9 | 0.80 | `adw-1-8` | OBS |
+| Fedora 43 (GNOME 49) | 1.8 | 0.78 | `adw-1-8` | OBS |
+
+**Tier 1b — Partial features (GNOME 48, `adw-1-6`):**
+AdwSpinner enabled, legacy shortcuts dialog.
+
+| Distro | libadwaita | VTE | Feature flags | Delivery |
+|--------|-----------|-----|---------------|----------|
+| openSUSE Leap 16.0 (GNOME 48) | 1.7 | 0.78 | `adw-1-6` | OBS |
+| Fedora 42 (GNOME 48) | 1.7 | 0.78 | `adw-1-6` | OBS |
+
+**Tier 2 — Baseline (libadwaita 1.5, no extra features):**
+GtkSpinner fallback, legacy shortcuts dialog. Delivered via Flatpak.
+
+| Distro | libadwaita | VTE | Feature flags | Delivery |
+|--------|-----------|-----|---------------|----------|
+| Ubuntu 24.04 LTS | 1.5 | 0.76 | (none) | Flatpak (GNOME 50 runtime) |
+
+### Build configuration per packaging system
+
+| System | Build command | Notes |
+|--------|-------------|-------|
+| Flatpak (all manifests) | `cargo build --release -p rustconn --features adw-1-8` | GNOME 50 runtime has libadwaita 1.9 |
+| OBS Tumbleweed/Slowroll | `cargo build --release -p rustconn --features adw-1-8` | libadwaita 1.8+ |
+| OBS Leap 16.0 | `cargo build --release -p rustconn --features adw-1-6` | libadwaita 1.7 |
+| OBS Fedora 43+ | `cargo build --release -p rustconn --features adw-1-8` | libadwaita 1.8+ |
+| OBS Fedora 42 | `cargo build --release -p rustconn --features adw-1-6` | libadwaita 1.7 |
+| GitHub .deb (Ubuntu 26.04) | `cargo build --release -p rustconn --features adw-1-8` | libadwaita 1.9 |
+
+### Compatibility notes
+
+- The `v4_14` feature flag in `gtk4` ensures runtime compatibility with GTK 4.14+.
+- VTE feature `v0_76` chosen for broad compatibility (Ubuntu 24.04 has VTE 0.76).
+  VTE 0.80 performance improvements (GPU rendering, 60 FPS) are automatic from
+  the C library — no Rust feature gate needed.
+- CSS uses `@named_color` syntax which works on all libadwaita versions (1.5–1.9).
+- Ubuntu 24.04 LTS users get full functionality via Flatpak with GNOME 50 runtime.
 
 ## 10. Recommended Commit Sequence
 
@@ -352,11 +385,15 @@ versions at runtime — use `#[cfg]` or runtime checks if needed for Ubuntu 24.0
    - Zero clippy warnings
    - All tests pass
 3. ~~`refactor: replace GtkSpinner with AdwSpinner`~~ ✅ (cfg-gated `adw-1-6`)
-4. `refactor: migrate CSS to libadwaita 1.6 variables` ⏳ (deferred — requires Flatpak runtime 50; `@named_color` syntax works on all versions)
+4. ~~`refactor: CSS migration`~~ — **SKIPPED**: `@named_color` works on all versions; no visual benefit from `var()` migration; would break Ubuntu 24.04 LTS
 5. ~~`feat: use AdwShortcutsDialog for keyboard shortcuts`~~ ✅ (cfg-gated `adw-1-8`)
-6. `chore: bump Flatpak runtime to GNOME 50`
-   - Update `runtime-version: '50'` in both manifests
-   - Update or remove VTE source module (depends on runtime 50 bundling)
-   - Update Flathub `x-checker-data` VTE version cap
-7. `chore: regenerate Flatpak cargo-sources.json`
-8. `chore: update packaging metadata for 0.10.0`
+6. ~~`chore: bump Flatpak runtime to GNOME 50`~~ ✅
+   - `runtime-version: '50'` in all three manifests
+   - VTE module updated to 0.80.0
+   - Flathub `x-checker-data` VTE cap updated to `< 0.81.0`
+   - Flatpak builds use `--features adw-1-8`
+7. ~~`chore: update OBS/Debian packaging with conditional feature flags`~~ ✅
+   - OBS spec: conditional `adw-1-8` / `adw-1-6` per distro
+   - Debian rules: `--features adw-1-8` for Ubuntu 26.04+
+8. `chore: regenerate Flatpak cargo-sources.json` — before release
+9. `chore: update packaging metadata for 0.10.0` — version bump, changelog

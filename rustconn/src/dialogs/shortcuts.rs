@@ -219,8 +219,7 @@ mod native {
                 }
 
                 if let Some(ref s) = section {
-                    let item =
-                        adw::ShortcutsItem::new(&i18n(shortcut.description), shortcut.accel);
+                    let item = adw::ShortcutsItem::new(&i18n(shortcut.description), shortcut.accel);
                     s.add(item);
                 }
             }
@@ -320,8 +319,7 @@ mod legacy {
                     let header_row = Self::create_category_header(&i18n(current_category));
                     list_box.append(&header_row);
                 }
-                let row =
-                    Self::create_shortcut_row(shortcut.keys, &i18n(shortcut.description));
+                let row = Self::create_shortcut_row(shortcut.keys, &i18n(shortcut.description));
                 list_box.append(&row);
             }
 

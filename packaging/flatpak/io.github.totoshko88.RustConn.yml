@@ -114,7 +114,7 @@ modules:
       env:
         CARGO_NET_OFFLINE: 'true'
     build-commands:
-      - cargo build --release -p rustconn -p rustconn-cli
+      - cargo build --release -p rustconn --features adw-1-8 -p rustconn-cli
       - install -Dm755 target/release/rustconn /app/bin/rustconn
       - install -Dm755 target/release/rustconn-cli /app/bin/rustconn-cli
       - install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.desktop /app/share/applications/io.github.totoshko88.RustConn.desktop
@@ -131,5 +131,5 @@ modules:
     sources:
       - type: git
         url: https://github.com/totoshko88/RustConn.git
-        tag: v0.9.15
+        tag: v0.10.0
       - cargo-sources.json

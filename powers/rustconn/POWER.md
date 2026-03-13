@@ -9,7 +9,7 @@ author: "Anton Isaiev"
 # RustConn Development Power
 
 Linux connection manager для SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust.
-GTK4/libadwaita GUI, Wayland-first. Rust 2024 edition, MSRV 1.88, three-crate Cargo workspace.
+GTK4/libadwaita GUI, Wayland-first. Rust 2024 edition, MSRV 1.92, three-crate Cargo workspace.
 
 ## Available Steering Files
 

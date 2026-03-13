@@ -5,7 +5,7 @@
 - **OS:** Linux (Wayland-first, X11 supported)
 - **GTK:** 4.14+
 - **libadwaita:** 1.5+
-- **Rust:** 1.88+ (for building from source)
+- **Rust:** 1.92+ (for building from source)
 
 ## Flatpak (Recommended)
 
@@ -227,7 +227,7 @@ This installs the desktop file and icon for application menu integration.
 
 ## Rust Installation
 
-RustConn requires Rust 1.88+ (MSRV). Install via [rustup](https://rustup.rs/):
+RustConn requires Rust 1.92+ (MSRV). Install via [rustup](https://rustup.rs/):
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh

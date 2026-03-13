@@ -1,3 +1,18 @@
+rustconn (0.10.0-1) unstable; urgency=medium
+
+  * GTK4/libadwaita/VTE crate upgrade: gtk4 0.11, libadwaita 0.9,
+    vte4 0.10, gdk4-wayland 0.11 — unlocks GNOME 48–50 widget APIs
+  * MSRV bumped to 1.92 across all crates, CI, and packaging
+  * Flatpak runtime bumped to GNOME 50 with VTE 0.80
+  * AdwSpinner migration — replaces gtk::Spinner in export dialog;
+    cfg-gated behind adw-1-6 feature for backward compatibility
+  * AdwShortcutsDialog migration — replaces deprecated gtk::ShortcutsWindow;
+    cfg-gated behind adw-1-8 feature for backward compatibility
+  * Tiered distro feature flags in OBS packaging: adw-1-8 for
+    Tumbleweed/Slowroll/Fedora 43+, adw-1-6 for Leap 16.0/Fedora 42
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Fri, 13 Mar 2026 12:00:00 +0200
+
 rustconn (0.9.15-1) unstable; urgency=medium
 
   * Added "Show Local Cursor" option for embedded RDP, VNC, and SPICE

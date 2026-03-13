@@ -90,6 +90,19 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.10.0" date="2026-03-13">
+      <description>
+        <p>GTK4/libadwaita/VTE crate upgrade and tiered distro support:</p>
+        <ul>
+          <li>GTK-rs bindings upgraded: gtk4 0.11, libadwaita 0.9, vte4 0.10, gdk4-wayland 0.11</li>
+          <li>MSRV bumped to Rust 1.92 across all crates, CI, and packaging</li>
+          <li>Flatpak runtime bumped to GNOME 50 with VTE 0.80</li>
+          <li>AdwSpinner replaces gtk::Spinner (cfg-gated behind adw-1-6 feature)</li>
+          <li>AdwShortcutsDialog replaces deprecated gtk::ShortcutsWindow (cfg-gated behind adw-1-8 feature)</li>
+          <li>Tiered distro feature flags: adw-1-8 for Tumbleweed/Fedora 43+, adw-1-6 for Leap 16.0/Fedora 42</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.9.15" date="2026-03-11">
       <description>
         <p>Hide local cursor option and SSH fixes:</p>

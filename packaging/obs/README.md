@@ -6,17 +6,17 @@
 
 | Дистрибутив | Версія | Rust джерело | Статус |
 |-------------|--------|--------------|--------|
-| openSUSE Tumbleweed | Rolling | System (1.88+) | ✅ |
-| openSUSE Slowroll | Rolling (slow) | System (1.88+) | ✅ |
+| openSUSE Tumbleweed | Rolling | System (1.92+) | ✅ |
+| openSUSE Slowroll | Rolling (slow) | System (1.92+) | ✅ |
 | openSUSE Leap | 16.0 | devel:languages:rust | ✅ |
 | Fedora | 42 | System (1.93) | ✅ |
 | Fedora | 43 | System (1.90) | ✅ |
 
-**Примітка:** MSRV (Minimum Supported Rust Version) = 1.88
+**Примітка:** MSRV (Minimum Supported Rust Version) = 1.92
 
 Ubuntu/Debian не підтримуються в OBS — системний Rust занадто старий:
 - Ubuntu 24.04: Rust 1.75, Ubuntu 25.04: Rust 1.84, Ubuntu 25.10: Rust 1.85
-- Ubuntu 26.04 (resolute) матиме Rust 1.88 — можна додати після релізу
+- Ubuntu 26.04 (resolute) матиме Rust 1.92 — можна додати після релізу
 - Debian 13 (trixie): Rust 1.85 (system), 1.90 (backports) — OBS не може використовувати backports
 - Використовуйте GitHub releases для .deb та AppImage пакетів.
 
@@ -96,7 +96,7 @@ cd home:totoshko88:rustconn/rustconn
 - Fedora_43
 
 **DEB:**
-- Debian 13+ (коли Rust >= 1.88 буде доступний)
+- Debian 13+ (коли Rust >= 1.92 буде доступний)
 - xUbuntu_26.04 (коли вийде)
 
 ### 3. Оновлення версії

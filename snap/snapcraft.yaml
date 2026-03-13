@@ -1,6 +1,6 @@
 name: rustconn
 base: core24
-version: '0.9.15'
+version: '0.10.0'
 summary: Manage remote connections easily
 description: |
   RustConn is a modern connection manager for Linux with a GTK4/Wayland-native
@@ -184,7 +184,7 @@ parts:
   rustconn:
     plugin: rust
     source: .
-    rust-channel: "1.88"
+    rust-channel: "1.92"
     rust-path: [rustconn, rustconn-cli]
     rust-use-global-lto: true
     build-packages:

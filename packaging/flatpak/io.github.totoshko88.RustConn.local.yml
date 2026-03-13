@@ -117,7 +117,7 @@ modules:
         CARGO_NET_OFFLINE: 'true'
         PKG_CONFIG_PATH: /app/lib64/pkgconfig:/app/lib/pkgconfig:/app/share/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig
     build-commands:
-      - cargo build --release -p rustconn -p rustconn-cli
+      - cargo build --release -p rustconn --features adw-1-8 -p rustconn-cli
       - install -Dm755 target/release/rustconn /app/bin/rustconn
       - install -Dm755 target/release/rustconn-cli /app/bin/rustconn-cli
       - install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.desktop /app/share/applications/io.github.totoshko88.RustConn.desktop

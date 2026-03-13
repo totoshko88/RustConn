@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-03-13
+
+### Changed
+- **GTK4/libadwaita/VTE crate upgrade** — gtk4 0.10→0.11, libadwaita 0.8→0.9, vte4 0.9→0.10, gdk4-wayland 0.10→0.11; unlocks GNOME 48–50 widget APIs
+- **MSRV bumped to 1.92** — required by updated GTK-rs bindings across all crates, CI, and packaging
+- **Flatpak runtime bumped to GNOME 50** — all three Flatpak manifests (local, release, Flathub) now build on `org.gnome.Platform` 50 with VTE 0.80
+- **AdwSpinner migration** — `adw::Spinner` replaces `gtk::Spinner` in export dialog progress indicator; cfg-gated behind `adw-1-6` feature for backward compatibility with libadwaita < 1.6
+- **AdwShortcutsDialog migration** — `adw::ShortcutsDialog` replaces deprecated `gtk::ShortcutsWindow`; cfg-gated behind `adw-1-8` feature for backward compatibility with libadwaita < 1.8
+- **Tiered distro feature flags in OBS packaging** — `adw-1-8` for Tumbleweed/Slowroll/Fedora 43+, `adw-1-6` for Leap 16.0/Fedora 42, baseline `v1_5` for older distros; Flatpak always builds with `adw-1-8`
+
 ## [0.9.15] - 2026-03-11
 
 ### Added

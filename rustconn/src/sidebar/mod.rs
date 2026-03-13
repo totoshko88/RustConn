@@ -35,6 +35,8 @@ use gtk4::{
     Orientation, PolicyType, ScrolledWindow, SearchEntry, SignalListItemFactory, TreeExpander,
     TreeListModel, TreeListRow, Widget, gdk, gio, glib,
 };
+#[cfg(feature = "adw-1-6")]
+use libadwaita as adw;
 use rustconn_core::Debouncer;
 use rustconn_core::connection::{LazyGroupLoader, SelectionState as CoreSelectionState};
 use std::cell::RefCell;
