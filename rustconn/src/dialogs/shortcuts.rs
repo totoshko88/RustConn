@@ -108,8 +108,8 @@ const SHORTCUTS: &[ShortcutEntry] = &[
         category: "Terminal",
     },
     ShortcutEntry {
-        accel: "<Control>w",
-        keys: "Ctrl+W",
+        accel: "<Control><Shift>w",
+        keys: "Ctrl+Shift+W",
         description: "Close current tab",
         category: "Terminal",
     },

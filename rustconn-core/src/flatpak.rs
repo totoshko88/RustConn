@@ -63,21 +63,29 @@ pub fn get_flatpak_known_hosts_path() -> Option<std::path::PathBuf> {
 /// This function caches the result for performance.
 ///
 /// Detection is based on:
-/// 1. Presence of `/.flatpak-info` file (most reliable)
-/// 2. `FLATPAK_ID` environment variable
+/// 1. Presence of `/.flatpak-info` file (most reliable — only exists inside sandbox)
+/// 2. `FLATPAK_ID` environment variable matching our app ID (guards against
+///    stray `FLATPAK_ID` from other Flatpak apps or user environment)
 #[must_use]
 pub fn is_flatpak() -> bool {
     *IS_FLATPAK.get_or_init(|| {
-        // Primary check: /.flatpak-info exists in Flatpak sandbox
+        // Primary check: /.flatpak-info exists only inside a Flatpak sandbox
         if std::path::Path::new("/.flatpak-info").exists() {
             tracing::debug!("Detected Flatpak sandbox via /.flatpak-info");
             return true;
         }
 
-        // Secondary check: FLATPAK_ID environment variable
-        if std::env::var("FLATPAK_ID").is_ok() {
-            tracing::debug!("Detected Flatpak sandbox via FLATPAK_ID env var");
-            return true;
+        // Secondary check: FLATPAK_ID must match our app ID to avoid false
+        // positives when the env var leaks from another Flatpak process (#59)
+        if let Ok(id) = std::env::var("FLATPAK_ID") {
+            if id == "io.github.totoshko88.RustConn" {
+                tracing::debug!("Detected Flatpak sandbox via FLATPAK_ID");
+                return true;
+            }
+            tracing::debug!(
+                flatpak_id = %id,
+                "FLATPAK_ID set but does not match our app ID, ignoring"
+            );
         }
 
         false
