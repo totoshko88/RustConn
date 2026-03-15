@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AdwShortcutsDialog migration** — replaces deprecated `gtk::ShortcutsWindow`; cfg-gated `adw-1-8`
 - **AdwSwitchRow migration** — replaces manual `ActionRow` + `Switch` in monitoring, logging, and secrets settings tabs
 - **AdwWrapBox for protocol filters** — sidebar filters wrap on narrow sidebars; cfg-gated `adw-1-7` with `GtkBox` fallback
+- **Welcome screen refreshed** — updated feature highlights (embedded protocols, monitoring, snippets & clusters, keybindings), replaced performance internals with Quick Access tips (fuzzy search, favorites, split view, .rdp files), added Command Palette / Import / Settings shortcuts
 - **CSS `prefers-reduced-motion`** — transitions disabled when reduced motion is requested
 - **Tiered distro feature flags** — `adw-1-8` for Tumbleweed/Fedora 43+, `adw-1-6` for Leap 16.0/Fedora 42, baseline for older distros
 - **Codebase cleanup** — removed 25+ unused CSS classes, consolidated `futures-util` into `futures`, fixed metainfo.xml duplicates, added k8s keywords, removed dead code

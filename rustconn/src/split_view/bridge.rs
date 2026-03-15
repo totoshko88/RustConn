@@ -1793,16 +1793,22 @@ impl SplitViewBridge {
         let features: [(&str, String); 9] = [
             (
                 "utilities-terminal-symbolic",
-                i18n("Embedded SSH terminals"),
+                i18n("Embedded SSH, RDP, VNC, SPICE"),
             ),
             ("security-high-symbolic", i18n("Secure credential storage")),
-            ("dialog-password-symbolic", i18n("Password Generator")),
-            ("view-refresh-symbolic", i18n("Session Restore")),
-            ("system-run-symbolic", i18n("Expect automation")),
-            ("folder-symbolic", i18n("Groups and tags")),
+            (
+                "utilities-system-monitor-symbolic",
+                i18n("Remote host monitoring"),
+            ),
+            ("view-refresh-symbolic", i18n("Session restore & reconnect")),
+            ("system-run-symbolic", i18n("Expect automation & tasks")),
+            ("folder-symbolic", i18n("Groups, tags, and templates")),
             ("network-workgroup-symbolic", i18n("Zero Trust tunnels")),
-            ("preferences-system-symbolic", i18n("Customizable settings")),
-            ("system-run-symbolic", i18n("Embedded and external clients")),
+            ("edit-paste-symbolic", i18n("Command snippets & clusters")),
+            (
+                "preferences-system-symbolic",
+                i18n("Customizable keybindings"),
+            ),
         ];
 
         for (icon, description) in &features {
@@ -1826,14 +1832,14 @@ impl SplitViewBridge {
 
         let shortcuts: [(&str, String); 9] = [
             ("Ctrl+N", i18n("New connection")),
-            ("Ctrl+Shift+N", i18n("New group")),
-            ("Ctrl+Shift+T", i18n("Local shell")),
             ("Ctrl+Shift+Q", i18n("Quick connect")),
+            ("Ctrl+P", i18n("Command palette")),
+            ("Ctrl+Shift+T", i18n("Local shell")),
             ("Ctrl+F", i18n("Search")),
             ("Ctrl+Shift+S", i18n("Split vertical")),
             ("Ctrl+Shift+H", i18n("Split horizontal")),
-            ("Ctrl+W", i18n("Close tab")),
-            ("Ctrl+Tab", i18n("Next tab")),
+            ("Ctrl+I", i18n("Import connections")),
+            ("Ctrl+,", i18n("Settings")),
         ];
 
         for (shortcut, description) in &shortcuts {
@@ -1849,32 +1855,29 @@ impl SplitViewBridge {
         col
     }
 
-    /// Builds the Performance & Import column for the welcome screen
+    /// Builds the Quick Access & Import column for the welcome screen
     fn build_welcome_extras_column() -> GtkBox {
         let col = GtkBox::new(Orientation::Vertical, 6);
         col.set_valign(gtk4::Align::Start);
         col.set_hexpand(true);
 
-        let perf_group = adw::PreferencesGroup::builder()
-            .title(&i18n("Performance"))
+        let quick_group = adw::PreferencesGroup::builder()
+            .title(&i18n("Quick Access"))
             .build();
 
-        let perf_features: [(&str, String); 4] = [
-            ("edit-find-symbolic", i18n("Smart search caching")),
-            ("folder-symbolic", i18n("Lazy loading for trees")),
-            ("view-list-symbolic", i18n("Virtual scrolling")),
-            (
-                "video-joined-displays-symbolic",
-                i18n("Embedded VNC/RDP/SPICE"),
-            ),
+        let quick_features: [(&str, String); 4] = [
+            ("edit-find-symbolic", i18n("Fuzzy search & command palette")),
+            ("starred-symbolic", i18n("Pin favorites to sidebar")),
+            ("view-dual-symbolic", i18n("Split view for terminals")),
+            ("document-open-symbolic", i18n("Open .rdp files directly")),
         ];
 
-        for (icon, description) in &perf_features {
+        for (icon, description) in &quick_features {
             let row = adw::ActionRow::builder().title(description).build();
             row.add_prefix(&gtk4::Image::from_icon_name(icon));
-            perf_group.add(&row);
+            quick_group.add(&row);
         }
-        col.append(&perf_group);
+        col.append(&quick_group);
 
         // Import formats
         let formats_group = adw::PreferencesGroup::builder()
@@ -1883,10 +1886,10 @@ impl SplitViewBridge {
             .build();
 
         let formats = [
-            "Remmina",
-            "Asbru-CM / Royal TS / MobaXterm",
-            "SSH Config",
-            "Ansible Inventory",
+            "SSH Config / Ansible / RDP",
+            "Remmina / Asbru-CM / MobaXterm",
+            "Royal TS / Remote Desktop Manager",
+            "Libvirt XML / Virt-Viewer",
         ];
 
         for format in formats {
