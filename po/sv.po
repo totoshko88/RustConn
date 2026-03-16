@@ -6052,3 +6052,39 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:10
 msgid "ssh;rdp;vnc;spice;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr ""
+
+#: rustconn/src/dialogs/import.rs
+msgid "RDP File (.rdp)"
+msgstr "RDP-fil (.rdp)"
+
+#: rustconn/src/dialogs/import.rs
+msgid "Import RDP connection from a Microsoft .rdp file"
+msgstr "Importera RDP-anslutning från en Microsoft .rdp-fil"
+
+#: rustconn/src/dialogs/import.rs
+msgid "Select RDP File"
+msgstr "Välj RDP-fil"
+
+#: rustconn/src/dialogs/import.rs
+msgid "RDP Files (*.rdp)"
+msgstr "RDP-filer (*.rdp)"
+
+#: rustconn/src/dialogs/statistics.rs
+msgid "Most Used"
+msgstr "Mest använda"
+
+#: rustconn/src/dialogs/statistics.rs
+msgid "Top connections by usage"
+msgstr "Mest använda anslutningar"
+
+#: rustconn/src/dialogs/statistics.rs
+msgid "Protocol Distribution"
+msgstr "Protokollfördelning"
+
+#: rustconn/src/dialogs/statistics.rs
+msgid "sessions"
+msgstr "sessioner"
+
+#: rustconn/src/window/split_view_actions.rs
+msgid "Split view is available for terminal-based sessions only"
+msgstr "Delad vy är bara tillgänglig för terminalbaserade sessioner"

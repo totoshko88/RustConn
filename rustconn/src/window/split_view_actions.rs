@@ -58,13 +58,16 @@ impl MainWindow {
                 return; // No active session to split
             };
 
-            // Check if protocol supports split view (only SSH, Local Shell, ZeroTrust, SFTP with mc)
+            // Check if protocol supports split view (only VTE terminal-based sessions)
             // RDP, VNC, SPICE are not supported because they use embedded widgets, not VTE terminals
             if let Some(info) = notebook_for_split_h.get_session_info(current_session) {
                 let protocol = &info.protocol;
                 if protocol != "ssh"
                     && protocol != "local"
                     && protocol != "sftp"
+                    && protocol != "telnet"
+                    && protocol != "serial"
+                    && protocol != "kubernetes"
                     && !protocol.starts_with("zerotrust")
                 {
                     tracing::debug!(
@@ -74,7 +77,7 @@ impl MainWindow {
                     if let Some(win) = window_weak_h.upgrade() {
                         crate::toast::show_toast_on_window(
                             &win,
-                            &crate::i18n::i18n("Split view is only available for SSH, SFTP and Local Shell tabs"),
+                            &crate::i18n::i18n("Split view is available for terminal-based sessions only"),
                             crate::toast::ToastType::Warning,
                         );
                     }
@@ -213,7 +216,7 @@ impl MainWindow {
                 split_view.setup_select_tab_callback_with_provider(
                     move || {
                         // Get all sessions from the notebook, excluding those already in THIS split
-                        // Only show VTE-based sessions (SSH, ZeroTrust, Local Shell)
+                        // Only show VTE-based sessions (SSH, ZeroTrust, Local Shell, Telnet, Serial, Kubernetes)
                         // RDP/VNC/SPICE not supported in split view
                         notebook_for_provider
                             .get_all_sessions()
@@ -221,6 +224,10 @@ impl MainWindow {
                             .filter(|s| {
                                 s.protocol == "ssh"
                                     || s.protocol == "local"
+                                    || s.protocol == "sftp"
+                                    || s.protocol == "telnet"
+                                    || s.protocol == "serial"
+                                    || s.protocol == "kubernetes"
                                     || s.protocol.starts_with("zerotrust")
                             })
                             .map(|s| (s.id, s.name))
@@ -328,13 +335,16 @@ impl MainWindow {
                 return; // No active session to split
             };
 
-            // Check if protocol supports split view (only SSH, Local Shell, ZeroTrust, SFTP with mc)
+            // Check if protocol supports split view (only VTE terminal-based sessions)
             // RDP, VNC, SPICE are not supported because they use embedded widgets, not VTE terminals
             if let Some(info) = notebook_for_split_v.get_session_info(current_session) {
                 let protocol = &info.protocol;
                 if protocol != "ssh"
                     && protocol != "local"
                     && protocol != "sftp"
+                    && protocol != "telnet"
+                    && protocol != "serial"
+                    && protocol != "kubernetes"
                     && !protocol.starts_with("zerotrust")
                 {
                     tracing::debug!(
@@ -344,7 +354,7 @@ impl MainWindow {
                     if let Some(win) = window_weak_v.upgrade() {
                         crate::toast::show_toast_on_window(
                             &win,
-                            &crate::i18n::i18n("Split view is only available for SSH, SFTP and Local Shell tabs"),
+                            &crate::i18n::i18n("Split view is available for terminal-based sessions only"),
                             crate::toast::ToastType::Warning,
                         );
                     }
@@ -483,7 +493,7 @@ impl MainWindow {
                 split_view.setup_select_tab_callback_with_provider(
                     move || {
                         // Get all sessions from the notebook, excluding those already in THIS split
-                        // Only show VTE-based sessions (SSH, ZeroTrust, Local Shell)
+                        // Only show VTE-based sessions (SSH, ZeroTrust, Local Shell, Telnet, Serial, Kubernetes)
                         // RDP/VNC/SPICE not supported in split view
                         notebook_for_provider
                             .get_all_sessions()
@@ -491,6 +501,10 @@ impl MainWindow {
                             .filter(|s| {
                                 s.protocol == "ssh"
                                     || s.protocol == "local"
+                                    || s.protocol == "sftp"
+                                    || s.protocol == "telnet"
+                                    || s.protocol == "serial"
+                                    || s.protocol == "kubernetes"
                                     || s.protocol.starts_with("zerotrust")
                             })
                             .map(|s| (s.id, s.name))

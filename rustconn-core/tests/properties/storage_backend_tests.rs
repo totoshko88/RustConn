@@ -103,8 +103,8 @@ proptest! {
     /// Property 10: Backend Selection Priority
     /// Validates: Requirement 3.1 - Store to KeePass if enabled, otherwise Keyring
     ///
-    /// When KeePass is enabled AND has a valid path, select KdbxFile backend.
-    /// Otherwise, select LibSecret backend.
+    /// When preferred_backend is KeePassXc, KeePass is enabled AND has a valid path,
+    /// select KdbxFile backend. Otherwise, select LibSecret backend.
     #[test]
     fn backend_selection_priority(
         kdbx_enabled in any::<bool>(),
@@ -117,6 +117,7 @@ proptest! {
         };
 
         let settings = SecretSettings {
+            preferred_backend: SecretBackendType::KeePassXc,
             kdbx_enabled,
             kdbx_path,
             ..Default::default()
@@ -148,6 +149,7 @@ proptest! {
         };
 
         let settings = SecretSettings {
+            preferred_backend: SecretBackendType::KeePassXc,
             kdbx_enabled,
             kdbx_path,
             ..Default::default()

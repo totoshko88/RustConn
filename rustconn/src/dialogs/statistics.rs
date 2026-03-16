@@ -199,17 +199,17 @@ impl StatisticsDialog {
     }
 
     /// Sets statistics for multiple connections (overview)
-    pub fn set_overview_statistics(&self, stats: &[(String, ConnectionStatistics)]) {
+    pub fn set_overview_statistics(&self, stats: &[(String, ConnectionStatistics, String)]) {
         // Clear existing content
         while let Some(child) = self.content_box.first_child() {
             self.content_box.remove(&child);
         }
 
         // Calculate totals
-        let total_connections: u32 = stats.iter().map(|(_, s)| s.total_connections).sum();
-        let total_successful: u32 = stats.iter().map(|(_, s)| s.successful_connections).sum();
-        let total_failed: u32 = stats.iter().map(|(_, s)| s.failed_connections).sum();
-        let total_duration: i64 = stats.iter().map(|(_, s)| s.total_duration_seconds).sum();
+        let total_connections: u32 = stats.iter().map(|(_, s, _)| s.total_connections).sum();
+        let total_successful: u32 = stats.iter().map(|(_, s, _)| s.successful_connections).sum();
+        let total_failed: u32 = stats.iter().map(|(_, s, _)| s.failed_connections).sum();
+        let total_duration: i64 = stats.iter().map(|(_, s, _)| s.total_duration_seconds).sum();
 
         // Summary group
         let summary_group = adw::PreferencesGroup::builder()
@@ -253,18 +253,103 @@ impl StatisticsDialog {
 
         self.content_box.append(&summary_group);
 
+        // Most Used connections (top 3)
+        if !stats.is_empty() {
+            let mut sorted: Vec<_> = stats.iter().collect();
+            sorted.sort_by(|a, b| b.1.total_connections.cmp(&a.1.total_connections));
+
+            let most_used_group = adw::PreferencesGroup::builder()
+                .title(i18n("Most Used"))
+                .description(i18n("Top connections by usage"))
+                .build();
+
+            for (name, stat, protocol) in sorted.iter().take(3) {
+                let row = adw::ActionRow::builder()
+                    .title(name.as_str())
+                    .subtitle(&format!(
+                        "{} • {} {} • {:.0}%",
+                        protocol.to_uppercase(),
+                        stat.total_connections,
+                        i18n("sessions"),
+                        stat.success_rate()
+                    ))
+                    .build();
+
+                let duration_label = Label::builder()
+                    .label(&ConnectionStatistics::format_duration(
+                        stat.total_duration_seconds,
+                    ))
+                    .css_classes(["dim-label"])
+                    .build();
+                row.add_suffix(&duration_label);
+
+                most_used_group.add(&row);
+            }
+
+            self.content_box.append(&most_used_group);
+        }
+
+        // Protocol Distribution
+        if !stats.is_empty() {
+            let mut protocol_totals: std::collections::HashMap<String, u32> =
+                std::collections::HashMap::new();
+            for (_, stat, protocol) in stats {
+                *protocol_totals
+                    .entry(protocol.to_uppercase())
+                    .or_default() += stat.total_connections;
+            }
+
+            let mut protocol_list: Vec<_> = protocol_totals.into_iter().collect();
+            protocol_list.sort_by(|a, b| b.1.cmp(&a.1));
+
+            let protocol_group = adw::PreferencesGroup::builder()
+                .title(i18n("Protocol Distribution"))
+                .build();
+
+            for (protocol, count) in &protocol_list {
+                let fraction = if total_connections > 0 {
+                    f64::from(*count) / f64::from(total_connections)
+                } else {
+                    0.0
+                };
+
+                let row = adw::ActionRow::builder()
+                    .title(protocol)
+                    .subtitle(&format!(
+                        "{} {} ({:.0}%)",
+                        count,
+                        i18n("sessions"),
+                        fraction * 100.0
+                    ))
+                    .build();
+
+                let progress = gtk4::ProgressBar::builder()
+                    .fraction(fraction)
+                    .valign(gtk4::Align::Center)
+                    .width_request(80)
+                    .build();
+                row.add_suffix(&progress);
+
+                protocol_group.add(&row);
+            }
+
+            self.content_box.append(&protocol_group);
+        }
+
         // Per-connection breakdown
         if !stats.is_empty() {
             let breakdown_group = adw::PreferencesGroup::builder()
                 .title(i18n("Per-Connection"))
                 .build();
 
-            for (name, stat) in stats {
+            for (name, stat, protocol) in stats {
                 let row = adw::ActionRow::builder()
                     .title(name)
                     .subtitle(&format!(
-                        "{} sessions • {:.0}% success",
+                        "{} • {} {} • {:.0}%",
+                        protocol.to_uppercase(),
                         stat.total_connections,
+                        i18n("sessions"),
                         stat.success_rate()
                     ))
                     .build();

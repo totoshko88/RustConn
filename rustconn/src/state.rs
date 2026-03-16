@@ -2021,14 +2021,15 @@ impl AppState {
 
     /// Gets statistics for all connections
     #[must_use]
-    pub fn get_all_statistics(&self) -> Vec<(String, ConnectionStatistics)> {
-        let mut stats_map: HashMap<Uuid, (String, ConnectionStatistics)> = HashMap::new();
+    pub fn get_all_statistics(&self) -> Vec<(String, ConnectionStatistics, String)> {
+        let mut stats_map: HashMap<Uuid, (String, ConnectionStatistics, String)> = HashMap::new();
 
         for entry in &self.history_entries {
             let stat_entry = stats_map.entry(entry.connection_id).or_insert_with(|| {
                 (
                     entry.connection_name.clone(),
                     ConnectionStatistics::new(entry.connection_id),
+                    entry.protocol.clone(),
                 )
             });
             stat_entry.1.update_from_entry(entry);

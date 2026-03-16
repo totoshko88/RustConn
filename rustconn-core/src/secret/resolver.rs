@@ -1292,6 +1292,7 @@ mod tests {
     #[test]
     fn test_select_storage_backend_keepass_enabled() {
         let settings = SecretSettings {
+            preferred_backend: SecretBackendType::KeePassXc,
             kdbx_enabled: true,
             kdbx_path: Some(std::path::PathBuf::from("/path/to/db.kdbx")),
             ..Default::default()

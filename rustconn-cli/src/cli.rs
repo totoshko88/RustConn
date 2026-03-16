@@ -377,6 +377,18 @@ pub enum ImportFormatArg {
     RoyalTs,
     /// MobaXterm session format (.mxtsessions)
     MobaXterm,
+    /// Microsoft RDP file (.rdp)
+    #[value(name = "rdp", alias = "rdp-file")]
+    Rdp,
+    /// Remote Desktop Manager JSON export
+    #[value(name = "rdm", alias = "remote-desktop-manager")]
+    Rdm,
+    /// Virt-Viewer connection file (.vv)
+    #[value(name = "virt-viewer", alias = "vv")]
+    VirtViewer,
+    /// Libvirt domain XML / GNOME Boxes
+    #[value(name = "libvirt", alias = "gnome-boxes")]
+    Libvirt,
 }
 
 /// Snippet subcommands

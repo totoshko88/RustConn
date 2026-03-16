@@ -356,11 +356,11 @@ impl Eq for SecretSettings {}
 #[serde(rename_all = "snake_case")]
 pub enum SecretBackendType {
     /// `KeePassXC` browser integration
-    #[default]
     KeePassXc,
     /// Direct KDBX file access (GNOME Secrets, `OneKeePass`, KeePass compatible)
     KdbxFile,
     /// libsecret (GNOME Keyring/KDE Wallet)
+    #[default]
     LibSecret,
     /// Bitwarden CLI
     Bitwarden,

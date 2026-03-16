@@ -6061,3 +6061,39 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:10
 msgid "ssh;rdp;vnc;spice;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr ""
+
+#: rustconn/src/dialogs/import.rs
+msgid "RDP File (.rdp)"
+msgstr "Файл RDP (.rdp)"
+
+#: rustconn/src/dialogs/import.rs
+msgid "Import RDP connection from a Microsoft .rdp file"
+msgstr "Імпортувати RDP-з'єднання з файлу Microsoft .rdp"
+
+#: rustconn/src/dialogs/import.rs
+msgid "Select RDP File"
+msgstr "Виберіть файл RDP"
+
+#: rustconn/src/dialogs/import.rs
+msgid "RDP Files (*.rdp)"
+msgstr "Файли RDP (*.rdp)"
+
+#: rustconn/src/dialogs/statistics.rs
+msgid "Most Used"
+msgstr "Найчастіше використовувані"
+
+#: rustconn/src/dialogs/statistics.rs
+msgid "Top connections by usage"
+msgstr "Найпопулярніші з'єднання"
+
+#: rustconn/src/dialogs/statistics.rs
+msgid "Protocol Distribution"
+msgstr "Розподіл за протоколами"
+
+#: rustconn/src/dialogs/statistics.rs
+msgid "sessions"
+msgstr "сеансів"
+
+#: rustconn/src/window/split_view_actions.rs
+msgid "Split view is available for terminal-based sessions only"
+msgstr "Розділений вигляд доступний лише для термінальних сеансів"

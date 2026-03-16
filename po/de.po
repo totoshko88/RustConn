@@ -6075,3 +6075,39 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:10
 msgid "ssh;rdp;vnc;spice;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr ""
+
+#: rustconn/src/dialogs/import.rs
+msgid "RDP File (.rdp)"
+msgstr "RDP-Datei (.rdp)"
+
+#: rustconn/src/dialogs/import.rs
+msgid "Import RDP connection from a Microsoft .rdp file"
+msgstr "RDP-Verbindung aus einer Microsoft .rdp-Datei importieren"
+
+#: rustconn/src/dialogs/import.rs
+msgid "Select RDP File"
+msgstr "RDP-Datei auswählen"
+
+#: rustconn/src/dialogs/import.rs
+msgid "RDP Files (*.rdp)"
+msgstr "RDP-Dateien (*.rdp)"
+
+#: rustconn/src/dialogs/statistics.rs
+msgid "Most Used"
+msgstr "Am häufigsten verwendet"
+
+#: rustconn/src/dialogs/statistics.rs
+msgid "Top connections by usage"
+msgstr "Meistgenutzte Verbindungen"
+
+#: rustconn/src/dialogs/statistics.rs
+msgid "Protocol Distribution"
+msgstr "Protokollverteilung"
+
+#: rustconn/src/dialogs/statistics.rs
+msgid "sessions"
+msgstr "Sitzungen"
+
+#: rustconn/src/window/split_view_actions.rs
+msgid "Split view is available for terminal-based sessions only"
+msgstr "Geteilte Ansicht ist nur für terminalbasierte Sitzungen verfügbar"

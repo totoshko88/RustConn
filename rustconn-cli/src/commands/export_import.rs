@@ -255,8 +255,9 @@ fn import_connections(
     file: &Path,
 ) -> Result<rustconn_core::import::ImportResult, CliError> {
     use rustconn_core::import::{
-        AnsibleInventoryImporter, AsbruImporter, ImportSource, MobaXtermImporter, RemminaImporter,
-        RoyalTsImporter, SshConfigImporter,
+        AnsibleInventoryImporter, AsbruImporter, ImportSource, LibvirtXmlImporter,
+        MobaXtermImporter, RdmImporter, RdpFileImporter, RemminaImporter, RoyalTsImporter,
+        SshConfigImporter, VirtViewerImporter,
     };
 
     let result = match format {
@@ -305,6 +306,30 @@ fn import_connections(
         }
         ImportFormatArg::MobaXterm => {
             let importer = MobaXtermImporter::with_path(file.to_path_buf());
+            importer
+                .import_from_path(file)
+                .map_err(|e| CliError::Import(e.to_string()))?
+        }
+        ImportFormatArg::Rdp => {
+            let importer = RdpFileImporter::new();
+            importer
+                .import_from_path(file)
+                .map_err(|e| CliError::Import(e.to_string()))?
+        }
+        ImportFormatArg::Rdm => {
+            let importer = RdmImporter::new();
+            importer
+                .import_from_path(file)
+                .map_err(|e| CliError::Import(e.to_string()))?
+        }
+        ImportFormatArg::VirtViewer => {
+            let importer = VirtViewerImporter::new();
+            importer
+                .import_from_path(file)
+                .map_err(|e| CliError::Import(e.to_string()))?
+        }
+        ImportFormatArg::Libvirt => {
+            let importer = LibvirtXmlImporter::new();
             importer
                 .import_from_path(file)
                 .map_err(|e| CliError::Import(e.to_string()))?

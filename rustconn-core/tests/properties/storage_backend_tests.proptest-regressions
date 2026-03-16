@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 48df0bae3ed8b78b24c3861c12e0e13ea3a6199f69183d7282f569e382db9908 # shrinks to kdbx_enabled = true, has_path = true
