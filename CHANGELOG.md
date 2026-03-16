@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### RDP
 - **Crash on RDP connect (RefCell already borrowed)** — the IronRDP event polling loop held an immutable `client_ref.borrow()` while `handle_ironrdp_error` attempted `client_ref.borrow_mut().take()`, causing a double-borrow panic; error handling is now deferred until after the borrow is dropped ([#57](https://github.com/totoshko88/RustConn/issues/57))
+- **Crash on RDP connect (ironrdp-tokio panic)** — upstream bug in `ironrdp-tokio 0.8.0` causes `copy_from_slice` panic on 64-bit systems during KDC TCP response parsing; `connect_finalize` is now wrapped in `catch_unwind` so the panic is converted to an error and the GUI falls back to FreeRDP instead of crashing
 - **RDP gateway ignored in embedded mode** — IronRDP doesn't support RD Gateway; now falls back to external xfreerdp with a toast ([#53](https://github.com/totoshko88/RustConn/issues/53))
 - **External RDP sidebar icon stays green after tab close** — fixed session ID / connection ID mismatch in `add_embedded_session_tab`; external xfreerdp process is now killed on tab close
 

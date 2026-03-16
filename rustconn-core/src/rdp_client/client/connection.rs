@@ -17,6 +17,7 @@ use ironrdp_tokio::TokioFramed;
 use ironrdp_tokio::reqwest::ReqwestNetworkClient;
 use secrecy::ExposeSecret;
 use std::net::SocketAddr;
+use std::panic::AssertUnwindSafe;
 use tokio::net::TcpStream;
 
 pub type UpgradedFramed = TokioFramed<ironrdp_tls::TlsStream<TcpStream>>;
@@ -185,7 +186,12 @@ pub async fn establish_connection(
         );
 
         // Complete connection (NLA, licensing, capabilities)
-        let connection_result = ironrdp_tokio::connect_finalize(
+        // Wrap in catch_unwind: ironrdp-tokio 0.8.0 has a bug where
+        // `copy_from_slice` panics on 64-bit systems in the KDC TCP
+        // response parser (usize::to_be_bytes() returns 8 bytes but
+        // destination is 4 bytes). Convert the panic into an error
+        // so the GUI can fall back to FreeRDP instead of crashing.
+        let finalize_future = AssertUnwindSafe(ironrdp_tokio::connect_finalize(
             upgraded,
             connector,
             &mut upgraded_framed,
@@ -193,16 +199,36 @@ pub async fn establish_connection(
             ServerName::new(&config.host),
             server_public_key,
             None, // No Kerberos config
-        )
-        .await
-        .map_err(|e| {
-            tracing::error!(
-                "IronRDP connect_finalize failed: {:?}, error_kind={:?}",
-                e,
-                e.kind()
-            );
-            RdpClientError::ConnectionFailed(format!("Connection finalize failed: {e}"))
-        })?;
+        ));
+
+        let connection_result = match futures::FutureExt::catch_unwind(finalize_future).await {
+            Ok(Ok(result)) => result,
+            Ok(Err(e)) => {
+                tracing::error!(
+                    "IronRDP connect_finalize failed: {:?}, error_kind={:?}",
+                    e,
+                    e.kind()
+                );
+                return Err(RdpClientError::ConnectionFailed(format!(
+                    "Connection finalize failed: {e}"
+                )));
+            }
+            Err(panic_payload) => {
+                let msg = panic_payload
+                    .downcast_ref::<String>()
+                    .map(String::as_str)
+                    .or_else(|| panic_payload.downcast_ref::<&str>().copied())
+                    .unwrap_or("unknown panic in IronRDP");
+                tracing::error!(
+                    protocol = "rdp",
+                    panic = %msg,
+                    "IronRDP connect_finalize panicked (upstream bug)"
+                );
+                return Err(RdpClientError::ConnectionFailed(format!(
+                    "IronRDP internal error: {msg}"
+                )));
+            }
+        };
 
         Ok::<_, RdpClientError>((upgraded_framed, connection_result))
     })
