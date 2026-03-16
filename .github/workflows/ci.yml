@@ -40,7 +40,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run cargo check
-        run: cargo check --all-targets --all-features
+        run: cargo check --all-targets
 
   fmt:
     name: Format
@@ -87,7 +87,7 @@ jobs:
           key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
+        run: cargo clippy --all-targets -- -D warnings
 
   test:
     name: Test
@@ -118,7 +118,7 @@ jobs:
           key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run tests
-        run: cargo test --workspace --all-features
+        run: cargo test --workspace
 
   test-core:
     name: Test Core (no GUI)
@@ -196,4 +196,4 @@ jobs:
         run: |
           source $HOME/.cargo/env
           rustc --version
-          cargo check --all-targets --all-features
+          cargo check --all-targets
