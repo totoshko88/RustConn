@@ -2055,7 +2055,34 @@ impl ImportDialog {
                         progress_label_clone
                             .set_text(&format!("Importing from {}...", path.display()));
 
-                        let importer = CsvImporter::with_options(CsvParseOptions::default());
+                        // Auto-detect delimiter from file extension and content
+                        let delimiter = if path
+                            .extension()
+                            .is_some_and(|ext| ext.eq_ignore_ascii_case("tsv"))
+                        {
+                            b'\t'
+                        } else if let Ok(first_line) = std::fs::read_to_string(&path)
+                            .map(|s| s.lines().next().unwrap_or_default().to_string())
+                        {
+                            // Heuristic: if semicolons outnumber commas, use semicolon
+                            let commas = first_line.matches(',').count();
+                            let semicolons = first_line.matches(';').count();
+                            let tabs = first_line.matches('\t').count();
+                            if tabs > commas && tabs > semicolons {
+                                b'\t'
+                            } else if semicolons > commas {
+                                b';'
+                            } else {
+                                b','
+                            }
+                        } else {
+                            b','
+                        };
+                        let options = CsvParseOptions {
+                            delimiter,
+                            ..CsvParseOptions::default()
+                        };
+                        let importer = CsvImporter::with_options(options);
                         let result = Self::import_or_error(importer.import_from_path(&path), "CSV");
 
                         let filename = path

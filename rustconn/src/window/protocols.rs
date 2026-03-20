@@ -9,6 +9,7 @@ use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
 use crate::utils::spawn_blocking_with_callback;
+use gtk4::glib;
 use gtk4::prelude::*;
 use rustconn_core::connection::check_port;
 use rustconn_core::variables::{Variable, VariableManager, VariableScope};
@@ -203,6 +204,16 @@ fn start_ssh_connection_internal(
         &terminal_settings,
         conn.theme_override.as_ref(),
     );
+
+    // Apply per-connection highlight rules (merged with global rules)
+    if !conn.highlight_rules.is_empty() {
+        let global_rules = state
+            .try_borrow()
+            .ok()
+            .map(|s| s.settings().highlight_rules.clone())
+            .unwrap_or_default();
+        notebook.set_highlight_rules(session_id, &global_rules, &conn.highlight_rules);
+    }
 
     // Record connection start in history
     let history_entry_id = if let Ok(mut state_mut) = state.try_borrow_mut() {
@@ -605,6 +616,42 @@ fn start_ssh_connection_internal(
                         "Terminal connection detected as established"
                     );
                 }
+            }
+        });
+    }
+
+    // --- Auto-recording: start recording once SSH connection is established ---
+    if conn.session_recording_enabled {
+        let notebook_clone = notebook.clone();
+        let recording_conn_name = conn_name.clone();
+        let recording_started = std::rc::Rc::new(std::cell::Cell::new(false));
+        let recording_started_clone = recording_started.clone();
+        let recording_ssh_params = Some(crate::terminal::SshRecordingParams {
+            host: host.clone(),
+            port,
+            username: username.clone(),
+            identity_file: identity_file.clone(),
+        });
+
+        notebook.connect_contents_changed(session_id, move || {
+            if recording_started_clone.get() {
+                return;
+            }
+            // Wait for connection to be established (cursor row > 2)
+            if let Some(row) = notebook_clone.get_terminal_cursor_row(session_id)
+                && row > 2
+            {
+                recording_started_clone.set(true);
+                notebook_clone.start_recording(
+                    session_id,
+                    &recording_conn_name,
+                    rustconn_core::session::SanitizeConfig::default(),
+                    recording_ssh_params.clone(),
+                );
+                tracing::info!(
+                    %session_id,
+                    "Auto-recording started after SSH connection established"
+                );
             }
         });
     }
@@ -1179,6 +1226,16 @@ fn start_telnet_connection_internal(
         conn.theme_override.as_ref(),
     );
 
+    // Apply per-connection highlight rules (merged with global rules)
+    if !conn.highlight_rules.is_empty() {
+        let global_rules = state
+            .try_borrow()
+            .ok()
+            .map(|s| s.settings().highlight_rules.clone())
+            .unwrap_or_default();
+        notebook.set_highlight_rules(session_id, &global_rules, &conn.highlight_rules);
+    }
+
     // Record connection start in history
     let history_entry_id = if let Ok(mut state_mut) = state.try_borrow_mut() {
         Some(state_mut.record_connection_start(conn, conn.username.as_deref()))
@@ -1256,6 +1313,41 @@ fn start_telnet_connection_internal(
 
     // Wire up child exited callback (second call for terminal monitoring)
     MainWindow::setup_child_exited_handler(state, notebook, sidebar, session_id, connection_id);
+
+    // --- Auto-recording for Telnet ---
+    if conn.session_recording_enabled {
+        let notebook_clone = notebook.clone();
+        let recording_conn_name = conn_name.clone();
+        let recording_started = std::rc::Rc::new(std::cell::Cell::new(false));
+        let recording_started_clone = recording_started.clone();
+        let recording_ssh_params = Some(crate::terminal::SshRecordingParams {
+            host: host.clone(),
+            port,
+            username: conn.username.clone(),
+            identity_file: None,
+        });
+
+        notebook.connect_contents_changed(session_id, move || {
+            if recording_started_clone.get() {
+                return;
+            }
+            if let Some(row) = notebook_clone.get_terminal_cursor_row(session_id)
+                && row > 0
+            {
+                recording_started_clone.set(true);
+                notebook_clone.start_recording(
+                    session_id,
+                    &recording_conn_name,
+                    rustconn_core::session::SanitizeConfig::default(),
+                    recording_ssh_params.clone(),
+                );
+                tracing::info!(
+                    %session_id,
+                    "Auto-recording started after Telnet connection"
+                );
+            }
+        });
+    }
 
     Some(session_id)
 }
@@ -1480,6 +1572,16 @@ pub fn start_serial_connection(
         conn.theme_override.as_ref(),
     );
 
+    // Apply per-connection highlight rules (merged with global rules)
+    if !conn.highlight_rules.is_empty() {
+        let global_rules = state
+            .try_borrow()
+            .ok()
+            .map(|s| s.settings().highlight_rules.clone())
+            .unwrap_or_default();
+        notebook.set_highlight_rules(session_id, &global_rules, &conn.highlight_rules);
+    }
+
     // Record connection start in history
     let history_entry_id = if let Ok(mut state_mut) = state.try_borrow_mut() {
         Some(state_mut.record_connection_start(conn, conn.username.as_deref()))
@@ -1522,6 +1624,25 @@ pub fn start_serial_connection(
 
     // Spawn picocom
     notebook.spawn_serial(session_id, &command);
+
+    // --- Auto-recording for Serial ---
+    if conn.session_recording_enabled {
+        let notebook_clone = notebook.clone();
+        let recording_conn_name = conn_name;
+        // Serial is local — no SSH params needed
+        glib::timeout_add_local_once(std::time::Duration::from_secs(1), move || {
+            notebook_clone.start_recording(
+                session_id,
+                &recording_conn_name,
+                rustconn_core::session::SanitizeConfig::default(),
+                None,
+            );
+            tracing::info!(
+                %session_id,
+                "Auto-recording started for Serial connection"
+            );
+        });
+    }
 
     Some(session_id)
 }
@@ -1613,6 +1734,16 @@ pub fn start_kubernetes_connection(
         conn.theme_override.as_ref(),
     );
 
+    // Apply per-connection highlight rules (merged with global rules)
+    if !conn.highlight_rules.is_empty() {
+        let global_rules = state
+            .try_borrow()
+            .ok()
+            .map(|s| s.settings().highlight_rules.clone())
+            .unwrap_or_default();
+        notebook.set_highlight_rules(session_id, &global_rules, &conn.highlight_rules);
+    }
+
     // Record connection start in history
     let history_entry_id = if let Ok(mut state_mut) = state.try_borrow_mut() {
         Some(state_mut.record_connection_start(conn, conn.username.as_deref()))
@@ -1661,6 +1792,268 @@ pub fn start_kubernetes_connection(
     let spawn_command = rustconn_core::flatpak::wrap_host_command(&kubectl_command);
     let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
     notebook.spawn_command(session_id, &[&shell, "-c", &spawn_command], None, None);
+
+    // --- Auto-recording for Kubernetes ---
+    if conn.session_recording_enabled {
+        let notebook_clone = notebook.clone();
+        let recording_conn_name = conn_name;
+        let recording_started = std::rc::Rc::new(std::cell::Cell::new(false));
+        let recording_started_clone = recording_started.clone();
+
+        notebook.connect_contents_changed(session_id, move || {
+            if recording_started_clone.get() {
+                return;
+            }
+            if let Some(row) = notebook_clone.get_terminal_cursor_row(session_id)
+                && row > 0
+            {
+                recording_started_clone.set(true);
+                notebook_clone.start_recording(
+                    session_id,
+                    &recording_conn_name,
+                    rustconn_core::session::SanitizeConfig::default(),
+                    None,
+                );
+                tracing::info!(
+                    %session_id,
+                    "Auto-recording started after Kubernetes connection"
+                );
+            }
+        });
+    }
+
+    Some(session_id)
+}
+
+/// Starts a MOSH connection
+///
+/// Creates a terminal tab and spawns the `mosh` process with SSH port,
+/// predict mode, server binary, and port range from `MoshConfig`.
+/// Uses `MoshProtocol::build_command()` to generate the argv.
+#[allow(clippy::too_many_arguments)]
+pub fn start_mosh_connection(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    connection_id: Uuid,
+    conn: &rustconn_core::Connection,
+    logging_enabled: bool,
+) -> Option<Uuid> {
+    // Port check uses the SSH port (mosh handshake goes over SSH)
+    let settings = state.borrow().settings().clone();
+    let should_check = settings.connection.pre_connect_port_check && !conn.skip_port_check;
+
+    if should_check {
+        let ssh_port = if let rustconn_core::ProtocolConfig::Mosh(ref cfg) = conn.protocol_config {
+            cfg.ssh_port.unwrap_or(22)
+        } else {
+            22
+        };
+        let host = conn.host.clone();
+        let timeout = settings.connection.port_check_timeout_secs;
+        let state_clone = state.clone();
+        let notebook_clone = notebook.clone();
+        let sidebar_clone = sidebar.clone();
+        let conn_clone = conn.clone();
+
+        spawn_blocking_with_callback(
+            move || check_port(&host, ssh_port, timeout),
+            move |result| match result {
+                Ok(_) => {
+                    start_mosh_connection_internal(
+                        &state_clone,
+                        &notebook_clone,
+                        &sidebar_clone,
+                        connection_id,
+                        &conn_clone,
+                        logging_enabled,
+                    );
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        protocol = "mosh",
+                        host = %conn_clone.host,
+                        error = %e,
+                        "Port check failed for MOSH connection"
+                    );
+                    sidebar_clone.update_connection_status(&connection_id.to_string(), "failed");
+                    if let Some(root) = notebook_clone.widget().root()
+                        && let Some(window) = root.downcast_ref::<gtk4::Window>()
+                    {
+                        crate::toast::show_retry_toast_on_window(
+                            window,
+                            &crate::i18n::i18n("Connection failed. Host unreachable."),
+                            &connection_id.to_string(),
+                        );
+                    }
+                }
+            },
+        );
+        None
+    } else {
+        start_mosh_connection_internal(
+            state,
+            notebook,
+            sidebar,
+            connection_id,
+            conn,
+            logging_enabled,
+        )
+    }
+}
+
+/// Internal function to start MOSH connection (after port check).
+fn start_mosh_connection_internal(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    connection_id: Uuid,
+    conn: &rustconn_core::Connection,
+    logging_enabled: bool,
+) -> Option<Uuid> {
+    use rustconn_core::protocol::{
+        MoshProtocol, Protocol, detect_mosh, format_command_message, format_connection_message,
+    };
+
+    let conn_name = conn.name.clone();
+
+    // Check mosh availability
+    let mosh_info = detect_mosh();
+    if !mosh_info.installed {
+        tracing::warn!(
+            connection = %conn_name,
+            "mosh not found for MOSH connection"
+        );
+        if let Some(root) = notebook.widget().root()
+            && let Some(window) = root.downcast_ref::<gtk4::Window>()
+        {
+            crate::toast::show_missing_cli_toast(
+                window,
+                &i18n("Install mosh for MOSH connections"),
+            );
+        }
+        return None;
+    }
+
+    // Build mosh command via MoshProtocol
+    let mosh = MoshProtocol::new();
+    let Some(command) = mosh.build_command(conn) else {
+        tracing::error!(
+            connection = %conn_name,
+            "Failed to build mosh command"
+        );
+        return None;
+    };
+
+    tracing::info!(
+        connection = %conn_name,
+        connection_id = %connection_id,
+        "Starting MOSH connection"
+    );
+
+    // Get terminal settings from state
+    let terminal_settings = state
+        .try_borrow()
+        .ok()
+        .map(|s| s.settings().terminal.clone())
+        .unwrap_or_default();
+
+    // Create terminal tab for MOSH
+    let session_id = notebook.create_terminal_tab_with_settings(
+        connection_id,
+        &conn_name,
+        "mosh",
+        Some(&conn.automation),
+        &terminal_settings,
+        conn.theme_override.as_ref(),
+    );
+
+    // Apply per-connection highlight rules (merged with global rules)
+    if !conn.highlight_rules.is_empty() {
+        let global_rules = state
+            .try_borrow()
+            .ok()
+            .map(|s| s.settings().highlight_rules.clone())
+            .unwrap_or_default();
+        notebook.set_highlight_rules(session_id, &global_rules, &conn.highlight_rules);
+    }
+
+    // Record connection start in history
+    let history_entry_id = if let Ok(mut state_mut) = state.try_borrow_mut() {
+        Some(state_mut.record_connection_start(conn, conn.username.as_deref()))
+    } else {
+        None
+    };
+
+    if let Some(entry_id) = history_entry_id {
+        notebook.set_history_entry_id(session_id, entry_id);
+    }
+
+    // Update last_connected timestamp
+    if let Ok(mut state_mut) = state.try_borrow_mut()
+        && let Err(e) = state_mut.update_last_connected(connection_id)
+    {
+        tracing::warn!(?e, "Failed to update last_connected");
+    }
+
+    // Set up session logging if enabled
+    if logging_enabled {
+        MainWindow::setup_session_logging(state, notebook, session_id, connection_id, &conn_name);
+    }
+
+    // Wire up child exited callback
+    MainWindow::setup_child_exited_handler(state, notebook, sidebar, session_id, connection_id);
+
+    // Build command string for display
+    let mosh_command = command.join(" ");
+    let conn_msg = format_connection_message("MOSH", &conn.host);
+    let cmd_msg = format_command_message(&mosh_command);
+    let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
+    notebook.display_output(session_id, &feedback);
+
+    // Spawn mosh — uses exec (no shell wrapper needed)
+    let argv: Vec<&str> = command.iter().map(String::as_str).collect();
+    notebook.spawn_command(session_id, &argv, None, None);
+
+    // --- Auto-recording for MOSH ---
+    if conn.session_recording_enabled {
+        let notebook_clone = notebook.clone();
+        let recording_conn_name = conn_name;
+        let recording_started = std::rc::Rc::new(std::cell::Cell::new(false));
+        let recording_started_clone = recording_started.clone();
+        let ssh_port = if let rustconn_core::ProtocolConfig::Mosh(ref cfg) = conn.protocol_config {
+            cfg.ssh_port.unwrap_or(22)
+        } else {
+            22
+        };
+        let recording_ssh_params = Some(crate::terminal::SshRecordingParams {
+            host: conn.host.clone(),
+            port: ssh_port,
+            username: conn.username.clone(),
+            identity_file: None,
+        });
+
+        notebook.connect_contents_changed(session_id, move || {
+            if recording_started_clone.get() {
+                return;
+            }
+            if let Some(row) = notebook_clone.get_terminal_cursor_row(session_id)
+                && row > 2
+            {
+                recording_started_clone.set(true);
+                notebook_clone.start_recording(
+                    session_id,
+                    &recording_conn_name,
+                    rustconn_core::session::SanitizeConfig::default(),
+                    recording_ssh_params.clone(),
+                );
+                tracing::info!(
+                    %session_id,
+                    "Auto-recording started after MOSH connection"
+                );
+            }
+        });
+    }
 
     Some(session_id)
 }

@@ -141,6 +141,10 @@ impl RecordingReader {
         // terminated by `\n`.  We also reduce the first timing entry's byte
         // count so that data ↔ timing alignment is preserved.
         let (data, timing_entries) = strip_script_header(data, timing_entries);
+        // Also strip the echoed `script -q -f --log-out …` command that
+        // appears in the data file (the VTE erase sequence is sent via
+        // `feed()` and is NOT captured by `script`).
+        let (data, timing_entries) = strip_script_command_echo(data, timing_entries);
 
         Ok(Self {
             data,
@@ -200,6 +204,92 @@ fn strip_script_header(
             remaining = 0;
         }
     }
+    (data, timing)
+}
+
+/// Strip the echoed `script -q -f --log-out …` command from the beginning of
+/// the data file.  RustConn prefixes the command with a space (for
+/// `HISTCONTROL=ignorespace`) so we look for ` script -q -f --log-out` in the
+/// first 512 bytes.  The entire line up to and including the trailing `\n` is
+/// removed, and timing entries are adjusted identically to
+/// [`strip_script_header`].
+fn strip_script_command_echo(
+    mut data: Vec<u8>,
+    mut timing: Vec<(Duration, usize)>,
+) -> (Vec<u8>, Vec<(Duration, usize)>) {
+    const MARKER: &[u8] = b"script -q -f --log-out";
+    let search_len = data.len().min(512);
+    let search_window = &data[..search_len];
+
+    // Find the marker within the first 512 bytes
+    let Some(marker_pos) = search_window
+        .windows(MARKER.len())
+        .position(|w| w == MARKER)
+    else {
+        return (data, timing);
+    };
+
+    // Walk backwards to the start of the line (or start of data)
+    let line_start = data[..marker_pos]
+        .iter()
+        .rposition(|&b| b == b'\n')
+        .map_or(0, |i| i + 1);
+
+    // Walk forwards to the end of the line
+    let line_end = data[marker_pos..]
+        .iter()
+        .position(|&b| b == b'\n')
+        .map_or(data.len(), |i| marker_pos + i + 1);
+
+    let strip_len = line_end - line_start;
+    if strip_len == 0 {
+        return (data, timing);
+    }
+
+    data.drain(line_start..line_end);
+
+    // Adjust timing entries: skip `line_start` bytes first, then subtract
+    // `strip_len` bytes from the entries that covered the removed range.
+    let mut skip = line_start;
+    let mut remaining = strip_len;
+    let mut i = 0;
+    // Skip entries that are entirely before the removed range
+    while skip > 0 && i < timing.len() {
+        let count = timing[i].1;
+        if count <= skip {
+            skip -= count;
+            i += 1;
+        } else {
+            // Entry partially before the range — split: keep the prefix part
+            // and start removing from the rest.
+            let before = skip;
+            skip = 0;
+            let after = count - before;
+            if after <= remaining {
+                remaining -= after;
+                timing[i].1 = before;
+                i += 1;
+            } else {
+                timing[i].1 = before + (after - remaining);
+                remaining = 0;
+            }
+        }
+    }
+    // Remove entries that fall entirely within the stripped range
+    while remaining > 0 && i < timing.len() {
+        let (delay, count) = timing[i];
+        if count <= remaining {
+            remaining -= count;
+            timing.remove(i);
+            if i < timing.len() {
+                timing[i].0 += delay;
+            }
+        } else {
+            timing[i] = (delay, count - remaining);
+            remaining = 0;
+        }
+    }
+
     (data, timing)
 }
 

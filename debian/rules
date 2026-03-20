@@ -18,6 +18,9 @@ override_dh_auto_install:
 	# Desktop file
 	install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.desktop \
 		debian/rustconn/usr/share/applications/io.github.totoshko88.RustConn.desktop
+	# MIME type for .rdp files
+	install -Dm644 rustconn/assets/io.github.totoshko88.RustConn-rdp.xml \
+		debian/rustconn/usr/share/mime/packages/io.github.totoshko88.RustConn-rdp.xml
 	# Icons - hicolor theme (for desktop/launcher)
 	install -Dm644 rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
 		debian/rustconn/usr/share/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg

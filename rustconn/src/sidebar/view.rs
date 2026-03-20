@@ -3,6 +3,7 @@ use gtk4::prelude::*;
 use gtk4::{
     Box as GtkBox, DragSource, GestureClick, Image, Label, ListItem, ListView, MultiSelection,
     Orientation, SignalListItemFactory, SingleSelection, TreeExpander, TreeListRow, gdk, glib,
+    pango,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -44,6 +45,8 @@ pub fn setup_list_item(
     let label = Label::new(None);
     label.set_halign(gtk4::Align::Start);
     label.set_hexpand(true);
+    label.set_ellipsize(pango::EllipsizeMode::End);
+    label.set_max_width_chars(35);
     content_box.append(&label);
 
     let pin_icon = Image::from_icon_name("starred-symbolic");

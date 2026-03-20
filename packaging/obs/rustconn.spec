@@ -188,6 +188,8 @@ install -Dm755 target/release/rustconn %{buildroot}%{_bindir}/rustconn
 install -Dm755 target/release/rustconn-cli %{buildroot}%{_bindir}/rustconn-cli
 install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.desktop \
     %{buildroot}%{_datadir}/applications/io.github.totoshko88.RustConn.desktop
+install -Dm644 rustconn/assets/io.github.totoshko88.RustConn-rdp.xml \
+    %{buildroot}%{_datadir}/mime/packages/io.github.totoshko88.RustConn-rdp.xml
 install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml \
     %{buildroot}%{_datadir}/metainfo/io.github.totoshko88.RustConn.metainfo.xml
 
@@ -218,6 +220,7 @@ done
 %{_bindir}/rustconn
 %{_bindir}/rustconn-cli
 %{_datadir}/applications/io.github.totoshko88.RustConn.desktop
+%{_datadir}/mime/packages/io.github.totoshko88.RustConn-rdp.xml
 %{_datadir}/metainfo/io.github.totoshko88.RustConn.metainfo.xml
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo

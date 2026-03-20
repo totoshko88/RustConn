@@ -16,6 +16,11 @@ DESKTOP_DIR="$PREFIX/share/applications"
 mkdir -p "$DESKTOP_DIR"
 cp rustconn/assets/io.github.totoshko88.RustConn.desktop "$DESKTOP_DIR/"
 
+# Install MIME type definition for .rdp files
+MIME_DIR="$PREFIX/share/mime/packages"
+mkdir -p "$MIME_DIR"
+cp rustconn/assets/io.github.totoshko88.RustConn-rdp.xml "$MIME_DIR/"
+
 # Install locale files (if compiled .mo files exist)
 if [ -d "po" ]; then
     for po_file in po/*.po; do
@@ -33,6 +38,11 @@ fi
 # Update icon cache
 if command -v gtk-update-icon-cache &> /dev/null; then
     gtk-update-icon-cache -f -t "$PREFIX/share/icons/hicolor" 2>/dev/null || true
+fi
+
+# Update MIME database
+if command -v update-mime-database &> /dev/null; then
+    update-mime-database "$PREFIX/share/mime" 2>/dev/null || true
 fi
 
 echo "Desktop entry, icon, and locales installed to $PREFIX"

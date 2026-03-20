@@ -1350,7 +1350,13 @@ impl super::EmbeddedRdpWidget {
                 Ok(())
             }
             Err(e) => {
-                let msg = format!("Failed to start FreeRDP: {e}");
+                let msg = if e.to_string().contains("not found")
+                    || e.to_string().contains("No such file")
+                {
+                    "RDP connection failed. Install FreeRDP 3.x (xfreerdp3 or wlfreerdp3) for external mode.".to_string()
+                } else {
+                    format!("Failed to start FreeRDP: {e}")
+                };
                 self.report_error(&msg);
                 Err(EmbeddedRdpError::Connection(msg))
             }

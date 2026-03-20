@@ -2207,7 +2207,6 @@ impl TerminalNotebook {
     /// # Returns
     ///
     /// `true` if recording was started successfully, `false` on error.
-    #[allow(dead_code)] // Called by connection flow when session_recording_enabled is true
     pub fn start_recording(
         &self,
         session_id: Uuid,
@@ -2283,21 +2282,28 @@ impl TerminalNotebook {
                 );
 
                 let cmd = format!(
-                    "script -q -f --log-out '{remote_data}' --log-timing '{remote_timing}'\n"
+                    " script -q -f --log-out '{remote_data}' --log-timing '{remote_timing}'\n"
                 );
                 terminal.feed_child(cmd.as_bytes());
-                // Erase the echoed command from the terminal display:
-                // move cursor up one line and clear it.
-                terminal.feed(b"\x1b[1A\x1b[2K");
+                // Erase the echoed command after a short delay so the PTY echo
+                // has time to arrive before we clear the line.
+                let term_clone = terminal.clone();
+                glib::timeout_add_local_once(std::time::Duration::from_millis(100), move || {
+                    term_clone.feed(b"\x1b[1A\x1b[2K");
+                });
             } else {
                 // Local session: write directly to local recording paths.
                 let data_str = data_path.display().to_string();
                 let timing_str = timing_path.display().to_string();
                 let cmd =
-                    format!("script -q -f --log-out '{data_str}' --log-timing '{timing_str}'\n");
+                    format!(" script -q -f --log-out '{data_str}' --log-timing '{timing_str}'\n");
                 terminal.feed_child(cmd.as_bytes());
-                // Erase the echoed command from the terminal display
-                terminal.feed(b"\x1b[1A\x1b[2K");
+                // Erase the echoed command after a short delay so the PTY echo
+                // has time to arrive before we clear the line.
+                let term_clone = terminal.clone();
+                glib::timeout_add_local_once(std::time::Duration::from_millis(100), move || {
+                    term_clone.feed(b"\x1b[1A\x1b[2K");
+                });
             }
             self.active_recordings.borrow_mut().insert(session_id);
         }
@@ -2315,117 +2321,161 @@ impl TerminalNotebook {
 
     /// Stops recording a terminal session.
     ///
-    /// Sends `exit` to terminate the `script` sub-shell, then restores the
-    /// tab title and generates the metadata sidecar. For remote sessions,
-    /// retrieves the recording files from the remote host via SCP.
+    /// Sends EOF (Ctrl+D) to terminate the `script` sub-shell, then restores
+    /// the tab title and generates the metadata sidecar. For remote sessions,
+    /// retrieves the recording files from the remote host via SCP in a
+    /// background thread to avoid blocking the GTK main loop.
     #[allow(dead_code)] // Called by connection flow on session end
     pub fn stop_recording(&self, session_id: Uuid) {
         if !self.active_recordings.borrow_mut().remove(&session_id) {
             return;
         }
 
-        // Send `exit` to terminate the `script` sub-shell
+        // Send Ctrl+D (EOF) to terminate the `script` sub-shell cleanly.
+        // Unlike `exit\n`, EOF produces no visible echo and is safely ignored
+        // if the sub-shell has already exited.
         if let Some(terminal) = self.get_terminal(session_id) {
-            terminal.feed_child(b"exit\n");
+            terminal.feed_child(b"\x04");
         }
 
         self.update_recording_indicator(session_id, false);
 
-        // For remote sessions, retrieve files via SCP
+        // Capture recording paths + start time before moving into closures
+        let recording_info = self.recording_paths.borrow_mut().remove(&session_id);
+
+        // For remote sessions, retrieve files via SCP in a background thread
         if let Some(remote_info) = self.remote_recordings.borrow_mut().remove(&session_id) {
-            let params = &remote_info.ssh_params;
-            let mut port_args = vec!["-P".to_string(), params.port.to_string()];
-            if let Some(ref key) = params.identity_file {
-                port_args.push("-i".to_string());
-                port_args.push(key.clone());
-            }
-            // Re-use the Flatpak-writable known_hosts so SCP/SSH don't prompt
-            if let Some(kh) = rustconn_core::get_flatpak_known_hosts_path() {
-                port_args.push("-o".to_string());
-                port_args.push(format!("UserKnownHostsFile={}", kh.display()));
-            }
-            port_args.push("-o".to_string());
-            port_args.push("StrictHostKeyChecking=accept-new".to_string());
-            let user_host = if let Some(ref user) = params.username {
-                format!("{user}@{}", params.host)
-            } else {
-                params.host.clone()
-            };
+            let params = remote_info.ssh_params.clone();
+            let remote_data = remote_info.remote_data.clone();
+            let remote_timing = remote_info.remote_timing.clone();
+            let local_data = remote_info.local_data.clone();
+            let local_timing = remote_info.local_timing.clone();
 
-            // SCP data file
-            let data_src = format!("{user_host}:{}", remote_info.remote_data);
-            let data_result = std::process::Command::new("scp")
-                .args(&port_args)
-                .arg(&data_src)
-                .arg(remote_info.local_data.as_os_str())
-                .output();
+            let rec_info = recording_info;
 
-            // SCP timing file
-            let timing_src = format!("{user_host}:{}", remote_info.remote_timing);
-            let timing_result = std::process::Command::new("scp")
-                .args(&port_args)
-                .arg(&timing_src)
-                .arg(remote_info.local_timing.as_os_str())
-                .output();
+            crate::utils::spawn_blocking_with_callback(
+                move || {
+                    let mut port_args = vec!["-P".to_string(), params.port.to_string()];
+                    if let Some(ref key) = params.identity_file {
+                        port_args.push("-i".to_string());
+                        port_args.push(key.clone());
+                    }
+                    if let Some(kh) = rustconn_core::get_flatpak_known_hosts_path() {
+                        port_args.push("-o".to_string());
+                        port_args.push(format!("UserKnownHostsFile={}", kh.display()));
+                    }
+                    port_args.push("-o".to_string());
+                    port_args.push("StrictHostKeyChecking=accept-new".to_string());
+                    let user_host = if let Some(ref user) = params.username {
+                        format!("{user}@{}", params.host)
+                    } else {
+                        params.host.clone()
+                    };
 
-            match (&data_result, &timing_result) {
-                (Ok(d), Ok(t)) if d.status.success() && t.status.success() => {
-                    tracing::info!(%session_id, "Remote recording files retrieved via SCP");
-                }
-                _ => {
-                    tracing::warn!(
-                        %session_id,
-                        "Failed to retrieve remote recording files via SCP"
-                    );
-                }
-            }
+                    // SCP data file
+                    let data_src = format!("{user_host}:{remote_data}");
+                    let data_ok = std::process::Command::new("scp")
+                        .args(&port_args)
+                        .arg(&data_src)
+                        .arg(local_data.as_os_str())
+                        .output()
+                        .map(|o| o.status.success())
+                        .unwrap_or(false);
 
-            // Clean up remote temp files (best-effort)
-            let mut ssh_args: Vec<String> = vec!["-p".to_string(), params.port.to_string()];
-            if let Some(ref key) = params.identity_file {
-                ssh_args.push("-i".to_string());
-                ssh_args.push(key.clone());
-            }
-            if let Some(kh) = rustconn_core::get_flatpak_known_hosts_path() {
-                ssh_args.push("-o".to_string());
-                ssh_args.push(format!("UserKnownHostsFile={}", kh.display()));
-            }
-            ssh_args.push("-o".to_string());
-            ssh_args.push("StrictHostKeyChecking=accept-new".to_string());
-            let _ = std::process::Command::new("ssh")
-                .args(&ssh_args)
-                .arg(&user_host)
-                .arg(format!(
-                    "rm -f '{}' '{}'",
-                    remote_info.remote_data, remote_info.remote_timing
-                ))
-                .output();
-        }
+                    // SCP timing file
+                    let timing_src = format!("{user_host}:{remote_timing}");
+                    let timing_ok = std::process::Command::new("scp")
+                        .args(&port_args)
+                        .arg(&timing_src)
+                        .arg(local_timing.as_os_str())
+                        .output()
+                        .map(|o| o.status.success())
+                        .unwrap_or(false);
 
-        // Generate .meta.json sidecar
-        if let Some((data_path, timing_path, connection_name, start_time)) =
-            self.recording_paths.borrow_mut().remove(&session_id)
-        {
-            let duration = start_time.elapsed().as_secs_f64();
-            let data_size = std::fs::metadata(&data_path).map(|m| m.len()).unwrap_or(0);
-            let timing_size = std::fs::metadata(&timing_path)
-                .map(|m| m.len())
-                .unwrap_or(0);
+                    // Clean up remote temp files (best-effort)
+                    let mut ssh_args: Vec<String> = vec!["-p".to_string(), params.port.to_string()];
+                    if let Some(ref key) = params.identity_file {
+                        ssh_args.push("-i".to_string());
+                        ssh_args.push(key.clone());
+                    }
+                    if let Some(kh) = rustconn_core::get_flatpak_known_hosts_path() {
+                        ssh_args.push("-o".to_string());
+                        ssh_args.push(format!("UserKnownHostsFile={}", kh.display()));
+                    }
+                    ssh_args.push("-o".to_string());
+                    ssh_args.push("StrictHostKeyChecking=accept-new".to_string());
+                    let _ = std::process::Command::new("ssh")
+                        .args(&ssh_args)
+                        .arg(&user_host)
+                        .arg(format!("rm -f '{remote_data}' '{remote_timing}'"))
+                        .output();
 
-            let meta = RecordingMetadata {
-                connection_name,
-                display_name: None,
-                created_at: chrono::Utc::now(),
-                duration_secs: duration,
-                total_size_bytes: data_size + timing_size,
-            };
-            let meta_path = metadata_path(&data_path);
-            if let Err(e) = write_metadata(&meta_path, &meta) {
-                tracing::warn!(%e, "Failed to write recording metadata sidecar");
+                    (data_ok && timing_ok, rec_info)
+                },
+                move |result: (
+                    bool,
+                    Option<(std::path::PathBuf, std::path::PathBuf, String, Instant)>,
+                )| {
+                    let (scp_ok, rec_info) = result;
+                    if scp_ok {
+                        tracing::info!(%session_id, "Remote recording files retrieved via SCP");
+                    } else {
+                        tracing::warn!(
+                            %session_id,
+                            "Failed to retrieve remote recording files via SCP"
+                        );
+                    }
+                    // Generate .meta.json sidecar on the GTK thread
+                    if let Some((data_path, timing_path, connection_name, start_time)) = rec_info {
+                        Self::write_recording_metadata(
+                            &data_path,
+                            &timing_path,
+                            &connection_name,
+                            start_time,
+                            session_id,
+                        );
+                    }
+                },
+            );
+        } else {
+            // Local session — generate metadata synchronously (fast, no I/O)
+            if let Some((data_path, timing_path, connection_name, start_time)) = recording_info {
+                Self::write_recording_metadata(
+                    &data_path,
+                    &timing_path,
+                    &connection_name,
+                    start_time,
+                    session_id,
+                );
             }
         }
 
         tracing::info!(%session_id, "Session recording stopped");
+    }
+
+    /// Writes the `.meta.json` sidecar for a finished recording.
+    fn write_recording_metadata(
+        data_path: &std::path::Path,
+        timing_path: &std::path::Path,
+        connection_name: &str,
+        start_time: Instant,
+        session_id: Uuid,
+    ) {
+        let duration = start_time.elapsed().as_secs_f64();
+        let data_size = std::fs::metadata(data_path).map(|m| m.len()).unwrap_or(0);
+        let timing_size = std::fs::metadata(timing_path).map(|m| m.len()).unwrap_or(0);
+
+        let meta = RecordingMetadata {
+            connection_name: connection_name.to_string(),
+            display_name: None,
+            created_at: chrono::Utc::now(),
+            duration_secs: duration,
+            total_size_bytes: data_size + timing_size,
+        };
+        let meta_path = metadata_path(data_path);
+        if let Err(e) = write_metadata(&meta_path, &meta) {
+            tracing::warn!(%e, %session_id, "Failed to write recording metadata sidecar");
+        }
     }
 
     /// Returns whether a session is currently being recorded.
@@ -2501,7 +2551,6 @@ impl TerminalNotebook {
     /// [`CompiledHighlightRules::compile`], registers each valid regex
     /// pattern with VTE's `match_add_regex()` so matched text is
     /// visually indicated, and stores the compiled rules for the session.
-    #[allow(dead_code)] // Will be called by connection flow when highlighting is wired up
     pub fn set_highlight_rules(
         &self,
         session_id: Uuid,

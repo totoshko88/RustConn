@@ -2681,6 +2681,14 @@ impl MainWindow {
                 &conn_clone,
                 logging_enabled,
             ),
+            "mosh" => protocols::start_mosh_connection(
+                state,
+                notebook,
+                sidebar,
+                connection_id,
+                &conn_clone,
+                logging_enabled,
+            ),
             p if p == "zerotrust" || p.starts_with("zerotrust:") => {
                 protocols::start_zerotrust_connection(
                     state,

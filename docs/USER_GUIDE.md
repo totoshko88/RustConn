@@ -46,10 +46,11 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 32. [Script Credentials](#script-credentials)
 33. [Per-connection Terminal Theming](#per-connection-terminal-theming)
 34. [CLI Usage](#cli-usage)
-35. [Frequently Asked Questions](#frequently-asked-questions)
-36. [Migration Guide](#migration-guide)
-37. [Troubleshooting](#troubleshooting)
-38. [Security Best Practices](#security-best-practices)
+35. [Configuration Sync Between Machines](#configuration-sync-between-machines)
+36. [Frequently Asked Questions](#frequently-asked-questions)
+37. [Migration Guide](#migration-guide)
+38. [Troubleshooting](#troubleshooting)
+39. [Security Best Practices](#security-best-practices)
 
 ---
 
@@ -3040,6 +3041,72 @@ After importing from any source:
 - [ ] Organize imported connections into groups if the source format did not preserve hierarchy
 - [ ] Set up your preferred secret backend if you have not already
 - [ ] Delete the import source file if it contains sensitive data
+
+---
+
+## Configuration Sync Between Machines
+
+RustConn stores all configuration in `~/.config/rustconn/`:
+
+```
+~/.config/rustconn/
+├── config.toml           # Application settings
+├── connections.toml      # Connections (hosts, ports, usernames)
+├── groups.toml           # Group hierarchy and credentials
+├── snippets.toml         # Command snippets
+├── clusters.toml         # Broadcast clusters
+├── templates.toml        # Connection templates
+├── smart_folders.toml    # Smart Folders
+├── history.toml          # Connection history (local)
+└── trash.toml            # Trash (local)
+```
+
+### Git (Recommended)
+
+```bash
+cd ~/.config/rustconn
+git init
+echo "history.toml" >> .gitignore
+echo "trash.toml" >> .gitignore
+git add -A && git commit -m "Initial config"
+git remote add origin <your-repo-url>
+git push -u origin main
+```
+
+On the second machine:
+```bash
+git clone <your-repo-url> ~/.config/rustconn
+```
+
+Advantages: version history, merge conflict visibility, offline support.
+
+### Syncthing / rsync
+
+```bash
+# rsync (one-time or cron):
+rsync -avz ~/.config/rustconn/ user@remote:~/.config/rustconn/
+
+# Syncthing: add ~/.config/rustconn as a shared folder
+```
+
+### CLI Export/Import
+
+```bash
+# Export on machine A:
+rustconn-cli export --format json --output connections.json
+
+# Import on machine B:
+rustconn-cli import --format json connections.json
+```
+
+### Built-in Backup/Restore
+
+Settings → Backup → Export creates a ZIP archive of all configuration files. Import the archive on another machine via Settings → Backup → Import.
+
+**Tips:**
+- `history.toml` and `trash.toml` are machine-local — exclude them from sync
+- Passwords stored in KeePass/libsecret/Bitwarden are not in the config files — sync your vault separately
+- After syncing, restart RustConn to pick up changes
 
 ---
 

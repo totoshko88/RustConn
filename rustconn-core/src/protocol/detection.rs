@@ -438,10 +438,19 @@ pub fn detect_kubectl() -> ClientInfo {
 }
 
 /// Detects picocom (serial terminal client)
+///
+/// picocom 3.x returns exit code 1 for `--help`, so `try_detect_client` may
+/// fail even when the binary is present.  Falls back to `which_binary` to
+/// confirm the binary exists without relying on exit code.
 #[must_use]
 pub fn detect_picocom() -> ClientInfo {
     if let Some(info) = try_detect_client("picocom", "picocom", &["--help"]) {
         return info;
+    }
+    // Fallback: picocom --help returns exit code 1 on some versions.
+    // Check if the binary exists in PATH without running it.
+    if let Some(path) = which_binary("picocom") {
+        return ClientInfo::installed("picocom", path, None);
     }
     ClientInfo::not_installed("picocom", "Install picocom package")
 }
