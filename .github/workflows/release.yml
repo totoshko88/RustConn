@@ -312,79 +312,59 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install dependencies
+      - name: Build in ARM64 container
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-4-dev \
-            libvte-2.91-gtk4-dev \
-            libadwaita-1-dev \
-            libdbus-1-dev \
-            libssl-dev \
-            libasound2-dev \
-            pkg-config \
-            debhelper \
-            devscripts \
-            gettext \
-            gcc-aarch64-linux-gnu \
-            g++-aarch64-linux-gnu
+          docker run --rm --platform linux/arm64 \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            ubuntu:24.04 bash -c '
+              set -e
+              apt-get update
+              apt-get install -y \
+                curl gcc make pkg-config gettext \
+                libgtk-4-dev libvte-2.91-gtk4-dev libadwaita-1-dev \
+                libdbus-1-dev libssl-dev libasound2-dev
 
-      - name: Add ARM64 Rust target
-        run: rustup target add aarch64-unknown-linux-gnu
+              # Install Rust
+              curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | \
+                sh -s -- -y --default-toolchain 1.92.0 --profile minimal
+              source $HOME/.cargo/env
 
-      - name: Build release binary
-        env:
-          PKG_CONFIG_SYSROOT_DIR: /usr/aarch64-linux-gnu
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
-        run: cargo build --release --target aarch64-unknown-linux-gnu -p rustconn -p rustconn-cli
+              cargo build --release -p rustconn -p rustconn-cli
 
-      - name: Create deb package structure
-        run: |
-          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
-          PKG_DIR="rustconn_${VERSION}_arm64"
-          
-          mkdir -p "${PKG_DIR}/DEBIAN"
-          mkdir -p "${PKG_DIR}/usr/bin"
-          mkdir -p "${PKG_DIR}/usr/share/applications"
-          mkdir -p "${PKG_DIR}/usr/share/metainfo"
-          mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/scalable/apps"
-          mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/256x256/apps"
-          mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/128x128/apps"
-          mkdir -p "${PKG_DIR}/usr/share/doc/rustconn"
-          
-          # Binaries
-          cp target/aarch64-unknown-linux-gnu/release/rustconn "${PKG_DIR}/usr/bin/"
-          cp target/aarch64-unknown-linux-gnu/release/rustconn-cli "${PKG_DIR}/usr/bin/"
-          
-          # Desktop file and metadata
-          cp rustconn/assets/io.github.totoshko88.RustConn.desktop "${PKG_DIR}/usr/share/applications/"
-          cp rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml "${PKG_DIR}/usr/share/metainfo/"
-          
-          # Icons
-          cp rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
-             "${PKG_DIR}/usr/share/icons/hicolor/scalable/apps/" || true
-          for size in 256 128; do
-            cp "rustconn/assets/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png" \
-               "${PKG_DIR}/usr/share/icons/hicolor/${size}x${size}/apps/" 2>/dev/null || true
-          done
-          
-          # Docs and copyright
-          cp README.md LICENSE CHANGELOG.md "${PKG_DIR}/usr/share/doc/rustconn/"
-          cp debian/copyright "${PKG_DIR}/usr/share/doc/rustconn/copyright"
-          
-          # Locale files (compile .po to .mo)
-          for po_file in po/*.po; do
-            [ -f "$po_file" ] || continue
-            lang=$(basename "$po_file" .po)
-            mkdir -p "${PKG_DIR}/usr/share/locale/${lang}/LC_MESSAGES"
-            msgfmt -o "${PKG_DIR}/usr/share/locale/${lang}/LC_MESSAGES/rustconn.mo" "$po_file"
-          done
-          
-          # Control file
-          cat > "${PKG_DIR}/DEBIAN/control" << EOF
+              VERSION=$(grep "^version" Cargo.toml | head -1 | sed "s/.*\"\(.*\)\"/\1/")
+              PKG_DIR="rustconn_${VERSION}_arm64"
+
+              mkdir -p "${PKG_DIR}/DEBIAN"
+              mkdir -p "${PKG_DIR}/usr/bin"
+              mkdir -p "${PKG_DIR}/usr/share/applications"
+              mkdir -p "${PKG_DIR}/usr/share/metainfo"
+              mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/scalable/apps"
+              mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/256x256/apps"
+              mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/128x128/apps"
+              mkdir -p "${PKG_DIR}/usr/share/doc/rustconn"
+
+              cp target/release/rustconn "${PKG_DIR}/usr/bin/"
+              cp target/release/rustconn-cli "${PKG_DIR}/usr/bin/"
+              cp rustconn/assets/io.github.totoshko88.RustConn.desktop "${PKG_DIR}/usr/share/applications/"
+              cp rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml "${PKG_DIR}/usr/share/metainfo/"
+              cp rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
+                 "${PKG_DIR}/usr/share/icons/hicolor/scalable/apps/" 2>/dev/null || true
+              for size in 256 128; do
+                cp "rustconn/assets/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png" \
+                   "${PKG_DIR}/usr/share/icons/hicolor/${size}x${size}/apps/" 2>/dev/null || true
+              done
+              cp README.md LICENSE CHANGELOG.md "${PKG_DIR}/usr/share/doc/rustconn/"
+              cp debian/copyright "${PKG_DIR}/usr/share/doc/rustconn/copyright"
+
+              for po_file in po/*.po; do
+                [ -f "$po_file" ] || continue
+                lang=$(basename "$po_file" .po)
+                mkdir -p "${PKG_DIR}/usr/share/locale/${lang}/LC_MESSAGES"
+                msgfmt -o "${PKG_DIR}/usr/share/locale/${lang}/LC_MESSAGES/rustconn.mo" "$po_file"
+              done
+
+              cat > "${PKG_DIR}/DEBIAN/control" << CTRL
           Package: rustconn
           Version: ${VERSION}
           Section: net
@@ -398,12 +378,12 @@ jobs:
            RustConn is a GTK4-based connection manager for SSH, RDP, VNC, and SPICE
            remote connections with support for embedded terminals, connection groups,
            import/export, and secure credential storage.
-          EOF
-          
-          # Build deb
-          dpkg-deb --build "${PKG_DIR}"
-          mkdir -p dist
-          mv "${PKG_DIR}.deb" dist/
+          CTRL
+
+              dpkg-deb --build "${PKG_DIR}"
+              mkdir -p dist
+              mv "${PKG_DIR}.deb" dist/
+            '
 
       - name: Upload deb artifact
         uses: actions/upload-artifact@v6
@@ -414,113 +394,84 @@ jobs:
   build-rpm-arm64:
     name: Build RPM Package (ARM64)
     runs-on: ubuntu-24.04
-    container:
-      image: fedora:41
-      options: --platform linux/arm64
     steps:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
 
-      - name: Install build tools
-        run: |
-          dnf install -y \
-            git \
-            curl \
-            gcc \
-            make \
-            pkg-config \
-            gtk4-devel \
-            vte291-gtk4-devel \
-            libadwaita-devel \
-            dbus-devel \
-            openssl-devel \
-            alsa-lib-devel \
-            rpm-build \
-            ruby-devel \
-            rubygems \
-            zstd \
-            gettext
-
-      - name: Install fpm
-        run: gem install fpm
-
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install Rust
+      - name: Build in ARM64 container
         run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.92.0 --profile minimal
-          source $HOME/.cargo/env
-          rustc --version
-          cargo --version
+          docker run --rm --platform linux/arm64 \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            fedora:41 bash -c '
+              set -e
+              dnf install -y \
+                git curl gcc make pkg-config \
+                gtk4-devel vte291-gtk4-devel libadwaita-devel \
+                dbus-devel openssl-devel alsa-lib-devel \
+                rpm-build ruby-devel rubygems zstd gettext
 
-      - name: Build release binary
-        run: |
-          source $HOME/.cargo/env
-          cargo build --release -p rustconn -p rustconn-cli
+              gem install fpm
 
-      - name: Create RPM package
-        run: |
-          source $HOME/.cargo/env
-          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
-          
-          # Create staging directory
-          mkdir -p staging/usr/bin
-          mkdir -p staging/usr/share/applications
-          mkdir -p staging/usr/share/metainfo
-          mkdir -p staging/usr/share/icons/hicolor/scalable/apps
-          mkdir -p staging/usr/share/icons/hicolor/128x128/apps
-          mkdir -p staging/usr/share/icons/hicolor/256x256/apps
-          
-          # Copy binaries
-          cp target/release/rustconn staging/usr/bin/
-          cp target/release/rustconn-cli staging/usr/bin/
-          
-          # Copy desktop file and metadata
-          cp rustconn/assets/io.github.totoshko88.RustConn.desktop staging/usr/share/applications/
-          cp rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml staging/usr/share/metainfo/
-          
-          # Copy icons
-          cp rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
-             staging/usr/share/icons/hicolor/scalable/apps/ 2>/dev/null || true
-          for size in 128 256; do
-            cp "rustconn/assets/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png" \
-               "staging/usr/share/icons/hicolor/${size}x${size}/apps/" 2>/dev/null || true
-          done
-          
-          # Locale files (compile .po to .mo)
-          for po_file in po/*.po; do
-            [ -f "$po_file" ] || continue
-            lang=$(basename "$po_file" .po)
-            mkdir -p "staging/usr/share/locale/${lang}/LC_MESSAGES"
-            msgfmt -o "staging/usr/share/locale/${lang}/LC_MESSAGES/rustconn.mo" "$po_file"
-          done
-          
-          # Build RPM with fpm
-          fpm -s dir -t rpm \
-            -n rustconn \
-            -v "${VERSION}" \
-            --iteration 1 \
-            --license "GPL-3.0-or-later" \
-            --vendor "Anton Isaiev" \
-            --maintainer "Anton Isaiev <totoshko88@gmail.com>" \
-            --url "https://github.com/totoshko88/RustConn" \
-            --description "Modern connection manager for Linux (SSH, RDP, VNC, SPICE)" \
-            --depends "gtk4 >= 4.14" \
-            --depends "libadwaita" \
-            --depends "vte291-gtk4" \
-            --depends "openssh-clients" \
-            -C staging \
-            usr
-          
-          # Move to dist
-          mkdir -p dist
-          mv *.rpm dist/
-          
-          echo "=== Built RPM packages ==="
-          ls -la dist/
+              curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | \
+                sh -s -- -y --default-toolchain 1.92.0 --profile minimal
+              source $HOME/.cargo/env
+
+              cargo build --release -p rustconn -p rustconn-cli
+
+              VERSION=$(grep "^version" Cargo.toml | head -1 | sed "s/.*\"\(.*\)\"/\1/")
+
+              mkdir -p staging/usr/bin
+              mkdir -p staging/usr/share/applications
+              mkdir -p staging/usr/share/metainfo
+              mkdir -p staging/usr/share/icons/hicolor/scalable/apps
+              mkdir -p staging/usr/share/icons/hicolor/128x128/apps
+              mkdir -p staging/usr/share/icons/hicolor/256x256/apps
+
+              cp target/release/rustconn staging/usr/bin/
+              cp target/release/rustconn-cli staging/usr/bin/
+              cp rustconn/assets/io.github.totoshko88.RustConn.desktop staging/usr/share/applications/
+              cp rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml staging/usr/share/metainfo/
+              cp rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
+                 staging/usr/share/icons/hicolor/scalable/apps/ 2>/dev/null || true
+              for size in 128 256; do
+                cp "rustconn/assets/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png" \
+                   "staging/usr/share/icons/hicolor/${size}x${size}/apps/" 2>/dev/null || true
+              done
+
+              for po_file in po/*.po; do
+                [ -f "$po_file" ] || continue
+                lang=$(basename "$po_file" .po)
+                mkdir -p "staging/usr/share/locale/${lang}/LC_MESSAGES"
+                msgfmt -o "staging/usr/share/locale/${lang}/LC_MESSAGES/rustconn.mo" "$po_file"
+              done
+
+              fpm -s dir -t rpm \
+                -n rustconn \
+                -v "${VERSION}" \
+                --iteration 1 \
+                --license "GPL-3.0-or-later" \
+                --vendor "Anton Isaiev" \
+                --maintainer "Anton Isaiev <totoshko88@gmail.com>" \
+                --url "https://github.com/totoshko88/RustConn" \
+                --description "Modern connection manager for Linux (SSH, RDP, VNC, SPICE)" \
+                --depends "gtk4 >= 4.14" \
+                --depends "libadwaita" \
+                --depends "vte291-gtk4" \
+                --depends "openssh-clients" \
+                -C staging \
+                usr
+
+              mkdir -p dist
+              mv *.rpm dist/
+              echo "=== Built RPM packages ==="
+              ls -la dist/
+            '
 
       - name: Upload RPM artifact
         uses: actions/upload-artifact@v6
@@ -540,80 +491,66 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install dependencies
+      - name: Build in ARM64 container
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-4-dev \
-            libvte-2.91-gtk4-dev \
-            libadwaita-1-dev \
-            libdbus-1-dev \
-            libssl-dev \
-            libasound2-dev \
-            pkg-config \
-            libfuse2 \
-            gettext \
-            gcc-aarch64-linux-gnu \
-            g++-aarch64-linux-gnu
+          docker run --rm --platform linux/arm64 \
+            --device /dev/fuse --cap-add SYS_ADMIN --security-opt apparmor:unconfined \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            ubuntu:24.04 bash -c '
+              set -e
+              apt-get update
+              apt-get install -y \
+                curl gcc make pkg-config gettext wget file \
+                libgtk-4-dev libvte-2.91-gtk4-dev libadwaita-1-dev \
+                libdbus-1-dev libssl-dev libasound2-dev libfuse2
 
-      - name: Add ARM64 Rust target
-        run: rustup target add aarch64-unknown-linux-gnu
+              # Install Rust
+              curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | \
+                sh -s -- -y --default-toolchain 1.92.0 --profile minimal
+              source $HOME/.cargo/env
 
-      - name: Build release
-        env:
-          PKG_CONFIG_SYSROOT_DIR: /usr/aarch64-linux-gnu
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
-        run: cargo build --release --target aarch64-unknown-linux-gnu -p rustconn -p rustconn-cli
+              cargo build --release -p rustconn -p rustconn-cli
 
-      - name: Download linuxdeploy
-        run: |
-          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-aarch64.AppImage
-          wget -q https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh
-          chmod +x linuxdeploy-aarch64.AppImage linuxdeploy-plugin-gtk.sh
+              # Download linuxdeploy for aarch64
+              wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-aarch64.AppImage
+              wget -q https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh
+              chmod +x linuxdeploy-aarch64.AppImage linuxdeploy-plugin-gtk.sh
 
-      - name: Prepare AppDir
-        run: |
-          mkdir -p AppDir/usr/bin
-          mkdir -p AppDir/usr/share/applications
-          mkdir -p AppDir/usr/share/icons/hicolor/scalable/apps
-          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
-          mkdir -p AppDir/usr/share/icons/hicolor/128x128/apps
-          mkdir -p AppDir/usr/share/metainfo
-          
-          cp target/aarch64-unknown-linux-gnu/release/rustconn AppDir/usr/bin/
-          cp target/aarch64-unknown-linux-gnu/release/rustconn-cli AppDir/usr/bin/
-          cp rustconn/assets/io.github.totoshko88.RustConn.desktop AppDir/usr/share/applications/
-          cp rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml AppDir/usr/share/metainfo/
-          
-          # Copy icons
-          cp rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
-             AppDir/usr/share/icons/hicolor/scalable/apps/ || true
-          for size in 256 128; do
-            cp "rustconn/assets/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png" \
-               "AppDir/usr/share/icons/hicolor/${size}x${size}/apps/" 2>/dev/null || true
-          done
-          
-          # Locale files (compile .po to .mo)
-          for po_file in po/*.po; do
-            [ -f "$po_file" ] || continue
-            lang=$(basename "$po_file" .po)
-            mkdir -p "AppDir/usr/share/locale/${lang}/LC_MESSAGES"
-            msgfmt -o "AppDir/usr/share/locale/${lang}/LC_MESSAGES/rustconn.mo" "$po_file"
-          done
+              mkdir -p AppDir/usr/bin
+              mkdir -p AppDir/usr/share/applications
+              mkdir -p AppDir/usr/share/icons/hicolor/scalable/apps
+              mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+              mkdir -p AppDir/usr/share/icons/hicolor/128x128/apps
+              mkdir -p AppDir/usr/share/metainfo
 
-      - name: Build AppImage
-        run: |
-          DEPLOY_GTK_VERSION=4 ./linuxdeploy-aarch64.AppImage \
-            --appdir AppDir \
-            --plugin gtk \
-            --output appimage
-          
-          # Rename to include version
-          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
-          mv RustConn*.AppImage "RustConn-${VERSION}-aarch64.AppImage"
+              cp target/release/rustconn AppDir/usr/bin/
+              cp target/release/rustconn-cli AppDir/usr/bin/
+              cp rustconn/assets/io.github.totoshko88.RustConn.desktop AppDir/usr/share/applications/
+              cp rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml AppDir/usr/share/metainfo/
+              cp rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
+                 AppDir/usr/share/icons/hicolor/scalable/apps/ 2>/dev/null || true
+              for size in 256 128; do
+                cp "rustconn/assets/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png" \
+                   "AppDir/usr/share/icons/hicolor/${size}x${size}/apps/" 2>/dev/null || true
+              done
+
+              for po_file in po/*.po; do
+                [ -f "$po_file" ] || continue
+                lang=$(basename "$po_file" .po)
+                mkdir -p "AppDir/usr/share/locale/${lang}/LC_MESSAGES"
+                msgfmt -o "AppDir/usr/share/locale/${lang}/LC_MESSAGES/rustconn.mo" "$po_file"
+              done
+
+              DEPLOY_GTK_VERSION=4 ./linuxdeploy-aarch64.AppImage \
+                --appimage-extract-and-run \
+                --appdir AppDir \
+                --plugin gtk \
+                --output appimage
+
+              VERSION=$(grep "^version" Cargo.toml | head -1 | sed "s/.*\"\(.*\)\"/\1/")
+              mv RustConn*.AppImage "RustConn-${VERSION}-aarch64.AppImage"
+            '
 
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v6
