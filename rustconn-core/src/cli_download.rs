@@ -678,19 +678,19 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         category: ComponentCategory::PasswordManager,
         install_method: InstallMethod::Download,
         download_url: Some(
-            "https://cache.agilebits.com/dist/1P/op2/pkg/v2.33.0/\
-             op_linux_amd64_v2.33.0.zip",
+            "https://cache.agilebits.com/dist/1P/op2/pkg/v2.33.1/\
+             op_linux_amd64_v2.33.1.zip",
         ),
         aarch64_url: Some(
-            "https://cache.agilebits.com/dist/1P/op2/pkg/v2.33.0/\
-             op_linux_arm64_v2.33.0.zip",
+            "https://cache.agilebits.com/dist/1P/op2/pkg/v2.33.1/\
+             op_linux_arm64_v2.33.1.zip",
         ),
         checksum: ChecksumPolicy::SkipLatest,
         pip_package: None,
         size_hint: "~15 MB",
         binary_name: "op",
         install_subdir: "1password",
-        pinned_version: Some("2.33.0"),
+        pinned_version: Some("2.33.1"),
         works_in_sandbox: true,
     },
     // Container orchestration CLIs

@@ -238,7 +238,17 @@ impl OnePasswordBackend {
             Err(_) => return Ok(None),
         };
 
-        let items: Vec<OnePasswordItem> = serde_json::from_str(&output).unwrap_or_default();
+        let items: Vec<OnePasswordItem> = match serde_json::from_str(&output) {
+            Ok(items) => items,
+            Err(e) => {
+                tracing::warn!(
+                    error = %e,
+                    output_len = output.len(),
+                    "1Password: failed to parse item list JSON, treating as empty"
+                );
+                Vec::new()
+            }
+        };
 
         // Find exact match by title
         for item in items {

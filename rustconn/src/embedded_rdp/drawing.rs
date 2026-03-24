@@ -31,7 +31,7 @@ impl super::EmbeddedRdpWidget {
         let rdp_height = self.rdp_height.clone();
 
         self.drawing_area
-            .set_draw_func(move |_area, cr, width, height| {
+            .set_draw_func(move |area, cr, width, height| {
                 let current_state = *state.borrow();
                 let embedded = *is_embedded.borrow();
 
@@ -67,15 +67,30 @@ impl super::EmbeddedRdpWidget {
                         crate::utils::dimension_to_i32(buf_height),
                         crate::utils::stride_to_i32(buffer.stride()),
                     ) {
-                        // Scale to fit the drawing area while maintaining aspect ratio
-                        let scale_x = f64::from(width) / f64::from(buf_width);
-                        let scale_y = f64::from(height) / f64::from(buf_height);
+                        // HiDPI fix: The pixel buffer is in device pixels (e.g. 1920×1080
+                        // on a 2× display where the widget is 960×540 CSS pixels).
+                        // Tell Cairo the surface is already at device resolution so it
+                        // doesn't double-scale (CSS→device) through bilinear interpolation,
+                        // which causes blurry output.
+                        let effective_scale = config.borrow().as_ref().map_or_else(
+                            || f64::from(area.scale_factor().max(1)),
+                            |c| c.scale_override.effective_scale(area.scale_factor()),
+                        );
+                        surface.set_device_scale(effective_scale, effective_scale);
+
+                        // Scale to fit the drawing area while maintaining aspect ratio.
+                        // After set_device_scale, Cairo treats the surface dimensions in
+                        // CSS pixels (buf_width/scale × buf_height/scale), so we compute
+                        // the scale ratio in CSS space directly.
+                        let css_buf_w = f64::from(buf_width) / effective_scale;
+                        let css_buf_h = f64::from(buf_height) / effective_scale;
+                        let scale_x = f64::from(width) / css_buf_w;
+                        let scale_y = f64::from(height) / css_buf_h;
                         let scale = scale_x.min(scale_y);
 
                         // Center the image
-                        let offset_x = f64::from(buf_width).mul_add(-scale, f64::from(width)) / 2.0;
-                        let offset_y =
-                            f64::from(buf_height).mul_add(-scale, f64::from(height)) / 2.0;
+                        let offset_x = css_buf_w.mul_add(-scale, f64::from(width)) / 2.0;
+                        let offset_y = css_buf_h.mul_add(-scale, f64::from(height)) / 2.0;
 
                         // Save the current transformation matrix
                         if let Err(e) = cr.save() {
@@ -86,9 +101,14 @@ impl super::EmbeddedRdpWidget {
                         cr.scale(scale, scale);
                         let _ = cr.set_source_surface(&surface, 0.0, 0.0);
 
-                        // Use bilinear filtering for smooth scaling to reduce artifacts
-                        // Nearest-neighbor can cause visible pixelation and artifacts
-                        cr.source().set_filter(gtk4::cairo::Filter::Bilinear);
+                        // Use adaptive filtering: Nearest for 1:1 pixel mapping (sharp),
+                        // Bilinear when actual scaling is needed (smooth).
+                        let filter = if (scale - 1.0).abs() < 0.01 {
+                            gtk4::cairo::Filter::Nearest
+                        } else {
+                            gtk4::cairo::Filter::Bilinear
+                        };
+                        cr.source().set_filter(filter);
 
                         let _ = cr.paint();
 

@@ -46,27 +46,29 @@ struct PassboltResource {
     id: String,
     #[serde(alias = "Name")]
     name: String,
-    #[serde(alias = "Username", default)]
+    #[serde(rename = "username", alias = "Username", default)]
     _username: Option<String>,
-    #[serde(alias = "URI", default)]
+    #[serde(rename = "uri", alias = "URI", default)]
     _uri: Option<String>,
 }
 
 /// Passbolt resource detail (from `get resource`)
 #[derive(Debug, Deserialize)]
 struct PassboltResourceDetail {
-    #[serde(alias = "ID")]
-    _id: String,
-    #[serde(alias = "Name")]
-    _name: String,
-    #[serde(alias = "Username", default)]
+    #[serde(rename = "id", alias = "ID", default)]
+    _id: Option<String>,
+    #[serde(rename = "name", alias = "Name", default)]
+    _name: Option<String>,
+    #[serde(rename = "username", alias = "Username", default)]
     username: Option<String>,
-    #[serde(alias = "Password", default)]
+    #[serde(rename = "password", alias = "Password", default)]
     password: Option<String>,
-    #[serde(alias = "URI", default)]
+    #[serde(rename = "uri", alias = "URI", default)]
     _uri: Option<String>,
-    #[serde(alias = "Description", default)]
+    #[serde(rename = "description", alias = "Description", default)]
     _description: Option<String>,
+    #[serde(rename = "folder_parent_id", default)]
+    _folder_parent_id: Option<String>,
 }
 
 /// Passbolt version information

@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.10.5** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.10.6** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 

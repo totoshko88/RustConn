@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.10.5
+Version:        0.10.6
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -226,6 +226,18 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Tue Mar 24 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.6-0
+- Fixed Passbolt CLI integration broken with CLI 0.4.2 — serde
+  deserialization failed on lowercase JSON fields; added rename
+  attributes for underscore-prefixed fields; made id/name optional
+  in resource detail (#69)
+- Fixed blurry/artifact RDP image on HiDPI displays — set device scale
+  on Cairo surface for 1:1 pixel rendering; adaptive filter selection
+- Fixed 1Password JSON parse errors silently ignored — now logs warning
+- CLI downloads: 1Password CLI 2.33.0→2.33.1
+- Dependencies: ipconfig 0.3.2→0.3.4, libredox 0.1.14→0.1.15,
+  proptest 1.10.0→1.11.0
+
 * Tue Mar 24 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.5-0
 - Fixed KeePassXC CLI integration — database password not passed (#68)
 - Fixed KeePassXC CLI silent error swallowing — added tracing warnings

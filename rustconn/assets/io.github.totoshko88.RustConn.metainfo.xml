@@ -103,6 +103,19 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.10.6" date="2026-03-24">
+      <url type="details">https://github.com/totoshko88/RustConn/blob/main/CHANGELOG.md#0106---2026-03-24</url>
+      <description>
+        <p>HiDPI RDP fix, Passbolt CLI 0.4.2 compatibility, and secret backend improvements:</p>
+        <ul>
+          <li>Fixed Passbolt credential retrieval broken with CLI 0.4.2 — JSON fields are now lowercase (#69)</li>
+          <li>Fixed blurry/artifact RDP image on HiDPI displays — proper device scale on Cairo surface</li>
+          <li>Fixed 1Password JSON parse errors silently ignored — now logs warning</li>
+          <li>CLI downloads: 1Password CLI 2.33.0 to 2.33.1</li>
+          <li>Dependencies: ipconfig 0.3.4, libredox 0.1.15, proptest 1.11.0</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.10.5" date="2026-03-24">
       <url type="details">https://github.com/totoshko88/RustConn/blob/main/CHANGELOG.md#0105---2026-03-24</url>
       <description>

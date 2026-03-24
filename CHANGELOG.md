@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.6] - 2026-03-25
+
+### Fixed
+- **Passbolt CLI integration broken with CLI 0.4.2** — `PassboltResourceDetail` deserialization failed because serde looked for `"_id"`, `"_name"`, `"_uri"`, `"_description"` instead of lowercase `"id"`, `"name"`, `"uri"`, `"description"` returned by Passbolt CLI 0.4.2; added `serde(rename)` for all underscore-prefixed fields; made `_id` and `_name` optional since `get resource` no longer returns `id`; added `folder_parent_id` field; same fix applied to `PassboltResource` for `_username` and `_uri` ([#69](https://github.com/totoshko88/RustConn/issues/69))
+- **Blurry/artifact RDP image on HiDPI displays** — embedded IronRDP framebuffer was double-scaled on HiDPI (device→CSS→device) because Cairo surface lacked `set_device_scale`; now sets device scale on the pixel buffer surface so Cairo renders 1:1 at native resolution; also uses adaptive filter (Nearest for 1:1, Bilinear for actual scaling)
+- **1Password JSON parse errors silently ignored** — `op item list` parse failures were swallowed by `unwrap_or_default()`, masking real issues; now logs warning via `tracing::warn!`
+
+### Changed
+- **CLI downloads** — 1Password CLI 2.33.0→2.33.1
+
+### Dependencies
+- **Updated**: ipconfig 0.3.2→0.3.4, libredox 0.1.14→0.1.15, proptest 1.10.0→1.11.0
+
 ## [0.10.5] - 2026-03-24
 
 ### Fixed
