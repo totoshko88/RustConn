@@ -138,7 +138,7 @@ pub fn delete_selected_connection(
             move |confirmed| {
                 if confirmed && let Ok(mut state_mut) = state_clone.try_borrow_mut() {
                     let delete_result = if is_group {
-                        state_mut.delete_group(id)
+                        state_mut.delete_group_cascade(id)
                     } else {
                         state_mut.delete_connection(id)
                     };

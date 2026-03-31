@@ -15,6 +15,7 @@ rustconn/src/window/protocols.rs
 rustconn/src/window/sessions.rs
 rustconn/src/window/clusters.rs
 rustconn/src/window/groups.rs
+rustconn/src/window/operations.rs
 rustconn/src/window/sorting.rs
 rustconn/src/dialogs/mod.rs
 rustconn/src/dialogs/connection/dialog.rs

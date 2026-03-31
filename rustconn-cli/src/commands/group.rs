@@ -2,6 +2,7 @@
 
 use std::path::Path;
 
+use rustconn_core::ConnectionManager;
 use rustconn_core::models::ConnectionGroup;
 
 use crate::cli::{GroupCommands, OutputFormat};
@@ -196,34 +197,35 @@ fn cmd_group_create(
 fn cmd_group_delete(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
     let config_manager = create_config_manager(config_path)?;
 
-    let mut groups = config_manager
+    // Load groups to resolve the name/ID to a UUID
+    let groups = config_manager
         .load_groups()
         .map_err(|e| CliError::Group(format!("Failed to load groups: {e}")))?;
-
-    let mut connections = config_manager
-        .load_connections()
-        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
 
     let group = find_group(&groups, name)?;
     let id = group.id;
     let group_name = group.name.clone();
 
-    groups.retain(|g| g.id != id);
+    // ConnectionManager::new() spawns tokio tasks for debounced persistence,
+    // so we need a runtime even though the CLI is synchronous.
+    let rt = tokio::runtime::Runtime::new()
+        .map_err(|e| CliError::Group(format!("Failed to create async runtime: {e}")))?;
 
-    // Clear group_id for connections that belonged to the deleted group
-    for conn in &mut connections {
-        if conn.group_id == Some(id) {
-            conn.group_id = None;
-        }
-    }
+    rt.block_on(async {
+        let mut manager = ConnectionManager::new(config_manager)
+            .map_err(|e| CliError::Group(format!("Failed to initialize connection manager: {e}")))?;
 
-    config_manager
-        .save_groups(&groups)
-        .map_err(|e| CliError::Group(format!("Failed to save groups: {e}")))?;
+        manager
+            .delete_group(id)
+            .map_err(|e| CliError::Group(format!("Failed to delete group: {e}")))?;
 
-    config_manager
-        .save_connections(&connections)
-        .map_err(|e| CliError::Config(format!("Failed to save connections: {e}")))?;
+        manager
+            .flush_persistence()
+            .await
+            .map_err(|e| CliError::Group(format!("Failed to persist changes: {e}")))?;
+
+        Ok::<(), CliError>(())
+    })?;
 
     println!("Deleted group '{group_name}' (ID: {id})");
 

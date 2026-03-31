@@ -21,6 +21,7 @@ mod export_format_tests;
 mod export_tests;
 mod ffi_tests;
 mod freerdp_tests;
+mod group_delete_tests;
 mod health_check_tests;
 mod highlight_tests;
 mod history_tests;
