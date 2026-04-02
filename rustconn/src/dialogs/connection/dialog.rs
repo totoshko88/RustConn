@@ -22,10 +22,9 @@ use rustconn_core::automation::{ConnectionTask, ExpectRule, TaskCondition, built
 use rustconn_core::models::{
     AwsSsmConfig, AzureBastionConfig, AzureSshConfig, BoundaryConfig, CloudflareAccessConfig,
     Connection, ConnectionThemeOverride, CustomProperty, GcpIapConfig, GenericZeroTrustConfig,
-    HoopDevConfig,
-    HighlightRule, OciBastionConfig, PasswordSource, PropertyType, ProtocolConfig, RdpClientMode,
-    RdpConfig, RdpPerformanceMode, Resolution, ScaleOverride, SharedFolder, SpiceConfig,
-    SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, TailscaleSshConfig,
+    HighlightRule, HoopDevConfig, OciBastionConfig, PasswordSource, PropertyType, ProtocolConfig,
+    RdpClientMode, RdpConfig, RdpPerformanceMode, Resolution, ScaleOverride, SharedFolder,
+    SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, TailscaleSshConfig,
     TeleportConfig, VncClientMode, VncConfig, VncPerformanceMode, WindowMode, ZeroTrustConfig,
     ZeroTrustProvider, ZeroTrustProviderConfig,
 };
@@ -3799,14 +3798,10 @@ impl ConnectionDialog {
             .build();
         group.add(&connection_name_row);
 
-        let gateway_url_row = adw::EntryRow::builder()
-            .title(i18n("Gateway URL"))
-            .build();
+        let gateway_url_row = adw::EntryRow::builder().title(i18n("Gateway URL")).build();
         group.add(&gateway_url_row);
 
-        let grpc_url_row = adw::EntryRow::builder()
-            .title(i18n("gRPC URL"))
-            .build();
+        let grpc_url_row = adw::EntryRow::builder().title(i18n("gRPC URL")).build();
         group.add(&grpc_url_row);
 
         let vbox = GtkBox::new(Orientation::Vertical, 0);
@@ -5937,7 +5932,8 @@ impl ConnectionDialog {
                 }
             }
             ZeroTrustProviderConfig::HoopDev(cfg) => {
-                self.zt_hoop_connection_name_entry.set_text(&cfg.connection_name);
+                self.zt_hoop_connection_name_entry
+                    .set_text(&cfg.connection_name);
                 if let Some(ref url) = cfg.gateway_url {
                     self.zt_hoop_gateway_url_entry.set_text(url);
                 }

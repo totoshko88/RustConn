@@ -212,8 +212,9 @@ fn cmd_group_delete(config_path: Option<&Path>, name: &str) -> Result<(), CliErr
         .map_err(|e| CliError::Group(format!("Failed to create async runtime: {e}")))?;
 
     rt.block_on(async {
-        let mut manager = ConnectionManager::new(config_manager)
-            .map_err(|e| CliError::Group(format!("Failed to initialize connection manager: {e}")))?;
+        let mut manager = ConnectionManager::new(config_manager).map_err(|e| {
+            CliError::Group(format!("Failed to initialize connection manager: {e}"))
+        })?;
 
         manager
             .delete_group(id)

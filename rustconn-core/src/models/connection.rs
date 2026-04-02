@@ -186,7 +186,7 @@ impl ConnectionThemeOverride {
             let len = bytes.len();
             (len == 7 || len == 9)
                 && bytes[0] == b'#'
-                && bytes[1..].iter().all(|b| b.is_ascii_hexdigit())
+                && bytes[1..].iter().all(u8::is_ascii_hexdigit)
         }
 
         for (field, value) in [

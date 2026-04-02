@@ -1988,17 +1988,17 @@ impl ZeroTrustConfig {
             }
             ZeroTrustProviderConfig::HoopDev(cfg) => {
                 let mut a = vec!["connect".to_string(), cfg.connection_name.clone()];
-                if let Some(ref url) = cfg.gateway_url {
-                    if !url.is_empty() {
-                        a.push("--api-url".to_string());
-                        a.push(url.clone());
-                    }
+                if let Some(ref url) = cfg.gateway_url
+                    && !url.is_empty()
+                {
+                    a.push("--api-url".to_string());
+                    a.push(url.clone());
                 }
-                if let Some(ref url) = cfg.grpc_url {
-                    if !url.is_empty() {
-                        a.push("--grpc-url".to_string());
-                        a.push(url.clone());
-                    }
+                if let Some(ref url) = cfg.grpc_url
+                    && !url.is_empty()
+                {
+                    a.push("--grpc-url".to_string());
+                    a.push(url.clone());
                 }
                 ("hoop".to_string(), a)
             }
@@ -2468,7 +2468,10 @@ mod zerotrust_tests {
             custom_args: vec![],
             detected_provider: None,
         };
-        assert!(config.validate().is_err(), "Empty connection_name must be rejected");
+        assert!(
+            config.validate().is_err(),
+            "Empty connection_name must be rejected"
+        );
     }
 
     #[test]
@@ -2483,7 +2486,10 @@ mod zerotrust_tests {
             custom_args: vec![],
             detected_provider: None,
         };
-        assert!(config.validate().is_err(), "Whitespace-only connection_name must be rejected");
+        assert!(
+            config.validate().is_err(),
+            "Whitespace-only connection_name must be rejected"
+        );
     }
 
     #[test]
@@ -2498,7 +2504,10 @@ mod zerotrust_tests {
             custom_args: vec![],
             detected_provider: None,
         };
-        assert!(config.validate().is_ok(), "Valid HoopDevConfig must pass validation");
+        assert!(
+            config.validate().is_ok(),
+            "Valid HoopDevConfig must pass validation"
+        );
     }
 
     #[test]

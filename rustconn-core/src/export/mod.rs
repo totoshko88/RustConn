@@ -278,9 +278,8 @@ pub fn write_export_file(path: &Path, content: &str) -> Result<(), ExportError> 
     {
         use std::os::unix::fs::PermissionsExt;
         let perms = std::fs::Permissions::from_mode(0o600);
-        std::fs::set_permissions(path, perms).map_err(|e| {
-            ExportError::WriteError(format!("Failed to set file permissions: {e}"))
-        })?;
+        std::fs::set_permissions(path, perms)
+            .map_err(|e| ExportError::WriteError(format!("Failed to set file permissions: {e}")))?;
     }
 
     Ok(())

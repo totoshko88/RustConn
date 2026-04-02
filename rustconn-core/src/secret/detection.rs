@@ -611,7 +611,7 @@ pub async fn detect_pass() -> PasswordManagerInfo {
     // Try all paths (standard paths + extra paths) in a single iterator chain
     for path in pass_paths
         .iter()
-        .map(|s| s.to_string())
+        .map(std::string::ToString::to_string)
         .chain(extra_paths.iter().cloned())
     {
         if let Ok(output) = Command::new(&path).arg("--version").output().await

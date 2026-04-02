@@ -109,24 +109,24 @@ pub fn resolve_ssh_agent_socket(
     global_setting: Option<&str>,
 ) -> Option<String> {
     // Per-connection override (highest priority)
-    if let Some(path) = per_connection {
-        if !path.is_empty() {
-            return Some(path.to_string());
-        }
+    if let Some(path) = per_connection
+        && !path.is_empty()
+    {
+        return Some(path.to_string());
     }
 
     // Global setting (second priority)
-    if let Some(path) = global_setting {
-        if !path.is_empty() {
-            return Some(path.to_string());
-        }
+    if let Some(path) = global_setting
+        && !path.is_empty()
+    {
+        return Some(path.to_string());
     }
 
     // OnceLock agent info (third priority)
-    if let Some(info) = AGENT_INFO.get() {
-        if !info.socket_path.is_empty() {
-            return Some(info.socket_path.clone());
-        }
+    if let Some(info) = AGENT_INFO.get()
+        && !info.socket_path.is_empty()
+    {
+        return Some(info.socket_path.clone());
     }
 
     // None — inherit SSH_AUTH_SOCK from parent environment
@@ -146,10 +146,10 @@ pub fn apply_agent_env_with_overrides(
     if let Some(socket_path) = resolve_ssh_agent_socket(per_connection, global_setting) {
         cmd.env("SSH_AUTH_SOCK", &socket_path);
         // Also set SSH_AGENT_PID if available from OnceLock
-        if let Some(info) = AGENT_INFO.get() {
-            if let Some(ref pid) = info.pid {
-                cmd.env("SSH_AGENT_PID", pid);
-            }
+        if let Some(info) = AGENT_INFO.get()
+            && let Some(ref pid) = info.pid
+        {
+            cmd.env("SSH_AGENT_PID", pid);
         }
     } else {
         // No overrides — fall back to existing behavior
@@ -675,10 +675,7 @@ mod tests {
 
     #[test]
     fn test_resolve_per_connection_wins() {
-        let result = resolve_ssh_agent_socket(
-            Some("/per/conn.sock"),
-            Some("/global.sock"),
-        );
+        let result = resolve_ssh_agent_socket(Some("/per/conn.sock"), Some("/global.sock"));
         assert_eq!(result, Some("/per/conn.sock".to_string()));
     }
 
@@ -721,10 +718,8 @@ mod tests {
     #[test]
     fn test_resolve_per_connection_overrides_everything() {
         // Per-connection should win regardless of global
-        let result = resolve_ssh_agent_socket(
-            Some("/custom/agent.sock"),
-            Some("/global/agent.sock"),
-        );
+        let result =
+            resolve_ssh_agent_socket(Some("/custom/agent.sock"), Some("/global/agent.sock"));
         assert_eq!(result, Some("/custom/agent.sock".to_string()));
     }
 

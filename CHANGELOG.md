@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.10.9] - 2026-03-31
+## [0.10.9] - 2026-04-02
 
 ### Added
 - **Hoop.dev Zero Trust provider** — added Hoop.dev as the 11th Zero Trust provider; supports `hoop connect <connection-name>` with optional `--api-url` and `--grpc-url` flags; includes data model (`HoopDevConfig`), CLI detection (`detect_hoop()`), Flatpak CLI download component, GUI fields in connection dialog, CLI support (`--provider hoop_dev --hoop-connection-name`), Flatpak `~/.hoop:ro` permission, serialization round-trip, i18n, and property-based tests
@@ -42,7 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Clippy suppressions scoped to GUI crate** — 8 GTK-specific clippy suppressions (`redundant_clone`, `needless_borrow`, `needless_pass_by_value`, `unused_self`, `wildcard_imports`, `needless_borrows_for_generic_args`, `redundant_closure_for_method_calls`, `redundant_closure`) moved from workspace `Cargo.toml` to `rustconn/Cargo.toml`; `rustconn-core` now linted under stricter rules
 
 ### Dependencies
-- **Updated**: aws-lc-sys 0.39.0→0.39.1, cc 1.2.57→1.2.58, cmake 0.1.57→0.1.58, hybrid-array 0.4.8→0.4.9, mio 1.1.1→1.2.0, simd-adler32 0.3.8→0.3.9, uuid 1.22.0→1.23.0, winnow 1.0.0→1.0.1, zerocopy 0.8.47→0.8.48, zune-jpeg 0.5.14→0.5.15
+- **Updated**: aws-lc-sys 0.39.0→0.39.1, cc 1.2.57→1.2.58, cmake 0.1.57→0.1.58, hybrid-array 0.4.8→0.4.10, hyper 1.8.1→1.9.0, libc 0.2.183→0.2.184, mio 1.1.1→1.2.0, simd-adler32 0.3.8→0.3.9, system-deps 7.0.7→7.0.8, toml_edit 0.25.8→0.25.10, uuid 1.22.0→1.23.0, winnow 1.0.0→1.0.1, zerocopy 0.8.47→0.8.48, zip 8.4.0→8.5.0, zune-jpeg 0.5.14→0.5.15
+- **CLI downloads** — Tailscale 1.96.2→1.96.4
 
 ## [0.10.8] - 2026-03-27
 

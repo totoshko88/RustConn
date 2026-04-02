@@ -964,19 +964,55 @@ Connects via HashiCorp Boundary proxy.
 
 #### Hoop.dev
 
-Connects via Hoop.dev zero-trust access gateway using `hoop connect`.
+Connects via Hoop.dev zero-trust access gateway using `hoop connect`. Hoop.dev is an access gateway for databases and servers that provides secure, auditable access with SSO authentication and data masking capabilities.
 
 | Field | Description | Example |
 |-------|-------------|---------|
-| Connection Name | Hoop.dev connection identifier | `my-database` |
-| Gateway URL | API gateway URL (optional) | `https://app.hoop.dev` |
-| gRPC URL | gRPC server URL (optional) | `grpc.hoop.dev:8443` |
+| Connection Name | Hoop.dev connection identifier (required) | `my-database` |
+| Gateway URL | API gateway URL (optional, for self-hosted) | `https://app.hoop.dev` |
+| gRPC URL | gRPC server URL (optional, for self-hosted) | `grpcs://app.hoop.dev:8443` |
 
-**Prerequisites:** `hoop` CLI installed and authenticated via browser SSO (`hoop login`).
+**Generated command:** `hoop connect <connection-name> [--api-url <url>] [--grpc-url <url>]`
 
-**Flatpak:** The host `~/.hoop/` directory is mounted as read-only to share authentication tokens and configuration. Install `hoop` via Flatpak Components.
+**Prerequisites:**
 
-**Flatpak:** Boundary stores authentication tokens in the system keyring via D-Bus (`org.freedesktop.secrets`), which works natively in Flatpak. No config directory redirection is needed.
+1. Install the `hoop` CLI:
+   ```bash
+   curl -s -L https://releases.hoop.dev/release/install-cli.sh | sh
+   ```
+   Or via Homebrew: `brew tap hoophq/brew https://github.com/hoophq/brew.git && brew install hoop`
+
+2. Configure the gateway (once per machine):
+   - Managed instance: `hoop login` (gateway URL defaults to `https://use.hoop.dev`)
+   - Self-hosted: `hoop config create --api-url https://your-gateway.tld` then `hoop login`
+
+3. Authenticate: `hoop login` opens your browser for SSO. The access token is stored in `$HOME/.hoop/config.toml`.
+
+**Environment variables (alternative to config file):**
+
+| Variable | Description |
+|----------|-------------|
+| `HOOP_APIURL` | Gateway API URL (e.g., `https://use.hoop.dev`) |
+| `HOOP_GRPCURL` | gRPC URL (e.g., `grpcs://use.hoop.dev:8443`) |
+| `HOOP_TOKEN` | Access token or API key |
+| `HOOP_TLSCA` | TLS CA certificate path (for self-signed certs) |
+
+**CLI usage:**
+
+```bash
+# GUI: create a ZeroTrust connection with provider "Hoop.dev"
+# CLI:
+rustconn-cli add --name "Production DB" --host localhost --protocol zt \
+  --provider hoop_dev --hoop-connection-name my-database
+
+# With self-hosted gateway:
+rustconn-cli add --name "Staging DB" --host localhost --protocol zt \
+  --provider hoop_dev --hoop-connection-name staging-db \
+  --hoop-gateway-url https://hoop.internal.company.com \
+  --hoop-grpc-url grpcs://hoop.internal.company.com:8443
+```
+
+**Flatpak:** The host `~/.hoop/` directory is mounted as read-only to share authentication tokens and configuration. Install `hoop` via Flatpak Components if not available on the host.
 
 #### Generic Command
 
@@ -1533,6 +1569,7 @@ Download and install additional CLI tools directly within the Flatpak sandbox:
 - Teleport, Tailscale
 - Cloudflare Tunnel
 - HashiCorp Boundary
+- Hoop.dev
 
 **Password Manager CLIs:**
 - Bitwarden CLI

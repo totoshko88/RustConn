@@ -738,131 +738,131 @@ pub const fn keycode_to_scancode(keycode: u32) -> Option<RdpScancode> {
     // certain platforms, causing wrong scancodes for Shift+Arrow combos.
     match keycode {
         // Row 0: Esc, F-keys
-        9 => Some(RdpScancode::standard(0x01)),   // Escape
-        67 => Some(RdpScancode::standard(0x3B)),   // F1
-        68 => Some(RdpScancode::standard(0x3C)),   // F2
-        69 => Some(RdpScancode::standard(0x3D)),   // F3
-        70 => Some(RdpScancode::standard(0x3E)),   // F4
-        71 => Some(RdpScancode::standard(0x3F)),   // F5
-        72 => Some(RdpScancode::standard(0x40)),   // F6
-        73 => Some(RdpScancode::standard(0x41)),   // F7
-        74 => Some(RdpScancode::standard(0x42)),   // F8
-        75 => Some(RdpScancode::standard(0x43)),   // F9
-        76 => Some(RdpScancode::standard(0x44)),   // F10
-        95 => Some(RdpScancode::standard(0x57)),   // F11
-        96 => Some(RdpScancode::standard(0x58)),   // F12
+        9 => Some(RdpScancode::standard(0x01)),  // Escape
+        67 => Some(RdpScancode::standard(0x3B)), // F1
+        68 => Some(RdpScancode::standard(0x3C)), // F2
+        69 => Some(RdpScancode::standard(0x3D)), // F3
+        70 => Some(RdpScancode::standard(0x3E)), // F4
+        71 => Some(RdpScancode::standard(0x3F)), // F5
+        72 => Some(RdpScancode::standard(0x40)), // F6
+        73 => Some(RdpScancode::standard(0x41)), // F7
+        74 => Some(RdpScancode::standard(0x42)), // F8
+        75 => Some(RdpScancode::standard(0x43)), // F9
+        76 => Some(RdpScancode::standard(0x44)), // F10
+        95 => Some(RdpScancode::standard(0x57)), // F11
+        96 => Some(RdpScancode::standard(0x58)), // F12
 
         // Row 1: number row
-        49 => Some(RdpScancode::standard(0x29)),   // grave `
-        10 => Some(RdpScancode::standard(0x02)),   // 1
-        11 => Some(RdpScancode::standard(0x03)),   // 2
-        12 => Some(RdpScancode::standard(0x04)),   // 3
-        13 => Some(RdpScancode::standard(0x05)),   // 4
-        14 => Some(RdpScancode::standard(0x06)),   // 5
-        15 => Some(RdpScancode::standard(0x07)),   // 6
-        16 => Some(RdpScancode::standard(0x08)),   // 7
-        17 => Some(RdpScancode::standard(0x09)),   // 8
-        18 => Some(RdpScancode::standard(0x0A)),   // 9
-        19 => Some(RdpScancode::standard(0x0B)),   // 0
-        20 => Some(RdpScancode::standard(0x0C)),   // minus
-        21 => Some(RdpScancode::standard(0x0D)),   // equal
-        22 => Some(RdpScancode::standard(0x0E)),   // BackSpace
+        49 => Some(RdpScancode::standard(0x29)), // grave `
+        10 => Some(RdpScancode::standard(0x02)), // 1
+        11 => Some(RdpScancode::standard(0x03)), // 2
+        12 => Some(RdpScancode::standard(0x04)), // 3
+        13 => Some(RdpScancode::standard(0x05)), // 4
+        14 => Some(RdpScancode::standard(0x06)), // 5
+        15 => Some(RdpScancode::standard(0x07)), // 6
+        16 => Some(RdpScancode::standard(0x08)), // 7
+        17 => Some(RdpScancode::standard(0x09)), // 8
+        18 => Some(RdpScancode::standard(0x0A)), // 9
+        19 => Some(RdpScancode::standard(0x0B)), // 0
+        20 => Some(RdpScancode::standard(0x0C)), // minus
+        21 => Some(RdpScancode::standard(0x0D)), // equal
+        22 => Some(RdpScancode::standard(0x0E)), // BackSpace
 
         // Row 2: QWERTY
-        23 => Some(RdpScancode::standard(0x0F)),   // Tab
-        24 => Some(RdpScancode::standard(0x10)),   // q
-        25 => Some(RdpScancode::standard(0x11)),   // w
-        26 => Some(RdpScancode::standard(0x12)),   // e
-        27 => Some(RdpScancode::standard(0x13)),   // r
-        28 => Some(RdpScancode::standard(0x14)),   // t
-        29 => Some(RdpScancode::standard(0x15)),   // y
-        30 => Some(RdpScancode::standard(0x16)),   // u
-        31 => Some(RdpScancode::standard(0x17)),   // i
-        32 => Some(RdpScancode::standard(0x18)),   // o
-        33 => Some(RdpScancode::standard(0x19)),   // p
-        34 => Some(RdpScancode::standard(0x1A)),   // bracketleft
-        35 => Some(RdpScancode::standard(0x1B)),   // bracketright
-        36 => Some(RdpScancode::standard(0x1C)),   // Return
-        51 => Some(RdpScancode::standard(0x2B)),   // backslash
+        23 => Some(RdpScancode::standard(0x0F)), // Tab
+        24 => Some(RdpScancode::standard(0x10)), // q
+        25 => Some(RdpScancode::standard(0x11)), // w
+        26 => Some(RdpScancode::standard(0x12)), // e
+        27 => Some(RdpScancode::standard(0x13)), // r
+        28 => Some(RdpScancode::standard(0x14)), // t
+        29 => Some(RdpScancode::standard(0x15)), // y
+        30 => Some(RdpScancode::standard(0x16)), // u
+        31 => Some(RdpScancode::standard(0x17)), // i
+        32 => Some(RdpScancode::standard(0x18)), // o
+        33 => Some(RdpScancode::standard(0x19)), // p
+        34 => Some(RdpScancode::standard(0x1A)), // bracketleft
+        35 => Some(RdpScancode::standard(0x1B)), // bracketright
+        36 => Some(RdpScancode::standard(0x1C)), // Return
+        51 => Some(RdpScancode::standard(0x2B)), // backslash
 
         // Row 3: home row
-        66 => Some(RdpScancode::standard(0x3A)),   // Caps_Lock
-        38 => Some(RdpScancode::standard(0x1E)),   // a
-        39 => Some(RdpScancode::standard(0x1F)),   // s
-        40 => Some(RdpScancode::standard(0x20)),   // d
-        41 => Some(RdpScancode::standard(0x21)),   // f
-        42 => Some(RdpScancode::standard(0x22)),   // g
-        43 => Some(RdpScancode::standard(0x23)),   // h
-        44 => Some(RdpScancode::standard(0x24)),   // j
-        45 => Some(RdpScancode::standard(0x25)),   // k
-        46 => Some(RdpScancode::standard(0x26)),   // l
-        47 => Some(RdpScancode::standard(0x27)),   // semicolon
-        48 => Some(RdpScancode::standard(0x28)),   // apostrophe
+        66 => Some(RdpScancode::standard(0x3A)), // Caps_Lock
+        38 => Some(RdpScancode::standard(0x1E)), // a
+        39 => Some(RdpScancode::standard(0x1F)), // s
+        40 => Some(RdpScancode::standard(0x20)), // d
+        41 => Some(RdpScancode::standard(0x21)), // f
+        42 => Some(RdpScancode::standard(0x22)), // g
+        43 => Some(RdpScancode::standard(0x23)), // h
+        44 => Some(RdpScancode::standard(0x24)), // j
+        45 => Some(RdpScancode::standard(0x25)), // k
+        46 => Some(RdpScancode::standard(0x26)), // l
+        47 => Some(RdpScancode::standard(0x27)), // semicolon
+        48 => Some(RdpScancode::standard(0x28)), // apostrophe
 
         // Row 4: bottom row
-        50 => Some(RdpScancode::standard(0x2A)),   // Shift_L
-        52 => Some(RdpScancode::standard(0x2C)),   // z
-        53 => Some(RdpScancode::standard(0x2D)),   // x
-        54 => Some(RdpScancode::standard(0x2E)),   // c
-        55 => Some(RdpScancode::standard(0x2F)),   // v
-        56 => Some(RdpScancode::standard(0x30)),   // b
-        57 => Some(RdpScancode::standard(0x31)),   // n
-        58 => Some(RdpScancode::standard(0x32)),   // m
-        59 => Some(RdpScancode::standard(0x33)),   // comma
-        60 => Some(RdpScancode::standard(0x34)),   // period
-        61 => Some(RdpScancode::standard(0x35)),   // slash
-        62 => Some(RdpScancode::standard(0x36)),   // Shift_R
+        50 => Some(RdpScancode::standard(0x2A)), // Shift_L
+        52 => Some(RdpScancode::standard(0x2C)), // z
+        53 => Some(RdpScancode::standard(0x2D)), // x
+        54 => Some(RdpScancode::standard(0x2E)), // c
+        55 => Some(RdpScancode::standard(0x2F)), // v
+        56 => Some(RdpScancode::standard(0x30)), // b
+        57 => Some(RdpScancode::standard(0x31)), // n
+        58 => Some(RdpScancode::standard(0x32)), // m
+        59 => Some(RdpScancode::standard(0x33)), // comma
+        60 => Some(RdpScancode::standard(0x34)), // period
+        61 => Some(RdpScancode::standard(0x35)), // slash
+        62 => Some(RdpScancode::standard(0x36)), // Shift_R
 
         // Bottom modifiers
-        37 => Some(RdpScancode::standard(0x1D)),   // Control_L
-        64 => Some(RdpScancode::standard(0x38)),   // Alt_L
-        65 => Some(RdpScancode::standard(0x39)),   // Space
+        37 => Some(RdpScancode::standard(0x1D)), // Control_L
+        64 => Some(RdpScancode::standard(0x38)), // Alt_L
+        65 => Some(RdpScancode::standard(0x39)), // Space
 
         // Extended modifier keys
-        97 => Some(RdpScancode::extended(0x1D)),   // Control_R
-        108 => Some(RdpScancode::extended(0x38)),  // Alt_R
-        133 => Some(RdpScancode::extended(0x5B)),  // Super_L
-        134 => Some(RdpScancode::extended(0x5C)),  // Super_R
-        135 => Some(RdpScancode::extended(0x5D)),  // Menu
+        97 => Some(RdpScancode::extended(0x1D)), // Control_R
+        108 => Some(RdpScancode::extended(0x38)), // Alt_R
+        133 => Some(RdpScancode::extended(0x5B)), // Super_L
+        134 => Some(RdpScancode::extended(0x5C)), // Super_R
+        135 => Some(RdpScancode::extended(0x5D)), // Menu
 
         // Navigation keys (extended)
-        110 => Some(RdpScancode::extended(0x47)),  // Home
-        111 => Some(RdpScancode::extended(0x48)),  // Up
-        112 => Some(RdpScancode::extended(0x49)),  // Page_Up
-        113 => Some(RdpScancode::extended(0x4B)),  // Left
-        114 => Some(RdpScancode::extended(0x4D)),  // Right
-        115 => Some(RdpScancode::extended(0x4F)),  // End
-        116 => Some(RdpScancode::extended(0x50)),  // Down
-        117 => Some(RdpScancode::extended(0x51)),  // Page_Down
-        118 => Some(RdpScancode::extended(0x52)),  // Insert
-        119 => Some(RdpScancode::extended(0x53)),  // Delete
+        110 => Some(RdpScancode::extended(0x47)), // Home
+        111 => Some(RdpScancode::extended(0x48)), // Up
+        112 => Some(RdpScancode::extended(0x49)), // Page_Up
+        113 => Some(RdpScancode::extended(0x4B)), // Left
+        114 => Some(RdpScancode::extended(0x4D)), // Right
+        115 => Some(RdpScancode::extended(0x4F)), // End
+        116 => Some(RdpScancode::extended(0x50)), // Down
+        117 => Some(RdpScancode::extended(0x51)), // Page_Down
+        118 => Some(RdpScancode::extended(0x52)), // Insert
+        119 => Some(RdpScancode::extended(0x53)), // Delete
 
         // Print / Scroll Lock / Pause
-        107 => Some(RdpScancode::extended(0x37)),  // Print
-        78 => Some(RdpScancode::standard(0x46)),   // Scroll_Lock
-        127 => Some(RdpScancode::standard(0x45)),  // Pause
+        107 => Some(RdpScancode::extended(0x37)), // Print
+        78 => Some(RdpScancode::standard(0x46)),  // Scroll_Lock
+        127 => Some(RdpScancode::standard(0x45)), // Pause
 
         // Numpad
-        77 => Some(RdpScancode::standard(0x45)),   // Num_Lock
-        106 => Some(RdpScancode::extended(0x35)),  // KP_Divide
-        63 => Some(RdpScancode::standard(0x37)),   // KP_Multiply
-        82 => Some(RdpScancode::standard(0x4A)),   // KP_Subtract
-        86 => Some(RdpScancode::standard(0x4E)),   // KP_Add
-        104 => Some(RdpScancode::extended(0x1C)),  // KP_Enter
-        91 => Some(RdpScancode::standard(0x53)),   // KP_Decimal
-        90 => Some(RdpScancode::standard(0x52)),   // KP_0
-        87 => Some(RdpScancode::standard(0x4F)),   // KP_1
-        88 => Some(RdpScancode::standard(0x50)),   // KP_2
-        89 => Some(RdpScancode::standard(0x51)),   // KP_3
-        83 => Some(RdpScancode::standard(0x4B)),   // KP_4
-        84 => Some(RdpScancode::standard(0x4C)),   // KP_5
-        85 => Some(RdpScancode::standard(0x4D)),   // KP_6
-        79 => Some(RdpScancode::standard(0x47)),   // KP_7
-        80 => Some(RdpScancode::standard(0x48)),   // KP_8
-        81 => Some(RdpScancode::standard(0x49)),   // KP_9
+        77 => Some(RdpScancode::standard(0x45)),  // Num_Lock
+        106 => Some(RdpScancode::extended(0x35)), // KP_Divide
+        63 => Some(RdpScancode::standard(0x37)),  // KP_Multiply
+        82 => Some(RdpScancode::standard(0x4A)),  // KP_Subtract
+        86 => Some(RdpScancode::standard(0x4E)),  // KP_Add
+        104 => Some(RdpScancode::extended(0x1C)), // KP_Enter
+        91 => Some(RdpScancode::standard(0x53)),  // KP_Decimal
+        90 => Some(RdpScancode::standard(0x52)),  // KP_0
+        87 => Some(RdpScancode::standard(0x4F)),  // KP_1
+        88 => Some(RdpScancode::standard(0x50)),  // KP_2
+        89 => Some(RdpScancode::standard(0x51)),  // KP_3
+        83 => Some(RdpScancode::standard(0x4B)),  // KP_4
+        84 => Some(RdpScancode::standard(0x4C)),  // KP_5
+        85 => Some(RdpScancode::standard(0x4D)),  // KP_6
+        79 => Some(RdpScancode::standard(0x47)),  // KP_7
+        80 => Some(RdpScancode::standard(0x48)),  // KP_8
+        81 => Some(RdpScancode::standard(0x49)),  // KP_9
 
         // ISO key (between left Shift and Z on non-US layouts)
-        94 => Some(RdpScancode::standard(0x56)),   // less / greater
+        94 => Some(RdpScancode::standard(0x56)), // less / greater
 
         _ => None,
     }

@@ -18,11 +18,11 @@ use gtk4::{
 use libadwaita as adw;
 use rustconn_core::models::{
     AwsSsmConfig, AzureBastionConfig, AzureSshConfig, BoundaryConfig, CloudflareAccessConfig,
-    ConnectionTemplate, GcpIapConfig, GenericZeroTrustConfig, OciBastionConfig, ProtocolConfig,
-    ProtocolType, RdpClientMode, RdpConfig, RdpPerformanceMode, Resolution, ScaleOverride,
-    SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, TailscaleSshConfig,
-    TeleportConfig, VncClientMode, VncConfig, VncPerformanceMode, ZeroTrustConfig,
-    ZeroTrustProvider, ZeroTrustProviderConfig,
+    ConnectionTemplate, GcpIapConfig, GenericZeroTrustConfig, HoopDevConfig, OciBastionConfig,
+    ProtocolConfig, ProtocolType, RdpClientMode, RdpConfig, RdpPerformanceMode, Resolution,
+    ScaleOverride, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource,
+    TailscaleSshConfig, TeleportConfig, VncClientMode, VncConfig, VncPerformanceMode,
+    ZeroTrustConfig, ZeroTrustProvider, ZeroTrustProviderConfig,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -106,6 +106,9 @@ pub struct TemplateDialog {
     zt_tailscale_host_entry: Entry,
     zt_boundary_target_entry: Entry,
     zt_boundary_addr_entry: Entry,
+    zt_hoop_connection_name_entry: Entry,
+    zt_hoop_gateway_url_entry: Entry,
+    zt_hoop_grpc_url_entry: Entry,
     zt_generic_command_entry: Entry,
     zt_custom_args_entry: Entry,
     // State
@@ -268,6 +271,9 @@ impl TemplateDialog {
             zt_tailscale_host_entry,
             zt_boundary_target_entry,
             zt_boundary_addr_entry,
+            zt_hoop_connection_name_entry,
+            zt_hoop_gateway_url_entry,
+            zt_hoop_grpc_url_entry,
             zt_generic_command_entry,
             zt_custom_args_entry,
         ) = Self::create_zerotrust_options();
@@ -382,6 +388,9 @@ impl TemplateDialog {
             &zt_tailscale_host_entry,
             &zt_boundary_target_entry,
             &zt_boundary_addr_entry,
+            &zt_hoop_connection_name_entry,
+            &zt_hoop_gateway_url_entry,
+            &zt_hoop_grpc_url_entry,
             &zt_generic_command_entry,
             &zt_custom_args_entry,
         );
@@ -450,6 +459,9 @@ impl TemplateDialog {
             zt_tailscale_host_entry,
             zt_boundary_target_entry,
             zt_boundary_addr_entry,
+            zt_hoop_connection_name_entry,
+            zt_hoop_gateway_url_entry,
+            zt_hoop_grpc_url_entry,
             zt_generic_command_entry,
             zt_custom_args_entry,
             editing_id,
@@ -1317,6 +1329,9 @@ impl TemplateDialog {
         Entry,
         Entry,
         Entry,
+        Entry,
+        Entry,
+        Entry,
     ) {
         let scrolled = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -1350,6 +1365,7 @@ impl TemplateDialog {
             "Teleport",
             "Tailscale SSH",
             "HashiCorp Boundary",
+            "Hoop.dev",
             i18n("Generic Command").as_str(),
         ]);
         let provider_dropdown = DropDown::new(Some(provider_list), gtk4::Expression::NONE);
@@ -1406,6 +1422,11 @@ impl TemplateDialog {
         let (boundary_box, boundary_target, boundary_addr) = Self::create_boundary_fields();
         provider_stack.add_named(&boundary_box, Some("boundary"));
 
+        // Hoop.dev
+        let (hoop_box, hoop_connection_name, hoop_gateway_url, hoop_grpc_url) =
+            Self::create_hoop_dev_fields();
+        provider_stack.add_named(&hoop_box, Some("hoop_dev"));
+
         // Generic
         let (generic_box, generic_command) = Self::create_generic_fields();
         provider_stack.add_named(&generic_box, Some("generic"));
@@ -1425,6 +1446,7 @@ impl TemplateDialog {
                 "teleport",
                 "tailscale",
                 "boundary",
+                "hoop_dev",
                 "generic",
             ];
             let selected = dropdown.selected() as usize;
@@ -1483,6 +1505,9 @@ impl TemplateDialog {
             tailscale_host,
             boundary_target,
             boundary_addr,
+            hoop_connection_name,
+            hoop_gateway_url,
+            hoop_grpc_url,
             generic_command,
             custom_args_entry,
         )
@@ -1838,6 +1863,59 @@ impl TemplateDialog {
         (content, target_entry, addr_entry)
     }
 
+    fn create_hoop_dev_fields() -> (GtkBox, Entry, Entry, Entry) {
+        let content = GtkBox::new(Orientation::Vertical, 12);
+
+        let group = adw::PreferencesGroup::builder()
+            .title(i18n("Hoop.dev"))
+            .build();
+
+        let connection_name_entry = Entry::builder()
+            .hexpand(true)
+            .placeholder_text("e.g., my-database")
+            .valign(gtk4::Align::Center)
+            .build();
+        let connection_name_row = adw::ActionRow::builder()
+            .title(i18n("Connection Name"))
+            .subtitle(i18n("Hoop.dev connection identifier"))
+            .build();
+        connection_name_row.add_suffix(&connection_name_entry);
+        group.add(&connection_name_row);
+
+        let gateway_url_entry = Entry::builder()
+            .hexpand(true)
+            .placeholder_text("e.g., https://app.hoop.dev")
+            .valign(gtk4::Align::Center)
+            .build();
+        let gateway_url_row = adw::ActionRow::builder()
+            .title(i18n("Gateway URL"))
+            .subtitle(i18n("Hoop.dev gateway API URL (optional)"))
+            .build();
+        gateway_url_row.add_suffix(&gateway_url_entry);
+        group.add(&gateway_url_row);
+
+        let grpc_url_entry = Entry::builder()
+            .hexpand(true)
+            .placeholder_text("e.g., grpc.hoop.dev:8443")
+            .valign(gtk4::Align::Center)
+            .build();
+        let grpc_url_row = adw::ActionRow::builder()
+            .title(i18n("gRPC URL"))
+            .subtitle(i18n("Hoop.dev gRPC server URL (optional)"))
+            .build();
+        grpc_url_row.add_suffix(&grpc_url_entry);
+        group.add(&grpc_url_row);
+
+        content.append(&group);
+
+        (
+            content,
+            connection_name_entry,
+            gateway_url_entry,
+            grpc_url_entry,
+        )
+    }
+
     fn create_generic_fields() -> (GtkBox, Entry) {
         let content = GtkBox::new(Orientation::Vertical, 12);
 
@@ -1931,6 +2009,9 @@ impl TemplateDialog {
         zt_tailscale_host: &Entry,
         zt_boundary_target: &Entry,
         zt_boundary_addr: &Entry,
+        zt_hoop_connection_name: &Entry,
+        zt_hoop_gateway_url: &Entry,
+        zt_hoop_grpc_url: &Entry,
         zt_generic_command: &Entry,
         zt_custom_args: &Entry,
     ) {
@@ -1996,6 +2077,9 @@ impl TemplateDialog {
         let zt_tailscale_host = zt_tailscale_host.clone();
         let zt_boundary_target = zt_boundary_target.clone();
         let zt_boundary_addr = zt_boundary_addr.clone();
+        let zt_hoop_connection_name = zt_hoop_connection_name.clone();
+        let zt_hoop_gateway_url = zt_hoop_gateway_url.clone();
+        let zt_hoop_grpc_url = zt_hoop_grpc_url.clone();
         let zt_generic_command = zt_generic_command.clone();
         let zt_custom_args = zt_custom_args.clone();
 
@@ -2064,6 +2148,9 @@ impl TemplateDialog {
                 &zt_tailscale_host,
                 &zt_boundary_target,
                 &zt_boundary_addr,
+                &zt_hoop_connection_name,
+                &zt_hoop_gateway_url,
+                &zt_hoop_grpc_url,
                 &zt_generic_command,
                 &zt_custom_args,
             );
@@ -2172,6 +2259,9 @@ impl TemplateDialog {
         zt_tailscale_host: &Entry,
         zt_boundary_target: &Entry,
         zt_boundary_addr: &Entry,
+        zt_hoop_connection_name: &Entry,
+        zt_hoop_gateway_url: &Entry,
+        zt_hoop_grpc_url: &Entry,
         zt_generic_command: &Entry,
         zt_custom_args: &Entry,
     ) -> ProtocolConfig {
@@ -2225,6 +2315,9 @@ impl TemplateDialog {
                 zt_tailscale_host,
                 zt_boundary_target,
                 zt_boundary_addr,
+                zt_hoop_connection_name,
+                zt_hoop_gateway_url,
+                zt_hoop_grpc_url,
                 zt_generic_command,
                 zt_custom_args,
             ),
@@ -2305,6 +2398,7 @@ impl TemplateDialog {
             sftp_enabled: true,
             port_forwards: Vec::new(),
             waypipe: false,
+            ssh_agent_socket: None,
         };
 
         if !custom_options_text.is_empty() {
@@ -2492,6 +2586,9 @@ impl TemplateDialog {
         tailscale_host: &Entry,
         boundary_target: &Entry,
         boundary_addr: &Entry,
+        hoop_connection_name: &Entry,
+        hoop_gateway_url: &Entry,
+        hoop_grpc_url: &Entry,
         generic_command: &Entry,
         custom_args: &Entry,
     ) -> ProtocolConfig {
@@ -2565,6 +2662,19 @@ impl TemplateDialog {
                     Some(boundary_addr.text().to_string())
                 },
             }),
+            9 => ZeroTrustProviderConfig::HoopDev(HoopDevConfig {
+                connection_name: hoop_connection_name.text().to_string(),
+                gateway_url: if hoop_gateway_url.text().is_empty() {
+                    None
+                } else {
+                    Some(hoop_gateway_url.text().to_string())
+                },
+                grpc_url: if hoop_grpc_url.text().is_empty() {
+                    None
+                } else {
+                    Some(hoop_grpc_url.text().to_string())
+                },
+            }),
             _ => ZeroTrustProviderConfig::Generic(GenericZeroTrustConfig {
                 command_template: generic_command.text().to_string(),
             }),
@@ -2580,6 +2690,7 @@ impl TemplateDialog {
             6 => ZeroTrustProvider::Teleport,
             7 => ZeroTrustProvider::TailscaleSsh,
             8 => ZeroTrustProvider::Boundary,
+            9 => ZeroTrustProvider::HoopDev,
             _ => ZeroTrustProvider::Generic,
         };
 
@@ -2783,7 +2894,8 @@ impl TemplateDialog {
             ZeroTrustProvider::Teleport => 6,
             ZeroTrustProvider::TailscaleSsh => 7,
             ZeroTrustProvider::Boundary => 8,
-            ZeroTrustProvider::Generic => 9,
+            ZeroTrustProvider::HoopDev => 9,
+            ZeroTrustProvider::Generic => 10,
         };
         self.zt_provider_dropdown.set_selected(provider_idx);
 
@@ -2797,6 +2909,7 @@ impl TemplateDialog {
             ZeroTrustProvider::Teleport => "teleport",
             ZeroTrustProvider::TailscaleSsh => "tailscale",
             ZeroTrustProvider::Boundary => "boundary",
+            ZeroTrustProvider::HoopDev => "hoop_dev",
             ZeroTrustProvider::Generic => "generic",
         };
         self.zt_provider_stack.set_visible_child_name(stack_name);
@@ -2847,6 +2960,16 @@ impl TemplateDialog {
                 self.zt_boundary_target_entry.set_text(&c.target);
                 if let Some(ref a) = c.addr {
                     self.zt_boundary_addr_entry.set_text(a);
+                }
+            }
+            ZeroTrustProviderConfig::HoopDev(c) => {
+                self.zt_hoop_connection_name_entry
+                    .set_text(&c.connection_name);
+                if let Some(ref url) = c.gateway_url {
+                    self.zt_hoop_gateway_url_entry.set_text(url);
+                }
+                if let Some(ref url) = c.grpc_url {
+                    self.zt_hoop_grpc_url_entry.set_text(url);
                 }
             }
             ZeroTrustProviderConfig::Generic(c) => {

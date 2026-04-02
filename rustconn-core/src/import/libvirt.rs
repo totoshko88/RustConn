@@ -430,9 +430,9 @@ impl LibvirtXmlImporter {
                 && meta.len() > MAX_XML_SIZE
             {
                 result.add_skipped(SkippedEntry::with_location(
-                    &path.display().to_string(),
+                    path.display().to_string(),
                     "File too large (>10 MB)",
-                    &dir.display().to_string(),
+                    dir.display().to_string(),
                 ));
                 continue;
             }

@@ -59,6 +59,7 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
                     sftp_enabled: false,
                     port_forwards: Vec::new(),
                     waypipe: false,
+                    ssh_agent_socket: None,
                 }
             },
         )
@@ -811,6 +812,7 @@ fn arb_ssh_config_with_identities_only() -> impl Strategy<Value = SshConfig> {
                     sftp_enabled: false,
                     port_forwards: Vec::new(),
                     waypipe: false,
+                    ssh_agent_socket: None,
                 }
             },
         )
@@ -848,6 +850,7 @@ fn arb_ssh_config_with_agent_fingerprint() -> impl Strategy<Value = SshConfig> {
                 sftp_enabled: false,
                 port_forwards: Vec::new(),
                 waypipe: false,
+                ssh_agent_socket: None,
             }
         })
 }
@@ -1005,6 +1008,7 @@ fn arb_ssh_config_with_file_key_source() -> impl Strategy<Value = SshConfig> {
                     sftp_enabled: false,
                     port_forwards: Vec::new(),
                     waypipe: false,
+                    ssh_agent_socket: None,
                 }
             },
         )
@@ -1041,6 +1045,7 @@ fn arb_ssh_config_with_agent_key_source() -> impl Strategy<Value = SshConfig> {
                     sftp_enabled: false,
                     port_forwards: Vec::new(),
                     waypipe: false,
+                    ssh_agent_socket: None,
                 }
             },
         )
@@ -1220,7 +1225,10 @@ fn arb_hoop_command() -> impl Strategy<Value = String> {
         Just("hoop connect my-database --api-url https://app.hoop.dev".to_string()),
         Just("hoop connect prod-server --grpc-url grpc.hoop.dev:8443".to_string()),
         Just("/usr/bin/hoop connect staging".to_string()),
-        Just("hoop connect dev --api-url https://gw.example.com --grpc-url grpc.example.com:443".to_string()),
+        Just(
+            "hoop connect dev --api-url https://gw.example.com --grpc-url grpc.example.com:443"
+                .to_string()
+        ),
     ]
 }
 
@@ -1568,6 +1576,7 @@ fn arb_ssh_config_with_port_forwards() -> impl Strategy<Value = SshConfig> {
             sftp_enabled: false,
             port_forwards,
             waypipe: false,
+            ssh_agent_socket: None,
         })
 }
 
@@ -1623,6 +1632,7 @@ proptest! {
             sftp_enabled: false,
             port_forwards: Vec::new(),
             waypipe: false,
+            ssh_agent_socket: None,
         };
         let args = config.build_command_args();
 
@@ -1697,20 +1707,18 @@ proptest! {
         prop_assert_eq!(&args[1], &config.connection_name, "Second arg must be connection_name");
 
         // Check --api-url flag
-        if let Some(ref url) = config.gateway_url {
-            if !url.is_empty() {
+        if let Some(ref url) = config.gateway_url
+            && !url.is_empty() {
                 let has_api_url = args.windows(2).any(|w| w[0] == "--api-url" && w[1] == *url);
                 prop_assert!(has_api_url, "Non-empty gateway_url must produce --api-url flag. Args: {args:?}");
             }
-        }
 
         // Check --grpc-url flag
-        if let Some(ref url) = config.grpc_url {
-            if !url.is_empty() {
+        if let Some(ref url) = config.grpc_url
+            && !url.is_empty() {
                 let has_grpc_url = args.windows(2).any(|w| w[0] == "--grpc-url" && w[1] == *url);
                 prop_assert!(has_grpc_url, "Non-empty grpc_url must produce --grpc-url flag. Args: {args:?}");
             }
-        }
 
         // Custom args must appear at the end
         if !custom_args.is_empty() {

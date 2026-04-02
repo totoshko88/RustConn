@@ -166,7 +166,7 @@ pub async fn establish_connection(
 
         // Extract server public key from certificate
         let server_public_key = ironrdp_tls::extract_tls_server_public_key(&server_cert)
-            .map(|k| k.to_vec())
+            .map(<[u8]>::to_vec)
             .unwrap_or_default();
 
         let upgraded = ironrdp_tokio::mark_as_upgraded(should_upgrade, &mut connector);

@@ -97,17 +97,16 @@ pub fn cmd_show(config_path: Option<&Path>, name: &str) -> Result<(), CliError> 
         }
         rustconn_core::models::ProtocolConfig::ZeroTrust(ref zt_config) => {
             println!("  Provider: {}", zt_config.provider);
-            match zt_config.provider_config {
-                rustconn_core::models::ZeroTrustProviderConfig::HoopDev(ref cfg) => {
-                    println!("  Connection Name: {}", cfg.connection_name);
-                    if let Some(ref url) = cfg.gateway_url {
-                        println!("  Gateway URL: {url}");
-                    }
-                    if let Some(ref url) = cfg.grpc_url {
-                        println!("  gRPC URL: {url}");
-                    }
+            if let rustconn_core::models::ZeroTrustProviderConfig::HoopDev(ref cfg) =
+                zt_config.provider_config
+            {
+                println!("  Connection Name: {}", cfg.connection_name);
+                if let Some(ref url) = cfg.gateway_url {
+                    println!("  Gateway URL: {url}");
                 }
-                _ => {}
+                if let Some(ref url) = cfg.grpc_url {
+                    println!("  gRPC URL: {url}");
+                }
             }
             if !zt_config.custom_args.is_empty() {
                 println!("  Custom Args: {}", zt_config.custom_args.join(" "));

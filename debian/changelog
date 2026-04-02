@@ -4,7 +4,7 @@ rustconn (0.10.9-1) unstable; urgency=medium
   * Corrected: v0.9.11 incorrectly stated Flatpak uses --device=serial;
     the actual permission is --device=all (required for serial port access)
 
- -- Anton Isaiev <totoshko88@gmail.com>  Mon, 31 Mar 2026 12:00:00 +0000
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 02 Apr 2026 12:00:00 +0000
 
 rustconn (0.10.8-1) unstable; urgency=medium
 

@@ -86,6 +86,7 @@ pub fn get_protocol_string(config: &rustconn_core::ProtocolConfig) -> String {
                 rustconn_core::models::ZeroTrustProvider::Teleport => "teleport",
                 rustconn_core::models::ZeroTrustProvider::TailscaleSsh => "tailscale",
                 rustconn_core::models::ZeroTrustProvider::Boundary => "boundary",
+                rustconn_core::models::ZeroTrustProvider::HoopDev => "hoop",
                 rustconn_core::models::ZeroTrustProvider::Generic => "generic",
             };
             format!("zerotrust:{provider}")

@@ -13,10 +13,9 @@ use uuid::Uuid;
 /// Creates a fresh `ConnectionManager` backed by a temp directory.
 /// Returns the manager, temp dir (must be kept alive), and Tokio runtime.
 fn create_test_manager() -> (ConnectionManager, TempDir, tokio::runtime::Runtime) {
-    let runtime = tokio::runtime::Runtime::new()
-        .expect("Tokio runtime creation should never fail in tests");
-    let temp_dir = TempDir::new()
-        .expect("TempDir creation should never fail in tests");
+    let runtime =
+        tokio::runtime::Runtime::new().expect("Tokio runtime creation should never fail in tests");
+    let temp_dir = TempDir::new().expect("TempDir creation should never fail in tests");
     let config_manager = ConfigManager::with_config_dir(temp_dir.path().to_path_buf());
     let manager = runtime.block_on(async {
         ConnectionManager::new(config_manager)
@@ -191,7 +190,7 @@ proptest! {
             prop_assert_eq!(
                 child.parent_id,
                 Some(root_id),
-                "Child {cid} should be reparented to root_id"
+                "Child should be reparented to root_id"
             );
         }
 
@@ -202,7 +201,7 @@ proptest! {
             let conn = conn.expect("already checked");
             prop_assert_eq!(
                 conn.group_id, None,
-                "Connection {conn_id} should be ungrouped after delete_group"
+                "Connection should be ungrouped after delete_group"
             );
         }
 

@@ -103,11 +103,12 @@
     <control>touch</control>
   </supports>
   <releases>
-    <release version="0.10.9" date="2026-03-31">
-      <url type="details">https://github.com/totoshko88/RustConn/blob/main/CHANGELOG.md#0109---2026-03-31</url>
+    <release version="0.10.9" date="2026-04-02">
+      <url type="details">https://github.com/totoshko88/RustConn/blob/main/CHANGELOG.md#0109---2026-04-02</url>
       <description>
-        <p>Security hardening, custom SSH agent socket, and changelog correction.</p>
+        <p>Hoop.dev Zero Trust provider, security hardening, custom SSH agent socket, and changelog correction.</p>
         <ul>
+          <li>Hoop.dev Zero Trust provider (11th provider) with CLI detection, GUI fields, Flatpak support</li>
           <li>Custom SSH agent socket override (global and per-connection)</li>
           <li>Orphaned subgroups cascade-delete fix</li>
           <li>Tar archive path traversal defense-in-depth (CVE-2026-33056)</li>

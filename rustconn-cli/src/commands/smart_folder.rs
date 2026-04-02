@@ -164,7 +164,7 @@ fn cmd_smart_folder_create(
         )));
     }
 
-    let filter_protocol = protocol.map(|p| parse_protocol_type(p)).transpose()?;
+    let filter_protocol = protocol.map(parse_protocol_type).transpose()?;
 
     let filter_tags = tags
         .map(|t| t.split(',').map(|s| s.trim().to_string()).collect())

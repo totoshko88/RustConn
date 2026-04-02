@@ -538,24 +538,17 @@ fn create_hoop_dev_fields() -> (GtkBox, adw::EntryRow, adw::EntryRow, adw::Entry
         .title(i18n("Connection Name"))
         .build();
     connection_name_row.set_text("");
-    connection_name_row
-        .set_property("placeholder-text", &i18n("e.g., my-database"));
+    connection_name_row.set_property("placeholder-text", &i18n("e.g., my-database"));
     group.add(&connection_name_row);
 
-    let gateway_url_row = adw::EntryRow::builder()
-        .title(i18n("Gateway URL"))
-        .build();
+    let gateway_url_row = adw::EntryRow::builder().title(i18n("Gateway URL")).build();
     gateway_url_row.set_text("");
-    gateway_url_row
-        .set_property("placeholder-text", &i18n("e.g., https://app.hoop.dev"));
+    gateway_url_row.set_property("placeholder-text", &i18n("e.g., https://app.hoop.dev"));
     group.add(&gateway_url_row);
 
-    let grpc_url_row = adw::EntryRow::builder()
-        .title(i18n("gRPC URL"))
-        .build();
+    let grpc_url_row = adw::EntryRow::builder().title(i18n("gRPC URL")).build();
     grpc_url_row.set_text("");
-    grpc_url_row
-        .set_property("placeholder-text", &i18n("e.g., grpc.hoop.dev:8443"));
+    grpc_url_row.set_property("placeholder-text", &i18n("e.g., grpc.hoop.dev:8443"));
     group.add(&grpc_url_row);
 
     let vbox = GtkBox::new(Orientation::Vertical, 0);

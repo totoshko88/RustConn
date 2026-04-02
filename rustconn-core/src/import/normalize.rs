@@ -298,8 +298,7 @@ pub fn looks_like_hostname(s: &str) -> bool {
     }
 
     // Contains dynamic variable syntax ($VAR or ${VAR})
-    if trimmed.contains("${")
-        || (trimmed.contains('$') && trimmed.chars().any(|c| c.is_alphabetic()))
+    if trimmed.contains("${") || (trimmed.contains('$') && trimmed.chars().any(char::is_alphabetic))
     {
         return true;
     }

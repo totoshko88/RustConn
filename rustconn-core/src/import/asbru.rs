@@ -567,8 +567,7 @@ impl AsbruImporter {
         // Check environments first
         if let Some(environments) = raw_config.get("environments")
             && let Some(env_map) = environments.as_mapping()
-            && let Some(entry_value) =
-                env_map.get(&serde_yaml::Value::String(entry_key.to_string()))
+            && let Some(entry_value) = env_map.get(serde_yaml::Value::String(entry_key.to_string()))
             && let Ok(entry) = serde_yaml::from_value::<AsbruEntry>(entry_value.clone())
         {
             return entry.pass.or(entry.password).filter(|p| !p.is_empty());

@@ -120,10 +120,7 @@ impl Protocol for VncProtocol {
                     "-proxyserver",
                     "-listen",
                 ];
-                if dangerous_prefixes
-                    .iter()
-                    .any(|p| lower.starts_with(p))
-                {
+                if dangerous_prefixes.iter().any(|p| lower.starts_with(p)) {
                     tracing::warn!(arg = %arg, "Blocked dangerous VNC custom arg");
                     continue;
                 }

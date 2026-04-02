@@ -19,7 +19,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::i18n::i18n;
-use rustconn_core::sftp::{validate_socket_path, SocketPathValidation};
+use rustconn_core::sftp::{SocketPathValidation, validate_socket_path};
 
 /// Return type for SSH options creation
 ///

@@ -942,9 +942,9 @@ mod provider_persistence_unit_tests {
 /// - `grpc_url`: `None` or a host:port string
 fn arb_hoop_dev_config() -> impl Strategy<Value = rustconn_core::models::HoopDevConfig> {
     (
-        "[a-zA-Z0-9_-]{1,50}",                                          // connection_name
-        prop::option::of("https?://[a-z0-9.-]{1,30}(:[0-9]{2,5})?"),    // gateway_url
-        prop::option::of("[a-z0-9.-]{1,30}:[0-9]{2,5}"),                 // grpc_url
+        "[a-zA-Z0-9_-]{1,50}",                                       // connection_name
+        prop::option::of("https?://[a-z0-9.-]{1,30}(:[0-9]{2,5})?"), // gateway_url
+        prop::option::of("[a-z0-9.-]{1,30}:[0-9]{2,5}"),             // grpc_url
     )
         .prop_map(|(connection_name, gateway_url, grpc_url)| {
             rustconn_core::models::HoopDevConfig {
@@ -1061,7 +1061,10 @@ mod hoop_dev_tests {
     fn test_hoop_detection_returns_valid_info() {
         let info = detect_hoop();
         // Name should always be set regardless of installation status
-        assert!(!info.name.is_empty(), "Hoop.dev client name must not be empty");
+        assert!(
+            !info.name.is_empty(),
+            "Hoop.dev client name must not be empty"
+        );
 
         if info.installed {
             assert!(info.path.is_some(), "Installed hoop must have a path");
@@ -1076,14 +1079,20 @@ mod hoop_dev_tests {
     #[test]
     fn test_hoop_downloadable_component() {
         let component = rustconn_core::cli_download::get_component("hoop");
-        assert!(component.is_some(), "hoop component must exist in DOWNLOADABLE_COMPONENTS");
+        assert!(
+            component.is_some(),
+            "hoop component must exist in DOWNLOADABLE_COMPONENTS"
+        );
 
         let c = component.expect("checked above");
         assert_eq!(c.id, "hoop");
         assert_eq!(c.name, "Hoop.dev");
         assert_eq!(c.binary_name, "hoop");
         assert_eq!(c.install_subdir, "hoop");
-        assert_eq!(c.category, rustconn_core::cli_download::ComponentCategory::ZeroTrust);
+        assert_eq!(
+            c.category,
+            rustconn_core::cli_download::ComponentCategory::ZeroTrust
+        );
         assert!(c.works_in_sandbox, "hoop should work in sandbox");
         assert!(c.download_url.is_some(), "hoop must have a download URL");
     }

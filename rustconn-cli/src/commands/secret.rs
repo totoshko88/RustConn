@@ -489,7 +489,7 @@ fn cmd_secret_set(
             let backend = LibSecretBackend::new("rustconn");
             let creds = Credentials {
                 username: Some(username_value.clone()),
-                password: Some(password_value.clone()),
+                password: Some(password_value),
                 key_passphrase: None,
                 domain: connection.domain.clone(),
             };
@@ -554,7 +554,7 @@ fn cmd_secret_set(
             let backend = BitwardenBackend::new();
             let creds = Credentials {
                 username: Some(username_value.clone()),
-                password: Some(password_value.clone()),
+                password: Some(password_value),
                 key_passphrase: None,
                 domain: connection.domain.clone(),
             };
@@ -579,7 +579,7 @@ fn cmd_secret_set(
             let backend = OnePasswordBackend::new();
             let creds = Credentials {
                 username: Some(username_value.clone()),
-                password: Some(password_value.clone()),
+                password: Some(password_value),
                 key_passphrase: None,
                 domain: connection.domain.clone(),
             };
@@ -605,7 +605,7 @@ fn cmd_secret_set(
             let backend = PassboltBackend::new();
             let creds = Credentials {
                 username: Some(username_value.clone()),
-                password: Some(password_value.clone()),
+                password: Some(password_value),
                 key_passphrase: None,
                 domain: connection.domain.clone(),
             };
@@ -631,7 +631,7 @@ fn cmd_secret_set(
             let backend = create_pass_backend(&settings);
             let creds = Credentials {
                 username: Some(username_value.clone()),
-                password: Some(password_value.clone()),
+                password: Some(password_value),
                 key_passphrase: None,
                 domain: connection.domain.clone(),
             };

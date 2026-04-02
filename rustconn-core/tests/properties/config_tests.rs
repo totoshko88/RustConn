@@ -110,6 +110,7 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
                     sftp_enabled: false,
                     port_forwards: Vec::new(),
                     waypipe: false,
+                    ssh_agent_socket: None,
                 }
             },
         )
@@ -501,6 +502,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                     monitoring: rustconn_core::MonitoringSettings::default(),
                     highlight_rules: Vec::new(),
                     smart_folders: Vec::new(),
+                    ssh_agent_socket: None,
                 }
             },
         )

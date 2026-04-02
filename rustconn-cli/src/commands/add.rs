@@ -199,7 +199,8 @@ fn create_connection(
             // ZeroTrust connections are handled by create_zerotrust_connection()
             // before this function is called
             return Err(CliError::Config(
-                "Zero Trust connections require --provider. Use --protocol zt --provider hoop_dev".into(),
+                "Zero Trust connections require --provider. Use --protocol zt --provider hoop_dev"
+                    .into(),
             ));
         }
         ProtocolType::Telnet => {

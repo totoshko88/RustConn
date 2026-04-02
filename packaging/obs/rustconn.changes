@@ -1,5 +1,5 @@
 -------------------------------------------------------------------
-Mon Mar 31 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.9
+Wed Apr 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.9
 
 - See CHANGELOG.md for full release notes
 - Corrected: v0.9.11 incorrectly stated Flatpak uses --device=serial;

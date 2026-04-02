@@ -146,7 +146,7 @@ impl CsvExporter {
         let mut output = String::new();
 
         // Header row
-        let headers: Vec<&str> = fields.iter().map(|f| f.header()).collect();
+        let headers: Vec<&str> = fields.iter().map(CsvExportField::header).collect();
         output.push_str(&headers.join(&delimiter.to_string()));
         output.push('\n');
 

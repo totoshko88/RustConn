@@ -35,6 +35,7 @@ pub fn sample_ssh_connection_with_key() -> Connection {
         sftp_enabled: false,
         port_forwards: Vec::new(),
         waypipe: false,
+        ssh_agent_socket: None,
     };
 
     let mut conn = Connection::new(
@@ -71,6 +72,7 @@ pub fn sample_ssh_connection_custom_port() -> Connection {
         sftp_enabled: false,
         port_forwards: Vec::new(),
         waypipe: false,
+        ssh_agent_socket: None,
     };
 
     let mut conn = Connection::new(
@@ -105,6 +107,7 @@ pub fn sample_ssh_connection_with_proxy() -> Connection {
         sftp_enabled: false,
         port_forwards: Vec::new(),
         waypipe: false,
+        ssh_agent_socket: None,
     };
 
     let mut conn = Connection::new(

@@ -174,20 +174,20 @@ impl CsvImporter {
 
         let Some(host) = get(mapping.host_col).map(String::from) else {
             result.add_skipped(SkippedEntry::with_location(
-                name.clone(),
+                name,
                 "Missing required field: host",
                 format!("row {}", row_idx + 1),
             ));
             return;
         };
 
-        let protocol_type = match mapping.protocol_col.and_then(|i| get(i)) {
+        let protocol_type = match mapping.protocol_col.and_then(&get) {
             Some(proto_str) => {
                 if let Some(pt) = parse_protocol(proto_str) {
                     pt
                 } else {
                     result.add_skipped(SkippedEntry::with_location(
-                        name.clone(),
+                        name,
                         format!("Unrecognized protocol: {proto_str}"),
                         format!("row {}", row_idx + 1),
                     ));
@@ -199,19 +199,19 @@ impl CsvImporter {
 
         let port = mapping
             .port_col
-            .and_then(|i| get(i))
+            .and_then(&get)
             .and_then(|s| s.parse::<u16>().ok())
             .unwrap_or_else(|| protocol_type.default_port());
 
         let mut conn = Connection::new(name, host, port, default_protocol_config(protocol_type));
 
-        if let Some(username) = mapping.username_col.and_then(|i| get(i)) {
+        if let Some(username) = mapping.username_col.and_then(&get) {
             conn.username = Some(username.to_string());
         }
-        if let Some(desc) = mapping.description_col.and_then(|i| get(i)) {
+        if let Some(desc) = mapping.description_col.and_then(&get) {
             conn.description = Some(desc.to_string());
         }
-        if let Some(tags_str) = mapping.tags_col.and_then(|i| get(i)) {
+        if let Some(tags_str) = mapping.tags_col.and_then(&get) {
             conn.tags = tags_str
                 .split(';')
                 .map(str::trim)
@@ -219,7 +219,7 @@ impl CsvImporter {
                 .map(String::from)
                 .collect();
         }
-        if let Some(group_path) = mapping.group_col.and_then(|i| get(i)) {
+        if let Some(group_path) = mapping.group_col.and_then(get) {
             conn.group_id = Some(resolve_group_path(group_path, groups, result));
         }
 

@@ -4,7 +4,7 @@
 //! custom SSH agent socket resolution, validation, and serialization.
 
 use proptest::prelude::*;
-use rustconn_core::sftp::{resolve_ssh_agent_socket, validate_socket_path, SocketPathValidation};
+use rustconn_core::sftp::{SocketPathValidation, resolve_ssh_agent_socket, validate_socket_path};
 
 /// Generates an arbitrary non-empty string suitable for socket paths.
 /// Uses printable ASCII to avoid TOML encoding issues.
@@ -16,10 +16,7 @@ fn arb_nonempty_path() -> impl Strategy<Value = String> {
 
 /// Generates an `Option<String>` that is either `None` or `Some(non-empty path)`.
 fn arb_optional_path() -> impl Strategy<Value = Option<String>> {
-    prop_oneof![
-        Just(None),
-        arb_nonempty_path().prop_map(Some),
-    ]
+    prop_oneof![Just(None), arb_nonempty_path().prop_map(Some),]
 }
 
 // ============================================================================

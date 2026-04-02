@@ -7,7 +7,7 @@ use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, Label, ListBox, Orientation};
 use libadwaita as adw;
-use rustconn_core::sftp::{validate_socket_path, SocketPathValidation};
+use rustconn_core::sftp::{SocketPathValidation, validate_socket_path};
 use rustconn_core::ssh_agent::SshAgentManager;
 use std::cell::RefCell;
 use std::path::Path;
@@ -27,8 +27,8 @@ pub fn create_ssh_agent_page() -> (
     gtk4::Widget,
     Label,
     Button,
-    ListBox,            // available_keys_list
-    adw::EntryRow,      // custom_socket_entry
+    ListBox,       // available_keys_list
+    adw::EntryRow, // custom_socket_entry
 ) {
     let page = adw::PreferencesPage::builder()
         .title(i18n("SSH Agent"))
@@ -91,8 +91,9 @@ pub fn create_ssh_agent_page() -> (
         .build();
     custom_socket_entry.set_show_apply_button(false);
     // Subtitle via tooltip since EntryRow doesn't have .set_subtitle()
-    custom_socket_entry
-        .set_tooltip_text(Some(&i18n("Overrides auto-detected SSH_AUTH_SOCK for all connections")));
+    custom_socket_entry.set_tooltip_text(Some(&i18n(
+        "Overrides auto-detected SSH_AUTH_SOCK for all connections",
+    )));
     // Use the text property's placeholder
     custom_socket_entry.set_text("");
     // Set placeholder via the underlying editable

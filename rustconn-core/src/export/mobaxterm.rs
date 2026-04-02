@@ -165,7 +165,7 @@ impl MobaXtermExporter {
             // Color depth
             params[28] = rdp_config
                 .color_depth
-                .map(|d| Self::color_depth_to_moba_id(d))
+                .map(Self::color_depth_to_moba_id)
                 .unwrap_or_else(|| "0".to_string()); // Auto
         }
 
