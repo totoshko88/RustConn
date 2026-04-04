@@ -136,6 +136,7 @@ impl AnsibleInventoryImporter {
     }
 
     /// Parses a host line from INI inventory
+    #[allow(clippy::unused_self)]
     fn parse_host_line(
         &self,
         line: &str,
@@ -324,6 +325,7 @@ impl AnsibleInventoryImporter {
     }
 
     /// Processes YAML hosts section
+    #[allow(clippy::unused_self)]
     fn process_yaml_hosts(
         &self,
         hosts: &serde_yaml::Value,

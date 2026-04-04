@@ -103,6 +103,19 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.10.10" date="2026-04-04">
+      <url type="details">https://github.com/totoshko88/RustConn/blob/main/CHANGELOG.md#01010---2026-04-04</url>
+      <description>
+        <p>Flatpak sandbox permissions cleanup, HIG improvements, and internal quality.</p>
+        <ul>
+          <li>Removed extra Flatpak sandbox permissions rejected by Flathub lint review</li>
+          <li>Added Flatpak Sandbox Overrides section to User Guide with manual override instructions</li>
+          <li>Bulk delete dialog migrated to AdwAlertDialog (GNOME HIG)</li>
+          <li>Background thread result delivery uses event-driven channel instead of polling</li>
+          <li>Added 14 unit tests for vault credential key generation</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.10.9" date="2026-04-02">
       <url type="details">https://github.com/totoshko88/RustConn/blob/main/CHANGELOG.md#0109---2026-04-02</url>
       <description>

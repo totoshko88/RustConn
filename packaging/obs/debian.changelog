@@ -1,3 +1,12 @@
+rustconn (0.10.10-1) unstable; urgency=medium
+
+  * Flatpak: removed extra sandbox permissions rejected by Flathub lint
+    (home/.hoop, xdg-run/gnupg, bitwarden data, xdg-run/ssh-agent);
+    users can add them manually via flatpak override
+  * User Guide: added Flatpak Sandbox Overrides section
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Sat, 04 Apr 2026 12:00:00 +0000
+
 rustconn (0.10.9-1) unstable; urgency=medium
 
   * See CHANGELOG.md for full release notes

@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Sat Apr 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.10
+
+- Flatpak: removed extra sandbox permissions rejected by Flathub lint
+  (home/.hoop, xdg-run/gnupg, bitwarden data, xdg-run/ssh-agent);
+  users can add them manually via flatpak override
+- User Guide: added Flatpak Sandbox Overrides section
+
+-------------------------------------------------------------------
 Wed Apr 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.9
 
 - See CHANGELOG.md for full release notes

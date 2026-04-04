@@ -26,14 +26,8 @@ finish-args:
   - --filesystem=home/.config/gcloud:ro
   - --filesystem=home/.azure:ro
   - --filesystem=home/.kube:ro
-  # Hoop.dev CLI config and access tokens
-  - --filesystem=home/.hoop:ro
   # SSH agent socket
   - --socket=ssh-auth
-  # Alternative SSH agent sockets (KeePassXC, Bitwarden, GPG agent)
-  - --filesystem=xdg-run/gnupg:ro
-  - --filesystem=home/.var/app/com.bitwarden.desktop/data:ro
-  - --filesystem=xdg-run/ssh-agent:ro
   # D-Bus access for secret service (GNOME Keyring, KWallet)
   - --talk-name=org.freedesktop.secrets
   - --talk-name=org.kde.kwalletd5
@@ -287,7 +281,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/totoshko88/RustConn.git
-        tag: v0.10.9
+        tag: v0.10.10
         x-checker-data:
           type: git
           tag-pattern: ^v([\d.]+)$

@@ -72,6 +72,7 @@ impl PassBackend {
     ///
     /// Structure: rustconn/<connection_id>/<field>
     /// Where field is one of: username, password, key_passphrase, domain
+    #[allow(clippy::unused_self)]
     fn build_pass_path(&self, connection_id: &str, field: &str) -> String {
         // Sanitize connection_id to prevent path traversal (e.g. "../../other")
         let safe_id = connection_id.replace(['/', '\\', '.'], "_");

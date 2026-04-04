@@ -28,7 +28,7 @@ pub struct UpdateParams<'a> {
 }
 
 /// Update connection command handler
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::needless_pass_by_value, clippy::too_many_lines)]
 pub fn cmd_update(config_path: Option<&Path>, params: UpdateParams<'_>) -> Result<(), CliError> {
     let config_manager = create_config_manager(config_path)?;
 

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.10] - 2026-04-04
+
+### Changed
+- **Flatpak: removed extra sandbox permissions rejected by Flathub lint** — reverted `--filesystem=home/.hoop:ro`, `--filesystem=xdg-run/gnupg:ro`, `--filesystem=home/.var/app/com.bitwarden.desktop/data:ro`, and `--filesystem=xdg-run/ssh-agent:ro` from Flatpak and Flathub manifests; these permissions are now added manually by users via `flatpak override` after installation (see [Flatpak Sandbox Overrides](docs/USER_GUIDE.md#flatpak-sandbox-overrides)); prompted by [flathub-infra/flatpak-builder-lint#972](https://github.com/flathub-infra/flatpak-builder-lint/pull/972#pullrequestreview-4051168156)
+
+### Added
+- **User Guide: Flatpak Sandbox Overrides section** — documents how to add filesystem permissions for alternative SSH agent sockets (KeePassXC, Bitwarden, GPG agent, 1Password) and Hoop.dev CLI config after Flatpak installation ([User Guide → Flatpak Sandbox Overrides](docs/USER_GUIDE.md#flatpak-sandbox-overrides))
+
+### Improved
+- **Bulk delete dialog migrated to AdwAlertDialog** — replaced custom `adw::Window` with `adw::AlertDialog` using `set_close_response("cancel")` and `ResponseAppearance::Destructive`, following GNOME HIG for destructive confirmation dialogs
+- **Background thread result delivery** — `spawn_blocking_with_callback` now uses event-driven `glib::MainContext::channel()` instead of 16ms polling timer, reducing unnecessary main loop wake-ups
+- **vault_ops unit tests** — added 14 tests for `select_backend_for_load` (8 backend selection scenarios including KeePass fallback logic) and `generate_store_key` (6 key format scenarios across LibSecret, Bitwarden, 1Password, Pass backends)
+
+### Dependencies
+- **Updated**: cc 1.2.58→1.2.59, coreaudio-rs 0.14.0→0.14.1, indexmap 2.13.0→2.13.1, libz-sys 1.1.25→1.1.26, semver 1.0.27→1.0.28, tokio 1.50.0→1.51.0, tokio-macros 2.6.1→2.7.0, writeable 0.6.2→0.6.3, yuv 0.8.12→0.8.13
+- **CLI downloads** — TigerVNC 1.16.0→1.16.1
+
 ## [0.10.9] - 2026-04-02
 
 ### Added

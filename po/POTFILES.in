@@ -63,6 +63,7 @@ rustconn/src/sidebar/filter.rs
 rustconn/src/sidebar_ui.rs
 rustconn/src/terminal/mod.rs
 rustconn/src/validation.rs
+rustconn/src/vault_ops.rs
 rustconn/src/empty_state.rs
 rustconn/src/dashboard.rs
 rustconn/src/automation.rs

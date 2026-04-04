@@ -30,6 +30,7 @@ use crate::cli::Commands;
 use crate::error::CliError;
 
 /// Dispatch a CLI command to the appropriate handler.
+#[allow(clippy::too_many_lines)]
 pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), CliError> {
     match command {
         Commands::List {

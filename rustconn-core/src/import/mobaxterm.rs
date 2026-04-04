@@ -236,6 +236,7 @@ impl MobaXtermImporter {
     }
 
     /// Parses an SSH/SFTP session.
+    #[allow(clippy::unused_self)]
     fn parse_ssh_session(
         &self,
         name: &str,
@@ -329,6 +330,7 @@ impl MobaXtermImporter {
     }
 
     /// Parses an RDP session.
+    #[allow(clippy::unused_self)]
     fn parse_rdp_session(
         &self,
         name: &str,
@@ -413,6 +415,7 @@ impl MobaXtermImporter {
     }
 
     /// Parses a Telnet session.
+    #[allow(clippy::unused_self)]
     fn parse_telnet_session(
         &self,
         name: &str,
@@ -445,6 +448,7 @@ impl MobaXtermImporter {
     }
 
     /// Parses a VNC session.
+    #[allow(clippy::unused_self)]
     fn parse_vnc_session(
         &self,
         name: &str,

@@ -367,6 +367,7 @@ impl SearchEngine {
     }
 
     /// Finds substring position using case-insensitive comparison without allocation
+    #[allow(clippy::unused_self)]
     fn find_case_insensitive(&self, needle: &str, haystack: &str) -> Option<usize> {
         let needle_len = needle.len();
         let haystack_len = haystack.len();
@@ -545,6 +546,7 @@ impl SearchEngine {
     }
 
     /// Checks if a connection passes all filters in the query
+    #[allow(clippy::unused_self)]
     fn passes_filters(
         &self,
         query: &SearchQuery,
@@ -689,6 +691,7 @@ impl SearchEngine {
     }
 
     /// Core fuzzy character matching algorithm
+    #[allow(clippy::unused_self)]
     fn fuzzy_score_chars(
         &self,
         query_chars: impl Iterator<Item = char>,

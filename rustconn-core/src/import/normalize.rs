@@ -172,6 +172,7 @@ impl ImportNormalizer {
     }
 
     /// Deduplicates groups with same name and parent, returns remap of old->new IDs
+    #[allow(clippy::unused_self)]
     fn deduplicate_groups(&self, groups: &mut Vec<ConnectionGroup>) -> HashMap<Uuid, Uuid> {
         let mut remap: HashMap<Uuid, Uuid> = HashMap::new();
         let mut seen: HashMap<(String, Option<Uuid>), Uuid> = HashMap::new();

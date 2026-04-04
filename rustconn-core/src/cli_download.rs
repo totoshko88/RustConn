@@ -462,8 +462,8 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         install_method: InstallMethod::Download,
         // SourceForge direct download URL (follows redirects)
         download_url: Some(
-            "https://sourceforge.net/projects/tigervnc/files/stable/1.16.0/\
-             tigervnc-1.16.0.x86_64.tar.gz/download",
+            "https://sourceforge.net/projects/tigervnc/files/stable/1.16.1/\
+             tigervnc-1.16.1.x86_64.tar.gz/download",
         ),
         aarch64_url: None,
         checksum: ChecksumPolicy::Static(
@@ -473,7 +473,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         size_hint: "~5 MB",
         binary_name: "vncviewer",
         install_subdir: "tigervnc",
-        pinned_version: Some("1.16.0"),
+        pinned_version: Some("1.16.1"),
         works_in_sandbox: false,
     },
     // Zero Trust CLIs

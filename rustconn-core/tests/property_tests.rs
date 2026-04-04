@@ -13,6 +13,7 @@
 #![allow(clippy::field_reassign_with_default)]
 #![allow(clippy::single_component_path_imports)]
 #![allow(clippy::use_self)]
+#![allow(clippy::needless_pass_by_value)]
 #![allow(clippy::redundant_closure)]
 #![allow(clippy::redundant_closure_for_method_calls)]
 #![allow(clippy::expect_fun_call)]

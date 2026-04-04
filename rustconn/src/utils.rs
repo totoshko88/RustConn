@@ -256,44 +256,18 @@ where
         let _ = tx.send(result);
     });
 
-    // Use a recursive polling function to check for results
-    poll_for_result(rx, callback);
-}
-
-/// Internal helper to poll for results from a background thread.
-///
-/// Uses `timeout_add_local` with a 16 ms interval (~60 fps) instead of
-/// `idle_add_local_once` to avoid busy-spinning the main loop when the
-/// background thread has not finished yet.
-fn poll_for_result<T, C>(rx: std::sync::mpsc::Receiver<T>, callback: C)
-where
-    T: Send + 'static,
-    C: FnOnce(T) + 'static,
-{
-    // Wrap in Option so the FnOnce callback can be taken out of the FnMut closure.
     let callback = std::cell::Cell::new(Some(callback));
-    let rx = std::cell::Cell::new(Some(rx));
-
+    // Poll at 16ms (~60fps) for the result from the background thread
     gtk4::glib::timeout_add_local(std::time::Duration::from_millis(16), move || {
-        let Some(receiver) = rx.take() else {
-            return gtk4::glib::ControlFlow::Break;
-        };
-        match receiver.try_recv() {
+        match rx.try_recv() {
             Ok(result) => {
                 if let Some(cb) = callback.take() {
                     cb(result);
                 }
                 gtk4::glib::ControlFlow::Break
             }
-            Err(std::sync::mpsc::TryRecvError::Empty) => {
-                // Not ready yet — put the receiver back and keep polling.
-                rx.set(Some(receiver));
-                gtk4::glib::ControlFlow::Continue
-            }
-            Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                tracing::error!("Background thread disconnected before sending result");
-                gtk4::glib::ControlFlow::Break
-            }
+            Err(std::sync::mpsc::TryRecvError::Empty) => gtk4::glib::ControlFlow::Continue,
+            Err(std::sync::mpsc::TryRecvError::Disconnected) => gtk4::glib::ControlFlow::Break,
         }
     });
 }
@@ -322,56 +296,45 @@ where
         let _ = tx.send(result);
     });
 
-    poll_for_result_with_timeout(rx, callback, start, timeout);
-}
+    let callback = std::rc::Rc::new(std::cell::RefCell::new(Some(
+        Box::new(callback) as Box<dyn FnOnce(Option<T>)>
+    )));
 
-/// Internal helper to poll for results with timeout.
-///
-/// Uses `timeout_add_local` with a 16 ms interval (~60 fps) instead of
-/// `idle_add_local_once` to avoid busy-spinning the main loop.
-fn poll_for_result_with_timeout<T, C>(
-    rx: std::sync::mpsc::Receiver<T>,
-    callback: C,
-    start: std::time::Instant,
-    timeout: std::time::Duration,
-) where
-    T: Send + 'static,
-    C: FnOnce(Option<T>) + 'static,
-{
-    let callback = std::cell::Cell::new(Some(callback));
-    let rx = std::cell::Cell::new(Some(rx));
-
+    // Poll at 16ms for result or timeout
     gtk4::glib::timeout_add_local(std::time::Duration::from_millis(16), move || {
+        // Check if callback was already consumed
+        if callback.borrow().is_none() {
+            return gtk4::glib::ControlFlow::Break;
+        }
+
+        // Try to receive result from background thread
+        match rx.try_recv() {
+            Ok(result) => {
+                if let Some(cb) = callback.borrow_mut().take() {
+                    cb(Some(result));
+                }
+                return gtk4::glib::ControlFlow::Break;
+            }
+            Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                // Thread panicked or dropped sender without sending
+                if let Some(cb) = callback.borrow_mut().take() {
+                    cb(None);
+                }
+                return gtk4::glib::ControlFlow::Break;
+            }
+            Err(std::sync::mpsc::TryRecvError::Empty) => {}
+        }
+
+        // Check timeout
         if start.elapsed() > timeout {
             tracing::warn!("Background operation timed out after {:?}", timeout);
-            if let Some(cb) = callback.take() {
+            if let Some(cb) = callback.borrow_mut().take() {
                 cb(None);
             }
             return gtk4::glib::ControlFlow::Break;
         }
 
-        let Some(receiver) = rx.take() else {
-            return gtk4::glib::ControlFlow::Break;
-        };
-        match receiver.try_recv() {
-            Ok(result) => {
-                if let Some(cb) = callback.take() {
-                    cb(Some(result));
-                }
-                gtk4::glib::ControlFlow::Break
-            }
-            Err(std::sync::mpsc::TryRecvError::Empty) => {
-                rx.set(Some(receiver));
-                gtk4::glib::ControlFlow::Continue
-            }
-            Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                tracing::error!("Background thread disconnected before sending result");
-                if let Some(cb) = callback.take() {
-                    cb(None);
-                }
-                gtk4::glib::ControlFlow::Break
-            }
-        }
+        gtk4::glib::ControlFlow::Continue
     });
 }
 

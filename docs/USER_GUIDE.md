@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.10.9** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.10.10** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -50,7 +50,8 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 36. [Frequently Asked Questions](#frequently-asked-questions)
 37. [Migration Guide](#migration-guide)
 38. [Troubleshooting](#troubleshooting)
-39. [Security Best Practices](#security-best-practices)
+39. [Flatpak Sandbox Overrides](#flatpak-sandbox-overrides)
+40. [Security Best Practices](#security-best-practices)
 
 ---
 
@@ -3381,9 +3382,8 @@ If features are not working in the Flatpak build:
 1. **File access:** Flatpak has limited filesystem access. Use `flatpak override --user --filesystem=home io.github.totoshko88.RustConn` for broader access
 2. **SSH agent:** The Flatpak build forwards `SSH_AUTH_SOCK` from the host via `--socket=ssh-auth`. However, this hard-overwrites `SSH_AUTH_SOCK` inside the sandbox, which means:
    - Custom socket paths set in Settings → SSH Agent are limited to paths accessible inside the sandbox (`~/.var/app/...`, `$XDG_RUNTIME_DIR/...`)
-   - 1Password SSH agent socket (`~/.1password/agent.sock`) is **not** mounted by default — add it via `flatpak override --user --filesystem=home/.1password:ro io.github.totoshko88.RustConn`
+   - Alternative SSH agent sockets (1Password, KeePassXC, Bitwarden, GPG agent) are **not** mounted by default — add them manually via `flatpak override`, see [Flatpak Sandbox Overrides](#flatpak-sandbox-overrides)
    - A sandbox-internal `ssh-agent` is not accessible to host processes (e.g., file managers launched via `xdg-open`)
-   - KeePassXC agent socket (`$XDG_RUNTIME_DIR/ssh-agent/`) and Bitwarden agent socket (`~/.var/app/com.bitwarden.desktop/data/`) are pre-configured in the Flatpak manifest
 3. **Serial devices:** Requires `--device=all` permission
 4. **CLI tools:** Host-installed binaries (bw, kubectl, pass, op) are NOT visible inside the sandbox. Use Menu → Flatpak Components to install them
 5. **Secret Service:** GNOME Keyring / KDE Wallet access works via D-Bus portal
@@ -3397,6 +3397,54 @@ If features are not working in the Flatpak build:
 2. Check that the remote host has `uptime`, `free`, `df`, and `cat /proc/loadavg` available
 3. Monitoring uses a separate SSH session — ensure `MaxSessions` in `sshd_config` allows multiple sessions
 4. If metrics show "N/A", the remote command may have timed out — increase the polling interval in Settings → Connection → Monitoring
+
+---
+
+## Flatpak Sandbox Overrides
+
+The Flatpak build ships with a minimal set of sandbox permissions. Some features (alternative SSH agent sockets, Hoop.dev CLI, additional filesystem paths) require manually granting extra permissions via `flatpak override` after installation.
+
+### SSH Agent Sockets
+
+The default Flatpak manifest includes `--socket=ssh-auth`, which forwards the standard `SSH_AUTH_SOCK` from the host. If you use an alternative SSH agent (KeePassXC, Bitwarden, GPG agent, 1Password), you need to grant access to its socket path:
+
+```bash
+# KeePassXC SSH agent socket
+flatpak override --user --filesystem=xdg-run/ssh-agent:ro io.github.totoshko88.RustConn
+
+# Bitwarden SSH agent socket
+flatpak override --user --filesystem=home/.var/app/com.bitwarden.desktop/data:ro io.github.totoshko88.RustConn
+
+# GPG agent socket (for gpg-agent SSH emulation)
+flatpak override --user --filesystem=xdg-run/gnupg:ro io.github.totoshko88.RustConn
+
+# 1Password SSH agent socket
+flatpak override --user --filesystem=home/.1password:ro io.github.totoshko88.RustConn
+```
+
+After adding the override, set the socket path in Settings → SSH Agent (global) or in the connection's SSH tab (per-connection).
+
+### Hoop.dev Zero Trust
+
+Hoop.dev stores CLI config and access tokens in `~/.hoop/`. Grant read access:
+
+```bash
+flatpak override --user --filesystem=home/.hoop:ro io.github.totoshko88.RustConn
+```
+
+### Viewing and Resetting Overrides
+
+```bash
+# List all user overrides for RustConn
+flatpak override --user --show io.github.totoshko88.RustConn
+
+# Reset all user overrides to defaults
+flatpak override --user --reset io.github.totoshko88.RustConn
+```
+
+### Why Manual Overrides?
+
+Flatpak's linting policy ([flatpak-builder-lint](https://github.com/flathub-infra/flatpak-builder-lint)) restricts the set of filesystem permissions that can be shipped in the manifest. Permissions like `xdg-run/gnupg`, `xdg-run/ssh-agent`, and access to other application data directories are flagged during Flathub review. Users who need these features can add them via `flatpak override` without affecting the default sandbox security for everyone else.
 
 ---
 

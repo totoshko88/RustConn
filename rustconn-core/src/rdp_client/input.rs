@@ -725,6 +725,7 @@ pub const fn keyval_to_scancode(keyval: u32) -> Option<RdpScancode> {
 ///
 /// An `Option<RdpScancode>` containing the scancode if mappable.
 #[must_use]
+#[allow(clippy::too_many_lines)]
 pub const fn keycode_to_scancode(keycode: u32) -> Option<RdpScancode> {
     // Linux evdev keycodes are offset by 8 from X11 keycodes
     // and roughly correspond to AT scancodes

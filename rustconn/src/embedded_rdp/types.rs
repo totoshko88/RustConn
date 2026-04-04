@@ -92,6 +92,7 @@ pub struct EmbeddedSharedFolder {
 
 /// RDP connection configuration
 #[derive(Debug, Clone)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct RdpConfig {
     /// Target hostname or IP address
     pub host: String,

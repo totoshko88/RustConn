@@ -403,6 +403,7 @@ impl EmbeddedSpiceWidget {
                 }
 
                 // Fallback: old SpicePixelBuffer path (to_vec copy)
+                #[allow(clippy::items_after_statements)]
                 static WARN_ONCE: std::sync::Once = std::sync::Once::new();
                 WARN_ONCE.call_once(|| {
                     tracing::warn!("SPICE: using fallback SpicePixelBuffer with per-frame to_vec() copy — consider migrating to CairoBackedBuffer");

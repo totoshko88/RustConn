@@ -990,3 +990,131 @@ pub fn generate_store_key(
         format!("rustconn/{identifier}")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rustconn_core::config::{SecretBackendType, SecretSettings};
+
+    fn default_secret_settings(backend: SecretBackendType) -> SecretSettings {
+        SecretSettings {
+            preferred_backend: backend,
+            kdbx_enabled: false,
+            kdbx_path: None,
+            kdbx_key_file: None,
+            kdbx_password: None,
+            enable_fallback: false,
+            ..Default::default()
+        }
+    }
+
+    // ── select_backend_for_load ──────────────────────────────────────
+
+    #[test]
+    fn select_backend_bitwarden() {
+        let s = default_secret_settings(SecretBackendType::Bitwarden);
+        assert_eq!(select_backend_for_load(&s), SecretBackendType::Bitwarden);
+    }
+
+    #[test]
+    fn select_backend_onepassword() {
+        let s = default_secret_settings(SecretBackendType::OnePassword);
+        assert_eq!(select_backend_for_load(&s), SecretBackendType::OnePassword);
+    }
+
+    #[test]
+    fn select_backend_passbolt() {
+        let s = default_secret_settings(SecretBackendType::Passbolt);
+        assert_eq!(select_backend_for_load(&s), SecretBackendType::Passbolt);
+    }
+
+    #[test]
+    fn select_backend_pass() {
+        let s = default_secret_settings(SecretBackendType::Pass);
+        assert_eq!(select_backend_for_load(&s), SecretBackendType::Pass);
+    }
+
+    #[test]
+    fn select_backend_libsecret() {
+        let s = default_secret_settings(SecretBackendType::LibSecret);
+        assert_eq!(select_backend_for_load(&s), SecretBackendType::LibSecret);
+    }
+
+    #[test]
+    fn select_backend_keepass_with_kdbx_enabled() {
+        let s = SecretSettings {
+            preferred_backend: SecretBackendType::KeePassXc,
+            kdbx_enabled: true,
+            kdbx_path: Some(std::path::PathBuf::from("/tmp/test.kdbx")),
+            ..Default::default()
+        };
+        assert_eq!(select_backend_for_load(&s), SecretBackendType::KdbxFile);
+    }
+
+    #[test]
+    fn select_backend_keepass_without_kdbx_falls_back() {
+        let s = SecretSettings {
+            preferred_backend: SecretBackendType::KeePassXc,
+            kdbx_enabled: false,
+            kdbx_path: None,
+            enable_fallback: true,
+            ..Default::default()
+        };
+        assert_eq!(select_backend_for_load(&s), SecretBackendType::LibSecret);
+    }
+
+    #[test]
+    fn select_backend_keepass_no_fallback() {
+        let s = SecretSettings {
+            preferred_backend: SecretBackendType::KeePassXc,
+            kdbx_enabled: false,
+            kdbx_path: None,
+            enable_fallback: false,
+            ..Default::default()
+        };
+        assert_eq!(select_backend_for_load(&s), SecretBackendType::KeePassXc);
+    }
+
+    // ── generate_store_key ───────────────────────────────────────────
+
+    #[test]
+    fn store_key_libsecret_format() {
+        let key = generate_store_key("My Server", "10.0.0.1", "ssh", SecretBackendType::LibSecret);
+        assert_eq!(key, "My Server (ssh)");
+    }
+
+    #[test]
+    fn store_key_libsecret_strips_slashes() {
+        let key = generate_store_key(
+            "Prod/Web-01",
+            "10.0.0.1",
+            "ssh",
+            SecretBackendType::LibSecret,
+        );
+        assert_eq!(key, "Prod-Web-01 (ssh)");
+    }
+
+    #[test]
+    fn store_key_bitwarden_format() {
+        let key = generate_store_key("My Server", "10.0.0.1", "ssh", SecretBackendType::Bitwarden);
+        assert_eq!(key, "rustconn/My Server");
+    }
+
+    #[test]
+    fn store_key_empty_name_falls_back_to_host() {
+        let key = generate_store_key("", "10.0.0.1", "rdp", SecretBackendType::Bitwarden);
+        assert_eq!(key, "rustconn/10.0.0.1");
+    }
+
+    #[test]
+    fn store_key_whitespace_name_falls_back_to_host() {
+        let key = generate_store_key("   ", "10.0.0.1", "rdp", SecretBackendType::OnePassword);
+        assert_eq!(key, "rustconn/10.0.0.1");
+    }
+
+    #[test]
+    fn store_key_pass_format() {
+        let key = generate_store_key("DB Server", "db.local", "ssh", SecretBackendType::Pass);
+        assert_eq!(key, "rustconn/DB Server");
+    }
+}

@@ -8,6 +8,7 @@ use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
 
 /// Show connection details command handler
+#[allow(clippy::too_many_lines)]
 pub fn cmd_show(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
     let config_manager = create_config_manager(config_path)?;
 

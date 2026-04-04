@@ -224,6 +224,7 @@ impl SshConfigImporter {
         result.add_connection(connection);
     }
     /// Extracts recognized SSH options as custom_options for the connection
+    #[allow(clippy::unused_self)]
     fn extract_recognized_options(
         &self,
         options: &HashMap<String, String>,

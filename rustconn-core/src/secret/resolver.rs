@@ -1177,6 +1177,7 @@ impl CredentialResolver {
     }
 
     /// Merges resolved credentials with group overrides (username, domain)
+    #[allow(clippy::unused_self)]
     fn merge_group_credentials(
         &self,
         mut creds: Credentials,

@@ -31,6 +31,7 @@ pub struct AddParams<'a> {
 }
 
 /// Add connection command handler
+#[allow(clippy::needless_pass_by_value)]
 pub fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Result<(), CliError> {
     let (protocol_type, default_port) = parse_protocol(params.protocol)?;
     let port = params.port.unwrap_or(default_port);

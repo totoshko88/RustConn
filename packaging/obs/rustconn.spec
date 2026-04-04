@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.10.9
+Version:        0.10.10
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -226,6 +226,12 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Sat Apr 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.10-0
+- Flatpak: removed extra sandbox permissions rejected by Flathub lint
+  (home/.hoop, xdg-run/gnupg, bitwarden data, xdg-run/ssh-agent);
+  users can add them manually via flatpak override
+- User Guide: added Flatpak Sandbox Overrides section
+
 * Wed Apr 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.9-0
 - See CHANGELOG.md for full release notes
 - Corrected: v0.9.11 incorrectly stated Flatpak uses --device=serial;

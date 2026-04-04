@@ -401,76 +401,29 @@ fn create_bulk_delete_dialog(
     window: &gtk4::Window,
     item_names: &[String],
     summary: &str,
-) -> (adw::Window, gtk4::Button, gtk4::Button) {
-    use gtk4::Label;
-    use gtk4::prelude::*;
+    on_confirm: impl Fn() + 'static,
+) {
+    let body = format!(
+        "{}\n\n{}\n\n{}",
+        i18n_f("Are you sure you want to delete {}?", &[summary]),
+        item_names.join("\n"),
+        i18n("Connections in deleted groups will become ungrouped.")
+    );
 
-    let dialog = adw::Window::builder()
-        .title(i18n("Delete Selected Items?"))
-        .transient_for(window)
-        .modal(true)
-        .default_width(500)
-        .default_height(if item_names.len() > 10 { 400 } else { 300 })
-        .build();
+    let dialog = adw::AlertDialog::new(Some(&i18n("Delete Selected Items?")), Some(&body));
+    dialog.add_response("cancel", &i18n("Cancel"));
+    dialog.add_response("delete", &i18n("Delete All"));
+    dialog.set_default_response(Some("cancel"));
+    dialog.set_close_response("cancel");
+    dialog.set_response_appearance("delete", adw::ResponseAppearance::Destructive);
 
-    let header = adw::HeaderBar::new();
-    let cancel_btn = gtk4::Button::builder().label(&i18n("Cancel")).build();
-    let delete_btn = gtk4::Button::builder()
-        .label(&i18n("Delete All"))
-        .css_classes(["destructive-action"])
-        .build();
-    header.pack_start(&cancel_btn);
-    header.pack_end(&delete_btn);
+    dialog.connect_response(None, move |_, response| {
+        if response == "delete" {
+            on_confirm();
+        }
+    });
 
-    let content = gtk4::Box::new(gtk4::Orientation::Vertical, 12);
-    content.set_margin_top(12);
-    content.set_margin_bottom(12);
-    content.set_margin_start(12);
-    content.set_margin_end(12);
-
-    // Summary label
-    let summary_label = Label::builder()
-        .label(i18n_f("Are you sure you want to delete {}?", &[summary]))
-        .halign(gtk4::Align::Start)
-        .wrap(true)
-        .build();
-    content.append(&summary_label);
-
-    // Scrolled list of items
-    let scrolled = gtk4::ScrolledWindow::builder()
-        .hscrollbar_policy(gtk4::PolicyType::Never)
-        .vscrollbar_policy(gtk4::PolicyType::Automatic)
-        .min_content_height(100)
-        .max_content_height(250)
-        .vexpand(true)
-        .build();
-
-    let items_label = Label::builder()
-        .label(item_names.join("\n"))
-        .halign(gtk4::Align::Start)
-        .valign(gtk4::Align::Start)
-        .wrap(true)
-        .selectable(true)
-        .build();
-    scrolled.set_child(Some(&items_label));
-    content.append(&scrolled);
-
-    // Warning label
-    let warning_label = Label::builder()
-        .label(i18n("Connections in deleted groups will become ungrouped."))
-        .halign(gtk4::Align::Start)
-        .wrap(true)
-        .css_classes(["dim-label"])
-        .build();
-    content.append(&warning_label);
-
-    // Use ToolbarView for proper adw::Window layout
-    let toolbar_view = adw::ToolbarView::new();
-    toolbar_view.add_top_bar(&header);
-    toolbar_view.set_content(Some(&content));
-    dialog.set_content(Some(&toolbar_view));
-
-    (dialog, cancel_btn, delete_btn)
+    dialog.present(Some(window));
 }
 
 /// Performs bulk deletion and shows results
@@ -538,8 +491,6 @@ pub fn delete_selected_connections(
     state: &SharedAppState,
     sidebar: &SharedSidebar,
 ) {
-    use gtk4::prelude::*;
-
     let selected_ids = sidebar.get_selected_ids();
 
     if selected_ids.is_empty() {
@@ -567,25 +518,10 @@ pub fn delete_selected_connections(
     };
 
     // Create dialog
-    let (dialog, cancel_btn, delete_btn) = create_bulk_delete_dialog(window, &item_names, &summary);
-
-    // Connect cancel button
-    let dialog_weak = dialog.downgrade();
-    cancel_btn.connect_clicked(move |_| {
-        if let Some(d) = dialog_weak.upgrade() {
-            d.close();
-        }
-    });
-
-    // Connect delete button
-    let dialog_weak = dialog.downgrade();
     let state_clone = state.clone();
     let sidebar_clone = sidebar.clone();
     let window_clone = window.clone();
-    delete_btn.connect_clicked(move |_| {
-        if let Some(d) = dialog_weak.upgrade() {
-            d.close();
-        }
+    create_bulk_delete_dialog(window, &item_names, &summary, move || {
         perform_bulk_delete(
             &state_clone,
             &sidebar_clone,
@@ -593,8 +529,6 @@ pub fn delete_selected_connections(
             selected_ids.clone(),
         );
     });
-
-    dialog.present();
 }
 
 /// Shows dialog to move selected items to a group (supports both connections and groups)

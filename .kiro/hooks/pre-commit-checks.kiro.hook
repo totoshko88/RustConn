@@ -1,9 +1,9 @@
 {
   "enabled": true,
   "name": "Pre-commit fmt & clippy",
-  "description": "Before git commit or git push, automatically runs cargo fmt and clippy to prevent CI failures",
+  "description": "Before git commit or git push, runs cargo fmt --check and cargo clippy to prevent CI failures",
   "shortName": "pre-commit-checks",
-  "version": "2",
+  "version": "3",
   "when": {
     "type": "preToolUse",
     "toolTypes": ["shell"]
