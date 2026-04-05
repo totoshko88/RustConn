@@ -2,8 +2,10 @@
 
 use adw::prelude::*;
 use gtk4::CheckButton;
+use gtk4::StringList;
 use gtk4::prelude::*;
 use libadwaita as adw;
+use rustconn_core::activity_monitor::{ActivityMonitorDefaults, MonitorMode};
 use rustconn_core::monitoring::MonitoringSettings;
 
 use crate::i18n::i18n;
@@ -29,6 +31,12 @@ pub struct MonitoringPageWidgets {
     pub show_load: CheckButton,
     /// Show system info (distro, kernel, uptime)
     pub show_system_info: CheckButton,
+    /// Activity monitor default mode combo
+    pub activity_mode_combo: adw::ComboRow,
+    /// Activity monitor default quiet period spin
+    pub activity_quiet_period_spin: adw::SpinRow,
+    /// Activity monitor default silence timeout spin
+    pub activity_silence_timeout_spin: adw::SpinRow,
 }
 
 impl MonitoringPageWidgets {
@@ -162,6 +170,41 @@ impl MonitoringPageWidgets {
             sysinfo_clone.set_sensitive(state);
         });
 
+        // === Activity Monitor Group ===
+        let activity_group = adw::PreferencesGroup::builder()
+            .title(i18n("Activity Monitor"))
+            .description(i18n(
+                "Default settings for terminal activity and silence detection",
+            ))
+            .build();
+
+        let mode_items = StringList::new(&[&i18n("Off"), &i18n("Activity"), &i18n("Silence")]);
+        let activity_mode_combo = adw::ComboRow::builder()
+            .title(i18n("Default Mode"))
+            .subtitle(i18n("Monitoring mode applied to new connections"))
+            .model(&mode_items)
+            .selected(0)
+            .build();
+        activity_group.add(&activity_mode_combo);
+
+        let quiet_period_adj = gtk4::Adjustment::new(10.0, 1.0, 300.0, 1.0, 10.0, 0.0);
+        let activity_quiet_period_spin = adw::SpinRow::builder()
+            .title(i18n("Default Quiet Period"))
+            .subtitle(i18n("Seconds of silence before activity notification"))
+            .adjustment(&quiet_period_adj)
+            .build();
+        activity_group.add(&activity_quiet_period_spin);
+
+        let silence_timeout_adj = gtk4::Adjustment::new(30.0, 1.0, 600.0, 1.0, 10.0, 0.0);
+        let activity_silence_timeout_spin = adw::SpinRow::builder()
+            .title(i18n("Default Silence Timeout"))
+            .subtitle(i18n("Seconds of no output before silence notification"))
+            .adjustment(&silence_timeout_adj)
+            .build();
+        activity_group.add(&activity_silence_timeout_spin);
+
+        page.add(&activity_group);
+
         Self {
             page,
             enabled_row,
@@ -172,6 +215,9 @@ impl MonitoringPageWidgets {
             show_network,
             show_load,
             show_system_info,
+            activity_mode_combo,
+            activity_quiet_period_spin,
+            activity_silence_timeout_spin,
         }
     }
 
@@ -211,6 +257,36 @@ impl MonitoringPageWidgets {
             show_network: self.show_network.is_active(),
             show_load: self.show_load.is_active(),
             show_system_info: self.show_system_info.is_active(),
+        }
+    }
+
+    /// Loads activity monitor defaults into UI controls
+    pub fn load_activity_monitor(&self, defaults: &ActivityMonitorDefaults) {
+        let mode_idx = match defaults.mode {
+            MonitorMode::Off => 0,
+            MonitorMode::Activity => 1,
+            MonitorMode::Silence => 2,
+        };
+        self.activity_mode_combo.set_selected(mode_idx);
+        self.activity_quiet_period_spin
+            .set_value(f64::from(defaults.effective_quiet_period()));
+        self.activity_silence_timeout_spin
+            .set_value(f64::from(defaults.effective_silence_timeout()));
+    }
+
+    /// Collects activity monitor defaults from UI controls
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[must_use]
+    pub fn collect_activity_monitor(&self) -> ActivityMonitorDefaults {
+        let mode = match self.activity_mode_combo.selected() {
+            1 => MonitorMode::Activity,
+            2 => MonitorMode::Silence,
+            _ => MonitorMode::Off,
+        };
+        ActivityMonitorDefaults {
+            mode,
+            quiet_period_secs: self.activity_quiet_period_spin.value() as u32,
+            silence_timeout_secs: self.activity_silence_timeout_spin.value() as u32,
         }
     }
 }

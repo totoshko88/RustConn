@@ -13,6 +13,7 @@
 //!
 //! For interior mutability, `RefCell` is used instead of `Mutex` for the same reasons.
 
+use crate::activity_coordinator::ActivityCoordinator;
 use crate::external_window::ExternalWindowManager;
 use crate::monitoring::MonitoringCoordinator;
 use crate::sidebar::ConnectionSidebar;
@@ -55,6 +56,11 @@ pub type SharedExternalWindowManager = Rc<ExternalWindowManager>;
 ///
 /// Uses `Rc` because GTK is single-threaded; no need for `Arc`.
 pub type SharedMonitoring = Rc<MonitoringCoordinator>;
+
+/// Shared activity coordinator type for terminal activity/silence detection
+///
+/// Uses `Rc` because GTK is single-threaded; no need for `Arc`.
+pub type SharedActivityCoordinator = Rc<ActivityCoordinator>;
 
 /// Returns the protocol string for a connection, including provider info for ZeroTrust
 ///

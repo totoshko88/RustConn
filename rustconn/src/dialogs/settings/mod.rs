@@ -730,6 +730,10 @@ impl SettingsDialog {
         // Load monitoring settings
         self.monitoring_widgets.load(&settings.monitoring);
 
+        // Load activity monitor defaults
+        self.monitoring_widgets
+            .load_activity_monitor(&settings.activity_monitor);
+
         // Load global highlight rules
         self.load_highlight_rules(&settings.highlight_rules);
     }
@@ -924,6 +928,7 @@ impl SettingsDialog {
                 history: settings_clone.borrow().history.clone(),
                 keybindings: collect_keybinding_settings(&keybindings_overrides_clone),
                 monitoring: monitoring_widgets_clone.collect(),
+                activity_monitor: monitoring_widgets_clone.collect_activity_monitor(),
                 highlight_rules: highlight_rules_clone
                     .borrow()
                     .iter()

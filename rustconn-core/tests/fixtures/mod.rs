@@ -142,6 +142,8 @@ pub fn sample_rdp_connection_with_domain() -> Connection {
         disable_nla: false,
         clipboard_enabled: true,
         show_local_cursor: true,
+        jiggler_enabled: false,
+        jiggler_interval_secs: 60,
     };
 
     let mut conn = Connection::new(

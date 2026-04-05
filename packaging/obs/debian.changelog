@@ -1,3 +1,13 @@
+rustconn (0.10.11-1) unstable; urgency=medium
+
+  * RDP Mouse Jiggler — prevents idle disconnect with periodic mouse movements
+  * Connect All in Folder — open all connections in a group at once
+  * Copy Username / Copy Password from sidebar context menu
+  * Host Online Check — TCP probe with auto-connect when host comes online
+  * WoL + Auto-Connect — WoL now polls and auto-connects when host is ready
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Sat, 04 Apr 2026 18:00:00 +0000
+
 rustconn (0.10.10-1) unstable; urgency=medium
 
   * Flatpak: removed extra sandbox permissions rejected by Flathub lint

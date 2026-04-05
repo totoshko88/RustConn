@@ -24,6 +24,7 @@
 // Enable missing_docs warning for public API documentation
 #![warn(missing_docs)]
 
+pub mod activity_monitor;
 pub mod automation;
 pub mod cli_download;
 pub mod cluster;
@@ -38,6 +39,7 @@ pub mod export;
 pub mod ffi;
 pub mod flatpak;
 pub mod highlight;
+pub mod host_check;
 pub mod import;
 pub mod models;
 pub mod monitoring;
@@ -74,6 +76,7 @@ pub mod wol;
 // rather than the flat namespace (`rustconn_core::Connection`).
 // =============================================================================
 
+pub use activity_monitor::{ActivityMonitorConfig, ActivityMonitorDefaults, MonitorMode};
 pub use automation::{
     AutomationTemplate, CompiledRule, ConnectionTask, ExpectEngine, ExpectError, ExpectResult,
     ExpectRule, FolderConnectionTracker, KeyElement, KeySequence, KeySequenceError,

@@ -1,5 +1,6 @@
 //! Property-based tests for `RustConn` core library
 
+mod activity_monitor_tests;
 mod async_credential_tests;
 mod batch_processing_tests;
 mod bulk_credential_tests;

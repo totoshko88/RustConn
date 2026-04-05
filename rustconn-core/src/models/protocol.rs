@@ -811,6 +811,10 @@ fn default_true() -> bool {
     true
 }
 
+const fn default_jiggler_interval() -> u32 {
+    60
+}
+
 impl SshConfig {
     /// Builds SSH command arguments based on the configuration
     ///
@@ -1280,6 +1284,12 @@ pub struct RdpConfig {
     /// Show local mouse cursor over embedded viewer (disable to avoid double cursor)
     #[serde(default = "default_true")]
     pub show_local_cursor: bool,
+    /// Enable mouse jiggler to prevent idle disconnect
+    #[serde(default)]
+    pub jiggler_enabled: bool,
+    /// Mouse jiggler interval in seconds (10–600, default: 60)
+    #[serde(default = "default_jiggler_interval")]
+    pub jiggler_interval_secs: u32,
 }
 
 impl RdpConfig {

@@ -207,6 +207,8 @@ pub struct EmbeddedRdpWidget {
     /// Signal handler ID for local clipboard change monitoring (Phase 3)
     #[cfg(feature = "rdp-embedded")]
     clipboard_handler_id: Rc<RefCell<Option<glib::SignalHandlerId>>>,
+    /// Mouse jiggler timer source ID (sends periodic mouse moves to prevent idle disconnect)
+    jiggler_timer: Rc<RefCell<Option<glib::SourceId>>>,
 }
 
 impl EmbeddedRdpWidget {
@@ -371,6 +373,7 @@ impl EmbeddedRdpWidget {
             resize_handler_id: Rc::new(RefCell::new(None)),
             #[cfg(feature = "rdp-embedded")]
             clipboard_handler_id: Rc::new(RefCell::new(None)),
+            jiggler_timer: Rc::new(RefCell::new(None)),
         };
 
         widget.setup_drawing();
@@ -674,7 +677,91 @@ impl EmbeddedRdpWidget {
         *self.state.borrow_mut() = new_state;
         self.drawing_area.queue_draw();
 
+        // Auto-manage jiggler based on connection state
+        match new_state {
+            RdpConnectionState::Connected => {
+                // Check if jiggler is enabled in config
+                if let Some(ref config) = *self.config.borrow()
+                    && config.jiggler_enabled
+                {
+                    self.start_jiggler(config.jiggler_interval_secs);
+                }
+            }
+            RdpConnectionState::Disconnected | RdpConnectionState::Error => {
+                self.stop_jiggler();
+            }
+            RdpConnectionState::Connecting => {}
+        }
+
         with_callback(&self.on_state_changed, |cb| cb(new_state));
+    }
+
+    /// Starts the mouse jiggler timer
+    ///
+    /// Sends a tiny ±1px mouse movement every `interval_secs` seconds to
+    /// prevent the remote session from going idle and disconnecting.
+    /// Uses a toggling offset so the cursor oscillates in place without
+    /// drifting or jumping to the screen center.
+    pub fn start_jiggler(&self, interval_secs: u32) {
+        self.stop_jiggler();
+
+        let interval = interval_secs.clamp(10, 600);
+        let state = self.state.clone();
+        let is_ironrdp = self.is_ironrdp.clone();
+        #[cfg(feature = "rdp-embedded")]
+        let ironrdp_tx = self.ironrdp_command_tx.clone();
+        let freerdp_thread = self.freerdp_thread.clone();
+        let rdp_width = self.rdp_width.clone();
+        let rdp_height = self.rdp_height.clone();
+        // Toggle between +1 and -1 so the cursor oscillates in place
+        let jiggle_toggle = Rc::new(std::cell::Cell::new(false));
+
+        let source_id = glib::timeout_add_seconds_local(interval, move || {
+            let current_state = *state.borrow();
+            if current_state != RdpConnectionState::Connected {
+                return glib::ControlFlow::Break;
+            }
+
+            // Use center as a safe reference point but only move ±1px
+            let cx = *rdp_width.borrow() / 2;
+            let cy = *rdp_height.borrow() / 2;
+            let toggle = jiggle_toggle.get();
+            jiggle_toggle.set(!toggle);
+            let offset: i32 = if toggle { 1 } else { -1 };
+
+            let using_ironrdp = *is_ironrdp.borrow();
+            if using_ironrdp {
+                #[cfg(feature = "rdp-embedded")]
+                if let Some(ref tx) = *ironrdp_tx.borrow() {
+                    let _ = tx.send(RdpClientCommand::PointerEvent {
+                        x: (cx as i32 + offset).max(0) as u16,
+                        y: cy as u16,
+                        buttons: 0,
+                    });
+                }
+            } else if let Some(ref thread) = *freerdp_thread.borrow() {
+                let _ = thread.send_command(RdpCommand::MouseEvent {
+                    x: cx as i32 + offset,
+                    y: cy as i32,
+                    button: 0,
+                    pressed: false,
+                });
+            }
+
+            tracing::trace!("Mouse jiggler tick");
+            glib::ControlFlow::Continue
+        });
+
+        *self.jiggler_timer.borrow_mut() = Some(source_id);
+        tracing::debug!(interval_secs = interval, "Mouse jiggler started");
+    }
+
+    /// Stops the mouse jiggler timer
+    pub fn stop_jiggler(&self) {
+        if let Some(source_id) = self.jiggler_timer.borrow_mut().take() {
+            source_id.remove();
+            tracing::debug!("Mouse jiggler stopped");
+        }
     }
 
     /// Reports an error and notifies listeners

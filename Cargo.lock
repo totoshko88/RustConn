@@ -1428,9 +1428,9 @@ dependencies = [
 
 [[package]]
 name = "fastrand"
-version = "2.3.0"
+version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
+checksum = "a043dc74da1e37d6afe657061213aa6f425f855399a11d3463c6ecccc4dfda1f"
 
 [[package]]
 name = "fdeflate"
@@ -4732,7 +4732,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.10.10"
+version = "0.10.11"
 dependencies = [
  "chrono",
  "cpal",
@@ -4760,7 +4760,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.10.10"
+version = "0.10.11"
 dependencies = [
  "chrono",
  "clap",
@@ -4781,7 +4781,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.10.10"
+version = "0.10.11"
 dependencies = [
  "ar",
  "argon2",

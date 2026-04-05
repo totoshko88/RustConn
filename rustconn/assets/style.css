@@ -435,6 +435,20 @@ label.error {
 /* Tab styles for sessions in split view removed — not applied from Rust code */
 
 /* ============================================================
+ * Terminal Activity Monitor — Tab Indicator Styles
+ * ============================================================ */
+
+/* Activity notification indicator (e.g. new output after quiet period) */
+.tab-activity-indicator {
+    color: @accent_color;
+}
+
+/* Silence notification indicator (e.g. no output for configured duration) */
+.tab-silence-indicator {
+    color: @warning_color;
+}
+
+/* ============================================================
  * Monitoring Bar Styles
  * ============================================================ */
 

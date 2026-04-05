@@ -18,6 +18,7 @@ use gtk4::{
     SpinButton, Stack, StringList, TextView,
 };
 use libadwaita as adw;
+use rustconn_core::activity_monitor::{ActivityMonitorConfig, MonitorMode};
 use rustconn_core::automation::{ConnectionTask, ExpectRule, TaskCondition, builtin_templates};
 use rustconn_core::models::{
     AwsSsmConfig, AzureBastionConfig, AzureSshConfig, BoundaryConfig, CloudflareAccessConfig,
@@ -166,6 +167,8 @@ pub struct ConnectionDialog {
     rdp_disable_nla_check: CheckButton,
     rdp_clipboard_check: CheckButton,
     rdp_show_local_cursor_check: CheckButton,
+    rdp_jiggler_check: CheckButton,
+    rdp_jiggler_interval_spin: gtk4::SpinButton,
     rdp_shared_folders: Rc<RefCell<Vec<SharedFolder>>>,
     rdp_shared_folders_list: gtk4::ListBox,
     rdp_custom_args_entry: Entry,
@@ -316,6 +319,10 @@ pub struct ConnectionDialog {
     highlight_rules: Rc<RefCell<Vec<HighlightRule>>>,
     /// Button to add highlight rules
     add_highlight_rule_button: Button,
+    // Activity monitor fields
+    activity_mode_combo: adw::ComboRow,
+    activity_quiet_period_spin: adw::SpinRow,
+    activity_silence_timeout_spin: adw::SpinRow,
     // State
     editing_id: Rc<RefCell<Option<Uuid>>>,
     // Callback
@@ -511,6 +518,8 @@ impl ConnectionDialog {
             rdp_disable_nla_check,
             rdp_clipboard_check,
             rdp_show_local_cursor_check,
+            rdp_jiggler_check,
+            rdp_jiggler_interval_spin,
             rdp_shared_folders,
             rdp_shared_folders_list,
             rdp_custom_args_entry,
@@ -716,6 +725,9 @@ impl ConnectionDialog {
             highlight_rules_list,
             add_highlight_rule_button,
             _theme_preset_dropdown,
+            activity_mode_combo,
+            activity_quiet_period_spin,
+            activity_silence_timeout_spin,
         ) = super::advanced_tab::create_advanced_tab();
         view_stack
             .add_titled(&advanced_tab, Some("advanced"), &i18n("Advanced"))
@@ -815,6 +827,8 @@ impl ConnectionDialog {
             &rdp_disable_nla_check,
             &rdp_clipboard_check,
             &rdp_show_local_cursor_check,
+            &rdp_jiggler_check,
+            &rdp_jiggler_interval_spin,
             &rdp_shared_folders,
             &rdp_custom_args_entry,
             &rdp_keyboard_layout_dropdown,
@@ -915,6 +929,9 @@ impl ConnectionDialog {
             &script_command_entry,
             &recording_toggle,
             &highlight_rules,
+            &activity_mode_combo,
+            &activity_quiet_period_spin,
+            &activity_silence_timeout_spin,
         );
 
         let result = Self {
@@ -977,6 +994,8 @@ impl ConnectionDialog {
             rdp_disable_nla_check,
             rdp_clipboard_check,
             rdp_show_local_cursor_check,
+            rdp_jiggler_check,
+            rdp_jiggler_interval_spin,
             rdp_shared_folders,
             rdp_shared_folders_list,
             rdp_custom_args_entry,
@@ -1092,6 +1111,9 @@ impl ConnectionDialog {
             highlight_rules_list,
             highlight_rules,
             add_highlight_rule_button,
+            activity_mode_combo,
+            activity_quiet_period_spin,
+            activity_silence_timeout_spin,
             editing_id,
             on_save,
             connections_data,
@@ -1837,6 +1859,8 @@ impl ConnectionDialog {
         rdp_disable_nla_check: &CheckButton,
         rdp_clipboard_check: &CheckButton,
         rdp_show_local_cursor_check: &CheckButton,
+        rdp_jiggler_check: &CheckButton,
+        rdp_jiggler_interval_spin: &SpinButton,
         rdp_shared_folders: &Rc<RefCell<Vec<SharedFolder>>>,
         rdp_custom_args_entry: &Entry,
         rdp_keyboard_layout_dropdown: &DropDown,
@@ -1937,6 +1961,9 @@ impl ConnectionDialog {
         script_command_entry: &Entry,
         recording_toggle: &adw::SwitchRow,
         highlight_rules: &Rc<RefCell<Vec<HighlightRule>>>,
+        activity_mode_combo: &adw::ComboRow,
+        activity_quiet_period_spin: &adw::SpinRow,
+        activity_silence_timeout_spin: &adw::SpinRow,
     ) {
         let window = window.clone();
         let on_save = on_save.clone();
@@ -1984,6 +2011,8 @@ impl ConnectionDialog {
         let rdp_disable_nla_check = rdp_disable_nla_check.clone();
         let rdp_clipboard_check = rdp_clipboard_check.clone();
         let rdp_show_local_cursor_check = rdp_show_local_cursor_check.clone();
+        let rdp_jiggler_check = rdp_jiggler_check.clone();
+        let rdp_jiggler_interval_spin = rdp_jiggler_interval_spin.clone();
         let rdp_shared_folders = rdp_shared_folders.clone();
         let rdp_custom_args_entry = rdp_custom_args_entry.clone();
         let rdp_keyboard_layout_dropdown = rdp_keyboard_layout_dropdown.clone();
@@ -2094,6 +2123,9 @@ impl ConnectionDialog {
         let script_command_entry = script_command_entry.clone();
         let recording_toggle = recording_toggle.clone();
         let highlight_rules = highlight_rules.clone();
+        let activity_mode_combo = activity_mode_combo.clone();
+        let activity_quiet_period_spin = activity_quiet_period_spin.clone();
+        let activity_silence_timeout_spin = activity_silence_timeout_spin.clone();
 
         save_btn.connect_clicked(move |_| {
             let local_variables = Self::collect_local_variables(&variables_rows);
@@ -2145,6 +2177,8 @@ impl ConnectionDialog {
                 rdp_disable_nla_check: &rdp_disable_nla_check,
                 rdp_clipboard_check: &rdp_clipboard_check,
                 rdp_show_local_cursor_check: &rdp_show_local_cursor_check,
+                rdp_jiggler_check: &rdp_jiggler_check,
+                rdp_jiggler_interval_spin: &rdp_jiggler_interval_spin,
                 rdp_shared_folders: &rdp_shared_folders,
                 rdp_custom_args_entry: &rdp_custom_args_entry,
                 rdp_keyboard_layout_dropdown: &rdp_keyboard_layout_dropdown,
@@ -2256,6 +2290,9 @@ impl ConnectionDialog {
                 script_command_entry: &script_command_entry,
                 recording_toggle: &recording_toggle,
                 highlight_rules: &collected_highlight_rules,
+                activity_mode_combo: &activity_mode_combo,
+                activity_quiet_period_spin: &activity_quiet_period_spin,
+                activity_silence_timeout_spin: &activity_silence_timeout_spin,
             };
 
             if let Err(err) = data.validate() {
@@ -2291,6 +2328,8 @@ impl ConnectionDialog {
         CheckButton,
         CheckButton,
         CheckButton,
+        CheckButton,
+        SpinButton,
         Rc<RefCell<Vec<SharedFolder>>>,
         gtk4::ListBox,
         Entry,
@@ -2492,6 +2531,36 @@ impl ConnectionDialog {
             .build();
         show_cursor_row.add_suffix(&rdp_show_local_cursor_check);
         features_group.add(&show_cursor_row);
+
+        // Mouse Jiggler — prevent idle disconnect
+        let rdp_jiggler_check = CheckButton::new();
+        let jiggler_row = adw::ActionRow::builder()
+            .title(i18n("Mouse Jiggler"))
+            .subtitle(i18n("Prevent idle disconnect by simulating mouse movement"))
+            .activatable_widget(&rdp_jiggler_check)
+            .build();
+        jiggler_row.add_suffix(&rdp_jiggler_check);
+        features_group.add(&jiggler_row);
+
+        let jiggler_adjustment = gtk4::Adjustment::new(60.0, 10.0, 600.0, 10.0, 60.0, 0.0);
+        let rdp_jiggler_interval_spin = gtk4::SpinButton::builder()
+            .adjustment(&jiggler_adjustment)
+            .digits(0)
+            .valign(gtk4::Align::Center)
+            .sensitive(false)
+            .build();
+        let jiggler_interval_row = adw::ActionRow::builder()
+            .title(i18n("Jiggler Interval"))
+            .subtitle(i18n("Seconds between mouse movements"))
+            .build();
+        jiggler_interval_row.add_suffix(&rdp_jiggler_interval_spin);
+        features_group.add(&jiggler_interval_row);
+
+        // Toggle interval sensitivity based on jiggler checkbox
+        let spin_ref = rdp_jiggler_interval_spin.clone();
+        rdp_jiggler_check.connect_toggled(move |check| {
+            spin_ref.set_sensitive(check.is_active());
+        });
 
         // Disable NLA
         let disable_nla_check = CheckButton::new();
@@ -2699,6 +2768,8 @@ impl ConnectionDialog {
             disable_nla_check,
             clipboard_check,
             rdp_show_local_cursor_check,
+            rdp_jiggler_check,
+            rdp_jiggler_interval_spin,
             shared_folders,
             folders_list,
             args_entry,
@@ -5077,6 +5148,27 @@ impl ConnectionDialog {
 
         // Set highlight rules
         self.set_highlight_rules(&conn.highlight_rules);
+
+        // Set activity monitor config
+        if let Some(ref config) = conn.activity_monitor_config {
+            let mode_idx = match config.mode {
+                Some(MonitorMode::Activity) => 1,
+                Some(MonitorMode::Silence) => 2,
+                _ => 0,
+            };
+            self.activity_mode_combo.set_selected(mode_idx);
+            if let Some(quiet) = config.quiet_period_secs {
+                self.activity_quiet_period_spin.set_value(f64::from(quiet));
+            }
+            if let Some(silence) = config.silence_timeout_secs {
+                self.activity_silence_timeout_spin
+                    .set_value(f64::from(silence));
+            }
+        } else {
+            self.activity_mode_combo.set_selected(0);
+            self.activity_quiet_period_spin.set_value(10.0);
+            self.activity_silence_timeout_spin.set_value(30.0);
+        }
     }
 
     /// Sets the available groups for the group dropdown
@@ -5703,6 +5795,11 @@ impl ConnectionDialog {
         self.rdp_clipboard_check.set_active(rdp.clipboard_enabled);
         self.rdp_show_local_cursor_check
             .set_active(rdp.show_local_cursor);
+        self.rdp_jiggler_check.set_active(rdp.jiggler_enabled);
+        self.rdp_jiggler_interval_spin
+            .set_value(f64::from(rdp.jiggler_interval_secs));
+        self.rdp_jiggler_interval_spin
+            .set_sensitive(rdp.jiggler_enabled);
         self.rdp_disable_nla_check.set_active(rdp.disable_nla);
         if let Some(ref gw) = rdp.gateway {
             self.rdp_gateway_entry.set_text(&gw.hostname);
@@ -6611,6 +6708,8 @@ struct ConnectionDialogData<'a> {
     rdp_disable_nla_check: &'a CheckButton,
     rdp_clipboard_check: &'a CheckButton,
     rdp_show_local_cursor_check: &'a CheckButton,
+    rdp_jiggler_check: &'a CheckButton,
+    rdp_jiggler_interval_spin: &'a SpinButton,
     rdp_shared_folders: &'a Rc<RefCell<Vec<SharedFolder>>>,
     rdp_custom_args_entry: &'a Entry,
     rdp_keyboard_layout_dropdown: &'a DropDown,
@@ -6727,6 +6826,10 @@ struct ConnectionDialogData<'a> {
     recording_toggle: &'a adw::SwitchRow,
     // Highlight rules
     highlight_rules: &'a Vec<HighlightRule>,
+    // Activity monitor fields
+    activity_mode_combo: &'a adw::ComboRow,
+    activity_quiet_period_spin: &'a adw::SpinRow,
+    activity_silence_timeout_spin: &'a adw::SpinRow,
 }
 
 impl ConnectionDialogData<'_> {
@@ -6963,6 +7066,30 @@ impl ConnectionDialogData<'_> {
             .filter(|r| !r.pattern.is_empty())
             .cloned()
             .collect();
+
+        // Set activity monitor config
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        {
+            let mode = match self.activity_mode_combo.selected() {
+                1 => Some(MonitorMode::Activity),
+                2 => Some(MonitorMode::Silence),
+                _ => None, // Off or default
+            };
+            let quiet = self.activity_quiet_period_spin.value() as u32;
+            let silence = self.activity_silence_timeout_spin.value() as u32;
+
+            // Store None if all defaults (Off, 10, 30) to keep config clean
+            let is_default = mode.is_none() && quiet == 10 && silence == 30;
+            conn.activity_monitor_config = if is_default {
+                None
+            } else {
+                Some(ActivityMonitorConfig {
+                    mode,
+                    quiet_period_secs: if quiet == 10 { None } else { Some(quiet) },
+                    silence_timeout_secs: if silence == 30 { None } else { Some(silence) },
+                })
+            };
+        }
 
         // Set group from dropdown
         let selected_idx = self.group_dropdown.selected() as usize;
@@ -7591,6 +7718,8 @@ impl ConnectionDialogData<'_> {
             disable_nla: self.rdp_disable_nla_check.is_active(),
             clipboard_enabled: self.rdp_clipboard_check.is_active(),
             show_local_cursor: self.rdp_show_local_cursor_check.is_active(),
+            jiggler_enabled: self.rdp_jiggler_check.is_active(),
+            jiggler_interval_secs: self.rdp_jiggler_interval_spin.value() as u32,
         }
     }
 

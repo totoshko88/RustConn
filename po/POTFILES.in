@@ -14,6 +14,7 @@ rustconn/src/window/mod.rs
 rustconn/src/window/protocols.rs
 rustconn/src/window/sessions.rs
 rustconn/src/window/clusters.rs
+rustconn/src/window/edit_actions.rs
 rustconn/src/window/groups.rs
 rustconn/src/window/operations.rs
 rustconn/src/window/sorting.rs

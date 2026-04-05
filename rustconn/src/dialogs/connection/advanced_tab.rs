@@ -35,6 +35,9 @@ pub(super) fn create_advanced_tab() -> (
     ListBox,
     Button,
     DropDown,
+    adw::ComboRow,
+    adw::SpinRow,
+    adw::SpinRow,
 ) {
     let scrolled = ScrolledWindow::builder()
         .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -298,6 +301,66 @@ pub(super) fn create_advanced_tab() -> (
 
     content.append(&recording_group);
 
+    // === Activity Monitor Section ===
+    let activity_monitor_group = adw::PreferencesGroup::builder()
+        .title(i18n("Activity Monitor"))
+        .description(i18n("Detect terminal output activity or silence"))
+        .build();
+
+    let mode_items = StringList::new(&[&i18n("Off"), &i18n("Activity"), &i18n("Silence")]);
+    let activity_mode_combo = adw::ComboRow::builder()
+        .title(i18n("Mode"))
+        .subtitle(i18n("Select monitoring mode for this connection"))
+        .model(&mode_items)
+        .selected(0)
+        .build();
+    activity_monitor_group.add(&activity_mode_combo);
+
+    let quiet_period_adj = gtk4::Adjustment::new(10.0, 1.0, 300.0, 1.0, 10.0, 0.0);
+    let quiet_period_spin = adw::SpinRow::builder()
+        .title(i18n("Quiet Period"))
+        .subtitle(i18n("Seconds of silence before activity notification"))
+        .adjustment(&quiet_period_adj)
+        .visible(false)
+        .build();
+    activity_monitor_group.add(&quiet_period_spin);
+
+    let silence_timeout_adj = gtk4::Adjustment::new(30.0, 1.0, 600.0, 1.0, 10.0, 0.0);
+    let silence_timeout_spin = adw::SpinRow::builder()
+        .title(i18n("Silence Timeout"))
+        .subtitle(i18n("Seconds of no output before silence notification"))
+        .adjustment(&silence_timeout_adj)
+        .visible(false)
+        .build();
+    activity_monitor_group.add(&silence_timeout_spin);
+
+    // Wire sensitivity: show/hide spin rows based on mode selection
+    {
+        let quiet_spin = quiet_period_spin.clone();
+        let silence_spin = silence_timeout_spin.clone();
+        activity_mode_combo.connect_selected_notify(move |combo| {
+            match combo.selected() {
+                1 => {
+                    // Activity
+                    quiet_spin.set_visible(true);
+                    silence_spin.set_visible(false);
+                }
+                2 => {
+                    // Silence
+                    quiet_spin.set_visible(false);
+                    silence_spin.set_visible(true);
+                }
+                _ => {
+                    // Off
+                    quiet_spin.set_visible(false);
+                    silence_spin.set_visible(false);
+                }
+            }
+        });
+    }
+
+    content.append(&activity_monitor_group);
+
     // === Highlight Rules Section ===
     let highlight_group = adw::PreferencesGroup::builder()
         .title(i18n("Highlight Rules"))
@@ -471,6 +534,9 @@ pub(super) fn create_advanced_tab() -> (
         highlight_rules_list,
         add_highlight_rule_button,
         theme_preset_dropdown,
+        activity_mode_combo,
+        quiet_period_spin,
+        silence_timeout_spin,
     )
 }
 

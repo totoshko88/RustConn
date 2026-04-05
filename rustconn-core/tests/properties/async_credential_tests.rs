@@ -86,6 +86,7 @@ fn create_test_connection(
         theme_override: None,
         icon: None,
         monitoring_config: None,
+        activity_monitor_config: None,
         session_recording_enabled: false,
         highlight_rules: Vec::new(),
     }

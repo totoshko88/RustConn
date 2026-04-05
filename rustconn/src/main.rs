@@ -37,6 +37,7 @@
 #![allow(clippy::missing_errors_doc)] // Internal GUI functions don't need error docs
 #![allow(clippy::missing_panics_doc)] // Internal GUI functions don't need panic docs
 
+pub mod activity_coordinator;
 pub mod alert;
 mod app;
 pub mod async_utils;

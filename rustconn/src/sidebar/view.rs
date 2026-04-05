@@ -132,15 +132,24 @@ pub fn setup_list_item(
                 }
             }
 
-            // Check if this is a group by looking at the icon
-            let is_group = widget
-                .first_child()
-                .and_then(|c| c.first_child())
-                .and_then(|c| c.downcast::<gtk4::Image>().ok())
-                .is_some_and(|img| {
-                    img.icon_name()
-                        .is_some_and(|n| n.as_str() == "folder-symbolic")
-                });
+            // Check if this is a group from the ConnectionItem data
+            let is_group = list_item_weak
+                .upgrade()
+                .and_then(|li| li.item())
+                .and_then(|obj| obj.downcast::<gtk4::TreeListRow>().ok())
+                .and_then(|row| row.item())
+                .and_then(|obj| obj.downcast::<ConnectionItem>().ok())
+                .map(|item| {
+                    let g = item.is_group();
+                    tracing::debug!(
+                        name = %item.name(),
+                        is_group = g,
+                        protocol = %item.protocol(),
+                        "Context menu: is_group check"
+                    );
+                    g
+                })
+                .unwrap_or(false);
 
             // Detect SSH protocol from the ConnectionItem data
             let (is_ssh, is_connected, conn_id_str) = list_item_weak

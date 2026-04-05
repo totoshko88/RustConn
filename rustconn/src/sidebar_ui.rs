@@ -106,6 +106,20 @@ pub fn show_context_menu_for_item(
             }
         });
         menu_box.append(&new_conn_btn);
+
+        // Connect All — open all connections in this group
+        let connect_all_btn = create_menu_button(&i18n("Connect All"));
+        let win = window_clone.clone();
+        let popover_c = popover_ref.clone();
+        connect_all_btn.connect_clicked(move |_| {
+            if let Some(p) = popover_c.upgrade() {
+                p.popdown();
+            }
+            if let Some(action) = win.lookup_action("connect-all-in-group") {
+                action.activate(None);
+            }
+        });
+        menu_box.append(&connect_all_btn);
     }
 
     let edit_btn = create_menu_button(&i18n("Edit"));
@@ -162,6 +176,34 @@ pub fn show_context_menu_for_item(
         });
         menu_box.append(&move_btn);
 
+        // Copy Username
+        let copy_user_btn = create_menu_button(&i18n("Copy Username"));
+        let win = window_clone.clone();
+        let popover_c = popover_ref.clone();
+        copy_user_btn.connect_clicked(move |_| {
+            if let Some(p) = popover_c.upgrade() {
+                p.popdown();
+            }
+            if let Some(action) = win.lookup_action("copy-username") {
+                action.activate(None);
+            }
+        });
+        menu_box.append(&copy_user_btn);
+
+        // Copy Password
+        let copy_pass_btn = create_menu_button(&i18n("Copy Password"));
+        let win = window_clone.clone();
+        let popover_c = popover_ref.clone();
+        copy_pass_btn.connect_clicked(move |_| {
+            if let Some(p) = popover_c.upgrade() {
+                p.popdown();
+            }
+            if let Some(action) = win.lookup_action("copy-password") {
+                action.activate(None);
+            }
+        });
+        menu_box.append(&copy_pass_btn);
+
         // Run Snippet option - opens snippet picker for the selected connection
         let snippet_btn = create_menu_button(&i18n("Run Snippet..."));
         let win = window_clone.clone();
@@ -189,6 +231,20 @@ pub fn show_context_menu_for_item(
             }
         });
         menu_box.append(&wol_btn);
+
+        // Check if Online option
+        let check_online_btn = create_menu_button(&i18n("Check if Online"));
+        let win = window_clone.clone();
+        let popover_c = popover_ref.clone();
+        check_online_btn.connect_clicked(move |_| {
+            if let Some(p) = popover_c.upgrade() {
+                p.popdown();
+            }
+            if let Some(action) = win.lookup_action("check-host-online") {
+                action.activate(None);
+            }
+        });
+        menu_box.append(&check_online_btn);
 
         // Open SFTP option (SSH connections only)
         if is_ssh {

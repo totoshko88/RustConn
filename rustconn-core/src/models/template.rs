@@ -263,6 +263,7 @@ impl ConnectionTemplate {
             pin_order: 0,
             icon: None,
             monitoring_config: None,
+            activity_monitor_config: None,
             theme_override: None,
             session_recording_enabled: false,
             highlight_rules: Vec::new(),

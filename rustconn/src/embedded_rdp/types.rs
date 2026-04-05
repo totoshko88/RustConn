@@ -139,6 +139,10 @@ pub struct RdpConfig {
     /// Whether to ignore TLS certificate validation (default: false).
     /// When false, uses TOFU (trust-on-first-use) like SSH known_hosts.
     pub ignore_certificate: bool,
+    /// Enable mouse jiggler to prevent idle disconnect
+    pub jiggler_enabled: bool,
+    /// Mouse jiggler interval in seconds (10–600, default: 60)
+    pub jiggler_interval_secs: u32,
 }
 
 impl Default for RdpConfig {
@@ -165,6 +169,8 @@ impl Default for RdpConfig {
             gateway_port: 443,
             gateway_username: None,
             ignore_certificate: false,
+            jiggler_enabled: false,
+            jiggler_interval_secs: 60,
         }
     }
 }

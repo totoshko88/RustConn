@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use super::custom_property::CustomProperty;
 use super::highlight::HighlightRule;
 use super::protocol::{ProtocolConfig, ProtocolType};
+use crate::activity_monitor::ActivityMonitorConfig;
 use crate::automation::{ConnectionTask, ExpectRule, KeySequence};
 use crate::error::ConfigError;
 use crate::monitoring::MonitoringConfig;
@@ -310,6 +311,11 @@ pub struct Connection {
     /// When `None`, the global `MonitoringSettings` from `AppSettings` apply.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub monitoring_config: Option<MonitoringConfig>,
+    /// Per-connection activity monitor override
+    ///
+    /// When `None`, the global `ActivityMonitorDefaults` from `AppSettings` apply.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub activity_monitor_config: Option<ActivityMonitorConfig>,
     /// Per-connection terminal theme override
     ///
     /// When `None`, the global terminal theme settings apply.
@@ -361,6 +367,7 @@ impl Connection {
             pin_order: 0,
             icon: None,
             monitoring_config: None,
+            activity_monitor_config: None,
             theme_override: None,
             session_recording_enabled: false,
             highlight_rules: Vec::new(),

@@ -194,9 +194,9 @@ Pinned CLI versions for Flatpak sandbox. Run `./scripts/check-cli-versions.sh` t
 
 | Component | ID | Current Version |
 |-----------|----|-----------------|
-| TigerVNC | `vncviewer` | 1.16.0 |
+| TigerVNC | `vncviewer` | 1.16.1 |
 | Teleport | `tsh` | 18.7.2 |
-| Tailscale | `tailscale` | 1.96.2 |
+| Tailscale | `tailscale` | 1.96.4 |
 | Boundary | `boundary` | 0.21.1 |
 | Bitwarden CLI | `bw` | 2026.2.0 |
 | 1Password CLI | `op` | 2.33.1 |

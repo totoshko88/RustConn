@@ -84,6 +84,105 @@ impl MainWindow {
         });
         window.add_action(&move_to_group_action);
 
+        // Copy username to clipboard
+        let copy_username_action = gio::SimpleAction::new("copy-username", None);
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let window_weak = window.downgrade();
+        let toast_clone = self.toast_overlay.clone();
+        copy_username_action.connect_activate(move |_, _| {
+            let Some(item) = sidebar_clone.get_selected_item() else {
+                return;
+            };
+            if item.is_group() {
+                return;
+            }
+            let Ok(conn_id) = uuid::Uuid::parse_str(&item.id()) else {
+                return;
+            };
+            let Ok(state_ref) = state_clone.try_borrow() else {
+                return;
+            };
+            if let Some(conn) = state_ref.get_connection(conn_id) {
+                // Try cached credentials first (resolved from vault during connection),
+                // fall back to the username stored directly on the connection model
+                let username = state_ref
+                    .get_cached_credentials(conn_id)
+                    .map(|creds| creds.username.clone())
+                    .filter(|u| !u.is_empty())
+                    .or_else(|| conn.username.clone())
+                    .unwrap_or_default();
+                if username.is_empty() {
+                    toast_clone.show_warning(&crate::i18n::i18n("No username configured"));
+                } else if let Some(win) = window_weak.upgrade() {
+                    gtk4::prelude::WidgetExt::display(&win)
+                        .clipboard()
+                        .set_text(&username);
+                    toast_clone.show_success(&crate::i18n::i18n("Username copied"));
+                }
+            }
+        });
+        window.add_action(&copy_username_action);
+
+        // Copy password to clipboard (with auto-clear after 30 seconds)
+        let copy_password_action = gio::SimpleAction::new("copy-password", None);
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let window_weak = window.downgrade();
+        let toast_clone = self.toast_overlay.clone();
+        copy_password_action.connect_activate(move |_, _| {
+            let Some(item) = sidebar_clone.get_selected_item() else {
+                return;
+            };
+            if item.is_group() {
+                return;
+            }
+            let Ok(conn_id) = uuid::Uuid::parse_str(&item.id()) else {
+                return;
+            };
+            let Ok(state_ref) = state_clone.try_borrow() else {
+                return;
+            };
+            if state_ref.get_connection(conn_id).is_some() {
+                // Try cached credentials (resolved from vault during connection)
+                use secrecy::ExposeSecret;
+                if let Some(creds) = state_ref.get_cached_credentials(conn_id) {
+                    let pw = creds.password.expose_secret();
+                    if pw.is_empty() {
+                        toast_clone.show_warning(&crate::i18n::i18n("Cached password is empty"));
+                    } else {
+                        let pw_owned = pw.to_string();
+                        if let Some(win) = window_weak.upgrade() {
+                            let clipboard = gtk4::prelude::WidgetExt::display(&win).clipboard();
+                            clipboard.set_text(&pw_owned);
+                            toast_clone.show_success(&crate::i18n::i18n(
+                                "Password copied (auto-clears in 30s)",
+                            ));
+                            // Auto-clear clipboard after 30 seconds only if it still
+                            // contains the password we set (don't clobber user data)
+                            let clipboard_weak = clipboard.downgrade();
+                            glib::timeout_add_seconds_local_once(30, move || {
+                                if let Some(cb) = clipboard_weak.upgrade() {
+                                    cb.read_text_async(gio::Cancellable::NONE, move |result| {
+                                        if let Ok(Some(current)) = result
+                                            && current.as_str() == pw_owned
+                                            && let Some(cb2) = clipboard_weak.upgrade()
+                                        {
+                                            cb2.set_text("");
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    }
+                } else {
+                    toast_clone
+                        .show_warning(&crate::i18n::i18n("Connect first to cache credentials"));
+                }
+            }
+        });
+        window.add_action(&copy_password_action);
+
         // Rename item action (works for both connections and groups)
         let rename_action = gio::SimpleAction::new("rename-item", None);
         let window_weak = window.downgrade();
@@ -179,6 +278,7 @@ impl MainWindow {
         let split_view_clone = self.split_view.clone();
         let sidebar_clone = sidebar.clone();
         let monitoring_clone = self.monitoring.clone();
+        let activity_clone_retry = self.activity_coordinator.clone();
         retry_action.connect_activate(move |_, param| {
             if let Some(param) = param
                 && let Some(id_str) = param.get::<String>()
@@ -192,6 +292,7 @@ impl MainWindow {
                     sidebar_clone.clone(),
                     monitoring_clone.clone(),
                     conn_id,
+                    Some(activity_clone_retry.clone()),
                 );
             }
         });
@@ -202,6 +303,9 @@ impl MainWindow {
         let state_clone = state.clone();
         let sidebar_clone = sidebar.clone();
         let toast_clone = self.toast_overlay.clone();
+        let notebook_clone = self.terminal_notebook.clone();
+        let monitoring_clone = self.monitoring.clone();
+        let split_view_clone = self.split_view.clone();
         wol_action.connect_activate(move |_, _| {
             let Some(item) = sidebar_clone.get_selected_item() else {
                 return;
@@ -226,11 +330,18 @@ impl MainWindow {
             };
             let wol_config = wol_config.clone();
             let mac_display = wol_config.mac_address.to_string();
+            let host_for_check = conn.host.clone();
+            let port_for_check = conn.port;
             drop(state_ref);
 
             let mac_for_cb = mac_display.clone();
             let id_for_cb = id_str.clone();
             let toast_for_cb = toast_clone.clone();
+            let state_for_wol = state_clone.clone();
+            let sidebar_for_wol = sidebar_clone.clone();
+            let notebook_for_wol = notebook_clone.clone();
+            let monitoring_for_wol = monitoring_clone.clone();
+            let split_view_for_wol = split_view_clone.clone();
             crate::utils::spawn_blocking_with_callback(
                 move || rustconn_core::wol::send_wol_with_retry(&wol_config, 3, 500),
                 move |result| match result {
@@ -241,9 +352,69 @@ impl MainWindow {
                             id_for_cb,
                         );
                         toast_for_cb.show_success(&crate::i18n::i18n_f(
-                            "Wake On LAN sent to {}",
+                            "Wake On LAN sent to {} — waiting for host to come online...",
                             &[&mac_for_cb],
                         ));
+
+                        // Start polling for host to come online, then auto-connect
+                        let toast = toast_for_cb.clone();
+                        let host = host_for_check.clone();
+                        let cancel = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+                        // Register cancel token so it can be cancelled if needed
+                        notebook_for_wol.register_poll_cancel(conn_id, cancel.clone());
+
+                        let config =
+                            rustconn_core::host_check::HostCheckConfig::new(&host, port_for_check)
+                                .with_timeout_secs(3)
+                                .with_poll_interval_secs(5)
+                                .with_max_poll_duration_secs(300);
+
+                        let state_wol = state_for_wol.clone();
+                        let notebook_wol = notebook_for_wol.clone();
+                        let sidebar_wol = sidebar_for_wol.clone();
+                        let monitoring_wol = monitoring_for_wol.clone();
+                        let split_view_wol = split_view_for_wol.clone();
+                        let host_display = host.clone();
+                        let notebook_cleanup = notebook_for_wol.clone();
+
+                        crate::utils::spawn_blocking_with_callback(
+                            move || {
+                                let rt = tokio::runtime::Runtime::new()
+                                    .expect("Failed to create tokio runtime");
+                                rt.block_on(rustconn_core::host_check::poll_until_online(
+                                    &config,
+                                    &cancel,
+                                    |_online, _elapsed| {},
+                                ))
+                            },
+                            move |result| {
+                                notebook_cleanup.cancel_poll(conn_id);
+                                match result {
+                                    Ok(true) => {
+                                        toast.show_success(&crate::i18n::i18n_f(
+                                            "{} is online — connecting...",
+                                            &[&host_display],
+                                        ));
+                                        Self::start_connection_with_credential_resolution(
+                                            state_wol,
+                                            notebook_wol,
+                                            split_view_wol,
+                                            sidebar_wol,
+                                            monitoring_wol,
+                                            conn_id,
+                                            None,
+                                        );
+                                    }
+                                    Ok(false) => {
+                                        toast.show_warning(&crate::i18n::i18n_f(
+                                            "{} did not come online after WoL",
+                                            &[&host_display],
+                                        ));
+                                    }
+                                    Err(_) => {}
+                                }
+                            },
+                        );
                     }
                     Err(e) => {
                         tracing::error!(?e, "Failed to send WoL for connection {}", id_for_cb,);
@@ -255,6 +426,107 @@ impl MainWindow {
             );
         });
         window.add_action(&wol_action);
+
+        // Check if host is online — TCP probe with polling and optional auto-connect
+        let check_online_action = gio::SimpleAction::new("check-host-online", None);
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let toast_clone = self.toast_overlay.clone();
+        let notebook_clone_online = self.terminal_notebook.clone();
+        let monitoring_clone_online = self.monitoring.clone();
+        let split_view_clone_online = self.split_view.clone();
+        check_online_action.connect_activate(move |_, _| {
+            let Some(item) = sidebar_clone.get_selected_item() else {
+                return;
+            };
+            if item.is_group() {
+                return;
+            }
+            let id_str = item.id();
+            let Ok(conn_id) = Uuid::parse_str(&id_str) else {
+                return;
+            };
+            let (host, port) = {
+                let Ok(state_ref) = state_clone.try_borrow() else {
+                    return;
+                };
+                let Some(conn) = state_ref.get_connection(conn_id) else {
+                    return;
+                };
+                (conn.host.clone(), conn.port)
+            };
+
+            let toast = toast_clone.clone();
+            let state_for_connect = state_clone.clone();
+            let sidebar_for_connect = sidebar_clone.clone();
+            let notebook_for_connect = notebook_clone_online.clone();
+            let monitoring_for_connect = monitoring_clone_online.clone();
+            let split_view_for_connect = split_view_clone_online.clone();
+            let host_display = host.clone();
+
+            toast.show_toast(&crate::i18n::i18n_f(
+                "Checking if {} is online...",
+                &[&host_display],
+            ));
+
+            // Run async TCP probe in background
+            let cancel = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+            // Register cancel token so it can be cancelled if needed
+            notebook_for_connect.register_poll_cancel(conn_id, cancel.clone());
+
+            let config = rustconn_core::host_check::HostCheckConfig::new(&host, port)
+                .with_timeout_secs(3)
+                .with_poll_interval_secs(5)
+                .with_max_poll_duration_secs(120);
+            let host_display2 = host.clone();
+            let notebook_cleanup = notebook_for_connect.clone();
+
+            crate::utils::spawn_blocking_with_callback(
+                move || {
+                    let rt =
+                        tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+                    rt.block_on(rustconn_core::host_check::poll_until_online(
+                        &config,
+                        &cancel,
+                        |_online, _elapsed| {},
+                    ))
+                },
+                move |result| {
+                    notebook_cleanup.cancel_poll(conn_id);
+                    match result {
+                        Ok(true) => {
+                            toast.show_success(&crate::i18n::i18n_f(
+                                "{} is online",
+                                &[&host_display2],
+                            ));
+                            Self::start_connection_with_credential_resolution(
+                                state_for_connect,
+                                notebook_for_connect,
+                                split_view_for_connect,
+                                sidebar_for_connect,
+                                monitoring_for_connect,
+                                conn_id,
+                                None,
+                            );
+                        }
+                        Ok(false) => {
+                            toast.show_warning(&crate::i18n::i18n_f(
+                                "{} did not come online within timeout",
+                                &[&host_display2],
+                            ));
+                        }
+                        Err(e) => {
+                            tracing::warn!(%e, "Host check failed");
+                            toast.show_error(&crate::i18n::i18n_f(
+                                "Host check failed: {}",
+                                &[&e.to_string()],
+                            ));
+                        }
+                    }
+                },
+            );
+        });
+        window.add_action(&check_online_action);
 
         // Open SFTP action — opens file manager or mc in local shell
         let sftp_action = gio::SimpleAction::new("open-sftp", None);

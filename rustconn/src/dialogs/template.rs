@@ -2477,6 +2477,8 @@ impl TemplateDialog {
             disable_nla: false,
             clipboard_enabled: true,
             show_local_cursor: true,
+            jiggler_enabled: false,
+            jiggler_interval_secs: 60,
         })
     }
 

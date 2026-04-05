@@ -177,6 +177,8 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                 disable_nla: false,
                 clipboard_enabled: true,
                 show_local_cursor: true,
+                jiggler_enabled: false,
+                jiggler_interval_secs: 60,
             },
         )
 }
@@ -500,6 +502,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                     history: HistorySettings::default(),
                     keybindings: rustconn_core::config::keybindings::KeybindingSettings::default(),
                     monitoring: rustconn_core::MonitoringSettings::default(),
+                    activity_monitor: rustconn_core::ActivityMonitorDefaults::default(),
                     highlight_rules: Vec::new(),
                     smart_folders: Vec::new(),
                     ssh_agent_socket: None,

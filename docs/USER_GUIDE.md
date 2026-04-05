@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.10.10** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.10.11** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -32,26 +32,27 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 18. [Tab Grouping](#tab-grouping)
 19. [Custom Icons](#custom-icons)
 20. [Remote Monitoring](#remote-monitoring)
-21. [Custom Keybindings](#custom-keybindings)
-22. [Adaptive UI](#adaptive-ui)
-23. [Encrypted Documents](#encrypted-documents)
-24. [RDP File Association](#rdp-file-association)
-25. [Keyboard Shortcuts](#keyboard-shortcuts)
-26. [MOSH Protocol](#mosh-protocol)
-27. [CSV Import/Export](#csv-importexport)
-28. [Session Recording](#session-recording)
-29. [Text Highlighting Rules](#text-highlighting-rules)
-30. [Ad-hoc Broadcast](#ad-hoc-broadcast)
-31. [Smart Folders](#smart-folders)
-32. [Script Credentials](#script-credentials)
-33. [Per-connection Terminal Theming](#per-connection-terminal-theming)
-34. [CLI Usage](#cli-usage)
-35. [Configuration Sync Between Machines](#configuration-sync-between-machines)
-36. [Frequently Asked Questions](#frequently-asked-questions)
-37. [Migration Guide](#migration-guide)
-38. [Troubleshooting](#troubleshooting)
-39. [Flatpak Sandbox Overrides](#flatpak-sandbox-overrides)
-40. [Security Best Practices](#security-best-practices)
+21. [Terminal Activity Monitor](#terminal-activity-monitor)
+22. [Custom Keybindings](#custom-keybindings)
+23. [Adaptive UI](#adaptive-ui)
+24. [Encrypted Documents](#encrypted-documents)
+25. [RDP File Association](#rdp-file-association)
+26. [Keyboard Shortcuts](#keyboard-shortcuts)
+27. [MOSH Protocol](#mosh-protocol)
+28. [CSV Import/Export](#csv-importexport)
+29. [Session Recording](#session-recording)
+30. [Text Highlighting Rules](#text-highlighting-rules)
+31. [Ad-hoc Broadcast](#ad-hoc-broadcast)
+32. [Smart Folders](#smart-folders)
+33. [Script Credentials](#script-credentials)
+34. [Per-connection Terminal Theming](#per-connection-terminal-theming)
+35. [CLI Usage](#cli-usage)
+36. [Configuration Sync Between Machines](#configuration-sync-between-machines)
+37. [Frequently Asked Questions](#frequently-asked-questions)
+38. [Migration Guide](#migration-guide)
+39. [Troubleshooting](#troubleshooting)
+40. [Flatpak Sandbox Overrides](#flatpak-sandbox-overrides)
+41. [Security Best Practices](#security-best-practices)
 
 ---
 
@@ -153,7 +154,7 @@ Shows integration status in sidebar toolbar:
 | Protocol | Options |
 |----------|---------|
 | SSH | Auth method (password, publickey, keyboard-interactive, agent, security-key/FIDO2), key source (default/file/agent), proxy jump (Jump Host), ProxyJump, IdentitiesOnly, ControlMaster, agent forwarding, Waypipe (Wayland forwarding), X11 forwarding, compression, startup command, custom SSH options, port forwarding (local/remote/dynamic) |
-| RDP | Client mode (embedded/external), performance mode (quality/balanced/speed), resolution, color depth, display scale override, audio redirection, RDP gateway (host, port, username), keyboard layout, disable NLA, clipboard sharing, shared folders, custom FreeRDP arguments |
+| RDP | Client mode (embedded/external), performance mode (quality/balanced/speed), resolution, color depth, display scale override, audio redirection, RDP gateway (host, port, username), keyboard layout, disable NLA, clipboard sharing, shared folders, mouse jiggler (prevent idle disconnect, configurable interval 10–600s), custom FreeRDP arguments |
 | VNC | Client mode (embedded/external), performance mode (quality/balanced/speed), encoding (Auto/Tight/ZRLE/Hextile/Raw/CopyRect), compression level, quality level, display scale override, view-only mode, scaling, clipboard sharing, custom arguments |
 | SPICE | TLS encryption, CA certificate (with inline validation), skip certificate verification, USB redirection, clipboard sharing, image compression (Auto/Off/GLZ/LZ/QUIC), proxy URL, shared folders |
 | MOSH | Predict mode (Adaptive/Always/Never), SSH port, UDP port range, server binary path, custom arguments |
@@ -258,6 +259,39 @@ For RDP, VNC, and SPICE connections, RustConn performs a fast TCP port check bef
 - Provides faster feedback (2-3s vs 30-60s timeout) when hosts are unreachable
 - Configurable globally in Settings → Connection page
 - Per-connection "Skip port check" option for special cases (firewalls, port knocking, VPN)
+
+### Copy Username / Copy Password
+
+Right-click a connection in the sidebar → **Copy Username** or **Copy Password**.
+
+- **Copy Username** copies the username from cached credentials (resolved during a previous connection) or falls back to the username stored on the connection model
+- **Copy Password** copies the password from cached credentials; you must connect at least once so credentials are resolved and cached
+- Password is auto-cleared from clipboard after 30 seconds (only if the clipboard still contains the copied password)
+- Toast notifications confirm the action or explain why it failed
+
+### Check if Online
+
+Right-click a connection → **Check if Online** to probe whether the host is reachable.
+
+- Starts an async TCP port probe (polls every 5s for up to 2 minutes)
+- If the host comes online within the timeout, RustConn auto-connects
+- Toast notifications show progress and result
+
+### Connect All in Folder
+
+Right-click a group in the sidebar → **Connect All** to open all connections in that group (including nested subgroups) simultaneously.
+
+### Auto-reconnect on Session Failure
+
+When an SSH session disconnects unexpectedly (server reboot, network failure), RustConn automatically starts polling the host (every 5s for up to 5 minutes) and reconnects when the server comes back online. The reconnect banner is still shown for manual reconnect if auto-reconnect times out.
+
+### RDP Mouse Jiggler
+
+Prevents idle disconnect by sending periodic mouse movements to the remote RDP session.
+
+- Configure in Connection Dialog → RDP → Features: enable **Mouse Jiggler** and set the interval (10–600 seconds, default 60)
+- Auto-starts when the RDP session connects, auto-stops on disconnect
+- Works with both IronRDP embedded and FreeRDP external modes
 
 ---
 
@@ -1532,7 +1566,9 @@ Wake sleeping machines before connecting by sending WoL magic packets.
 
 **Send WoL from sidebar:**
 - Right-click connection → **Wake On LAN**
-- Toast notification confirms success or failure
+- After sending the magic packet, RustConn automatically polls the host (every 5s for up to 5 minutes)
+- When the host comes online, RustConn auto-connects
+- Toast notifications show progress: "waiting for host...", "online — connecting...", or "did not come online after WoL"
 
 **Auto-WoL on connect:**
 - If a connection has WoL configured, a magic packet is sent automatically when you connect
@@ -2065,6 +2101,68 @@ Host key verification uses `StrictHostKeyChecking=accept-new` — new host keys 
 | Bar dims with ⚠ icon | 3 consecutive collection errors | Check SSH connectivity; reconnect the session |
 | No private IP shown | `hostname -I` not available on remote host | Install `inetutils` or `hostname` package on the remote host |
 | High CPU on remote host | Polling interval too low | Increase interval to 5–10 seconds in Settings |
+
+---
+
+## Terminal Activity Monitor
+
+Per-session activity and silence detection for terminal tabs, inspired by KDE Konsole. Each SSH terminal session can independently track output events and notify you when activity resumes after a quiet period or when a terminal goes silent.
+
+### Monitoring Modes
+
+| Mode | Behavior | Default Timeout |
+|------|----------|-----------------|
+| **Off** | No monitoring (default) | — |
+| **Activity** | Notify when new output appears after a configurable quiet period | 10 seconds |
+| **Silence** | Notify when no output occurs for a configurable duration | 30 seconds |
+
+**Activity mode** is useful when you've started a long-running command in a background tab and want to know when it produces output again. For example, a build that's been quiet for a while suddenly prints results.
+
+**Silence mode** is useful when you're watching a stream of output (logs, compilation) and want to know when it stops — indicating the process has finished or stalled.
+
+### Notification Channels
+
+When a notification fires, it's delivered through three channels:
+
+1. **Tab indicator icon** — an icon appears on the tab (ℹ for activity, ⚠ for silence)
+2. **In-app toast** — a toast message like "Activity detected: Web-01" or "Silence detected: Build-Server"
+3. **Desktop notification** — a system notification when the RustConn window is not focused
+
+The tab indicator and notification are cleared automatically when you switch to that tab.
+
+### Configure Global Defaults
+
+1. Open **Settings** (Ctrl+,) → **Monitoring** tab
+2. Scroll to the **Activity Monitor** section
+3. Set **Default Mode** (Off / Activity / Silence)
+4. Set **Default Quiet Period** (1–300 seconds, default: 10)
+5. Set **Default Silence Timeout** (1–600 seconds, default: 30)
+
+These defaults apply to all new connections unless overridden per-connection.
+
+### Per-Connection Override
+
+1. Edit connection → **Advanced** tab
+2. Scroll to the **Activity Monitor** section
+3. Set **Mode** (Off / Activity / Silence) — overrides the global default
+4. Set **Quiet Period** (visible when mode = Activity)
+5. Set **Silence Timeout** (visible when mode = Silence)
+
+When a per-connection value is set, it takes priority over the global default. When left unset, the global default is used.
+
+### Quick Mode Toggle (Tab Context Menu)
+
+Right-click any terminal tab → **Monitor: Off/Activity/Silence** to cycle through modes without opening the connection dialog. The mode cycles: Off → Activity → Silence → Off.
+
+### Troubleshooting
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| No notifications appear | Mode is Off | Set mode to Activity or Silence in Settings or connection dialog |
+| Activity notification fires too often | Quiet period too short | Increase quiet period (e.g., 30–60 seconds) |
+| Silence notification fires too early | Silence timeout too short | Increase silence timeout (e.g., 60–120 seconds) |
+| No desktop notification | Window is focused | Desktop notifications only fire when the window is not active |
+| Tab indicator doesn't clear | Tab not switched to | Click on the tab to clear the indicator |
 
 ---
 

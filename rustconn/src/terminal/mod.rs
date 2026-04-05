@@ -35,6 +35,7 @@ use vte4::{PtyFlags, Terminal};
 /// `_vte_regex_has_multiline_compile_flag(regex)` check failed.
 const PCRE2_MULTILINE: u32 = 0x0000_0400;
 
+use crate::activity_coordinator::ActivityCoordinator;
 use crate::automation::{AutomationSession, Trigger};
 use crate::broadcast::BroadcastController;
 use crate::embedded_rdp::EmbeddedRdpWidget;
@@ -130,6 +131,11 @@ pub struct TerminalNotebook {
     session_highlight_rules: Rc<RefCell<HashMap<Uuid, CompiledHighlightRules>>>,
     /// Ad-hoc broadcast controller for sending input to multiple terminals
     broadcast_controller: Rc<RefCell<BroadcastController>>,
+    /// Cancel tokens for background polling tasks (host check, auto-reconnect, WoL)
+    /// Keyed by session_id or connection_id depending on context
+    poll_cancel_tokens: Rc<RefCell<HashMap<Uuid, std::sync::Arc<std::sync::atomic::AtomicBool>>>>,
+    /// Activity coordinator for terminal activity/silence monitoring (set after construction)
+    activity_coordinator: Rc<RefCell<Option<Rc<ActivityCoordinator>>>>,
 }
 
 impl TerminalNotebook {
@@ -192,6 +198,8 @@ impl TerminalNotebook {
             active_recordings: Rc::new(RefCell::new(HashSet::new())),
             remote_recordings: RefCell::new(HashMap::new()),
             broadcast_controller: Rc::new(RefCell::new(BroadcastController::new())),
+            poll_cancel_tokens: Rc::new(RefCell::new(HashMap::new())),
+            activity_coordinator: Rc::new(RefCell::new(None)),
         };
 
         term_notebook.setup_tab_view_signals();
@@ -319,27 +327,40 @@ impl TerminalNotebook {
     /// The menu is shown on right-click via `adw::TabView::set_menu_model`.
     /// The `setup-menu` signal stores the target page so actions can find it.
     fn setup_tab_context_menu(&self) {
-        // Build the GMenu model for tab context menu
-        let menu = gio::Menu::new();
-
-        let group_section = gio::Menu::new();
-        group_section.append(Some(&i18n("Set Group...")), Some("tab.set-group"));
-        group_section.append(Some(&i18n("Remove from Group")), Some("tab.remove-group"));
-        menu.append_section(None, &group_section);
-
-        let close_section = gio::Menu::new();
-        close_section.append(Some(&i18n("Close Tab")), Some("tab.close"));
-        menu.append_section(None, &close_section);
-
-        self.tab_view.set_menu_model(Some(&menu));
+        // Build the initial GMenu model for tab context menu
+        // The monitor section label is updated dynamically in connect_setup_menu
+        let menu = Rc::new(RefCell::new(Self::build_tab_context_menu(None)));
+        self.tab_view.set_menu_model(Some(&*menu.borrow()));
 
         // Shared cell to store the page that was right-clicked
         let context_page: Rc<RefCell<Option<adw::TabPage>>> = Rc::new(RefCell::new(None));
 
         // When the context menu is about to show, store the target page
+        // and rebuild the menu model with the current monitor mode label
         let context_page_setup = context_page.clone();
+        let sessions_for_menu = self.sessions.clone();
+        let activity_for_menu = self.activity_coordinator.clone();
+        let tab_view_for_menu = self.tab_view.clone();
+        let menu_for_setup = menu;
         self.tab_view.connect_setup_menu(move |_tab_view, page| {
             *context_page_setup.borrow_mut() = page.cloned();
+
+            // Determine the current monitor mode for the right-clicked tab
+            let current_mode = page.and_then(|page| {
+                let sessions = sessions_for_menu.borrow();
+                let session_id = sessions
+                    .iter()
+                    .find(|(_, p)| *p == page)
+                    .map(|(id, _)| *id)?;
+                let coordinator = activity_for_menu.borrow();
+                let coordinator = coordinator.as_ref()?;
+                coordinator.get_mode(session_id)
+            });
+
+            // Rebuild menu with updated monitor label
+            let new_menu = Self::build_tab_context_menu(current_mode);
+            *menu_for_setup.borrow_mut() = new_menu.clone();
+            tab_view_for_menu.set_menu_model(Some(&new_menu));
         });
 
         // Create action group
@@ -518,7 +539,7 @@ impl TerminalNotebook {
 
         // "Close Tab" action
         let close_action = gio::SimpleAction::new("close", None);
-        let context_page_close = context_page;
+        let context_page_close = context_page.clone();
         let tab_view_clone = self.tab_view.clone();
         close_action.connect_activate(move |_, _| {
             if let Some(page) = context_page_close.borrow().clone() {
@@ -527,9 +548,72 @@ impl TerminalNotebook {
         });
         action_group.add_action(&close_action);
 
+        // "Cycle Monitor" action — cycles Off → Activity → Silence → Off
+        let cycle_monitor_action = gio::SimpleAction::new("cycle-monitor", None);
+        let context_page_monitor = context_page;
+        let sessions_for_monitor = self.sessions.clone();
+        let activity_for_action = self.activity_coordinator.clone();
+        cycle_monitor_action.connect_activate(move |_, _| {
+            let target_page = context_page_monitor.borrow().clone();
+            let Some(target_page) = target_page else {
+                return;
+            };
+            let session_id = {
+                let sessions_ref = sessions_for_monitor.borrow();
+                sessions_ref
+                    .iter()
+                    .find(|(_, p)| *p == &target_page)
+                    .map(|(id, _)| *id)
+            };
+            let Some(session_id) = session_id else {
+                return;
+            };
+
+            let coordinator = activity_for_action.borrow();
+            let Some(coordinator) = coordinator.as_ref() else {
+                return;
+            };
+            let new_mode = coordinator.cycle_mode(session_id);
+            tracing::debug!(
+                session_id = %session_id,
+                mode = ?new_mode,
+                "Monitor mode cycled via context menu"
+            );
+        });
+        action_group.add_action(&cycle_monitor_action);
+
         // Attach action group to the TabView widget
         self.tab_view
             .insert_action_group("tab", Some(&action_group));
+    }
+
+    /// Builds the GMenu model for the tab context menu.
+    ///
+    /// The monitor section label reflects the current mode when provided.
+    fn build_tab_context_menu(
+        current_mode: Option<rustconn_core::activity_monitor::MonitorMode>,
+    ) -> gio::Menu {
+        use rustconn_core::activity_monitor::MonitorMode;
+
+        let menu = gio::Menu::new();
+
+        let group_section = gio::Menu::new();
+        group_section.append(Some(&i18n("Set Group...")), Some("tab.set-group"));
+        group_section.append(Some(&i18n("Remove from Group")), Some("tab.remove-group"));
+        menu.append_section(None, &group_section);
+
+        // Monitor section with current mode in label
+        let monitor_section = gio::Menu::new();
+        let mode = current_mode.unwrap_or(MonitorMode::Off);
+        let label = i18n_f("Monitor: {}", &[mode.display_name()]);
+        monitor_section.append(Some(&label), Some("tab.cycle-monitor"));
+        menu.append_section(None, &monitor_section);
+
+        let close_section = gio::Menu::new();
+        close_section.append(Some(&i18n("Close Tab")), Some("tab.close"));
+        menu.append_section(None, &close_section);
+
+        menu
     }
 
     /// Creates the welcome tab content - uses the full welcome screen with features
@@ -1393,9 +1477,28 @@ impl TerminalNotebook {
     /// Closes a terminal tab by session ID
     pub fn close_tab(&self, session_id: Uuid) {
         self.reconnect_shown.borrow_mut().remove(&session_id);
+        // Cancel any background polling (auto-reconnect, host check) for this session
+        self.cancel_poll(session_id);
         let page = self.sessions.borrow().get(&session_id).cloned();
         if let Some(page) = page {
             self.tab_view.close_page(&page);
+        }
+    }
+
+    /// Registers a cancel token for a background polling task
+    pub fn register_poll_cancel(
+        &self,
+        key: Uuid,
+        cancel: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    ) {
+        self.poll_cancel_tokens.borrow_mut().insert(key, cancel);
+    }
+
+    /// Cancels and removes a background polling task by key
+    pub fn cancel_poll(&self, key: Uuid) {
+        if let Some(cancel) = self.poll_cancel_tokens.borrow_mut().remove(&key) {
+            cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+            tracing::debug!(%key, "Cancelled background poll");
         }
     }
 
@@ -1486,6 +1589,12 @@ impl TerminalNotebook {
         F: Fn(Uuid, Uuid) + 'static,
     {
         *self.on_reconnect.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// Returns a clone of the reconnect callback reference for use in auto-reconnect polling
+    #[must_use]
+    pub fn reconnect_callback(&self) -> Rc<RefCell<Option<Box<dyn Fn(Uuid, Uuid)>>>> {
+        self.on_reconnect.clone()
     }
 
     /// Sets a color indicator on a tab to show it's in a split pane
@@ -1896,6 +2005,12 @@ impl TerminalNotebook {
     #[must_use]
     pub fn tab_view(&self) -> &adw::TabView {
         &self.tab_view
+    }
+
+    /// Returns a clone of the sessions map for external use (e.g. activity indicator updates)
+    #[must_use]
+    pub fn sessions_map(&self) -> Rc<RefCell<HashMap<Uuid, adw::TabPage>>> {
+        self.sessions.clone()
     }
 
     /// Returns the number of open tabs
@@ -2781,6 +2896,13 @@ impl TerminalNotebook {
     #[allow(dead_code)] // Public API — wired by app layer
     pub fn broadcast_controller(&self) -> Rc<RefCell<BroadcastController>> {
         self.broadcast_controller.clone()
+    }
+
+    /// Sets the activity coordinator for tab context menu integration.
+    ///
+    /// Must be called after construction to enable the "Monitor: ..." context menu action.
+    pub fn set_activity_coordinator(&self, coordinator: Rc<ActivityCoordinator>) {
+        *self.activity_coordinator.borrow_mut() = Some(coordinator);
     }
 }
 

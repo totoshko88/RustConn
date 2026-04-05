@@ -376,6 +376,10 @@ fn start_embedded_rdp_session(
         embedded_config.gateway_username = gateway.username.clone();
     }
 
+    // Pass mouse jiggler settings
+    embedded_config.jiggler_enabled = rdp_config.jiggler_enabled;
+    embedded_config.jiggler_interval_secs = rdp_config.jiggler_interval_secs;
+
     // Wrap in Rc to keep widget alive in notebook
     let embedded_widget = Rc::new(embedded_widget);
 
@@ -385,10 +389,18 @@ fn start_embedded_rdp_session(
     let notebook_for_state = notebook.clone();
     let sidebar_for_state = sidebar.clone();
     let state_for_callback = state.clone();
+    let was_ever_connected = Rc::new(std::cell::Cell::new(false));
+    let was_connected_clone = was_ever_connected.clone();
     embedded_widget.connect_state_changed(move |rdp_state| match rdp_state {
         crate::embedded_rdp::RdpConnectionState::Disconnected => {
             notebook_for_state.stop_recording(session_id);
-            notebook_for_state.mark_tab_disconnected(session_id);
+            if was_connected_clone.get() {
+                // Was connected before — show disconnected tab for reconnect
+                notebook_for_state.mark_tab_disconnected(session_id);
+            } else {
+                // Never connected — close the tab silently
+                notebook_for_state.close_tab(session_id);
+            }
             sidebar_for_state.decrement_session_count(&connection_id.to_string(), false);
             // Record connection end in history
             if let Some(info) = notebook_for_state.get_session_info(session_id)
@@ -399,6 +411,7 @@ fn start_embedded_rdp_session(
             }
         }
         crate::embedded_rdp::RdpConnectionState::Connected => {
+            was_connected_clone.set(true);
             notebook_for_state.mark_tab_connected(session_id);
             sidebar_for_state.increment_session_count(&connection_id.to_string());
         }
@@ -409,6 +422,11 @@ fn start_embedded_rdp_session(
                 && let Ok(mut state_mut) = state_for_callback.try_borrow_mut()
             {
                 state_mut.record_connection_failed(entry_id, "RDP connection error");
+            }
+            // If never connected, close the tab — no point showing failed tab for initial failure
+            if !was_connected_clone.get() {
+                notebook_for_state.close_tab(session_id);
+                sidebar_for_state.update_connection_status(&connection_id.to_string(), "");
             }
         }
         crate::embedded_rdp::RdpConnectionState::Connecting => {}

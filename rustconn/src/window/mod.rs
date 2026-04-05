@@ -38,6 +38,7 @@ use self::types::{
 use crate::alert;
 use crate::toast::ToastOverlay;
 
+use crate::activity_coordinator::ActivityCoordinator;
 use crate::dialogs::{ExportDialog, SettingsDialog};
 use crate::external_window::ExternalWindowManager;
 use crate::monitoring::MonitoringCoordinator;
@@ -75,6 +76,7 @@ pub struct MainWindow {
     external_window_manager: SharedExternalWindowManager,
     toast_overlay: SharedToastOverlay,
     monitoring: Rc<MonitoringCoordinator>,
+    activity_coordinator: types::SharedActivityCoordinator,
 }
 
 impl MainWindow {
@@ -174,8 +176,12 @@ impl MainWindow {
         let sidebar_for_close = sidebar.clone();
         let monitoring = Rc::new(MonitoringCoordinator::new());
         let monitoring_for_close = monitoring.clone();
+        let activity_coordinator = Rc::new(ActivityCoordinator::new());
+        let activity_for_close = activity_coordinator.clone();
+        terminal_notebook.set_activity_coordinator(activity_coordinator.clone());
         terminal_notebook.set_on_page_closed(move |session_id, connection_id| {
             monitoring_for_close.stop_monitoring(session_id);
+            activity_for_close.stop(session_id);
             sidebar_for_close.decrement_session_count(&connection_id.to_string(), false);
         });
 
@@ -188,6 +194,7 @@ impl MainWindow {
             let split_view_for_reconnect = split_view.clone();
             let sidebar_for_reconnect = sidebar.clone();
             let monitoring_for_reconnect = monitoring.clone();
+            let activity_for_reconnect = activity_coordinator.clone();
             terminal_notebook.set_on_reconnect(move |session_id, connection_id| {
                 tracing::info!(
                     %session_id,
@@ -204,6 +211,7 @@ impl MainWindow {
                     sidebar_for_reconnect.clone(),
                     monitoring_for_reconnect.clone(),
                     connection_id,
+                    Some(activity_for_reconnect.clone()),
                 );
             });
         }
@@ -314,6 +322,7 @@ impl MainWindow {
             external_window_manager,
             toast_overlay,
             monitoring,
+            activity_coordinator,
         };
 
         // Set up window actions
@@ -422,6 +431,61 @@ impl MainWindow {
             }
         });
         window.add_action(&new_conn_in_group_action);
+
+        // Connect all connections in a group (including nested subgroups)
+        let connect_all_action = gio::SimpleAction::new("connect-all-in-group", None);
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let notebook_clone = self.terminal_notebook.clone();
+        let split_view_clone = self.split_view.clone();
+        let monitoring_clone = self.monitoring.clone();
+        let activity_clone_all = self.activity_coordinator.clone();
+        connect_all_action.connect_activate(move |_, _| {
+            let Some(item) = sidebar_clone.get_selected_item() else {
+                return;
+            };
+            if !item.is_group() {
+                return;
+            }
+            let Ok(group_id) = uuid::Uuid::parse_str(&item.id()) else {
+                return;
+            };
+            // Collect all descendant group IDs (including the selected group itself)
+            let conn_ids: Vec<uuid::Uuid> = {
+                let Ok(state_ref) = state_clone.try_borrow() else {
+                    return;
+                };
+                let groups = state_ref.list_groups();
+                let mut descendant_ids = std::collections::HashSet::new();
+                descendant_ids.insert(group_id);
+                let mut to_process = vec![group_id];
+                while let Some(current) = to_process.pop() {
+                    for g in &groups {
+                        if g.parent_id == Some(current) && descendant_ids.insert(g.id) {
+                            to_process.push(g.id);
+                        }
+                    }
+                }
+                state_ref
+                    .list_connections()
+                    .into_iter()
+                    .filter(|c| c.group_id.is_some_and(|gid| descendant_ids.contains(&gid)))
+                    .map(|c| c.id)
+                    .collect()
+            };
+            for conn_id in conn_ids {
+                Self::start_connection_with_credential_resolution(
+                    state_clone.clone(),
+                    notebook_clone.clone(),
+                    split_view_clone.clone(),
+                    sidebar_clone.clone(),
+                    monitoring_clone.clone(),
+                    conn_id,
+                    Some(activity_clone_all.clone()),
+                );
+            }
+        });
+        window.add_action(&connect_all_action);
 
         // New connection from connection context (pre-selects the group of the selected connection)
         let new_conn_from_ctx_action = gio::SimpleAction::new("new-connection-from-context", None);
@@ -838,6 +902,7 @@ impl MainWindow {
         let sidebar_clone = sidebar.clone();
         let split_view_clone = self.split_view.clone();
         let monitoring_clone = self.monitoring.clone();
+        let activity_clone = self.activity_coordinator.clone();
         run_snippet_for_conn_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
                 // Get selected connection from sidebar
@@ -875,6 +940,7 @@ impl MainWindow {
                             &sidebar_clone,
                             &monitoring_clone,
                             id,
+                            Some(&activity_clone),
                         );
 
                         // Show snippet picker after a short delay to allow connection to establish
@@ -1090,6 +1156,7 @@ impl MainWindow {
         let sidebar_clone = self.sidebar.clone();
         let split_view_clone = self.split_view.clone();
         let monitoring_clone = self.monitoring.clone();
+        let activity_clone_hist = self.activity_coordinator.clone();
         show_history_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
                 let state_ref = state_clone.borrow();
@@ -1105,6 +1172,7 @@ impl MainWindow {
                 let sidebar_for_connect = sidebar_clone.clone();
                 let split_view_for_connect = split_view_clone.clone();
                 let monitoring_for_connect = monitoring_clone.clone();
+                let activity_for_connect = activity_clone_hist.clone();
                 dialog.connect_on_connect(move |entry| {
                     if entry.is_quick_connect() {
                         tracing::warn!("Cannot reconnect to quick connect from history");
@@ -1121,6 +1189,7 @@ impl MainWindow {
                             sidebar_for_connect.clone(),
                             monitoring_for_connect.clone(),
                             entry.connection_id,
+                            Some(activity_for_connect.clone()),
                         );
                     }
                 });
@@ -1562,6 +1631,7 @@ impl MainWindow {
         let notebook_clone = terminal_notebook.clone();
         let split_view_clone = split_view.clone();
         let monitoring_clone = self.monitoring.clone();
+        let activity_clone_sidebar = self.activity_coordinator.clone();
         sidebar.list_view().connect_activate(move |_, position| {
             Self::connect_at_position_with_split(
                 &state_clone,
@@ -1570,6 +1640,7 @@ impl MainWindow {
                 &split_view_clone,
                 &monitoring_clone,
                 position,
+                Some(&activity_clone_sidebar),
             );
         });
 
@@ -1580,6 +1651,8 @@ impl MainWindow {
         let split_container_for_tab = self.split_container.clone();
         let global_split_view = split_view.clone();
         let notebook_clone = terminal_notebook.clone();
+        let activity_for_tab = self.activity_coordinator.clone();
+        let sessions_for_tab = terminal_notebook.sessions_map();
         terminal_notebook.tab_view().connect_notify_local(
             Some("selected-page"),
             move |tab_view, _| {
@@ -1590,6 +1663,12 @@ impl MainWindow {
 
                 // Get session ID for this page
                 if let Some(session_id) = notebook_clone.get_session_id_for_page(page_num) {
+                    // Clear activity monitor indicator and reset notification state
+                    activity_for_tab.on_tab_switched(session_id);
+                    if let Some(page) = sessions_for_tab.borrow().get(&session_id) {
+                        page.set_indicator_icon(gio::Icon::NONE);
+                    }
+
                     // Check if this is a VNC, RDP, or SPICE session - they display differently
                     if let Some(info) = notebook_clone.get_session_info(session_id)
                         && (info.protocol == "vnc"
@@ -1898,6 +1977,7 @@ impl MainWindow {
         split_view: &SharedSplitView,
         monitoring: &types::SharedMonitoring,
         position: u32,
+        activity: Option<&types::SharedActivityCoordinator>,
     ) {
         // Get the item at position from the tree model (not the flat store)
         let tree_model = sidebar.tree_model();
@@ -1917,6 +1997,7 @@ impl MainWindow {
                         sidebar.clone(),
                         monitoring.clone(),
                         conn_id,
+                        activity.cloned(),
                     );
                 }
             }
@@ -1939,6 +2020,7 @@ impl MainWindow {
         sidebar: SharedSidebar,
         monitoring: types::SharedMonitoring,
         connection_id: Uuid,
+        activity: Option<types::SharedActivityCoordinator>,
     ) {
         // Get connection info and cached credentials (fast, non-blocking)
         let (protocol_type, cached_credentials) = {
@@ -1980,6 +2062,7 @@ impl MainWindow {
                     &username, &password,
                 )),
                 Some((username, password, domain)),
+                activity,
             );
             return;
         }
@@ -1990,6 +2073,7 @@ impl MainWindow {
         let split_view_clone = split_view.clone();
         let sidebar_clone = sidebar.clone();
         let monitoring_clone = monitoring.clone();
+        let activity_clone = activity;
 
         {
             let Ok(state_ref) = state.try_borrow() else {
@@ -2016,6 +2100,7 @@ impl MainWindow {
                     protocol_type,
                     resolved_credentials,
                     None, // No cached credentials
+                    activity_clone,
                 );
             });
         }
@@ -2036,6 +2121,7 @@ impl MainWindow {
         protocol_type: rustconn_core::ProtocolType,
         resolved_credentials: Option<rustconn_core::Credentials>,
         cached_credentials: Option<(String, String, String)>,
+        activity: Option<types::SharedActivityCoordinator>,
     ) {
         use rustconn_core::models::ProtocolType;
 
@@ -2085,6 +2171,7 @@ impl MainWindow {
                     &sidebar,
                     &monitoring,
                     connection_id,
+                    activity.as_ref(),
                 );
             }
             ProtocolType::Sftp => {
@@ -2358,6 +2445,7 @@ impl MainWindow {
                 &sidebar,
                 &monitoring,
                 connection_id,
+                None,
             );
             return;
         }
@@ -2371,6 +2459,7 @@ impl MainWindow {
                 &sidebar,
                 &monitoring,
                 connection_id,
+                None,
             );
             return;
         }
@@ -2462,6 +2551,7 @@ impl MainWindow {
         sidebar: &SharedSidebar,
         monitoring: &types::SharedMonitoring,
         connection_id: Uuid,
+        activity: Option<&types::SharedActivityCoordinator>,
     ) -> Option<Uuid> {
         // Update status to connecting
         sidebar.update_connection_status(&connection_id.to_string(), "connecting");
@@ -2540,6 +2630,17 @@ impl MainWindow {
                     }
                 });
             }
+        }
+
+        // Wire activity monitoring for SSH/terminal sessions
+        if let Some(activity_coord) = activity {
+            Self::setup_activity_monitoring(
+                state,
+                notebook,
+                activity_coord,
+                session_id,
+                connection_id,
+            );
         }
 
         Some(session_id)
@@ -2865,6 +2966,153 @@ impl MainWindow {
         );
     }
 
+    /// Sets up activity monitoring for an SSH session.
+    ///
+    /// Resolves per-connection or global defaults, starts the coordinator,
+    /// connects VTE `contents_changed` to `on_output()`, and delivers
+    /// notifications (tab indicator, toast, desktop notification).
+    /// Also wires `connect_child_exited` for cleanup.
+    fn setup_activity_monitoring(
+        state: &SharedAppState,
+        notebook: &SharedNotebook,
+        activity: &types::SharedActivityCoordinator,
+        session_id: Uuid,
+        connection_id: Uuid,
+    ) {
+        use rustconn_core::activity_monitor::MonitorMode;
+
+        // Resolve effective config from per-connection override + global defaults
+        let (mode, quiet, silence, conn_name) = {
+            let Ok(state_ref) = state.try_borrow() else {
+                return;
+            };
+            let defaults = &state_ref.settings().activity_monitor;
+            let conn = match state_ref.get_connection(connection_id) {
+                Some(c) => c,
+                None => return,
+            };
+            let name = conn.name.clone();
+            if let Some(ref config) = conn.activity_monitor_config {
+                (
+                    config.effective_mode(defaults),
+                    config.effective_quiet_period(defaults),
+                    config.effective_silence_timeout(defaults),
+                    name,
+                )
+            } else {
+                (
+                    defaults.mode,
+                    defaults.effective_quiet_period(),
+                    defaults.effective_silence_timeout(),
+                    name,
+                )
+            }
+        };
+
+        // Don't start monitoring if mode is Off
+        if mode == MonitorMode::Off {
+            return;
+        }
+
+        // 4.1: Start the coordinator for this session
+        activity.start(session_id, mode, quiet, silence);
+
+        // Set up silence callback for timer-based silence notifications
+        let notebook_for_silence = notebook.clone();
+        let sessions_for_silence = notebook.sessions_map();
+        let conn_name_for_silence = conn_name.clone();
+        activity.set_silence_callback(move |sid, ntype| {
+            Self::deliver_activity_notification(
+                &notebook_for_silence,
+                &sessions_for_silence,
+                sid,
+                ntype,
+                &conn_name_for_silence,
+            );
+        });
+
+        // 4.2: Connect contents_changed to on_output() for activity detection
+        let activity_for_output = Rc::clone(activity);
+        let notebook_for_output = notebook.clone();
+        let sessions_for_output = notebook.sessions_map();
+        let conn_name_for_output = conn_name.clone();
+        notebook.connect_contents_changed(session_id, move || {
+            if let Some(ntype) = activity_for_output.on_output(session_id) {
+                Self::deliver_activity_notification(
+                    &notebook_for_output,
+                    &sessions_for_output,
+                    session_id,
+                    ntype,
+                    &conn_name_for_output,
+                );
+            }
+        });
+
+        // 4.7: On child exit, stop the coordinator to clean up timers
+        let activity_for_exit = Rc::clone(activity);
+        notebook.connect_child_exited(session_id, move |_exit_status| {
+            activity_for_exit.stop(session_id);
+        });
+
+        tracing::debug!(
+            %session_id,
+            %connection_id,
+            ?mode,
+            quiet_period = quiet,
+            silence_timeout = silence,
+            "Activity monitoring started"
+        );
+    }
+
+    /// Delivers an activity/silence notification through all channels:
+    /// tab indicator icon, toast, and desktop notification (when unfocused).
+    fn deliver_activity_notification(
+        notebook: &SharedNotebook,
+        sessions: &Rc<RefCell<std::collections::HashMap<Uuid, adw::TabPage>>>,
+        session_id: Uuid,
+        ntype: crate::activity_coordinator::NotificationType,
+        session_name: &str,
+    ) {
+        use crate::activity_coordinator::NotificationType;
+        use crate::i18n::i18n_f;
+
+        let (icon_name, toast_msg) = match ntype {
+            NotificationType::Activity => (
+                "dialog-information-symbolic",
+                i18n_f("Activity detected: {}", &[session_name]),
+            ),
+            NotificationType::Silence => (
+                "dialog-warning-symbolic",
+                i18n_f("Silence detected: {}", &[session_name]),
+            ),
+        };
+
+        // 4.3: Set tab indicator icon
+        if let Some(page) = sessions.borrow().get(&session_id) {
+            page.set_indicator_icon(Some(&gio::ThemedIcon::new(icon_name)));
+        }
+
+        // 4.4: Show toast via existing ToastOverlay
+        if let Some(root) = notebook.widget().root()
+            && let Some(window) = root.downcast_ref::<gtk4::Window>()
+        {
+            let toast_type = match ntype {
+                NotificationType::Activity => crate::toast::ToastType::Info,
+                NotificationType::Silence => crate::toast::ToastType::Warning,
+            };
+            crate::toast::show_toast_on_window(window, &toast_msg, toast_type);
+
+            // 4.5: Send desktop notification when window is unfocused
+            if !window.is_active()
+                && let Some(app) = window.application()
+            {
+                let notification = gio::Notification::new(&toast_msg);
+                notification.set_icon(&gio::ThemedIcon::new(icon_name));
+                app.send_notification(Some(&format!("activity-{session_id}")), &notification);
+            }
+        }
+    }
+
     /// Sets up the child exited handler for session cleanup
     pub fn setup_child_exited_handler(
         state: &SharedAppState,
@@ -2988,6 +3236,67 @@ impl MainWindow {
             // Mark tab as disconnected and show reconnect overlay
             notebook_clone.mark_tab_disconnected(session_id);
             notebook_clone.show_reconnect_overlay(session_id);
+
+            // Auto-reconnect: poll host and reconnect when it comes back online
+            // Only for non-intentional disconnects (failures, not user-initiated)
+            if is_failure
+                && let Ok(state_ref) = state_clone.try_borrow()
+                && let Some(conn) = state_ref.get_connection(connection_id)
+            {
+                let host = conn.host.clone();
+                let port = conn.port;
+                drop(state_ref);
+
+                let cancel = std::sync::Arc::new(
+                    std::sync::atomic::AtomicBool::new(false),
+                );
+                // Register cancel token so closing the tab cancels polling
+                notebook_clone.register_poll_cancel(session_id, cancel.clone());
+
+                let config =
+                    rustconn_core::host_check::HostCheckConfig::new(&host, port)
+                        .with_timeout_secs(3)
+                        .with_poll_interval_secs(5)
+                        .with_max_poll_duration_secs(300);
+
+                tracing::info!(
+                    %connection_id,
+                    %host,
+                    %port,
+                    "Starting auto-reconnect polling"
+                );
+
+                // Clone notebook's on_reconnect callback for use in the polling result
+                let on_reconnect = notebook_clone.reconnect_callback();
+                let notebook_cleanup = notebook_clone.clone();
+
+                crate::utils::spawn_blocking_with_callback(
+                    move || {
+                        let rt = tokio::runtime::Runtime::new()
+                            .expect("Failed to create tokio runtime");
+                        rt.block_on(
+                            rustconn_core::host_check::poll_until_online(
+                                &config,
+                                &cancel,
+                                |_online, _elapsed| {},
+                            ),
+                        )
+                    },
+                    move |result| {
+                        // Clean up the cancel token
+                        notebook_cleanup.cancel_poll(session_id);
+                        if matches!(result, Ok(true)) {
+                            tracing::info!(
+                                %connection_id,
+                                "Host is back online, triggering reconnect"
+                            );
+                            if let Some(ref cb) = *on_reconnect.borrow() {
+                                cb(session_id, connection_id);
+                            }
+                        }
+                    },
+                );
+            }
 
             // Decrement session count - status changes only if no other sessions active
             sidebar_clone.decrement_session_count(&connection_id_str, is_failure);
@@ -3562,6 +3871,7 @@ impl MainWindow {
                         &self.sidebar,
                         &self.monitoring,
                         *id,
+                        Some(&self.activity_coordinator),
                     );
                 } else {
                     tracing::warn!(%id, "Startup action: connection not found, skipping");
@@ -3587,6 +3897,7 @@ impl MainWindow {
                             &self.sidebar,
                             &self.monitoring,
                             conn_id,
+                            Some(&self.activity_coordinator),
                         );
                         let state_clone = self.state.clone();
                         let sidebar_clone = Rc::clone(&self.sidebar);

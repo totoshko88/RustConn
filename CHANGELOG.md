@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+## [0.10.11] - 2026-04-05
+
+### Added
+- **RDP Mouse Jiggler** — prevents idle disconnect by sending periodic mouse movements; configurable interval (10–600 seconds, default 60); auto-starts when RDP session connects, auto-stops on disconnect; works with both IronRDP embedded and FreeRDP external modes; settings in Connection Dialog → RDP → Features
+- **Connect All in Folder** — right-click a group in the sidebar → "Connect All" opens all connections in that group simultaneously
+- **Copy Username / Copy Password from context menu** — right-click a connection → "Copy Username" or "Copy Password" copies credentials to clipboard; password auto-clears from clipboard after 30 seconds for security; uses cached credentials resolved during previous connection
+- **Host Online Check** — right-click a connection → "Check if Online" starts async TCP port probing (polls every 5s for up to 2 minutes); auto-connects when host becomes reachable; shows toast notifications for status updates
+- **WoL + Auto-Connect** — Wake On LAN now automatically polls the host after sending the magic packet (up to 5 minutes) and auto-connects when the host comes online; replaces the previous fire-and-forget WoL behavior
+- **Auto-reconnect on session failure** — when an SSH session disconnects unexpectedly (server reboot, network failure), RustConn automatically starts polling the host (every 5s for up to 5 minutes) and reconnects when the server comes back online; the reconnect banner is still shown for manual reconnect if auto-reconnect times out
+- **Host check module** (`rustconn-core::host_check`) — async TCP connect probe with configurable timeout, polling interval, and max duration; cancellation support via `AtomicBool`; `check_host_online()` for single probe, `poll_until_online()` for continuous monitoring
+- **Terminal Activity Monitor** — per-session activity and silence detection for terminal tabs, inspired by KDE Konsole ([#72](https://github.com/totoshko88/RustConn/issues/72)); three monitoring modes: Off (default), Activity (notify when new output appears after a configurable quiet period), and Silence (notify when no output occurs for a configurable timeout); notifications delivered through tab indicator icons, in-app toasts, and desktop notifications (when window is unfocused); per-connection config overrides global defaults; settings in Connection Dialog → Advanced → Activity Monitor and Settings → Monitoring → Activity Monitor; tab context menu "Monitor: Off/Activity/Silence" for quick mode cycling; property-based tests for mode cycling, serde round-trip, config resolution, and timeout clamping
+
+### Fixed
+- **RDP tabs auto-close on initial connection failure** — RDP tabs that fail during initial connection (CredSSP auth error, connection refused, timeout) now close automatically instead of showing a useless "failed" tab; disconnected tabs are still shown for sessions that were previously connected (for reconnect)
+- **Group context menu detection** — fixed `is_group` detection in sidebar context menu to use `ConnectionItem.is_group()` instead of icon name check; groups with custom emoji icons now correctly show group-specific menu items (Connect All, New Connection in Group)
+
+### Dependencies
+- **Updated**: fastrand 2.3.0→2.4.0
+
 ## [0.10.10] - 2026-04-04
 
 ### Changed

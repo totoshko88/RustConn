@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.10.10
+Version:        0.10.11
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -226,6 +226,13 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Sat Apr 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.11-0
+- RDP Mouse Jiggler — prevents idle disconnect with periodic mouse movements
+- Connect All in Folder — open all connections in a group at once
+- Copy Username / Copy Password from sidebar context menu
+- Host Online Check — TCP probe with auto-connect when host comes online
+- WoL + Auto-Connect — WoL now polls and auto-connects when host is ready
+
 * Sat Apr 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.10-0
 - Flatpak: removed extra sandbox permissions rejected by Flathub lint
   (home/.hoop, xdg-run/gnupg, bitwarden data, xdg-run/ssh-agent);
