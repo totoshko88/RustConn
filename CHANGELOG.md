@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SSH: ControlMaster sockets cleaned up on application exit** — all SSH ControlMaster sockets are now gracefully closed (`ssh -O exit`) when the application shuts down; previously sockets lingered in the filesystem until `ControlPersist` timeout expired ([#125](https://github.com/totoshko88/RustConn/issues/125))
 - **SSH: control socket path shortened for macOS compatibility** — the ControlPath format changed from `rustconn-ssh-{host}-{port}-%r` to `rc-{host}-{port}-%r`; on macOS, `/tmp` is used instead of `$TMPDIR` (which is ~52 chars under `/var/folders/...`) to stay within the 104-byte Unix socket path limit; long hostnames are truncated to 40 characters
 - **Auto-reconnect: no longer loops infinitely on rapid crashes** — if a session crashes within 5 seconds of starting (e.g., SIGSEGV in VTE), auto-reconnect is skipped to prevent an infinite reconnect loop; previously a terminal crash would trigger immediate reconnect → crash → reconnect indefinitely at ~17ms intervals
+- **Flatpak: local shell PTY resize now propagates to host** — when the VTE widget resizes, the new dimensions are forwarded to the host-side PTY via `flatpak-spawn --host -- stty rows R cols C`; previously the host shell retained its initial 24×80 size regardless of window resizing, causing incorrect line wrapping in bash, vim, htop, etc. ([#122](https://github.com/totoshko88/RustConn/issues/122))
 
 ## [0.13.6] - 2026-05-07
 

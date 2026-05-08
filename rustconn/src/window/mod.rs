@@ -5044,6 +5044,35 @@ impl MainWindow {
                 "flatpak-spawn --host --env=TERM=xterm-256color -- script -qfc '{host_shell} --login' /dev/null"
             );
             notebook.spawn_command(session_id, &["/bin/sh", "-c", &spawn_cmd], None, None, None);
+
+            // Wire up PTY resize propagation for Flatpak host shell (#122).
+            //
+            // VTE automatically resizes its own PTY (sandbox-side), but the
+            // host-side PTY created by `script` never receives TIOCSWINSZ.
+            // On each VTE char-size-changed, send a resize escape sequence
+            // that `script`/the host shell can interpret.
+            //
+            // We use the ANSI "resize terminal" sequence: feed `stty rows R cols C`
+            // wrapped in a way that doesn't disrupt the user's input. The approach:
+            // send SIGWINCH to the host process group via flatpak-spawn.
+            if let Some(terminal) = notebook.get_terminal(session_id) {
+                use vte4::prelude::*;
+                terminal.connect_char_size_changed(move |term, _width, _height| {
+                    let rows = term.row_count();
+                    let cols = term.column_count();
+                    // Spawn a background process to resize the host PTY.
+                    // `stty` on the host sets the PTY dimensions and the kernel
+                    // delivers SIGWINCH to the foreground process group.
+                    let cmd = format!(
+                        "flatpak-spawn --host -- stty rows {rows} cols {cols}"
+                    );
+                    std::thread::spawn(move || {
+                        let _ = std::process::Command::new("sh")
+                            .args(["-c", &cmd])
+                            .output();
+                    });
+                });
+            }
         } else {
             notebook.spawn_command(session_id, &[&shell], None, None, None);
         }
