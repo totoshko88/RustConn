@@ -1,0 +1,12 @@
+{
+  "name": "KiroGraph Deferred Sync",
+  "version": "1.0.0",
+  "description": "Sync the KiroGraph index when the agent is idle and a dirty marker is present. Batches multiple rapid saves into one sync.",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "kirograph sync-if-dirty --quiet 2>/dev/null || true"
+  }
+}

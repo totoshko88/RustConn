@@ -2,7 +2,11 @@
   "mcpServers": {
     "kirograph": {
       "command": "kirograph",
-      "args": ["serve", "--mcp", "--path", "/home/totoshko88/Documents/RustConn"],
+      "args": [
+        "serve",
+        "--mcp"
+      ],
+      "disabled": false,
       "autoApprove": [
         "kirograph_search",
         "kirograph_context",
@@ -15,13 +19,7 @@
         "kirograph_dead_code",
         "kirograph_circular_deps",
         "kirograph_path",
-        "kirograph_type_hierarchy",
-        "kirograph_architecture",
-        "kirograph_coupling",
-        "kirograph_package",
-        "kirograph_hotspots",
-        "kirograph_surprising",
-        "kirograph_diff"
+        "kirograph_type_hierarchy"
       ]
     }
   }

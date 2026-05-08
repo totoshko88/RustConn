@@ -5,6 +5,23 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.9] - 2026-05-09
+
+### Fixed
+- **Flatpak: Zero Trust Generic commands now execute on host** — custom commands in the Generic Zero Trust provider were failing with "No command specified" because the double `sh -c` wrapping broke argument parsing for `flatpak-spawn`; now Generic commands in Flatpak are automatically wrapped with `flatpak-spawn --host -- script -qfc '...' /dev/null` (same PTY-allocating approach as Local Shell), so host-side binaries resolve correctly without manual `flatpak-spawn` prefixes; single quotes in command templates are properly escaped ([#132](https://github.com/totoshko88/RustConn/issues/132))
+- **Split View: focus border not updating on click** — clicking a terminal pane in split view would send input to the correct terminal but the focus border (colored outline) remained on the previously focused pane; root cause: each call to `setup_all_panel_click_handlers` added a new `GestureClick` controller without removing the previous one, causing duplicate gesture controllers to compete for the click event; the first (stale) handler would claim the event before the current handler could update focus styling; fixed by removing existing primary-button gesture controllers before adding a new one
+- **Zero Trust Generic: skip vault credential lookup** — connecting via Generic Command no longer triggers a ~14-second Bitwarden/KeePass vault lookup; the custom command handles its own authentication interactively in the terminal, so vault resolution is unnecessary and was only adding startup delay ([#132](https://github.com/totoshko88/RustConn/issues/132))
+
+### Improved
+- **RDP: real disk space reported to Windows via shared folders** — the RDPDR backend now queries actual filesystem statistics using `nix::sys::statvfs` instead of returning hardcoded values; Windows Explorer and applications connected via shared folders now see correct total/available disk space; values are normalized to 4096-byte allocation units matching the reported sector geometry; graceful fallback to defaults if the statvfs call fails
+
+### Dependencies
+- `cc` 1.2.61 → 1.2.62
+- `filetime` 0.2.27 → 0.2.28
+- `quick-xml` 0.39.3 → 0.39.4
+- `tokio` 1.52.2 → 1.52.3
+- Added `nix` 0.31.2 (feature: `fs`) to rustconn-core for safe statvfs access
+
 ## [0.13.8] - 2026-05-08
 
 ### Fixed

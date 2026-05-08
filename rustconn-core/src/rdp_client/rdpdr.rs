@@ -888,10 +888,29 @@ impl RustConnRdpdrBackend {
 
 /// Returns (total_alloc_units, available_alloc_units) for the filesystem containing `path`.
 ///
-/// TODO: Use a safe statvfs wrapper (e.g. `nix` crate) to query real disk space.
-/// Currently returns hardcoded defaults because `unsafe` code is forbidden in this crate.
-fn get_disk_stats(_path: &str) -> (i64, i64) {
-    (1_000_000, 500_000)
+/// Uses `nix::sys::statvfs` for safe filesystem queries without `unsafe` code.
+/// Values are normalized to 4096-byte allocation units (8 sectors × 512 bytes)
+/// to match the `sectors_per_alloc_unit` and `bytes_per_sector` reported to Windows.
+/// Falls back to hardcoded defaults if the statvfs call fails.
+fn get_disk_stats(path: &str) -> (i64, i64) {
+    const ALLOC_UNIT_BYTES: u64 = 4096; // 8 sectors × 512 bytes
+
+    match nix::sys::statvfs::statvfs(path) {
+        Ok(stat) => {
+            let frag_size = stat.fragment_size();
+            // Convert from filesystem blocks to 4096-byte allocation units
+            let total_bytes = stat.blocks().saturating_mul(frag_size);
+            let avail_bytes = stat.blocks_available().saturating_mul(frag_size);
+
+            let total = i64::try_from(total_bytes / ALLOC_UNIT_BYTES).unwrap_or(1_000_000);
+            let available = i64::try_from(avail_bytes / ALLOC_UNIT_BYTES).unwrap_or(500_000);
+            (total, available)
+        }
+        Err(e) => {
+            warn!("statvfs failed for {path:?}: {e}, using defaults");
+            (1_000_000, 500_000)
+        }
+    }
 }
 
 /// Converts Unix timestamp (seconds) to Windows FILETIME (100-nanosecond intervals since 1601)

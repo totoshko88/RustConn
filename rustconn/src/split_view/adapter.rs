@@ -1225,6 +1225,19 @@ impl SplitViewAdapter {
             return;
         };
 
+        // Remove any existing click gesture controllers to avoid duplicates
+        // that can cause focus styling to not update correctly.
+        let controllers_to_remove: Vec<_> = widget
+            .observe_controllers()
+            .into_iter()
+            .filter_map(|obj| obj.ok())
+            .filter_map(|obj| obj.downcast::<gtk4::GestureClick>().ok())
+            .filter(|g| g.button() == gdk::BUTTON_PRIMARY)
+            .collect();
+        for controller in controllers_to_remove {
+            widget.remove_controller(&controller);
+        }
+
         let click = gtk4::GestureClick::new();
         click.set_button(gdk::BUTTON_PRIMARY);
         click.set_propagation_phase(gtk4::PropagationPhase::Capture);

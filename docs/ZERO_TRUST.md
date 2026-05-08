@@ -211,6 +211,37 @@ For providers not listed above. Enter a custom command template that RustConn wi
 
 The command template supports `${host}`, `${user}`, and `${port}` placeholder substitution. These are replaced with the connection's host, username, and port values at runtime.
 
+#### Running Local Programs
+
+Generic Command can be used to launch **any program** on your local computer inside a RustConn terminal tab — not just network tunnels. This is useful for CLI tools that provide their own interactive TUI or shell session.
+
+**Example — Kiro CLI:**
+
+| Field | Value |
+|-------|-------|
+| Name | kiro-cli |
+| Command Template | `kiro-cli` |
+
+**Example — local Docker shell:**
+
+| Field | Value |
+|-------|-------|
+| Name | Docker dev container |
+| Command Template | `docker exec -it my-container /bin/bash` |
+
+**Example — tmux session:**
+
+| Field | Value |
+|-------|-------|
+| Name | tmux main |
+| Command Template | `tmux new-session -A -s main` |
+
+#### Flatpak Compatibility
+
+When RustConn runs as a Flatpak, Generic commands are **automatically executed on the host** via `flatpak-spawn --host` with a proper PTY allocation (same mechanism as Local Shell). No manual `flatpak-spawn` prefixes are needed — simply enter the command as you would on a native install.
+
+This means any program installed on your system (e.g., `kiro-cli`, `docker`, `tmux`, `htop`) works transparently regardless of whether RustConn is installed as a native package or Flatpak.
+
 ---
 
 ## Custom Arguments

@@ -1,13 +1,28 @@
 {
-  "name": "KiroGraph: Sync on delete",
+  "name": "KiroGraph Sync on Delete",
   "version": "1.0.0",
-  "description": "Immediately syncs the KiroGraph index when a source file is deleted",
+  "description": "Remove deleted files from the KiroGraph index immediately.",
   "when": {
     "type": "fileDeleted",
-    "patterns": ["*.rs"]
+    "patterns": [
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.js",
+      "**/*.jsx",
+      "**/*.py",
+      "**/*.go",
+      "**/*.rs",
+      "**/*.java",
+      "**/*.cs",
+      "**/*.rb",
+      "**/*.php",
+      "**/*.swift",
+      "**/*.kt",
+      "**/*.dart"
+    ]
   },
   "then": {
     "type": "runCommand",
-    "command": "kirograph sync-if-dirty"
+    "command": "kirograph sync-if-dirty 2>/dev/null || true"
   }
 }

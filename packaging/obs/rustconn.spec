@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.13.8
+Version:        0.13.9
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -238,6 +238,24 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Sat May 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.9-1
+- [Fixed] Flatpak: Zero Trust Generic commands now execute on host —
+  custom commands were failing with "No command specified" due to double
+  sh -c wrapping; now automatically wrapped with flatpak-spawn --host
+  with PTY allocation; single quotes in templates properly escaped (#132)
+- [Fixed] Split View: focus border not updating on click — clicking a
+  terminal pane sent input correctly but the focus border remained on the
+  previous pane; fixed by removing duplicate gesture controllers
+- [Improved] RDP: real disk space reported to Windows via shared folders —
+  RDPDR backend now queries actual filesystem statistics using
+  nix::sys::statvfs instead of returning hardcoded values; Windows Explorer
+  and applications see correct total/available disk space; values normalized
+  to 4096-byte allocation units; graceful fallback if statvfs call fails
+- [Dependencies] cc 1.2.61 → 1.2.62, filetime 0.2.27 → 0.2.28,
+  quick-xml 0.39.3 → 0.39.4, tokio 1.52.2 → 1.52.3
+- [Dependencies] Added nix 0.31.2 (feature: fs) to rustconn-core for safe
+  statvfs access
+
 * Thu May 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.8-1
 - [Fixed] Per-connection monitoring toggle not saving state — the
   "Enable Monitoring" switch always appeared enabled and did not persist

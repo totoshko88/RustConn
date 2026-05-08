@@ -2272,15 +2272,42 @@ pub fn start_zerotrust_connection(
     notebook.display_output(session_id, &feedback);
 
     // Spawn the Zero Trust command through shell
-    let spawn_command = rustconn_core::flatpak::wrap_host_command(&full_command);
-    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
-    notebook.spawn_command(
-        session_id,
-        &[&shell, "-c", &spawn_command],
-        None,
-        None,
-        None,
+    //
+    // For Generic provider in Flatpak: the user's custom command likely refers
+    // to host-side binaries (not installed in sandbox via Flatpak Components).
+    // Wrap with flatpak-spawn --host + script (for PTY) — same approach as
+    // Local Shell (#122). Other providers have their CLIs installed in-sandbox.
+    let is_generic = matches!(
+        &conn.protocol_config,
+        rustconn_core::ProtocolConfig::ZeroTrust(zt)
+            if matches!(zt.provider, rustconn_core::models::ZeroTrustProvider::Generic)
     );
+
+    if is_generic && rustconn_core::flatpak::is_flatpak() {
+        // Generic command_template is already a shell command string.
+        // Extract it from the full_command which is "sh -c <template>".
+        // We need just the template part for flatpak-spawn.
+        let template = full_command
+            .strip_prefix("sh -c ")
+            .unwrap_or(&full_command);
+        // Escape single quotes for safe embedding in '...' shell string:
+        // replace ' with '\'' (end quote, escaped quote, start quote)
+        let escaped = template.replace('\'', "'\\''");
+        let spawn_cmd = format!(
+            "flatpak-spawn --host --env=TERM=xterm-256color -- script -qfc '{escaped}' /dev/null"
+        );
+        notebook.spawn_command(session_id, &["/bin/sh", "-c", &spawn_cmd], None, None, None);
+    } else {
+        let spawn_command = rustconn_core::flatpak::wrap_host_command(&full_command);
+        let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
+        notebook.spawn_command(
+            session_id,
+            &[&shell, "-c", &spawn_command],
+            None,
+            None,
+            None,
+        );
+    }
 
     Some(session_id)
 }
