@@ -224,7 +224,10 @@ impl SecureCrtImporter {
 
         let connection = match protocol {
             ScrtProtocol::Ssh2 | ScrtProtocol::Ssh1 => {
-                let port = session.port.unwrap_or(22) as u16;
+                let port = session
+                    .port
+                    .and_then(|p| u16::try_from(p).ok())
+                    .unwrap_or(22);
 
                 // Determine auth method
                 let has_key = session.identity_file.is_some();
@@ -277,7 +280,10 @@ impl SecureCrtImporter {
                 conn
             }
             ScrtProtocol::Telnet => {
-                let port = session.port.unwrap_or(23) as u16;
+                let port = session
+                    .port
+                    .and_then(|p| u16::try_from(p).ok())
+                    .unwrap_or(23);
                 let mut conn = Connection::new(
                     name.to_string(),
                     hostname.to_string(),
@@ -289,7 +295,10 @@ impl SecureCrtImporter {
                 conn
             }
             ScrtProtocol::Rdp => {
-                let port = session.port.unwrap_or(3389) as u16;
+                let port = session
+                    .port
+                    .and_then(|p| u16::try_from(p).ok())
+                    .unwrap_or(3389);
                 let mut conn = Connection::new(
                     name.to_string(),
                     hostname.to_string(),
@@ -301,7 +310,10 @@ impl SecureCrtImporter {
                 conn
             }
             ScrtProtocol::Vnc => {
-                let port = session.port.unwrap_or(5900) as u16;
+                let port = session
+                    .port
+                    .and_then(|p| u16::try_from(p).ok())
+                    .unwrap_or(5900);
                 let mut conn = Connection::new(
                     name.to_string(),
                     hostname.to_string(),

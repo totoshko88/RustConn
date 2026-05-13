@@ -83,9 +83,9 @@ fn setup_open_document_action(
                     let mut state_ref = state_for_cb.borrow_mut();
                     let pw_str = password.as_ref().map(|s| {
                         use secrecy::ExposeSecret;
-                        s.expose_secret().to_string()
+                        zeroize::Zeroizing::new(s.expose_secret().to_string())
                     });
-                    match state_ref.open_document(&path, pw_str.as_deref()) {
+                    match state_ref.open_document(&path, pw_str.as_ref().map(|z| z.as_str())) {
                         Ok(_doc_id) => {
                             drop(state_ref);
                         }
@@ -140,12 +140,12 @@ fn setup_save_document_action(window: &gtk4::ApplicationWindow, state: &SharedAp
                             let mut state_ref = state_for_cb.borrow_mut();
                             let pw_str = password.as_ref().map(|s| {
                                 use secrecy::ExposeSecret;
-                                s.expose_secret().to_string()
+                                zeroize::Zeroizing::new(s.expose_secret().to_string())
                             });
                             if let Err(e) = state_ref.save_document(
                                 id,
                                 &path,
-                                pw_str.as_deref(),
+                                pw_str.as_ref().map(|z| z.as_str()),
                                 EncryptionStrength::Standard,
                             ) {
                                 drop(state_ref);

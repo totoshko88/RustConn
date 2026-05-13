@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Auto-Context Before Task",
+  "description": "Before starting a spec task, automatically runs kirograph_context to orient the agent on relevant code areas",
+  "version": "1",
+  "when": {
+    "type": "preTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A spec task is about to start. Read the task description from the current spec, then call kirograph_context with that task description to get relevant entry points and code context. This will help you orient before making changes. If kirograph is unavailable, use context-gatherer sub-agent instead."
+  }
+}

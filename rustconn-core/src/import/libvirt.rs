@@ -340,15 +340,17 @@ impl LibvirtXmlImporter {
         // Resolve port: prefer tls_port for SPICE, then port, then default
         let port = if gfx.graphics_type == "spice" {
             gfx.tls_port
-                .and_then(|p| if p > 0 { Some(p as u16) } else { None })
-                .or(if gfx.port > 0 {
-                    Some(gfx.port as u16)
-                } else {
-                    None
+                .and_then(|p| u16::try_from(p).ok())
+                .or_else(|| {
+                    if gfx.port > 0 {
+                        u16::try_from(gfx.port).ok()
+                    } else {
+                        None
+                    }
                 })
                 .unwrap_or(default_port)
         } else if gfx.port > 0 {
-            gfx.port as u16
+            u16::try_from(gfx.port).unwrap_or(default_port)
         } else {
             default_port
         };

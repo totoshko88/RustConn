@@ -524,6 +524,9 @@ impl MainWindow {
                     "Starting auto-reconnect with exponential backoff"
                 );
 
+                // Update the reconnect banner to show auto-reconnect status
+                notebook_clone.update_reconnect_banner_status(session_id, true);
+
                 // Clone notebook's on_reconnect callback for use in the polling result
                 let on_reconnect = notebook_clone.reconnect_callback();
                 let notebook_cleanup = notebook_clone.clone();

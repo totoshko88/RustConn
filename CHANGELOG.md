@@ -5,6 +5,23 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.14] - 2026-05-13
+
+### Added
+- **Welcome page: Import button** — added "Import" action button alongside "New Connection" and "Quick Connect" on the welcome page, making it easier for users migrating from PuTTY, Remmina, mRemoteNG, or SecureCRT to get started
+- **Template Manager: empty state** — added `adw::StatusPage` placeholder with icon and description when no templates exist, consistent with Recordings and History dialogs
+- **Reconnect banner: auto-reconnect indicator** — when auto-reconnect is active, the disconnected session banner now shows "Auto-reconnecting…" status label so users know background polling is in progress
+
+### Fixed
+- **Credential memory safety** — intermediate password strings from `expose_secret().to_string()` are now wrapped in `zeroize::Zeroizing` across VNC, RDP, and document password flows; passwords are zeroed in memory on drop instead of lingering as plain `String`
+- **Potential panic in resize debounce** — replaced `unwrap()` on `Instant::checked_sub()` with `unwrap_or_else` fallback in terminal resize handler (`window/mod.rs`)
+- **CLI `show` command panic** — replaced `expect("json object")` with proper `let-else` error propagation in `rustconn-cli`
+- **Port overflow in SecureCRT/libvirt importers** — replaced truncating `as u16` casts with `u16::try_from().ok()` fallback to default port; prevents silent corruption when imported files contain port values > 65535
+- **Sync file path traversal** — added `validate_sync_filename()` that rejects absolute paths, `..` components, and directory separators in `sync_file` field; prevents writing outside the configured sync directory via crafted `.rcn` files
+
+### Dependencies
+- **Updated**: filetime 0.2.28→0.2.29, libbz2-rs-sys 0.2.3→0.2.4, open 5.3.4→5.3.5, zerofrom 0.1.7→0.1.8
+
 ## [0.13.13] - 2026-05-12
 
 ### Added

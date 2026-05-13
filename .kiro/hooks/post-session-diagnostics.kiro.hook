@@ -8,6 +8,6 @@
   },
   "then": {
     "type": "askAgent",
-    "prompt": "Run `git diff --name-only HEAD` to find .rs files modified in this session. If any .rs files were modified, run getDiagnostics on them (max 10 files). Report only if errors are found — if all clean, say nothing. Do NOT run cargo build/clippy — getDiagnostics is sufficient and faster."
+    "prompt": "Run `git diff --name-only HEAD` to find .rs files modified in this session. If any .rs files were modified, run getDiagnostics on them (max 10 files). Report only if errors are found — if all clean, say nothing. Do NOT run cargo build/clippy — getDiagnostics is sufficient and faster.\n\nAdditionally, run `git diff HEAD` and scan the diff for debug leftovers: `dbg!`, `todo!`, `println!`, `eprintln!`, `#[allow(dead_code)]` on new code. If any found, warn the developer with file and line. Do NOT auto-fix — just report."
   }
 }

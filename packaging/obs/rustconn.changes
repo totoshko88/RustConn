@@ -1,4 +1,26 @@
 -------------------------------------------------------------------
+Tue May 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.14
+
+- Update to version 0.13.14
+- [Added] Welcome page: Import button for easier migration from other tools
+- [Added] Template Manager: empty state placeholder when no templates exist
+- [Added] Reconnect banner: auto-reconnect status indicator
+- [Fixed] Credential memory safety — intermediate password strings from
+  expose_secret().to_string() now wrapped in zeroize::Zeroizing across
+  VNC, RDP, and document password flows; zeroed on drop
+- [Fixed] Potential panic in resize debounce — replaced unwrap() on
+  Instant::checked_sub() with unwrap_or_else fallback in terminal resize
+  handler (window/mod.rs)
+- [Fixed] CLI show command panic — replaced expect("json object") with
+  proper let-else error propagation in rustconn-cli
+- [Fixed] Port overflow in SecureCRT/libvirt importers — replaced
+  truncating as u16 casts with u16::try_from().ok() fallback to default
+  port; prevents silent corruption when port values > 65535
+- [Fixed] Sync file path traversal — added validate_sync_filename() that
+  rejects absolute paths, .. components, and directory separators;
+  prevents writing outside configured sync directory via crafted .rcn files
+
+-------------------------------------------------------------------
 Mon May 12 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.13
 
 - Update to version 0.13.13

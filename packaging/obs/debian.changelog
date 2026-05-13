@@ -1,3 +1,16 @@
+rustconn (0.13.14-1) unstable; urgency=medium
+
+  * [Added] Welcome page: Import button — added Import action alongside New Connection and Quick Connect for easier migration from other tools
+  * [Added] Template Manager: empty state — adw::StatusPage placeholder when no templates exist
+  * [Added] Reconnect banner: auto-reconnect indicator — shows Auto-reconnecting status when background polling is active
+  * [Fixed] Credential memory safety — intermediate password strings from expose_secret().to_string() now wrapped in zeroize::Zeroizing across VNC, RDP, and document password flows
+  * [Fixed] Potential panic in resize debounce — replaced unwrap() on Instant::checked_sub() with unwrap_or_else fallback in terminal resize handler
+  * [Fixed] CLI show command panic — replaced expect("json object") with proper let-else error propagation in rustconn-cli
+  * [Fixed] Port overflow in SecureCRT/libvirt importers — replaced truncating as u16 casts with u16::try_from().ok() fallback to default port
+  * [Fixed] Sync file path traversal — added validate_sync_filename() that rejects absolute paths, .. components, and directory separators
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Tue, 13 May 2026 22:00:00 +0300
+
 rustconn (0.13.13-1) unstable; urgency=medium
 
   * [Added] SSH ProxyCommand support — custom proxy for .onion hosts and SOCKS proxies

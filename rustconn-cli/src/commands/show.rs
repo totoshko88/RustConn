@@ -77,7 +77,9 @@ fn print_json(
     });
 
     // Add protocol-specific config
-    let map = obj.as_object_mut().expect("json object");
+    let Some(map) = obj.as_object_mut() else {
+        return Err(CliError::Config("Failed to build JSON object".to_string()));
+    };
 
     match &connection.protocol_config {
         ProtocolConfig::Ssh(config) => {

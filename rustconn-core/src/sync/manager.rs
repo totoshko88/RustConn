@@ -17,7 +17,7 @@ use crate::variables::Variable;
 
 use super::group_export::{
     GroupSyncExport, SyncConnection, SyncError, SyncGroup, collect_variable_templates,
-    compute_group_path, group_name_to_filename,
+    compute_group_path, group_name_to_filename, validate_sync_filename,
 };
 use super::group_merge::{GroupMergeEngine, GroupMergeResult};
 use super::settings::{SyncMode, SyncSettings};
@@ -189,6 +189,9 @@ impl SyncManager {
             .sync_file
             .clone()
             .unwrap_or_else(|| group_name_to_filename(&root_group.name));
+
+        // Validate filename against path traversal
+        validate_sync_filename(&sync_file)?;
 
         // 3. Collect all subgroups recursively
         let subgroups = collect_subgroups(group_id, groups);
@@ -578,6 +581,19 @@ impl SyncManager {
 
         for group in import_groups {
             let sync_file = group.sync_file.as_ref().expect("filtered above");
+
+            // Validate filename against path traversal
+            if let Err(e) = validate_sync_filename(sync_file) {
+                tracing::warn!(
+                    group = %group.name,
+                    sync_file,
+                    "Invalid sync filename, skipping import: {e}"
+                );
+                let state = self.state.entry(group.id).or_default();
+                state.last_error = Some(format!("Invalid sync filename: {sync_file}"));
+                continue;
+            }
+
             let file_path = sync_dir.join(sync_file);
 
             // Skip files that don't exist

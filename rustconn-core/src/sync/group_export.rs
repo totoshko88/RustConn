@@ -79,6 +79,10 @@ pub enum SyncError {
     /// The sync directory does not exist or is not writable.
     #[error("Sync directory is not writable: {0}")]
     SyncDirNotWritable(std::path::PathBuf),
+
+    /// The sync filename contains path traversal or invalid characters.
+    #[error("Invalid sync filename: {0}")]
+    InvalidSyncFilename(String),
 }
 
 /// Current sync format version.
@@ -563,6 +567,42 @@ pub fn group_name_to_filename(name: &str) -> String {
         slugified
     };
     format!("{base}.rcn")
+}
+
+/// Validates that a sync filename is safe (no path traversal, no absolute paths).
+///
+/// Returns `Ok(())` if the filename is a plain filename without directory
+/// separators or `..` components. Returns `Err(SyncError::InvalidSyncFilename)`
+/// otherwise.
+///
+/// # Errors
+///
+/// Returns [`SyncError::InvalidSyncFilename`] if the filename contains
+/// path traversal components (`..`), directory separators, or is an absolute path.
+pub fn validate_sync_filename(filename: &str) -> Result<(), SyncError> {
+    use std::path::Path;
+
+    let path = Path::new(filename);
+
+    // Reject absolute paths
+    if path.is_absolute() {
+        return Err(SyncError::InvalidSyncFilename(filename.to_owned()));
+    }
+
+    // Reject any path with parent directory traversal or directory separators
+    for component in path.components() {
+        match component {
+            std::path::Component::Normal(_) => {}
+            _ => return Err(SyncError::InvalidSyncFilename(filename.to_owned())),
+        }
+    }
+
+    // Reject if it contains more than one component (subdirectory)
+    if path.components().count() != 1 {
+        return Err(SyncError::InvalidSyncFilename(filename.to_owned()));
+    }
+
+    Ok(())
 }
 
 /// Creates a [`Connection`] from a [`SyncConnection`], assigning it to the

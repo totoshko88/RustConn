@@ -1087,13 +1087,14 @@ fn start_vnc_connection_internal(
     }
 
     // Get password from cached credentials (set by credential resolution flow)
-    let password: Option<String> = state.try_borrow().ok().and_then(|state_ref| {
-        state_ref.get_cached_credentials(connection_id).map(|c| {
-            use secrecy::ExposeSecret;
-            tracing::debug!("[VNC] Found cached credentials for connection");
-            c.password.expose_secret().to_string()
-        })
-    });
+    let password: Option<zeroize::Zeroizing<String>> =
+        state.try_borrow().ok().and_then(|state_ref| {
+            state_ref.get_cached_credentials(connection_id).map(|c| {
+                use secrecy::ExposeSecret;
+                tracing::debug!("[VNC] Found cached credentials for connection");
+                zeroize::Zeroizing::new(c.password.expose_secret().to_string())
+            })
+        });
 
     tracing::debug!(
         "[VNC] Password available: {}",
@@ -1148,9 +1149,12 @@ fn start_vnc_connection_internal(
         });
 
         // Initiate connection with VNC config (respects client_mode setting)
-        if let Err(e) =
-            vnc_widget.connect_with_config(&host, port, password.as_deref(), &vnc_config)
-        {
+        if let Err(e) = vnc_widget.connect_with_config(
+            &host,
+            port,
+            password.as_ref().map(|p| p.as_str()),
+            &vnc_config,
+        ) {
             tracing::error!(%e, conn_name, "Failed to connect VNC session");
             sidebar.update_connection_status(&connection_id.to_string(), "failed");
         } else {

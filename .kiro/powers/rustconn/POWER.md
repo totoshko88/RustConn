@@ -2,18 +2,24 @@
 name: "rustconn"
 displayName: "RustConn"
 description: "Development and release workflow for RustConn — GTK4/Rust connection manager with strict clippy, property tests, crate boundaries, and automated packaging"
-keywords: ["rustconn", "rust", "clippy", "fmt", "cargo", "release", "version", "changelog", "packaging", "gtk4", "property test", "proptest"]
+keywords: ["rustconn", "rust", "clippy", "fmt", "cargo", "release", "version", "changelog", "packaging", "gtk4", "property test", "proptest", "github", "pr", "issue", "merge"]
 author: "Anton Isaiev"
 ---
 
 # RustConn Development Power
 
 Linux connection manager for SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust.
-GTK4/libadwaita GUI, Wayland-first. Rust 2024 edition, MSRV 1.95, three-crate Cargo workspace.
+GTK4/libadwaita GUI, Wayland-first. Rust 2024 edition, MSRV 1.95, version 0.13.13, three-crate Cargo workspace.
+
+## MCP Servers
+
+- **github** — GitHub API (issues, PRs, releases, code search). Requires `GITHUB_TOKEN` env variable.
 
 ## Available Steering Files
 
 - **release.md** — Full release process: version bumps, dependencies, CLI updates, changelog, packaging, checklist
+- **github-workflow.md** — PR creation, issue templates, release workflow, useful GitHub MCP commands
+- **github-workflow.md** — PR templates, issue workflow, release via GitHub MCP
 
 ## Development Flow
 
@@ -190,7 +196,7 @@ pub type SharedAppState = Rc<RefCell<AppState>>;
 - With parameters: `i18n_f("{} connections", &[&count.to_string()])` — positional `{}`
 - In `window/mod.rs`: use `crate::i18n::i18n(...)` (full path)
 - After adding new strings: run `po/update-pot.sh`, then merge into all `.po` files
-- 15 languages: uk, de, fr, es, it, pl, cs, sk, da, sv, nl, pt, be, kk, uz
+- 16 languages: be, cs, da, de, es, fr, it, kk, nl, pl, pt, sk, sv, uk, uz, zh-cn
 
 ## CLI Downloads (`rustconn-core/src/cli_download.rs`)
 

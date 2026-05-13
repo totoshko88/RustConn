@@ -3082,6 +3082,17 @@ impl TemplateManagerDialog {
             .selection_mode(gtk4::SelectionMode::Single)
             .css_classes(["boxed-list"])
             .build();
+
+        // Empty state placeholder (GNOME HIG)
+        let placeholder = adw::StatusPage::builder()
+            .icon_name("document-page-setup-symbolic")
+            .title(i18n("No Templates"))
+            .description(i18n(
+                "Create a template to quickly set up new connections with predefined settings.",
+            ))
+            .build();
+        templates_list.set_placeholder(Some(&placeholder));
+
         scrolled.set_child(Some(&templates_list));
         content.append(&scrolled);
 

@@ -2027,9 +2027,25 @@ impl TerminalNotebook {
     /// Appends a horizontal bar with a "Session disconnected" label and a
     /// "Reconnect" button to the tab's container. The button triggers the
     /// `on_reconnect` callback with the session's connection ID.
+    ///
+    /// If `auto_reconnect_active` is true, an additional label is shown
+    /// indicating that automatic reconnection is in progress.
     pub fn show_reconnect_overlay(&self, session_id: Uuid) {
+        self.show_reconnect_overlay_with_status(session_id, false);
+    }
+
+    /// Shows a reconnect overlay with optional auto-reconnect status indicator
+    pub fn show_reconnect_overlay_with_status(
+        &self,
+        session_id: Uuid,
+        auto_reconnect_active: bool,
+    ) {
         // Guard: child-exited can fire twice for the same session; show only one banner
         if !self.reconnect_shown.borrow_mut().insert(session_id) {
+            // If banner already shown but auto-reconnect just started, update it
+            if auto_reconnect_active {
+                self.update_reconnect_banner_status(session_id, true);
+            }
             return;
         }
 
@@ -2069,11 +2085,20 @@ impl TerminalNotebook {
         let label = gtk4::Label::new(Some(&i18n("Session disconnected")));
         label.add_css_class("dim-label");
 
+        banner.append(&label);
+
+        // Auto-reconnect status indicator
+        if auto_reconnect_active {
+            let status_label = gtk4::Label::new(Some(&i18n("Auto-reconnecting…")));
+            status_label.add_css_class("dim-label");
+            status_label.set_widget_name("reconnect-status");
+            banner.append(&status_label);
+        }
+
         let button = gtk4::Button::with_label(&i18n("Reconnect"));
         button.add_css_class("suggested-action");
         button.set_tooltip_text(Some(&i18n("Reconnect to this session")));
 
-        banner.append(&label);
         banner.append(&button);
         container.append(&banner);
 
@@ -2091,6 +2116,60 @@ impl TerminalNotebook {
             protocol = %info.protocol,
             "Reconnect overlay shown for disconnected session"
         );
+    }
+
+    /// Updates the auto-reconnect status label in an existing reconnect banner
+    pub fn update_reconnect_banner_status(&self, session_id: Uuid, active: bool) {
+        let Some(page) = self.sessions.borrow().get(&session_id).cloned() else {
+            return;
+        };
+        let outer = page.child().downcast::<GtkBox>().ok();
+        let Some(outer) = outer else {
+            return;
+        };
+        let Some(inner_widget) = outer.first_child() else {
+            return;
+        };
+        let Some(container) = inner_widget.downcast::<GtkBox>().ok() else {
+            return;
+        };
+
+        // Find the reconnect-banner widget
+        let mut child = container.first_child();
+        while let Some(widget) = child {
+            if widget.widget_name() == "reconnect-banner" {
+                if let Ok(banner) = widget.downcast::<GtkBox>() {
+                    // Check if status label already exists
+                    let mut has_status = false;
+                    let mut banner_child = banner.first_child();
+                    while let Some(bc) = banner_child {
+                        if bc.widget_name() == "reconnect-status" {
+                            has_status = true;
+                            if !active {
+                                banner.remove(&bc);
+                            }
+                            break;
+                        }
+                        banner_child = bc.next_sibling();
+                    }
+                    // Add status label if needed and not already present
+                    if active && !has_status {
+                        let status_label = gtk4::Label::new(Some(&i18n("Auto-reconnecting…")));
+                        status_label.add_css_class("dim-label");
+                        status_label.set_widget_name("reconnect-status");
+                        // Insert before the button (last child)
+                        if let Some(button) = banner.last_child() {
+                            banner
+                                .insert_child_after(&status_label, button.prev_sibling().as_ref());
+                        } else {
+                            banner.append(&status_label);
+                        }
+                    }
+                }
+                break;
+            }
+            child = widget.next_sibling();
+        }
     }
 
     /// Sets the callback invoked when a reconnect button is clicked

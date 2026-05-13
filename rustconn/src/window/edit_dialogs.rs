@@ -2353,12 +2353,12 @@ fn start_quick_vnc(
         // Initiate connection with password if provided
         let pw_exposed = params.password.as_ref().map(|s| {
             use secrecy::ExposeSecret;
-            s.expose_secret().to_string()
+            zeroize::Zeroizing::new(s.expose_secret().to_string())
         });
         if let Err(e) = vnc_widget.connect_with_config(
             &params.host,
             params.port,
-            pw_exposed.as_deref(),
+            pw_exposed.as_ref().map(|z| z.as_str()),
             &vnc_config,
         ) {
             tracing::error!("Failed to connect VNC session '{}': {}", params.host, e);

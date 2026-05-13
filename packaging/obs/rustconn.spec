@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.13.13
+Version:        0.13.14
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -238,6 +238,25 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Tue May 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.14-1
+- [Added] Welcome page: Import button — added "Import" action button
+  alongside "New Connection" and "Quick Connect" on the welcome page
+- [Added] Template Manager: empty state — added adw::StatusPage placeholder
+  with icon and description when no templates exist
+- [Added] Reconnect banner: auto-reconnect indicator — disconnected session
+  banner now shows "Auto-reconnecting…" status label when active
+- [Fixed] Credential memory safety — intermediate password strings from
+  expose_secret().to_string() now wrapped in zeroize::Zeroizing across
+  VNC, RDP, and document password flows; zeroed on drop
+- [Fixed] Potential panic in resize debounce — replaced unwrap() on
+  Instant::checked_sub() with unwrap_or_else fallback in terminal resize handler
+- [Fixed] CLI show command panic — replaced expect("json object") with
+  proper let-else error propagation in rustconn-cli
+- [Fixed] Port overflow in SecureCRT/libvirt importers — replaced truncating
+  as u16 casts with u16::try_from().ok() fallback to default port
+- [Fixed] Sync file path traversal — added validate_sync_filename() that
+  rejects absolute paths, .. components, and directory separators
+
 * Mon May 12 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.13-0
 - [Added] SSH ProxyCommand support — custom proxy for .onion hosts and SOCKS proxies
 - [Fixed] SSH Startup Command not executing in GUI terminal

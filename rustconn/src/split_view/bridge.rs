@@ -1483,6 +1483,13 @@ impl SplitViewBridge {
             .build();
         actions.append(&quick_btn);
 
+        let import_btn = gtk4::Button::builder()
+            .label(&i18n("Import"))
+            .css_classes(["pill"])
+            .action_name("win.import")
+            .build();
+        actions.append(&import_btn);
+
         content.append(&actions);
 
         // Build the three column groups

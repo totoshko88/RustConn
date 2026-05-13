@@ -65,6 +65,11 @@ coverage/
 # Python cache
 __pycache__/
 
+# Environment secrets
+.env
+.env.*
+.envrc
+
 # KiroGraph index
 .kirograph/
 

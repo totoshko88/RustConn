@@ -46,9 +46,10 @@ impl MainWindow {
 
             let cached = state_ref.get_cached_credentials(connection_id).map(|c| {
                 use secrecy::ExposeSecret;
+                use zeroize::Zeroizing;
                 (
                     c.username.clone(),
-                    c.password.expose_secret().to_string(),
+                    Zeroizing::new(c.password.expose_secret().to_string()),
                     c.domain.clone(),
                 )
             });
@@ -134,7 +135,8 @@ impl MainWindow {
                 connection_id,
                 protocol_type,
                 Some(rustconn_core::Credentials::with_password(
-                    &username, &password,
+                    &username,
+                    password.as_str(),
                 )),
                 Some((username, password, domain)),
                 activity,
@@ -423,7 +425,7 @@ impl MainWindow {
         connection_id: Uuid,
         protocol_type: rustconn_core::ProtocolType,
         resolved_credentials: Option<rustconn_core::Credentials>,
-        cached_credentials: Option<(String, String, String)>,
+        cached_credentials: Option<(String, zeroize::Zeroizing<String>, String)>,
         activity: Option<types::SharedActivityCoordinator>,
     ) {
         use rustconn_core::models::ProtocolType;
@@ -499,7 +501,7 @@ impl MainWindow {
         sidebar: SharedSidebar,
         connection_id: Uuid,
         resolved_credentials: Option<rustconn_core::Credentials>,
-        cached_credentials: Option<(String, String, String)>,
+        cached_credentials: Option<(String, zeroize::Zeroizing<String>, String)>,
     ) {
         // Check if port check is needed BEFORE prompting for credentials
         let (should_check, host, port, timeout) = {
@@ -602,7 +604,7 @@ impl MainWindow {
         sidebar: SharedSidebar,
         connection_id: Uuid,
         resolved_credentials: Option<rustconn_core::Credentials>,
-        cached_credentials: Option<(String, String, String)>,
+        cached_credentials: Option<(String, zeroize::Zeroizing<String>, String)>,
     ) {
         // Use resolved credentials if available
         if let Some(ref creds) = resolved_credentials
@@ -695,7 +697,7 @@ impl MainWindow {
         monitoring: types::SharedMonitoring,
         connection_id: Uuid,
         resolved_credentials: Option<rustconn_core::Credentials>,
-        cached_credentials: Option<(String, String, String)>,
+        cached_credentials: Option<(String, zeroize::Zeroizing<String>, String)>,
     ) {
         // Check if port check is needed BEFORE prompting for credentials
         let (should_check, host, port, timeout) = {
@@ -789,7 +791,7 @@ impl MainWindow {
         monitoring: types::SharedMonitoring,
         connection_id: Uuid,
         resolved_credentials: Option<rustconn_core::Credentials>,
-        cached_credentials: Option<(String, String, String)>,
+        cached_credentials: Option<(String, zeroize::Zeroizing<String>, String)>,
     ) {
         // Use resolved credentials if available (VNC only needs password)
         if let Some(ref creds) = resolved_credentials

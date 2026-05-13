@@ -134,6 +134,21 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.13.14" date="2026-05-13">
+      <description>
+        <p>Version 0.13.14 — UX improvements and security fixes:</p>
+        <ul>
+          <li>Welcome page: Import button for users migrating from PuTTY, Remmina, mRemoteNG, or SecureCRT</li>
+          <li>Template Manager: empty state placeholder with icon and description</li>
+          <li>Reconnect banner: auto-reconnect indicator shows "Auto-reconnecting…" status</li>
+          <li>Credential memory safety: intermediate password strings now wrapped in zeroize::Zeroizing across VNC, RDP, and document password flows</li>
+          <li>Fixed potential panic in terminal resize debounce handler</li>
+          <li>Fixed CLI show command panic on malformed JSON</li>
+          <li>Fixed port overflow in SecureCRT/libvirt importers — values above 65535 no longer silently corrupt</li>
+          <li>Fixed sync file path traversal — rejects absolute paths and directory escape sequences in .rcn files</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.13.13" date="2026-05-12">
       <description>
         <p>Version 0.13.13 — SSH ProxyCommand, bug fixes, performance:</p>

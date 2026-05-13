@@ -3563,7 +3563,7 @@ impl MainWindow {
                 let last_resize = std::sync::Arc::new(std::sync::Mutex::new(
                     std::time::Instant::now()
                         .checked_sub(std::time::Duration::from_secs(1))
-                        .unwrap(),
+                        .unwrap_or_else(|| std::time::Instant::now()),
                 ));
                 terminal.connect_char_size_changed(move |term, _width, _height| {
                     let rows = term.row_count();
