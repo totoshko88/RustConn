@@ -15,15 +15,41 @@ use crate::i18n::i18n;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
 use crate::window::SharedToastOverlay;
+use crate::window::types::SessionSplitBridges;
 
 /// Type alias for shared terminal notebook
 pub type SharedNotebook = Rc<TerminalNotebook>;
+
+/// Sends text to the focused terminal, respecting split view focus.
+///
+/// If the active tab has a per-session split bridge, sends text to the
+/// focused pane's session. Otherwise falls back to the tab's active terminal.
+fn send_text_to_focused(
+    notebook: &SharedNotebook,
+    session_bridges: &SessionSplitBridges,
+    text: &str,
+) {
+    // Check if the active tab has a per-session split bridge
+    if let Some(active_session_id) = notebook.get_active_session_id() {
+        let bridges = session_bridges.borrow();
+        if let Some(bridge) = bridges.get(&active_session_id) {
+            // Tab is split — send to the focused pane's session
+            if let Some(focused_session_id) = bridge.get_focused_session() {
+                notebook.send_text_to_session(focused_session_id, text);
+                return;
+            }
+        }
+    }
+    // Fallback: send to the active tab's terminal
+    notebook.send_text(text);
+}
 
 /// Shows the new snippet dialog
 pub fn show_new_snippet_dialog(
     window: &gtk4::Window,
     state: SharedAppState,
     toast: SharedToastOverlay,
+    notebook: SharedNotebook,
 ) {
     let dialog = SnippetDialog::new(Some(&window.clone().upcast()));
 
@@ -35,6 +61,8 @@ pub fn show_new_snippet_dialog(
             match state_mut.create_snippet(snippet) {
                 Ok(_) => {
                     toast.show_success(&i18n("Snippet has been saved successfully."));
+                    drop(state_mut);
+                    notebook.rebuild_snippet_menu(&state);
                 }
                 Err(e) => {
                     crate::alert::show_error(&window_clone, &i18n("Error Creating Snippet"), &e);
@@ -50,6 +78,7 @@ pub fn show_snippets_manager(
     window: &gtk4::Window,
     state: SharedAppState,
     notebook: SharedNotebook,
+    session_bridges: SessionSplitBridges,
 ) {
     let manager_window = adw::Window::builder()
         .title(i18n("Manage Snippets"))
@@ -101,13 +130,21 @@ pub fn show_snippets_manager(
     manager_window.set_content(Some(&toolbar_view));
 
     // Populate snippets list with inline action buttons
-    populate_snippets_manager_list(&state, &snippets_list, "", &manager_window, &notebook);
+    populate_snippets_manager_list(
+        &state,
+        &snippets_list,
+        "",
+        &manager_window,
+        &notebook,
+        &session_bridges,
+    );
 
     // Connect search
     let state_clone = state.clone();
     let list_clone = snippets_list.clone();
     let manager_clone = manager_window.clone();
     let notebook_clone = notebook.clone();
+    let bridges_clone = session_bridges.clone();
     search_entry.connect_search_changed(move |entry| {
         let query = entry.text().to_string();
         populate_snippets_manager_list(
@@ -116,6 +153,7 @@ pub fn show_snippets_manager(
             &query,
             &manager_clone,
             &notebook_clone,
+            &bridges_clone,
         );
     });
 
@@ -124,12 +162,14 @@ pub fn show_snippets_manager(
     let list_clone = snippets_list.clone();
     let manager_clone = manager_window.clone();
     let notebook_clone = notebook;
+    let bridges_clone = session_bridges;
     new_btn.connect_clicked(move |_| {
         let dialog = SnippetDialog::new(Some(&manager_clone.clone().upcast()));
         let state_inner = state_clone.clone();
         let list_inner = list_clone.clone();
         let manager_inner = manager_clone.clone();
         let notebook_inner = notebook_clone.clone();
+        let bridges_inner = bridges_clone.clone();
         dialog.run(move |result| {
             if let Some(snippet) = result
                 && let Ok(mut state_mut) = state_inner.try_borrow_mut()
@@ -138,12 +178,14 @@ pub fn show_snippets_manager(
                     tracing::warn!(?e, "Failed to create snippet");
                 }
                 drop(state_mut);
+                notebook_inner.rebuild_snippet_menu(&state_inner);
                 populate_snippets_manager_list(
                     &state_inner,
                     &list_inner,
                     "",
                     &manager_inner,
                     &notebook_inner,
+                    &bridges_inner,
                 );
             }
         });
@@ -159,6 +201,7 @@ fn populate_snippets_manager_list(
     query: &str,
     manager_window: &adw::Window,
     notebook: &SharedNotebook,
+    session_bridges: &SessionSplitBridges,
 ) {
     // Clear existing rows
     while let Some(row) = list.row_at_index(0) {
@@ -240,11 +283,18 @@ fn populate_snippets_manager_list(
         let state_exec = state.clone();
         let notebook_exec = notebook.clone();
         let manager_exec = manager_window.clone();
+        let bridges_exec = session_bridges.clone();
         execute_btn.connect_clicked(move |_| {
             let state_ref = state_exec.borrow();
             if let Some(snippet) = state_ref.get_snippet(snippet_id).cloned() {
                 drop(state_ref);
-                execute_snippet(&manager_exec, &notebook_exec, &snippet, &state_exec);
+                execute_snippet(
+                    &manager_exec,
+                    &notebook_exec,
+                    &bridges_exec,
+                    &snippet,
+                    &state_exec,
+                );
             }
         });
 
@@ -253,6 +303,7 @@ fn populate_snippets_manager_list(
         let list_edit = list.clone();
         let manager_edit = manager_window.clone();
         let notebook_edit = notebook.clone();
+        let bridges_edit = session_bridges.clone();
         edit_btn.connect_clicked(move |_| {
             let state_ref = state_edit.borrow();
             if let Some(snippet) = state_ref.get_snippet(snippet_id).cloned() {
@@ -263,6 +314,7 @@ fn populate_snippets_manager_list(
                 let list_inner = list_edit.clone();
                 let manager_inner = manager_edit.clone();
                 let notebook_inner = notebook_edit.clone();
+                let bridges_inner = bridges_edit.clone();
                 dialog.run(move |result| {
                     if let Some(updated) = result
                         && let Ok(mut state_mut) = state_inner.try_borrow_mut()
@@ -271,12 +323,14 @@ fn populate_snippets_manager_list(
                             tracing::warn!(?e, "Failed to update snippet");
                         }
                         drop(state_mut);
+                        notebook_inner.rebuild_snippet_menu(&state_inner);
                         populate_snippets_manager_list(
                             &state_inner,
                             &list_inner,
                             "",
                             &manager_inner,
                             &notebook_inner,
+                            &bridges_inner,
                         );
                     }
                 });
@@ -288,11 +342,13 @@ fn populate_snippets_manager_list(
         let list_del = list.clone();
         let manager_del = manager_window.clone();
         let notebook_del = notebook.clone();
+        let bridges_del = session_bridges.clone();
         delete_btn.connect_clicked(move |_| {
             let state_inner = state_del.clone();
             let list_inner = list_del.clone();
             let manager_inner = manager_del.clone();
             let notebook_inner = notebook_del.clone();
+            let bridges_inner = bridges_del.clone();
             alert::show_confirm(
                 &manager_del,
                 &i18n("Delete Snippet?"),
@@ -305,12 +361,14 @@ fn populate_snippets_manager_list(
                             tracing::warn!(?e, "Failed to delete snippet");
                         }
                         drop(state_mut);
+                        notebook_inner.rebuild_snippet_menu(&state_inner);
                         populate_snippets_manager_list(
                             &state_inner,
                             &list_inner,
                             "",
                             &manager_inner,
                             &notebook_inner,
+                            &bridges_inner,
                         );
                     }
                 },
@@ -381,7 +439,12 @@ pub fn populate_snippets_list(state: &SharedAppState, list: &gtk4::ListBox, quer
 }
 
 /// Shows a snippet picker for quick execution
-pub fn show_snippet_picker(window: &gtk4::Window, state: SharedAppState, notebook: SharedNotebook) {
+pub fn show_snippet_picker(
+    window: &gtk4::Window,
+    state: SharedAppState,
+    notebook: SharedNotebook,
+    session_bridges: SessionSplitBridges,
+) {
     let picker_window = adw::Window::builder()
         .title(i18n("Execute Snippet"))
         .transient_for(window)
@@ -443,6 +506,7 @@ pub fn show_snippet_picker(window: &gtk4::Window, state: SharedAppState, noteboo
     let state_clone = state;
     let notebook_clone = notebook;
     let window_clone = picker_window.clone();
+    let bridges_clone = session_bridges;
     snippets_list.connect_row_activated(move |_, row| {
         if let Some(id_str) = row.widget_name().as_str().strip_prefix("snippet-")
             && let Ok(id) = Uuid::parse_str(id_str)
@@ -450,7 +514,13 @@ pub fn show_snippet_picker(window: &gtk4::Window, state: SharedAppState, noteboo
             let state_ref = state_clone.borrow();
             if let Some(snippet) = state_ref.get_snippet(id).cloned() {
                 drop(state_ref);
-                execute_snippet(&window_clone, &notebook_clone, &snippet, &state_clone);
+                execute_snippet(
+                    &window_clone,
+                    &notebook_clone,
+                    &bridges_clone,
+                    &snippet,
+                    &state_clone,
+                );
                 window_clone.close();
             }
         }
@@ -463,6 +533,7 @@ pub fn show_snippet_picker(window: &gtk4::Window, state: SharedAppState, noteboo
 pub fn execute_snippet(
     parent: &impl IsA<gtk4::Window>,
     notebook: &SharedNotebook,
+    session_bridges: &SessionSplitBridges,
     snippet: &rustconn_core::models::Snippet,
     state: &SharedAppState,
 ) {
@@ -482,7 +553,7 @@ pub fn execute_snippet(
 
     if variables.is_empty() {
         // No variables, execute directly
-        notebook.send_text(&format!("{}\n", snippet.command));
+        send_text_to_focused(notebook, session_bridges, &format!("{}\n", snippet.command));
     } else {
         // Try to resolve variables from Global Variables first
         let state_ref = state.borrow();
@@ -522,10 +593,10 @@ pub fn execute_snippet(
                 &snippet.command,
                 &resolved,
             );
-            notebook.send_text(&format!("{substituted}\n"));
+            send_text_to_focused(notebook, session_bridges, &format!("{substituted}\n"));
         } else {
             // Some variables unresolved — show dialog with pre-filled values
-            show_variable_input_dialog(parent, notebook, snippet, &resolved);
+            show_variable_input_dialog(parent, notebook, session_bridges, snippet, &resolved);
         }
     }
 }
@@ -534,6 +605,7 @@ pub fn execute_snippet(
 pub fn show_variable_input_dialog(
     parent: &impl IsA<gtk4::Window>,
     notebook: &SharedNotebook,
+    session_bridges: &SessionSplitBridges,
     snippet: &rustconn_core::models::Snippet,
     prefilled: &std::collections::HashMap<String, String>,
 ) {
@@ -615,6 +687,7 @@ pub fn show_variable_input_dialog(
     // Connect execute
     let window_clone = var_window.clone();
     let notebook_clone = notebook.clone();
+    let bridges_clone = session_bridges.clone();
     let command = snippet.command.clone();
     execute_btn.connect_clicked(move |_| {
         let mut values = std::collections::HashMap::new();
@@ -624,9 +697,75 @@ pub fn show_variable_input_dialog(
 
         let substituted =
             rustconn_core::snippet::SnippetManager::substitute_variables(&command, &values);
-        notebook_clone.send_text(&format!("{substituted}\n"));
+        send_text_to_focused(&notebook_clone, &bridges_clone, &format!("{substituted}\n"));
         window_clone.close();
     });
 
     var_window.present();
+}
+
+/// Executes a snippet directly without a parent window dialog.
+///
+/// Used by the inline context menu action `win.run-snippet-direct`.
+/// If the snippet has unresolved variables, falls back to the full
+/// `execute_snippet` flow (which requires a parent window — not available
+/// from a context menu action, so variables are resolved from globals/defaults only).
+pub fn execute_snippet_direct(
+    notebook: &SharedNotebook,
+    session_bridges: &SessionSplitBridges,
+    snippet: &rustconn_core::models::Snippet,
+    state: &SharedAppState,
+) {
+    // Check if there's an active terminal
+    if notebook.get_active_terminal().is_none() {
+        return;
+    }
+
+    let variables = rustconn_core::snippet::SnippetManager::extract_variables(&snippet.command);
+
+    if variables.is_empty() {
+        send_text_to_focused(notebook, session_bridges, &format!("{}\n", snippet.command));
+    } else {
+        // Resolve variables from Global Variables and snippet defaults
+        let state_ref = state.borrow();
+        let global_variables = crate::state::resolve_global_variables(state_ref.settings());
+        drop(state_ref);
+
+        let mut var_manager = rustconn_core::variables::VariableManager::new();
+        for var in &global_variables {
+            var_manager.set_global(var.clone());
+        }
+
+        let mut resolved: std::collections::HashMap<String, String> =
+            std::collections::HashMap::new();
+        let mut has_unresolved = false;
+
+        for var_name in &variables {
+            match var_manager.resolve(var_name, rustconn_core::variables::VariableScope::Global) {
+                Ok(value) => {
+                    resolved.insert(var_name.clone(), value);
+                }
+                Err(_) => {
+                    if let Some(var_def) = snippet.variables.iter().find(|v| &v.name == var_name)
+                        && let Some(ref default) = var_def.default_value
+                    {
+                        resolved.insert(var_name.clone(), default.clone());
+                    } else {
+                        has_unresolved = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if !has_unresolved {
+            let substituted = rustconn_core::snippet::SnippetManager::substitute_variables(
+                &snippet.command,
+                &resolved,
+            );
+            send_text_to_focused(notebook, session_bridges, &format!("{substituted}\n"));
+        }
+        // If unresolved variables remain, silently skip — the user should
+        // use the full "Execute Snippet…" picker which shows the variable dialog.
+    }
 }

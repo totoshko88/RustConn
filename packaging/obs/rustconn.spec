@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.13.14
+Version:        0.13.15
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -238,6 +238,18 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Wed May 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.15-1
+- [Added] Local Shell: custom command — new "Command" field in Settings →
+  Terminal → Local Shell allows specifying a custom command instead of
+  the default login shell
+- [Fixed] Split screen snippet execution — snippets now execute in the
+  focused pane of a split terminal tab instead of always targeting the
+  first pane; uses per-session split bridge to resolve the correct
+  focused session before sending text
+- [Improved] Dynamic snippet context menu — when ≤5 snippets exist,
+  they appear as individual items directly in the terminal right-click
+  menu; when more than 5 exist, the previous picker is shown
+
 * Tue May 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.14-1
 - [Added] Welcome page: Import button — added "Import" action button
   alongside "New Connection" and "Quick Connect" on the welcome page

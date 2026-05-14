@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.13.14** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.13.15** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -855,6 +855,15 @@ Supported providers: AWS Session Manager, GCP IAP Tunnel, Azure Bastion, Azure S
 | Local Shell | Local VTE terminal tab (user's default shell) |
 
 **Local Shell:** Open a local terminal tab without connecting to any remote host. Useful as a quick terminal emulator or for running local commands alongside remote sessions. Start via Menu → File → Local Shell, the startup action (Settings → Interface → Startup → Local Shell), or `rustconn --shell`.
+
+**Custom Shell Command:** Configure a custom command for Local Shell in Settings → Terminal → Local Shell → Command. When set, Local Shell runs this command instead of the default login shell. Examples:
+- `fish` — use Fish shell instead of bash
+- `bash --norc` — bash without loading .bashrc
+- `neofetch && bash` — show system info on startup, then drop into bash
+- `tmux new-session` — start a tmux session
+- `/usr/bin/zsh -l` — explicit path to zsh as login shell
+
+Leave the field empty to use the system default shell (`$SHELL`).
 
 ### Display Mode (Window Mode)
 
@@ -1764,6 +1773,8 @@ The settings dialog uses `adw::PreferencesDialog` with built-in search. Settings
 ### Terminal page
 
 **Terminal group:** Font (family and size), Scrollback (history buffer lines), Color Theme (Dark, Light, Solarized, Monokai, Dracula, plus user-created custom themes), Cursor (shape and blink mode), Behavior (scroll on output/keystroke, hyperlinks, mouse autohide, bell, SFTP via mc, copy on select).
+
+**Local Shell group:** Command — custom command to run in Local Shell tabs instead of the default login shell (e.g. `fish`, `bash --norc`, `neofetch && bash`). Leave empty for system default.
 
 **Custom Themes:** Click the **+** button next to the theme dropdown to create a new custom theme. The theme editor lets you set background, foreground, cursor, and all 16 ANSI palette colors. Custom themes are saved to `~/.config/rustconn/custom_themes.json` and appear alongside built-in themes. Edit or delete custom themes with the pencil and trash buttons.
 

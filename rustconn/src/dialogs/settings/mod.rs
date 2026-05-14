@@ -88,6 +88,7 @@ pub struct SettingsDialog {
     sftp_use_mc_check: CheckButton,
     copy_on_select_check: CheckButton,
     show_scrollbar_check: CheckButton,
+    local_shell_command_entry: Entry,
     // Logging settings
     logging_enabled_row: adw::SwitchRow,
     log_dir_entry: Entry,
@@ -174,6 +175,7 @@ impl SettingsDialog {
             sftp_use_mc_check,
             copy_on_select_check,
             show_scrollbar_check,
+            local_shell_command_entry,
         ) = create_terminal_page();
 
         let (
@@ -532,6 +534,7 @@ impl SettingsDialog {
             sftp_use_mc_check,
             copy_on_select_check,
             show_scrollbar_check,
+            local_shell_command_entry,
             logging_enabled_row,
             log_dir_entry,
             retention_spin,
@@ -828,6 +831,7 @@ impl SettingsDialog {
             &self.sftp_use_mc_check,
             &self.copy_on_select_check,
             &self.show_scrollbar_check,
+            &self.local_shell_command_entry,
             &settings.terminal,
         );
 
@@ -943,6 +947,7 @@ impl SettingsDialog {
         let sftp_use_mc_check_clone = self.sftp_use_mc_check.clone();
         let copy_on_select_check_clone = self.copy_on_select_check.clone();
         let show_scrollbar_check_clone = self.show_scrollbar_check.clone();
+        let local_shell_command_entry_clone = self.local_shell_command_entry.clone();
 
         // Logging controls
         let logging_enabled_row_clone = self.logging_enabled_row.clone();
@@ -1056,6 +1061,7 @@ impl SettingsDialog {
                 &sftp_use_mc_check_clone,
                 &copy_on_select_check_clone,
                 &show_scrollbar_check_clone,
+                &local_shell_command_entry_clone,
                 log_timestamps_check_clone.is_active(),
             );
 

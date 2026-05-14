@@ -1288,12 +1288,14 @@ impl MainWindow {
         let window_weak = window.downgrade();
         let state_clone = state.clone();
         let toast_clone = self.toast_overlay.clone();
+        let notebook_clone = terminal_notebook.clone();
         new_snippet_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
                 snippets::show_new_snippet_dialog(
                     win.upcast_ref(),
                     state_clone.clone(),
                     toast_clone.clone(),
+                    notebook_clone.clone(),
                 );
             }
         });
@@ -1304,12 +1306,14 @@ impl MainWindow {
         let window_weak = window.downgrade();
         let state_clone = state.clone();
         let notebook_clone = terminal_notebook.clone();
+        let bridges_clone = self.session_split_bridges.clone();
         manage_snippets_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
                 snippets::show_snippets_manager(
                     win.upcast_ref(),
                     state_clone.clone(),
                     notebook_clone.clone(),
+                    bridges_clone.clone(),
                 );
             }
         });
@@ -1320,16 +1324,43 @@ impl MainWindow {
         let window_weak = window.downgrade();
         let state_clone = state.clone();
         let notebook_clone = terminal_notebook.clone();
+        let bridges_clone = self.session_split_bridges.clone();
         execute_snippet_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
                 snippets::show_snippet_picker(
                     win.upcast_ref(),
                     state_clone.clone(),
                     notebook_clone.clone(),
+                    bridges_clone.clone(),
                 );
             }
         });
         window.add_action(&execute_snippet_action);
+
+        // Run snippet directly by ID (from inline context menu items)
+        let run_snippet_direct_action =
+            gio::SimpleAction::new("run-snippet-direct", Some(glib::VariantTy::STRING));
+        let state_clone = state.clone();
+        let notebook_clone = terminal_notebook.clone();
+        let bridges_clone = self.session_split_bridges.clone();
+        run_snippet_direct_action.connect_activate(move |_, param| {
+            if let Some(param) = param
+                && let Some(id_str) = param.get::<String>()
+                && let Ok(id) = Uuid::parse_str(&id_str)
+            {
+                let state_ref = state_clone.borrow();
+                if let Some(snippet) = state_ref.get_snippet(id).cloned() {
+                    drop(state_ref);
+                    crate::window::snippets::execute_snippet_direct(
+                        &notebook_clone,
+                        &bridges_clone,
+                        &snippet,
+                        &state_clone,
+                    );
+                }
+            }
+        });
+        window.add_action(&run_snippet_direct_action);
 
         // Run snippet for selected connection (from context menu)
         // First connects to the selected connection, then shows snippet picker
@@ -1342,6 +1373,7 @@ impl MainWindow {
         let split_view_clone = self.split_view.clone();
         let monitoring_clone = self.monitoring.clone();
         let activity_clone = self.activity_coordinator.clone();
+        let bridges_clone = self.session_split_bridges.clone();
         run_snippet_for_conn_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
                 // Get selected connection from sidebar
@@ -1368,6 +1400,7 @@ impl MainWindow {
                             win.upcast_ref(),
                             state_clone.clone(),
                             notebook_clone.clone(),
+                            bridges_clone.clone(),
                         );
                     } else {
                         // Need to connect first, then show snippet picker
@@ -1386,6 +1419,7 @@ impl MainWindow {
                         let win_for_timeout = win.clone();
                         let state_for_timeout = state_clone.clone();
                         let notebook_for_timeout = notebook_clone.clone();
+                        let bridges_for_timeout = bridges_clone.clone();
                         glib::timeout_add_local_once(
                             std::time::Duration::from_millis(500),
                             move || {
@@ -1393,6 +1427,7 @@ impl MainWindow {
                                     win_for_timeout.upcast_ref(),
                                     state_for_timeout,
                                     notebook_for_timeout,
+                                    bridges_for_timeout,
                                 );
                             },
                         );
@@ -1419,6 +1454,9 @@ impl MainWindow {
             }
         });
         window.add_action(&show_sessions_action);
+
+        // Initialize snippet context menu with current snippets
+        terminal_notebook.rebuild_snippet_menu(state);
     }
 
     /// Sets up cluster-related actions
@@ -3505,6 +3543,13 @@ impl MainWindow {
         // Get user's default shell
         let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
 
+        // Check if a custom local shell command is configured
+        let custom_command = if terminal_settings.local_shell_command.is_empty() {
+            None
+        } else {
+            Some(terminal_settings.local_shell_command.clone())
+        };
+
         // In Flatpak, spawn the shell on the host via flatpak-spawn so the
         // user gets their full system shell with all tools and dotfiles (#122).
         //
@@ -3530,23 +3575,18 @@ impl MainWindow {
                 })
                 .unwrap_or_else(|| "/bin/bash".to_string());
 
-            // Run the host shell via flatpak-spawn, wrapped in `script` to
-            // allocate a real PTY on the host side (#122).
-            //
-            // flatpak-spawn --host only forwards stdio — it does NOT create a
-            // PTY on the host. Without a PTY the shell cannot become a session
-            // leader, which causes:
-            //   - "can't set process group" / "no job control" warnings
-            //   - tcgetpgrp / setpgid failures
-            //   - broken job control (Ctrl-Z, fg, bg)
-            //
-            // `script -qfc '<shell> --login' /dev/null` (from util-linux,
-            // present on virtually every Linux host) creates a host-side PTY
-            // and runs the shell inside it, giving bash/zsh/fish a proper
-            // controlling terminal.
-            let spawn_cmd = format!(
-                "flatpak-spawn --host --env=TERM=xterm-256color -- script -qfc '{host_shell} --login' /dev/null"
-            );
+            // If a custom command is set, run it via the host shell.
+            // Otherwise use the default login shell behavior.
+            let spawn_cmd = if let Some(ref cmd) = custom_command {
+                let escaped_cmd = cmd.replace('\'', "'\\''");
+                format!(
+                    "flatpak-spawn --host --env=TERM=xterm-256color -- script -qfc '{host_shell} -c '\"'\"'{escaped_cmd}'\"'\"'' /dev/null"
+                )
+            } else {
+                format!(
+                    "flatpak-spawn --host --env=TERM=xterm-256color -- script -qfc '{host_shell} --login' /dev/null"
+                )
+            };
             notebook.spawn_command(session_id, &["/bin/sh", "-c", &spawn_cmd], None, None, None);
 
             // Wire up PTY resize propagation for Flatpak host shell (#122).
@@ -3587,6 +3627,9 @@ impl MainWindow {
                     });
                 });
             }
+        } else if let Some(ref cmd) = custom_command {
+            // Custom command: run via user's shell with -c
+            notebook.spawn_command(session_id, &[&shell, "-c", cmd], None, None, None);
         } else {
             notebook.spawn_command(session_id, &[&shell], None, None, None);
         }

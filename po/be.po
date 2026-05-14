@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-13 00:26+0300\n"
+"POT-Creation-Date: 2026-05-14 11:31+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Belarusian\n"
@@ -28,10 +28,10 @@ msgstr "OK"
 #: rustconn/src/dialogs/history.rs:191 rustconn/src/dialogs/progress.rs:64
 #: rustconn/src/dialogs/progress.rs:184 rustconn/src/dialogs/recording.rs:505
 #: rustconn/src/dialogs/recording.rs:576
-#: rustconn/src/dialogs/settings/mod.rs:445
+#: rustconn/src/dialogs/settings/mod.rs:447
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:494
-#: rustconn/src/dialogs/settings/terminal_tab.rs:593
-#: rustconn/src/dialogs/settings/terminal_tab.rs:640
+#: rustconn/src/dialogs/settings/terminal_tab.rs:620
+#: rustconn/src/dialogs/settings/terminal_tab.rs:667
 #: rustconn/src/dialogs/statistics.rs:90 rustconn/src/dialogs/template.rs:3184
 #: rustconn/src/dialogs/tunnel.rs:489 rustconn/src/dialogs/variable_setup.rs:85
 #: rustconn/src/dialogs/widgets.rs:455
@@ -40,7 +40,7 @@ msgstr "OK"
 #: rustconn/src/window/edit_dialogs.rs:2109 rustconn/src/window/groups.rs:60
 #: rustconn/src/window/operations.rs:81 rustconn/src/window/operations.rs:414
 #: rustconn/src/window/operations.rs:582 rustconn/src/window/sessions.rs:326
-#: rustconn/src/window/snippets.rs:394 rustconn/src/window/snippets.rs:548
+#: rustconn/src/window/snippets.rs:451 rustconn/src/window/snippets.rs:614
 msgid "Cancel"
 msgstr "Скасаваць"
 
@@ -54,7 +54,7 @@ msgstr "Не захоўваць"
 
 #: rustconn/src/alert.rs:94 rustconn/src/dialogs/connection/dialog.rs:3584
 #: rustconn/src/dialogs/connection/dialog.rs:3586
-#: rustconn/src/dialogs/settings/terminal_tab.rs:641
+#: rustconn/src/dialogs/settings/terminal_tab.rs:668
 #: rustconn/src/dialogs/smart_folder.rs:80
 #: rustconn/src/dialogs/smart_folder.rs:81 rustconn/src/dialogs/snippet.rs:352
 #: rustconn/src/dialogs/template.rs:2719 rustconn/src/dialogs/variables.rs:123
@@ -146,7 +146,7 @@ msgstr "Новы кластар"
 #: rustconn/src/dialogs/cluster.rs:71 rustconn/src/dialogs/cluster.rs:72
 #: rustconn/src/dialogs/connection/dialog.rs:1713
 #: rustconn/src/dialogs/connection/dialog.rs:1714
-#: rustconn/src/dialogs/settings/terminal_tab.rs:594
+#: rustconn/src/dialogs/settings/terminal_tab.rs:621
 #: rustconn/src/dialogs/smart_folder.rs:85
 #: rustconn/src/dialogs/smart_folder.rs:86 rustconn/src/dialogs/snippet.rs:79
 #: rustconn/src/dialogs/snippet.rs:80 rustconn/src/dialogs/template.rs:141
@@ -246,7 +246,7 @@ msgstr "Гэты кластар будзе выдалены назаўсёды."
 #: rustconn/src/dialogs/tunnel.rs:490 rustconn/src/sidebar_ui.rs:202
 #: rustconn/src/smart_folder_ui.rs:393 rustconn/src/smart_folder_ui.rs:577
 #: rustconn/src/window/clusters.rs:497 rustconn/src/window/operations.rs:136
-#: rustconn/src/window/snippets.rs:228 rustconn/src/window/snippets.rs:300
+#: rustconn/src/window/snippets.rs:267 rustconn/src/window/snippets.rs:351
 #: rustconn/src/window/templates.rs:148
 msgid "Delete"
 msgstr "Выдаліць"
@@ -308,12 +308,12 @@ msgid "Quick color presets for environment identification"
 msgstr "Хуткія каляровыя прэсеты для ідэнтыфікацыі асяроддзя"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:101
-#: rustconn/src/dialogs/settings/terminal_tab.rs:664
+#: rustconn/src/dialogs/settings/terminal_tab.rs:691
 msgid "Background"
 msgstr "Фон"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:109
-#: rustconn/src/dialogs/settings/terminal_tab.rs:665
+#: rustconn/src/dialogs/settings/terminal_tab.rs:692
 msgid "Foreground"
 msgstr "Тэкст"
 
@@ -378,7 +378,7 @@ msgstr "Выяўляць актыўнасць або цішыню вываду �
 #: rustconn/src/dialogs/connection/advanced_tab.rs:311
 #: rustconn/src/dialogs/connection/spice.rs:158
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:183
-#: rustconn/src/dialogs/settings/terminal_tab.rs:256
+#: rustconn/src/dialogs/settings/terminal_tab.rs:257
 #: rustconn/src/dialogs/template.rs:1266
 msgid "Off"
 msgstr "Выкл."
@@ -461,7 +461,7 @@ msgid "Upper limit for backoff delay between attempts"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:432
-#: rustconn/src/dialogs/settings/mod.rs:241
+#: rustconn/src/dialogs/settings/mod.rs:243
 msgid "Highlight Rules"
 msgstr "Правілы падсвятлення"
 
@@ -470,13 +470,13 @@ msgid "Regex-based text highlighting for this connection"
 msgstr "Падсвятленне тэксту на аснове рэгулярных выразаў для гэтага злучэння"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:446
-#: rustconn/src/dialogs/settings/mod.rs:256
+#: rustconn/src/dialogs/settings/mod.rs:258
 msgid "No highlight rules"
 msgstr "Няма правілаў падсвятлення"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:456
 #: rustconn/src/dialogs/connection/automation_tab.rs:139
-#: rustconn/src/dialogs/settings/mod.rs:265
+#: rustconn/src/dialogs/settings/mod.rs:267
 #: rustconn/src/window/edit_dialogs.rs:1503
 msgid "Add Rule"
 msgstr "Дадаць правіла"
@@ -535,7 +535,7 @@ msgstr "Час чакання загрузкі"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:688
 #: rustconn/src/dialogs/connection/general_tab.rs:78
-#: rustconn/src/dialogs/export.rs:388 rustconn/src/dialogs/settings/mod.rs:1255
+#: rustconn/src/dialogs/export.rs:388 rustconn/src/dialogs/settings/mod.rs:1261
 #: rustconn/src/dialogs/smart_folder.rs:119
 #: rustconn/src/dialogs/template.rs:504
 #: rustconn/src/window/connection_dialogs.rs:249
@@ -545,36 +545,36 @@ msgid "Name"
 msgstr "Назва"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:690
-#: rustconn/src/dialogs/settings/mod.rs:1257
+#: rustconn/src/dialogs/settings/mod.rs:1263
 msgid "Rule name"
 msgstr "Назва правіла"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:697
-#: rustconn/src/dialogs/settings/mod.rs:1265
+#: rustconn/src/dialogs/settings/mod.rs:1271
 msgid "Pattern (regex)"
 msgstr "Шаблон (regex)"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:699
-#: rustconn/src/dialogs/settings/mod.rs:1267
+#: rustconn/src/dialogs/settings/mod.rs:1273
 msgid "Regex pattern to match"
 msgstr "Рэгулярны выраз для пошуку"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:707
-#: rustconn/src/dialogs/settings/mod.rs:1276
+#: rustconn/src/dialogs/settings/mod.rs:1282
 msgid "Enable rule"
 msgstr "Уключыць правіла"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:714
 #: rustconn/src/dialogs/connection/dialog.rs:2696
 #: rustconn/src/dialogs/connection/dialog.rs:2698
-#: rustconn/src/dialogs/settings/mod.rs:1284
+#: rustconn/src/dialogs/settings/mod.rs:1290
 #: rustconn/src/window/edit_dialogs.rs:2680
 #: rustconn/src/window/edit_dialogs.rs:2682
 msgid "Delete rule"
 msgstr "Выдаліць правіла"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:718
-#: rustconn/src/dialogs/settings/mod.rs:1289
+#: rustconn/src/dialogs/settings/mod.rs:1295
 msgid "Delete highlight rule"
 msgstr "Выдаліць правіла падсвятлення"
 
@@ -669,6 +669,7 @@ msgstr "напр. /шлях/да/скрыпту.sh або vpn-connect ${host}"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:267
 #: rustconn/src/dialogs/connection/general_tab.rs:334
+#: rustconn/src/dialogs/settings/terminal_tab.rs:411
 #: rustconn/src/dialogs/snippet.rs:200 rustconn/src/dialogs/template.rs:1930
 msgid "Command"
 msgstr "Каманда"
@@ -1354,7 +1355,7 @@ msgstr "Zero Trust"
 #: rustconn/src/dialogs/connection/ssh.rs:447
 #: rustconn/src/dialogs/connection/telnet.rs:36
 #: rustconn/src/dialogs/connection/vnc.rs:288
-#: rustconn/src/dialogs/settings/mod.rs:299
+#: rustconn/src/dialogs/settings/mod.rs:301
 #: rustconn/src/dialogs/template.rs:674 rustconn/src/dialogs/wol.rs:62
 #: rustconn/src/dialogs/wol.rs:68
 msgid "Connection"
@@ -3231,7 +3232,7 @@ msgstr "Экспарт..."
 msgid "Preparing export..."
 msgstr "Падрыхтоўка экспарту..."
 
-#: rustconn/src/dialogs/export.rs:494 rustconn/src/window/mod.rs:3694
+#: rustconn/src/dialogs/export.rs:494 rustconn/src/window/mod.rs:3707
 msgid "Export Complete"
 msgstr "Экспарт завершаны"
 
@@ -4490,78 +4491,78 @@ msgstr "Часавыя адзнакі"
 msgid "Prepend [HH:MM:SS] to each line in session logs"
 msgstr "Дадаваць [HH:MM:SS] да кожнага радка ў журналах сеансаў"
 
-#: rustconn/src/dialogs/settings/mod.rs:242
+#: rustconn/src/dialogs/settings/mod.rs:244
 msgid "Global regex-based text highlighting rules"
 msgstr "Глабальныя правілы падсвятлення тэксту на аснове regex"
 
-#: rustconn/src/dialogs/settings/mod.rs:326
+#: rustconn/src/dialogs/settings/mod.rs:328
 msgid "Backup & Restore"
 msgstr "Рэзервовае капіраванне і аднаўленне"
 
-#: rustconn/src/dialogs/settings/mod.rs:327
+#: rustconn/src/dialogs/settings/mod.rs:329
 msgid "Export or import all settings as a ZIP archive"
 msgstr "Экспартаваць або імпартаваць усе налады як ZIP-архіў"
 
-#: rustconn/src/dialogs/settings/mod.rs:331
+#: rustconn/src/dialogs/settings/mod.rs:333
 msgid "Backup Settings…"
 msgstr "Рэзервовае капіраванне налад…"
 
-#: rustconn/src/dialogs/settings/mod.rs:332
+#: rustconn/src/dialogs/settings/mod.rs:334
 msgid "Save all configuration files to a ZIP archive"
 msgstr "Захаваць усе файлы канфігурацыі ў ZIP-архіў"
 
-#: rustconn/src/dialogs/settings/mod.rs:335
+#: rustconn/src/dialogs/settings/mod.rs:337
 msgid "Restore Settings…"
 msgstr "Аднавіць налады…"
 
-#: rustconn/src/dialogs/settings/mod.rs:337
+#: rustconn/src/dialogs/settings/mod.rs:339
 msgid "Load configuration from a ZIP archive (restart required)"
 msgstr "Загрузіць канфігурацыю з ZIP-архіва (патрабуецца перазапуск)"
 
-#: rustconn/src/dialogs/settings/mod.rs:365
+#: rustconn/src/dialogs/settings/mod.rs:367
 msgid "Save Backup"
 msgstr "Захаваць рэзервовую копію"
 
-#: rustconn/src/dialogs/settings/mod.rs:383
+#: rustconn/src/dialogs/settings/mod.rs:385
 msgid "Backup saved ({} files)"
 msgstr "Рэзервовую копію захавана ({} файлаў)"
 
-#: rustconn/src/dialogs/settings/mod.rs:396
+#: rustconn/src/dialogs/settings/mod.rs:398
 msgid "Backup Error"
 msgstr "Памылка рэзервовага капіравання"
 
-#: rustconn/src/dialogs/settings/mod.rs:422
+#: rustconn/src/dialogs/settings/mod.rs:424
 msgid "Open Backup"
 msgstr "Адкрыць рэзервовую копію"
 
-#: rustconn/src/dialogs/settings/mod.rs:440
+#: rustconn/src/dialogs/settings/mod.rs:442
 msgid "Restore Settings?"
 msgstr "Аднавіць налады?"
 
-#: rustconn/src/dialogs/settings/mod.rs:442
+#: rustconn/src/dialogs/settings/mod.rs:444
 msgid ""
 "This will overwrite current settings. A restart is required to apply changes."
 msgstr ""
 "Гэта перазапіша бягучыя налады. Для прымянення змен патрабуецца перазапуск."
 
-#: rustconn/src/dialogs/settings/mod.rs:446
+#: rustconn/src/dialogs/settings/mod.rs:448
 msgid "Restore"
 msgstr "Аднавіць"
 
-#: rustconn/src/dialogs/settings/mod.rs:478
+#: rustconn/src/dialogs/settings/mod.rs:480
 msgid "Restored files but failed to reload settings. Please restart."
 msgstr ""
 "Файлы адноўлены, але не ўдалося перазагрузіць налады. Перазапусціце праграму."
 
-#: rustconn/src/dialogs/settings/mod.rs:490
+#: rustconn/src/dialogs/settings/mod.rs:492
 msgid "Restored {} files. Restart to apply."
 msgstr "Адноўлена {} файлаў. Перазапусціце для прымянення."
 
-#: rustconn/src/dialogs/settings/mod.rs:503
+#: rustconn/src/dialogs/settings/mod.rs:505
 msgid "Restore Error"
 msgstr "Памылка аднаўлення"
 
-#: rustconn/src/dialogs/settings/mod.rs:778
+#: rustconn/src/dialogs/settings/mod.rs:781
 msgid "Failed to start"
 msgstr "Не ўдалося запусціць"
 
@@ -5295,247 +5296,266 @@ msgstr "Выдаліць з агента"
 msgid "Remove key from SSH agent"
 msgstr "Выдаліць ключ з SSH-агента"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:36
+#: rustconn/src/dialogs/settings/terminal_tab.rs:37
 #: rustconn/src/dialogs/shortcuts.rs:554
 msgid "Terminal"
 msgstr "Тэрмінал"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:41
+#: rustconn/src/dialogs/settings/terminal_tab.rs:42
 msgid "Font"
 msgstr "Шрыфт"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:49
+#: rustconn/src/dialogs/settings/terminal_tab.rs:50
 msgid "Family"
 msgstr "Сямейства"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:62
+#: rustconn/src/dialogs/settings/terminal_tab.rs:63
 msgid "Size"
 msgstr "Памер"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:71
-#: rustconn/src/dialogs/settings/terminal_tab.rs:669
+#: rustconn/src/dialogs/settings/terminal_tab.rs:72
+#: rustconn/src/dialogs/settings/terminal_tab.rs:696
 msgid "Colors"
 msgstr "Колеры"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:81
+#: rustconn/src/dialogs/settings/terminal_tab.rs:82
 #: rustconn/src/dialogs/settings/ui_tab.rs:87
 msgid "Theme"
 msgstr "Тэма"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:95
-#: rustconn/src/dialogs/settings/terminal_tab.rs:98
+#: rustconn/src/dialogs/settings/terminal_tab.rs:96
+#: rustconn/src/dialogs/settings/terminal_tab.rs:99
 msgid "New custom theme"
 msgstr "Новая ўласная тэма"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:102
-#: rustconn/src/dialogs/settings/terminal_tab.rs:107
+#: rustconn/src/dialogs/settings/terminal_tab.rs:103
+#: rustconn/src/dialogs/settings/terminal_tab.rs:108
 msgid "Edit custom theme"
 msgstr "Рэдагаваць уласную тэму"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:112
-#: rustconn/src/dialogs/settings/terminal_tab.rs:117
+#: rustconn/src/dialogs/settings/terminal_tab.rs:113
+#: rustconn/src/dialogs/settings/terminal_tab.rs:118
 msgid "Delete custom theme"
 msgstr "Выдаліць уласную тэму"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:125
+#: rustconn/src/dialogs/settings/terminal_tab.rs:126
 msgid "Custom themes"
 msgstr "Уласныя тэмы"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:205
-#: rustconn/src/dialogs/settings/terminal_tab.rs:666
+#: rustconn/src/dialogs/settings/terminal_tab.rs:206
+#: rustconn/src/dialogs/settings/terminal_tab.rs:693
 msgid "Cursor"
 msgstr "Курсор"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:218
+#: rustconn/src/dialogs/settings/terminal_tab.rs:219
 msgid "Block"
 msgstr "Блок"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:223
+#: rustconn/src/dialogs/settings/terminal_tab.rs:224
 msgid "IBeam"
 msgstr "I-курсор"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:228
+#: rustconn/src/dialogs/settings/terminal_tab.rs:229
 msgid "Underline"
 msgstr "Падкрэсліванне"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:237
+#: rustconn/src/dialogs/settings/terminal_tab.rs:238
 msgid "Shape"
 msgstr "Форма"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:251
+#: rustconn/src/dialogs/settings/terminal_tab.rs:252
 msgid "On"
 msgstr "Укл."
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:261
+#: rustconn/src/dialogs/settings/terminal_tab.rs:262
 #: rustconn/src/dialogs/settings/ui_tab.rs:49
 msgid "System"
 msgstr "Сістэмная"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:270
+#: rustconn/src/dialogs/settings/terminal_tab.rs:271
 msgid "Blink"
 msgstr "Мігценне"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:278
+#: rustconn/src/dialogs/settings/terminal_tab.rs:279
 msgid "Scrolling"
 msgstr "Пракрутка"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:290
+#: rustconn/src/dialogs/settings/terminal_tab.rs:291
 msgid "History"
 msgstr "Гісторыя"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:291
+#: rustconn/src/dialogs/settings/terminal_tab.rs:292
 msgid "Number of lines to keep in scrollback"
 msgstr "Колькасць радкоў у буферы пракруткі"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:300
+#: rustconn/src/dialogs/settings/terminal_tab.rs:301
 msgid "On output"
 msgstr "Пры вывадзе"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:301
+#: rustconn/src/dialogs/settings/terminal_tab.rs:302
 msgid "Scroll to bottom when new output appears"
 msgstr "Пракручваць уніз пры новым вывадзе"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:313
+#: rustconn/src/dialogs/settings/terminal_tab.rs:314
 msgid "On keystroke"
 msgstr "Пры націсканні клавішы"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:314
+#: rustconn/src/dialogs/settings/terminal_tab.rs:315
 msgid "Scroll to bottom when typing"
 msgstr "Пракручваць уніз пры ўводзе"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:326
+#: rustconn/src/dialogs/settings/terminal_tab.rs:327
 msgid "Scrollbar"
 msgstr "Паласа пракруткі"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:327
+#: rustconn/src/dialogs/settings/terminal_tab.rs:328
 msgid "Show a scrollbar next to the terminal"
 msgstr "Паказваць паласу пракруткі побач з тэрміналам"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:337
+#: rustconn/src/dialogs/settings/terminal_tab.rs:338
 msgid "Behavior"
 msgstr "Паводзіны"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:346
+#: rustconn/src/dialogs/settings/terminal_tab.rs:347
 msgid "Hyperlinks"
 msgstr "Гіперспасылкі"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:347
+#: rustconn/src/dialogs/settings/terminal_tab.rs:348
 msgid "Allow clickable URLs in terminal"
 msgstr "Дазволіць клікабельныя URL у тэрмінале"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:359
+#: rustconn/src/dialogs/settings/terminal_tab.rs:360
 msgid "Hide pointer"
 msgstr "Хаваць паказальнік"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:360
+#: rustconn/src/dialogs/settings/terminal_tab.rs:361
 msgid "Hide mouse cursor when typing"
 msgstr "Хаваць курсор мышы пры ўводзе"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:369
+#: rustconn/src/dialogs/settings/terminal_tab.rs:370
 msgid "Bell"
 msgstr "Званок"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:370
+#: rustconn/src/dialogs/settings/terminal_tab.rs:371
 msgid "Play sound on terminal bell"
 msgstr "Прайграваць гук пры званку тэрмінала"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:379
+#: rustconn/src/dialogs/settings/terminal_tab.rs:380
 msgid "SFTP via mc"
 msgstr "SFTP праз mc"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:380
+#: rustconn/src/dialogs/settings/terminal_tab.rs:381
 msgid "Open SFTP in Midnight Commander (local shell tab)"
 msgstr "Адкрыць SFTP у Midnight Commander (лакальная ўкладка)"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:389
+#: rustconn/src/dialogs/settings/terminal_tab.rs:390
 msgid "Copy on select"
 msgstr "Капіяваць пры вылучэнні"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:390
+#: rustconn/src/dialogs/settings/terminal_tab.rs:391
 msgid "Automatically copy selected text to clipboard"
 msgstr "Аўтаматычна капіяваць вылучаны тэкст у буфер абмену"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:587
+#: rustconn/src/dialogs/settings/terminal_tab.rs:401
+#: rustconn/src/dialogs/settings/ui_tab.rs:165
+#: rustconn/src/dialogs/settings/ui_tab.rs:364 rustconn/src/tray.rs:222
+#: rustconn/src/window/ui.rs:154
+msgid "Local Shell"
+msgstr "Лакальная абалонка"
+
+#: rustconn/src/dialogs/settings/terminal_tab.rs:402
+msgid "Custom command for the local shell tab"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/terminal_tab.rs:406
+msgid "Default system shell"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/terminal_tab.rs:412
+msgid "e.g. fish, bash --norc, neofetch &amp;&amp; bash"
+msgstr ""
+
+#: rustconn/src/dialogs/settings/terminal_tab.rs:614
 msgid "New Custom Theme"
 msgstr "Новая ўласная тэма"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:588
+#: rustconn/src/dialogs/settings/terminal_tab.rs:615
 msgid "Enter a name for the new theme"
 msgstr "Увядзіце назву для новай тэмы"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:598
+#: rustconn/src/dialogs/settings/terminal_tab.rs:625
 msgid "Theme name"
 msgstr "Назва тэмы"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:635
+#: rustconn/src/dialogs/settings/terminal_tab.rs:662
 msgid "{} — Theme Editor"
 msgstr "{} — Рэдактар тэм"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:677
+#: rustconn/src/dialogs/settings/terminal_tab.rs:704
 msgid "Palette"
 msgstr "Палітра"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:681
+#: rustconn/src/dialogs/settings/terminal_tab.rs:708
 msgid "Black"
 msgstr "Чорны"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:682
+#: rustconn/src/dialogs/settings/terminal_tab.rs:709
 msgid "Red"
 msgstr "Чырвоны"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:683
+#: rustconn/src/dialogs/settings/terminal_tab.rs:710
 msgid "Green"
 msgstr "Зялёны"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:684
+#: rustconn/src/dialogs/settings/terminal_tab.rs:711
 msgid "Yellow"
 msgstr "Жоўты"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:685
+#: rustconn/src/dialogs/settings/terminal_tab.rs:712
 msgid "Blue"
 msgstr "Сіні"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:686
+#: rustconn/src/dialogs/settings/terminal_tab.rs:713
 msgid "Magenta"
 msgstr "Пурпурны"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:687
+#: rustconn/src/dialogs/settings/terminal_tab.rs:714
 msgid "Cyan"
 msgstr "Блакітны"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:688
+#: rustconn/src/dialogs/settings/terminal_tab.rs:715
 msgid "White"
 msgstr "Белы"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:689
+#: rustconn/src/dialogs/settings/terminal_tab.rs:716
 msgid "Bright Black"
 msgstr "Яркі чорны"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:690
+#: rustconn/src/dialogs/settings/terminal_tab.rs:717
 msgid "Bright Red"
 msgstr "Яркі чырвоны"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:691
+#: rustconn/src/dialogs/settings/terminal_tab.rs:718
 msgid "Bright Green"
 msgstr "Яркі зялёны"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:692
+#: rustconn/src/dialogs/settings/terminal_tab.rs:719
 msgid "Bright Yellow"
 msgstr "Яркі жоўты"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:693
+#: rustconn/src/dialogs/settings/terminal_tab.rs:720
 msgid "Bright Blue"
 msgstr "Яркі сіні"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:694
+#: rustconn/src/dialogs/settings/terminal_tab.rs:721
 msgid "Bright Magenta"
 msgstr "Яркі пурпурны"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:695
+#: rustconn/src/dialogs/settings/terminal_tab.rs:722
 msgid "Bright Cyan"
 msgstr "Яркі блакітны"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:696
+#: rustconn/src/dialogs/settings/terminal_tab.rs:723
 msgid "Bright White"
 msgstr "Яркі белы"
 
@@ -5611,12 +5631,6 @@ msgstr "Дзеянне пры запуску праграмы"
 #: rustconn/src/dialogs/settings/ui_tab.rs:364
 msgid "Do nothing"
 msgstr "Нічога не рабіць"
-
-#: rustconn/src/dialogs/settings/ui_tab.rs:165
-#: rustconn/src/dialogs/settings/ui_tab.rs:364 rustconn/src/tray.rs:222
-#: rustconn/src/window/ui.rs:154
-msgid "Local Shell"
-msgstr "Лакальная абалонка"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:171
 msgid "On startup"
@@ -5905,8 +5919,8 @@ msgstr "Праз коску або кропку з коскай"
 msgid "Filter by Group"
 msgstr "Фільтр па групе"
 
-#: rustconn/src/dialogs/snippet.rs:64 rustconn/src/window/snippets.rs:67
-#: rustconn/src/window/snippets.rs:68
+#: rustconn/src/dialogs/snippet.rs:64 rustconn/src/window/snippets.rs:93
+#: rustconn/src/window/snippets.rs:94
 msgid "New Snippet"
 msgstr "Новы фрагмент"
 
@@ -6330,7 +6344,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/template.rs:3103 rustconn/src/sidebar_ui.rs:116
 #: rustconn/src/sidebar_ui.rs:193 rustconn/src/smart_folder_ui.rs:379
-#: rustconn/src/smart_folder_ui.rs:478 rustconn/src/window/snippets.rs:222
+#: rustconn/src/smart_folder_ui.rs:478 rustconn/src/window/snippets.rs:261
 msgid "Edit"
 msgstr "Рэдагаваць"
 
@@ -8169,27 +8183,27 @@ msgstr "Дынамічная тэчка '{}' не ўдалася: {}"
 msgid "Refreshed '{}': {} connections generated"
 msgstr "Абноўлена '{}': {} злучэнняў згенеравана"
 
-#: rustconn/src/window/mod.rs:2505
+#: rustconn/src/window/mod.rs:2513
 msgid "Connection to \\u{2018}{}\\u{2019} failed"
 msgstr "Злучэнне з \\u{2018}{}\\u{2019} не ўдалося"
 
-#: rustconn/src/window/mod.rs:2699 rustconn/src/window/mod.rs:2713
+#: rustconn/src/window/mod.rs:2707 rustconn/src/window/mod.rs:2721
 msgid "Pre-connect task failed: {}"
 msgstr "Задача перад злучэннем не ўдалася: {}"
 
-#: rustconn/src/window/mod.rs:3263
+#: rustconn/src/window/mod.rs:3271
 msgid "Startup connection not found"
 msgstr "Злучэнне для запуску не знойдзена"
 
-#: rustconn/src/window/mod.rs:3299
+#: rustconn/src/window/mod.rs:3307
 msgid "Failed to open .rdp file"
 msgstr "Не ўдалося адкрыць файл .rdp"
 
-#: rustconn/src/window/mod.rs:3335
+#: rustconn/src/window/mod.rs:3343
 msgid "Failed to open .vv file"
 msgstr "Не ўдалося адкрыць файл .vv"
 
-#: rustconn/src/window/mod.rs:3696
+#: rustconn/src/window/mod.rs:3709
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "Паспяхова экспартавана {} злучэнняў. {} прапушчана."
 
@@ -8453,62 +8467,62 @@ msgstr "Дадаць новы радок (націсніце Enter)"
 msgid "Smart folder '{}' deleted"
 msgstr "Разумную тэчку '{}' выдалена"
 
-#: rustconn/src/window/snippets.rs:37
+#: rustconn/src/window/snippets.rs:62
 msgid "Snippet has been saved successfully."
 msgstr "Фрагмент паспяхова захаваны."
 
-#: rustconn/src/window/snippets.rs:40
+#: rustconn/src/window/snippets.rs:65
 msgid "Error Creating Snippet"
 msgstr "Памылка стварэння фрагмента"
 
-#: rustconn/src/window/snippets.rs:55
+#: rustconn/src/window/snippets.rs:81
 msgid "Manage Snippets"
 msgstr "Кіраванне фрагментамі"
 
-#: rustconn/src/window/snippets.rs:80 rustconn/src/window/snippets.rs:404
+#: rustconn/src/window/snippets.rs:106 rustconn/src/window/snippets.rs:461
 msgid "Search snippets..."
 msgstr "Пошук фрагментаў..."
 
-#: rustconn/src/window/snippets.rs:216 rustconn/src/window/snippets.rs:550
+#: rustconn/src/window/snippets.rs:255 rustconn/src/window/snippets.rs:616
 msgid "Execute"
 msgstr "Выканаць"
 
-#: rustconn/src/window/snippets.rs:217
+#: rustconn/src/window/snippets.rs:256
 msgid "Execute snippet"
 msgstr "Выканаць фрагмент"
 
-#: rustconn/src/window/snippets.rs:223
+#: rustconn/src/window/snippets.rs:262
 msgid "Edit snippet"
 msgstr "Рэдагаваць фрагмент"
 
-#: rustconn/src/window/snippets.rs:229
+#: rustconn/src/window/snippets.rs:268
 msgid "Delete snippet"
 msgstr "Выдаліць фрагмент"
 
-#: rustconn/src/window/snippets.rs:298
+#: rustconn/src/window/snippets.rs:349
 msgid "Delete Snippet?"
 msgstr "Выдаліць фрагмент?"
 
-#: rustconn/src/window/snippets.rs:299
+#: rustconn/src/window/snippets.rs:350
 msgid "Are you sure you want to delete this snippet?"
 msgstr "Вы ўпэўнены, што хочаце выдаліць гэты фрагмент?"
 
-#: rustconn/src/window/snippets.rs:386
+#: rustconn/src/window/snippets.rs:443
 msgid "Execute Snippet"
 msgstr "Выканаць фрагмент"
 
-#: rustconn/src/window/snippets.rs:474
+#: rustconn/src/window/snippets.rs:539
 msgid "No Active Terminal"
 msgstr "Няма актыўнага тэрмінала"
 
-#: rustconn/src/window/snippets.rs:475
+#: rustconn/src/window/snippets.rs:540
 msgid "Please open a terminal session first before executing a snippet."
 msgstr ""
 "Калі ласка, спачатку адкрыйце тэрмінальную сесію перад выкананнем сніпета."
 "Спачатку адкрыйце сесію тэрмінала перад выкананнем сніпета.Калі ласка, "
 "спачатку адкрыйце сеанс тэрмінала перад выкананнем фрагмента."
 
-#: rustconn/src/window/snippets.rs:541
+#: rustconn/src/window/snippets.rs:607
 msgid "Enter Variable Values"
 msgstr "Увядзіце значэнні зменных"
 

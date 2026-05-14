@@ -134,6 +134,16 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.13.15" date="2026-05-14">
+      <description>
+        <p>Version 0.13.15 — Custom shell command, split screen fix, dynamic snippets:</p>
+        <ul>
+          <li>Local Shell: custom command field in Settings allows specifying a custom command instead of the default login shell</li>
+          <li>Fixed split screen snippet execution — snippets now execute in the focused pane instead of always targeting the first pane</li>
+          <li>Dynamic snippet context menu — when 5 or fewer snippets exist, they appear directly in the terminal right-click menu for one-click execution</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.13.14" date="2026-05-13">
       <description>
         <p>Version 0.13.14 — UX improvements and security fixes:</p>

@@ -31,6 +31,7 @@ pub fn create_terminal_page() -> (
     CheckButton, // sftp_use_mc
     CheckButton, // copy_on_select
     CheckButton, // show_scrollbar
+    Entry,       // local_shell_command
 ) {
     let page = adw::PreferencesPage::builder()
         .title(i18n("Terminal"))
@@ -395,6 +396,27 @@ pub fn create_terminal_page() -> (
 
     page.add(&behavior_group);
 
+    // === Local Shell Group ===
+    let local_shell_group = adw::PreferencesGroup::builder()
+        .title(i18n("Local Shell"))
+        .description(i18n("Custom command for the local shell tab"))
+        .build();
+
+    let local_shell_command_entry = Entry::builder()
+        .placeholder_text(i18n("Default system shell"))
+        .hexpand(true)
+        .valign(gtk4::Align::Center)
+        .build();
+    let local_shell_command_row = adw::ActionRow::builder()
+        .title(i18n("Command"))
+        .subtitle(i18n("e.g. fish, bash --norc, neofetch &amp;&amp; bash"))
+        .build();
+    local_shell_command_row.add_suffix(&local_shell_command_entry);
+    local_shell_command_row.set_activatable_widget(Some(&local_shell_command_entry));
+    local_shell_group.add(&local_shell_command_row);
+
+    page.add(&local_shell_group);
+
     (
         page,
         font_family_entry,
@@ -411,6 +433,7 @@ pub fn create_terminal_page() -> (
         sftp_use_mc_check,
         copy_on_select_check,
         show_scrollbar_check,
+        local_shell_command_entry,
     )
 }
 
@@ -431,6 +454,7 @@ pub fn load_terminal_settings(
     sftp_use_mc_check: &CheckButton,
     copy_on_select_check: &CheckButton,
     show_scrollbar_check: &CheckButton,
+    local_shell_command_entry: &Entry,
     settings: &TerminalSettings,
 ) {
     font_family_entry.set_text(&settings.font_family);
@@ -476,6 +500,7 @@ pub fn load_terminal_settings(
     sftp_use_mc_check.set_active(settings.sftp_use_mc);
     copy_on_select_check.set_active(settings.copy_on_select);
     show_scrollbar_check.set_active(settings.show_scrollbar);
+    local_shell_command_entry.set_text(&settings.local_shell_command);
 }
 
 /// Gets the toggle button at a specific index in a button box
@@ -525,6 +550,7 @@ pub fn collect_terminal_settings(
     sftp_use_mc_check: &CheckButton,
     copy_on_select_check: &CheckButton,
     show_scrollbar_check: &CheckButton,
+    local_shell_command_entry: &Entry,
     log_timestamps: bool,
 ) -> TerminalSettings {
     let theme_names = TerminalTheme::theme_names();
@@ -562,6 +588,7 @@ pub fn collect_terminal_settings(
         sftp_use_mc: sftp_use_mc_check.is_active(),
         copy_on_select: copy_on_select_check.is_active(),
         show_scrollbar: show_scrollbar_check.is_active(),
+        local_shell_command: local_shell_command_entry.text().trim().to_string(),
     }
 }
 

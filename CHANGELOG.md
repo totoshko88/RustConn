@@ -5,6 +5,20 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.15] - 2026-05-14
+
+### Added
+- **Local Shell: custom command** — new "Command" field in Settings → Terminal → Local Shell allows specifying a custom command to run instead of the default login shell (e.g. `fish`, `bash --norc`, `neofetch && bash`, environment setup scripts); applies only to Local Shell tabs, not remote connections
+
+### Fixed
+- **Split screen snippet execution** — snippets now execute in the focused pane of a split terminal tab instead of always targeting the first pane; uses per-session split bridge to resolve the correct focused session before sending text
+
+### Improved
+- **Dynamic snippet context menu** — when ≤5 snippets exist, they appear as individual items directly in the terminal right-click menu for one-click execution; when more than 5 exist, the previous "Execute Snippet…" picker is shown instead
+
+### Dependencies
+- **Updated**: aws-lc-rs 1.16.3→1.17.0, aws-lc-sys 0.40.0→0.41.0, kqueue-sys 1.1.1→1.1.2, kurbo 0.13.0→0.13.1
+
 ## [0.13.14] - 2026-05-13
 
 ### Added

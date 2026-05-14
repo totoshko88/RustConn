@@ -156,6 +156,10 @@ pub struct TerminalNotebook {
     /// Per-session tab page containers (session_id → TabPageContainer).
     /// Guarantees every TabPage.child() has non-zero allocation for TabOverview.
     tab_containers: Rc<RefCell<HashMap<Uuid, TabPageContainer>>>,
+    /// Shared snippet menu section for terminal context menus.
+    /// Updated when snippets are created/edited/deleted; all terminals
+    /// share the same live `gio::Menu` model so changes propagate automatically.
+    snippet_menu_section: Rc<gio::Menu>,
 }
 
 impl TerminalNotebook {
@@ -241,6 +245,7 @@ impl TerminalNotebook {
             ssh_tunnels: Rc::new(RefCell::new(HashMap::new())),
             activity_coordinator: Rc::new(RefCell::new(None)),
             tab_containers: Rc::new(RefCell::new(HashMap::new())),
+            snippet_menu_section: Rc::new(gio::Menu::new()),
         };
 
         term_notebook.setup_tab_view_signals();
@@ -1129,7 +1134,7 @@ impl TerminalNotebook {
 
         // Right-click context menu actions installed on the terminal widget
         // so they follow it when reparented between TabView and split view.
-        config::setup_context_menu(&terminal);
+        config::setup_context_menu(&terminal, &self.snippet_menu_section);
 
         // Drag-and-drop: insert shell-escaped file paths when files are
         // dragged from a file manager onto the terminal (GNOME Terminal behavior).
@@ -2578,6 +2583,13 @@ impl TerminalNotebook {
         if let Some(terminal) = self.get_terminal(session_id) {
             terminal.feed_child(text.as_bytes());
         }
+    }
+
+    /// Rebuilds the shared snippet menu section based on current app state.
+    ///
+    /// Call this after snippets are created, edited, or deleted.
+    pub fn rebuild_snippet_menu(&self, state: &crate::state::SharedAppState) {
+        config::rebuild_snippet_menu_section(&self.snippet_menu_section, state);
     }
 
     /// Displays output text in a specific terminal session

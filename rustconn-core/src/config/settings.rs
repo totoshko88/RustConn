@@ -117,6 +117,13 @@ pub struct TerminalSettings {
     /// Show a scrollbar next to the terminal
     #[serde(default = "default_show_scrollbar")]
     pub show_scrollbar: bool,
+    /// Custom command to run in Local Shell instead of the default login shell.
+    ///
+    /// When set, Local Shell executes this command (e.g. `fish`, `bash --norc`,
+    /// `neofetch && bash`, or any custom script) instead of `$SHELL`.
+    /// Empty string means use the default shell.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub local_shell_command: String,
 }
 
 fn default_font_family() -> String {
@@ -194,6 +201,7 @@ impl Default for TerminalSettings {
             sftp_use_mc: default_sftp_use_mc(),
             copy_on_select: false,
             show_scrollbar: default_show_scrollbar(),
+            local_shell_command: String::new(),
         }
     }
 }

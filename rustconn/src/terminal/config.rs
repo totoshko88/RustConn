@@ -8,6 +8,7 @@ use gtk4::prelude::*;
 use rustconn_core::config::TerminalSettings;
 use rustconn_core::models::ConnectionThemeOverride;
 use rustconn_core::terminal_themes::{Color, TerminalTheme};
+use std::rc::Rc;
 use vte4::prelude::*;
 use vte4::{CursorBlinkMode, CursorShape, Terminal};
 
@@ -123,10 +124,12 @@ fn setup_keyboard_shortcuts(terminal: &Terminal) {
 /// Copy uses `text_selected()` to snapshot the selection text before VTE
 /// clears it, avoiding the `gdk_clipboard_write_async: mime_type != NULL`
 /// assertion that `copy_clipboard_format` triggers on an empty selection.
-pub fn setup_context_menu(terminal: &Terminal) {
+///
+/// The `snippet_section` is a shared live `gio::Menu` model — all terminals
+/// reference the same instance so snippet changes propagate automatically.
+pub fn setup_context_menu(terminal: &Terminal, snippet_section: &Rc<gtk4::gio::Menu>) {
     use gtk4::gio;
     use std::cell::RefCell;
-    use std::rc::Rc;
 
     // Cache the last selection so Copy still works after VTE clears it
     // on right-click.
@@ -157,13 +160,8 @@ pub fn setup_context_menu(terminal: &Terminal) {
     );
     menu.append_section(None, &clipboard_section);
 
-    // Snippet execution — reuses the existing window-level action
-    let snippet_section = gio::Menu::new();
-    snippet_section.append(
-        Some(&crate::i18n::i18n("Execute Snippet…")),
-        Some("win.execute-snippet"),
-    );
-    menu.append_section(None, &snippet_section);
+    // Snippet section — shared live model, updated externally
+    menu.append_section(None, snippet_section.as_ref());
 
     // Register the action group on the container so VTE's popover can
     // resolve "terminal.*" actions by walking up the widget tree.
@@ -212,6 +210,40 @@ pub fn setup_context_menu(terminal: &Terminal) {
 
     // Let VTE handle the right-click popover natively.
     terminal.set_context_menu_model(Some(&menu));
+}
+
+/// Maximum number of snippets to show inline in the context menu.
+/// If more exist, a single "Execute Snippet…" item opens the picker.
+pub const SNIPPET_INLINE_LIMIT: usize = 5;
+
+/// Rebuilds the snippet section of the terminal context menu.
+///
+/// - ≤ `SNIPPET_INLINE_LIMIT` snippets → each shown as a direct menu item
+///   with action `win.run-snippet-direct('uuid')`.
+/// - More than limit → single "Execute Snippet…" item opening the picker.
+/// - No snippets → single "Execute Snippet…" item (opens manager).
+pub fn rebuild_snippet_menu_section(
+    section: &gtk4::gio::Menu,
+    state: &crate::state::SharedAppState,
+) {
+    section.remove_all();
+
+    let state_ref = state.borrow();
+    let snippets = state_ref.list_snippets();
+
+    if snippets.len() <= SNIPPET_INLINE_LIMIT && !snippets.is_empty() {
+        // Few snippets — show each inline for quick access
+        for snippet in snippets {
+            let action = format!("win.run-snippet-direct('{}')", snippet.id);
+            section.append(Some(&snippet.name), Some(&action));
+        }
+    } else {
+        // No snippets or too many — show picker
+        section.append(
+            Some(&crate::i18n::i18n("Execute Snippet…")),
+            Some("win.execute-snippet"),
+        );
+    }
 }
 
 /// Converts Color to gdk::RGBA
