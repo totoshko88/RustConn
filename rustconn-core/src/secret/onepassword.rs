@@ -137,6 +137,7 @@ impl OnePasswordBackend {
     /// Builds command with appropriate authentication
     fn build_command(&self, args: &[&str]) -> Command {
         let mut cmd = Command::new("op");
+        cmd.env("PATH", crate::cli_download::get_extended_path());
         cmd.args(args);
 
         // Add service account token if available
@@ -452,6 +453,7 @@ impl SecretBackend for OnePasswordBackend {
     async fn is_available(&self) -> bool {
         // Check if op CLI is installed
         let installed = Command::new("op")
+            .env("PATH", crate::cli_download::get_extended_path())
             .arg("--version")
             .output()
             .await
@@ -486,7 +488,12 @@ pub struct OnePasswordVersion {
 
 /// Gets 1Password CLI version
 pub async fn get_onepassword_version() -> Option<OnePasswordVersion> {
-    let output = Command::new("op").arg("--version").output().await.ok()?;
+    let output = Command::new("op")
+        .env("PATH", crate::cli_download::get_extended_path())
+        .arg("--version")
+        .output()
+        .await
+        .ok()?;
 
     if output.status.success() {
         let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
@@ -502,7 +509,11 @@ pub async fn get_onepassword_version() -> Option<OnePasswordVersion> {
 /// Gets comprehensive 1Password status
 pub async fn get_onepassword_status() -> OnePasswordStatus {
     // Check if installed
-    let version_output = Command::new("op").arg("--version").output().await;
+    let version_output = Command::new("op")
+        .env("PATH", crate::cli_download::get_extended_path())
+        .arg("--version")
+        .output()
+        .await;
 
     let (installed, version) = match version_output {
         Ok(output) if output.status.success() => {
@@ -526,6 +537,7 @@ pub async fn get_onepassword_status() -> OnePasswordStatus {
     // Check if signed in using whoami
     // This will trigger desktop app authentication if integration is enabled
     let whoami_output = Command::new("op")
+        .env("PATH", crate::cli_download::get_extended_path())
         .args(["whoami", "--format", "json"])
         .output()
         .await;
@@ -588,6 +600,7 @@ pub async fn get_onepassword_status() -> OnePasswordStatus {
 /// Returns `SecretError` if sign-out fails
 pub async fn signout() -> SecretResult<()> {
     let output = Command::new("op")
+        .env("PATH", crate::cli_download::get_extended_path())
         .arg("signout")
         .output()
         .await

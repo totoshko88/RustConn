@@ -5,6 +5,32 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.16] - 2026-05-15
+
+### Added
+- **macOS port** — full macOS support with native PTY, tray icon, Homebrew formula, DMG packaging
+- **macOS tray icon** (`tray-macos` feature) — native NSStatusItem via `tray-icon` + `muda` crates with dynamic menu updates (Show/Hide, Recent Connections, Active Sessions, Quick Connect, Local Shell, About, Quit)
+- **macOS Keychain backend** — native credential storage via Security.framework (`security-framework` crate), no CLI tools needed
+- **Native PTY spawn for macOS** — VTE `spawn_async` workaround via `openpty()` + `Pty::foreign_sync()` with `process_group(0)` for job control
+- **macOS PATH extension** — GUI apps launched via `.app` bundle get Homebrew and tool paths injected automatically
+- **Unified `detection_command()` helper** — all secret backend detection uses extended PATH for macOS compatibility
+- **Platform-aware URL opener** — `open` on macOS, `xdg-open` on Linux for web vaults and file managers
+- **DMG build script** — automated `.dmg` creation with bundled icons, locales, GSettings schemas, ad-hoc code signing
+- **Homebrew formula** — complete `rustconn.rb` for Homebrew Tap distribution
+
+### Fixed
+- **macOS tray: main-thread initialization** — `NSStatusItem` now created on main thread (was background thread causing silent failure)
+- **macOS tray: dynamic menu rebuild** — menu updates on state change via `set_menu()` (was static after creation)
+- **X11 renderer fallback skipped on macOS** — `ensure_x11_renderer_fallback()` gated with `#[cfg(not(target_os = "macos"))]`
+- **Cross-platform `statvfs` types** — `u64::from()` with platform-specific clippy attributes
+- **Secret backend detection on macOS** — all backends use extended PATH, removed per-tool fallback path lists
+- **Removed invalid Cellar path** — `/usr/local/Cellar/keepassxc/keepassxc-cli` never existed
+- **PTY child process cleanup** — kill + waitpid on `Pty::foreign_sync()` failure prevents zombies
+- **PTY child handle race** — `std::mem::forget(child)` prevents double-waitpid with GLib watcher
+
+### Dependencies
+- **Updated**: winnow 1.0.2→1.0.3
+
 ## [0.13.15] - 2026-05-14
 
 ### Added

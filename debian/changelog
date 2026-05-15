@@ -1,3 +1,19 @@
+rustconn (0.13.16-1) unstable; urgency=medium
+
+  * [Added] macOS port — native PTY, tray icon, Keychain backend, Homebrew
+    formula, DMG packaging
+  * [Added] macOS tray icon (tray-macos feature) — NSStatusItem with dynamic
+    menu updates
+  * [Added] macOS Keychain backend — native credential storage via
+    Security.framework
+  * [Fixed] macOS tray: main-thread initialization (NSStatusItem requirement)
+  * [Fixed] macOS tray: dynamic menu rebuild on state change
+  * [Fixed] X11 renderer fallback skipped on macOS
+  * [Fixed] Cross-platform statvfs types, secret backend detection, PTY cleanup
+  * [Dependencies] winnow 1.0.2→1.0.3
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Thu, 15 May 2026 12:00:00 +0200
+
 rustconn (0.13.15-1) unstable; urgency=medium
 
   * [Added] Local Shell: custom command — new "Command" field in Settings →

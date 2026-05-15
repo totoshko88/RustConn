@@ -5228,6 +5228,7 @@ impl ConnectionDialog {
                                         })?
                                     }
                                     SecretBackendType::LibSecret
+                                    | SecretBackendType::MacOsKeychain
                                     | SecretBackendType::KeePassXc
                                     | SecretBackendType::KdbxFile => {
                                         let backend = rustconn_core::secret::LibSecretBackend::new(

@@ -19,7 +19,6 @@ gtk4 = { workspace = true, features = ["v4_14"] }
 libadwaita = { workspace = true }
 gdk4-wayland = { version = "0.11", optional = true }
 vte4 = { workspace = true, features = ["v0_76"] }
-nix = { version = "0.31", features = ["term", "process"] }
 uuid = { workspace = true }
 regex = { workspace = true }
 chrono = { workspace = true }
@@ -34,6 +33,10 @@ dirs = { workspace = true }
 ksni = { version = "0.3", features = ["blocking"], optional = true }
 # SVG rendering for tray icon (renders SVG to ARGB32 pixmap)
 resvg = { version = "0.47", optional = true }
+# macOS tray icon via NSStatusItem (cross-platform crate, used only on macOS)
+tray-icon = { version = "0.19", optional = true }
+# Menu builder for macOS tray (companion to tray-icon)
+muda = { version = "0.16", optional = true }
 # Internationalization (gettext)
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
 # Tracing for structured logging
@@ -47,6 +50,7 @@ shell-words = "1"
 [features]
 default = ["tray", "vnc-embedded", "rdp-embedded", "rdp-audio", "wayland-native", "spice-embedded"]
 tray = ["dep:ksni", "dep:resvg"]
+tray-macos = ["dep:tray-icon", "dep:muda", "dep:resvg"]
 vnc-embedded = ["rustconn-core/vnc-embedded"]
 rdp-embedded = ["rustconn-core/rdp-embedded"]
 rdp-audio = ["rdp-embedded", "dep:cpal"]
@@ -101,3 +105,6 @@ wildcard_imports = "allow"
 needless_borrows_for_generic_args = "allow"
 redundant_closure_for_method_calls = "allow"
 redundant_closure = "allow"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+nix = { version = "0.31", features = ["term", "process", "signal"] }

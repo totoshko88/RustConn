@@ -231,6 +231,15 @@ impl SecretManager {
                 // lookups (e.g. variable resolution).
                 backends.push(Arc::new(super::LibSecretBackend::default_app()));
             }
+            #[cfg(target_os = "macos")]
+            SecretBackendType::MacOsKeychain => {
+                backends.push(Arc::new(super::MacOsKeychainBackend::new()));
+            }
+            #[cfg(not(target_os = "macos"))]
+            SecretBackendType::MacOsKeychain => {
+                // Fallback to libsecret on non-macOS platforms
+                backends.push(Arc::new(super::LibSecretBackend::default_app()));
+            }
         }
 
         // Add libsecret as fallback if enabled and not already primary
@@ -241,6 +250,7 @@ impl SecretManager {
                     | SecretBackendType::KeePassXc
                     | SecretBackendType::KdbxFile
                     | SecretBackendType::Pass
+                    | SecretBackendType::MacOsKeychain
             )
         {
             backends.push(Arc::new(super::LibSecretBackend::default_app()));

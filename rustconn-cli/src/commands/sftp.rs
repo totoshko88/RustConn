@@ -108,7 +108,7 @@ pub fn cmd_sftp(
             return Ok(());
         }
 
-        let mut proc = std::process::Command::new("xdg-open");
+        let mut proc = std::process::Command::new(rustconn_core::secret::url_open_command());
         proc.arg(&uri);
         rustconn_core::sftp::apply_agent_env(&mut proc);
         if proc.spawn().is_ok() {

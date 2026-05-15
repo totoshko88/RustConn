@@ -363,6 +363,7 @@ fn arb_secret_backend_type() -> impl Strategy<Value = SecretBackendType> {
         Just(SecretBackendType::OnePassword),
         Just(SecretBackendType::Passbolt),
         Just(SecretBackendType::Pass),
+        Just(SecretBackendType::MacOsKeychain),
     ]
 }
 

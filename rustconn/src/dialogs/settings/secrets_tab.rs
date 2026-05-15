@@ -953,7 +953,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             };
 
             if let Some(ref server_url) = url {
-                let result = std::process::Command::new("xdg-open")
+                let result = std::process::Command::new(rustconn_core::secret::url_open_command())
                     .arg(server_url)
                     .spawn();
                 if result.is_err() {
@@ -1962,7 +1962,7 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
     // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password, 4=Passbolt, 5=Pass
     let backend_index = match settings.preferred_backend {
         SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => 0,
-        SecretBackendType::LibSecret => 1,
+        SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => 1,
         SecretBackendType::Bitwarden => 2,
         SecretBackendType::OnePassword => 3,
         SecretBackendType::Passbolt => 4,

@@ -114,6 +114,7 @@ impl PassboltBackend {
     /// Builds a passbolt command with common flags
     fn build_command(&self, args: &[&str]) -> Command {
         let mut cmd = Command::new("passbolt");
+        cmd.env("PATH", crate::cli_download::get_extended_path());
         cmd.args(args);
 
         if let Some(ref addr) = self.server_address {
@@ -289,6 +290,7 @@ impl SecretBackend for PassboltBackend {
     async fn is_available(&self) -> bool {
         // Check if passbolt CLI is installed
         let installed = Command::new("passbolt")
+            .env("PATH", crate::cli_download::get_extended_path())
             .arg("--version")
             .output()
             .await
@@ -315,6 +317,7 @@ impl SecretBackend for PassboltBackend {
 /// Gets Passbolt CLI version
 pub async fn get_passbolt_version() -> Option<PassboltVersion> {
     let output = Command::new("passbolt")
+        .env("PATH", crate::cli_download::get_extended_path())
         .arg("--version")
         .output()
         .await
@@ -354,7 +357,11 @@ fn read_passbolt_server_address() -> Option<String> {
 /// Gets comprehensive Passbolt status
 pub async fn get_passbolt_status() -> PassboltStatus {
     // Check if installed
-    let version_output = Command::new("passbolt").arg("--version").output().await;
+    let version_output = Command::new("passbolt")
+        .env("PATH", crate::cli_download::get_extended_path())
+        .arg("--version")
+        .output()
+        .await;
 
     let (installed, version) = match version_output {
         Ok(output) if output.status.success() => {
@@ -379,6 +386,7 @@ pub async fn get_passbolt_status() -> PassboltStatus {
 
     // Check if configured by trying to list users
     let list_output = Command::new("passbolt")
+        .env("PATH", crate::cli_download::get_extended_path())
         .args(["list", "user", "--json"])
         .output()
         .await;

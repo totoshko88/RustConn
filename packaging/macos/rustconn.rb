@@ -1,7 +1,7 @@
 class Rustconn < Formula
   desc "Manage remote connections easily - SSH, RDP, VNC, SPICE, Telnet, Serial"
   homepage "https://github.com/totoshko88/RustConn"
-  url "https://github.com/totoshko88/RustConn/archive/refs/tags/v0.13.14.tar.gz"
+  url "https://github.com/totoshko88/RustConn/archive/refs/tags/v0.13.16.tar.gz"
   # sha256 "UPDATE_WITH_ACTUAL_SHA256"
   license "GPL-3.0-or-later"
   head "https://github.com/totoshko88/RustConn.git", branch: "main"
@@ -9,6 +9,7 @@ class Rustconn < Formula
   depends_on "rust" => :build
   depends_on "pkg-config" => :build
   depends_on "gettext" => :build
+  depends_on "librsvg" => :build
 
   depends_on "gtk4"
   depends_on "libadwaita"
@@ -22,7 +23,7 @@ class Rustconn < Formula
     system "cargo", "build", "--release",
            "-p", "rustconn",
            "--no-default-features",
-           "--features", "vnc-embedded,rdp-embedded,rdp-audio,spice-embedded"
+           "--features", "tray-macos,vnc-embedded,rdp-embedded,rdp-audio,spice-embedded"
 
     bin.install "target/release/rustconn"
 
@@ -73,7 +74,6 @@ class Rustconn < Formula
       export XDG_DATA_DIRS="#{HOMEBREW_PREFIX}/share:/usr/local/share:/usr/share"
       export GSETTINGS_SCHEMA_DIR="#{HOMEBREW_PREFIX}/share/glib-2.0/schemas"
       export LOCALEDIR="#{share}/locale"
-      export GDK_DPI_SCALE=0.5
       exec "#{bin}/rustconn" "$@"
     EOS
     chmod 0755, "#{app_dir}/MacOS/rustconn-wrapper"
@@ -102,6 +102,8 @@ class Rustconn < Formula
           <string>#{version}</string>
           <key>NSHighResolutionCapable</key>
           <true/>
+          <key>LSMinimumSystemVersion</key>
+          <string>13.0</string>
       </dict>
       </plist>
     EOS

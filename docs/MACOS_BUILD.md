@@ -32,14 +32,14 @@ pkg-config --modversion vte-2.91-gtk4 # 0.76+
 
 ```bash
 cargo build -p rustconn --no-default-features \
-  --features "vnc-embedded,rdp-embedded,rdp-audio,spice-embedded"
+  --features "tray-macos,vnc-embedded,rdp-embedded,rdp-audio,spice-embedded"
 ```
 
 ### Release Build (optimized)
 
 ```bash
 cargo build --release -p rustconn --no-default-features \
-  --features "vnc-embedded,rdp-embedded,rdp-audio,spice-embedded"
+  --features "tray-macos,vnc-embedded,rdp-embedded,rdp-audio,spice-embedded"
 ```
 
 ### CLI Only
@@ -95,7 +95,7 @@ RUST_LOG=debug \
 ```bash
 # 1. Build
 cargo build -p rustconn --no-default-features \
-  --features "vnc-embedded,rdp-embedded,rdp-audio,spice-embedded"
+  --features "tray-macos,vnc-embedded,rdp-embedded,rdp-audio,spice-embedded"
 
 # 2. Create bundle structure
 mkdir -p RustConn.app/Contents/{MacOS,Resources}
@@ -136,7 +136,7 @@ DIR="$(cd "$(dirname "$0")/.." && pwd)"
 export XDG_DATA_DIRS="$DIR/Resources/share:/opt/homebrew/share:/usr/local/share:/usr/share"
 export GSETTINGS_SCHEMA_DIR="/opt/homebrew/share/glib-2.0/schemas"
 export LOCALEDIR="$DIR/Resources/locale"
-export GDK_DPI_SCALE=0.5
+# Let GTK4 handle HiDPI scaling natively; override with GDK_DPI_SCALE env if needed.
 cd "$HOME"
 exec "$DIR/MacOS/rustconn" "$@"
 EOF
@@ -159,9 +159,9 @@ cat > RustConn.app/Contents/Info.plist << 'EOF'
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleVersion</key>
-    <string>0.13.14</string>
+    <string>0.13.15</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.13.14</string>
+    <string>0.13.15</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSDocumentsFolderUsageDescription</key>
@@ -178,7 +178,7 @@ open RustConn.app
 
 ```bash
 ./packaging/macos/build-dmg.sh --release
-# Output: dist/RustConn-0.13.14-macOS-arm64.dmg
+# Output: dist/RustConn-<VERSION>-macOS-arm64.dmg
 ```
 
 ---
@@ -195,10 +195,10 @@ open $(brew --prefix)/opt/rustconn/RustConn.app
 
 ### Publishing a New Release
 
-1. Tag the release on GitHub: `git tag v0.13.14 && git push --tags`
+1. Tag the release on GitHub: `git tag vX.Y.Z && git push --tags`
 2. Get the archive SHA256:
    ```bash
-   curl -sL https://github.com/totoshko88/RustConn/archive/refs/tags/v0.13.14.tar.gz | shasum -a 256
+   curl -sL https://github.com/totoshko88/RustConn/archive/refs/tags/vX.Y.Z.tar.gz | shasum -a 256
    ```
 3. Update `sha256` in `packaging/macos/rustconn.rb`
 4. Push to `homebrew-rustconn` tap repository
@@ -258,10 +258,10 @@ Expected on macOS — the tray feature uses D-Bus StatusNotifierItem which doesn
 
 ### Window Too Large / DPI Issues
 
-The wrapper script sets `GDK_DPI_SCALE=0.5` for Retina displays. Adjust this value if the window is too large or too small:
+GTK4 handles HiDPI scaling natively on macOS. If the window appears too large or too small, override with:
 
 ```bash
-export GDK_DPI_SCALE=0.75  # Try different values
+export GDK_DPI_SCALE=0.75  # Try different values (default: let GTK4 decide)
 ```
 
 ### Permission Dialog (Documents Access)

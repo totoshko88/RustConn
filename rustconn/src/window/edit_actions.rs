@@ -858,37 +858,55 @@ impl MainWindow {
     ///
     /// Tries: `dolphin` → `nautilus` → `xdg-open` (last resort).
     pub(crate) fn sftp_launch_file_manager(uri: &str) {
-        // Try dolphin first (KDE)
-        let mut cmd = std::process::Command::new("dolphin");
-        cmd.arg("--new-window").arg(uri);
-        rustconn_core::sftp::apply_agent_env(&mut cmd);
-        if cmd.spawn().is_ok() {
-            tracing::info!(%uri, "Launched dolphin for SFTP");
+        // On macOS, `open` handles sftp:// URIs natively (delegates to Finder or
+        // a registered SFTP client like Cyberduck/Transmit).
+        #[cfg(target_os = "macos")]
+        {
+            let mut cmd = std::process::Command::new("open");
+            cmd.arg(uri);
+            rustconn_core::sftp::apply_agent_env(&mut cmd);
+            if cmd.spawn().is_ok() {
+                tracing::info!(%uri, "Launched macOS open for SFTP");
+                return;
+            }
+            tracing::warn!(%uri, "macOS open failed for SFTP URI");
             return;
         }
 
-        // Try nautilus (GNOME)
-        let mut cmd = std::process::Command::new("nautilus");
-        cmd.args(["--new-window", uri]);
-        rustconn_core::sftp::apply_agent_env(&mut cmd);
-        if cmd.spawn().is_ok() {
-            tracing::info!(%uri, "Launched nautilus for SFTP");
-            return;
-        }
+        // Linux: Try dolphin first (KDE)
+        #[cfg(not(target_os = "macos"))]
+        {
+            let mut cmd = std::process::Command::new("dolphin");
+            cmd.arg("--new-window").arg(uri);
+            rustconn_core::sftp::apply_agent_env(&mut cmd);
+            if cmd.spawn().is_ok() {
+                tracing::info!(%uri, "Launched dolphin for SFTP");
+                return;
+            }
 
-        // Last resort — xdg-open (may go through D-Bus)
-        let mut cmd = std::process::Command::new("xdg-open");
-        cmd.arg(uri);
-        rustconn_core::sftp::apply_agent_env(&mut cmd);
-        if cmd.spawn().is_ok() {
-            tracing::info!(%uri, "Launched xdg-open for SFTP");
-            return;
-        }
+            // Try nautilus (GNOME)
+            let mut cmd = std::process::Command::new("nautilus");
+            cmd.args(["--new-window", uri]);
+            rustconn_core::sftp::apply_agent_env(&mut cmd);
+            if cmd.spawn().is_ok() {
+                tracing::info!(%uri, "Launched nautilus for SFTP");
+                return;
+            }
 
-        tracing::warn!(
-            %uri,
-            "No file manager found for SFTP URI"
-        );
+            // Last resort — xdg-open
+            let mut cmd = std::process::Command::new("xdg-open");
+            cmd.arg(uri);
+            rustconn_core::sftp::apply_agent_env(&mut cmd);
+            if cmd.spawn().is_ok() {
+                tracing::info!(%uri, "Launched xdg-open for SFTP");
+                return;
+            }
+
+            tracing::warn!(
+                %uri,
+                "No file manager found for SFTP URI"
+            );
+        }
     }
 
     /// Handles SFTP connection — opens file manager or mc

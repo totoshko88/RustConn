@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.13.15
+Version:        0.13.16
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -238,6 +238,17 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Thu May 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.16-0
+- Update to version 0.13.16
+- [Added] macOS port — native PTY, tray icon, Keychain backend, Homebrew formula, DMG packaging
+- [Added] macOS tray icon (tray-macos feature) — NSStatusItem with dynamic menu
+- [Added] macOS Keychain backend — native credential storage via Security.framework
+- [Fixed] macOS tray: main-thread initialization (NSStatusItem requirement)
+- [Fixed] macOS tray: dynamic menu rebuild on state change
+- [Fixed] X11 renderer fallback skipped on macOS
+- [Fixed] Cross-platform statvfs types, secret backend detection, PTY cleanup
+- [Dependencies] winnow 1.0.2→1.0.3
+
 * Wed May 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.15-1
 - [Added] Local Shell: custom command — new "Command" field in Settings →
   Terminal → Local Shell allows specifying a custom command instead of

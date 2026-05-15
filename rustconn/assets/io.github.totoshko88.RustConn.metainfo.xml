@@ -134,6 +134,19 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.13.16" date="2026-05-15">
+      <description>
+        <p>Version 0.13.16 — macOS port:</p>
+        <ul>
+          <li>Added macOS port with native PTY, tray icon, Keychain backend, Homebrew formula, DMG packaging</li>
+          <li>Added macOS tray icon (tray-macos feature) with dynamic menu updates</li>
+          <li>Added macOS Keychain backend for native credential storage</li>
+          <li>Fixed macOS tray main-thread initialization and dynamic menu rebuild</li>
+          <li>Fixed X11 renderer fallback skipped on macOS</li>
+          <li>Fixed cross-platform statvfs types, secret backend detection, PTY cleanup</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.13.15" date="2026-05-14">
       <description>
         <p>Version 0.13.15 — Custom shell command, split screen fix, dynamic snippets:</p>

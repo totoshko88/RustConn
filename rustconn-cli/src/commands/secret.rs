@@ -218,7 +218,7 @@ fn cmd_secret_get(
         .unwrap_or(settings.secrets.preferred_backend);
 
     match backend_type {
-        SecretBackendType::LibSecret => {
+        SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 
@@ -479,7 +479,7 @@ fn cmd_secret_set(
         .unwrap_or_default();
 
     match backend_type {
-        SecretBackendType::LibSecret => {
+        SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
             use rustconn_core::models::Credentials;
             use rustconn_core::secret::{LibSecretBackend, SecretBackend};
 
@@ -687,7 +687,7 @@ fn cmd_secret_delete(
         .unwrap_or(settings.secrets.preferred_backend);
 
     match backend_type {
-        SecretBackendType::LibSecret => {
+        SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 

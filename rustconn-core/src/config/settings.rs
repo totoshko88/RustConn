@@ -425,6 +425,8 @@ pub enum SecretBackendType {
     Passbolt,
     /// Pass (Unix Password Manager)
     Pass,
+    /// macOS Keychain (Security.framework)
+    MacOsKeychain,
 }
 
 /// Color scheme preference

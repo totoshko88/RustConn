@@ -81,6 +81,7 @@ impl LibSecretBackend {
         args.extend(Self::attrs_to_args(&attrs));
 
         let mut child = Command::new("secret-tool")
+            .env("PATH", crate::cli_download::get_extended_path())
             .args(&args)
             .stdin(Stdio::piped())
             .stdout(Stdio::null())
@@ -121,6 +122,7 @@ impl LibSecretBackend {
         args.extend(Self::attrs_to_args(&attrs));
 
         let output = Command::new("secret-tool")
+            .env("PATH", crate::cli_download::get_extended_path())
             .args(&args)
             .output()
             .await
@@ -148,6 +150,7 @@ impl LibSecretBackend {
         args.extend(Self::attrs_to_args(&attrs));
 
         let output = Command::new("secret-tool")
+            .env("PATH", crate::cli_download::get_extended_path())
             .args(&args)
             .output()
             .await
@@ -232,6 +235,7 @@ impl SecretBackend for LibSecretBackend {
         // Note: secret-tool does not support --version (exits with code 2),
         // so we only check whether the process can be spawned at all.
         Command::new("secret-tool")
+            .env("PATH", crate::cli_download::get_extended_path())
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .output()

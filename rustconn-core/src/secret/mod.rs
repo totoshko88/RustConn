@@ -19,6 +19,8 @@ mod kdbx;
 mod keepassxc;
 pub mod keyring;
 mod libsecret;
+#[cfg(target_os = "macos")]
+pub mod macos_keychain;
 mod manager;
 mod onepassword;
 mod pass;
@@ -45,6 +47,7 @@ pub use detection::{
     PasswordManagerInfo, VERSION_REGEX, detect_bitwarden, detect_gnome_secrets, detect_keepass,
     detect_keepassxc, detect_libsecret, detect_onepassword, detect_pass, detect_passbolt,
     detect_password_managers, get_password_manager_launch_command, open_password_manager,
+    url_open_command,
 };
 pub use hierarchy::{
     GROUPS_SUBFOLDER, GroupCreationResult, KEEPASS_ROOT_GROUP, KeePassHierarchy, PATH_SEPARATOR,
@@ -55,6 +58,8 @@ pub use keepassxc::{
     store_kdbx_password_in_keyring,
 };
 pub use libsecret::LibSecretBackend;
+#[cfg(target_os = "macos")]
+pub use macos_keychain::MacOsKeychainBackend;
 pub use manager::{BulkOperationResult, CACHE_TTL_SECONDS, CredentialUpdate, SecretManager};
 pub use onepassword::{
     OnePasswordBackend, OnePasswordStatus, OnePasswordVersion, delete_token_from_keyring,

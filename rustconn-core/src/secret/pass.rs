@@ -83,6 +83,7 @@ impl PassBackend {
     /// Sets up the Command with optional PASSWORD_STORE_DIR
     fn setup_command(&self) -> Command {
         let mut cmd = Command::new("pass");
+        cmd.env("PATH", crate::cli_download::get_extended_path());
         if let Some(ref dir) = self.store_dir {
             cmd.env("PASSWORD_STORE_DIR", dir);
         }
@@ -289,6 +290,7 @@ impl SecretBackend for PassBackend {
     async fn is_available(&self) -> bool {
         // Check if pass is available
         let mut cmd = Command::new("pass");
+        cmd.env("PATH", crate::cli_download::get_extended_path());
         if let Some(ref dir) = self.store_dir {
             cmd.env("PASSWORD_STORE_DIR", dir);
         }

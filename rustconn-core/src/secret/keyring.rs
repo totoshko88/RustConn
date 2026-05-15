@@ -21,6 +21,7 @@ pub async fn is_secret_tool_available() -> bool {
     // arguments prints usage to stderr and exits with code 1.
     // Use `which` / `command -v` to check binary presence instead.
     Command::new("which")
+        .env("PATH", crate::cli_download::get_extended_path())
         .arg("secret-tool")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -48,6 +49,7 @@ pub async fn store(key: &str, value: &str, label: &str) -> SecretResult<()> {
     }
 
     let mut child = Command::new("secret-tool")
+        .env("PATH", crate::cli_download::get_extended_path())
         .args(["store", "--label", label, "application", APP_ID, "key", key])
         .stdin(Stdio::piped())
         .stdout(Stdio::null())
@@ -85,6 +87,7 @@ pub async fn store(key: &str, value: &str, label: &str) -> SecretResult<()> {
 /// Returns `SecretError::LibSecret` if `secret-tool` cannot be spawned.
 pub async fn lookup(key: &str) -> SecretResult<Option<String>> {
     let output = Command::new("secret-tool")
+        .env("PATH", crate::cli_download::get_extended_path())
         .args(["lookup", "application", APP_ID, "key", key])
         .output()
         .await
@@ -108,6 +111,7 @@ pub async fn lookup(key: &str) -> SecretResult<Option<String>> {
 /// Returns `SecretError::DeleteFailed` if the clear command fails.
 pub async fn clear(key: &str) -> SecretResult<()> {
     let output = Command::new("secret-tool")
+        .env("PATH", crate::cli_download::get_extended_path())
         .args(["clear", "application", APP_ID, "key", key])
         .output()
         .await

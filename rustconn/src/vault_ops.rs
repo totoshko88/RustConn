@@ -260,8 +260,8 @@ pub fn rename_vault_credential(
 
         // Build old/new keys based on backend key format
         let (old_key, new_key) = match backend_type {
-            SecretBackendType::LibSecret => {
-                // LibSecret uses "{name} ({protocol})" format
+            SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
+                // LibSecret/Keychain uses "{name} ({protocol})" format
                 let old_key = format!("{} ({protocol_str})", old_name.replace('/', "-"));
                 let new_key = format!("{} ({protocol_str})", updated_conn.name.replace('/', "-"));
                 (old_key, new_key)
@@ -975,6 +975,7 @@ pub fn dispatch_vault_op(
                 rustconn_core::secret::PassBackend::from_secret_settings(secret_settings),
             ),
             SecretBackendType::LibSecret
+            | SecretBackendType::MacOsKeychain
             | SecretBackendType::KeePassXc
             | SecretBackendType::KdbxFile => {
                 std::sync::Arc::new(rustconn_core::secret::LibSecretBackend::new("rustconn"))
@@ -1053,6 +1054,7 @@ pub fn select_backend_for_load(
         SecretBackendType::OnePassword => SecretBackendType::OnePassword,
         SecretBackendType::Passbolt => SecretBackendType::Passbolt,
         SecretBackendType::Pass => SecretBackendType::Pass,
+        SecretBackendType::MacOsKeychain => SecretBackendType::MacOsKeychain,
         SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
             if secrets.kdbx_enabled && secrets.kdbx_path.is_some() {
                 SecretBackendType::KdbxFile

@@ -136,38 +136,54 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     // Initialize tray icon if enabled in settings
     let enable_tray = state.borrow().settings().ui.enable_tray_icon;
     if enable_tray {
-        // Spawn TrayManager on a background thread so that the blocking
+        // macOS: TrayManager uses NSStatusItem which MUST be created on the
+        // main thread. Create it synchronously here (it's fast — no D-Bus).
+        #[cfg(feature = "tray-macos")]
+        {
+            if let Some(tray) = TrayManager::new() {
+                let mut initial_cache = TrayStateCache::default();
+                update_tray_state(&tray, &state, &mut initial_cache);
+                *tray_manager.borrow_mut() = Some(tray);
+            } else {
+                tracing::warn!("Failed to create macOS tray icon");
+            }
+        }
+
+        // Linux: Spawn TrayManager on a background thread so that the blocking
         // D-Bus registration (`tray.spawn()` → `compat::block_on`) does
         // not stall the GTK main loop.  The result is polled back via a
         // lightweight channel.
-        let (tray_tx, tray_rx) = std::sync::mpsc::channel::<TrayManager>();
-        std::thread::Builder::new()
-            .name("tray-init".into())
-            .spawn(move || {
-                if let Some(tray) = TrayManager::new() {
-                    let _ = tray_tx.send(tray);
-                }
-            })
-            .ok();
-
-        let state_for_tray = state.clone();
-        let tray_mgr_for_init = tray_manager.clone();
-        glib::timeout_add_local(std::time::Duration::from_millis(50), move || match tray_rx
-            .try_recv()
+        #[cfg(feature = "tray")]
         {
-            Ok(tray) => {
-                let mut initial_cache = TrayStateCache::default();
-                update_tray_state(&tray, &state_for_tray, &mut initial_cache);
-                tray.force_refresh();
-                *tray_mgr_for_init.borrow_mut() = Some(tray);
-                glib::ControlFlow::Break
-            }
-            Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
-            Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                tracing::warn!("Tray initialization thread exited without creating tray");
-                glib::ControlFlow::Break
-            }
-        });
+            let (tray_tx, tray_rx) = std::sync::mpsc::channel::<TrayManager>();
+            std::thread::Builder::new()
+                .name("tray-init".into())
+                .spawn(move || {
+                    if let Some(tray) = TrayManager::new() {
+                        let _ = tray_tx.send(tray);
+                    }
+                })
+                .ok();
+
+            let state_for_tray = state.clone();
+            let tray_mgr_for_init = tray_manager.clone();
+            glib::timeout_add_local(std::time::Duration::from_millis(50), move || match tray_rx
+                .try_recv()
+            {
+                Ok(tray) => {
+                    let mut initial_cache = TrayStateCache::default();
+                    update_tray_state(&tray, &state_for_tray, &mut initial_cache);
+                    tray.force_refresh();
+                    *tray_mgr_for_init.borrow_mut() = Some(tray);
+                    glib::ControlFlow::Break
+                }
+                Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                    tracing::warn!("Tray initialization thread exited without creating tray");
+                    glib::ControlFlow::Break
+                }
+            });
+        }
     }
 
     // Schedule delayed force-refreshes so the D-Bus host caches our menu.
@@ -650,6 +666,7 @@ fn refresh_sidebar_secret_status(
     let backend = settings.secrets.preferred_backend;
     let (enabled, database_exists) = match backend {
         rustconn_core::config::SecretBackendType::LibSecret
+        | rustconn_core::config::SecretBackendType::MacOsKeychain
         | rustconn_core::config::SecretBackendType::Bitwarden
         | rustconn_core::config::SecretBackendType::OnePassword
         | rustconn_core::config::SecretBackendType::Passbolt

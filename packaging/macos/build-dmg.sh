@@ -17,11 +17,11 @@ echo "=== Building RustConn for macOS ==="
 echo "Building binary ($BUILD_TYPE)..."
 if [ "$BUILD_TYPE" = "--release" ]; then
     cargo build -p rustconn --release --no-default-features \
-        --features "vnc-embedded,rdp-embedded,rdp-audio,spice-embedded"
+        --features "tray-macos,vnc-embedded,rdp-embedded,rdp-audio,spice-embedded"
     BINARY="$PROJECT_DIR/target/release/rustconn"
 else
     cargo build -p rustconn --no-default-features \
-        --features "vnc-embedded,rdp-embedded,rdp-audio,spice-embedded"
+        --features "tray-macos,vnc-embedded,rdp-embedded,rdp-audio,spice-embedded"
     BINARY="$PROJECT_DIR/target/debug/rustconn"
 fi
 
@@ -84,7 +84,7 @@ DIR="$(cd "$(dirname "$0")/.." && pwd)"
 export XDG_DATA_DIRS="$DIR/Resources/share:/opt/homebrew/share:/usr/local/share:/usr/share"
 export GSETTINGS_SCHEMA_DIR="$DIR/Resources/share/glib-2.0/schemas"
 export LOCALEDIR="$DIR/Resources/locale"
-export GDK_DPI_SCALE=0.5
+# Let GTK4 handle HiDPI scaling natively; override with GDK_DPI_SCALE env if needed.
 exec "$DIR/MacOS/rustconn" "$@"
 EOF
 chmod +x "$APP_DIR/Contents/MacOS/rustconn-wrapper"
@@ -108,22 +108,39 @@ cat > "$APP_DIR/Contents/Info.plist" << EOF
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleVersion</key>
-    <string>\${VERSION}</string>
+    <string>${VERSION}</string>
     <key>CFBundleShortVersionString</key>
-    <string>\${VERSION}</string>
+    <string>${VERSION}</string>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>RustConn needs to open URLs in your default browser.</string>
 </dict>
 </plist>
 EOF
 
-# 10. Create DMG
+# 10. Ad-hoc code sign (prevents Gatekeeper quarantine issues during development)
+echo "Code signing (ad-hoc)..."
+codesign --force --deep --sign - "$APP_DIR" 2>/dev/null || true
+
+# 11. Create DMG
 echo "Creating DMG..."
 mkdir -p "$DMG_DIR"
 DMG_PATH="$DMG_DIR/RustConn-${VERSION}-macOS-arm64.dmg"
 rm -f "$DMG_PATH"
-hdiutil create -volname "RustConn" -srcfolder "$APP_DIR" \
+
+# Create a temporary folder with .app and Applications symlink for drag-install UX
+DMG_STAGING="$DMG_DIR/dmg-staging"
+rm -rf "$DMG_STAGING"
+mkdir -p "$DMG_STAGING"
+cp -R "$APP_DIR" "$DMG_STAGING/"
+ln -s /Applications "$DMG_STAGING/Applications"
+
+hdiutil create -volname "RustConn" -srcfolder "$DMG_STAGING" \
     -ov -format UDZO "$DMG_PATH"
+rm -rf "$DMG_STAGING"
 
 echo ""
 echo "=== Done ==="

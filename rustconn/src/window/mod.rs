@@ -1024,6 +1024,7 @@ impl MainWindow {
         let settings = state.borrow().settings().clone();
         let action_enabled = match settings.secrets.preferred_backend {
             rustconn_core::config::SecretBackendType::LibSecret
+            | rustconn_core::config::SecretBackendType::MacOsKeychain
             | rustconn_core::config::SecretBackendType::Bitwarden
             | rustconn_core::config::SecretBackendType::OnePassword
             | rustconn_core::config::SecretBackendType::Passbolt
@@ -2293,6 +2294,7 @@ impl MainWindow {
         // For KeePassXC/KdbxFile, check if enabled and database exists
         let (enabled, database_exists) = match backend {
             rustconn_core::config::SecretBackendType::LibSecret
+            | rustconn_core::config::SecretBackendType::MacOsKeychain
             | rustconn_core::config::SecretBackendType::Bitwarden
             | rustconn_core::config::SecretBackendType::OnePassword
             | rustconn_core::config::SecretBackendType::Passbolt
@@ -3085,6 +3087,7 @@ impl MainWindow {
                         {
                             let action_enabled = match backend {
                                 rustconn_core::config::SecretBackendType::LibSecret
+                                | rustconn_core::config::SecretBackendType::MacOsKeychain
                                 | rustconn_core::config::SecretBackendType::Bitwarden
                                 | rustconn_core::config::SecretBackendType::OnePassword
                                 | rustconn_core::config::SecretBackendType::Passbolt

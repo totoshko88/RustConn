@@ -152,6 +152,16 @@ pub fn get_bw_cmd() -> String {
         .unwrap_or_else(|| "bw".to_string())
 }
 
+/// Creates a [`Command`] for the resolved `bw` binary with extended PATH.
+///
+/// On macOS, GUI apps launched via `.app` bundle have minimal PATH.
+/// This helper ensures `bw` (and any tools it invokes) are discoverable.
+fn bw_command(bw_cmd: &str) -> Command {
+    let mut cmd = Command::new(bw_cmd);
+    cmd.env("PATH", crate::cli_download::get_extended_path());
+    cmd
+}
+
 /// Resolves the `bw` CLI command path by probing known locations.
 ///
 /// Checks (in order):
@@ -189,6 +199,7 @@ pub fn resolve_bw_cmd() -> String {
 
     for candidate in &candidates {
         if std::process::Command::new(candidate)
+            .env("PATH", crate::cli_download::get_extended_path())
             .arg("--version")
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null())
@@ -350,6 +361,7 @@ impl BitwardenBackend {
     /// of `--session` CLI argument to avoid exposure in `/proc/PID/cmdline`.
     fn build_command(&self, args: &[&str]) -> Command {
         let mut cmd = Command::new(&self.bw_cmd);
+        cmd.env("PATH", crate::cli_download::get_extended_path());
         cmd.args(args);
 
         if let Some(ref session) = self.session_key {
@@ -682,7 +694,7 @@ impl SecretBackend for BitwardenBackend {
 
     async fn is_available(&self) -> bool {
         // Check if bw CLI is installed
-        let installed = Command::new(&self.bw_cmd)
+        let installed = bw_command(&self.bw_cmd)
             .arg("--version")
             .output()
             .await
@@ -721,7 +733,7 @@ pub struct BitwardenVersion {
 /// Gets Bitwarden CLI version
 pub async fn get_bitwarden_version() -> Option<BitwardenVersion> {
     let bw_cmd = get_bw_cmd();
-    let output = Command::new(&bw_cmd).arg("--version").output().await.ok()?;
+    let output = bw_command(&bw_cmd).arg("--version").output().await.ok()?;
 
     if output.status.success() {
         let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
@@ -769,6 +781,7 @@ fn unlock_vault_sync(password: &str) -> SecretResult<SecretString> {
 
     // Strategy 1: --passwordenv with --raw (returns session key directly)
     let output = std::process::Command::new(&bw_cmd)
+        .env("PATH", crate::cli_download::get_extended_path())
         .args(["unlock", "--passwordenv", "BW_PASSWORD", "--raw"])
         .env("BW_PASSWORD", password)
         .stdout(std::process::Stdio::piped())
@@ -789,6 +802,7 @@ fn unlock_vault_sync(password: &str) -> SecretResult<SecretString> {
 
     // Strategy 2: --passwordenv without --raw (parse session key from verbose output)
     let output = std::process::Command::new(&bw_cmd)
+        .env("PATH", crate::cli_download::get_extended_path())
         .args(["unlock", "--passwordenv", "BW_PASSWORD"])
         .env("BW_PASSWORD", password)
         .stdout(std::process::Stdio::piped())
@@ -810,6 +824,7 @@ fn unlock_vault_sync(password: &str) -> SecretResult<SecretString> {
 
     // Strategy 3: stdin pipe without --raw (for maximum compatibility)
     let mut child = std::process::Command::new(&bw_cmd)
+        .env("PATH", crate::cli_download::get_extended_path())
         .arg("unlock")
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
@@ -888,7 +903,7 @@ pub async fn lock_vault() -> SecretResult<()> {
     clear_verified();
     clear_session_key();
     let bw_cmd = get_bw_cmd();
-    let output = Command::new(&bw_cmd)
+    let output = bw_command(&bw_cmd)
         .arg("lock")
         .output()
         .await
@@ -922,7 +937,7 @@ pub async fn login_with_api_key(
     client_secret: &SecretString,
 ) -> SecretResult<()> {
     let bw_cmd = get_bw_cmd();
-    let output = Command::new(&bw_cmd)
+    let output = bw_command(&bw_cmd)
         .args(["login", "--apikey"])
         .env("BW_CLIENTID", client_id.expose_secret())
         .env("BW_CLIENTSECRET", client_secret.expose_secret())
@@ -949,7 +964,7 @@ pub async fn login_with_api_key(
 pub async fn logout() -> SecretResult<()> {
     clear_verified();
     let bw_cmd = get_bw_cmd();
-    let output = Command::new(&bw_cmd)
+    let output = bw_command(&bw_cmd)
         .arg("logout")
         .output()
         .await
@@ -977,7 +992,7 @@ pub async fn logout() -> SecretResult<()> {
 /// Returns `SecretError` if configuration fails
 pub async fn configure_server(server_url: &str) -> SecretResult<()> {
     let bw_cmd = get_bw_cmd();
-    let output = Command::new(&bw_cmd)
+    let output = bw_command(&bw_cmd)
         .args(["config", "server", server_url])
         .output()
         .await

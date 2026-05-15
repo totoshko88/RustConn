@@ -722,7 +722,7 @@ fn parse_flatpak_version(output: &str) -> Option<String> {
 
 /// Returns the platform-specific command to open a URL or file.
 /// On macOS this is `open`, on Linux/other — `xdg-open`.
-fn url_open_command() -> &'static str {
+pub fn url_open_command() -> &'static str {
     #[cfg(target_os = "macos")]
     {
         "open"
@@ -884,6 +884,13 @@ pub fn get_password_manager_launch_command(
             let store_dir = std::env::var("PASSWORD_STORE_DIR")
                 .unwrap_or_else(|_| format!("{home}/.password-store"));
             Some((url_open_command().to_string(), vec![store_dir]))
+        }
+        crate::config::SecretBackendType::MacOsKeychain => {
+            // Open Keychain Access on macOS
+            Some((
+                "open".to_string(),
+                vec!["-a".to_string(), "Keychain Access".to_string()],
+            ))
         }
     }
 }

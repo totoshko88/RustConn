@@ -210,6 +210,7 @@ fn print_usage() {
 /// X11 (no `WAYLAND_DISPLAY`), this function re-executes the process
 /// with `GSK_RENDERER=cairo`.  The re-exec happens before GTK or tokio
 /// start, so it is safe.  A sentinel env var prevents infinite loops.
+#[cfg(not(target_os = "macos"))]
 fn ensure_x11_renderer_fallback() {
     use std::os::unix::process::CommandExt;
 
@@ -262,6 +263,8 @@ fn main() -> gtk4::glib::ExitCode {
     // popovers appear empty until the pointer moves over them (#85).
     // Re-exec with GSK_RENDERER=cairo before GTK starts (same pattern as
     // the language re-exec in i18n.rs).  Wayland sessions are unaffected.
+    // Skipped on macOS — no X11/Wayland there.
+    #[cfg(not(target_os = "macos"))]
     ensure_x11_renderer_fallback();
 
     // Apply saved language from config BEFORE GTK starts.

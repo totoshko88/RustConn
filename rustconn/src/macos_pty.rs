@@ -6,6 +6,7 @@
 //! `nix::pty::openpty()` and manually spawning the child process with
 //! the slave fd as stdin/stdout/stderr, then handing the master fd to VTE.
 
+use std::os::fd::AsFd;
 use std::os::unix::process::CommandExt;
 use std::process::{Command, Stdio};
 
@@ -13,6 +14,18 @@ use gtk4::gio;
 use gtk4::glib;
 use vte4::prelude::*;
 use vte4::{Pty, Terminal};
+
+/// Essential environment variables that must be present for a child shell
+/// to function correctly. If `envv` provides them, those values take priority;
+/// otherwise we inherit from the parent process.
+const ESSENTIAL_ENV_VARS: &[&str] = &["HOME", "USER", "LOGNAME", "SHELL", "LANG", "PATH"];
+
+/// Checks whether `envv` already contains a variable with the given key.
+fn envv_contains_key(envv: &[&str], key: &str) -> bool {
+    let prefix_len = key.len();
+    envv.iter()
+        .any(|e| e.len() > prefix_len && e.starts_with(key) && e.as_bytes()[prefix_len] == b'=')
+}
 
 /// Spawns a command in a native macOS PTY and connects it to the VTE terminal.
 ///
@@ -54,21 +67,37 @@ pub fn spawn_native_pty(
         }
     }
 
-    // If envv is empty, inherit parent environment
+    // If envv is empty, inherit full parent environment
     if envv.is_empty() {
         for (key, value) in std::env::vars() {
             cmd.env(&key, &value);
         }
+    } else {
+        // Ensure essential env vars are present even when envv is non-empty.
+        // Without HOME/USER/SHELL the child shell may malfunction.
+        for &var in ESSENTIAL_ENV_VARS {
+            if !envv_contains_key(envv, var) {
+                if let Ok(value) = std::env::var(var) {
+                    cmd.env(var, value);
+                }
+            }
+        }
     }
 
-    // Ensure TERM is set
+    // Ensure TERM is set (overrides any inherited value)
     cmd.env("TERM", "xterm-256color");
 
-    // 3. Connect slave fd as stdin/stdout/stderr for the child
-    let stdin_fd = nix::unistd::dup(&slave_fd).map_err(|e| format!("dup stdin failed: {e}"))?;
-    let stdout_fd = nix::unistd::dup(&slave_fd).map_err(|e| format!("dup stdout failed: {e}"))?;
-    let stderr_fd = nix::unistd::dup(&slave_fd).map_err(|e| format!("dup stderr failed: {e}"))?;
+    // 3. Connect slave fd as stdin/stdout/stderr for the child.
+    //    nix 0.31 dup() returns OwnedFd which auto-closes on drop,
+    //    so if a later dup fails the earlier OwnedFds are cleaned up.
+    let stdin_fd =
+        nix::unistd::dup(slave_fd.as_fd()).map_err(|e| format!("dup stdin failed: {e}"))?;
+    let stdout_fd =
+        nix::unistd::dup(slave_fd.as_fd()).map_err(|e| format!("dup stdout failed: {e}"))?;
+    let stderr_fd =
+        nix::unistd::dup(slave_fd.as_fd()).map_err(|e| format!("dup stderr failed: {e}"))?;
 
+    // Stdio::from(OwnedFd) takes ownership — no unsafe needed.
     cmd.stdin(Stdio::from(stdin_fd));
     cmd.stdout(Stdio::from(stdout_fd));
     cmd.stderr(Stdio::from(stderr_fd));
@@ -82,6 +111,11 @@ pub fn spawn_native_pty(
         .map_err(|e| format!("spawn failed: {e}"))?;
     let child_pid = child.id();
 
+    // Forget the Child handle — GLib's child_watch_add_local will reap the
+    // process via waitpid(). If we let Child drop here, its Drop impl would
+    // call waitpid() and race with GLib's watcher.
+    std::mem::forget(child);
+
     tracing::info!(
         command = %argv[0],
         pid = child_pid,
@@ -91,9 +125,18 @@ pub fn spawn_native_pty(
     // 5. Close slave fd in parent (child has its own copies)
     drop(slave_fd);
 
-    // 6. Create VTE Pty from master fd and attach to terminal
-    let vte_pty = Pty::foreign_sync(master_fd, gio::Cancellable::NONE)
-        .map_err(|e| format!("Failed to create VTE Pty from fd: {e}"))?;
+    // 6. Create VTE Pty from master fd and attach to terminal.
+    // If this fails, kill the child and reap it to avoid a zombie process.
+    let vte_pty = match Pty::foreign_sync(master_fd, gio::Cancellable::NONE) {
+        Ok(pty) => pty,
+        Err(e) => {
+            let pid = nix::unistd::Pid::from_raw(child_pid as i32);
+            let _ = nix::sys::signal::kill(pid, nix::sys::signal::Signal::SIGKILL);
+            // Reap the killed child to prevent zombie
+            let _ = nix::sys::wait::waitpid(pid, None);
+            return Err(format!("Failed to create VTE Pty from fd: {e}"));
+        }
+    };
 
     terminal.set_pty(Some(&vte_pty));
 

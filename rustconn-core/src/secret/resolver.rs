@@ -154,7 +154,9 @@ impl CredentialResolver {
             SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
                 self.resolve_from_keepass(connection).await
             }
-            SecretBackendType::LibSecret => self.resolve_from_keyring(connection).await,
+            SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
+                self.resolve_from_keyring(connection).await
+            }
             SecretBackendType::Bitwarden => self.resolve_from_bitwarden(connection).await,
             SecretBackendType::OnePassword => self.resolve_from_onepassword(connection).await,
             SecretBackendType::Passbolt => self.resolve_from_passbolt(connection).await,
@@ -369,6 +371,7 @@ impl CredentialResolver {
             SecretBackendType::OnePassword => SecretBackendType::OnePassword,
             SecretBackendType::Passbolt => SecretBackendType::Passbolt,
             SecretBackendType::Pass => SecretBackendType::Pass,
+            SecretBackendType::MacOsKeychain => SecretBackendType::MacOsKeychain,
             SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
                 if self.settings.kdbx_enabled && self.settings.kdbx_path.is_some() {
                     SecretBackendType::KdbxFile
@@ -584,7 +587,7 @@ impl CredentialResolver {
                 let lookup_key = Self::generate_lookup_key(connection);
                 self.secret_manager.store(&lookup_key, credentials).await
             }
-            SecretBackendType::LibSecret => {
+            SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
                 let lookup_key = Self::generate_keyring_key(connection);
                 self.secret_manager.store(&lookup_key, credentials).await
             }
@@ -621,7 +624,7 @@ impl CredentialResolver {
                 let lookup_key = Self::generate_hierarchical_lookup_key(connection, groups);
                 self.secret_manager.store(&lookup_key, credentials).await
             }
-            SecretBackendType::LibSecret => {
+            SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
                 let lookup_key = Self::generate_keyring_key(connection);
                 self.secret_manager.store(&lookup_key, credentials).await
             }
@@ -880,7 +883,9 @@ impl CredentialResolver {
                 self.resolve_from_keepass_hierarchical(connection, groups)
                     .await
             }
-            SecretBackendType::LibSecret => self.resolve_from_keyring(connection).await,
+            SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
+                self.resolve_from_keyring(connection).await
+            }
             SecretBackendType::Bitwarden => self.resolve_from_bitwarden(connection).await,
             SecretBackendType::OnePassword => self.resolve_from_onepassword(connection).await,
             SecretBackendType::Passbolt => self.resolve_from_passbolt(connection).await,
@@ -1008,6 +1013,7 @@ impl CredentialResolver {
                 }
             }
             SecretBackendType::LibSecret
+            | SecretBackendType::MacOsKeychain
             | SecretBackendType::Bitwarden
             | SecretBackendType::OnePassword
             | SecretBackendType::Passbolt
@@ -1059,8 +1065,8 @@ impl CredentialResolver {
                             let _ = self.secret_manager.delete(&old_key).await;
                         }
                     }
-                    SecretBackendType::LibSecret => {
-                        // LibSecret uses "{name} ({protocol})" format
+                    SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
+                        // LibSecret/Keychain uses "{name} ({protocol})" format
                         let old_key = Self::generate_keyring_key(&old_connection);
                         let new_key = Self::generate_keyring_key(connection);
                         if old_key != new_key

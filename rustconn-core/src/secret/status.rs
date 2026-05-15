@@ -122,8 +122,13 @@ impl KeePassStatus {
     ///
     /// Searches in PATH and common installation locations.
     fn find_keepassxc_cli() -> Option<std::path::PathBuf> {
-        // Try to find in PATH using `which`
-        if let Ok(output) = Command::new("which").arg("keepassxc-cli").output()
+        let extended_path = crate::cli_download::get_extended_path();
+
+        // Try to find in PATH using `which` (with extended PATH for macOS .app bundles)
+        if let Ok(output) = Command::new("which")
+            .env("PATH", &extended_path)
+            .arg("keepassxc-cli")
+            .output()
             && output.status.success()
         {
             let path_str = String::from_utf8_lossy(&output.stdout);
@@ -158,8 +163,13 @@ impl KeePassStatus {
     /// Builds a [`Command`] for running `keepassxc-cli`.
     ///
     /// The returned command has no arguments yet — callers append `.arg(...)` as needed.
+    ///
+    /// Injects the extended PATH so that child processes (e.g. GPG invoked by
+    /// keepassxc-cli) can also be found on macOS where GUI apps have minimal PATH.
     fn keepassxc_command(cli_path: &Path) -> Command {
-        Command::new(cli_path)
+        let mut cmd = Command::new(cli_path);
+        cmd.env("PATH", crate::cli_download::get_extended_path());
+        cmd
     }
 
     /// Gets the `KeePassXC` version from the CLI

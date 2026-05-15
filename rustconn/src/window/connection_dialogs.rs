@@ -554,6 +554,7 @@ pub fn show_new_group_dialog_with_parent(
                                 })?
                             }
                             SecretBackendType::LibSecret
+                            | SecretBackendType::MacOsKeychain
                             | SecretBackendType::KeePassXc
                             | SecretBackendType::KdbxFile => {
                                 let backend =

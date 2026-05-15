@@ -1,4 +1,20 @@
 -------------------------------------------------------------------
+Thu May 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.16
+
+- Update to version 0.13.16
+- [Added] macOS port — native PTY, tray icon, Keychain backend, Homebrew
+  formula, DMG packaging
+- [Added] macOS tray icon (tray-macos feature) — NSStatusItem with dynamic
+  menu updates
+- [Added] macOS Keychain backend — native credential storage via
+  Security.framework
+- [Fixed] macOS tray: main-thread initialization (NSStatusItem requirement)
+- [Fixed] macOS tray: dynamic menu rebuild on state change
+- [Fixed] X11 renderer fallback skipped on macOS
+- [Fixed] Cross-platform statvfs types, secret backend detection, PTY cleanup
+- [Dependencies] winnow 1.0.2→1.0.3
+
+-------------------------------------------------------------------
 Wed May 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.15
 
 - Update to version 0.13.15

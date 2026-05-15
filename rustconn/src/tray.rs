@@ -375,10 +375,278 @@ mod tray_impl {
 pub use tray_impl::TrayManager;
 
 // ============================================================================
-// Stub implementation when the "tray" feature is disabled
+// macOS tray implementation using tray-icon + muda (NSStatusItem)
 // ============================================================================
 
-#[cfg(not(feature = "tray"))]
+#[cfg(feature = "tray-macos")]
+mod tray_macos_impl {
+    use super::*;
+    use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
+    use tray_icon::TrayIconBuilder;
+
+    /// Embedded SVG icon data (same as Linux tray)
+    const ICON_SVG: &[u8] =
+        include_bytes!("../assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg");
+
+    /// Render SVG to RGBA pixmap for tray-icon crate
+    fn render_svg_to_rgba(size: u32) -> Option<Vec<u8>> {
+        let tree = resvg::usvg::Tree::from_data(ICON_SVG, &resvg::usvg::Options::default()).ok()?;
+        let mut pixmap = resvg::tiny_skia::Pixmap::new(size, size)?;
+        let svg_size = tree.size();
+        let scale = (size as f32 / svg_size.width()).min(size as f32 / svg_size.height());
+        let transform = resvg::tiny_skia::Transform::from_scale(scale, scale);
+        resvg::render(&tree, transform, &mut pixmap.as_mut());
+        Some(pixmap.data().to_vec())
+    }
+
+    /// Menu item IDs for the macOS tray
+    const ID_TOGGLE_WINDOW: &str = "toggle-window";
+    const ID_QUICK_CONNECT: &str = "quick-connect";
+    const ID_LOCAL_SHELL: &str = "local-shell";
+    const ID_ABOUT: &str = "about";
+    const ID_QUIT: &str = "quit";
+    const ID_CONNECT_PREFIX: &str = "connect:";
+
+    /// macOS tray icon manager using NSStatusItem via tray-icon crate.
+    ///
+    /// **IMPORTANT:** Must be created on the main thread — macOS AppKit
+    /// requires `NSStatusItem` allocation on the main thread.
+    pub struct TrayManager {
+        state: Arc<Mutex<TrayState>>,
+        receiver: Receiver<TrayMessage>,
+        tray_icon: tray_icon::TrayIcon,
+    }
+
+    impl TrayManager {
+        /// Creates a new macOS tray icon.
+        ///
+        /// **Must be called from the main thread** (macOS AppKit requirement).
+        /// Unlike the Linux `ksni` tray which uses D-Bus and can be spawned
+        /// on a background thread, `NSStatusItem` will silently fail or crash
+        /// if created off the main thread.
+        #[must_use]
+        pub fn new() -> Option<Self> {
+            let (sender, receiver) = mpsc::channel();
+            let state = Arc::new(Mutex::new(TrayState::default()));
+
+            // Render icon
+            let rgba_data = render_svg_to_rgba(22)?;
+            let icon = tray_icon::Icon::from_rgba(rgba_data, 22, 22).ok()?;
+
+            // Build menu
+            let menu = Self::build_menu(&state);
+
+            // Create tray icon (must be on main thread)
+            let tray_icon = TrayIconBuilder::new()
+                .with_icon(icon)
+                .with_tooltip("RustConn")
+                .with_menu(Box::new(menu))
+                .build()
+                .ok()?;
+
+            // Set up menu event handler on a background thread.
+            // MenuEvent::receiver() is thread-safe — only the TrayIcon itself
+            // must live on the main thread.
+            let sender_for_events = sender.clone();
+            std::thread::Builder::new()
+                .name("tray-macos-events".into())
+                .spawn(move || {
+                    let menu_rx = MenuEvent::receiver();
+                    loop {
+                        match menu_rx.recv() {
+                            Ok(event) => {
+                                let id_str = event.id().0.as_str();
+                                let msg = match id_str {
+                                    ID_TOGGLE_WINDOW => Some(TrayMessage::ToggleWindow),
+                                    ID_QUICK_CONNECT => Some(TrayMessage::QuickConnect),
+                                    ID_LOCAL_SHELL => Some(TrayMessage::LocalShell),
+                                    ID_ABOUT => Some(TrayMessage::About),
+                                    ID_QUIT => Some(TrayMessage::Quit),
+                                    other if other.starts_with(ID_CONNECT_PREFIX) => {
+                                        let uuid_str = &other[ID_CONNECT_PREFIX.len()..];
+                                        Uuid::parse_str(uuid_str).ok().map(TrayMessage::Connect)
+                                    }
+                                    _ => None,
+                                };
+                                if let Some(m) = msg {
+                                    let _ = sender_for_events.send(m);
+                                }
+                            }
+                            Err(_) => break,
+                        }
+                    }
+                })
+                .ok()?;
+
+            Some(Self {
+                state,
+                receiver,
+                tray_icon,
+            })
+        }
+
+        fn build_menu(state: &Arc<Mutex<TrayState>>) -> Menu {
+            let menu = Menu::new();
+
+            let toggle_label = {
+                let s = state.lock().unwrap_or_else(|e| e.into_inner());
+                if s.window_visible {
+                    gettext("Hide Window")
+                } else {
+                    gettext("Show Window")
+                }
+            };
+
+            let _ = menu.append(&MenuItem::with_id(
+                muda::MenuId(ID_TOGGLE_WINDOW.into()),
+                &toggle_label,
+                true,
+                None,
+            ));
+            let _ = menu.append(&PredefinedMenuItem::separator());
+
+            // Recent connections submenu
+            {
+                let s = state.lock().unwrap_or_else(|e| e.into_inner());
+                if !s.recent_connections.is_empty() {
+                    let submenu = Submenu::new(&gettext("Recent Connections"), true);
+                    for (id, name) in s.recent_connections.iter().take(10) {
+                        let menu_id = format!("{ID_CONNECT_PREFIX}{id}");
+                        let _ = submenu.append(&MenuItem::with_id(
+                            muda::MenuId(menu_id.into()),
+                            name,
+                            true,
+                            None,
+                        ));
+                    }
+                    let _ = menu.append(&submenu);
+                    let _ = menu.append(&PredefinedMenuItem::separator());
+                }
+            }
+
+            // Active sessions count (informational, disabled)
+            {
+                let s = state.lock().unwrap_or_else(|e| e.into_inner());
+                if s.active_sessions > 0 {
+                    let mut label = gettext("{} Active Session(s)");
+                    if let Some(pos) = label.find("{}") {
+                        label.replace_range(pos..pos + 2, &s.active_sessions.to_string());
+                    }
+                    let _ = menu.append(&MenuItem::with_id(
+                        muda::MenuId("active-sessions".into()),
+                        &label,
+                        false,
+                        None,
+                    ));
+                    let _ = menu.append(&PredefinedMenuItem::separator());
+                }
+            }
+
+            let _ = menu.append(&MenuItem::with_id(
+                muda::MenuId(ID_QUICK_CONNECT.into()),
+                &gettext("Quick Connect..."),
+                true,
+                None,
+            ));
+            let _ = menu.append(&MenuItem::with_id(
+                muda::MenuId(ID_LOCAL_SHELL.into()),
+                &gettext("Local Shell"),
+                true,
+                None,
+            ));
+            let _ = menu.append(&PredefinedMenuItem::separator());
+            let _ = menu.append(&MenuItem::with_id(
+                muda::MenuId(ID_ABOUT.into()),
+                &gettext("About RustConn"),
+                true,
+                None,
+            ));
+            let _ = menu.append(&MenuItem::with_id(
+                muda::MenuId(ID_QUIT.into()),
+                &gettext("Quit"),
+                true,
+                None,
+            ));
+
+            menu
+        }
+
+        /// Rebuilds and replaces the tray menu to reflect current state.
+        ///
+        /// Unlike Linux ksni which has `handle.update()`, macOS `tray-icon`
+        /// does not automatically rebuild the menu on open. We must explicitly
+        /// call `set_menu()` whenever state changes.
+        fn rebuild_menu(&self) {
+            let menu = Self::build_menu(&self.state);
+            self.tray_icon.set_menu(Some(Box::new(menu)));
+        }
+
+        pub fn force_refresh(&self) {
+            self.rebuild_menu();
+        }
+
+        pub fn set_active_sessions(&self, count: u32) {
+            let changed = if let Ok(mut state) = self.state.lock() {
+                if state.active_sessions != count {
+                    state.active_sessions = count;
+                    true
+                } else {
+                    false
+                }
+            } else {
+                false
+            };
+            if changed {
+                self.rebuild_menu();
+            }
+        }
+
+        pub fn set_recent_connections(&self, connections: Vec<(Uuid, String)>) {
+            let changed = if let Ok(mut state) = self.state.lock() {
+                if state.recent_connections != connections {
+                    state.recent_connections = connections;
+                    true
+                } else {
+                    false
+                }
+            } else {
+                false
+            };
+            if changed {
+                self.rebuild_menu();
+            }
+        }
+
+        pub fn set_window_visible(&self, visible: bool) {
+            let changed = if let Ok(mut state) = self.state.lock() {
+                if state.window_visible != visible {
+                    state.window_visible = visible;
+                    true
+                } else {
+                    false
+                }
+            } else {
+                false
+            };
+            if changed {
+                self.rebuild_menu();
+            }
+        }
+
+        pub fn try_recv(&self) -> Option<TrayMessage> {
+            self.receiver.try_recv().ok()
+        }
+    }
+}
+
+#[cfg(feature = "tray-macos")]
+pub use tray_macos_impl::TrayManager;
+
+// ============================================================================
+// Stub implementation when no tray feature is enabled
+// ============================================================================
+
+#[cfg(not(any(feature = "tray", feature = "tray-macos")))]
 mod tray_stub {
     use super::*;
 
@@ -405,7 +673,7 @@ mod tray_stub {
     }
 }
 
-#[cfg(not(feature = "tray"))]
+#[cfg(not(any(feature = "tray", feature = "tray-macos")))]
 pub use tray_stub::TrayManager;
 
 // ============================================================================
