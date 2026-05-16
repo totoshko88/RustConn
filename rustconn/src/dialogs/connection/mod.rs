@@ -30,6 +30,7 @@ mod spice;
 mod ssh;
 mod telnet;
 mod vnc;
+mod web;
 pub mod widgets;
 mod zerotrust;
 

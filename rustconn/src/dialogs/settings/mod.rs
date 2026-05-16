@@ -6,7 +6,7 @@
 //! Migrated to `PreferencesDialog` (libadwaita 1.5+) from deprecated `PreferencesWindow`.
 
 mod clients_tab;
-mod cloud_sync_tab;
+pub mod cloud_sync_tab;
 mod keybindings_tab;
 mod logging_tab;
 mod monitoring_tab;

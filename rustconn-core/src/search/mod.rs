@@ -291,11 +291,12 @@ impl SearchEngine {
             "sftp" => Ok(ProtocolType::Sftp),
             "kubernetes" | "k8s" => Ok(ProtocolType::Kubernetes),
             "mosh" => Ok(ProtocolType::Mosh),
+            "web" => Ok(ProtocolType::Web),
             _ => Err(SearchError::InvalidOperator {
                 operator: "protocol".to_string(),
                 reason: format!(
                     "unknown protocol '{value}', expected ssh, rdp, vnc, \
-                     spice, telnet, zerotrust, serial, sftp, kubernetes, or mosh"
+                     spice, telnet, zerotrust, serial, sftp, kubernetes, mosh, or web"
                 ),
             }),
         }
@@ -1036,6 +1037,7 @@ pub mod benchmark {
 mod tests {
     use super::*;
     use crate::models::CustomProperty;
+    use crate::models::ProtocolConfig;
 
     fn create_test_connection(name: &str, host: &str, protocol: ProtocolType) -> Connection {
         let mut conn = match protocol {
@@ -1052,6 +1054,12 @@ mod tests {
             ProtocolType::Sftp => Connection::new_sftp(name.to_string(), host.to_string(), 22),
             ProtocolType::Kubernetes => Connection::new_kubernetes(name.to_string()),
             ProtocolType::Mosh => Connection::new_mosh(name.to_string(), host.to_string(), 22),
+            ProtocolType::Web => {
+                let mut c = Connection::new_ssh(name.to_string(), host.to_string(), 443);
+                c.protocol = ProtocolType::Web;
+                c.protocol_config = ProtocolConfig::Web(crate::models::WebConfig::default());
+                c
+            }
         };
         conn.id = Uuid::new_v4();
         conn

@@ -268,6 +268,13 @@ impl ConnectionSidebar {
         );
         #[cfg(not(feature = "adw-1-7"))]
         kubernetes_filter.set_hexpand(true);
+        let web_filter = filter::create_filter_button(
+            "Web",
+            rustconn_core::get_protocol_icon(ProtocolType::Web),
+            "Filter Web bookmark connections",
+        );
+        #[cfg(not(feature = "adw-1-7"))]
+        web_filter.set_hexpand(true);
 
         protocol_group.append(&ssh_filter);
         protocol_group.append(&rdp_filter);
@@ -277,6 +284,7 @@ impl ConnectionSidebar {
         protocol_group.append(&serial_filter);
         protocol_group.append(&zerotrust_filter);
         protocol_group.append(&kubernetes_filter);
+        protocol_group.append(&web_filter);
 
         filter_box.append(&protocol_group);
 
@@ -306,6 +314,9 @@ impl ConnectionSidebar {
         protocol_filter_buttons
             .borrow_mut()
             .insert("Kubernetes".to_string(), kubernetes_filter.clone());
+        protocol_filter_buttons
+            .borrow_mut()
+            .insert("Web".to_string(), web_filter.clone());
 
         // Active protocol filters state
         let active_protocol_filters = Rc::new(RefCell::new(HashSet::new()));
@@ -409,6 +420,17 @@ impl ConnectionSidebar {
                     &entry,
                     &flag,
                 );
+            });
+        }
+        {
+            let filters = active_protocol_filters.clone();
+            let buttons = protocol_filter_buttons.clone();
+            let entry = search_entry.clone();
+            let flag = programmatic_flag.clone();
+            let ctr = container.clone();
+            filter::connect_filter_button(&web_filter, move |btn| {
+                ctr.set_width_request(ctr.width());
+                search::toggle_protocol_filter("Web", btn, &filters, &buttons, &entry, &flag);
             });
         }
 

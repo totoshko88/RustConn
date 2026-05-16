@@ -189,6 +189,9 @@ pub struct ConnectionDialog {
     rdp_shared_folders_list: gtk4::ListBox,
     rdp_custom_args_entry: Entry,
     rdp_keyboard_layout_dropdown: DropDown,
+    rdp_remote_app_program_entry: Entry,
+    rdp_remote_app_args_entry: Entry,
+    rdp_remote_app_name_entry: Entry,
     // VNC fields
     vnc_client_mode_dropdown: DropDown,
     vnc_performance_mode_dropdown: DropDown,
@@ -285,6 +288,9 @@ pub struct ConnectionDialog {
     k8s_busybox_check: CheckButton,
     k8s_busybox_image_entry: Entry,
     k8s_custom_args_entry: Entry,
+    // Web fields
+    web_browser_entry: Entry,
+    web_private_mode_switch: adw::SwitchRow,
     // Variables fields
     variables_list: ListBox,
     variables_rows: Rc<RefCell<Vec<LocalVariableRow>>>,
@@ -554,6 +560,9 @@ impl ConnectionDialog {
             rdp_shared_folders_list,
             rdp_custom_args_entry,
             rdp_keyboard_layout_dropdown,
+            rdp_remote_app_program_entry,
+            rdp_remote_app_args_entry,
+            rdp_remote_app_name_entry,
         ) = super::rdp::create_rdp_options();
         protocol_stack.add_named(&rdp_box, Some("rdp"));
 
@@ -664,6 +673,11 @@ impl ConnectionDialog {
             k8s_custom_args_entry,
         ) = super::kubernetes::create_kubernetes_options();
         protocol_stack.add_named(&k8s_box, Some("kubernetes"));
+
+        // Web bookmark options page
+        let (web_box, web_browser_entry, web_private_mode_switch) =
+            super::web::create_web_options();
+        protocol_stack.add_named(&web_box, Some("web"));
 
         // MOSH now uses SSH tab with additional MOSH settings group
         // (mosh_port_range_entry, mosh_predict_dropdown, mosh_server_binary_entry
@@ -877,6 +891,9 @@ impl ConnectionDialog {
             &rdp_shared_folders,
             &rdp_custom_args_entry,
             &rdp_keyboard_layout_dropdown,
+            &rdp_remote_app_program_entry,
+            &rdp_remote_app_args_entry,
+            &rdp_remote_app_name_entry,
             &vnc_client_mode_dropdown,
             &vnc_performance_mode_dropdown,
             &vnc_encoding_dropdown,
@@ -951,6 +968,8 @@ impl ConnectionDialog {
             &mosh_port_range_entry,
             &mosh_predict_dropdown,
             &mosh_server_binary_entry,
+            &web_browser_entry,
+            &web_private_mode_switch,
             &variables_rows,
             &logging_tab_struct,
             &expect_rules,
@@ -1067,6 +1086,9 @@ impl ConnectionDialog {
             rdp_shared_folders_list,
             rdp_custom_args_entry,
             rdp_keyboard_layout_dropdown,
+            rdp_remote_app_program_entry,
+            rdp_remote_app_args_entry,
+            rdp_remote_app_name_entry,
             vnc_client_mode_dropdown,
             vnc_performance_mode_dropdown,
             vnc_encoding_dropdown,
@@ -1146,6 +1168,8 @@ impl ConnectionDialog {
             k8s_busybox_check,
             k8s_busybox_image_entry,
             k8s_custom_args_entry,
+            web_browser_entry,
+            web_private_mode_switch,
             mosh_port_range_entry,
             mosh_predict_dropdown,
             mosh_server_binary_entry,
@@ -1459,6 +1483,11 @@ impl ConnectionDialog {
                         rustconn_core::models::ProtocolType::Mosh => {
                             rustconn_core::models::ProtocolConfig::Mosh(
                                 rustconn_core::models::MoshConfig::default(),
+                            )
+                        }
+                        rustconn_core::models::ProtocolType::Web => {
+                            rustconn_core::models::ProtocolConfig::Web(
+                                rustconn_core::models::WebConfig::default(),
                             )
                         }
                     };
@@ -1804,6 +1833,7 @@ impl ConnectionDialog {
                 "sftp",
                 "kubernetes",
                 "mosh",
+                "web",
             ];
             let selected = dropdown.selected() as usize;
             if selected < protocols.len() {
@@ -1823,22 +1853,36 @@ impl ConnectionDialog {
                 let is_zerotrust = protocol_id == "zerotrust";
                 let is_serial = protocol_id == "serial";
                 let is_kubernetes = protocol_id == "kubernetes";
+                let is_web = protocol_id == "web";
                 let hide_network = is_zerotrust || is_serial || is_kubernetes;
                 let visible = !hide_network;
 
-                host_entry.set_visible(visible);
-                host_label.set_visible(visible);
-                port_clone.set_visible(visible);
-                port_label.set_visible(visible);
+                host_entry.set_visible(visible || is_web);
+                host_label.set_visible(visible || is_web);
+                port_clone.set_visible(visible && !is_web);
+                port_label.set_visible(visible && !is_web);
                 username_entry.set_visible(visible);
                 username_label.set_visible(visible);
+
+                // Update host field label and placeholder for Web protocol
+                if is_web {
+                    host_label.set_text(&crate::i18n::i18n("URL"));
+                    host_entry
+                        .set_placeholder_text(Some(&crate::i18n::i18n("https://example.com")));
+                } else {
+                    host_label.set_text(&crate::i18n::i18n("Host"));
+                    host_entry.set_placeholder_text(Some(&crate::i18n::i18n("hostname or IP")));
+                }
                 tags_entry.set_visible(!is_zerotrust);
                 tags_label.set_visible(!is_zerotrust);
 
                 // Password source only relevant for protocols that use credentials:
-                // SSH, SFTP, RDP, VNC, SPICE. Hidden for Telnet, Serial, MOSH,
+                // SSH, SFTP, RDP, VNC, SPICE, Web. Hidden for Telnet, Serial, MOSH,
                 // Kubernetes, Zero Trust — they don't use stored passwords.
-                let uses_password = matches!(protocol_id, "ssh" | "sftp" | "rdp" | "vnc" | "spice");
+                let uses_password = matches!(
+                    protocol_id,
+                    "ssh" | "sftp" | "rdp" | "vnc" | "spice" | "web"
+                );
                 password_source_dropdown.set_visible(uses_password);
                 password_source_label.set_visible(uses_password);
                 // Password row visibility controlled by password_source_dropdown
@@ -1947,6 +1991,9 @@ impl ConnectionDialog {
         rdp_shared_folders: &Rc<RefCell<Vec<SharedFolder>>>,
         rdp_custom_args_entry: &Entry,
         rdp_keyboard_layout_dropdown: &DropDown,
+        rdp_remote_app_program_entry: &Entry,
+        rdp_remote_app_args_entry: &Entry,
+        rdp_remote_app_name_entry: &Entry,
         vnc_client_mode_dropdown: &DropDown,
         vnc_performance_mode_dropdown: &DropDown,
         vnc_encoding_dropdown: &DropDown,
@@ -2021,6 +2068,8 @@ impl ConnectionDialog {
         mosh_port_range_entry: &Entry,
         mosh_predict_dropdown: &DropDown,
         mosh_server_binary_entry: &Entry,
+        web_browser_entry: &Entry,
+        web_private_mode_switch: &adw::SwitchRow,
         variables_rows: &Rc<RefCell<Vec<LocalVariableRow>>>,
         logging_tab: &logging_tab::LoggingTab,
         expect_rules: &Rc<RefCell<Vec<ExpectRule>>>,
@@ -2118,6 +2167,9 @@ impl ConnectionDialog {
         let rdp_shared_folders = rdp_shared_folders.clone();
         let rdp_custom_args_entry = rdp_custom_args_entry.clone();
         let rdp_keyboard_layout_dropdown = rdp_keyboard_layout_dropdown.clone();
+        let rdp_remote_app_program_entry = rdp_remote_app_program_entry.clone();
+        let rdp_remote_app_args_entry = rdp_remote_app_args_entry.clone();
+        let rdp_remote_app_name_entry = rdp_remote_app_name_entry.clone();
         let rdp_performance_mode_dropdown = rdp_performance_mode_dropdown.clone();
         let vnc_client_mode_dropdown = vnc_client_mode_dropdown.clone();
         let vnc_encoding_dropdown = vnc_encoding_dropdown.clone();
@@ -2193,6 +2245,8 @@ impl ConnectionDialog {
         let mosh_port_range_entry = mosh_port_range_entry.clone();
         let mosh_predict_dropdown = mosh_predict_dropdown.clone();
         let mosh_server_binary_entry = mosh_server_binary_entry.clone();
+        let web_browser_entry = web_browser_entry.clone();
+        let web_private_mode_switch = web_private_mode_switch.clone();
         let variables_rows = variables_rows.clone();
         let logging_enabled_check = logging_tab.enabled_check.clone();
         let logging_path_entry = logging_tab.path_entry.clone();
@@ -2303,6 +2357,9 @@ impl ConnectionDialog {
                 rdp_shared_folders: &rdp_shared_folders,
                 rdp_custom_args_entry: &rdp_custom_args_entry,
                 rdp_keyboard_layout_dropdown: &rdp_keyboard_layout_dropdown,
+                rdp_remote_app_program_entry: &rdp_remote_app_program_entry,
+                rdp_remote_app_args_entry: &rdp_remote_app_args_entry,
+                rdp_remote_app_name_entry: &rdp_remote_app_name_entry,
                 vnc_client_mode_dropdown: &vnc_client_mode_dropdown,
                 vnc_encoding_dropdown: &vnc_encoding_dropdown,
                 vnc_compression_spin: &vnc_compression_spin,
@@ -2376,6 +2433,8 @@ impl ConnectionDialog {
                 mosh_port_range_entry: &mosh_port_range_entry,
                 mosh_predict_dropdown: &mosh_predict_dropdown,
                 mosh_server_binary_entry: &mosh_server_binary_entry,
+                web_browser_entry: &web_browser_entry,
+                web_private_mode_switch: &web_private_mode_switch,
                 local_variables: &local_variables,
                 logging_tab: &logging_tab::LoggingTab {
                     enabled_check: logging_enabled_check.clone(),
@@ -3734,6 +3793,11 @@ impl ConnectionDialog {
                 // MOSH uses SSH tab — protocol dropdown handler shows mosh_settings_group
                 self.set_mosh_config(mosh_config);
             }
+            ProtocolConfig::Web(web_config) => {
+                self.protocol_dropdown.set_selected(10); // Web
+                self.protocol_stack.set_visible_child_name("web");
+                self.set_web_config(web_config);
+            }
         }
 
         // Set local variables
@@ -4602,6 +4666,17 @@ impl ConnectionDialog {
                 .set_text(&rdp.custom_args.join(" "));
         }
 
+        // Set RemoteApp fields
+        if let Some(ref program) = rdp.remote_app_program {
+            self.rdp_remote_app_program_entry.set_text(program);
+        }
+        if let Some(ref args) = rdp.remote_app_args {
+            self.rdp_remote_app_args_entry.set_text(args);
+        }
+        if let Some(ref name) = rdp.remote_app_name {
+            self.rdp_remote_app_name_entry.set_text(name);
+        }
+
         // Set keyboard layout dropdown
         if let Some(klid) = rdp.keyboard_layout {
             let index = klid_to_dropdown_index(klid);
@@ -4880,6 +4955,13 @@ impl ConnectionDialog {
         if let Some(ref server_binary) = mosh.server_binary {
             self.mosh_server_binary_entry.set_text(server_binary);
         }
+    }
+
+    fn set_web_config(&self, web: &rustconn_core::models::WebConfig) {
+        if let Some(ref browser) = web.browser {
+            self.web_browser_entry.set_text(browser);
+        }
+        self.web_private_mode_switch.set_active(web.private_mode);
     }
 
     /// Runs the dialog and calls the callback with the result
@@ -5799,6 +5881,9 @@ struct ConnectionDialogData<'a> {
     rdp_shared_folders: &'a Rc<RefCell<Vec<SharedFolder>>>,
     rdp_custom_args_entry: &'a Entry,
     rdp_keyboard_layout_dropdown: &'a DropDown,
+    rdp_remote_app_program_entry: &'a Entry,
+    rdp_remote_app_args_entry: &'a Entry,
+    rdp_remote_app_name_entry: &'a Entry,
     vnc_client_mode_dropdown: &'a DropDown,
     vnc_performance_mode_dropdown: &'a DropDown,
     vnc_encoding_dropdown: &'a DropDown,
@@ -5878,6 +5963,9 @@ struct ConnectionDialogData<'a> {
     mosh_port_range_entry: &'a Entry,
     mosh_predict_dropdown: &'a DropDown,
     mosh_server_binary_entry: &'a Entry,
+    // Web fields
+    web_browser_entry: &'a Entry,
+    web_private_mode_switch: &'a adw::SwitchRow,
     local_variables: &'a HashMap<String, Variable>,
     logging_tab: &'a logging_tab::LoggingTab,
     expect_rules: &'a Vec<ExpectRule>,
@@ -6367,6 +6455,7 @@ impl ConnectionDialogData<'_> {
             7 => Some(ProtocolConfig::Sftp(self.build_ssh_config())),
             8 => Some(ProtocolConfig::Kubernetes(self.build_kubernetes_config())),
             9 => Some(ProtocolConfig::Mosh(self.build_mosh_config())),
+            10 => Some(ProtocolConfig::Web(self.build_web_config())),
             _ => None,
         }
     }
@@ -6689,6 +6778,21 @@ impl ConnectionDialogData<'_> {
         }
     }
 
+    fn build_web_config(&self) -> rustconn_core::models::WebConfig {
+        let browser = {
+            let text = self.web_browser_entry.text();
+            if text.trim().is_empty() {
+                None
+            } else {
+                Some(text.trim().to_string())
+            }
+        };
+        rustconn_core::models::WebConfig {
+            browser,
+            private_mode: self.web_private_mode_switch.is_active(),
+        }
+    }
+
     fn build_ssh_config(&self) -> SshConfig {
         let auth_method = match self.ssh_auth_dropdown.selected() {
             1 => SshAuthMethod::PublicKey,
@@ -6914,6 +7018,30 @@ impl ConnectionDialogData<'_> {
             autotype_delay_ms: self.rdp_autotype_delay_spin.value() as u32,
             autotype_initial_delay_ms: self.rdp_autotype_initial_delay_spin.value() as u32,
             reconnect_on_resize: self.rdp_reconnect_on_resize_check.is_active(),
+            remote_app_program: {
+                let text = self.rdp_remote_app_program_entry.text();
+                if text.trim().is_empty() {
+                    None
+                } else {
+                    Some(text.trim().to_string())
+                }
+            },
+            remote_app_args: {
+                let text = self.rdp_remote_app_args_entry.text();
+                if text.trim().is_empty() {
+                    None
+                } else {
+                    Some(text.trim().to_string())
+                }
+            },
+            remote_app_name: {
+                let text = self.rdp_remote_app_name_entry.text();
+                if text.trim().is_empty() {
+                    None
+                } else {
+                    Some(text.trim().to_string())
+                }
+            },
         }
     }
 

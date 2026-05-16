@@ -2145,6 +2145,18 @@ fn show_sync_setup_dialog(
                     return;
                 };
 
+                // Detect Flatpak document portal path — inotify won't work there
+                if rustconn_core::flatpak::is_flatpak()
+                    && rustconn_core::flatpak::is_portal_path(&path)
+                {
+                    dialog_inner.force_close();
+                    crate::dialogs::settings::cloud_sync_tab::show_flatpak_sync_dir_portal_warning(
+                        parent_inner.upcast_ref(),
+                        &path,
+                    );
+                    return;
+                }
+
                 // Save sync_dir to settings
                 if let Ok(mut state_mut) = state_inner.try_borrow_mut() {
                     state_mut.settings_mut().sync.sync_dir = Some(path.clone());

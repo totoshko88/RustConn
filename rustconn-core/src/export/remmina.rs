@@ -73,6 +73,9 @@ impl RemminaExporter {
             ProtocolType::Mosh => {
                 return Err(ExportError::UnsupportedProtocol("MOSH".to_string()));
             }
+            ProtocolType::Web => {
+                return Err(ExportError::UnsupportedProtocol("Web".to_string()));
+            }
         }
 
         Ok(output)
@@ -155,6 +158,16 @@ impl RemminaExporter {
                 let _ = writeln!(output, "sound=local");
             } else {
                 let _ = writeln!(output, "sound=off");
+            }
+
+            // RemoteApp (RAIL) settings
+            // Note: Remmina does not have a field for RemoteApp display name,
+            // so `remote_app_name` is intentionally not exported here.
+            if let Some(ref program) = rdp_config.remote_app_program {
+                let _ = writeln!(output, "exec={program}");
+            }
+            if let Some(ref args) = rdp_config.remote_app_args {
+                let _ = writeln!(output, "execpath={args}");
             }
         }
     }

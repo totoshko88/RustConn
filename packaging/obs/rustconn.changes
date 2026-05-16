@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Fri May 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.17
+
+- Update to version 0.13.17
+- [Fixed] Cloud Sync in Flatpak — detect XDG Document Portal paths when
+  selecting sync directory; show a warning dialog with flatpak override
+  command instead of silently saving an unusable portal path (#152)
+- [Fixed] Highlight overlay not cleared by clear command — colored underlines
+  and background highlights now disappear immediately when the terminal screen
+  is erased (#154)
+
+-------------------------------------------------------------------
 Thu May 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.16
 
 - Update to version 0.13.16

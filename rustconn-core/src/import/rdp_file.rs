@@ -149,6 +149,18 @@ impl RdpFileImporter {
             audio_redirect,
             gateway,
             clipboard_enabled: clipboard,
+            remote_app_program: fields
+                .get("remoteapplicationprogram")
+                .filter(|s| !s.is_empty())
+                .map(String::from),
+            remote_app_args: fields
+                .get("remoteapplicationcmdline")
+                .filter(|s| !s.is_empty())
+                .map(String::from),
+            remote_app_name: fields
+                .get("remoteapplicationname")
+                .filter(|s| !s.is_empty())
+                .map(String::from),
             ..Default::default()
         });
 
@@ -309,5 +321,60 @@ desktopheight:i:1080
 
         let result = RdpFileImporter::parse_rdp_file(&path);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_rdp_file_with_remoteapp() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("remoteapp.rdp");
+        let content = "\
+full address:s:rdserver.corp.com
+username:s:user1
+remoteapplicationprogram:s:||notepad
+remoteapplicationcmdline:s:/p C:\\docs\\readme.txt
+remoteapplicationname:s:Notepad Editor
+";
+        fs::write(&path, content).unwrap();
+
+        let conn = RdpFileImporter::parse_rdp_file(&path).unwrap();
+        assert_eq!(conn.host, "rdserver.corp.com");
+        assert_eq!(conn.port, 3389);
+
+        if let ProtocolConfig::Rdp(ref rdp) = conn.protocol_config {
+            assert_eq!(rdp.remote_app_program.as_deref(), Some("||notepad"));
+            assert_eq!(
+                rdp.remote_app_args.as_deref(),
+                Some("/p C:\\docs\\readme.txt")
+            );
+            assert_eq!(rdp.remote_app_name.as_deref(), Some("Notepad Editor"));
+            assert!(rdp.is_remote_app());
+            assert!(rdp.requires_freerdp_fallback());
+        } else {
+            panic!("Expected RDP protocol config");
+        }
+    }
+
+    #[test]
+    fn test_parse_rdp_file_remoteapp_empty_fields_ignored() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("empty_app.rdp");
+        let content = "\
+full address:s:server.example.com
+remoteapplicationprogram:s:
+remoteapplicationcmdline:s:
+remoteapplicationname:s:
+";
+        fs::write(&path, content).unwrap();
+
+        let conn = RdpFileImporter::parse_rdp_file(&path).unwrap();
+
+        if let ProtocolConfig::Rdp(ref rdp) = conn.protocol_config {
+            assert!(rdp.remote_app_program.is_none());
+            assert!(rdp.remote_app_args.is_none());
+            assert!(rdp.remote_app_name.is_none());
+            assert!(!rdp.is_remote_app());
+        } else {
+            panic!("Expected RDP protocol config");
+        }
     }
 }

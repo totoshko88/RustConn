@@ -1148,9 +1148,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .label(i18n("Not connected"))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
-        .wrap(true)
-        .wrap_mode(gtk4::pango::WrapMode::WordChar)
-        .max_width_chars(40)
         .css_classes(["dim-label"])
         .build();
 

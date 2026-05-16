@@ -26,7 +26,7 @@ It brings SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, and Zero Trust
 
 | Category | Details |
 |----------|---------|
-| **Protocols** | SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust |
+| **Protocols** | SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust, Web Bookmarks |
 | **File Transfer** | SFTP file browser via system file manager (sftp:// URI, D-Bus portal) |
 | **Organization** | Groups, tags, templates, custom icons (emoji/GTK), connection history & statistics |
 | **Monitoring** | Remote host metrics bar (CPU, RAM, disk, network, load, system info) — agentless, per-connection toggle |
@@ -47,6 +47,7 @@ It brings SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, and Zero Trust
 | Kubernetes | kubectl exec via VTE | External |
 | MOSH | mosh via VTE | External |
 | Zero Trust | AWS SSM, GCP IAP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary, Hoop.dev | External |
+| Web | System browser (UriLauncher / xdg-open) | External |
 
 ## Installation
 

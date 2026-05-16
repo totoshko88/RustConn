@@ -2847,6 +2847,11 @@ impl MainWindow {
                 Self::handle_sftp_connect(state, notebook, Some(sidebar), None, connection_id);
                 None
             }
+            "web" => {
+                // Web opens URL in default browser — no terminal session
+                Self::handle_web_connect(state, sidebar, connection_id);
+                None
+            }
             _ => {
                 // Unknown protocol
                 None

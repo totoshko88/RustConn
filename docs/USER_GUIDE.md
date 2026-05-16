@@ -1,8 +1,8 @@
 # RustConn User Guide
 
-**Version 0.13.16** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.13.17** | GTK4/libadwaita Connection Manager for Linux
 
-RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
+RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
 ## Table of Contents
 
@@ -20,6 +20,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Kubernetes](#kubernetes-shell)
    - [SFTP](#sftp-file-browser)
    - [Zero Trust Providers](#zero-trust-providers)
+   - [Web Bookmarks](#web-bookmarks)
 5. [Sessions & Terminal](#sessions--terminal)
    - [Session Types & Display Modes](#session-types)
    - [Tab Management](#tab-management)
@@ -369,6 +370,7 @@ Protocol-specific options are configured in the connection dialog's protocol tab
 | Serial | Device path, baud rate, data bits, stop bits, parity, flow control, custom picocom arguments |
 | Kubernetes | Kubeconfig path, context, namespace, pod, container, shell, busybox mode, busybox image, custom kubectl arguments |
 | ZeroTrust | Provider-specific (AWS SSM, GCP IAP, Azure Bastion, Azure SSH, OCI Bastion, Cloudflare Access, Teleport, Tailscale SSH, HashiCorp Boundary, Hoop.dev, Generic Command), custom CLI arguments |
+| Web | URL (opens in system browser), credentials for copy-to-clipboard |
 
 ### SSH
 
@@ -637,6 +639,38 @@ The embedded RDP toolbar includes a Quick Actions dropdown menu for launching co
 
 The Quick Actions menu is accessible via the dropdown button (arrow icon) on the RDP toolbar. All labels are translatable.
 
+#### RemoteApp (RAIL)
+
+Launch individual remote applications instead of a full desktop session. The remote application window appears on your local desktop as if it were a native window — no full desktop is rendered.
+
+**Configure RemoteApp:**
+1. Open Connection Dialog → RDP → **RemoteApp** section
+2. Enter the **Program** path — either an alias (`||notepad`) or a full path (`C:\Program Files\app.exe`)
+3. Optionally set **Arguments** (command-line arguments passed to the application)
+4. Optionally set **Display Name** (shown in taskbar and window title)
+
+**How It Works:**
+- RemoteApp uses the RAIL (Remote Applications Integrated Locally) protocol extension
+- RustConn automatically uses FreeRDP for RemoteApp sessions — IronRDP does not support RAIL
+- FreeRDP must be installed on the system (bundled in Flatpak builds)
+- The Arguments and Display Name fields appear only after entering a Program path
+
+**Program Path Format:**
+
+| Format | Example | Description |
+|--------|---------|-------------|
+| Alias | `\|\|notepad` | Published RemoteApp alias (configured on the RD server) |
+| Full path | `C:\Program Files\app.exe` | Direct path to the executable on the remote server |
+
+**Import from .rdp files:**
+
+RemoteApp settings are automatically imported from `.rdp` files containing `remoteapplicationprogram`, `remoteapplicationcmdline`, and `remoteapplicationname` fields.
+
+**Limitations:**
+- Requires FreeRDP (not available with IronRDP embedded mode)
+- The RDP server must have RemoteApp programs published or allow arbitrary program execution
+- Not all RDP servers support RAIL (Windows Server with Remote Desktop Session Host role required)
+
 #### Hide Local Cursor
 
 Embedded RDP, VNC, and SPICE viewers support hiding the local OS cursor to eliminate the "double cursor" effect (local + remote cursor visible simultaneously). Toggle "Show Local Cursor" in the connection dialog's Features section. Enabled by default for backward compatibility.
@@ -834,6 +868,38 @@ This limitation does not affect native packages (deb, rpm, Snap) where RustConn 
 RustConn supports connecting through identity-aware proxy services (Zero Trust). For detailed provider setup and configuration, see the dedicated [Zero Trust Providers](ZERO_TRUST.md) guide.
 
 Supported providers: AWS Session Manager, GCP IAP Tunnel, Azure Bastion, Azure SSH (AAD), OCI Bastion, Cloudflare Access, Teleport, Tailscale SSH, HashiCorp Boundary, Hoop.dev, Generic Command.
+
+### Web Bookmarks
+
+Web bookmark connections store website URLs and open them in the system's default browser. No embedded browser is used — RustConn delegates to the OS via GTK4 `UriLauncher` (portal-aware, works in Flatpak).
+
+**Use cases:**
+- Quick access to web-based admin panels (AWS Console, Grafana, Proxmox, etc.)
+- Storing credentials for web services alongside SSH/RDP connections
+- Organizing all infrastructure access points in one place
+
+**Creating a Web bookmark:**
+1. Click "New Connection" → select **Web** protocol
+2. Enter the full URL in the **URL** field (must start with `http://` or `https://`)
+3. Optionally set username/password — these are stored in the configured secret backend for copy-to-clipboard via the sidebar context menu
+4. Click Save
+
+**Connecting:**
+- Double-click the connection in the sidebar → the URL opens in your default browser
+- The sidebar status briefly shows "connecting" (yellow) then clears — Web bookmarks have no persistent session
+
+**Context menu actions:**
+- **Copy Username** / **Copy Password** — copies stored credentials to clipboard (auto-clears after 30 seconds)
+
+**CLI:**
+```bash
+rustconn-cli add --name "AWS Console" --protocol web --host "https://console.aws.amazon.com"
+```
+
+**Limitations:**
+- No embedded browser — always opens in the system default
+- No auto-fill — credentials are for copy-to-clipboard only
+- Port field is hidden (not applicable for URLs)
 
 ---
 
@@ -1053,6 +1119,8 @@ Define regex-based patterns to highlight matching text in terminal output with c
 | Enabled | Toggle rule on/off |
 
 Invalid regex patterns are rejected with an error message during validation.
+
+**Note:** Lines containing only whitespace are not processed by the highlight overlay. This prevents stale highlights from appearing after the `clear` command erases the terminal screen. Highlight rules that intentionally match whitespace-only patterns will not render.
 
 ### Per-connection Terminal Theming
 
@@ -1964,7 +2032,7 @@ RustConn registers as a handler for `.rdp` files. Double-clicking an `.rdp` file
 2. RustConn parses the file and creates a temporary connection
 3. The connection starts immediately
 
-**Supported .rdp Fields:** `full address`, `username`, `domain`, `gatewayhostname`, `gatewayusername`, `desktopwidth`/`desktopheight`, `session bpp`, `audiomode`, `redirectclipboard`.
+**Supported .rdp Fields:** `full address`, `username`, `domain`, `gatewayhostname`, `gatewayusername`, `desktopwidth`/`desktopheight`, `session bpp`, `audiomode`, `redirectclipboard`, `remoteapplicationprogram`, `remoteapplicationcmdline`, `remoteapplicationname`.
 
 **Desktop Integration:**
 ```bash
@@ -2101,6 +2169,8 @@ Groups can define SSH settings (auth method, key path, proxy jump, agent socket)
 ### Flatpak: Granting Filesystem Access for Cloud Sync
 
 Flatpak sandboxes restrict filesystem access by default. Cloud Sync requires read/write access to your sync directory (e.g. Google Drive, Syncthing, Nextcloud folder).
+
+> **Automatic detection:** When selecting a sync directory in Flatpak, RustConn detects XDG Document Portal paths (temporary FUSE mounts that don't support inotify) and shows a warning dialog with the exact `flatpak override` command needed. You can copy the command directly from the dialog.
 
 **Grant access to a specific directory:**
 

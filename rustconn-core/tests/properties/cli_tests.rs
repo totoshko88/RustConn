@@ -75,6 +75,12 @@ impl TestConnection {
             ProtocolType::Mosh => {
                 Connection::new_mosh(self.name.clone(), self.host.clone(), self.port)
             }
+            ProtocolType::Web => Connection::new(
+                self.name.clone(),
+                "https://example.com".to_string(),
+                0,
+                ProtocolConfig::Web(rustconn_core::models::WebConfig::default()),
+            ),
         }
     }
 }
@@ -633,6 +639,12 @@ fn create_test_connection_for_add(
         ProtocolType::Sftp => Connection::new_sftp(name.to_string(), host.to_string(), port),
         ProtocolType::Kubernetes => Connection::new_kubernetes(name.to_string()),
         ProtocolType::Mosh => Connection::new_mosh(name.to_string(), host.to_string(), port),
+        ProtocolType::Web => Connection::new(
+            name.to_string(),
+            "https://example.com".to_string(),
+            0,
+            ProtocolConfig::Web(rustconn_core::models::WebConfig::default()),
+        ),
     };
 
     if let Some(user) = username {

@@ -337,6 +337,22 @@ fn create_connection(
             }
             Connection::new_mosh(name.to_string(), host.to_string(), port)
         }
+        ProtocolType::Web => {
+            if key.is_some() {
+                tracing::warn!("--key option is ignored for Web connections");
+            }
+            if auth_method.is_some() {
+                tracing::warn!("--auth-method is ignored for Web connections");
+            }
+            Connection::new(
+                name.to_string(),
+                host.to_string(),
+                0,
+                rustconn_core::models::ProtocolConfig::Web(
+                    rustconn_core::models::WebConfig::default(),
+                ),
+            )
+        }
     };
     Ok(conn)
 }

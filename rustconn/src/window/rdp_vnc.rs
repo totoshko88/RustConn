@@ -529,6 +529,11 @@ fn start_embedded_rdp_session(
     // Pass reconnect-on-resize preference (legacy server compatibility)
     embedded_config.reconnect_on_resize = rdp_config.reconnect_on_resize;
 
+    // Pass RemoteApp configuration (forces FreeRDP fallback — RAIL not supported by IronRDP)
+    embedded_config.remote_app_program = rdp_config.remote_app_program.clone();
+    embedded_config.remote_app_args = rdp_config.remote_app_args.clone();
+    embedded_config.remote_app_name = rdp_config.remote_app_name.clone();
+
     // Pass certificate verification setting
     embedded_config.ignore_certificate = rdp_config.ignore_certificate;
 
@@ -756,6 +761,9 @@ fn start_external_rdp_session(
     if rdp_config.disable_nla {
         extra_args.push("/sec:nla:off".to_string());
     }
+
+    // Add RemoteApp arguments for launching individual applications
+    extra_args.extend(rdp_config.remote_app_freerdp_args());
 
     // Prepare domain (use None if empty)
     let domain_opt = if domain.is_empty() {

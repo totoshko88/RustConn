@@ -26,7 +26,7 @@ use crate::i18n::i18n;
 
 /// Creates the RDP options panel with all protocol-specific widgets.
 ///
-/// Returns a 27-element tuple matching the fields expected by `ConnectionDialog`.
+/// Returns a 30-element tuple matching the fields expected by `ConnectionDialog`.
 #[allow(clippy::similar_names, clippy::too_many_lines, clippy::type_complexity)]
 pub(super) fn create_rdp_options() -> (
     GtkBox,
@@ -56,6 +56,9 @@ pub(super) fn create_rdp_options() -> (
     gtk4::ListBox,
     Entry,
     DropDown,
+    Entry,
+    Entry,
+    Entry,
 ) {
     let scrolled = ScrolledWindow::builder()
         .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -528,6 +531,79 @@ pub(super) fn create_rdp_options() -> (
         remove_btn_for_selection.set_sensitive(row.is_some());
     });
 
+    // === RemoteApp Group ===
+    let remoteapp_group = adw::PreferencesGroup::builder()
+        .title(i18n("RemoteApp"))
+        .description(i18n(
+            "Launch a single application instead of full desktop (requires FreeRDP)",
+        ))
+        .build();
+
+    let remote_app_program_entry = Entry::builder()
+        .hexpand(true)
+        .placeholder_text(i18n("||notepad or C:\\Program Files\\app.exe"))
+        .valign(gtk4::Align::Center)
+        .build();
+    let program_row = adw::ActionRow::builder()
+        .title(i18n("Program"))
+        .subtitle(i18n("Application alias (||name) or full path"))
+        .build();
+    program_row.add_suffix(&remote_app_program_entry);
+    remoteapp_group.add(&program_row);
+
+    let remote_app_args_entry = Entry::builder()
+        .hexpand(true)
+        .placeholder_text(i18n("Command-line arguments"))
+        .valign(gtk4::Align::Center)
+        .build();
+    let app_args_row = adw::ActionRow::builder()
+        .title(i18n("Arguments"))
+        .subtitle(i18n("Arguments passed to the remote application"))
+        .build();
+    app_args_row.add_suffix(&remote_app_args_entry);
+    remoteapp_group.add(&app_args_row);
+
+    let remote_app_name_entry = Entry::builder()
+        .hexpand(true)
+        .placeholder_text(i18n("Display name (optional)"))
+        .valign(gtk4::Align::Center)
+        .build();
+    let app_name_row = adw::ActionRow::builder()
+        .title(i18n("Display Name"))
+        .subtitle(i18n("Shown in taskbar and window title"))
+        .build();
+    app_name_row.add_suffix(&remote_app_name_entry);
+    remoteapp_group.add(&app_name_row);
+
+    // Show/hide args and name rows based on program entry
+    let app_args_row_clone = app_args_row.clone();
+    let app_name_row_clone = app_name_row.clone();
+    app_args_row.set_visible(false);
+    app_name_row.set_visible(false);
+
+    // Show a warning when RemoteApp is configured but FreeRDP is not available
+    let freerdp_warning_row = adw::ActionRow::builder()
+        .title(i18n("⚠ FreeRDP not found"))
+        .subtitle(i18n(
+            "RemoteApp requires FreeRDP. Install sdl-freerdp3, xfreerdp, or wlfreerdp.",
+        ))
+        .css_classes(["warning"])
+        .build();
+    freerdp_warning_row.set_visible(false);
+    remoteapp_group.add(&freerdp_warning_row);
+
+    let has_freerdp =
+        crate::embedded_rdp::launcher::SafeFreeRdpLauncher::detect_freerdp().is_some();
+    let freerdp_warning_clone = freerdp_warning_row;
+    remote_app_program_entry.connect_changed(move |entry| {
+        let has_program = !entry.text().is_empty();
+        app_args_row_clone.set_visible(has_program);
+        app_name_row_clone.set_visible(has_program);
+        freerdp_warning_clone.set_visible(has_program && !has_freerdp);
+    });
+
+    content.append(&remoteapp_group);
+
     // === Advanced Group ===
     let advanced_group = adw::PreferencesGroup::builder()
         .title(i18n("Advanced"))
@@ -630,5 +706,8 @@ pub(super) fn create_rdp_options() -> (
         folders_list,
         args_entry,
         kb_layout_dropdown,
+        remote_app_program_entry,
+        remote_app_args_entry,
+        remote_app_name_entry,
     )
 }

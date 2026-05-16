@@ -223,6 +223,7 @@ pub fn refresh_templates_list(
             ProtocolType::Spice => spice_templates.push(template),
             ProtocolType::Serial | ProtocolType::Sftp => ssh_templates.push(template),
             ProtocolType::Kubernetes | ProtocolType::Mosh => ssh_templates.push(template),
+            ProtocolType::Web => {} // Web bookmarks don't use templates
         }
     }
 

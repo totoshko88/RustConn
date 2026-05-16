@@ -119,6 +119,7 @@ impl AsbruExporter {
             ProtocolType::Sftp => "SFTP",
             ProtocolType::Kubernetes => "kubernetes",
             ProtocolType::Mosh => "mosh",
+            ProtocolType::Web => "web",
         };
         lines.push(format!("  method: \"{method}\""));
 
@@ -170,7 +171,8 @@ impl AsbruExporter {
             | ProtocolConfig::ZeroTrust(_)
             | ProtocolConfig::Serial(_)
             | ProtocolConfig::Kubernetes(_)
-            | ProtocolConfig::Mosh(_) => {
+            | ProtocolConfig::Mosh(_)
+            | ProtocolConfig::Web(_) => {
                 // VNC, SPICE, Telnet, ZeroTrust, Kubernetes don't have additional fields
             }
             ProtocolConfig::Sftp(ssh_config) => {

@@ -31,6 +31,7 @@ const PROTOCOL_VARIANTS: &[ProtocolType] = &[
     ProtocolType::Sftp,
     ProtocolType::Kubernetes,
     ProtocolType::Mosh,
+    ProtocolType::Web,
 ];
 
 /// Dialog for creating or editing a Smart Folder.
@@ -151,6 +152,7 @@ impl SmartFolderDialog {
                 ProtocolType::Sftp => "SFTP",
                 ProtocolType::Kubernetes => "Kubernetes",
                 ProtocolType::Mosh => "MOSH",
+                ProtocolType::Web => "Web",
             }))
             .collect();
 
