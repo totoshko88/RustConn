@@ -2738,6 +2738,7 @@ impl TemplateDialog {
             ProtocolType::Sftp => 7,
             ProtocolType::Kubernetes => 8,
             ProtocolType::Mosh => 9,
+            ProtocolType::Web => 10,
         };
         self.protocol_dropdown.set_selected(protocol_idx);
         self.protocol_stack
@@ -2779,6 +2780,7 @@ impl TemplateDialog {
             ProtocolConfig::Sftp(ssh) => self.load_ssh_config(ssh),
             ProtocolConfig::Kubernetes(_) => {} // No Kubernetes-specific template config
             ProtocolConfig::Mosh(_) => {}       // No MOSH-specific template config yet
+            ProtocolConfig::Web(_) => {}        // No Web-specific template config
         }
     }
 
@@ -3386,6 +3388,7 @@ fn refresh_templates_list(
             ProtocolType::Kubernetes | ProtocolType::Mosh => {
                 ssh_templates.push(template);
             }
+            ProtocolType::Web => {} // Web bookmarks don't use templates
         }
     }
 

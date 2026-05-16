@@ -125,6 +125,7 @@ pub const fn get_protocol_icon(protocol: ProtocolType) -> &'static str {
         ProtocolType::Sftp => "folder-remote-symbolic",
         ProtocolType::Kubernetes => "system-run-symbolic",
         ProtocolType::Mosh => "utilities-terminal-symbolic",
+        ProtocolType::Web => "web-browser-symbolic",
     }
 }
 
@@ -151,6 +152,7 @@ pub fn get_protocol_icon_by_name(protocol: &str) -> &'static str {
         "sftp" => "folder-remote-symbolic",
         "kubernetes" => "system-run-symbolic",
         "mosh" => "utilities-terminal-symbolic",
+        "web" => "web-browser-symbolic",
         "info" => "dialog-information-symbolic",
         _ => "network-server-symbolic",
     }
@@ -171,6 +173,7 @@ pub fn get_protocol_color_rgb(protocol: &str) -> (u8, u8, u8) {
         "kubernetes" => (0x00, 0xb4, 0xd8),     // Cyan
         "mosh" => (0x26, 0xa2, 0x69),           // Green-teal
         "sftp" => (0x62, 0xa0, 0xea),           // Light blue
+        "web" => (0xe0, 0x62, 0x62),            // Red-coral
         _ => (0x99, 0xc1, 0xf1),                // Default light blue
     }
 }

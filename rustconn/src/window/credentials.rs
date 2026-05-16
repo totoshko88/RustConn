@@ -493,6 +493,18 @@ impl MainWindow {
                     connection_id,
                 );
             }
+            ProtocolType::Web => {
+                // Web connections open URL in default browser — no tab created
+                // Cache credentials if available (for Copy Password context menu)
+                if let Some(ref creds) = resolved_credentials
+                    && let (Some(username), Some(password)) =
+                        (&creds.username, creds.expose_password())
+                    && let Ok(mut state_mut) = state.try_borrow_mut()
+                {
+                    state_mut.cache_credentials(connection_id, username, password, "");
+                }
+                Self::handle_web_connect(&state, &sidebar, connection_id);
+            }
         }
     }
 

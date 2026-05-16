@@ -7,7 +7,7 @@ use crate::models::ProtocolType;
 
 use super::{
     KubernetesProtocol, MoshProtocol, Protocol, RdpProtocol, SerialProtocol, SftpProtocol,
-    SpiceProtocol, SshProtocol, TelnetProtocol, VncProtocol,
+    SpiceProtocol, SshProtocol, TelnetProtocol, VncProtocol, WebProtocol,
 };
 
 /// Registry for protocol handlers
@@ -34,6 +34,7 @@ impl ProtocolRegistry {
         let sftp = Arc::new(SftpProtocol::new());
         let kubernetes = Arc::new(KubernetesProtocol::new());
         let mosh = Arc::new(MoshProtocol::new());
+        let web = Arc::new(WebProtocol::new());
 
         protocols.insert(ssh.protocol_id(), ssh);
         protocols.insert(rdp.protocol_id(), rdp);
@@ -44,6 +45,7 @@ impl ProtocolRegistry {
         protocols.insert(sftp.protocol_id(), sftp);
         protocols.insert(kubernetes.protocol_id(), kubernetes);
         protocols.insert(mosh.protocol_id(), mosh);
+        protocols.insert(web.protocol_id(), web);
 
         Self { protocols }
     }
@@ -87,6 +89,7 @@ impl ProtocolRegistry {
             ProtocolType::Sftp => "sftp",
             ProtocolType::Kubernetes => "kubernetes",
             ProtocolType::Mosh => "mosh",
+            ProtocolType::Web => "web",
         };
         self.protocols.get(id).cloned()
     }

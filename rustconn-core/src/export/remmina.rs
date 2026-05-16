@@ -73,6 +73,9 @@ impl RemminaExporter {
             ProtocolType::Mosh => {
                 return Err(ExportError::UnsupportedProtocol("MOSH".to_string()));
             }
+            ProtocolType::Web => {
+                return Err(ExportError::UnsupportedProtocol("Web".to_string()));
+            }
         }
 
         Ok(output)

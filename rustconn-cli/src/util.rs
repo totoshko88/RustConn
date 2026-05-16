@@ -198,5 +198,6 @@ pub fn default_port_for_protocol(proto: rustconn_core::models::ProtocolType) -> 
         ProtocolType::Serial => 0,
         ProtocolType::Kubernetes => 0,
         ProtocolType::ZeroTrust => 22,
+        ProtocolType::Web => 443,
     }
 }

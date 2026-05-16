@@ -671,6 +671,22 @@ impl ConnectionDialog {
         ) = super::kubernetes::create_kubernetes_options();
         protocol_stack.add_named(&k8s_box, Some("kubernetes"));
 
+        // Web bookmark — minimal options page (URL goes in host field)
+        let web_box = gtk4::Box::new(gtk4::Orientation::Vertical, 12);
+        web_box.set_margin_top(12);
+        web_box.set_margin_bottom(12);
+        web_box.set_margin_start(12);
+        web_box.set_margin_end(12);
+        let web_info = adw::StatusPage::builder()
+            .icon_name("web-browser-symbolic")
+            .title(crate::i18n::i18n("Web Bookmark"))
+            .description(crate::i18n::i18n(
+                "Opens URL in the default browser. Credentials are stored for copy-to-clipboard.",
+            ))
+            .build();
+        web_box.append(&web_info);
+        protocol_stack.add_named(&web_box, Some("web"));
+
         // MOSH now uses SSH tab with additional MOSH settings group
         // (mosh_port_range_entry, mosh_predict_dropdown, mosh_server_binary_entry
         //  are already created in ssh::create_ssh_options above)
@@ -1473,6 +1489,11 @@ impl ConnectionDialog {
                                 rustconn_core::models::MoshConfig::default(),
                             )
                         }
+                        rustconn_core::models::ProtocolType::Web => {
+                            rustconn_core::models::ProtocolConfig::Web(
+                                rustconn_core::models::WebConfig::default(),
+                            )
+                        }
                     };
                     let mut test_conn = rustconn_core::models::Connection::new(
                         conn_name.clone(),
@@ -1816,6 +1837,7 @@ impl ConnectionDialog {
                 "sftp",
                 "kubernetes",
                 "mosh",
+                "web",
             ];
             let selected = dropdown.selected() as usize;
             if selected < protocols.len() {
@@ -1835,22 +1857,36 @@ impl ConnectionDialog {
                 let is_zerotrust = protocol_id == "zerotrust";
                 let is_serial = protocol_id == "serial";
                 let is_kubernetes = protocol_id == "kubernetes";
+                let is_web = protocol_id == "web";
                 let hide_network = is_zerotrust || is_serial || is_kubernetes;
                 let visible = !hide_network;
 
-                host_entry.set_visible(visible);
-                host_label.set_visible(visible);
-                port_clone.set_visible(visible);
-                port_label.set_visible(visible);
+                host_entry.set_visible(visible || is_web);
+                host_label.set_visible(visible || is_web);
+                port_clone.set_visible(visible && !is_web);
+                port_label.set_visible(visible && !is_web);
                 username_entry.set_visible(visible);
                 username_label.set_visible(visible);
+
+                // Update host field label and placeholder for Web protocol
+                if is_web {
+                    host_label.set_text(&crate::i18n::i18n("URL"));
+                    host_entry
+                        .set_placeholder_text(Some(&crate::i18n::i18n("https://example.com")));
+                } else {
+                    host_label.set_text(&crate::i18n::i18n("Host"));
+                    host_entry.set_placeholder_text(Some(&crate::i18n::i18n("hostname or IP")));
+                }
                 tags_entry.set_visible(!is_zerotrust);
                 tags_label.set_visible(!is_zerotrust);
 
                 // Password source only relevant for protocols that use credentials:
-                // SSH, SFTP, RDP, VNC, SPICE. Hidden for Telnet, Serial, MOSH,
+                // SSH, SFTP, RDP, VNC, SPICE, Web. Hidden for Telnet, Serial, MOSH,
                 // Kubernetes, Zero Trust — they don't use stored passwords.
-                let uses_password = matches!(protocol_id, "ssh" | "sftp" | "rdp" | "vnc" | "spice");
+                let uses_password = matches!(
+                    protocol_id,
+                    "ssh" | "sftp" | "rdp" | "vnc" | "spice" | "web"
+                );
                 password_source_dropdown.set_visible(uses_password);
                 password_source_label.set_visible(uses_password);
                 // Password row visibility controlled by password_source_dropdown
@@ -3754,6 +3790,10 @@ impl ConnectionDialog {
                 self.protocol_dropdown.set_selected(9); // MOSH
                 // MOSH uses SSH tab — protocol dropdown handler shows mosh_settings_group
                 self.set_mosh_config(mosh_config);
+            }
+            ProtocolConfig::Web(_) => {
+                self.protocol_dropdown.set_selected(10); // Web
+                self.protocol_stack.set_visible_child_name("web");
             }
         }
 
@@ -6402,6 +6442,9 @@ impl ConnectionDialogData<'_> {
             7 => Some(ProtocolConfig::Sftp(self.build_ssh_config())),
             8 => Some(ProtocolConfig::Kubernetes(self.build_kubernetes_config())),
             9 => Some(ProtocolConfig::Mosh(self.build_mosh_config())),
+            10 => Some(ProtocolConfig::Web(
+                rustconn_core::models::WebConfig::default(),
+            )),
             _ => None,
         }
     }

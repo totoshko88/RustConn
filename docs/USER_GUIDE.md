@@ -2,7 +2,7 @@
 
 **Version 0.13.17** | GTK4/libadwaita Connection Manager for Linux
 
-RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
+RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
 ## Table of Contents
 
@@ -20,6 +20,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Kubernetes](#kubernetes-shell)
    - [SFTP](#sftp-file-browser)
    - [Zero Trust Providers](#zero-trust-providers)
+   - [Web Bookmarks](#web-bookmarks)
 5. [Sessions & Terminal](#sessions--terminal)
    - [Session Types & Display Modes](#session-types)
    - [Tab Management](#tab-management)
@@ -369,6 +370,7 @@ Protocol-specific options are configured in the connection dialog's protocol tab
 | Serial | Device path, baud rate, data bits, stop bits, parity, flow control, custom picocom arguments |
 | Kubernetes | Kubeconfig path, context, namespace, pod, container, shell, busybox mode, busybox image, custom kubectl arguments |
 | ZeroTrust | Provider-specific (AWS SSM, GCP IAP, Azure Bastion, Azure SSH, OCI Bastion, Cloudflare Access, Teleport, Tailscale SSH, HashiCorp Boundary, Hoop.dev, Generic Command), custom CLI arguments |
+| Web | URL (opens in system browser), credentials for copy-to-clipboard |
 
 ### SSH
 
@@ -866,6 +868,38 @@ This limitation does not affect native packages (deb, rpm, Snap) where RustConn 
 RustConn supports connecting through identity-aware proxy services (Zero Trust). For detailed provider setup and configuration, see the dedicated [Zero Trust Providers](ZERO_TRUST.md) guide.
 
 Supported providers: AWS Session Manager, GCP IAP Tunnel, Azure Bastion, Azure SSH (AAD), OCI Bastion, Cloudflare Access, Teleport, Tailscale SSH, HashiCorp Boundary, Hoop.dev, Generic Command.
+
+### Web Bookmarks
+
+Web bookmark connections store website URLs and open them in the system's default browser. No embedded browser is used — RustConn delegates to the OS via GTK4 `UriLauncher` (portal-aware, works in Flatpak).
+
+**Use cases:**
+- Quick access to web-based admin panels (AWS Console, Grafana, Proxmox, etc.)
+- Storing credentials for web services alongside SSH/RDP connections
+- Organizing all infrastructure access points in one place
+
+**Creating a Web bookmark:**
+1. Click "New Connection" → select **Web** protocol
+2. Enter the full URL in the **URL** field (must start with `http://` or `https://`)
+3. Optionally set username/password — these are stored in the configured secret backend for copy-to-clipboard via the sidebar context menu
+4. Click Save
+
+**Connecting:**
+- Double-click the connection in the sidebar → the URL opens in your default browser
+- The sidebar status briefly shows "connecting" (yellow) then clears — Web bookmarks have no persistent session
+
+**Context menu actions:**
+- **Copy Username** / **Copy Password** — copies stored credentials to clipboard (auto-clears after 30 seconds)
+
+**CLI:**
+```bash
+rustconn-cli add --name "AWS Console" --protocol web --host "https://console.aws.amazon.com"
+```
+
+**Limitations:**
+- No embedded browser — always opens in the system default
+- No auto-fill — credentials are for copy-to-clipboard only
+- Port field is hidden (not applicable for URLs)
 
 ---
 

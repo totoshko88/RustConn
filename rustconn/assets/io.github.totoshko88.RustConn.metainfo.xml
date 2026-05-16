@@ -136,8 +136,10 @@
   <releases>
     <release version="0.13.17" date="2026-05-16">
       <description>
-        <p>Version 0.13.17 — Cloud Sync Flatpak fix, highlight overlay fix:</p>
+        <p>Version 0.13.17 — Web bookmarks, RDP RemoteApp, Flatpak fixes:</p>
         <ul>
+          <li>New: Web bookmark connections — store website URLs and open them in the default browser; credentials stored in secret backend for copy-to-clipboard</li>
+          <li>New: RDP RemoteApp support — launch individual remote applications instead of a full desktop session; configure program path, arguments, and display name; automatically uses FreeRDP</li>
           <li>Fixed Cloud Sync in Flatpak — detect XDG Document Portal paths when selecting sync directory; show a warning dialog with flatpak override command instead of silently saving an unusable portal path</li>
           <li>Fixed highlight overlay not cleared by clear command — colored underlines and background highlights now disappear immediately when the terminal screen is erased</li>
         </ul>

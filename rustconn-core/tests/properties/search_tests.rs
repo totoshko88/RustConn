@@ -66,6 +66,12 @@ fn arb_connection() -> impl Strategy<Value = Connection> {
                 ProtocolType::Sftp => Connection::new_sftp(name, host, 22),
                 ProtocolType::Kubernetes => Connection::new_kubernetes(name),
                 ProtocolType::Mosh => Connection::new_mosh(name, host, 22),
+                ProtocolType::Web => Connection::new(
+                    name,
+                    "https://example.com".to_string(),
+                    0,
+                    rustconn_core::ProtocolConfig::Web(rustconn_core::models::WebConfig::default()),
+                ),
             };
             conn.tags = tags;
             conn

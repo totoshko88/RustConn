@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Web bookmark connections** — new protocol type "Web" for storing website URLs with credentials; opens in the default browser via GTK4 UriLauncher (portal-aware, works in Flatpak); credentials stored in the configured secret backend (KeePassXC, Bitwarden, etc.) for copy-to-clipboard via context menu; no embedded browser — delegates to the system default; icon `web-browser-symbolic` in sidebar (#151)
 - **RDP RemoteApp support** — launch individual remote applications instead of a full desktop session; configure program path, arguments, and display name in the connection dialog; automatically uses FreeRDP (IronRDP does not support RAIL protocol); imported from `.rdp` files (`remoteapplicationprogram`, `remoteapplicationcmdline`, `remoteapplicationname` fields) (#153)
 
 ### Fixed
@@ -22,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation: RemoteApp** — added "RemoteApp (RAIL)" section to User Guide with configuration steps, program path format table, import notes, and limitations; updated "Supported .rdp Fields" list
 - **Documentation: Cloud Sync portal detection** — added note about automatic XDG Document Portal path detection to the Flatpak Cloud Sync section
 - **Documentation: Highlight overlay limitation** — documented that whitespace-only lines are excluded from highlight processing
+
+### Dependencies
+- **Updated**: libbz2-rs-sys 0.2.4→0.2.5, openssl 0.10.79→0.10.80, openssl-sys 0.9.115→0.9.116
 
 ## [0.13.16] - 2026-05-16
 

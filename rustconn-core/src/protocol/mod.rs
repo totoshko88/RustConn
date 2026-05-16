@@ -18,6 +18,7 @@ mod spice;
 mod ssh;
 mod telnet;
 mod vnc;
+mod web;
 
 pub use cli::{format_command_message, format_connection_message};
 pub use detection::{
@@ -45,6 +46,7 @@ pub use spice::SpiceProtocol;
 pub use ssh::SshProtocol;
 pub use telnet::TelnetProtocol;
 pub use vnc::VncProtocol;
+pub use web::WebProtocol;
 
 pub use crate::error::ProtocolResult;
 use crate::models::Connection;

@@ -37,7 +37,7 @@ pub use protocol::{
     ScaleOverride, SerialBaudRate, SerialConfig, SerialDataBits, SerialFlowControl, SerialParity,
     SerialStopBits, SharedFolder, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig,
     SshKeySource, TailscaleSshConfig, TeleportConfig, TelnetBackspaceSends, TelnetConfig,
-    TelnetDeleteSends, VncClientMode, VncConfig, VncPerformanceMode, ZeroTrustConfig,
+    TelnetDeleteSends, VncClientMode, VncConfig, VncPerformanceMode, WebConfig, ZeroTrustConfig,
     ZeroTrustProvider, ZeroTrustProviderConfig, build_remote_app_freerdp_args,
 };
 pub use smart_folder::SmartFolder;

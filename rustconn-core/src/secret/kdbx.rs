@@ -45,6 +45,7 @@ impl KdbxEntry {
             crate::models::ProtocolConfig::Sftp(_) => "SFTP",
             crate::models::ProtocolConfig::Kubernetes(_) => "Kubernetes",
             crate::models::ProtocolConfig::Mosh(_) => "MOSH",
+            crate::models::ProtocolConfig::Web(_) => "Web",
         };
 
         let url = format!(

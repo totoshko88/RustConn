@@ -2410,6 +2410,9 @@ proptest! {
                 ProtocolType::Mosh => ProtocolConfig::Mosh(
                     rustconn_core::MoshConfig::default(),
                 ),
+                ProtocolType::Web => ProtocolConfig::Web(
+                    rustconn_core::models::WebConfig::default(),
+                ),
             };
 
             manager
@@ -2480,6 +2483,9 @@ proptest! {
             ProtocolType::Mosh => ProtocolConfig::Mosh(
                 rustconn_core::MoshConfig::default(),
             ),
+            ProtocolType::Web => ProtocolConfig::Web(
+                rustconn_core::models::WebConfig::default(),
+            ),
         };
 
         manager
@@ -2543,6 +2549,9 @@ proptest! {
             ProtocolType::Mosh => ProtocolConfig::Mosh(
                 rustconn_core::MoshConfig::default(),
             ),
+            ProtocolType::Web => ProtocolConfig::Web(
+                rustconn_core::models::WebConfig::default(),
+            ),
         };
 
         let conn_id = manager
@@ -2591,6 +2600,9 @@ proptest! {
             ),
             ProtocolType::Mosh => ProtocolConfig::Mosh(
                 rustconn_core::MoshConfig::default(),
+            ),
+            ProtocolType::Web => ProtocolConfig::Web(
+                rustconn_core::models::WebConfig::default(),
             ),
         };
 
@@ -2647,6 +2659,9 @@ proptest! {
             ),
             ProtocolType::Mosh => ProtocolConfig::Mosh(
                 rustconn_core::MoshConfig::default(),
+            ),
+            ProtocolType::Web => ProtocolConfig::Web(
+                rustconn_core::models::WebConfig::default(),
             ),
         };
 

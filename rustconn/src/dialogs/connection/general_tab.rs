@@ -108,6 +108,7 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
         "SFTP".to_string(),
         "Kubernetes".to_string(),
         "MOSH".to_string(),
+        "Web".to_string(),
     ];
     let protocol_strs: Vec<&str> = protocol_items.iter().map(String::as_str).collect();
     let protocol_list = StringList::new(&protocol_strs);
@@ -257,8 +258,6 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     let password_entry = Entry::builder()
         .placeholder_text(i18n("Password value"))
         .hexpand(true)
-        .width_chars(16)
-        .max_width_chars(40)
         .visibility(false)
         .valign(gtk4::Align::Center)
         .build();
@@ -322,8 +321,6 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     let script_command_entry = Entry::builder()
         .placeholder_text(i18n("e.g. vault kv get -field=password secret/myapp"))
         .hexpand(true)
-        .width_chars(20)
-        .max_width_chars(50)
         .valign(gtk4::Align::Center)
         .build();
     let script_test_button = Button::builder()

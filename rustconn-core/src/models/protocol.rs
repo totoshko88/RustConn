@@ -28,6 +28,8 @@ pub enum ProtocolType {
     Kubernetes,
     /// MOSH protocol (mobile shell)
     Mosh,
+    /// Web bookmark (opens URL in default browser)
+    Web,
 }
 
 impl ProtocolType {
@@ -47,6 +49,7 @@ impl ProtocolType {
             Self::Sftp => "sftp",
             Self::Kubernetes => "kubernetes",
             Self::Mosh => "mosh",
+            Self::Web => "web",
         }
     }
 
@@ -62,6 +65,7 @@ impl ProtocolType {
             Self::Sftp => 22,
             Self::Kubernetes => 0,
             Self::Mosh => 22,
+            Self::Web => 443,
         }
     }
 }
@@ -79,6 +83,7 @@ impl std::fmt::Display for ProtocolType {
             Self::Sftp => write!(f, "SFTP"),
             Self::Kubernetes => write!(f, "Kubernetes"),
             Self::Mosh => write!(f, "MOSH"),
+            Self::Web => write!(f, "Web"),
         }
     }
 }
@@ -107,6 +112,8 @@ pub enum ProtocolConfig {
     Kubernetes(KubernetesConfig),
     /// MOSH protocol configuration
     Mosh(MoshConfig),
+    /// Web bookmark configuration (opens URL in default browser)
+    Web(WebConfig),
 }
 
 impl ProtocolConfig {
@@ -124,6 +131,7 @@ impl ProtocolConfig {
             Self::Sftp(_) => ProtocolType::Sftp,
             Self::Kubernetes(_) => ProtocolType::Kubernetes,
             Self::Mosh(_) => ProtocolType::Mosh,
+            Self::Web(_) => ProtocolType::Web,
         }
     }
 }
@@ -2856,4 +2864,20 @@ mod zerotrust_tests {
         assert_eq!(program, "hoop");
         assert_eq!(args, vec!["connect", "staging", "--debug", "--verbose"]);
     }
+}
+
+/// Web bookmark configuration
+///
+/// Configuration for web bookmark connections. These connections open a URL
+/// in the user's default browser. Credentials (username/password) are stored
+/// in the configured secret backend and can be copied via the context menu.
+/// The browser's password manager extension handles auto-fill.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WebConfig {
+    /// Custom browser command (None = system default via xdg-open / portal)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub browser: Option<String>,
+    /// Open in private/incognito mode
+    #[serde(default)]
+    pub private_mode: bool,
 }

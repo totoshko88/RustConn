@@ -461,6 +461,7 @@ proptest! {
             ProtocolConfig::Sftp(_) => 22u16,
             ProtocolConfig::Kubernetes(_) => 0u16,
             ProtocolConfig::Mosh(_) => 22u16,
+            ProtocolConfig::Web(_) => 0u16,
         };
 
         prop_assert_eq!(

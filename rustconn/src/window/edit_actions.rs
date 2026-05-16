@@ -860,6 +860,75 @@ impl MainWindow {
         window.add_action(&sftp_action);
     }
 
+    /// Opens a Web bookmark connection in the default browser.
+    ///
+    /// Uses `gtk4::UriLauncher` which works correctly in both Flatpak
+    /// (via `org.freedesktop.portal.OpenURI`) and native environments.
+    /// Does not create a tab — shows a toast confirming the URL was opened.
+    /// Resets sidebar status after the browser launch completes.
+    pub(crate) fn handle_web_connect(
+        state: &SharedAppState,
+        sidebar: &SharedSidebar,
+        connection_id: Uuid,
+    ) {
+        let url = {
+            let Ok(state_ref) = state.try_borrow() else {
+                return;
+            };
+            let Some(conn) = state_ref.get_connection(connection_id) else {
+                return;
+            };
+            let url = conn.host.clone();
+            drop(state_ref);
+            // Update last_connected timestamp
+            if let Ok(mut state_mut) = state.try_borrow_mut()
+                && let Err(e) = state_mut.update_last_connected(connection_id)
+            {
+                tracing::warn!(?e, "Failed to update last_connected for web connection");
+            }
+            url
+        };
+
+        if url.is_empty() {
+            tracing::warn!(connection_id = %connection_id, "Web connection has empty URL");
+            sidebar.update_connection_status(&connection_id.to_string(), "");
+            return;
+        }
+
+        // Use gtk4::UriLauncher for portal-aware URL opening
+        let launcher = gtk4::UriLauncher::new(&url);
+        let sidebar_clone = sidebar.clone();
+        launcher.launch(
+            gtk4::Window::NONE,
+            gtk4::gio::Cancellable::NONE,
+            move |result| {
+                if let Err(e) = result {
+                    tracing::error!(url = %url, error = %e, "Failed to open URL in browser");
+                    sidebar_clone.update_connection_status(&connection_id.to_string(), "failed");
+                    crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
+                        "Failed to open URL: {}",
+                        &[&e.to_string()],
+                    ));
+                } else {
+                    tracing::info!("Web bookmark opened in browser");
+                    // Clear "connecting" status — Web has no persistent session
+                    sidebar_clone.update_connection_status(&connection_id.to_string(), "");
+                    // Show success toast on active window
+                    if let Some(app) = gtk4::gio::Application::default()
+                        && let Some(gtk_app) = app.downcast_ref::<gtk4::Application>()
+                        && let Some(window) = gtk_app.active_window()
+                    {
+                        crate::toast::show_toast_on_window(
+                            &window,
+                            &crate::i18n::i18n("Opened in browser"),
+                            crate::toast::ToastType::Success,
+                        );
+                    }
+                }
+            },
+        );
+    }
+
     /// Launches a file manager for an `sftp://` URI as a direct
     /// subprocess so it inherits the ssh-agent socket.
     ///
