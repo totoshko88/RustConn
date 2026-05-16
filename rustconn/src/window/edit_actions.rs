@@ -862,7 +862,9 @@ impl MainWindow {
 
     /// Opens a Web bookmark connection in the default browser.
     ///
-    /// Uses `gtk4::UriLauncher` which works correctly in both Flatpak
+    /// When a custom browser is configured in `WebConfig`, launches it as a
+    /// subprocess with optional private-mode flags. Otherwise uses
+    /// `gtk4::UriLauncher` which works correctly in both Flatpak
     /// (via `org.freedesktop.portal.OpenURI`) and native environments.
     /// Does not create a tab — shows a toast confirming the URL was opened.
     /// Resets sidebar status after the browser launch completes.
@@ -871,7 +873,7 @@ impl MainWindow {
         sidebar: &SharedSidebar,
         connection_id: Uuid,
     ) {
-        let url = {
+        let (url, web_config) = {
             let Ok(state_ref) = state.try_borrow() else {
                 return;
             };
@@ -879,6 +881,10 @@ impl MainWindow {
                 return;
             };
             let url = conn.host.clone();
+            let config = match &conn.protocol_config {
+                rustconn_core::models::ProtocolConfig::Web(cfg) => cfg.clone(),
+                _ => rustconn_core::models::WebConfig::default(),
+            };
             drop(state_ref);
             // Update last_connected timestamp
             if let Ok(mut state_mut) = state.try_borrow_mut()
@@ -886,7 +892,7 @@ impl MainWindow {
             {
                 tracing::warn!(?e, "Failed to update last_connected for web connection");
             }
-            url
+            (url, config)
         };
 
         if url.is_empty() {
@@ -895,7 +901,50 @@ impl MainWindow {
             return;
         }
 
-        // Use gtk4::UriLauncher for portal-aware URL opening
+        // If a custom browser is configured, launch it as a subprocess
+        if let Some(ref browser) = web_config.browser {
+            let mut cmd = std::process::Command::new(browser);
+
+            // Add private mode flag for known browsers
+            if web_config.private_mode {
+                let browser_lower = browser.to_lowercase();
+                if browser_lower.contains("firefox") {
+                    cmd.arg("--private-window");
+                } else if browser_lower.contains("chrom") || browser_lower.contains("brave") {
+                    cmd.arg("--incognito");
+                }
+            }
+
+            cmd.arg(&url);
+
+            match cmd.spawn() {
+                Ok(_) => {
+                    tracing::info!(browser = %browser, "Web bookmark opened in custom browser");
+                    sidebar.update_connection_status(&connection_id.to_string(), "");
+                    if let Some(app) = gtk4::gio::Application::default()
+                        && let Some(gtk_app) = app.downcast_ref::<gtk4::Application>()
+                        && let Some(window) = gtk_app.active_window()
+                    {
+                        crate::toast::show_toast_on_window(
+                            &window,
+                            &crate::i18n::i18n("Opened in browser"),
+                            crate::toast::ToastType::Success,
+                        );
+                    }
+                }
+                Err(e) => {
+                    tracing::error!(browser = %browser, error = %e, "Failed to launch custom browser");
+                    sidebar.update_connection_status(&connection_id.to_string(), "failed");
+                    crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
+                        "Failed to open URL: {}",
+                        &[&e.to_string()],
+                    ));
+                }
+            }
+            return;
+        }
+
+        // Use gtk4::UriLauncher for portal-aware URL opening (system default browser)
         let launcher = gtk4::UriLauncher::new(&url);
         let sidebar_clone = sidebar.clone();
         launcher.launch(

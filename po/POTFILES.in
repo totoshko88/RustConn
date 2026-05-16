@@ -40,6 +40,7 @@ rustconn/src/dialogs/connection/spice.rs
 rustconn/src/dialogs/connection/serial.rs
 rustconn/src/dialogs/connection/telnet.rs
 rustconn/src/dialogs/connection/kubernetes.rs
+rustconn/src/dialogs/connection/web.rs
 rustconn/src/dialogs/connection/zerotrust.rs
 rustconn/src/dialogs/connection/shared_folders.rs
 rustconn/src/dialogs/connection/logging_tab.rs

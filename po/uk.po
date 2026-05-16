@@ -1158,7 +1158,7 @@ msgstr "Обери сертифікат CA"
 
 #: rustconn/src/dialogs/connection/dialog.rs:3601
 msgid "Edit Connection"
-msgstr "Редагуй з'єднання"
+msgstr "Редагуй з'єднок"
 
 #: rustconn/src/dialogs/connection/dialog.rs:3874
 #: rustconn/src/dialogs/connection/general_tab.rs:365
@@ -1543,11 +1543,11 @@ msgstr "Організація"
 #: rustconn/src/dialogs/connection/general_tab.rs:361
 #: rustconn/src/dialogs/export.rs:424 rustconn/src/dialogs/template.rs:560
 msgid "Tags"
-msgstr "Теґи"
+msgstr "Познаки"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:355
 msgid "tag1, tag2, ..."
-msgstr "теґ1, теґ2, ..."
+msgstr "познака1, познака2, ..."
 
 #: rustconn/src/dialogs/connection/general_tab.rs:372
 #: rustconn/src/dialogs/export.rs:300 rustconn/src/dialogs/export.rs:418
@@ -1931,7 +1931,7 @@ msgstr "Типово: 443"
 
 #: rustconn/src/dialogs/connection/rdp.rs:428
 msgid "Same as connection username"
-msgstr "Такий самий як ім'я користувача з'єднання"
+msgstr "Такий самий як ім'я користувача з'єднанка"
 
 #: rustconn/src/dialogs/connection/rdp.rs:432
 msgid "Gateway Username"
@@ -1939,7 +1939,7 @@ msgstr "Ім'я користувача шлюзу"
 
 #: rustconn/src/dialogs/connection/rdp.rs:433
 msgid "If different from connection username"
-msgstr "Якщо відрізняється від імені користувача з'єднання"
+msgstr "Якщо відрізняється від імені користувача з'єднанка"
 
 #: rustconn/src/dialogs/connection/rdp.rs:456
 #: rustconn/src/dialogs/connection/spice.rs:283
@@ -1994,39 +1994,39 @@ msgstr "Вилучи"
 
 #: rustconn/src/dialogs/connection/rdp.rs:536
 msgid "RemoteApp"
-msgstr ""
+msgstr "RemoteApp"
 
 #: rustconn/src/dialogs/connection/rdp.rs:538
 msgid "Launch a single application instead of full desktop (requires FreeRDP)"
-msgstr ""
+msgstr "Запустити окрему програму замість повного робочого стола (потребує FreeRDP)"
 
 #: rustconn/src/dialogs/connection/rdp.rs:544
 msgid "||notepad or C:\\Program Files\\app.exe"
-msgstr ""
+msgstr "||notepad або C:\\Program Files\\app.exe"
 
 #: rustconn/src/dialogs/connection/rdp.rs:548
 msgid "Program"
-msgstr ""
+msgstr "Програма"
 
 #: rustconn/src/dialogs/connection/rdp.rs:549
 msgid "Application alias (||name) or full path"
-msgstr ""
+msgstr "Псевдонім програми (||назва) або повний шлях"
 
 #: rustconn/src/dialogs/connection/rdp.rs:556
 msgid "Command-line arguments"
-msgstr ""
+msgstr "Аргументи командного рядка"
 
 #: rustconn/src/dialogs/connection/rdp.rs:560
 msgid "Arguments"
-msgstr ""
+msgstr "Аргументи"
 
 #: rustconn/src/dialogs/connection/rdp.rs:561
 msgid "Arguments passed to the remote application"
-msgstr ""
+msgstr "Аргументи, що передаються віддаленій програмі"
 
 #: rustconn/src/dialogs/connection/rdp.rs:568
 msgid "Display name (optional)"
-msgstr ""
+msgstr "Назва для показу (необов'язково)"
 
 #: rustconn/src/dialogs/connection/rdp.rs:572
 #: rustconn/src/dialogs/recording.rs:513
@@ -2035,16 +2035,16 @@ msgstr "Назва"
 
 #: rustconn/src/dialogs/connection/rdp.rs:573
 msgid "Shown in taskbar and window title"
-msgstr ""
+msgstr "Показується на панелі завдань і в заголовку вікна"
 
 #: rustconn/src/dialogs/connection/rdp.rs:586
 msgid "⚠ FreeRDP not found"
-msgstr ""
+msgstr "⚠ FreeRDP не знайдено"
 
 #: rustconn/src/dialogs/connection/rdp.rs:588
 msgid ""
 "RemoteApp requires FreeRDP. Install sdl-freerdp3, xfreerdp, or wlfreerdp."
-msgstr ""
+msgstr "RemoteApp потребує FreeRDP. Встанови sdl-freerdp3, xfreerdp або wlfreerdp."
 
 #: rustconn/src/dialogs/connection/rdp.rs:613
 msgid "Auto (detect)"
@@ -4435,14 +4435,23 @@ msgid ""
 "Adjust the path if needed to match the actual location on your filesystem. "
 "Then restart RustConn and set the sync directory again."
 msgstr ""
+"Пісочниця Flatpak не може безпосередньо звертатися до цієї теки. Моніторинг "
+"файлів не працюватиме через портал документів.\n"
+"\n"
+"Щоб надати доступ, виконай у терміналі:\n"
+"\n"
+"flatpak override --user --filesystem={} {}\n"
+"\n"
+"За потреби скоригуй шлях відповідно до фактичного розташування у файловій "
+"системі. Потім перезапусти RustConn і знову вкажи теку синхронізації."
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:235
 msgid "Flatpak: filesystem access required"
-msgstr ""
+msgstr "Flatpak: потрібен доступ до файлової системи"
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:243
 msgid "Copy Command"
-msgstr ""
+msgstr "Копіюй команду"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:26
 msgid "Keybindings"
@@ -5513,7 +5522,7 @@ msgstr "Відкрий SFTP у Midnight Commander (локальна вкладк
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:395
 msgid "⚠ External file managers cannot access SSH agent in Flatpak sandbox"
-msgstr ""
+msgstr "⚠ Зовнішні файлові менеджери не мають доступу до агента SSH у пісочниці Flatpak"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:406
 msgid "Copy on select"
@@ -5805,11 +5814,11 @@ msgstr "Експорт з'єднань"
 
 #: rustconn/src/dialogs/shortcuts.rs:564
 msgid "Edit selected connection (sidebar)"
-msgstr "Редагуй вибране з'єднання (бічна панель)"
+msgstr "Редагуй вибраний з'єднок (бічна панель)"
 
 #: rustconn/src/dialogs/shortcuts.rs:565
 msgid "Delete selected connection/group (sidebar)"
-msgstr "Вилучи вибране з'єднання/групу (бічна панель)"
+msgstr "Вилучи вибраний з'єднок/групу (бічна панель)"
 
 #: rustconn/src/dialogs/shortcuts.rs:566
 msgid "Rename selected item"
@@ -5817,15 +5826,15 @@ msgstr "Перейменувати вибраний елемент"
 
 #: rustconn/src/dialogs/shortcuts.rs:567
 msgid "Duplicate connection (sidebar)"
-msgstr "Дублювати з'єднання (бічна панель)"
+msgstr "Дублювати з'єднок (бічна панель)"
 
 #: rustconn/src/dialogs/shortcuts.rs:568
 msgid "Copy connection"
-msgstr "Копіювати з'єднання"
+msgstr "Копіювати з'єднок"
 
 #: rustconn/src/dialogs/shortcuts.rs:569
 msgid "Paste connection"
-msgstr "Встав з'єднання"
+msgstr "Встав з'єднок"
 
 #: rustconn/src/dialogs/shortcuts.rs:570
 msgid "Move to group (sidebar)"
@@ -7183,7 +7192,7 @@ msgstr "З'єднай все"
 
 #: rustconn/src/sidebar_ui.rs:112
 msgid "New Connection in Group"
-msgstr "Нове з'єднання в групі"
+msgstr "Новий з'єднок у групі"
 
 #: rustconn/src/sidebar_ui.rs:120
 msgid "Sync Now"
@@ -7267,7 +7276,7 @@ msgstr "Перемісти до групи"
 
 #: rustconn/src/sidebar_ui.rs:405
 msgid "Move selected connections to group"
-msgstr "Перемісти вибрані з'єднання до групи"
+msgstr "Перемісти вибрані з'єднки до групи"
 
 #: rustconn/src/sidebar_ui.rs:412
 msgid "Create Cluster"
@@ -7279,7 +7288,7 @@ msgstr "Створи кластер із вибраних з'єднань"
 
 #: rustconn/src/sidebar_ui.rs:425
 msgid "Select all connections"
-msgstr "Обери всі з'єднання"
+msgstr "Обери всі з'єднки"
 
 #: rustconn/src/sidebar_ui.rs:432
 msgid "Clear Selection"
@@ -7295,7 +7304,7 @@ msgstr "Вилучи вибране"
 
 #: rustconn/src/sidebar_ui.rs:444
 msgid "Delete selected connections"
-msgstr "Вилучи вибрані з'єднання"
+msgstr "Вилучи вибрані з'єднки"
 
 #: rustconn/src/sidebar_ui.rs:463
 msgid "Group Operations Mode"
@@ -7315,7 +7324,7 @@ msgstr "Сортуй за абеткою"
 
 #: rustconn/src/sidebar_ui.rs:484
 msgid "Sort connections alphabetically"
-msgstr "Сортувати з'єднання за алфавітом"
+msgstr "Сортувати з'єднки за абеткою"
 
 #: rustconn/src/sidebar_ui.rs:490
 msgid "Sort by Recent Usage"
@@ -8006,6 +8015,9 @@ msgid ""
 "Flatpak.                              Enable \"SFTP via mc\" in Settings for "
 "reliable access."
 msgstr ""
+"Зовнішні файлові менеджери не мають доступу до агента SSH у "
+"Flatpak.                              Увімкни «SFTP через mc» в Уставах для "
+"надійного доступу."
 
 #: rustconn/src/window/edit_dialogs.rs:209
 msgid "Error Updating Connection"

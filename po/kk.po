@@ -1998,39 +1998,39 @@ msgstr "Жою"
 
 #: rustconn/src/dialogs/connection/rdp.rs:536
 msgid "RemoteApp"
-msgstr ""
+msgstr "RemoteApp"
 
 #: rustconn/src/dialogs/connection/rdp.rs:538
 msgid "Launch a single application instead of full desktop (requires FreeRDP)"
-msgstr ""
+msgstr "Толық жұмыс үстелінің орнына жеке қолданбаны іске қосу (FreeRDP қажет)"
 
 #: rustconn/src/dialogs/connection/rdp.rs:544
 msgid "||notepad or C:\\Program Files\\app.exe"
-msgstr ""
+msgstr "||notepad немесе C:\\Program Files\\app.exe"
 
 #: rustconn/src/dialogs/connection/rdp.rs:548
 msgid "Program"
-msgstr ""
+msgstr "Бағдарлама"
 
 #: rustconn/src/dialogs/connection/rdp.rs:549
 msgid "Application alias (||name) or full path"
-msgstr ""
+msgstr "Қолданба бүркеншік аты (||атау) немесе толық жол"
 
 #: rustconn/src/dialogs/connection/rdp.rs:556
 msgid "Command-line arguments"
-msgstr ""
+msgstr "Пәрмен жолы аргументтері"
 
 #: rustconn/src/dialogs/connection/rdp.rs:560
 msgid "Arguments"
-msgstr ""
+msgstr "Аргументтер"
 
 #: rustconn/src/dialogs/connection/rdp.rs:561
 msgid "Arguments passed to the remote application"
-msgstr ""
+msgstr "Қашықтағы қолданбаға берілетін аргументтер"
 
 #: rustconn/src/dialogs/connection/rdp.rs:568
 msgid "Display name (optional)"
-msgstr ""
+msgstr "Көрсетілетін атау (міндетті емес)"
 
 #: rustconn/src/dialogs/connection/rdp.rs:572
 #: rustconn/src/dialogs/recording.rs:513
@@ -2039,16 +2039,17 @@ msgstr "Көрсетілетін атау"
 
 #: rustconn/src/dialogs/connection/rdp.rs:573
 msgid "Shown in taskbar and window title"
-msgstr ""
+msgstr "Тапсырмалар тақтасы мен терезе тақырыбында көрсетіледі"
 
 #: rustconn/src/dialogs/connection/rdp.rs:586
 msgid "⚠ FreeRDP not found"
-msgstr ""
+msgstr "⚠ FreeRDP табылмады"
 
 #: rustconn/src/dialogs/connection/rdp.rs:588
 msgid ""
 "RemoteApp requires FreeRDP. Install sdl-freerdp3, xfreerdp, or wlfreerdp."
 msgstr ""
+"RemoteApp үшін FreeRDP қажет. sdl-freerdp3, xfreerdp немесе wlfreerdp орнатыңыз."
 
 #: rustconn/src/dialogs/connection/rdp.rs:613
 msgid "Auto (detect)"
@@ -4442,14 +4443,24 @@ msgid ""
 "Adjust the path if needed to match the actual location on your filesystem. "
 "Then restart RustConn and set the sync directory again."
 msgstr ""
+"Flatpak құмсалғышы бұл каталогқа тікелей қол жеткізе алмайды. Файлдарды "
+"бақылау құжат порталы арқылы жұмыс істемейді.\n"
+"\n"
+"Рұқсат беру үшін терминалда орындаңыз:\n"
+"\n"
+"flatpak override --user --filesystem={} {}\n"
+"\n"
+"Қажет болса, жолды файлдық жүйедегі нақты орынға сәйкестендіріңіз. Содан "
+"кейін RustConn-ды қайта іске қосыңыз және синхрондау каталогын қайта "
+"орнатыңыз."
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:235
 msgid "Flatpak: filesystem access required"
-msgstr ""
+msgstr "Flatpak: файлдық жүйеге қол жеткізу қажет"
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:243
 msgid "Copy Command"
-msgstr ""
+msgstr "Пәрменді көшіру"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:26
 msgid "Keybindings"
@@ -5527,7 +5538,7 @@ msgstr "SFTP-ні Midnight Commander арқылы ашу (жергілікті s
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:395
 msgid "⚠ External file managers cannot access SSH agent in Flatpak sandbox"
-msgstr ""
+msgstr "⚠ Сыртқы файл менеджерлері Flatpak құмсалғышындағы SSH агентіне қол жеткізе алмайды"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:406
 msgid "Copy on select"
@@ -8023,6 +8034,9 @@ msgid ""
 "Flatpak.                              Enable \"SFTP via mc\" in Settings for "
 "reliable access."
 msgstr ""
+"Сыртқы файл менеджерлері Flatpak ішіндегі SSH агентіне қол жеткізе "
+"алмайды.                              Сенімді қол жеткізу үшін Параметрлерде "
+"\"SFTP mc арқылы\" мүмкіндігін қосыңыз."
 
 #: rustconn/src/window/edit_dialogs.rs:209
 msgid "Error Updating Connection"
