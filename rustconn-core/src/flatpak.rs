@@ -235,10 +235,19 @@ pub fn wrap_host_command(command: &str) -> String {
 ///
 /// Portal paths look like `/run/user/<uid>/doc/<hash>/<filename>`.
 /// These paths become stale after Flatpak rebuilds because the hash changes.
+///
+/// The check requires the path to start with `/run/user/` followed by a
+/// numeric UID and a `/doc/` segment with a hex hash component, reducing
+/// false positives from unrelated paths that happen to contain those substrings.
 #[must_use]
 pub fn is_portal_path(path: &std::path::Path) -> bool {
     let s = path.to_string_lossy();
-    s.contains("/run/user/") && s.contains("/doc/")
+    // Must start with /run/user/<digits>/doc/
+    s.starts_with("/run/user/")
+        && s.split('/')
+            .nth(3) // uid component
+            .is_some_and(|uid| !uid.is_empty() && uid.chars().all(|c| c.is_ascii_digit()))
+        && s.contains("/doc/")
 }
 
 /// Copies a key file from a Flatpak document portal path to the stable
@@ -379,5 +388,34 @@ mod tests {
             let cmd = "aws ssm start-session --target i-123";
             assert_eq!(wrap_host_command(cmd), cmd);
         }
+    }
+
+    #[test]
+    fn test_is_portal_path_valid() {
+        use std::path::Path;
+        assert!(is_portal_path(Path::new(
+            "/run/user/1000/doc/abc123/Documents"
+        )));
+        assert!(is_portal_path(Path::new(
+            "/run/user/0/doc/deadbeef/myfile.txt"
+        )));
+        assert!(is_portal_path(Path::new(
+            "/run/user/65534/doc/hash/nested/path"
+        )));
+    }
+
+    #[test]
+    fn test_is_portal_path_rejects_non_portal() {
+        use std::path::Path;
+        // Regular home directory path
+        assert!(!is_portal_path(Path::new("/home/user/Documents")));
+        // Path that contains /doc/ but not under /run/user/
+        assert!(!is_portal_path(Path::new("/var/lib/doc/something")));
+        // Path with /run/user/ but non-numeric UID
+        assert!(!is_portal_path(Path::new("/run/user/abc/doc/hash/file")));
+        // Path that doesn't start with /run/user/
+        assert!(!is_portal_path(Path::new(
+            "/home/user/run/user/1000/doc/hash/file"
+        )));
     }
 }

@@ -156,6 +156,12 @@ pub struct RdpConfig {
     /// Force full reconnect on resize instead of Display Control Channel.
     /// Useful for legacy servers that don't support MS-RDPEDISP.
     pub reconnect_on_resize: bool,
+    /// RemoteApp program path or alias (forces FreeRDP fallback).
+    pub remote_app_program: Option<String>,
+    /// RemoteApp command-line arguments.
+    pub remote_app_args: Option<String>,
+    /// RemoteApp display name.
+    pub remote_app_name: Option<String>,
 }
 
 impl Default for RdpConfig {
@@ -189,6 +195,9 @@ impl Default for RdpConfig {
             autotype_delay_ms: 20,
             autotype_initial_delay_ms: 0,
             reconnect_on_resize: false,
+            remote_app_program: None,
+            remote_app_args: None,
+            remote_app_name: None,
         }
     }
 }
@@ -294,6 +303,20 @@ impl RdpConfig {
     pub const fn with_polling_interval(mut self, interval_ms: u32) -> Self {
         self.polling_interval_ms = interval_ms;
         self
+    }
+
+    /// Builds FreeRDP command-line arguments for RemoteApp (RAIL) mode.
+    ///
+    /// Returns an empty `Vec` if no RemoteApp program is configured.
+    /// The returned args use FreeRDP 3.x syntax: `/app:`, `/app-cmd:`, `/app-name:`.
+    /// Values containing spaces are quoted for correct FreeRDP parsing.
+    #[must_use]
+    pub fn remote_app_freerdp_args(&self) -> Vec<String> {
+        rustconn_core::models::build_remote_app_freerdp_args(
+            self.remote_app_program.as_deref(),
+            self.remote_app_args.as_deref(),
+            self.remote_app_name.as_deref(),
+        )
     }
 }
 

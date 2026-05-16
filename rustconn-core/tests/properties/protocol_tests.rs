@@ -160,6 +160,9 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                     autotype_delay_ms: 20,
                     autotype_initial_delay_ms: 0,
                     reconnect_on_resize: false,
+                    remote_app_program: None,
+                    remote_app_args: None,
+                    remote_app_name: None,
                 }
             },
         )
@@ -1785,4 +1788,137 @@ fn prop_zerotrust_provider_icons_are_distinct() {
             );
         }
     }
+}
+
+// ============================================================================
+// RemoteApp tests
+// ============================================================================
+
+/// `requires_freerdp_fallback()` and `is_remote_app()` must agree:
+/// both should return false when program is empty string.
+#[test]
+fn remote_app_empty_string_not_treated_as_configured() {
+    let config = RdpConfig {
+        remote_app_program: Some(String::new()),
+        ..Default::default()
+    };
+    assert!(!config.is_remote_app());
+    assert!(!config.requires_freerdp_fallback());
+}
+
+/// `requires_freerdp_fallback()` returns true when a non-empty program is set.
+#[test]
+fn remote_app_non_empty_forces_freerdp() {
+    let config = RdpConfig {
+        remote_app_program: Some("notepad".to_string()),
+        ..Default::default()
+    };
+    assert!(config.is_remote_app());
+    assert!(config.requires_freerdp_fallback());
+}
+
+/// `remote_app_freerdp_args()` returns empty vec when no program configured.
+#[test]
+fn remote_app_freerdp_args_empty_when_no_program() {
+    let config = RdpConfig::default();
+    assert!(config.remote_app_freerdp_args().is_empty());
+}
+
+/// `remote_app_freerdp_args()` returns empty vec when program is empty string.
+#[test]
+fn remote_app_freerdp_args_empty_when_program_empty() {
+    let config = RdpConfig {
+        remote_app_program: Some(String::new()),
+        ..Default::default()
+    };
+    assert!(config.remote_app_freerdp_args().is_empty());
+}
+
+/// `remote_app_freerdp_args()` produces correct FreeRDP arguments.
+#[test]
+fn remote_app_freerdp_args_full() {
+    let config = RdpConfig {
+        remote_app_program: Some("||notepad".to_string()),
+        remote_app_args: Some("/p test.txt".to_string()),
+        remote_app_name: Some("Notepad".to_string()),
+        ..Default::default()
+    };
+    let args = config.remote_app_freerdp_args();
+    assert_eq!(args.len(), 3);
+    assert_eq!(args[0], "/app:||notepad");
+    // Args contain a space → quoted
+    assert_eq!(args[1], "/app-cmd:\"/p test.txt\"");
+    assert_eq!(args[2], "/app-name:Notepad");
+}
+
+/// `remote_app_freerdp_args()` skips empty args and name.
+#[test]
+fn remote_app_freerdp_args_skips_empty_optional_fields() {
+    let config = RdpConfig {
+        remote_app_program: Some("calc".to_string()),
+        remote_app_args: Some(String::new()),
+        remote_app_name: None,
+        ..Default::default()
+    };
+    let args = config.remote_app_freerdp_args();
+    assert_eq!(args.len(), 1);
+    assert_eq!(args[0], "/app:calc");
+}
+
+proptest! {
+    /// Property: `remote_app_freerdp_args()` always starts with `/app:` when program is non-empty.
+    #[test]
+    fn remote_app_args_start_with_app_prefix(
+        program in "[a-zA-Z][a-zA-Z0-9_./\\\\-]{0,50}",
+        args in prop::option::of("[a-zA-Z0-9 _./\\\\-]{1,50}"),
+        name in prop::option::of("[a-zA-Z0-9 _-]{1,30}"),
+    ) {
+        let config = RdpConfig {
+            remote_app_program: Some(program.clone()),
+            remote_app_args: args,
+            remote_app_name: name,
+            ..Default::default()
+        };
+        let result = config.remote_app_freerdp_args();
+        prop_assert!(!result.is_empty());
+        prop_assert!(result[0].starts_with("/app:"));
+        // Values with spaces are quoted
+        if program.contains(' ') {
+            prop_assert_eq!(&result[0], &format!("/app:\"{program}\""));
+        } else {
+            prop_assert_eq!(&result[0], &format!("/app:{program}"));
+        }
+    }
+}
+
+/// `remote_app_freerdp_args()` quotes values containing spaces.
+#[test]
+fn remote_app_freerdp_args_quotes_spaces() {
+    let config = RdpConfig {
+        remote_app_program: Some("C:\\Program Files\\app.exe".to_string()),
+        remote_app_args: Some("/p my document.txt".to_string()),
+        remote_app_name: Some("My App".to_string()),
+        ..Default::default()
+    };
+    let args = config.remote_app_freerdp_args();
+    assert_eq!(args.len(), 3);
+    assert_eq!(args[0], "/app:\"C:\\Program Files\\app.exe\"");
+    assert_eq!(args[1], "/app-cmd:\"/p my document.txt\"");
+    assert_eq!(args[2], "/app-name:\"My App\"");
+}
+
+/// `remote_app_freerdp_args()` does not quote values without spaces.
+#[test]
+fn remote_app_freerdp_args_no_quotes_without_spaces() {
+    let config = RdpConfig {
+        remote_app_program: Some("||notepad".to_string()),
+        remote_app_args: Some("/p".to_string()),
+        remote_app_name: Some("Notepad".to_string()),
+        ..Default::default()
+    };
+    let args = config.remote_app_freerdp_args();
+    assert_eq!(args.len(), 3);
+    assert_eq!(args[0], "/app:||notepad");
+    assert_eq!(args[1], "/app-cmd:/p");
+    assert_eq!(args[2], "/app-name:Notepad");
 }

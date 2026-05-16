@@ -69,16 +69,42 @@ pub fn create_cloud_sync_page() -> CloudSyncPageWidgets {
             .title(i18n("Select Sync Directory"))
             .build();
         let row_clone = sync_dir_row_clone.clone();
+        let win_clone = win.clone();
         file_dialog.select_folder(Some(win), None::<&gtk4::gio::Cancellable>, move |result| {
             if let Ok(file) = result
                 && let Some(path) = file.path()
             {
-                row_clone.set_text(&path.to_string_lossy());
+                if rustconn_core::flatpak::is_flatpak()
+                    && rustconn_core::flatpak::is_portal_path(&path)
+                {
+                    show_flatpak_sync_dir_portal_warning(&win_clone, &path);
+                } else {
+                    row_clone.set_text(&path.to_string_lossy());
+                }
             }
         });
     });
 
     setup_group.add(&sync_dir_row);
+
+    // Validate manually entered paths for Flatpak portal paths.
+    // The FileDialog check above only catches paths selected via the chooser;
+    // this handles direct text entry via the "Apply" button.
+    sync_dir_row.connect_apply(move |row| {
+        if rustconn_core::flatpak::is_flatpak() {
+            let text = row.text();
+            let path = std::path::Path::new(text.as_str());
+            if rustconn_core::flatpak::is_portal_path(path) {
+                // Clear the invalid path and show warning
+                row.set_text("");
+                if let Some(root) = row.root()
+                    && let Some(win) = root.downcast_ref::<gtk4::Window>()
+                {
+                    show_flatpak_sync_dir_portal_warning(win, path);
+                }
+            }
+        }
+    });
 
     let device_name_row = adw::EntryRow::builder()
         .title(i18n("Device Name"))
@@ -169,4 +195,62 @@ pub fn add_available_file_row(
 
     row.add_suffix(&import_btn);
     group.add(&row);
+}
+
+/// Shows a warning dialog when the user selects a sync directory that resolves
+/// to a Flatpak document portal path.
+///
+/// Portal paths (`/run/user/<uid>/doc/<hash>/...`) are temporary FUSE mounts
+/// that don't support inotify and become stale after app restart. The user
+/// must grant direct filesystem access via `flatpak override` instead.
+pub fn show_flatpak_sync_dir_portal_warning(parent: &gtk4::Window, portal_path: &std::path::Path) {
+    use crate::i18n::i18n_f;
+
+    let app_id = crate::app::APP_ID;
+
+    // Try to extract a human-readable hint from the portal path.
+    // Portal paths look like /run/user/1000/doc/<hash>/<dirname>
+    // The last component is usually the original directory name.
+    let dir_hint = portal_path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
+
+    // Build the filesystem argument for the flatpak override command.
+    // We use the directory name as a hint with ~/... prefix, but since
+    // portal paths don't preserve the full original path, the user may
+    // need to adjust it (e.g. ~/Dropbox/rustconn-sync instead of ~/rustconn-sync).
+    let filesystem_arg = if dir_hint.is_empty() {
+        "/path/to/your/sync/directory".to_string()
+    } else {
+        format!("~/{dir_hint}")
+    };
+
+    let body = i18n_f(
+        "The Flatpak sandbox cannot directly access this directory. File monitoring will not work through the document portal.\n\nTo grant access, run in a terminal:\n\nflatpak override --user --filesystem={} {}\n\nAdjust the path if needed to match the actual location on your filesystem. Then restart RustConn and set the sync directory again.",
+        &[&filesystem_arg, app_id],
+    );
+
+    let dialog = adw::AlertDialog::new(
+        Some(&i18n("Flatpak: filesystem access required")),
+        Some(&body),
+    );
+    dialog.add_response("close", &i18n("Close"));
+    dialog.set_default_response(Some("close"));
+    dialog.set_close_response("close");
+
+    // Add a "Copy Command" button for convenience
+    dialog.add_response("copy", &i18n("Copy Command"));
+    dialog.set_response_appearance("copy", adw::ResponseAppearance::Suggested);
+
+    let cmd = format!("flatpak override --user --filesystem={filesystem_arg} {app_id}");
+    let parent_clone = parent.clone();
+    dialog.connect_response(None, move |_, response| {
+        if response == "copy" {
+            let display = gtk4::prelude::WidgetExt::display(&parent_clone);
+            display.clipboard().set_text(&cmd);
+        }
+    });
+
+    dialog.present(Some(parent));
 }

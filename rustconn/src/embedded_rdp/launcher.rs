@@ -208,6 +208,11 @@ impl SafeFreeRdpLauncher {
             }
         }
 
+        // Add RemoteApp arguments for launching individual applications
+        for arg in config.remote_app_freerdp_args() {
+            cmd.arg(arg);
+        }
+
         if config.port == 3389 {
             cmd.arg(format!("/v:{}", config.host));
         } else {

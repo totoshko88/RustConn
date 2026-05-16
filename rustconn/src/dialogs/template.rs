@@ -2486,6 +2486,9 @@ impl TemplateDialog {
             autotype_delay_ms: 20,
             autotype_initial_delay_ms: 0,
             reconnect_on_resize: false,
+            remote_app_program: None,
+            remote_app_args: None,
+            remote_app_name: None,
         })
     }
 

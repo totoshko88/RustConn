@@ -1453,6 +1453,20 @@ pub struct RdpConfig {
     /// Default: false (use Display Control for seamless resize).
     #[serde(default)]
     pub reconnect_on_resize: bool,
+
+    /// RemoteApp program path or alias.
+    /// When set, the RDP session launches a single application instead of a full desktop.
+    /// Forces FreeRDP fallback (IronRDP does not support RAIL protocol).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub remote_app_program: Option<String>,
+
+    /// RemoteApp command-line arguments.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub remote_app_args: Option<String>,
+
+    /// RemoteApp display name (shown in taskbar/window title).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub remote_app_name: Option<String>,
 }
 
 impl RdpConfig {
@@ -1466,9 +1480,14 @@ impl RdpConfig {
     /// Whether this configuration requires FreeRDP instead of IronRDP.
     ///
     /// Returns `true` when the security layer or TLS level is incompatible
-    /// with IronRDP's `rustls` backend (TLS 1.2+ only).
+    /// with IronRDP's `rustls` backend (TLS 1.2+ only), or when RemoteApp
+    /// is configured (IronRDP does not support RAIL protocol).
     #[must_use]
     pub fn requires_freerdp_fallback(&self) -> bool {
+        // RemoteApp requires RAIL protocol — not supported by IronRDP
+        if self.is_remote_app() {
+            return true;
+        }
         // Security layer incompatible with IronRDP
         if self.security_layer.requires_freerdp() {
             return true;
@@ -1480,6 +1499,28 @@ impl RdpConfig {
             return true;
         }
         false
+    }
+
+    /// Returns whether this is a RemoteApp session.
+    #[must_use]
+    pub fn is_remote_app(&self) -> bool {
+        self.remote_app_program
+            .as_ref()
+            .is_some_and(|p| !p.is_empty())
+    }
+
+    /// Builds FreeRDP command-line arguments for RemoteApp (RAIL) mode.
+    ///
+    /// Returns an empty `Vec` if no RemoteApp program is configured.
+    /// The returned args use FreeRDP 3.x syntax: `/app:`, `/app-cmd:`, `/app-name:`.
+    /// Values containing spaces are quoted for correct FreeRDP parsing.
+    #[must_use]
+    pub fn remote_app_freerdp_args(&self) -> Vec<String> {
+        build_remote_app_freerdp_args(
+            self.remote_app_program.as_deref(),
+            self.remote_app_args.as_deref(),
+            self.remote_app_name.as_deref(),
+        )
     }
 }
 
@@ -2454,6 +2495,48 @@ impl Default for KubernetesConfig {
             busybox_image: default_busybox_image(),
             custom_args: Vec::new(),
         }
+    }
+}
+
+/// Builds FreeRDP command-line arguments for RemoteApp (RAIL) mode.
+///
+/// This is a shared implementation used by both `rustconn_core::models::RdpConfig`
+/// and `rustconn::embedded_rdp::types::RdpConfig` to avoid code duplication.
+///
+/// Returns an empty `Vec` if `program` is `None` or empty.
+/// The returned args use FreeRDP 3.x syntax: `/app:`, `/app-cmd:`, `/app-name:`.
+/// Values containing spaces are quoted for correct FreeRDP parsing.
+#[must_use]
+pub fn build_remote_app_freerdp_args(
+    program: Option<&str>,
+    cmd_args: Option<&str>,
+    name: Option<&str>,
+) -> Vec<String> {
+    let mut args = Vec::new();
+    if let Some(program) = program
+        && !program.is_empty()
+    {
+        args.push(format_freerdp_app_arg("/app:", program));
+        if let Some(cmd_args) = cmd_args
+            && !cmd_args.is_empty()
+        {
+            args.push(format_freerdp_app_arg("/app-cmd:", cmd_args));
+        }
+        if let Some(name) = name
+            && !name.is_empty()
+        {
+            args.push(format_freerdp_app_arg("/app-name:", name));
+        }
+    }
+    args
+}
+
+/// Formats a FreeRDP `/app*:` argument, quoting the value if it contains spaces.
+fn format_freerdp_app_arg(prefix: &str, value: &str) -> String {
+    if value.contains(' ') {
+        format!("{prefix}\"{value}\"")
+    } else {
+        format!("{prefix}{value}")
     }
 }
 

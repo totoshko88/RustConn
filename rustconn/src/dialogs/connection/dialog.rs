@@ -189,6 +189,9 @@ pub struct ConnectionDialog {
     rdp_shared_folders_list: gtk4::ListBox,
     rdp_custom_args_entry: Entry,
     rdp_keyboard_layout_dropdown: DropDown,
+    rdp_remote_app_program_entry: Entry,
+    rdp_remote_app_args_entry: Entry,
+    rdp_remote_app_name_entry: Entry,
     // VNC fields
     vnc_client_mode_dropdown: DropDown,
     vnc_performance_mode_dropdown: DropDown,
@@ -554,6 +557,9 @@ impl ConnectionDialog {
             rdp_shared_folders_list,
             rdp_custom_args_entry,
             rdp_keyboard_layout_dropdown,
+            rdp_remote_app_program_entry,
+            rdp_remote_app_args_entry,
+            rdp_remote_app_name_entry,
         ) = super::rdp::create_rdp_options();
         protocol_stack.add_named(&rdp_box, Some("rdp"));
 
@@ -877,6 +883,9 @@ impl ConnectionDialog {
             &rdp_shared_folders,
             &rdp_custom_args_entry,
             &rdp_keyboard_layout_dropdown,
+            &rdp_remote_app_program_entry,
+            &rdp_remote_app_args_entry,
+            &rdp_remote_app_name_entry,
             &vnc_client_mode_dropdown,
             &vnc_performance_mode_dropdown,
             &vnc_encoding_dropdown,
@@ -1067,6 +1076,9 @@ impl ConnectionDialog {
             rdp_shared_folders_list,
             rdp_custom_args_entry,
             rdp_keyboard_layout_dropdown,
+            rdp_remote_app_program_entry,
+            rdp_remote_app_args_entry,
+            rdp_remote_app_name_entry,
             vnc_client_mode_dropdown,
             vnc_performance_mode_dropdown,
             vnc_encoding_dropdown,
@@ -1947,6 +1959,9 @@ impl ConnectionDialog {
         rdp_shared_folders: &Rc<RefCell<Vec<SharedFolder>>>,
         rdp_custom_args_entry: &Entry,
         rdp_keyboard_layout_dropdown: &DropDown,
+        rdp_remote_app_program_entry: &Entry,
+        rdp_remote_app_args_entry: &Entry,
+        rdp_remote_app_name_entry: &Entry,
         vnc_client_mode_dropdown: &DropDown,
         vnc_performance_mode_dropdown: &DropDown,
         vnc_encoding_dropdown: &DropDown,
@@ -2118,6 +2133,9 @@ impl ConnectionDialog {
         let rdp_shared_folders = rdp_shared_folders.clone();
         let rdp_custom_args_entry = rdp_custom_args_entry.clone();
         let rdp_keyboard_layout_dropdown = rdp_keyboard_layout_dropdown.clone();
+        let rdp_remote_app_program_entry = rdp_remote_app_program_entry.clone();
+        let rdp_remote_app_args_entry = rdp_remote_app_args_entry.clone();
+        let rdp_remote_app_name_entry = rdp_remote_app_name_entry.clone();
         let rdp_performance_mode_dropdown = rdp_performance_mode_dropdown.clone();
         let vnc_client_mode_dropdown = vnc_client_mode_dropdown.clone();
         let vnc_encoding_dropdown = vnc_encoding_dropdown.clone();
@@ -2303,6 +2321,9 @@ impl ConnectionDialog {
                 rdp_shared_folders: &rdp_shared_folders,
                 rdp_custom_args_entry: &rdp_custom_args_entry,
                 rdp_keyboard_layout_dropdown: &rdp_keyboard_layout_dropdown,
+                rdp_remote_app_program_entry: &rdp_remote_app_program_entry,
+                rdp_remote_app_args_entry: &rdp_remote_app_args_entry,
+                rdp_remote_app_name_entry: &rdp_remote_app_name_entry,
                 vnc_client_mode_dropdown: &vnc_client_mode_dropdown,
                 vnc_encoding_dropdown: &vnc_encoding_dropdown,
                 vnc_compression_spin: &vnc_compression_spin,
@@ -4602,6 +4623,17 @@ impl ConnectionDialog {
                 .set_text(&rdp.custom_args.join(" "));
         }
 
+        // Set RemoteApp fields
+        if let Some(ref program) = rdp.remote_app_program {
+            self.rdp_remote_app_program_entry.set_text(program);
+        }
+        if let Some(ref args) = rdp.remote_app_args {
+            self.rdp_remote_app_args_entry.set_text(args);
+        }
+        if let Some(ref name) = rdp.remote_app_name {
+            self.rdp_remote_app_name_entry.set_text(name);
+        }
+
         // Set keyboard layout dropdown
         if let Some(klid) = rdp.keyboard_layout {
             let index = klid_to_dropdown_index(klid);
@@ -5799,6 +5831,9 @@ struct ConnectionDialogData<'a> {
     rdp_shared_folders: &'a Rc<RefCell<Vec<SharedFolder>>>,
     rdp_custom_args_entry: &'a Entry,
     rdp_keyboard_layout_dropdown: &'a DropDown,
+    rdp_remote_app_program_entry: &'a Entry,
+    rdp_remote_app_args_entry: &'a Entry,
+    rdp_remote_app_name_entry: &'a Entry,
     vnc_client_mode_dropdown: &'a DropDown,
     vnc_performance_mode_dropdown: &'a DropDown,
     vnc_encoding_dropdown: &'a DropDown,
@@ -6914,6 +6949,30 @@ impl ConnectionDialogData<'_> {
             autotype_delay_ms: self.rdp_autotype_delay_spin.value() as u32,
             autotype_initial_delay_ms: self.rdp_autotype_initial_delay_spin.value() as u32,
             reconnect_on_resize: self.rdp_reconnect_on_resize_check.is_active(),
+            remote_app_program: {
+                let text = self.rdp_remote_app_program_entry.text();
+                if text.trim().is_empty() {
+                    None
+                } else {
+                    Some(text.trim().to_string())
+                }
+            },
+            remote_app_args: {
+                let text = self.rdp_remote_app_args_entry.text();
+                if text.trim().is_empty() {
+                    None
+                } else {
+                    Some(text.trim().to_string())
+                }
+            },
+            remote_app_name: {
+                let text = self.rdp_remote_app_name_entry.text();
+                if text.trim().is_empty() {
+                    None
+                } else {
+                    Some(text.trim().to_string())
+                }
+            },
         }
     }
 

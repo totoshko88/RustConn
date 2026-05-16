@@ -16,7 +16,7 @@ mod password;
 mod password_generator;
 mod progress;
 pub mod recording;
-mod settings;
+pub(crate) mod settings;
 mod shortcuts;
 mod smart_folder;
 mod snippet;

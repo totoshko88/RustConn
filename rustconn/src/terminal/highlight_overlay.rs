@@ -15,6 +15,15 @@
 //!    `terminal.text_range_format()`, runs [`CompiledHighlightRules::find_matches`]
 //!    per line, and draws colored rectangles (background) and underlines
 //!    (foreground) using Cairo.
+//!
+//! ## Limitations
+//!
+//! - Lines that contain only whitespace are skipped to prevent stale highlights
+//!   after `clear` (issue #154). This means highlight rules that intentionally
+//!   match whitespace-only patterns will not render on the overlay.
+//! - Wide characters (CJK) occupy 2 terminal columns but `chars().count()`
+//!   treats them as 1 character, so highlight positions may be slightly off
+//!   for lines containing wide characters.
 
 use gtk4::prelude::*;
 use gtk4::{DrawingArea, Overlay};
@@ -121,7 +130,11 @@ impl HighlightOverlay {
                         continue;
                     };
                     let line = line_gstr.as_str();
-                    if line.is_empty() {
+                    // Use trim() to skip lines that contain only whitespace —
+                    // after `clear`, VTE may return space-filled lines from the
+                    // erased display area that would otherwise produce stale
+                    // highlight matches (see issue #154).
+                    if line.trim().is_empty() {
                         continue;
                     }
 
@@ -166,11 +179,19 @@ impl HighlightOverlay {
                 }
             });
 
-        // Throttled redraw on contents-changed — avoid excessive Cairo
-        // rendering during fast terminal output (e.g. `cat /dev/urandom`).
-        // Uses a 32ms (~30fps) idle-based throttle: the first event queues
-        // a draw, subsequent events within the window are coalesced.
-        let da_for_signal = da;
+        // Redraw on contents-changed using idle callback.
+        //
+        // Previous implementation used a 32ms timeout throttle which caused
+        // stale highlights to linger after `clear` (issue #154): VTE repaints
+        // itself immediately but the overlay redraw was deferred, leaving
+        // ghost underlines visible until the next contents-changed.
+        //
+        // `idle_add_local_once` schedules the redraw in the same main-loop
+        // iteration — after VTE finishes processing the current input batch
+        // but before the next frame is composited.  Coalescing is still
+        // effective: rapid signals within one iteration share a single
+        // pending flag, so only one `queue_draw()` fires per frame.
+        let da_weak = da.downgrade();
         let redraw_pending = Rc::new(std::cell::Cell::new(false));
         let redraw_pending_signal = redraw_pending.clone();
         terminal.connect_contents_changed(move |_| {
@@ -178,11 +199,13 @@ impl HighlightOverlay {
                 return; // Already scheduled
             }
             redraw_pending_signal.set(true);
-            let da_idle = da_for_signal.clone();
+            let da_weak_idle = da_weak.clone();
             let pending = redraw_pending_signal.clone();
-            gtk4::glib::timeout_add_local_once(std::time::Duration::from_millis(32), move || {
+            gtk4::glib::idle_add_local_once(move || {
                 pending.set(false);
-                da_idle.queue_draw();
+                if let Some(da_ref) = da_weak_idle.upgrade() {
+                    da_ref.queue_draw();
+                }
             });
         });
     }
@@ -198,5 +221,46 @@ impl HighlightOverlay {
     #[allow(dead_code)]
     pub fn queue_redraw(&self) {
         self.drawing_area.queue_draw();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_hex_color_valid_colors() {
+        assert_eq!(parse_hex_color("#FF0000"), Some((1.0, 0.0, 0.0)));
+        assert_eq!(parse_hex_color("#00FF00"), Some((0.0, 1.0, 0.0)));
+        assert_eq!(parse_hex_color("#0000FF"), Some((0.0, 0.0, 1.0)));
+        assert_eq!(parse_hex_color("#000000"), Some((0.0, 0.0, 0.0)));
+        assert_eq!(parse_hex_color("#FFFFFF"), Some((1.0, 1.0, 1.0)));
+    }
+
+    #[test]
+    fn parse_hex_color_mixed_case() {
+        let (r, g, b) = parse_hex_color("#aaBBcc").unwrap();
+        let expected_r = f64::from(0xAA) / 255.0;
+        let expected_g = f64::from(0xBB) / 255.0;
+        let expected_b = f64::from(0xCC) / 255.0;
+        assert!((r - expected_r).abs() < f64::EPSILON);
+        assert!((g - expected_g).abs() < f64::EPSILON);
+        assert!((b - expected_b).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn parse_hex_color_invalid_inputs() {
+        // Missing hash
+        assert_eq!(parse_hex_color("FF0000"), None);
+        // Too short
+        assert_eq!(parse_hex_color("#FFF"), None);
+        // Too long
+        assert_eq!(parse_hex_color("#FF000000"), None);
+        // Invalid hex chars
+        assert_eq!(parse_hex_color("#GGHHII"), None);
+        // Empty
+        assert_eq!(parse_hex_color(""), None);
+        // Only hash
+        assert_eq!(parse_hex_color("#"), None);
     }
 }

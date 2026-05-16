@@ -89,9 +89,13 @@ impl super::EmbeddedRdpWidget {
         // This is determined at compile time via the rdp-embedded feature flag
         if Self::is_ironrdp_available() {
             // Skip IronRDP if security settings require FreeRDP
-            // (RDP Security Layer, TLS-only, or low TLS security level)
+            // (RDP Security Layer, TLS-only, low TLS security level, or RemoteApp)
             let force_freerdp = config.security_layer.requires_freerdp()
-                || config.tls_security_level.is_some_and(|l| l < 2);
+                || config.tls_security_level.is_some_and(|l| l < 2)
+                || config
+                    .remote_app_program
+                    .as_ref()
+                    .is_some_and(|p| !p.is_empty());
 
             if force_freerdp {
                 let reason = format!(

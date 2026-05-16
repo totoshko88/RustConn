@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.13.16
+Version:        0.13.17
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -238,6 +238,15 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Fri May 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.17-1
+- Update to version 0.13.17
+- [Fixed] Cloud Sync in Flatpak — detect XDG Document Portal paths when
+  selecting sync directory; show a warning dialog with flatpak override
+  command instead of silently saving an unusable portal path (#152)
+- [Fixed] Highlight overlay not cleared by clear command — colored underlines
+  and background highlights now disappear immediately when the terminal screen
+  is erased (#154)
+
 * Thu May 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.16-0
 - Update to version 0.13.16
 - [Added] macOS port — native PTY, tray icon, Keychain backend, Homebrew formula, DMG packaging
