@@ -1997,39 +1997,39 @@ msgstr "Odstrániť"
 
 #: rustconn/src/dialogs/connection/rdp.rs:536
 msgid "RemoteApp"
-msgstr ""
+msgstr "RemoteApp"
 
 #: rustconn/src/dialogs/connection/rdp.rs:538
 msgid "Launch a single application instead of full desktop (requires FreeRDP)"
-msgstr ""
+msgstr "Spustiť jednu aplikáciu namiesto celej pracovnej plochy (vyžaduje FreeRDP)"
 
 #: rustconn/src/dialogs/connection/rdp.rs:544
 msgid "||notepad or C:\\Program Files\\app.exe"
-msgstr ""
+msgstr "||notepad alebo C:\\Program Files\\app.exe"
 
 #: rustconn/src/dialogs/connection/rdp.rs:548
 msgid "Program"
-msgstr ""
+msgstr "Program"
 
 #: rustconn/src/dialogs/connection/rdp.rs:549
 msgid "Application alias (||name) or full path"
-msgstr ""
+msgstr "Alias aplikácie (||názov) alebo úplná cesta"
 
 #: rustconn/src/dialogs/connection/rdp.rs:556
 msgid "Command-line arguments"
-msgstr ""
+msgstr "Argumenty príkazového riadka"
 
 #: rustconn/src/dialogs/connection/rdp.rs:560
 msgid "Arguments"
-msgstr ""
+msgstr "Argumenty"
 
 #: rustconn/src/dialogs/connection/rdp.rs:561
 msgid "Arguments passed to the remote application"
-msgstr ""
+msgstr "Argumenty odovzdané vzdialenej aplikácii"
 
 #: rustconn/src/dialogs/connection/rdp.rs:568
 msgid "Display name (optional)"
-msgstr ""
+msgstr "Zobrazovaný názov (voliteľné)"
 
 #: rustconn/src/dialogs/connection/rdp.rs:572
 #: rustconn/src/dialogs/recording.rs:513
@@ -2038,16 +2038,17 @@ msgstr "Zobrazovaný názov"
 
 #: rustconn/src/dialogs/connection/rdp.rs:573
 msgid "Shown in taskbar and window title"
-msgstr ""
+msgstr "Zobrazené na paneli úloh a v záhlaví okna"
 
 #: rustconn/src/dialogs/connection/rdp.rs:586
 msgid "⚠ FreeRDP not found"
-msgstr ""
+msgstr "⚠ FreeRDP sa nenašiel"
 
 #: rustconn/src/dialogs/connection/rdp.rs:588
 msgid ""
 "RemoteApp requires FreeRDP. Install sdl-freerdp3, xfreerdp, or wlfreerdp."
 msgstr ""
+"RemoteApp vyžaduje FreeRDP. Nainštalujte sdl-freerdp3, xfreerdp alebo wlfreerdp."
 
 #: rustconn/src/dialogs/connection/rdp.rs:613
 msgid "Auto (detect)"
@@ -4444,14 +4445,24 @@ msgid ""
 "Adjust the path if needed to match the actual location on your filesystem. "
 "Then restart RustConn and set the sync directory again."
 msgstr ""
+"Sandbox Flatpak nemôže priamo pristupovať k tomuto adresáru. Monitorovanie "
+"súborov nebude fungovať cez portál dokumentov.\n"
+"\n"
+"Pre udelenie prístupu spustite v termináli:\n"
+"\n"
+"flatpak override --user --filesystem={} {}\n"
+"\n"
+"V prípade potreby upravte cestu tak, aby zodpovedala skutočnému umiestneniu "
+"vo vašom súborovom systéme. Potom reštartujte RustConn a znova nastavte "
+"adresár synchronizácie."
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:235
 msgid "Flatpak: filesystem access required"
-msgstr ""
+msgstr "Flatpak: vyžadovaný prístup k súborovému systému"
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:243
 msgid "Copy Command"
-msgstr ""
+msgstr "Kopírovať príkaz"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:26
 msgid "Keybindings"
@@ -5527,7 +5538,7 @@ msgstr "Otvoriť SFTP v Midnight Commander (karta lokálneho shellu)"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:395
 msgid "⚠ External file managers cannot access SSH agent in Flatpak sandbox"
-msgstr ""
+msgstr "⚠ Externé správcovia súborov nemajú prístup k agentovi SSH v sandboxe Flatpak"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:406
 msgid "Copy on select"
@@ -8023,6 +8034,9 @@ msgid ""
 "Flatpak.                              Enable \"SFTP via mc\" in Settings for "
 "reliable access."
 msgstr ""
+"Externé správcovia súborov nemajú prístup k agentovi SSH vo "
+"Flatpak.                              Povoľte \"SFTP cez mc\" v Nastaveniach pre "
+"spoľahlivý prístup."
 
 #: rustconn/src/window/edit_dialogs.rs:209
 msgid "Error Updating Connection"

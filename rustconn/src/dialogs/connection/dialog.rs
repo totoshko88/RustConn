@@ -288,6 +288,9 @@ pub struct ConnectionDialog {
     k8s_busybox_check: CheckButton,
     k8s_busybox_image_entry: Entry,
     k8s_custom_args_entry: Entry,
+    // Web fields
+    web_browser_entry: Entry,
+    web_private_mode_switch: adw::SwitchRow,
     // Variables fields
     variables_list: ListBox,
     variables_rows: Rc<RefCell<Vec<LocalVariableRow>>>,
@@ -671,20 +674,9 @@ impl ConnectionDialog {
         ) = super::kubernetes::create_kubernetes_options();
         protocol_stack.add_named(&k8s_box, Some("kubernetes"));
 
-        // Web bookmark — minimal options page (URL goes in host field)
-        let web_box = gtk4::Box::new(gtk4::Orientation::Vertical, 12);
-        web_box.set_margin_top(12);
-        web_box.set_margin_bottom(12);
-        web_box.set_margin_start(12);
-        web_box.set_margin_end(12);
-        let web_info = adw::StatusPage::builder()
-            .icon_name("web-browser-symbolic")
-            .title(crate::i18n::i18n("Web Bookmark"))
-            .description(crate::i18n::i18n(
-                "Opens URL in the default browser. Credentials are stored for copy-to-clipboard.",
-            ))
-            .build();
-        web_box.append(&web_info);
+        // Web bookmark options page
+        let (web_box, web_browser_entry, web_private_mode_switch) =
+            super::web::create_web_options();
         protocol_stack.add_named(&web_box, Some("web"));
 
         // MOSH now uses SSH tab with additional MOSH settings group
@@ -976,6 +968,8 @@ impl ConnectionDialog {
             &mosh_port_range_entry,
             &mosh_predict_dropdown,
             &mosh_server_binary_entry,
+            &web_browser_entry,
+            &web_private_mode_switch,
             &variables_rows,
             &logging_tab_struct,
             &expect_rules,
@@ -1174,6 +1168,8 @@ impl ConnectionDialog {
             k8s_busybox_check,
             k8s_busybox_image_entry,
             k8s_custom_args_entry,
+            web_browser_entry,
+            web_private_mode_switch,
             mosh_port_range_entry,
             mosh_predict_dropdown,
             mosh_server_binary_entry,
@@ -2072,6 +2068,8 @@ impl ConnectionDialog {
         mosh_port_range_entry: &Entry,
         mosh_predict_dropdown: &DropDown,
         mosh_server_binary_entry: &Entry,
+        web_browser_entry: &Entry,
+        web_private_mode_switch: &adw::SwitchRow,
         variables_rows: &Rc<RefCell<Vec<LocalVariableRow>>>,
         logging_tab: &logging_tab::LoggingTab,
         expect_rules: &Rc<RefCell<Vec<ExpectRule>>>,
@@ -2247,6 +2245,8 @@ impl ConnectionDialog {
         let mosh_port_range_entry = mosh_port_range_entry.clone();
         let mosh_predict_dropdown = mosh_predict_dropdown.clone();
         let mosh_server_binary_entry = mosh_server_binary_entry.clone();
+        let web_browser_entry = web_browser_entry.clone();
+        let web_private_mode_switch = web_private_mode_switch.clone();
         let variables_rows = variables_rows.clone();
         let logging_enabled_check = logging_tab.enabled_check.clone();
         let logging_path_entry = logging_tab.path_entry.clone();
@@ -2433,6 +2433,8 @@ impl ConnectionDialog {
                 mosh_port_range_entry: &mosh_port_range_entry,
                 mosh_predict_dropdown: &mosh_predict_dropdown,
                 mosh_server_binary_entry: &mosh_server_binary_entry,
+                web_browser_entry: &web_browser_entry,
+                web_private_mode_switch: &web_private_mode_switch,
                 local_variables: &local_variables,
                 logging_tab: &logging_tab::LoggingTab {
                     enabled_check: logging_enabled_check.clone(),
@@ -3791,9 +3793,10 @@ impl ConnectionDialog {
                 // MOSH uses SSH tab — protocol dropdown handler shows mosh_settings_group
                 self.set_mosh_config(mosh_config);
             }
-            ProtocolConfig::Web(_) => {
+            ProtocolConfig::Web(web_config) => {
                 self.protocol_dropdown.set_selected(10); // Web
                 self.protocol_stack.set_visible_child_name("web");
+                self.set_web_config(web_config);
             }
         }
 
@@ -4954,6 +4957,13 @@ impl ConnectionDialog {
         }
     }
 
+    fn set_web_config(&self, web: &rustconn_core::models::WebConfig) {
+        if let Some(ref browser) = web.browser {
+            self.web_browser_entry.set_text(browser);
+        }
+        self.web_private_mode_switch.set_active(web.private_mode);
+    }
+
     /// Runs the dialog and calls the callback with the result
     pub fn run<F: Fn(Option<super::ConnectionDialogResult>) + 'static>(&self, cb: F) {
         // Store callback - the save button handler was connected in the constructor
@@ -5953,6 +5963,9 @@ struct ConnectionDialogData<'a> {
     mosh_port_range_entry: &'a Entry,
     mosh_predict_dropdown: &'a DropDown,
     mosh_server_binary_entry: &'a Entry,
+    // Web fields
+    web_browser_entry: &'a Entry,
+    web_private_mode_switch: &'a adw::SwitchRow,
     local_variables: &'a HashMap<String, Variable>,
     logging_tab: &'a logging_tab::LoggingTab,
     expect_rules: &'a Vec<ExpectRule>,
@@ -6442,9 +6455,7 @@ impl ConnectionDialogData<'_> {
             7 => Some(ProtocolConfig::Sftp(self.build_ssh_config())),
             8 => Some(ProtocolConfig::Kubernetes(self.build_kubernetes_config())),
             9 => Some(ProtocolConfig::Mosh(self.build_mosh_config())),
-            10 => Some(ProtocolConfig::Web(
-                rustconn_core::models::WebConfig::default(),
-            )),
+            10 => Some(ProtocolConfig::Web(self.build_web_config())),
             _ => None,
         }
     }
@@ -6764,6 +6775,21 @@ impl ConnectionDialogData<'_> {
             server_binary,
             predict_mode,
             custom_args: Vec::new(),
+        }
+    }
+
+    fn build_web_config(&self) -> rustconn_core::models::WebConfig {
+        let browser = {
+            let text = self.web_browser_entry.text();
+            if text.trim().is_empty() {
+                None
+            } else {
+                Some(text.trim().to_string())
+            }
+        };
+        rustconn_core::models::WebConfig {
+            browser,
+            private_mode: self.web_private_mode_switch.is_active(),
         }
     }
 

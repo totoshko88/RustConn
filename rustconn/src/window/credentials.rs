@@ -72,6 +72,15 @@ impl MainWindow {
             return;
         }
 
+        // Web bookmarks open in the default browser — we don't pass credentials
+        // to the browser, so vault resolution is unnecessary overhead (~3s for
+        // KeePassXC). Credentials are resolved on-demand via Copy Password.
+        if protocol_type == rustconn_core::models::ProtocolType::Web {
+            drop(busy_guard);
+            Self::handle_web_connect(&state, &sidebar, connection_id);
+            return;
+        }
+
         // Skip async credential resolution for connections that don't use
         // vault passwords (None = SSH key / no password, Prompt = ask user).
         // This avoids ~12s of sequential Bitwarden CLI calls for connections

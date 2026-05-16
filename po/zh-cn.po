@@ -1973,39 +1973,39 @@ msgstr "移除"
 
 #: rustconn/src/dialogs/connection/rdp.rs:536
 msgid "RemoteApp"
-msgstr ""
+msgstr "RemoteApp"
 
 #: rustconn/src/dialogs/connection/rdp.rs:538
 msgid "Launch a single application instead of full desktop (requires FreeRDP)"
-msgstr ""
+msgstr "启动单个应用程序而非完整桌面（需要 FreeRDP）"
 
 #: rustconn/src/dialogs/connection/rdp.rs:544
 msgid "||notepad or C:\\Program Files\\app.exe"
-msgstr ""
+msgstr "||notepad 或 C:\\Program Files\\app.exe"
 
 #: rustconn/src/dialogs/connection/rdp.rs:548
 msgid "Program"
-msgstr ""
+msgstr "程序"
 
 #: rustconn/src/dialogs/connection/rdp.rs:549
 msgid "Application alias (||name) or full path"
-msgstr ""
+msgstr "应用程序别名（||名称）或完整路径"
 
 #: rustconn/src/dialogs/connection/rdp.rs:556
 msgid "Command-line arguments"
-msgstr ""
+msgstr "命令行参数"
 
 #: rustconn/src/dialogs/connection/rdp.rs:560
 msgid "Arguments"
-msgstr ""
+msgstr "参数"
 
 #: rustconn/src/dialogs/connection/rdp.rs:561
 msgid "Arguments passed to the remote application"
-msgstr ""
+msgstr "传递给远程应用程序的参数"
 
 #: rustconn/src/dialogs/connection/rdp.rs:568
 msgid "Display name (optional)"
-msgstr ""
+msgstr "显示名称（可选）"
 
 #: rustconn/src/dialogs/connection/rdp.rs:572
 #: rustconn/src/dialogs/recording.rs:513
@@ -2014,16 +2014,17 @@ msgstr "显示名称"
 
 #: rustconn/src/dialogs/connection/rdp.rs:573
 msgid "Shown in taskbar and window title"
-msgstr ""
+msgstr "显示在任务栏和窗口标题中"
 
 #: rustconn/src/dialogs/connection/rdp.rs:586
 msgid "⚠ FreeRDP not found"
-msgstr ""
+msgstr "⚠ 未找到 FreeRDP"
 
 #: rustconn/src/dialogs/connection/rdp.rs:588
 msgid ""
 "RemoteApp requires FreeRDP. Install sdl-freerdp3, xfreerdp, or wlfreerdp."
 msgstr ""
+"RemoteApp 需要 FreeRDP。请安装 sdl-freerdp3、xfreerdp 或 wlfreerdp。"
 
 #: rustconn/src/dialogs/connection/rdp.rs:613
 msgid "Auto (detect)"
@@ -4402,14 +4403,22 @@ msgid ""
 "Adjust the path if needed to match the actual location on your filesystem. "
 "Then restart RustConn and set the sync directory again."
 msgstr ""
+"Flatpak 沙箱无法直接访问此目录。文件监控将无法通过文档门户工作。\n"
+"\n"
+"要授予访问权限，请在终端中运行：\n"
+"\n"
+"flatpak override --user --filesystem={} {}\n"
+"\n"
+"如有需要，请调整路径以匹配文件系统中的实际位置。然后重新启动 RustConn "
+"并重新设置同步目录。"
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:235
 msgid "Flatpak: filesystem access required"
-msgstr ""
+msgstr "Flatpak：需要文件系统访问权限"
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:243
 msgid "Copy Command"
-msgstr ""
+msgstr "复制命令"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:26
 msgid "Keybindings"
@@ -5475,7 +5484,7 @@ msgstr "在 Midnight Commander 中打开 SFTP（本地 shell 标签页）"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:395
 msgid "⚠ External file managers cannot access SSH agent in Flatpak sandbox"
-msgstr ""
+msgstr "⚠ 外部文件管理器无法访问 Flatpak 沙箱中的 SSH 代理"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:406
 msgid "Copy on select"
@@ -7954,6 +7963,8 @@ msgid ""
 "Flatpak.                              Enable \"SFTP via mc\" in Settings for "
 "reliable access."
 msgstr ""
+"外部文件管理器无法访问 Flatpak 中的 SSH "
+"代理。                              请在设置中启用\"通过 mc 使用 SFTP\"以获得可靠访问。"
 
 #: rustconn/src/window/edit_dialogs.rs:209
 msgid "Error Updating Connection"

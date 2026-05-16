@@ -2006,39 +2006,39 @@ msgstr "Rimuovi"
 
 #: rustconn/src/dialogs/connection/rdp.rs:536
 msgid "RemoteApp"
-msgstr ""
+msgstr "RemoteApp"
 
 #: rustconn/src/dialogs/connection/rdp.rs:538
 msgid "Launch a single application instead of full desktop (requires FreeRDP)"
-msgstr ""
+msgstr "Avvia una singola applicazione invece del desktop completo (richiede FreeRDP)"
 
 #: rustconn/src/dialogs/connection/rdp.rs:544
 msgid "||notepad or C:\\Program Files\\app.exe"
-msgstr ""
+msgstr "||notepad o C:\\Program Files\\app.exe"
 
 #: rustconn/src/dialogs/connection/rdp.rs:548
 msgid "Program"
-msgstr ""
+msgstr "Programma"
 
 #: rustconn/src/dialogs/connection/rdp.rs:549
 msgid "Application alias (||name) or full path"
-msgstr ""
+msgstr "Alias dell'applicazione (||nome) o percorso completo"
 
 #: rustconn/src/dialogs/connection/rdp.rs:556
 msgid "Command-line arguments"
-msgstr ""
+msgstr "Argomenti della riga di comando"
 
 #: rustconn/src/dialogs/connection/rdp.rs:560
 msgid "Arguments"
-msgstr ""
+msgstr "Argomenti"
 
 #: rustconn/src/dialogs/connection/rdp.rs:561
 msgid "Arguments passed to the remote application"
-msgstr ""
+msgstr "Argomenti passati all'applicazione remota"
 
 #: rustconn/src/dialogs/connection/rdp.rs:568
 msgid "Display name (optional)"
-msgstr ""
+msgstr "Nome visualizzato (facoltativo)"
 
 #: rustconn/src/dialogs/connection/rdp.rs:572
 #: rustconn/src/dialogs/recording.rs:513
@@ -2047,16 +2047,17 @@ msgstr "Nome visualizzato"
 
 #: rustconn/src/dialogs/connection/rdp.rs:573
 msgid "Shown in taskbar and window title"
-msgstr ""
+msgstr "Mostrato nella barra delle applicazioni e nel titolo della finestra"
 
 #: rustconn/src/dialogs/connection/rdp.rs:586
 msgid "⚠ FreeRDP not found"
-msgstr ""
+msgstr "⚠ FreeRDP non trovato"
 
 #: rustconn/src/dialogs/connection/rdp.rs:588
 msgid ""
 "RemoteApp requires FreeRDP. Install sdl-freerdp3, xfreerdp, or wlfreerdp."
 msgstr ""
+"RemoteApp richiede FreeRDP. Installare sdl-freerdp3, xfreerdp o wlfreerdp."
 
 #: rustconn/src/dialogs/connection/rdp.rs:613
 msgid "Auto (detect)"
@@ -4448,14 +4449,24 @@ msgid ""
 "Adjust the path if needed to match the actual location on your filesystem. "
 "Then restart RustConn and set the sync directory again."
 msgstr ""
+"La sandbox di Flatpak non può accedere direttamente a questa directory. Il "
+"monitoraggio dei file non funzionerà tramite il portale dei documenti.\n"
+"\n"
+"Per concedere l'accesso, eseguire in un terminale:\n"
+"\n"
+"flatpak override --user --filesystem={} {}\n"
+"\n"
+"Modificare il percorso se necessario per corrispondere alla posizione "
+"effettiva sul filesystem. Quindi riavviare RustConn e impostare nuovamente "
+"la directory di sincronizzazione."
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:235
 msgid "Flatpak: filesystem access required"
-msgstr ""
+msgstr "Flatpak: accesso al filesystem richiesto"
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:243
 msgid "Copy Command"
-msgstr ""
+msgstr "Copia comando"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:26
 msgid "Keybindings"
@@ -5531,7 +5542,7 @@ msgstr "Apri SFTP in Midnight Commander (scheda shell locale)"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:395
 msgid "⚠ External file managers cannot access SSH agent in Flatpak sandbox"
-msgstr ""
+msgstr "⚠ I gestori di file esterni non possono accedere all'agente SSH nella sandbox di Flatpak"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:406
 msgid "Copy on select"
@@ -8030,6 +8041,9 @@ msgid ""
 "Flatpak.                              Enable \"SFTP via mc\" in Settings for "
 "reliable access."
 msgstr ""
+"I gestori di file esterni non possono accedere all'agente SSH in "
+"Flatpak.                              Abilitare «SFTP via mc» nelle "
+"Impostazioni per un accesso affidabile."
 
 #: rustconn/src/window/edit_dialogs.rs:209
 msgid "Error Updating Connection"
