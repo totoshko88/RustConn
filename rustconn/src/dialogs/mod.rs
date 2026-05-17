@@ -5,6 +5,7 @@ mod backend_missing;
 mod cluster;
 mod command_palette;
 mod connection;
+pub mod connection_wizard;
 mod document;
 mod export;
 mod flatpak_components;
@@ -36,6 +37,7 @@ pub use cluster::{ClusterCallback, ClusterDialog, ClusterListDialog};
 pub use command_palette::CommandPaletteDialog;
 pub use command_palette::OpenTabInfo;
 pub use connection::ConnectionDialog;
+pub use connection_wizard::{ConnectionWizard, PartialConnection, WizardResult};
 pub use document::{
     CloseDocumentDialog, DocumentCallback, DocumentDialogResult, DocumentProtectionDialog,
     NewDocumentDialog, OpenDocumentDialog, SaveDocumentDialog,

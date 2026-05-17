@@ -149,6 +149,10 @@ pub fn create_app_menu() -> gio::Menu {
     // Connections section
     let conn_section = gio::Menu::new();
     conn_section.append(Some(&i18n("New Connection")), Some("win.new-connection"));
+    conn_section.append(
+        Some(&i18n("New Connection (Advanced)\u{2026}")),
+        Some("win.new-connection-advanced"),
+    );
     conn_section.append(Some(&i18n("New Group")), Some("win.new-group"));
     conn_section.append(Some(&i18n("Quick Connect")), Some("win.quick-connect"));
     conn_section.append(Some(&i18n("Local Shell")), Some("win.local-shell"));

@@ -31,6 +31,12 @@ const SHORTCUTS: &[ShortcutEntry] = &[
     ShortcutEntry {
         accel: "<Control><Shift>n",
         keys: "Ctrl+Shift+N",
+        description: "New connection (advanced)",
+        category: "Connections",
+    },
+    ShortcutEntry {
+        accel: "<Control><Shift>g",
+        keys: "Ctrl+Shift+G",
         description: "New group",
         category: "Connections",
     },
@@ -557,6 +563,7 @@ fn _i18n_markers() {
     i18n("Application");
     // Shortcut descriptions
     i18n("New connection");
+    i18n("New connection (advanced)");
     i18n("New group");
     i18n("Quick connect");
     i18n("Import connections");

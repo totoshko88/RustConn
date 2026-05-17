@@ -41,6 +41,19 @@ pub fn show_new_connection_dialog_in_group(
     show_new_connection_dialog_internal(window, state, sidebar, None, Some(group_id));
 }
 
+/// Shows the new connection dialog pre-filled with data from a `Connection`.
+///
+/// Used by the Connection Wizard "Advanced..." button to transfer partial data
+/// into the full editor.
+pub fn show_new_connection_dialog_prefilled(
+    window: &gtk4::Window,
+    state: SharedAppState,
+    sidebar: SharedSidebar,
+    connection: rustconn_core::models::Connection,
+) {
+    show_new_connection_dialog_internal_prefilled(window, state, sidebar, connection);
+}
+
 /// Internal function to show the new connection dialog with optional template
 #[allow(clippy::too_many_lines)]
 pub fn show_new_connection_dialog_internal(
@@ -184,6 +197,146 @@ pub fn show_new_connection_dialog_internal(
                     }
                     Err(e) => {
                         // Show error in UI dialog with proper transient parent
+                        alert::show_error(&window_clone, &i18n("Error Creating Connection"), &e);
+                    }
+                }
+            }
+        }
+    });
+}
+
+/// Internal: shows the new connection dialog pre-filled with an existing Connection object.
+///
+/// Similar to `show_new_connection_dialog_internal` but uses `set_connection` directly
+/// instead of applying a template.
+#[allow(clippy::too_many_lines)]
+fn show_new_connection_dialog_internal_prefilled(
+    window: &gtk4::Window,
+    state: SharedAppState,
+    sidebar: SharedSidebar,
+    connection: rustconn_core::models::Connection,
+) {
+    let dialog = ConnectionDialog::new(Some(&window.clone().upcast()), state.clone());
+    dialog.setup_key_file_chooser(Some(&window.clone().upcast()));
+
+    // Set available groups
+    {
+        let state_ref = state.borrow();
+        let mut groups: Vec<_> = state_ref.list_groups().into_iter().cloned().collect();
+        groups.sort_by_key(|a| a.name.to_lowercase());
+        dialog.set_groups(&groups);
+        let connections: Vec<_> = state_ref.list_connections().into_iter().cloned().collect();
+        dialog.set_connections(&connections);
+    }
+
+    // Set preferred backend based on settings
+    {
+        let state_ref = state.borrow();
+        let preferred_backend = state_ref.settings().secrets.preferred_backend;
+        dialog.set_preferred_backend(preferred_backend);
+    }
+
+    // Populate variable dropdown with secret global variables
+    {
+        let state_ref = state.borrow();
+        let global_vars = state_ref.settings().global_variables.clone();
+        dialog.set_global_variables(&global_vars);
+    }
+
+    // Set up password visibility toggle and source visibility
+    dialog.connect_password_visibility_toggle();
+    dialog.connect_password_source_visibility();
+    dialog.update_password_row_visibility();
+
+    // Set up password load button with KeePass settings
+    {
+        use secrecy::ExposeSecret;
+        let state_ref = state.borrow();
+        let settings = state_ref.settings();
+        let groups: Vec<rustconn_core::models::ConnectionGroup> =
+            state_ref.list_groups().iter().cloned().cloned().collect();
+        dialog.connect_password_load_button_with_groups(
+            settings.secrets.kdbx_enabled,
+            settings.secrets.kdbx_path.clone(),
+            settings
+                .secrets
+                .kdbx_password
+                .as_ref()
+                .map(|p| p.expose_secret().to_string()),
+            settings.secrets.kdbx_key_file.clone(),
+            groups.clone(),
+            settings.secrets.clone(),
+        );
+        dialog.connect_vault_test_button(
+            settings.secrets.kdbx_enabled,
+            settings.secrets.kdbx_path.clone(),
+            settings
+                .secrets
+                .kdbx_password
+                .as_ref()
+                .map(|p| p.expose_secret().to_string()),
+            settings.secrets.kdbx_key_file.clone(),
+            groups,
+            settings.secrets.clone(),
+        );
+    }
+
+    // Pre-fill dialog with the connection data from wizard
+    dialog.set_connection(&connection);
+    dialog.window().set_title(Some(&i18n("New Connection")));
+
+    let window_clone = window.clone();
+    dialog.run(move |result| {
+        if let Some(dialog_result) = result {
+            let conn = dialog_result.connection;
+            let password = dialog_result.password;
+
+            if let Ok(mut state_mut) = state.try_borrow_mut() {
+                // Clone values needed for password saving before creating connection
+                let conn_name = conn.name.clone();
+                let conn_host = conn.host.clone();
+                let conn_username = conn.username.clone();
+                let password_source = conn.password_source.clone();
+                let protocol = conn.protocol;
+
+                match state_mut.create_connection(conn) {
+                    Ok(conn_id) => {
+                        // Save password to vault if password source is Vault
+                        if password_source == rustconn_core::models::PasswordSource::Vault
+                            && let Some(pwd) = password
+                        {
+                            use secrecy::ExposeSecret;
+                            let settings = state_mut.settings().clone();
+                            let groups: Vec<_> =
+                                state_mut.list_groups().into_iter().cloned().collect();
+                            let conn_for_path = state_mut.get_connection(conn_id).cloned();
+                            let username = conn_username.unwrap_or_default();
+
+                            crate::state::save_password_to_vault(
+                                &settings,
+                                &groups,
+                                conn_for_path.as_ref(),
+                                &conn_name,
+                                &conn_host,
+                                protocol,
+                                &username,
+                                pwd.expose_secret(),
+                                conn_id,
+                            );
+                        }
+
+                        // Release borrow before scheduling reload
+                        drop(state_mut);
+                        let state_clone = state.clone();
+                        let sidebar_clone = sidebar.clone();
+                        glib::idle_add_local_once(move || {
+                            MainWindow::reload_sidebar_preserving_state(
+                                &state_clone,
+                                &sidebar_clone,
+                            );
+                        });
+                    }
+                    Err(e) => {
                         alert::show_error(&window_clone, &i18n("Error Creating Connection"), &e);
                     }
                 }

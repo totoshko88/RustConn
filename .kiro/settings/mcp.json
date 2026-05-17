@@ -4,7 +4,9 @@
       "command": "kirograph",
       "args": [
         "serve",
-        "--mcp"
+        "--mcp",
+        "--path",
+        "/home/totoshko88/Documents/RustConn"
       ],
       "disabled": false,
       "autoApprove": [

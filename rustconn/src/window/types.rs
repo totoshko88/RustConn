@@ -24,6 +24,75 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use uuid::Uuid;
 
+/// Maximum number of quick connect history entries to keep (LIFO)
+const QUICK_CONNECT_HISTORY_MAX: usize = 15;
+
+/// A runtime-only quick connect history entry (not serialized to disk)
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct QuickConnectHistoryEntry {
+    /// Protocol index: 0=SSH, 1=RDP, 2=VNC, 3=Telnet
+    pub protocol_index: u32,
+    /// Protocol display name
+    pub protocol_name: String,
+    /// Host or IP
+    pub host: String,
+    /// Port number
+    pub port: u16,
+    /// Username (if any)
+    pub username: Option<String>,
+}
+
+impl QuickConnectHistoryEntry {
+    /// Creates a new quick connect history entry
+    #[must_use]
+    pub fn new(protocol_index: u32, host: String, port: u16, username: Option<String>) -> Self {
+        let protocol_name = match protocol_index {
+            0 => "SSH".to_string(),
+            1 => "RDP".to_string(),
+            2 => "VNC".to_string(),
+            3 => "Telnet".to_string(),
+            _ => "SSH".to_string(),
+        };
+        Self {
+            protocol_index,
+            protocol_name,
+            host,
+            port,
+            username,
+        }
+    }
+
+    /// Returns a display string for the history entry
+    #[must_use]
+    pub fn display_string(&self) -> String {
+        let user_part = self
+            .username
+            .as_ref()
+            .map_or(String::new(), |u| format!("{u}@"));
+        format!(
+            "{} — {user_part}{}:{}",
+            self.protocol_name, self.host, self.port
+        )
+    }
+}
+
+/// Shared quick connect history (runtime only, max 15 entries, LIFO)
+pub type SharedQuickConnectHistory = Rc<RefCell<Vec<QuickConnectHistoryEntry>>>;
+
+/// Adds an entry to the quick connect history (LIFO, deduplicates, max 15)
+pub fn add_to_quick_connect_history(
+    history: &SharedQuickConnectHistory,
+    entry: QuickConnectHistoryEntry,
+) {
+    let mut hist = history.borrow_mut();
+    // Remove duplicate if exists
+    hist.retain(|e| e != &entry);
+    // Insert at front (most recent first)
+    hist.insert(0, entry);
+    // Trim to max
+    hist.truncate(QUICK_CONNECT_HISTORY_MAX);
+}
+
 /// Shared sidebar type
 ///
 /// Uses `Rc` because GTK is single-threaded; no need for `Arc`.

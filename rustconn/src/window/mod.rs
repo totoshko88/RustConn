@@ -107,6 +107,8 @@ pub struct MainWindow {
     tunnel_manager: SharedTunnelManager,
     /// Busy-state tracker — shows/hides header bar spinner on 0→1 / 1→0 transitions
     busy_stack: rustconn_core::BusyStack,
+    /// Runtime-only quick connect history (max 15 entries, LIFO, not persisted)
+    quick_connect_history: types::SharedQuickConnectHistory,
 }
 
 impl MainWindow {
@@ -473,6 +475,7 @@ impl MainWindow {
             activity_coordinator,
             tunnel_manager,
             busy_stack,
+            quick_connect_history: Rc::new(RefCell::new(Vec::new())),
         };
 
         // Set up window actions
@@ -544,21 +547,35 @@ impl MainWindow {
         sidebar: &SharedSidebar,
         notebook: &SharedNotebook,
     ) {
-        // New connection action
+        // New connection action — opens Connection Wizard (Ctrl+N)
         let new_conn_action = gio::SimpleAction::new("new-connection", None);
         let window_weak = window.downgrade();
         let state_clone = state.clone();
         let sidebar_clone = sidebar.clone();
+        let toast_clone = self.toast_overlay.clone();
         new_conn_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
-                Self::show_new_connection_dialog(
+                Self::show_connection_wizard(
                     win.upcast_ref(),
                     state_clone.clone(),
                     sidebar_clone.clone(),
+                    toast_clone.clone(),
                 );
             }
         });
         window.add_action(&new_conn_action);
+
+        // New connection advanced — opens full ConnectionDialog directly
+        let new_conn_advanced_action = gio::SimpleAction::new("new-connection-advanced", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        new_conn_advanced_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                Self::show_new_connection_dialog(&win, state_clone.clone(), sidebar_clone.clone());
+            }
+        });
+        window.add_action(&new_conn_advanced_action);
 
         // New connection in group action (pre-selects the currently selected group)
         let new_conn_in_group_action = gio::SimpleAction::new("new-connection-in-group", None);
@@ -2892,6 +2909,83 @@ impl MainWindow {
         connection_dialogs::show_new_connection_dialog(window.upcast_ref(), state, sidebar);
     }
 
+    /// Shows the Connection Wizard (simplified step-by-step flow)
+    fn show_connection_wizard(
+        window: &adw::ApplicationWindow,
+        state: SharedAppState,
+        sidebar: SharedSidebar,
+        toast_overlay: SharedToastOverlay,
+    ) {
+        use crate::dialogs::connection_wizard::{ConnectionWizard, WizardResult};
+
+        let wizard = ConnectionWizard::new(Some(window.upcast_ref()), state.clone());
+
+        let state_for_cb = state.clone();
+        let sidebar_for_cb = sidebar.clone();
+        let window_weak = window.downgrade();
+        let toast_for_cb = toast_overlay;
+        wizard.connect_complete(move |result| {
+            match result {
+                WizardResult::Save(conn) => {
+                    let conn_name = conn.name.clone();
+                    if let Ok(mut state_mut) = state_for_cb.try_borrow_mut()
+                        && let Ok(_conn_id) = state_mut.create_connection(conn)
+                    {
+                        drop(state_mut);
+                        let state_c = state_for_cb.clone();
+                        let sidebar_c = sidebar_for_cb.clone();
+                        let toast_c = toast_for_cb.clone();
+                        let name = conn_name;
+                        glib::idle_add_local_once(move || {
+                            Self::reload_sidebar_preserving_state(&state_c, &sidebar_c);
+                            toast_c.show_success(&crate::i18n::i18n_f(
+                                "Connection \u{201c}{}\u{201d} created",
+                                &[&name],
+                            ));
+                        });
+                    }
+                }
+                WizardResult::SaveAndConnect(conn) => {
+                    let conn_id = conn.id;
+                    if let Ok(mut state_mut) = state_for_cb.try_borrow_mut()
+                        && state_mut.create_connection(conn).is_ok()
+                    {
+                        drop(state_mut);
+                        let state_c = state_for_cb.clone();
+                        let sidebar_c = sidebar_for_cb.clone();
+                        let window_w = window_weak.clone();
+                        glib::idle_add_local_once(move || {
+                            Self::reload_sidebar_preserving_state(&state_c, &sidebar_c);
+                            // Connect after sidebar refresh
+                            if let Some(win) = window_w.upgrade() {
+                                let variant = conn_id.to_string().to_variant();
+                                gio::prelude::ActionGroupExt::activate_action(
+                                    &win,
+                                    "connect-by-id",
+                                    Some(&variant),
+                                );
+                            }
+                        });
+                    }
+                }
+                WizardResult::OpenAdvanced(partial) => {
+                    // Open full dialog pre-filled with wizard data
+                    if let Some(win) = window_weak.upgrade() {
+                        let conn = partial.to_connection();
+                        connection_dialogs::show_new_connection_dialog_prefilled(
+                            win.upcast_ref(),
+                            state_for_cb.clone(),
+                            sidebar_for_cb.clone(),
+                            conn,
+                        );
+                    }
+                }
+            }
+        });
+
+        wizard.present();
+    }
+
     /// Shows the new group dialog with optional parent selection
     fn show_new_group_dialog(
         window: &adw::ApplicationWindow,
@@ -3697,8 +3791,15 @@ impl MainWindow {
         notebook: SharedNotebook,
         split_view: SharedSplitView,
         sidebar: SharedSidebar,
+        history: types::SharedQuickConnectHistory,
     ) {
-        edit_dialogs::show_quick_connect_dialog(window.upcast_ref(), notebook, split_view, sidebar);
+        edit_dialogs::show_quick_connect_dialog(
+            window.upcast_ref(),
+            notebook,
+            split_view,
+            sidebar,
+            history,
+        );
     }
 
     /// Toggles group operations mode for multi-select

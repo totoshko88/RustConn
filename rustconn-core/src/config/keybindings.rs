@@ -158,8 +158,14 @@ pub fn default_keybindings() -> Vec<KeybindingDef> {
             Connections,
         ),
         KeybindingDef::new(
-            "win.new-group",
+            "win.new-connection-advanced",
             "<Control><Shift>n",
+            "New Connection (Advanced)",
+            Connections,
+        ),
+        KeybindingDef::new(
+            "win.new-group",
+            "<Control><Shift>g",
             "New Group",
             Connections,
         ),

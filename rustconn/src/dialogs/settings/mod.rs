@@ -241,8 +241,14 @@ impl SettingsDialog {
         // Add global highlight rules group to terminal page
         let hl_group = adw::PreferencesGroup::builder()
             .title(i18n("Highlight Rules"))
-            .description(i18n("Global regex-based text highlighting rules"))
             .build();
+
+        let hl_expander = adw::ExpanderRow::builder()
+            .title(i18n("Highlight Rules"))
+            .subtitle(i18n("Global regex-based text highlighting rules"))
+            .show_enable_switch(false)
+            .build();
+        hl_group.add(&hl_expander);
 
         let hl_scrolled = gtk4::ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -257,7 +263,7 @@ impl SettingsDialog {
         highlight_rules_list
             .set_placeholder(Some(&gtk4::Label::new(Some(&i18n("No highlight rules")))));
         hl_scrolled.set_child(Some(&highlight_rules_list));
-        hl_group.add(&hl_scrolled);
+        hl_expander.add_row(&adw::PreferencesRow::builder().child(&hl_scrolled).build());
 
         let hl_btn_box = GtkBox::new(gtk4::Orientation::Horizontal, 8);
         hl_btn_box.set_halign(gtk4::Align::End);
@@ -268,7 +274,7 @@ impl SettingsDialog {
             .css_classes(["suggested-action"])
             .build();
         hl_btn_box.append(&add_hl_button);
-        hl_group.add(&hl_btn_box);
+        hl_expander.add_row(&adw::PreferencesRow::builder().child(&hl_btn_box).build());
         terminal_page.add(&hl_group);
 
         let highlight_rules: Rc<RefCell<Vec<rustconn_core::models::HighlightRule>>> =

@@ -44,6 +44,10 @@ rustconn/src/dialogs/connection/web.rs
 rustconn/src/dialogs/connection/zerotrust.rs
 rustconn/src/dialogs/connection/shared_folders.rs
 rustconn/src/dialogs/connection/logging_tab.rs
+rustconn/src/dialogs/connection_wizard/auth_page.rs
+rustconn/src/dialogs/connection_wizard/connection_page.rs
+rustconn/src/dialogs/connection_wizard/mod.rs
+rustconn/src/dialogs/connection_wizard/protocol_page.rs
 rustconn/src/dialogs/settings/mod.rs
 rustconn/src/dialogs/settings/ui_tab.rs
 rustconn/src/dialogs/settings/terminal_tab.rs

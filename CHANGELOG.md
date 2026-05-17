@@ -5,6 +5,23 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - Unreleased
+
+### Added
+
+- **Connection Wizard** — new step-by-step dialog for creating connections (Ctrl+N); 3 steps: protocol selection → connection details → authentication/finish; all 11 protocols supported with logical grouping (Secure Shell, Remote Desktop, Terminal, Cloud & Containers, Other); "Advanced…" button on every step opens the full ConnectionDialog; "Save" and "Save & Connect" final actions (#0140)
+- **Jump Host in Wizard** — SSH tunnel dropdown available for SSH, MOSH, SFTP, RDP, VNC, SPICE protocols directly in the wizard's Step 2
+- **VTE Color Profile in Wizard** — terminal theme selector on Step 3 for VTE-based protocols (SSH, MOSH, SFTP, Telnet, Serial, Kubernetes, Zero Trust); maps to per-connection `ConnectionThemeOverride`
+- **Zero Trust Custom Command** — "Custom Command" is now the first option in Zero Trust provider list with a clear description, making it easy to use any CLI tool for connection
+- **`win.new-connection-advanced` action** — opens the full ConnectionDialog directly, accessible from the wizard's "Advanced…" button and application menu
+- **Quick Connect runtime history** — last 15 quick connect sessions remembered during the app lifetime (not persisted); shown as "Recent" section in the Quick Connect dialog with type-ahead filtering by host/username; clicking an entry fills protocol, host, port, and username fields instantly
+- **Wizard → Advanced pre-fill** — clicking "Advanced…" in the Connection Wizard now transfers all entered data (protocol, host, port, username, auth method, jump host, theme) into the full ConnectionDialog instead of opening a blank form
+
+### Changed
+
+- **Ctrl+N behavior** — now opens the Connection Wizard instead of the full ConnectionDialog; the full dialog remains accessible via "Advanced…" button or `win.new-connection-advanced` action
+- **Highlight Rules in Settings** — collapsed into `adw::ExpanderRow` for cleaner Terminal settings page; rules are hidden by default, expandable on demand
+
 ## [0.13.17] - 2026-05-16
 
 ### Added

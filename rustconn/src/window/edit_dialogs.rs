@@ -2189,8 +2189,9 @@ pub fn show_quick_connect_dialog(
     notebook: SharedNotebook,
     split_view: SharedSplitView,
     sidebar: SharedSidebar,
+    history: super::types::SharedQuickConnectHistory,
 ) {
-    show_quick_connect_dialog_with_state(window, notebook, split_view, sidebar, None);
+    show_quick_connect_dialog_with_state(window, notebook, split_view, sidebar, None, history);
 }
 
 /// Parameters for a quick connect session
@@ -2391,6 +2392,7 @@ pub fn show_quick_connect_dialog_with_state(
     split_view: SharedSplitView,
     sidebar: SharedSidebar,
     state: Option<&SharedAppState>,
+    history: super::types::SharedQuickConnectHistory,
 ) {
     // Collect templates if state is available
     let templates: Vec<rustconn_core::models::ConnectionTemplate> = state
@@ -2512,6 +2514,89 @@ pub fn show_quick_connect_dialog_with_state(
 
     content.append(&settings_group);
 
+    // --- History section (runtime only, shown if history is non-empty) ---
+    let history_group = adw::PreferencesGroup::builder()
+        .title(i18n("Recent"))
+        .build();
+    let history_listbox = gtk4::ListBox::builder()
+        .selection_mode(gtk4::SelectionMode::Single)
+        .css_classes(vec!["boxed-list".to_string()])
+        .build();
+    history_group.add(&history_listbox);
+    content.append(&history_group);
+
+    // Populate history list
+    {
+        let hist = history.borrow();
+        if hist.is_empty() {
+            history_group.set_visible(false);
+        } else {
+            for entry in hist.iter() {
+                let row = adw::ActionRow::builder()
+                    .title(glib::markup_escape_text(&entry.display_string()))
+                    .activatable(true)
+                    .build();
+                row.add_prefix(&gtk4::Image::from_icon_name("go-jump-symbolic"));
+                history_listbox.append(&row);
+            }
+        }
+    }
+
+    // Connect history row activation to fill fields
+    let history_for_activate = history.clone();
+    let host_entry_for_hist = host_entry.clone();
+    let port_spin_for_hist = port_spin.clone();
+    let user_entry_for_hist = user_entry.clone();
+    let protocol_dd_for_hist = protocol_dropdown.clone();
+    history_listbox.connect_row_activated(move |_, row| {
+        let index = row.index();
+        if index < 0 {
+            return;
+        }
+        let hist = history_for_activate.borrow();
+        if let Some(entry) = hist.get(index as usize) {
+            protocol_dd_for_hist.set_selected(entry.protocol_index);
+            host_entry_for_hist.set_text(&entry.host);
+            port_spin_for_hist.set_value(f64::from(entry.port));
+            if let Some(ref user) = entry.username {
+                user_entry_for_hist.set_text(user);
+            } else {
+                user_entry_for_hist.set_text("");
+            }
+        }
+    });
+
+    // Filter history when host entry text changes
+    let history_for_filter = history.clone();
+    let history_listbox_for_filter = history_listbox.clone();
+    let history_group_for_filter = history_group.clone();
+    host_entry.connect_changed(move |entry| {
+        let filter_text = entry.text().to_string().to_lowercase();
+        let hist = history_for_filter.borrow();
+        if hist.is_empty() {
+            history_group_for_filter.set_visible(false);
+            return;
+        }
+        let mut any_visible = false;
+        let mut idx = 0i32;
+        while let Some(row) = history_listbox_for_filter.row_at_index(idx) {
+            if let Some(entry) = hist.get(idx as usize) {
+                let visible = filter_text.is_empty()
+                    || entry.host.to_lowercase().contains(&filter_text)
+                    || entry
+                        .username
+                        .as_ref()
+                        .is_some_and(|u| u.to_lowercase().contains(&filter_text));
+                row.set_visible(visible);
+                if visible {
+                    any_visible = true;
+                }
+            }
+            idx += 1;
+        }
+        history_group_for_filter.set_visible(any_visible);
+    });
+
     // Use ToolbarView for proper adw::Window layout
     let toolbar_view = adw::ToolbarView::new();
     toolbar_view.add_top_bar(&header);
@@ -2599,6 +2684,7 @@ pub fn show_quick_connect_dialog_with_state(
     let protocol_clone = protocol_dropdown;
     // Clone state for use in closure
     let state_for_connect = state.cloned();
+    let history_for_connect = history;
     connect_btn.connect_clicked(move |_| {
         let host = host_clone.text().to_string();
         if host.trim().is_empty() {
@@ -2631,6 +2717,16 @@ pub fn show_quick_connect_dialog_with_state(
             }
         };
 
+        // Save to runtime history
+        let protocol_idx = protocol_clone.selected();
+        let history_entry = super::types::QuickConnectHistoryEntry::new(
+            protocol_idx,
+            host.clone(),
+            port,
+            username.clone(),
+        );
+        super::types::add_to_quick_connect_history(&history_for_connect, history_entry);
+
         let params = QuickConnectParams {
             host,
             port,
@@ -2638,7 +2734,7 @@ pub fn show_quick_connect_dialog_with_state(
             password,
         };
 
-        match protocol_clone.selected() {
+        match protocol_idx {
             0 => start_quick_ssh(&notebook, &params, &terminal_settings),
             1 => start_quick_rdp(&notebook, &split_view, &sidebar, &params),
             2 => start_quick_vnc(&notebook, &split_view, &sidebar, &params),
