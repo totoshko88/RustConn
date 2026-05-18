@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Predefined connection templates** — 20 built-in templates for common CLI tools (RustDesk, Docker, Podman, LXC, Incus, Distrobox, Virsh, Proxmox, IPMI, Picocom, WireGuard, Teleport, Ansible, and more) with emoji icons, grouped into 6 categories: Remote Desktop, Containers, Virtualization, Hardware, Cloud Access, Automation
+- **Template grid in Connection Wizard** — Custom Command mode (Step 2) now shows a grid of template buttons below the command field; user ZeroTrust templates appear first, predefined fill remaining slots; "More…" button opens a popover with all templates grouped by category
+- **Template icon field** — templates now support a custom icon (emoji or GTK icon name); shown in Manage Templates list and inherited by connections created from the template
+- **Icon inheritance** — connections created via wizard template buttons automatically inherit the template's emoji icon for sidebar display
 - **Per-connection "Skip port check" toggle** — new switch in the Advanced tab → Connection Behavior section to bypass the pre-connect TCP probe for the selected connection; useful for low-bandwidth links and hosts only reachable through an RDP Gateway or jump host (#153)
 
 ### Fixed

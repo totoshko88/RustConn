@@ -338,7 +338,6 @@ impl ConnectionManager {
         updated.last_connected = existing.last_connected;
         updated.key_sequence = existing.key_sequence.clone();
         updated.window_geometry = existing.window_geometry;
-        updated.skip_port_check = existing.skip_port_check;
         updated.is_pinned = existing.is_pinned;
         updated.pin_order = existing.pin_order;
 

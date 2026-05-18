@@ -57,6 +57,7 @@ pub mod embedded_vnc_types;
 pub mod embedded_vnc_ui;
 pub mod external_window;
 pub mod i18n;
+mod i18n_markers;
 #[cfg(target_os = "macos")]
 pub mod macos_pty;
 pub mod monitoring;

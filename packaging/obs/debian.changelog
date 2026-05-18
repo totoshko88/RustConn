@@ -1,11 +1,15 @@
 rustconn (0.14.1-1) unstable; urgency=medium
 
-  * [Added] Per-connection "Skip port check" toggle (#153)
-  * [Fixed] RDP Gateway: "Host unreachable" before connection (#153)
-  * [Fixed] Highlight overlay: colored underlines persisted after clear (#154)
-  * [Dependencies] Flatpak: vte 0.80.3→0.80.5, freerdp 3.25.0→3.26.0
+  * Version bump to 0.14.1
+  * Added predefined connection templates (20 built-in for Docker, RustDesk, IPMI, etc.)
+  * Added template grid in Connection Wizard Custom Command mode
+  * Added template icon field with emoji support
+  * Added per-connection "Skip port check" toggle
+  * Fixed "Use Template" UI freeze
+  * Fixed RDP Gateway "Host unreachable" before connection
+  * Fixed highlight overlay underlines persisting after clear
 
- -- Anton Isaiev <totoshko88@gmail.com>  Sun, 18 May 2026 14:00:00 +0000
+ -- Anton Isaiev <totoshko88@gmail.com>  Sun, 18 May 2026 12:00:00 +0200
 
 rustconn (0.14.0-1) unstable; urgency=medium
 

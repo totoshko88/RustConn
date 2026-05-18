@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.14.0** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.14.1** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -1540,20 +1540,34 @@ Groups are visual only — they are session-scoped and not persisted across rest
 
 ### Templates
 
-Templates are connection presets that store protocol settings, authentication defaults, tags, custom properties, and automation tasks. When you create a connection from a template, all configured fields are copied into the new connection.
+Templates are connection presets that store protocol settings, authentication defaults, tags, custom properties, and automation tasks. When you create a connection from a template, all configured fields are copied into the new connection — including the template's icon.
 
 **Manage Templates:** Menu → Tools → **Manage Templates** (or `rustconn-cli template list`)
 
 **Create Template:**
-- **From scratch:** Open Manage Templates → Click **Create Template** → configure name, protocol, default settings
+- **From scratch:** Open Manage Templates → Click **Create Template** → configure name, icon (emoji or GTK icon name), protocol, default settings
 - **From existing connection:** Right-click a connection → **Create Template from Connection**
 
 **Use Template:**
+- **From Connection Wizard (Ctrl+N):** Choose "Custom Command" → template grid shows your templates and predefined ones; click to fill command and name
 - **From Quick Connect (Ctrl+Shift+Q):** Select a template from the dropdown — fields pre-fill the form
 - **From Manage Templates:** Select a template → click **Create Connection**
 - **From CLI:** `rustconn-cli template apply "SSH Template" --name "New Server" --host "10.0.0.5"`
 
-**Template Fields:** Protocol, Host/Port, Username/Domain, Password Source, Tags, Protocol Config, Custom Properties, Pre/Post Tasks, WoL Config.
+**Template Fields:** Protocol, Host/Port, Username/Domain, Password Source, Tags, Icon, Protocol Config, Custom Properties, Pre/Post Tasks, WoL Config.
+
+**Predefined Templates:** RustConn ships with 20 built-in templates for common CLI tools that don't have dedicated protocol support:
+
+| Category | Templates |
+|----------|-----------|
+| Remote Desktop | 🖥️ RustDesk, 🔴 AnyDesk, 🌐 Remmina |
+| Containers | 🐳 Docker, 🦭 Podman, 📦 LXC/LXD, 🧊 Incus, 🗃️ Distrobox |
+| Virtualization | 🖧 Virsh Console, 🟠 Proxmox VM, 🟡 Proxmox CT |
+| Hardware | 🔌 IPMI SOL, 🔧 Picocom, 🐟 Redfish BMC |
+| Cloud Access | 🛡️ WireGuard+SSH, 🚀 Teleport App, 🎛️ Cockpit |
+| Automation | ⚙️ Ansible, ⏰ WoL+SSH, ❄️ Nix Remote Build |
+
+Click "More…" in the wizard grid to browse all predefined templates grouped by category. Your own ZeroTrust templates (created via Manage Templates) appear first in the grid automatically.
 
 ### Snippets
 

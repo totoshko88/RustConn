@@ -726,7 +726,13 @@ impl ConnectionWizard {
         conn.username = partial.username;
         conn.domain = partial.domain;
         conn.theme_override = partial.theme_override;
-        conn.icon = self.auth_page.icon();
+        // Use auth_page icon if set, otherwise inherit from selected template
+        let icon = self.auth_page.icon();
+        conn.icon = if icon.is_some() {
+            icon
+        } else {
+            self.connection_page.selected_template_icon()
+        };
         conn
     }
 

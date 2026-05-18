@@ -262,6 +262,10 @@ pub use sync::{
     load_inventory, parse_inventory_json, parse_inventory_yaml, sync_inventory, sync_tag,
 };
 pub use template::TemplateManager;
+pub use template::{
+    PREDEFINED_TEMPLATES, PredefinedTemplate, TemplateCategory, all_predefined_templates,
+    find_predefined_template, templates_by_category,
+};
 // Split view types (tab-scoped layouts)
 pub use split::SplitDirection;
 pub use split::{

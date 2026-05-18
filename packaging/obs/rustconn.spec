@@ -240,10 +240,18 @@ done
 %changelog
 * Sun May 18 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.1-0
 - Update to version 0.14.1
-- [Added] Per-connection "Skip port check" toggle (#153)
-- [Fixed] RDP Gateway: "Host unreachable" before connection (#153)
-- [Fixed] Highlight overlay: colored underlines persisted after clear (#154)
-- [Dependencies] Flatpak: vte 0.80.3→0.80.5, freerdp 3.25.0→3.26.0
+- [Added] Predefined connection templates — 20 built-in templates for common
+  CLI tools (RustDesk, Docker, Podman, LXC, Incus, Distrobox, Virsh, Proxmox,
+  IPMI, Picocom, WireGuard, Teleport, Ansible, and more) with emoji icons
+- [Added] Template grid in Connection Wizard — Custom Command mode shows
+  template buttons; user templates first, predefined fill remaining;
+  "More…" popover with all templates by category
+- [Added] Template icon field — templates support custom icon (emoji or GTK
+  icon name); inherited by connections
+- [Added] Per-connection "Skip port check" toggle
+- [Fixed] "Use Template" freezes UI
+- [Fixed] RDP Gateway: "Host unreachable" before connection
+- [Fixed] Highlight overlay: colored underlines persisted after clear
 
 * Sun May 18 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.0-0
 - Update to version 0.14.0

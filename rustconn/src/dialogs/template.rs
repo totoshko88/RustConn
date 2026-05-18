@@ -41,6 +41,7 @@ pub struct TemplateDialog {
     // Basic fields
     name_entry: adw::EntryRow,
     description_entry: adw::EntryRow,
+    icon_entry: adw::EntryRow,
     protocol_dropdown: DropDown,
     host_entry: adw::EntryRow,
     port_spin: SpinButton,
@@ -168,6 +169,7 @@ impl TemplateDialog {
             basic_scrolled,
             name_entry,
             description_entry,
+            icon_entry,
             protocol_dropdown,
             host_entry,
             port_spin,
@@ -329,6 +331,7 @@ impl TemplateDialog {
             &editing_id,
             &name_entry,
             &description_entry,
+            &icon_entry,
             &protocol_dropdown,
             &host_entry,
             &port_spin,
@@ -398,6 +401,7 @@ impl TemplateDialog {
             save_button: save_btn,
             name_entry,
             description_entry,
+            icon_entry,
             protocol_dropdown,
             host_entry,
             port_spin,
@@ -471,6 +475,7 @@ impl TemplateDialog {
         ScrolledWindow,
         adw::EntryRow,
         adw::EntryRow,
+        adw::EntryRow,
         DropDown,
         adw::EntryRow,
         SpinButton,
@@ -507,6 +512,11 @@ impl TemplateDialog {
         // Description - use EntryRow for proper width
         let description_entry = adw::EntryRow::builder().title(i18n("Description")).build();
         info_group.add(&description_entry);
+
+        // Icon - emoji or GTK icon name
+        let icon_entry = adw::EntryRow::builder().title(i18n("Icon")).build();
+        icon_entry.set_tooltip_text(Some(&i18n("Emoji or icon name (optional)")));
+        info_group.add(&icon_entry);
 
         // Protocol
         let protocols = StringList::new(&["SSH", "RDP", "VNC", "SPICE", "ZeroTrust", "Telnet"]);
@@ -569,6 +579,7 @@ impl TemplateDialog {
             scrolled,
             name_entry,
             description_entry,
+            icon_entry,
             protocol_dropdown,
             host_entry,
             port_spin,
@@ -1950,6 +1961,7 @@ impl TemplateDialog {
         editing_id: &Rc<RefCell<Option<Uuid>>>,
         name_entry: &adw::EntryRow,
         description_entry: &adw::EntryRow,
+        icon_entry: &adw::EntryRow,
         protocol_dropdown: &DropDown,
         host_entry: &adw::EntryRow,
         port_spin: &SpinButton,
@@ -2018,6 +2030,7 @@ impl TemplateDialog {
         let editing_id = editing_id.clone();
         let name_entry = name_entry.clone();
         let description_entry = description_entry.clone();
+        let icon_entry = icon_entry.clone();
         let protocol_dropdown = protocol_dropdown.clone();
         let host_entry = host_entry.clone();
         let port_spin = port_spin.clone();
@@ -2156,6 +2169,11 @@ impl TemplateDialog {
             let desc = description_entry.text();
             if !desc.trim().is_empty() {
                 template.description = Some(desc.trim().to_string());
+            }
+
+            let icon_text = icon_entry.text();
+            if !icon_text.trim().is_empty() {
+                template.icon = Some(icon_text.trim().to_string());
             }
 
             let host = host_entry.text();
@@ -2725,6 +2743,9 @@ impl TemplateDialog {
         self.name_entry.set_text(&template.name);
         if let Some(ref desc) = template.description {
             self.description_entry.set_text(desc);
+        }
+        if let Some(ref icon) = template.icon {
+            self.icon_entry.set_text(icon);
         }
 
         let protocol_idx: u32 = match template.protocol {

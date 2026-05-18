@@ -144,12 +144,13 @@
   <releases>
     <release version="0.14.1" date="2026-05-18">
       <description>
-        <p>Version 0.14.1 — Bug fixes and Flatpak dependency updates:</p>
+        <p>Version 0.14.1 - Predefined Templates &amp; Wizard Improvements:</p>
         <ul>
-          <li>Per-connection Skip port check toggle for RDP Gateway and jump host scenarios</li>
-          <li>Fixed RDP Gateway connections failing with Host unreachable error</li>
-          <li>Fixed highlight overlay colored underlines persisting after clear command</li>
-          <li>Flatpak: updated VTE 0.80.3 to 0.80.5, FreeRDP 3.25.0 to 3.26.0</li>
+          <li>20 built-in templates for Docker, RustDesk, Podman, IPMI, Proxmox, and more</li>
+          <li>Template grid in Connection Wizard with emoji icons</li>
+          <li>Template icon field inherited by connections</li>
+          <li>Per-connection Skip port check toggle</li>
+          <li>Fixed Use Template UI freeze and RDP Gateway connectivity</li>
         </ul>
       </description>
     </release>

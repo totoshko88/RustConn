@@ -255,10 +255,29 @@ pub fn refresh_templates_list(
             hbox.set_margin_start(8);
             hbox.set_margin_end(8);
 
-            // Protocol icon
-            let icon_name = rustconn_core::get_protocol_icon(template.protocol);
-            let icon = gtk4::Image::from_icon_name(icon_name);
-            hbox.append(&icon);
+            // Use custom icon if set, otherwise protocol-based icon
+            if let Some(ref custom_icon) = template.icon {
+                if custom_icon.chars().count() <= 2
+                    && custom_icon.chars().next().is_some_and(|c| !c.is_ascii())
+                {
+                    // Emoji icon
+                    let emoji_lbl = Label::builder()
+                        .label(custom_icon)
+                        .css_classes(["emoji-icon"])
+                        .width_chars(2)
+                        .build();
+                    hbox.append(&emoji_lbl);
+                } else {
+                    // GTK icon name
+                    let icon = gtk4::Image::from_icon_name(custom_icon);
+                    hbox.append(&icon);
+                }
+            } else {
+                // Default protocol icon
+                let icon_name = rustconn_core::get_protocol_icon(template.protocol);
+                let icon = gtk4::Image::from_icon_name(icon_name);
+                hbox.append(&icon);
+            }
 
             // Template info
             let info_box = gtk4::Box::new(Orientation::Vertical, 2);

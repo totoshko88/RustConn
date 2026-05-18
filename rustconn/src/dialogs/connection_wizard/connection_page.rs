@@ -50,6 +50,9 @@ pub struct ConnectionPage {
     k8s_group: adw::PreferencesGroup,
     zt_group: adw::PreferencesGroup,
     web_group: adw::PreferencesGroup,
+    // Template grid for Custom Command mode
+    templates_group: GtkBox,
+    templates_flow: gtk4::FlowBox,
     // Navigation
     next_button: Button,
     on_next: Rc<RefCell<Option<Box<dyn Fn()>>>>,
@@ -236,6 +239,144 @@ impl ConnectionPage {
 
         content_box.append(&web_group);
 
+        // Create next_button early so template buttons can reference it
+        let next_button = Button::with_label(&i18n("Next"));
+        next_button.add_css_class("suggested-action");
+        next_button.set_sensitive(false);
+
+        // === Templates grid (for Custom Command mode) ===
+        #[allow(clippy::items_after_statements)]
+        const MAX_GRID_SLOTS: usize = 7;
+        // Use a plain GtkBox instead of PreferencesGroup to avoid ListBoxRow
+        // wrapping which intercepts button clicks.
+        let templates_group = GtkBox::new(Orientation::Vertical, 6);
+        templates_group.set_visible(false);
+        templates_group.set_margin_top(12);
+
+        let templates_header = gtk4::Label::builder()
+            .label(&i18n("Templates"))
+            .halign(gtk4::Align::Start)
+            .css_classes(["heading"])
+            .build();
+        templates_group.append(&templates_header);
+
+        let templates_desc = gtk4::Label::builder()
+            .label(&i18n("Quick-start from a predefined command"))
+            .halign(gtk4::Align::Start)
+            .css_classes(["dim-label"])
+            .build();
+        templates_group.append(&templates_desc);
+
+        let templates_flow = gtk4::FlowBox::builder()
+            .homogeneous(true)
+            .min_children_per_line(2)
+            .max_children_per_line(4)
+            .selection_mode(gtk4::SelectionMode::None)
+            .row_spacing(6)
+            .column_spacing(6)
+            .activate_on_single_click(false)
+            .build();
+
+        // Populate: user ZeroTrust templates first, then predefined to fill 7 slots
+        let zt_cmd_for_flow = zt_command_row.clone();
+        let name_row_for_flow = name_row.clone();
+        let next_btn_for_flow = next_button.clone();
+
+        let mut slots_used = 0usize;
+
+        // 1) User templates (ZeroTrust protocol = Custom Command)
+        {
+            let state_ref = state.borrow();
+            let user_zt_templates: Vec<_> = state_ref
+                .get_all_templates()
+                .into_iter()
+                .filter(|t| t.protocol == ProtocolType::ZeroTrust)
+                .collect();
+
+            for user_tpl in user_zt_templates.iter().take(MAX_GRID_SLOTS) {
+                let icon_str = user_tpl.icon.clone().unwrap_or_default();
+                let tpl_name = user_tpl.name.clone();
+                // Extract command from ZeroTrust config
+                let cmd_str = if let rustconn_core::models::ProtocolConfig::ZeroTrust(ref zt) =
+                    user_tpl.protocol_config
+                {
+                    if let rustconn_core::models::ZeroTrustProviderConfig::Generic(ref g) =
+                        zt.provider_config
+                    {
+                        g.command_template.clone()
+                    } else {
+                        String::new()
+                    }
+                } else {
+                    String::new()
+                };
+
+                if cmd_str.is_empty() {
+                    continue;
+                }
+
+                let btn = Self::create_user_template_button(&icon_str, &tpl_name);
+                let zt_cmd_clone = zt_cmd_for_flow.clone();
+                let name_row_clone = name_row_for_flow.clone();
+                let next_btn_clone = next_btn_for_flow.clone();
+                let icon_for_cb = icon_str.clone();
+                let name_for_cb = tpl_name.clone();
+                btn.connect_clicked(move |_| {
+                    zt_cmd_clone.set_text(&cmd_str);
+                    if name_row_clone.text().is_empty() {
+                        name_row_clone.set_text(&name_for_cb);
+                    }
+                    if !icon_for_cb.is_empty() {
+                        name_row_clone.set_widget_name(&format!("tpl-icon:{}", icon_for_cb));
+                    }
+                    next_btn_clone.set_sensitive(true);
+                });
+                templates_flow.append(&btn);
+                slots_used += 1;
+            }
+        }
+
+        // 2) Fill remaining slots with predefined templates
+        let remaining = MAX_GRID_SLOTS.saturating_sub(slots_used);
+        for predefined in rustconn_core::PREDEFINED_TEMPLATES.iter().take(remaining) {
+            let btn = Self::create_template_button(predefined);
+            let cmd = predefined.command;
+            let tpl_name = predefined.name;
+            let tpl_icon = predefined.icon;
+            let zt_cmd_clone = zt_cmd_for_flow.clone();
+            let name_row_clone = name_row_for_flow.clone();
+            let next_btn_clone = next_btn_for_flow.clone();
+            btn.connect_clicked(move |_| {
+                zt_cmd_clone.set_text(cmd);
+                if name_row_clone.text().is_empty() {
+                    name_row_clone.set_text(tpl_name);
+                }
+                name_row_clone.set_widget_name(&format!("tpl-icon:{tpl_icon}"));
+                next_btn_clone.set_sensitive(true);
+            });
+            templates_flow.append(&btn);
+        }
+
+        // 3) "More…" button — shows popover with all templates
+        let more_btn = Self::create_more_templates_button();
+        let zt_cmd_for_more = zt_command_row.clone();
+        let name_row_for_more = name_row.clone();
+        let next_btn_for_more = next_button.clone();
+        let state_for_more = state.clone();
+        more_btn.connect_clicked(move |btn| {
+            Self::show_all_templates_popover(
+                btn,
+                &zt_cmd_for_more,
+                &name_row_for_more,
+                &next_btn_for_more,
+                &state_for_more,
+            );
+        });
+        templates_flow.append(&more_btn);
+
+        templates_group.append(&templates_flow);
+        content_box.append(&templates_group);
+
         // === Footer (sticky bottom bar) ===
         let footer = GtkBox::new(Orientation::Horizontal, 12);
         footer.set_margin_top(6);
@@ -256,9 +397,6 @@ impl ConnectionPage {
         spacer.set_hexpand(true);
         footer.append(&spacer);
 
-        let next_button = Button::with_label(&i18n("Next"));
-        next_button.add_css_class("suggested-action");
-        next_button.set_sensitive(false);
         footer.append(&next_button);
 
         let scrolled = ScrolledWindow::builder()
@@ -370,6 +508,8 @@ impl ConnectionPage {
             k8s_group,
             zt_group,
             web_group,
+            templates_group,
+            templates_flow,
             next_button,
             on_next,
             on_advanced,
@@ -388,6 +528,7 @@ impl ConnectionPage {
         self.k8s_group.set_visible(false);
         self.zt_group.set_visible(false);
         self.web_group.set_visible(false);
+        self.templates_group.set_visible(false);
         self.info_label.set_visible(false);
         self.username_row.set_visible(false);
         self.domain_row.set_visible(false);
@@ -491,12 +632,17 @@ impl ConnectionPage {
         self.username_row.set_visible(false);
         self.domain_row.set_visible(false);
         self.jump_host_row.set_visible(false);
-        // ZT group: only command row
+        // ZT group: only command row, rename to "Custom Command"
+        self.zt_group.set_title(&i18n("Custom Command"));
+        self.zt_group
+            .set_description(Some(&i18n("Run any CLI tool as a connection")));
         self.zt_provider_row.set_visible(false);
         self.zt_command_row.set_visible(true);
         self.zt_field1_row.set_visible(false);
         self.zt_field2_row.set_visible(false);
         self.zt_field3_row.set_visible(false);
+        // Show templates grid
+        self.templates_group.set_visible(true);
         self.page.set_title(&i18n("Custom Command"));
     }
 
@@ -711,5 +857,279 @@ impl ConnectionPage {
 
     pub fn connect_advanced<F: Fn() + 'static>(&self, f: F) {
         *self.on_advanced.borrow_mut() = Some(Box::new(f));
+    }
+
+    /// Creates a button for a user-defined template (from Manage Templates)
+    fn create_user_template_button(icon: &str, name: &str) -> Button {
+        let vbox = GtkBox::new(Orientation::Vertical, 4);
+        vbox.set_halign(gtk4::Align::Center);
+        vbox.set_margin_top(8);
+        vbox.set_margin_bottom(8);
+
+        if !icon.is_empty()
+            && icon.chars().count() <= 2
+            && icon.chars().next().is_some_and(|c| !c.is_ascii())
+        {
+            // Emoji icon
+            let emoji_label = gtk4::Label::builder()
+                .label(icon)
+                .css_classes(["title-2"])
+                .build();
+            vbox.append(&emoji_label);
+        } else if !icon.is_empty() {
+            // GTK icon name
+            let img = gtk4::Image::from_icon_name(icon);
+            img.set_pixel_size(24);
+            vbox.append(&img);
+        } else {
+            // Fallback: system-run
+            let img = gtk4::Image::from_icon_name("system-run-symbolic");
+            img.set_pixel_size(24);
+            vbox.append(&img);
+        }
+
+        let name_label = gtk4::Label::builder()
+            .label(name)
+            .css_classes(["caption"])
+            .ellipsize(gtk4::pango::EllipsizeMode::End)
+            .max_width_chars(12)
+            .build();
+        vbox.append(&name_label);
+
+        Button::builder()
+            .child(&vbox)
+            .css_classes(["flat"])
+            .tooltip_text(name)
+            .width_request(90)
+            .height_request(70)
+            .build()
+    }
+
+    /// Creates a template button with emoji icon + name for the flow grid
+    fn create_template_button(predefined: &rustconn_core::PredefinedTemplate) -> Button {
+        let vbox = GtkBox::new(Orientation::Vertical, 4);
+        vbox.set_halign(gtk4::Align::Center);
+        vbox.set_margin_top(8);
+        vbox.set_margin_bottom(8);
+
+        let emoji_label = gtk4::Label::builder()
+            .label(predefined.icon)
+            .css_classes(["title-2"])
+            .build();
+        vbox.append(&emoji_label);
+
+        let name_label = gtk4::Label::builder()
+            .label(predefined.name)
+            .css_classes(["caption"])
+            .ellipsize(gtk4::pango::EllipsizeMode::End)
+            .max_width_chars(12)
+            .build();
+        vbox.append(&name_label);
+
+        let btn = Button::builder()
+            .child(&vbox)
+            .css_classes(["flat"])
+            .tooltip_text(&i18n(predefined.description))
+            .width_request(90)
+            .height_request(70)
+            .build();
+        btn.update_property(&[gtk4::accessible::Property::Label(&i18n(
+            predefined.description,
+        ))]);
+        btn
+    }
+
+    /// Creates the "More…" button for the flow grid — shows all predefined templates
+    fn create_more_templates_button() -> Button {
+        let vbox = GtkBox::new(Orientation::Vertical, 4);
+        vbox.set_halign(gtk4::Align::Center);
+        vbox.set_margin_top(8);
+        vbox.set_margin_bottom(8);
+
+        let icon = gtk4::Image::from_icon_name("view-more-symbolic");
+        icon.set_pixel_size(24);
+        vbox.append(&icon);
+
+        let label = gtk4::Label::builder()
+            .label(&i18n("More\u{2026}"))
+            .css_classes(["caption"])
+            .build();
+        vbox.append(&label);
+
+        let btn = Button::builder()
+            .child(&vbox)
+            .css_classes(["flat"])
+            .tooltip_text(&i18n("Browse all predefined templates"))
+            .width_request(90)
+            .height_request(70)
+            .build();
+        btn.update_property(&[gtk4::accessible::Property::Label(&i18n(
+            "Browse all predefined templates",
+        ))]);
+        btn
+    }
+
+    /// Returns the template icon stored by a template button click, if any.
+    /// Format: "tpl-icon:🐳" stored in name_row widget_name.
+    #[must_use]
+    pub fn selected_template_icon(&self) -> Option<String> {
+        let wname = self.name_row.widget_name();
+        wname
+            .strip_prefix("tpl-icon:")
+            .map(|s| s.to_string())
+            .filter(|s| !s.is_empty())
+    }
+
+    /// Shows a popover with all predefined templates grouped by category
+    fn show_all_templates_popover(
+        parent_btn: &Button,
+        zt_cmd_row: &adw::EntryRow,
+        name_row: &adw::EntryRow,
+        next_btn: &Button,
+        state: &SharedAppState,
+    ) {
+        let popover = gtk4::Popover::new();
+        popover.set_parent(parent_btn);
+
+        let scrolled = ScrolledWindow::builder()
+            .hscrollbar_policy(gtk4::PolicyType::Never)
+            .vscrollbar_policy(gtk4::PolicyType::Automatic)
+            .max_content_height(350)
+            .propagate_natural_height(true)
+            .build();
+
+        let content = GtkBox::new(Orientation::Vertical, 8);
+        content.set_margin_top(8);
+        content.set_margin_bottom(8);
+        content.set_margin_start(8);
+        content.set_margin_end(8);
+
+        // === User templates section ===
+        let state_ref = state.borrow();
+        let user_zt_templates: Vec<_> = state_ref
+            .get_all_templates()
+            .into_iter()
+            .filter(|t| t.protocol == ProtocolType::ZeroTrust)
+            .collect();
+        drop(state_ref);
+
+        if !user_zt_templates.is_empty() {
+            let user_header = gtk4::Label::builder()
+                .label(&i18n("Your Templates"))
+                .halign(gtk4::Align::Start)
+                .css_classes(["heading"])
+                .margin_top(4)
+                .build();
+            content.append(&user_header);
+
+            let user_flow = gtk4::FlowBox::builder()
+                .homogeneous(true)
+                .min_children_per_line(3)
+                .max_children_per_line(5)
+                .selection_mode(gtk4::SelectionMode::None)
+                .activate_on_single_click(false)
+                .row_spacing(4)
+                .column_spacing(4)
+                .build();
+
+            for user_tpl in &user_zt_templates {
+                let icon_str = user_tpl.icon.clone().unwrap_or_default();
+                let tpl_name = user_tpl.name.clone();
+                let cmd_str = if let rustconn_core::models::ProtocolConfig::ZeroTrust(ref zt) =
+                    user_tpl.protocol_config
+                {
+                    if let rustconn_core::models::ZeroTrustProviderConfig::Generic(ref g) =
+                        zt.provider_config
+                    {
+                        g.command_template.clone()
+                    } else {
+                        String::new()
+                    }
+                } else {
+                    String::new()
+                };
+
+                if cmd_str.is_empty() {
+                    continue;
+                }
+
+                let btn = Self::create_user_template_button(&icon_str, &tpl_name);
+                let zt_clone = zt_cmd_row.clone();
+                let name_clone = name_row.clone();
+                let next_clone = next_btn.clone();
+                let popover_clone = popover.clone();
+                let icon_for_cb = icon_str.clone();
+                let name_for_cb = tpl_name.clone();
+                btn.connect_clicked(move |_| {
+                    zt_clone.set_text(&cmd_str);
+                    if name_clone.text().is_empty() {
+                        name_clone.set_text(&name_for_cb);
+                    }
+                    if !icon_for_cb.is_empty() {
+                        name_clone.set_widget_name(&format!("tpl-icon:{}", icon_for_cb));
+                    }
+                    next_clone.set_sensitive(true);
+                    popover_clone.popdown();
+                });
+                user_flow.append(&btn);
+            }
+
+            content.append(&user_flow);
+        }
+
+        // === Predefined templates by category ===
+        for category in rustconn_core::TemplateCategory::all() {
+            let templates = rustconn_core::templates_by_category(*category);
+            if templates.is_empty() {
+                continue;
+            }
+
+            // Category header
+            let header = gtk4::Label::builder()
+                .label(&i18n(category.display_name()))
+                .halign(gtk4::Align::Start)
+                .css_classes(["heading"])
+                .margin_top(4)
+                .build();
+            content.append(&header);
+
+            // Template buttons in a flow
+            let flow = gtk4::FlowBox::builder()
+                .homogeneous(true)
+                .min_children_per_line(3)
+                .max_children_per_line(5)
+                .selection_mode(gtk4::SelectionMode::None)
+                .activate_on_single_click(false)
+                .row_spacing(4)
+                .column_spacing(4)
+                .build();
+
+            for tpl in &templates {
+                let btn = Self::create_template_button(tpl);
+                let cmd = tpl.command;
+                let tpl_name = tpl.name;
+                let tpl_icon = tpl.icon;
+                let zt_clone = zt_cmd_row.clone();
+                let name_clone = name_row.clone();
+                let next_clone = next_btn.clone();
+                let popover_clone = popover.clone();
+                btn.connect_clicked(move |_| {
+                    zt_clone.set_text(cmd);
+                    if name_clone.text().is_empty() {
+                        name_clone.set_text(tpl_name);
+                    }
+                    name_clone.set_widget_name(&format!("tpl-icon:{tpl_icon}"));
+                    next_clone.set_sensitive(true);
+                    popover_clone.popdown();
+                });
+                flow.append(&btn);
+            }
+
+            content.append(&flow);
+        }
+
+        scrolled.set_child(Some(&content));
+        popover.set_child(Some(&scrolled));
+        popover.popup();
     }
 }

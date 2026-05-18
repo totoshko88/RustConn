@@ -10,5 +10,5 @@ Build-Depends: debhelper-compat (= 13), cargo, rustc, libgtk-4-dev, libvte-2.91-
 Package-List:
  rustconn deb net optional arch=any
 Files:
- 00000000000000000000000000000000 0 rustconn_0.14.0.orig.tar.xz
- 00000000000000000000000000000000 0 rustconn_0.14.0-1.debian.tar.xz
+ 00000000000000000000000000000000 0 rustconn_0.14.1.orig.tar.xz
+ 00000000000000000000000000000000 0 rustconn_0.14.1-1.debian.tar.xz

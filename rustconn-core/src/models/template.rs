@@ -38,6 +38,9 @@ pub struct ConnectionTemplate {
     /// Description of what this template is for
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Custom icon (emoji or GTK icon name)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
     /// Protocol type (SSH, RDP, VNC, SPICE)
     pub protocol: ProtocolType,
     /// Default remote host address (can be empty for user to fill in)
@@ -89,6 +92,7 @@ impl ConnectionTemplate {
             id: Uuid::new_v4(),
             name,
             description: None,
+            icon: None,
             protocol,
             host: String::new(),
             port,
@@ -134,6 +138,13 @@ impl ConnectionTemplate {
     #[must_use]
     pub fn with_description(mut self, description: impl Into<String>) -> Self {
         self.description = Some(description.into());
+        self
+    }
+
+    /// Sets the icon for this template (emoji or GTK icon name)
+    #[must_use]
+    pub fn with_icon(mut self, icon: impl Into<String>) -> Self {
+        self.icon = Some(icon.into());
         self
     }
 
@@ -261,7 +272,7 @@ impl ConnectionTemplate {
             skip_port_check: false,
             is_pinned: false,
             pin_order: 0,
-            icon: None,
+            icon: self.icon.clone(),
             monitoring_config: None,
             activity_monitor_config: None,
             theme_override: None,
@@ -283,6 +294,7 @@ impl ConnectionTemplate {
             id: Uuid::new_v4(),
             name: template_name,
             description: None,
+            icon: connection.icon.clone(),
             protocol: connection.protocol,
             host: connection.host.clone(),
             port: connection.port,
