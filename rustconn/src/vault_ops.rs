@@ -392,8 +392,8 @@ pub fn migrate_vault_entries_on_group_change(
     };
 
     // Collect all group IDs in the subtree rooted at changed_group_id
-    let mut affected_group_ids = vec![changed_group_id];
-    collect_descendant_groups(changed_group_id, new_groups, &mut affected_group_ids);
+    let affected_group_ids =
+        rustconn_core::models::collect_descendant_group_ids(changed_group_id, new_groups);
 
     // Build rename pairs: (old_key, new_key)
     let mut rename_pairs: Vec<(String, String)> = Vec::new();
@@ -476,20 +476,6 @@ pub fn migrate_vault_entries_on_group_change(
             }
         },
     );
-}
-
-/// Collects all descendant group IDs recursively.
-fn collect_descendant_groups(
-    parent_id: uuid::Uuid,
-    groups: &[rustconn_core::models::ConnectionGroup],
-    result: &mut Vec<uuid::Uuid>,
-) {
-    for group in groups {
-        if group.parent_id == Some(parent_id) && !result.contains(&group.id) {
-            result.push(group.id);
-            collect_descendant_groups(group.id, groups, result);
-        }
-    }
 }
 
 /// Saves a secret variable value to the configured vault backend.

@@ -1218,6 +1218,7 @@ impl SettingsDialog {
                     sync_settings
                 },
                 standalone_tunnels: settings_clone.borrow().standalone_tunnels.clone(),
+                quick_connect_history: settings_clone.borrow().quick_connect_history.clone(),
             };
 
             // Update stored settings

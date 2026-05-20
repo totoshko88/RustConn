@@ -1,15 +1,14 @@
 {
   "enabled": true,
   "name": "Pre-commit fmt & clippy",
-  "description": "Before git commit or git push, runs cargo fmt and cargo clippy to prevent CI failures. Triggers on shell tool usage with git-related commands.",
+  "description": "On-demand quality gate before committing. Run manually before git commit/push. Delegates to rust-quality-check sub-agent.",
   "shortName": "pre-commit-checks",
-  "version": "5",
+  "version": "6",
   "when": {
-    "type": "preToolUse",
-    "toolTypes": ["shell"]
+    "type": "userTriggered"
   },
   "then": {
     "type": "askAgent",
-    "prompt": "A shell command is about to run. Inspect the command text. If it contains 'git commit' or 'git push', you MUST first run 'cargo fmt --all' and 'cargo clippy --all-targets -- -D warnings' before proceeding. If either fails, fix the issues before allowing the git command.\n\nIf the command is any other operation (including git status, git diff, git log, git add, git branch, git checkout, etc.), allow it to proceed without checks.\n\nIMPORTANT: Only block on literal 'git commit' or 'git push' — not on other git subcommands."
+    "prompt": "The developer wants to run pre-commit checks. Invoke the rust-quality-check sub-agent with prompt: \"Run fmt and clippy checks. Do NOT run tests unless explicitly requested.\" Report the result and remind the developer to commit if all checks pass."
   }
 }

@@ -157,7 +157,8 @@ pub use models::{
     SerialConfig, SerialDataBits, SerialFlowControl, SerialParity, SerialStopBits, Snippet,
     SnippetVariable, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource,
     StandaloneTunnel, TelnetBackspaceSends, TelnetConfig, TelnetDeleteSends, TemplateError,
-    TunnelStatus, VncConfig, WindowGeometry, WindowMode, group_templates_by_protocol,
+    TunnelStatus, VncConfig, WindowGeometry, WindowMode, collect_descendant_group_ids,
+    group_templates_by_protocol,
 };
 pub use password_generator::{
     CharacterSet, PasswordGenerator, PasswordGeneratorConfig, PasswordGeneratorError,

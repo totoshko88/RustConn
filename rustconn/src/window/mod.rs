@@ -467,7 +467,7 @@ impl MainWindow {
             session_split_bridges,
             global_color_pool,
             split_container,
-            state,
+            state: state.clone(),
             overlay_split_view,
             external_window_manager,
             toast_overlay,
@@ -475,7 +475,7 @@ impl MainWindow {
             activity_coordinator,
             tunnel_manager,
             busy_stack,
-            quick_connect_history: Rc::new(RefCell::new(Vec::new())),
+            quick_connect_history: types::load_quick_connect_history(&state),
         };
 
         // Set up window actions

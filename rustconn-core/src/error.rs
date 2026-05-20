@@ -66,6 +66,10 @@ pub enum ConfigError {
     /// Failed to deserialize configuration
     #[error("Failed to deserialize configuration: {0}")]
     Deserialize(String),
+
+    /// Failed to acquire advisory lock on configuration directory
+    #[error("Failed to lock configuration directory: {0}")]
+    Lock(String),
 }
 
 /// Errors related to protocol operations (SSH, RDP, VNC)

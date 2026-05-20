@@ -64,6 +64,9 @@ pub struct AppSettings {
     /// Standalone SSH tunnels (port forwarding without terminal sessions)
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub standalone_tunnels: Vec<crate::models::StandaloneTunnel>,
+    /// Quick Connect history (protocol/host/port/username, no secrets)
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub quick_connect_history: Vec<QuickConnectHistoryItem>,
 }
 
 /// Terminal-related settings
@@ -638,6 +641,20 @@ impl Default for ConnectionSettings {
             port_check_timeout_secs: default_port_check_timeout(),
         }
     }
+}
+
+/// A persisted Quick Connect history entry (no secrets)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QuickConnectHistoryItem {
+    /// Protocol name: "SSH", "RDP", "VNC", "Telnet"
+    pub protocol: String,
+    /// Host or IP address
+    pub host: String,
+    /// Port number
+    pub port: u16,
+    /// Username (if provided)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub username: Option<String>,
 }
 
 /// Magic bytes identifying AES-256-GCM encrypted credentials (v1)

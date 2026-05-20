@@ -1,3 +1,20 @@
+rustconn (0.14.4-1) unstable; urgency=medium
+
+  * CLI: history, pin/unpin, tag, move, monitor commands — full connection management
+  * CLI: import --auto / --dry-run — auto-detect sources and preview imports
+  * CLI: export --csv-delimiter, --csv-fields — customize CSV export format
+  * CLI: add/update — full GUI parity for SSH, RDP, VNC, SPICE, MOSH, Serial fields
+  * Config file locking — exclusive advisory lock (fs2) on write; GUI + CLI no longer conflict
+  * SSH agent: add_key() accepts &SecretString — intermediate strings wrapped in Zeroizing
+  * Quick Connect: history persisted across sessions (up to 15 entries, no passwords)
+  * RDP Quick Actions: 3 new Windows admin tools (diskmgmt.msc, resmon, compmgmt.msc)
+  * Settings: Azure/gcloud/OCI CLI not detected in Flatpak — env vars now passed through
+  * Settings: .version file fallback for CLI tools installed via Components dialog
+  * Settings: SSH/RDP/Waypipe version strings — parser extracts version token only
+  * Command Palette: fixed shortcut display Ctrl+Shift+N → Ctrl+Shift+G
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Tue, 20 May 2026 16:00:00 +0300
+
 rustconn (0.14.3-1) unstable; urgency=medium
 
   * Settings: removed duplicate group titles above collapsible sections

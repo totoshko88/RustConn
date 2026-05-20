@@ -152,3 +152,35 @@ impl ConnectionGroup {
         self.parent_id.is_none()
     }
 }
+
+/// Collects all descendant group IDs from a slice, starting from `root_id`.
+///
+/// Uses BFS with a parent→children index for O(n) traversal.
+/// The returned vector includes `root_id` as the first element.
+#[must_use]
+pub fn collect_descendant_group_ids(root_id: Uuid, groups: &[ConnectionGroup]) -> Vec<Uuid> {
+    use std::collections::HashMap;
+
+    let mut children_index: HashMap<Uuid, Vec<Uuid>> = HashMap::new();
+    for group in groups {
+        if let Some(parent) = group.parent_id {
+            children_index.entry(parent).or_default().push(group.id);
+        }
+    }
+
+    let mut result = vec![root_id];
+    let mut i = 0;
+    while i < result.len() {
+        let current = result[i];
+        if let Some(children) = children_index.get(&current) {
+            for &child_id in children {
+                if !result.contains(&child_id) {
+                    result.push(child_id);
+                }
+            }
+        }
+        i += 1;
+    }
+
+    result
+}

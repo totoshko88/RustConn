@@ -527,11 +527,11 @@ fn add_key_with_passphrase_dialog(
         let passphrase = if passphrase_text.is_empty() {
             None
         } else {
-            Some(passphrase_text.as_str())
+            Some(secrecy::SecretString::from(passphrase_text.to_string()))
         };
 
         let manager = manager_clone.borrow();
-        match manager.add_key(&key_path_clone, passphrase) {
+        match manager.add_key(&key_path_clone, passphrase.as_ref()) {
             Ok(()) => {
                 tracing::info!("Key added successfully: {}", key_path_clone.display());
                 dialog_clone2.close();

@@ -13,8 +13,8 @@ pub use keybindings::{
 };
 pub use manager::ConfigManager;
 pub use settings::{
-    AppSettings, ColorScheme, ConnectionSettings, LoggingSettings, SavedSession, SecretBackendType,
-    SecretSettings, SessionRestoreSettings, StartupAction, TerminalSettings, UiSettings,
-    legacy_migration_count, reset_legacy_migration_count,
+    AppSettings, ColorScheme, ConnectionSettings, LoggingSettings, QuickConnectHistoryItem,
+    SavedSession, SecretBackendType, SecretSettings, SessionRestoreSettings, StartupAction,
+    TerminalSettings, UiSettings, legacy_migration_count, reset_legacy_migration_count,
 };
 // MonitoringSettings is re-exported from the monitoring module, not config

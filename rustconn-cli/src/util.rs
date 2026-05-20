@@ -136,6 +136,38 @@ pub fn find_connection<'a>(
     }
 }
 
+/// Resolves a group name to its UUID, creating the group if it does not exist.
+///
+/// Tries case-sensitive match, then case-insensitive. If no match is found,
+/// appends a new `ConnectionGroup` to the slice's owner via the provided callback.
+///
+/// # Errors
+///
+/// Returns `CliError::Config` if the name is empty.
+pub fn find_or_create_group_id(
+    groups: &mut Vec<rustconn_core::models::ConnectionGroup>,
+    name: &str,
+) -> Result<uuid::Uuid, CliError> {
+    let trimmed = name.trim();
+    if trimmed.is_empty() {
+        return Err(CliError::Config("Group name cannot be empty".to_string()));
+    }
+
+    if let Some(g) = groups.iter().find(|g| g.name == trimmed) {
+        return Ok(g.id);
+    }
+
+    if let Some(g) = groups.iter().find(|g| g.name.eq_ignore_ascii_case(trimmed)) {
+        return Ok(g.id);
+    }
+
+    // Group doesn't exist — create it
+    let new_group = rustconn_core::models::ConnectionGroup::new(trimmed.to_string());
+    let id = new_group.id;
+    groups.push(new_group);
+    Ok(id)
+}
+
 /// Outputs content through a pager (`less`) if stdout is a terminal and
 /// the content exceeds 40 lines. Falls back to direct printing otherwise.
 ///

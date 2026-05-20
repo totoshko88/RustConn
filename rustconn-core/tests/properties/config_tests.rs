@@ -526,6 +526,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                     ssh_agent_socket: None,
                     sync: SyncSettings::default(),
                     standalone_tunnels: Vec::new(),
+                    quick_connect_history: Vec::new(),
                 }
             },
         )

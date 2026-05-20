@@ -69,6 +69,7 @@ ironrdp-tls = { version = "0.2", features = ["native-tls"], optional = true }
 # Pin native-tls to avoid Tlsv13 compile bug in 0.2.17
 native-tls = { workspace = true }
 nix = { version = "0.31.2", features = ["fs"] }
+fs2 = "0.4"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 security-framework = "3.3"

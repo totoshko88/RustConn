@@ -1,6 +1,6 @@
 # RustConn CLI Reference
 
-**Version 0.14.2** | Full command-line interface for RustConn connection management
+**Version 0.14.4** | Full command-line interface for RustConn connection management
 
 The `rustconn-cli` binary provides full connection management from the terminal. It shares the same configuration files as the GUI (`~/.config/rustconn/`), so changes made in either tool are immediately visible to the other.
 
@@ -146,6 +146,60 @@ Options:
 | `--keep-alive-count` | — | SSH keep-alive count max (`ServerAliveCountMax`) |
 | `--ssh-verbose` | — | Enable SSH verbose/debug output (`-v` flag) |
 | `--ignore-certificate` | — | Accept any RDP server certificate (skip TOFU verification) |
+| `--tags` | — | Comma-separated tags (e.g. `"production,linux,critical"`) |
+| `--description` | — | Description text for the connection |
+| `--group` | — | Group name (creates the group if missing) |
+| `--domain` | — | Windows domain for RDP/SPICE authentication |
+| `--window-mode` | — | Window mode: `embedded`, `external`, or `fullscreen` (RDP/VNC only) |
+| `--skip-port-check` | — | Skip pre-connect TCP port check |
+| `--x11-forwarding` | — | Enable X11 forwarding (`-X` flag, SSH/SFTP only) |
+| `--agent-forwarding` | — | Enable SSH agent forwarding (`-A` flag, SSH/SFTP only) |
+| `--compression` | — | Enable compression (`-C` flag, SSH/SFTP only) |
+| `--startup-command` | — | Command to execute on SSH connection startup |
+| `--proxy-command` | — | SSH ProxyCommand (e.g. `"ncat --proxy 127.0.0.1:9050 --proxy-type socks5 %h %p"`) |
+| `--ssh-option` | — | Custom SSH option `K=V` (repeatable, e.g. `--ssh-option StrictHostKeyChecking=no`) |
+| `--local-forward` | — | Local port forwarding `L:H:P` (repeatable, e.g. `8080:localhost:80`) |
+| `--remote-forward` | — | Remote port forwarding `R:H:P` (repeatable, e.g. `9090:localhost:3000`) |
+| `--dynamic-forward` | — | Dynamic SOCKS forwarding port (repeatable, e.g. `1080`) |
+| `--gateway` | — | RDP gateway hostname |
+| `--gateway-port` | — | RDP gateway port (default: 443) |
+| `--gateway-username` | — | RDP gateway username (if different from connection user) |
+| `--remote-app-program` | — | RemoteApp program path or alias (RDP only) |
+| `--remote-app-args` | — | RemoteApp command-line arguments (RDP only) |
+| `--remote-app-name` | — | RemoteApp display name (RDP only) |
+| `--resolution` | — | RDP resolution (e.g. `1920x1080`) |
+| `--color-depth` | — | RDP color depth: 8, 15, 16, 24, or 32 |
+| `--disable-nla` | — | Disable Network Level Authentication (RDP only) |
+| `--keyboard-layout` | — | RDP keyboard layout override (Windows KLID) |
+| `--audio-redirect` | — | Enable audio redirection (RDP only) |
+| `--shared-folder` | — | Shared folder `NAME:PATH` (repeatable, RDP only) |
+| `--vnc-client-mode` | — | VNC client mode: `embedded` (default) or `external` |
+| `--vnc-performance` | — | VNC performance mode: `quality`, `balanced` (default), or `speed` |
+| `--vnc-encoding` | — | VNC encoding: `tight`, `zrle`, or `hextile` |
+| `--vnc-compression` | — | VNC compression level (0-9) |
+| `--vnc-quality` | — | VNC quality level (0-9) |
+| `--vnc-view-only` | — | VNC view-only mode (no keyboard/mouse input) |
+| `--vnc-no-scaling` | — | Disable VNC scaling |
+| `--vnc-no-clipboard` | — | Disable VNC clipboard sharing |
+| `--vnc-custom-arg` | — | Custom VNC client argument (repeatable) |
+| `--spice-tls` | — | Enable SPICE TLS encryption |
+| `--spice-ca-cert` | — | SPICE CA certificate path for TLS verification |
+| `--spice-skip-cert-verify` | — | Skip SPICE certificate verification (insecure) |
+| `--spice-usb-redirection` | — | Enable SPICE USB redirection |
+| `--spice-no-clipboard` | — | Disable SPICE clipboard sharing |
+| `--spice-image-compression` | — | SPICE image compression: `auto`, `off`, `glz`, `lz`, `quic` |
+| `--spice-proxy` | — | SPICE proxy URL (e.g. `http://proxy:3128`) |
+| `--spice-shared-folder` | — | SPICE shared folder `NAME:PATH` (repeatable) |
+| `--mosh-ssh-port` | — | SSH port for MOSH initial handshake |
+| `--mosh-port-range` | — | MOSH UDP port range (e.g. `60000:60010`) |
+| `--mosh-server-binary` | — | Path to remote mosh-server binary |
+| `--mosh-predict` | — | MOSH prediction mode: `adaptive` (default), `always`, `never` |
+| `--mosh-custom-arg` | — | Custom MOSH client argument (repeatable) |
+| `--serial-data-bits` | — | Serial data bits: `5`, `6`, `7`, `8` (default) |
+| `--serial-stop-bits` | — | Serial stop bits: `1` (default), `2` |
+| `--serial-parity` | — | Serial parity: `none` (default), `odd`, `even` |
+| `--serial-flow-control` | — | Serial flow control: `none` (default), `hardware`, `software` |
+| `--serial-custom-arg` | — | Custom serial client argument (repeatable) |
 | `--provider` | — | Zero Trust provider (see [Zero Trust examples](#zero-trust-examples) below) |
 
 **Protocol examples:**
@@ -174,6 +228,22 @@ rustconn-cli add -n "Router" -H /dev/ttyUSB0 -P serial --baud-rate 9600
 
 # MOSH
 rustconn-cli add -n "Mobile" -H 10.0.0.1 -P mosh -u admin
+
+# VNC with advanced settings
+rustconn-cli add -n "Desktop" -H 10.0.0.1 -P vnc --vnc-performance speed \
+    --vnc-encoding zrle --vnc-compression 9 --vnc-quality 3
+
+# SPICE with TLS and USB redirection
+rustconn-cli add -n "VM" -H 10.0.0.1 -P spice --spice-tls \
+    --spice-ca-cert /etc/pki/ca.pem --spice-usb-redirection
+
+# MOSH with custom port range and prediction
+rustconn-cli add -n "Mobile" -H 10.0.0.1 -P mosh -u admin \
+    --mosh-port-range 60000:60010 --mosh-predict always
+
+# Serial with full configuration
+rustconn-cli add -n "Router" -H /dev/ttyUSB0 -P serial --baud-rate 9600 \
+    --serial-data-bits 8 --serial-parity none --serial-flow-control hardware
 
 # Kubernetes
 rustconn-cli add -n "Pod" -H pod-name -P k8s
@@ -278,10 +348,32 @@ rustconn-cli update "My Server" --icon "⭐"
 rustconn-cli update "My Server" --jump-host "Bastion"
 rustconn-cli update "My Server" --keep-alive-interval 60 --keep-alive-count 3
 rustconn-cli update "My Server" --ssh-verbose
+rustconn-cli update "My Server" --x11-forwarding --agent-forwarding --compression
+rustconn-cli update "My Server" --local-forward 8080:localhost:80 --dynamic-forward 1080
+rustconn-cli update "My Server" --proxy-command "ncat --proxy 127.0.0.1:9050 --proxy-type socks5 %h %p"
+rustconn-cli update "My Server" --ssh-option StrictHostKeyChecking=no
+rustconn-cli update "My Server" --tags "production,web" --group "Production"
+rustconn-cli update "My Server" --add-tag critical --remove-tag staging
 rustconn-cli update "Windows" --ignore-certificate
+rustconn-cli update "Windows" --gateway gw.example.com --gateway-port 443
+rustconn-cli update "Windows" --resolution 1920x1080 --color-depth 32
+rustconn-cli update "Windows" --shared-folder docs:/home/user/Documents
+rustconn-cli update "Windows" --remote-app-program "||calc" --remote-app-name "Calculator"
+rustconn-cli update "Desktop" --vnc-performance speed --vnc-compression 9 --vnc-view-only
+rustconn-cli update "Desktop" --vnc-client-mode external --vnc-custom-arg "-FullScreen"
+rustconn-cli update "VM" --spice-tls --spice-ca-cert /etc/pki/ca.pem --spice-usb-redirection
+rustconn-cli update "VM" --spice-image-compression glz --spice-shared-folder share:/mnt/data
+rustconn-cli update "Mobile" --mosh-port-range 60000:60010 --mosh-predict always
+rustconn-cli update "Mobile" --mosh-server-binary /usr/local/bin/mosh-server
+rustconn-cli update "Router" --serial-data-bits 7 --serial-parity even --serial-flow-control hardware
 ```
 
-All flags from `add` are available (except `--protocol`), plus `--new-name` to rename. Only specified fields are changed; unspecified fields remain unchanged.
+All flags from `add` are available (except `--protocol`), plus:
+- `--new-name` to rename
+- `--add-tag` / `--remove-tag` for incremental tag editing
+- `--skip-port-check=false` to clear the flag
+
+Only specified fields are changed; unspecified fields remain unchanged.
 
 ### delete — Delete a connection
 
@@ -361,7 +453,7 @@ The command automatically manages SSH agent keys before connecting. Only SSH con
 ### export — Export connections
 
 ```bash
-rustconn-cli export -f <format> -o <path>
+rustconn-cli export -f <format> -o <path> [--csv-delimiter <delim>] [--csv-fields <fields>]
 ```
 
 ```bash
@@ -373,6 +465,8 @@ rustconn-cli export -f royal-ts -o connections.rtsz
 rustconn-cli export -f moba-xterm -o sessions.mxtsessions
 rustconn-cli export -f asbru -o asbru.yml
 rustconn-cli export -f csv -o connections.csv
+rustconn-cli export -f csv -o connections.csv --csv-delimiter semicolon
+rustconn-cli export -f csv -o connections.csv --csv-fields "name,host,port,protocol"
 ```
 
 | Format | Description |
@@ -386,10 +480,17 @@ rustconn-cli export -f csv -o connections.csv
 | `moba-xterm` | MobaXterm sessions (`.mxtsessions`) |
 | `csv` | CSV format (`.csv`) |
 
+**CSV options** (only valid with `--format csv`):
+
+| Flag | Description |
+|------|-------------|
+| `--csv-delimiter` | Delimiter: `comma` (default), `semicolon`, `tab` |
+| `--csv-fields` | Comma-separated list of fields to include |
+
 ### import — Import connections
 
 ```bash
-rustconn-cli import -f <format> <file>
+rustconn-cli import -f <format> [<file>] [--auto] [--dry-run]
 ```
 
 ```bash
@@ -403,7 +504,16 @@ rustconn-cli import -f rdp session.rdp
 rustconn-cli import -f virt-viewer vm.vv
 rustconn-cli import -f libvirt domain.xml
 rustconn-cli import -f csv connections.csv
+rustconn-cli import -f ssh-config --auto             # Auto-detect sources
+rustconn-cli import -f ssh-config --dry-run file     # Preview without saving
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--auto` | Auto-detect available import sources (Asbru-CM, Remmina, SSH config) and import all found |
+| `--dry-run` | Show what would be imported without saving changes |
+
+The `--auto` flag scans default locations (`~/.config/asbru-cm/`, `~/.local/share/remmina/`, `~/.ssh/config`) and imports from all detected sources. Duplicates (same name + host) are skipped.
 
 Additional import formats: `rdp` (Microsoft RDP files), `rdm` (Remote Desktop Manager), `virt-viewer` (`.vv` files), `libvirt` (GNOME Boxes / virsh XML). Passwords are never included in import/export files — re-enter them after importing.
 
@@ -727,6 +837,98 @@ JSON output:
 ```
 
 When piped (non-TTY stdout), output defaults to JSON automatically.
+
+### history — View connection history
+
+```bash
+rustconn-cli history list [-f table|json|csv] [-l limit] [-c connection]
+rustconn-cli history show <id>
+rustconn-cli history clear [--force]
+```
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List recent connection history entries |
+| `show <id>` | Show details of a specific history entry (by UUID) |
+| `clear` | Clear all connection history (prompts for confirmation) |
+
+```bash
+rustconn-cli history list                            # Last 20 entries
+rustconn-cli history list --limit 50                 # Last 50 entries
+rustconn-cli history list --connection "Prod"        # Filter by name
+rustconn-cli history list --format json              # JSON output
+rustconn-cli history show 550e8400-e29b-...          # Entry details
+rustconn-cli history clear --force                   # Clear without prompt
+```
+
+### pin / unpin — Pin connections to favorites
+
+```bash
+rustconn-cli pin <name>
+rustconn-cli unpin <name>
+```
+
+Pinned connections appear at the top of the sidebar in the GUI. Pin order is preserved (new pins go to the end).
+
+```bash
+rustconn-cli pin "Production DB"                     # Pin to favorites
+rustconn-cli unpin "Production DB"                   # Remove from favorites
+```
+
+### tag — Manage connection tags
+
+```bash
+rustconn-cli tag list [-f table|json|csv]
+rustconn-cli tag add -c <connection> -t <tag>
+rustconn-cli tag remove -c <connection> -t <tag>
+```
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all tags with usage counts |
+| `add` | Add a tag to a connection |
+| `remove` | Remove a tag from a connection |
+
+```bash
+rustconn-cli tag list                                # All tags with counts
+rustconn-cli tag list --format json                  # JSON: {"linux": 5, "prod": 3}
+rustconn-cli tag add -c "Server" -t "production"     # Add tag
+rustconn-cli tag remove -c "Server" -t "staging"     # Remove tag
+```
+
+### move — Move connection to a group
+
+```bash
+rustconn-cli move <name> --group <group>
+```
+
+Moves a connection to the specified group. Creates the group if it doesn't exist.
+
+```bash
+rustconn-cli move "Old Server" --group "Archive"     # Move to existing group
+rustconn-cli move "New VM" --group "Cloud"           # Creates "Cloud" if missing
+```
+
+### monitor — Manage per-connection monitoring
+
+```bash
+rustconn-cli monitor enable <name> [--interval <secs>]
+rustconn-cli monitor disable <name>
+rustconn-cli monitor metrics <name> [-f table|json|csv]
+```
+
+| Subcommand | Description |
+|------------|-------------|
+| `enable` | Enable monitoring for a connection (optional interval override) |
+| `disable` | Disable monitoring for a connection |
+| `metrics` | Show monitoring configuration for a connection |
+
+```bash
+rustconn-cli monitor enable "Server" --interval 30   # Enable with 30s interval
+rustconn-cli monitor disable "Server"                # Disable monitoring
+rustconn-cli monitor metrics "Server"                # Show current config
+rustconn-cli monitor metrics "Server" --format json  # JSON output
+```
 
 ---
 

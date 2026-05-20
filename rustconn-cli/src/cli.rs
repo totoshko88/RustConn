@@ -217,6 +217,232 @@ pub enum Commands {
         /// Accept any RDP server certificate (skip TOFU verification)
         #[arg(long)]
         ignore_certificate: bool,
+
+        /// Comma-separated tags (e.g. "production,linux,critical")
+        #[arg(long, value_name = "TAG[,TAG...]")]
+        tags: Option<String>,
+
+        /// Description text for the connection
+        #[arg(long, value_name = "TEXT")]
+        description: Option<String>,
+
+        /// Group name to assign the connection to (creates the group if missing)
+        #[arg(long, value_name = "NAME")]
+        group: Option<String>,
+
+        /// Windows domain for RDP/SPICE authentication
+        #[arg(long, value_name = "DOMAIN")]
+        domain: Option<String>,
+
+        /// Window mode: embedded (default), external, or fullscreen.
+        /// Currently honored only for RDP and VNC; ignored for other protocols.
+        #[arg(
+            long,
+            value_name = "MODE",
+            value_parser = ["embedded", "external", "fullscreen"]
+        )]
+        window_mode: Option<String>,
+
+        /// Skip pre-connect TCP port check for this connection
+        #[arg(long)]
+        skip_port_check: bool,
+
+        /// Enable X11 forwarding (-X flag) for SSH/SFTP connections
+        #[arg(long)]
+        x11_forwarding: bool,
+
+        /// Enable SSH agent forwarding (-A flag) for SSH/SFTP connections
+        #[arg(long)]
+        agent_forwarding: bool,
+
+        /// Enable compression (-C flag) for SSH/SFTP connections
+        #[arg(long)]
+        compression: bool,
+
+        /// Command to execute on SSH connection startup
+        #[arg(long, value_name = "TEXT")]
+        startup_command: Option<String>,
+
+        /// SSH ProxyCommand for connections that require a proxy
+        /// (e.g., "ncat --proxy 127.0.0.1:9050 --proxy-type socks5 %h %p")
+        #[arg(long, value_name = "TEXT")]
+        proxy_command: Option<String>,
+
+        /// Custom SSH option (repeatable, format: Key=Value)
+        #[arg(long, value_name = "K=V", value_parser = parse_key_val)]
+        ssh_option: Vec<(String, String)>,
+
+        /// Local port forwarding (repeatable, format: LOCAL_PORT:REMOTE_HOST:REMOTE_PORT)
+        #[arg(long, value_name = "L:H:P")]
+        local_forward: Vec<String>,
+
+        /// Remote port forwarding (repeatable, format: REMOTE_PORT:LOCAL_HOST:LOCAL_PORT)
+        #[arg(long, value_name = "R:H:P")]
+        remote_forward: Vec<String>,
+
+        /// Dynamic (SOCKS) port forwarding (repeatable, format: PORT)
+        #[arg(long, value_name = "PORT")]
+        dynamic_forward: Vec<String>,
+
+        /// RDP gateway hostname (enables gateway tunneling)
+        #[arg(long, value_name = "HOST")]
+        gateway: Option<String>,
+
+        /// RDP gateway port (default: 443)
+        #[arg(long, value_name = "PORT")]
+        gateway_port: Option<u16>,
+
+        /// RDP gateway username (if different from connection username)
+        #[arg(long, value_name = "USER")]
+        gateway_username: Option<String>,
+
+        /// RemoteApp program path or alias (launches single app instead of full desktop)
+        #[arg(long, value_name = "PATH")]
+        remote_app_program: Option<String>,
+
+        /// RemoteApp command-line arguments
+        #[arg(long, value_name = "ARGS")]
+        remote_app_args: Option<String>,
+
+        /// RemoteApp display name (shown in taskbar/window title)
+        #[arg(long, value_name = "NAME")]
+        remote_app_name: Option<String>,
+
+        /// RDP resolution (e.g. "1920x1080")
+        #[arg(long, value_name = "WxH")]
+        resolution: Option<String>,
+
+        /// RDP color depth (8, 15, 16, 24, or 32)
+        #[arg(long, value_name = "BITS")]
+        color_depth: Option<u8>,
+
+        /// Disable Network Level Authentication for RDP
+        #[arg(long)]
+        disable_nla: bool,
+
+        /// RDP keyboard layout override (Windows KLID, e.g. 0x00000409 for US)
+        #[arg(long, value_name = "KLID")]
+        keyboard_layout: Option<u32>,
+
+        /// Enable audio redirection for RDP
+        #[arg(long)]
+        audio_redirect: bool,
+
+        /// Shared folder for RDP drive redirection (repeatable, format: NAME:PATH)
+        #[arg(long, value_name = "NAME:PATH")]
+        shared_folder: Vec<String>,
+
+        // --- VNC-specific flags ---
+        /// VNC client mode: embedded (default) or external
+        #[arg(long, value_name = "MODE", value_parser = ["embedded", "external"])]
+        vnc_client_mode: Option<String>,
+
+        /// VNC performance mode: quality, balanced (default), or speed
+        #[arg(long, value_name = "MODE", value_parser = ["quality", "balanced", "speed"])]
+        vnc_performance: Option<String>,
+
+        /// VNC encoding: tight, zrle, or hextile
+        #[arg(long, value_name = "ENC", value_parser = ["tight", "zrle", "hextile"])]
+        vnc_encoding: Option<String>,
+
+        /// VNC compression level (0-9)
+        #[arg(long, value_name = "N", value_parser = clap::value_parser!(u8).range(0..=9))]
+        vnc_compression: Option<u8>,
+
+        /// VNC quality level (0-9)
+        #[arg(long, value_name = "N", value_parser = clap::value_parser!(u8).range(0..=9))]
+        vnc_quality: Option<u8>,
+
+        /// VNC view-only mode (no keyboard/mouse input)
+        #[arg(long)]
+        vnc_view_only: bool,
+
+        /// Disable VNC scaling (don't scale display to fit window)
+        #[arg(long)]
+        vnc_no_scaling: bool,
+
+        /// Disable VNC clipboard sharing
+        #[arg(long)]
+        vnc_no_clipboard: bool,
+
+        /// Custom VNC client argument (repeatable)
+        #[arg(long, value_name = "ARG")]
+        vnc_custom_arg: Vec<String>,
+
+        // --- SPICE-specific flags ---
+        /// Enable SPICE TLS encryption
+        #[arg(long)]
+        spice_tls: bool,
+
+        /// SPICE CA certificate path for TLS verification
+        #[arg(long, value_name = "PATH")]
+        spice_ca_cert: Option<String>,
+
+        /// Skip SPICE certificate verification (insecure)
+        #[arg(long)]
+        spice_skip_cert_verify: bool,
+
+        /// Enable SPICE USB redirection
+        #[arg(long)]
+        spice_usb_redirection: bool,
+
+        /// Disable SPICE clipboard sharing
+        #[arg(long)]
+        spice_no_clipboard: bool,
+
+        /// SPICE image compression mode: auto, off, glz, lz, quic
+        #[arg(long, value_name = "MODE", value_parser = ["auto", "off", "glz", "lz", "quic"])]
+        spice_image_compression: Option<String>,
+
+        /// SPICE proxy URL (e.g. http://proxy:3128)
+        #[arg(long, value_name = "URL")]
+        spice_proxy: Option<String>,
+
+        /// SPICE shared folder (repeatable, format: NAME:PATH)
+        #[arg(long, value_name = "NAME:PATH")]
+        spice_shared_folder: Vec<String>,
+
+        // --- MOSH-specific flags ---
+        /// SSH port for MOSH initial handshake
+        #[arg(long, value_name = "PORT")]
+        mosh_ssh_port: Option<u16>,
+
+        /// MOSH UDP port range (e.g. 60000:60010)
+        #[arg(long, value_name = "RANGE")]
+        mosh_port_range: Option<String>,
+
+        /// Path to remote mosh-server binary
+        #[arg(long, value_name = "PATH")]
+        mosh_server_binary: Option<String>,
+
+        /// MOSH prediction mode: adaptive (default), always, never
+        #[arg(long, value_name = "MODE", value_parser = ["adaptive", "always", "never"])]
+        mosh_predict: Option<String>,
+
+        /// Custom MOSH client argument (repeatable)
+        #[arg(long, value_name = "ARG")]
+        mosh_custom_arg: Vec<String>,
+
+        // --- Serial-specific wave-2 flags ---
+        /// Serial data bits: 5, 6, 7, 8 (default)
+        #[arg(long, value_name = "N", value_parser = ["5", "6", "7", "8"])]
+        serial_data_bits: Option<String>,
+
+        /// Serial stop bits: 1 (default), 2
+        #[arg(long, value_name = "N", value_parser = ["1", "2"])]
+        serial_stop_bits: Option<String>,
+
+        /// Serial parity: none (default), odd, even
+        #[arg(long, value_name = "MODE", value_parser = ["none", "odd", "even"])]
+        serial_parity: Option<String>,
+
+        /// Serial flow control: none (default), hardware, software
+        #[arg(long, value_name = "MODE", value_parser = ["none", "hardware", "software"])]
+        serial_flow_control: Option<String>,
+
+        /// Custom serial client argument (repeatable)
+        #[arg(long, value_name = "ARG")]
+        serial_custom_arg: Vec<String>,
     },
 
     /// Export connections to external format
@@ -229,6 +455,14 @@ pub enum Commands {
         /// Output file or directory path
         #[arg(short, long)]
         output: PathBuf,
+
+        /// CSV delimiter (comma, semicolon, tab) — only for CSV format
+        #[arg(long, value_parser = ["comma", "semicolon", "tab"])]
+        csv_delimiter: Option<String>,
+
+        /// CSV fields to include (comma-separated list of field names) — only for CSV format
+        #[arg(long, value_name = "FIELDS")]
+        csv_fields: Option<String>,
     },
 
     /// Import connections from external format
@@ -239,7 +473,16 @@ pub enum Commands {
         format: ImportFormatArg,
 
         /// Input file path
-        file: PathBuf,
+        #[arg(conflicts_with = "auto")]
+        file: Option<PathBuf>,
+
+        /// Auto-detect available import sources (Asbru, Remmina, SSH config, etc.)
+        #[arg(long, conflicts_with = "file")]
+        auto: bool,
+
+        /// Show what would be imported without saving
+        #[arg(long)]
+        dry_run: bool,
     },
 
     /// Test connection connectivity
@@ -423,6 +666,240 @@ pub enum Commands {
         /// Accept any RDP server certificate (skip TOFU verification)
         #[arg(long)]
         ignore_certificate: bool,
+
+        /// Comma-separated tags (replaces existing tags; use --add-tag/--remove-tag for incremental edits)
+        #[arg(long, value_name = "TAG[,TAG...]")]
+        tags: Option<String>,
+
+        /// Add a single tag (repeatable; preserves existing tags)
+        #[arg(long, value_name = "TAG")]
+        add_tag: Vec<String>,
+
+        /// Remove a single tag (repeatable; no error if missing)
+        #[arg(long, value_name = "TAG")]
+        remove_tag: Vec<String>,
+
+        /// New description text
+        #[arg(long, value_name = "TEXT")]
+        description: Option<String>,
+
+        /// Move connection to a different group (creates the group if missing)
+        #[arg(long, value_name = "NAME")]
+        group: Option<String>,
+
+        /// Windows domain for RDP/SPICE authentication
+        #[arg(long, value_name = "DOMAIN")]
+        domain: Option<String>,
+
+        /// Window mode: embedded, external, or fullscreen.
+        /// Currently honored only for RDP and VNC; ignored for other protocols.
+        #[arg(
+            long,
+            value_name = "MODE",
+            value_parser = ["embedded", "external", "fullscreen"]
+        )]
+        window_mode: Option<String>,
+
+        /// Set skip-port-check flag (use --skip-port-check=false to clear)
+        #[arg(long, num_args = 0..=1, default_missing_value = "true")]
+        skip_port_check: Option<bool>,
+
+        /// Enable X11 forwarding (-X flag) for SSH/SFTP connections
+        #[arg(long)]
+        x11_forwarding: bool,
+
+        /// Enable SSH agent forwarding (-A flag) for SSH/SFTP connections
+        #[arg(long)]
+        agent_forwarding: bool,
+
+        /// Enable compression (-C flag) for SSH/SFTP connections
+        #[arg(long)]
+        compression: bool,
+
+        /// Command to execute on SSH connection startup
+        #[arg(long, value_name = "TEXT")]
+        startup_command: Option<String>,
+
+        /// SSH ProxyCommand for connections that require a proxy
+        /// (e.g., "ncat --proxy 127.0.0.1:9050 --proxy-type socks5 %h %p")
+        #[arg(long, value_name = "TEXT")]
+        proxy_command: Option<String>,
+
+        /// Custom SSH option (repeatable, format: Key=Value)
+        #[arg(long, value_name = "K=V", value_parser = parse_key_val)]
+        ssh_option: Vec<(String, String)>,
+
+        /// Local port forwarding (repeatable, format: LOCAL_PORT:REMOTE_HOST:REMOTE_PORT)
+        #[arg(long, value_name = "L:H:P")]
+        local_forward: Vec<String>,
+
+        /// Remote port forwarding (repeatable, format: REMOTE_PORT:LOCAL_HOST:LOCAL_PORT)
+        #[arg(long, value_name = "R:H:P")]
+        remote_forward: Vec<String>,
+
+        /// Dynamic (SOCKS) port forwarding (repeatable, format: PORT)
+        #[arg(long, value_name = "PORT")]
+        dynamic_forward: Vec<String>,
+
+        /// RDP gateway hostname (enables gateway tunneling)
+        #[arg(long, value_name = "HOST")]
+        gateway: Option<String>,
+
+        /// RDP gateway port (default: 443)
+        #[arg(long, value_name = "PORT")]
+        gateway_port: Option<u16>,
+
+        /// RDP gateway username (if different from connection username)
+        #[arg(long, value_name = "USER")]
+        gateway_username: Option<String>,
+
+        /// RemoteApp program path or alias (launches single app instead of full desktop)
+        #[arg(long, value_name = "PATH")]
+        remote_app_program: Option<String>,
+
+        /// RemoteApp command-line arguments
+        #[arg(long, value_name = "ARGS")]
+        remote_app_args: Option<String>,
+
+        /// RemoteApp display name (shown in taskbar/window title)
+        #[arg(long, value_name = "NAME")]
+        remote_app_name: Option<String>,
+
+        /// RDP resolution (e.g. "1920x1080")
+        #[arg(long, value_name = "WxH")]
+        resolution: Option<String>,
+
+        /// RDP color depth (8, 15, 16, 24, or 32)
+        #[arg(long, value_name = "BITS")]
+        color_depth: Option<u8>,
+
+        /// Disable Network Level Authentication for RDP
+        #[arg(long)]
+        disable_nla: bool,
+
+        /// RDP keyboard layout override (Windows KLID, e.g. 0x00000409 for US)
+        #[arg(long, value_name = "KLID")]
+        keyboard_layout: Option<u32>,
+
+        /// Enable audio redirection for RDP
+        #[arg(long)]
+        audio_redirect: bool,
+
+        /// Shared folder for RDP drive redirection (repeatable, format: NAME:PATH)
+        #[arg(long, value_name = "NAME:PATH")]
+        shared_folder: Vec<String>,
+
+        // --- VNC-specific flags ---
+        /// VNC client mode: embedded (default) or external
+        #[arg(long, value_name = "MODE", value_parser = ["embedded", "external"])]
+        vnc_client_mode: Option<String>,
+
+        /// VNC performance mode: quality, balanced (default), or speed
+        #[arg(long, value_name = "MODE", value_parser = ["quality", "balanced", "speed"])]
+        vnc_performance: Option<String>,
+
+        /// VNC encoding: tight, zrle, or hextile
+        #[arg(long, value_name = "ENC", value_parser = ["tight", "zrle", "hextile"])]
+        vnc_encoding: Option<String>,
+
+        /// VNC compression level (0-9)
+        #[arg(long, value_name = "N", value_parser = clap::value_parser!(u8).range(0..=9))]
+        vnc_compression: Option<u8>,
+
+        /// VNC quality level (0-9)
+        #[arg(long, value_name = "N", value_parser = clap::value_parser!(u8).range(0..=9))]
+        vnc_quality: Option<u8>,
+
+        /// VNC view-only mode (no keyboard/mouse input)
+        #[arg(long)]
+        vnc_view_only: bool,
+
+        /// Disable VNC scaling (don't scale display to fit window)
+        #[arg(long)]
+        vnc_no_scaling: bool,
+
+        /// Disable VNC clipboard sharing
+        #[arg(long)]
+        vnc_no_clipboard: bool,
+
+        /// Custom VNC client argument (repeatable)
+        #[arg(long, value_name = "ARG")]
+        vnc_custom_arg: Vec<String>,
+
+        // --- SPICE-specific flags ---
+        /// Enable SPICE TLS encryption
+        #[arg(long)]
+        spice_tls: bool,
+
+        /// SPICE CA certificate path for TLS verification
+        #[arg(long, value_name = "PATH")]
+        spice_ca_cert: Option<String>,
+
+        /// Skip SPICE certificate verification (insecure)
+        #[arg(long)]
+        spice_skip_cert_verify: bool,
+
+        /// Enable SPICE USB redirection
+        #[arg(long)]
+        spice_usb_redirection: bool,
+
+        /// Disable SPICE clipboard sharing
+        #[arg(long)]
+        spice_no_clipboard: bool,
+
+        /// SPICE image compression mode: auto, off, glz, lz, quic
+        #[arg(long, value_name = "MODE", value_parser = ["auto", "off", "glz", "lz", "quic"])]
+        spice_image_compression: Option<String>,
+
+        /// SPICE proxy URL (e.g. http://proxy:3128)
+        #[arg(long, value_name = "URL")]
+        spice_proxy: Option<String>,
+
+        /// SPICE shared folder (repeatable, format: NAME:PATH)
+        #[arg(long, value_name = "NAME:PATH")]
+        spice_shared_folder: Vec<String>,
+
+        // --- MOSH-specific flags ---
+        /// SSH port for MOSH initial handshake
+        #[arg(long, value_name = "PORT")]
+        mosh_ssh_port: Option<u16>,
+
+        /// MOSH UDP port range (e.g. 60000:60010)
+        #[arg(long, value_name = "RANGE")]
+        mosh_port_range: Option<String>,
+
+        /// Path to remote mosh-server binary
+        #[arg(long, value_name = "PATH")]
+        mosh_server_binary: Option<String>,
+
+        /// MOSH prediction mode: adaptive (default), always, never
+        #[arg(long, value_name = "MODE", value_parser = ["adaptive", "always", "never"])]
+        mosh_predict: Option<String>,
+
+        /// Custom MOSH client argument (repeatable)
+        #[arg(long, value_name = "ARG")]
+        mosh_custom_arg: Vec<String>,
+
+        // --- Serial-specific wave-2 flags ---
+        /// Serial data bits: 5, 6, 7, 8 (default)
+        #[arg(long, value_name = "N", value_parser = ["5", "6", "7", "8"])]
+        serial_data_bits: Option<String>,
+
+        /// Serial stop bits: 1 (default), 2
+        #[arg(long, value_name = "N", value_parser = ["1", "2"])]
+        serial_stop_bits: Option<String>,
+
+        /// Serial parity: none (default), odd, even
+        #[arg(long, value_name = "MODE", value_parser = ["none", "odd", "even"])]
+        serial_parity: Option<String>,
+
+        /// Serial flow control: none (default), hardware, software
+        #[arg(long, value_name = "MODE", value_parser = ["none", "hardware", "software"])]
+        serial_flow_control: Option<String>,
+
+        /// Custom serial client argument (repeatable)
+        #[arg(long, value_name = "ARG")]
+        serial_custom_arg: Vec<String>,
     },
 
     /// Send Wake-on-LAN magic packet
@@ -532,6 +1009,43 @@ pub enum Commands {
     /// Cloud Sync and inventory sync operations
     #[command(subcommand, about = "Cloud Sync operations and inventory sync")]
     Sync(SyncCommands),
+
+    /// View and manage connection history
+    #[command(subcommand, about = "View and manage connection history")]
+    History(HistoryCommands),
+
+    /// Pin a connection to favorites
+    #[command(about = "Pin a connection to favorites")]
+    Pin {
+        /// Connection name or UUID
+        name: String,
+    },
+
+    /// Unpin a connection from favorites
+    #[command(about = "Unpin a connection from favorites")]
+    Unpin {
+        /// Connection name or UUID
+        name: String,
+    },
+
+    /// Manage connection tags
+    #[command(subcommand, about = "Manage connection tags")]
+    Tag(TagCommands),
+
+    /// Move a connection to a different group
+    #[command(about = "Move a connection to a different group")]
+    Move {
+        /// Connection name or UUID
+        name: String,
+
+        /// Target group name (creates the group if missing)
+        #[arg(short, long)]
+        group: String,
+    },
+
+    /// Manage per-connection monitoring
+    #[command(subcommand, about = "Manage per-connection monitoring")]
+    Monitor(MonitorCommands),
 }
 
 /// Output format for the list command
@@ -1372,5 +1886,109 @@ pub enum SyncCommands {
         /// Dry run — show what would change without modifying anything
         #[arg(long)]
         dry_run: bool,
+    },
+}
+
+/// History subcommands
+#[derive(Subcommand)]
+pub enum HistoryCommands {
+    /// List recent connection history
+    #[command(about = "List recent connection history entries")]
+    List {
+        /// Output format
+        #[arg(short, long, default_value = "table", value_enum)]
+        format: OutputFormat,
+
+        /// Maximum number of entries to show
+        #[arg(short, long, default_value = "20")]
+        limit: usize,
+
+        /// Filter by connection name
+        #[arg(short, long)]
+        connection: Option<String>,
+    },
+
+    /// Show details of a specific history entry
+    #[command(about = "Show details of a specific history entry")]
+    Show {
+        /// History entry ID (UUID)
+        id: String,
+    },
+
+    /// Clear all connection history
+    #[command(about = "Clear all connection history")]
+    Clear {
+        /// Skip confirmation prompt
+        #[arg(short, long)]
+        force: bool,
+    },
+}
+
+/// Tag subcommands
+#[derive(Subcommand)]
+pub enum TagCommands {
+    /// List all tags used across connections
+    #[command(about = "List all tags used across connections")]
+    List {
+        /// Output format
+        #[arg(short, long, default_value = "table", value_enum)]
+        format: OutputFormat,
+    },
+
+    /// Add a tag to a connection
+    #[command(about = "Add a tag to a connection")]
+    Add {
+        /// Connection name or UUID
+        #[arg(short, long)]
+        connection: String,
+
+        /// Tag to add
+        #[arg(short, long)]
+        tag: String,
+    },
+
+    /// Remove a tag from a connection
+    #[command(about = "Remove a tag from a connection")]
+    Remove {
+        /// Connection name or UUID
+        #[arg(short, long)]
+        connection: String,
+
+        /// Tag to remove
+        #[arg(short, long)]
+        tag: String,
+    },
+}
+
+/// Monitor subcommands
+#[derive(Subcommand)]
+pub enum MonitorCommands {
+    /// Enable monitoring for a connection
+    #[command(about = "Enable per-connection monitoring")]
+    Enable {
+        /// Connection name or UUID
+        name: String,
+
+        /// Polling interval in seconds (overrides global setting)
+        #[arg(short, long)]
+        interval: Option<u8>,
+    },
+
+    /// Disable monitoring for a connection
+    #[command(about = "Disable per-connection monitoring")]
+    Disable {
+        /// Connection name or UUID
+        name: String,
+    },
+
+    /// Show monitoring metrics for a connection
+    #[command(about = "Show monitoring metrics for a connection")]
+    Metrics {
+        /// Connection name or UUID
+        name: String,
+
+        /// Output format
+        #[arg(short, long, default_value = "table", value_enum)]
+        format: OutputFormat,
     },
 }

@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.4] - 2026-05-20
+
+### Added
+
+- **CLI: `history`, `pin`/`unpin`, `tag`, `move`, `monitor` commands** — full set of connection management commands (history, favorites, tags, group moves, monitoring)
+- **CLI: `import --auto` / `--dry-run`** — auto-detect sources (Asbru, Remmina, SSH config) and preview imports without saving
+- **CLI: `export --csv-delimiter`, `--csv-fields`** — customize CSV export format
+- **CLI: `add`/`update` — full GUI parity** — all advanced fields for SSH, RDP, VNC, SPICE, MOSH, Serial; metadata (`--tags`, `--group`, `--domain`, `--skip-port-check`)
+- **Config file locking** — exclusive advisory lock (`fs2`) on write; GUI + CLI no longer conflict
+- **SSH agent: `add_key()` accepts `&SecretString`** — intermediate strings wrapped in `Zeroizing`
+- **Quick Connect: history persisted across sessions** — up to 15 entries in `config.toml`, no passwords
+- **RDP Quick Actions: 3 new Windows admin tools** — Disk Management (`diskmgmt.msc`), Resource Monitor (`resmon`), Computer Management (`compmgmt.msc`); 9 total actions in the "⋮" menu
+
+### Fixed
+
+- **Settings: Azure/gcloud/OCI CLI not detected in Flatpak** — relevant env vars now passed through
+- **Settings: `.version` file fallback** for CLI tools installed via Components dialog
+- **Settings: SSH/RDP/Waypipe version strings** — parser now extracts version token only
+- **Command Palette: "New Group"** — fixed shortcut display Ctrl+Shift+N → Ctrl+Shift+G
+
+### Improved
+
+- **Pre-connect probe bypass: cleanup** — replaced inline checks with `conn.bypasses_direct_probe()`
+- **Property tests: +8 tests** in `connection_probe_tests.rs` (VNC/SPICE/RDP/SFTP jump_host, invariant)
+- **vault_ops: deduplicated `collect_descendant_groups`** — replaced O(n²) recursive local function with `rustconn_core::models::collect_descendant_group_ids()` (O(n) BFS with parent→children index)
+
+### Dependencies
+
+- `fs2` 0.4 (new — advisory file locking)
+- `either` 1.15.0 → 1.16.0
+
 
 ## [0.14.3] - 2026-05-20
 

@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.14.3
+Version:        0.14.4
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -238,6 +238,18 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Tue May 20 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.4-1
+- CLI: history, pin/unpin, tag, move, monitor commands — full connection management
+- CLI: import --auto / --dry-run — auto-detect sources and preview imports
+- CLI: export --csv-delimiter, --csv-fields — customize CSV export format
+- CLI: add/update — full GUI parity for SSH, RDP, VNC, SPICE, MOSH, Serial fields
+- Config file locking — exclusive advisory lock (fs2) on write; GUI + CLI no longer conflict
+- SSH agent: add_key() accepts &SecretString — intermediate strings wrapped in Zeroizing
+- Quick Connect: history persisted across sessions (up to 15 entries, no passwords)
+- RDP Quick Actions: 3 new Windows admin tools (diskmgmt.msc, resmon, compmgmt.msc)
+- Settings: Azure/gcloud/OCI CLI not detected in Flatpak — env vars now passed through
+- Command Palette: fixed shortcut display Ctrl+Shift+N → Ctrl+Shift+G
+
 * Tue May 20 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.3-1
 - Settings: removed duplicate group titles above collapsible sections
 - CLI: secret set --password wrapped in Zeroizing immediately, added --password-stdin

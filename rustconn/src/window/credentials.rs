@@ -534,14 +534,13 @@ impl MainWindow {
             let settings = state_ref.settings();
             let conn = state_ref.get_connection(connection_id);
             if let Some(conn) = conn {
-                // Skip port check when the destination is only reachable
                 // Centralized probe-bypass logic handles jump host, RDP Gateway, etc.
                 let should = conn.should_pre_connect_check(&settings.connection);
-                if !should && settings.connection.pre_connect_port_check && !conn.skip_port_check {
+                if conn.bypasses_direct_probe() {
                     tracing::debug!(
                         protocol = "rdp",
                         host = %conn.host,
-                        "Skipping port check — connection uses a jump host or RDP Gateway"
+                        "Skipping port check — connection bypasses direct probe"
                     );
                 }
                 (

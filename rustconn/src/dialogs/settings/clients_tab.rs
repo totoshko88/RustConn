@@ -656,13 +656,35 @@ fn get_version_with_env(
     // Build command with extended PATH for Flatpak CLI tools
     let extended_path = rustconn_core::cli_download::get_extended_path();
 
-    let mut child = std::process::Command::new(command_path)
-        .arg(version_arg)
+    let mut cmd = std::process::Command::new(command_path);
+    cmd.arg(version_arg)
         .env("PATH", &extended_path)
         .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .spawn()
-        .ok()?;
+        .stderr(std::process::Stdio::piped());
+
+    // In Flatpak, pip-based CLIs need extra environment variables
+    if rustconn_core::flatpak::is_flatpak() {
+        match command_name {
+            "az" => {
+                if let Some(dir) = rustconn_core::flatpak::get_flatpak_azure_config_dir() {
+                    cmd.env("AZURE_CONFIG_DIR", dir);
+                }
+            }
+            "oci" => {
+                if let Some(dir) = rustconn_core::flatpak::get_flatpak_oci_config_dir() {
+                    cmd.env("OCI_CLI_CONFIG_FILE", dir.join("config"));
+                }
+            }
+            "gcloud" => {
+                if let Some(dir) = rustconn_core::flatpak::get_flatpak_gcloud_config_dir() {
+                    cmd.env("CLOUDSDK_CONFIG", dir);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let mut child = cmd.spawn().ok()?;
 
     let start = std::time::Instant::now();
     loop {
@@ -702,6 +724,19 @@ fn get_version_with_env(
     };
 
     parse_version_output(cmd_name, &version_str)
+        .or_else(|| read_installed_version_file(command_name))
+}
+
+/// Reads the `.version` file written during CLI installation as a fallback
+/// when the CLI command itself doesn't return parseable version output.
+fn read_installed_version_file(command_name: &str) -> Option<String> {
+    let component = rustconn_core::cli_download::get_component(command_name)?;
+    let cli_dir = rustconn_core::cli_download::get_cli_install_dir()?;
+    let version_file = cli_dir.join(component.install_subdir).join(".version");
+    std::fs::read_to_string(version_file)
+        .ok()
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
 }
 
 /// Parses version from command output based on command type

@@ -7,6 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use fs2::FileExt;
 use tokio::io::AsyncWriteExt;
 
 use crate::cluster::Cluster;
@@ -167,6 +168,46 @@ impl ConfigManager {
         Ok(())
     }
 
+    /// Acquires an exclusive advisory lock on the configuration directory.
+    ///
+    /// Returns the lock file handle which holds the lock until dropped.
+    /// If another process holds the lock, this will block until it is released.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the lock file cannot be created or locked.
+    pub fn acquire_lock(&self) -> ConfigResult<fs::File> {
+        self.ensure_config_dir()?;
+        let lock_path = self.config_dir.join(".lock");
+        let lock_file = fs::OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(&lock_path)
+            .map_err(|e| {
+                ConfigError::Lock(format!(
+                    "Failed to open lock file {}: {}",
+                    lock_path.display(),
+                    e
+                ))
+            })?;
+
+        // Try non-blocking first; if busy, log and block
+        if lock_file.try_lock_exclusive().is_err() {
+            tracing::info!("Waiting for another rustconn instance to release config lock…");
+            lock_file.lock_exclusive().map_err(|e| {
+                ConfigError::Lock(format!(
+                    "Failed to acquire exclusive lock on {}: {}",
+                    lock_path.display(),
+                    e
+                ))
+            })?;
+        }
+
+        Ok(lock_file)
+    }
+
     /// Ensures the logs directory exists
     ///
     /// # Errors
@@ -213,7 +254,7 @@ impl ConfigManager {
         let file = ConnectionsFile {
             connections: connections.to_vec(),
         };
-        Self::save_toml_file(&path, &file)
+        self.save_toml_file(&path, &file)
     }
 
     /// Saves connections to the configuration file asynchronously
@@ -229,7 +270,7 @@ impl ConfigManager {
         let file = ConnectionsFile {
             connections: connections.to_vec(),
         };
-        Self::save_toml_file_async(&path, &file).await
+        self.save_toml_file_async(&path, &file).await
     }
 
     // ========== Groups ==========
@@ -259,7 +300,7 @@ impl ConfigManager {
         let file = GroupsFile {
             groups: groups.to_vec(),
         };
-        Self::save_toml_file(&path, &file)
+        self.save_toml_file(&path, &file)
     }
 
     /// Saves connection groups to the configuration file asynchronously
@@ -275,7 +316,7 @@ impl ConfigManager {
         let file = GroupsFile {
             groups: groups.to_vec(),
         };
-        Self::save_toml_file_async(&path, &file).await
+        self.save_toml_file_async(&path, &file).await
     }
 
     // ========== Snippets ==========
@@ -305,7 +346,7 @@ impl ConfigManager {
         let file = SnippetsFile {
             snippets: snippets.to_vec(),
         };
-        Self::save_toml_file(&path, &file)
+        self.save_toml_file(&path, &file)
     }
 
     // ========== Clusters ==========
@@ -335,7 +376,7 @@ impl ConfigManager {
         let file = ClustersFile {
             clusters: clusters.to_vec(),
         };
-        Self::save_toml_file(&path, &file)
+        self.save_toml_file(&path, &file)
     }
 
     // ========== Templates ==========
@@ -365,7 +406,7 @@ impl ConfigManager {
         let file = TemplatesFile {
             templates: templates.to_vec(),
         };
-        Self::save_toml_file(&path, &file)
+        self.save_toml_file(&path, &file)
     }
 
     // ========== Connection History ==========
@@ -395,7 +436,7 @@ impl ConfigManager {
         let file = HistoryFile {
             entries: entries.to_vec(),
         };
-        Self::save_toml_file(&path, &file)
+        self.save_toml_file(&path, &file)
     }
 
     // ========== Trash ==========
@@ -433,7 +474,7 @@ impl ConfigManager {
             connections: connections.to_vec(),
             groups: groups.to_vec(),
         };
-        Self::save_toml_file_async(&path, &file).await
+        self.save_toml_file_async(&path, &file).await
     }
 
     // ========== Application Settings ==========
@@ -463,7 +504,7 @@ impl ConfigManager {
     pub fn save_settings(&self, settings: &AppSettings) -> ConfigResult<()> {
         self.ensure_config_dir()?;
         let path = self.config_dir.join(CONFIG_FILE);
-        Self::save_toml_file(&path, settings)
+        self.save_toml_file(&path, settings)
     }
 
     // ========== Global Variables ==========
@@ -521,12 +562,18 @@ impl ConfigManager {
     }
 
     /// Saves data to a TOML file with atomic write (temp file + rename).
-    fn save_toml_file<T>(path: &Path, data: &T) -> ConfigResult<()>
+    ///
+    /// Acquires an exclusive advisory lock before writing to prevent
+    /// concurrent modifications from other processes (GUI + CLI).
+    fn save_toml_file<T>(&self, path: &Path, data: &T) -> ConfigResult<()>
     where
         T: serde::Serialize,
     {
         let content = toml::to_string_pretty(data)
             .map_err(|e| ConfigError::Serialize(format!("Failed to serialize: {e}")))?;
+
+        // Acquire advisory lock (released on drop)
+        let _lock = self.acquire_lock()?;
 
         // Atomic write: temp file + rename (matches save_toml_file_async pattern)
         let temp_path = path.with_extension("tmp");
@@ -577,14 +624,18 @@ impl ConfigManager {
     /// Saves data to a TOML file asynchronously with atomic write.
     ///
     /// Uses a temp file + rename pattern to prevent data corruption
-    /// if the process crashes during write.
+    /// if the process crashes during write. Acquires an exclusive advisory
+    /// lock before writing to prevent concurrent modifications.
     #[allow(clippy::future_not_send)] // Path is not Sync, effectively pinned to thread which is fine for our use case
-    async fn save_toml_file_async<T>(path: &Path, data: &T) -> ConfigResult<()>
+    async fn save_toml_file_async<T>(&self, path: &Path, data: &T) -> ConfigResult<()>
     where
         T: serde::Serialize,
     {
         let content = toml::to_string_pretty(data)
             .map_err(|e| ConfigError::Serialize(format!("Failed to serialize: {e}")))?;
+
+        // Acquire advisory lock (released on drop)
+        let _lock = self.acquire_lock()?;
 
         // Use temp file for atomic write
         let temp_path = path.with_extension("tmp");
@@ -1122,5 +1173,84 @@ mod tests {
 
         let result = ConfigManager::validate_cluster(&cluster);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_acquire_lock_exclusive() {
+        let (manager, _temp) = create_test_manager();
+        manager.ensure_config_dir().unwrap();
+
+        // First lock should succeed
+        let lock1 = manager.acquire_lock();
+        assert!(lock1.is_ok());
+
+        // Second lock from same process should block or fail with try_lock
+        let lock_path = manager.config_dir().join(".lock");
+        let lock_file2 = fs::OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(&lock_path)
+            .unwrap();
+        // try_lock_exclusive should fail because lock1 is held
+        assert!(fs2::FileExt::try_lock_exclusive(&lock_file2).is_err());
+
+        // Drop lock1 — now lock2 should succeed
+        drop(lock1);
+        assert!(fs2::FileExt::try_lock_exclusive(&lock_file2).is_ok());
+    }
+
+    #[test]
+    fn test_concurrent_save_with_lock() {
+        use std::sync::Arc;
+        use std::thread;
+
+        let temp_dir = TempDir::new().unwrap();
+        let config_dir = temp_dir.path().to_path_buf();
+
+        let manager1 = ConfigManager::with_config_dir(config_dir.clone());
+        let manager2 = ConfigManager::with_config_dir(config_dir);
+
+        manager1.ensure_config_dir().unwrap();
+
+        let m1 = Arc::new(manager1);
+        let m2 = Arc::new(manager2);
+
+        let m1_clone = Arc::clone(&m1);
+        let m2_clone = Arc::clone(&m2);
+
+        // Two threads saving connections concurrently — no lost updates
+        let handle1 = thread::spawn(move || {
+            let conn = Connection::new(
+                "Server A".to_string(),
+                "a.example.com".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            );
+            m1_clone
+                .save_connections(std::slice::from_ref(&conn))
+                .unwrap();
+        });
+
+        let handle2 = thread::spawn(move || {
+            let conn = Connection::new(
+                "Server B".to_string(),
+                "b.example.com".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            );
+            m2_clone
+                .save_connections(std::slice::from_ref(&conn))
+                .unwrap();
+        });
+
+        handle1.join().unwrap();
+        handle2.join().unwrap();
+
+        // One of the two writes wins — file is valid TOML with exactly 1 connection
+        let loaded = m1.load_connections().unwrap();
+        assert_eq!(loaded.len(), 1);
+        assert!(loaded[0].name == "Server A" || loaded[0].name == "Server B");
     }
 }

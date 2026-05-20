@@ -18,6 +18,7 @@ use crate::external_window::ExternalWindowManager;
 use crate::monitoring::MonitoringCoordinator;
 use crate::sidebar::ConnectionSidebar;
 use crate::split_view::SplitViewBridge;
+use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -87,8 +88,39 @@ impl QuickConnectHistoryEntry {
     }
 }
 
-/// Shared quick connect history (runtime only, max 15 entries, LIFO)
+/// Shared quick connect history (max 15 entries, LIFO, persisted in settings)
 pub type SharedQuickConnectHistory = Rc<RefCell<Vec<QuickConnectHistoryEntry>>>;
+
+impl QuickConnectHistoryEntry {
+    /// Converts a persisted `QuickConnectHistoryItem` into a runtime entry
+    #[must_use]
+    pub fn from_persisted(item: &rustconn_core::config::QuickConnectHistoryItem) -> Self {
+        let protocol_index = match item.protocol.as_str() {
+            "RDP" => 1,
+            "VNC" => 2,
+            "Telnet" => 3,
+            _ => 0, // SSH default
+        };
+        Self {
+            protocol_index,
+            protocol_name: item.protocol.clone(),
+            host: item.host.clone(),
+            port: item.port,
+            username: item.username.clone(),
+        }
+    }
+
+    /// Converts a runtime entry into a persistable `QuickConnectHistoryItem`
+    #[must_use]
+    pub fn to_persisted(&self) -> rustconn_core::config::QuickConnectHistoryItem {
+        rustconn_core::config::QuickConnectHistoryItem {
+            protocol: self.protocol_name.clone(),
+            host: self.host.clone(),
+            port: self.port,
+            username: self.username.clone(),
+        }
+    }
+}
 
 /// Adds an entry to the quick connect history (LIFO, deduplicates, max 15)
 pub fn add_to_quick_connect_history(
@@ -102,6 +134,42 @@ pub fn add_to_quick_connect_history(
     hist.insert(0, entry);
     // Trim to max
     hist.truncate(QUICK_CONNECT_HISTORY_MAX);
+}
+
+/// Loads Quick Connect history from `AppState`'s persisted settings
+pub fn load_quick_connect_history(state: &SharedAppState) -> SharedQuickConnectHistory {
+    let entries: Vec<QuickConnectHistoryEntry> = state
+        .try_borrow()
+        .ok()
+        .map(|s| {
+            s.settings()
+                .quick_connect_history
+                .iter()
+                .map(QuickConnectHistoryEntry::from_persisted)
+                .collect()
+        })
+        .unwrap_or_default();
+    Rc::new(RefCell::new(entries))
+}
+
+/// Persists the current Quick Connect history into `AppState` settings.
+///
+/// Logs a warning if saving fails — the runtime history is preserved either way.
+pub fn persist_quick_connect_history(history: &SharedQuickConnectHistory, state: &SharedAppState) {
+    let items: Vec<rustconn_core::config::QuickConnectHistoryItem> = history
+        .borrow()
+        .iter()
+        .map(QuickConnectHistoryEntry::to_persisted)
+        .collect();
+
+    if let Ok(mut state_mut) = state.try_borrow_mut() {
+        state_mut.settings_mut().quick_connect_history = items;
+        if let Err(e) = state_mut.save_settings() {
+            tracing::warn!("Failed to persist Quick Connect history: {e}");
+        }
+    } else {
+        tracing::warn!("Could not borrow AppState mutably to persist Quick Connect history");
+    }
 }
 
 /// Shared sidebar type

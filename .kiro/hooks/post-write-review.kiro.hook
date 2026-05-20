@@ -1,9 +1,9 @@
 {
-  "enabled": true,
+  "enabled": false,
   "name": "Post-Write Review",
-  "description": "Unified post-write review for .rs files: checks i18n coverage in GUI code, protocol architecture rules, and credential security patterns. Skips non-.rs files silently.",
+  "description": "DISABLED — rules moved to steering. Checks i18n coverage, protocol architecture, and credential security after .rs writes.",
   "shortName": "post-write-review",
-  "version": "1",
+  "version": "2",
   "when": {
     "type": "postToolUse",
     "toolTypes": ["write"]

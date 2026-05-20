@@ -140,6 +140,21 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.14.4" date="2026-05-20">
+      <description>
+        <p>CLI full parity with GUI, architecture improvements:</p>
+        <ul>
+          <li>CLI: history, pin/unpin, tag, move, monitor commands for full connection management</li>
+          <li>CLI: import --auto / --dry-run for auto-detect sources and preview imports</li>
+          <li>CLI: add/update — all advanced fields for SSH, RDP, VNC, SPICE, MOSH, Serial</li>
+          <li>Config file locking — GUI + CLI no longer conflict on concurrent writes</li>
+          <li>Quick Connect history persisted across sessions (up to 15 entries)</li>
+          <li>RDP Quick Actions: 3 new Windows admin tools (9 total)</li>
+          <li>SSH agent: add_key() accepts SecretString for better credential security</li>
+          <li>Fixed: Command Palette shortcut display, Flatpak CLI detection</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.14.3" date="2026-05-20">
       <description>
         <p>UI polish and GNOME HIG compliance:</p>

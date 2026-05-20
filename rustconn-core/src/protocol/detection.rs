@@ -649,11 +649,42 @@ fn parse_version(output: &str) -> Option<String> {
         // rdesktop: "rdesktop 1.9.0"
         // vncviewer: "TigerVNC Viewer 64-bit v1.12.0"
         // remote-viewer: "remote-viewer version 11.0"
+        // waypipe: "waypipe 0.11.0"
+
+        // SSH: extract "OpenSSH_X.Yp1" before the comma
+        if line.contains("OpenSSH") {
+            // "OpenSSH_10.3p1, OpenSSL 3.5.6 7 Apr 2026" → "OpenSSH_10.3p1"
+            if let Some(ssh_part) = line.split(',').next() {
+                let trimmed = ssh_part
+                    .split_whitespace()
+                    .next()
+                    .unwrap_or_else(|| ssh_part.trim());
+                return Some(trimmed.to_string());
+            }
+        }
+
+        // FreeRDP: extract version number
+        if line.contains("FreeRDP") {
+            // "This is FreeRDP version 3.26.0 (3.26.0)" → "3.26.0"
+            if let Some(after) = line.split("version").nth(1)
+                && let Some(ver) = after.split_whitespace().next()
+            {
+                return Some(ver.to_string());
+            }
+        }
+
+        // waypipe: "waypipe 0.11.0" → "0.11.0"
+        if line.starts_with("waypipe")
+            && let Some(ver) = line.strip_prefix("waypipe")
+        {
+            let ver = ver.trim();
+            if !ver.is_empty() {
+                return Some(ver.to_string());
+            }
+        }
 
         // Return the first meaningful line as version info
         if line.contains("version")
-            || line.contains("OpenSSH")
-            || line.contains("FreeRDP")
             || line.contains("rdesktop")
             || line.contains("VNC")
             || line.contains("TigerVNC")
@@ -778,16 +809,35 @@ mod tests {
     fn test_parse_version_openssh() {
         let output = "OpenSSH_8.9p1 Ubuntu-3ubuntu0.1, OpenSSL 3.0.2 15 Mar 2022";
         let version = parse_version(output);
-        assert!(version.is_some());
-        assert!(version.unwrap().contains("OpenSSH"));
+        assert_eq!(version.as_deref(), Some("OpenSSH_8.9p1"));
     }
 
     #[test]
     fn test_parse_version_freerdp() {
         let output = "This is FreeRDP version 2.10.0 (2.10.0)";
         let version = parse_version(output);
-        assert!(version.is_some());
-        assert!(version.unwrap().contains("FreeRDP"));
+        assert_eq!(version.as_deref(), Some("2.10.0"));
+    }
+
+    #[test]
+    fn test_parse_version_freerdp3() {
+        let output = "This is FreeRDP version 3.26.0 (3.26.0)";
+        let version = parse_version(output);
+        assert_eq!(version.as_deref(), Some("3.26.0"));
+    }
+
+    #[test]
+    fn test_parse_version_waypipe() {
+        let output = "waypipe 0.11.0";
+        let version = parse_version(output);
+        assert_eq!(version.as_deref(), Some("0.11.0"));
+    }
+
+    #[test]
+    fn test_parse_version_openssh_no_distro() {
+        let output = "OpenSSH_10.3p1, OpenSSL 3.5.6 7 Apr 2026";
+        let version = parse_version(output);
+        assert_eq!(version.as_deref(), Some("OpenSSH_10.3p1"));
     }
 
     #[test]

@@ -80,6 +80,24 @@ pub static QUICK_ACTIONS: &[QuickAction] = &[
         tooltip: "Open Windows Services console",
         icon: "application-x-executable-symbolic",
     },
+    QuickAction {
+        id: "disk-management",
+        label: "Disk Management",
+        tooltip: "Open Windows Disk Management console",
+        icon: "drive-harddisk-symbolic",
+    },
+    QuickAction {
+        id: "resource-monitor",
+        label: "Resource Monitor",
+        tooltip: "Open Windows Resource Monitor (CPU, memory, disk, network)",
+        icon: "org.gnome.SystemMonitor-symbolic",
+    },
+    QuickAction {
+        id: "computer-management",
+        label: "Computer Management",
+        tooltip: "Open Computer Management (disks, services, users, event log)",
+        icon: "computer-symbolic",
+    },
 ];
 
 /// Builds the key sequence for a given quick action ID.
@@ -94,6 +112,9 @@ pub fn build_key_sequence(action_id: &str) -> Option<Vec<(u16, bool, bool)>> {
         "cmd" => Some(build_run_command("cmd")),
         "event-viewer" => Some(build_run_command("eventvwr.msc")),
         "services" => Some(build_run_command("services.msc")),
+        "disk-management" => Some(build_run_command("diskmgmt.msc")),
+        "resource-monitor" => Some(build_run_command("resmon")),
+        "computer-management" => Some(build_run_command("compmgmt.msc")),
         _ => None,
     }
 }
@@ -271,7 +292,15 @@ mod tests {
     #[test]
     fn char_to_scancode_covers_admin_commands() {
         // All characters used in our admin commands must be mappable
-        for cmd in ["powershell", "cmd", "eventvwr.msc", "services.msc"] {
+        for cmd in [
+            "powershell",
+            "cmd",
+            "eventvwr.msc",
+            "services.msc",
+            "diskmgmt.msc",
+            "resmon",
+            "compmgmt.msc",
+        ] {
             for ch in cmd.chars() {
                 assert!(
                     char_to_scancode(ch).is_some(),

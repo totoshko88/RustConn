@@ -253,12 +253,12 @@ pub fn start_ssh_connection(
     // Use centralized probe-bypass logic + inherited proxy jump from groups
     let should_check = conn.should_pre_connect_check(&settings.connection) && !has_inherited_proxy;
 
-    if !should_check && settings.connection.pre_connect_port_check && !conn.skip_port_check {
+    if conn.bypasses_direct_probe() || has_inherited_proxy {
         tracing::debug!(
             protocol = "ssh",
             host = %conn.host,
             port = conn.port,
-            "Skipping port check — connection uses a jump host or proxy"
+            "Skipping port check — connection bypasses direct probe"
         );
     }
 

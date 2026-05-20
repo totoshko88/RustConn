@@ -135,6 +135,10 @@ pub struct ExportOptions {
     pub include_groups: bool,
     /// Output path (file or directory depending on format)
     pub output_path: PathBuf,
+    /// Custom CSV delimiter (only for CSV format)
+    pub csv_delimiter: Option<char>,
+    /// Custom CSV fields to include (only for CSV format)
+    pub csv_fields: Option<Vec<String>>,
 }
 
 impl ExportOptions {
@@ -145,6 +149,8 @@ impl ExportOptions {
             format,
             include_groups: true,
             output_path,
+            csv_delimiter: None,
+            csv_fields: None,
         }
     }
 

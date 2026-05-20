@@ -1,9 +1,9 @@
 {
-  "enabled": true,
+  "enabled": false,
   "name": "Pre-Write Guard",
-  "description": "Unified pre-write gate for .rs files: blocks GTK imports in rustconn-core/rustconn-cli and blocks unsafe code anywhere (workspace lint: forbid)",
+  "description": "DISABLED — rules moved to steering. Blocks GTK imports in rustconn-core/rustconn-cli and blocks unsafe code anywhere.",
   "shortName": "pre-write-guard",
-  "version": "1",
+  "version": "2",
   "when": {
     "type": "preToolUse",
     "toolTypes": ["write"]

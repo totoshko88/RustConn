@@ -13,6 +13,8 @@ pub fn cmd_export(
     config_path: Option<&Path>,
     format: ExportFormatArg,
     output: &Path,
+    csv_delimiter: Option<&str>,
+    csv_fields: Option<&str>,
 ) -> Result<(), CliError> {
     let config_manager = create_config_manager(config_path)?;
 
@@ -29,6 +31,13 @@ pub fn cmd_export(
         .map(|s| s.smart_folders)
         .unwrap_or_default();
 
+    if (csv_delimiter.is_some() || csv_fields.is_some()) && !matches!(format, ExportFormatArg::Csv)
+    {
+        return Err(CliError::Export(
+            "--csv-delimiter and --csv-fields are only valid with --format csv".to_string(),
+        ));
+    }
+
     let export_format = match format {
         ExportFormatArg::Ansible => rustconn_core::export::ExportFormat::Ansible,
         ExportFormatArg::SshConfig => rustconn_core::export::ExportFormat::SshConfig,
@@ -41,7 +50,21 @@ pub fn cmd_export(
         ExportFormatArg::SecureCrt => rustconn_core::export::ExportFormat::SecureCrt,
     };
 
-    let options = rustconn_core::export::ExportOptions::new(export_format, output.to_path_buf());
+    let mut options =
+        rustconn_core::export::ExportOptions::new(export_format, output.to_path_buf());
+
+    if let Some(delimiter) = csv_delimiter {
+        let delim_char = match delimiter {
+            "semicolon" => ';',
+            "tab" => '\t',
+            _ => ',',
+        };
+        options.csv_delimiter = Some(delim_char);
+    }
+
+    if let Some(fields) = csv_fields {
+        options.csv_fields = Some(fields.split(',').map(|s| s.trim().to_string()).collect());
+    }
 
     let result = export_connections(&connections, &groups, &smart_folders, &options)?;
 
@@ -154,11 +177,22 @@ fn export_connections(
 }
 
 /// Import connections command handler
+#[allow(clippy::too_many_lines)]
 pub fn cmd_import(
     config_path: Option<&Path>,
     format: ImportFormatArg,
-    file: &Path,
+    file: Option<&Path>,
+    auto: bool,
+    dry_run: bool,
 ) -> Result<(), CliError> {
+    if auto {
+        return cmd_import_auto(config_path, dry_run);
+    }
+
+    let file = file.ok_or_else(|| {
+        CliError::Import("Either provide a file path or use --auto for auto-detection.".to_string())
+    })?;
+
     if !file.exists() {
         return Err(CliError::Import(format!(
             "File not found: {}",
@@ -207,6 +241,32 @@ pub fn cmd_import(
         for error in &import_result.errors {
             tracing::error!("Import error: {error}");
         }
+    }
+
+    if dry_run {
+        println!("\n[dry-run] No changes saved.");
+        if !import_result.connections.is_empty() {
+            println!("\nConnections that would be imported:");
+            for conn in &import_result.connections {
+                let is_duplicate = existing_connections
+                    .iter()
+                    .any(|c| c.name == conn.name && c.host == conn.host);
+                let status = if is_duplicate {
+                    " (duplicate, skip)"
+                } else {
+                    ""
+                };
+                println!(
+                    "  - {} ({}://{}:{}){}",
+                    conn.name,
+                    conn.protocol.as_str(),
+                    conn.host,
+                    conn.port,
+                    status
+                );
+            }
+        }
+        return Ok(());
     }
 
     let initial_count = existing_connections.len();
@@ -372,4 +432,131 @@ fn import_connections(
     };
 
     Ok(result)
+}
+
+/// Auto-detect available import sources and import from all found
+#[allow(clippy::too_many_lines)]
+fn cmd_import_auto(config_path: Option<&Path>, dry_run: bool) -> Result<(), CliError> {
+    use rustconn_core::import::{AsbruImporter, ImportSource, RemminaImporter, SshConfigImporter};
+
+    let sources: Vec<Box<dyn ImportSource>> = vec![
+        Box::new(AsbruImporter::new()),
+        Box::new(RemminaImporter::new()),
+        Box::new(SshConfigImporter::new()),
+    ];
+
+    let available: Vec<_> = sources.iter().filter(|s| s.is_available()).collect();
+
+    if available.is_empty() {
+        println!("No import sources detected.");
+        println!("\nSearched locations:");
+        for source in &sources {
+            println!("  {} — not found", source.display_name());
+            for path in source.default_paths() {
+                println!("    {}", path.display());
+            }
+        }
+        return Ok(());
+    }
+
+    println!("Detected import sources:");
+    for source in &available {
+        println!("  ✓ {}", source.display_name());
+    }
+    println!();
+
+    let config_manager = create_config_manager(config_path)?;
+
+    let mut existing_connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load existing connections: {e}")))?;
+
+    let mut existing_groups = config_manager
+        .load_groups()
+        .map_err(|e| CliError::Config(format!("Failed to load existing groups: {e}")))?;
+
+    let initial_count = existing_connections.len();
+    let initial_group_count = existing_groups.len();
+
+    for source in &available {
+        println!("Importing from {}...", source.display_name());
+
+        match source.import() {
+            Ok(result) => {
+                println!(
+                    "  Found {} connections, {} groups",
+                    result.connections.len(),
+                    result.groups.len()
+                );
+
+                if dry_run {
+                    for conn in &result.connections {
+                        let is_duplicate = existing_connections
+                            .iter()
+                            .any(|c| c.name == conn.name && c.host == conn.host);
+                        let status = if is_duplicate {
+                            " (duplicate, skip)"
+                        } else {
+                            ""
+                        };
+                        println!(
+                            "    - {} ({}://{}:{}){}",
+                            conn.name,
+                            conn.protocol.as_str(),
+                            conn.host,
+                            conn.port,
+                            status
+                        );
+                    }
+                } else {
+                    for group in result.groups {
+                        if !existing_groups.iter().any(|g| g.name == group.name) {
+                            existing_groups.push(group);
+                        }
+                    }
+
+                    for conn in result.connections {
+                        let is_duplicate = existing_connections
+                            .iter()
+                            .any(|c| c.name == conn.name && c.host == conn.host);
+                        if !is_duplicate {
+                            existing_connections.push(conn);
+                        }
+                    }
+                }
+
+                if !result.errors.is_empty() {
+                    for error in &result.errors {
+                        tracing::warn!("  {}: {error}", source.display_name());
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::warn!("  Failed to import from {}: {e}", source.display_name());
+            }
+        }
+    }
+
+    if dry_run {
+        println!("\n[dry-run] No changes saved.");
+    } else {
+        config_manager
+            .save_connections(&existing_connections)
+            .map_err(|e| CliError::Config(format!("Failed to save connections: {e}")))?;
+
+        config_manager
+            .save_groups(&existing_groups)
+            .map_err(|e| CliError::Config(format!("Failed to save groups: {e}")))?;
+
+        let new_connections = existing_connections.len() - initial_count;
+        let new_groups = existing_groups.len() - initial_group_count;
+
+        println!("\nAuto-import results:");
+        println!("  New connections added: {new_connections}");
+        println!("  New groups added: {new_groups}");
+        println!("  Total connections: {}", existing_connections.len());
+        println!("  Total groups: {}", existing_groups.len());
+    }
+
+    Ok(())
 }

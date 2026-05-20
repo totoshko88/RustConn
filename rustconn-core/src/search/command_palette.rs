@@ -127,7 +127,7 @@ pub fn builtin_commands() -> Vec<PaletteItem> {
             .with_priority(90),
         PaletteItem::new("New Group", CommandPaletteAction::NewGroup)
             .with_icon("folder-new-symbolic")
-            .with_description("Ctrl+Shift+N")
+            .with_description("Ctrl+Shift+G")
             .with_priority(85),
         PaletteItem::new("Local Shell", CommandPaletteAction::LocalShell)
             .with_icon("utilities-terminal-symbolic")

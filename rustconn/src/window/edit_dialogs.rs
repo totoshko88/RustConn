@@ -2708,7 +2708,7 @@ pub fn show_quick_connect_dialog_with_state(
             }
         };
 
-        // Save to runtime history
+        // Save to runtime history (and persist to settings if state is available)
         let protocol_idx = protocol_clone.selected();
         let history_entry = super::types::QuickConnectHistoryEntry::new(
             protocol_idx,
@@ -2717,6 +2717,9 @@ pub fn show_quick_connect_dialog_with_state(
             username.clone(),
         );
         super::types::add_to_quick_connect_history(&history_for_connect, history_entry);
+        if let Some(state) = state_for_connect.as_ref() {
+            super::types::persist_quick_connect_history(&history_for_connect, state);
+        }
 
         let params = QuickConnectParams {
             host,

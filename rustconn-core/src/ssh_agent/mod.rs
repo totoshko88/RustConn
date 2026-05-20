@@ -491,18 +491,25 @@ impl SshAgentManager {
     /// # Arguments
     ///
     /// * `key_path` - Path to the private key file
-    /// * `passphrase` - Optional passphrase for encrypted keys
+    /// * `passphrase` - Optional passphrase for encrypted keys (as `SecretString`)
     ///
     /// # Errors
     ///
     /// Returns `AgentError::NotRunning` if no socket is configured.
     /// Returns `AgentError::AddKeyFailed` if the key cannot be added.
-    pub fn add_key(&self, key_path: &std::path::Path, passphrase: Option<&str>) -> AgentResult<()> {
+    pub fn add_key(
+        &self,
+        key_path: &std::path::Path,
+        passphrase: Option<&secrecy::SecretString>,
+    ) -> AgentResult<()> {
         use std::process::{Command, Stdio};
 
         let socket_path = self.socket_path.as_ref().ok_or(AgentError::NotRunning)?;
 
         if let Some(pass) = passphrase {
+            use secrecy::ExposeSecret;
+            use zeroize::Zeroizing;
+
             // Write a temporary SSH_ASKPASS helper script that echoes the passphrase.
             // SSH_ASKPASS_REQUIRE=force tells ssh-add to use the helper even without
             // a terminal, avoiding the need for a PTY/expect library.
@@ -514,12 +521,12 @@ impl SshAgentManager {
 
             // The script prints the passphrase to stdout.
             // Single-quotes are escaped to prevent shell injection.
-            let escaped = pass.replace('\'', "'\\''");
-            std::fs::write(
-                &script_path,
-                format!("#!/bin/sh\nprintf '%s\\n' '{escaped}'"),
-            )
-            .map_err(|e| AgentError::AddKeyFailed(format!("write askpass: {e}")))?;
+            // Wrap intermediate in Zeroizing to ensure cleanup on drop.
+            let escaped = Zeroizing::new(pass.expose_secret().replace('\'', "'\\''"));
+            let script_content =
+                Zeroizing::new(format!("#!/bin/sh\nprintf '%s\\n' '{}'", escaped.as_str()));
+            std::fs::write(&script_path, script_content.as_bytes())
+                .map_err(|e| AgentError::AddKeyFailed(format!("write askpass: {e}")))?;
 
             #[cfg(unix)]
             {
