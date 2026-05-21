@@ -30,15 +30,11 @@ pub fn show_sessions_manager(
     notebook: SharedNotebook,
     sidebar: SharedSidebar,
 ) {
-    let manager_window = adw::Window::builder()
+    let manager_dialog = adw::Dialog::builder()
         .title(i18n("Active Sessions"))
-        .transient_for(window)
-        .modal(true)
-        .default_width(500)
-        .default_height(500)
+        .content_width(500)
+        .content_height(500)
         .build();
-
-    manager_window.set_size_request(320, 280);
 
     // Header bar with Refresh button and standard window buttons (GNOME HIG)
     let header = adw::HeaderBar::new();
@@ -112,7 +108,7 @@ pub fn show_sessions_manager(
     let toolbar_view = adw::ToolbarView::new();
     toolbar_view.add_top_bar(&header);
     toolbar_view.set_content(Some(&content));
-    manager_window.set_content(Some(&toolbar_view));
+    manager_dialog.set_child(Some(&toolbar_view));
 
     // Populate sessions list
     populate_sessions_list(&state, &notebook, &sessions_list, &count_label);
@@ -140,7 +136,7 @@ pub fn show_sessions_manager(
     // Connect switch button
     let notebook_clone = notebook.clone();
     let list_clone = sessions_list.clone();
-    let window_clone = manager_window.clone();
+    let window_clone = manager_dialog.clone();
     switch_btn.connect_clicked(move |_| {
         if let Some(row) = list_clone.selected_row()
             && let Some(id_str) = row.widget_name().as_str().strip_prefix("session-")
@@ -154,7 +150,7 @@ pub fn show_sessions_manager(
     // Connect send text button
     let notebook_clone = notebook.clone();
     let list_clone = sessions_list.clone();
-    let manager_clone = manager_window.clone();
+    let manager_clone = manager_dialog.clone();
     send_text_btn.connect_clicked(move |_| {
         if let Some(row) = list_clone.selected_row()
             && let Some(id_str) = row.widget_name().as_str().strip_prefix("session-")
@@ -169,7 +165,7 @@ pub fn show_sessions_manager(
     let notebook_clone = notebook;
     let list_clone = sessions_list;
     let count_clone = count_label;
-    let manager_clone = manager_window.clone();
+    let manager_clone = manager_dialog.clone();
     let sidebar_clone = sidebar;
     terminate_btn.connect_clicked(move |_| {
         if let Some(row) = list_clone.selected_row()
@@ -217,7 +213,7 @@ pub fn show_sessions_manager(
         }
     });
 
-    manager_window.present();
+    manager_dialog.present(Some(window));
 }
 
 /// Populates the sessions list

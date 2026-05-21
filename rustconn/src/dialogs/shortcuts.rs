@@ -352,25 +352,18 @@ mod legacy {
 
     /// Keyboard shortcuts help dialog (legacy fallback)
     pub struct ShortcutsDialog {
-        window: adw::Window,
+        dialog: adw::Dialog,
     }
 
     impl ShortcutsDialog {
         /// Creates a new shortcuts dialog
         #[must_use]
-        pub fn new(parent: Option<&impl IsA<gtk4::Window>>) -> Self {
-            let window = adw::Window::builder()
+        pub fn new(_parent: Option<&impl IsA<gtk4::Window>>) -> Self {
+            let dialog = adw::Dialog::builder()
                 .title(i18n("Keyboard Shortcuts"))
-                .modal(true)
-                .default_width(500)
-                .default_height(400)
+                .content_width(500)
+                .content_height(400)
                 .build();
-
-            if let Some(p) = parent {
-                window.set_transient_for(Some(p));
-            }
-
-            window.set_size_request(320, 280);
 
             let header = adw::HeaderBar::new();
 
@@ -390,7 +383,7 @@ mod legacy {
             let toolbar_view = adw::ToolbarView::new();
             toolbar_view.add_top_bar(&header);
             toolbar_view.set_content(Some(&clamp));
-            window.set_content(Some(&toolbar_view));
+            dialog.set_child(Some(&toolbar_view));
 
             let search_entry = SearchEntry::builder()
                 .placeholder_text(i18n("Search shortcuts..."))
@@ -428,7 +421,7 @@ mod legacy {
                 Self::filter_shortcuts(&list_box_clone, &search_text);
             });
 
-            Self { window }
+            Self { dialog }
         }
 
         fn create_category_header(category: &str) -> ListBoxRow {
@@ -532,9 +525,9 @@ mod legacy {
             false
         }
 
-        /// Shows the dialog (ignores parent — uses transient_for set in constructor)
-        pub fn show(&self, _parent: Option<&impl IsA<gtk4::Widget>>) {
-            self.window.present();
+        /// Shows the dialog
+        pub fn show(&self, parent: Option<&impl IsA<gtk4::Widget>>) {
+            self.dialog.present(parent);
         }
     }
 }

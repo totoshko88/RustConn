@@ -136,12 +136,6 @@ pub fn show_clusters_manager(
     // Wrap dialog in Rc for shared access across callbacks
     let dialog_ref = std::rc::Rc::new(dialog);
 
-    // Initial population of clusters
-    let dialog_for_refresh = dialog_ref.clone();
-    dialog_ref.window().connect_show(move |_| {
-        dialog_for_refresh.refresh_list();
-    });
-
     // Set up all dialog callbacks
     setup_cluster_dialog_callbacks(
         &dialog_ref,
@@ -152,6 +146,8 @@ pub fn show_clusters_manager(
         &monitoring,
     );
 
+    // Populate clusters before showing
+    dialog_ref.refresh_list();
     dialog_ref.show();
 }
 
@@ -197,12 +193,12 @@ fn setup_cluster_dialog_callbacks(
     // Edit callback
     let state_clone = state.clone();
     let notebook_clone = notebook.clone();
-    let dialog_window = dialog_ref.window().clone();
+    let window_clone = window.clone();
     let dialog_ref_edit = dialog_ref.clone();
     let refresh_after_edit = create_refresh_callback(dialog_ref_edit.clone());
     dialog_ref.set_on_edit(move |cluster_id| {
         edit_cluster(
-            dialog_window.upcast_ref(),
+            &window_clone,
             &state_clone,
             &notebook_clone,
             cluster_id,
@@ -212,12 +208,12 @@ fn setup_cluster_dialog_callbacks(
 
     // Delete callback
     let state_clone = state.clone();
-    let dialog_window = dialog_ref.window().clone();
+    let window_clone = window.clone();
     let dialog_ref_delete = dialog_ref.clone();
     let refresh_after_delete = create_refresh_callback(dialog_ref_delete.clone());
     dialog_ref.set_on_delete(move |cluster_id| {
         delete_cluster(
-            dialog_window.upcast_ref(),
+            &window_clone,
             &state_clone,
             cluster_id,
             Box::new(refresh_after_delete.clone()),
@@ -227,12 +223,12 @@ fn setup_cluster_dialog_callbacks(
     // New cluster callback
     let state_clone = state.clone();
     let notebook_clone = notebook.clone();
-    let dialog_window = dialog_ref.window().clone();
+    let window_clone = window.clone();
     let dialog_ref_new = dialog_ref.clone();
     let refresh_after_new = create_refresh_callback(dialog_ref_new.clone());
     dialog_ref.set_on_new(move || {
         show_new_cluster_dialog_from_manager(
-            dialog_window.upcast_ref(),
+            &window_clone,
             state_clone.clone(),
             notebook_clone.clone(),
             Box::new(refresh_after_new.clone()),

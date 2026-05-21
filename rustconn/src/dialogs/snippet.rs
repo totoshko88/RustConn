@@ -3,8 +3,8 @@
 //! Provides a GTK4 dialog for creating/editing snippets with variable definitions
 //! and category assignment.
 //!
-//! Updated for GTK 4.10+ compatibility using Window instead of Dialog.
-//! Migrated to libadwaita components for GNOME HIG compliance.
+//! Uses `adw::Dialog` for GNOME HIG compliance: bottom-sheet on narrow screens,
+//! auto-close on Escape, drag-to-close support.
 
 use adw::prelude::*;
 use gtk4::prelude::*;
@@ -22,7 +22,7 @@ use crate::i18n::i18n;
 
 /// Snippet dialog for creating/editing snippets
 pub struct SnippetDialog {
-    window: adw::Window,
+    dialog: adw::Dialog,
     name_entry: Entry,
     description_entry: Entry,
     category_entry: Entry,
@@ -34,6 +34,7 @@ pub struct SnippetDialog {
     editing_id: Rc<RefCell<Option<Uuid>>>,
     variables: Rc<RefCell<Vec<VariableRow>>>,
     on_save: super::SnippetCallback,
+    parent: Option<gtk4::Widget>,
 }
 
 /// Represents a variable row in the dialog
@@ -59,19 +60,11 @@ impl SnippetDialog {
     /// Creates a new snippet dialog
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
-        // Create window instead of deprecated Dialog
-        let window = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(i18n("New Snippet"))
-            .modal(true)
-            .default_width(500)
-            .default_height(400)
+            .content_width(500)
+            .content_height(400)
             .build();
-
-        if let Some(p) = parent {
-            window.set_transient_for(Some(p));
-        }
-
-        window.set_size_request(320, 280);
 
         // Header bar with Create icon button (GNOME HIG)
         let header = adw::HeaderBar::new();
@@ -105,7 +98,7 @@ impl SnippetDialog {
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
         toolbar_view.set_content(Some(&scrolled));
-        window.set_content(Some(&toolbar_view));
+        dialog.set_child(Some(&toolbar_view));
 
         // === Basic Info Section ===
         let (basic_frame, name_entry, description_entry, category_entry, tags_entry) =
@@ -134,8 +127,10 @@ impl SnippetDialog {
 
         let on_save: super::SnippetCallback = Rc::new(RefCell::new(None));
 
+        let parent_widget = parent.map(|p| p.clone().upcast::<gtk4::Widget>());
+
         Self {
-            window,
+            dialog,
             name_entry,
             description_entry,
             category_entry,
@@ -147,6 +142,7 @@ impl SnippetDialog {
             editing_id: Rc::new(RefCell::new(None)),
             variables,
             on_save,
+            parent: parent_widget,
         }
     }
 
@@ -348,7 +344,7 @@ impl SnippetDialog {
 
     /// Populates the dialog with an existing snippet for editing
     pub fn set_snippet(&self, snippet: &Snippet) {
-        self.window.set_title(Some(&i18n("Edit Snippet")));
+        self.dialog.set_title(&i18n("Edit Snippet"));
         self.save_btn.set_label(&i18n("Save"));
         *self.editing_id.borrow_mut() = Some(snippet.id);
 
@@ -403,13 +399,6 @@ impl SnippetDialog {
         }
 
         Ok(())
-    }
-
-    /// Shows an error message as a toast notification
-    ///
-    /// Displays a warning toast with the given error message.
-    pub fn show_error(&self, message: &str) {
-        crate::toast::show_toast_on_window(&self.window, message, crate::toast::ToastType::Warning);
     }
 
     /// Wires the add variable button to add new variable rows
@@ -469,7 +458,7 @@ impl SnippetDialog {
     /// Runs the dialog and calls the callback with the result
     ///
     /// Connects the Save button to `validate()` and `build_snippet()` methods,
-    /// then presents the dialog window.
+    /// then presents the dialog.
     pub fn run<F: Fn(Option<Snippet>) + 'static>(&self, cb: F) {
         // Store callback
         *self.on_save.borrow_mut() = Some(Box::new(cb));
@@ -478,7 +467,7 @@ impl SnippetDialog {
         self.wire_add_var_button();
 
         // Connect save button directly using stored reference
-        let window = self.window.clone();
+        let dialog = self.dialog.clone();
         let on_save = self.on_save.clone();
         let name_entry = self.name_entry.clone();
         let description_entry = self.description_entry.clone();
@@ -522,10 +511,11 @@ impl SnippetDialog {
             if let Some(ref cb) = *on_save.borrow() {
                 cb(snippet);
             }
-            window.close();
+            dialog.close();
         });
 
-        self.window.present();
+        self.dialog
+            .present(self.parent.as_ref().map(|w| w as &gtk4::Widget));
     }
 
     /// Builds a Snippet from the provided field references
@@ -600,9 +590,9 @@ impl SnippetDialog {
         Some(snippet)
     }
 
-    /// Returns a reference to the underlying window
+    /// Returns a reference to the underlying dialog
     #[must_use]
-    pub const fn window(&self) -> &adw::Window {
-        &self.window
+    pub const fn dialog(&self) -> &adw::Dialog {
+        &self.dialog
     }
 }

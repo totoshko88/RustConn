@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Improved
+
+- **UX-1: Snippet dialogs migrated to `adw::Dialog`** — New/Edit Snippet, Manage Snippets, Execute Snippet (picker), Enter Variable Values now use `adw::Dialog` instead of `adw::Window`; enables bottom-sheet on narrow screens, auto-close on Escape, drag-to-close
+- **UX-1: Variables dialog migrated to `adw::Dialog`** — Global Variables dialog uses `adw::Dialog` for consistent GNOME HIG behavior
+- **UX-1: Recordings dialog migrated to `adw::Dialog`** — list, play, rename, delete, import recordings
+- **UX-1: Cluster dialogs migrated to `adw::Dialog`** — New/Edit Cluster and Manage Clusters
+- **UX-1: Statistics dialog migrated to `adw::Dialog`** — Connection Statistics overview
+- **UX-1: Smart Folder dialog migrated to `adw::Dialog`** — New/Edit Smart Folder
+- **UX-1: Password Generator migrated to `adw::Dialog`** — password generation dialog
+- **UX-1: Export dialog migrated to `adw::Dialog`** — Export Connections with format selection
+- **UX-1: Shortcuts dialog migrated to `adw::Dialog`** — Keyboard Shortcuts (legacy fallback)
+- **UX-1: Terminal Search dialog migrated to `adw::Dialog`** — Search in Terminal
+- **UX-1: Document dialogs migrated to `adw::Dialog`** — New Document, Enter Password (open encrypted)
+- **UX-1: Import dialog migrated to `adw::Dialog`** — Import Connections with source selection
+- **UX-1: Sessions Manager migrated to `adw::Dialog`** — Active Sessions list
+- **UX-1: Move to Group dialog migrated to `adw::Dialog`** — move connections/groups
+- **UX-1: New Group dialog migrated to `adw::Dialog`** — create group with credentials
+
 ## [0.14.4] - 2026-05-20
 
 ### Added

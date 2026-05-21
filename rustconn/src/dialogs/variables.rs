@@ -3,15 +3,15 @@
 //! Provides a GTK4 dialog for creating, editing, and deleting variables
 //! with support for secret variable masking.
 //!
-//! Updated for GTK 4.10+ compatibility using Window instead of Dialog.
-//! Uses libadwaita components for GNOME HIG compliance.
+//! Uses `adw::Dialog` for GNOME HIG compliance: bottom-sheet on narrow screens,
+//! auto-close on Escape, drag-to-close support.
 
 use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
     Box as GtkBox, Button, CheckButton, Entry, Grid, Label, ListBox, ListBoxRow, Orientation,
-    ScrolledWindow, glib,
+    ScrolledWindow,
 };
 use libadwaita as adw;
 use rustconn_core::config::AppSettings;
@@ -26,12 +26,13 @@ type SharedSettings = Rc<RefCell<Option<AppSettings>>>;
 
 /// Variables dialog for managing global variables
 pub struct VariablesDialog {
-    window: adw::Window,
+    dialog: adw::Dialog,
     variables_list: ListBox,
     add_header_btn: Button,
     variables: Rc<RefCell<Vec<VariableRow>>>,
     on_save: VariablesCallback,
     settings: SharedSettings,
+    parent: Option<gtk4::Widget>,
 }
 
 /// Represents a variable row in the dialog
@@ -58,20 +59,13 @@ impl VariablesDialog {
     /// Creates a new variables dialog for global variables
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
-        let window = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(i18n("Global Variables"))
-            .modal(true)
-            .default_width(500)
-            .default_height(400)
+            .content_width(500)
+            .content_height(400)
             .build();
 
-        if let Some(p) = parent {
-            window.set_transient_for(Some(p));
-        }
-
-        window.set_size_request(320, 280);
-
-        // Header bar with Add button and standard window buttons (GNOME HIG)
+        // Header bar with Add button (GNOME HIG)
         let header = adw::HeaderBar::new();
         let add_header_btn = Button::from_icon_name("list-add-symbolic");
         add_header_btn.set_tooltip_text(Some(&i18n("Add Variable")));
@@ -92,11 +86,11 @@ impl VariablesDialog {
 
         clamp.set_child(Some(&content));
 
-        // Use ToolbarView for adw::Window
+        // Use ToolbarView for adw::Dialog
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
         toolbar_view.set_content(Some(&clamp));
-        window.set_content(Some(&toolbar_view));
+        dialog.set_child(Some(&toolbar_view));
 
         // Variables list in PreferencesGroup
         let (group, variables_list) = Self::create_variables_section();
@@ -106,13 +100,12 @@ impl VariablesDialog {
         let variables: Rc<RefCell<Vec<VariableRow>>> = Rc::new(RefCell::new(Vec::new()));
         let settings: SharedSettings = Rc::new(RefCell::new(None));
 
-        // Connect window close to cancel callback
+        // Connect dialog closed to cancel callback
         let on_save_clone = on_save.clone();
-        window.connect_close_request(move |_| {
+        dialog.connect_closed(move |_| {
             if let Some(ref cb) = *on_save_clone.borrow() {
                 cb(None);
             }
-            glib::Propagation::Proceed
         });
 
         // Save button at bottom of content
@@ -127,7 +120,7 @@ impl VariablesDialog {
         content.append(&save_box);
 
         // Connect save button
-        let window_clone = window.clone();
+        let dialog_clone = dialog.clone();
         let on_save_clone = on_save.clone();
         let variables_clone = variables.clone();
         save_btn.connect_clicked(move |_| {
@@ -135,16 +128,19 @@ impl VariablesDialog {
             if let Some(ref cb) = *on_save_clone.borrow() {
                 cb(Some(vars));
             }
-            window_clone.close();
+            dialog_clone.close();
         });
 
+        let parent_widget = parent.map(|p| p.clone().upcast::<gtk4::Widget>());
+
         Self {
-            window,
+            dialog,
             variables_list,
             add_header_btn,
             variables,
             on_save,
             settings,
+            parent: parent_widget,
         }
     }
 
@@ -581,12 +577,13 @@ impl VariablesDialog {
     pub fn run<F: Fn(Option<Vec<Variable>>) + 'static>(&self, cb: F) {
         *self.on_save.borrow_mut() = Some(Box::new(cb));
         self.wire_add_button();
-        self.window.present();
+        self.dialog
+            .present(self.parent.as_ref().map(|w| w as &gtk4::Widget));
     }
 
-    /// Returns a reference to the underlying window
+    /// Returns a reference to the underlying dialog
     #[must_use]
-    pub const fn window(&self) -> &adw::Window {
-        &self.window
+    pub const fn dialog(&self) -> &adw::Dialog {
+        &self.dialog
     }
 }

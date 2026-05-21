@@ -340,11 +340,9 @@ pub fn show_new_group_dialog_with_parent(
     sidebar: SharedSidebar,
     preselected_parent: Option<Uuid>,
 ) {
-    let group_window = adw::Window::builder()
+    let group_dialog = adw::Dialog::builder()
         .title(i18n("New Group"))
-        .transient_for(window)
-        .modal(true)
-        .default_width(450)
+        .content_width(450)
         .build();
 
     // Header bar with Create icon button (GNOME HIG)
@@ -369,11 +367,11 @@ pub fn show_new_group_dialog_with_parent(
 
     clamp.set_child(Some(&content));
 
-    // Use ToolbarView for proper adw::Window layout
+    // Use ToolbarView for proper adw::Dialog layout
     let toolbar_view = adw::ToolbarView::new();
     toolbar_view.add_top_bar(&header);
     toolbar_view.set_content(Some(&clamp));
-    group_window.set_content(Some(&toolbar_view));
+    group_dialog.set_child(Some(&toolbar_view));
 
     // === Group Details ===
     let details_group = adw::PreferencesGroup::builder()
@@ -536,7 +534,7 @@ pub fn show_new_group_dialog_with_parent(
     let password_source_for_load = password_source_dropdown.clone();
     let name_row_for_load = name_row.clone();
     let state_for_load = state.clone();
-    let window_for_load = group_window.clone();
+    let window_for_load = group_dialog.clone();
     password_load_btn.connect_clicked(move |btn| {
         let group_name = name_row_for_load.text().to_string();
         if group_name.trim().is_empty() {
@@ -778,7 +776,7 @@ pub fn show_new_group_dialog_with_parent(
     // Connect create button
     let state_clone = state.clone();
     let sidebar_clone = sidebar;
-    let window_clone = group_window.clone();
+    let window_clone = group_dialog.clone();
     let name_row_clone = name_row;
     let icon_row_clone = icon_row;
     let dropdown_clone = parent_dropdown;
@@ -931,7 +929,7 @@ pub fn show_new_group_dialog_with_parent(
         }
     });
 
-    group_window.present();
+    group_dialog.present(Some(window));
 }
 
 /// Shows the import dialog

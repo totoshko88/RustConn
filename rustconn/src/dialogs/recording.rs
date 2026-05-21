@@ -1,12 +1,14 @@
 //! Recordings dialog for managing session recordings
 //!
-//! Provides a GTK4/libadwaita dialog for listing, playing, renaming,
+//! Provides a GTK4/libadwaita `adw::Dialog` for listing, playing, renaming,
 //! deleting, and importing session recordings. Follows the same
 //! `ClusterListDialog` / `TemplateManagerDialog` pattern.
+//!
+//! Uses `adw::Dialog` for GNOME HIG compliance: bottom-sheet on narrow screens,
+//! auto-close on Escape, drag-to-close support.
 
 use crate::i18n::i18n;
 use adw::prelude::*;
-use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::{
     Box as GtkBox, Button, FileDialog, Label, ListBox, ListBoxRow, Orientation, ScrolledWindow,
@@ -46,7 +48,8 @@ struct RecordingListRow {
 /// from both `&self` methods and static (closure) contexts.
 #[derive(Clone)]
 struct RecordingListContext {
-    window: adw::Window,
+    dialog: adw::Dialog,
+    parent: Option<gtk4::Widget>,
     recordings_list: ListBox,
     recording_rows: Rc<RefCell<Vec<RecordingListRow>>>,
     on_play: Rc<RefCell<Option<Box<dyn Fn(RecordingEntry)>>>>,
@@ -60,7 +63,8 @@ struct RecordingListContext {
 
 /// Dialog for managing session recordings (list, play, rename, delete, import).
 pub struct RecordingsDialog {
-    window: adw::Window,
+    dialog: adw::Dialog,
+    parent: Option<gtk4::Widget>,
     recordings_list: ListBox,
     recording_rows: Rc<RefCell<Vec<RecordingListRow>>>,
     on_play: Rc<RefCell<Option<Box<dyn Fn(RecordingEntry)>>>>,
@@ -73,27 +77,24 @@ impl RecordingsDialog {
     /// Creates a new recordings dialog.
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
-        let window = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(i18n("Recordings"))
-            .modal(true)
-            .default_width(600)
-            .default_height(450)
+            .content_width(600)
+            .content_height(450)
             .build();
 
-        if let Some(p) = parent {
-            window.set_transient_for(Some(p));
-        }
+        let parent_widget = parent.map(|p| p.clone().upcast::<gtk4::Widget>());
 
-        window.set_size_request(400, 300);
-
-        // Header bar with Import button and standard window buttons (GNOME HIG)
+        // Header bar with Import button (GNOME HIG)
         let header = adw::HeaderBar::new();
 
         let import_btn = Button::builder()
             .icon_name("document-open-symbolic")
             .tooltip_text(i18n("Import recording"))
             .build();
-        import_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Import recording"))]);
+        import_btn.update_property(&[gtk4::accessible::Property::Label(
+            &i18n("Import recording"),
+        )]);
         header.pack_start(&import_btn);
 
         // Main content box
@@ -149,19 +150,22 @@ impl RecordingsDialog {
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
         toolbar_view.set_content(Some(&content));
-        window.set_content(Some(&toolbar_view));
+        dialog.set_child(Some(&toolbar_view));
 
         // Callbacks
-        let on_play: Rc<RefCell<Option<Box<dyn Fn(RecordingEntry)>>>> = Rc::new(RefCell::new(None));
+        let on_play: Rc<RefCell<Option<Box<dyn Fn(RecordingEntry)>>>> =
+            Rc::new(RefCell::new(None));
         let on_delete: Rc<RefCell<Option<Box<dyn Fn(PathBuf)>>>> = Rc::new(RefCell::new(None));
         let on_rename: Rc<RefCell<Option<Box<dyn Fn(PathBuf, String)>>>> =
             Rc::new(RefCell::new(None));
         let on_import: Rc<RefCell<Option<Box<dyn Fn()>>>> = Rc::new(RefCell::new(None));
-        let recording_rows: Rc<RefCell<Vec<RecordingListRow>>> = Rc::new(RefCell::new(Vec::new()));
+        let recording_rows: Rc<RefCell<Vec<RecordingListRow>>> =
+            Rc::new(RefCell::new(Vec::new()));
 
         // Build the shared context for import refresh
         let list_ctx = RecordingListContext {
-            window: window.clone(),
+            dialog: dialog.clone(),
+            parent: parent_widget.clone(),
             recordings_list: recordings_list.clone(),
             recording_rows: recording_rows.clone(),
             on_play: on_play.clone(),
@@ -203,8 +207,9 @@ impl RecordingsDialog {
             }
         });
 
-        let dialog = Self {
-            window,
+        let result = Self {
+            dialog,
+            parent: parent_widget,
             recordings_list,
             recording_rows,
             on_play,
@@ -213,14 +218,15 @@ impl RecordingsDialog {
             on_import,
         };
 
-        dialog.refresh_list();
-        dialog
+        result.refresh_list();
+        result
     }
 
     /// Returns a `RecordingListContext` from `&self` fields.
     fn list_ctx(&self) -> RecordingListContext {
         RecordingListContext {
-            window: self.window.clone(),
+            dialog: self.dialog.clone(),
+            parent: self.parent.clone(),
             recordings_list: self.recordings_list.clone(),
             recording_rows: self.recording_rows.clone(),
             on_play: self.on_play.clone(),
@@ -236,13 +242,14 @@ impl RecordingsDialog {
 
     /// Shows the dialog.
     pub fn present(&self) {
-        self.window.present();
+        self.dialog
+            .present(self.parent.as_ref().map(|w| w as &gtk4::Widget));
     }
 
-    /// Returns a reference to the underlying window.
+    /// Returns a reference to the underlying dialog.
     #[must_use]
-    pub const fn window(&self) -> &adw::Window {
-        &self.window
+    pub const fn dialog(&self) -> &adw::Dialog {
+        &self.dialog
     }
 
     /// Sets the callback invoked when the user clicks Play on a recording.
@@ -420,16 +427,16 @@ impl RecordingsDialog {
 
         // Wire up Rename
         let data_path = entry.data_path.clone();
-        let window_weak = ctx.window.downgrade();
+        let dialog_weak = ctx.dialog.downgrade();
         let on_rename = ctx.on_rename.clone();
         let name_label_clone = name_label.clone();
         let current_name = display.to_string();
         rename_button.connect_clicked(move |_| {
-            let Some(win) = window_weak.upgrade() else {
+            let Some(dlg) = dialog_weak.upgrade() else {
                 return;
             };
             Self::handle_rename(
-                &win,
+                &dlg,
                 &data_path,
                 &current_name,
                 &on_rename,
@@ -439,18 +446,18 @@ impl RecordingsDialog {
 
         // Wire up Delete
         let data_path_del = entry.data_path.clone();
-        let window_weak_del = ctx.window.downgrade();
+        let dialog_weak_del = ctx.dialog.downgrade();
         let on_delete = ctx.on_delete.clone();
         let recordings_list_ref = ctx.recordings_list.clone();
         let recording_rows_ref = ctx.recording_rows.clone();
         let row_weak = row.downgrade();
         let entry_name = display.to_string();
         delete_button.connect_clicked(move |_| {
-            let Some(win) = window_weak_del.upgrade() else {
+            let Some(dlg) = dialog_weak_del.upgrade() else {
                 return;
             };
             Self::handle_delete(
-                &win,
+                &dlg,
                 &data_path_del,
                 &entry_name,
                 &on_delete,
@@ -462,12 +469,10 @@ impl RecordingsDialog {
 
         // Wire up Export
         let data_path_exp = entry.data_path.clone();
-        let window_weak_exp = ctx.window.downgrade();
+        let parent_weak = ctx.parent.as_ref().map(|w| w.downgrade());
         export_button.connect_clicked(move |_| {
-            let Some(win) = window_weak_exp.upgrade() else {
-                return;
-            };
-            Self::handle_export(&win, &data_path_exp);
+            let parent = parent_weak.as_ref().and_then(gtk4::glib::WeakRef::upgrade);
+            Self::handle_export(parent.as_ref(), &data_path_exp);
         });
 
         RecordingListRow {
@@ -491,7 +496,7 @@ impl RecordingsDialog {
 
     /// Shows a rename dialog and updates the metadata sidecar on disk.
     fn handle_rename(
-        win: &adw::Window,
+        dlg: &adw::Dialog,
         data_path: &std::path::Path,
         current_name: &str,
         on_rename: &Rc<RefCell<Option<Box<dyn Fn(PathBuf, String)>>>>,
@@ -546,7 +551,7 @@ impl RecordingsDialog {
             }
         });
 
-        alert.present(Some(win));
+        alert.present(Some(dlg));
     }
 
     // -----------------------------------------------------------------------
@@ -556,13 +561,13 @@ impl RecordingsDialog {
     /// Shows a confirmation dialog and deletes the recording from disk.
     #[allow(clippy::too_many_arguments)]
     fn handle_delete(
-        win: &adw::Window,
+        dlg: &adw::Dialog,
         data_path: &std::path::Path,
         entry_name: &str,
         on_delete: &Rc<RefCell<Option<Box<dyn Fn(PathBuf)>>>>,
         recordings_list: &ListBox,
         recording_rows: &Rc<RefCell<Vec<RecordingListRow>>>,
-        row_weak: &glib::WeakRef<ListBoxRow>,
+        row_weak: &gtk4::glib::WeakRef<ListBoxRow>,
     ) {
         let alert = adw::AlertDialog::builder()
             .heading(i18n("Delete Recording?"))
@@ -612,7 +617,7 @@ impl RecordingsDialog {
             }
         });
 
-        alert.present(Some(win));
+        alert.present(Some(dlg));
     }
 
     // -----------------------------------------------------------------------
@@ -620,43 +625,59 @@ impl RecordingsDialog {
     // -----------------------------------------------------------------------
 
     /// Opens a folder chooser and exports the recording.
-    fn handle_export(win: &adw::Window, data_path: &std::path::Path) {
-        let dialog = FileDialog::builder()
+    fn handle_export(parent: Option<&gtk4::Widget>, data_path: &std::path::Path) {
+        let file_dialog = FileDialog::builder()
             .title(i18n("Export Recording"))
             .modal(true)
             .build();
 
-        let win_clone = win.clone();
+        let parent_win = parent.and_then(|w| w.root())
+            .and_then(|r| r.downcast::<gtk4::Window>().ok());
+
+        let parent_clone = parent_win.clone();
         let data_path = data_path.to_path_buf();
 
-        dialog.select_folder(Some(win), gtk4::gio::Cancellable::NONE, move |result| {
-            let Ok(folder) = result else {
-                return; // User cancelled
-            };
-            let Some(dest_dir) = folder.path() else {
-                return;
-            };
+        file_dialog.select_folder(
+            parent_win.as_ref(),
+            gtk4::gio::Cancellable::NONE,
+            move |result| {
+                let Ok(folder) = result else {
+                    return; // User cancelled
+                };
+                let Some(dest_dir) = folder.path() else {
+                    return;
+                };
 
-            let Some(rec_dir) = default_recordings_dir() else {
-                Self::show_error(&win_clone, &i18n("Cannot determine recordings directory."));
-                return;
-            };
+                let Some(rec_dir) = default_recordings_dir() else {
+                    if let Some(ref win) = parent_clone {
+                        Self::show_error_on_window(
+                            win,
+                            &i18n("Cannot determine recordings directory."),
+                        );
+                    }
+                    return;
+                };
 
-            let mgr = RecordingManager::new(rec_dir);
-            match mgr.export(&data_path, &dest_dir) {
-                Ok(_) => {
-                    crate::toast::show_toast_on_window(
-                        &win_clone,
-                        &i18n("Recording exported successfully"),
-                        crate::toast::ToastType::Info,
-                    );
+                let mgr = RecordingManager::new(rec_dir);
+                match mgr.export(&data_path, &dest_dir) {
+                    Ok(_) => {
+                        if let Some(ref win) = parent_clone {
+                            crate::toast::show_toast_on_window(
+                                win,
+                                &i18n("Recording exported successfully"),
+                                crate::toast::ToastType::Info,
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        let msg = format!("{}: {e}", i18n("Export failed"));
+                        if let Some(ref win) = parent_clone {
+                            Self::show_error_on_window(win, &msg);
+                        }
+                    }
                 }
-                Err(e) => {
-                    let msg = format!("{}: {e}", i18n("Export failed"));
-                    Self::show_error(&win_clone, &msg);
-                }
-            }
-        });
+            },
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -681,10 +702,14 @@ impl RecordingsDialog {
             .filters(&filters)
             .build();
 
+        let parent_win = ctx.parent.as_ref()
+            .and_then(|w| w.root())
+            .and_then(|r| r.downcast::<gtk4::Window>().ok());
+
         let ctx_clone = ctx.clone();
 
         data_dialog.open(
-            Some(&ctx.window),
+            parent_win.as_ref(),
             gtk4::gio::Cancellable::NONE,
             move |result| {
                 let Ok(data_file) = result else {
@@ -709,10 +734,14 @@ impl RecordingsDialog {
                     .filters(&timing_filters)
                     .build();
 
+                let parent_win_inner = ctx_clone.parent.as_ref()
+                    .and_then(|w| w.root())
+                    .and_then(|r| r.downcast::<gtk4::Window>().ok());
+
                 let ctx_inner = ctx_clone.clone();
 
                 timing_dialog.open(
-                    Some(&ctx_clone.window),
+                    parent_win_inner.as_ref(),
                     gtk4::gio::Cancellable::NONE,
                     move |result| {
                         let Ok(timing_file) = result else {
@@ -736,30 +765,46 @@ impl RecordingsDialog {
         timing_path: &std::path::Path,
     ) {
         let Some(dir) = default_recordings_dir() else {
-            Self::show_error(&ctx.window, &i18n("Cannot determine recordings directory."));
+            Self::show_error(&ctx.dialog, &i18n("Cannot determine recordings directory."));
             return;
         };
 
         let mgr = RecordingManager::new(dir);
         match mgr.import(data_path, timing_path) {
             Ok(_entry) => {
-                crate::toast::show_toast_on_window(
-                    &ctx.window,
-                    &i18n("Recording imported successfully"),
-                    crate::toast::ToastType::Info,
-                );
+                if let Some(ref parent) = ctx.parent {
+                    if let Some(win) = parent.root().and_then(|r| r.downcast::<gtk4::Window>().ok()) {
+                        crate::toast::show_toast_on_window(
+                            &win,
+                            &i18n("Recording imported successfully"),
+                            crate::toast::ToastType::Info,
+                        );
+                    }
+                }
                 // Refresh the list so the imported recording appears immediately
                 Self::refresh_list_with_ctx(ctx);
             }
             Err(e) => {
                 let msg = format!("{}: {e}", i18n("Import failed"));
-                Self::show_error(&ctx.window, &msg);
+                Self::show_error(&ctx.dialog, &msg);
             }
         }
     }
 
-    /// Shows an error alert dialog.
-    fn show_error(win: &adw::Window, message: &str) {
+    /// Shows an error alert dialog presented on the adw::Dialog.
+    fn show_error(dlg: &adw::Dialog, message: &str) {
+        let alert = adw::AlertDialog::builder()
+            .heading(i18n("Error"))
+            .body(message)
+            .build();
+        alert.add_response("ok", &i18n("OK"));
+        alert.set_default_response(Some("ok"));
+        alert.set_close_response("ok");
+        alert.present(Some(dlg));
+    }
+
+    /// Shows an error alert dialog presented on a gtk4::Window.
+    fn show_error_on_window(win: &gtk4::Window, message: &str) {
         let alert = adw::AlertDialog::builder()
             .heading(i18n("Error"))
             .body(message)

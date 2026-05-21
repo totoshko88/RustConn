@@ -1,6 +1,6 @@
 //! Connection statistics dialog
 //!
-//! This module provides a dialog for viewing detailed connection statistics.
+//! This module provides an `adw::Dialog` for viewing detailed connection statistics.
 //! Migrated to libadwaita components for GNOME HIG compliance.
 
 use crate::i18n::i18n;
@@ -16,27 +16,21 @@ use uuid::Uuid;
 
 /// Connection statistics dialog
 pub struct StatisticsDialog {
-    window: adw::Window,
+    dialog: adw::Dialog,
     content_box: GtkBox,
     on_clear: Rc<RefCell<Option<Box<dyn Fn() + 'static>>>>,
+    parent: Option<gtk4::Widget>,
 }
 
 impl StatisticsDialog {
     /// Creates a new statistics dialog
     #[must_use]
     pub fn new(parent: Option<&impl IsA<gtk4::Window>>) -> Self {
-        let window = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(i18n("Connection Statistics"))
-            .default_width(500)
-            .default_height(400)
-            .modal(true)
+            .content_width(500)
+            .content_height(400)
             .build();
-
-        if let Some(p) = parent {
-            window.set_transient_for(Some(p));
-        }
-
-        window.set_size_request(320, 280);
 
         // Header bar with Reset icon button on the left (GNOME HIG)
         let header = adw::HeaderBar::new();
@@ -70,15 +64,15 @@ impl StatisticsDialog {
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
         toolbar_view.set_content(Some(&scrolled));
-        window.set_content(Some(&toolbar_view));
+        dialog.set_child(Some(&toolbar_view));
 
         let on_clear: Rc<RefCell<Option<Box<dyn Fn() + 'static>>>> = Rc::new(RefCell::new(None));
 
         // Reset button handler — confirmation dialog before destructive action
         let on_clear_clone = on_clear.clone();
-        let dialog_weak = window.downgrade();
+        let dialog_weak = dialog.downgrade();
         reset_btn.connect_clicked(move |_| {
-            let Some(win) = dialog_weak.upgrade() else {
+            let Some(dlg) = dialog_weak.upgrade() else {
                 return;
             };
             let alert = adw::AlertDialog::builder()
@@ -94,22 +88,26 @@ impl StatisticsDialog {
             alert.set_close_response("cancel");
 
             let on_clear = on_clear_clone.clone();
-            let win_close = win.clone();
+            let dlg_close = dlg.clone();
             alert.connect_response(None, move |_, response| {
                 if response == "reset" {
                     if let Some(ref callback) = *on_clear.borrow() {
                         callback();
                     }
-                    win_close.close();
+                    dlg_close.close();
                 }
             });
-            alert.present(Some(&win));
+            alert.present(Some(&dlg));
         });
 
+        let parent_widget: Option<gtk4::Widget> =
+            parent.map(|p| p.as_ref().clone().upcast::<gtk4::Widget>());
+
         Self {
-            window,
+            dialog,
             content_box,
             on_clear,
+            parent: parent_widget,
         }
     }
 
@@ -432,7 +430,8 @@ impl StatisticsDialog {
 
     /// Shows the dialog
     pub fn present(&self) {
-        self.window.present();
+        self.dialog
+            .present(self.parent.as_ref().map(|w| w as &gtk4::Widget));
     }
 }
 

@@ -35,7 +35,7 @@ pub type ExportCallback = Rc<RefCell<Option<Box<dyn Fn(Option<ExportResult>)>>>>
 /// Export dialog for exporting connections to external formats
 #[allow(dead_code)] // Fields kept for GTK widget lifecycle
 pub struct ExportDialog {
-    dialog: adw::Window,
+    dialog: adw::Dialog,
     stack: Stack,
     // Format selection
     format_dropdown: DropDown,
@@ -90,18 +90,11 @@ impl ExportDialog {
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
         // Create dialog
-        let dialog = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(i18n("Export Connections"))
-            .modal(true)
-            .default_width(600)
-            .default_height(650)
+            .content_width(600)
+            .content_height(650)
             .build();
-
-        if let Some(p) = parent {
-            dialog.set_transient_for(Some(p));
-        }
-
-        dialog.set_size_request(350, 300);
 
         // Header bar with Export icon button and standard window buttons (GNOME HIG)
         let header = adw::HeaderBar::new();
@@ -123,11 +116,11 @@ impl ExportDialog {
         stack.set_vexpand(true);
         content.append(&stack);
 
-        // Use ToolbarView for adw::Window
+        // Use ToolbarView for adw::Dialog
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
         toolbar_view.set_content(Some(&content));
-        dialog.set_content(Some(&toolbar_view));
+        dialog.set_child(Some(&toolbar_view));
 
         // === Options Page ===
         let (
@@ -812,7 +805,7 @@ impl ExportDialog {
         // Connect export button
         self.connect_export_button();
 
-        self.dialog.present();
+        self.dialog.present(self.parent.as_ref());
     }
 
     /// Connects the browse button to show file/folder dialog

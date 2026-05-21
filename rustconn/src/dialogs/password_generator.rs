@@ -17,20 +17,12 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 /// Shows the password generator dialog
-pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
-    let window = adw::Window::builder()
+pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Widget>>) {
+    let dialog = adw::Dialog::builder()
         .title(i18n("Password Generator"))
-        .modal(true)
-        .default_width(600)
-        .default_height(500)
-        .resizable(true)
+        .content_width(600)
+        .content_height(500)
         .build();
-
-    if let Some(p) = parent {
-        window.set_transient_for(Some(p));
-    }
-
-    window.set_size_request(350, 300);
 
     // Header bar with Copy button and standard window buttons (GNOME HIG)
     let header = adw::HeaderBar::new();
@@ -65,7 +57,10 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
     let toolbar_view = adw::ToolbarView::new();
     toolbar_view.add_top_bar(&header);
     toolbar_view.set_content(Some(&scrolled));
-    window.set_content(Some(&toolbar_view));
+
+    let toast_overlay = adw::ToastOverlay::new();
+    toast_overlay.set_child(Some(&toolbar_view));
+    dialog.set_child(Some(&toast_overlay));
 
     // === Password Display Group ===
     let password_group = adw::PreferencesGroup::builder()
@@ -385,17 +380,15 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
 
     // Connect signals
     let password_entry_clone = password_entry.clone();
-    let window_clone = window.clone();
+    let dialog_clone = dialog.clone();
+    let toast_overlay_clone = toast_overlay.clone();
     copy_btn.connect_clicked(move |_| {
         let text = password_entry_clone.text().to_string();
         if !text.is_empty() {
-            let display = gtk4::prelude::WidgetExt::display(&window_clone);
+            let display = gtk4::prelude::WidgetExt::display(&dialog_clone);
             display.clipboard().set_text(&text);
-            crate::toast::show_toast_on_window(
-                &window_clone,
-                &i18n("Password copied to clipboard"),
-                crate::toast::ToastType::Info,
-            );
+            let toast = adw::Toast::new(&i18n("Password copied to clipboard"));
+            toast_overlay_clone.add_toast(toast);
         }
     });
 
@@ -426,5 +419,5 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Window>>) {
     // Generate initial password
     generate_password();
 
-    window.present();
+    dialog.present(parent);
 }

@@ -36,7 +36,7 @@ const PROTOCOL_VARIANTS: &[ProtocolType] = &[
 
 /// Dialog for creating or editing a Smart Folder.
 pub struct SmartFolderDialog {
-    window: adw::Window,
+    dialog: adw::Dialog,
     name_entry: Entry,
     icon_entry: Entry,
     protocol_dropdown: DropDown,
@@ -48,6 +48,8 @@ pub struct SmartFolderDialog {
     on_save: SmartFolderCallback,
     /// Group IDs corresponding to dropdown indices (index 0 = None / "Any").
     group_ids: Rc<RefCell<Vec<Option<Uuid>>>>,
+    /// Parent widget for presenting the dialog.
+    parent: Option<gtk4::Widget>,
 }
 
 impl SmartFolderDialog {
@@ -63,16 +65,13 @@ impl SmartFolderDialog {
             i18n("New Smart Folder")
         };
 
-        let window = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(title)
-            .modal(true)
-            .default_width(460)
+            .content_width(460)
             .build();
 
-        if let Some(p) = parent {
-            window.set_transient_for(Some(p));
-        }
-        window.set_size_request(320, -1);
+        let parent_widget: Option<gtk4::Widget> =
+            parent.map(|p| p.clone().upcast::<gtk4::Widget>());
 
         // Header bar with Save/Create icon button (GNOME HIG)
         let header = adw::HeaderBar::new();
@@ -110,7 +109,7 @@ impl SmartFolderDialog {
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
         toolbar_view.set_content(Some(&toast_overlay));
-        window.set_content(Some(&toolbar_view));
+        dialog.set_child(Some(&toolbar_view));
 
         // === Name section ===
         let name_group = adw::PreferencesGroup::builder()
@@ -193,7 +192,7 @@ impl SmartFolderDialog {
         let group_ids: Rc<RefCell<Vec<Option<Uuid>>>> = Rc::new(RefCell::new(vec![None]));
 
         let dialog = Self {
-            window,
+            dialog,
             name_entry,
             icon_entry,
             protocol_dropdown,
@@ -204,6 +203,7 @@ impl SmartFolderDialog {
             editing_id,
             on_save,
             group_ids,
+            parent: parent_widget,
         };
 
         // Pre-populate if editing
@@ -278,7 +278,7 @@ impl SmartFolderDialog {
     pub fn run<F: Fn(Option<SmartFolder>) + 'static>(&self, cb: F) {
         *self.on_save.borrow_mut() = Some(Box::new(cb));
 
-        let window = self.window.clone();
+        let dialog = self.dialog.clone();
         let on_save = self.on_save.clone();
         let name_entry = self.name_entry.clone();
         let icon_entry = self.icon_entry.clone();
@@ -351,15 +351,15 @@ impl SmartFolderDialog {
             if let Some(ref cb) = *on_save.borrow() {
                 cb(Some(folder));
             }
-            window.close();
+            dialog.close();
         });
 
-        self.window.present();
+        self.dialog.present(self.parent.as_ref());
     }
 
-    /// Returns a reference to the underlying window.
+    /// Returns a reference to the underlying dialog.
     #[must_use]
-    pub const fn window(&self) -> &adw::Window {
-        &self.window
+    pub const fn dialog(&self) -> &adw::Dialog {
+        &self.dialog
     }
 }

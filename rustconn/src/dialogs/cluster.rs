@@ -1,10 +1,10 @@
 //! Cluster dialog for managing connection clusters
 //!
-//! Provides a GTK4 dialog for creating, editing, and managing clusters
+//! Provides an `adw::Dialog` for creating, editing, and managing clusters
 //! with connection selection and broadcast mode configuration.
 //!
-//! Updated for GTK 4.10+ compatibility using Window instead of Dialog.
-//! Migrated to libadwaita components for GNOME HIG compliance.
+//! Migrated to `adw::Dialog` for GNOME HIG compliance: bottom-sheet on narrow
+//! screens, centered floating sheet on wide screens.
 
 use crate::i18n::{i18n, i18n_f};
 use adw::prelude::*;
@@ -24,7 +24,7 @@ pub type ClusterCallback = Rc<RefCell<Option<Box<dyn Fn(Option<Cluster>)>>>>;
 
 /// Cluster dialog for managing clusters
 pub struct ClusterDialog {
-    window: adw::Window,
+    dialog: adw::Dialog,
     name_entry: gtk4::Entry,
     broadcast_row: adw::SwitchRow,
     connections_list: ListBox,
@@ -33,6 +33,7 @@ pub struct ClusterDialog {
     on_save: ClusterCallback,
     select_all_btn: Button,
     deselect_all_btn: Button,
+    parent: Option<gtk4::Widget>,
 }
 
 /// Represents a connection selection row in the cluster dialog
@@ -52,18 +53,11 @@ impl ClusterDialog {
     /// Creates a new cluster dialog
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
-        let window = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(i18n("New Cluster"))
-            .modal(true)
-            .default_width(500)
-            .default_height(400)
+            .content_width(500)
+            .content_height(400)
             .build();
-
-        if let Some(p) = parent {
-            window.set_transient_for(Some(p));
-        }
-
-        window.set_size_request(320, 280);
 
         // Header bar with Create icon button (GNOME HIG)
         let header = adw::HeaderBar::new();
@@ -97,7 +91,7 @@ impl ClusterDialog {
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
         toolbar_view.set_content(Some(&scrolled));
-        window.set_content(Some(&toolbar_view));
+        dialog.set_child(Some(&toolbar_view));
 
         // === Cluster Details ===
         let details_group = adw::PreferencesGroup::builder()
@@ -133,7 +127,7 @@ impl ClusterDialog {
         let editing_id: Rc<RefCell<Option<Uuid>>> = Rc::new(RefCell::new(None));
 
         // Connect save button
-        let window_clone = window.clone();
+        let dialog_clone = dialog.clone();
         let on_save_clone = on_save.clone();
         let name_entry_clone = name_entry.clone();
         let broadcast_row_clone = broadcast_row.clone();
@@ -157,11 +151,9 @@ impl ClusterDialog {
                 .collect();
 
             if selected_ids.is_empty() {
-                crate::toast::show_toast_on_window(
-                    &window_clone,
-                    &i18n("Please select at least one connection"),
-                    crate::toast::ToastType::Warning,
-                );
+                crate::toast::show_error_toast_on_active_window(&i18n(
+                    "Please select at least one connection",
+                ));
                 return;
             }
 
@@ -180,11 +172,13 @@ impl ClusterDialog {
             if let Some(ref cb) = *on_save_clone.borrow() {
                 cb(Some(cluster));
             }
-            window_clone.close();
+            dialog_clone.close();
         });
 
+        let parent_widget = parent.map(|p| p.clone().upcast::<gtk4::Widget>());
+
         Self {
-            window,
+            dialog,
             name_entry,
             broadcast_row,
             connections_list,
@@ -193,6 +187,7 @@ impl ClusterDialog {
             on_save,
             select_all_btn,
             deselect_all_btn,
+            parent: parent_widget,
         }
     }
 
@@ -307,7 +302,7 @@ impl ClusterDialog {
     /// Sets the cluster to edit (for editing existing clusters)
     pub fn set_cluster(&self, cluster: &Cluster) {
         *self.editing_id.borrow_mut() = Some(cluster.id);
-        self.window.set_title(Some(&i18n("Edit Cluster")));
+        self.dialog.set_title(&i18n("Edit Cluster"));
         self.name_entry.set_text(&cluster.name);
         self.broadcast_row.set_active(cluster.broadcast_enabled);
 
@@ -329,19 +324,20 @@ impl ClusterDialog {
     /// Runs the dialog and calls the callback with the result
     pub fn run<F: Fn(Option<Cluster>) + 'static>(&self, cb: F) {
         *self.on_save.borrow_mut() = Some(Box::new(cb));
-        self.window.present();
+        self.dialog
+            .present(self.parent.as_ref().map(|w| w as &gtk4::Widget));
     }
 
-    /// Returns a reference to the underlying window
+    /// Returns a reference to the underlying dialog
     #[must_use]
-    pub const fn window(&self) -> &adw::Window {
-        &self.window
+    pub const fn dialog(&self) -> &adw::Dialog {
+        &self.dialog
     }
 }
 
 /// Cluster list dialog for managing all clusters
 pub struct ClusterListDialog {
-    window: adw::Window,
+    dialog: adw::Dialog,
     clusters_list: ListBox,
     cluster_rows: Rc<RefCell<Vec<ClusterListRow>>>,
     on_connect: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>,
@@ -351,6 +347,7 @@ pub struct ClusterListDialog {
     on_new: Rc<RefCell<Option<Box<dyn Fn()>>>>,
     /// Callback to get current clusters for refresh
     clusters_provider: Rc<RefCell<Option<Box<dyn Fn() -> Vec<Cluster>>>>>,
+    parent: Option<gtk4::Widget>,
 }
 
 /// Represents a cluster row in the list dialog
@@ -378,18 +375,11 @@ impl ClusterListDialog {
     /// Creates a new cluster list dialog
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
-        let window = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(i18n("Manage Clusters"))
-            .modal(true)
-            .default_width(500)
-            .default_height(400)
+            .content_width(500)
+            .content_height(400)
             .build();
-
-        if let Some(p) = parent {
-            window.set_transient_for(Some(p));
-        }
-
-        window.set_size_request(320, 280);
 
         // Header bar with Add button and standard window buttons (GNOME HIG)
         let header = adw::HeaderBar::new();
@@ -412,11 +402,11 @@ impl ClusterListDialog {
 
         clamp.set_child(Some(&content));
 
-        // Use ToolbarView for adw::Window (GNOME HIG)
+        // Use ToolbarView for adw::Dialog (GNOME HIG)
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
         toolbar_view.set_content(Some(&clamp));
-        window.set_content(Some(&toolbar_view));
+        dialog.set_child(Some(&toolbar_view));
 
         // Info label
         let info_label = Label::builder()
@@ -460,8 +450,10 @@ impl ClusterListDialog {
             }
         });
 
+        let parent_widget = parent.map(|p| p.clone().upcast::<gtk4::Widget>());
+
         Self {
-            window,
+            dialog,
             clusters_list,
             cluster_rows,
             on_connect,
@@ -470,6 +462,7 @@ impl ClusterListDialog {
             on_delete,
             on_new,
             clusters_provider,
+            parent: parent_widget,
         }
     }
 
@@ -624,9 +617,9 @@ impl ClusterListDialog {
             });
 
             let on_delete_clone = self.on_delete.clone();
-            let window_weak = self.window.downgrade();
+            let dialog_weak = self.dialog.downgrade();
             cluster_row.delete_button.connect_clicked(move |_| {
-                let Some(win) = window_weak.upgrade() else {
+                let Some(dlg) = dialog_weak.upgrade() else {
                     return;
                 };
                 let alert = adw::AlertDialog::builder()
@@ -646,7 +639,7 @@ impl ClusterListDialog {
                         cb(cluster_id);
                     }
                 });
-                alert.present(Some(&win));
+                alert.present(Some(&dlg));
             });
 
             self.clusters_list.append(&cluster_row.row);
@@ -703,12 +696,13 @@ impl ClusterListDialog {
 
     /// Shows the dialog
     pub fn show(&self) {
-        self.window.present();
+        self.dialog
+            .present(self.parent.as_ref().map(|w| w as &gtk4::Widget));
     }
 
-    /// Returns a reference to the underlying window
+    /// Returns a reference to the underlying dialog
     #[must_use]
-    pub const fn window(&self) -> &adw::Window {
-        &self.window
+    pub const fn dialog(&self) -> &adw::Dialog {
+        &self.dialog
     }
 }

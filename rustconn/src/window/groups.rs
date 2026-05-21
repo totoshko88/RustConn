@@ -49,11 +49,9 @@ pub fn show_move_to_group_dialog(
     drop(state_ref);
 
     // Create dialog
-    let move_window = adw::Window::builder()
+    let move_dialog = adw::Dialog::builder()
         .title(i18n("Move"))
-        .transient_for(window)
-        .modal(true)
-        .default_width(450)
+        .content_width(450)
         .build();
 
     let header = adw::HeaderBar::new();
@@ -146,10 +144,10 @@ pub fn show_move_to_group_dialog(
     let toolbar_view = adw::ToolbarView::new();
     toolbar_view.add_top_bar(&header);
     toolbar_view.set_content(Some(&content));
-    move_window.set_content(Some(&toolbar_view));
+    move_dialog.set_child(Some(&toolbar_view));
 
     // Connect cancel
-    let window_clone = move_window.clone();
+    let window_clone = move_dialog.clone();
     cancel_btn.connect_clicked(move |_| {
         window_clone.close();
     });
@@ -157,7 +155,7 @@ pub fn show_move_to_group_dialog(
     // Connect move
     let state_clone = state.clone();
     let sidebar_clone = sidebar.clone();
-    let window_clone = move_window.clone();
+    let window_clone = move_dialog.clone();
     let parent_window = window.clone();
     move_btn.connect_clicked(move |_| {
         let selected_idx = group_dropdown.selected() as usize;
@@ -194,7 +192,7 @@ pub fn show_move_to_group_dialog(
         }
     });
 
-    move_window.present();
+    move_dialog.present(Some(window));
 }
 
 /// Checks if a group is a descendant of another group

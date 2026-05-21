@@ -1,6 +1,8 @@
 //! Snippet-related methods for the main window
 //!
 //! This module contains methods for managing and executing command snippets.
+//! Dialogs use `adw::Dialog` for GNOME HIG compliance (bottom-sheet on narrow,
+//! auto-close on Escape, drag-to-close).
 
 use adw::prelude::*;
 use gtk4::prelude::*;
@@ -72,7 +74,7 @@ pub fn show_new_snippet_dialog(
     });
 }
 
-/// Shows the snippets manager window
+/// Shows the snippets manager dialog
 #[allow(clippy::too_many_lines)]
 pub fn show_snippets_manager(
     window: &gtk4::Window,
@@ -80,17 +82,13 @@ pub fn show_snippets_manager(
     notebook: SharedNotebook,
     session_bridges: SessionSplitBridges,
 ) {
-    let manager_window = adw::Window::builder()
+    let manager_dialog = adw::Dialog::builder()
         .title(i18n("Manage Snippets"))
-        .transient_for(window)
-        .modal(true)
-        .default_width(500)
-        .default_height(400)
+        .content_width(500)
+        .content_height(400)
         .build();
 
-    manager_window.set_size_request(320, 280);
-
-    // Header bar with Add button and standard window buttons (GNOME HIG)
+    // Header bar with Add button (GNOME HIG)
     let header = adw::HeaderBar::new();
     let new_btn = Button::from_icon_name("list-add-symbolic");
     new_btn.set_tooltip_text(Some(&i18n("New Snippet")));
@@ -123,18 +121,19 @@ pub fn show_snippets_manager(
     scrolled.set_child(Some(&snippets_list));
     content.append(&scrolled);
 
-    // Use ToolbarView for proper adw::Window layout
+    // Use ToolbarView for adw::Dialog layout
     let toolbar_view = adw::ToolbarView::new();
     toolbar_view.add_top_bar(&header);
     toolbar_view.set_content(Some(&content));
-    manager_window.set_content(Some(&toolbar_view));
+    manager_dialog.set_child(Some(&toolbar_view));
 
     // Populate snippets list with inline action buttons
     populate_snippets_manager_list(
         &state,
         &snippets_list,
         "",
-        &manager_window,
+        window,
+        &manager_dialog,
         &notebook,
         &session_bridges,
     );
@@ -142,7 +141,8 @@ pub fn show_snippets_manager(
     // Connect search
     let state_clone = state.clone();
     let list_clone = snippets_list.clone();
-    let manager_clone = manager_window.clone();
+    let window_clone = window.clone();
+    let manager_clone = manager_dialog.clone();
     let notebook_clone = notebook.clone();
     let bridges_clone = session_bridges.clone();
     search_entry.connect_search_changed(move |entry| {
@@ -151,6 +151,7 @@ pub fn show_snippets_manager(
             &state_clone,
             &list_clone,
             &query,
+            &window_clone,
             &manager_clone,
             &notebook_clone,
             &bridges_clone,
@@ -160,13 +161,15 @@ pub fn show_snippets_manager(
     // Connect new button
     let state_clone = state.clone();
     let list_clone = snippets_list.clone();
-    let manager_clone = manager_window.clone();
+    let window_clone = window.clone();
+    let manager_clone = manager_dialog.clone();
     let notebook_clone = notebook;
     let bridges_clone = session_bridges;
     new_btn.connect_clicked(move |_| {
-        let dialog = SnippetDialog::new(Some(&manager_clone.clone().upcast()));
+        let dialog = SnippetDialog::new(Some(&window_clone));
         let state_inner = state_clone.clone();
         let list_inner = list_clone.clone();
+        let window_inner = window_clone.clone();
         let manager_inner = manager_clone.clone();
         let notebook_inner = notebook_clone.clone();
         let bridges_inner = bridges_clone.clone();
@@ -183,6 +186,7 @@ pub fn show_snippets_manager(
                     &state_inner,
                     &list_inner,
                     "",
+                    &window_inner,
                     &manager_inner,
                     &notebook_inner,
                     &bridges_inner,
@@ -191,7 +195,7 @@ pub fn show_snippets_manager(
         });
     });
 
-    manager_window.present();
+    manager_dialog.present(Some(window));
 }
 
 /// Populates the snippets manager list with inline action buttons per row
@@ -199,7 +203,8 @@ fn populate_snippets_manager_list(
     state: &SharedAppState,
     list: &gtk4::ListBox,
     query: &str,
-    manager_window: &adw::Window,
+    parent_window: &gtk4::Window,
+    manager_dialog: &adw::Dialog,
     notebook: &SharedNotebook,
     session_bridges: &SessionSplitBridges,
 ) {
@@ -282,14 +287,14 @@ fn populate_snippets_manager_list(
         // Connect execute
         let state_exec = state.clone();
         let notebook_exec = notebook.clone();
-        let manager_exec = manager_window.clone();
+        let parent_exec = parent_window.clone();
         let bridges_exec = session_bridges.clone();
         execute_btn.connect_clicked(move |_| {
             let state_ref = state_exec.borrow();
             if let Some(snippet) = state_ref.get_snippet(snippet_id).cloned() {
                 drop(state_ref);
                 execute_snippet(
-                    &manager_exec,
+                    &parent_exec,
                     &notebook_exec,
                     &bridges_exec,
                     &snippet,
@@ -301,17 +306,19 @@ fn populate_snippets_manager_list(
         // Connect edit
         let state_edit = state.clone();
         let list_edit = list.clone();
-        let manager_edit = manager_window.clone();
+        let parent_edit = parent_window.clone();
+        let manager_edit = manager_dialog.clone();
         let notebook_edit = notebook.clone();
         let bridges_edit = session_bridges.clone();
         edit_btn.connect_clicked(move |_| {
             let state_ref = state_edit.borrow();
             if let Some(snippet) = state_ref.get_snippet(snippet_id).cloned() {
                 drop(state_ref);
-                let dialog = SnippetDialog::new(Some(&manager_edit.clone().upcast()));
+                let dialog = SnippetDialog::new(Some(&parent_edit));
                 dialog.set_snippet(&snippet);
                 let state_inner = state_edit.clone();
                 let list_inner = list_edit.clone();
+                let parent_inner = parent_edit.clone();
                 let manager_inner = manager_edit.clone();
                 let notebook_inner = notebook_edit.clone();
                 let bridges_inner = bridges_edit.clone();
@@ -328,6 +335,7 @@ fn populate_snippets_manager_list(
                             &state_inner,
                             &list_inner,
                             "",
+                            &parent_inner,
                             &manager_inner,
                             &notebook_inner,
                             &bridges_inner,
@@ -340,12 +348,14 @@ fn populate_snippets_manager_list(
         // Connect delete
         let state_del = state.clone();
         let list_del = list.clone();
-        let manager_del = manager_window.clone();
+        let parent_del = parent_window.clone();
+        let manager_del = manager_dialog.clone();
         let notebook_del = notebook.clone();
         let bridges_del = session_bridges.clone();
         delete_btn.connect_clicked(move |_| {
             let state_inner = state_del.clone();
             let list_inner = list_del.clone();
+            let parent_inner = parent_del.clone();
             let manager_inner = manager_del.clone();
             let notebook_inner = notebook_del.clone();
             let bridges_inner = bridges_del.clone();
@@ -366,6 +376,7 @@ fn populate_snippets_manager_list(
                             &state_inner,
                             &list_inner,
                             "",
+                            &parent_inner,
                             &manager_inner,
                             &notebook_inner,
                             &bridges_inner,
@@ -445,17 +456,13 @@ pub fn show_snippet_picker(
     notebook: SharedNotebook,
     session_bridges: SessionSplitBridges,
 ) {
-    let picker_window = adw::Window::builder()
+    let picker_dialog = adw::Dialog::builder()
         .title(i18n("Execute Snippet"))
-        .transient_for(window)
-        .modal(true)
-        .default_width(500)
-        .default_height(400)
+        .content_width(500)
+        .content_height(400)
         .build();
 
     let header = adw::HeaderBar::new();
-    let cancel_btn = Button::builder().label(&i18n("Cancel")).build();
-    header.pack_start(&cancel_btn);
 
     let content = gtk4::Box::new(Orientation::Vertical, 8);
     content.set_margin_top(12);
@@ -480,11 +487,11 @@ pub fn show_snippet_picker(
     scrolled.set_child(Some(&snippets_list));
     content.append(&scrolled);
 
-    // Use ToolbarView for proper adw::Window layout
+    // Use ToolbarView for adw::Dialog layout
     let toolbar_view = adw::ToolbarView::new();
     toolbar_view.add_top_bar(&header);
     toolbar_view.set_content(Some(&content));
-    picker_window.set_content(Some(&toolbar_view));
+    picker_dialog.set_child(Some(&toolbar_view));
 
     populate_snippets_list(&state, &snippets_list, "");
 
@@ -496,16 +503,11 @@ pub fn show_snippet_picker(
         populate_snippets_list(&state_clone, &list_clone, &query);
     });
 
-    // Connect cancel
-    let window_clone = picker_window.clone();
-    cancel_btn.connect_clicked(move |_| {
-        window_clone.close();
-    });
-
     // Connect row activation (double-click or Enter)
     let state_clone = state;
     let notebook_clone = notebook;
-    let window_clone = picker_window.clone();
+    let dialog_clone = picker_dialog.clone();
+    let window_clone = window.clone();
     let bridges_clone = session_bridges;
     snippets_list.connect_row_activated(move |_, row| {
         if let Some(id_str) = row.widget_name().as_str().strip_prefix("snippet-")
@@ -521,12 +523,12 @@ pub fn show_snippet_picker(
                     &snippet,
                     &state_clone,
                 );
-                window_clone.close();
+                dialog_clone.close();
             }
         }
     });
 
-    picker_window.present();
+    picker_dialog.present(Some(window));
 }
 
 /// Executes a snippet in the active terminal
@@ -609,21 +611,13 @@ pub fn show_variable_input_dialog(
     snippet: &rustconn_core::models::Snippet,
     prefilled: &std::collections::HashMap<String, String>,
 ) {
-    let var_window = adw::Window::builder()
+    let var_dialog = adw::Dialog::builder()
         .title(i18n("Enter Variable Values"))
-        .transient_for(parent)
-        .modal(true)
-        .default_width(450)
+        .content_width(450)
         .build();
 
-    let header = adw::HeaderBar::new();
-    let cancel_btn = Button::builder().label(&i18n("Cancel")).build();
-    let execute_btn = Button::builder()
-        .label(&i18n("Execute"))
-        .css_classes(["suggested-action"])
-        .build();
-    header.pack_start(&cancel_btn);
-    header.pack_end(&execute_btn);
+    let (header, cancel_btn, execute_btn) =
+        crate::dialogs::widgets::dialog_header("Cancel", "Execute");
 
     let content = gtk4::Box::new(Orientation::Vertical, 8);
     content.set_margin_top(12);
@@ -672,20 +666,20 @@ pub fn show_variable_input_dialog(
 
     content.append(&grid);
 
-    // Use ToolbarView for proper adw::Window layout
+    // Use ToolbarView for adw::Dialog layout
     let toolbar_view = adw::ToolbarView::new();
     toolbar_view.add_top_bar(&header);
     toolbar_view.set_content(Some(&content));
-    var_window.set_content(Some(&toolbar_view));
+    var_dialog.set_child(Some(&toolbar_view));
 
     // Connect cancel
-    let window_clone = var_window.clone();
+    let dialog_clone = var_dialog.clone();
     cancel_btn.connect_clicked(move |_| {
-        window_clone.close();
+        dialog_clone.close();
     });
 
     // Connect execute
-    let window_clone = var_window.clone();
+    let dialog_clone = var_dialog.clone();
     let notebook_clone = notebook.clone();
     let bridges_clone = session_bridges.clone();
     let command = snippet.command.clone();
@@ -698,10 +692,11 @@ pub fn show_variable_input_dialog(
         let substituted =
             rustconn_core::snippet::SnippetManager::substitute_variables(&command, &values);
         send_text_to_focused(&notebook_clone, &bridges_clone, &format!("{substituted}\n"));
-        window_clone.close();
+        dialog_clone.close();
     });
 
-    var_window.present();
+    let parent_widget: gtk4::Widget = parent.as_ref().clone().upcast();
+    var_dialog.present(Some(&parent_widget));
 }
 
 /// Executes a snippet directly without a parent window dialog.

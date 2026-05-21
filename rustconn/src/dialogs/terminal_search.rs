@@ -19,7 +19,7 @@ const PCRE2_MULTILINE: u32 = 0x0000_0400;
 
 /// Terminal search dialog for VTE terminals
 pub struct TerminalSearchDialog {
-    window: adw::Window,
+    dialog: adw::Dialog,
     search_entry: SearchEntry,
     case_sensitive: CheckButton,
     regex_toggle: CheckButton,
@@ -30,24 +30,22 @@ pub struct TerminalSearchDialog {
     close_btn: Button,
     prev_btn: Button,
     next_btn: Button,
+    /// Parent widget for presenting the dialog.
+    parent: Option<gtk4::Widget>,
 }
 
 impl TerminalSearchDialog {
     /// Creates a new terminal search dialog
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>, terminal: Terminal) -> Self {
-        let window = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(i18n("Search in Terminal"))
-            .modal(true)
-            .default_width(400)
-            .default_height(180)
+            .content_width(400)
+            .content_height(180)
             .build();
 
-        if let Some(p) = parent {
-            window.set_transient_for(Some(p));
-        }
-
-        window.set_size_request(280, -1);
+        let parent_widget: Option<gtk4::Widget> =
+            parent.map(|p| p.clone().upcast::<gtk4::Widget>());
 
         // Header bar with standard window close button (×) per GNOME HIG
         let header = adw::HeaderBar::new();
@@ -62,11 +60,11 @@ impl TerminalSearchDialog {
         content.set_margin_start(12);
         content.set_margin_end(12);
 
-        // Use ToolbarView for adw::Window
+        // Use ToolbarView for adw::Dialog
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
         toolbar_view.set_content(Some(&content));
-        window.set_content(Some(&toolbar_view));
+        dialog.set_child(Some(&toolbar_view));
 
         // Search entry
         let search_entry = SearchEntry::builder()
@@ -125,7 +123,7 @@ impl TerminalSearchDialog {
         let current_search = Rc::new(RefCell::new(String::new()));
 
         let dialog = Self {
-            window,
+            dialog,
             search_entry,
             case_sensitive,
             regex_toggle,
@@ -136,6 +134,7 @@ impl TerminalSearchDialog {
             close_btn,
             prev_btn,
             next_btn,
+            parent: parent_widget,
         };
 
         dialog.setup_signals();
@@ -145,12 +144,12 @@ impl TerminalSearchDialog {
     /// Sets up signal handlers for the dialog
     fn setup_signals(&self) {
         // Close button handler — clear highlights on close
-        let window = self.window.clone();
+        let dialog = self.dialog.clone();
         let terminal_close = self.terminal.clone();
         self.close_btn.connect_clicked(move |_| {
             terminal_close.match_remove_all();
             terminal_close.search_set_regex(None, 0);
-            window.close();
+            dialog.close();
         });
 
         // Search on text change
@@ -275,19 +274,19 @@ impl TerminalSearchDialog {
         });
 
         // Handle Escape key to close — clear highlights
-        let window_escape = self.window.clone();
+        let dialog_escape = self.dialog.clone();
         let terminal_escape = self.terminal.clone();
         let key_controller = gtk4::EventControllerKey::new();
         key_controller.connect_key_pressed(move |_, key, _, _| {
             if key == gtk4::gdk::Key::Escape {
                 terminal_escape.match_remove_all();
                 terminal_escape.search_set_regex(None, 0);
-                window_escape.close();
+                dialog_escape.close();
                 return gtk4::glib::Propagation::Stop;
             }
             gtk4::glib::Propagation::Proceed
         });
-        self.window.add_controller(key_controller);
+        self.dialog.add_controller(key_controller);
     }
 
     /// Performs a search in the terminal
@@ -348,13 +347,13 @@ impl TerminalSearchDialog {
 
     /// Shows the dialog
     pub fn show(&self) {
-        self.window.present();
+        self.dialog.present(self.parent.as_ref());
         self.search_entry.grab_focus();
     }
 
-    /// Returns the underlying window
+    /// Returns the underlying dialog
     #[must_use]
-    pub const fn window(&self) -> &adw::Window {
-        &self.window
+    pub const fn dialog(&self) -> &adw::Dialog {
+        &self.dialog
     }
 }

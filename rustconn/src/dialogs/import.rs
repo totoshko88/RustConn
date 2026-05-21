@@ -28,7 +28,7 @@ use crate::i18n::{i18n, i18n_f};
 
 /// Import dialog for importing connections from external sources
 pub struct ImportDialog {
-    dialog: adw::Window,
+    dialog: adw::Dialog,
     stack: Stack,
     source_list: ListBox,
     progress_bar: ProgressBar,
@@ -49,18 +49,11 @@ impl ImportDialog {
     /// Creates a new import dialog
     #[must_use]
     pub fn new(parent: Option<&gtk4::Window>) -> Self {
-        let dialog = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(i18n("Import Connections"))
-            .modal(true)
-            .default_width(600)
-            .default_height(500)
+            .content_width(600)
+            .content_height(500)
             .build();
-
-        if let Some(p) = parent {
-            dialog.set_transient_for(Some(p));
-        }
-
-        dialog.set_size_request(350, 300);
 
         // Header bar with Import icon button and standard window buttons (GNOME HIG)
         let header = adw::HeaderBar::new();
@@ -93,7 +86,7 @@ impl ImportDialog {
 
         clamp.set_child(Some(&content));
         toolbar_view.set_content(Some(&clamp));
-        dialog.set_content(Some(&toolbar_view));
+        dialog.set_child(Some(&toolbar_view));
 
         // === Source Selection Page ===
         let source_page = Self::create_source_page();
@@ -695,7 +688,7 @@ impl ImportDialog {
             }
         });
 
-        self.dialog.present();
+        self.dialog.present(self.parent.as_ref());
     }
 
     /// Runs the dialog and calls the callback with the result and source name
@@ -990,7 +983,7 @@ impl ImportDialog {
         });
         self.source_list.add_controller(gesture);
 
-        self.dialog.present();
+        self.dialog.present(self.parent.as_ref());
     }
 
     /// Handles the special case of importing from an SSH config file
@@ -1274,7 +1267,7 @@ impl ImportDialog {
 
     /// Returns a reference to the underlying dialog
     #[must_use]
-    pub const fn dialog(&self) -> &adw::Window {
+    pub const fn dialog(&self) -> &adw::Dialog {
         &self.dialog
     }
 
