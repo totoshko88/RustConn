@@ -1886,7 +1886,8 @@ proptest! {
         prop_assert!(!result.is_empty());
         prop_assert!(result[0].starts_with("/app:program:"));
         // Program value is always present after "program:"
-        prop_assert!(result[0].contains(&format!("program:{program}")));
+        let expected_fragment = format!("program:{}", program);
+        prop_assert!(result[0].contains(&expected_fragment));
     }
 }
 
