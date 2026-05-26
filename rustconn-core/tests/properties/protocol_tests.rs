@@ -1846,11 +1846,9 @@ fn remote_app_freerdp_args_full() {
         ..Default::default()
     };
     let args = config.remote_app_freerdp_args();
-    assert_eq!(args.len(), 3);
-    assert_eq!(args[0], "/app:||notepad");
-    // Args contain a space → quoted
-    assert_eq!(args[1], "/app-cmd:\"/p test.txt\"");
-    assert_eq!(args[2], "/app-name:Notepad");
+    // FreeRDP 3.x: single /app: argument with comma-separated key:value pairs
+    assert_eq!(args.len(), 1);
+    assert_eq!(args[0], "/app:program:||notepad,cmd:/p test.txt,name:Notepad");
 }
 
 /// `remote_app_freerdp_args()` skips empty args and name.
@@ -1864,11 +1862,11 @@ fn remote_app_freerdp_args_skips_empty_optional_fields() {
     };
     let args = config.remote_app_freerdp_args();
     assert_eq!(args.len(), 1);
-    assert_eq!(args[0], "/app:calc");
+    assert_eq!(args[0], "/app:program:calc");
 }
 
 proptest! {
-    /// Property: `remote_app_freerdp_args()` always starts with `/app:` when program is non-empty.
+    /// Property: `remote_app_freerdp_args()` always starts with `/app:program:` when program is non-empty.
     #[test]
     fn remote_app_args_start_with_app_prefix(
         program in "[a-zA-Z][a-zA-Z0-9_./\\\\-]{0,50}",
@@ -1883,17 +1881,13 @@ proptest! {
         };
         let result = config.remote_app_freerdp_args();
         prop_assert!(!result.is_empty());
-        prop_assert!(result[0].starts_with("/app:"));
-        // Values with spaces are quoted
-        if program.contains(' ') {
-            prop_assert_eq!(&result[0], &format!("/app:\"{program}\""));
-        } else {
-            prop_assert_eq!(&result[0], &format!("/app:{program}"));
-        }
+        prop_assert!(result[0].starts_with("/app:program:"));
+        // Program value is always present after "program:"
+        prop_assert!(result[0].contains(&format!("program:{program}")));
     }
 }
 
-/// `remote_app_freerdp_args()` quotes values containing spaces.
+/// `remote_app_freerdp_args()` includes all fields in single argument.
 #[test]
 fn remote_app_freerdp_args_quotes_spaces() {
     let config = RdpConfig {
@@ -1903,13 +1897,14 @@ fn remote_app_freerdp_args_quotes_spaces() {
         ..Default::default()
     };
     let args = config.remote_app_freerdp_args();
-    assert_eq!(args.len(), 3);
-    assert_eq!(args[0], "/app:\"C:\\Program Files\\app.exe\"");
-    assert_eq!(args[1], "/app-cmd:\"/p my document.txt\"");
-    assert_eq!(args[2], "/app-name:\"My App\"");
+    assert_eq!(args.len(), 1);
+    assert_eq!(
+        args[0],
+        "/app:program:C:\\Program Files\\app.exe,cmd:/p my document.txt,name:My App"
+    );
 }
 
-/// `remote_app_freerdp_args()` does not quote values without spaces.
+/// `remote_app_freerdp_args()` produces single argument with all fields.
 #[test]
 fn remote_app_freerdp_args_no_quotes_without_spaces() {
     let config = RdpConfig {
@@ -1919,8 +1914,6 @@ fn remote_app_freerdp_args_no_quotes_without_spaces() {
         ..Default::default()
     };
     let args = config.remote_app_freerdp_args();
-    assert_eq!(args.len(), 3);
-    assert_eq!(args[0], "/app:||notepad");
-    assert_eq!(args[1], "/app-cmd:/p");
-    assert_eq!(args[2], "/app-name:Notepad");
+    assert_eq!(args.len(), 1);
+    assert_eq!(args[0], "/app:program:||notepad,cmd:/p,name:Notepad");
 }
