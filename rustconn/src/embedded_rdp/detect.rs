@@ -74,6 +74,51 @@ pub fn detect_wlfreerdp() -> bool {
     detect_best_freerdp().is_some_and(|b| b.starts_with("wl"))
 }
 
+/// Detects the best FreeRDP binary for RemoteApp (RAIL) sessions.
+///
+/// `wlfreerdp` and `sdl-freerdp` do not support RAIL/RemoteApp — they render
+/// a full desktop into their own surface and cannot create individual
+/// application windows. Only `xfreerdp` variants support RAIL because they
+/// use X11 window management for per-app windows.
+///
+/// In Flatpak, `xfreerdp` is typically not bundled (only `wlfreerdp`/`sdl-freerdp`
+/// are included). This function checks the host system via `flatpak-spawn --host`
+/// when running inside a Flatpak sandbox.
+#[must_use]
+pub fn detect_best_freerdp_for_remoteapp() -> Option<String> {
+    // Only xfreerdp variants support RAIL/RemoteApp
+    const REMOTEAPP_CANDIDATES: &[&str] = &["xfreerdp3", "xfreerdp"];
+
+    // First check inside the sandbox
+    for candidate in REMOTEAPP_CANDIDATES {
+        if binary_exists(candidate) {
+            return Some((*candidate).to_string());
+        }
+    }
+
+    // In Flatpak, check host system via flatpak-spawn
+    if rustconn_core::flatpak::is_flatpak() {
+        for candidate in REMOTEAPP_CANDIDATES {
+            if host_binary_exists(candidate) {
+                // Return a marker that launch() will interpret as host-side binary
+                return Some(format!("host:{candidate}"));
+            }
+        }
+    }
+
+    None
+}
+
+/// Checks whether a binary exists on the host system (via flatpak-spawn --host).
+fn host_binary_exists(name: &str) -> bool {
+    Command::new("flatpak-spawn")
+        .args(["--host", "which", name])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .is_ok_and(|s| s.success())
+}
+
 /// Detects if any FreeRDP client is available for external mode
 ///
 /// Returns the name of the best available FreeRDP client.

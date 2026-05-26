@@ -2165,6 +2165,9 @@ impl SplitViewBridge {
         // split's contents must use [`Self::active_sessions`] /
         // [`Self::active_session_count`] rather than `session_ids()` /
         // `session_count()`.
+        self.terminals
+            .borrow_mut()
+            .insert(session_id, terminal.clone());
 
         // Detach terminal from any previous parent and display in panel
         Self::detach_terminal_from_parent(terminal);

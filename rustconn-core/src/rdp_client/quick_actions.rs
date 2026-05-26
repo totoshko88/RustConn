@@ -40,63 +40,86 @@ pub struct QuickAction {
     pub tooltip: &'static str,
     /// Icon name (symbolic, GNOME icon theme)
     pub icon: &'static str,
+    /// Group index for visual separation (items with same group are together)
+    pub group: u8,
 }
 
 /// All available quick actions
+///
+/// Group 0: Quick shortcuts (hotkey-based, no Run dialog)
+/// Group 1: Admin consoles (Win+R based, alphabetically sorted)
 pub static QUICK_ACTIONS: &[QuickAction] = &[
-    QuickAction {
-        id: "task-manager",
-        label: "Task Manager",
-        tooltip: "Open Windows Task Manager (Ctrl+Shift+Esc)",
-        icon: "utilities-system-monitor-symbolic",
-    },
+    // Group 0: Quick shortcuts
     QuickAction {
         id: "settings",
         label: "Settings",
         tooltip: "Open Windows Settings (Win+I)",
         icon: "emblem-system-symbolic",
+        group: 0,
     },
     QuickAction {
-        id: "registry-editor",
-        label: "Registry Editor",
-        tooltip: "Open Windows Registry Editor",
-        icon: "preferences-other-symbolic",
+        id: "task-manager",
+        label: "Task Manager",
+        tooltip: "Open Windows Task Manager (Ctrl+Shift+Esc)",
+        icon: "utilities-system-monitor-symbolic",
+        group: 0,
+    },
+    // Group 1: Admin consoles (alphabetical)
+    QuickAction {
+        id: "computer-management",
+        label: "Computer Management",
+        tooltip: "Open Computer Management (disks, services, users, event log)",
+        icon: "computer-symbolic",
+        group: 1,
     },
     QuickAction {
         id: "device-manager",
         label: "Device Manager",
         tooltip: "Open Windows Device Manager",
         icon: "preferences-desktop-peripherals-symbolic",
-    },
-    QuickAction {
-        id: "event-viewer",
-        label: "Event Viewer",
-        tooltip: "Open Windows Event Viewer",
-        icon: "document-open-recent-symbolic",
-    },
-    QuickAction {
-        id: "services",
-        label: "Services",
-        tooltip: "Open Windows Services console",
-        icon: "application-x-executable-symbolic",
+        group: 1,
     },
     QuickAction {
         id: "disk-management",
         label: "Disk Management",
         tooltip: "Open Windows Disk Management console",
         icon: "drive-harddisk-symbolic",
+        group: 1,
+    },
+    QuickAction {
+        id: "event-viewer",
+        label: "Event Viewer",
+        tooltip: "Open Windows Event Viewer",
+        icon: "document-open-recent-symbolic",
+        group: 1,
+    },
+    QuickAction {
+        id: "registry-editor",
+        label: "Registry Editor",
+        tooltip: "Open Windows Registry Editor",
+        icon: "preferences-other-symbolic",
+        group: 1,
     },
     QuickAction {
         id: "resource-monitor",
         label: "Resource Monitor",
         tooltip: "Open Windows Resource Monitor (CPU, memory, disk, network)",
         icon: "org.gnome.SystemMonitor-symbolic",
+        group: 1,
     },
     QuickAction {
-        id: "computer-management",
-        label: "Computer Management",
-        tooltip: "Open Computer Management (disks, services, users, event log)",
-        icon: "computer-symbolic",
+        id: "server-manager",
+        label: "Server Manager",
+        tooltip: "Open Windows Server Manager",
+        icon: "network-server-symbolic",
+        group: 1,
+    },
+    QuickAction {
+        id: "services",
+        label: "Services",
+        tooltip: "Open Windows Services console",
+        icon: "application-x-executable-symbolic",
+        group: 1,
     },
 ];
 
@@ -115,6 +138,7 @@ pub fn build_key_sequence(action_id: &str) -> Option<Vec<(u16, bool, bool)>> {
         "disk-management" => Some(build_run_command("diskmgmt.msc")),
         "resource-monitor" => Some(build_run_command("resmon")),
         "computer-management" => Some(build_run_command("compmgmt.msc")),
+        "server-manager" => Some(build_run_command("servermanager")),
         _ => None,
     }
 }
@@ -312,6 +336,7 @@ mod tests {
             "diskmgmt.msc",
             "resmon",
             "compmgmt.msc",
+            "servermanager",
         ] {
             for ch in cmd.chars() {
                 assert!(

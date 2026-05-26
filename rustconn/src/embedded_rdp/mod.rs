@@ -352,12 +352,20 @@ impl EmbeddedRdpWidget {
         ))]);
         {
             let menu = gtk4::gio::Menu::new();
+            let mut current_group = rustconn_core::QUICK_ACTIONS.first().map_or(0, |a| a.group);
+            let mut section = gtk4::gio::Menu::new();
             for action in rustconn_core::QUICK_ACTIONS {
-                menu.append(
+                if action.group != current_group {
+                    menu.append_section(None, &section);
+                    section = gtk4::gio::Menu::new();
+                    current_group = action.group;
+                }
+                section.append(
                     Some(&i18n(action.label)),
                     Some(&format!("rdp.{}", action.id)),
                 );
             }
+            menu.append_section(None, &section);
             quick_actions_button.set_menu_model(Some(&menu));
         }
         toolbar.append(&quick_actions_button);

@@ -5,6 +5,29 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.9] - 2026-05-26
+
+### Added
+
+- **Server Manager** quick action in the RDP embedded toolbar (Windows admin tools menu).
+
+### Improved
+
+- Windows admin tools menu is now grouped with a separator: quick shortcuts (Settings, Task Manager) are separated from admin consoles (sorted alphabetically).
+
+### Fixed
+
+- Split view: panels with sessions moved via Select Tab lost their content ("Loading...") on subsequent splits — terminal was not stored in the internal map for restoration after `rebuild_widgets()`.
+- RemoteApp: sessions now correctly use external FreeRDP mode instead of embedded wlfreerdp — RAIL protocol requires its own window management which is incompatible with Wayland subsurface embedding. ([#153](https://github.com/totoshko88/RustConn/issues/153))
+- RemoteApp: use `xfreerdp3` via `flatpak-spawn --host` in Flatpak sandbox since only xfreerdp supports RAIL/RemoteApp (wlfreerdp and sdl-freerdp do not). ([#153](https://github.com/totoshko88/RustConn/issues/153))
+- RemoteApp: updated `/app:` argument format to FreeRDP 3.x syntax (`/app:program:<path>,cmd:<args>,name:<name>`). ([#153](https://github.com/totoshko88/RustConn/issues/153))
+- RemoteApp: force NTLM authentication (`/auth-pkg-list:ntlm`) for host-launched xfreerdp3 to avoid Kerberos realm misconfiguration on standalone servers. ([#153](https://github.com/totoshko88/RustConn/issues/153))
+- RemoteApp: pass password via `/p:` argument for RemoteApp sessions (FreeRDP 3.x `/from-stdin` requires interactive input incompatible with pipe-based stdin). ([#153](https://github.com/totoshko88/RustConn/issues/153))
+
+### Known Issues
+
+- RemoteApp (RAIL) windows do not appear on Wayland sessions due to an upstream xfreerdp3 bug — RAIL app windows fail to create via XWayland (`xf_Pointer: Invalid appWindow`). Workaround: use an X11 session or full desktop RDP instead. ([FreeRDP#11292](https://github.com/FreeRDP/FreeRDP/issues/11292))
+
 ## [0.14.8] - 2026-05-26
 
 ### Added
