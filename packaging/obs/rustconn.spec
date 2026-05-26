@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.14.8
+Version:        0.14.9
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -238,6 +238,11 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Mon May 26 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.9-0
+- Version bump to 0.14.9
+- Added Server Manager quick action in RDP admin tools menu
+- Fixed split view and RemoteApp issues
+
 * Mon May 26 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.8-0
 - Split-view broadcast toggle in header bar (#160)
 - Compact interface mode for reduced chrome (#157)

@@ -98,18 +98,63 @@ impl SafeFreeRdpLauncher {
     ///
     /// Returns error if FreeRDP cannot be launched.
     pub fn launch(&self, config: &RdpConfig) -> Result<Child, EmbeddedRdpError> {
-        let binary = Self::detect_freerdp().ok_or_else(|| {
+        // RemoteApp (RAIL) is not supported by wlfreerdp — it requires a window
+        // manager that can create individual app windows. Use xfreerdp/sdl-freerdp.
+        let is_remote_app = config
+            .remote_app_program
+            .as_ref()
+            .is_some_and(|p| !p.is_empty());
+
+        let binary = if is_remote_app {
+            Self::detect_freerdp_for_remoteapp()
+        } else {
+            Self::detect_freerdp()
+        }
+        .ok_or_else(|| {
             EmbeddedRdpError::FreeRdpInit(
                 "No FreeRDP client found. Install sdl-freerdp3, xfreerdp, or wlfreerdp."
                     .to_string(),
             )
         })?;
 
-        let mut cmd = Command::new(&binary);
+        // Check if we need to launch via flatpak-spawn --host
+        let (actual_binary, via_host) = if let Some(host_bin) = binary.strip_prefix("host:") {
+            (host_bin.to_string(), true)
+        } else {
+            (binary, false)
+        };
+
+        let mut cmd = if via_host {
+            let mut c = Command::new("flatpak-spawn");
+            c.arg("--host");
+            // Forward stdin for password passing via /from-stdin
+            c.arg("--forward-fd=0");
+            // Pass environment variables via flatpak-spawn --env
+            for (key, value) in self.build_env() {
+                c.arg(format!("--env={key}={value}"));
+            }
+            // Pass display environment so xfreerdp can open a window on host
+            if let Ok(display) = std::env::var("DISPLAY") {
+                c.arg(format!("--env=DISPLAY={display}"));
+            }
+            if let Ok(wayland) = std::env::var("WAYLAND_DISPLAY") {
+                c.arg(format!("--env=WAYLAND_DISPLAY={wayland}"));
+            }
+            if let Ok(xdg_runtime) = std::env::var("XDG_RUNTIME_DIR") {
+                c.arg(format!("--env=XDG_RUNTIME_DIR={xdg_runtime}"));
+            }
+            c.arg(&actual_binary);
+            c
+        } else {
+            Command::new(&actual_binary)
+        };
 
         // Set environment to suppress Qt warnings (Requirement 6.1, 6.2)
-        for (key, value) in self.build_env() {
-            cmd.env(key, value);
+        // (only for non-host mode; host mode passes env via flatpak-spawn --env above)
+        if !via_host {
+            for (key, value) in self.build_env() {
+                cmd.env(key, value);
+            }
         }
 
         // Build connection arguments
@@ -128,7 +173,10 @@ impl SafeFreeRdpLauncher {
             && let Some(mut stdin) = child.stdin.take()
         {
             use std::io::Write;
-            // FreeRDP /from-stdin reads the password from stdin
+            // FreeRDP 3.x /from-stdin expects: domain\npassword\n
+            // Send empty domain line first, then password
+            let domain = config.domain.as_deref().unwrap_or("");
+            let _ = writeln!(stdin, "{domain}");
             let _ = writeln!(stdin, "{}", password.expose_secret());
         }
 
@@ -140,6 +188,15 @@ impl SafeFreeRdpLauncher {
     /// Delegates to the unified detection in [`super::detect::detect_best_freerdp`].
     pub fn detect_freerdp() -> Option<String> {
         super::detect::detect_best_freerdp()
+    }
+
+    /// Detects the best FreeRDP binary for RemoteApp (RAIL) sessions.
+    ///
+    /// `wlfreerdp` does not support RAIL — it renders a full desktop into a
+    /// Wayland subsurface and cannot create individual application windows.
+    /// This method skips `wl*` variants and prefers `xfreerdp3`/`sdl-freerdp3`.
+    pub fn detect_freerdp_for_remoteapp() -> Option<String> {
+        super::detect::detect_best_freerdp_for_remoteapp()
     }
 
     /// Adds connection arguments to the command
@@ -157,9 +214,21 @@ impl SafeFreeRdpLauncher {
         if let Some(ref password) = config.password
             && !password.expose_secret().is_empty()
         {
-            // Use /from-stdin to avoid exposing password in /proc/PID/cmdline
-            cmd.arg("/from-stdin");
-            cmd.stdin(Stdio::piped());
+            // For RemoteApp (external xfreerdp3 process), use /p: directly.
+            // FreeRDP 3.x /from-stdin expects interactive domain+password input
+            // which doesn't work reliably with pipe-based stdin.
+            // For embedded mode (wlfreerdp), /from-stdin works fine (FreeRDP 2.x compat).
+            let is_remote_app = config
+                .remote_app_program
+                .as_ref()
+                .is_some_and(|p| !p.is_empty());
+
+            if is_remote_app {
+                cmd.arg(format!("/p:{}", password.expose_secret()));
+            } else {
+                cmd.arg("/from-stdin");
+                cmd.stdin(Stdio::piped());
+            }
         }
 
         cmd.arg(format!("/w:{}", config.width));
@@ -211,6 +280,18 @@ impl SafeFreeRdpLauncher {
         // Add RemoteApp arguments for launching individual applications
         for arg in config.remote_app_freerdp_args() {
             cmd.arg(arg);
+        }
+
+        // When RemoteApp is used with xfreerdp3, force NTLM authentication.
+        // xfreerdp3 on the host often lacks Kerberos realm configuration,
+        // causing NLA to fail even with correct credentials. NTLM works
+        // reliably for standalone (non-domain) Windows servers.
+        if config
+            .remote_app_program
+            .as_ref()
+            .is_some_and(|p| !p.is_empty())
+        {
+            cmd.arg("/auth-pkg-list:ntlm");
         }
 
         if config.port == 3389 {

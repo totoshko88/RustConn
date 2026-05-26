@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.14.8** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.14.9** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -658,14 +658,27 @@ When server-side paste is blocked (GPO, Citrix policy, UAC dialogs, password fie
 
 The embedded RDP toolbar includes a Quick Actions dropdown menu for launching common Windows administration tools on the remote desktop. Actions send scancode key sequences directly through the RDP session with a 30ms inter-key delay for reliability.
 
+The menu is split into two sections separated by a divider:
+
+**Quick Shortcuts:**
+
 | Action | Shortcut Sent | Description |
 |--------|---------------|-------------|
-| Task Manager | Ctrl+Shift+Esc | Opens Windows Task Manager |
 | Settings | Win+I | Opens Windows Settings |
-| PowerShell | Win+R → `powershell` | Launches PowerShell via Run dialog |
-| CMD | Win+R → `cmd` | Launches Command Prompt via Run dialog |
-| Event Viewer | Win+R → `eventvwr` | Opens Event Viewer via Run dialog |
-| Services | Win+R → `services.msc` | Opens Services console via Run dialog |
+| Task Manager | Ctrl+Shift+Esc | Opens Windows Task Manager |
+
+**Admin Consoles (alphabetical):**
+
+| Action | Shortcut Sent | Description |
+|--------|---------------|-------------|
+| Computer Management | Win+R → `compmgmt.msc` | Opens Computer Management (disks, services, users, event log) |
+| Device Manager | Win+R → `devmgmt.msc` | Opens Device Manager |
+| Disk Management | Win+R → `diskmgmt.msc` | Opens Disk Management console |
+| Event Viewer | Win+R → `eventvwr.msc` | Opens Event Viewer |
+| Registry Editor | Win+R → `regedit` | Opens Registry Editor |
+| Resource Monitor | Win+R → `resmon` | Opens Resource Monitor (CPU, memory, disk, network) |
+| Server Manager | Win+R → `servermanager` | Opens Windows Server Manager |
+| Services | Win+R → `services.msc` | Opens Services console |
 
 The Quick Actions menu is accessible via the dropdown button (arrow icon) on the RDP toolbar. All labels are translatable.
 

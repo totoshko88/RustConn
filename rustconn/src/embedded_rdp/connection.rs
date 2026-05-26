@@ -125,7 +125,14 @@ impl super::EmbeddedRdpWidget {
         }
 
         // Try wlfreerdp for embedded-like experience (Requirement 6.4)
-        if Self::detect_wlfreerdp() {
+        // Skip embedded mode for RemoteApp — RAIL requires its own window management
+        // which is incompatible with Wayland subsurface embedding.
+        let is_remote_app = config
+            .remote_app_program
+            .as_ref()
+            .is_some_and(|p| !p.is_empty());
+
+        if Self::detect_wlfreerdp() && !is_remote_app {
             match self.connect_embedded(config) {
                 Ok(()) => {
                     // Check if fallback was triggered by the thread

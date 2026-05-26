@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Mon May 26 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.9
+
+- Version bump to 0.14.9
+- Added Server Manager quick action in RDP admin tools menu
+- Improved Windows admin tools menu grouping with separator
+- Fixed split view panels losing content on subsequent splits
+- Fixed RemoteApp: external FreeRDP mode, Flatpak host xfreerdp3, FreeRDP 3.x syntax, NTLM auth
+
+-------------------------------------------------------------------
 Mon May 26 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.8
 
 - Split-view broadcast toggle in header bar (#160)

@@ -2615,28 +2615,23 @@ pub fn build_remote_app_freerdp_args(
     if let Some(program) = program
         && !program.is_empty()
     {
-        args.push(format_freerdp_app_arg("/app:", program));
+        // FreeRDP 3.x syntax: /app:program:<path>,cmd:<args>,name:<name>
+        // FreeRDP 2.x used separate /app: /app-cmd: /app-name: arguments,
+        // but 3.x uses a single /app: with comma-separated key:value pairs.
+        let mut app_parts = vec![format!("program:{program}")];
         if let Some(cmd_args) = cmd_args
             && !cmd_args.is_empty()
         {
-            args.push(format_freerdp_app_arg("/app-cmd:", cmd_args));
+            app_parts.push(format!("cmd:{cmd_args}"));
         }
         if let Some(name) = name
             && !name.is_empty()
         {
-            args.push(format_freerdp_app_arg("/app-name:", name));
+            app_parts.push(format!("name:{name}"));
         }
+        args.push(format!("/app:{}", app_parts.join(",")));
     }
     args
-}
-
-/// Formats a FreeRDP `/app*:` argument, quoting the value if it contains spaces.
-fn format_freerdp_app_arg(prefix: &str, value: &str) -> String {
-    if value.contains(' ') {
-        format!("{prefix}\"{value}\"")
-    } else {
-        format!("{prefix}{value}")
-    }
 }
 
 #[cfg(test)]

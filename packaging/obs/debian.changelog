@@ -1,3 +1,13 @@
+rustconn (0.14.9-1) unstable; urgency=medium
+
+  * Version bump to 0.14.9
+  * Added Server Manager quick action in RDP admin tools menu
+  * Improved Windows admin tools menu grouping with separator
+  * Fixed split view panels losing content on subsequent splits
+  * Fixed RemoteApp: external FreeRDP mode, Flatpak host xfreerdp3, FreeRDP 3.x /app: syntax, NTLM auth, /p: password passing
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Mon, 26 May 2026 22:00:00 +0200
+
 rustconn (0.14.8-1) unstable; urgency=medium
 
   * Split-view broadcast toggle in header bar (#160)
