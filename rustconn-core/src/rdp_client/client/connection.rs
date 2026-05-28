@@ -36,8 +36,10 @@ pub type UpgradedFramed = TokioFramed<ironrdp_tls::TlsStream<TcpStream>>;
 /// changed certificates on subsequent connections.
 // The future is not Send because IronRDP's AsyncNetworkClient is not Send.
 // This is fine because we run on a single-threaded Tokio runtime.
-#[allow(clippy::future_not_send)]
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub async fn establish_connection(
     config: &RdpClientConfig,
     event_tx: std::sync::mpsc::Sender<RdpClientEvent>,

@@ -419,7 +419,10 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::assertions_on_constants)]
+    #[expect(
+        clippy::assertions_on_constants,
+        reason = "compile-time invariant checked alongside runtime asserts to surface regressions on every test run"
+    )]
     fn test_native_format_version_constant() {
         assert!(NATIVE_FORMAT_VERSION >= 1);
     }

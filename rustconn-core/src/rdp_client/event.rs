@@ -4,10 +4,22 @@
 //! along with conversion functions for framebuffer data.
 
 // cast_possible_truncation allowed at workspace level
-#![allow(clippy::cast_sign_loss)]
-#![allow(clippy::missing_panics_doc)]
-#![allow(clippy::option_if_let_else)]
-#![allow(clippy::redundant_clone)]
+#![allow(
+    clippy::cast_sign_loss,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::missing_panics_doc,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::option_if_let_else,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::redundant_clone,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 /// Clipboard format information for RDP clipboard operations
 #[derive(Debug, Clone, PartialEq, Eq)]

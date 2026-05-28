@@ -106,7 +106,10 @@ pub struct DirectoryWatcher {
     /// Receiver for directory change events
     event_rx: Receiver<DirectoryChange>,
     /// Sender for internal notify events
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     notify_tx: Sender<Result<Event, notify::Error>>,
 }
 
@@ -127,7 +130,6 @@ impl DirectoryWatcher {
     /// # Errors
     ///
     /// Returns error if the watcher cannot be created
-    #[allow(clippy::similar_names)]
     pub fn new() -> Result<Self, DirectoryWatcherError> {
         let (notify_tx, notify_rx) = mpsc::channel();
         let (event_tx, event_rx) = mpsc::channel();
@@ -164,7 +166,10 @@ impl DirectoryWatcher {
     /// # Errors
     ///
     /// Returns error if the watch cannot be added
-    #[allow(clippy::significant_drop_tightening)]
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "guard is intentionally held across the operation to keep the critical section atomic"
+    )]
     pub fn add_watch(&mut self, request: WatchRequest) -> Result<(), DirectoryWatcherError> {
         let path = request.path.clone();
         let mode = if request.watch_tree {
@@ -194,7 +199,6 @@ impl DirectoryWatcher {
     }
 
     /// Removes a watch for a file ID
-    #[allow(clippy::significant_drop_tightening)]
     pub fn remove_watch(&mut self, file_id: u32) {
         let Ok(mut watches) = self.watches.lock() else {
             return;

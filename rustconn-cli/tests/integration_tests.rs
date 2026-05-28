@@ -3,7 +3,10 @@
 //! These tests verify the CLI commands work correctly end-to-end,
 //! including list, add, export, import, and error handling.
 
-#![allow(clippy::uninlined_format_args)]
+#![allow(
+    clippy::uninlined_format_args,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 use std::process::{Command, Output};
 use tempfile::TempDir;

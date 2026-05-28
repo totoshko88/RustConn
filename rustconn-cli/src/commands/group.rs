@@ -13,6 +13,12 @@ use crate::format::escape_csv_field;
 use crate::util::create_config_manager;
 
 /// Group command handler
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when groups or connections cannot be loaded or saved
+/// - [`CliError::Group`] when a referenced group does not exist or a name conflicts
 pub fn cmd_group(config_path: Option<&Path>, subcmd: GroupCommands) -> Result<(), CliError> {
     match subcmd {
         GroupCommands::List { format } => cmd_group_list(config_path, format.effective()),
@@ -138,7 +144,11 @@ fn print_group_csv(groups: &[ConnectionGroup]) {
     }
 }
 
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "group show dispatches across output formats and lists every group field; \
+              extracting per-format helpers would only relocate the field list"
+)]
 fn cmd_group_show(
     config_path: Option<&Path>,
     name: &str,
@@ -489,7 +499,12 @@ fn cmd_group_remove_connection(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    reason = "edit accepts every editable group field via individual CLI flags; bundling \
+              into a struct would just duplicate the flag list and complicate Clap parsing"
+)]
 fn cmd_group_edit(
     config_path: Option<&Path>,
     name: &str,

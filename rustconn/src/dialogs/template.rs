@@ -34,7 +34,10 @@ use crate::i18n::i18n;
 pub type TemplateCallback = Rc<RefCell<Option<Box<dyn Fn(Option<ConnectionTemplate>)>>>>;
 
 /// Template dialog for creating/editing templates
-#[allow(clippy::similar_names)]
+#[allow(
+    clippy::similar_names,
+    reason = "names follow a deliberate naming scheme for paired inputs/outputs; renaming hurts readability"
+)]
 pub struct TemplateDialog {
     dialog: adw::Dialog,
     parent: Option<gtk4::Widget>,
@@ -122,7 +125,11 @@ pub struct TemplateDialog {
 impl TemplateDialog {
     /// Creates a new template dialog
     #[must_use]
-    #[allow(clippy::too_many_lines, clippy::similar_names)]
+    #[expect(
+        clippy::similar_names,
+        clippy::too_many_lines,
+        reason = "long match dispatch with paired naming; splitting would only relocate the boilerplate"
+    )]
     pub fn new(parent: Option<&impl IsA<gtk4::Widget>>) -> Self {
         let dialog = adw::Dialog::builder()
             .title(i18n("New Template"))
@@ -587,7 +594,10 @@ impl TemplateDialog {
         )
     }
 
-    #[allow(clippy::type_complexity)]
+    #[allow(
+        clippy::type_complexity,
+        reason = "internal helper signature documents the exact tuple layout used by the caller; aliasing would obscure the data flow"
+    )]
     fn create_ssh_options() -> (
         GtkBox,
         DropDown,
@@ -775,7 +785,10 @@ impl TemplateDialog {
         )
     }
 
-    #[allow(clippy::type_complexity)]
+    #[allow(
+        clippy::type_complexity,
+        reason = "internal helper signature documents the exact tuple layout used by the caller; aliasing would obscure the data flow"
+    )]
     fn create_rdp_options() -> (
         GtkBox,
         DropDown,
@@ -958,7 +971,10 @@ impl TemplateDialog {
         )
     }
 
-    #[allow(clippy::type_complexity)]
+    #[allow(
+        clippy::type_complexity,
+        reason = "internal helper signature documents the exact tuple layout used by the caller; aliasing would obscure the data flow"
+    )]
     fn create_vnc_options() -> (
         GtkBox,
         DropDown,
@@ -1137,7 +1153,10 @@ impl TemplateDialog {
         )
     }
 
-    #[allow(clippy::type_complexity)]
+    #[allow(
+        clippy::type_complexity,
+        reason = "internal helper signature documents the exact tuple layout used by the caller; aliasing would obscure the data flow"
+    )]
     fn create_spice_options() -> (
         GtkBox,
         adw::SwitchRow,
@@ -1279,7 +1298,12 @@ impl TemplateDialog {
         )
     }
 
-    #[allow(clippy::type_complexity, clippy::too_many_lines, clippy::similar_names)]
+    #[expect(
+        clippy::similar_names,
+        clippy::too_many_lines,
+        clippy::type_complexity,
+        reason = "long match dispatch returning a documented tuple with paired naming; restructuring would only relocate the boilerplate"
+    )]
     fn create_zerotrust_options() -> (
         GtkBox,
         DropDown,
@@ -1671,7 +1695,10 @@ impl TemplateDialog {
         (content, vm_entry, rg_entry)
     }
 
-    #[allow(clippy::similar_names)]
+    #[expect(
+        clippy::similar_names,
+        reason = "names follow a deliberate naming scheme for paired inputs/outputs; renaming hurts readability"
+    )]
     fn create_oci_fields() -> (GtkBox, Entry, Entry, Entry) {
         let content = GtkBox::new(Orientation::Vertical, 12);
 
@@ -1917,10 +1944,11 @@ impl TemplateDialog {
         (content, command_entry)
     }
 
-    #[allow(
+    #[expect(
+        clippy::similar_names,
         clippy::too_many_arguments,
         clippy::too_many_lines,
-        clippy::similar_names
+        reason = "long builder takes paired widgets and dispatches over many protocol kinds; restructuring would only relocate the parameter list"
     )]
     fn connect_save_button(
         save_btn: &Button,
@@ -2149,7 +2177,10 @@ impl TemplateDialog {
                 template.host = host.trim().to_string();
             }
 
-            #[allow(clippy::cast_sign_loss)]
+            #[expect(
+                clippy::cast_sign_loss,
+                reason = "value is non-negative by construction in this code path"
+            )]
             let port = port_spin.value() as u16;
             template.port = port;
 
@@ -2184,9 +2215,10 @@ impl TemplateDialog {
     }
 
     #[allow(
+        clippy::similar_names,
         clippy::too_many_arguments,
         clippy::too_many_lines,
-        clippy::similar_names
+        reason = "long builder takes paired widgets and dispatches over many protocol kinds; restructuring would only relocate the parameter list"
     )]
     fn build_protocol_config(
         protocol_idx: usize,
@@ -2318,7 +2350,10 @@ impl TemplateDialog {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     fn build_ssh_config(
         auth_dropdown: &DropDown,
         key_source_dropdown: &DropDown,
@@ -2415,7 +2450,10 @@ impl TemplateDialog {
             RdpClientMode::Embedded
         };
 
-        #[allow(clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_sign_loss,
+            reason = "value is non-negative by construction in this code path"
+        )]
         let resolution = Resolution {
             width: width_spin.value() as u32,
             height: height_spin.value() as u32,
@@ -2479,7 +2517,10 @@ impl TemplateDialog {
         })
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     fn build_vnc_config(
         client_mode_dropdown: &DropDown,
         encoding_entry: &Entry,
@@ -2508,7 +2549,10 @@ impl TemplateDialog {
                 .collect()
         };
 
-        #[allow(clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_sign_loss,
+            reason = "value is non-negative by construction in this code path"
+        )]
         ProtocolConfig::Vnc(VncConfig {
             client_mode,
             performance_mode: VncPerformanceMode::default(),
@@ -2564,7 +2608,11 @@ impl TemplateDialog {
         })
     }
 
-    #[allow(clippy::too_many_arguments, clippy::similar_names)]
+    #[expect(
+        clippy::similar_names,
+        clippy::too_many_arguments,
+        reason = "function parameters follow paired naming for inputs/outputs; bundling would only restate the field list"
+    )]
     fn build_zerotrust_config(
         provider_dropdown: &DropDown,
         aws_target: &Entry,

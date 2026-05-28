@@ -56,11 +56,11 @@ struct AsbruEntry {
     /// Asbru-CM stores passwords as "pass" in YAML
     /// Currently parsed for YAML completeness but not imported by default for security
     #[serde(default)]
-    #[allow(dead_code)] // Reserved for future password import feature
+    #[allow(dead_code, reason = "Reserved for future password import feature")]
     pass: Option<String>,
     /// Alternative password field name used in some Asbru versions
     #[serde(default)]
-    #[allow(dead_code)] // Reserved for future password import feature
+    #[allow(dead_code, reason = "Reserved for future password import feature")]
     password: Option<String>,
     #[serde(default, rename = "type")]
     protocol_type: Option<String>,
@@ -87,7 +87,7 @@ struct AsbruEntry {
     /// with parent references rather than nested objects. This field must be
     /// present to correctly deserialize the YAML structure.
     #[serde(default)]
-    #[allow(dead_code)] // Required for YAML deserialization completeness
+    #[allow(dead_code, reason = "Required for YAML deserialization completeness")]
     children: Option<HashMap<String, serde_yaml::Value>>,
 }
 
@@ -139,7 +139,10 @@ impl AsbruImporter {
     /// Filters out "tmp", empty values, and placeholder names.
     /// For name/title fields, only extracts if they look like hostnames
     /// (contain dots, are IP addresses, or contain dynamic variables).
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unused_self,
+        reason = "method is part of a uniform helper API where most operations need &self; keeping &self preserves the consistent signature"
+    )]
     fn extract_hostname(&self, entry: &AsbruEntry) -> Option<String> {
         // Try ip field first
         if let Some(ip) = &entry.ip
@@ -353,7 +356,10 @@ impl AsbruImporter {
     }
 
     /// Converts an Asbru entry to a Connection
-    #[allow(clippy::too_many_lines)]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+    )]
     fn convert_entry(
         &self,
         key: &str,
@@ -588,7 +594,10 @@ impl AsbruImporter {
     }
 
     /// Finds the Asbru config file in a directory
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unused_self,
+        reason = "method is part of a uniform helper API where most operations need &self; keeping &self preserves the consistent signature"
+    )]
     fn find_config_file(&self, dir: &Path) -> Option<PathBuf> {
         // Asbru stores connections in various files
         let possible_files = [

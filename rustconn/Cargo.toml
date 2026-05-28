@@ -12,7 +12,7 @@ name = "rustconn"
 path = "src/main.rs"
 
 [dependencies]
-rustconn-core = { path = "../rustconn-core", version = "0.14.0" }
+rustconn-core = { path = "../rustconn-core", version = "0.15.0" }
 tokio = { workspace = true }
 futures = { workspace = true }
 gtk4 = { workspace = true, features = ["v4_14"] }

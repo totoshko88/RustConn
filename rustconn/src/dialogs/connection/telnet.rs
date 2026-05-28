@@ -39,8 +39,8 @@ pub fn create_telnet_options() -> TelnetOptionsWidgets {
         ))
         .build();
 
-    let (custom_args_row, custom_args_entry) = EntryRowBuilder::new("Custom Arguments")
-        .subtitle("Additional command-line arguments")
+    let (custom_args_row, custom_args_entry) = EntryRowBuilder::new(i18n("Custom Arguments"))
+        .subtitle(i18n("Additional command-line arguments"))
         .placeholder("-e ^] -l user")
         .build();
     connection_group.add(&custom_args_row);

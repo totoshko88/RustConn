@@ -259,7 +259,10 @@ pub fn parse_key_list(output: &str) -> AgentResult<Vec<AgentKey>> {
 
         // Extract key type from parentheses at the end
         // Using nested if-let for clarity over map_or_else
-        #[allow(clippy::option_if_let_else)]
+        #[expect(
+            clippy::option_if_let_else,
+            reason = "if-let form reads more naturally than map_or_else for the side-effecting else branch"
+        )]
         let (comment, key_type) = if let Some(paren_start) = rest.rfind('(') {
             if let Some(paren_end) = rest.rfind(')') {
                 let key_type = rest[paren_start + 1..paren_end].to_string();

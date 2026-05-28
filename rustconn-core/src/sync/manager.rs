@@ -540,7 +540,10 @@ impl SyncManager {
     ///
     /// Does not panic. The internal `expect` is guarded by a preceding filter
     /// that ensures `sync_file.is_some()`.
-    #[allow(clippy::too_many_lines)]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+    )]
     pub fn import_all_on_start(
         &mut self,
         groups: &[ConnectionGroup],

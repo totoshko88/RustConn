@@ -6,6 +6,12 @@ use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
 
 /// Duplicate a connection
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when connections cannot be loaded or saved
+/// - [`CliError::ConnectionNotFound`] when no connection matches `name`
 pub fn cmd_duplicate(
     config_path: Option<&Path>,
     name: &str,

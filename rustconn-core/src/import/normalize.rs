@@ -19,7 +19,10 @@ use super::ImportResult;
 
 /// Options for import normalization
 #[derive(Debug, Clone, Default)]
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)]
 pub struct NormalizeOptions {
     /// Add source tag (e.g., "imported:ssh_config")
     pub add_source_tag: bool,
@@ -172,7 +175,10 @@ impl ImportNormalizer {
     }
 
     /// Deduplicates groups with same name and parent, returns remap of old->new IDs
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unused_self,
+        reason = "method is part of a uniform helper API where most operations need &self; keeping &self preserves the consistent signature"
+    )]
     fn deduplicate_groups(&self, groups: &mut Vec<ConnectionGroup>) -> HashMap<Uuid, Uuid> {
         let mut remap: HashMap<Uuid, Uuid> = HashMap::new();
         let mut seen: HashMap<(String, Option<Uuid>), Uuid> = HashMap::new();

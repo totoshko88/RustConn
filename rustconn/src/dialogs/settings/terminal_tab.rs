@@ -13,7 +13,10 @@ use crate::i18n::i18n;
 use crate::i18n::i18n_f;
 
 /// Creates the terminal settings page using AdwPreferencesPage
-#[allow(clippy::type_complexity)]
+#[expect(
+    clippy::type_complexity,
+    reason = "internal helper signature documents the exact tuple layout used by the caller; aliasing would obscure the data flow"
+)]
 pub fn create_terminal_page() -> (
     adw::PreferencesPage,
     Entry,
@@ -484,7 +487,10 @@ pub fn create_terminal_page() -> (
 }
 
 /// Loads terminal settings into UI controls
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 pub fn load_terminal_settings(
     font_family_entry: &Entry,
     font_size_spin: &SpinButton,
@@ -626,7 +632,10 @@ fn get_active_toggle_index(button_box: &GtkBox) -> usize {
 }
 
 /// Collects terminal settings from UI controls
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 pub fn collect_terminal_settings(
     font_family_entry: &Entry,
     font_size_spin: &SpinButton,
@@ -664,7 +673,11 @@ pub fn collect_terminal_settings(
         .unwrap_or(&"On")
         .to_string();
 
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "value range fits the target type and is non-negative by construction in this code path"
+    )]
     TerminalSettings {
         font_family: font_family_entry.text().to_string(),
         font_size: (font_size_spin.value() as u32).max(1),
@@ -742,7 +755,10 @@ where
 ///
 /// The editor lets the user pick background, foreground, and cursor colors.
 /// On save the theme is persisted and the dropdown is refreshed.
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 fn show_theme_editor(
     parent: Option<&gtk4::Window>,
     theme: &TerminalTheme,

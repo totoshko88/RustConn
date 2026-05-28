@@ -9,6 +9,14 @@ use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
 
 /// Connect command handler
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when the configuration cannot be read or no connections are configured
+/// - [`CliError::ConnectionNotFound`] when no connection matches `name`
+/// - [`CliError::Connection`] when the protocol-specific client (ssh, xfreerdp,
+///   vncviewer, …) cannot be launched or exits with a non-zero status
 pub fn cmd_connect(config_path: Option<&Path>, name: &str, dry_run: bool) -> Result<(), CliError> {
     let config_manager = create_config_manager(config_path)?;
 

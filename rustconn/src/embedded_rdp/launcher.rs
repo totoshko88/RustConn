@@ -157,6 +157,29 @@ impl SafeFreeRdpLauncher {
             }
         }
 
+        // For RemoteApp, write the password into a single-use args file
+        // in $XDG_RUNTIME_DIR (mode 0600) instead of `/p:` on the
+        // command line. The guard removes the file when this function
+        // returns, even on the error path.
+        let _password_guard = if is_remote_app
+            && let Some(ref password) = config.password
+            && !password.expose_secret().is_empty()
+        {
+            match super::ephemeral_args::EphemeralRdpArgs::write(password) {
+                Ok(guard) => {
+                    cmd.arg(format!("/args-from:file:{}", guard.path().display()));
+                    Some(guard)
+                }
+                Err(e) => {
+                    return Err(EmbeddedRdpError::FreeRdpInit(format!(
+                        "could not prepare RemoteApp credentials file: {e}"
+                    )));
+                }
+            }
+        } else {
+            None
+        };
+
         // Build connection arguments
         Self::add_connection_args(&mut cmd, config);
 
@@ -167,8 +190,11 @@ impl SafeFreeRdpLauncher {
             .spawn()
             .map_err(|e| EmbeddedRdpError::FreeRdpInit(e.to_string()))?;
 
-        // Write password via stdin when /from-stdin is used
-        if let Some(ref password) = config.password
+        // Write password via stdin when /from-stdin is used (i.e. for
+        // non-RemoteApp sessions; RemoteApp gets the password via the
+        // ephemeral args file above).
+        if !is_remote_app
+            && let Some(ref password) = config.password
             && !password.expose_secret().is_empty()
             && let Some(mut stdin) = child.stdin.take()
         {
@@ -180,6 +206,9 @@ impl SafeFreeRdpLauncher {
             let _ = writeln!(stdin, "{}", password.expose_secret());
         }
 
+        // _password_guard is dropped here, removing the temp args file.
+        // FreeRDP keeps the file mapped only briefly during argument
+        // parsing, so removing it shortly after spawn is safe.
         Ok(child)
     }
 
@@ -214,18 +243,22 @@ impl SafeFreeRdpLauncher {
         if let Some(ref password) = config.password
             && !password.expose_secret().is_empty()
         {
-            // For RemoteApp (external xfreerdp3 process), use /p: directly.
-            // FreeRDP 3.x /from-stdin expects interactive domain+password input
-            // which doesn't work reliably with pipe-based stdin.
-            // For embedded mode (wlfreerdp), /from-stdin works fine (FreeRDP 2.x compat).
+            // For RemoteApp (external xfreerdp3 process), the caller writes
+            // the password into a single-use args file in $XDG_RUNTIME_DIR
+            // and passes `/args-from:file:<path>` instead — so the password
+            // never appears in `/proc/<pid>/cmdline`. See
+            // `super::ephemeral_args::EphemeralRdpArgs` for details and
+            // `launch()` for the wiring.
+            //
+            // For embedded mode (wlfreerdp) we still use `/from-stdin` —
+            // it works fine for non-RAIL sessions and reuses the existing
+            // pipe-based password injection.
             let is_remote_app = config
                 .remote_app_program
                 .as_ref()
                 .is_some_and(|p| !p.is_empty());
 
-            if is_remote_app {
-                cmd.arg(format!("/p:{}", password.expose_secret()));
-            } else {
+            if !is_remote_app {
                 cmd.arg("/from-stdin");
                 cmd.stdin(Stdio::piped());
             }

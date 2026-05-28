@@ -17,8 +17,14 @@
 //! - Requirement 16.5: Keyboard and mouse input forwarding
 
 // cast_possible_truncation, cast_precision_loss allowed at workspace level
-#![allow(clippy::cast_sign_loss)]
-#![allow(clippy::missing_panics_doc)]
+#![allow(
+    clippy::cast_sign_loss,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::missing_panics_doc,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 // Re-export types for external use
 pub use crate::embedded_vnc_types::{
@@ -73,7 +79,10 @@ use std::sync::{Arc, Mutex as StdMutex};
 /// // Connect
 /// widget.connect(&config)?;
 /// ```
-#[allow(dead_code)] // Many fields kept for GTK widget lifecycle and signal handlers
+#[allow(
+    dead_code,
+    reason = "Many fields kept for GTK widget lifecycle and signal handlers"
+)]
 pub struct EmbeddedVncWidget {
     /// Main container widget
     container: GtkBox,

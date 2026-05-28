@@ -27,7 +27,10 @@ pub struct SmartFoldersSidebar {
     /// The list box holding smart folder rows.
     list_box: ListBox,
     /// Header label (kept alive for updates).
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     header_label: Label,
     /// Add button (kept alive for signal handler).
     add_button: Button,
@@ -38,14 +41,14 @@ impl SmartFoldersSidebar {
     #[must_use]
     pub fn new() -> Self {
         let container = GtkBox::new(Orientation::Vertical, 4);
-        container.set_margin_top(8);
-        container.set_margin_bottom(4);
-        container.set_margin_start(8);
-        container.set_margin_end(8);
+        container.set_margin_top(12);
+        container.set_margin_bottom(6);
+        container.set_margin_start(12);
+        container.set_margin_end(12);
 
         // --- Header row: icon + label + spacer + add button ---
         let header_row = GtkBox::new(Orientation::Horizontal, 6);
-        header_row.set_margin_bottom(4);
+        header_row.set_margin_bottom(6);
 
         let icon_label = Label::new(Some("🔍"));
         icon_label.add_css_class("heading");
@@ -118,8 +121,8 @@ impl SmartFoldersSidebar {
         if folders.is_empty() {
             let placeholder = Label::new(Some(&i18n("No smart folders")));
             placeholder.add_css_class("dim-label");
-            placeholder.set_margin_top(8);
-            placeholder.set_margin_bottom(8);
+            placeholder.set_margin_top(12);
+            placeholder.set_margin_bottom(12);
             self.list_box.append(&placeholder);
             return;
         }
@@ -152,10 +155,10 @@ fn build_expandable_folder_row(folder: &SmartFolder, connections: &[&Connection]
 
     // --- Header row (clickable) ---
     let header = GtkBox::new(Orientation::Horizontal, 6);
-    header.set_margin_top(4);
-    header.set_margin_bottom(4);
-    header.set_margin_start(4);
-    header.set_margin_end(4);
+    header.set_margin_top(6);
+    header.set_margin_bottom(6);
+    header.set_margin_start(6);
+    header.set_margin_end(6);
 
     // Expander arrow
     let arrow = Image::from_icon_name("pan-end-symbolic");
@@ -191,7 +194,7 @@ fn build_expandable_folder_row(folder: &SmartFolder, connections: &[&Connection]
     let conn_list = ListBox::new();
     conn_list.set_selection_mode(SelectionMode::Single);
     conn_list.add_css_class("navigation-sidebar");
-    conn_list.set_margin_start(20);
+    conn_list.set_margin_start(24);
     conn_list.set_activate_on_single_click(false);
 
     for conn in connections {
@@ -289,10 +292,10 @@ fn build_connection_row(conn: &Connection) -> ListBoxRow {
     row.set_widget_name(&conn.id.to_string());
 
     let hbox = GtkBox::new(Orientation::Horizontal, 6);
-    hbox.set_margin_top(2);
-    hbox.set_margin_bottom(2);
-    hbox.set_margin_start(4);
-    hbox.set_margin_end(4);
+    hbox.set_margin_top(6);
+    hbox.set_margin_bottom(6);
+    hbox.set_margin_start(6);
+    hbox.set_margin_end(6);
 
     // Connection icon: custom (emoji or GTK icon name) or protocol-based
     let custom_icon = conn.icon.as_deref().unwrap_or("");
@@ -408,7 +411,10 @@ fn show_smart_folder_context_menu(
     popover.set_parent(window);
 
     let widget_bounds = widget.compute_bounds(window);
-    #[allow(clippy::cast_possible_truncation)]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "value range fits the target type by construction in this code path"
+    )]
     let (popup_x, popup_y) = if let Some(bounds) = widget_bounds {
         (bounds.x() as i32 + x as i32, bounds.y() as i32 + y as i32)
     } else {

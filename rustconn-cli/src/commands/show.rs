@@ -9,7 +9,12 @@ use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
 
 /// Show connection details command handler
-#[allow(clippy::too_many_lines)]
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when connections or groups cannot be loaded
+/// - [`CliError::ConnectionNotFound`] when no connection matches `name`
 pub fn cmd_show(
     config_path: Option<&Path>,
     name: &str,
@@ -35,7 +40,11 @@ pub fn cmd_show(
 }
 
 /// Build a full JSON representation of a connection (without secrets).
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "JSON output documents every persisted Connection field; \
+              splitting wouldn't reduce surface area"
+)]
 fn print_json(
     connection: &Connection,
     connections: &[Connection],
@@ -262,7 +271,11 @@ fn print_csv(connection: &Connection) -> Result<(), CliError> {
 }
 
 /// Print connection details as human-readable table (original behavior).
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "table output enumerates every persisted Connection field with a label; \
+              splitting per protocol only fragments the linear render"
+)]
 fn print_table(connection: &Connection, connections: &[Connection]) -> Result<(), CliError> {
     let resolve_jump = |jump_id: uuid::Uuid| -> String {
         connections

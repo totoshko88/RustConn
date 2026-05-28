@@ -189,7 +189,10 @@ impl RdpAudioPlayer {
     ///
     /// The audio callback panics if the buffer mutex is poisoned, which indicates
     /// an unrecoverable panic occurred in another thread while holding the lock.
-    #[allow(clippy::unwrap_used)]
+    #[allow(
+        clippy::unwrap_used,
+        reason = "value is statically proven non-None at this site (see preceding insert/init); panicking would indicate a programmer bug"
+    )]
     fn create_i16_stream(
         &self,
         device: &cpal::Device,
@@ -241,7 +244,10 @@ impl RdpAudioPlayer {
     ///
     /// The audio callback panics if the buffer mutex is poisoned, which indicates
     /// an unrecoverable panic occurred in another thread while holding the lock.
-    #[allow(clippy::unwrap_used)]
+    #[allow(
+        clippy::unwrap_used,
+        reason = "value is statically proven non-None at this site (see preceding insert/init); panicking would indicate a programmer bug"
+    )]
     fn create_u8_stream(
         &self,
         device: &cpal::Device,

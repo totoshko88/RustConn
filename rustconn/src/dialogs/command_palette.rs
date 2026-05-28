@@ -217,7 +217,10 @@ impl CommandPaletteDialog {
                 let idx = row.index();
                 if idx >= 0 {
                     let items_ref = items_clone.borrow();
-                    #[allow(clippy::cast_sign_loss)]
+                    #[expect(
+                        clippy::cast_sign_loss,
+                        reason = "value is non-negative by construction in this code path"
+                    )]
                     if let Some(item) = items_ref.get(idx as usize) {
                         if let Some(ref cb) = *on_action.borrow() {
                             cb(item.action.clone());
@@ -490,8 +493,8 @@ impl CommandPaletteDialog {
         let hbox = GtkBox::new(Orientation::Horizontal, 8);
         hbox.set_margin_top(6);
         hbox.set_margin_bottom(6);
-        hbox.set_margin_start(8);
-        hbox.set_margin_end(8);
+        hbox.set_margin_start(12);
+        hbox.set_margin_end(12);
 
         // Icon
         if let Some(ref icon_name) = item.icon {
@@ -539,7 +542,10 @@ impl CommandPaletteDialog {
             let idx = row.index();
             if idx >= 0 {
                 let items_ref = items.borrow();
-                #[allow(clippy::cast_sign_loss)]
+                #[expect(
+                    clippy::cast_sign_loss,
+                    reason = "value is non-negative by construction in this code path"
+                )]
                 if let Some(item) = items_ref.get(idx as usize) {
                     if let Some(ref cb) = *on_action.borrow() {
                         cb(item.action.clone());

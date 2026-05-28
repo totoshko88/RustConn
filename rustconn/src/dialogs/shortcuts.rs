@@ -7,7 +7,10 @@
 //! Otherwise falls back to a custom `adw::Window` with a searchable `ListBox`.
 
 /// Keyboard shortcut entry definition
-#[allow(dead_code)] // `accel` used only with `adw-1-8`; `keys` used only without it
+#[allow(
+    dead_code,
+    reason = "`accel` used only with `adw-1-8`; `keys` used only without it"
+)]
 struct ShortcutEntry {
     /// GTK accelerator string (e.g., "`<Control>`n")
     accel: &'static str,
@@ -460,8 +463,8 @@ mod legacy {
             row.set_activatable(false);
 
             let hbox = GtkBox::new(Orientation::Horizontal, 12);
-            hbox.set_margin_top(8);
-            hbox.set_margin_bottom(8);
+            hbox.set_margin_top(12);
+            hbox.set_margin_bottom(12);
             hbox.set_margin_start(12);
             hbox.set_margin_end(12);
 
@@ -557,7 +560,10 @@ pub use legacy::ShortcutsDialog;
 /// Marker function for xgettext to discover shortcut descriptions and categories.
 /// These strings are defined as static `&str` in the `SHORTCUTS` array and wrapped
 /// in `i18n()` when building the UI, but xgettext cannot trace this indirection.
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "kept alive for GTK widget lifecycle / future API exposure"
+)]
 fn _i18n_markers() {
     use crate::i18n::i18n;
     // Categories

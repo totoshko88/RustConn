@@ -365,7 +365,11 @@ where
 /// The `cast_possible_truncation` and `cast_sign_loss` warnings are suppressed
 /// because we explicitly clamp the value to the valid u16 range before casting.
 #[must_use]
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "value range fits the target type and is non-negative by construction in this code path"
+)]
 pub fn coord_to_u16(value: f64) -> u16 {
     value.clamp(0.0, f64::from(u16::MAX)).round() as u16
 }
@@ -388,7 +392,10 @@ pub fn coord_to_u16(value: f64) -> u16 {
 /// The `cast_possible_truncation` warning is suppressed because we explicitly
 /// clamp the value to the valid i32 range before casting.
 #[must_use]
-#[allow(clippy::cast_possible_truncation)]
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "value range fits the target type by construction in this code path"
+)]
 pub fn coord_to_i32(value: f64) -> i32 {
     value
         .clamp(f64::from(i32::MIN), f64::from(i32::MAX))
@@ -413,7 +420,10 @@ pub fn coord_to_i32(value: f64) -> i32 {
 /// The `cast_possible_truncation` warning is suppressed because we explicitly
 /// clamp the value to u16::MAX before casting.
 #[must_use]
-#[allow(clippy::cast_possible_truncation)]
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "value range fits the target type by construction in this code path"
+)]
 pub fn dimension_to_u16(value: u32) -> u16 {
     value.min(u32::from(u16::MAX)) as u16
 }
@@ -436,9 +446,16 @@ pub fn dimension_to_u16(value: u32) -> u16 {
 /// The `cast_possible_truncation` and `cast_sign_loss` warnings are suppressed
 /// because we explicitly clamp the value to i32::MAX before casting.
 #[must_use]
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "value range fits the target type and is non-negative by construction in this code path"
+)]
 pub fn dimension_to_i32(value: u32) -> i32 {
-    #[allow(clippy::cast_possible_wrap)]
+    #[expect(
+        clippy::cast_possible_wrap,
+        reason = "value range fits the target signed type by construction in this code path"
+    )]
     let result = value.min(i32::MAX as u32) as i32;
     result
 }
@@ -461,9 +478,15 @@ pub fn dimension_to_i32(value: u32) -> i32 {
 /// The `cast_possible_truncation` warning is suppressed because we explicitly
 /// clamp the value to i32::MAX before casting.
 #[must_use]
-#[allow(clippy::cast_possible_truncation)]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "value range fits the target type by construction in this code path"
+)]
 pub fn stride_to_i32(stride: u32) -> i32 {
-    #[allow(clippy::cast_possible_wrap)]
+    #[expect(
+        clippy::cast_possible_wrap,
+        reason = "value range fits the target signed type by construction in this code path"
+    )]
     let result = stride.min(i32::MAX as u32) as i32;
     result
 }

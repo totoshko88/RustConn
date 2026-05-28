@@ -19,6 +19,13 @@ use crate::util::create_config_manager;
 use super::sync::cmd_sync;
 
 /// Dispatches a `sync` subcommand to the appropriate handler.
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when configuration or sync state cannot be read or written
+/// - [`CliError::Import`] / [`CliError::Export`] when an inventory file is
+///   missing, malformed, or cannot be written
 pub fn cmd_cloud_sync(config_path: Option<&Path>, subcmd: SyncCommands) -> Result<(), CliError> {
     match subcmd {
         SyncCommands::Status => cmd_sync_status(config_path),

@@ -26,7 +26,10 @@ pub type SharedNotebook = Rc<TerminalNotebook>;
 pub type SharedSplitView = Rc<SplitViewBridge>;
 
 /// Starts an RDP connection with password dialog
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 pub fn start_rdp_with_password_dialog(
     state: SharedAppState,
     notebook: SharedNotebook,
@@ -176,7 +179,10 @@ pub fn start_rdp_with_password_dialog(
 }
 
 /// Starts RDP session with provided credentials
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 pub fn start_rdp_session_with_credentials(
     state: &SharedAppState,
     notebook: &SharedNotebook,
@@ -201,7 +207,10 @@ pub fn start_rdp_session_with_credentials(
 }
 
 /// Internal function to start RDP session (after port check)
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 fn start_rdp_session_internal(
     state: &SharedAppState,
     notebook: &SharedNotebook,
@@ -440,7 +449,10 @@ fn start_rdp_session_internal(
 }
 
 /// Starts embedded RDP session
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 fn start_embedded_rdp_session(
     state: &SharedAppState,
     notebook: &SharedNotebook,
@@ -728,7 +740,10 @@ fn start_embedded_rdp_session(
 }
 
 /// Starts external RDP session using xfreerdp
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 fn start_external_rdp_session(
     state: &SharedAppState,
     notebook: &SharedNotebook,
@@ -895,7 +910,10 @@ fn start_external_rdp_session(
 }
 
 /// Starts a VNC connection with password dialog
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 pub fn start_vnc_with_password_dialog(
     state: SharedAppState,
     notebook: SharedNotebook,

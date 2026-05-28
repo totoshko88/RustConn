@@ -10,6 +10,15 @@ use crate::format::escape_csv_field;
 use crate::util::create_config_manager;
 
 /// Variable command handler
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when variables or settings cannot be loaded or saved
+/// - [`CliError::Variable`] when a variable operation fails (duplicate name,
+///   missing variable, invalid value)
+/// - [`CliError::Secret`] when a secret variable cannot be written to or
+///   read from the configured backend
 pub fn cmd_var(config_path: Option<&Path>, subcmd: VariableCommands) -> Result<(), CliError> {
     match subcmd {
         VariableCommands::List { format } => cmd_var_list(config_path, format.effective()),

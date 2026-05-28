@@ -15,7 +15,7 @@ use std::rc::Rc;
 use uuid::Uuid;
 
 /// Connection details page — Step 2 of the wizard
-#[allow(dead_code)] // Fields kept for GTK widget lifecycle
+#[allow(dead_code, reason = "Fields kept for GTK widget lifecycle")]
 pub struct ConnectionPage {
     pub page: adw::NavigationPage,
     state: SharedAppState,
@@ -245,7 +245,10 @@ impl ConnectionPage {
         next_button.set_sensitive(false);
 
         // === Templates grid (for Custom Command mode) ===
-        #[allow(clippy::items_after_statements)]
+        #[expect(
+            clippy::items_after_statements,
+            reason = "local helper introduced inline next to its only call site; hoisting would scatter related logic"
+        )]
         const MAX_GRID_SLOTS: usize = 7;
         // Use a plain GtkBox instead of PreferencesGroup to avoid ListBoxRow
         // wrapping which intercepts button clicks.
@@ -752,7 +755,11 @@ impl ConnectionPage {
 
     #[must_use]
     pub fn port(&self) -> u16 {
-        #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let p = self.port_row.value() as u16;
         p
     }
@@ -856,8 +863,8 @@ impl ConnectionPage {
     fn create_user_template_button(icon: &str, name: &str) -> Button {
         let vbox = GtkBox::new(Orientation::Vertical, 4);
         vbox.set_halign(gtk4::Align::Center);
-        vbox.set_margin_top(8);
-        vbox.set_margin_bottom(8);
+        vbox.set_margin_top(12);
+        vbox.set_margin_bottom(12);
 
         if !icon.is_empty()
             && icon.chars().count() <= 2
@@ -902,8 +909,8 @@ impl ConnectionPage {
     fn create_template_button(predefined: &rustconn_core::PredefinedTemplate) -> Button {
         let vbox = GtkBox::new(Orientation::Vertical, 4);
         vbox.set_halign(gtk4::Align::Center);
-        vbox.set_margin_top(8);
-        vbox.set_margin_bottom(8);
+        vbox.set_margin_top(12);
+        vbox.set_margin_bottom(12);
 
         let emoji_label = gtk4::Label::builder()
             .label(predefined.icon)
@@ -936,8 +943,8 @@ impl ConnectionPage {
     fn create_more_templates_button() -> Button {
         let vbox = GtkBox::new(Orientation::Vertical, 4);
         vbox.set_halign(gtk4::Align::Center);
-        vbox.set_margin_top(8);
-        vbox.set_margin_bottom(8);
+        vbox.set_margin_top(12);
+        vbox.set_margin_bottom(12);
 
         let icon = gtk4::Image::from_icon_name("view-more-symbolic");
         icon.set_pixel_size(24);
@@ -992,10 +999,10 @@ impl ConnectionPage {
             .build();
 
         let content = GtkBox::new(Orientation::Vertical, 8);
-        content.set_margin_top(8);
-        content.set_margin_bottom(8);
-        content.set_margin_start(8);
-        content.set_margin_end(8);
+        content.set_margin_top(12);
+        content.set_margin_bottom(12);
+        content.set_margin_start(12);
+        content.set_margin_end(12);
 
         // === User templates section ===
         let state_ref = state.borrow();

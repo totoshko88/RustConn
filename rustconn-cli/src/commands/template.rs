@@ -10,6 +10,13 @@ use crate::format::escape_csv_field;
 use crate::util::{create_config_manager, create_template_manager, parse_protocol_type};
 
 /// Template command handler
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when templates cannot be loaded or saved
+/// - [`CliError::Template`] when a template operation fails (duplicate name,
+///   missing template, unknown protocol)
 pub fn cmd_template(config_path: Option<&Path>, subcmd: TemplateCommands) -> Result<(), CliError> {
     match subcmd {
         TemplateCommands::List { format, protocol } => {

@@ -75,7 +75,7 @@ struct KeePassXcEntry {
     /// preserved for potential future use in entry display or logging.
     /// Required for correct JSON deserialization of `KeePassXC` responses.
     #[serde(default)]
-    #[allow(dead_code)] // Required for JSON deserialization completeness
+    #[allow(dead_code, reason = "Required for JSON deserialization completeness")]
     name: Option<String>,
     /// Entry UUID from `KeePassXC`
     ///
@@ -83,7 +83,7 @@ struct KeePassXcEntry {
     /// preserved for potential future use in entry identification or updates.
     /// Required for correct JSON deserialization of `KeePassXC` responses.
     #[serde(default)]
-    #[allow(dead_code)] // Required for JSON deserialization completeness
+    #[allow(dead_code, reason = "Required for JSON deserialization completeness")]
     uuid: Option<String>,
 }
 
@@ -149,7 +149,10 @@ impl KeePassXcBackend {
             .map_err(|e| SecretError::KeePassXC(format!("Failed to serialize request: {e}")))?;
 
         // Send length-prefixed message (native messaging format)
-        #[allow(clippy::cast_possible_truncation)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "value range fits the target type by construction in this code path"
+        )]
         let len = request_json.len() as u32;
         stream
             .write_all(&len.to_ne_bytes())
@@ -374,4 +377,29 @@ pub async fn get_kdbx_password_from_keyring() -> SecretResult<Option<SecretStrin
 /// Returns `SecretError` if deletion fails
 pub async fn delete_kdbx_password_from_keyring() -> SecretResult<()> {
     super::keyring::clear(KEY_KDBX_PASSWORD).await
+}
+
+impl std::fmt::Debug for KeePassXcBackend {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("KeePassXcBackend")
+            .field("socket_path", &self.socket_path)
+            .field("client_id", &self.client_id)
+            .field("associated", &self.associated.load(Ordering::Relaxed))
+            .finish()
+    }
+}
+
+#[cfg(test)]
+mod debug_tests {
+    use super::*;
+
+    #[test]
+    fn debug_does_not_leak_secret() {
+        // KeePassXcBackend keeps no passwords in-process — the association
+        // is purely transport-level. The test guards against future fields.
+        let backend = KeePassXcBackend::new("hunter2-client-id");
+        let rendered = format!("{backend:?}");
+        assert!(rendered.contains("KeePassXcBackend"));
+        assert!(rendered.contains("associated"));
+    }
 }

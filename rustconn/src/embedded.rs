@@ -56,10 +56,10 @@ impl SessionControls {
     #[must_use]
     pub fn new() -> Self {
         let container = GtkBox::new(Orientation::Horizontal, 8);
-        container.set_margin_start(8);
-        container.set_margin_end(8);
-        container.set_margin_top(4);
-        container.set_margin_bottom(4);
+        container.set_margin_start(12);
+        container.set_margin_end(12);
+        container.set_margin_top(6);
+        container.set_margin_bottom(6);
 
         let status_label = Label::new(Some(&i18n("Connecting...")));
         status_label.set_hexpand(true);
@@ -130,7 +130,7 @@ impl Default for SessionControls {
 }
 
 /// Embedded session tab for RDP/VNC connections
-#[allow(dead_code)] // Fields kept for GTK widget lifecycle
+#[allow(dead_code, reason = "Fields kept for GTK widget lifecycle")]
 pub struct EmbeddedSessionTab {
     id: Uuid,
     connection_id: Uuid,
@@ -321,7 +321,10 @@ impl RdpLauncher {
     ///
     /// # Errors
     /// Returns error if the RDP client fails to start
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub fn start(
         tab: &EmbeddedSessionTab,
         host: &str,
@@ -367,7 +370,10 @@ impl RdpLauncher {
     ///
     /// # Errors
     /// Returns error if the RDP client fails to start
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub fn start_with_geometry(
         tab: &EmbeddedSessionTab,
         host: &str,

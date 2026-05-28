@@ -123,11 +123,17 @@ impl CheckboxRowBuilder {
 
 /// Builder for creating `adw::ActionRow` with an `Entry` suffix.
 ///
+/// # i18n
+///
+/// `title`, `subtitle` and `placeholder` are passed through to the widget
+/// **verbatim** — callers MUST wrap user-facing strings in `i18n()` /
+/// `i18n_f()` at the call site so `xgettext` extracts them into the POT.
+///
 /// # Example
 /// ```ignore
-/// let (row, entry) = EntryRowBuilder::new("Hostname")
-///     .subtitle("Server address")
-///     .placeholder("example.com")
+/// let (row, entry) = EntryRowBuilder::new(&i18n("Hostname"))
+///     .subtitle(&i18n("Server address"))
+///     .placeholder(&i18n("example.com"))
 ///     .build();
 /// group.add(&row);
 /// ```
@@ -140,7 +146,9 @@ pub struct EntryRowBuilder {
 }
 
 impl EntryRowBuilder {
-    /// Creates a new builder with the given title.
+    /// Creates a new builder with the given **already-translated** title.
+    ///
+    /// Pass `&i18n("...")` so `xgettext` picks up the literal.
     #[must_use]
     pub fn new(title: impl Into<String>) -> Self {
         Self {
@@ -151,21 +159,21 @@ impl EntryRowBuilder {
         }
     }
 
-    /// Sets the subtitle (description) for the row.
+    /// Sets the **already-translated** subtitle (description) for the row.
     #[must_use]
     pub fn subtitle(mut self, subtitle: impl Into<String>) -> Self {
         self.subtitle = Some(subtitle.into());
         self
     }
 
-    /// Sets the placeholder text for the entry.
+    /// Sets the **already-translated** placeholder text for the entry.
     #[must_use]
     pub fn placeholder(mut self, placeholder: impl Into<String>) -> Self {
         self.placeholder = Some(placeholder.into());
         self
     }
 
-    /// Sets the initial text value.
+    /// Sets the initial text value (raw, not translated).
     #[must_use]
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.text = Some(text.into());
@@ -190,10 +198,12 @@ impl EntryRowBuilder {
             entry.set_text(text);
         }
 
-        let mut row_builder = adw::ActionRow::builder().title(i18n(&self.title));
+        // title / subtitle are expected to be already translated by the caller
+        // (see struct doc comment).
+        let mut row_builder = adw::ActionRow::builder().title(&self.title);
 
         if let Some(subtitle) = &self.subtitle {
-            row_builder = row_builder.subtitle(i18n(subtitle));
+            row_builder = row_builder.subtitle(subtitle);
         }
 
         let row = row_builder.build();
@@ -444,7 +454,10 @@ impl SwitchRowBuilder {
 /// be invisible to the POT extraction tool.
 ///
 /// This function is never called at runtime.
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "kept alive for GTK widget lifecycle / future API exposure"
+)]
 fn _i18n_markers() {
     // Button labels used in dialog_header() across the codebase
     i18n("Close");

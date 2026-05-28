@@ -60,10 +60,10 @@ pub fn add_folder_row_to_list(
     share_name: &str,
 ) {
     let row_box = GtkBox::new(Orientation::Horizontal, 8);
-    row_box.set_margin_top(4);
-    row_box.set_margin_bottom(4);
-    row_box.set_margin_start(8);
-    row_box.set_margin_end(8);
+    row_box.set_margin_top(6);
+    row_box.set_margin_bottom(6);
+    row_box.set_margin_start(12);
+    row_box.set_margin_end(12);
 
     let path_label = Label::builder()
         .label(path.to_string_lossy().as_ref())

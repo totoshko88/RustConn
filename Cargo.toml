@@ -7,7 +7,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.14.10"
+version = "0.15.0"
 edition = "2024"
 authors = ["Anton Isaiev <totoshko88@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -110,5 +110,10 @@ map_unwrap_or = "allow"
 manual_map = "allow"
 # Clone assignment is sometimes clearer than clone_from
 assigning_clones = "allow"
+
+# Pragmatic Rust Guidelines (M-LINT-OVERRIDE-EXPECT): force every #[allow]
+# / #[expect] override to carry a `reason = "..."` so future readers
+# understand why the lint is suppressed.
+allow_attributes_without_reason = "warn"
 
 

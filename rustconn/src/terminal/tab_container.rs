@@ -13,7 +13,10 @@ use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Orientation};
 
 /// State of the content inside a `TabPageContainer`.
-#[allow(dead_code)] // Split/Welcome variants used in Phase 2 of TabOverview refactoring
+#[allow(
+    dead_code,
+    reason = "Split/Welcome variants used in Phase 2 of TabOverview refactoring"
+)]
 enum ContainerState {
     /// A single terminal (the default for new SSH tabs).
     Single,
@@ -31,7 +34,7 @@ pub struct TabPageContainer {
     /// The widget that becomes `TabPage.child()`.
     outer: GtkBox,
     /// Current content state.
-    #[allow(dead_code)] // Read in Phase 2 of TabOverview refactoring
+    #[allow(dead_code, reason = "Read in Phase 2 of TabOverview refactoring")]
     state: ContainerState,
 }
 
@@ -76,7 +79,7 @@ impl TabPageContainer {
     /// Removes the current single-terminal content and replaces it with
     /// the split view bridge widget. The caller is responsible for
     /// reparenting the terminal into the bridge *before* calling this.
-    #[allow(dead_code)] // Used in Phase 2 of TabOverview refactoring
+    #[allow(dead_code, reason = "Used in Phase 2 of TabOverview refactoring")]
     pub fn switch_to_split(&mut self, split_widget: &GtkBox) {
         self.clear_children();
         self.outer.append(split_widget);
@@ -86,7 +89,7 @@ impl TabPageContainer {
     /// Transitions back to **Single** state.
     ///
     /// Removes the split widget and inserts the single-terminal content.
-    #[allow(dead_code)] // Used in Phase 2 of TabOverview refactoring
+    #[allow(dead_code, reason = "Used in Phase 2 of TabOverview refactoring")]
     pub fn switch_to_single(&mut self, content: &GtkBox) {
         self.clear_children();
         self.outer.append(content);
@@ -95,14 +98,14 @@ impl TabPageContainer {
 
     /// Returns `true` if the container is currently in split mode.
     #[must_use]
-    #[allow(dead_code)] // Used in Phase 2 of TabOverview refactoring
+    #[allow(dead_code, reason = "Used in Phase 2 of TabOverview refactoring")]
     pub fn is_split(&self) -> bool {
         matches!(self.state, ContainerState::Split)
     }
 
     /// Returns `true` if the container is currently showing the welcome page.
     #[must_use]
-    #[allow(dead_code)] // Used in Phase 2 of TabOverview refactoring
+    #[allow(dead_code, reason = "Used in Phase 2 of TabOverview refactoring")]
     pub fn is_welcome(&self) -> bool {
         matches!(self.state, ContainerState::Welcome)
     }

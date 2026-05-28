@@ -27,7 +27,12 @@ use crate::i18n::i18n;
 /// Creates the RDP options panel with all protocol-specific widgets.
 ///
 /// Returns a 28-element tuple matching the fields expected by `ConnectionDialog`.
-#[allow(clippy::similar_names, clippy::too_many_lines, clippy::type_complexity)]
+#[allow(
+    clippy::similar_names,
+    clippy::too_many_lines,
+    clippy::type_complexity,
+    reason = "long match dispatch returning a documented tuple with paired naming; restructuring would only relocate the boilerplate"
+)]
 pub(super) fn create_rdp_options() -> (
     GtkBox,
     DropDown,
@@ -480,7 +485,7 @@ pub(super) fn create_rdp_options() -> (
 
     let folders_buttons = GtkBox::new(Orientation::Horizontal, 8);
     folders_buttons.set_halign(gtk4::Align::End);
-    folders_buttons.set_margin_top(8);
+    folders_buttons.set_margin_top(12);
     let add_folder_btn = Button::builder()
         .label(i18n("Add"))
         .css_classes(["suggested-action"])

@@ -11,7 +11,10 @@ use crate::i18n::i18n;
 ///
 /// Returns the individual widgets for embedding into a collapsible expander
 /// on the Terminal page.
-#[allow(clippy::type_complexity)]
+#[allow(
+    clippy::type_complexity,
+    reason = "internal helper signature documents the exact tuple layout used by the caller; aliasing would obscure the data flow"
+)]
 pub fn create_logging_page() -> (
     adw::PreferencesPage,
     adw::SwitchRow,
@@ -110,7 +113,10 @@ pub fn create_logging_page() -> (
 }
 
 /// Loads logging settings into UI controls
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 pub fn load_logging_settings(
     logging_enabled_row: &adw::SwitchRow,
     log_dir_entry: &Entry,
@@ -140,7 +146,11 @@ pub fn load_logging_settings(
 }
 
 /// Collects logging settings from UI controls
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "value range fits the target type and is non-negative by construction in this code path"
+)]
 pub fn collect_logging_settings(
     logging_enabled_row: &adw::SwitchRow,
     log_dir_entry: &Entry,

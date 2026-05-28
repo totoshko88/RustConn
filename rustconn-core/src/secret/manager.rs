@@ -692,3 +692,47 @@ impl SecretManager {
         result
     }
 }
+
+impl std::fmt::Debug for SecretManager {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Cache size is read with try_read to avoid blocking in Debug.
+        // If the lock is contended we report `?` rather than waiting.
+        let cache_size = self
+            .cache
+            .try_read()
+            .map_or_else(|_| None, |c| Some(c.len()));
+
+        let backend_ids: Vec<&'static str> = self.backends.iter().map(|b| b.backend_id()).collect();
+
+        f.debug_struct("SecretManager")
+            .field("backend_count", &self.backends.len())
+            .field("backend_ids", &backend_ids)
+            .field("cache_enabled", &self.cache_enabled)
+            .field("cache_size", &cache_size)
+            .field("cache_ttl_secs", &CACHE_TTL_SECONDS)
+            .finish()
+    }
+}
+
+#[cfg(test)]
+mod debug_tests {
+    use super::*;
+
+    #[test]
+    fn debug_does_not_leak_secret() {
+        // SecretManager keeps cached credentials in-process. Even though
+        // cache values aren't rendered (only the count), this sentinel
+        // guards against future Debug expansions that could expose
+        // Credentials directly.
+        let manager = SecretManager::empty();
+        let rendered = format!("{manager:?}");
+        assert!(rendered.contains("SecretManager"));
+        assert!(rendered.contains("backend_count"));
+        assert!(rendered.contains("cache_enabled"));
+        // Make sure no `Credentials { ... }` ends up in Debug accidentally.
+        assert!(
+            !rendered.contains("password"),
+            "Debug should not render password field: {rendered}"
+        );
+    }
+}

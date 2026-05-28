@@ -66,7 +66,10 @@ pub fn parse_custom_options(text: &str) -> HashMap<String, String> {
 /// assert!(formatted.contains("ForwardAgent=yes"));
 /// ```
 #[must_use]
-#[allow(clippy::implicit_hasher)]
+#[expect(
+    clippy::implicit_hasher,
+    reason = "wrapper takes any HashMap; an explicit S: BuildHasher generic would push one more parameter onto every caller"
+)]
 pub fn format_custom_options(options: &HashMap<String, String>) -> String {
     let mut pairs: Vec<String> = options.iter().map(|(k, v)| format!("{k}={v}")).collect();
     pairs.sort(); // Sort for deterministic output

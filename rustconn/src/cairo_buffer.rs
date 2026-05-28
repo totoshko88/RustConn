@@ -92,7 +92,10 @@ impl CairoBackedBuffer {
     ///
     /// After writing, calls `mark_dirty_rectangle` so Cairo knows which
     /// area needs to be re-composited.
-    #[allow(clippy::many_single_char_names)]
+    #[expect(
+        clippy::many_single_char_names,
+        reason = "matrix/vector arithmetic uses canonical short names from the linear algebra literature"
+    )]
     pub fn update_region(
         &mut self,
         x: u32,

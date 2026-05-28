@@ -4,7 +4,10 @@
 //! layout pattern: ScrolledWindow → Clamp → Box with consistent margins.
 
 // Builder methods are available for future customization needs
-#![allow(dead_code)]
+#![allow(
+    dead_code,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Orientation, ScrolledWindow};

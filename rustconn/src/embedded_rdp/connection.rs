@@ -221,9 +221,17 @@ impl super::EmbeddedRdpWidget {
             let h = self.drawing_area.height();
             if w > 100 && h > 100 {
                 // Convert CSS pixels to device pixels using effective scale
-                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    clippy::cast_sign_loss,
+                    reason = "value range fits the target type and is non-negative by construction in this code path"
+                )]
                 let device_w = (f64::from(w.unsigned_abs()) * effective_scale) as u32;
-                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    clippy::cast_sign_loss,
+                    reason = "value range fits the target type and is non-negative by construction in this code path"
+                )]
                 let device_h = (f64::from(h.unsigned_abs()) * effective_scale) as u32;
                 // Round down to multiple of 4 for RDP compatibility
                 // Many RDP servers and codecs require dimensions divisible by 4
@@ -247,7 +255,11 @@ impl super::EmbeddedRdpWidget {
         // Compute RDP desktop scale factor as percentage (e.g. 2.0 → 200)
         // This tells the Windows server what DPI scaling to use so UI elements
         // appear at the correct logical size on HiDPI displays.
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let rdp_scale_percent = (effective_scale * 100.0) as u32;
 
         tracing::debug!(
@@ -1362,13 +1374,29 @@ impl super::EmbeddedRdpWidget {
 
         let scale = cursor_scale;
         if scale > 1.01 {
-            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            #[expect(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "value range fits the target type and is non-negative by construction in this code path"
+            )]
             let logical_w = (crop_w as f64 / scale).round().max(1.0) as u16;
-            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            #[expect(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "value range fits the target type and is non-negative by construction in this code path"
+            )]
             let logical_h = (crop_h as f64 / scale).round().max(1.0) as u16;
-            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            #[allow(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "value range fits the target type and is non-negative by construction in this code path"
+            )]
             let hotspot_logical_x = (f64::from(hotspot_x) / scale).round() as i32;
-            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            #[allow(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "value range fits the target type and is non-negative by construction in this code path"
+            )]
             let hotspot_logical_y = (f64::from(hotspot_y) / scale).round() as i32;
 
             let src_w = crop_w;
@@ -1378,10 +1406,18 @@ impl super::EmbeddedRdpWidget {
             // Nearest-neighbor downscale with premultiplied alpha + R↔B swap
             let mut scaled = vec![0u8; dst_w * dst_h * bpp];
             for dy in 0..dst_h {
-                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    clippy::cast_sign_loss,
+                    reason = "value range fits the target type and is non-negative by construction in this code path"
+                )]
                 let sy = (dy as f64 * scale) as usize;
                 for dx in 0..dst_w {
-                    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                    #[expect(
+                        clippy::cast_possible_truncation,
+                        clippy::cast_sign_loss,
+                        reason = "value range fits the target type and is non-negative by construction in this code path"
+                    )]
                     let sx = (dx as f64 * scale) as usize;
                     let src_off = (sy * src_w + sx) * bpp;
                     let dst_off = (dy * dst_w + dx) * bpp;

@@ -19,9 +19,18 @@
 //!   `search_parallel` for multi-threaded search
 
 // cast_possible_truncation, cast_precision_loss, unused_self allowed at workspace level
-#![allow(clippy::cast_sign_loss)]
-#![allow(clippy::uninlined_format_args)]
-#![allow(clippy::missing_panics_doc)]
+#![allow(
+    clippy::cast_sign_loss,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::uninlined_format_args,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::missing_panics_doc,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 pub mod cache;
 pub mod command_palette;
@@ -375,7 +384,10 @@ impl SearchEngine {
     ///
     /// Iterates over valid UTF-8 char boundaries so this is safe for
     /// multi-byte characters (Cyrillic, CJK, emoji, etc.).
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unused_self,
+        reason = "method is part of a uniform helper API where most operations need &self; keeping &self preserves the consistent signature"
+    )]
     fn find_case_insensitive(&self, needle: &str, haystack: &str) -> Option<usize> {
         let needle_len = needle.len();
         let haystack_len = haystack.len();
@@ -563,7 +575,10 @@ impl SearchEngine {
     }
 
     /// Checks if a connection passes all filters in the query
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unused_self,
+        reason = "method is part of a uniform helper API where most operations need &self; keeping &self preserves the consistent signature"
+    )]
     fn passes_filters(
         &self,
         query: &SearchQuery,
@@ -712,7 +727,10 @@ impl SearchEngine {
     }
 
     /// Core fuzzy character matching algorithm
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unused_self,
+        reason = "method is part of a uniform helper API where most operations need &self; keeping &self preserves the consistent signature"
+    )]
     fn fuzzy_score_chars(
         &self,
         query_chars: impl Iterator<Item = char>,

@@ -10,6 +10,12 @@ use crate::error::CliError;
 use crate::format::escape_csv_field;
 
 /// Recording command handler.
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Recording`] when listing, deleting, or importing recordings fails
+/// - [`CliError::Io`] when the recordings directory cannot be created or read
 pub fn cmd_recording(subcmd: RecordingCommands) -> Result<(), CliError> {
     match subcmd {
         RecordingCommands::List { format } => cmd_recording_list(format.effective()),

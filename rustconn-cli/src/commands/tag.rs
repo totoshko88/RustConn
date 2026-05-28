@@ -9,6 +9,12 @@ use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
 
 /// Tag command dispatcher
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when connections cannot be loaded or saved
+/// - [`CliError::ConnectionNotFound`] when a referenced connection does not exist
 pub fn cmd_tag(config_path: Option<&Path>, subcmd: TagCommands) -> Result<(), CliError> {
     match subcmd {
         TagCommands::List { format } => cmd_tag_list(config_path, format.effective()),

@@ -33,7 +33,7 @@ use crate::i18n::{i18n, i18n_f};
 pub type ExportCallback = Rc<RefCell<Option<Box<dyn Fn(Option<ExportResult>)>>>>;
 
 /// Export dialog for exporting connections to external formats
-#[allow(dead_code)] // Fields kept for GTK widget lifecycle
+#[allow(dead_code, reason = "Fields kept for GTK widget lifecycle")]
 pub struct ExportDialog {
     dialog: adw::Dialog,
     stack: Stack,
@@ -210,7 +210,10 @@ impl ExportDialog {
     }
 
     /// Creates the options page with format selection and output path
-    #[allow(clippy::type_complexity)]
+    #[expect(
+        clippy::type_complexity,
+        reason = "internal helper signature documents the exact tuple layout used by the caller; aliasing would obscure the data flow"
+    )]
     fn create_options_page() -> (
         ScrolledWindow,
         DropDown,
@@ -562,7 +565,10 @@ impl ExportDialog {
         let mut filter_data: Vec<(Option<uuid::Uuid>, String)> =
             vec![(None, i18n("All connections"))];
 
-        #[allow(clippy::items_after_statements)]
+        #[expect(
+            clippy::items_after_statements,
+            reason = "local helper introduced inline next to its only call site; hoisting would scatter related logic"
+        )]
         fn add_group_recursive(
             group: &ConnectionGroup,
             all_groups: &[ConnectionGroup],
@@ -637,7 +643,10 @@ impl ExportDialog {
     }
 
     /// Performs the export operation
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     fn do_export(
         connections: &[Connection],
         groups: &[ConnectionGroup],

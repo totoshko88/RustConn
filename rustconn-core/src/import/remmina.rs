@@ -187,7 +187,10 @@ impl RemminaImporter {
 
     /// Converts Remmina config section to a Connection
     /// Returns (Connection, Option<group_path>) for group assignment
-    #[allow(clippy::too_many_lines)]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+    )]
     fn convert_to_connection(
         &self,
         config: &HashMap<String, String>,

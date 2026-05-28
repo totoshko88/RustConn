@@ -184,14 +184,14 @@ impl VariablesDialog {
         expanded: bool,
     ) -> VariableRow {
         let main_box = GtkBox::new(Orientation::Vertical, 0);
-        main_box.set_margin_top(4);
-        main_box.set_margin_bottom(4);
-        main_box.set_margin_start(8);
-        main_box.set_margin_end(8);
+        main_box.set_margin_top(6);
+        main_box.set_margin_bottom(6);
+        main_box.set_margin_start(12);
+        main_box.set_margin_end(12);
 
         // Header row: expander label + delete button
         let header_box = GtkBox::new(Orientation::Horizontal, 8);
-        header_box.set_margin_bottom(4);
+        header_box.set_margin_bottom(6);
 
         let delete_button = Button::builder()
             .icon_name("user-trash-symbolic")

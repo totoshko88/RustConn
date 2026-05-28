@@ -71,7 +71,10 @@ pub struct AppSettings {
 
 /// Terminal-related settings
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[allow(clippy::struct_excessive_bools)] // Terminal settings are independent boolean flags
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)] // Terminal settings are independent boolean flags
 pub struct TerminalSettings {
     /// Font family for terminal
     #[serde(default = "default_font_family")]
@@ -221,7 +224,10 @@ impl Default for TerminalSettings {
 
 /// Logging settings
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[allow(clippy::struct_excessive_bools)] // Logging modes are independent boolean flags
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)] // Logging modes are independent boolean flags
 pub struct LoggingSettings {
     /// Enable session logging
     #[serde(default)]
@@ -266,7 +272,10 @@ impl Default for LoggingSettings {
 
 /// Secret storage settings
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)]
 pub struct SecretSettings {
     /// Preferred secret backend
     #[serde(default)]
@@ -477,7 +486,10 @@ const MAX_SEARCH_HISTORY_ENTRIES: usize = 20;
 
 /// UI settings
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)]
 pub struct UiSettings {
     /// Color scheme preference
     #[serde(default)]

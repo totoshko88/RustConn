@@ -114,7 +114,10 @@ impl PasswordStrength {
 }
 
 /// Configuration for password generation
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)]
 #[derive(Debug, Clone)]
 pub struct PasswordGeneratorConfig {
     /// Desired password length

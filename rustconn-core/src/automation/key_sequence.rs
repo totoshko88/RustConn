@@ -697,7 +697,10 @@ mod tests {
 
     #[test]
     fn test_to_string_round_trip() {
-        #[allow(clippy::literal_string_with_formatting_args)]
+        #[expect(
+            clippy::literal_string_with_formatting_args,
+            reason = "test fixture string contains Rust format placeholders verbatim - they are part of the expected payload"
+        )]
         let original = "user{TAB}${password}{ENTER}{WAIT:500}";
         let seq = KeySequence::parse(original).unwrap();
         let serialized = seq.to_string();

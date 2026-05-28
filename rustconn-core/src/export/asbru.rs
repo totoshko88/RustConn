@@ -77,7 +77,10 @@ impl AsbruExporter {
     ///
     /// A string containing the YAML entry for the connection.
     #[must_use]
-    #[allow(clippy::too_many_lines)]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+    )]
     pub fn connection_to_entry(
         connection: &Connection,
         group_uuid_map: &HashMap<Uuid, String>,

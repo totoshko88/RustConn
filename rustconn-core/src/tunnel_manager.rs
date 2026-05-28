@@ -78,7 +78,10 @@ impl TunnelManager {
     ///
     /// Returns an error if the connection is not SSH, the tunnel is already
     /// running, or the SSH process fails to spawn.
-    #[allow(clippy::too_many_lines)]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+    )]
     pub fn start(
         &mut self,
         tunnel: &StandaloneTunnel,

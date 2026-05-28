@@ -167,7 +167,10 @@ impl RustConnClipboardBackend {
 }
 
 impl CliprdrBackend for RustConnClipboardBackend {
-    #[allow(clippy::unnecessary_literal_bound)]
+    #[expect(
+        clippy::unnecessary_literal_bound,
+        reason = "explicit 'static bound documents that the trait object outlives all callers, even when the type system can infer it"
+    )]
     fn temporary_directory(&self) -> &str {
         ".cliprdr"
     }

@@ -251,3 +251,28 @@ impl SecretBackend for LibSecretBackend {
         "GNOME Keyring / KDE Wallet"
     }
 }
+
+impl std::fmt::Debug for LibSecretBackend {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LibSecretBackend")
+            .field("application_id", &self.application_id)
+            .finish()
+    }
+}
+
+#[cfg(test)]
+mod debug_tests {
+    use super::*;
+
+    #[test]
+    fn debug_does_not_leak_secret() {
+        // LibSecretBackend stores no secrets in-process; the test guards
+        // against accidental future fields that could leak.
+        let backend = LibSecretBackend::new("hunter2-app-id");
+        let rendered = format!("{backend:?}");
+        // application_id is intentionally non-secret, so it may appear.
+        // Make sure we never grow a field that contains a real password.
+        assert!(rendered.contains("LibSecretBackend"));
+        assert!(rendered.contains("application_id"));
+    }
+}

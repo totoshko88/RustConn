@@ -280,7 +280,19 @@ impl MainWindow {
                                     .map(|c| c.id)
                                     .collect();
                                 for conn_id in old_dynamic {
-                                    let _ = state_mut.connection_manager().delete_connection(conn_id);
+                                    // best-effort: failure to remove a stale dynamic
+                                    // connection should not block the refresh; the
+                                    // overall result is still surfaced via toast.
+                                    if let Err(e) = state_mut
+                                        .connection_manager()
+                                        .delete_connection(conn_id)
+                                    {
+                                        tracing::warn!(
+                                            connection = %conn_id,
+                                            error = %e,
+                                            "failed to remove stale dynamic connection"
+                                        );
+                                    }
                                 }
 
                                 // Add new dynamic connections
@@ -288,7 +300,12 @@ impl MainWindow {
                                     let conn = rustconn_core::dynamic_folder::entry_to_connection(
                                         entry, group_id,
                                     );
-                                    let _ = state_mut.create_connection(conn);
+                                    if let Err(e) = state_mut.create_connection(conn) {
+                                        tracing::warn!(
+                                            error = %e,
+                                            "failed to create dynamic connection during refresh"
+                                        );
+                                    }
                                 }
 
                                 // Update group's last_refreshed_at
@@ -297,9 +314,16 @@ impl MainWindow {
                                 {
                                     df.last_refreshed_at = Some(chrono::Utc::now());
                                     df.last_error = None;
-                                    let _ = state_mut
+                                    if let Err(e) = state_mut
                                         .connection_manager()
-                                        .update_group(group_id, group);
+                                        .update_group(group_id, group)
+                                    {
+                                        tracing::warn!(
+                                            group = %group_id,
+                                            error = %e,
+                                            "failed to record dynamic folder refresh timestamp"
+                                        );
+                                    }
                                 }
 
                                 drop(state_mut);
@@ -330,9 +354,16 @@ impl MainWindow {
                                 && let Some(ref mut df) = group.dynamic_folder
                             {
                                 df.last_error = Some(error_msg.clone());
-                                let _ = state_mut
+                                if let Err(e) = state_mut
                                     .connection_manager()
-                                    .update_group(group_id, group);
+                                    .update_group(group_id, group)
+                                {
+                                    tracing::warn!(
+                                        group = %group_id,
+                                        error = %e,
+                                        "failed to record dynamic folder error state"
+                                    );
+                                }
                             }
 
                             let msg = crate::i18n::i18n_f(

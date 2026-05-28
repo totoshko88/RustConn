@@ -1046,7 +1046,7 @@ pub fn show_edit_group_dialog(
         .halign(gtk4::Align::Start)
         .css_classes(["dim-label", "caption"])
         .build();
-    variables_info.set_margin_bottom(4);
+    variables_info.set_margin_bottom(6);
     expect_rules_group.add(&variables_info);
 
     let expect_rules_list = gtk4::ListBox::builder()
@@ -1066,7 +1066,7 @@ pub fn show_edit_group_dialog(
     // Button row outside PreferencesGroup to avoid ListBoxRow click-swallowing
     let expect_button_box = gtk4::Box::new(Orientation::Horizontal, 8);
     expect_button_box.set_halign(gtk4::Align::End);
-    expect_button_box.set_margin_top(8);
+    expect_button_box.set_margin_top(12);
 
     let template_menu_button = gtk4::MenuButton::builder()
         .label(&i18n("From Template"))
@@ -1077,10 +1077,10 @@ pub fn show_edit_group_dialog(
     // Fixed width prevents the dialog from resizing when different templates are selected
     template_popover.set_size_request(280, -1);
     let template_list_box = gtk4::Box::new(Orientation::Vertical, 4);
-    template_list_box.set_margin_top(8);
-    template_list_box.set_margin_bottom(8);
-    template_list_box.set_margin_start(8);
-    template_list_box.set_margin_end(8);
+    template_list_box.set_margin_top(12);
+    template_list_box.set_margin_bottom(12);
+    template_list_box.set_margin_start(12);
+    template_list_box.set_margin_end(12);
 
     for template in rustconn_core::automation::builtin_templates() {
         // Add protocol hint to SSH-specific templates
@@ -1289,7 +1289,7 @@ pub fn show_edit_group_dialog(
 
     let scripts_button_box = gtk4::Box::new(Orientation::Horizontal, 8);
     scripts_button_box.set_halign(gtk4::Align::End);
-    scripts_button_box.set_margin_top(8);
+    scripts_button_box.set_margin_top(12);
     scripts_button_box.append(&add_script_button);
 
     // Populate existing post-login scripts
@@ -1870,10 +1870,10 @@ fn add_group_expect_rule_row(
     use rustconn_core::automation::ExpectRule;
 
     let main_box = gtk4::Box::new(Orientation::Vertical, 6);
-    main_box.set_margin_top(8);
-    main_box.set_margin_bottom(8);
-    main_box.set_margin_start(8);
-    main_box.set_margin_end(8);
+    main_box.set_margin_top(12);
+    main_box.set_margin_bottom(12);
+    main_box.set_margin_start(12);
+    main_box.set_margin_end(12);
 
     // Row 0: Action buttons (delete, move up/down) — top-right for visibility
     let action_box = gtk4::Box::new(Orientation::Horizontal, 4);
@@ -1974,7 +1974,10 @@ fn add_group_expect_rule_row(
             // Insert variable at cursor position
             let pos = entry_clone.position();
             entry_clone.insert_text(&var, &mut pos.clone());
-            #[allow(clippy::cast_possible_wrap)]
+            #[expect(
+                clippy::cast_possible_wrap,
+                reason = "value range fits the target signed type by construction in this code path"
+            )]
             entry_clone.set_position(pos + var.len() as i32);
             if let Some(popover) = btn
                 .ancestor(gtk4::Popover::static_type())
@@ -2005,7 +2008,10 @@ fn add_group_expect_rule_row(
         newline_btn.connect_clicked(move |btn| {
             let pos = entry_clone.position();
             entry_clone.insert_text("\\n", &mut pos.clone());
-            #[allow(clippy::cast_possible_wrap)]
+            #[allow(
+                clippy::cast_possible_wrap,
+                reason = "value range fits the target signed type by construction in this code path"
+            )]
             entry_clone.set_position(pos + 2);
             if let Some(popover) = btn
                 .ancestor(gtk4::Popover::static_type())
@@ -2142,7 +2148,10 @@ fn add_group_expect_rule_row(
         }
         list_for_up.remove(&row_for_up);
         list_for_up.insert(&row_for_up, index - 1);
-        #[allow(clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_sign_loss,
+            reason = "value is non-negative by construction in this code path"
+        )]
         let idx = index as usize;
         let mut rules_vec = rules_for_up.borrow_mut();
         if idx < rules_vec.len() {
@@ -2157,13 +2166,20 @@ fn add_group_expect_rule_row(
     move_down_button.connect_clicked(move |_| {
         let index = row_for_down.index();
         let rules_len = rules_for_down.borrow().len();
-        #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
+        #[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    reason = "value range fits both signed and unsigned target types by construction in this code path"
+)]
         if index < 0 || index >= (rules_len as i32 - 1) {
             return;
         }
         list_for_down.remove(&row_for_down);
         list_for_down.insert(&row_for_down, index + 1);
-        #[allow(clippy::cast_sign_loss)]
+        #[expect(
+    clippy::cast_sign_loss,
+    reason = "value is non-negative by construction in this code path"
+)]
         let idx = index as usize;
         let mut rules_vec = rules_for_down.borrow_mut();
         if idx + 1 < rules_vec.len() {
@@ -2198,7 +2214,10 @@ fn add_group_expect_rule_row(
 
     let rules_for_priority = rules.clone();
     priority_spin.connect_value_changed(move |spin| {
-        #[allow(clippy::cast_possible_truncation)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "value range fits the target type by construction in this code path"
+        )]
         let value = spin.value() as i32;
         if let Some(r) = rules_for_priority
             .borrow_mut()
@@ -2211,7 +2230,11 @@ fn add_group_expect_rule_row(
 
     let rules_for_timeout = rules.clone();
     timeout_spin.connect_value_changed(move |spin| {
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "value range fits the target type and is non-negative by construction in this code path"
+)]
         let value = spin.value() as u32;
         if let Some(r) = rules_for_timeout
             .borrow_mut()
@@ -2258,10 +2281,10 @@ fn add_post_login_script_row(
     use crate::i18n::i18n;
 
     let row_box = gtk4::Box::new(Orientation::Horizontal, 8);
-    row_box.set_margin_top(8);
-    row_box.set_margin_bottom(8);
-    row_box.set_margin_start(8);
-    row_box.set_margin_end(8);
+    row_box.set_margin_top(12);
+    row_box.set_margin_bottom(12);
+    row_box.set_margin_start(12);
+    row_box.set_margin_end(12);
 
     let command_entry = gtk4::Entry::builder()
         .hexpand(true)
@@ -2298,7 +2321,10 @@ fn add_post_login_script_row(
     delete_button.connect_clicked(move |_| {
         let idx = row_for_delete.index();
         list_for_delete.remove(&row_for_delete);
-        #[allow(clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_sign_loss,
+            reason = "value is non-negative by construction in this code path"
+        )]
         if idx >= 0 {
             let idx = idx as usize;
             let mut vec = scripts_for_delete.borrow_mut();

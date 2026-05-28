@@ -216,7 +216,10 @@ impl ConnectionThemeOverride {
 
 /// A saved remote connection configuration
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)]
 pub struct Connection {
     /// Unique identifier for the connection
     pub id: Uuid,

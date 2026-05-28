@@ -92,7 +92,10 @@ impl RoyalTsImporter {
     }
 
     /// Parses Royal TS XML content using event-based parsing
-    #[allow(clippy::too_many_lines)]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+    )]
     #[must_use]
     pub fn parse_xml(&self, content: &str, source_path: &str) -> ImportResult {
         let mut result = ImportResult::new();

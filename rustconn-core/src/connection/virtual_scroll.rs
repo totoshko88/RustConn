@@ -106,7 +106,10 @@ impl SelectionState {
 
 /// Configuration for virtual scrolling behavior
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "kept alive for GTK widget lifecycle / future API exposure"
+)]
 pub struct VirtualScrollConfig {
     /// Minimum number of items before enabling virtual scrolling
     pub threshold: usize,
@@ -126,7 +129,10 @@ impl Default for VirtualScrollConfig {
     }
 }
 
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "kept alive for GTK widget lifecycle / future API exposure"
+)]
 impl VirtualScrollConfig {
     /// Creates a new configuration with custom threshold
     #[must_use]

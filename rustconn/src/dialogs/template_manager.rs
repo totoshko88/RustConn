@@ -442,10 +442,10 @@ fn append_section_header(list: &ListBox, title: &str) {
 /// Appends a template row to the templates list.
 fn append_template_row(list: &ListBox, template: &ConnectionTemplate) {
     let hbox = GtkBox::new(Orientation::Horizontal, 8);
-    hbox.set_margin_top(8);
-    hbox.set_margin_bottom(8);
-    hbox.set_margin_start(8);
-    hbox.set_margin_end(8);
+    hbox.set_margin_top(12);
+    hbox.set_margin_bottom(12);
+    hbox.set_margin_start(12);
+    hbox.set_margin_end(12);
 
     let icon_name = rustconn_core::get_protocol_icon(template.protocol);
     let icon = gtk4::Image::from_icon_name(icon_name);

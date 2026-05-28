@@ -635,7 +635,10 @@ impl MainWindow {
     /// - Activity: logs change counts (default, lightweight)
     /// - Input: logs user commands sent to terminal
     /// - Output: logs full terminal transcript
-    #[allow(clippy::too_many_arguments)]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     fn setup_logging_handlers(
         notebook: &SharedNotebook,
         session_id: Uuid,

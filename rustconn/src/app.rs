@@ -520,7 +520,10 @@ fn update_tray_state(tray: &TrayManager, state: &SharedAppState, last_state: &mu
 
     // Update active session count only if changed
     let session_count = state_ref.active_sessions().len();
-    #[allow(clippy::cast_possible_truncation)]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "value range fits the target type by construction in this code path"
+    )]
     let session_count_u32 = session_count as u32;
 
     if last_state.session_count != session_count_u32 {

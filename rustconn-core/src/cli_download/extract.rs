@@ -128,7 +128,10 @@ pub(super) fn extract_deb(data: &[u8], dest: &Path) -> CliDownloadResult<()> {
                 .map_err(|e| CliDownloadError::ExtractionFailed(format!("read data.tar: {e}")))?;
 
             // Extract based on compression type
-            #[allow(clippy::case_sensitive_file_extension_comparisons)]
+            #[expect(
+                clippy::case_sensitive_file_extension_comparisons,
+                reason = "extension comes from a controlled allow-list, not user input - case is already normalised upstream"
+            )]
             if name.ends_with(".gz") {
                 extract_tar_gz(&data_archive, dest)?;
             } else if name.ends_with(".xz") {

@@ -12,6 +12,13 @@ use crate::format::escape_csv_field;
 use crate::util::create_config_manager;
 
 /// Snippet command handler
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when snippets cannot be loaded or saved
+/// - [`CliError::Snippet`] when a snippet operation fails (duplicate name,
+///   missing snippet, invalid template syntax)
 pub fn cmd_snippet(config_path: Option<&Path>, subcmd: SnippetCommands) -> Result<(), CliError> {
     match subcmd {
         SnippetCommands::List {

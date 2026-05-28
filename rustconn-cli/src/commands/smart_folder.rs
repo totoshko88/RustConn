@@ -11,6 +11,13 @@ use crate::format::escape_csv_field;
 use crate::util::{create_config_manager, parse_protocol_type};
 
 /// Smart folder command handler
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when configuration cannot be read or written
+/// - [`CliError::SmartFolder`] when a smart folder operation fails
+///   (duplicate name, missing folder, invalid filter rule)
 pub fn cmd_smart_folder(
     config_path: Option<&Path>,
     subcmd: SmartFolderCommands,

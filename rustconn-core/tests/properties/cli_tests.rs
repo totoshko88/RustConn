@@ -1125,7 +1125,10 @@ proptest! {
 /// The String payloads are required for the `arb_cli_error()` strategy to
 /// generate realistic error instances matching the actual CLI error types.
 #[derive(Debug, Clone)]
-#[allow(dead_code)] // String fields needed for realistic test data generation
+#[allow(
+    dead_code,
+    reason = "String fields needed for realistic test data generation"
+)]
 enum TestCliError {
     Config(String),
     ConnectionNotFound(String),

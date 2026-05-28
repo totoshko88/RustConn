@@ -10,6 +10,12 @@ use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
 
 /// Monitor command dispatcher
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when connections cannot be loaded or saved
+/// - [`CliError::ConnectionNotFound`] when no connection matches the supplied name
 pub fn cmd_monitor(config_path: Option<&Path>, subcmd: MonitorCommands) -> Result<(), CliError> {
     match subcmd {
         MonitorCommands::Enable { name, interval } => {

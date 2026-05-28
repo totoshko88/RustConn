@@ -1,7 +1,10 @@
 //! SPICE client configuration
 
 // Allow struct with multiple bools - SPICE has many boolean options
-#![allow(clippy::struct_excessive_bools)]
+#![allow(
+    clippy::struct_excessive_bools,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 use secrecy::SecretString;
 use serde::{Deserialize, Serialize};

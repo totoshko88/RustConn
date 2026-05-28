@@ -345,7 +345,10 @@ impl VncPixelBuffer {
     /// * `h` - Height of the region
     /// * `src_data` - Source pixel data
     /// * `src_stride` - Source stride
-    #[allow(clippy::cast_sign_loss)]
+    #[allow(
+        clippy::cast_sign_loss,
+        reason = "value is non-negative by construction in this code path"
+    )]
     pub fn update_region(
         &mut self,
         x: u32,

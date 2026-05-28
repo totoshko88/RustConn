@@ -3,8 +3,14 @@
 //! These tests validate the correctness properties defined in the design document
 //! for the String Interning system (Requirements 5.x).
 
-#![allow(clippy::overly_complex_bool_expr)]
-#![allow(clippy::manual_range_contains)]
+#![allow(
+    clippy::overly_complex_bool_expr,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::manual_range_contains,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 use proptest::prelude::*;
 use rustconn_core::{

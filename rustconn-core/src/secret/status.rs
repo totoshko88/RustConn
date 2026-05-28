@@ -4,7 +4,10 @@
 //! including `KeePassXC` installation detection, version parsing, and KDBX file validation.
 
 // Allow missing errors documentation - status detection functions have straightforward errors
-#![allow(clippy::missing_errors_doc)]
+#![allow(
+    clippy::missing_errors_doc,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 use secrecy::{ExposeSecret, SecretString};
 use std::path::Path;
@@ -17,7 +20,10 @@ use crate::error::{SecretError, SecretResult};
 /// This struct provides information about the current state of `KeePass` integration,
 /// including whether `KeePassXC` is installed, its version, and KDBX file accessibility.
 #[derive(Debug, Clone, Default)]
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)]
 pub struct KeePassStatus {
     /// Whether `KeePassXC` application is installed
     pub keepassxc_installed: bool,
@@ -309,7 +315,10 @@ impl KeePassStatus {
     ///
     /// Note: Entry names include protocol suffix to allow same name for different protocols.
     /// Format: `RustConn/{entry_name} ({protocol})` where protocol is extracted from URL.
-    #[allow(clippy::too_many_lines)]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+    )]
     pub fn save_password_to_kdbx(
         kdbx_path: &Path,
         db_password: Option<&SecretString>,

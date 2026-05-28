@@ -69,9 +69,17 @@ impl super::EmbeddedRdpWidget {
                     || f64::from(area.scale_factor().max(1)),
                     |c| c.scale_override.effective_scale(area.scale_factor()),
                 );
-                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                #[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "value range fits the target type and is non-negative by construction in this code path"
+)]
                 let device_width = (f64::from(css_width) * effective_scale) as u32;
-                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                #[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "value range fits the target type and is non-negative by construction in this code path"
+)]
                 let device_height = (f64::from(css_height) * effective_scale) as u32;
 
                 tracing::debug!(
@@ -146,9 +154,17 @@ impl super::EmbeddedRdpWidget {
                             if using_ironrdp && !force_reconnect {
                                 // IronRDP path: use Display Control Channel for
                                 // seamless resize without reconnect (MS-RDPEDISP)
-                                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                                #[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "value range fits the target type and is non-negative by construction in this code path"
+)]
                                 let w = rounded_width as u16;
-                                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                                #[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "value range fits the target type and is non-negative by construction in this code path"
+)]
                                 let h = rounded_height as u16;
 
                                 if let Some(ref sender) = *tx.borrow() {

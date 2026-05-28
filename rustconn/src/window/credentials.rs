@@ -438,7 +438,10 @@ impl MainWindow {
     ///
     /// This is called either immediately (if cached credentials exist) or
     /// from the async callback (after credential resolution completes).
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     fn handle_resolved_credentials(
         state: SharedAppState,
         notebook: SharedNotebook,
@@ -528,7 +531,10 @@ impl MainWindow {
     }
 
     /// Handles RDP credential resolution and connection start
-    #[allow(clippy::too_many_arguments)]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     fn handle_rdp_credentials(
         state: SharedAppState,
         notebook: SharedNotebook,
@@ -620,7 +626,10 @@ impl MainWindow {
     }
 
     /// Internal RDP credential handling (after port check)
-    #[allow(clippy::too_many_arguments)]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     fn handle_rdp_credentials_internal(
         state: SharedAppState,
         notebook: SharedNotebook,
@@ -712,7 +721,10 @@ impl MainWindow {
     }
 
     /// Handles VNC credential resolution and connection start
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     fn handle_vnc_credentials(
         state: SharedAppState,
         notebook: SharedNotebook,
@@ -800,7 +812,10 @@ impl MainWindow {
     }
 
     /// Internal VNC credential handling (after port check)
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     fn handle_vnc_credentials_internal(
         state: SharedAppState,
         notebook: SharedNotebook,
@@ -906,7 +921,10 @@ impl MainWindow {
     }
 
     /// Starts RDP session with provided credentials
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     fn start_rdp_session_with_credentials(
         state: &SharedAppState,
         notebook: &SharedNotebook,

@@ -59,7 +59,10 @@ use crate::models::Connection;
 /// (e.g., split-view button, audio controls, clipboard toggle,
 /// multi-monitor options, port forwarding settings).
 // Allow many bools — these are distinct, independent capability flags
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProtocolCapabilities {
     /// Has a built-in embedded viewer (VTE, IronRDP, vnc-rs)

@@ -221,7 +221,10 @@ impl AsyncCredentialResolver {
     ///
     /// # Returns
     /// `AsyncCredentialResult` indicating success, timeout, or error
-    #[allow(clippy::cast_possible_truncation)] // timeout.as_millis() won't exceed u64::MAX
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "value range fits the target type by construction in this code path"
+    )] // timeout.as_millis() won't exceed u64::MAX
     #[instrument(skip(self, connection), fields(connection_id = %connection.id, timeout_ms = timeout.as_millis() as u64))]
     pub async fn resolve_with_timeout(
         &self,
@@ -247,7 +250,10 @@ impl AsyncCredentialResolver {
     ///
     /// # Returns
     /// `AsyncCredentialResult` indicating success, cancellation, timeout, or error
-    #[allow(clippy::cast_possible_truncation)] // timeout.as_millis() won't exceed u64::MAX
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "value range fits the target type by construction in this code path"
+    )] // timeout.as_millis() won't exceed u64::MAX
     #[instrument(skip(self, connection, cancel_token), fields(connection_id = %connection.id, cancellable = true, timeout_ms = timeout.as_millis() as u64))]
     pub async fn resolve_with_cancellation_and_timeout(
         &self,

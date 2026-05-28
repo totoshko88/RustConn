@@ -240,7 +240,10 @@ pub fn all_sample_connections() -> Vec<Connection> {
 /// Reserved for future tests that need to verify group-related functionality
 /// without the associated connections.
 #[must_use]
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "kept alive for GTK widget lifecycle / future API exposure"
+)]
 pub fn all_sample_groups() -> Vec<ConnectionGroup> {
     vec![sample_production_group(), sample_development_group()]
 }

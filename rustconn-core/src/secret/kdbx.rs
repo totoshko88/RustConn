@@ -149,7 +149,10 @@ impl KdbxExporter {
     }
 
     /// Generates the `KeePass` XML content
-    #[allow(clippy::format_push_string)]
+    #[expect(
+        clippy::format_push_string,
+        reason = "incremental format! into String is clearer than write! macro chaining for this report builder"
+    )]
     fn generate_xml(&self) -> String {
         let now = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
 

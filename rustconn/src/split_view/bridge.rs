@@ -216,7 +216,10 @@ impl TerminalPane {
 
     /// Returns the currently displayed session ID
     #[must_use]
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub const fn current_session(&self) -> Option<Uuid> {
         self.current_session
     }
@@ -1778,7 +1781,10 @@ impl SplitViewBridge {
     ///
     /// * `on_session_selected` - Callback invoked when a session is selected.
     ///   Receives (panel_uuid, session_id) and should move the session to the panel.
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn setup_select_tab_callback<F>(&self, on_session_selected: F)
     where
         F: Fn(Uuid, Uuid) + Clone + 'static,

@@ -752,7 +752,10 @@ pub enum SshAuthMethod {
 
 /// SSH protocol configuration
 // Allow 6 bools - these are distinct SSH connection options that map directly to CLI flags
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SshConfig {
     /// Authentication method
@@ -863,7 +866,6 @@ impl SshConfig {
     /// - **Legacy behavior**: If `identities_only` is explicitly set to true, it will
     ///   still be honored for backward compatibility.
     #[must_use]
-    #[allow(clippy::too_many_lines)]
     pub fn build_command_args(&self) -> Vec<String> {
         let mut args = Vec::new();
 
@@ -1374,7 +1376,10 @@ impl RdpSecurityLayer {
 
 /// RDP protocol configuration
 // Allow 4 bools - these are distinct RDP connection options
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RdpConfig {
     /// RDP client mode (embedded or external)
@@ -1667,7 +1672,10 @@ impl VncClientMode {
 
 /// VNC protocol configuration
 // Allow 4 bools - these are distinct VNC connection options
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VncConfig {
     /// VNC client mode (embedded or external)
@@ -1753,7 +1761,10 @@ pub enum SpiceImageCompression {
 
 /// SPICE protocol configuration
 // Allow 4 bools - these are distinct configuration options for SPICE protocol
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SpiceConfig {
     /// Enable TLS encryption
@@ -1958,7 +1969,10 @@ impl ZeroTrustConfig {
     /// # Errors
     ///
     /// Returns `ProtocolError::InvalidConfig` if required fields are empty.
-    #[allow(clippy::too_many_lines)] // Single match over 10 provider variants
+    #[expect(
+        clippy::too_many_lines,
+        reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+    )] // Single match over 10 provider variants
     pub fn validate(&self) -> crate::error::ProtocolResult<()> {
         use crate::error::ProtocolError;
 
@@ -2079,7 +2093,10 @@ impl ZeroTrustConfig {
     /// Returns a tuple of (program, arguments) that can be used to spawn the process.
     /// The `username` parameter is used for providers that support it.
     #[must_use]
-    #[allow(clippy::too_many_lines)]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+    )]
     pub fn build_command(&self, username: Option<&str>) -> (String, Vec<String>) {
         let mut args = match &self.provider_config {
             ZeroTrustProviderConfig::AwsSsm(cfg) => {

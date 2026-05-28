@@ -88,7 +88,10 @@ impl LogViewerDialog {
                 let index = row.index();
                 if index >= 0 {
                     let paths = file_paths_for_select.borrow();
-                    #[allow(clippy::cast_sign_loss)]
+                    #[expect(
+                        clippy::cast_sign_loss,
+                        reason = "value is non-negative by construction in this code path"
+                    )]
                     if let Some(path) = paths.get(index as usize) {
                         *selected_clone.borrow_mut() = Some(path.clone());
                         Self::load_log_content(&content_clone, path);
@@ -275,10 +278,10 @@ impl LogViewerDialog {
                 .unwrap_or_default();
 
             let row_box = GtkBox::new(Orientation::Vertical, 2);
-            row_box.set_margin_top(4);
-            row_box.set_margin_bottom(4);
-            row_box.set_margin_start(8);
-            row_box.set_margin_end(8);
+            row_box.set_margin_top(6);
+            row_box.set_margin_bottom(6);
+            row_box.set_margin_start(12);
+            row_box.set_margin_end(12);
 
             let name_label = Label::builder()
                 .label(&filename)

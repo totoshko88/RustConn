@@ -399,7 +399,7 @@ impl StatisticsDialog {
     /// Creates a success rate visualization box
     fn create_success_rate_box(&self, stats: &ConnectionStatistics) -> GtkBox {
         let container = GtkBox::new(Orientation::Vertical, 8);
-        container.set_margin_top(16);
+        container.set_margin_top(18);
 
         let label = Label::builder()
             .label(i18n("Success Rate"))

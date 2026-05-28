@@ -6,6 +6,10 @@ use crate::cli::Cli;
 use crate::error::CliError;
 
 /// Generate a man page for the CLI and write it to stdout.
+///
+/// # Errors
+///
+/// Returns [`CliError::Io`] when writing to stdout fails.
 pub fn cmd_manpage() -> Result<(), CliError> {
     let cmd = Cli::command();
     let man = clap_mangen::Man::new(cmd);

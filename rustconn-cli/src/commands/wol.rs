@@ -8,6 +8,15 @@ use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
 
 /// Wake-on-LAN command handler
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when connections cannot be loaded
+/// - [`CliError::ConnectionNotFound`] when `target` is neither a MAC address
+///   nor a known connection name
+/// - [`CliError::Wol`] when the connection has no Wake-on-LAN configuration
+///   or the magic packet cannot be sent (network/socket error)
 pub fn cmd_wol(
     config_path: Option<&Path>,
     target: &str,

@@ -16,7 +16,10 @@ use gtk4::{
 use libadwaita as adw;
 
 /// Widgets created by the General tab, replacing the previous 30-element tuple.
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "kept alive for GTK widget lifecycle / future API exposure"
+)]
 pub(super) struct BasicTabWidgets {
     pub container: GtkBox,
     pub name_entry: Entry,
@@ -161,7 +164,10 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     // Update port description when port changes
     let port_desc_clone = port_desc.clone();
     port_spin.connect_value_changed(move |spin| {
-        #[allow(clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_sign_loss,
+            reason = "value is non-negative by construction in this code path"
+        )]
         let port = spin.value() as u16;
         let desc = get_port_description(port);
         port_desc_clone.set_label(&desc);

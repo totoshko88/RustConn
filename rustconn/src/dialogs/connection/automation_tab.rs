@@ -45,7 +45,10 @@ pub(super) struct AutomationTabWidgets {
 }
 
 /// Creates the combined Automation tab (Expect Rules + Tasks).
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub(super) fn create_automation_combined_tab() -> AutomationTabWidgets {
     let scrolled = ScrolledWindow::builder()
         .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -80,7 +83,7 @@ pub(super) fn create_automation_combined_tab() -> AutomationTabWidgets {
         .halign(gtk4::Align::Start)
         .css_classes(["dim-label", "caption"])
         .build();
-    variables_info.set_margin_bottom(4);
+    variables_info.set_margin_bottom(6);
     rules_group.add(&variables_info);
 
     let expect_rules_list = ListBox::builder()
@@ -95,7 +98,7 @@ pub(super) fn create_automation_combined_tab() -> AutomationTabWidgets {
 
     let rules_button_box = GtkBox::new(Orientation::Horizontal, 8);
     rules_button_box.set_halign(gtk4::Align::End);
-    rules_button_box.set_margin_top(8);
+    rules_button_box.set_margin_top(12);
 
     let template_menu_button = gtk4::MenuButton::builder()
         .label(&i18n("From Template"))
@@ -104,10 +107,10 @@ pub(super) fn create_automation_combined_tab() -> AutomationTabWidgets {
 
     let template_popover = gtk4::Popover::new();
     let template_list_box = GtkBox::new(Orientation::Vertical, 4);
-    template_list_box.set_margin_top(8);
-    template_list_box.set_margin_bottom(8);
-    template_list_box.set_margin_start(8);
-    template_list_box.set_margin_end(8);
+    template_list_box.set_margin_top(12);
+    template_list_box.set_margin_bottom(12);
+    template_list_box.set_margin_start(12);
+    template_list_box.set_margin_end(12);
 
     for template in builtin_templates() {
         // Add protocol hint to SSH-specific templates for consistency with group dialog

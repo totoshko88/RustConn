@@ -197,8 +197,8 @@ pub fn create_history_popover(
             label.set_halign(gtk4::Align::Start);
             label.set_margin_start(6);
             label.set_margin_end(6);
-            label.set_margin_top(4);
-            label.set_margin_bottom(4);
+            label.set_margin_top(6);
+            label.set_margin_bottom(6);
             row.set_child(Some(&label));
             list_box_clone.append(&row);
         }

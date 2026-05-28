@@ -293,7 +293,10 @@ struct BitwardenFolder {
 pub struct BitwardenStatus {
     status: String,
     #[serde(rename = "userEmail")]
-    #[allow(dead_code)] // Deserialized from `bw status` JSON but not used directly
+    #[allow(
+        dead_code,
+        reason = "Deserialized from `bw status` JSON but not used directly"
+    )]
     user_email: Option<String>,
 }
 
@@ -1250,7 +1253,10 @@ async fn try_relogin_and_unlock(
 ///
 /// # Errors
 /// Returns `SecretError::BackendUnavailable` if all strategies fail.
-#[allow(clippy::too_many_lines)] // multi-strategy unlock with ordered fallbacks
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)] // multi-strategy unlock with ordered fallbacks
 pub async fn auto_unlock(
     settings: &crate::config::SecretSettings,
 ) -> SecretResult<BitwardenBackend> {
@@ -1387,4 +1393,37 @@ pub async fn auto_unlock(
 /// Base64 encode helper (standard base64 with padding)
 fn base64_encode(data: &[u8]) -> String {
     data_encoding::BASE64.encode(data)
+}
+
+impl std::fmt::Debug for BitwardenBackend {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BitwardenBackend")
+            // Never log the actual session key — only its presence.
+            .field("session_present", &self.session_key.is_some())
+            .field("server_url", &self.server_url)
+            .field("organization_id", &self.organization_id)
+            .field("folder_name", &self.folder_name)
+            .field("bw_cmd", &self.bw_cmd)
+            .finish_non_exhaustive()
+    }
+}
+
+#[cfg(test)]
+mod debug_tests {
+    use super::*;
+
+    #[test]
+    fn debug_does_not_leak_secret() {
+        let session = SecretString::from("hunter2-bw-session".to_string());
+        let backend = BitwardenBackend::with_session(session)
+            .with_server_url("https://vault.example.org")
+            .with_organization("org-hunter2");
+        let rendered = format!("{backend:?}");
+        assert!(
+            !rendered.contains("hunter2-bw-session"),
+            "Debug leaked the session key: {rendered}"
+        );
+        assert!(rendered.contains("BitwardenBackend"));
+        assert!(rendered.contains("session_present"));
+    }
 }

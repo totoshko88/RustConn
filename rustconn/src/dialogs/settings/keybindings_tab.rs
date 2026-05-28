@@ -23,7 +23,10 @@ use crate::i18n::{i18n, i18n_f};
 ///
 /// Each category is rendered as a collapsible `ExpanderRow` inside a single
 /// `PreferencesGroup`, keeping the Interface page compact.
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub fn create_keybindings_page() -> (adw::PreferencesPage, Rc<RefCell<KeybindingSettings>>) {
     let page = adw::PreferencesPage::builder()
         .title(&i18n("Keybindings"))

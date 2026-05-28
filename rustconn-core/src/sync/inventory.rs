@@ -169,7 +169,10 @@ pub fn sync_tag(source: &str) -> String {
 /// # Returns
 ///
 /// A [`SyncResult`] summarizing what changed.
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub fn sync_inventory(
     inventory: &Inventory,
     source: &str,

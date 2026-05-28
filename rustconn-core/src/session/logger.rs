@@ -57,7 +57,10 @@ pub type LogResult<T> = std::result::Result<T, LogError>;
 /// Defines how session output should be logged, including file paths,
 /// timestamp formatting, and retention policies.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[allow(clippy::struct_excessive_bools)] // Logging modes are independent boolean flags
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)] // Logging modes are independent boolean flags
 pub struct LogConfig {
     /// Whether logging is enabled
     pub enabled: bool,
@@ -206,7 +209,10 @@ impl<'de> serde::Deserialize<'de> for LogConfig {
         D: serde::Deserializer<'de>,
     {
         #[derive(serde::Deserialize)]
-        #[allow(clippy::struct_excessive_bools)]
+        #[expect(
+            clippy::struct_excessive_bools,
+            reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+        )]
         struct LogConfigHelper {
             enabled: bool,
             path_template: String,

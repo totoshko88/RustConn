@@ -37,7 +37,11 @@ use crate::cli::Commands;
 use crate::error::CliError;
 
 /// Dispatch a CLI command to the appropriate handler.
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "main command dispatcher matches every CLI subcommand; \
+              splitting branches would only move boilerplate elsewhere"
+)]
 pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), CliError> {
     match command {
         Commands::List {

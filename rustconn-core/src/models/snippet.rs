@@ -169,7 +169,10 @@ impl Snippet {
 }
 
 /// Helper for serde `skip_serializing_if` — skips when delivery is `Auto`.
-#[allow(clippy::trivially_copy_pass_by_ref)]
+#[expect(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "&self chosen for API consistency with sibling impls that need the borrow"
+)]
 fn is_default_delivery(d: &ScriptDelivery) -> bool {
     matches!(d, ScriptDelivery::Auto)
 }

@@ -32,7 +32,10 @@ fn show_vault_save_error_toast() {
 /// based on the current settings. Password is taken as `&SecretString`
 /// so plaintext copies do not leak via call-site `String`s — see
 /// `secrets-guide.md`.
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 pub fn save_password_to_vault(
     settings: &rustconn_core::config::AppSettings,
     groups: &[rustconn_core::models::ConnectionGroup],
@@ -573,7 +576,10 @@ pub fn save_variable_to_vault(
 /// backend selection logic as connection passwords.
 ///
 /// Convenience wrapper around [`load_variable_from_vault_with_path`] with no custom path.
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "kept alive for GTK widget lifecycle / future API exposure"
+)]
 pub fn load_variable_from_vault(
     settings: &rustconn_core::config::SecretSettings,
     var_name: &str,

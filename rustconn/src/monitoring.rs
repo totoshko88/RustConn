@@ -528,7 +528,10 @@ impl MonitoringCoordinator {
     /// * `identity_file` - Optional SSH key path
     /// * `password` - Optional password for sshpass authentication
     /// * `jump_host` - Optional jump host chain for `-J` flag
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub fn start_monitoring(
         &self,
         session_id: Uuid,
@@ -735,7 +738,10 @@ impl MonitoringCoordinator {
     }
 
     /// Stores connection parameters for later suspend/resume.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     fn store_params(
         &self,
         session_id: Uuid,

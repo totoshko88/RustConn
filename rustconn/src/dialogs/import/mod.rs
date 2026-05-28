@@ -466,7 +466,10 @@ impl ImportDialog {
     /// 1. Get the selected source via `get_selected_source()` (Requirement 5.1)
     /// 2. Perform import via `do_import()` (Requirement 5.1)
     /// 3. Display results via `show_results_with_source()` (Requirements 5.2, 5.3)
-    #[allow(clippy::too_many_lines)]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+    )]
     pub fn run_with_source<F: Fn(Option<ImportResult>, String) + 'static>(&self, cb: F) {
         // Store callback
         *self.on_complete_with_source.borrow_mut() = Some(Box::new(cb));

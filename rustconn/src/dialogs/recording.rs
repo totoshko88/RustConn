@@ -25,7 +25,7 @@ use std::rc::Rc;
 // ---------------------------------------------------------------------------
 
 /// A single row in the recordings list.
-#[allow(dead_code)] // Fields kept for GTK widget lifecycle
+#[allow(dead_code, reason = "Fields kept for GTK widget lifecycle")]
 struct RecordingListRow {
     row: ListBoxRow,
     data_path: PathBuf,
@@ -302,8 +302,8 @@ impl RecordingsDialog {
         entry: &RecordingEntry,
     ) -> RecordingListRow {
         let hbox = GtkBox::new(Orientation::Horizontal, 8);
-        hbox.set_margin_top(8);
-        hbox.set_margin_bottom(8);
+        hbox.set_margin_top(12);
+        hbox.set_margin_bottom(12);
         hbox.set_margin_start(12);
         hbox.set_margin_end(12);
 
@@ -555,7 +555,10 @@ impl RecordingsDialog {
     // -----------------------------------------------------------------------
 
     /// Shows a confirmation dialog and deletes the recording from disk.
-    #[allow(clippy::too_many_arguments)]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     fn handle_delete(
         dlg: &adw::Dialog,
         data_path: &std::path::Path,
@@ -824,7 +827,11 @@ impl RecordingsDialog {
 // ---------------------------------------------------------------------------
 
 /// Formats a duration in seconds to a human-readable string (e.g. "5m 23s").
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "value range fits the target type and is non-negative by construction in this code path"
+)]
 fn format_duration(secs: f64) -> String {
     let total = secs as u64;
     let hours = total / 3600;
@@ -841,7 +848,10 @@ fn format_duration(secs: f64) -> String {
 }
 
 /// Formats a byte count to a human-readable size string.
-#[allow(clippy::cast_precision_loss)]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "f64 conversion is intentional for display/UI arithmetic where sub-integer precision is irrelevant"
+)]
 fn format_size(bytes: u64) -> String {
     const KB: u64 = 1024;
     const MB: u64 = 1024 * KB;

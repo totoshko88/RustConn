@@ -940,7 +940,10 @@ pub fn show_quick_connect_dialog_with_state(
             .map(|s| s.settings().terminal.clone())
             .unwrap_or_default();
 
-        #[allow(clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_sign_loss,
+            reason = "value is non-negative by construction in this code path"
+        )]
         let port = port_clone.value() as u16;
         let username = {
             let text = user_clone.text();

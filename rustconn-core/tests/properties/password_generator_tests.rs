@@ -277,7 +277,7 @@ proptest! {
     fn empty_password_zero_entropy(_dummy in 0..1) {
         let generator = PasswordGenerator::with_defaults();
         let entropy = generator.calculate_entropy("");
-        #[allow(clippy::float_cmp)]
+        #[allow(clippy::float_cmp, reason = "kept alive for GTK widget lifecycle / future API exposure")]
         let is_zero = entropy == 0.0;
         prop_assert!(is_zero);
     }

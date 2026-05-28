@@ -286,7 +286,7 @@ impl SnippetDialog {
 
         let button_box = GtkBox::new(Orientation::Horizontal, 8);
         button_box.set_halign(gtk4::Align::End);
-        button_box.set_margin_top(8);
+        button_box.set_margin_top(12);
 
         let add_var_button = Button::builder().label(i18n("Add Variable")).build();
         button_box.append(&add_var_button);
@@ -324,10 +324,10 @@ impl SnippetDialog {
         default: Option<&str>,
     ) -> VariableRow {
         let hbox = GtkBox::new(Orientation::Horizontal, 8);
-        hbox.set_margin_top(8);
-        hbox.set_margin_bottom(8);
-        hbox.set_margin_start(8);
-        hbox.set_margin_end(8);
+        hbox.set_margin_top(12);
+        hbox.set_margin_bottom(12);
+        hbox.set_margin_start(12);
+        hbox.set_margin_end(12);
 
         let grid = Grid::builder()
             .row_spacing(4)
@@ -593,7 +593,10 @@ impl SnippetDialog {
     /// Builds a Snippet from the provided field references
     ///
     /// Helper method to avoid code duplication between `run()` closure and `build_snippet()`.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     fn build_snippet_from_fields(
         name_entry: &Entry,
         description_entry: &Entry,

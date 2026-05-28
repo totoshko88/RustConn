@@ -144,7 +144,10 @@ impl HistoryDialog {
                 let index = row.index();
                 if index >= 0 {
                     let entries_ref = entries_clone.borrow();
-                    #[allow(clippy::cast_sign_loss)]
+                    #[expect(
+                        clippy::cast_sign_loss,
+                        reason = "value is non-negative by construction in this code path"
+                    )]
                     if let Some(entry) = entries_ref.get(index as usize) {
                         if let Some(ref callback) = *on_connect.borrow() {
                             callback(entry);
@@ -161,7 +164,10 @@ impl HistoryDialog {
         search_entry.connect_search_changed(move |entry| {
             let query = entry.text().to_string().to_lowercase();
             let entries_ref = entries_search.borrow();
-            #[allow(clippy::cast_possible_wrap)]
+            #[expect(
+                clippy::cast_possible_wrap,
+                reason = "value range fits the target signed type by construction in this code path"
+            )]
             for (idx, e) in entries_ref.iter().enumerate() {
                 if let Some(row) = list_box_search.row_at_index(idx as i32) {
                     let visible = query.is_empty()
@@ -241,8 +247,8 @@ impl HistoryDialog {
         let row = ListBoxRow::new();
 
         let content = GtkBox::new(Orientation::Horizontal, 12);
-        content.set_margin_top(8);
-        content.set_margin_bottom(8);
+        content.set_margin_top(12);
+        content.set_margin_bottom(12);
         content.set_margin_start(12);
         content.set_margin_end(12);
 
@@ -324,7 +330,10 @@ impl HistoryDialog {
             if let Some(r) = row_weak.upgrade() {
                 let index = r.index();
                 if index >= 0 {
-                    #[allow(clippy::cast_sign_loss)]
+                    #[expect(
+                        clippy::cast_sign_loss,
+                        reason = "value is non-negative by construction in this code path"
+                    )]
                     let idx = index as usize;
                     let mut entries = entries_ref.borrow_mut();
                     if idx < entries.len() {

@@ -71,7 +71,10 @@ pub(super) async fn install_download_component(
 
     // Determine file type and extract
     let url_lower = url.to_lowercase();
-    #[allow(clippy::case_sensitive_file_extension_comparisons)]
+    #[expect(
+        clippy::case_sensitive_file_extension_comparisons,
+        reason = "extension comes from a controlled allow-list, not user input - case is already normalised upstream"
+    )]
     if url_lower.ends_with(".zip") {
         extract_zip(&bytes, &install_dir)?;
     } else if url_lower.ends_with(".tar.gz") || url_lower.ends_with(".tgz") {

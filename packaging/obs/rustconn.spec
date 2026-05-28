@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.14.10
+Version:        0.15.0
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -238,6 +238,16 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Wed May 27 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.0-0
+- Version bump to 0.15.0 — quality pass release
+- RDP RemoteApp: closed /p: cmdline leak via single-use args file in $XDG_RUNTIME_DIR
+- Migrated ~350 #[allow] overrides to #[expect(reason = "...")]; dropped ~50 stale ones
+- Manual Debug impls for all secret backends with leak-protection tests
+- # Errors documentation on every public CLI command function
+- Settings-save failures now surface a toast instead of being dropped silently
+- EntryRowBuilder requires pre-translated titles so xgettext catches every UI label
+- GUI spacing follows GNOME HIG steps (6/12/18/24 px) consistently
+
 * Wed May 27 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.10-0
 - Version bump to 0.14.10
 - Hardened secret handling: SecretString in vault save signatures

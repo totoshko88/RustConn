@@ -37,7 +37,10 @@ pub struct FlatpakComponentsDialog {
     toast_overlay: adw::ToastOverlay,
     /// List of component rows for updating status
     /// Note: This field appears unused but is required to keep GTK widgets alive
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     component_rows: Rc<RefCell<Vec<ComponentRow>>>,
     /// Parent widget for presenting
     parent: Option<gtk4::Widget>,

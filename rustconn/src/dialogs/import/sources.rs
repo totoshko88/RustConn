@@ -187,8 +187,8 @@ impl ImportDialog {
         available: bool,
     ) -> ListBoxRow {
         let hbox = GtkBox::new(Orientation::Horizontal, 12);
-        hbox.set_margin_top(8);
-        hbox.set_margin_bottom(8);
+        hbox.set_margin_top(12);
+        hbox.set_margin_bottom(12);
         hbox.set_margin_start(12);
         hbox.set_margin_end(12);
 
@@ -255,7 +255,10 @@ impl ImportDialog {
             _ => i18n("Unknown"),
         }
     }
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub(super) fn handle_ssh_config_file_import(
         parent_window: Option<&gtk4::Window>,
         stack: &Stack,
@@ -346,7 +349,10 @@ impl ImportDialog {
     }
 
     /// Handles the special case of importing from an Asbru-CM YAML file
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub(super) fn handle_asbru_file_import(
         parent_window: Option<&gtk4::Window>,
         stack: &Stack,
@@ -435,7 +441,10 @@ impl ImportDialog {
     }
 
     /// Handles the special case of importing from an Ansible inventory file
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub(super) fn handle_ansible_file_import(
         parent_window: Option<&gtk4::Window>,
         stack: &Stack,
@@ -534,7 +543,10 @@ impl ImportDialog {
     /// a preview with connection count before import.
     ///
     /// Requirements: 13.1, 13.3
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub(super) fn handle_native_file_import(
         parent_window: Option<&gtk4::Window>,
         stack: &Stack,
@@ -700,7 +712,10 @@ impl ImportDialog {
     }
 
     /// Handles the special case of importing from a Royal TS file (.rtsz)
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub(super) fn handle_royalts_file_import(
         parent_window: Option<&gtk4::Window>,
         stack: &Stack,
@@ -787,7 +802,10 @@ impl ImportDialog {
     }
 
     /// Handles the special case of importing from a Remote Desktop Manager JSON file
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub(super) fn handle_rdm_file_import(
         parent_window: Option<&gtk4::Window>,
         stack: &Stack,
@@ -875,7 +893,10 @@ impl ImportDialog {
     }
 
     /// Handles the special case of importing from a MobaXterm session file
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub(super) fn handle_mobaxterm_file_import(
         parent_window: Option<&gtk4::Window>,
         stack: &Stack,
@@ -963,7 +984,10 @@ impl ImportDialog {
     }
 
     /// Handles importing from a libvirt domain XML file
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub(super) fn handle_libvirt_file_import(
         parent_window: Option<&gtk4::Window>,
         stack: &Stack,
@@ -1050,7 +1074,10 @@ impl ImportDialog {
     }
 
     /// Handles importing from a virt-viewer (.vv) file
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub(super) fn handle_vv_file_import(
         parent_window: Option<&gtk4::Window>,
         stack: &Stack,
@@ -1135,7 +1162,10 @@ impl ImportDialog {
     }
 
     /// Handles import from a Microsoft .rdp file via file chooser dialog.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub(super) fn handle_rdp_file_import(
         parent_window: Option<&gtk4::Window>,
         stack: &Stack,
@@ -1224,7 +1254,10 @@ impl ImportDialog {
     /// and displays a preview with connection count before import.
     ///
     /// Requirements: 2.8, 2.9
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub(super) fn handle_csv_file_import(
         parent_window: Option<&gtk4::Window>,
         stack: &Stack,
@@ -1337,7 +1370,10 @@ impl ImportDialog {
     /// Opens a file chooser dialog that allows selecting multiple files
     /// (CSV, SSH config, RDP, etc.) and imports them all in a single batch
     /// with progress reporting.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub(super) fn handle_multi_file_import(
         parent_window: Option<&gtk4::Window>,
         stack: &Stack,
@@ -1414,7 +1450,10 @@ impl ImportDialog {
                     // Import each file based on extension, merging results
                     let mut combined = ImportResult::default();
                     for (idx, path) in paths.iter().enumerate() {
-                        #[allow(clippy::cast_precision_loss)]
+                        #[expect(
+    clippy::cast_precision_loss,
+    reason = "f64 conversion is intentional for display/UI arithmetic where sub-integer precision is irrelevant"
+)]
                         let fraction = (idx as f64) / (file_count as f64);
                         progress_bar_clone.set_fraction(fraction);
 

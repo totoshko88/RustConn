@@ -43,12 +43,23 @@ impl MainWindow {
 
             let state_save = state_clone.clone();
             let sidebar_save = sidebar_clone.clone();
+            let window_weak_save = win.downgrade();
             dialog.run(move |result| {
                 if let Some(folder) = result {
                     if let Ok(mut state_mut) = state_save.try_borrow_mut() {
                         let mut settings = state_mut.settings().clone();
                         settings.smart_folders.push(folder);
-                        let _ = state_mut.update_settings(settings);
+                        if let Err(e) = state_mut.update_settings(settings) {
+                            tracing::warn!(error = %e, "failed to save smart folder");
+                            if let Some(win) = window_weak_save.upgrade() {
+                                let msg = i18n_f("Could not save smart folder: {}", &[&e]);
+                                crate::toast::show_toast_on_window(
+                                    &win,
+                                    &msg,
+                                    crate::toast::ToastType::Error,
+                                );
+                            }
+                        }
                     }
                     Self::reload_sidebar_preserving_state(&state_save, &sidebar_save);
                 }
@@ -91,6 +102,7 @@ impl MainWindow {
 
             let state_save = state_clone.clone();
             let sidebar_save = sidebar_clone.clone();
+            let window_weak_save = win.downgrade();
             dialog.run(move |result| {
                 if let Some(updated_folder) = result {
                     if let Ok(mut state_mut) = state_save.try_borrow_mut() {
@@ -102,7 +114,17 @@ impl MainWindow {
                         {
                             *existing = updated_folder;
                         }
-                        let _ = state_mut.update_settings(settings);
+                        if let Err(e) = state_mut.update_settings(settings) {
+                            tracing::warn!(error = %e, "failed to save edited smart folder");
+                            if let Some(win) = window_weak_save.upgrade() {
+                                let msg = i18n_f("Could not save smart folder: {}", &[&e]);
+                                crate::toast::show_toast_on_window(
+                                    &win,
+                                    &msg,
+                                    crate::toast::ToastType::Error,
+                                );
+                            }
+                        }
                     }
                     Self::reload_sidebar_preserving_state(&state_save, &sidebar_save);
                 }
@@ -139,7 +161,12 @@ impl MainWindow {
             if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
                 let mut settings = state_mut.settings().clone();
                 settings.smart_folders.retain(|f| f.id != folder_id);
-                let _ = state_mut.update_settings(settings);
+                if let Err(e) = state_mut.update_settings(settings) {
+                    tracing::warn!(error = %e, "failed to delete smart folder");
+                    let msg = i18n_f("Could not delete smart folder: {}", &[&e]);
+                    crate::toast::show_toast_on_window(&win, &msg, crate::toast::ToastType::Error);
+                    return;
+                }
             }
 
             Self::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
@@ -159,6 +186,7 @@ impl MainWindow {
         let toggle_action = gio::SimpleAction::new("toggle-smart-folders", None);
         let sidebar_clone = sidebar.clone();
         let state_clone = state.clone();
+        let window_weak = window.downgrade();
         toggle_action.connect_activate(move |_, _| {
             let new_visible = !sidebar_clone.is_smart_folders_visible();
             sidebar_clone.set_smart_folders_visible(new_visible);
@@ -166,7 +194,20 @@ impl MainWindow {
             if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
                 let mut settings = state_mut.settings().clone();
                 settings.ui.show_smart_folders = new_visible;
-                let _ = state_mut.update_settings(settings);
+                if let Err(e) = state_mut.update_settings(settings) {
+                    tracing::warn!(
+                        error = %e,
+                        "failed to persist smart-folders visibility toggle"
+                    );
+                    if let Some(win) = window_weak.upgrade() {
+                        let msg = i18n_f("Could not save preference: {}", &[&e]);
+                        crate::toast::show_toast_on_window(
+                            &win,
+                            &msg,
+                            crate::toast::ToastType::Error,
+                        );
+                    }
+                }
             }
         });
         window.add_action(&toggle_action);

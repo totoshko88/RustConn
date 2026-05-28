@@ -55,7 +55,7 @@ pub enum DropPosition {
 /// This struct is used by `invoke_drag_drop()` and `set_drag_drop_callback()` methods
 /// to pass drag-drop operation details to registered callbacks.
 #[derive(Debug, Clone)]
-#[allow(dead_code)] // Fields used by drag-drop callback system
+#[allow(dead_code, reason = "Fields used by drag-drop callback system")]
 pub struct DragDropData {
     /// Type of the dragged item ("conn" or "group")
     pub item_type: String,
@@ -119,7 +119,10 @@ impl DropIndicator {
     ///
     /// Note: Part of drag-drop API, used internally by drop target handlers.
     #[must_use]
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn highlighted_group_index(&self) -> Option<u32> {
         *self.highlighted_group_index.borrow()
     }
@@ -292,7 +295,10 @@ impl DropIndicator {
     ///
     /// Note: Part of drag-drop API for determining drop position.
     #[must_use]
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn target_index(&self) -> Option<u32> {
         *self.target_index.borrow()
     }
@@ -301,7 +307,10 @@ impl DropIndicator {
     ///
     /// Note: Part of drag-drop API for visual feedback state.
     #[must_use]
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn is_visible(&self) -> bool {
         self.indicator.is_visible()
     }
@@ -359,7 +368,10 @@ impl SelectionModelWrapper {
                 // Iterate through the bitset using nth() which returns the nth set bit
                 let size = selection.size();
                 for i in 0..size {
-                    #[allow(clippy::cast_possible_truncation)]
+                    #[expect(
+                        clippy::cast_possible_truncation,
+                        reason = "value range fits the target type by construction in this code path"
+                    )]
                     let pos = selection.nth(i as u32);
                     if pos != u32::MAX {
                         positions.push(pos);

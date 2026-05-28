@@ -55,7 +55,10 @@ pub struct ConnectionManager {
 
 impl ConnectionManager {
     /// Initializes debouncing primitives and spawns background workers
-    #[allow(clippy::type_complexity)] // Internal initialization helper, complexity is expected
+    #[expect(
+        clippy::type_complexity,
+        reason = "internal helper signature documents the exact tuple layout used by the caller; aliasing would obscure the data flow"
+    )] // Internal initialization helper, complexity is expected
     fn init_persistence(
         config_manager: ConfigManager,
     ) -> (
@@ -1236,7 +1239,10 @@ impl ConnectionManager {
         // Update sort_order for each connection
         for (idx, conn_id) in group_connections.iter().enumerate() {
             if let Some(conn) = self.connections.get_mut(conn_id) {
-                #[allow(clippy::cast_possible_wrap)]
+                #[expect(
+                    clippy::cast_possible_wrap,
+                    reason = "value range fits the target signed type by construction in this code path"
+                )]
                 {
                     conn.sort_order = idx as i32;
                 }
@@ -1258,7 +1264,6 @@ impl ConnectionManager {
     /// # Errors
     ///
     /// Returns an error if persistence fails.
-    #[allow(clippy::too_many_lines)]
     pub fn sort_all(&mut self) -> ConfigResult<()> {
         if self.is_sorted {
             return Ok(());
@@ -1275,7 +1280,10 @@ impl ConnectionManager {
         Self::sort_ids_by_name(&mut root_groups, &self.groups, |g| &g.name);
         for (idx, group_id) in root_groups.iter().enumerate() {
             if let Some(group) = self.groups.get_mut(group_id) {
-                #[allow(clippy::cast_possible_wrap)]
+                #[expect(
+                    clippy::cast_possible_wrap,
+                    reason = "value range fits the target signed type by construction in this code path"
+                )]
                 {
                     group.sort_order = idx as i32;
                 }
@@ -1296,7 +1304,10 @@ impl ConnectionManager {
             Self::sort_ids_by_name(&mut child_groups, &self.groups, |g| &g.name);
             for (idx, child_id) in child_groups.iter().enumerate() {
                 if let Some(group) = self.groups.get_mut(child_id) {
-                    #[allow(clippy::cast_possible_wrap)]
+                    #[expect(
+                        clippy::cast_possible_wrap,
+                        reason = "value range fits the target signed type by construction in this code path"
+                    )]
                     {
                         group.sort_order = idx as i32;
                     }
@@ -1314,7 +1325,10 @@ impl ConnectionManager {
             Self::sort_ids_by_name(&mut group_connections, &self.connections, |c| &c.name);
             for (idx, conn_id) in group_connections.iter().enumerate() {
                 if let Some(conn) = self.connections.get_mut(conn_id) {
-                    #[allow(clippy::cast_possible_wrap)]
+                    #[expect(
+                        clippy::cast_possible_wrap,
+                        reason = "value range fits the target signed type by construction in this code path"
+                    )]
                     {
                         conn.sort_order = idx as i32;
                     }
@@ -1334,7 +1348,10 @@ impl ConnectionManager {
         Self::sort_ids_by_name(&mut ungrouped, &self.connections, |c| &c.name);
         for (idx, conn_id) in ungrouped.iter().enumerate() {
             if let Some(conn) = self.connections.get_mut(conn_id) {
-                #[allow(clippy::cast_possible_wrap)]
+                #[expect(
+                    clippy::cast_possible_wrap,
+                    reason = "value range fits the target signed type by construction in this code path"
+                )]
                 {
                     conn.sort_order = idx as i32;
                 }
@@ -1428,7 +1445,10 @@ impl ConnectionManager {
         // Update sort_order for all connections
         for (idx, conn_id) in conn_ids.iter().enumerate() {
             if let Some(conn) = self.connections.get_mut(conn_id) {
-                #[allow(clippy::cast_possible_wrap)]
+                #[expect(
+                    clippy::cast_possible_wrap,
+                    reason = "value range fits the target signed type by construction in this code path"
+                )]
                 {
                     conn.sort_order = idx as i32;
                 }
@@ -1509,7 +1529,10 @@ impl ConnectionManager {
         // Update sort_order for all connections in the group
         for (idx, (conn_id, _)) in group_connections.iter().enumerate() {
             if let Some(conn) = self.connections.get_mut(conn_id) {
-                #[allow(clippy::cast_possible_wrap)]
+                #[expect(
+                    clippy::cast_possible_wrap,
+                    reason = "value range fits the target signed type by construction in this code path"
+                )]
                 {
                     conn.sort_order = idx as i32;
                 }
@@ -1588,7 +1611,10 @@ impl ConnectionManager {
         // Update sort_order for all sibling groups
         for (idx, (gid, _)) in sibling_groups.iter().enumerate() {
             if let Some(group) = self.groups.get_mut(gid) {
-                #[allow(clippy::cast_possible_wrap)]
+                #[expect(
+                    clippy::cast_possible_wrap,
+                    reason = "value range fits the target signed type by construction in this code path"
+                )]
                 {
                     group.sort_order = idx as i32;
                 }

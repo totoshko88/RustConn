@@ -6,7 +6,10 @@
 use crate::i18n::{i18n, i18n_f};
 
 /// Results of background CLI detection for all secret backends
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)]
 pub(super) struct SecretCliDetection {
     pub keepassxc_version: Option<String>,
     pub bitwarden_installed: bool,

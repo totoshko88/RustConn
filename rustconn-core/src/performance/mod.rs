@@ -8,14 +8,38 @@
 // Cast warnings are acceptable here as we're dealing with metrics/statistics
 // where precision loss is not critical.
 // cast_possible_truncation, cast_precision_loss, unused_self allowed at workspace level
-#![allow(clippy::missing_panics_doc)]
-#![allow(clippy::significant_drop_in_scrutinee)]
-#![allow(clippy::significant_drop_tightening)]
-#![allow(clippy::cast_sign_loss)]
-#![allow(clippy::format_push_string)]
-#![allow(clippy::incompatible_msrv)]
-#![allow(clippy::option_if_let_else)]
-#![allow(clippy::len_zero)]
+#![allow(
+    clippy::missing_panics_doc,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::significant_drop_in_scrutinee,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::significant_drop_tightening,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::cast_sign_loss,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::format_push_string,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::incompatible_msrv,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::option_if_let_else,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::len_zero,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 mod batch;
 mod compact_string;

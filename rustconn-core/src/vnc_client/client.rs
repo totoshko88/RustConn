@@ -220,7 +220,10 @@ impl VncClient {
 }
 
 /// Runs the VNC client protocol loop
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 async fn run_vnc_client(
     config: VncClientConfig,
     event_tx: std::sync::mpsc::Sender<VncClientEvent>,

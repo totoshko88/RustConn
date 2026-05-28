@@ -652,3 +652,38 @@ pub async fn get_token_from_keyring() -> SecretResult<Option<SecretString>> {
 pub async fn delete_token_from_keyring() -> SecretResult<()> {
     super::keyring::clear(KEY_OP_TOKEN).await
 }
+
+impl std::fmt::Debug for OnePasswordBackend {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OnePasswordBackend")
+            // SecretString uses redacting Debug — but we never expose the
+            // wrapped `SecretString` itself either way; show only presence.
+            .field(
+                "service_account_token_present",
+                &self.service_account_token.is_some(),
+            )
+            .field("vault_name", &self.vault_name)
+            .field("account", &self.account)
+            .finish_non_exhaustive()
+    }
+}
+
+#[cfg(test)]
+mod debug_tests {
+    use super::*;
+
+    #[test]
+    fn debug_does_not_leak_secret() {
+        let token = SecretString::from("hunter2-service-token".to_string());
+        let backend = OnePasswordBackend::with_service_account(token)
+            .with_vault_name("hunter2-vault")
+            .with_account("hunter2-acct");
+        let rendered = format!("{backend:?}");
+        assert!(
+            !rendered.contains("hunter2-service-token"),
+            "Debug leaked the service account token: {rendered}"
+        );
+        assert!(rendered.contains("OnePasswordBackend"));
+        assert!(rendered.contains("service_account_token_present"));
+    }
+}

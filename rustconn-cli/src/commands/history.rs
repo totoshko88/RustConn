@@ -10,6 +10,12 @@ use crate::format::escape_csv_field;
 use crate::util::create_config_manager;
 
 /// History command dispatcher
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when history or connections cannot be loaded
+/// - [`CliError::ConnectionNotFound`] when a referenced connection does not exist
 pub fn cmd_history(config_path: Option<&Path>, subcmd: HistoryCommands) -> Result<(), CliError> {
     match subcmd {
         HistoryCommands::List {

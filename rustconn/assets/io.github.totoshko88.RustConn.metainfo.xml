@@ -140,6 +140,20 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.15.0" date="2026-05-27">
+      <description>
+        <p>Version 0.15.0 — quality pass release. No new user-facing features; technical-debt and security fixes:</p>
+        <ul>
+          <li>RDP RemoteApp: closed the /p: cmdline leak via a single-use args file in $XDG_RUNTIME_DIR (mode 0600)</li>
+          <li>Migrated around 350 #[allow] lint overrides to #[expect(reason = "…")]; dropped 50 stale ones</li>
+          <li>Manual Debug impls for every secret backend with leak-protection unit tests</li>
+          <li># Errors documentation on every public CLI command function</li>
+          <li>Settings-save failures now surface a toast instead of being silently dropped</li>
+          <li>EntryRowBuilder requires pre-translated titles so xgettext catches every UI label</li>
+          <li>GUI spacing now consistently follows GNOME HIG steps (6 / 12 / 18 / 24 px)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.14.10" date="2026-05-27">
       <description>
         <p>Version 0.14.10 - Security hardening and quality improvements:</p>

@@ -161,7 +161,10 @@ type ErrorCallback = Box<dyn Fn(&str) + 'static>;
 /// This widget provides native SPICE session embedding within GTK4 applications.
 /// It uses a `DrawingArea` for rendering and integrates with the SPICE client
 /// from `rustconn-core`.
-#[allow(dead_code)] // Many fields kept for GTK widget lifecycle and signal handlers
+#[allow(
+    dead_code,
+    reason = "Many fields kept for GTK widget lifecycle and signal handlers"
+)]
 pub struct EmbeddedSpiceWidget {
     /// Main container widget
     container: GtkBox,
@@ -227,16 +230,16 @@ impl EmbeddedSpiceWidget {
 
         // Create toolbar with clipboard and Ctrl+Alt+Del buttons
         let toolbar = GtkBox::new(Orientation::Horizontal, 4);
-        toolbar.set_margin_start(4);
-        toolbar.set_margin_end(4);
-        toolbar.set_margin_top(4);
-        toolbar.set_margin_bottom(4);
+        toolbar.set_margin_start(6);
+        toolbar.set_margin_end(6);
+        toolbar.set_margin_top(6);
+        toolbar.set_margin_bottom(6);
         toolbar.set_halign(gtk4::Align::End);
 
         // Status label for feedback
         let status_label = Label::new(None);
         status_label.set_visible(false);
-        status_label.set_margin_end(8);
+        status_label.set_margin_end(12);
         status_label.add_css_class("dim-label");
         toolbar.append(&status_label);
 
@@ -252,8 +255,8 @@ impl EmbeddedSpiceWidget {
 
         // Separator
         let separator = gtk4::Separator::new(Orientation::Vertical);
-        separator.set_margin_start(4);
-        separator.set_margin_end(4);
+        separator.set_margin_start(6);
+        separator.set_margin_end(6);
         toolbar.append(&separator);
 
         // Ctrl+Alt+Del button
@@ -421,7 +424,10 @@ impl EmbeddedSpiceWidget {
                 }
 
                 // Fallback: old SpicePixelBuffer path (to_vec copy)
-                #[allow(clippy::items_after_statements)]
+                #[expect(
+    clippy::items_after_statements,
+    reason = "local helper introduced inline next to its only call site; hoisting would scatter related logic"
+)]
                 static WARN_ONCE: std::sync::Once = std::sync::Once::new();
                 WARN_ONCE.call_once(|| {
                     tracing::warn!("SPICE: using fallback SpicePixelBuffer with per-frame to_vec() copy — consider migrating to CairoBackedBuffer");
@@ -576,9 +582,15 @@ impl EmbeddedSpiceWidget {
                         let rel_x = (x - offset_x) / scale;
                         let rel_y = (y - offset_y) / scale;
 
-                        #[allow(clippy::cast_sign_loss)]
+                        #[expect(
+                            clippy::cast_sign_loss,
+                            reason = "value is non-negative by construction in this code path"
+                        )]
                         let spice_x = rel_x.clamp(0.0, spice_w - 1.0) as u16;
-                        #[allow(clippy::cast_sign_loss)]
+                        #[expect(
+                            clippy::cast_sign_loss,
+                            reason = "value is non-negative by construction in this code path"
+                        )]
                         let spice_y = rel_y.clamp(0.0, spice_h - 1.0) as u16;
 
                         if let Some(ref sender) = *cmd_sender_motion.borrow() {
@@ -636,9 +648,15 @@ impl EmbeddedSpiceWidget {
                         let rel_x = (x - offset_x) / scale;
                         let rel_y = (y - offset_y) / scale;
 
-                        #[allow(clippy::cast_sign_loss)]
+                        #[expect(
+                            clippy::cast_sign_loss,
+                            reason = "value is non-negative by construction in this code path"
+                        )]
                         let spice_x = rel_x.clamp(0.0, spice_w - 1.0) as u16;
-                        #[allow(clippy::cast_sign_loss)]
+                        #[expect(
+                            clippy::cast_sign_loss,
+                            reason = "value is non-negative by construction in this code path"
+                        )]
                         let spice_y = rel_y.clamp(0.0, spice_h - 1.0) as u16;
 
                         if let Some(ref sender) = *cmd_sender_click.borrow() {
@@ -683,9 +701,15 @@ impl EmbeddedSpiceWidget {
                         let rel_x = (x - offset_x) / scale;
                         let rel_y = (y - offset_y) / scale;
 
-                        #[allow(clippy::cast_sign_loss)]
+                        #[expect(
+                            clippy::cast_sign_loss,
+                            reason = "value is non-negative by construction in this code path"
+                        )]
                         let spice_x = rel_x.clamp(0.0, spice_w - 1.0) as u16;
-                        #[allow(clippy::cast_sign_loss)]
+                        #[expect(
+                            clippy::cast_sign_loss,
+                            reason = "value is non-negative by construction in this code path"
+                        )]
                         let spice_y = rel_y.clamp(0.0, spice_h - 1.0) as u16;
 
                         if let Some(ref sender) = *cmd_sender_release.borrow() {

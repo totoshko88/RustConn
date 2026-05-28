@@ -21,7 +21,10 @@ use crate::state::SharedAppState;
 pub type SharedSidebar = Rc<ConnectionSidebar>;
 
 /// Shows the move to group dialog for the selected item (connection or group)
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub fn show_move_to_group_dialog(
     window: &gtk4::Window,
     state: &SharedAppState,

@@ -31,11 +31,26 @@
 
 // Global clippy lint configuration for GUI code
 // Only truly necessary suppressions are kept globally; others should be applied per-function
-#![allow(clippy::too_many_lines)] // GUI setup functions are inherently long
-#![allow(clippy::type_complexity)] // GTK callback types are complex by design
-#![allow(clippy::significant_drop_tightening)] // GTK widget drops are managed by GTK
-#![allow(clippy::missing_errors_doc)] // Internal GUI functions don't need error docs
-#![allow(clippy::missing_panics_doc)] // Internal GUI functions don't need panic docs
+#![allow(
+    clippy::too_many_lines,
+    reason = "GUI setup functions are inherently long"
+)]
+#![allow(
+    clippy::type_complexity,
+    reason = "GTK callback types are complex by design"
+)]
+#![allow(
+    clippy::significant_drop_tightening,
+    reason = "GTK widget drops are managed by GTK"
+)]
+#![allow(
+    clippy::missing_errors_doc,
+    reason = "Internal GUI functions don't need error docs"
+)]
+#![allow(
+    clippy::missing_panics_doc,
+    reason = "Internal GUI functions don't need panic docs"
+)]
 
 pub mod activity_coordinator;
 pub mod alert;

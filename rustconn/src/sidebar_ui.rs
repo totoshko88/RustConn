@@ -73,7 +73,11 @@ impl ContextMenuItem {
 }
 
 /// Shows the context menu for a connection item with group awareness
-#[allow(clippy::fn_params_excessive_bools, clippy::too_many_arguments)]
+#[expect(
+    clippy::fn_params_excessive_bools,
+    clippy::too_many_arguments,
+    reason = "function parameters mirror Clap-derived flags 1:1; bundling would only restate them"
+)]
 pub fn show_context_menu_for_item(
     widget: &impl IsA<gtk4::Widget>,
     x: f64,
@@ -297,7 +301,10 @@ fn show_popover(
 
     popover.set_child(Some(&vbox));
 
-    #[allow(clippy::cast_possible_truncation)]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "value range fits the target type by construction in this code path"
+    )]
     let rect = gdk::Rectangle::new(x as i32, y as i32, 1, 1);
     popover.set_pointing_to(Some(&rect));
     // Use autohide=false so GTK4 does not grab the pointer.  With a grab,
@@ -384,10 +391,10 @@ pub fn get_protocol_icon(protocol: &str) -> &'static str {
 #[must_use]
 pub fn create_bulk_actions_bar() -> GtkBox {
     let bar = GtkBox::new(Orientation::Horizontal, 4);
-    bar.set_margin_start(8);
-    bar.set_margin_end(8);
-    bar.set_margin_top(4);
-    bar.set_margin_bottom(4);
+    bar.set_margin_start(12);
+    bar.set_margin_end(12);
+    bar.set_margin_top(6);
+    bar.set_margin_bottom(6);
     bar.set_halign(gtk4::Align::Center);
     bar.add_css_class("bulk-actions-bar");
 
@@ -458,8 +465,8 @@ pub fn create_bulk_actions_bar() -> GtkBox {
 #[must_use]
 pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     let toolbar = GtkBox::new(Orientation::Horizontal, 4);
-    toolbar.set_margin_start(8);
-    toolbar.set_margin_end(8);
+    toolbar.set_margin_start(12);
+    toolbar.set_margin_end(12);
     toolbar.set_halign(gtk4::Align::Center);
 
     let group_ops_button = Button::from_icon_name("view-list-symbolic");

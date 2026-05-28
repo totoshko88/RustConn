@@ -3,7 +3,10 @@
 //! These tests validate the correctness properties defined in the design document
 //! for the Virtual Scrolling system (Requirements 6.x).
 
-#![allow(clippy::manual_clamp)]
+#![allow(
+    clippy::manual_clamp,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 use proptest::prelude::*;
 use rustconn_core::VirtualScroller;

@@ -195,7 +195,10 @@ impl super::EmbeddedRdpWidget {
     /// Draws the status overlay when not rendering framebuffer
     ///
     /// This shows connection status, host information, and hints to the user.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub(super) fn draw_status_overlay(
         cr: &gtk4::cairo::Context,
         width: i32,

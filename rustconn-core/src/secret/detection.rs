@@ -741,7 +741,10 @@ pub fn url_open_command() -> &'static str {
 ///
 /// # Returns
 /// A tuple of (command, args) to launch the password manager, or None
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub fn get_password_manager_launch_command(
     backend: &crate::config::SecretBackendType,
     passbolt_server_url: Option<&str>,

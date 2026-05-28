@@ -130,7 +130,10 @@ pub fn calculate_indicator_y(
 /// The row index at the given Y coordinate
 #[must_use]
 pub fn calculate_row_index(y: f64, config: &DropConfig) -> u32 {
-    #[allow(clippy::cast_sign_loss)]
+    #[expect(
+        clippy::cast_sign_loss,
+        reason = "value is non-negative by construction in this code path"
+    )]
     let index = (y / config.row_height) as u32;
     index
 }

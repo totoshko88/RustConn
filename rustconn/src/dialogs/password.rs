@@ -29,7 +29,7 @@ pub struct PasswordDialogResult {
 }
 
 /// Password prompt dialog
-#[allow(dead_code)] // Fields kept for GTK widget lifecycle
+#[allow(dead_code, reason = "Fields kept for GTK widget lifecycle")]
 pub struct PasswordDialog {
     dialog: adw::Dialog,
     username_entry: Entry,
@@ -223,7 +223,10 @@ impl PasswordDialog {
         )
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     fn connect_signals(
         dialog: &adw::Dialog,
         connect_btn: &Button,

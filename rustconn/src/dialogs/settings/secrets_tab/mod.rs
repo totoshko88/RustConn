@@ -30,7 +30,7 @@ use self::keyring::{
 };
 
 /// Return type for secrets page - contains all widgets needed for dynamic visibility
-#[allow(dead_code)] // Fields kept for GTK widget lifecycle
+#[allow(dead_code, reason = "Fields kept for GTK widget lifecycle")]
 pub struct SecretsPageWidgets {
     pub page: adw::PreferencesPage,
     pub secret_backend_dropdown: DropDown,
@@ -188,7 +188,10 @@ fn set_storage_combo_value(combo: &adw::ComboRow, storage: CredentialStorage) {
 }
 
 /// Creates the secrets settings page using AdwPreferencesPage
-#[allow(clippy::type_complexity)]
+#[allow(
+    clippy::type_complexity,
+    reason = "internal helper signature documents the exact tuple layout used by the caller; aliasing would obscure the data flow"
+)]
 pub fn create_secrets_page() -> SecretsPageWidgets {
     let page = adw::PreferencesPage::builder()
         .title(i18n("Secrets"))

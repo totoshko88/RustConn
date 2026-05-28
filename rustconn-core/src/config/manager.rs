@@ -446,7 +446,10 @@ impl ConfigManager {
     /// # Errors
     ///
     /// Returns an error if the file exists but cannot be parsed.
-    #[allow(clippy::type_complexity)]
+    #[expect(
+        clippy::type_complexity,
+        reason = "internal helper signature documents the exact tuple layout used by the caller; aliasing would obscure the data flow"
+    )]
     pub fn load_trash(
         &self,
     ) -> ConfigResult<(
@@ -626,7 +629,10 @@ impl ConfigManager {
     /// Uses a temp file + rename pattern to prevent data corruption
     /// if the process crashes during write. Acquires an exclusive advisory
     /// lock before writing to prevent concurrent modifications.
-    #[allow(clippy::future_not_send)] // Path is not Sync, effectively pinned to thread which is fine for our use case
+    #[expect(
+        clippy::future_not_send,
+        reason = "future borrows GTK/Path types that are pinned to the calling thread; never moved to another runtime"
+    )] // Path is not Sync, effectively pinned to thread which is fine for our use case
     async fn save_toml_file_async<T>(&self, path: &Path, data: &T) -> ConfigResult<()>
     where
         T: serde::Serialize,

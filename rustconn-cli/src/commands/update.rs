@@ -13,7 +13,11 @@ use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
 
 /// Parameters for the `update` command
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "AddParams/UpdateParams mirror Clap-derived flags 1:1; bundling related \
+              booleans into enums would force callers to convert and obscure CLI mapping"
+)]
 pub struct UpdateParams<'a> {
     pub name: &'a str,
     pub new_name: Option<&'a str>,
@@ -112,7 +116,21 @@ pub struct UpdateParams<'a> {
 }
 
 /// Update connection command handler
-#[allow(clippy::needless_pass_by_value, clippy::too_many_lines)]
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when connections cannot be loaded or saved, or when
+///   the requested protocol / auth method / port combination is invalid
+/// - [`CliError::ConnectionNotFound`] when no connection matches `params.name`
+///   or `--jump-host` references an unknown connection
+/// - [`CliError::Group`] when `--group` is set and the group cannot be created
+#[expect(
+    clippy::needless_pass_by_value,
+    clippy::too_many_lines,
+    reason = "UpdateParams is consumed by value to take ownership of borrowed flag values \
+              from Clap; the long body matches every editable field in turn"
+)]
 pub fn cmd_update(config_path: Option<&Path>, params: UpdateParams<'_>) -> Result<(), CliError> {
     let config_manager = create_config_manager(config_path)?;
 

@@ -7,7 +7,10 @@ use ironrdp::session::image::DecodedImage;
 use ironrdp::session::{ActiveStage, ActiveStageOutput};
 use ironrdp_tokio::FramedWrite;
 
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub async fn process_command<W: FramedWrite>(
     cmd: RdpClientCommand,
     active_stage: &mut ActiveStage,
@@ -408,7 +411,10 @@ async fn handle_clipboard_request<W: FramedWrite>(
     }
 }
 
-#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 async fn handle_file_contents_request<W: FramedWrite>(
     active_stage: &mut ActiveStage,
     writer: &mut W,

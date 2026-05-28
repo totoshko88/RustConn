@@ -23,7 +23,10 @@ pub type SharedNotebook = Rc<TerminalNotebook>;
 pub type SharedSidebar = Rc<ConnectionSidebar>;
 
 /// Shows the sessions manager window
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub fn show_sessions_manager(
     window: &gtk4::Window,
     state: SharedAppState,
@@ -249,8 +252,8 @@ pub fn populate_sessions_list(
             row.set_widget_name(&format!("session-{session_id}"));
 
             let hbox = gtk4::Box::new(Orientation::Horizontal, 12);
-            hbox.set_margin_top(8);
-            hbox.set_margin_bottom(8);
+            hbox.set_margin_top(12);
+            hbox.set_margin_bottom(12);
             hbox.set_margin_start(12);
             hbox.set_margin_end(12);
 

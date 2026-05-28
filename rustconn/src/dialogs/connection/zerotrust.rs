@@ -6,7 +6,10 @@
 //! - Custom arguments for CLI commands
 
 // OCI Bastion has target_id and target_ip fields which are semantically different
-#![allow(clippy::similar_names)]
+#![allow(
+    clippy::similar_names,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 use adw::prelude::*;
 use gtk4::prelude::*;
@@ -16,7 +19,11 @@ use libadwaita as adw;
 use crate::i18n::i18n;
 
 /// Creates the Zero Trust options panel with provider-specific fields using libadwaita.
-#[allow(clippy::type_complexity, clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    clippy::type_complexity,
+    reason = "long match dispatch returning a documented tuple; aliasing would obscure the data flow"
+)]
 pub(super) fn create_zerotrust_options() -> (
     GtkBox,
     DropDown,

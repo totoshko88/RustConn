@@ -35,7 +35,10 @@ pub struct StepReviewPage {
     command_buffer: gtk4::TextBuffer,
     no_forwards_label: gtk4::Label,
     save_button: gtk4::Button,
-    #[allow(dead_code)] // Kept alive for GTK widget lifecycle (ToastOverlay must outlive Toasts)
+    #[allow(
+        dead_code,
+        reason = "Kept alive for GTK widget lifecycle (ToastOverlay must outlive Toasts)"
+    )]
     toast_overlay: adw::ToastOverlay,
     on_save: Rc<RefCell<Option<Box<dyn Fn()>>>>,
 }
@@ -133,7 +136,7 @@ impl StepReviewPage {
         let copy_button = gtk4::Button::from_icon_name("edit-copy-symbolic");
         copy_button.add_css_class("flat");
         copy_button.set_valign(gtk4::Align::Start);
-        copy_button.set_margin_top(8);
+        copy_button.set_margin_top(12);
         copy_button.set_tooltip_text(Some(&i18n("Copy SSH command to clipboard")));
         copy_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
             "Copy SSH command to clipboard",

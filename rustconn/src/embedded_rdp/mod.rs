@@ -51,6 +51,7 @@ mod autotype;
 mod clipboard;
 mod connection;
 mod drawing;
+mod ephemeral_args;
 pub mod file_dnd;
 mod input;
 mod resize;
@@ -121,7 +122,10 @@ fn with_callback<T>(cell: &RefCell<Option<T>>, f: impl FnOnce(&T)) {
 /// // Connect
 /// widget.connect(&config)?;
 /// ```
-#[allow(dead_code)] // Many fields kept for GTK widget lifecycle and signal handlers
+#[allow(
+    dead_code,
+    reason = "Many fields kept for GTK widget lifecycle and signal handlers"
+)]
 pub struct EmbeddedRdpWidget {
     /// Main container widget
     container: GtkBox,
@@ -229,7 +233,11 @@ pub struct EmbeddedRdpWidget {
 /// `&'static str` constants that are passed to `i18n()` at runtime.
 /// xgettext cannot extract them from the loop, so we list them here as literals.
 /// This function is never called; it exists solely for `po/update-pot.sh`.
-#[allow(dead_code, unreachable_code)]
+#[allow(
+    dead_code,
+    unreachable_code,
+    reason = "kept alive for GTK widget lifecycle / future API exposure"
+)]
 fn _extract_builtin_labels() {
     return;
     // Quick Actions labels
@@ -265,16 +273,16 @@ impl EmbeddedRdpWidget {
 
         // Create toolbar with clipboard and Ctrl+Alt+Del buttons (right-aligned like VNC)
         let toolbar = GtkBox::new(Orientation::Horizontal, 4);
-        toolbar.set_margin_start(4);
-        toolbar.set_margin_end(4);
-        toolbar.set_margin_top(4);
-        toolbar.set_margin_bottom(4);
+        toolbar.set_margin_start(6);
+        toolbar.set_margin_end(6);
+        toolbar.set_margin_top(6);
+        toolbar.set_margin_bottom(6);
         toolbar.set_halign(gtk4::Align::End); // Align to right
 
         // Status label for reconnect indicator (hidden by default)
         let status_label = Label::new(None);
         status_label.set_visible(false);
-        status_label.set_margin_end(8);
+        status_label.set_margin_end(12);
         status_label.add_css_class("dim-label");
         toolbar.append(&status_label);
 
@@ -333,8 +341,8 @@ impl EmbeddedRdpWidget {
 
         // Separator
         let separator = gtk4::Separator::new(Orientation::Vertical);
-        separator.set_margin_start(4);
-        separator.set_margin_end(4);
+        separator.set_margin_start(6);
+        separator.set_margin_end(6);
         toolbar.append(&separator);
 
         let ctrl_alt_del_button = Button::with_label(&i18n("Ctrl+Alt+Del"));

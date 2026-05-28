@@ -161,7 +161,7 @@ impl ProtocolPage {
             let header = Label::new(Some(&i18n(title)));
             header.add_css_class("heading");
             header.set_halign(gtk4::Align::Center);
-            header.set_margin_bottom(4);
+            header.set_margin_bottom(6);
             column.append(&header);
 
             // Protocol buttons stacked vertically, expanding to fill space

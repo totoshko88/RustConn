@@ -16,11 +16,26 @@
 //! - Requirement 1.7: Dynamic resolution change on resize
 
 // cast_possible_truncation allowed at workspace level
-#![allow(clippy::cast_sign_loss)]
-#![allow(clippy::match_same_arms)]
-#![allow(clippy::float_cmp)]
-#![allow(clippy::missing_panics_doc)]
-#![allow(clippy::unreadable_literal)]
+#![allow(
+    clippy::cast_sign_loss,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::match_same_arms,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::float_cmp,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::missing_panics_doc,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::unreadable_literal,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 use serde::{Deserialize, Serialize};
 
@@ -219,9 +234,15 @@ impl CoordinateTransform {
         let (rdp_x, rdp_y) = self.transform_clamped(widget_x, widget_y);
 
         // Convert to u16, clamping to u16::MAX just in case
-        #[allow(clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_sign_loss,
+            reason = "value is non-negative by construction in this code path"
+        )]
         let x = (rdp_x.round() as u32).min(u32::from(u16::MAX)) as u16;
-        #[allow(clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_sign_loss,
+            reason = "value is non-negative by construction in this code path"
+        )]
         let y = (rdp_y.round() as u32).min(u32::from(u16::MAX)) as u16;
 
         (x, y)
@@ -577,7 +598,10 @@ impl RdpScancode {
 /// assert!(scancode.is_some());
 /// ```
 #[must_use]
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub const fn keyval_to_scancode(keyval: u32) -> Option<RdpScancode> {
     // GDK keyval constants (from gdk/gdkkeysyms.h)
     // These are the most common keys used in RDP sessions
@@ -725,7 +749,10 @@ pub const fn keyval_to_scancode(keyval: u32) -> Option<RdpScancode> {
 ///
 /// An `Option<RdpScancode>` containing the scancode if mappable.
 #[must_use]
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub const fn keycode_to_scancode(keycode: u32) -> Option<RdpScancode> {
     // Linux evdev keycodes are offset by 8 from X11 keycodes
     // and roughly correspond to AT scancodes

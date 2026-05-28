@@ -22,7 +22,11 @@ use std::rc::Rc;
 use crate::i18n::i18n;
 
 /// Creates the SPICE options panel using libadwaita components following GNOME HIG.
-#[allow(clippy::type_complexity, clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    clippy::type_complexity,
+    reason = "long match dispatch returning a documented tuple; aliasing would obscure the data flow"
+)]
 pub(super) fn create_spice_options() -> (
     GtkBox,
     adw::SwitchRow,
@@ -225,7 +229,7 @@ pub(super) fn create_spice_options() -> (
 
     let folders_buttons = GtkBox::new(Orientation::Horizontal, 8);
     folders_buttons.set_halign(gtk4::Align::End);
-    folders_buttons.set_margin_top(8);
+    folders_buttons.set_margin_top(12);
     let add_folder_btn = Button::builder()
         .label(i18n("Add"))
         .css_classes(["suggested-action"])

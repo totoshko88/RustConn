@@ -170,7 +170,10 @@ impl KeybindingSettings {
 /// This is the single source of truth for all keyboard shortcuts in the
 /// application. The order matches the display order in the settings UI.
 #[must_use]
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub fn default_keybindings() -> Vec<KeybindingDef> {
     use KeybindingCategory::{Application, Connections, Navigation, SplitView, Terminal, View};
     vec![

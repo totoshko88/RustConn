@@ -10,7 +10,10 @@ use rustconn_core::models::Connection;
 use crate::i18n::i18n;
 
 /// Creates the UI settings page using AdwPreferencesPage
-#[allow(clippy::type_complexity)]
+#[expect(
+    clippy::type_complexity,
+    reason = "internal helper signature documents the exact tuple layout used by the caller; aliasing would obscure the data flow"
+)]
 pub fn create_ui_page() -> (
     adw::PreferencesPage,
     GtkBox,
@@ -332,7 +335,10 @@ fn build_startup_entries(connections: &[&Connection]) -> Vec<StartupConnectionEn
 }
 
 /// Loads UI settings into UI controls
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 pub fn load_ui_settings(
     color_scheme_box: &GtkBox,
     language_dropdown: &DropDown,
@@ -430,12 +436,18 @@ pub fn load_ui_settings(
             .position(|e| e.id == *id)
             .map_or(0, |pos| pos + 2),
     };
-    #[allow(clippy::cast_possible_truncation)]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "value range fits the target type by construction in this code path"
+    )]
     startup_action_dropdown.set_selected(selected as u32);
 }
 
 /// Collects UI settings from UI controls
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 pub fn collect_ui_settings(
     color_scheme_box: &GtkBox,
     language_dropdown: &DropDown,
@@ -493,7 +505,10 @@ pub fn collect_ui_settings(
         session_restore: SessionRestoreSettings {
             enabled: session_restore_enabled.is_active(),
             prompt_on_restore: prompt_on_restore.is_active(),
-            #[allow(clippy::cast_sign_loss)]
+            #[expect(
+                clippy::cast_sign_loss,
+                reason = "value is non-negative by construction in this code path"
+            )]
             max_age_hours: max_age_row.value().max(0.0) as u32,
             saved_sessions: Vec::new(),
         },

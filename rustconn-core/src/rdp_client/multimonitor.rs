@@ -12,7 +12,10 @@
 //! - Flags (primary monitor indicator)
 //! - Physical dimensions (optional)
 
-#![allow(clippy::cast_lossless)]
+#![allow(
+    clippy::cast_lossless,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 use serde::{Deserialize, Serialize};
 

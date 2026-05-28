@@ -20,7 +20,10 @@ use rustconn_core::models::PasswordSource;
 pub type SharedSidebar = Rc<ConnectionSidebar>;
 
 /// Shows the templates manager window
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub fn show_templates_manager(
     window: &gtk4::Window,
     state: SharedAppState,
@@ -188,7 +191,10 @@ pub fn show_templates_manager(
 }
 
 /// Refreshes the templates list with optional protocol filter
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub fn refresh_templates_list(
     list: &gtk4::ListBox,
     templates: &std::rc::Rc<std::cell::RefCell<Vec<rustconn_core::models::ConnectionTemplate>>>,
@@ -250,10 +256,10 @@ pub fn refresh_templates_list(
     let add_template_row =
         |list: &gtk4::ListBox, template: &rustconn_core::models::ConnectionTemplate| {
             let hbox = gtk4::Box::new(Orientation::Horizontal, 8);
-            hbox.set_margin_top(8);
-            hbox.set_margin_bottom(8);
-            hbox.set_margin_start(8);
-            hbox.set_margin_end(8);
+            hbox.set_margin_top(12);
+            hbox.set_margin_bottom(12);
+            hbox.set_margin_start(12);
+            hbox.set_margin_end(12);
 
             // Use custom icon if set, otherwise protocol-based icon
             if let Some(ref custom_icon) = template.icon {

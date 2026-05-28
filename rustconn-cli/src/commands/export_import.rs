@@ -9,6 +9,14 @@ use crate::error::CliError;
 use crate::util::create_config_manager;
 
 /// Export connections command handler
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when connections, groups, or settings cannot be loaded
+/// - [`CliError::Export`] when the requested format does not support the
+///   selected options (`--csv-delimiter` / `--csv-fields` outside CSV) or the
+///   underlying exporter fails to write the output file
 pub fn cmd_export(
     config_path: Option<&Path>,
     format: ExportFormatArg,
@@ -177,7 +185,19 @@ fn export_connections(
 }
 
 /// Import connections command handler
-#[allow(clippy::too_many_lines)]
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Import`] when no file is provided (and `--auto` is off), the
+///   file does not exist, the format cannot be parsed, or no source files are
+///   found in `--auto` mode
+/// - [`CliError::Config`] when imported connections cannot be saved
+#[expect(
+    clippy::too_many_lines,
+    reason = "import dispatches across every supported source format with format-specific \
+              parsing; per-format helpers would duplicate connection persistence"
+)]
 pub fn cmd_import(
     config_path: Option<&Path>,
     format: ImportFormatArg,
@@ -435,7 +455,11 @@ fn import_connections(
 }
 
 /// Auto-detect available import sources and import from all found
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "auto-import probes every source location and aggregates results inline; \
+              extracting per-source probes would only relocate the boilerplate"
+)]
 fn cmd_import_auto(config_path: Option<&Path>, dry_run: bool) -> Result<(), CliError> {
     use rustconn_core::import::{AsbruImporter, ImportSource, RemminaImporter, SshConfigImporter};
 

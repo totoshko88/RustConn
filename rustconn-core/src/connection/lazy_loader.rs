@@ -166,7 +166,10 @@ impl LazyGroupLoader {
 }
 
 #[cfg(test)]
-#[allow(clippy::similar_names)]
+#[expect(
+    clippy::similar_names,
+    reason = "names follow a deliberate naming scheme for paired inputs/outputs; renaming hurts readability"
+)]
 mod tests {
     use super::*;
     use crate::models::ProtocolConfig;

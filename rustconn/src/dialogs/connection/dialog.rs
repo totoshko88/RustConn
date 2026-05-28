@@ -4,7 +4,10 @@
 //! - `super::ssh` - SSH options
 
 // OCI Bastion has target_id and target_ip fields which are semantically different
-#![allow(clippy::similar_names)]
+#![allow(
+    clippy::similar_names,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 use super::builders::ConnectionDialogData;
 use super::logging_tab;
@@ -92,7 +95,10 @@ fn klid_to_dropdown_index(klid: u32) -> u32 {
 }
 
 /// Connection dialog for creating/editing connections
-#[allow(dead_code)] // Many fields kept for GTK widget lifecycle and signal handlers
+#[allow(
+    dead_code,
+    reason = "Many fields kept for GTK widget lifecycle and signal handlers"
+)]
 pub struct ConnectionDialog {
     dialog: adw::Dialog,
     parent: Option<gtk4::Widget>,
@@ -362,7 +368,7 @@ pub struct ConnectionDialog {
 }
 
 /// Represents a local variable row in the connection dialog
-#[allow(dead_code)] // Fields kept for GTK widget lifecycle
+#[allow(dead_code, reason = "Fields kept for GTK widget lifecycle")]
 struct LocalVariableRow {
     /// The row widget
     row: ListBoxRow,
@@ -427,7 +433,10 @@ struct CustomPropertyRow {
 impl ConnectionDialog {
     /// Creates a new connection dialog
     #[must_use]
-    #[allow(clippy::too_many_lines)]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+    )]
     pub fn new(parent: Option<&gtk4::Window>, state: crate::state::SharedAppState) -> Self {
         let (dialog, header, save_btn, test_btn) = Self::create_window_with_header(parent);
         let view_stack = Self::create_view_stack(&dialog, &header);
@@ -1239,7 +1248,10 @@ impl ConnectionDialog {
             let domain_btn_for_update = domain_load_button.clone();
             let update_buttons = Rc::new(move |selected_idx: u32| {
                 let sensitive = selected_idx > 0; // 0 is Root
-                #[allow(clippy::cast_possible_truncation)]
+                #[allow(
+                    clippy::cast_possible_truncation,
+                    reason = "value range fits the target type by construction in this code path"
+                )]
                 {
                     user_btn_for_update.set_sensitive(sensitive);
                     domain_btn_for_update.set_sensitive(sensitive);
@@ -1385,7 +1397,10 @@ impl ConnectionDialog {
             }
 
             // Create a minimal connection for testing
-            #[allow(clippy::cast_sign_loss)]
+            #[expect(
+    clippy::cast_sign_loss,
+    reason = "value is non-negative by construction in this code path"
+)]
             let port = port_spin.value().max(0.0) as u16;
 
             let protocol_config = match protocol_index {
@@ -1793,7 +1808,10 @@ impl ConnectionDialog {
     }
 
     /// Connects the protocol dropdown to update the stack and port
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     fn connect_protocol_dropdown(
         dropdown: &DropDown,
         stack: &Stack,
@@ -1930,7 +1948,11 @@ impl ConnectionDialog {
     }
 
     /// Connects the save button to validate and save the connection
-    #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
+    #[expect(
+        clippy::too_many_arguments,
+        clippy::too_many_lines,
+        reason = "long match dispatch with many flat parameters; restructuring would only move the parameter list elsewhere"
+    )]
     fn connect_save_button(
         save_btn: &Button,
         dialog: &adw::Dialog,
@@ -2513,10 +2535,10 @@ impl ConnectionDialog {
     /// Creates a custom property row widget
     fn create_custom_property_row(property: Option<&CustomProperty>) -> CustomPropertyRow {
         let main_box = GtkBox::new(Orientation::Vertical, 8);
-        main_box.set_margin_top(8);
-        main_box.set_margin_bottom(8);
-        main_box.set_margin_start(8);
-        main_box.set_margin_end(8);
+        main_box.set_margin_top(12);
+        main_box.set_margin_bottom(12);
+        main_box.set_margin_start(12);
+        main_box.set_margin_end(12);
 
         let grid = Grid::builder()
             .row_spacing(6)
@@ -2734,13 +2756,16 @@ impl ConnectionDialog {
     }
 
     /// Creates an expect rule row widget
-    #[allow(clippy::too_many_lines)]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+    )]
     fn create_expect_rule_row(rule: Option<&ExpectRule>) -> ExpectRuleRow {
         let main_box = GtkBox::new(Orientation::Vertical, 6);
-        main_box.set_margin_top(8);
-        main_box.set_margin_bottom(8);
-        main_box.set_margin_start(8);
-        main_box.set_margin_end(8);
+        main_box.set_margin_top(12);
+        main_box.set_margin_bottom(12);
+        main_box.set_margin_start(12);
+        main_box.set_margin_end(12);
 
         // Row 0: Action buttons (delete, move up/down) — top-right for visibility
         let action_box = GtkBox::new(Orientation::Horizontal, 4);
@@ -2841,7 +2866,10 @@ impl ConnectionDialog {
             btn.connect_clicked(move |btn| {
                 let pos = entry_clone.position();
                 entry_clone.insert_text(&var, &mut pos.clone());
-                #[allow(clippy::cast_possible_wrap)]
+                #[expect(
+    clippy::cast_possible_wrap,
+    reason = "value range fits the target signed type by construction in this code path"
+)]
                 entry_clone.set_position(pos + var.len() as i32);
                 if let Some(popover) = btn
                     .ancestor(gtk4::Popover::static_type())
@@ -2871,7 +2899,10 @@ impl ConnectionDialog {
             newline_btn.connect_clicked(move |btn| {
                 let pos = entry_clone.position();
                 entry_clone.insert_text("\\n", &mut pos.clone());
-                #[allow(clippy::cast_possible_wrap)]
+                #[allow(
+    clippy::cast_possible_wrap,
+    reason = "value range fits the target signed type by construction in this code path"
+)]
                 entry_clone.set_position(pos + 2);
                 if let Some(popover) = btn
                     .ancestor(gtk4::Popover::static_type())
@@ -3172,7 +3203,10 @@ impl ConnectionDialog {
         let rules_for_priority = expect_rules.clone();
         let priority_id = rule_id;
         rule_row.priority_spin.connect_value_changed(move |spin| {
-            #[allow(clippy::cast_possible_truncation)]
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "value range fits the target type by construction in this code path"
+            )]
             let value = spin.value() as i32;
             if let Some(rule) = rules_for_priority
                 .borrow_mut()
@@ -3187,7 +3221,11 @@ impl ConnectionDialog {
         let rules_for_timeout = expect_rules.clone();
         let timeout_id = rule_id;
         rule_row.timeout_spin.connect_value_changed(move |spin| {
-            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            #[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "value range fits the target type and is non-negative by construction in this code path"
+)]
             let value = spin.value() as u32;
             if let Some(rule) = rules_for_timeout
                 .borrow_mut()
@@ -3245,7 +3283,10 @@ impl ConnectionDialog {
         list.insert(row, new_index);
 
         // Update the rules vector
-        #[allow(clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_sign_loss,
+            reason = "value is non-negative by construction in this code path"
+        )]
         let idx = index as usize;
         let mut rules_vec = rules.borrow_mut();
         if idx < rules_vec.len() {
@@ -3262,7 +3303,11 @@ impl ConnectionDialog {
     ) {
         let index = row.index();
         let rules_len = rules.borrow().len();
-        #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_possible_wrap,
+            reason = "value range fits both signed and unsigned target types by construction in this code path"
+        )]
         if index < 0 || index >= (rules_len as i32 - 1) {
             return;
         }
@@ -3273,7 +3318,10 @@ impl ConnectionDialog {
         list.insert(row, new_index);
 
         // Update the rules vector
-        #[allow(clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_sign_loss,
+            reason = "value is non-negative by construction in this code path"
+        )]
         let idx = index as usize;
         let mut rules_vec = rules.borrow_mut();
         if idx + 1 < rules_vec.len() {
@@ -3351,10 +3399,10 @@ impl ConnectionDialog {
         is_inherited: bool,
     ) -> LocalVariableRow {
         let main_box = GtkBox::new(Orientation::Vertical, 8);
-        main_box.set_margin_top(8);
-        main_box.set_margin_bottom(8);
-        main_box.set_margin_start(8);
-        main_box.set_margin_end(8);
+        main_box.set_margin_top(12);
+        main_box.set_margin_bottom(12);
+        main_box.set_margin_start(12);
+        main_box.set_margin_end(12);
 
         let grid = Grid::builder()
             .row_spacing(6)
@@ -3895,10 +3943,16 @@ impl ConnectionDialog {
             self.retry_enabled_toggle.set_active(config.enabled);
             self.retry_max_attempts_spin
                 .set_value(f64::from(config.max_attempts));
-            #[allow(clippy::cast_precision_loss)]
+            #[expect(
+                clippy::cast_precision_loss,
+                reason = "f64 conversion is intentional for display/UI arithmetic where sub-integer precision is irrelevant"
+            )]
             self.retry_initial_delay_spin
                 .set_value(config.initial_delay_ms as f64);
-            #[allow(clippy::cast_precision_loss)]
+            #[expect(
+                clippy::cast_precision_loss,
+                reason = "f64 conversion is intentional for display/UI arithmetic where sub-integer precision is irrelevant"
+            )]
             self.retry_max_delay_spin
                 .set_value(config.max_delay_ms as f64);
         } else {
@@ -3913,7 +3967,10 @@ impl ConnectionDialog {
     ///
     /// Groups are displayed in a flat list with hierarchy indicated by indentation.
     /// The first item is always "(Root)" for connections without a group.
-    #[allow(clippy::items_after_statements)]
+    #[expect(
+        clippy::items_after_statements,
+        reason = "local helper introduced inline next to its only call site; hoisting would scatter related logic"
+    )]
     pub fn set_groups(&self, groups: &[rustconn_core::models::ConnectionGroup]) {
         use rustconn_core::models::ConnectionGroup;
 
@@ -4024,7 +4081,10 @@ impl ConnectionDialog {
     pub fn set_selected_group(&self, group_id: Uuid) {
         let groups_data = self.groups_data.borrow();
         if let Some(idx) = groups_data.iter().position(|(id, _)| *id == Some(group_id)) {
-            #[allow(clippy::cast_possible_truncation)]
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "value range fits the target type by construction in this code path"
+            )]
             self.group_dropdown.set_selected(idx as u32);
         }
     }
@@ -4575,7 +4635,10 @@ impl ConnectionDialog {
         let keys = self.ssh_agent_keys.borrow();
         for (idx, key) in keys.iter().enumerate() {
             if key.fingerprint == fingerprint || key.comment == comment {
-                #[allow(clippy::cast_possible_truncation)]
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "value range fits the target type by construction in this code path"
+                )]
                 self.ssh_agent_key_dropdown.set_selected(idx as u32);
                 return;
             }
@@ -4653,10 +4716,10 @@ impl ConnectionDialog {
 
             // Add to UI
             let row_box = GtkBox::new(Orientation::Horizontal, 8);
-            row_box.set_margin_top(4);
-            row_box.set_margin_bottom(4);
-            row_box.set_margin_start(8);
-            row_box.set_margin_end(8);
+            row_box.set_margin_top(6);
+            row_box.set_margin_bottom(6);
+            row_box.set_margin_start(12);
+            row_box.set_margin_end(12);
 
             let path_label = Label::builder()
                 .label(folder.local_path.to_string_lossy().as_ref())
@@ -4702,7 +4765,10 @@ impl ConnectionDialog {
         if let Some(jump_id) = rdp.jump_host_id {
             let conns = self.rdp_connections_data.borrow();
             if let Some(idx) = conns.iter().position(|(id, _)| *id == Some(jump_id)) {
-                #[allow(clippy::cast_possible_truncation)]
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "value range fits the target type by construction in this code path"
+                )]
                 self.rdp_jump_host_dropdown.set_selected(idx as u32);
             }
         }
@@ -4753,7 +4819,10 @@ impl ConnectionDialog {
         if let Some(jump_id) = vnc.jump_host_id {
             let conns = self.vnc_connections_data.borrow();
             if let Some(idx) = conns.iter().position(|(id, _)| *id == Some(jump_id)) {
-                #[allow(clippy::cast_possible_truncation)]
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "value range fits the target type by construction in this code path"
+                )]
                 self.vnc_jump_host_dropdown.set_selected(idx as u32);
             }
         }
@@ -4806,7 +4875,10 @@ impl ConnectionDialog {
         if let Some(jump_id) = spice.jump_host_id {
             let conns = self.spice_connections_data.borrow();
             if let Some(idx) = conns.iter().position(|(id, _)| *id == Some(jump_id)) {
-                #[allow(clippy::cast_possible_truncation)]
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "value range fits the target type by construction in this code path"
+                )]
                 self.spice_jump_host_dropdown.set_selected(idx as u32);
             }
         }
@@ -5087,7 +5159,10 @@ impl ConnectionDialog {
     /// * `kdbx_key_file` - Key file for the KeePass database
     /// * `groups` - List of connection groups for building hierarchical paths
     /// * `secret_settings` - Secret backend settings for backend dispatch
-    #[allow(clippy::too_many_arguments)]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub fn connect_password_load_button_with_groups(
         &self,
         kdbx_enabled: bool,
@@ -5392,7 +5467,10 @@ impl ConnectionDialog {
     /// host, protocol, and group — then shows a success/failure dialog with
     /// the lookup key used. Helps users verify their vault configuration
     /// before connecting.
-    #[allow(clippy::too_many_arguments)]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub fn connect_vault_test_button(
         &self,
         kdbx_enabled: bool,

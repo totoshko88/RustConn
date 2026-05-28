@@ -33,16 +33,16 @@ impl EmbeddedVncWidget {
 
         // Create toolbar with clipboard and Ctrl+Alt+Del buttons (right-aligned)
         let toolbar = GtkBox::new(Orientation::Horizontal, 4);
-        toolbar.set_margin_start(4);
-        toolbar.set_margin_end(4);
-        toolbar.set_margin_top(4);
-        toolbar.set_margin_bottom(4);
+        toolbar.set_margin_start(6);
+        toolbar.set_margin_end(6);
+        toolbar.set_margin_top(6);
+        toolbar.set_margin_bottom(6);
         toolbar.set_halign(gtk4::Align::End);
 
         // Status label for clipboard feedback (hidden by default)
         let status_label = Label::new(None);
         status_label.set_visible(false);
-        status_label.set_margin_end(8);
+        status_label.set_margin_end(12);
         status_label.add_css_class("dim-label");
         toolbar.append(&status_label);
 
@@ -58,8 +58,8 @@ impl EmbeddedVncWidget {
 
         // Separator
         let separator = gtk4::Separator::new(Orientation::Vertical);
-        separator.set_margin_start(4);
-        separator.set_margin_end(4);
+        separator.set_margin_start(6);
+        separator.set_margin_end(6);
         toolbar.append(&separator);
 
         // Ctrl+Alt+Del button
@@ -240,7 +240,10 @@ impl EmbeddedVncWidget {
                     }
 
                     // Fallback: old VncPixelBuffer path (to_vec copy)
-                    #[allow(clippy::items_after_statements)]
+                    #[expect(
+    clippy::items_after_statements,
+    reason = "local helper introduced inline next to its only call site; hoisting would scatter related logic"
+)]
                     static WARN_ONCE: std::sync::Once = std::sync::Once::new();
                     WARN_ONCE.call_once(|| {
                         tracing::warn!("VNC: using fallback VncPixelBuffer with per-frame to_vec() copy — consider migrating to CairoBackedBuffer");
@@ -579,9 +582,17 @@ impl EmbeddedVncWidget {
                     || f64::from(area.scale_factor().max(1)),
                     |c| c.scale_override.effective_scale(area.scale_factor()),
                 );
-                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                #[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "value range fits the target type and is non-negative by construction in this code path"
+)]
                 let scaled_width = (f64::from(new_width.unsigned_abs()) * effective_scale) as u32;
-                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                #[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "value range fits the target type and is non-negative by construction in this code path"
+)]
                 let scaled_height = (f64::from(new_height.unsigned_abs()) * effective_scale) as u32;
 
                 *width.borrow_mut() = new_width.unsigned_abs();

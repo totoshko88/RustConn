@@ -3,8 +3,14 @@
 //! Tests that verify exporting connections to various formats and re-importing
 //! them preserves all connection data correctly.
 
-#![allow(clippy::uninlined_format_args)]
-#![allow(clippy::single_char_pattern)]
+#![allow(
+    clippy::uninlined_format_args,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::single_char_pattern,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 use rustconn_core::export::{
     AnsibleExporter, AsbruExporter, ExportFormat, ExportOptions, ExportTarget, RemminaExporter,

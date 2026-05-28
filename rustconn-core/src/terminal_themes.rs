@@ -10,7 +10,6 @@ use std::sync::Mutex;
 
 /// RGB color representation
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[allow(clippy::derive_partial_eq_without_eq)]
 pub struct Color {
     /// Red component (0.0-1.0)
     pub r: f32,
@@ -45,11 +44,23 @@ impl Color {
     /// Converts this color to a `#RRGGBB` hex string.
     #[must_use]
     pub fn to_hex(&self) -> String {
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let r = (self.r * 255.0).round() as u8;
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let g = (self.g * 255.0).round() as u8;
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let b = (self.b * 255.0).round() as u8;
         format!("#{r:02X}{g:02X}{b:02X}")
     }
@@ -192,7 +203,11 @@ impl TerminalTheme {
     }
 
     /// Adds or updates a custom theme and persists to disk.
-    #[allow(clippy::missing_panics_doc, clippy::significant_drop_tightening)]
+    #[expect(
+        clippy::missing_panics_doc,
+        clippy::significant_drop_tightening,
+        reason = "Mutex guard is intentionally held across the operation; panic only on poisoned lock"
+    )]
     pub fn save_custom_theme(theme: Self) {
         let mut guard = CUSTOM_THEMES
             .lock()
@@ -212,7 +227,11 @@ impl TerminalTheme {
     /// Removes a custom theme by name and persists to disk.
     ///
     /// Returns `true` if the theme was found and removed.
-    #[allow(clippy::missing_panics_doc, clippy::significant_drop_tightening)]
+    #[expect(
+        clippy::missing_panics_doc,
+        clippy::significant_drop_tightening,
+        reason = "Mutex guard is intentionally held across the operation; panic only on poisoned lock"
+    )]
     pub fn remove_custom_theme(name: &str) -> bool {
         let mut guard = CUSTOM_THEMES
             .lock()

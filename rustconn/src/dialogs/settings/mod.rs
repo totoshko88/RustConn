@@ -70,7 +70,7 @@ fn collect_groups(widget: &gtk4::Widget, groups: &mut Vec<adw::PreferencesGroup>
 }
 
 /// Main settings dialog using AdwPreferencesDialog (libadwaita 1.5+)
-#[allow(dead_code)] // Fields kept for GTK widget lifecycle
+#[allow(dead_code, reason = "Fields kept for GTK widget lifecycle")]
 pub struct SettingsDialog {
     dialog: adw::PreferencesDialog,
     // Terminal settings
@@ -300,7 +300,7 @@ impl SettingsDialog {
 
         let hl_btn_box = GtkBox::new(gtk4::Orientation::Horizontal, 8);
         hl_btn_box.set_halign(gtk4::Align::End);
-        hl_btn_box.set_margin_top(8);
+        hl_btn_box.set_margin_top(12);
 
         let add_hl_button = Button::builder()
             .label(&i18n("Add Rule"))
@@ -1286,8 +1286,8 @@ fn create_settings_highlight_rule_row(
     let hbox = GtkBox::new(gtk4::Orientation::Horizontal, 8);
     hbox.set_margin_top(6);
     hbox.set_margin_bottom(6);
-    hbox.set_margin_start(8);
-    hbox.set_margin_end(8);
+    hbox.set_margin_start(12);
+    hbox.set_margin_end(12);
 
     let name_entry = gtk4::Entry::builder()
         .placeholder_text(i18n("Name"))

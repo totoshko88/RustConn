@@ -14,9 +14,6 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 /// Runs the active RDP session, processing framebuffer updates and input
-// The future is not Send because IronRDP's AsyncNetworkClient is not Send.
-// This is fine because we run on a single-threaded Tokio runtime.
-#[allow(clippy::future_not_send)]
 pub async fn run_active_session(
     framed: UpgradedFramed,
     connection_result: ConnectionResult,

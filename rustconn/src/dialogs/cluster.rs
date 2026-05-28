@@ -36,7 +36,10 @@ pub struct ClusterDialog {
 }
 
 /// Represents a connection selection row in the cluster dialog
-#[allow(dead_code)] // Fields kept for GTK widget lifecycle and future use
+#[allow(
+    dead_code,
+    reason = "Fields kept for GTK widget lifecycle and future use"
+)]
 struct ConnectionSelectionRow {
     /// The row widget
     row: ListBoxRow,
@@ -98,8 +101,8 @@ impl ClusterDialog {
             .build();
 
         // Name entry row using builder
-        let (name_row, name_entry) = super::widgets::EntryRowBuilder::new("Name")
-            .placeholder("Enter cluster name")
+        let (name_row, name_entry) = super::widgets::EntryRowBuilder::new(i18n("Name"))
+            .placeholder(i18n("Enter cluster name"))
             .build();
         name_row.set_activatable_widget(Some(&name_entry));
         details_group.add(&name_row);
@@ -223,8 +226,8 @@ impl ClusterDialog {
         let hbox = GtkBox::new(Orientation::Horizontal, 8);
         hbox.set_margin_top(6);
         hbox.set_margin_bottom(6);
-        hbox.set_margin_start(8);
-        hbox.set_margin_end(8);
+        hbox.set_margin_start(12);
+        hbox.set_margin_end(12);
 
         let selected_check = CheckButton::new();
 
@@ -339,7 +342,10 @@ pub struct ClusterListDialog {
 }
 
 /// Represents a cluster row in the list dialog
-#[allow(dead_code)] // Fields kept for GTK widget lifecycle and future dynamic updates
+#[allow(
+    dead_code,
+    reason = "Fields kept for GTK widget lifecycle and future dynamic updates"
+)]
 struct ClusterListRow {
     /// The row widget
     row: ListBoxRow,
@@ -457,10 +463,10 @@ impl ClusterListDialog {
     /// Creates a cluster row widget
     fn create_cluster_row(cluster: &Cluster) -> ClusterListRow {
         let hbox = GtkBox::new(Orientation::Horizontal, 8);
-        hbox.set_margin_top(8);
-        hbox.set_margin_bottom(8);
-        hbox.set_margin_start(8);
-        hbox.set_margin_end(8);
+        hbox.set_margin_top(12);
+        hbox.set_margin_bottom(12);
+        hbox.set_margin_start(12);
+        hbox.set_margin_end(12);
 
         // Cluster icon
         let icon = gtk4::Image::from_icon_name("network-workgroup-symbolic");

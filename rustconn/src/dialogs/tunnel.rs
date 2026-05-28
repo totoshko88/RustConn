@@ -584,7 +584,10 @@ fn refresh_from_context(ctx: &TunnelRowContext) {
 ///
 /// When `existing` is `Some`, the wizard is pre-populated for editing (preserves UUID).
 /// When `None`, a blank wizard is shown for creating a new tunnel.
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 fn open_tunnel_builder(
     parent: &adw::Window,
     state: &SharedAppState,

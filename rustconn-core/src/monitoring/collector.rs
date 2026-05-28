@@ -145,7 +145,11 @@ impl Default for MetricsComputer {
 /// with any transport (SSH channel, exec, etc.).
 ///
 /// Returns a handle to stop the collector and a receiver for events.
-#[allow(clippy::needless_pass_by_value, clippy::too_many_lines)]
+#[allow(
+    clippy::needless_pass_by_value,
+    clippy::too_many_lines,
+    reason = "kept alive for GTK widget lifecycle / future API exposure"
+)]
 pub fn start_collector<F, Fut>(
     settings: MonitoringSettings,
     exec_command: F,

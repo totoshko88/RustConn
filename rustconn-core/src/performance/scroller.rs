@@ -55,7 +55,10 @@ impl VirtualScroller {
 
     /// Gets the range of visible items (`start_index`, `end_index`)
     #[must_use]
-    #[allow(clippy::cast_sign_loss)]
+    #[expect(
+        clippy::cast_sign_loss,
+        reason = "value is non-negative by construction in this code path"
+    )]
     pub fn visible_range(&self) -> (usize, usize) {
         if self.total_items == 0 || self.item_height <= 0.0 {
             return (0, 0);

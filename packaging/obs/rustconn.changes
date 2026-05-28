@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Wed May 27 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.0
+
+- RDP RemoteApp: password no longer leaked via /proc/PID/cmdline; uses single-use args file in $XDG_RUNTIME_DIR with mode 0600
+- Migrated ~350 #[allow] overrides to #[expect(reason = "...")]; ~50 stale overrides dropped during the audit
+- Manual Debug impls for all secret backends (BitwardenBackend, KeePassXcBackend, LibSecretBackend, MacOsKeychainBackend, OnePasswordBackend, PassBackend, PassboltBackend, SecretManager, CredentialResolver) with leak-protection unit tests
+- # Errors documentation on every public CLI command function
+- Settings-save failures now surface a toast instead of being silently dropped
+- EntryRowBuilder requires pre-translated titles so xgettext extracts every UI label
+- GUI spacing now consistently follows GNOME HIG steps (6/12/18/24 px)
+
+-------------------------------------------------------------------
 Wed May 27 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.10
 
 - Hardened secret handling: SecretString accepted directly in vault save signatures

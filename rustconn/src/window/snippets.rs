@@ -75,7 +75,10 @@ pub fn show_new_snippet_dialog(
 }
 
 /// Shows the snippets manager dialog
-#[allow(clippy::too_many_lines)]
+#[allow(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub fn show_snippets_manager(
     window: &gtk4::Window,
     state: SharedAppState,
@@ -226,10 +229,10 @@ fn populate_snippets_manager_list(
         row.set_widget_name(&format!("snippet-{}", snippet.id));
 
         let hbox = gtk4::Box::new(Orientation::Horizontal, 8);
-        hbox.set_margin_top(8);
-        hbox.set_margin_bottom(8);
+        hbox.set_margin_top(12);
+        hbox.set_margin_bottom(12);
         hbox.set_margin_start(12);
-        hbox.set_margin_end(8);
+        hbox.set_margin_end(12);
 
         let vbox = gtk4::Box::new(Orientation::Vertical, 2);
         vbox.set_hexpand(true);
@@ -417,8 +420,8 @@ pub fn populate_snippets_list(state: &SharedAppState, list: &gtk4::ListBox, quer
         row.set_widget_name(&format!("snippet-{}", snippet.id));
 
         let hbox = gtk4::Box::new(Orientation::Horizontal, 12);
-        hbox.set_margin_top(8);
-        hbox.set_margin_bottom(8);
+        hbox.set_margin_top(12);
+        hbox.set_margin_bottom(12);
         hbox.set_margin_start(12);
         hbox.set_margin_end(12);
 
@@ -678,7 +681,10 @@ pub fn show_variable_input_dialog(
             entry.set_placeholder_text(Some(desc));
         }
 
-        #[allow(clippy::cast_possible_wrap)]
+        #[expect(
+            clippy::cast_possible_wrap,
+            reason = "value range fits the target signed type by construction in this code path"
+        )]
         let row_idx = i as i32;
         grid.attach(&label, 0, row_idx, 1, 1);
         grid.attach(&entry, 1, row_idx, 1, 1);

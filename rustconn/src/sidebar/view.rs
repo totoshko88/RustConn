@@ -18,7 +18,10 @@ use crate::sidebar_ui;
 /// Each list item is set up with proper accessible properties:
 /// - Status icons have live region for dynamic updates
 /// - Labels are associated with their icons
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub fn setup_list_item(
     _factory: &SignalListItemFactory,
     list_item: &ListItem,
@@ -28,10 +31,10 @@ pub fn setup_list_item(
     let expander = TreeExpander::new();
 
     let content_box = GtkBox::new(Orientation::Horizontal, 8);
-    content_box.set_margin_start(4);
-    content_box.set_margin_end(4);
-    content_box.set_margin_top(4);
-    content_box.set_margin_bottom(4);
+    content_box.set_margin_start(6);
+    content_box.set_margin_end(6);
+    content_box.set_margin_top(6);
+    content_box.set_margin_bottom(6);
 
     let icon = Image::from_icon_name("network-server-symbolic");
     content_box.append(&icon);

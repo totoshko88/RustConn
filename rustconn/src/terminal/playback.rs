@@ -100,7 +100,7 @@ impl PlaybackController {
 
     /// Returns the current playback state.
     #[must_use]
-    #[allow(dead_code)] // Public API for external state queries
+    #[allow(dead_code, reason = "Public API for external state queries")]
     pub fn state(&self) -> PlaybackState {
         self.state.get()
     }
@@ -234,7 +234,7 @@ pub struct PlaybackToolbar {
     /// Status label shown after playback completes.
     pub status_label: Label,
     /// Quick search entry for filtering recordings.
-    #[allow(dead_code)] // Kept for future programmatic access
+    #[allow(dead_code, reason = "Kept for future programmatic access")]
     pub search_entry: SearchEntry,
     /// Popover containing the filtered recording list.
     pub search_popover: Popover,
@@ -257,8 +257,8 @@ impl Drop for PlaybackToolbar {
 pub fn create_playback_toolbar(recordings: &[RecordingEntry]) -> PlaybackToolbar {
     let toolbar_box = GtkBox::new(Orientation::Horizontal, 4);
     toolbar_box.add_css_class("playback-toolbar");
-    toolbar_box.set_margin_start(4);
-    toolbar_box.set_margin_end(4);
+    toolbar_box.set_margin_start(6);
+    toolbar_box.set_margin_end(6);
 
     // --- Control buttons (10.1) ---
 
@@ -377,10 +377,10 @@ fn populate_search_list(list: &ListBox, recordings: &[RecordingEntry]) {
             .unwrap_or(&entry.metadata.connection_name);
         let label = Label::new(Some(display));
         label.set_halign(gtk4::Align::Start);
-        label.set_margin_start(8);
-        label.set_margin_end(8);
-        label.set_margin_top(4);
-        label.set_margin_bottom(4);
+        label.set_margin_start(12);
+        label.set_margin_end(12);
+        label.set_margin_top(6);
+        label.set_margin_bottom(6);
 
         let row = ListBoxRow::new();
         row.set_child(Some(&label));

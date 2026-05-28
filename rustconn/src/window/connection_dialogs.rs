@@ -67,7 +67,10 @@ pub fn show_new_connection_dialog_prefilled(
 }
 
 /// Internal function to show the new connection dialog with optional template
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub fn show_new_connection_dialog_internal(
     window: &gtk4::Window,
     state: SharedAppState,
@@ -212,7 +215,10 @@ pub fn show_new_connection_dialog_internal(
 ///
 /// Similar to `show_new_connection_dialog_internal` but uses `set_connection` directly
 /// instead of applying a template.
-#[allow(clippy::too_many_lines)]
+#[allow(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 fn show_new_connection_dialog_internal_prefilled(
     window: &gtk4::Window,
     state: SharedAppState,
@@ -344,7 +350,11 @@ pub fn show_new_group_dialog(window: &gtk4::Window, state: SharedAppState, sideb
 }
 
 /// Shows the new group dialog with parent group selection
-#[allow(clippy::too_many_lines, clippy::needless_pass_by_value)]
+#[expect(
+    clippy::needless_pass_by_value,
+    clippy::too_many_lines,
+    reason = "value is consumed by trait/API contract and the body dispatches over many variants; restructuring would scatter related logic"
+)]
 pub fn show_new_group_dialog_with_parent(
     window: &gtk4::Window,
     state: SharedAppState,

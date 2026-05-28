@@ -8,7 +8,10 @@ mod manager;
 /// Session recording in `scriptreplay`-compatible format.
 pub mod recording;
 mod restore;
-#[allow(clippy::module_inception)]
+#[expect(
+    clippy::module_inception,
+    reason = "internal `mod foo` inside `foo.rs` keeps the file private and re-exports curated items"
+)]
 mod session;
 
 pub use logger::{

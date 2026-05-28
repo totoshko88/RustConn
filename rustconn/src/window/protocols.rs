@@ -893,7 +893,10 @@ pub fn reconnect_generic_vte_in_place(
 /// Starts a Telnet connection
 ///
 /// Creates a terminal tab and spawns the telnet process.
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 pub fn start_telnet_connection(
     state: &SharedAppState,
     notebook: &SharedNotebook,
@@ -966,7 +969,10 @@ pub fn start_telnet_connection(
 /// Internal function to start Telnet connection (after port check).
 ///
 /// Creates a terminal tab and spawns the telnet process.
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 fn start_telnet_connection_internal(
     state: &SharedAppState,
     notebook: &SharedNotebook,
@@ -1127,7 +1133,10 @@ fn start_telnet_connection_internal(
 /// Starts a Zero Trust connection
 ///
 /// Creates a terminal tab and spawns the Zero Trust provider command.
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 pub fn start_zerotrust_connection(
     state: &SharedAppState,
     notebook: &SharedNotebook,
@@ -1318,7 +1327,10 @@ pub fn start_zerotrust_connection(
 ///
 /// Creates a terminal tab and spawns picocom with the serial configuration.
 /// Shows user-friendly toasts when picocom is not found or device access fails.
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 pub fn start_serial_connection(
     state: &SharedAppState,
     notebook: &SharedNotebook,
@@ -1475,7 +1487,10 @@ pub fn start_serial_connection(
 /// Creates a terminal tab and spawns `kubectl exec` or `kubectl run`
 /// with the Kubernetes configuration. Uses `Protocol::build_command()`
 /// from `KubernetesProtocol` to generate the command.
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 pub fn start_kubernetes_connection(
     state: &SharedAppState,
     notebook: &SharedNotebook,
@@ -1670,7 +1685,10 @@ pub fn start_kubernetes_connection(
 /// Creates a terminal tab and spawns the `mosh` process with SSH port,
 /// predict mode, server binary, and port range from `MoshConfig`.
 /// Uses `MoshProtocol::build_command()` to generate the argv.
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 pub fn start_mosh_connection(
     state: &SharedAppState,
     notebook: &SharedNotebook,

@@ -17,7 +17,11 @@ use crate::util::{
 };
 
 /// Parameters for the `add` command
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "AddParams/UpdateParams mirror Clap-derived flags 1:1; bundling related \
+              booleans into enums would force callers to convert and obscure CLI mapping"
+)]
 pub struct AddParams<'a> {
     pub name: &'a str,
     pub host: &'a str,
@@ -114,7 +118,19 @@ pub struct AddParams<'a> {
 }
 
 /// Add connection command handler
-#[allow(clippy::needless_pass_by_value, clippy::too_many_lines)]
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when connections cannot be loaded or saved, or when
+///   the requested protocol / auth method / port combination is invalid
+/// - [`CliError::Group`] when `--group` is set and the group cannot be created
+#[expect(
+    clippy::needless_pass_by_value,
+    clippy::too_many_lines,
+    reason = "AddParams is consumed by value to take ownership of borrowed flag values \
+              from Clap; the long body builds every protocol's connection inline"
+)]
 pub fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Result<(), CliError> {
     let (protocol_type, default_port) = parse_protocol(params.protocol)?;
     let port = params.port.unwrap_or(default_port);
@@ -490,7 +506,11 @@ pub fn parse_protocol(protocol: &str) -> Result<(ProtocolType, u16), CliError> {
 }
 
 /// Create a connection with the specified parameters
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "create_connection branches over every protocol kind and applies wave-2 fields \
+              inline; per-protocol helpers exist already and reduce this to a dispatcher"
+)]
 fn create_connection(
     name: &str,
     host: &str,
@@ -652,7 +672,11 @@ fn require<'a>(value: Option<&'a str>, flag: &str, provider: &str) -> Result<&'a
 }
 
 /// Create a Zero Trust connection from CLI parameters
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Zero Trust create dispatches across every supported provider; \
+              per-provider helpers would duplicate the require/parse boilerplate"
+)]
 fn create_zerotrust_connection(name: &str, params: &AddParams<'_>) -> Result<Connection, CliError> {
     let provider_str = params.provider.ok_or_else(|| {
         CliError::Config(
@@ -845,7 +869,11 @@ pub fn apply_jump_host_id(
 /// custom options, port forwards) to an `SshConfig`.
 ///
 /// Used for both SSH and SFTP protocol configs (they share the same struct).
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "wave-2 SSH/SFTP fields are flat in the Clap-derived AddParams; \
+              regrouping into a struct would only restate the field list"
+)]
 pub fn apply_ssh_wave2_fields(
     cfg: &mut rustconn_core::models::SshConfig,
     x11_forwarding: bool,

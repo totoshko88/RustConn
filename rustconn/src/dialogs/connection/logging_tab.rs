@@ -21,7 +21,7 @@ const TIMESTAMP_FORMATS: [&str; 5] = [
 ];
 
 /// Logging tab widget group
-#[allow(dead_code)] // Fields kept for GTK widget lifecycle
+#[allow(dead_code, reason = "Fields kept for GTK widget lifecycle")]
 pub struct LoggingTab {
     pub enabled_switch: adw::SwitchRow,
     pub path_entry: Entry,
@@ -299,9 +299,15 @@ impl LoggingTab {
             .unwrap_or(&TIMESTAMP_FORMATS[0])
             .to_string();
 
-        #[allow(clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_sign_loss,
+            reason = "value is non-negative by construction in this code path"
+        )]
         let max_size_mb = self.max_size_spin.value() as u32;
-        #[allow(clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_sign_loss,
+            reason = "value is non-negative by construction in this code path"
+        )]
         let retention_days = self.retention_spin.value() as u32;
 
         Some(LogConfig {

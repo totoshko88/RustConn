@@ -10,7 +10,11 @@
 //! Keep in sync with:
 //! - `rustconn-core/src/template/predefined.rs` (descriptions + category names)
 
-#![allow(dead_code, unreachable_code)]
+#![allow(
+    dead_code,
+    unreachable_code,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 fn _never_called() {
     return;

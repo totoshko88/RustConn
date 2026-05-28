@@ -383,7 +383,7 @@ impl PartialConnection {
 }
 
 /// The Connection Wizard dialog
-#[allow(dead_code)] // Fields kept for GTK widget lifecycle
+#[allow(dead_code, reason = "Fields kept for GTK widget lifecycle")]
 pub struct ConnectionWizard {
     dialog: adw::Dialog,
     nav_view: adw::NavigationView,

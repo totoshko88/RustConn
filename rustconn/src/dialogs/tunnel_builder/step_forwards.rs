@@ -31,9 +31,9 @@ struct ForwardRuleWidgets {
     local_port_spin: adw::SpinRow,
     remote_host_entry: adw::EntryRow,
     remote_port_spin: adw::SpinRow,
-    #[allow(dead_code)] // Kept alive for GTK widget lifecycle
+    #[allow(dead_code, reason = "Kept alive for GTK widget lifecycle")]
     local_port_warning: gtk4::Label,
-    #[allow(dead_code)] // Kept alive for GTK widget lifecycle
+    #[allow(dead_code, reason = "Kept alive for GTK widget lifecycle")]
     remote_host_error: gtk4::Label,
 }
 
@@ -47,10 +47,18 @@ impl ForwardRuleWidgets {
             _ => PortForwardDirection::Local,
         };
 
-        #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let local_port = self.local_port_spin.value() as u16;
         let remote_host = self.remote_host_entry.text().trim().to_string();
-        #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let remote_port = self.remote_port_spin.value() as u16;
 
         PortForward {
@@ -63,7 +71,11 @@ impl ForwardRuleWidgets {
 
     /// Returns true if this rule passes validation
     fn is_valid(&self) -> bool {
-        #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let local_port = self.local_port_spin.value() as u16;
         if local_port == 0 {
             return false;
@@ -76,7 +88,11 @@ impl ForwardRuleWidgets {
             if remote_host.trim().is_empty() {
                 return false;
             }
-            #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+            #[expect(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "value range fits the target type and is non-negative by construction in this code path"
+            )]
             let remote_port = self.remote_port_spin.value() as u16;
             if remote_port == 0 {
                 return false;
@@ -530,10 +546,18 @@ impl StepForwardsPage {
                     2 => "D",
                     _ => "?",
                 };
-                #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    clippy::cast_sign_loss,
+                    reason = "value range fits the target type and is non-negative by construction in this code path"
+                )]
                 let lp = lp_c.value() as u16;
                 let rh = remote_host_c.text();
-                #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    clippy::cast_sign_loss,
+                    reason = "value range fits the target type and is non-negative by construction in this code path"
+                )]
                 let rp = remote_port_c.value() as u16;
                 let title = if dir == "D" {
                     format!("D {lp} (SOCKS)")
@@ -580,7 +604,11 @@ impl StepForwardsPage {
         {
             let warning_label = local_port_warning.clone();
             local_port_spin.connect_changed(move |spin| {
-                #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+                #[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "value range fits the target type and is non-negative by construction in this code path"
+)]
                 let port = spin.value() as u16;
                 warning_label.set_visible(port > 0 && port < 1024);
             });

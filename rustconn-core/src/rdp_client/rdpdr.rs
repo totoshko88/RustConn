@@ -64,7 +64,7 @@ pub struct RustConnRdpdrBackend {
 
 /// Pending directory change notification
 #[derive(Debug, Clone)]
-#[allow(dead_code)] // Fields read via Debug in trace! logging
+#[allow(dead_code, reason = "Fields read via Debug in trace! logging")]
 struct PendingNotification {
     /// Device IO request header
     device_io_request: ironrdp::rdpdr::pdu::efs::DeviceIoRequest,
@@ -284,8 +284,14 @@ impl RdpdrBackend for RustConnRdpdrBackend {
 }
 
 impl RustConnRdpdrBackend {
-    #[allow(clippy::too_many_lines)]
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+    )]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "function returns Result for trait/API uniformity even though this branch never fails"
+    )]
     fn handle_create(&mut self, req: DeviceCreateRequest) -> PduResult<Vec<SvcMessage>> {
         let file_id = self.alloc_file_id();
         let device_id = req.device_io_request.device_id;
@@ -365,7 +371,10 @@ impl RustConnRdpdrBackend {
 
         // Handle file creation/opening
         let mut opts = OpenOptions::new();
-        #[allow(clippy::match_same_arms)]
+        #[expect(
+            clippy::match_same_arms,
+            reason = "arms differ only in attached doc comment; collapsing would lose the inline documentation"
+        )]
         match req.create_disposition {
             CreateDisposition::FILE_OPEN => {
                 opts.read(true);
@@ -429,7 +438,10 @@ impl RustConnRdpdrBackend {
         }
     }
 
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "function returns Result for trait/API uniformity even though this branch never fails"
+    )]
     fn handle_close(&mut self, req: DeviceCloseRequest) -> PduResult<Vec<SvcMessage>> {
         let file_id = req.device_io_request.file_id;
         self.file_handles.remove(&file_id);
@@ -450,7 +462,10 @@ impl RustConnRdpdrBackend {
         ))])
     }
 
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "function returns Result for trait/API uniformity even though this branch never fails"
+    )]
     fn handle_read(&mut self, req: DeviceReadRequest) -> PduResult<Vec<SvcMessage>> {
         let file_id = req.device_io_request.file_id;
         if let Some(file) = self.file_handles.get_mut(&file_id)
@@ -486,7 +501,10 @@ impl RustConnRdpdrBackend {
         ))])
     }
 
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "function returns Result for trait/API uniformity even though this branch never fails"
+    )]
     fn handle_write(&mut self, req: DeviceWriteRequest) -> PduResult<Vec<SvcMessage>> {
         let file_id = req.device_io_request.file_id;
         if let Some(file) = self.file_handles.get_mut(&file_id)
@@ -521,8 +539,14 @@ impl RustConnRdpdrBackend {
         ))])
     }
 
-    #[allow(clippy::unnecessary_wraps)]
-    #[allow(clippy::needless_pass_by_ref_mut)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "function returns Result for trait/API uniformity even though this branch never fails"
+    )]
+    #[expect(
+        clippy::needless_pass_by_ref_mut,
+        reason = "&mut required by the trait/upstream contract even when this branch does not mutate"
+    )]
     fn handle_query_info(
         &mut self,
         req: ServerDriveQueryInformationRequest,
@@ -563,7 +587,10 @@ impl RustConnRdpdrBackend {
             .unwrap_or_default();
         let file_attrs = get_file_attributes(&meta, &file_name);
 
-        #[allow(clippy::cast_possible_wrap)]
+        #[expect(
+            clippy::cast_possible_wrap,
+            reason = "value range fits the target signed type by construction in this code path"
+        )]
         let buffer = match req.file_info_class_lvl {
             FileInformationClassLevel::FILE_BASIC_INFORMATION => {
                 Some(FileInformationClass::Basic(FileBasicInformation {
@@ -598,9 +625,14 @@ impl RustConnRdpdrBackend {
         )])
     }
 
-    #[allow(clippy::unnecessary_wraps)]
-    #[allow(clippy::needless_pass_by_ref_mut)]
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "function returns Result for trait/API uniformity even though this branch never fails"
+    )]
+    #[expect(
+        clippy::needless_pass_by_ref_mut,
+        reason = "&mut required by the trait/upstream contract even when this branch does not mutate"
+    )]
     fn handle_query_volume(
         &mut self,
         req: ServerDriveQueryVolumeInformationRequest,
@@ -666,7 +698,10 @@ impl RustConnRdpdrBackend {
         )])
     }
 
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "function returns Result for trait/API uniformity even though this branch never fails"
+    )]
     fn handle_query_directory(
         &mut self,
         req: ServerDriveQueryDirectoryRequest,
@@ -723,7 +758,10 @@ impl RustConnRdpdrBackend {
 
             if let Ok(meta) = std::fs::metadata(&full_path) {
                 let file_attrs = get_file_attributes(&meta, &file_name);
-                #[allow(clippy::cast_possible_wrap)]
+                #[expect(
+                    clippy::cast_possible_wrap,
+                    reason = "value range fits the target signed type by construction in this code path"
+                )]
                 let info = FileBothDirectoryInformation::new(
                     unix_to_filetime(meta.ctime()),
                     unix_to_filetime(meta.ctime()),
@@ -762,10 +800,22 @@ impl RustConnRdpdrBackend {
         )])
     }
 
-    #[allow(clippy::unnecessary_wraps)]
-    #[allow(clippy::needless_pass_by_ref_mut)]
-    #[allow(clippy::needless_pass_by_value)]
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "function returns Result for trait/API uniformity even though this branch never fails"
+    )]
+    #[expect(
+        clippy::needless_pass_by_ref_mut,
+        reason = "&mut required by the trait/upstream contract even when this branch does not mutate"
+    )]
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "value is consumed by trait/API contract; borrowing would force callers to clone before passing"
+    )]
+    #[expect(
+        clippy::unused_self,
+        reason = "method is part of a uniform helper API where most operations need &self; keeping &self preserves the consistent signature"
+    )]
     fn handle_set_info(
         &mut self,
         req: ServerDriveSetInformationRequest,
@@ -787,8 +837,14 @@ impl RustConnRdpdrBackend {
     ///
     /// The server sends this request to be notified when a directory changes.
     /// We set up an inotify watch on the directory and will respond when changes occur.
-    #[allow(clippy::unnecessary_wraps)]
-    #[allow(clippy::needless_pass_by_value)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "function returns Result for trait/API uniformity even though this branch never fails"
+    )]
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "value is consumed by trait/API contract; borrowing would force callers to clone before passing"
+    )]
     fn handle_notify_change_directory(
         &mut self,
         req: ServerDriveNotifyChangeDirectoryRequest,
@@ -846,8 +902,10 @@ impl RustConnRdpdrBackend {
     ///
     /// Implements byte-range locking for shared folder files.
     /// This is important for applications that use file locking for synchronization.
-    #[allow(clippy::unnecessary_wraps)]
-    #[allow(clippy::needless_pass_by_ref_mut)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "function returns Result for trait/API uniformity even though this branch never fails"
+    )]
     fn handle_lock_control(
         &self,
         req: ServerDriveLockControlRequest,
@@ -897,12 +955,30 @@ fn get_disk_stats(path: &str) -> (i64, i64) {
 
     match nix::sys::statvfs::statvfs(path) {
         Ok(stat) => {
-            #[cfg_attr(not(target_os = "macos"), allow(clippy::useless_conversion))]
+            #[cfg_attr(
+                not(target_os = "macos"),
+                allow(
+                    clippy::useless_conversion,
+                    reason = "u64::from is identity on Linux but a real conversion on macOS where fragment_size() returns u32"
+                )
+            )]
             let frag_size = u64::from(stat.fragment_size());
             // Convert from filesystem blocks to 4096-byte allocation units
-            #[cfg_attr(not(target_os = "macos"), allow(clippy::useless_conversion))]
+            #[cfg_attr(
+                not(target_os = "macos"),
+                allow(
+                    clippy::useless_conversion,
+                    reason = "u64::from is identity on Linux but a real conversion on macOS where blocks() returns u32"
+                )
+            )]
             let total_bytes = u64::from(stat.blocks()).saturating_mul(frag_size);
-            #[cfg_attr(not(target_os = "macos"), allow(clippy::useless_conversion))]
+            #[cfg_attr(
+                not(target_os = "macos"),
+                allow(
+                    clippy::useless_conversion,
+                    reason = "u64::from is identity on Linux but a real conversion on macOS where blocks_available() returns u32"
+                )
+            )]
             let avail_bytes = u64::from(stat.blocks_available()).saturating_mul(frag_size);
 
             let total = i64::try_from(total_bytes / ALLOC_UNIT_BYTES).unwrap_or(1_000_000);

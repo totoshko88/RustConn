@@ -36,8 +36,14 @@
 //! - Requirement 10.1: Follow VNC client architecture pattern
 
 // cast_possible_truncation, cast_precision_loss allowed at workspace level
-#![allow(clippy::cast_sign_loss)]
-#![allow(clippy::missing_panics_doc)]
+#![allow(
+    clippy::cast_sign_loss,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::missing_panics_doc,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 #[cfg(feature = "rdp-embedded")]
 pub mod audio;

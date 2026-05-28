@@ -17,7 +17,11 @@ use rustconn_core::wol::{DEFAULT_BROADCAST_ADDRESS, DEFAULT_WOL_PORT, DEFAULT_WO
 /// Activity Monitor, Highlight Rules, and WOL settings.
 ///
 /// Uses libadwaita components following GNOME HIG.
-#[allow(clippy::type_complexity, clippy::similar_names)]
+#[expect(
+    clippy::similar_names,
+    clippy::type_complexity,
+    reason = "internal helper signature documents the tuple layout with paired naming; aliasing would obscure the data flow"
+)]
 pub(super) fn create_advanced_tab() -> (
     GtkBox,
     CheckButton,
@@ -480,7 +484,7 @@ pub(super) fn create_advanced_tab() -> (
 
     let hl_button_box = GtkBox::new(Orientation::Horizontal, 8);
     hl_button_box.set_halign(gtk4::Align::End);
-    hl_button_box.set_margin_top(8);
+    hl_button_box.set_margin_top(12);
 
     let add_highlight_rule_button = Button::builder()
         .label(&i18n("Add Rule"))
@@ -665,9 +669,10 @@ pub(super) fn hex_to_rgba(hex: &str) -> Option<gtk4::gdk::RGBA> {
 
 /// Converts a GDK RGBA value to a hex color string (`#RRGGBB`).
 #[allow(
+    clippy::cast_lossless,
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
-    clippy::cast_lossless
+    reason = "value range fits the target type and is non-negative by construction; explicit `as` cast is intentional alongside .round()"
 )]
 pub(super) fn rgba_to_hex(rgba: &gtk4::gdk::RGBA) -> String {
     let r = (rgba.red() * 255.0).round() as u8;
@@ -706,8 +711,8 @@ pub(super) fn create_highlight_rule_row(
     let hbox = GtkBox::new(Orientation::Horizontal, 8);
     hbox.set_margin_top(6);
     hbox.set_margin_bottom(6);
-    hbox.set_margin_start(8);
-    hbox.set_margin_end(8);
+    hbox.set_margin_start(12);
+    hbox.set_margin_end(12);
 
     let name_entry = Entry::builder()
         .placeholder_text(i18n("Name"))

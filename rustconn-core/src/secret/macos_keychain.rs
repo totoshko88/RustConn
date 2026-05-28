@@ -30,6 +30,12 @@ mod inner {
     /// separate Keychain item with a composite account name.
     pub struct MacOsKeychainBackend;
 
+    impl std::fmt::Debug for MacOsKeychainBackend {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("MacOsKeychainBackend").finish()
+        }
+    }
+
     impl MacOsKeychainBackend {
         /// Creates a new macOS Keychain backend
         #[must_use]
@@ -191,6 +197,20 @@ mod inner {
 
         fn display_name(&self) -> &'static str {
             "macOS Keychain"
+        }
+    }
+
+    #[cfg(test)]
+    mod debug_tests {
+        use super::*;
+
+        #[test]
+        fn debug_does_not_leak_secret() {
+            // MacOsKeychainBackend is a unit struct — no in-process secrets.
+            // Sentinel test guards against future field additions.
+            let backend = MacOsKeychainBackend::new();
+            let rendered = format!("{backend:?}");
+            assert_eq!(rendered, "MacOsKeychainBackend");
         }
     }
 }

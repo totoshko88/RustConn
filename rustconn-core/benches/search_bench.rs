@@ -2,10 +2,22 @@
 //!
 //! Run with: `cargo bench -p rustconn-core`
 
-#![allow(clippy::cast_possible_truncation)]
-#![allow(clippy::cast_possible_wrap)]
-#![allow(clippy::semicolon_if_nothing_returned)]
-#![allow(clippy::explicit_iter_loop)]
+#![allow(
+    clippy::cast_possible_truncation,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::cast_possible_wrap,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::semicolon_if_nothing_returned,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
+#![allow(
+    clippy::explicit_iter_loop,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use rustconn_core::models::{Connection, ConnectionGroup, ProtocolConfig, SshConfig};

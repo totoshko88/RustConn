@@ -257,13 +257,19 @@ impl HighlightOverlay {
 
     /// Returns the underlying `DrawingArea` widget.
     #[must_use]
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn drawing_area(&self) -> &DrawingArea {
         &self.drawing_area
     }
 
     /// Triggers a manual redraw of the overlay.
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn queue_redraw(&self) {
         self.drawing_area.queue_draw();
     }

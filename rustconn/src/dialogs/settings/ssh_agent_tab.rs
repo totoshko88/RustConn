@@ -16,7 +16,10 @@ use std::rc::Rc;
 use crate::i18n::{i18n, i18n_f};
 
 /// Creates the SSH Agent settings page using AdwPreferencesPage
-#[allow(clippy::type_complexity)]
+#[allow(
+    clippy::type_complexity,
+    reason = "internal helper signature documents the exact tuple layout used by the caller; aliasing would obscure the data flow"
+)]
 pub fn create_ssh_agent_page() -> (
     adw::PreferencesPage,
     Label,

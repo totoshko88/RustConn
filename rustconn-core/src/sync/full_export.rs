@@ -91,7 +91,10 @@ impl FullSyncExport {
     /// `remember_window_position`, `skip_port_check`) are cleared to
     /// defaults to avoid leaking device-specific state.
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub fn build(
         app_version: String,
         device_id: Uuid,

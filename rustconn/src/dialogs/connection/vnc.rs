@@ -17,7 +17,10 @@ use rustconn_core::models::{ScaleOverride, VncClientMode, VncPerformanceMode};
 use crate::i18n::i18n;
 
 /// Creates the VNC options panel using libadwaita components following GNOME HIG.
-#[allow(clippy::type_complexity)]
+#[expect(
+    clippy::type_complexity,
+    reason = "internal helper signature documents the exact tuple layout used by the caller; aliasing would obscure the data flow"
+)]
 pub(super) fn create_vnc_options() -> (
     GtkBox,
     DropDown,

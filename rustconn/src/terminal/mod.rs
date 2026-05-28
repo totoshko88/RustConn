@@ -87,7 +87,7 @@ struct RemoteRecordingInfo {
 
 /// Terminal notebook widget for managing multiple terminal sessions
 /// Now using adw::TabView for modern GNOME HIG compliance
-#[allow(dead_code)] // Many fields kept for GTK widget lifecycle
+#[allow(dead_code, reason = "Many fields kept for GTK widget lifecycle")]
 pub struct TerminalNotebook {
     /// Main container with TabView and TabBar
     container: GtkBox,
@@ -427,7 +427,10 @@ impl TerminalNotebook {
     }
 
     /// Creates a new terminal tab for an SSH session with default settings
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn create_terminal_tab(
         &self,
         connection_id: Uuid,
@@ -453,7 +456,10 @@ impl TerminalNotebook {
     ///
     /// `global_variables` are used to substitute `${VAR}` references in
     /// Expect-rule responses before the automation session is created.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub fn create_terminal_tab_with_settings(
         &self,
         connection_id: Uuid,
@@ -883,7 +889,10 @@ impl TerminalNotebook {
 
     /// Gets the session widget (VNC) for a session
     #[must_use]
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn get_session_widget(&self, session_id: Uuid) -> Option<SessionWidget> {
         let widgets = self.session_widgets.borrow();
         if let Some(SessionWidgetStorage::Vnc(_)) = widgets.get(&session_id) {
@@ -900,7 +909,10 @@ impl TerminalNotebook {
 
     /// Gets the GTK widget for a session (for display in split view)
     #[must_use]
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn get_session_display_widget(&self, session_id: Uuid) -> Option<Widget> {
         let widgets = self.session_widgets.borrow();
         if let Some(storage) = widgets.get(&session_id) {
@@ -923,7 +935,10 @@ impl TerminalNotebook {
 
     /// Gets the session state for a VNC session
     #[must_use]
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn get_session_state(&self, session_id: Uuid) -> Option<SessionState> {
         let widgets = self.session_widgets.borrow();
         match widgets.get(&session_id) {
@@ -1276,7 +1291,10 @@ impl TerminalNotebook {
     }
 
     /// Spawns an SSH command in the terminal
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub fn spawn_ssh(
         &self,
         session_id: Uuid,
@@ -1819,7 +1837,7 @@ impl TerminalNotebook {
     ///
     /// * `session_id` - The session UUID
     /// * `color_id` - The ColorId from the split layout model
-    #[allow(dead_code)] // Will be used in window integration tasks
+    #[allow(dead_code, reason = "Will be used in window integration tasks")]
     pub fn set_tab_split_color_id(
         &self,
         session_id: Uuid,
@@ -1840,7 +1858,7 @@ impl TerminalNotebook {
     /// # Arguments
     ///
     /// * `session_id` - The session UUID
-    #[allow(dead_code)] // Will be used in window integration tasks
+    #[allow(dead_code, reason = "Will be used in window integration tasks")]
     pub fn update_tab_color_indicator(&self, session_id: Uuid) {
         if let Some(color_index) = self.get_session_split_color(session_id) {
             self.set_tab_split_color(session_id, color_index);
@@ -2065,7 +2083,10 @@ impl TerminalNotebook {
 
     /// Gets all active sessions
     #[must_use]
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn get_all_sessions(&self) -> Vec<TerminalSession> {
         self.session_info.borrow().values().cloned().collect()
     }
@@ -2187,7 +2208,7 @@ impl TerminalNotebook {
 
     /// Returns the per-session tab containers map.
     #[must_use]
-    #[allow(dead_code)] // Public API for Phase 2 split view integration
+    #[allow(dead_code, reason = "Public API for Phase 2 split view integration")]
     pub fn tab_containers(&self) -> &Rc<RefCell<HashMap<Uuid, TabPageContainer>>> {
         &self.tab_containers
     }
@@ -2259,7 +2280,10 @@ impl TerminalNotebook {
     /// Switches a session's tab page back to single-terminal mode.
     ///
     /// Removes the split widget and restores the single-terminal content.
-    #[allow(dead_code)] // Used when unsplitting restores single-terminal mode
+    #[allow(
+        dead_code,
+        reason = "Used when unsplitting restores single-terminal mode"
+    )]
     pub fn switch_tab_to_single(&self, session_id: Uuid, content: &GtkBox) {
         let mut containers = self.tab_containers.borrow_mut();
         if let Some(container) = containers.get_mut(&session_id) {
@@ -2305,14 +2329,20 @@ impl TerminalNotebook {
 
     /// Returns the number of open tabs
     #[must_use]
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn tab_count(&self) -> u32 {
         self.tab_view.n_pages() as u32
     }
 
     /// Returns the number of active sessions (excluding Welcome tab)
     #[must_use]
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn session_count(&self) -> usize {
         self.sessions.borrow().len()
     }
@@ -2465,7 +2495,7 @@ impl TerminalNotebook {
     }
 
     /// Hides TabView content area (legacy — kept for backward compatibility)
-    #[allow(dead_code)] // Legacy method, TabView now always visible
+    #[allow(dead_code, reason = "Legacy method, TabView now always visible")]
     pub fn hide_tab_view_content(&self) {
         self.tab_view.set_visible(false);
         self.tab_view.set_vexpand(false);
@@ -2473,7 +2503,10 @@ impl TerminalNotebook {
 
     /// Returns whether the TabView content is currently visible
     #[must_use]
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn is_tab_view_content_visible(&self) -> bool {
         self.tab_view.is_visible()
     }
@@ -2490,7 +2523,7 @@ impl TerminalNotebook {
     /// # Requirements
     /// - 3.1: Each Root_Tab maintains its own Split_Container
     #[must_use]
-    #[allow(dead_code)] // Will be used in window integration tasks
+    #[allow(dead_code, reason = "Will be used in window integration tasks")]
     pub fn split_manager(&self) -> Rc<RefCell<TabSplitManager>> {
         Rc::clone(&self.split_manager)
     }
@@ -2507,7 +2540,7 @@ impl TerminalNotebook {
     /// # Returns
     ///
     /// The TabId associated with this session
-    #[allow(dead_code)] // Will be used in window integration tasks
+    #[allow(dead_code, reason = "Will be used in window integration tasks")]
     pub fn get_or_create_tab_id(&self, session_id: Uuid) -> TabId {
         let mut tab_ids = self.session_tab_ids.borrow_mut();
         *tab_ids.entry(session_id).or_default()
@@ -2523,7 +2556,7 @@ impl TerminalNotebook {
     ///
     /// The TabId if the session has one, None otherwise
     #[must_use]
-    #[allow(dead_code)] // Will be used in window integration tasks
+    #[allow(dead_code, reason = "Will be used in window integration tasks")]
     pub fn get_tab_id(&self, session_id: Uuid) -> Option<TabId> {
         self.session_tab_ids.borrow().get(&session_id).copied()
     }
@@ -2538,7 +2571,7 @@ impl TerminalNotebook {
     ///
     /// `true` if the session's tab has splits, `false` otherwise
     #[must_use]
-    #[allow(dead_code)] // Will be used in window integration tasks
+    #[allow(dead_code, reason = "Will be used in window integration tasks")]
     pub fn is_session_split(&self, session_id: Uuid) -> bool {
         if let Some(tab_id) = self.get_tab_id(session_id) {
             self.split_manager.borrow().is_split(tab_id)
@@ -2557,7 +2590,7 @@ impl TerminalNotebook {
     ///
     /// The color index if the session has a split container with a color
     #[must_use]
-    #[allow(dead_code)] // Will be used in window integration tasks
+    #[allow(dead_code, reason = "Will be used in window integration tasks")]
     pub fn get_session_split_color(&self, session_id: Uuid) -> Option<usize> {
         if let Some(tab_id) = self.get_tab_id(session_id) {
             self.split_manager
@@ -2577,7 +2610,7 @@ impl TerminalNotebook {
     ///
     /// The group is assigned a color from the palette. The tab indicator is
     /// updated to show the group color (unless a split color is active).
-    #[allow(dead_code)] // Public API for window-level tab group operations
+    #[allow(dead_code, reason = "Public API for window-level tab group operations")]
     pub fn set_tab_group(&self, session_id: Uuid, group_name: &str) {
         let color_index = self
             .tab_group_manager
@@ -2606,7 +2639,7 @@ impl TerminalNotebook {
     }
 
     /// Removes a session from its tab group.
-    #[allow(dead_code)] // Public API for window-level tab group operations
+    #[allow(dead_code, reason = "Public API for window-level tab group operations")]
     pub fn remove_tab_group(&self, session_id: Uuid) {
         if let Some(info) = self.session_info.borrow_mut().get_mut(&session_id) {
             info.tab_group = None;
@@ -2630,7 +2663,7 @@ impl TerminalNotebook {
 
     /// Returns the group name for a session, if any.
     #[must_use]
-    #[allow(dead_code)] // Public API for window-level tab group operations
+    #[allow(dead_code, reason = "Public API for window-level tab group operations")]
     pub fn get_tab_group(&self, session_id: Uuid) -> Option<String> {
         self.session_info
             .borrow()
@@ -2640,7 +2673,7 @@ impl TerminalNotebook {
 
     /// Returns all known group names from the tab group manager.
     #[must_use]
-    #[allow(dead_code)] // Public API for window-level tab group operations
+    #[allow(dead_code, reason = "Public API for window-level tab group operations")]
     pub fn known_group_names(&self) -> Vec<String> {
         self.tab_group_manager.borrow().group_names()
     }
@@ -2839,7 +2872,7 @@ impl TerminalNotebook {
     }
 
     /// Checks if a cluster has any active terminal sessions
-    #[allow(dead_code)] // Public API for future cluster status UI
+    #[allow(dead_code, reason = "Public API for future cluster status UI")]
     pub fn has_active_cluster_sessions(&self, cluster_id: Uuid) -> bool {
         self.cluster_sessions
             .borrow()
@@ -2853,7 +2886,7 @@ impl TerminalNotebook {
     ///
     /// When activated, the app layer can show checkboxes on terminal tabs.
     /// When deactivated, all selections are cleared.
-    #[allow(dead_code)] // Public API — wired by app layer
+    #[allow(dead_code, reason = "Public API — wired by app layer")]
     pub fn toggle_broadcast(&self) {
         let mut bc = self.broadcast_controller.borrow_mut();
         if bc.is_active() {
@@ -2865,13 +2898,13 @@ impl TerminalNotebook {
 
     /// Returns whether ad-hoc broadcast mode is currently active.
     #[must_use]
-    #[allow(dead_code)] // Public API — wired by app layer
+    #[allow(dead_code, reason = "Public API — wired by app layer")]
     pub fn is_broadcast_active(&self) -> bool {
         self.broadcast_controller.borrow().is_active()
     }
 
     /// Toggles a terminal's selection for ad-hoc broadcast.
-    #[allow(dead_code)] // Public API — wired by app layer
+    #[allow(dead_code, reason = "Public API — wired by app layer")]
     pub fn toggle_broadcast_terminal(&self, session_id: Uuid) {
         self.broadcast_controller
             .borrow_mut()
@@ -2880,7 +2913,7 @@ impl TerminalNotebook {
 
     /// Returns whether a terminal is selected for ad-hoc broadcast.
     #[must_use]
-    #[allow(dead_code)] // Public API — wired by app layer
+    #[allow(dead_code, reason = "Public API — wired by app layer")]
     pub fn is_broadcast_terminal_selected(&self, session_id: &Uuid) -> bool {
         self.broadcast_controller.borrow().is_selected(session_id)
     }
@@ -2889,7 +2922,7 @@ impl TerminalNotebook {
     ///
     /// Uses `send_text_to_session` for each selected terminal.
     /// Returns the number of terminals that received the input.
-    #[allow(dead_code)] // Public API — wired by app layer
+    #[allow(dead_code, reason = "Public API — wired by app layer")]
     pub fn broadcast_text(&self, text: &str) -> usize {
         let targets = self.broadcast_controller.borrow().broadcast_targets();
         let mut count = 0;
@@ -2902,7 +2935,7 @@ impl TerminalNotebook {
 
     /// Returns a clone of the broadcast controller for external wiring.
     #[must_use]
-    #[allow(dead_code)] // Public API — wired by app layer
+    #[allow(dead_code, reason = "Public API — wired by app layer")]
     pub fn broadcast_controller(&self) -> Rc<RefCell<BroadcastController>> {
         self.broadcast_controller.clone()
     }

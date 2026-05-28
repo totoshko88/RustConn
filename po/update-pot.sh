@@ -40,6 +40,8 @@ xgettext \
 xgettext \
     --from-code=UTF-8 \
     --join-existing \
+    --package-name="${DOMAIN}" \
+    --package-version="${VERSION}" \
     --output="${POTFILE}" \
     rustconn/assets/io.github.totoshko88.RustConn.desktop
 

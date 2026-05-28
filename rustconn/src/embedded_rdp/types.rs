@@ -92,7 +92,10 @@ pub struct EmbeddedSharedFolder {
 
 /// RDP connection configuration
 #[derive(Debug, Clone)]
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)]
 pub struct RdpConfig {
     /// Target hostname or IP address
     pub host: String,

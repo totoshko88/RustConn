@@ -3,7 +3,10 @@
 //! This module contains `ConnectionDialogData` — a struct that collects references
 
 // OCI Bastion has target_id and target_ip fields which are semantically different
-#![allow(clippy::similar_names)]
+#![allow(
+    clippy::similar_names,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 //! to all dialog widgets and provides `validate()` and `build_connection()` methods
 //! to produce a `ConnectionDialogResult` from the current widget state.
 
@@ -254,7 +257,11 @@ impl ConnectionDialogData<'_> {
                 return Err(i18n("Host cannot contain spaces"));
             }
 
-            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            #[expect(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "value range fits the target type and is non-negative by construction in this code path"
+            )]
             let port = self.port_spin.value() as u16;
             if port == 0 {
                 return Err(i18n("Port must be greater than 0"));
@@ -337,7 +344,11 @@ impl ConnectionDialogData<'_> {
             Some(description_text.trim().to_string())
         };
         let host = self.host_entry.text().trim().to_string();
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let port = self.port_spin.value() as u16;
 
         let protocol_config = self.build_protocol_config()?;
@@ -482,7 +493,11 @@ impl ConnectionDialogData<'_> {
             .collect();
 
         // Set activity monitor config
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         {
             let mode = match self.activity_mode_combo.selected() {
                 1 => Some(MonitorMode::Activity),
@@ -506,7 +521,11 @@ impl ConnectionDialogData<'_> {
         }
 
         // Set retry config
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         {
             let enabled = self.retry_enabled_toggle.is_active();
             let max_attempts = self.retry_max_attempts_spin.value() as u32;
@@ -576,9 +595,17 @@ impl ConnectionDialogData<'_> {
             broadcast_address
         };
 
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let port = self.wol_port_spin.value() as u16;
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let wait_seconds = self.wol_wait_spin.value() as u32;
 
         Some(WolConfig {
@@ -599,7 +626,11 @@ impl ConnectionDialogData<'_> {
             return None;
         }
 
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let timeout_ms = self.pre_connect_timeout_spin.value() as u32;
         let timeout = if timeout_ms > 0 {
             Some(timeout_ms)
@@ -633,7 +664,11 @@ impl ConnectionDialogData<'_> {
             return None;
         }
 
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let timeout_ms = self.post_disconnect_timeout_spin.value() as u32;
         let timeout = if timeout_ms > 0 {
             Some(timeout_ms)
@@ -959,7 +994,11 @@ impl ConnectionDialogData<'_> {
 
     fn build_mosh_config(&self) -> rustconn_core::models::MoshConfig {
         // MOSH uses the main port spin for SSH port (general tab)
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let ssh_port_val = self.port_spin.value() as u16;
         let ssh_port = if ssh_port_val == 22 {
             None
@@ -1110,12 +1149,20 @@ impl ConnectionDialogData<'_> {
             }
         };
 
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let keep_alive_interval = {
             let val = self.ssh_keep_alive_interval.value() as u32;
             if val == 0 { None } else { Some(val) }
         };
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let keep_alive_count_max = {
             let val = self.ssh_keep_alive_count_max.value() as u32;
             // Only store if keep-alive interval is set and count differs from default (3)
@@ -1159,7 +1206,11 @@ impl ConnectionDialogData<'_> {
         let performance_mode =
             RdpPerformanceMode::from_index(self.rdp_performance_mode_dropdown.selected());
 
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let resolution = Some(Resolution::new(
             self.rdp_width_spin.value() as u32,
             self.rdp_height_spin.value() as u32,
@@ -1179,7 +1230,11 @@ impl ConnectionDialogData<'_> {
             if text.trim().is_empty() {
                 None
             } else {
-                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    clippy::cast_sign_loss,
+                    reason = "value range fits the target type and is non-negative by construction in this code path"
+                )]
                 let port = self.rdp_gateway_port_spin.value() as u16;
                 let username_text = self.rdp_gateway_username_entry.text();
                 let username = if username_text.trim().is_empty() {
@@ -1282,9 +1337,17 @@ impl ConnectionDialogData<'_> {
             _ => None, // Auto = no override
         };
 
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let compression = Some(self.vnc_compression_spin.value() as u8);
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "value range fits the target type and is non-negative by construction in this code path"
+        )]
         let quality = Some(self.vnc_quality_spin.value() as u8);
 
         let custom_args = Self::parse_args(&self.vnc_custom_args_entry.text());

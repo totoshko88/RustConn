@@ -157,7 +157,10 @@ pub(super) async fn install_pip_component(
 /// pip with `--user` and `PYTHONUSERBASE` installs packages to site-packages
 /// but doesn't create console scripts in bin/. We create wrapper scripts
 /// that invoke the Python module directly.
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+)]
 pub(super) async fn create_pip_wrapper_script(
     python_dir: &Path,
     component: &DownloadableComponent,

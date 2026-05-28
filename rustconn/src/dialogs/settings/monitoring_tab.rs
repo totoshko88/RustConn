@@ -216,7 +216,11 @@ impl MonitoringPageWidgets {
     }
 
     /// Collects monitoring settings from UI controls
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "value range fits the target type and is non-negative by construction in this code path"
+    )]
     #[must_use]
     pub fn collect(&self) -> MonitoringSettings {
         MonitoringSettings {
@@ -246,7 +250,11 @@ impl MonitoringPageWidgets {
     }
 
     /// Collects activity monitor defaults from UI controls
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "value range fits the target type and is non-negative by construction in this code path"
+    )]
     #[must_use]
     pub fn collect_activity_monitor(&self) -> ActivityMonitorDefaults {
         let mode = match self.activity_mode_combo.selected() {

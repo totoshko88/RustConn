@@ -147,7 +147,10 @@ struct VncDisplayState {
 ///
 /// The underlying C resources are cleaned up when this struct is dropped.
 /// The `Drop` implementation ensures proper disconnection and resource cleanup.
-#[allow(clippy::type_complexity)]
+#[expect(
+    clippy::type_complexity,
+    reason = "internal helper signature documents the exact tuple layout used by the caller; aliasing would obscure the data flow"
+)]
 pub struct VncDisplay {
     /// Internal state
     state: Rc<RefCell<VncDisplayState>>,

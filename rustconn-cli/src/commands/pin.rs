@@ -7,6 +7,12 @@ use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
 
 /// Pin a connection to favorites
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when connections cannot be loaded or saved
+/// - [`CliError::ConnectionNotFound`] when no connection matches `name`
 pub fn cmd_pin(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
     let config_manager = create_config_manager(config_path)?;
 
@@ -52,6 +58,12 @@ pub fn cmd_pin(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
 }
 
 /// Unpin a connection from favorites
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when connections cannot be loaded or saved
+/// - [`CliError::ConnectionNotFound`] when no connection matches `name`
 pub fn cmd_unpin(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
     let config_manager = create_config_manager(config_path)?;
 

@@ -113,7 +113,10 @@ impl SelectionState {
     ///
     /// Reserved for future use in property tests that need to verify
     /// selection bounds against total item count.
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn item_count(&self) -> usize {
         self.items.len()
     }

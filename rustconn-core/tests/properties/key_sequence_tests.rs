@@ -78,7 +78,10 @@ fn arb_key_element() -> impl Strategy<Value = KeyElement> {
 ///
 /// Reserved for future property tests that need complete key sequence generation.
 /// Currently, tests use more targeted element-based strategies.
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "kept alive for GTK widget lifecycle / future API exposure"
+)]
 fn arb_key_sequence() -> impl Strategy<Value = KeySequence> {
     prop::collection::vec(arb_key_element(), 0..10).prop_map(|elements| {
         // Filter out empty text elements

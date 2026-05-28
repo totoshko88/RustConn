@@ -243,7 +243,6 @@ impl Drop for RdpClient {
 }
 
 /// Runs the RDP client protocol loop using `IronRDP`
-#[allow(clippy::future_not_send)]
 async fn run_rdp_client(
     config: RdpClientConfig,
     event_tx: std::sync::mpsc::Sender<RdpClientEvent>,

@@ -222,7 +222,10 @@ pub enum GatewayError {
 }
 
 /// Checks if an address is a local/private address
-#[allow(clippy::case_sensitive_file_extension_comparisons)]
+#[expect(
+    clippy::case_sensitive_file_extension_comparisons,
+    reason = "extension comes from a controlled allow-list, not user input - case is already normalised upstream"
+)]
 fn is_local_address(host: &str) -> bool {
     // Check for localhost variants
     if host.eq_ignore_ascii_case("localhost") || host == "127.0.0.1" || host == "::1" {

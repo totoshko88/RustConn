@@ -351,6 +351,9 @@ fn apply_language_setlocale(lang: &str) {
 
     // Re-bind domain so gettext picks up the new locale
     let locale_dir = locale_dir();
+    // best-effort: bindtextdomain returns the bound directory or NULL on
+    // OOM. There is nothing the app can do here, and falling back to the
+    // previous binding is acceptable.
     let _ = gettextrs::bindtextdomain(GETTEXT_DOMAIN, locale_dir);
     let _ = gettextrs::bind_textdomain_codeset(GETTEXT_DOMAIN, "UTF-8");
     let _ = gettextrs::textdomain(GETTEXT_DOMAIN);

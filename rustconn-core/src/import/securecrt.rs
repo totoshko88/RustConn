@@ -199,7 +199,10 @@ impl SecureCrtImporter {
     }
 
     /// Converts a parsed session into a Connection.
-    #[allow(clippy::too_many_lines)]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+    )]
     fn session_to_connection(
         session: &ScrtSession,
         name: &str,
@@ -398,7 +401,10 @@ impl SecureCrtImporter {
     }
 
     /// Imports a single `.ini` file.
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unused_self,
+        reason = "method is part of a uniform helper API where most operations need &self; keeping &self preserves the consistent signature"
+    )]
     fn import_single_ini(
         &self,
         path: &Path,

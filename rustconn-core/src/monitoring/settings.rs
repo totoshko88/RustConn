@@ -6,7 +6,10 @@
 use serde::{Deserialize, Serialize};
 
 /// Global monitoring settings (stored in `config.toml` under `[monitoring]`)
-#[allow(clippy::struct_excessive_bools)] // Settings struct — bools are independent toggles, not a state machine
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)] // Settings struct — bools are independent toggles, not a state machine
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MonitoringSettings {
     /// Whether remote monitoring is enabled globally (default: true)

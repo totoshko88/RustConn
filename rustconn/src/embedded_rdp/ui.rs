@@ -78,7 +78,10 @@ pub const fn gtk_button_to_rdp_button(gtk_button: u32) -> u8 {
 ///
 /// This shows connection status, host information, and hints to the user.
 /// Used when not rendering framebuffer (external mode, connecting, etc.)
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 pub fn draw_status_overlay(
     cr: &gtk4::cairo::Context,
     width: i32,

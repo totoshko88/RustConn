@@ -445,7 +445,10 @@ fn detect_zerotrust_clients() -> Vec<ClientInfo> {
 
     // Run all zero trust detections in parallel.
     // We must collect handles first to spawn all threads before joining.
-    #[allow(clippy::needless_collect)]
+    #[expect(
+        clippy::needless_collect,
+        reason = "intermediate Vec is required because the following loop borrows the source mutably"
+    )]
     std::thread::scope(|s| {
         let handles: Vec<_> = zerotrust_configs
             .iter()

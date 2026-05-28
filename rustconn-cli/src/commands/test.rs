@@ -7,6 +7,15 @@ use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
 
 /// Test connection command handler
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when connections cannot be loaded
+/// - [`CliError::ConnectionNotFound`] when no connection matches `name`
+///   (and `name` is not the special value `"all"`)
+/// - [`CliError::TestFailed`] when the TCP probe fails or the host is unreachable
+///   within `timeout` seconds
 pub fn cmd_test(
     config_path: Option<&Path>,
     name: &str,

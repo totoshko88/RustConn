@@ -185,16 +185,16 @@ pub fn create_embedded_toolbar() -> (
     gtk4::Label,
 ) {
     let toolbar = GtkBox::new(gtk4::Orientation::Horizontal, 4);
-    toolbar.set_margin_start(4);
-    toolbar.set_margin_end(4);
-    toolbar.set_margin_top(4);
-    toolbar.set_margin_bottom(4);
+    toolbar.set_margin_start(6);
+    toolbar.set_margin_end(6);
+    toolbar.set_margin_top(6);
+    toolbar.set_margin_bottom(6);
     toolbar.set_halign(gtk4::Align::End);
 
     // Status label (hidden by default)
     let status_label = gtk4::Label::new(None);
     status_label.set_visible(false);
-    status_label.set_margin_end(8);
+    status_label.set_margin_end(12);
     status_label.add_css_class("dim-label");
     toolbar.append(&status_label);
 
@@ -216,8 +216,8 @@ pub fn create_embedded_toolbar() -> (
 
     // Separator
     let separator = gtk4::Separator::new(gtk4::Orientation::Vertical);
-    separator.set_margin_start(4);
-    separator.set_margin_end(4);
+    separator.set_margin_start(6);
+    separator.set_margin_end(6);
     toolbar.append(&separator);
 
     // Ctrl+Alt+Del button
@@ -255,7 +255,10 @@ pub fn create_embedded_toolbar() -> (
 /// Draws a status overlay on a Cairo context
 ///
 /// This is used when the embedded widget is not connected or in external mode.
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+)]
 pub fn draw_status_overlay(
     cr: &gtk4::cairo::Context,
     width: i32,

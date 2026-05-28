@@ -90,7 +90,10 @@ fn acquire_busy_guard() -> Option<rustconn_core::BusyGuard> {
 /// Main application window wrapper
 ///
 /// Provides access to the main window and its components.
-#[allow(dead_code)] // Fields kept for GTK widget lifecycle and future use
+#[allow(
+    dead_code,
+    reason = "Fields kept for GTK widget lifecycle and future use"
+)]
 pub struct MainWindow {
     window: adw::ApplicationWindow,
     sidebar: SharedSidebar,
@@ -638,7 +641,10 @@ impl MainWindow {
     }
 
     /// Connects UI signals
-    #[allow(clippy::too_many_lines)]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
+    )]
     fn connect_signals(&self) {
         let state = self.state.clone();
         let sidebar = self.sidebar.clone();
@@ -1093,7 +1099,10 @@ impl MainWindow {
     }
 
     /// Public method to refresh KeePass button status (called after settings change)
-    #[allow(dead_code)] // Part of KeePass integration API, called from settings dialog
+    #[allow(
+        dead_code,
+        reason = "Part of KeePass integration API, called from settings dialog"
+    )]
     pub fn refresh_keepass_status(&self) {
         self.update_keepass_button_status();
     }
@@ -2239,7 +2248,10 @@ impl MainWindow {
     ///
     /// Note: Part of public API for accessing sidebar from external code.
     #[must_use]
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn sidebar(&self) -> &ConnectionSidebar {
         &self.sidebar
     }
@@ -2433,7 +2445,10 @@ impl MainWindow {
     ///
     /// Note: Part of public API for accessing notebook from external code.
     #[must_use]
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn terminal_notebook(&self) -> &TerminalNotebook {
         &self.terminal_notebook
     }
@@ -2498,7 +2513,10 @@ impl MainWindow {
     /// Saves the current expanded groups state to settings
     ///
     /// Note: Part of tree state persistence API.
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "kept alive for GTK widget lifecycle / future API exposure"
+    )]
     pub fn save_expanded_groups(&self) {
         let expanded = self.sidebar.get_expanded_groups();
         if let Some(Err(e)) =

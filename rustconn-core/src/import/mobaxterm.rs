@@ -236,7 +236,10 @@ impl MobaXtermImporter {
     }
 
     /// Parses an SSH/SFTP session.
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unused_self,
+        reason = "method is part of a uniform helper API where most operations need &self; keeping &self preserves the consistent signature"
+    )]
     fn parse_ssh_session(
         &self,
         name: &str,
@@ -334,7 +337,10 @@ impl MobaXtermImporter {
     }
 
     /// Parses an RDP session.
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unused_self,
+        reason = "method is part of a uniform helper API where most operations need &self; keeping &self preserves the consistent signature"
+    )]
     fn parse_rdp_session(
         &self,
         name: &str,
@@ -419,7 +425,10 @@ impl MobaXtermImporter {
     }
 
     /// Parses a Telnet session.
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unused_self,
+        reason = "method is part of a uniform helper API where most operations need &self; keeping &self preserves the consistent signature"
+    )]
     fn parse_telnet_session(
         &self,
         name: &str,
@@ -452,7 +461,10 @@ impl MobaXtermImporter {
     }
 
     /// Parses a VNC session.
-    #[allow(clippy::unused_self)]
+    #[expect(
+        clippy::unused_self,
+        reason = "method is part of a uniform helper API where most operations need &self; keeping &self preserves the consistent signature"
+    )]
     fn parse_vnc_session(
         &self,
         name: &str,

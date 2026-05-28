@@ -1,3 +1,15 @@
+rustconn (0.15.0-1) unstable; urgency=medium
+
+  * RDP RemoteApp: password no longer leaked via /proc/PID/cmdline (uses single-use args file in $XDG_RUNTIME_DIR)
+  * Migrated ~350 #[allow] overrides to #[expect(reason = "...")]; ~50 stale overrides dropped
+  * Manual Debug impls for all secret backends with leak-protection unit tests
+  * # Errors documentation on every public CLI command function
+  * Settings-save failures now surface a toast instead of being silently dropped
+  * EntryRowBuilder requires pre-translated titles so xgettext extracts every UI label
+  * GUI spacing now consistently follows GNOME HIG steps (6/12/18/24 px)
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 27 May 2026 14:00:00 +0200
+
 rustconn (0.14.10-1) unstable; urgency=medium
 
   * Hardened secret handling: SecretString accepted directly in vault save signatures

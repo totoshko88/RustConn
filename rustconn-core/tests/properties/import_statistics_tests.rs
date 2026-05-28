@@ -59,7 +59,7 @@ proptest! {
         for _ in 0..count {
             stats.record_connection_success();
         }
-        #[allow(clippy::float_cmp)]
+        #[allow(clippy::float_cmp, reason = "kept alive for GTK widget lifecycle / future API exposure")]
         let is_100 = stats.success_rate() == 100.0;
         prop_assert!(is_100);
     }
@@ -71,7 +71,7 @@ proptest! {
         for _ in 0..count {
             stats.record_connection_failure();
         }
-        #[allow(clippy::float_cmp)]
+        #[allow(clippy::float_cmp, reason = "kept alive for GTK widget lifecycle / future API exposure")]
         let is_0 = stats.success_rate() == 0.0;
         prop_assert!(is_0);
     }
@@ -80,7 +80,7 @@ proptest! {
     #[test]
     fn success_rate_100_when_empty(_dummy in 0..1) {
         let stats = ImportStatistics::new();
-        #[allow(clippy::float_cmp)]
+        #[allow(clippy::float_cmp, reason = "kept alive for GTK widget lifecycle / future API exposure")]
         let is_100 = stats.success_rate() == 100.0;
         prop_assert!(is_100);
     }

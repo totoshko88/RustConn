@@ -11,6 +11,12 @@ use crate::util::create_config_manager;
 ///
 /// Loads an inventory file (JSON/YAML), synchronizes it against the
 /// existing connections, and persists the result.
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Import`] when the inventory file does not exist or cannot be parsed
+/// - [`CliError::Config`] when connections cannot be loaded or saved
 pub fn cmd_sync(
     config_path: Option<&Path>,
     file: &Path,

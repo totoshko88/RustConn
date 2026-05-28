@@ -466,3 +466,30 @@ pub async fn get_passphrase_from_keyring() -> SecretResult<Option<SecretString>>
 pub async fn delete_passphrase_from_keyring() -> SecretResult<()> {
     super::keyring::clear(KEY_PB_PASSPHRASE).await
 }
+
+impl std::fmt::Debug for PassboltBackend {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PassboltBackend")
+            .field("server_address", &self.server_address)
+            .finish()
+    }
+}
+
+#[cfg(test)]
+mod debug_tests {
+    use super::*;
+
+    #[test]
+    fn debug_does_not_leak_secret() {
+        // PassboltBackend keeps no secrets in-process; passphrases live
+        // only inside the OS keyring. Sentinel test for future fields.
+        let backend =
+            PassboltBackend::new().with_server_address("https://passbolt.example.org/hunter2");
+        let rendered = format!("{backend:?}");
+        assert!(rendered.contains("PassboltBackend"));
+        assert!(
+            rendered.contains("server_address"),
+            "unexpected Debug shape: {rendered}"
+        );
+    }
+}

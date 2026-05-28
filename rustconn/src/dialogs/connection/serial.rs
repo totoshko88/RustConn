@@ -54,8 +54,8 @@ pub fn create_serial_options() -> SerialOptionsWidgets {
         ))
         .build();
 
-    let (device_row, device_entry) = EntryRowBuilder::new("Device Path")
-        .subtitle("Path to the serial device")
+    let (device_row, device_entry) = EntryRowBuilder::new(i18n("Device Path"))
+        .subtitle(i18n("Path to the serial device"))
         .placeholder("/dev/ttyUSB0")
         .build();
     device_group.add(&device_row);
@@ -98,8 +98,8 @@ pub fn create_serial_options() -> SerialOptionsWidgets {
         }
     });
 
-    let (custom_args_row, custom_args_entry) = EntryRowBuilder::new("Custom Arguments")
-        .subtitle("Additional picocom command-line arguments")
+    let (custom_args_row, custom_args_entry) = EntryRowBuilder::new(i18n("Custom Arguments"))
+        .subtitle(i18n("Additional picocom command-line arguments"))
         .placeholder("--noreset --imap lfcrlf")
         .build();
     device_group.add(&custom_args_row);

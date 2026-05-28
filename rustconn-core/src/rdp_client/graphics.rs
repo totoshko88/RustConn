@@ -17,7 +17,10 @@
 //! - RemoteFX: Supported
 //! - GFX/H.264: Not yet supported (requires upstream changes)
 
-#![allow(clippy::struct_excessive_bools)]
+#![allow(
+    clippy::struct_excessive_bools,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 use serde::{Deserialize, Serialize};
 
@@ -84,7 +87,10 @@ impl GraphicsMode {
 
 /// Server graphics capabilities detected during connection
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
+)]
 pub struct ServerGraphicsCapabilities {
     /// Server supports RemoteFX codec
     pub supports_remotefx: bool,

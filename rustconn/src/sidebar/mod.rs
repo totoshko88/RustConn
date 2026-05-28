@@ -11,7 +11,10 @@
 //! loaded on demand when a group is expanded.
 
 // Allow items_after_statements for const definitions inside functions
-#![allow(clippy::items_after_statements)]
+#![allow(
+    clippy::items_after_statements,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 // Re-export types for external use
 pub use crate::sidebar_types::{
@@ -46,7 +49,7 @@ use std::rc::Rc;
 use uuid::Uuid;
 
 /// Sidebar widget for connection tree display
-#[allow(dead_code)] // Many fields kept for GTK widget lifecycle
+#[allow(dead_code, reason = "Many fields kept for GTK widget lifecycle")]
 pub struct ConnectionSidebar {
     container: GtkBox,
     search_entry: SearchEntry,
@@ -186,9 +189,9 @@ impl ConnectionSidebar {
 
         // Quick Filter bar: filters left (expand to fill)
         let filter_box = GtkBox::new(Orientation::Horizontal, 4);
-        filter_box.set_margin_start(4);
-        filter_box.set_margin_end(4);
-        filter_box.set_margin_bottom(2);
+        filter_box.set_margin_start(6);
+        filter_box.set_margin_end(6);
+        filter_box.set_margin_bottom(6);
 
         // Protocol filter group — wrapping layout on adw-1-7+, linked buttons fallback
         #[cfg(feature = "adw-1-7")]
@@ -933,7 +936,7 @@ impl ConnectionSidebar {
 
     /// Checks if a connection has an active recording session
     #[must_use]
-    #[allow(dead_code)] // Public API for recording status checks
+    #[allow(dead_code, reason = "Public API for recording status checks")]
     pub fn is_connection_recording(&self, connection_id: &str) -> bool {
         self.recording_checker
             .borrow()
@@ -943,7 +946,7 @@ impl ConnectionSidebar {
 
     /// Returns a clone of the recording checker Rc for use in closures
     #[must_use]
-    #[allow(dead_code)] // Public API for recording checker access
+    #[allow(dead_code, reason = "Public API for recording checker access")]
     pub fn recording_checker_rc(&self) -> Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>> {
         Rc::clone(&self.recording_checker)
     }
@@ -1579,7 +1582,10 @@ impl ConnectionSidebar {
     /// Selects an item by its UUID
     ///
     /// Searches through the tree model to find and select the item with the given ID.
-    #[allow(dead_code)] // Public API — used by restore_state inline, kept for external callers
+    #[allow(
+        dead_code,
+        reason = "Public API — used by restore_state inline, kept for external callers"
+    )]
     pub fn select_item_by_id(&self, item_id: Uuid) {
         let tree_model = self.tree_model.clone();
         let selection_model = self.selection_model.clone();
@@ -1881,7 +1887,10 @@ impl ConnectionItem {
 
     /// Creates a new group item with all properties including dynamic folder flag
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     pub fn new_group_full_with_dynamic(
         id: &str,
         name: &str,

@@ -1,7 +1,10 @@
 //! RDP client configuration
 
 // Allow struct with multiple bools - RDP has many boolean options
-#![allow(clippy::struct_excessive_bools)]
+#![allow(
+    clippy::struct_excessive_bools,
+    reason = "module-wide override for legacy code; refactored case by case"
+)]
 
 use super::gateway::GatewayConfig;
 use super::graphics::{GraphicsMode, GraphicsQuality};

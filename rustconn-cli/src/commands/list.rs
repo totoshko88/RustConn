@@ -11,6 +11,11 @@ use crate::format::escape_csv_field;
 use crate::util::create_config_manager;
 
 /// List connections command handler
+///
+/// # Errors
+///
+/// Returns:
+/// - [`CliError::Config`] when connections, groups, or tags cannot be loaded
 pub fn cmd_list(
     config_path: Option<&Path>,
     format: OutputFormat,
