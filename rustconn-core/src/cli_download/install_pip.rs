@@ -256,6 +256,20 @@ exec python3 -c "from ssm_session_client.main import main; main()" "$@"
         {
             test_cmd.env("OCI_CLI_CONFIG_FILE", dir.join("config"));
         }
+    } else if crate::snap::is_snap() {
+        if component.id == "az" {
+            if let Some(dir) = crate::snap::get_snap_azure_config_dir() {
+                test_cmd.env("AZURE_CONFIG_DIR", &dir);
+            }
+        } else if component.id == "gcloud" {
+            if let Some(dir) = crate::snap::get_snap_gcloud_config_dir() {
+                test_cmd.env("CLOUDSDK_CONFIG", &dir);
+            }
+        } else if component.id == "oci"
+            && let Some(dir) = crate::snap::get_snap_oci_config_dir()
+        {
+            test_cmd.env("OCI_CLI_CONFIG_FILE", dir.join("config"));
+        }
     }
 
     let test_output = test_cmd.output().await;

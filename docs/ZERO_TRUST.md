@@ -1,6 +1,6 @@
 # RustConn Zero Trust Providers
 
-**Version 0.15.2** | Identity-aware proxy integrations for RustConn
+**Version 0.15.3** | Identity-aware proxy integrations for RustConn
 
 RustConn supports connecting through identity-aware proxy services (Zero Trust). Instead of direct SSH/RDP to a host, the connection is tunneled through a provider's CLI tool that handles authentication and authorization.
 
@@ -18,7 +18,13 @@ For the main user guide, see [USER_GUIDE.md](USER_GUIDE.md). For CLI usage, see 
 
 The Zero Trust tab is available for SSH connections. RustConn constructs the appropriate CLI command and runs it in a VTE terminal.
 
-When selecting a provider, RustConn checks if the required CLI tool is available on PATH. If not found, a warning is displayed with instructions to install the tool or use Flatpak Components.
+When selecting a provider, RustConn checks if the required CLI tool is available on PATH. If not found, a warning is displayed with instructions to install the tool via the **Components** dialog (Settings → Components).
+
+> **Sandbox note (Flatpak & Snap):** In both sandboxed distributions, host binaries are not directly accessible. CLI tools are downloaded on demand into the app's writable data directory via the Components dialog. Cloud credential directories (`~/.aws`, `~/.config/gcloud`, `~/.azure`, `~/.oci`, `~/.kube`) are accessed read-only through sandbox permissions:
+> - **Flatpak:** `--filesystem=home/.aws` etc. in the manifest (granted at install).
+> - **Snap:** `personal-files` plugs (manual connection required): `sudo snap connect rustconn:aws-credentials`, `sudo snap connect rustconn:gcloud-credentials`, etc.
+>
+> RustConn automatically redirects writable config to a sandbox-internal directory and bootstraps credentials from the host mount on first use.
 
 ---
 

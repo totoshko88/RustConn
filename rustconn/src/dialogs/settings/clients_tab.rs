@@ -637,7 +637,8 @@ fn get_version_with_env(
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
 
-    // In Flatpak, pip-based CLIs need extra environment variables
+    // In a sandbox, pip/cloud CLIs need their config dir redirected to a
+    // writable location (host dirs are read-only or absent under confinement).
     if rustconn_core::flatpak::is_flatpak() {
         match command_name {
             "az" => {
@@ -652,6 +653,25 @@ fn get_version_with_env(
             }
             "gcloud" => {
                 if let Some(dir) = rustconn_core::flatpak::get_flatpak_gcloud_config_dir() {
+                    cmd.env("CLOUDSDK_CONFIG", dir);
+                }
+            }
+            _ => {}
+        }
+    } else if rustconn_core::is_snap() {
+        match command_name {
+            "az" => {
+                if let Some(dir) = rustconn_core::snap::get_snap_azure_config_dir() {
+                    cmd.env("AZURE_CONFIG_DIR", dir);
+                }
+            }
+            "oci" => {
+                if let Some(dir) = rustconn_core::snap::get_snap_oci_config_dir() {
+                    cmd.env("OCI_CLI_CONFIG_FILE", dir.join("config"));
+                }
+            }
+            "gcloud" => {
+                if let Some(dir) = rustconn_core::snap::get_snap_gcloud_config_dir() {
                     cmd.env("CLOUDSDK_CONFIG", dir);
                 }
             }

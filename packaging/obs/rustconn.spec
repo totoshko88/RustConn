@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.15.2
+Version:        0.15.3
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -238,6 +238,14 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Sat May 30 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.3-0
+- Snap base bumped to core26 (Ubuntu 26.04 / GNOME 50 / libadwaita 1.8)
+- Removed system-files plug; external CLIs download on demand inside sandbox
+- Components dialog now works in both snap and Flatpak
+- Added is_sandboxed() predicate unifying snap/Flatpak CLI logic
+- Fixed broken Ukrainian translation; updated all 16 language catalogs
+- Dependencies: hyper 1.10.1, uuid 1.23.2, zbus 5.16.0, zerocopy 0.8.50, zvariant 5.12.0
+
 * Fri May 29 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.2-0
 - Corrected misleading copy-pasted #[allow]/#[expect] reasons in rustconn-core and property tests; lints that fire now use #[expect]
 - Removed dead notify_tx field and its #[allow(dead_code)] from DirectoryWatcher

@@ -5,6 +5,36 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.3] - 2026-05-30
+
+Snap packaging now reaches feature parity with the Flatpak build and is on a current GNOME runtime.
+
+### Changed
+
+- **Snap base bumped to `core26` (Ubuntu 26.04 / GNOME 50).** The previous `core24` base only provides libadwaita 1.5, while the UI targets libadwaita 1.8 — the same version the Flatpak GNOME 50 runtime ships. The snap now builds the GUI crate with `--features adw-1-8` via an explicit workspace `cargo build` in `override-build` (the plugin's `rust-features` key applies `--features` per-crate, which would fail on `rustconn-cli`, so we drive cargo directly, mirroring the Flatpak manifest).
+- **Removed the `system-files` (`host-usr-bin`) plug from the snap.** The Snap Store review rejected executing host binaries (`-1` on the privileged request); bundled embedded clients plus on-demand CLI downloads replace it. The `personal-files` plugs (`aws`/`gcloud`/`azure`/`oci`/`kube-credentials`) remain and are intended for manual connection, matching the reviewer's `+1`.
+- **Renamed the "Flatpak Components" dialog/menu to "Components".** The external-CLI download manager is no longer Flatpak-specific.
+
+### Added
+
+- **External CLI tools can now be downloaded on demand inside the snap**, mirroring the Flatpak mechanism. CLIs install into `$SNAP_USER_DATA/cli/` and are added to the connection-launch `PATH`; cloud CLI config dirs (gcloud, Azure, Teleport, OCI) are redirected to writable `$SNAP_USER_DATA/.config/<tool>` locations with credential bootstrap from the host's read-only `personal-files` mounts. `python3` is now staged so the pip-based `az`/`oci` CLIs work.
+- **`rustconn_core::is_sandboxed()`** — single predicate (`is_snap() || is_flatpak()`) now gates all sandbox-specific CLI logic instead of Flatpak-only checks, so snap and Flatpak share one code path.
+- **Snap confinement guidance for personal-files plugs.** `get_confinement_message()` now detects when cloud credential directories exist on the host but are inaccessible (plug not connected) and shows the exact `sudo snap connect rustconn:<plug>` command to run.
+
+### Fixed
+
+- **Broken Ukrainian translation for the Protocol Clients section.** The Components dialog subtitle was garbled ("Убудовані Першорядні - це клієнти…") — now correctly reads "Необов'язкові для зовнішніх з'єднань RDP/VNC/SPICE. Перевагу мають вбудовані клієнти (IronRDP, vnc-rs)."
+- **All 16 language catalogs updated for the "Components" rename.** Removed stale "Flatpak" from translations and cleared fuzzy flags so the menu/dialog title is properly localized in all languages.
+
+### Documentation
+
+- **Zero Trust guide updated for snap.** Added a "Sandbox note (Flatpak & Snap)" block explaining how CLI tools are installed and how credential directories are accessed in both sandboxed distributions.
+- **Bitwarden setup guide updated for snap.** Sections now reference both Flatpak and Snap paths; "Flatpak Components" → "Components" throughout.
+
+### Dependencies
+
+- **Updated**: hyper 1.10.0→1.10.1, typenum 1.20.0→1.20.1, uuid 1.23.1→1.23.2, zbus 5.15.0→5.16.0, zbus_macros 5.15.0→5.16.0, zerocopy 0.8.49→0.8.50, zerocopy-derive 0.8.49→0.8.50, zvariant 5.11.0→5.12.0, zvariant_derive 5.11.0→5.12.0, zvariant_utils 3.3.1→3.4.0
+
 ## [0.15.2] - 2026-05-29
 
 A small code-hygiene and documentation release. No user-facing behaviour changes — the goal is to remove misleading lint reasons, drop a dead field, replace a `unwrap()` in the CLI with a proper error path, and bring the keyboard-shortcut documentation back in sync with the code.

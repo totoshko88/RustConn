@@ -1507,7 +1507,7 @@ pub fn start_kubernetes_connection(
     let conn_name = conn.name.clone();
 
     // Check kubectl availability before attempting to launch
-    let kubectl_available = if rustconn_core::flatpak::is_flatpak() {
+    let kubectl_available = if rustconn_core::is_sandboxed() {
         rustconn_core::flatpak::is_host_command_available("kubectl")
     } else {
         let kubectl_info = detect_kubectl();
@@ -1516,7 +1516,7 @@ pub fn start_kubernetes_connection(
     if !kubectl_available {
         tracing::warn!(
             connection = %conn_name,
-            flatpak = rustconn_core::flatpak::is_flatpak(),
+            sandboxed = rustconn_core::is_sandboxed(),
             "kubectl not found for Kubernetes connection"
         );
         if let Some(root) = notebook.widget().root()

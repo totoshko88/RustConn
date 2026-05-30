@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-29 11:31+0300\n"
+"POT-Creation-Date: 2026-05-30 09:52+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: Mykola Zubkov <zubkov139@ukr.net>\n"
 "Language-Team: Ukrainian\n"
@@ -1459,8 +1459,7 @@ msgstr "Емоджі або назва піктограми"
 #: rustconn/src/window/connection_dialogs.rs:412
 #: rustconn/src/window/edit_group.rs:134
 msgid "Enter an emoji (e.g. 🇺🇦) or GTK icon name (e.g. starred-symbolic)"
-msgstr ""
-"Уведи емодзі (напр. 🇺🇦) або назву GTK-іконки (напр. starred-symbolic)"
+msgstr "Уведи емодзі (напр. 🇺🇦) або назву GTK-іконки (напр. starred-symbolic)"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:96
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:158
@@ -3895,8 +3894,8 @@ msgid "Close"
 msgstr "Закрий"
 
 #: rustconn/src/dialogs/flatpak_components.rs:70
-msgid "Flatpak Components"
-msgstr "Складники Flatpak"
+msgid "Components"
+msgstr "Складники"
 
 #: rustconn/src/dialogs/flatpak_components.rs:103
 #: rustconn/src/dialogs/flatpak_components.rs:104
@@ -3920,8 +3919,8 @@ msgid ""
 "Optional for external RDP/VNC/SPICE connections.              Embedded "
 "clients (IronRDP, vnc-rs) are preferred."
 msgstr ""
-"Необов'язково для зовнішніх з'єднувань RDP/VNC/SPICE.              Убудовані "
-"Першорядні - це клієнти (IronRDP, vnc-rs)."
+"Необов'язкові для зовнішніх з'єднків RDP/VNC/SPICE. Перевагу мають вбудовані "
+"клієнти (IronRDP, vnc-rs)."
 
 #: rustconn/src/dialogs/flatpak_components.rs:168
 msgid "Zero Trust CLIs"
@@ -3930,7 +3929,7 @@ msgstr "CLI Zero Trust"
 #: rustconn/src/dialogs/flatpak_components.rs:169
 msgid ""
 "Required for Zero Trust connections (AWS SSM, GCP IAP, Azure Bastion, etc.)"
-msgstr "Треба для з'єднувань Zero Trust (AWS SSM, GCP IAP, Azure Bastion тощо)"
+msgstr "Треба для з'єднків Zero Trust (AWS SSM, GCP IAP, Azure Bastion тощо)"
 
 #: rustconn/src/dialogs/flatpak_components.rs:179
 msgid "Password Manager CLIs"
@@ -3947,7 +3946,7 @@ msgstr "Оркестрування контейнерів"
 
 #: rustconn/src/dialogs/flatpak_components.rs:191
 msgid "Required for Kubernetes pod shell connections"
-msgstr "Потрібно для з'єднувань з оболонкою подів Kubernetes"
+msgstr "Потрібно для з'єднків з оболонкою подів Kubernetes"
 
 #: rustconn/src/dialogs/flatpak_components.rs:269
 #: rustconn/src/dialogs/flatpak_components.rs:271
@@ -3958,7 +3957,7 @@ msgstr "Установлено"
 
 #: rustconn/src/dialogs/flatpak_components.rs:302
 msgid "Cancel component operation"
-msgstr "Скасуй операцію з компонентом"
+msgstr "Скасуй операцію зі складником"
 
 #: rustconn/src/dialogs/flatpak_components.rs:309
 msgid "Update"
@@ -3966,7 +3965,7 @@ msgstr "Онови"
 
 #: rustconn/src/dialogs/flatpak_components.rs:315
 msgid "Update component"
-msgstr "Онови компонент"
+msgstr "Онови складник"
 
 #: rustconn/src/dialogs/flatpak_components.rs:325
 #: rustconn/src/dialogs/flatpak_components.rs:506 rustconn/src/toast.rs:269
@@ -7757,20 +7756,20 @@ msgid "Save files from remote clipboard"
 msgstr "Збережи файли з віддаленого буфера"
 
 #: rustconn/src/embedded_rdp/mod.rs:422 rustconn/src/embedded_spice.rs:291
-#: rustconn/src/embedded_vnc/ui.rs:101 rustconn/src/terminal/mod.rs:1623
+#: rustconn/src/embedded_vnc/ui.rs:101 rustconn/src/terminal/mod.rs:1663
 msgid "Session disconnected"
 msgstr "Сеанс від'єднано"
 
 #: rustconn/src/embedded_rdp/mod.rs:425 rustconn/src/embedded_spice.rs:294
 #: rustconn/src/embedded_trait.rs:233 rustconn/src/embedded_vnc/ui.rs:104
-#: rustconn/src/terminal/mod.rs:1182 rustconn/src/terminal/mod.rs:1265
-#: rustconn/src/terminal/mod.rs:1636
+#: rustconn/src/terminal/mod.rs:1222 rustconn/src/terminal/mod.rs:1305
+#: rustconn/src/terminal/mod.rs:1676
 msgid "Reconnect"
 msgstr "Перепід'єднай"
 
 #: rustconn/src/embedded_rdp/mod.rs:427 rustconn/src/embedded_spice.rs:296
-#: rustconn/src/embedded_vnc/ui.rs:106 rustconn/src/terminal/mod.rs:1184
-#: rustconn/src/terminal/mod.rs:1267 rustconn/src/terminal/mod.rs:1638
+#: rustconn/src/embedded_vnc/ui.rs:106 rustconn/src/terminal/mod.rs:1224
+#: rustconn/src/terminal/mod.rs:1307 rustconn/src/terminal/mod.rs:1678
 msgid "Reconnect to this session"
 msgstr "Перез'єднайся із цим сеансом"
 
@@ -8485,31 +8484,31 @@ msgstr "Огляд вкладок"
 msgid "Welcome"
 msgstr "Ласкаво просимо"
 
-#: rustconn/src/terminal/mod.rs:1178 rustconn/src/terminal/mod.rs:1261
+#: rustconn/src/terminal/mod.rs:1218 rustconn/src/terminal/mod.rs:1301
 msgid "Command not found: {}"
 msgstr "Команду не знайдено: {}"
 
-#: rustconn/src/terminal/mod.rs:1200 rustconn/src/terminal/mod.rs:1283
+#: rustconn/src/terminal/mod.rs:1240 rustconn/src/terminal/mod.rs:1323
 msgid "'{}' is not installed"
 msgstr "«{}» не встановлено"
 
-#: rustconn/src/terminal/mod.rs:1630 rustconn/src/terminal/mod.rs:1695
+#: rustconn/src/terminal/mod.rs:1670 rustconn/src/terminal/mod.rs:1735
 msgid "Auto-reconnecting…"
 msgstr "Автоперез'єднування…"
 
-#: rustconn/src/terminal/mod.rs:1745 rustconn/src/terminal/mod.rs:1755
+#: rustconn/src/terminal/mod.rs:1785 rustconn/src/terminal/mod.rs:1795
 msgid "Auto-reconnecting (attempt {}/{})"
 msgstr "Автоматичне перепідключення (спроба {}/{})"
 
-#: rustconn/src/terminal/mod.rs:2253
+#: rustconn/src/terminal/mod.rs:2293
 msgid "Displayed in Split View"
 msgstr "Показано у розділеному вигляді"
 
-#: rustconn/src/terminal/mod.rs:2254
+#: rustconn/src/terminal/mod.rs:2294
 msgid "This session is shown in another tab's split layout"
 msgstr "Цей сеанс показано у розділеному вигляді іншої вкладки"
 
-#: rustconn/src/terminal/mod.rs:2259
+#: rustconn/src/terminal/mod.rs:2299
 msgid "Go to Split View"
 msgstr "Перейди до розділеного вигляду"
 
@@ -8670,12 +8669,12 @@ msgid "{} Active Session(s)"
 msgstr "{} активних сесій"
 
 #: rustconn/src/tray.rs:246 rustconn/src/tray.rs:584
-#: rustconn/src/window/ui.rs:291
+#: rustconn/src/window/ui.rs:293
 msgid "About RustConn"
 msgstr "Про RustConn"
 
 #: rustconn/src/tray.rs:253 rustconn/src/tray.rs:590
-#: rustconn/src/window/ui.rs:292
+#: rustconn/src/window/ui.rs:294
 msgid "Quit"
 msgstr "Вийди"
 
@@ -9860,19 +9859,19 @@ msgstr "Устав з'єднок"
 msgid "Settings..."
 msgstr "Устави..."
 
-#: rustconn/src/window/ui.rs:277
-msgid "Flatpak Components..."
-msgstr "Компоненти Flatpak…"
+#: rustconn/src/window/ui.rs:279
+msgid "Components..."
+msgstr "Складники…"
 
-#: rustconn/src/window/ui.rs:285
+#: rustconn/src/window/ui.rs:287
 msgid "Fullscreen"
 msgstr "Повноекранний"
 
-#: rustconn/src/window/ui.rs:287
+#: rustconn/src/window/ui.rs:289
 msgid "Keyboard Passthrough"
 msgstr "Передача клавіятури"
 
-#: rustconn/src/window/ui.rs:290
+#: rustconn/src/window/ui.rs:292
 msgid "Keyboard Shortcuts..."
 msgstr "Комбінації клавіш..."
 

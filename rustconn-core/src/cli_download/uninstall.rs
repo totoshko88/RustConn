@@ -6,11 +6,11 @@ use super::{
 pub(super) async fn uninstall_component_impl(
     component: &DownloadableComponent,
 ) -> CliDownloadResult<()> {
-    if !crate::flatpak::is_flatpak() {
-        return Err(CliDownloadError::NotFlatpak);
+    if !crate::is_sandboxed() {
+        return Err(CliDownloadError::NotSandboxed);
     }
 
-    let cli_dir = get_cli_install_dir().ok_or(CliDownloadError::NotFlatpak)?;
+    let cli_dir = get_cli_install_dir().ok_or(CliDownloadError::NotSandboxed)?;
     let install_dir = cli_dir.join(component.install_subdir);
 
     if install_dir.exists() {

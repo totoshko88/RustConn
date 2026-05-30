@@ -1,3 +1,18 @@
+rustconn (0.15.3-1) unstable; urgency=medium
+
+  * Snap base bumped to core26 (Ubuntu 26.04 / GNOME 50 / libadwaita 1.8)
+  * Removed system-files (host-usr-bin) plug; external CLIs now download on demand inside the sandbox
+  * Renamed Flatpak Components dialog to Components; now available in both snap and Flatpak
+  * External CLI download mechanism (Components dialog) now works inside snap
+  * Added is_sandboxed() predicate unifying snap/Flatpak CLI logic
+  * Snap confinement message now guides users to connect personal-files plugs
+  * Fixed broken Ukrainian translation for Protocol Clients section
+  * Updated all 16 language catalogs for the Components rename
+  * Updated docs (ZERO_TRUST.md, BITWARDEN_SETUP.md) for snap parity
+  * Dependencies: hyper 1.10.0→1.10.1, uuid 1.23.1→1.23.2, zbus 5.15.0→5.16.0, zerocopy 0.8.49→0.8.50, zvariant 5.11.0→5.12.0
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Sat, 30 May 2026 12:00:00 +0200
+
 rustconn (0.15.2-1) unstable; urgency=medium
 
   * Corrected misleading copy-pasted #[allow]/#[expect] reasons across rustconn-core and property tests; lints that fire now use #[expect]

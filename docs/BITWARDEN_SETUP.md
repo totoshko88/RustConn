@@ -10,21 +10,21 @@ This guide covers configuring Bitwarden CLI as a secret backend in RustConn for 
 
 ## Step 1: Install Bitwarden CLI
 
-### Flatpak (recommended for Flatpak users)
+### Flatpak / Snap (recommended for sandboxed installs)
 
-The easiest way to install `bw` inside the Flatpak sandbox:
+The easiest way to install `bw` inside the sandbox:
 
 1. Open RustConn
-2. Go to Menu → **Flatpak Components...**
+2. Go to Menu → **Components...**
 3. Find **Bitwarden CLI** in the Password Manager section
 4. Click **Install**
 5. Wait for download and verification to complete
 
-The CLI is installed to `~/.var/app/io.github.totoshko88.RustConn/cli/bitwarden/bw` and is automatically detected by RustConn.
+The CLI is installed to `~/.var/app/io.github.totoshko88.RustConn/cli/bitwarden/bw` (Flatpak) or `~/snap/rustconn/current/cli/bitwarden/bw` (Snap) and is automatically detected by RustConn.
 
-> **Important:** Installing `bw` on the host system (e.g. via `npm install -g @bitwarden/cli`) does NOT make it available inside the Flatpak sandbox. You must install it through Flatpak Components or place the binary manually in the path above.
+> **Important:** Installing `bw` on the host system (e.g. via `npm install -g @bitwarden/cli`) does NOT make it available inside the sandbox. You must install it through the Components dialog or place the binary manually in the path above.
 
-### Native package (non-Flatpak)
+### Native package (non-sandboxed)
 
 Choose one method:
 
@@ -79,9 +79,9 @@ bw login --apikey
 
 Enter Client ID and Client Secret when prompted.
 
-### Flatpak users
+### Sandbox users (Flatpak / Snap)
 
-If you installed `bw` via Flatpak Components, you need to run it from within the sandbox. Open a **Local Shell** tab in RustConn (Ctrl+T or set startup action to Local Shell), then run the login commands there. The Flatpak Components installer adds the `bw` path to the Local Shell PATH automatically.
+If you installed `bw` via the Components dialog, you need to run it from within the sandbox. Open a **Local Shell** tab in RustConn (Ctrl+T or set startup action to Local Shell), then run the login commands there. The Components installer adds the `bw` path to the Local Shell PATH automatically.
 
 Alternatively, run directly:
 
@@ -156,7 +156,7 @@ To load an existing password from the vault, click the folder icon next to the p
 
 The `bw` binary is not found in PATH.
 
-- **Flatpak users:** Install `bw` via Menu → Flatpak Components. Host-installed `bw` is not accessible inside the sandbox.
+- **Sandbox users (Flatpak/Snap):** Install `bw` via Menu → Components. Host-installed `bw` is not accessible inside the sandbox.
 - **Native users:** Verify `bw` is installed: `which bw`. If installed in a non-standard location, ensure it is in your PATH.
 
 ### "Bitwarden vault is locked"

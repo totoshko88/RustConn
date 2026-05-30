@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-29 11:31+0300\n"
+"POT-Creation-Date: 2026-05-30 09:52+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Kazakh\n"
@@ -3904,8 +3904,8 @@ msgid "Close"
 msgstr "Жабу"
 
 #: rustconn/src/dialogs/flatpak_components.rs:70
-msgid "Flatpak Components"
-msgstr "Flatpak компоненттері"
+msgid "Components"
+msgstr "компоненттері"
 
 #: rustconn/src/dialogs/flatpak_components.rs:103
 #: rustconn/src/dialogs/flatpak_components.rs:104
@@ -7777,20 +7777,20 @@ msgid "Save files from remote clipboard"
 msgstr "Қашықтағы алмасу буферінен файлдарды сақтау"
 
 #: rustconn/src/embedded_rdp/mod.rs:422 rustconn/src/embedded_spice.rs:291
-#: rustconn/src/embedded_vnc/ui.rs:101 rustconn/src/terminal/mod.rs:1623
+#: rustconn/src/embedded_vnc/ui.rs:101 rustconn/src/terminal/mod.rs:1663
 msgid "Session disconnected"
 msgstr "Сеанс ажыратылды"
 
 #: rustconn/src/embedded_rdp/mod.rs:425 rustconn/src/embedded_spice.rs:294
 #: rustconn/src/embedded_trait.rs:233 rustconn/src/embedded_vnc/ui.rs:104
-#: rustconn/src/terminal/mod.rs:1182 rustconn/src/terminal/mod.rs:1265
-#: rustconn/src/terminal/mod.rs:1636
+#: rustconn/src/terminal/mod.rs:1222 rustconn/src/terminal/mod.rs:1305
+#: rustconn/src/terminal/mod.rs:1676
 msgid "Reconnect"
 msgstr "Қайта қосылу"
 
 #: rustconn/src/embedded_rdp/mod.rs:427 rustconn/src/embedded_spice.rs:296
-#: rustconn/src/embedded_vnc/ui.rs:106 rustconn/src/terminal/mod.rs:1184
-#: rustconn/src/terminal/mod.rs:1267 rustconn/src/terminal/mod.rs:1638
+#: rustconn/src/embedded_vnc/ui.rs:106 rustconn/src/terminal/mod.rs:1224
+#: rustconn/src/terminal/mod.rs:1307 rustconn/src/terminal/mod.rs:1678
 msgid "Reconnect to this session"
 msgstr "Бұл сеансқа қайта қосылу"
 
@@ -8505,31 +8505,31 @@ msgstr "Қойындылар шолуы"
 msgid "Welcome"
 msgstr "Қош келдіңіз"
 
-#: rustconn/src/terminal/mod.rs:1178 rustconn/src/terminal/mod.rs:1261
+#: rustconn/src/terminal/mod.rs:1218 rustconn/src/terminal/mod.rs:1301
 msgid "Command not found: {}"
 msgstr "Команда табылмады: {}"
 
-#: rustconn/src/terminal/mod.rs:1200 rustconn/src/terminal/mod.rs:1283
+#: rustconn/src/terminal/mod.rs:1240 rustconn/src/terminal/mod.rs:1323
 msgid "'{}' is not installed"
 msgstr "«{}» орнатылмаған"
 
-#: rustconn/src/terminal/mod.rs:1630 rustconn/src/terminal/mod.rs:1695
+#: rustconn/src/terminal/mod.rs:1670 rustconn/src/terminal/mod.rs:1735
 msgid "Auto-reconnecting…"
 msgstr "Автоматты қайта қосылу…"
 
-#: rustconn/src/terminal/mod.rs:1745 rustconn/src/terminal/mod.rs:1755
+#: rustconn/src/terminal/mod.rs:1785 rustconn/src/terminal/mod.rs:1795
 msgid "Auto-reconnecting (attempt {}/{})"
 msgstr "Автоматты түрде қайта қосылу ({}/{}-әрекет)"
 
-#: rustconn/src/terminal/mod.rs:2253
+#: rustconn/src/terminal/mod.rs:2293
 msgid "Displayed in Split View"
 msgstr "Бөлінген көріністе көрсетілген"
 
-#: rustconn/src/terminal/mod.rs:2254
+#: rustconn/src/terminal/mod.rs:2294
 msgid "This session is shown in another tab's split layout"
 msgstr "Бұл сеанс басқа қойындының бөлінген орналасуында көрсетілген"
 
-#: rustconn/src/terminal/mod.rs:2259
+#: rustconn/src/terminal/mod.rs:2299
 msgid "Go to Split View"
 msgstr "Бөлінген көрініске өту"
 
@@ -8690,12 +8690,12 @@ msgid "{} Active Session(s)"
 msgstr "{} белсенді сеанс"
 
 #: rustconn/src/tray.rs:246 rustconn/src/tray.rs:584
-#: rustconn/src/window/ui.rs:291
+#: rustconn/src/window/ui.rs:293
 msgid "About RustConn"
 msgstr "RustConn туралы"
 
 #: rustconn/src/tray.rs:253 rustconn/src/tray.rs:590
-#: rustconn/src/window/ui.rs:292
+#: rustconn/src/window/ui.rs:294
 msgid "Quit"
 msgstr "Шығу"
 
@@ -9876,19 +9876,19 @@ msgstr "Қосылымды қою"
 msgid "Settings..."
 msgstr "Параметрлер..."
 
-#: rustconn/src/window/ui.rs:277
-msgid "Flatpak Components..."
-msgstr "Flatpak компоненттері…"
+#: rustconn/src/window/ui.rs:279
+msgid "Components..."
+msgstr "компоненттері…"
 
-#: rustconn/src/window/ui.rs:285
+#: rustconn/src/window/ui.rs:287
 msgid "Fullscreen"
 msgstr "Толық экран"
 
-#: rustconn/src/window/ui.rs:287
+#: rustconn/src/window/ui.rs:289
 msgid "Keyboard Passthrough"
 msgstr "Пернетақта берілуі"
 
-#: rustconn/src/window/ui.rs:290
+#: rustconn/src/window/ui.rs:292
 msgid "Keyboard Shortcuts..."
 msgstr "Пернетақта тіркесімдері..."
 

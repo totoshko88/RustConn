@@ -128,9 +128,9 @@ pub enum CliDownloadError {
     #[error("I/O error: {0}")]
     IoError(#[from] std::io::Error),
 
-    /// Not running in Flatpak
-    #[error("CLI download is only available in Flatpak environment")]
-    NotFlatpak,
+    /// Not running in a confined sandbox (snap or Flatpak)
+    #[error("CLI download is only available inside a snap or Flatpak sandbox")]
+    NotSandboxed,
 
     /// CLI already installed
     #[error("CLI is already installed")]
@@ -377,21 +377,29 @@ pub fn get_arch() -> &'static str {
 
 /// Get the CLI installation directory
 ///
-/// In Flatpak: `~/.var/app/io.github.totoshko88.RustConn/cli/`
+/// Returns a writable per-application directory where external CLI tools are
+/// installed at runtime. Strict sandboxes do not expose host binaries, so the
+/// app downloads them here on demand.
+///
+/// - Flatpak: `~/.var/app/io.github.totoshko88.RustConn/cli/`
+/// - snap: `$SNAP_USER_DATA/cli/`
+///
+/// Returns `None` outside a sandbox.
 #[must_use]
 pub fn get_cli_install_dir() -> Option<PathBuf> {
-    if !crate::flatpak::is_flatpak() {
-        return None;
+    if crate::flatpak::is_flatpak() {
+        // In Flatpak, XDG_DATA_HOME points to ~/.var/app/<app-id>/data
+        // We want ~/.var/app/<app-id>/cli
+        return std::env::var("XDG_DATA_HOME").ok().map(|data_home| {
+            PathBuf::from(data_home)
+                .parent()
+                .map(|p| p.join("cli"))
+                .unwrap_or_else(|| PathBuf::from("cli"))
+        });
     }
 
-    // In Flatpak, XDG_DATA_HOME points to ~/.var/app/<app-id>/data
-    // We want ~/.var/app/<app-id>/cli
-    std::env::var("XDG_DATA_HOME").ok().map(|data_home| {
-        PathBuf::from(data_home)
-            .parent()
-            .map(|p| p.join("cli"))
-            .unwrap_or_else(|| PathBuf::from("cli"))
-    })
+    // In a snap, use the writable per-user data directory.
+    crate::snap::get_cli_install_dir()
 }
 
 /// Get all CLI directories that should be added to PATH
@@ -502,8 +510,8 @@ pub async fn install_component(
     progress_callback: ProgressCallback,
     cancel_token: DownloadCancellation,
 ) -> CliDownloadResult<PathBuf> {
-    if !crate::flatpak::is_flatpak() {
-        return Err(CliDownloadError::NotFlatpak);
+    if !crate::is_sandboxed() {
+        return Err(CliDownloadError::NotSandboxed);
     }
 
     if component.is_installed() {
@@ -514,7 +522,7 @@ pub async fn install_component(
         return Err(CliDownloadError::NotAvailable(component.name.to_string()));
     }
 
-    let cli_dir = get_cli_install_dir().ok_or(CliDownloadError::NotFlatpak)?;
+    let cli_dir = get_cli_install_dir().ok_or(CliDownloadError::NotSandboxed)?;
 
     // Create installation directory
     let install_dir = cli_dir.join(component.install_subdir);
@@ -584,7 +592,9 @@ pub fn get_user_friendly_error(error: &CliDownloadError) -> String {
         }
         CliDownloadError::PipInstallFailed(_) => "Python package installation failed.".to_string(),
         CliDownloadError::IoError(_) => "File system error occurred.".to_string(),
-        CliDownloadError::NotFlatpak => "This feature is only available in Flatpak.".to_string(),
+        CliDownloadError::NotSandboxed => {
+            "This feature is only available in a snap or Flatpak.".to_string()
+        }
         CliDownloadError::AlreadyInstalled => "Component is already installed.".to_string(),
         CliDownloadError::Cancelled => "Installation was cancelled.".to_string(),
         CliDownloadError::NotAvailable(name) => {

@@ -19,7 +19,7 @@ use rustconn_core::cli_download::{
     get_installation_status, get_user_friendly_error, install_component, uninstall_component,
     update_component,
 };
-use rustconn_core::flatpak::is_flatpak;
+use rustconn_core::is_sandboxed;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -57,17 +57,17 @@ struct ComponentRow {
 }
 
 impl FlatpakComponentsDialog {
-    /// Create a new Flatpak components dialog
+    /// Create a new components dialog
     ///
-    /// Returns `None` if not running in Flatpak
+    /// Returns `None` if not running in a sandbox (snap or Flatpak)
     #[must_use]
     pub fn new(parent: Option<&impl IsA<gtk4::Window>>) -> Option<Self> {
-        if !is_flatpak() {
+        if !is_sandboxed() {
             return None;
         }
 
         let dialog = adw::Dialog::builder()
-            .title(i18n("Flatpak Components"))
+            .title(i18n("Components"))
             .content_width(600)
             .content_height(500)
             .build();
@@ -546,8 +546,11 @@ impl FlatpakComponentsDialog {
     }
 }
 
-/// Check if Flatpak components menu should be visible
+/// Check if the external components menu should be visible.
+///
+/// Visible in any confined sandbox (snap or Flatpak) where host CLI tools are
+/// unavailable and must be downloaded into the app's writable data dir.
 #[must_use]
 pub fn should_show_flatpak_components_menu() -> bool {
-    is_flatpak()
+    is_sandboxed()
 }

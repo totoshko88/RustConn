@@ -252,8 +252,8 @@ pub fn show_undo_toast_on_window(
 
 /// Helper to show a missing CLI tool toast
 ///
-/// In Flatpak, adds an "Install" button that opens the Flatpak Components dialog.
-/// Outside Flatpak, shows a plain error toast.
+/// In a sandbox (snap or Flatpak), adds an "Install" button that opens the
+/// Components dialog. Outside a sandbox, shows a plain error toast.
 pub fn show_missing_cli_toast(window: &impl IsA<gui::Window>, message: &str) {
     if let Some(child) = window.child()
         && let Some(overlay) = find_toast_overlay(&child)
@@ -265,7 +265,7 @@ pub fn show_missing_cli_toast(window: &impl IsA<gui::Window>, message: &str) {
             &title_text,
             ToastType::Error,
         )));
-        if rustconn_core::flatpak::is_flatpak() {
+        if rustconn_core::is_sandboxed() {
             toast.set_button_label(Some(&crate::i18n::i18n("Install")));
             toast.set_action_name(Some("win.flatpak-components"));
         }

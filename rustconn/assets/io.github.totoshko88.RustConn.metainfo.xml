@@ -140,6 +140,18 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.15.3" date="2026-05-30">
+      <description>
+        <p>Version 0.15.3 — Snap packaging parity with Flatpak:</p>
+        <ul>
+          <li>Snap base bumped to core26 (Ubuntu 26.04 / GNOME 50 / libadwaita 1.8)</li>
+          <li>Removed system-files plug; external CLIs download on demand inside the sandbox</li>
+          <li>Components dialog now works in both snap and Flatpak</li>
+          <li>Snap confinement message guides users to connect personal-files plugs</li>
+          <li>Fixed broken Ukrainian translation; updated all 16 language catalogs</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.15.2" date="2026-05-29">
       <description>
         <p>Version 0.15.2 — code-hygiene release, no user-facing behaviour changes:</p>

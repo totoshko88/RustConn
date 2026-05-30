@@ -494,8 +494,9 @@ impl MainWindow {
                 dialog.present();
             }
         });
-        // Only enable in Flatpak environment
-        flatpak_components_action.set_enabled(rustconn_core::flatpak::is_flatpak());
+        // Only enable inside a sandbox (snap or Flatpak), where CLI tools are
+        // downloaded into the app's writable data dir.
+        flatpak_components_action.set_enabled(rustconn_core::is_sandboxed());
         window.add_action(&flatpak_components_action);
 
         // SSH Tunnels action — opens the standalone tunnel manager window

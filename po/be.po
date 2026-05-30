@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-29 11:31+0300\n"
+"POT-Creation-Date: 2026-05-30 09:52+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Belarusian\n"
@@ -3903,8 +3903,8 @@ msgid "Close"
 msgstr "Закрыць"
 
 #: rustconn/src/dialogs/flatpak_components.rs:70
-msgid "Flatpak Components"
-msgstr "Кампаненты Flatpak"
+msgid "Components"
+msgstr "Кампаненты"
 
 #: rustconn/src/dialogs/flatpak_components.rs:103
 #: rustconn/src/dialogs/flatpak_components.rs:104
@@ -7770,20 +7770,20 @@ msgid "Save files from remote clipboard"
 msgstr "Захаваць файлы з аддаленага буфера абмену"
 
 #: rustconn/src/embedded_rdp/mod.rs:422 rustconn/src/embedded_spice.rs:291
-#: rustconn/src/embedded_vnc/ui.rs:101 rustconn/src/terminal/mod.rs:1623
+#: rustconn/src/embedded_vnc/ui.rs:101 rustconn/src/terminal/mod.rs:1663
 msgid "Session disconnected"
 msgstr "Сеанс адлучаны"
 
 #: rustconn/src/embedded_rdp/mod.rs:425 rustconn/src/embedded_spice.rs:294
 #: rustconn/src/embedded_trait.rs:233 rustconn/src/embedded_vnc/ui.rs:104
-#: rustconn/src/terminal/mod.rs:1182 rustconn/src/terminal/mod.rs:1265
-#: rustconn/src/terminal/mod.rs:1636
+#: rustconn/src/terminal/mod.rs:1222 rustconn/src/terminal/mod.rs:1305
+#: rustconn/src/terminal/mod.rs:1676
 msgid "Reconnect"
 msgstr "Перазлучыцца"
 
 #: rustconn/src/embedded_rdp/mod.rs:427 rustconn/src/embedded_spice.rs:296
-#: rustconn/src/embedded_vnc/ui.rs:106 rustconn/src/terminal/mod.rs:1184
-#: rustconn/src/terminal/mod.rs:1267 rustconn/src/terminal/mod.rs:1638
+#: rustconn/src/embedded_vnc/ui.rs:106 rustconn/src/terminal/mod.rs:1224
+#: rustconn/src/terminal/mod.rs:1307 rustconn/src/terminal/mod.rs:1678
 msgid "Reconnect to this session"
 msgstr "Перазлучыцца з гэтым сеансам"
 
@@ -8498,31 +8498,31 @@ msgstr "Агляд укладак"
 msgid "Welcome"
 msgstr "Вітаем"
 
-#: rustconn/src/terminal/mod.rs:1178 rustconn/src/terminal/mod.rs:1261
+#: rustconn/src/terminal/mod.rs:1218 rustconn/src/terminal/mod.rs:1301
 msgid "Command not found: {}"
 msgstr "Каманда не знойдзена: {}"
 
-#: rustconn/src/terminal/mod.rs:1200 rustconn/src/terminal/mod.rs:1283
+#: rustconn/src/terminal/mod.rs:1240 rustconn/src/terminal/mod.rs:1323
 msgid "'{}' is not installed"
 msgstr "«{}» не ўсталявана"
 
-#: rustconn/src/terminal/mod.rs:1630 rustconn/src/terminal/mod.rs:1695
+#: rustconn/src/terminal/mod.rs:1670 rustconn/src/terminal/mod.rs:1735
 msgid "Auto-reconnecting…"
 msgstr "Аўтаперападключэнне…"
 
-#: rustconn/src/terminal/mod.rs:1745 rustconn/src/terminal/mod.rs:1755
+#: rustconn/src/terminal/mod.rs:1785 rustconn/src/terminal/mod.rs:1795
 msgid "Auto-reconnecting (attempt {}/{})"
 msgstr "Аўтаматычнае перападлучэнне (спроба {}/{})"
 
-#: rustconn/src/terminal/mod.rs:2253
+#: rustconn/src/terminal/mod.rs:2293
 msgid "Displayed in Split View"
 msgstr "Паказана ў падзеленым выглядзе"
 
-#: rustconn/src/terminal/mod.rs:2254
+#: rustconn/src/terminal/mod.rs:2294
 msgid "This session is shown in another tab's split layout"
 msgstr "Гэты сеанс паказаны ў падзеленым выглядзе іншай укладкі"
 
-#: rustconn/src/terminal/mod.rs:2259
+#: rustconn/src/terminal/mod.rs:2299
 msgid "Go to Split View"
 msgstr "Перайсці да падзеленага выгляду"
 
@@ -8683,12 +8683,12 @@ msgid "{} Active Session(s)"
 msgstr "{} актыўных сеансаў"
 
 #: rustconn/src/tray.rs:246 rustconn/src/tray.rs:584
-#: rustconn/src/window/ui.rs:291
+#: rustconn/src/window/ui.rs:293
 msgid "About RustConn"
 msgstr "Пра RustConn"
 
 #: rustconn/src/tray.rs:253 rustconn/src/tray.rs:590
-#: rustconn/src/window/ui.rs:292
+#: rustconn/src/window/ui.rs:294
 msgid "Quit"
 msgstr "Выйсці"
 
@@ -9876,19 +9876,19 @@ msgstr "Уставіць злучэнне"
 msgid "Settings..."
 msgstr "Налады..."
 
-#: rustconn/src/window/ui.rs:277
-msgid "Flatpak Components..."
-msgstr "Кампаненты Flatpak…"
+#: rustconn/src/window/ui.rs:279
+msgid "Components..."
+msgstr "Кампаненты…"
 
-#: rustconn/src/window/ui.rs:285
+#: rustconn/src/window/ui.rs:287
 msgid "Fullscreen"
 msgstr "Поўнаэкранны"
 
-#: rustconn/src/window/ui.rs:287
+#: rustconn/src/window/ui.rs:289
 msgid "Keyboard Passthrough"
 msgstr "Перадача клавіятуры"
 
-#: rustconn/src/window/ui.rs:290
+#: rustconn/src/window/ui.rs:292
 msgid "Keyboard Shortcuts..."
 msgstr "Спалучэнні клавіш..."
 

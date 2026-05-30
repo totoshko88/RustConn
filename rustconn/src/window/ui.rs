@@ -270,13 +270,12 @@ pub fn create_app_menu() -> gio::Menu {
     // Settings section (separated from app meta per GNOME HIG)
     let settings_section = gio::Menu::new();
     settings_section.append(Some(&i18n("Settings...")), Some("win.settings"));
-    // Flatpak Components menu item - only visible in Flatpak environment
-    // The action is always registered but does nothing outside Flatpak
-    if rustconn_core::flatpak::is_flatpak() {
-        settings_section.append(
-            Some(&i18n("Flatpak Components...")),
-            Some("win.flatpak-components"),
-        );
+    // External CLI components menu — visible in any confined sandbox (snap or
+    // Flatpak), where host binaries are unavailable and tools are downloaded
+    // into the app's writable data dir. The action is always registered but
+    // does nothing outside a sandbox.
+    if rustconn_core::is_sandboxed() {
+        settings_section.append(Some(&i18n("Components...")), Some("win.flatpak-components"));
     }
     menu.append_section(None, &settings_section);
 

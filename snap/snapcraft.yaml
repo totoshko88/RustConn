@@ -1,6 +1,6 @@
 name: rustconn
-base: core24
-version: '0.15.2'
+base: core26
+version: '0.15.3'
 summary: Manage remote connections easily
 description: |
   RustConn is a modern connection manager for Linux with a GTK4/Wayland-native
@@ -51,9 +51,11 @@ description: |
   - Remote host monitoring (CPU, memory, disk, network)
   - Wake-on-LAN with auto-connect
 
-  Note: This snap uses strict confinement with embedded protocol clients.
-  External CLIs (Zero Trust, password managers) must be installed on host
-  and accessed via system-files interface.
+  Note: This snap uses strict confinement with embedded protocol clients
+  (SSH, RDP via IronRDP, VNC via vnc-rs, SPICE) bundled in the snap. Optional
+  external CLIs (Zero Trust providers, password managers) are downloaded on
+  demand into the snap's writable user data and run inside the sandbox — no
+  host access is required.
 
 grade: stable
 confinement: strict
@@ -119,26 +121,6 @@ plugs:
     interface: personal-files
     read:
       - $HOME/.kube
-  host-usr-bin:
-    interface: system-files
-    read:
-      - /usr/bin/aws
-      - /usr/bin/gcloud
-      - /usr/bin/az
-      - /usr/bin/oci
-      - /usr/bin/cloudflared
-      - /usr/bin/tsh
-      - /usr/bin/tailscale
-      - /usr/bin/boundary
-      - /usr/bin/bw
-      - /usr/bin/op
-      - /usr/bin/passbolt
-      - /usr/bin/keepassxc-proxy
-      - /usr/bin/remote-viewer
-      - /usr/bin/xfreerdp
-      - /usr/bin/vncviewer
-      - /usr/bin/kubectl
-      - /usr/local/bin/kubectl
 
 apps:
   rustconn:
@@ -167,7 +149,6 @@ apps:
       - azure-credentials
       - oci-credentials
       - kube-credentials
-      - host-usr-bin
     environment:
       GTK_USE_PORTAL: "1"
       GDK_BACKEND: wayland,x11
@@ -190,15 +171,18 @@ apps:
       - azure-credentials
       - oci-credentials
       - kube-credentials
-      - host-usr-bin
 
 parts:
   rustconn:
     plugin: rust
     source: .
     rust-channel: "1.95"
-    rust-path: [rustconn, rustconn-cli]
-    rust-use-global-lto: true
+    # NOTE: we do NOT use `rust-features` here. The snapcraft rust plugin runs
+    # `cargo install --features <list>` once per `rust-path` crate, but the
+    # `adw-1-8` feature only exists in the `rustconn` crate — applying it to
+    # `rustconn-cli` would fail. Instead override-build performs a single
+    # workspace build, exactly like the Flatpak manifest:
+    #   cargo build --release -p rustconn --features adw-1-8 -p rustconn-cli
     build-packages:
       - libgtk-4-dev
       - libadwaita-1-dev
@@ -234,11 +218,23 @@ parts:
       - picocom
       - inetutils-telnet
       - waypipe
-    organize:
-      bin/rustconn: usr/bin/rustconn
-      bin/rustconn-cli: usr/bin/rustconn-cli
+      # python3 enables the pip-based Zero Trust CLIs (Azure `az`, Oracle `oci`)
+      # that the Components dialog installs at runtime. The Flatpak GNOME
+      # runtime ships Python; under snap we must stage it explicitly.
+      - python3
+      - python3-venv
     override-build: |
-      craftctl default
+      # Single workspace build with the adw-1-8 feature for the GUI crate,
+      # matching packaging/flatpak/io.github.totoshko88.RustConn.yml. Global
+      # LTO is enabled via --config to keep binary size down (the plugin's
+      # rust-use-global-lto would do the same, but we drive cargo directly).
+      cargo build --release \
+        --config 'profile.release.lto = true' \
+        --config 'profile.release.codegen-units = 1' \
+        -p rustconn --features adw-1-8 \
+        -p rustconn-cli
+      install -Dm755 target/release/rustconn "$CRAFT_PART_INSTALL/usr/bin/rustconn"
+      install -Dm755 target/release/rustconn-cli "$CRAFT_PART_INSTALL/usr/bin/rustconn-cli"
       mkdir -p $CRAFT_PART_INSTALL/usr/share/applications
       mkdir -p $CRAFT_PART_INSTALL/usr/share/icons
       mkdir -p $CRAFT_PART_INSTALL/usr/share/metainfo

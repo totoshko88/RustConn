@@ -89,6 +89,10 @@ pub(super) async fn install_gcloud(
             && let Some(config_dir) = crate::flatpak::get_flatpak_gcloud_config_dir()
         {
             cmd.env("CLOUDSDK_CONFIG", &config_dir);
+        } else if crate::snap::is_snap()
+            && let Some(config_dir) = crate::snap::get_snap_gcloud_config_dir()
+        {
+            cmd.env("CLOUDSDK_CONFIG", &config_dir);
         }
 
         let output = cmd.output().await?;

@@ -1072,6 +1072,46 @@ impl TerminalNotebook {
                 )));
             }
         }
+        // In a snap, mirror the Flatpak redirection above using the snap's
+        // writable user-data CLI config dirs. The personal-files plugs expose
+        // host credentials read-only, so writable config must live under
+        // $SNAP_USER_DATA (see rustconn_core::snap::get_snap_cli_config_dir).
+        else if rustconn_core::is_snap() {
+            if !env_vec.iter().any(|e| e.starts_with("CLOUDSDK_CONFIG="))
+                && let Some(dir) = rustconn_core::snap::get_snap_gcloud_config_dir()
+            {
+                env_vec.push(glib::GString::from(format!(
+                    "CLOUDSDK_CONFIG={}",
+                    dir.display()
+                )));
+            }
+            if !env_vec.iter().any(|e| e.starts_with("AZURE_CONFIG_DIR="))
+                && let Some(dir) = rustconn_core::snap::get_snap_azure_config_dir()
+            {
+                env_vec.push(glib::GString::from(format!(
+                    "AZURE_CONFIG_DIR={}",
+                    dir.display()
+                )));
+            }
+            if !env_vec.iter().any(|e| e.starts_with("TELEPORT_HOME="))
+                && let Some(dir) = rustconn_core::snap::get_snap_teleport_config_dir()
+            {
+                env_vec.push(glib::GString::from(format!(
+                    "TELEPORT_HOME={}",
+                    dir.display()
+                )));
+            }
+            if !env_vec
+                .iter()
+                .any(|e| e.starts_with("OCI_CLI_CONFIG_FILE="))
+                && let Some(dir) = rustconn_core::snap::get_snap_oci_config_dir()
+            {
+                env_vec.push(glib::GString::from(format!(
+                    "OCI_CLI_CONFIG_FILE={}",
+                    dir.join("config").display()
+                )));
+            }
+        }
 
         // Ensure TERM is set. GUI applications (like RustConn) typically
         // don't have TERM in their environment. Without it, ncurses-based

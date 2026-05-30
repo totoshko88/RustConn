@@ -529,14 +529,6 @@ fn which_binary(binary: &str) -> Option<PathBuf> {
         if app_path.exists() && app_path.is_file() {
             return Some(app_path);
         }
-
-        // Check Flatpak CLI install directories (e.g. ~/.var/app/<id>/cli/hoop/hoop)
-        for dir in crate::cli_download::get_cli_path_dirs() {
-            let cli_path = dir.join(binary);
-            if cli_path.exists() && cli_path.is_file() {
-                return Some(cli_path);
-            }
-        }
     }
 
     // In snap environment, check SNAP directory first for bundled clients
@@ -552,6 +544,18 @@ fn which_binary(binary: &str) -> Option<PathBuf> {
             let path = PathBuf::from(snap_path);
             if path.exists() && path.is_file() {
                 return Some(path);
+            }
+        }
+    }
+
+    // In any sandbox, check the writable CLI install directories
+    // (e.g. ~/.var/app/<id>/cli/hoop/hoop in Flatpak, $SNAP_USER_DATA/cli/...
+    // in snap) for tools downloaded on demand.
+    if crate::is_sandboxed() {
+        for dir in crate::cli_download::get_cli_path_dirs() {
+            let cli_path = dir.join(binary);
+            if cli_path.exists() && cli_path.is_file() {
+                return Some(cli_path);
             }
         }
     }
@@ -583,8 +587,8 @@ fn get_version(binary: &str, args: &[&str]) -> Option<String> {
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
 
-    // In Flatpak, extend PATH so the binary can find sibling tools
-    if crate::flatpak::is_flatpak() {
+    // In a sandbox, extend PATH so the binary can find sibling tools
+    if crate::is_sandboxed() {
         cmd.env("PATH", crate::cli_download::get_extended_path());
     }
 

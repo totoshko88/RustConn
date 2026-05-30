@@ -103,9 +103,9 @@ pub fn is_host_command_available(cli: &str) -> bool {
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null());
 
-    // In Flatpak, CLI tools are installed outside the default PATH.
-    // Use the extended PATH that includes Flatpak CLI directories.
-    if is_flatpak() {
+    // In a sandbox (snap or Flatpak), CLI tools are installed outside the
+    // default PATH. Use the extended PATH that includes the sandbox CLI dirs.
+    if crate::is_sandboxed() {
         let extended_path = crate::cli_download::get_extended_path();
         cmd.env("PATH", &extended_path);
         tracing::trace!(cli, path = %extended_path, "Checking CLI availability with extended PATH");

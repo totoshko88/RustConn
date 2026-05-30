@@ -278,15 +278,15 @@ pub fn get_components_by_category(
 
 /// Returns components filtered for the current environment.
 ///
-/// In Flatpak, excludes components that require host display access
-/// (e.g. xfreerdp, vncviewer). On ARM64, excludes components without
-/// an ARM64 download URL. Outside Flatpak on x86_64, returns all.
+/// In a sandbox (snap or Flatpak), excludes components that require host
+/// display access (e.g. xfreerdp, vncviewer). On ARM64, excludes components
+/// without an ARM64 download URL. Outside a sandbox on x86_64, returns all.
 #[must_use]
 pub fn get_available_components() -> Vec<&'static DownloadableComponent> {
     DOWNLOADABLE_COMPONENTS
         .iter()
         .filter(|c| {
-            if crate::flatpak::is_flatpak() && !c.works_in_sandbox {
+            if crate::is_sandboxed() && !c.works_in_sandbox {
                 return false;
             }
             c.is_available_for_current_arch()

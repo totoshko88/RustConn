@@ -1,4 +1,17 @@
 -------------------------------------------------------------------
+Sat May 30 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.3
+
+- Snap base bumped to core26 (Ubuntu 26.04 / GNOME 50 / libadwaita 1.8)
+- Removed system-files (host-usr-bin) plug; external CLIs now download on demand inside the sandbox
+- Renamed Flatpak Components dialog to Components; now available in both snap and Flatpak
+- External CLI download mechanism (Components dialog) now works inside snap
+- Added is_sandboxed() predicate unifying snap/Flatpak CLI logic
+- Snap confinement message now guides users to connect personal-files plugs
+- Fixed broken Ukrainian translation for Protocol Clients section
+- Updated all 16 language catalogs for the Components rename
+- Dependencies: hyper 1.10.0→1.10.1, uuid 1.23.1→1.23.2, zbus 5.15.0→5.16.0, zerocopy 0.8.49→0.8.50, zvariant 5.11.0→5.12.0
+
+-------------------------------------------------------------------
 Fri May 29 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.2
 
 - Corrected misleading copy-pasted #[allow]/#[expect] reasons that had spread into rustconn-core (a non-GTK crate) and property tests; each site now states its real reason and lints that fire use #[expect]

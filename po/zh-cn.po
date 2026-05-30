@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-29 11:31+0300\n"
+"POT-Creation-Date: 2026-05-30 09:52+0300\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -3863,8 +3863,8 @@ msgid "Close"
 msgstr "关闭"
 
 #: rustconn/src/dialogs/flatpak_components.rs:70
-msgid "Flatpak Components"
-msgstr "Flatpak 组件"
+msgid "Components"
+msgstr "组件"
 
 #: rustconn/src/dialogs/flatpak_components.rs:103
 #: rustconn/src/dialogs/flatpak_components.rs:104
@@ -7694,20 +7694,20 @@ msgid "Save files from remote clipboard"
 msgstr "从远程剪贴板保存文件"
 
 #: rustconn/src/embedded_rdp/mod.rs:422 rustconn/src/embedded_spice.rs:291
-#: rustconn/src/embedded_vnc/ui.rs:101 rustconn/src/terminal/mod.rs:1623
+#: rustconn/src/embedded_vnc/ui.rs:101 rustconn/src/terminal/mod.rs:1663
 msgid "Session disconnected"
 msgstr "会话已断开"
 
 #: rustconn/src/embedded_rdp/mod.rs:425 rustconn/src/embedded_spice.rs:294
 #: rustconn/src/embedded_trait.rs:233 rustconn/src/embedded_vnc/ui.rs:104
-#: rustconn/src/terminal/mod.rs:1182 rustconn/src/terminal/mod.rs:1265
-#: rustconn/src/terminal/mod.rs:1636
+#: rustconn/src/terminal/mod.rs:1222 rustconn/src/terminal/mod.rs:1305
+#: rustconn/src/terminal/mod.rs:1676
 msgid "Reconnect"
 msgstr "重连"
 
 #: rustconn/src/embedded_rdp/mod.rs:427 rustconn/src/embedded_spice.rs:296
-#: rustconn/src/embedded_vnc/ui.rs:106 rustconn/src/terminal/mod.rs:1184
-#: rustconn/src/terminal/mod.rs:1267 rustconn/src/terminal/mod.rs:1638
+#: rustconn/src/embedded_vnc/ui.rs:106 rustconn/src/terminal/mod.rs:1224
+#: rustconn/src/terminal/mod.rs:1307 rustconn/src/terminal/mod.rs:1678
 msgid "Reconnect to this session"
 msgstr "重新连接到此会话"
 
@@ -8422,31 +8422,31 @@ msgstr "标签页概览"
 msgid "Welcome"
 msgstr "欢迎"
 
-#: rustconn/src/terminal/mod.rs:1178 rustconn/src/terminal/mod.rs:1261
+#: rustconn/src/terminal/mod.rs:1218 rustconn/src/terminal/mod.rs:1301
 msgid "Command not found: {}"
 msgstr "命令未找到：{}"
 
-#: rustconn/src/terminal/mod.rs:1200 rustconn/src/terminal/mod.rs:1283
+#: rustconn/src/terminal/mod.rs:1240 rustconn/src/terminal/mod.rs:1323
 msgid "'{}' is not installed"
 msgstr "'{}' 未安装"
 
-#: rustconn/src/terminal/mod.rs:1630 rustconn/src/terminal/mod.rs:1695
+#: rustconn/src/terminal/mod.rs:1670 rustconn/src/terminal/mod.rs:1735
 msgid "Auto-reconnecting…"
 msgstr "正在自动重连…"
 
-#: rustconn/src/terminal/mod.rs:1745 rustconn/src/terminal/mod.rs:1755
+#: rustconn/src/terminal/mod.rs:1785 rustconn/src/terminal/mod.rs:1795
 msgid "Auto-reconnecting (attempt {}/{})"
 msgstr "自动重新连接（第 {}/{} 次）"
 
-#: rustconn/src/terminal/mod.rs:2253
+#: rustconn/src/terminal/mod.rs:2293
 msgid "Displayed in Split View"
 msgstr "在分屏视图中显示"
 
-#: rustconn/src/terminal/mod.rs:2254
+#: rustconn/src/terminal/mod.rs:2294
 msgid "This session is shown in another tab's split layout"
 msgstr "此会话显示在另一个标签页的分屏布局中"
 
-#: rustconn/src/terminal/mod.rs:2259
+#: rustconn/src/terminal/mod.rs:2299
 msgid "Go to Split View"
 msgstr "转到分屏视图"
 
@@ -8607,12 +8607,12 @@ msgid "{} Active Session(s)"
 msgstr "{} 个活动会话"
 
 #: rustconn/src/tray.rs:246 rustconn/src/tray.rs:584
-#: rustconn/src/window/ui.rs:291
+#: rustconn/src/window/ui.rs:293
 msgid "About RustConn"
 msgstr "关于 RustConn"
 
 #: rustconn/src/tray.rs:253 rustconn/src/tray.rs:590
-#: rustconn/src/window/ui.rs:292
+#: rustconn/src/window/ui.rs:294
 msgid "Quit"
 msgstr "退出"
 
@@ -9780,19 +9780,19 @@ msgstr "粘贴连接"
 msgid "Settings..."
 msgstr "设置..."
 
-#: rustconn/src/window/ui.rs:277
-msgid "Flatpak Components..."
-msgstr "Flatpak 组件..."
+#: rustconn/src/window/ui.rs:279
+msgid "Components..."
+msgstr "组件..."
 
-#: rustconn/src/window/ui.rs:285
+#: rustconn/src/window/ui.rs:287
 msgid "Fullscreen"
 msgstr "全屏"
 
-#: rustconn/src/window/ui.rs:287
+#: rustconn/src/window/ui.rs:289
 msgid "Keyboard Passthrough"
 msgstr "键盘穿透"
 
-#: rustconn/src/window/ui.rs:290
+#: rustconn/src/window/ui.rs:292
 msgid "Keyboard Shortcuts..."
 msgstr "键盘快捷键..."
 

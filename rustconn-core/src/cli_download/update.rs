@@ -14,8 +14,8 @@ pub(super) async fn update_component_impl(
     progress_callback: ProgressCallback,
     cancel_token: DownloadCancellation,
 ) -> CliDownloadResult<PathBuf> {
-    if !crate::flatpak::is_flatpak() {
-        return Err(CliDownloadError::NotFlatpak);
+    if !crate::is_sandboxed() {
+        return Err(CliDownloadError::NotSandboxed);
     }
 
     if !component.is_downloadable() {
@@ -32,7 +32,7 @@ pub(super) async fn update_component_impl(
     }
 
     // Remove existing installation
-    let cli_dir = get_cli_install_dir().ok_or(CliDownloadError::NotFlatpak)?;
+    let cli_dir = get_cli_install_dir().ok_or(CliDownloadError::NotSandboxed)?;
     let install_dir = cli_dir.join(component.install_subdir);
 
     if install_dir.exists() {

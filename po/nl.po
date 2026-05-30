@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-29 11:31+0300\n"
+"POT-Creation-Date: 2026-05-30 09:52+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Dutch\n"
@@ -3907,8 +3907,8 @@ msgid "Close"
 msgstr "Sluiten"
 
 #: rustconn/src/dialogs/flatpak_components.rs:70
-msgid "Flatpak Components"
-msgstr "Flatpak-componenten"
+msgid "Components"
+msgstr "componenten"
 
 #: rustconn/src/dialogs/flatpak_components.rs:103
 #: rustconn/src/dialogs/flatpak_components.rs:104
@@ -7783,20 +7783,20 @@ msgid "Save files from remote clipboard"
 msgstr "Bestanden opslaan van extern klembord"
 
 #: rustconn/src/embedded_rdp/mod.rs:422 rustconn/src/embedded_spice.rs:291
-#: rustconn/src/embedded_vnc/ui.rs:101 rustconn/src/terminal/mod.rs:1623
+#: rustconn/src/embedded_vnc/ui.rs:101 rustconn/src/terminal/mod.rs:1663
 msgid "Session disconnected"
 msgstr "Sessie verbroken"
 
 #: rustconn/src/embedded_rdp/mod.rs:425 rustconn/src/embedded_spice.rs:294
 #: rustconn/src/embedded_trait.rs:233 rustconn/src/embedded_vnc/ui.rs:104
-#: rustconn/src/terminal/mod.rs:1182 rustconn/src/terminal/mod.rs:1265
-#: rustconn/src/terminal/mod.rs:1636
+#: rustconn/src/terminal/mod.rs:1222 rustconn/src/terminal/mod.rs:1305
+#: rustconn/src/terminal/mod.rs:1676
 msgid "Reconnect"
 msgstr "Opnieuw verbinden"
 
 #: rustconn/src/embedded_rdp/mod.rs:427 rustconn/src/embedded_spice.rs:296
-#: rustconn/src/embedded_vnc/ui.rs:106 rustconn/src/terminal/mod.rs:1184
-#: rustconn/src/terminal/mod.rs:1267 rustconn/src/terminal/mod.rs:1638
+#: rustconn/src/embedded_vnc/ui.rs:106 rustconn/src/terminal/mod.rs:1224
+#: rustconn/src/terminal/mod.rs:1307 rustconn/src/terminal/mod.rs:1678
 msgid "Reconnect to this session"
 msgstr "Opnieuw verbinden met deze sessie"
 
@@ -8511,34 +8511,34 @@ msgstr "Tabbladoverzicht"
 msgid "Welcome"
 msgstr "Welkom"
 
-#: rustconn/src/terminal/mod.rs:1178 rustconn/src/terminal/mod.rs:1261
+#: rustconn/src/terminal/mod.rs:1218 rustconn/src/terminal/mod.rs:1301
 msgid "Command not found: {}"
 msgstr "Opdracht niet gevonden: {}"
 
-#: rustconn/src/terminal/mod.rs:1200 rustconn/src/terminal/mod.rs:1283
+#: rustconn/src/terminal/mod.rs:1240 rustconn/src/terminal/mod.rs:1323
 msgid "'{}' is not installed"
 msgstr "“{}” is niet geïnstalleerd"
 
-#: rustconn/src/terminal/mod.rs:1630 rustconn/src/terminal/mod.rs:1695
+#: rustconn/src/terminal/mod.rs:1670 rustconn/src/terminal/mod.rs:1735
 msgid "Auto-reconnecting…"
 msgstr "Automatisch opnieuw verbinden…"
 
-#: rustconn/src/terminal/mod.rs:1745 rustconn/src/terminal/mod.rs:1755
+#: rustconn/src/terminal/mod.rs:1785 rustconn/src/terminal/mod.rs:1795
 msgid "Auto-reconnecting (attempt {}/{})"
 msgstr "Automatisch opnieuw verbinden (poging {}/{})"
 
-#: rustconn/src/terminal/mod.rs:2253
+#: rustconn/src/terminal/mod.rs:2293
 msgid "Displayed in Split View"
 msgstr "Weergegeven in gesplitste weergave"
 
-#: rustconn/src/terminal/mod.rs:2254
+#: rustconn/src/terminal/mod.rs:2294
 msgid "This session is shown in another tab's split layout"
 msgstr ""
 "Deze sessie wordt weergegeven in de gesplitste indeling van een ander "
 "tabbladDeze sessie wordt weergegeven in de gesplitste indeling van een ander "
 "tabblad"
 
-#: rustconn/src/terminal/mod.rs:2259
+#: rustconn/src/terminal/mod.rs:2299
 msgid "Go to Split View"
 msgstr "Ga naar gesplitste weergave"
 
@@ -8699,12 +8699,12 @@ msgid "{} Active Session(s)"
 msgstr "{} actieve sessie(s)"
 
 #: rustconn/src/tray.rs:246 rustconn/src/tray.rs:584
-#: rustconn/src/window/ui.rs:291
+#: rustconn/src/window/ui.rs:293
 msgid "About RustConn"
 msgstr "Over RustConn"
 
 #: rustconn/src/tray.rs:253 rustconn/src/tray.rs:590
-#: rustconn/src/window/ui.rs:292
+#: rustconn/src/window/ui.rs:294
 msgid "Quit"
 msgstr "Afsluiten"
 
@@ -9895,19 +9895,19 @@ msgstr "Verbinding plakken"
 msgid "Settings..."
 msgstr "Instellingen..."
 
-#: rustconn/src/window/ui.rs:277
-msgid "Flatpak Components..."
-msgstr "Flatpak-componenten…"
+#: rustconn/src/window/ui.rs:279
+msgid "Components..."
+msgstr "componenten…"
 
-#: rustconn/src/window/ui.rs:285
+#: rustconn/src/window/ui.rs:287
 msgid "Fullscreen"
 msgstr "Volledig scherm"
 
-#: rustconn/src/window/ui.rs:287
+#: rustconn/src/window/ui.rs:289
 msgid "Keyboard Passthrough"
 msgstr "Toetsenbord-passthrough"
 
-#: rustconn/src/window/ui.rs:290
+#: rustconn/src/window/ui.rs:292
 msgid "Keyboard Shortcuts..."
 msgstr "Sneltoetsen..."
 

@@ -250,7 +250,7 @@ pub use sftp::{
 };
 pub use snap::{
     get_config_dir, get_confinement_message, get_data_dir, get_known_hosts_path, get_ssh_dir,
-    is_interface_connected, is_snap,
+    is_interface_connected, is_sandboxed, is_snap,
 };
 pub use snippet::SnippetManager;
 #[cfg(feature = "spice-embedded")]
