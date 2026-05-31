@@ -5743,6 +5743,9 @@ impl ConnectionDialog {
     pub fn refresh_agent_keys(&self) {
         use rustconn_core::ssh_agent::SshAgentManager;
 
+        // 5-second timeout — enough for a healthy agent, prevents indefinite hang.
+        const AGENT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
         // Show a placeholder while loading
         let loading_items: Vec<String> = vec![i18n("Loading agent keys…")];
         let loading_list =
@@ -5752,9 +5755,6 @@ impl ConnectionDialog {
         self.ssh_agent_key_dropdown.set_sensitive(false);
 
         // Clone the Rc fields needed to update UI after async completion
-        // 5-second timeout — enough for a healthy agent, prevents indefinite hang.
-        const AGENT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
-
         let ssh_agent_keys = self.ssh_agent_keys.clone();
         let ssh_agent_key_dropdown = self.ssh_agent_key_dropdown.clone();
         let ssh_key_source_dropdown = self.ssh_key_source_dropdown.clone();
