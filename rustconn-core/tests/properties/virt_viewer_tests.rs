@@ -80,7 +80,9 @@ fn arb_spice_vv(
         lines.push(format!("proxy={px}"));
     }
     if inline_pem {
-        lines.push("ca=-----BEGIN CERTIFICATE-----\\nMIIFake...".to_string());
+        lines.push(
+            "ca=-----BEGIN CERTIFICATE-----\\nMIIFake...\\n-----END CERTIFICATE-----".to_string(),
+        );
     }
 
     lines.join("\n")
