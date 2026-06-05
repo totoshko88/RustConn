@@ -230,7 +230,7 @@ impl AuthPage {
         // Auth method ComboRow → show/hide password and key file rows
         let pw_row = password_row.clone();
         let kf_row = key_file_row.clone();
-        method_row.connect_notify(Some("selected"), move |combo, _| {
+        method_row.connect_notify_local(Some("selected"), move |combo, _| {
             let selected = combo.selected();
             // 0 = Password, 1 = Key File, 2 = SSH Agent, 3 = Security Key
             pw_row.set_visible(selected == 0);

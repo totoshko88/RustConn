@@ -60,6 +60,12 @@ pub fn configure_terminal_with_settings(terminal: &Terminal, settings: &Terminal
     setup_keyboard_shortcuts(terminal);
     setup_font_zoom(terminal);
 
+    // macOS: Option key composed text handler (when option_is_meta is false)
+    #[cfg(target_os = "macos")]
+    if !settings.option_is_meta {
+        setup_macos_option_key_handler(terminal);
+    }
+
     // Context menu (Right click) — attached to the container, NOT the
     // terminal, to avoid interfering with VTE's internal mouse handling.
     // The context menu is set up separately after the terminal is created
@@ -444,4 +450,59 @@ pub fn apply_theme_override_with_base(
     {
         terminal.set_color_cursor(Some(&rgba));
     }
+}
+
+/// macOS: intercepts Option+key combinations in Capture phase and sends the
+/// composed Unicode character directly to the PTY instead of letting VTE
+/// interpret it as Alt/Meta + escape sequence.
+///
+/// On macOS with non-US keyboard layouts (German, French, etc.), the Option
+/// key is used to type common characters like @ (Option+L on German) or €
+/// (Option+E on many layouts). VTE treats Option as Alt/Meta and sends
+/// `ESC + keycode`, which is incorrect for composed text input.
+///
+/// This handler checks whether the GDK keyval produced by the macOS IM has
+/// a printable Unicode mapping. If so, it feeds the character directly to
+/// the terminal and stops propagation, preventing VTE's internal Alt handler.
+///
+/// When `option_is_meta` is `true` in settings, this handler is NOT installed
+/// and VTE's default behavior (ESC prefix) is used — suitable for vim/emacs.
+#[cfg(target_os = "macos")]
+fn setup_macos_option_key_handler(terminal: &Terminal) {
+    let controller = gtk4::EventControllerKey::new();
+    // Capture phase — intercept BEFORE VTE's internal key handler
+    controller.set_propagation_phase(gtk4::PropagationPhase::Capture);
+
+    let term = terminal.clone();
+    controller.connect_key_pressed(move |_ctrl, keyval, _keycode, modifiers| {
+        // Only act when Option/Alt is pressed
+        if !modifiers.contains(gdk::ModifierType::ALT_MASK) {
+            return glib::Propagation::Proceed;
+        }
+        // Do not intercept Ctrl+Option or Super+Option combos
+        if modifiers.contains(gdk::ModifierType::CONTROL_MASK)
+            || modifiers.contains(gdk::ModifierType::SUPER_MASK)
+        {
+            return glib::Propagation::Proceed;
+        }
+        // Do not intercept Shift+Option (uppercase compose is handled by the
+        // same logic — the keyval already reflects the shifted character)
+        // but we do NOT block it, Shift+Option is also a compose trigger.
+
+        // If GDK resolved this to a printable Unicode character, it came from
+        // the macOS IMContext compose path. Feed it as text to the PTY.
+        if let Some(ch) = keyval.to_unicode() {
+            if ch.is_control() || ch == '\u{ffff}' {
+                // Non-printable or invalid — let VTE handle as Alt+key
+                return glib::Propagation::Proceed;
+            }
+            let mut buf = [0u8; 4];
+            let text = ch.encode_utf8(&mut buf);
+            term.feed_child(text.as_bytes());
+            return glib::Propagation::Stop;
+        }
+
+        glib::Propagation::Proceed
+    });
+    terminal.add_controller(controller);
 }

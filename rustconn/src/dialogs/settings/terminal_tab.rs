@@ -35,6 +35,7 @@ pub fn create_terminal_page() -> (
     adw::SwitchRow, // show_scrollbar
     Entry,          // local_shell_command
     adw::SwitchRow, // close_on_clean_exit
+    adw::SwitchRow, // option_is_meta (macOS)
 ) {
     let page = adw::PreferencesPage::builder()
         .title(i18n("Terminal"))
@@ -442,6 +443,18 @@ pub fn create_terminal_page() -> (
         .build();
     behavior_group.add(&close_on_clean_exit_row);
 
+    // macOS: Option key as Meta
+    let option_is_meta_row = adw::SwitchRow::builder()
+        .title(i18n("Option as Meta key"))
+        .subtitle(i18n(
+            "Send Escape prefix instead of composed characters (for vim/emacs)",
+        ))
+        .build();
+    // Only show this setting on macOS — on Linux Alt always sends ESC
+    #[cfg(not(target_os = "macos"))]
+    option_is_meta_row.set_visible(false);
+    behavior_group.add(&option_is_meta_row);
+
     page.add(&behavior_group);
 
     // === Local Shell Group ===
@@ -483,6 +496,7 @@ pub fn create_terminal_page() -> (
         show_scrollbar_row,
         local_shell_command_entry,
         close_on_clean_exit_row,
+        option_is_meta_row,
     )
 }
 
@@ -508,6 +522,7 @@ pub fn load_terminal_settings(
     show_scrollbar_row: &adw::SwitchRow,
     local_shell_command_entry: &Entry,
     close_on_clean_exit_row: &adw::SwitchRow,
+    option_is_meta_row: &adw::SwitchRow,
     settings: &TerminalSettings,
 ) {
     font_family_entry.set_text(&settings.font_family);
@@ -551,6 +566,7 @@ pub fn load_terminal_settings(
     show_scrollbar_row.set_active(settings.show_scrollbar);
     local_shell_command_entry.set_text(&settings.local_shell_command);
     close_on_clean_exit_row.set_active(settings.close_on_clean_exit);
+    option_is_meta_row.set_active(settings.option_is_meta);
 }
 
 /// Sets the active toggle index.
@@ -653,6 +669,7 @@ pub fn collect_terminal_settings(
     show_scrollbar_row: &adw::SwitchRow,
     local_shell_command_entry: &Entry,
     close_on_clean_exit_row: &adw::SwitchRow,
+    option_is_meta_row: &adw::SwitchRow,
     log_timestamps: bool,
 ) -> TerminalSettings {
     let theme_names = TerminalTheme::theme_names();
@@ -696,6 +713,7 @@ pub fn collect_terminal_settings(
         show_scrollbar: show_scrollbar_row.is_active(),
         local_shell_command: local_shell_command_entry.text().trim().to_string(),
         close_on_clean_exit: close_on_clean_exit_row.is_active(),
+        option_is_meta: option_is_meta_row.is_active(),
     }
 }
 

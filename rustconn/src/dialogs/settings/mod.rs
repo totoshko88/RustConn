@@ -90,6 +90,7 @@ pub struct SettingsDialog {
     show_scrollbar_check: adw::SwitchRow,
     local_shell_command_entry: Entry,
     close_on_clean_exit_check: adw::SwitchRow,
+    option_is_meta_check: adw::SwitchRow,
     // Logging settings
     logging_enabled_row: adw::SwitchRow,
     log_dir_entry: Entry,
@@ -187,6 +188,7 @@ impl SettingsDialog {
             show_scrollbar_check,
             local_shell_command_entry,
             close_on_clean_exit_check,
+            option_is_meta_check,
         ) = create_terminal_page();
 
         let (
@@ -582,6 +584,7 @@ impl SettingsDialog {
             show_scrollbar_check,
             local_shell_command_entry,
             close_on_clean_exit_check,
+            option_is_meta_check,
             logging_enabled_row,
             log_dir_entry,
             retention_spin,
@@ -881,6 +884,7 @@ impl SettingsDialog {
             &self.show_scrollbar_check,
             &self.local_shell_command_entry,
             &self.close_on_clean_exit_check,
+            &self.option_is_meta_check,
             &settings.terminal,
         );
 
@@ -999,6 +1003,7 @@ impl SettingsDialog {
         let show_scrollbar_check_clone = self.show_scrollbar_check.clone();
         let local_shell_command_entry_clone = self.local_shell_command_entry.clone();
         let close_on_clean_exit_check_clone = self.close_on_clean_exit_check.clone();
+        let option_is_meta_check_clone = self.option_is_meta_check.clone();
 
         // Logging controls
         let logging_enabled_row_clone = self.logging_enabled_row.clone();
@@ -1115,6 +1120,7 @@ impl SettingsDialog {
                 &show_scrollbar_check_clone,
                 &local_shell_command_entry_clone,
                 &close_on_clean_exit_check_clone,
+                &option_is_meta_check_clone,
                 log_timestamps_check_clone.is_active(),
             );
 

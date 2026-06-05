@@ -139,6 +139,16 @@ pub struct TerminalSettings {
     /// Defaults to `false` (show reconnect overlay).
     #[serde(default)]
     pub close_on_clean_exit: bool,
+    /// macOS only: treat Option key as Meta/Alt (send ESC prefix).
+    ///
+    /// When `false` (default on macOS), the Option key produces composed
+    /// characters according to the active keyboard layout (e.g. Option+L → @
+    /// on German keyboard). When `true`, the Option key sends ESC-prefixed
+    /// escape sequences (useful for emacs/vim users).
+    ///
+    /// On Linux this setting is ignored — Alt always sends ESC sequences.
+    #[serde(default)]
+    pub option_is_meta: bool,
 }
 
 fn default_font_family() -> String {
@@ -218,6 +228,7 @@ impl Default for TerminalSettings {
             show_scrollbar: default_show_scrollbar(),
             local_shell_command: String::new(),
             close_on_clean_exit: false,
+            option_is_meta: false,
         }
     }
 }
