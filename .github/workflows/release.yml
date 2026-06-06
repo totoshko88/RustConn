@@ -311,7 +311,11 @@ jobs:
         uses: canonical/setup-lxd@main
 
       - name: Install Snapcraft
-        run: sudo snap install snapcraft --classic
+        run: |
+          # snapcraft 9.x required for core26 stable (8.x rejects it without build-base: devel)
+          # latest/stable still ships 8.x on GitHub Actions runners — use latest/candidate for 9.x
+          sudo snap install snapcraft --classic --candidate
+          snapcraft --version
 
       - name: Build Snap
         id: build
