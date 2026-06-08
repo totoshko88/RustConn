@@ -140,6 +140,15 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.15.11" date="2026-06-07">
+      <description>
+        <p>Version 0.15.11 — Snap startup fix for Ubuntu 26.04:</p>
+        <ul>
+          <li>Fixed Snap package still failing to start under strict confinement (#174)</li>
+          <li>Snap now uses the GNOME extension on a core24 base for a correctly confined GTK4 environment</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.15.10" date="2026-06-05">
       <description>
         <p>Version 0.15.10 — Keybinding fixes and Snap packaging:</p>

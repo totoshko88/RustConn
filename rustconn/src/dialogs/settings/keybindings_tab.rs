@@ -24,10 +24,6 @@ use crate::i18n::{i18n, i18n_f};
 ///
 /// Each category is rendered as a collapsible `ExpanderRow` inside a single
 /// `PreferencesGroup`, keeping the Interface page compact.
-#[expect(
-    clippy::too_many_lines,
-    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
-)]
 pub fn create_keybindings_page() -> (adw::PreferencesPage, Rc<RefCell<KeybindingSettings>>) {
     let page = adw::PreferencesPage::builder()
         .title(&i18n("Keybindings"))
@@ -99,130 +95,15 @@ pub fn create_keybindings_page() -> (adw::PreferencesPage, Rc<RefCell<Keybinding
             let default_accels = def.default_accels.clone();
             let accel_label_clone = accel_label.clone();
             let overrides_clone = overrides_cell.clone();
-            let record_btn_clone = record_btn.clone();
 
             record_btn.connect_clicked(move |btn| {
-                // Switch to "recording" mode
-                btn.set_label(&i18n("Press keys..."));
-                btn.set_sensitive(false);
-
-                // Temporarily remove all application accelerators so they do not
-                // intercept key events before our EventControllerKey receives them.
-                // See: https://github.com/totoshko88/RustConn/issues/167
-                let app = gio::Application::default()
-                    .and_then(|a| a.downcast::<gtk4::Application>().ok());
-                if let Some(ref app) = app {
-                    suspend_accels(app);
-                }
-
-                // Disable PreferencesDialog search during recording.
-                // When search_enabled=true, libadwaita sets a key_capture_widget
-                // on the SearchEntry which intercepts letter keys in bubble phase,
-                // interfering with shortcut recording.
-                let prefs_dialog = btn
-                    .ancestor(adw::PreferencesDialog::static_type())
-                    .and_then(|w| w.downcast::<adw::PreferencesDialog>().ok());
-                if let Some(ref dlg) = prefs_dialog {
-                    dlg.set_search_enabled(false);
-                }
-
-                // Create a temporary key controller in Capture phase so it
-                // receives key events before any child widget or mnemonic.
-                let key_ctrl = EventControllerKey::new();
-                key_ctrl.set_propagation_phase(gtk4::PropagationPhase::Capture);
-
-                let action = action_name.clone();
-                let defaults_str = default_accels.clone();
-                let label = accel_label_clone.clone();
-                let overrides = overrides_clone.clone();
-                let record = record_btn_clone.clone();
-                let app_for_restore = app.clone();
-                let prefs_dialog_restore = prefs_dialog.clone();
-
-                key_ctrl.connect_key_pressed(move |ctrl, keyval, _keycode, modifier| {
-                    // Ignore lone modifier presses
-                    if is_modifier_key(keyval) {
-                        return gtk4::glib::Propagation::Proceed;
-                    }
-
-                    // Escape cancels recording
-                    if keyval == gtk4::gdk::Key::Escape {
-                        label.set_label(
-                            &overrides
-                                .borrow()
-                                .overrides
-                                .get(&action)
-                                .cloned()
-                                .unwrap_or_else(|| defaults_str.clone()),
-                        );
-                        record.set_label(&i18n("Record"));
-                        record.set_sensitive(true);
-                        if let Some(ref app) = app_for_restore {
-                            restore_accels_with_overrides(app, &overrides.borrow());
-                        }
-                        if let Some(ref dlg) = prefs_dialog_restore {
-                            dlg.set_search_enabled(true);
-                        }
-                        if let Some(widget) = ctrl.widget() {
-                            widget.remove_controller(ctrl);
-                        }
-                        return gtk4::glib::Propagation::Stop;
-                    }
-
-                    // Build accelerator string
-                    let accel = gtk4::accelerator_name(keyval, modifier);
-                    if is_valid_accelerator(&accel) {
-                        // Check for conflicts with other actions
-                        let conflict = find_accel_conflict(&accel, &action, &overrides.borrow());
-                        if let Some(conflict_label) = &conflict {
-                            // Show conflict warning but still allow the assignment
-                            let warning = i18n_f("Conflicts with: {}", &[conflict_label]);
-                            label.set_label(&format!("{accel}  \u{26A0}"));
-                            label.set_tooltip_text(Some(&warning));
-                            label.remove_css_class("dim-label");
-                            label.add_css_class("warning");
-                        } else {
-                            label.set_label(&accel);
-                            label.set_tooltip_text(None);
-                            label.remove_css_class("warning");
-                            label.add_css_class("dim-label");
-                        }
-                        overrides
-                            .borrow_mut()
-                            .overrides
-                            .insert(action.clone(), accel.to_string());
-                    }
-
-                    record.set_label(&i18n("Record"));
-                    record.set_sensitive(true);
-                    if let Some(ref app) = app_for_restore {
-                        restore_accels_with_overrides(app, &overrides.borrow());
-                    }
-                    if let Some(ref dlg) = prefs_dialog_restore {
-                        dlg.set_search_enabled(true);
-                    }
-                    if let Some(widget) = ctrl.widget() {
-                        widget.remove_controller(ctrl);
-                    }
-                    gtk4::glib::Propagation::Stop
-                });
-
-                // Attach key controller to the toplevel window and ensure it
-                // has focus so key events are delivered during recording.
-                // When set_sensitive(false) is called above, the button loses
-                // focus and without an explicit focus target GTK4 may not
-                // deliver key events (no target widget for propagation).
-                if let Some(toplevel) = btn.root() {
-                    toplevel.add_controller(key_ctrl);
-                    // Move focus to the parent row; this ensures GTK4 has a
-                    // valid target widget for key event propagation.
-                    if let Some(row) = btn.ancestor(adw::ActionRow::static_type()) {
-                        row.grab_focus();
-                    } else if let Some(window) = toplevel.downcast_ref::<gtk4::Window>() {
-                        // Fallback: clear focus to let Window itself be target
-                        gtk4::prelude::GtkWindowExt::set_focus(window, gtk4::Widget::NONE);
-                    }
-                }
+                show_shortcut_recorder(
+                    btn,
+                    action_name.clone(),
+                    default_accels.clone(),
+                    accel_label_clone.clone(),
+                    overrides_clone.clone(),
+                );
             });
 
             // --- Reset button handler ---
@@ -264,6 +145,139 @@ pub fn create_keybindings_page() -> (adw::PreferencesPage, Rc<RefCell<Keybinding
     page.add(&reset_all_group);
 
     (page, overrides_cell)
+}
+
+/// Opens a modal dialog that captures a single key combination.
+///
+/// The previous implementation attached an `EventControllerKey` to the toplevel
+/// window and relied on `grab_focus()` on the parent row to establish a key
+/// event target. That was fragile: inside `AdwPreferencesDialog` the search
+/// `key_capture_widget` and the row's focusability differ across libadwaita
+/// versions and Wayland/Flatpak, so the recorder often never received any keys.
+///
+/// A dedicated modal `AdwDialog` owns its own keyboard focus scope. The capture
+/// target (`status`) is explicitly focusable and grabs focus on present, so the
+/// `EventControllerKey` reliably receives every key press regardless of the
+/// launching row or the parent dialog's search state.
+///
+/// Global application accelerators are still suspended during capture (they are
+/// application-scoped and fire even while a modal dialog is open) and restored
+/// when the recorder closes for any reason.
+///
+/// See: <https://github.com/totoshko88/RustConn/issues/167>
+/// and <https://github.com/totoshko88/RustConn/issues/170>
+fn show_shortcut_recorder(
+    anchor: &Button,
+    action: String,
+    default_accels: String,
+    accel_label: Label,
+    overrides: Rc<RefCell<KeybindingSettings>>,
+) {
+    let app = gio::Application::default().and_then(|a| a.downcast::<gtk4::Application>().ok());
+
+    // Suspend global accelerators so combinations like Ctrl+W or Ctrl+Shift+W
+    // are captured here instead of triggering their currently bound actions.
+    if let Some(ref app) = app {
+        suspend_accels(app);
+    }
+
+    let dialog = adw::Dialog::builder()
+        .title(&i18n("Set Shortcut"))
+        .content_width(420)
+        .build();
+
+    let toolbar = adw::ToolbarView::new();
+    toolbar.add_top_bar(&adw::HeaderBar::new());
+
+    let status = adw::StatusPage::builder()
+        .icon_name("preferences-desktop-keyboard-symbolic")
+        .title(&i18n("Press the new shortcut"))
+        .description(&i18n("Press Backspace to reset, or Escape to cancel"))
+        .build();
+    // The status page is the explicit focus target for the key controller, so
+    // Capture-phase key events are always delivered to it.
+    status.set_focusable(true);
+    toolbar.set_content(Some(&status));
+    dialog.set_child(Some(&toolbar));
+
+    let key_ctrl = EventControllerKey::new();
+    key_ctrl.set_propagation_phase(gtk4::PropagationPhase::Capture);
+
+    // Clone for the close handler before the key handler takes ownership.
+    let overrides_for_close = overrides.clone();
+
+    {
+        let dialog = dialog.clone();
+        let action = action.clone();
+        key_ctrl.connect_key_pressed(move |_ctrl, keyval, _keycode, state| {
+            // Ignore lone modifier presses; wait for a real key.
+            if is_modifier_key(keyval) {
+                return gtk4::glib::Propagation::Proceed;
+            }
+
+            // Escape cancels without changing the binding.
+            if keyval == gtk4::gdk::Key::Escape {
+                dialog.close();
+                return gtk4::glib::Propagation::Stop;
+            }
+
+            // Backspace resets the binding to its default.
+            if keyval == gtk4::gdk::Key::BackSpace {
+                overrides.borrow_mut().reset(&action);
+                accel_label.set_label(&default_accels);
+                accel_label.set_tooltip_text(None);
+                accel_label.remove_css_class("warning");
+                accel_label.add_css_class("dim-label");
+                dialog.close();
+                return gtk4::glib::Propagation::Stop;
+            }
+
+            // Strip lock modifiers (Caps/Num) so they do not pollute the accel.
+            let mods = state & gtk4::accelerator_get_default_mod_mask();
+            let accel = gtk4::accelerator_name(keyval, mods);
+            if !is_valid_accelerator(&accel) {
+                // E.g. a bare letter without modifiers: keep waiting.
+                return gtk4::glib::Propagation::Stop;
+            }
+
+            if let Some(conflict_label) = find_accel_conflict(&accel, &action, &overrides.borrow())
+            {
+                // Show a conflict warning but still allow the assignment.
+                let warning = i18n_f("Conflicts with: {}", &[&conflict_label]);
+                accel_label.set_label(&format!("{accel}  \u{26A0}"));
+                accel_label.set_tooltip_text(Some(&warning));
+                accel_label.remove_css_class("dim-label");
+                accel_label.add_css_class("warning");
+            } else {
+                accel_label.set_label(&accel);
+                accel_label.set_tooltip_text(None);
+                accel_label.remove_css_class("warning");
+                accel_label.add_css_class("dim-label");
+            }
+            overrides
+                .borrow_mut()
+                .overrides
+                .insert(action.clone(), accel.to_string());
+            dialog.close();
+            gtk4::glib::Propagation::Stop
+        });
+    }
+    status.add_controller(key_ctrl);
+
+    // Restore global accelerators whenever the recorder closes, regardless of
+    // whether a shortcut was set, reset, or cancelled.
+    {
+        dialog.connect_closed(move |_| {
+            if let Some(ref app) = app {
+                restore_accels_with_overrides(app, &overrides_for_close.borrow());
+            }
+        });
+    }
+
+    dialog.present(Some(anchor));
+    // Ensure the controller's widget holds focus so Capture-phase key events
+    // are delivered to it immediately.
+    status.grab_focus();
 }
 
 /// Loads keybinding settings into the page by updating accelerator labels.

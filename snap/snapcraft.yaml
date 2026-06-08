@@ -1,6 +1,6 @@
 name: rustconn
-base: core26
-version: '0.15.10'
+base: core24
+version: '0.15.11'
 summary: Manage remote connections easily
 description: |
   RustConn is a modern connection manager for Linux with a GTK4/Wayland-native
@@ -72,31 +72,25 @@ platforms:
     build-on: [amd64]
     build-for: [amd64]
 
-layout:
-  /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/webkit2gtk-4.1:
-    bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/webkit2gtk-4.1
-  /usr/share/xml/iso-codes:
-    bind: $SNAP/usr/share/xml/iso-codes
-  /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gdk-pixbuf-2.0:
-    bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gdk-pixbuf-2.0
-  /usr/share/icons:
-    bind: $SNAP/usr/share/icons
-  /usr/share/glib-2.0/schemas:
-    bind: $SNAP/usr/share/glib-2.0/schemas
+# NOTE: GTK4/libadwaita runtime (GTK, Pango, Cairo, gdk-pixbuf, graphene,
+# Mesa/GL, GNOME themes), the desktop-launch command-chain, the correct
+# XDG/D-Bus/fontconfig environment AND the matching AppArmor accesses are all
+# provided by the `gnome` extension via the gnome-46-2404 platform snap. We
+# therefore do NOT stage GTK here, do NOT define a custom launcher wrapper, and
+# do NOT hand-roll GTK environment variables — that earlier manual approach
+# (required while core26 had no gnome extension) is what broke startup under
+# strict confinement on Ubuntu 26.04 (issue #174). The extension is only
+# available for core22/core24, so we target core24 (Ubuntu 24.04 LTS); its VTE
+# 0.76 satisfies the app's `vte4 v0_76` requirement.
+#
+# libadwaita: the core24 gnome platform (gnome-46-2404) ships libadwaita 1.5,
+# so the GUI is built WITHOUT `--features adw-1-8` (the 1.6/1.7/1.8 widgets are
+# behind cfg-features with full 1.5 fallbacks — AdwSpinner→GtkSpinner,
+# AdwToggleGroup→linked buttons, AdwShortcutsDialog→legacy dialog). The Flatpak
+# build keeps adw-1-8 (GNOME 50 runtime); the snap trades that polish for a
+# working strictly-confined app until the gnome extension supports core26.
 
 plugs:
-  gtk-3-themes:
-    interface: content
-    target: $SNAP/data-dir/themes
-    default-provider: gtk-common-themes
-  icon-themes:
-    interface: content
-    target: $SNAP/data-dir/icons
-    default-provider: gtk-common-themes
-  sound-themes:
-    interface: content
-    target: $SNAP/data-dir/sounds
-    default-provider: gtk-common-themes
   ssh-keys:
     interface: ssh-keys
   serial-port:
@@ -126,16 +120,11 @@ plugs:
 
 apps:
   rustconn:
-    command: usr/bin/rustconn-wrapper
+    command: usr/bin/rustconn
+    extensions: [gnome]
     desktop: usr/share/applications/io.github.totoshko88.RustConn.desktop
     common-id: io.github.totoshko88.RustConn
     plugs:
-      - desktop
-      - desktop-legacy
-      - gsettings
-      - opengl
-      - wayland
-      - x11
       - audio-playback
       - network
       - network-bind
@@ -143,23 +132,11 @@ apps:
       - ssh-keys
       - serial-port
       - password-manager-service
-      - gtk-3-themes
-      - icon-themes
-      - sound-themes
       - aws-credentials
       - gcloud-credentials
       - azure-credentials
       - oci-credentials
       - kube-credentials
-    environment:
-      GTK_USE_PORTAL: "1"
-      GDK_BACKEND: wayland,x11
-      GSETTINGS_SCHEMA_DIR: $SNAP/usr/share/glib-2.0/schemas
-      GIO_MODULE_DIR: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gio/modules
-      GDK_PIXBUF_MODULE_FILE: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gdk-pixbuf-2.0/2.10.0/loaders.cache
-      XDG_DATA_DIRS: $SNAP/usr/share:$XDG_DATA_DIRS
-      FONTCONFIG_PATH: $SNAP/etc/fonts
-      FONTCONFIG_FILE: $SNAP/etc/fonts/fonts.conf
 
   rustconn-cli:
     command: usr/bin/rustconn-cli
@@ -180,12 +157,15 @@ parts:
     source: .
     rust-channel: "1.95"
     # NOTE: we do NOT use `rust-features` here. The snapcraft rust plugin runs
-    # `cargo install --features <list>` once per `rust-path` crate, but the
-    # `adw-1-8` feature only exists in the `rustconn` crate — applying it to
-    # `rustconn-cli` would fail. Instead override-build performs a single
-    # workspace build, exactly like the Flatpak manifest:
-    #   cargo build --release -p rustconn --features adw-1-8 -p rustconn-cli
+    # `cargo install --features <list>` once per `rust-path` crate, which fails
+    # for a workspace with crate-specific features. Instead override-build runs
+    # a single workspace `cargo build` (see below), like the Flatpak manifest.
     build-packages:
+      # GTK4/libadwaita/GLib dev files also come from the gnome SDK (added by
+      # the `gnome` extension build environment); we keep the distro dev
+      # packages too so the workspace `cargo build` always resolves
+      # gtk4-4.0.pc / libadwaita-1.pc (noble ships GTK 4.14 + libadwaita 1.5,
+      # matching the gnome-46-2404 runtime). VTE for GTK4 is NOT in the SDK.
       - libgtk-4-dev
       - libadwaita-1-dev
       - libvte-2.91-gtk4-dev
@@ -196,26 +176,14 @@ parts:
       - cmake
       - gettext
     stage-packages:
-      - libgtk-4-1
-      - libadwaita-1-0
+      # Only runtime libraries NOT provided by the gnome-46-2404 platform snap.
+      # VTE (GTK4 terminal widget), ALSA (RDP audio), OpenSSL, plus the bundled
+      # protocol CLIs. GTK/Pango/Cairo/gdk-pixbuf/graphene/themes/fontconfig are
+      # all provided by the platform via the gnome extension.
       - libvte-2.91-gtk4-0
       - libasound2t64
       - libssl3t64
       - openssh-client
-      - libgraphene-1.0-0
-      - libpango-1.0-0
-      - libpangocairo-1.0-0
-      - libharfbuzz0b
-      - libcairo2
-      - libcairo-gobject2
-      - libgdk-pixbuf-2.0-0
-      - librsvg2-2
-      - librsvg2-common
-      - shared-mime-info
-      - gsettings-desktop-schemas
-      - libglib2.0-bin
-      - fontconfig
-      - fonts-dejavu-core
       - mc
       - picocom
       - inetutils-telnet
@@ -226,14 +194,14 @@ parts:
       - python3
       - python3-venv
     override-build: |
-      # Single workspace build with the adw-1-8 feature for the GUI crate,
-      # matching packaging/flatpak/io.github.totoshko88.RustConn.yml. Global
-      # LTO is enabled via --config to keep binary size down (the plugin's
-      # rust-use-global-lto would do the same, but we drive cargo directly).
+      # Single workspace build matching packaging/flatpak (minus adw-1-8: the
+      # core24 gnome platform provides libadwaita 1.5, and the 1.6/1.7/1.8
+      # widgets have cfg-gated 1.5 fallbacks). Global LTO via --config keeps the
+      # binary small (equivalent to the plugin's rust-use-global-lto).
       cargo build --release \
         --config 'profile.release.lto = true' \
         --config 'profile.release.codegen-units = 1' \
-        -p rustconn --features adw-1-8 \
+        -p rustconn \
         -p rustconn-cli
       install -Dm755 target/release/rustconn "$CRAFT_PART_INSTALL/usr/bin/rustconn"
       install -Dm755 target/release/rustconn-cli "$CRAFT_PART_INSTALL/usr/bin/rustconn-cli"
@@ -249,17 +217,3 @@ parts:
         mkdir -p "$CRAFT_PART_INSTALL/usr/share/locale/$lang/LC_MESSAGES"
         msgfmt -o "$CRAFT_PART_INSTALL/usr/share/locale/$lang/LC_MESSAGES/rustconn.mo" "$po_file"
       done
-    override-prime: |
-      craftctl default
-      if [ -d usr/lib/*/gdk-pixbuf-2.0 ]; then
-        /usr/lib/*/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders > usr/lib/*/gdk-pixbuf-2.0/2.10.0/loaders.cache 2>/dev/null || true
-      fi
-      if [ -d usr/share/glib-2.0/schemas ]; then
-        glib-compile-schemas usr/share/glib-2.0/schemas 2>/dev/null || true
-      fi
-
-  wrapper:
-    plugin: dump
-    source: snap/local
-    organize:
-      rustconn-wrapper: usr/bin/rustconn-wrapper

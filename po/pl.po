@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-05 13:33-0700\n"
+"POT-Creation-Date: 2026-06-07 11:07+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Polish\n"
@@ -19,7 +19,7 @@ msgstr ""
 "Generated-By: Babel 2.10.3\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:63
-#: rustconn/src/app.rs:1050 rustconn/src/dialogs/recording.rs:806
+#: rustconn/src/app.rs:1049 rustconn/src/dialogs/recording.rs:806
 #: rustconn/src/dialogs/recording.rs:818
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:586 rustconn/src/toast.rs:246
 msgid "OK"
@@ -88,11 +88,11 @@ msgstr ""
 msgid "Settings"
 msgstr "Ustawienia"
 
-#: rustconn/src/app.rs:824
+#: rustconn/src/app.rs:823
 msgid "{} backend unavailable. Using fallback."
 msgstr "Backend {} niedostępny. Używam zapasowego."
 
-#: rustconn/src/app.rs:946
+#: rustconn/src/app.rs:945
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -103,35 +103,35 @@ msgstr ""
 "Kubernetes i Zero Trust z jednej aplikacji."
 
 #. Translators: Replace this with your name and language, e.g. "John Doe (German)"
-#: rustconn/src/app.rs:982
+#: rustconn/src/app.rs:981
 msgid "translator-credits"
 msgstr "Zespół RustConn (Polski)"
 
-#: rustconn/src/app.rs:989
+#: rustconn/src/app.rs:988
 msgid "User Guide"
 msgstr "Podręcznik użytkownika"
 
-#: rustconn/src/app.rs:993
+#: rustconn/src/app.rs:992
 msgid "Installation"
 msgstr "Instalacja"
 
-#: rustconn/src/app.rs:997
+#: rustconn/src/app.rs:996
 msgid "Releases"
 msgstr "Wydania"
 
-#: rustconn/src/app.rs:1001
+#: rustconn/src/app.rs:1000
 msgid "Changelog"
 msgstr "Historia zmian"
 
-#: rustconn/src/app.rs:1011
+#: rustconn/src/app.rs:1010
 msgid "Special Thanks"
 msgstr "Specjalne podziękowania"
 
-#: rustconn/src/app.rs:1026
+#: rustconn/src/app.rs:1025
 msgid "Made in Ukraine"
 msgstr "Made in Ukraine"
 
-#: rustconn/src/app.rs:1027
+#: rustconn/src/app.rs:1026
 msgid "All contributors and supporters"
 msgstr "Wszyscy współtwórcy i wspierający"
 
@@ -5017,44 +5017,50 @@ msgstr "Flatpak: wymagany dostęp do systemu plików"
 msgid "Copy Command"
 msgstr "Kopiuj polecenie"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:32
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:33
 msgid "Keybindings"
 msgstr "Skróty klawiszowe"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:43
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:44
 #: rustconn/src/dialogs/shortcuts.rs:414 rustconn/src/split_view/bridge.rs:1696
 msgid "Keyboard Shortcuts"
 msgstr "Skróty klawiszowe"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:76
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:157
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:195
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:77
 msgid "Record"
 msgstr "Nagraj"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:78
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:79
 msgid "Press a key combination to set a new shortcut"
 msgstr "Naciśnij kombinację klawiszy, aby ustawić nowy skrót"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:85
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:86
 msgid "Reset to default"
 msgstr "Przywróć domyślne"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:89
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:90
 msgid "Reset keybinding to default"
 msgstr "Przywróć domyślny skrót klawiszowy"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:105
-msgid "Press keys..."
-msgstr "Naciśnij klawisze..."
-
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:178
-msgid "Conflicts with: {}"
-msgstr "Konflikt z: {}"
-
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:248
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:134
 msgid "Reset All to Defaults"
 msgstr "Przywróć wszystkie domyślne"
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:189
+msgid "Set Shortcut"
+msgstr "Ustaw skrót"
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:198
+msgid "Press the new shortcut"
+msgstr "Naciśnij nowy skrót"
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:199
+msgid "Press Backspace to reset, or Escape to cancel"
+msgstr "Naciśnij Backspace, aby zresetować, lub Escape, aby anulować"
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:249
+msgid "Conflicts with: {}"
+msgstr "Konflikt z: {}"
 
 #: rustconn/src/dialogs/settings/logging_tab.rs:37
 msgid "Persist logs"
@@ -5331,7 +5337,7 @@ msgid "Session expired"
 msgstr "Sesja wygasła"
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:333
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1602
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1598
 msgid "Configured"
 msgstr "Skonfigurowany"
 
@@ -5723,53 +5729,53 @@ msgid "Connection Status"
 msgstr "Status połączenia"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1046
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1387
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1396
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1404
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1383
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1392
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1400
 msgid "Not installed"
 msgstr "Nie zainstalowano"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1129
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1752
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1125
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1748
 msgid "Token loaded from keyring"
 msgstr "Token załadowany z pęku kluczy"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1187
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1183
 msgid "Select KeePass Database"
 msgstr "Wybierz bazę danych KeePass"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1193
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1189
 msgid "KeePass Database (*.kdbx)"
 msgstr "Baza danych KeePass (*.kdbx)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1221
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1217
 msgid "Select Key File"
 msgstr "Wybierz plik klucza"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1228
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1224
 msgid "Key Files (*.keyx, *.key)"
 msgstr "Pliki kluczy (*.keyx, *.key)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1232
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1228
 msgid "All Files"
 msgstr "Wszystkie pliki"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1268
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1264
 msgid "No database selected"
 msgstr "Nie wybrano bazy danych"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1308
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1304
 #: rustconn/src/embedded_rdp/ui.rs:164 rustconn/src/embedded_spice.rs:479
 #: rustconn/src/embedded_trait.rs:322 rustconn/src/session/vnc.rs:202
 #: rustconn/src/sidebar/view.rs:532
 msgid "Connected"
 msgstr "Połączono"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1604
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1600
 msgid "Database path required"
 msgstr "Wymagana ścieżka bazy danych"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1607
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1603
 msgid "Disabled"
 msgstr "Wyłączony"
 
@@ -9975,6 +9981,9 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;połączenie;terminal;zdalny;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Press keys..."
+#~ msgstr "Naciśnij klawisze..."
 
 #~ msgid ""
 #~ "Existing vault entry name. If set, the password is read from "

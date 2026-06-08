@@ -5,6 +5,18 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.11] - 2026-06-07
+
+### Fixed
+
+- **Keybinding recorder still not registering keystrokes on Flatpak** — the inline recorder (0.15.7–0.15.10) attached a temporary `EventControllerKey` to the toplevel window and relied on `grab_focus()` on the parent `ActionRow` to give GTK4 a key-event target. Inside `AdwPreferencesDialog` this was unreliable across libadwaita versions and on Wayland/Flatpak: the row's focusability and the dialog's search `key_capture_widget` differ, so the capture controller frequently never received any keys and recording silently did nothing. Replaced the whole approach with a dedicated modal capture dialog (the same pattern GNOME Control Center uses): an `AdwDialog` that owns its own keyboard focus scope, with an explicitly focusable capture target so the `EventControllerKey` reliably receives every key press regardless of the launching row or the parent dialog's search state. Escape cancels, Backspace resets to default, and conflicting bindings still show a warning. Global application accelerators are suspended during capture and restored when the recorder closes ([#170](https://github.com/totoshko88/RustConn/issues/170), [#167](https://github.com/totoshko88/RustConn/issues/167))
+- **Snap package still failed to start on Ubuntu 26.04 after 0.15.10 ([#174](https://github.com/totoshko88/RustConn/issues/174))** — the 0.15.10 changelog blamed `grade: devel`, but `grade` only governs which store channel a snap may be released to; it has no effect on the AppArmor profile or interface connections, so removing it could not have fixed the startup failure. The real cause: the snap targeted `base: core26` and hand-rolled the entire GTK4 runtime (manual `stage-packages`, a custom launcher wrapper, and hand-set GTK environment variables) because the `gnome` extension — which Canonical documents as **required** for GTK4 apps — does not yet support core26 ([snapcraft#6185](https://github.com/canonical/snapcraft/issues/6185)). That manual setup omitted the `desktop-launch` command-chain, the GNOME platform (Mesa/GL, themes, fontconfig) and the matching AppArmor accesses, which is what strict confinement rejected at launch. Fix: moved the snap to `base: core24` and adopted `extensions: [gnome]`, which provides the complete, correctly-confined GTK4 desktop environment. Removed the custom `rustconn-wrapper`, the manual `environment`/`layout` blocks and the GTK `stage-packages` now supplied by the platform.
+
+### Changed
+
+- **Snap base `core26` → `core24` (Ubuntu 24.04 LTS / GNOME 46 / libadwaita 1.5).** The core24 gnome platform ships libadwaita 1.5, so the snap GUI is now built **without** `--features adw-1-8`. The 1.6/1.7/1.8 widgets are behind cfg-features with full 1.5 fallbacks (AdwSpinner → GtkSpinner, AdwToggleGroup → linked buttons, AdwShortcutsDialog → legacy dialog), so functionality is preserved with slightly less visual polish than the Flatpak (GNOME 50) build. The snap can return to core26 + adw-1-8 once the gnome extension gains core26 support.
+- **Snap CI installs Snapcraft from `latest/stable`** again (the `latest/candidate` 9.x pin was only needed for core26).
+
 ## [0.15.10] - 2026-06-05
 
 ### Fixed

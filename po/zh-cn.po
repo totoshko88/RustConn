@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-05 13:33-0700\n"
+"POT-Creation-Date: 2026-06-07 11:07+0200\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -19,7 +19,7 @@ msgstr ""
 "Generated-By: Babel 2.10.3\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:63
-#: rustconn/src/app.rs:1050 rustconn/src/dialogs/recording.rs:806
+#: rustconn/src/app.rs:1049 rustconn/src/dialogs/recording.rs:806
 #: rustconn/src/dialogs/recording.rs:818
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:586 rustconn/src/toast.rs:246
 msgid "OK"
@@ -86,11 +86,11 @@ msgstr ""
 msgid "Settings"
 msgstr "设置"
 
-#: rustconn/src/app.rs:824
+#: rustconn/src/app.rs:823
 msgid "{} backend unavailable. Using fallback."
 msgstr "{} 后端不可用，使用备用。"
 
-#: rustconn/src/app.rs:946
+#: rustconn/src/app.rs:945
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -100,35 +100,35 @@ msgstr ""
 "序管理 SSH、RDP、VNC、SPICE、Telnet、串口、Kubernetes 和零信任连接。"
 
 #. Translators: Replace this with your name and language, e.g. "John Doe (German)"
-#: rustconn/src/app.rs:982
+#: rustconn/src/app.rs:981
 msgid "translator-credits"
 msgstr "GaaChun (简体中文)"
 
-#: rustconn/src/app.rs:989
+#: rustconn/src/app.rs:988
 msgid "User Guide"
 msgstr "用户指南"
 
-#: rustconn/src/app.rs:993
+#: rustconn/src/app.rs:992
 msgid "Installation"
 msgstr "安装"
 
-#: rustconn/src/app.rs:997
+#: rustconn/src/app.rs:996
 msgid "Releases"
 msgstr "发布"
 
-#: rustconn/src/app.rs:1001
+#: rustconn/src/app.rs:1000
 msgid "Changelog"
 msgstr "更新日志"
 
-#: rustconn/src/app.rs:1011
+#: rustconn/src/app.rs:1010
 msgid "Special Thanks"
 msgstr "特别感谢"
 
-#: rustconn/src/app.rs:1026
+#: rustconn/src/app.rs:1025
 msgid "Made in Ukraine"
 msgstr "乌克兰制造"
 
-#: rustconn/src/app.rs:1027
+#: rustconn/src/app.rs:1026
 msgid "All contributors and supporters"
 msgstr "所有贡献者和支持者"
 
@@ -4971,44 +4971,50 @@ msgstr "Flatpak：需要文件系统访问权限"
 msgid "Copy Command"
 msgstr "复制命令"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:32
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:33
 msgid "Keybindings"
 msgstr "快捷键"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:43
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:44
 #: rustconn/src/dialogs/shortcuts.rs:414 rustconn/src/split_view/bridge.rs:1696
 msgid "Keyboard Shortcuts"
 msgstr "键盘快捷键"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:76
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:157
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:195
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:77
 msgid "Record"
 msgstr "录制"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:78
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:79
 msgid "Press a key combination to set a new shortcut"
 msgstr "按下一个组合键以设置新快捷键"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:85
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:86
 msgid "Reset to default"
 msgstr "重置为默认"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:89
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:90
 msgid "Reset keybinding to default"
 msgstr "重置快捷键为默认值"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:105
-msgid "Press keys..."
-msgstr "按下按键..."
-
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:178
-msgid "Conflicts with: {}"
-msgstr "冲突：{}"
-
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:248
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:134
 msgid "Reset All to Defaults"
 msgstr "全部重置为默认"
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:189
+msgid "Set Shortcut"
+msgstr "设置快捷键"
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:198
+msgid "Press the new shortcut"
+msgstr "按下新的快捷键"
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:199
+msgid "Press Backspace to reset, or Escape to cancel"
+msgstr "按 Backspace 重置，或按 Escape 取消"
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:249
+msgid "Conflicts with: {}"
+msgstr "冲突：{}"
 
 #: rustconn/src/dialogs/settings/logging_tab.rs:37
 msgid "Persist logs"
@@ -5280,7 +5286,7 @@ msgid "Session expired"
 msgstr "会话已过期"
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:333
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1602
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1598
 msgid "Configured"
 msgstr "已配置"
 
@@ -5666,53 +5672,53 @@ msgid "Connection Status"
 msgstr "连接状态"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1046
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1387
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1396
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1404
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1383
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1392
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1400
 msgid "Not installed"
 msgstr "未安装"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1129
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1752
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1125
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1748
 msgid "Token loaded from keyring"
 msgstr "令牌已从密钥环加载"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1187
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1183
 msgid "Select KeePass Database"
 msgstr "选择 KeePass 数据库"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1193
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1189
 msgid "KeePass Database (*.kdbx)"
 msgstr "KeePass 数据库 (*.kdbx)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1221
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1217
 msgid "Select Key File"
 msgstr "选择密钥文件"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1228
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1224
 msgid "Key Files (*.keyx, *.key)"
 msgstr "密钥文件 (*.keyx, *.key)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1232
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1228
 msgid "All Files"
 msgstr "所有文件"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1268
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1264
 msgid "No database selected"
 msgstr "未选择数据库"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1308
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1304
 #: rustconn/src/embedded_rdp/ui.rs:164 rustconn/src/embedded_spice.rs:479
 #: rustconn/src/embedded_trait.rs:322 rustconn/src/session/vnc.rs:202
 #: rustconn/src/sidebar/view.rs:532
 msgid "Connected"
 msgstr "已连接"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1604
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1600
 msgid "Database path required"
 msgstr "需要数据库路径"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1607
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1603
 msgid "Disabled"
 msgstr "已禁用"
 
@@ -9873,6 +9879,9 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Press keys..."
+#~ msgstr "按下按键..."
 
 #~ msgid ""
 #~ "Existing vault entry name. If set, the password is read from "

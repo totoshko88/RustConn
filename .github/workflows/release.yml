@@ -312,9 +312,10 @@ jobs:
 
       - name: Install Snapcraft
         run: |
-          # snapcraft 9.x required for core26 stable (8.x rejects it without build-base: devel)
-          # latest/stable still ships 8.x on GitHub Actions runners — use latest/candidate for 9.x
-          sudo snap install snapcraft --classic --candidate
+          # core24 + the `gnome` extension are fully supported by stable Snapcraft.
+          # (Moved off core26: the gnome extension required for GTK4 does not
+          # support core26 yet — see snapcraft#6185 and RustConn#174.)
+          sudo snap install snapcraft --classic
           snapcraft --version
 
       - name: Build Snap

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-05 13:33-0700\n"
+"POT-Creation-Date: 2026-06-07 11:07+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Dutch\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Generated-By: Babel 2.10.3\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:63
-#: rustconn/src/app.rs:1050 rustconn/src/dialogs/recording.rs:806
+#: rustconn/src/app.rs:1049 rustconn/src/dialogs/recording.rs:806
 #: rustconn/src/dialogs/recording.rs:818
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:586 rustconn/src/toast.rs:246
 msgid "OK"
@@ -87,11 +87,11 @@ msgstr ""
 msgid "Settings"
 msgstr "Instellingen"
 
-#: rustconn/src/app.rs:824
+#: rustconn/src/app.rs:823
 msgid "{} backend unavailable. Using fallback."
 msgstr "Backend {} niet beschikbaar. Terugvaloptie wordt gebruikt."
 
-#: rustconn/src/app.rs:946
+#: rustconn/src/app.rs:945
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -102,35 +102,35 @@ msgstr ""
 "verbindingen vanuit één applicatie."
 
 #. Translators: Replace this with your name and language, e.g. "John Doe (German)"
-#: rustconn/src/app.rs:982
+#: rustconn/src/app.rs:981
 msgid "translator-credits"
 msgstr "RustConn-team (Nederlands)"
 
-#: rustconn/src/app.rs:989
+#: rustconn/src/app.rs:988
 msgid "User Guide"
 msgstr "Gebruikershandleiding"
 
-#: rustconn/src/app.rs:993
+#: rustconn/src/app.rs:992
 msgid "Installation"
 msgstr "Installatie"
 
-#: rustconn/src/app.rs:997
+#: rustconn/src/app.rs:996
 msgid "Releases"
 msgstr "Releases"
 
-#: rustconn/src/app.rs:1001
+#: rustconn/src/app.rs:1000
 msgid "Changelog"
 msgstr "Wijzigingslogboek"
 
-#: rustconn/src/app.rs:1011
+#: rustconn/src/app.rs:1010
 msgid "Special Thanks"
 msgstr "Speciale dank"
 
-#: rustconn/src/app.rs:1026
+#: rustconn/src/app.rs:1025
 msgid "Made in Ukraine"
 msgstr "Made in Ukraine"
 
-#: rustconn/src/app.rs:1027
+#: rustconn/src/app.rs:1026
 msgid "All contributors and supporters"
 msgstr "Alle bijdragers en ondersteuners"
 
@@ -5028,44 +5028,50 @@ msgstr "Flatpak: toegang tot bestandssysteem vereist"
 msgid "Copy Command"
 msgstr "Opdracht kopiëren"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:32
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:33
 msgid "Keybindings"
 msgstr "Sneltoetsen"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:43
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:44
 #: rustconn/src/dialogs/shortcuts.rs:414 rustconn/src/split_view/bridge.rs:1696
 msgid "Keyboard Shortcuts"
 msgstr "Sneltoetsen"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:76
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:157
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:195
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:77
 msgid "Record"
 msgstr "Opnemen"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:78
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:79
 msgid "Press a key combination to set a new shortcut"
 msgstr "Druk op een toetsencombinatie om een nieuwe sneltoets in te stellen"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:85
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:86
 msgid "Reset to default"
 msgstr "Standaard herstellen"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:89
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:90
 msgid "Reset keybinding to default"
 msgstr "Sneltoets naar standaard herstellen"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:105
-msgid "Press keys..."
-msgstr "Druk op toetsen..."
-
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:178
-msgid "Conflicts with: {}"
-msgstr "Conflict met: {}"
-
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:248
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:134
 msgid "Reset All to Defaults"
 msgstr "Alles naar standaard herstellen"
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:189
+msgid "Set Shortcut"
+msgstr "Sneltoets instellen"
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:198
+msgid "Press the new shortcut"
+msgstr "Druk op de nieuwe sneltoets"
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:199
+msgid "Press Backspace to reset, or Escape to cancel"
+msgstr "Druk op Backspace om te resetten of Escape om te annuleren"
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:249
+msgid "Conflicts with: {}"
+msgstr "Conflict met: {}"
 
 #: rustconn/src/dialogs/settings/logging_tab.rs:37
 msgid "Persist logs"
@@ -5343,7 +5349,7 @@ msgid "Session expired"
 msgstr "Sessie verlopen"
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:333
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1602
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1598
 msgid "Configured"
 msgstr "Geconfigureerd"
 
@@ -5739,53 +5745,53 @@ msgid "Connection Status"
 msgstr "Verbindingsstatus"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1046
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1387
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1396
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1404
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1383
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1392
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1400
 msgid "Not installed"
 msgstr "Niet geïnstalleerd"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1129
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1752
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1125
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1748
 msgid "Token loaded from keyring"
 msgstr "Token geladen uit sleutelhanger"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1187
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1183
 msgid "Select KeePass Database"
 msgstr "KeePass-database selecteren"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1193
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1189
 msgid "KeePass Database (*.kdbx)"
 msgstr "KeePass-database (*.kdbx)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1221
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1217
 msgid "Select Key File"
 msgstr "Sleutelbestand selecteren"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1228
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1224
 msgid "Key Files (*.keyx, *.key)"
 msgstr "Sleutelbestanden (*.keyx, *.key)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1232
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1228
 msgid "All Files"
 msgstr "Alle bestanden"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1268
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1264
 msgid "No database selected"
 msgstr "Geen database geselecteerd"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1308
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1304
 #: rustconn/src/embedded_rdp/ui.rs:164 rustconn/src/embedded_spice.rs:479
 #: rustconn/src/embedded_trait.rs:322 rustconn/src/session/vnc.rs:202
 #: rustconn/src/sidebar/view.rs:532
 msgid "Connected"
 msgstr "Verbonden"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1604
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1600
 msgid "Database path required"
 msgstr "Databasepad vereist"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1607
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1603
 msgid "Disabled"
 msgstr "Uitgeschakeld"
 
@@ -6123,7 +6129,8 @@ msgstr "Option als Meta-toets"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:450
 msgid "Send Escape prefix instead of composed characters (for vim/emacs)"
-msgstr "Escape-prefix verzenden in plaats van samengestelde tekens (voor vim/emacs)"
+msgstr ""
+"Escape-prefix verzenden in plaats van samengestelde tekens (voor vim/emacs)"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:462
 #: rustconn/src/dialogs/settings/ui_tab.rs:209
@@ -9993,6 +10000,9 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Press keys..."
+#~ msgstr "Druk op toetsen..."
 
 #~ msgid ""
 #~ "Existing vault entry name. If set, the password is read from "

@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-05 13:33-0700\n"
+"POT-Creation-Date: 2026-06-07 11:07+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: Mykola Zubkov <zubkov139@ukr.net>\n"
 "Language-Team: Ukrainian\n"
@@ -24,7 +24,7 @@ msgstr ""
 "Generated-By: Babel 2.10.3\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:63
-#: rustconn/src/app.rs:1050 rustconn/src/dialogs/recording.rs:806
+#: rustconn/src/app.rs:1049 rustconn/src/dialogs/recording.rs:806
 #: rustconn/src/dialogs/recording.rs:818
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:586 rustconn/src/toast.rs:246
 msgid "OK"
@@ -91,11 +91,11 @@ msgstr ""
 msgid "Settings"
 msgstr "Устави"
 
-#: rustconn/src/app.rs:824
+#: rustconn/src/app.rs:823
 msgid "{} backend unavailable. Using fallback."
 msgstr "Бекенд {} недоступний. Використано резервний."
 
-#: rustconn/src/app.rs:946
+#: rustconn/src/app.rs:945
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -106,35 +106,35 @@ msgstr ""
 "однієї програми."
 
 #. Translators: Replace this with your name and language, e.g. "John Doe (German)"
-#: rustconn/src/app.rs:982
+#: rustconn/src/app.rs:981
 msgid "translator-credits"
 msgstr "Микола Зубков (Українська)"
 
-#: rustconn/src/app.rs:989
+#: rustconn/src/app.rs:988
 msgid "User Guide"
 msgstr "Посібник користувача"
 
-#: rustconn/src/app.rs:993
+#: rustconn/src/app.rs:992
 msgid "Installation"
 msgstr "Установлення"
 
-#: rustconn/src/app.rs:997
+#: rustconn/src/app.rs:996
 msgid "Releases"
 msgstr "Випуски"
 
-#: rustconn/src/app.rs:1001
+#: rustconn/src/app.rs:1000
 msgid "Changelog"
 msgstr "Журнал змін"
 
-#: rustconn/src/app.rs:1011
+#: rustconn/src/app.rs:1010
 msgid "Special Thanks"
 msgstr "Подяки"
 
-#: rustconn/src/app.rs:1026
+#: rustconn/src/app.rs:1025
 msgid "Made in Ukraine"
 msgstr "Зроблено в Україні"
 
-#: rustconn/src/app.rs:1027
+#: rustconn/src/app.rs:1026
 msgid "All contributors and supporters"
 msgstr "Усім учасникам і прихильникам"
 
@@ -147,7 +147,7 @@ msgid ""
 "This connection stores credentials in a secret vault, but no backend is set "
 "up yet."
 msgstr ""
-"Це з’єднання зберігає облікові дані у сховищі секретів, але бекенд ще не "
+"Цей з'єднок зберігає облікові дані у сховищі секретів, але бекенд ще не "
 "налаштовано."
 
 #: rustconn/src/dialogs/backend_missing.rs:42
@@ -466,7 +466,7 @@ msgstr "Увімкни автоперепідключення"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:386
 msgid "Automatically retry when connection drops"
-msgstr "Автоматично повторювати при розриві з'єднання"
+msgstr "Автоматично повторювати при розриві з'єднанка"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:393
 msgid "Maximum attempts"
@@ -629,7 +629,7 @@ msgid ""
 "placeholders resolved at connection time"
 msgstr ""
 "Відповіді підтримують заповнювачі ${password}, ${username} та $"
-"{VARIABLE_NAME}, що підставляються під час з'єднання"
+"{VARIABLE_NAME}, що підставляються під час з'єднування"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:93
 #: rustconn/src/window/edit_group.rs:1077
@@ -889,7 +889,7 @@ msgstr "У групі не визначено домену"
 
 #: rustconn/src/dialogs/connection/dialog.rs:1389
 msgid "Zero Trust Connection Test"
-msgstr "Певерірка з'єднанка Zero Trust"
+msgstr "Перевірка з'єднанка Zero Trust"
 
 #: rustconn/src/dialogs/connection/dialog.rs:1390
 msgid ""
@@ -928,11 +928,11 @@ msgstr "Випробуй"
 
 #: rustconn/src/dialogs/connection/dialog.rs:1547
 msgid "Connection Test Successful"
-msgstr "Перевірку з'єднання успішно пройдено"
+msgstr "Перевірку з'єднанка успішно пройдено"
 
 #: rustconn/src/dialogs/connection/dialog.rs:1549
 msgid "Connection successful! Latency: {}ms"
-msgstr "З'єднання успішне! Затримка: {} мс"
+msgstr "З'єднок успішний! Затримка: {} мс"
 
 #: rustconn/src/dialogs/connection/dialog.rs:1557
 msgid "Unknown error"
@@ -1749,7 +1749,7 @@ msgstr "Kubernetes"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:52
 msgid "Connect to pod shell via kubectl exec"
-msgstr "З'єднання з оболонкою пода через kubectl exec"
+msgstr "З'єднування з оболонкою пода через kubectl exec"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:55
 msgid "Kubeconfig"
@@ -2204,7 +2204,7 @@ msgstr "Проміжний гост"
 
 #: rustconn/src/dialogs/connection/rdp.rs:458
 msgid "Tunnel RDP through an SSH connection"
-msgstr "Тунелюй RDP через SSH-з'єднання"
+msgstr "Тунелюй RDP через SSH-з'єднок"
 
 #: rustconn/src/dialogs/connection/rdp.rs:467
 #: rustconn/src/dialogs/connection/spice.rs:211
@@ -2628,7 +2628,7 @@ msgstr "URL проксі для тунельованих з'єднань (нап
 
 #: rustconn/src/dialogs/connection/spice.rs:286
 msgid "Tunnel SPICE through an SSH connection"
-msgstr "Тунелюй SPICE через SSH-з'єднання"
+msgstr "Тунелюй SPICE через SSH-з'єднок"
 
 #: rustconn/src/dialogs/connection/ssh.rs:116
 msgid "MOSH Settings"
@@ -2781,7 +2781,7 @@ msgstr "Файл ключа не знайдено"
 #: rustconn/src/dialogs/connection/ssh.rs:473
 #: rustconn/src/window/edit_group.rs:756
 msgid "Connect via another SSH connection"
-msgstr "З'єднання через инше SSH-з'єднання"
+msgstr "З'єднування через инше SSH-з'єднок"
 
 #: rustconn/src/dialogs/connection/ssh.rs:479
 #: rustconn/src/dialogs/template.rs:704
@@ -3201,7 +3201,7 @@ msgstr "Додаткові параметри CLI для команди пров
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:251
 msgid "Connect via AWS Systems Manager"
-msgstr "З'єднання через AWS Systems Manager"
+msgstr "З'єднування через AWS Systems Manager"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:254
 #: rustconn/src/dialogs/template.rs:1530
@@ -3221,7 +3221,7 @@ msgstr "Реґіон"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:274
 msgid "Connect via Identity-Aware Proxy"
-msgstr "З'єднання через Identity-Aware Proxy"
+msgstr "З'єднування через Identity-Aware Proxy"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:278
 msgid "Instance Name"
@@ -3241,7 +3241,7 @@ msgstr "Проєкт"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:298
 msgid "Connect via Azure Bastion service"
-msgstr "З'єднання через службу Azure Bastion"
+msgstr "З'єднування через службу Azure Bastion"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:302
 #: rustconn/src/dialogs/template.rs:1627
@@ -3264,7 +3264,7 @@ msgstr "Назва Bastion"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:324
 msgid "Connect via Azure AD authentication"
-msgstr "З'єднання через автентифікацію Azure AD"
+msgstr "З'єднування через автентифікацію Azure AD"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:327
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:711
@@ -3274,7 +3274,7 @@ msgstr "Назва ВМ"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:352
 msgid "Connect via Oracle Cloud Bastion"
-msgstr "З'єднання через Oracle Cloud Bastion"
+msgstr "З'єднування через Oracle Cloud Bastion"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:355
 #: rustconn/src/dialogs/template.rs:1715
@@ -3305,7 +3305,7 @@ msgstr "Тривалість сесії в секундах (типово: 1800)
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:397
 msgid "Connect via Cloudflare Zero Trust"
-msgstr "З'єднання через Cloudflare Zero Trust"
+msgstr "З'єднування через Cloudflare Zero Trust"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:400
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:717
@@ -3315,7 +3315,7 @@ msgstr "Ім'я госта"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:413
 msgid "Connect via Gravitational Teleport"
-msgstr "З'єднання через Gravitational Teleport"
+msgstr "З'єднування через Gravitational Teleport"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:416
 msgid "Node Name"
@@ -3329,7 +3329,7 @@ msgstr "Кластер"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:432
 msgid "Connect via Tailscale network"
-msgstr "З'єднання через мережу Tailscale"
+msgstr "З'єднування через мережу Tailscale"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:436
 #: rustconn/src/dialogs/template.rs:1823
@@ -3338,7 +3338,7 @@ msgstr "Гост Tailscale"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:450
 msgid "Connect via Boundary proxy"
-msgstr "З'єднання через проксі Boundary"
+msgstr "З'єднування через проксі Boundary"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:453
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:687
@@ -3353,7 +3353,7 @@ msgstr "Адреса контролера"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:471
 msgid "Connect via Hoop.dev zero-trust gateway"
-msgstr "З'єднання через Hoop.dev zero-trust шлюз"
+msgstr "З'єднування через Hoop.dev zero-trust шлюз"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:475
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:737
@@ -3508,11 +3508,11 @@ msgstr "Використовує SSH для рукостискання, поті
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:547
 msgid "File browser over SSH connection"
-msgstr "Файловий оглядач через SSH-з'єднання"
+msgstr "Файловий оглядач через SSH-з'єднок"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:618
 msgid "{} Connection"
-msgstr "З'єднання {}"
+msgstr "З'єднок {}"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:691
 msgid "Profile"
@@ -3550,7 +3550,7 @@ msgstr "Дублювання з'єднанка"
 
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:260
 msgid "{} connection"
-msgstr "З'єднання {}"
+msgstr "З'єднок {}"
 
 #: rustconn/src/dialogs/document.rs:61
 msgid "New Document"
@@ -3642,7 +3642,7 @@ msgstr "Експорт"
 #: rustconn/src/dialogs/export.rs:197 rustconn/src/dialogs/export.rs:290
 #: rustconn/src/dialogs/export.rs:566
 msgid "All connections"
-msgstr "Усі з'єднання"
+msgstr "Усі з'єднки"
 
 #: rustconn/src/dialogs/export.rs:254
 msgid "Export Format"
@@ -3710,7 +3710,7 @@ msgstr "Обсяг експорту"
 
 #: rustconn/src/dialogs/export.rs:287
 msgid "Choose which connections to export"
-msgstr "Обери, які з'єднання експортувати"
+msgstr "Обери, які з'єднки експортувати"
 
 #: rustconn/src/dialogs/export.rs:297
 msgid "Export all or a specific group"
@@ -3725,7 +3725,7 @@ msgid ""
 "Remmina exports to a directory (one file per connection).\n"
 "                 Other formats export to a single file."
 msgstr ""
-"Remmina експортує до каталогу (один файл на з'єднання).\n"
+"Remmina експортує до каталогу (один файл на з'єднок).\n"
 "                 Инші формати експортують до одного файла."
 
 #: rustconn/src/dialogs/export.rs:315
@@ -4046,7 +4046,7 @@ msgstr "Нема історії з'єднань"
 
 #: rustconn/src/dialogs/history.rs:79
 msgid "Connections you open will appear here"
-msgstr "З'єднання, які ви відкриваєте, з'являться тут"
+msgstr "З'єднки, які ви відкриваєте, з'являться тут"
 
 #: rustconn/src/dialogs/history.rs:95
 msgid "Clear History"
@@ -4074,11 +4074,11 @@ msgstr "Очисть"
 
 #: rustconn/src/dialogs/history.rs:263
 msgid "Successful connection"
-msgstr "Успішне з'єднання"
+msgstr "Успішний з'єднок"
 
 #: rustconn/src/dialogs/history.rs:265
 msgid "Failed connection"
-msgstr "Невдале з'єднання"
+msgstr "Невдалий з'єднок"
 
 #: rustconn/src/dialogs/history.rs:319
 msgid "Remove from history"
@@ -4133,12 +4133,12 @@ msgid ""
 "Successfully imported {} connection(s) and {} group(s).\n"
 "Connections will be added to '{} Import' group."
 msgstr ""
-"Успішно імпортовано {} з'єднань та {} груп.\n"
-"З'єднання буде додано до групи «{} Import»."
+"Успішно імпортовано {} з'єднок та {} груп.\n"
+"З'єднки буде додано до групи «{} Import»."
 
 #: rustconn/src/dialogs/import/mod.rs:339
 msgid "Imported connections:"
-msgstr "Імпортовані з'єднання:"
+msgstr "Імпортовані з'єднки:"
 
 #: rustconn/src/dialogs/import/mod.rs:352
 msgid "Skipped {} entries:"
@@ -4231,7 +4231,7 @@ msgstr "CSV"
 
 #: rustconn/src/dialogs/import/sources.rs:83
 msgid "Import connections from a CSV file"
-msgstr "Імпортуй з'єднання з CSV файлу"
+msgstr "Імпортуй з'єднки з CSV файлу"
 
 #: rustconn/src/dialogs/import/sources.rs:88
 #: rustconn/src/dialogs/import/sources.rs:250
@@ -4268,7 +4268,7 @@ msgstr "Файл RDP (.rdp)"
 
 #: rustconn/src/dialogs/import/sources.rs:113
 msgid "Import RDP connection from a Microsoft .rdp file"
-msgstr "Імпортуй RDP-з'єднання з файлу Microsoft .rdp"
+msgstr "Імпортуй RDP-з'єднок з файлу Microsoft .rdp"
 
 #: rustconn/src/dialogs/import/sources.rs:118
 msgid "Remote Desktop Manager (JSON)"
@@ -4314,7 +4314,7 @@ msgstr "Кілька файлів (пакетно)"
 
 #: rustconn/src/dialogs/import/sources.rs:155
 msgid "Import connections from multiple files at once"
-msgstr "Імпортувати з'єднання з кількох файлів одночасно"
+msgstr "Імпортуй з'єднки з кількох файлів одночасно"
 
 #: rustconn/src/dialogs/import/sources.rs:217
 msgid "Available"
@@ -4525,16 +4525,16 @@ msgid ""
 "Imported {} connection(s) and {} group(s) from {} files ({} errors).\n"
 "Connections will be added to 'Multiple Files Import' group."
 msgstr ""
-"Імпортовано {} з'єднань та {} груп із {} файлів ({} помилок).\n"
-"З'єднання буде додано до групи «Multiple Files Import»."
+"Імпортовано {} з'єднок та {} груп із {} файлів ({} помилок).\n"
+"З'єднки буде додано до групи «Multiple Files Import»."
 
 #: rustconn/src/dialogs/import/sources.rs:1495
 msgid ""
 "Imported {} connection(s) and {} group(s) from {} files.\n"
 "Connections will be added to 'Multiple Files Import' group."
 msgstr ""
-"Імпортовано {} з'єднань та {} груп із {} файлів.\n"
-"З'єднання буде додано до групи «Multiple Files Import»."
+"Імпортовано {} з'єднок та {} груп із {} файлів.\n"
+"З'єднки буде додано до групи «Multiple Files Import»."
 
 #: rustconn/src/dialogs/log_viewer.rs:35
 msgid "Session Logs"
@@ -5009,44 +5009,50 @@ msgstr "Flatpak: потрібен доступ до файлової систе�
 msgid "Copy Command"
 msgstr "Копіюй команду"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:32
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:33
 msgid "Keybindings"
 msgstr "Скорочення клавіятури"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:43
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:44
 #: rustconn/src/dialogs/shortcuts.rs:414 rustconn/src/split_view/bridge.rs:1696
 msgid "Keyboard Shortcuts"
 msgstr "Клавіятурні скоротини"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:76
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:157
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:195
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:77
 msgid "Record"
 msgstr "Запиши"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:78
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:79
 msgid "Press a key combination to set a new shortcut"
 msgstr "Натисни комбінацію клавіш для нового скорочення"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:85
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:86
 msgid "Reset to default"
 msgstr "Скинь до типового"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:89
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:90
 msgid "Reset keybinding to default"
 msgstr "Скинь прив'язку до стандартної"
 
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:105
-msgid "Press keys..."
-msgstr "Натисни клавіші..."
-
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:178
-msgid "Conflicts with: {}"
-msgstr "Конфліктує з: {}"
-
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:248
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:134
 msgid "Reset All to Defaults"
 msgstr "Скинь усе до типових"
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:189
+msgid "Set Shortcut"
+msgstr "Призначення скорочення"
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:198
+msgid "Press the new shortcut"
+msgstr "Натисни нову комбінацію клавіш"
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:199
+msgid "Press Backspace to reset, or Escape to cancel"
+msgstr "Натисни Backspace, щоб скинути, або Escape, щоб скасувати"
+
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:249
+msgid "Conflicts with: {}"
+msgstr "Конфліктує з: {}"
 
 #: rustconn/src/dialogs/settings/logging_tab.rs:37
 msgid "Persist logs"
@@ -5323,7 +5329,7 @@ msgid "Session expired"
 msgstr "Термін сеансу вичерпано"
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:333
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1602
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1598
 msgid "Configured"
 msgstr "Налаштовано"
 
@@ -5709,53 +5715,53 @@ msgid "Connection Status"
 msgstr "Стан з'єднанка"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1046
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1387
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1396
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1404
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1383
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1392
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1400
 msgid "Not installed"
 msgstr "Не встановлено"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1129
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1752
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1125
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1748
 msgid "Token loaded from keyring"
 msgstr "Токен завантажено з в'язки ключів"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1187
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1183
 msgid "Select KeePass Database"
 msgstr "Обери базу даних KeePass"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1193
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1189
 msgid "KeePass Database (*.kdbx)"
 msgstr "База даних KeePass (*.kdbx)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1221
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1217
 msgid "Select Key File"
 msgstr "Обери файл ключа"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1228
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1224
 msgid "Key Files (*.keyx, *.key)"
 msgstr "Файли ключів (*.keyx, *.key)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1232
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1228
 msgid "All Files"
 msgstr "Усі файли"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1268
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1264
 msgid "No database selected"
 msgstr "Базу даних не вибрано"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1308
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1304
 #: rustconn/src/embedded_rdp/ui.rs:164 rustconn/src/embedded_spice.rs:479
 #: rustconn/src/embedded_trait.rs:322 rustconn/src/session/vnc.rs:202
 #: rustconn/src/sidebar/view.rs:532
 msgid "Connected"
 msgstr "З'єднано"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1604
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1600
 msgid "Database path required"
 msgstr "Потрібен шлях до бази даних"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1607
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1603
 msgid "Disabled"
 msgstr "Вимкнено"
 
@@ -6372,11 +6378,11 @@ msgstr "Швидке з'єднування"
 
 #: rustconn/src/dialogs/shortcuts.rs:616 rustconn/src/split_view/bridge.rs:1707
 msgid "Import connections"
-msgstr "Імпорт з'єднань"
+msgstr "Імпорт з'єднків"
 
 #: rustconn/src/dialogs/shortcuts.rs:617
 msgid "Export connections"
-msgstr "Експорт з'єднань"
+msgstr "Експорт з'єднків"
 
 #: rustconn/src/dialogs/shortcuts.rs:618
 msgid "Edit selected connection (sidebar)"
@@ -6388,15 +6394,15 @@ msgstr "Вилучи вибраний з'єднок/групу (бічна па�
 
 #: rustconn/src/dialogs/shortcuts.rs:620
 msgid "Rename selected item"
-msgstr "Перейменувати вибраний елемент"
+msgstr "Перейменуй вибраний елемент"
 
 #: rustconn/src/dialogs/shortcuts.rs:621
 msgid "Duplicate connection (sidebar)"
-msgstr "Дублювати з'єднок (бічна панель)"
+msgstr "Дублюй з'єднок (бічна панель)"
 
 #: rustconn/src/dialogs/shortcuts.rs:622
 msgid "Copy connection"
-msgstr "Копіювати з'єднок"
+msgstr "Копіюй з'єднок"
 
 #: rustconn/src/dialogs/shortcuts.rs:623
 msgid "Paste connection"
@@ -6408,7 +6414,7 @@ msgstr "Перемісти до групи (бічна панель)"
 
 #: rustconn/src/dialogs/shortcuts.rs:625
 msgid "Connect to selected"
-msgstr "З'єднатися з вибраним"
+msgstr "З'єднайся з вибраним"
 
 #: rustconn/src/dialogs/shortcuts.rs:626
 msgid "Copy from terminal"
@@ -6706,7 +6712,7 @@ msgstr "Статистики ще нема"
 
 #: rustconn/src/dialogs/statistics.rs:134
 msgid "Statistics will appear after your first connection."
-msgstr "Статистика з'явиться після першого з'єднання."
+msgstr "Статистика з'явиться після першого з'єднанка."
 
 #: rustconn/src/dialogs/statistics.rs:149
 msgid "Total connections"
@@ -6755,7 +6761,7 @@ msgstr "Найчастіше використовувані"
 
 #: rustconn/src/dialogs/statistics.rs:291
 msgid "Top connections by usage"
-msgstr "Найпопулярніші з'єднання"
+msgstr "Найпопулярніші з'єднки"
 
 #: rustconn/src/dialogs/statistics.rs:301
 #: rustconn/src/dialogs/statistics.rs:348
@@ -6769,7 +6775,7 @@ msgstr "Розподіл за протоколами"
 
 #: rustconn/src/dialogs/statistics.rs:369
 msgid "Per-Connection"
-msgstr "По з'єднаннях"
+msgstr "По з'єднках"
 
 #: rustconn/src/dialogs/statistics.rs:405
 msgid "Success Rate"
@@ -6995,7 +7001,7 @@ msgstr "URL-адреса контролера Boundary"
 
 #: rustconn/src/dialogs/template.rs:1884
 msgid "Hoop.dev connection identifier"
-msgstr "Ідентифікатор з'єднання Hoop.dev"
+msgstr "Ідентифікатор з'єднанка Hoop.dev"
 
 #: rustconn/src/dialogs/template.rs:1896
 msgid "Hoop.dev gateway API URL (optional)"
@@ -7170,7 +7176,7 @@ msgstr "Тунелі не налаштовані"
 
 #: rustconn/src/dialogs/tunnel.rs:73
 msgid "SSH tunnels forward ports through encrypted connections"
-msgstr "SSH-тунелі перенаправляють порти через зашифровані з'єднання"
+msgstr "SSH-тунелі перенаправляють порти через зашифровані з'єднки"
 
 #: rustconn/src/dialogs/tunnel.rs:101 rustconn/src/dialogs/tunnel.rs:174
 #: rustconn/src/dialogs/tunnel.rs:527
@@ -7204,12 +7210,12 @@ msgstr "Запусти тунель"
 
 #: rustconn/src/dialogs/tunnel.rs:312
 msgid "Unknown connection"
-msgstr "Невідоме з'єднання"
+msgstr "Невідомий з'єднок"
 
 #: rustconn/src/dialogs/tunnel.rs:315
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:83
 msgid "SSH Connection"
-msgstr "SSH-з'єднання"
+msgstr "SSH-з'єднок"
 
 #: rustconn/src/dialogs/tunnel.rs:321
 msgid "Actions"
@@ -7332,12 +7338,12 @@ msgstr "З'єднайся через проміжний сервер"
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:109
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:144
 msgid "New SSH Connection"
-msgstr "Нове SSH-з'єднання"
+msgstr "Нове SSH-з'єднок"
 
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:112
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:114
 msgid "Create a new SSH connection"
-msgstr "Створи нове SSH-з'єднання"
+msgstr "Створи нове SSH-з'єднок"
 
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:137
 msgid "No SSH connections available"
@@ -8211,7 +8217,7 @@ msgstr "Помилка синхронізації: {}"
 
 #: rustconn/src/sidebar/view.rs:537
 msgid "Connecting"
-msgstr "З'єднання"
+msgstr "З'єднування"
 
 #: rustconn/src/sidebar/view.rs:572
 msgid "Document has unsaved changes"
@@ -8411,7 +8417,7 @@ msgstr "Перетягни, щоб перемістити цей сеанс на
 
 #: rustconn/src/split_view/adapter.rs:1058
 msgid "Close Connection"
-msgstr "Закрий з'єднання"
+msgstr "Закрий з'єднок"
 
 #: rustconn/src/split_view/adapter.rs:1059
 msgid "Move to New Tab"
@@ -8452,7 +8458,7 @@ msgstr "Зручне керування віддаленим з'єдноком"
 
 #: rustconn/src/split_view/bridge.rs:1633
 msgid "Double-click a connection in the sidebar to get started"
-msgstr "Двічі клацни з'єднання на бічній панелі, щоб розпочати"
+msgstr "Двічі клацни з'єднок на бічній панелі, щоб розпочати"
 
 #: rustconn/src/split_view/bridge.rs:1657
 msgid "Embedded SSH, RDP, VNC, SPICE"
@@ -8725,11 +8731,11 @@ msgstr "Покажи вікно"
 
 #: rustconn/src/tray.rs:209 rustconn/src/tray.rs:537
 msgid "Recent Connections"
-msgstr "Нещодавні з'єднання"
+msgstr "Нещодавні з'єднки"
 
 #: rustconn/src/tray.rs:217 rustconn/src/tray.rs:572
 msgid "Quick Connect..."
-msgstr "Швидке з'єднання..."
+msgstr "Швидке з'єднування..."
 
 #: rustconn/src/tray.rs:233 rustconn/src/tray.rs:556
 msgid "{} Active Session(s)"
@@ -8780,7 +8786,7 @@ msgid ""
 "This will not delete the connections in the cluster."
 msgstr ""
 "Ви впевнені, що хочете вилучити кластер '{}'?\n"
-"Це не вилучить з'єднання в кластері."
+"Це не вилучить з'єднки в кластері."
 
 #: rustconn/src/window/clusters.rs:482
 msgid "Error Deleting Cluster"
@@ -8935,7 +8941,7 @@ msgstr ""
 #: rustconn/src/window/credentials.rs:791
 #: rustconn/src/window/edit_actions.rs:1110
 msgid "Connection failed. Host unreachable."
-msgstr "З'єднання не вдалося. Гост недоступний."
+msgstr "З'єднок не вдався. Гост недоступний."
 
 #: rustconn/src/window/document_actions.rs:97
 msgid "Failed to open document."
@@ -9010,7 +9016,7 @@ msgstr "Wake On LAN надіслано до {} — очікування на з�
 
 #: rustconn/src/window/edit_actions.rs:480
 msgid "{} is online — connecting..."
-msgstr "{} онлайн — з'єднання..."
+msgstr "{} онлайн — з'єднування..."
 
 #: rustconn/src/window/edit_actions.rs:495
 msgid "{} did not come online after WoL"
@@ -9142,7 +9148,7 @@ msgstr "Устави SSH"
 
 #: rustconn/src/window/edit_group.rs:560
 msgid "SSH settings inherited by connections in this group"
-msgstr "Устави SSH успадковуються з’єднаннями у цій групі"
+msgstr "Устави SSH успадковуються з'єднками у цій групі"
 
 #: rustconn/src/window/edit_group.rs:596
 msgid "Clear SSH Settings?"
@@ -9204,7 +9210,7 @@ msgstr "Динамічна тека"
 
 #: rustconn/src/window/edit_group.rs:921
 msgid "Generate connections from a script"
-msgstr "Генерувати з'єднання зі скрипта"
+msgstr "Генеруй з'єднки зі скрипта"
 
 #: rustconn/src/window/edit_group.rs:936
 msgid "Shell command executed via sh -c"
@@ -9228,7 +9234,7 @@ msgstr "0 = лише вручну"
 
 #: rustconn/src/window/edit_group.rs:1004
 msgid "Expect rules and post-login scripts inherited by connections"
-msgstr "Правила очікування та скрипти після входу, успадковані з'єднаннями"
+msgstr "Правила очікування та скрипти після входу, успадковані з'єднками"
 
 #: rustconn/src/window/edit_group.rs:1030
 msgid "Clear Automation?"
@@ -9272,7 +9278,7 @@ msgstr "Скрипти після входу"
 
 #: rustconn/src/window/edit_group.rs:1283
 msgid "Commands executed after login (inherited by connections)"
-msgstr "Команди, що виконуються після входу (успадковуються з'єднаннями)"
+msgstr "Команди, що виконуються після входу (успадковуються з'єднками)"
 
 #: rustconn/src/window/edit_group.rs:1291
 msgid "No post-login scripts"
@@ -9449,7 +9455,7 @@ msgstr "Вилучи {}?"
 
 #: rustconn/src/window/operations.rs:233
 msgid "Connection duplicated"
-msgstr "З'єднання продубльовано"
+msgstr "З'єднок продубльовано"
 
 #: rustconn/src/window/operations.rs:242
 msgid "Failed to duplicate connection"
@@ -9457,7 +9463,7 @@ msgstr "Не вдалося здублювати з'єднок"
 
 #: rustconn/src/window/operations.rs:315
 msgid "Connection copied to clipboard"
-msgstr "З'єднання скопійовано до обмінного буфера"
+msgstr "З'єднок скопійовано до обмінного буфера"
 
 #: rustconn/src/window/operations.rs:323
 msgid "Failed to copy connection"
@@ -9469,7 +9475,7 @@ msgstr "Нічого вставляти — спочатку скопіюйте 
 
 #: rustconn/src/window/operations.rs:360
 msgid "Connection pasted"
-msgstr "З'єднання вставлено"
+msgstr "З'єднок вставлено"
 
 #: rustconn/src/window/operations.rs:369
 msgid "Failed to paste connection"
@@ -9489,7 +9495,7 @@ msgstr "Ви впевнені, що хочете вилучити {}?"
 
 #: rustconn/src/window/operations.rs:410
 msgid "Connections in deleted groups will become ungrouped."
-msgstr "З'єднання у вилучених групах будуть без групи."
+msgstr "З'єднки у вилучених групах будуть без групи."
 
 #: rustconn/src/window/operations.rs:413
 msgid "Delete Selected Items?"
@@ -9613,7 +9619,7 @@ msgstr "Нема активних сеансів"
 
 #: rustconn/src/window/sessions.rs:82
 msgid "Open a connection to start a session"
-msgstr "Відкрий з'єднання, щоб розпочати сеанс"
+msgstr "Відкрий з'єднок, щоб розпочати сеанс"
 
 #: rustconn/src/window/sessions.rs:93
 msgid "Switch To"
@@ -9956,7 +9962,10 @@ msgstr "RustConn"
 
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
-msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;з'єднання;термінал;віддалений;kubernetes;k8s;послідовний;sftp;"
+msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;з'єднок;термінал;віддалений;kubernetes;k8s;послідовний;sftp;"
+
+#~ msgid "Press keys..."
+#~ msgstr "Натисни клавіші..."
 
 #~ msgid ""
 #~ "Existing vault entry name. If set, the password is read from "
