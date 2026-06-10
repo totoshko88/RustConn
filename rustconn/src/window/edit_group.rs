@@ -1466,7 +1466,7 @@ pub fn show_edit_group_dialog(
                     })
                     .map_or_else(String::new, |s| s.to_string());
                 if var_name.is_empty() {
-                    alert::show_validation_error(&window_clone, &i18n("Please select a variable"));
+                    alert::show_validation_error(&window_clone, &i18n("Select a variable"));
                     return;
                 }
                 PasswordSource::Variable(var_name)

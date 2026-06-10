@@ -570,7 +570,7 @@ pub fn execute_snippet(
         alert::show_error(
             window,
             &i18n("No Active Terminal"),
-            &i18n("Please open a terminal session first before executing a snippet."),
+            &i18n("Open a terminal session first before executing a snippet."),
         );
         return;
     }

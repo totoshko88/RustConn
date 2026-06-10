@@ -1396,7 +1396,7 @@ impl ConnectionDialog {
                 alert::show_error(
                     &window,
                     &i18n("Connection Test Failed"),
-                    &i18n(&i18n("Please fill in required fields (name and host)")),
+                    &i18n("Fill in the required fields (name and host)"),
                 );
                 return;
             }
@@ -1546,7 +1546,7 @@ impl ConnectionDialog {
                                 &window_clone,
                                 &i18n("Connection Test Successful"),
                                 &i18n_f(
-                                    "Connection successful! Latency: {}ms",
+                                    "Connection successful. Latency: {} ms",
                                     &[&latency.to_string()],
                                 ),
                             );
@@ -1554,7 +1554,9 @@ impl ConnectionDialog {
                         Some(test_result) => {
                             let error = test_result
                                 .error
-                                .unwrap_or_else(|| i18n("Unknown error"));
+                                .unwrap_or_else(|| {
+                                    i18n("The test failed without a specific error. Check the host address and port, then try again.")
+                                });
                             alert::show_error(&window_clone, &i18n("Connection Test Failed"), &error);
                         }
                         None => {
@@ -5217,7 +5219,7 @@ impl ConnectionDialog {
                 alert::show_error(
                     &window,
                     &i18n("Cannot Load Password"),
-                    &i18n("Please enter a connection name or host first."),
+                    &i18n("Enter a connection name or host first."),
                 );
                 return;
             }
@@ -5355,7 +5357,7 @@ impl ConnectionDialog {
                             alert::show_error(
                                 &window,
                                 &i18n("Vault Not Configured"),
-                                &i18n("Please configure a secret backend in Settings → Secrets."),
+                                &i18n("Configure a secret backend in Settings → Secrets."),
                             );
                         }
                     } else {
@@ -5548,7 +5550,7 @@ impl ConnectionDialog {
                 alert::show_error(
                     &window,
                     &i18n("Cannot Test"),
-                    &i18n("Please enter a connection name or host first."),
+                    &i18n("Enter a connection name or host first."),
                 );
                 return;
             }
@@ -5677,7 +5679,7 @@ impl ConnectionDialog {
                     alert::show_error(
                         &window,
                         &i18n("Vault Not Configured"),
-                        &i18n("Please configure a secret backend in Settings → Secrets."),
+                        &i18n("Configure a secret backend in Settings → Secrets."),
                     );
                 }
             } else {

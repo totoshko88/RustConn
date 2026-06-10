@@ -329,7 +329,10 @@ impl LogViewerDialog {
                     buffer_clone.set_text(&content);
                 }
                 Err(e) => {
-                    buffer_clone.set_text(&format!("Error loading log file: {e}"));
+                    buffer_clone.set_text(&crate::i18n::i18n_f(
+                        "Could not read the log file: {}. The file may have been moved or deleted.",
+                        &[&e.to_string()],
+                    ));
                 }
             },
         );

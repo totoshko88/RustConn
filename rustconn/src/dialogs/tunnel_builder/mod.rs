@@ -578,12 +578,12 @@ impl TunnelBuilderDialog {
         let error = adw::AlertDialog::builder()
             .heading(i18n("Connection Not Found"))
             .body(i18n_f(
-                "The SSH connection referenced by this tunnel no longer exists. Please select a different connection.",
+                "The SSH connection referenced by this tunnel no longer exists. Select a different connection.",
                 &[&connection_id.to_string()],
             ))
             .build();
 
-        error.add_response("ok", &i18n("OK"));
+        error.add_response("ok", &i18n("Close"));
         error.set_default_response(Some("ok"));
         error.set_close_response("ok");
 

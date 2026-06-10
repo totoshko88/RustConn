@@ -572,9 +572,10 @@ impl ConnectionSidebar {
         let group_ops_mode = Rc::new(RefCell::new(false));
         let group_ops_mode_clone = group_ops_mode.clone();
 
-        // Map to store signal handlers: ListItem -> SignalHandlerId
+        // Map to store signal handlers: ListItem -> property-notify handlers
+        // (status + is-recording), disconnected on unbind
         let signal_handlers: Rc<
-            RefCell<std::collections::HashMap<ListItem, glib::SignalHandlerId>>,
+            RefCell<std::collections::HashMap<ListItem, Vec<glib::SignalHandlerId>>>,
         > = Rc::new(RefCell::new(std::collections::HashMap::new()));
         let signal_handlers_bind = signal_handlers.clone();
         let signal_handlers_unbind = signal_handlers.clone();
@@ -627,6 +628,7 @@ impl ConnectionSidebar {
         // Set up keyboard navigation
         let selection_model_clone = selection_model.clone();
         let list_view_weak = list_view.downgrade();
+        let recording_checker_for_keys = recording_checker.clone();
         let key_controller = EventControllerKey::new();
         key_controller.connect_key_pressed(move |_controller, key, _code, modifier| {
             // Use is_multi() to check if we're in multi-selection mode
@@ -701,10 +703,69 @@ impl ConnectionSidebar {
                     selection_model_clone.borrow().clear_selection();
                     glib::Propagation::Stop
                 }
+                gdk::Key::Menu => {
+                    // Menu key: open the context menu for the selected row.
+                    // Keyboard fallback for environments where right-click
+                    // on nested rows is unreliable (#157).
+                    if let Some(lv) = list_view_weak.upgrade() {
+                        Self::show_context_menu_for_selected_row(&lv, &recording_checker_for_keys);
+                    }
+                    glib::Propagation::Stop
+                }
+                gdk::Key::F10 if modifier.contains(gdk::ModifierType::SHIFT_MASK) => {
+                    // Shift+F10: same as the Menu key (GNOME HIG)
+                    if let Some(lv) = list_view_weak.upgrade() {
+                        Self::show_context_menu_for_selected_row(&lv, &recording_checker_for_keys);
+                    }
+                    glib::Propagation::Stop
+                }
                 _ => glib::Propagation::Proceed,
             }
         });
         list_view.add_controller(key_controller);
+
+        // Fallback right-click handler on the ListView itself (#157).
+        // In the normal case the per-row CAPTURE gesture on each TreeExpander
+        // (view.rs) fires first and claims the press, which cancels this one.
+        // On some environments (reported on KDE Plasma) right-clicks on rows
+        // nested deeper than the root level never reach the per-row gesture;
+        // this fallback resolves the row from the click coordinates via
+        // pick() instead of relying on per-row event dispatch, so it works
+        // at any nesting depth.
+        let recording_for_fallback = recording_checker.clone();
+        let row_menu_fallback = GestureClick::new();
+        row_menu_fallback.set_button(gdk::BUTTON_SECONDARY);
+        row_menu_fallback.connect_pressed(move |gesture, _n_press, x, y| {
+            let Some(widget) = gesture.widget() else {
+                return;
+            };
+            let Some(lv) = widget.downcast_ref::<ListView>() else {
+                return;
+            };
+            if Self::show_row_context_menu_at(lv, x, y, &recording_for_fallback) {
+                gesture.set_state(gtk4::EventSequenceState::Claimed);
+            }
+        });
+        list_view.add_controller(row_menu_fallback);
+
+        // Touch: long-press opens the same context menu (GNOME HIG —
+        // touch screens have no right-click). touch-only so mouse
+        // long-presses keep their default behavior.
+        let recording_for_long_press = recording_checker.clone();
+        let row_menu_long_press = gtk4::GestureLongPress::new();
+        row_menu_long_press.set_touch_only(true);
+        row_menu_long_press.connect_pressed(move |gesture, x, y| {
+            let Some(widget) = gesture.widget() else {
+                return;
+            };
+            let Some(lv) = widget.downcast_ref::<ListView>() else {
+                return;
+            };
+            if Self::show_row_context_menu_at(lv, x, y, &recording_for_long_press) {
+                gesture.set_state(gtk4::EventSequenceState::Claimed);
+            }
+        });
+        list_view.add_controller(row_menu_long_press);
 
         // Create drop indicator for drag-and-drop visual feedback
         let drop_indicator = Rc::new(DropIndicator::new());
@@ -1168,6 +1229,41 @@ impl ConnectionSidebar {
         false
     }
 
+    /// Updates the recording indicator of a connection row.
+    ///
+    /// Sets the `is-recording` property on the matching `ConnectionItem`;
+    /// the bound row reacts via `notify::is-recording` and shows/hides the
+    /// red record icon (active session recording must be visible at a
+    /// glance — it is privacy-sensitive).
+    pub fn update_connection_recording(&self, id: &str, recording: bool) {
+        Self::update_item_recording_recursive(
+            self.store.upcast_ref::<gio::ListModel>(),
+            id,
+            recording,
+        );
+    }
+
+    /// Recursively finds a connection item by ID and sets its recording flag
+    fn update_item_recording_recursive(model: &gio::ListModel, id: &str, recording: bool) -> bool {
+        let n_items = model.n_items();
+        for i in 0..n_items {
+            if let Some(item) = model.item(i).and_downcast::<ConnectionItem>() {
+                if item.id() == id {
+                    item.set_is_recording(recording);
+                    return true;
+                }
+
+                if (item.is_group() || item.is_document())
+                    && let Some(children) = item.children()
+                    && Self::update_item_recording_recursive(&children, id, recording)
+                {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
     /// Gets the status of a connection item
     pub fn get_connection_status(&self, id: &str) -> Option<String> {
         self.connection_statuses
@@ -1265,6 +1361,114 @@ impl ConnectionSidebar {
             };
         }
         None
+    }
+
+    /// Resolves the row under (`x`, `y`) in `list_view` coordinates,
+    /// selects it, and shows its context menu anchored at the pointer.
+    ///
+    /// Shared by the right-click fallback gesture and the touch
+    /// long-press gesture (#157). Returns `true` when a row menu was
+    /// shown; `false` when there is no row at the position (the caller
+    /// lets the empty-space gesture on the `ScrolledWindow` handle it).
+    fn show_row_context_menu_at(
+        list_view: &ListView,
+        x: f64,
+        y: f64,
+        recording_checker: &Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
+    ) -> bool {
+        let Some(picked) = list_view.pick(x, y, gtk4::PickFlags::DEFAULT) else {
+            return false;
+        };
+        let expander = if let Some(e) = picked.downcast_ref::<TreeExpander>() {
+            Some(e.clone())
+        } else {
+            picked
+                .ancestor(TreeExpander::static_type())
+                .and_downcast::<TreeExpander>()
+        };
+        let Some(expander) = expander else {
+            return false;
+        };
+        let Some(row) = expander.list_row() else {
+            return false;
+        };
+        let Some(item) = row.item().and_downcast::<ConnectionItem>() else {
+            return false;
+        };
+
+        // Select the row so context-menu actions target it
+        if let Some(model) = list_view.model() {
+            let row_obj: &glib::Object = row.upcast_ref();
+            for i in 0..model.n_items() {
+                if model.item(i).as_ref() == Some(row_obj) {
+                    view::select_single_position(&model, i);
+                    break;
+                }
+            }
+        }
+
+        // Anchor the menu at the row, translating ListView → expander coords
+        let point = gtk4::graphene::Point::new(x as f32, y as f32);
+        let (ex, ey) = list_view
+            .compute_point(&expander, &point)
+            .map_or((16.0, 16.0), |p| (f64::from(p.x()), f64::from(p.y())));
+        view::show_context_menu_for_connection_item(
+            expander.upcast_ref(),
+            ex,
+            ey,
+            &item,
+            recording_checker,
+        );
+        true
+    }
+
+    /// Shows the sidebar context menu for the currently selected row.
+    ///
+    /// Keyboard fallback for the Menu key / Shift+F10 (#157): the menu is
+    /// anchored to the selected row's widget when it is realized, or to
+    /// the list view itself when the row is scrolled out of view.
+    fn show_context_menu_for_selected_row(
+        list_view: &ListView,
+        recording_checker: &Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
+    ) {
+        let Some(model) = list_view.model() else {
+            return;
+        };
+        let selection = model.selection();
+        if selection.is_empty() {
+            return;
+        }
+        let pos = selection.nth(0);
+        let Some(row) = model.item(pos).and_downcast::<TreeListRow>() else {
+            return;
+        };
+        let Some(item) = row.item().and_downcast::<ConnectionItem>() else {
+            return;
+        };
+
+        // Find the realized row widget to anchor the menu; fall back to
+        // the list view's top-left corner if the row is not realized.
+        let mut anchor_widget: Widget = list_view.clone().upcast();
+        let mut anchor_y = 16.0;
+        let mut child = list_view.first_child();
+        while let Some(w) = child {
+            if let Some(expander) = w.first_child().and_downcast::<TreeExpander>()
+                && expander.list_row().as_ref() == Some(&row)
+            {
+                anchor_y = f64::from(expander.height()) / 2.0;
+                anchor_widget = expander.upcast();
+                break;
+            }
+            child = w.next_sibling();
+        }
+
+        view::show_context_menu_for_connection_item(
+            &anchor_widget,
+            16.0,
+            anchor_y,
+            &item,
+            recording_checker,
+        );
     }
 
     /// Selects all visible items (only works in group operations mode)
@@ -1781,6 +1985,9 @@ mod imp {
         /// Whether this group has a dynamic folder configuration.
         #[property(get, set)]
         has_dynamic_folder: RefCell<bool>,
+        /// Whether a session of this connection is currently being recorded.
+        #[property(get, set)]
+        is_recording: RefCell<bool>,
         pub(super) children: RefCell<Option<gio::ListStore>>,
     }
 

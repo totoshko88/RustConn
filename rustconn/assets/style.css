@@ -26,6 +26,11 @@
 /* Panel border colors by ColorId index (0-5) */
 /* Requirement 6.3: Panel borders painted using assigned Color_ID */
 /* Requirement 6.4: Colors visually distinct in light and dark themes */
+/* Intentionally a fixed GNOME palette (not @accent_color-derived):
+ * the six panel colors must stay distinct from each other and stable
+ * across light/dark themes and user accent-color changes, because they
+ * identify panels — deriving them from the theme would let two panels
+ * collapse into similar hues. */
 
 /* Color 0: Blue (#3584e4) - GNOME Blue */
 .split-panel-color-0 {
@@ -345,6 +350,20 @@ label.error {
     font-size: 0.95em;
 }
 
+/* Sidebar recording indicator — red dot while a session is recorded
+ * (color + icon + tooltip, never color alone) */
+.recording-icon {
+    color: @error_color;
+}
+
+/* Context menu item — visible keyboard-focus indication (the menu is a
+ * custom Box of flat buttons, so the focused item must be highlighted
+ * like a regular menu row for keyboard navigation to be usable) */
+.context-menu-item:focus {
+    background-color: alpha(@accent_color, 0.15);
+    outline: none;
+}
+
 /* Context menu destructive button - ensure text is visible */
 .context-menu-destructive {
     color: @error_color;
@@ -460,6 +479,14 @@ tabbar > revealer > box {
 /* Sidebar bottom toolbar — flat icons on transparent background */
 .sidebar toolbarview > .bottom-bar {
     border-top: 1px solid alpha(@borders, 0.3);
+}
+
+/* Sidebar bottom toolbar buttons — minimum 44x44px tap target
+ * (GNOME HIG pointer & touch guideline; icon-only flat buttons
+ * otherwise shrink below comfortable touch size) */
+.sidebar toolbarview > .bottom-bar button {
+    min-width: 44px;
+    min-height: 44px;
 }
 
 /* ============================================================

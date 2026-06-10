@@ -497,7 +497,7 @@ pub fn delete_selected_connections(
         alert::show_alert(
             window,
             &i18n("No Selection"),
-            &i18n("Please select one or more items to delete."),
+            &i18n("Select one or more items to delete."),
         );
         return;
     }

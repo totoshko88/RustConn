@@ -84,3 +84,6 @@ __pycache__/
 
 # Internal planning
 ROADMAP.md
+
+# Claude Code local configuration
+.claude/

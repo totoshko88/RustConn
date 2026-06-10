@@ -130,6 +130,7 @@ impl MainWindow {
         let state_clone = state.clone();
         let sidebar_clone = sidebar.clone();
         let toast_clone = self.toast_overlay.clone();
+        let sync_banner = self.sync_banner.clone();
         sync_now_action.connect_activate(move |_, _| {
             let Some(item) = sidebar_clone.get_selected_item() else {
                 return;
@@ -178,6 +179,8 @@ impl MainWindow {
                                 ],
                             );
                             toast_clone.show_success(&msg);
+                            // Successful sync clears the persistent failure banner
+                            sync_banner.set_revealed(false);
                             // Reload sidebar to reflect changes
                             drop(state_mut);
                             Self::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
@@ -200,7 +203,11 @@ impl MainWindow {
                             } else {
                                 crate::i18n::i18n_f("Sync failed: {}", &[&error_str])
                             };
-                            toast_clone.show_error(&msg);
+                            // Persistent failure → banner (stays visible
+                            // until dismissed or the next successful sync),
+                            // not a transient toast (GNOME HIG)
+                            sync_banner.set_title(&msg);
+                            sync_banner.set_revealed(true);
                         }
                     }
                 }

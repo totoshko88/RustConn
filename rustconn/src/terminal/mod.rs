@@ -103,6 +103,9 @@ pub struct TerminalNotebook {
     sessions: Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
     /// Callback for when a page is closed (session_id, connection_id)
     on_page_closed: Rc<RefCell<Option<Box<dyn Fn(Uuid, Uuid)>>>>,
+    /// Callback for recording start/stop (`connection_id`, recording) —
+    /// drives the sidebar recording indicator
+    on_recording_changed: Rc<RefCell<Option<Box<dyn Fn(Uuid, bool)>>>>,
     /// Callback for split view cleanup when a page is about to close (session_id)
     on_split_cleanup: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>,
     /// Map of session IDs to terminal widgets (for SSH sessions)
@@ -233,6 +236,7 @@ impl TerminalNotebook {
             tab_overview,
             sessions: Rc::new(RefCell::new(HashMap::new())),
             on_page_closed: Rc::new(RefCell::new(None)),
+            on_recording_changed: Rc::new(RefCell::new(None)),
             on_split_cleanup: Rc::new(RefCell::new(None)),
             terminals: Rc::new(RefCell::new(HashMap::new())),
             session_widgets: Rc::new(RefCell::new(HashMap::new())),
@@ -1686,6 +1690,26 @@ impl TerminalNotebook {
         }
     }
 
+    /// Forces every VTE terminal to drop and rebuild its cached font state.
+    ///
+    /// VTE reads `gtk-fontconfig-timestamp` only when it creates its cached
+    /// `FontInfo` (the timestamp is part of the font-cache key) and never
+    /// subscribes to changes. After a fontconfig update (font installation,
+    /// `fc-cache`, or KDE pushing `Fontconfig/Timestamp` via XSettings on
+    /// screen unlock) terminals keep Pango objects that may reference freed
+    /// fonts, which crashes with SIGSEGV inside `pango_itemize` during the
+    /// next GTK snapshot (#171). Re-applying the current font description
+    /// goes through `vte_terminal_set_font`, which deliberately recreates
+    /// the font even when the description is unchanged, picking up the new
+    /// timestamp and releasing the stale Pango state.
+    pub fn refresh_fonts_after_fontconfig_change(&self) {
+        for (session_id, terminal) in self.terminals.borrow().iter() {
+            let desc = terminal.font_desc();
+            terminal.set_font(desc.as_ref());
+            tracing::debug!(%session_id, "Refreshed VTE font after fontconfig change");
+        }
+    }
+
     /// Shows a reconnect overlay banner at the bottom of a disconnected VTE tab
     ///
     /// Appends a horizontal bar with a "Session disconnected" label and a
@@ -2855,6 +2879,17 @@ impl TerminalNotebook {
         F: Fn(Uuid, Uuid) + 'static,
     {
         *self.on_page_closed.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// Sets the callback invoked when session recording starts or stops.
+    ///
+    /// Receives the connection ID and the new recording state; used to
+    /// drive the sidebar recording indicator.
+    pub fn set_on_recording_changed<F>(&self, callback: F)
+    where
+        F: Fn(Uuid, bool) + 'static,
+    {
+        *self.on_recording_changed.borrow_mut() = Some(Box::new(callback));
     }
 
     /// Sets the callback to be invoked for split view cleanup when a page is about to close.

@@ -1,3 +1,29 @@
+rustconn (0.15.13-1) unstable; urgency=medium
+
+  * Added Menu key / Shift+F10 to open the sidebar context menu for the
+    selected row — keyboard fallback where right-click on nested rows is
+    unreliable (#157)
+  * Added confirmation before closing with open session tabs (window close
+    button and Ctrl+Q share one dialog; skipped with minimize-to-tray)
+  * Added a recording indicator (red dot) in the sidebar while any session
+    of a connection is being recorded
+  * Added import duplicate handling — Cancel / Skip Duplicates / Import All
+    instead of silently creating renamed copies
+  * Added a persistent cloud-sync failure banner (manual Sync Now and
+    background auto-export); transient toasts kept for success only
+  * Added touch long-press to open the sidebar context menu
+  * Improved context-menu keyboard navigation and screen-reader roles, error
+    message wording (GNOME HIG), and 44x44 px sidebar tap targets
+  * Fixed sidebar context menu not opening for rows nested deeper than the
+    root level on some systems (KDE Plasma) (#157)
+  * Fixed crash (SIGSEGV) in pango when opening a new SSH tab or on screen
+    unlock — refresh VTE fonts on fontconfig change, defer child-exited work
+    to idle (#171)
+  * Updated crypto-primes 0.7.0 → 0.7.1, ksni 0.3.4 → 0.3.5, regex 1.12.3 →
+    1.12.4, zerocopy 0.8.50 → 0.8.52
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 10 Jun 2026 19:00:00 +0300
+
 rustconn (0.15.12-1) unstable; urgency=medium
 
   * Fixed macOS SSH password authentication always failing with "Permission

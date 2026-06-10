@@ -1,4 +1,18 @@
 -------------------------------------------------------------------
+Wed Jun 10 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.13
+
+- Added Menu key / Shift+F10 to open the sidebar context menu for the selected row — keyboard fallback where right-click on nested rows is unreliable (#157)
+- Added confirmation before closing with open session tabs (window close button and Ctrl+Q share one dialog; skipped with minimize-to-tray)
+- Added a recording indicator (red dot) in the sidebar while any session of a connection is being recorded
+- Added import duplicate handling — Cancel / Skip Duplicates / Import All instead of silently creating renamed copies
+- Added a persistent cloud-sync failure banner (manual Sync Now and background auto-export); transient toasts kept for success only
+- Added touch long-press to open the sidebar context menu
+- Improved context-menu keyboard navigation and screen-reader roles, error message wording (GNOME HIG), and 44x44 px sidebar tap targets
+- Fixed sidebar context menu not opening for rows nested deeper than the root level on some systems (KDE Plasma) (#157)
+- Fixed crash (SIGSEGV) in pango when opening a new SSH tab or on screen unlock — refresh VTE fonts on fontconfig change, defer child-exited work to idle (#171)
+- Updated crypto-primes 0.7.0 → 0.7.1, ksni 0.3.4 → 0.3.5, regex 1.12.3 → 1.12.4, zerocopy 0.8.50 → 0.8.52
+
+-------------------------------------------------------------------
 Tue Jun 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.12
 
 - Fixed macOS SSH password authentication always failing with "Permission denied" — native PTY child now claims the slave PTY as its controlling terminal (setsid + TIOCSCTTY) so ssh can read the password prompt; also affected ssh in a Local Shell (#175)

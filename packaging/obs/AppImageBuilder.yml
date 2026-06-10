@@ -8,7 +8,7 @@ AppDir:
     id: io.github.totoshko88.RustConn
     name: RustConn
     icon: rustconn
-    version: 0.15.12
+    version: 0.15.13
     exec: usr/bin/rustconn
     exec_args: $@
     author: Anton Isaiev
@@ -16,15 +16,18 @@ AppDir:
 
   apt:
     arch: amd64
+    # Noble (24.04 LTS) base — matches the GitHub release AppImage, which is
+    # built on ubuntu-24.04 runners. Jammy lacked the GTK4 build of VTE.
+    # Note the *t64 package renames from the 64-bit time_t transition.
     sources:
-      - sourceline: deb http://archive.ubuntu.com/ubuntu/ jammy main restricted universe multiverse
+      - sourceline: deb http://archive.ubuntu.com/ubuntu/ noble main restricted universe multiverse
         key_url: http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x871920D1991BC93C
-      - sourceline: deb http://archive.ubuntu.com/ubuntu/ jammy-updates main restricted universe multiverse
+      - sourceline: deb http://archive.ubuntu.com/ubuntu/ noble-updates main restricted universe multiverse
 
     include:
       - libgtk-4-1
-      - libvte-2.91-gtk4-1
-      - libglib2.0-0
+      - libvte-2.91-gtk4-0
+      - libglib2.0-0t64
       - libcairo2
       - libpango-1.0-0
       - libgdk-pixbuf-2.0-0
@@ -38,7 +41,7 @@ AppDir:
       - libepoxy0
       - libpcre2-8-0
       - libdbus-1-3
-      - libasound2
+      - libasound2t64
 
   files:
     include:
@@ -58,14 +61,10 @@ AppDir:
       GDK_BACKEND: wayland,x11
 
   test:
-    fedora-30:
-      image: appimagecrafters/tests-env:fedora-30
-      command: ./AppRun --version
+    # Only distros with glibc >= 2.39 can run a noble-based AppImage;
+    # fedora-30 / ubuntu-focal test images are too old for this base.
     debian-stable:
       image: appimagecrafters/tests-env:debian-stable
-      command: ./AppRun --version
-    ubuntu-focal:
-      image: appimagecrafters/tests-env:ubuntu-focal
       command: ./AppRun --version
 
 AppImage:

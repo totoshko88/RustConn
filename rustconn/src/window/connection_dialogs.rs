@@ -973,47 +973,127 @@ pub fn show_import_dialog(window: &gtk4::Window, state: SharedAppState, sidebar:
 
     let window_clone = window.clone();
     dialog.run_with_source(move |result, source_name| {
-        if let Some(import_result) = result
-            && let Ok(mut state_mut) = state.try_borrow_mut()
-        {
-            let connection_count = import_result.connections.len();
-            tracing::info!(count = connection_count, "Importing connections");
+        let Some(import_result) = result else {
+            return;
+        };
 
-            match state_mut.import_connections_with_source(&import_result, &source_name) {
-                Ok(count) => {
-                    // Merge snippets if present (native format)
-                    let snippet_count = import_result.snippets.len();
-                    for snippet in import_result.snippets {
-                        if let Err(e) = state_mut.create_snippet(snippet) {
-                            tracing::warn!("Failed to import snippet: {e}");
-                        }
-                    }
-                    drop(state_mut);
-                    // Defer sidebar reload to prevent UI freeze
-                    let state_clone = state.clone();
-                    let sidebar_clone = sidebar.clone();
-                    let window = window_clone.clone();
-                    let source = source_name.clone();
-                    glib::idle_add_local_once(move || {
-                        MainWindow::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
-                        let msg = if snippet_count > 0 {
-                            i18n_f(
-                                "Imported {} connections and {} snippets to '{}' group",
-                                &[&count.to_string(), &snippet_count.to_string(), &source],
-                            )
-                        } else {
-                            i18n_f(
-                                "Imported {} connections to '{}' group",
-                                &[&count.to_string(), &source],
-                            )
-                        };
-                        alert::show_success(&window, &i18n("Import Successful"), &msg);
-                    });
+        // Detect duplicates by name before applying (same case-insensitive
+        // rule the importer uses for auto-renaming) and let the user decide
+        // instead of silently creating renamed copies.
+        let duplicate_names: std::collections::HashSet<String> = state
+            .try_borrow()
+            .map(|s| {
+                import_result
+                    .connections
+                    .iter()
+                    .filter(|c| s.connection_exists_by_name(&c.name))
+                    .map(|c| c.name.to_lowercase())
+                    .collect()
+            })
+            .unwrap_or_default();
+        let duplicate_count = import_result
+            .connections
+            .iter()
+            .filter(|c| duplicate_names.contains(&c.name.to_lowercase()))
+            .count();
+
+        if duplicate_count == 0 {
+            apply_import_result(&window_clone, &state, &sidebar, import_result, &source_name);
+            return;
+        }
+
+        let confirm = adw::AlertDialog::new(
+            Some(&i18n("Import Duplicates?")),
+            Some(&i18n_f(
+                "{} of {} connections have the same name as existing ones. Imported copies are kept alongside the existing connections under a numbered name.",
+                &[
+                    &duplicate_count.to_string(),
+                    &import_result.connections.len().to_string(),
+                ],
+            )),
+        );
+        confirm.add_response("cancel", &i18n("Cancel"));
+        confirm.add_response("skip", &i18n("Skip Duplicates"));
+        confirm.add_response("all", &i18n("Import All"));
+        confirm.set_response_appearance("all", adw::ResponseAppearance::Suggested);
+        confirm.set_default_response(Some("all"));
+        confirm.set_close_response("cancel");
+
+        // The result is consumed by exactly one response; Fn closures
+        // cannot move it out directly, hence the Cell.
+        let pending = std::rc::Rc::new(std::cell::RefCell::new(Some(import_result)));
+        let window2 = window_clone.clone();
+        let state2 = state.clone();
+        let sidebar2 = sidebar.clone();
+        let source2 = source_name.clone();
+        confirm.connect_response(None, move |_, response| {
+            let Some(mut import_result) = pending.borrow_mut().take() else {
+                return;
+            };
+            match response {
+                "skip" => {
+                    import_result
+                        .connections
+                        .retain(|c| !duplicate_names.contains(&c.name.to_lowercase()));
+                    apply_import_result(&window2, &state2, &sidebar2, import_result, &source2);
                 }
-                Err(e) => {
-                    alert::show_error(&window_clone, &i18n("Import Failed"), &e);
+                "all" => {
+                    apply_import_result(&window2, &state2, &sidebar2, import_result, &source2);
+                }
+                _ => {}
+            }
+        });
+        confirm.present(Some(&window_clone));
+    });
+}
+
+/// Applies an import result to the app state and reports the outcome.
+fn apply_import_result(
+    window: &gtk4::Window,
+    state: &SharedAppState,
+    sidebar: &SharedSidebar,
+    import_result: rustconn_core::import::ImportResult,
+    source_name: &str,
+) {
+    let Ok(mut state_mut) = state.try_borrow_mut() else {
+        return;
+    };
+    let connection_count = import_result.connections.len();
+    tracing::info!(count = connection_count, "Importing connections");
+
+    match state_mut.import_connections_with_source(&import_result, source_name) {
+        Ok(count) => {
+            // Merge snippets if present (native format)
+            let snippet_count = import_result.snippets.len();
+            for snippet in import_result.snippets {
+                if let Err(e) = state_mut.create_snippet(snippet) {
+                    tracing::warn!("Failed to import snippet: {e}");
                 }
             }
+            drop(state_mut);
+            // Defer sidebar reload to prevent UI freeze
+            let state_clone = state.clone();
+            let sidebar_clone = sidebar.clone();
+            let window = window.clone();
+            let source = source_name.to_string();
+            glib::idle_add_local_once(move || {
+                MainWindow::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
+                let msg = if snippet_count > 0 {
+                    i18n_f(
+                        "Imported {} connections and {} snippets to '{}' group",
+                        &[&count.to_string(), &snippet_count.to_string(), &source],
+                    )
+                } else {
+                    i18n_f(
+                        "Imported {} connections to '{}' group",
+                        &[&count.to_string(), &source],
+                    )
+                };
+                alert::show_success(&window, &i18n("Import Successful"), &msg);
+            });
         }
-    });
+        Err(e) => {
+            alert::show_error(window, &i18n("Import Failed"), &e);
+        }
+    }
 }

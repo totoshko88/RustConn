@@ -1002,7 +1002,7 @@ impl ExportDialog {
                 if let Some(ref win) = parent_window {
                     crate::toast::show_toast_on_window(
                         win,
-                        &i18n("Please select an output file or directory"),
+                        &i18n("Select an output file or directory"),
                         crate::toast::ToastType::Warning,
                     );
                 }
@@ -1167,7 +1167,10 @@ impl ExportDialog {
                             // Show error
                             progress_label.set_text(&i18n("Export failed"));
                             result_label.set_text(&i18n("Export Failed"));
-                            result_details.set_text(&format!("Error: {e}"));
+                            result_details.set_text(&crate::i18n::i18n_f(
+                                "Could not write the export file: {}. Check destination permissions and free disk space.",
+                                &[e.as_str()],
+                            ));
 
                             stack.set_visible_child_name("result");
                             btn.set_label(&i18n("Close"));

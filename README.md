@@ -22,6 +22,15 @@ It brings SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, and Zero Trust
 
 [![Demo](https://img.youtube.com/vi/b-TI0i1I380/maxresdefault.jpg)](https://youtu.be/b-TI0i1I380)
 
+## Screenshots
+
+| | |
+|---|---|
+| ![Welcome screen](rustconn/assets/screenshots/welcome_light.png) | ![Embedded RDP session](rustconn/assets/screenshots/rdp_session_dark.png) |
+| ![Connection wizard](rustconn/assets/screenshots/connection_wizard_light.png) | ![SFTP file browser](rustconn/assets/screenshots/sftp_mc_light.png) |
+
+More screenshots on the [Flathub listing](https://flathub.org/apps/io.github.totoshko88.RustConn).
+
 ## Features
 
 | Category | Details |
@@ -35,6 +44,7 @@ It brings SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, and Zero Trust
 | **Productivity** | Split terminals, command snippets, cluster broadcast, ad-hoc broadcast, smart folders, session recording, text highlighting rules, Wake-on-LAN, SSH port forwarding, visual SSH tunnel builder (3-step wizard with path diagram), automation (expect rules, key sequences, pre/post-connect tasks), session reconnect, settings backup/restore, .rdp file association, tab overview, tab pinning, custom terminal themes |
 | **Cloud Sync** | Synchronize connections via shared cloud directory (Google Drive, Syncthing, Nextcloud, Dropbox); group sync with Master/Import access model; simple sync with UUID-based merge |
 | **CLI** | `rustconn-cli` — headless management: list/add/update/delete connections, import/export, snippets, groups, templates, clusters, secrets, WoL, shell completions |
+| **Languages** | English + 16 translations (Belarusian, Czech, Danish, German, Spanish, French, Italian, Kazakh, Dutch, Polish, Portuguese, Slovak, Swedish, Ukrainian, Uzbek, Chinese) |
 
 | Protocol | Client | Type |
 |----------|--------|------|
@@ -51,9 +61,23 @@ It brings SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, and Zero Trust
 
 ## Installation
 
-<a href="https://flathub.org/apps/io.github.totoshko88.RustConn">
-  <img width="200" alt="Download on Flathub" src="https://flathub.org/api/badge?locale=en"/>
-</a>
+<!-- Both badges are height-aligned (56px) and theme-adaptive: dark badge
+     on the light GitHub theme, light badge on the dark theme. -->
+<p>
+  <a href="https://flathub.org/apps/io.github.totoshko88.RustConn">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://flathub.org/assets/badges/flathub-badge-i-en.svg">
+      <img height="56" alt="Download on Flathub" src="https://flathub.org/assets/badges/flathub-badge-en.svg">
+    </picture>
+  </a>
+  &nbsp;
+  <a href="https://snapcraft.io/rustconn">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://snapcraft.io/en/light/install.svg">
+      <img height="56" alt="Get it from the Snap Store" src="https://snapcraft.io/en/dark/install.svg">
+    </picture>
+  </a>
+</p>
 
 ```bash
 flatpak install flathub io.github.totoshko88.RustConn
@@ -93,6 +117,7 @@ flatpak install flathub io.github.totoshko88.RustConn
 | [Architecture](docs/ARCHITECTURE.md) | Crate structure and design decisions |
 | [CI & Build Flow](docs/CI_BUILD_FLOW.md) | CI pipelines, OBS packaging, Flathub release process |
 | [Zero Trust](docs/ZERO_TRUST.md) | AWS SSM, GCP IAP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary |
+| [Changelog](CHANGELOG.md) | Release history and notable changes |
 
 ## Support
 

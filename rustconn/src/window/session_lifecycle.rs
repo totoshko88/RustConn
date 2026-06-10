@@ -488,6 +488,23 @@ impl MainWindow {
                 return;
             }
 
+            // Defer all remaining widget/VTE work (disconnect indicator,
+            // terminal.reset(), reconnect banner, auto-reconnect setup) to
+            // the next main-loop idle. `child-exited` is emitted from inside
+            // VTE — resetting VTE state or mutating the widget tree during
+            // the emission can race with the pending GTK snapshot of the
+            // current frame and crash in libvte/pango (#171).
+            let notebook_clone = notebook_clone.clone();
+            let state_clone = state_clone.clone();
+            let sidebar_clone = sidebar_clone.clone();
+            let connection_id_str = connection_id_str.clone();
+            glib::idle_add_local_once(move || {
+            // Guard: the tab may have been closed before this idle ran.
+            if notebook_clone.get_session_info(session_id).is_none() {
+                sidebar_clone.decrement_session_count(&connection_id_str, is_failure);
+                return;
+            }
+
             // Mark tab as disconnected and show reconnect overlay
             notebook_clone.mark_tab_disconnected(session_id);
             notebook_clone.show_reconnect_overlay(session_id);
@@ -641,6 +658,7 @@ impl MainWindow {
 
             // Decrement session count - status changes only if no other sessions active
             sidebar_clone.decrement_session_count(&connection_id_str, is_failure);
+            });
         });
     }
 

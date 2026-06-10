@@ -208,7 +208,19 @@ Due to snap confinement, RustConn stores data in snap-specific locations:
 ### SSH connections fail
 - Ensure `ssh-keys` interface is connected: `sudo snap connect rustconn:ssh-keys`
 - Check that SSH keys are in `~/.ssh/`
-- Verify SSH agent is running: `echo $SSH_AUTH_SOCK`
+
+### SSH agent does not work (known limitation)
+
+The host SSH agent (`$SSH_AUTH_SOCK`) is **not reachable from the strictly
+confined snap**. snapd has no interface that exposes the agent socket
+(unlike Flatpak's `--socket=ssh-auth`), so agent-based authentication and
+agent forwarding (`ForwardAgent`) cannot work in the snap package.
+
+Workarounds:
+- Use key files directly (the `ssh-keys` interface grants read access to
+  `~/.ssh/`); passphrases are prompted in the terminal
+- If your workflow relies on the SSH agent, prefer the **Flatpak** or
+  native package
 
 ### Zero Trust / kubectl CLI not found
 - Open the Components dialog (Menu → Components) and download the CLI
@@ -231,6 +243,7 @@ snap connections rustconn
 | Security | High (strict) | High (sandbox) | Medium |
 | Setup | Manual interfaces | Automatic | None needed |
 | SSH/RDP/VNC/SPICE | Embedded | Embedded | Embedded |
+| SSH agent | Not available (no snapd interface) | Host agent via `ssh-auth` socket | Host agent |
 | Telnet | Bundled | Bundled | Host CLI |
 | Serial | Bundled | Bundled | Host CLI |
 | Waypipe | Bundled | Bundled | Host CLI |

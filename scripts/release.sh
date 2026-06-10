@@ -81,6 +81,53 @@ done
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || fail "Not inside a git repo"
 cd "$REPO_ROOT"
 
+# Portable in-place sed (BSD sed on macOS needs -i '')
+sedi() {
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        sed -i '' -E "$@"
+    else
+        sed -i -E "$@"
+    fi
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Release-date refresh: rewrites the date of THIS version's entry in every
+# release file, each in its native format. LC_ALL=C keeps month/day names
+# English regardless of the user's locale.
+# ──────────────────────────────────────────────────────────────────────────────
+METAINFO="rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml"
+DATE_FILES=(CHANGELOG.md "$METAINFO" debian/changelog
+            packaging/obs/debian.changelog packaging/obs/rustconn.changes
+            packaging/obs/rustconn.spec)
+
+update_release_dates() {
+    local iso="$1"
+    local deb_date obs_date
+    deb_date="$(LC_ALL=C date '+%a, %d %b %Y %H:%M:%S %z')"
+    obs_date="$(LC_ALL=C date '+%a %b %d %Y')"
+
+    # CHANGELOG.md: ## [X.Y.Z] - YYYY-MM-DD
+    sedi "s|^## \[$VERSION\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$|## [$VERSION] - $iso|" CHANGELOG.md
+
+    # metainfo.xml: <release version="X.Y.Z" date="YYYY-MM-DD">
+    sedi "s|(<release version=\"$VERSION\" date=\")[0-9-]+(\")|\\1$iso\\2|" "$METAINFO"
+
+    # Debian changelogs: trailer line of this version's entry
+    #   -- Name <email>  Tue, 10 Jun 2026 14:00:00 +0300
+    local f
+    for f in debian/changelog packaging/obs/debian.changelog; do
+        sedi "/^rustconn \($VERSION-1\)/,/^ -- /{s|^( -- .*>)  .*\$|\\1  $deb_date|;}" "$f"
+    done
+
+    # OBS rustconn.changes: entry header  Tue Jun 10 2026 Name <email> - X.Y.Z
+    sedi "s|^[A-Z][a-z]{2} [A-Z][a-z]{2} [0-9]{1,2} [0-9]{4}( .* - $VERSION)$|$obs_date\\1|" \
+        packaging/obs/rustconn.changes
+
+    # rustconn.spec %changelog: * Tue Jun 10 2026 Name <email> - X.Y.Z-N
+    sedi "s|^\* [A-Z][a-z]{2} [A-Z][a-z]{2} [0-9]{1,2} [0-9]{4}( .* - $VERSION(-[0-9]+)?)$|* $obs_date\\1|" \
+        packaging/obs/rustconn.spec
+}
+
 # ──────────────────────────────────────────────────────────────────────────────
 # 1. Branch name = version (semver)
 # ──────────────────────────────────────────────────────────────────────────────
@@ -114,10 +161,39 @@ CHANGELOG_LINE="$(grep -m1 -E "^## \[$VERSION\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$" C
 CHANGELOG_DATE="$(echo "$CHANGELOG_LINE" | awk '{print $4}')"
 ok "CHANGELOG.md: $CHANGELOG_LINE"
 
+# A stale date is easy to miss when the section was written days earlier.
+# Offer to refresh the date of this version's entry in every release file.
+TODAY="$(date +%Y-%m-%d)"
+if [[ "$CHANGELOG_DATE" != "$TODAY" ]]; then
+    warn "CHANGELOG date is $CHANGELOG_DATE but today is $TODAY"
+    if $DRY_RUN; then
+        info "Re-run without --dry-run to be offered an automatic date refresh"
+    else
+        DO_DATE_UPDATE=false
+        if $ASSUME_YES; then
+            DO_DATE_UPDATE=true
+        elif [[ -t 0 ]]; then
+            read -r -p "Update the $VERSION release date to $TODAY in all release files? [y/N] " ans
+            case "$ans" in
+                y|Y|yes|YES) DO_DATE_UPDATE=true ;;
+            esac
+        else
+            warn "stdin is not a TTY — keeping the stale date (pass --yes to auto-update)"
+        fi
+        if $DO_DATE_UPDATE; then
+            update_release_dates "$TODAY"
+            CHANGELOG_DATE="$TODAY"
+            ok "Release dates refreshed to $TODAY:"
+            git --no-pager diff --stat -- "${DATE_FILES[@]}" || true
+            fail "Dates updated — review the diff, commit, and re-run the script"
+        fi
+    fi
+fi
+
 # ──────────────────────────────────────────────────────────────────────────────
 # 4. metainfo.xml has matching <release version="..." date="...">
+#    ($METAINFO is defined next to update_release_dates above)
 # ──────────────────────────────────────────────────────────────────────────────
-METAINFO="rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml"
 META_LINE="$(grep -m1 -E "<release version=\"$VERSION\" date=\"[0-9]{4}-[0-9]{2}-[0-9]{2}\"" "$METAINFO" || true)"
 [[ -n "$META_LINE" ]] || fail "$METAINFO missing <release version=\"$VERSION\" date=\"...\">"
 
@@ -136,9 +212,12 @@ PKG_FILES=(
     "packaging/obs/rustconn.dsc"
     "packaging/obs/debian.dsc"
     "packaging/obs/rustconn.spec"
+    "packaging/obs/rustconn.changes"
+    "packaging/obs/_service"
     "packaging/obs/AppImageBuilder.yml"
     "packaging/flatpak/io.github.totoshko88.RustConn.yml"
     "packaging/flathub/io.github.totoshko88.RustConn.yml"
+    "snap/snapcraft.yaml"
     "docs/USER_GUIDE.md"
     "docs/ARCHITECTURE.md"
 )
@@ -148,9 +227,12 @@ PKG_PATS=(
     "^Version: $VERSION-1$"
     "^Version: $VERSION-1$"
     "^Version:[[:space:]]+$VERSION$"
+    " - $VERSION(-[0-9]+)?$"
+    "revision\">v$VERSION<"
     "^[[:space:]]+version: $VERSION$"
     "tag: v$VERSION$"
     "tag: v$VERSION$"
+    "^version: '$VERSION'$"
     "\\*\\*Version $VERSION\\*\\*"
     "\\*\\*Version $VERSION\\*\\*"
 )
@@ -164,7 +246,7 @@ for i in "${!PKG_FILES[@]}"; do
         ((PKG_FAILED+=1))
         continue
     fi
-    if ! grep -qE "$pattern" "$file"; then
+    if ! grep -qE -- "$pattern" "$file"; then
         warn "Version $VERSION not found in $file (pattern: $pattern)"
         ((PKG_FAILED+=1))
     fi
@@ -184,6 +266,10 @@ git fetch --tags --quiet origin 2>/dev/null || warn "git fetch failed — checki
 if git rev-parse "$TAG" >/dev/null 2>&1; then
     fail "Tag $TAG already exists (local or remote). Aborting."
 fi
+# Definitive remote check — catches the case where fetch failed above
+if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+    fail "Tag $TAG already exists on origin. Aborting."
+fi
 ok "Tag $TAG does not exist yet"
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -199,6 +285,17 @@ ok "Working tree clean (untracked files ignored)"
 # 8. main branch exists, is reachable, and release branch contains it
 # ──────────────────────────────────────────────────────────────────────────────
 git rev-parse --verify main >/dev/null 2>&1 || fail "Branch 'main' does not exist"
+
+# Local main must not lag behind origin/main — merging into a stale main
+# would either push outdated history or be rejected as non-fast-forward
+# (e.g. after a hotfix merged via the GitHub UI).
+git fetch --quiet origin main 2>/dev/null || warn "git fetch origin main failed — checking local only"
+if git rev-parse --verify origin/main >/dev/null 2>&1; then
+    MAIN_BEHIND="$(git rev-list --count "main..origin/main" 2>/dev/null || echo "0")"
+    if (( MAIN_BEHIND > 0 )); then
+        fail "Local 'main' is $MAIN_BEHIND commit(s) behind 'origin/main'. Update main first."
+    fi
+fi
 
 # Ensure release branch includes all commits from main (fast-forward safe merge)
 BEHIND="$(git rev-list --count "HEAD..main" 2>/dev/null || echo "0")"
@@ -290,7 +387,7 @@ plan "git tag -a $TAG -m \"Release $VERSION\""
 if $NO_PUSH; then
     plan "(push skipped — --no-push)"
 else
-    plan "git push origin main --tags"
+    plan "git push --atomic origin main refs/tags/$TAG"
 fi
 echo
 
@@ -322,10 +419,23 @@ run git tag -a "$TAG" -m "Release $VERSION"
 
 if $NO_PUSH; then
     info "Skipping push (--no-push). Run manually:"
-    echo "    git push origin main --tags"
+    echo "    git push --atomic origin main refs/tags/$TAG"
 else
-    run git push origin main --tags
+    # --atomic: main and the tag land together or not at all — prevents a
+    # half-release (tag without main, or main without the tag that triggers
+    # the release workflow). Push ONLY this tag, never --tags: stray local
+    # tags must not reach origin.
+    run git push --atomic origin main "refs/tags/$TAG"
 fi
 
 echo
 ok "Release $VERSION completed."
+echo
+printf '%s%s═══ Next steps ═══%s\n' "$C_BOLD" "$C_BLUE" "$C_RESET"
+info "1. Watch the release workflow:  gh run watch --repo totoshko88/RustConn"
+info "2. Flathub: download the 'flathub-update-$TAG' artifact and open the PR"
+info "   (see docs/CI_BUILD_FLOW.md → Flathub Release)"
+info "3. Snap: test the candidate revision, then promote to stable:"
+info "     snap install rustconn --candidate   # on a test machine"
+info "     snapcraft release rustconn <revision> latest/stable"
+info "4. Verify OBS rebuilds: https://build.opensuse.org/package/show/home:totoshko88:rustconn/rustconn"

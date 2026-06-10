@@ -8,12 +8,16 @@ GitHub Actions workflows, OBS (Open Build Service) packaging, and Flathub releas
 ```mermaid
 graph LR
     Push[git push main] --> CI[CI Checks]
+    Push --> LP[snapcraft.io Builds]
+    LP --> SnapEdge[Snap Store edge]
     Tag[git push v*] --> CI
     Tag --> Release[Release Workflow]
     Tag --> Flathub[Flathub Update]
     Release --> GHRelease[GitHub Release]
-    Release --> SnapStore[Snap Store]
+    Release --> SnapCand[Snap Store candidate]
     Release --> OBS[OBS Update]
+    Release --> Brew[Homebrew tap]
+    SnapCand -->|manual promote| SnapStable[Snap Store stable]
     OBS --> RPM[openSUSE/Fedora RPMs]
     OBS --> DEB[Debian/Ubuntu DEBs]
 ```
@@ -47,6 +51,14 @@ graph TD
 | cargo-deny | License and advisory checks |
 | Security Audit | `cargo audit` with `audit.toml` ignore list |
 
+### Caching
+
+Every cargo job caches `~/.cargo/registry`, `~/.cargo/git`, and `target/`
+under a job-specific key (`-cargo-`, `-cargo-clippy-`, …), and all jobs share
+a `restore-keys: <os>-cargo-` fallback. On a key miss (new `Cargo.lock`, new
+job) the runner seeds from whichever sibling cache exists instead of
+rebuilding the dependency graph from scratch.
+
 ## Release Workflow (`release.yml`)
 
 Triggered by pushing a version tag (`v*`). This is the **single unified release workflow**
@@ -55,19 +67,19 @@ and updates OBS.
 
 ```mermaid
 graph TD
-    Tag[git push tag v0.15.12] --> BuildDeb[Build .deb]
+    Tag[git push tag v0.15.13] --> BuildDeb[Build .deb]
     Tag --> BuildRPM[Build .rpm]
     Tag --> BuildAppImage[Build AppImage]
     Tag --> BuildSnap[Build .snap]
     Tag --> BuildFlatpak[Build .flatpak]
 
-    BuildDeb --> |ubuntu-24.04| DebArtifact[rustconn_0.15.12_amd64.deb]
-    BuildRPM --> |fedora:44 container| RPMArtifact[rustconn-0.15.12-1.fc44.x86_64.rpm]
-    BuildAppImage --> |ubuntu-24.04| AppImageArtifact[RustConn-0.15.12-x86_64.AppImage]
-    BuildSnap --> |LXD + snapcraft| SnapArtifact[rustconn_0.15.12_amd64.snap]
-    BuildFlatpak --> |GNOME 50 container| FlatpakArtifact[RustConn-0.15.12.flatpak]
+    BuildDeb --> |ubuntu-24.04| DebArtifact[rustconn_0.15.13_amd64.deb]
+    BuildRPM --> |fedora:44 container| RPMArtifact[rustconn-0.15.13-1.fc44.x86_64.rpm]
+    BuildAppImage --> |ubuntu-24.04| AppImageArtifact[RustConn-0.15.13-x86_64.AppImage]
+    BuildSnap --> |LXD + snapcraft| SnapArtifact[rustconn_0.15.13_amd64.snap]
+    BuildFlatpak --> |GNOME 50 container| FlatpakArtifact[RustConn-0.15.13.flatpak]
 
-    BuildSnap --> |continue-on-error| SnapStore[Publish to Snap Store edge]
+    BuildSnap --> |continue-on-error| SnapStore[Publish to Snap Store candidate]
 
     DebArtifact --> Release[Create GitHub Release]
     RPMArtifact --> Release
@@ -88,17 +100,55 @@ graph TD
 | `build-snap` | ubuntu-latest + LXD + snapcraft | `rustconn_X.Y.Z_amd64.snap` |
 | `build-flatpak` | GNOME 50 Flatpak container | `RustConn-X.Y.Z.flatpak` |
 
-### Snap Store Publishing
+### Snap Store Channels
 
-The `build-snap` job also publishes to Snap Store (edge channel) after building.
-This step uses `continue-on-error: true` — if publishing fails (e.g., awaiting
-manual review/approval on Snap Store), the job still succeeds and the `.snap`
-artifact is included in the GitHub Release.
+Two publishers feed the Snap Store, each owning its own channel:
+
+| Channel | Source | Contents |
+|---------|--------|----------|
+| `edge` | snapcraft.io Builds (Launchpad), triggered by every push to `main` | Rolling builds of `main` HEAD |
+| `candidate` | `release.yml` `build-snap` job, triggered by version tags | Exact released code, CI provenance |
+| `stable` | Manual promote of a tested `candidate` revision | What `snap install rustconn` delivers |
+
+Promote with `snapcraft release rustconn <revision> latest/stable` (or
+drag-and-drop on snapcraft.io/rustconn/releases) after testing the
+candidate revision.
+
+The store setting **"Update metadata on release"** is enabled: when a
+revision lands in `stable`, the store listing (title, summary, description,
+links) is regenerated from that revision's `snapcraft.yaml`. Do not edit the
+Listing page by hand — it would be overwritten (and disables the sync).
+Screenshots and banner are managed separately on the Listing page and are
+not affected.
+
+The CI publish step uses `continue-on-error: true` — if the upload fails
+(e.g., awaiting manual review/approval on Snap Store), the job still
+succeeds and the `.snap` artifact is included in the GitHub Release.
 
 ### GitHub Release Artifacts
 
 The `release` job collects artifacts from all five build jobs and creates a GitHub
 Release with `.deb`, `.rpm`, `.AppImage`, `.snap`, and `.flatpak` files attached.
+
+### Homebrew Tap (macOS)
+
+After the GitHub Release is created, the `update-homebrew` job downloads the
+source tarball of the tag (with retry + `tar -tzf` integrity check), computes
+its SHA-256, and pushes an updated formula to `totoshko88/homebrew-rustconn`.
+
+### Supply-Chain Hygiene for Downloaded Tools
+
+Build-time tools fetched from the network are pinned and verified:
+
+| Tool | Where | Protection |
+|------|-------|-----------|
+| `flatpak-cargo-generator.py` | release.yml, flatpak.yml, flathub-update.yml | Pinned commit URL + SHA-256 check |
+| `linuxdeploy-plugin-gtk.sh` | release.yml (AppImage) | Pinned commit URL + SHA-256 check |
+| `linuxdeploy-x86_64.AppImage` | release.yml (AppImage) | `continuous` tag has unstable checksums → retry ×5 + ELF magic check |
+| Homebrew source tarball | release.yml | retry ×5 + `tar -tzf` integrity check |
+
+When bumping the pinned commits, recompute the SHA-256 of the fetched file
+and update both values together.
 
 ## OBS Update Flow
 
@@ -117,6 +167,7 @@ sequenceDiagram
     CI->>OBS: Update _service (tag revision)
     CI->>OBS: Update rustconn.spec (Version)
     CI->>OBS: Update debian.dsc (Version, DEBTRANSFORM-TAR)
+    CI->>OBS: Update AppImageBuilder.yml (version)
     CI->>OBS: Update debian.changelog (prepend entry)
     CI->>OBS: Update rustconn.changes (prepend entry)
     CI->>OBS: Upload vendor.tar.zst
@@ -188,15 +239,15 @@ sequenceDiagram
     participant GH as GitHub Actions
     participant FH as flathub/io.github.totoshko88.RustConn
 
-    Dev->>GH: Push tag v0.15.12
+    Dev->>GH: Push tag v0.15.13
     GH->>GH: Generate cargo-sources.json
     GH->>GH: Update manifest tag
-    GH->>GH: Upload artifact: flathub-update-v0.15.12
+    GH->>GH: Upload artifact: flathub-update-v0.15.13
 
     Dev->>Dev: Download artifact
     Dev->>FH: Create branch
     Dev->>FH: Upload manifest + cargo-sources.json
-    Dev->>FH: Create PR "Update to v0.15.12"
+    Dev->>FH: Create PR "Update to v0.15.13"
     FH->>FH: Flathub CI builds and tests
     FH->>FH: Merge → published to Flathub
 ```
@@ -240,5 +291,6 @@ Runs weekly (Monday 06:00 UTC) to check for updates to bundled CLI tools
 | `packaging/obs/rustconn.spec` | Version field | CI (release.yml) |
 | `packaging/obs/debian.dsc` | Version + tarball name | CI (release.yml) |
 | `packaging/obs/_service` | Tag revision | CI (release.yml) |
+| `packaging/obs/AppImageBuilder.yml` | version field | CI (release.yml / obs-update.yml) |
 | `snap/snapcraft.yaml` | version field | Release Version hook |
 | `metainfo.xml` | `<release>` entry | Release Version hook |

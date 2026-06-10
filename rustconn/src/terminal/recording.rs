@@ -342,6 +342,19 @@ impl TerminalNotebook {
 
     /// Updates the tab title to show or hide the "●REC" indicator.
     pub(crate) fn update_recording_indicator(&self, session_id: Uuid, recording: bool) {
+        // Notify the window so the sidebar recording indicator follows
+        // every start/stop path (manual action, auto-record, session end)
+        let connection_id = self
+            .session_info
+            .borrow()
+            .get(&session_id)
+            .map(|info| info.connection_id);
+        if let Some(connection_id) = connection_id
+            && let Some(ref callback) = *self.on_recording_changed.borrow()
+        {
+            callback(connection_id, recording);
+        }
+
         let rec_prefix = i18n("●REC");
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             let current_title = page.title().to_string();

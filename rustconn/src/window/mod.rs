@@ -129,6 +129,10 @@ pub struct MainWindow {
     /// active panels in the current application session, so the hint is
     /// shown at most once. Not persisted across restarts.
     broadcast_hint_shown: Rc<std::cell::Cell<bool>>,
+    /// Persistent banner below the header bar for cloud sync failures.
+    /// Shown by `show_sync_error_banner`, hidden on the next successful
+    /// sync or via its Dismiss button.
+    sync_banner: adw::Banner,
 }
 
 impl MainWindow {
@@ -251,6 +255,25 @@ impl MainWindow {
 
         // Create terminal notebook for tab management (using adw::TabView)
         let terminal_notebook = Rc::new(TerminalNotebook::new());
+
+        // Refresh VTE font state when fontconfig changes (#171).
+        // VTE reads `gtk-fontconfig-timestamp` only when it creates its
+        // cached FontInfo and never subscribes to changes, so after a
+        // fontconfig update (font install, fc-cache, KDE pushing
+        // Fontconfig/Timestamp via XSettings on screen unlock) terminals
+        // keep stale Pango font references and crash with SIGSEGV in
+        // pango_itemize during the next snapshot.
+        if let Some(gtk_settings) = gtk4::Settings::default() {
+            let notebook_weak = Rc::downgrade(&terminal_notebook);
+            gtk_settings.connect_notify_local(Some("gtk-fontconfig-timestamp"), move |_, _| {
+                if let Some(notebook) = notebook_weak.upgrade() {
+                    tracing::info!(
+                        "fontconfig timestamp changed; refreshing fonts on all terminals"
+                    );
+                    notebook.refresh_fonts_after_fontconfig_change();
+                }
+            });
+        }
 
         // Apply initial protocol tab coloring setting
         if let Ok(state_ref) = state.try_borrow() {
@@ -411,6 +434,18 @@ impl MainWindow {
         // This provides better responsive behavior and follows GNOME HIG
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header_bar);
+
+        // Persistent banner for cloud sync failures (GNOME HIG: a state
+        // that needs attention belongs in a banner, not a transient toast).
+        // Hidden by default; shown via show_sync_error_banner(), hidden on
+        // the next successful sync.
+        let sync_banner = adw::Banner::new("");
+        sync_banner.set_button_label(Some(&crate::i18n::i18n("Dismiss")));
+        sync_banner.connect_button_clicked(|banner| {
+            banner.set_revealed(false);
+        });
+        toolbar_view.add_top_bar(&sync_banner);
+
         toolbar_view.set_content(Some(toast_overlay.widget()));
 
         // Wrap everything with TabOverview — must be the outermost widget
@@ -500,6 +535,7 @@ impl MainWindow {
             passthrough_indicator,
             broadcast_toggle,
             broadcast_hint_shown: Rc::new(std::cell::Cell::new(false)),
+            sync_banner,
         };
 
         // Set up window actions
@@ -525,6 +561,28 @@ impl MainWindow {
                         false
                     }
                 });
+        }
+
+        // Drive the sidebar recording indicator from recording start/stop.
+        // Use a weak notebook reference — the notebook owns this callback,
+        // so a strong clone would create an Rc cycle.
+        {
+            let sidebar = main_window.sidebar.clone();
+            let notebook_weak = Rc::downgrade(&main_window.terminal_notebook);
+            main_window.terminal_notebook.set_on_recording_changed(
+                move |connection_id, recording| {
+                    // A connection may have several sessions; keep the dot
+                    // while ANY of them is still being recorded.
+                    let still_recording = recording
+                        || notebook_weak.upgrade().is_some_and(|nb| {
+                            nb.get_all_sessions()
+                                .iter()
+                                .any(|s| s.connection_id == connection_id && nb.is_recording(s.id))
+                        });
+                    sidebar
+                        .update_connection_recording(&connection_id.to_string(), still_recording);
+                },
+            );
         }
 
         // Load initial data
@@ -1014,7 +1072,33 @@ impl MainWindow {
         let sidebar_clone = sidebar.clone();
         let notebook_for_close = terminal_notebook.clone();
         let tunnel_manager_for_close = self.tunnel_manager.clone();
+        // One-shot flag: set after the user confirms closing with open
+        // sessions, so the second close() pass proceeds without re-asking.
+        let force_close = Rc::new(std::cell::Cell::new(false));
         window.connect_close_request(move |win| {
+            // When minimize-to-tray is enabled the window only hides and the
+            // app keeps running — no confirmation needed.
+            let minimize_to_tray = state_clone.try_borrow().is_ok_and(|s| {
+                s.settings().ui.minimize_to_tray && s.settings().ui.enable_tray_icon
+            });
+
+            // Confirm before quitting with open session tabs (GNOME HIG:
+            // protect against accidental loss of active connections).
+            let open_sessions = notebook_for_close.session_count();
+            if !minimize_to_tray && !force_close.get() && open_sessions > 0 {
+                let dialog = Self::close_confirmation_dialog(open_sessions);
+                let force_close_confirm = force_close.clone();
+                let win_weak = win.downgrade();
+                dialog.connect_response(Some("close"), move |_, _| {
+                    force_close_confirm.set(true);
+                    if let Some(w) = win_weak.upgrade() {
+                        w.close();
+                    }
+                });
+                dialog.present(Some(win));
+                return glib::Propagation::Stop;
+            }
+
             // Flush all active session recordings before shutdown
             notebook_for_close.flush_active_recordings();
 
@@ -2180,6 +2264,49 @@ impl MainWindow {
     }
 
     /// Returns a reference to the underlying GTK window
+    /// Builds the "close with open sessions" confirmation dialog.
+    ///
+    /// Shared by the window close button (`close_request`) and the
+    /// `app.quit` action so both paths protect active connections from
+    /// an accidental Ctrl+Q / window close (GNOME HIG).
+    #[must_use]
+    pub fn close_confirmation_dialog(open_sessions: usize) -> adw::AlertDialog {
+        let dialog = adw::AlertDialog::new(
+            Some(&crate::i18n::i18n("Close RustConn?")),
+            Some(&crate::i18n::i18n_f(
+                "{} session tab(s) are open. Active connections will be disconnected.",
+                &[&open_sessions.to_string()],
+            )),
+        );
+        dialog.add_response("cancel", &crate::i18n::i18n("Cancel"));
+        dialog.add_response("close", &crate::i18n::i18n("Close"));
+        dialog.set_response_appearance("close", adw::ResponseAppearance::Destructive);
+        dialog.set_default_response(Some("cancel"));
+        dialog.set_close_response("cancel");
+        dialog
+    }
+
+    /// Returns a shared handle to the terminal notebook.
+    #[must_use]
+    pub fn notebook_rc(&self) -> SharedNotebook {
+        self.terminal_notebook.clone()
+    }
+
+    /// Returns the cloud-sync error banner shown below the header bar.
+    #[must_use]
+    pub fn sync_banner(&self) -> &adw::Banner {
+        &self.sync_banner
+    }
+
+    /// Shows the persistent cloud-sync failure banner.
+    pub fn show_sync_error_banner(banner: &adw::Banner, group_name: &str, error: &str) {
+        banner.set_title(&crate::i18n::i18n_f(
+            "Cloud sync failed for '{}': {}",
+            &[group_name, error],
+        ));
+        banner.set_revealed(true);
+    }
+
     #[must_use]
     pub const fn gtk_window(&self) -> &adw::ApplicationWindow {
         &self.window

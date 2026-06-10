@@ -272,13 +272,21 @@ fn show_popover(
     let popover = gtk4::Popover::new();
     popover.set_parent(widget);
 
-    let vbox = GtkBox::new(Orientation::Vertical, 0);
+    // `accessible-role` is construct-only — use the builder so screen
+    // readers announce the container as a menu.
+    let vbox = GtkBox::builder()
+        .orientation(Orientation::Vertical)
+        .spacing(0)
+        .accessible_role(gtk4::AccessibleRole::Menu)
+        .build();
     vbox.add_css_class("context-menu");
 
     for item in items {
         match item {
             ContextMenuItem::Action { label, action } => {
-                let button = Button::new();
+                let button = Button::builder()
+                    .accessible_role(gtk4::AccessibleRole::MenuItem)
+                    .build();
                 button.add_css_class("flat");
                 button.add_css_class("context-menu-item");
 
@@ -342,6 +350,34 @@ fn show_popover(
     });
     popover.add_controller(key_controller);
 
+    // Arrow-key navigation between menu items with wrap-around, plus
+    // Home/End (standard GNOME menu behavior). The first item is focused
+    // on popup, so the controller receives key events immediately.
+    let vbox_for_nav = vbox.downgrade();
+    let nav_controller = gtk4::EventControllerKey::new();
+    nav_controller.connect_key_pressed(move |_, key, _, _| {
+        let Some(menu_box) = vbox_for_nav.upgrade() else {
+            return gtk4::glib::Propagation::Proceed;
+        };
+        let items = menu_item_buttons(&menu_box);
+        if items.is_empty() {
+            return gtk4::glib::Propagation::Proceed;
+        }
+        let focused = items.iter().position(|b| b.has_focus());
+        let target = match key {
+            gdk::Key::Down => focused.map_or(0, |i| (i + 1) % items.len()),
+            gdk::Key::Up => {
+                focused.map_or(items.len() - 1, |i| (i + items.len() - 1) % items.len())
+            }
+            gdk::Key::Home => 0,
+            gdk::Key::End => items.len() - 1,
+            _ => return gtk4::glib::Propagation::Proceed,
+        };
+        items[target].grab_focus();
+        gtk4::glib::Propagation::Stop
+    });
+    popover.add_controller(nav_controller);
+
     // Close the popover when focus leaves it (e.g. user presses a keyboard
     // shortcut that opens a dialog, or clicks a toolbar button).  This
     // replaces the autohide behaviour for the focus-loss scenario (#93)
@@ -391,6 +427,31 @@ fn show_popover(
 
     set_active_popover(&popover);
     popover.popup();
+
+    // Focus the first item so the menu is immediately keyboard-navigable
+    // (essential for the Menu key / Shift+F10 path, #157). Deferred to
+    // idle so the popover is mapped before the focus grab.
+    let vbox_for_focus = vbox.downgrade();
+    gtk4::glib::idle_add_local_once(move || {
+        if let Some(menu_box) = vbox_for_focus.upgrade()
+            && let Some(first) = menu_item_buttons(&menu_box).first()
+        {
+            first.grab_focus();
+        }
+    });
+}
+
+/// Collects the menu-item buttons of a context-menu box in visual order.
+fn menu_item_buttons(menu_box: &GtkBox) -> Vec<Button> {
+    let mut items = Vec::new();
+    let mut child = menu_box.first_child();
+    while let Some(widget) = child {
+        child = widget.next_sibling();
+        if let Ok(button) = widget.downcast::<Button>() {
+            items.push(button);
+        }
+    }
+    items
 }
 
 /// Returns the appropriate icon name for a protocol string

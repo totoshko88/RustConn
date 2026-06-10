@@ -24,16 +24,72 @@ fn find_child_by_css_class(parent: &GtkBox, class: &str) -> Option<gtk4::Widget>
     None
 }
 
+/// Selects only `position` in the list view's selection model
+/// (works for both single and multi-selection modes).
+pub fn select_single_position(model: &gtk4::SelectionModel, position: u32) {
+    if let Some(selection) = model.downcast_ref::<SingleSelection>() {
+        selection.set_selected(position);
+    } else if let Some(selection) = model.downcast_ref::<MultiSelection>() {
+        // In multi-selection mode, select only this item for context menu
+        selection.unselect_all();
+        selection.select_item(position, false);
+    }
+}
+
+/// Resolves menu-relevant data from a `ConnectionItem` and shows the
+/// sidebar context menu pointing at (`x`, `y`) within `widget`.
+///
+/// Shared by the per-row right-click gesture, the `ListView`-level
+/// fallback gesture, and the Menu / Shift+F10 keyboard handler (#157).
+pub fn show_context_menu_for_connection_item(
+    widget: &gtk4::Widget,
+    x: f64,
+    y: f64,
+    item: &ConnectionItem,
+    recording_checker: &Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
+) {
+    let is_group = item.is_group();
+    let protocol = item.protocol();
+    let is_ssh = protocol == "ssh" || protocol == "sftp";
+    let is_connected = item.status() == "connected";
+    let conn_id = item.id();
+    let is_recording = if is_connected && !conn_id.is_empty() {
+        recording_checker
+            .borrow()
+            .as_ref()
+            .is_some_and(|checker| checker(&conn_id))
+    } else {
+        false
+    };
+
+    tracing::debug!(
+        name = %item.name(),
+        %protocol,
+        is_group,
+        is_connected,
+        "Showing sidebar context menu"
+    );
+
+    sidebar_ui::show_context_menu_for_item(
+        widget,
+        x,
+        y,
+        is_group,
+        is_ssh,
+        is_connected,
+        is_recording,
+        &item.sync_mode(),
+        item.is_root_group(),
+        item.has_dynamic_folder(),
+    );
+}
+
 /// Sets up a list item widget
 ///
 /// # Accessibility
 /// Each list item is set up with proper accessible properties:
 /// - Status icons have live region for dynamic updates
 /// - Labels are associated with their icons
-#[expect(
-    clippy::too_many_lines,
-    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
-)]
 pub fn setup_list_item(
     _factory: &SignalListItemFactory,
     list_item: &ListItem,
@@ -70,6 +126,18 @@ pub fn setup_list_item(
     pin_icon.add_css_class("pin-icon");
     pin_icon.set_tooltip_text(Some(&i18n("Pinned")));
     content_box.append(&pin_icon);
+
+    // Red dot shown while a session of this connection is being recorded —
+    // recording is privacy-sensitive and must be visible at a glance.
+    let recording_icon = Image::from_icon_name("media-record-symbolic");
+    recording_icon.set_pixel_size(10);
+    recording_icon.set_visible(false);
+    recording_icon.add_css_class("recording-icon");
+    recording_icon.set_tooltip_text(Some(&i18n("Recording session")));
+    recording_icon.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Recording session",
+    ))]);
+    content_box.append(&recording_icon);
 
     expander.set_child(Some(&content_box));
     list_item.set_child(Some(&expander));
@@ -148,91 +216,19 @@ pub fn setup_list_item(
                     && let Some(list_view) = list_view.downcast_ref::<ListView>()
                     && let Some(model) = list_view.model()
                 {
-                    if let Some(selection) = model.downcast_ref::<SingleSelection>() {
-                        selection.set_selected(position);
-                    } else if let Some(selection) = model.downcast_ref::<MultiSelection>() {
-                        // In multi-selection mode, select only this item for context menu
-                        selection.unselect_all();
-                        selection.select_item(position, false);
-                    }
+                    select_single_position(&model, position);
                 }
             }
 
-            // Check if this is a group from the ConnectionItem data
-            let is_group = list_item_weak
+            if let Some(item) = list_item_weak
                 .upgrade()
                 .and_then(|li| li.item())
                 .and_then(|obj| obj.downcast::<gtk4::TreeListRow>().ok())
                 .and_then(|row| row.item())
                 .and_then(|obj| obj.downcast::<ConnectionItem>().ok())
-                .map(|item| {
-                    let g = item.is_group();
-                    tracing::debug!(
-                        name = %item.name(),
-                        is_group = g,
-                        protocol = %item.protocol(),
-                        "Context menu: is_group check"
-                    );
-                    g
-                })
-                .unwrap_or(false);
-
-            // Detect SSH protocol from the ConnectionItem data
-            let (
-                is_ssh,
-                is_connected,
-                conn_id_str,
-                sync_mode_str,
-                is_root_group,
-                has_dynamic_folder,
-            ) = list_item_weak
-                .upgrade()
-                .and_then(|li| li.item())
-                .and_then(|obj| obj.downcast::<gtk4::TreeListRow>().ok())
-                .and_then(|row| row.item())
-                .and_then(|obj| obj.downcast::<ConnectionItem>().ok())
-                .map(|item| {
-                    let p = item.protocol();
-                    let ssh = p == "ssh" || p == "sftp";
-                    let status = item.status();
-                    let connected = status == "connected";
-                    let id = item.id();
-                    let sm = item.sync_mode();
-                    let root = item.is_root_group();
-                    let dynamic = item.has_dynamic_folder();
-                    tracing::debug!(
-                        name = %item.name(),
-                        protocol = %p,
-                        %status,
-                        %connected,
-                        %id,
-                        "Context menu: ConnectionItem status"
-                    );
-                    (ssh, connected, id, sm, root, dynamic)
-                })
-                .unwrap_or((false, false, String::new(), String::new(), false, false));
-
-            let is_recording = if is_connected && !conn_id_str.is_empty() {
-                recording_checker
-                    .borrow()
-                    .as_ref()
-                    .is_some_and(|checker| checker(&conn_id_str))
-            } else {
-                false
-            };
-
-            sidebar_ui::show_context_menu_for_item(
-                &widget,
-                x,
-                y,
-                is_group,
-                is_ssh,
-                is_connected,
-                is_recording,
-                &sync_mode_str,
-                is_root_group,
-                has_dynamic_folder,
-            );
+            {
+                show_context_menu_for_connection_item(&widget, x, y, &item, &recording_checker);
+            }
 
             // Claim the gesture so the event does not propagate further into
             // ListView / TreeExpander internals.  Without this, GTK4 may apply
@@ -250,7 +246,7 @@ pub fn setup_list_item(
 pub fn bind_list_item(
     _factory: &SignalListItemFactory,
     list_item: &ListItem,
-    handlers: &Rc<RefCell<std::collections::HashMap<ListItem, glib::SignalHandlerId>>>,
+    handlers: &Rc<RefCell<std::collections::HashMap<ListItem, Vec<glib::SignalHandlerId>>>>,
     query: &str,
 ) {
     let Some(expander) = list_item.child().and_downcast::<TreeExpander>() else {
@@ -357,6 +353,13 @@ pub fn bind_list_item(
         // Groups don't show pin icon
         if let Some(ref pin) = pin_icon {
             pin.set_visible(false);
+        }
+        // Groups don't show the recording indicator (hide a stale icon
+        // left over from a recycled connection row)
+        if let Some(recording_icon) =
+            find_child_by_css_class(&content_box, "recording-icon").and_downcast::<Image>()
+        {
+            recording_icon.set_visible(false);
         }
 
         // Show connection count in tooltip
@@ -559,7 +562,31 @@ pub fn bind_list_item(
                 });
 
             // Store handler ID on list_item for cleanup
-            handlers.borrow_mut().insert(list_item.clone(), handler_id);
+            handlers
+                .borrow_mut()
+                .entry(list_item.clone())
+                .or_default()
+                .push(handler_id);
+        }
+
+        // Recording indicator: red dot while a session of this connection
+        // is being recorded (driven by the is-recording property, see
+        // ConnectionSidebar::update_connection_recording)
+        if let Some(recording_icon) =
+            find_child_by_css_class(&content_box, "recording-icon").and_downcast::<Image>()
+        {
+            recording_icon.set_visible(item.is_recording());
+
+            let recording_icon_clone = recording_icon.clone();
+            let handler_id =
+                item.connect_notify_local(Some("is-recording"), move |item: &ConnectionItem, _| {
+                    recording_icon_clone.set_visible(item.is_recording());
+                });
+            handlers
+                .borrow_mut()
+                .entry(list_item.clone())
+                .or_default()
+                .push(handler_id);
         }
 
         // Update label with dirty indicator for documents
@@ -586,13 +613,15 @@ pub fn bind_list_item(
 pub fn unbind_list_item(
     _factory: &SignalListItemFactory,
     list_item: &ListItem,
-    handlers: &Rc<RefCell<std::collections::HashMap<ListItem, glib::SignalHandlerId>>>,
+    handlers: &Rc<RefCell<std::collections::HashMap<ListItem, Vec<glib::SignalHandlerId>>>>,
 ) {
-    // Remove signal handler if exists
-    if let Some(handler_id) = handlers.borrow_mut().remove(list_item)
+    // Remove signal handlers if any exist
+    if let Some(handler_ids) = handlers.borrow_mut().remove(list_item)
         && let Some(row) = list_item.item().and_downcast::<TreeListRow>()
         && let Some(item) = row.item().and_downcast::<ConnectionItem>()
     {
-        item.disconnect(handler_id);
+        for handler_id in handler_ids {
+            item.disconnect(handler_id);
+        }
     }
 }

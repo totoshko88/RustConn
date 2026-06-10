@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.15.12** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.15.13** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -337,6 +337,8 @@ Temporary connection without saving:
 | Move to Group | Drag-drop or right-click → Move to Group |
 | Run Snippet | Right-click → Run Snippet... (sends snippet to active session) |
 | Start/Stop Recording | Right-click connected session → Start/Stop Recording |
+
+**Opening the context menu:** Besides right-click, the context menu for the selected row can be opened with the **Menu** key or **Shift+F10** (standard GNOME keyboard access, anchored to the selected row), or via a **touch long-press** on touchscreens. The menu supports Up/Down (with wrap-around) plus Home/End navigation and is announced to screen readers.
 
 ### Undo/Trash Functionality
 
@@ -1115,7 +1117,7 @@ Record terminal sessions in scriptreplay-compatible format for later playback. R
 2. Enable **Session Recording**
 3. Save
 
-When recording is active, the tab title shows a **●REC** indicator.
+When recording is active, the tab title shows a **●REC** indicator. A red `media-record-symbolic` dot also appears next to the connection in the sidebar (with tooltip and screen-reader label) while any of its sessions is being recorded, so an active recording is visible at a glance.
 
 **Recording Files:**
 Recordings are saved to `$XDG_DATA_HOME/rustconn/recordings/` (typically `~/.local/share/rustconn/recordings/`) with two files per session:
@@ -1860,7 +1862,7 @@ Store sensitive notes, certificates, and credentials in AES-256-GCM encrypted do
 
 **Use Cases:** Runbooks, API tokens, SSH key passphrases, network diagrams, compliance notes.
 
-**Backup:** Documents are stored in `~/.config/rustconn/documents/`. Included in Settings Backup/Restore but NOT in RustConn Native export (.rcn).
+**Backup:** Documents are stored in `~/.config/rustconn/documents/`. They are **not** included in Settings Backup/Restore or in RustConn Native export (.rcn) — back up the `documents/` directory manually if needed.
 
 ### Remote Monitoring
 
@@ -1883,10 +1885,10 @@ MobaXterm-style monitoring bar below SSH terminals showing real-time system metr
 | System info | One-time collection | Distro, kernel, arch, RAM, CPU cores, IP |
 
 **Enable Monitoring:**
-1. Open **Settings** (Ctrl+,) → **Connection** page → **Monitoring** group
+1. Open **Settings** (Ctrl+,) → **Monitoring** page → **General** group
 2. Toggle **Enable monitoring**
 3. Configure polling interval (1–60 seconds, default: 3)
-4. Select which metrics to display
+4. Select which metrics to display in the **Visible Metrics** group
 
 **Per-Connection Override:** Edit connection → **Advanced** tab → **Remote Monitoring** section → toggle **Enable Monitoring** ON or OFF. This overrides the global setting for this specific connection — if global monitoring is disabled but the toggle is ON, monitoring will still run for this connection (and vice versa).
 
@@ -2018,14 +2020,16 @@ When editing an existing tunnel, the path diagram shows the current tunnel statu
 
 Access via **Ctrl+,** or Menu → **Settings**
 
-The settings dialog uses `adw::PreferencesDialog` with built-in search. Settings are organized into 4 pages:
+The settings dialog uses `adw::PreferencesDialog` with built-in search. Settings are organized into 6 pages:
 
 | Page | Icon | Contents |
 |------|------|----------|
 | Terminal | `utilities-terminal-symbolic` | Terminal + Logging |
-| Interface | `applications-graphics-symbolic` | Appearance, Window, Startup, System Tray, Session Restore + Keybindings |
+| Interface | `applications-graphics-symbolic` | Appearance, Window, Startup, System Tray, Session Restore, Keybindings + Backup & Restore |
 | Secrets | `channel-secure-symbolic` | Secret backends + SSH Agent |
-| Connection | `network-server-symbolic` | Clients + Monitoring |
+| Connection | `network-server-symbolic` | Clients |
+| Monitoring | `power-profile-performance-symbolic` | Remote host metrics (General + Visible Metrics) + Terminal Activity Monitor defaults |
+| Cloud Sync | `emblem-synchronizing-symbolic` | Sync directory, synced groups, simple sync |
 
 ### Terminal page
 
@@ -2102,7 +2106,7 @@ When working in remote sessions with TUI applications (nvim, tmux, htop, mc), Ru
 - A toast notification confirms the mode change
 - The menu item shows a checkmark when active
 
-**Customization:** The list of shortcuts that remain active in passthrough mode can be configured in `settings.toml` under `[keybindings] passthrough_exceptions`.
+**Customization:** The list of shortcuts that remain active in passthrough mode can be configured in `config.toml` under `[keybindings] passthrough_exceptions`.
 
 ### Adaptive UI
 
@@ -2176,6 +2180,8 @@ Double-click source to start import immediately.
 - **Skip Existing** — Keep current connections, skip duplicates
 - **Overwrite** — Replace existing connections with imported data
 - **Rename** — Import as new connections with a suffix
+
+**Duplicate Handling:** If imported connections have names that already exist, RustConn shows a dialog with the duplicate count and three choices — **Cancel**, **Skip Duplicates**, or **Import All** — instead of silently creating renamed copies.
 
 **Import Preview:** For large imports (10+ connections), a preview is shown before applying.
 
@@ -2332,10 +2338,11 @@ RustConn stores all configuration in `~/.config/rustconn/`:
 ├── snippets.toml         # Command snippets
 ├── clusters.toml         # Broadcast clusters
 ├── templates.toml        # Connection templates
-├── smart_folders.toml    # Smart Folders
 ├── history.toml          # Connection history (local)
 └── trash.toml            # Trash (local)
 ```
+
+> **Note:** Smart Folders, global variables, keybindings, and all other application settings are stored inside `config.toml` — there is no separate `smart_folders.toml` file.
 
 **Git (Recommended):**
 ```bash
@@ -2462,6 +2469,8 @@ When connecting to a synced connection that references an unconfigured variable 
 **Sidebar sync indicators** show the current sync state for each synced group:
 - ⟳ (`emblem-synchronizing-symbolic`) — synced successfully, tooltip shows "Master — synced to cloud" or "Import — synced from cloud"
 - ⚠ (`dialog-warning-symbolic`) — last sync operation failed, tooltip shows the specific error (e.g. "Sync error: Parse error: invalid JSON")
+
+**Sync failure banner:** When a sync operation fails (manual *Sync Now* or background auto-export), a persistent `adw::Banner` appears below the header bar and stays until you dismiss it or the next successful sync clears it. Success messages still use transient toasts.
 
 ### Auto-Login with Stored Passwords
 
@@ -2809,6 +2818,7 @@ Note: Sidebar-scoped shortcuts (F2, Delete, Ctrl+E, Ctrl+D, Ctrl+C, Ctrl+V, Ctrl
 | Ctrl+C / Ctrl+V | Copy / Paste |
 | Ctrl+M | Move to Group |
 | Enter | Connect to selected |
+| Menu / Shift+F10 | Open context menu for selected row |
 
 ### Terminal
 
@@ -2868,6 +2878,8 @@ RustConn uses VTE, which passes all keystrokes to the shell. Configure vim/emacs
 | Ctrl+Shift+Backspace | Toggle Keyboard Passthrough |
 | Ctrl+Shift+B | Toggle Split Broadcast |
 | Ctrl+Q | Quit |
+
+> **Note:** Quitting with **Ctrl+Q** (or closing the window) while session tabs are open shows a "Close RustConn?" confirmation dialog with the number of open tabs, instead of silently disconnecting everything. This is skipped when minimize-to-tray is enabled (the app keeps running in the tray).
 
 ---
 

@@ -349,6 +349,7 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
 
             // Poll the export channel periodically and trigger debounced exports
             let state_poll = state_for_export.clone();
+            let sync_banner = window.sync_banner().clone();
             let debounce_ms = u64::from(debounce_secs.max(1)) * 1000;
             glib::timeout_add_local(std::time::Duration::from_millis(debounce_ms), move || {
                 // Drain all pending group IDs from the channel
@@ -365,9 +366,25 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
                                     connections = report.connections_added,
                                     "Auto-exported Master group"
                                 );
+                                // Successful sync clears the failure banner
+                                sync_banner.set_revealed(false);
                             }
                             Err(e) => {
                                 tracing::warn!(%e, "Auto-export failed");
+                                // Background failure would otherwise be
+                                // invisible — surface it in the persistent
+                                // sync banner (GNOME HIG: banner for state
+                                // that needs attention)
+                                let group_name = state_mut
+                                    .list_groups()
+                                    .iter()
+                                    .find(|g| g.id == *group_id)
+                                    .map_or_else(|| group_id.to_string(), |g| g.name.clone());
+                                crate::window::MainWindow::show_sync_error_banner(
+                                    &sync_banner,
+                                    &group_name,
+                                    &e,
+                                );
                                 // In Flatpak, show a one-time toast with actionable hint
                                 if rustconn_core::flatpak::is_flatpak()
                                     && e.contains("not configured")
@@ -849,15 +866,37 @@ fn setup_app_actions(
     let app_weak = app.downgrade();
     let state_clone = state.clone();
     let sidebar_rc = window.sidebar_rc();
+    let notebook_for_quit = window.notebook_rc();
+    let window_for_quit = window.gtk_window().downgrade();
     quit_action.connect_activate(move |_, _| {
-        // Save expanded groups state
-        let expanded = sidebar_rc.get_expanded_groups();
-        if let Ok(mut state_ref) = state_clone.try_borrow_mut() {
-            let _ = state_ref.update_expanded_groups(expanded);
+        let app_weak = app_weak.clone();
+        let state_clone = state_clone.clone();
+        let sidebar_rc = sidebar_rc.clone();
+
+        let do_quit = move || {
+            // Save expanded groups state
+            let expanded = sidebar_rc.get_expanded_groups();
+            if let Ok(mut state_ref) = state_clone.try_borrow_mut() {
+                let _ = state_ref.update_expanded_groups(expanded);
+            }
+            if let Some(app) = app_weak.upgrade() {
+                app.quit();
+            }
+        };
+
+        // Confirm before quitting with open session tabs (GNOME HIG) —
+        // Ctrl+Q goes through app.quit() and bypasses close_request, so
+        // the same confirmation dialog is shown here.
+        let open_sessions = notebook_for_quit.session_count();
+        if open_sessions > 0
+            && let Some(win) = window_for_quit.upgrade()
+        {
+            let dialog = crate::window::MainWindow::close_confirmation_dialog(open_sessions);
+            dialog.connect_response(Some("close"), move |_, _| do_quit());
+            dialog.present(Some(&win));
+            return;
         }
-        if let Some(app) = app_weak.upgrade() {
-            app.quit();
-        }
+        do_quit();
     });
     app.add_action(&quit_action);
 

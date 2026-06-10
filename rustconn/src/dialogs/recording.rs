@@ -803,7 +803,7 @@ impl RecordingsDialog {
             .heading(i18n("Error"))
             .body(message)
             .build();
-        alert.add_response("ok", &i18n("OK"));
+        alert.add_response("ok", &i18n("Close"));
         alert.set_default_response(Some("ok"));
         alert.set_close_response("ok");
         alert.present(Some(dlg));
@@ -815,7 +815,7 @@ impl RecordingsDialog {
             .heading(i18n("Error"))
             .body(message)
             .build();
-        alert.add_response("ok", &i18n("OK"));
+        alert.add_response("ok", &i18n("Close"));
         alert.set_default_response(Some("ok"));
         alert.set_close_response("ok");
         alert.present(Some(win));

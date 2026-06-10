@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.15.12
+Version:        0.15.13
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -41,6 +41,7 @@ BuildRequires:  pkgconfig(gtk4) >= 4.14
 BuildRequires:  pkgconfig(vte-2.91-gtk4)
 BuildRequires:  pkgconfig(libadwaita-1)
 BuildRequires:  pkgconfig(dbus-1)
+BuildRequires:  desktop-file-utils
 BuildRequires:  pkgconfig(openssl)
 BuildRequires:  zstd
 BuildRequires:  gcc
@@ -185,7 +186,9 @@ export PATH="$PWD/rust-toolchain/bin:$PATH"
 %if 0%{?suse_version}
 %{cargo_build} -p rustconn %{?adw_features} -p rustconn-cli
 %else
-cargo build --release -p rustconn %{?adw_features} -p rustconn-cli
+# --offline: belt-and-suspenders against accidental network access —
+# all crates come from the vendored sources configured in .cargo/config.toml
+cargo build --release --offline -p rustconn %{?adw_features} -p rustconn-cli
 %endif
 
 %install
@@ -193,6 +196,7 @@ install -Dm755 target/release/rustconn %{buildroot}%{_bindir}/rustconn
 install -Dm755 target/release/rustconn-cli %{buildroot}%{_bindir}/rustconn-cli
 install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.desktop \
     %{buildroot}%{_datadir}/applications/io.github.totoshko88.RustConn.desktop
+desktop-file-validate %{buildroot}%{_datadir}/applications/io.github.totoshko88.RustConn.desktop
 install -Dm644 rustconn/assets/io.github.totoshko88.RustConn-rdp.xml \
     %{buildroot}%{_datadir}/mime/packages/io.github.totoshko88.RustConn-rdp.xml
 install -Dm644 rustconn/assets/io.github.totoshko88.RustConn-vv.xml \
@@ -238,6 +242,18 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Wed Jun 10 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.13-0
+- Added Menu key / Shift+F10 to open the sidebar context menu for the selected row — keyboard fallback where right-click on nested rows is unreliable (#157)
+- Added confirmation before closing with open session tabs (window close button and Ctrl+Q share one dialog; skipped with minimize-to-tray)
+- Added a recording indicator (red dot) in the sidebar while any session of a connection is being recorded
+- Added import duplicate handling — Cancel / Skip Duplicates / Import All instead of silently creating renamed copies
+- Added a persistent cloud-sync failure banner (manual Sync Now and background auto-export); transient toasts kept for success only
+- Added touch long-press to open the sidebar context menu
+- Improved context-menu keyboard navigation and screen-reader roles, error message wording (GNOME HIG), and 44x44 px sidebar tap targets
+- Fixed sidebar context menu not opening for rows nested deeper than the root level on some systems (KDE Plasma) (#157)
+- Fixed crash (SIGSEGV) in pango when opening a new SSH tab or on screen unlock — refresh VTE fonts on fontconfig change, defer child-exited work to idle (#171)
+- Updated crypto-primes 0.7.0 -> 0.7.1, ksni 0.3.4 -> 0.3.5, regex 1.12.3 -> 1.12.4, zerocopy 0.8.50 -> 0.8.52
+
 * Tue Jun 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.12-0
 - Fixed macOS SSH password authentication always failing with "Permission denied" — native PTY child now claims the slave PTY as its controlling terminal (setsid + TIOCSCTTY) (#175)
 - Added rustconn-pty-sys crate to isolate the controlling-terminal FFI (pre_exec) so the main crates keep unsafe_code = "forbid"

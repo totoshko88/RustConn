@@ -111,6 +111,9 @@ jobs:
           sed -i "s/^Version:.*$/Version:        $VERSION/" "$OBS_DIR/rustconn.spec"
           sed -i "s/^Version:.*$/Version: $VERSION-1/" "$OBS_DIR/debian.dsc"
           sed -i "s/^DEBTRANSFORM-TAR:.*$/DEBTRANSFORM-TAR: rustconn-$VERSION.tar.xz/" "$OBS_DIR/debian.dsc"
+          # AppImageBuilder.yml is the only packaging file not covered by
+          # the other seds — keep its version in sync too
+          sed -i "s/^    version: .*$/    version: $VERSION/" "$OBS_DIR/AppImageBuilder.yml"
           
           DATE_RFC2822=$(date -R)
           NEW_ENTRY="rustconn ($VERSION-1) unstable; urgency=medium\n"

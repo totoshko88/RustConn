@@ -249,8 +249,15 @@ jobs:
 
       - name: Download linuxdeploy
         run: |
-          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-          wget -q https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh
+          # linuxdeploy ships only a "continuous" tag whose artifacts are
+          # rebuilt (checksums are not stable) — retry + ELF sanity check.
+          # The GTK plugin is a plain script: pin commit + checksum.
+          wget -q --tries=5 --waitretry=10 https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          file linuxdeploy-x86_64.AppImage | grep -q 'ELF 64-bit' || { echo "::error::linuxdeploy download is not an ELF binary"; exit 1; }
+          GTK_PLUGIN_COMMIT=3b67a1d1c1b0c8268f57f2bce40fe2d33d409cea
+          GTK_PLUGIN_SHA256=b0f4cbc684a0103a9651f0955b635eaea0096b3a66c0f5a2c2aa337960375171
+          wget -q "https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gtk/${GTK_PLUGIN_COMMIT}/linuxdeploy-plugin-gtk.sh"
+          echo "${GTK_PLUGIN_SHA256}  linuxdeploy-plugin-gtk.sh" | sha256sum -c -
           chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-gtk.sh
 
       - name: Prepare AppDir
@@ -337,7 +344,16 @@ jobs:
         continue-on-error: true
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAP_STORE_TOKEN }}
-        run: snapcraft upload ${{ steps.build.outputs.snap }} --release edge
+        # Channel layout since snapcraft.io Builds (Launchpad) was enabled:
+        #   edge      — rolling builds from main, auto-published by the
+        #               snapcraft.io build service (do NOT upload here: two
+        #               publishers racing for edge produce confusing history)
+        #   candidate — tagged release builds from this workflow (exact
+        #               released code, CI provenance)
+        #   stable    — manual promote of a tested candidate revision;
+        #               "Update metadata on release" then syncs the store
+        #               listing from that revision's snapcraft.yaml
+        run: snapcraft upload ${{ steps.build.outputs.snap }} --release candidate
 
   build-flatpak:
     name: Build Flatpak
@@ -355,7 +371,12 @@ jobs:
 
       - name: Generate cargo sources
         run: |
-          wget -q https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/master/cargo/flatpak-cargo-generator.py
+          # Pinned commit + checksum: this script shapes which sources end
+          # up in the Flatpak build (supply-chain hygiene)
+          FBT_COMMIT=737c0085912f9f7dabf9341d4608e2a77a51a73a
+          FBT_SHA256=b373c8ab1a05378ec5d8ed0645c7b127bcec7d2f7a1798694fbc627d570d856c
+          wget -q "https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/${FBT_COMMIT}/cargo/flatpak-cargo-generator.py"
+          echo "${FBT_SHA256}  flatpak-cargo-generator.py" | sha256sum -c -
           chmod +x flatpak-cargo-generator.py
           python3 flatpak-cargo-generator.py Cargo.lock -o packaging/flatpak/cargo-sources.json
           cp packaging/flatpak/cargo-sources.json packaging/flathub/cargo-sources.json
@@ -705,6 +726,9 @@ jobs:
           # Update debian.dsc version and tarball name
           sed -i "s/^Version:.*$/Version: $VERSION-1/" "$OBS_DIR/debian.dsc"
           sed -i "s/^DEBTRANSFORM-TAR:.*$/DEBTRANSFORM-TAR: rustconn-$VERSION.tar.xz/" "$OBS_DIR/debian.dsc"
+          # AppImageBuilder.yml is the only packaging file not covered by
+          # the other seds — keep its version in sync too
+          sed -i "s/^    version: .*$/    version: $VERSION/" "$OBS_DIR/AppImageBuilder.yml"
           
           # Update debian.changelog — prepend new entry
           DATE_RFC2822=$(date -R)
@@ -763,7 +787,10 @@ jobs:
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
           URL="https://github.com/totoshko88/RustConn/archive/refs/tags/v${VERSION}.tar.gz"
-          curl -sL "$URL" -o source.tar.gz
+          # Retry: the tag tarball may not be replicated to all CDN nodes
+          # in the first seconds after the release is created
+          curl --retry 5 --retry-delay 10 --retry-all-errors -sL "$URL" -o source.tar.gz
+          tar -tzf source.tar.gz > /dev/null || { echo "::error::Downloaded tarball is corrupt"; exit 1; }
           SHA256=$(sha256sum source.tar.gz | cut -d' ' -f1)
           echo "SHA256=${SHA256}" >> $GITHUB_OUTPUT
           echo "Source tarball SHA256: ${SHA256}"

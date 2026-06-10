@@ -140,6 +140,21 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.15.13" date="2026-06-10">
+      <description>
+        <p>Version 0.15.13 — sidebar accessibility, safer closing, and a crash fix:</p>
+        <ul>
+          <li>Menu key / Shift+F10 opens the sidebar context menu for the selected row, with keyboard navigation and screen-reader support (#157)</li>
+          <li>Confirmation before closing with open session tabs, so active connections are not lost by accident</li>
+          <li>A recording indicator in the sidebar while a session is being recorded</li>
+          <li>Import duplicate handling — choose to skip duplicates or import all</li>
+          <li>A persistent banner when cloud sync fails, instead of a disappearing toast</li>
+          <li>Touch long-press opens the sidebar context menu</li>
+          <li>Fixed the sidebar context menu not opening for deeply nested rows on some systems (#157)</li>
+          <li>Fixed a crash when opening a new SSH tab or unlocking the screen after a font change (#171)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.15.12" date="2026-06-09">
       <description>
         <p>Version 0.15.12 — macOS SSH connection fix:</p>

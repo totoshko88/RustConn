@@ -1,6 +1,6 @@
 name: rustconn
 base: core24
-version: '0.15.12'
+version: '0.15.13'
 title: RustConn
 summary: Manage remote connections easily
 description: |
@@ -161,6 +161,9 @@ apps:
       - home
       - ssh-keys
       - serial-port
+      # Keyring access for `rustconn-cli secret` — keep in sync with the
+      # GUI app plugs above
+      - password-manager-service
       - aws-credentials
       - gcloud-credentials
       - azure-credentials

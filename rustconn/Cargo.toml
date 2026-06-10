@@ -111,4 +111,4 @@ redundant_closure = "allow"
 nix = { version = "0.31", features = ["term", "process", "signal"] }
 # Isolated FFI helper for the native PTY controlling-terminal setup (#175).
 # Lives in its own crate because it contains the workspace's only `unsafe`.
-rustconn-pty-sys = { path = "../rustconn-pty-sys", version = "0.15.12" }
+rustconn-pty-sys = { path = "../rustconn-pty-sys", version = "0.15.13" }

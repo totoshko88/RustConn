@@ -144,7 +144,7 @@ impl ClusterDialog {
 
             if selected_ids.is_empty() {
                 crate::toast::show_error_toast_on_active_window(&i18n(
-                    "Please select at least one connection",
+                    "Select at least one connection",
                 ));
                 return;
             }
