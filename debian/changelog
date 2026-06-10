@@ -1,3 +1,18 @@
+rustconn (0.15.14-1) unstable; urgency=medium
+
+  * External RDP/VNC sessions no longer freeze the window for 1.5s on
+    connect — non-blocking spawn with 250ms poll for early failures
+  * Tray messages are now event-driven instead of polled — async-channel
+    awaited on the main context, no wakeups when idle
+  * Secret backend detection in Settings is parallel and cached (30s) —
+    scoped threads instead of sequential, 50ms timer instead of idle loop
+  * Connection history writes are debounced (2s) and off the main thread
+  * One suggested action per dialog (GNOME HIG)
+  * Added async-channel 2.5.0
+  * Updated crypto-primes 0.7.1 -> 0.7.2
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Thu, 11 Jun 2026 12:00:00 +0200
+
 rustconn (0.15.13-1) unstable; urgency=medium
 
   * Added Menu key / Shift+F10 to open the sidebar context menu for the

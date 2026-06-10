@@ -6,6 +6,7 @@
 use crate::i18n::{i18n, i18n_f};
 
 /// Results of background CLI detection for all secret backends
+#[derive(Clone)]
 #[expect(
     clippy::struct_excessive_bools,
     reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
@@ -30,18 +31,97 @@ pub(super) struct SecretCliDetection {
     pub secret_tool_available: bool,
 }
 
+/// Cached detection result: probing spawns ~10 child processes, so reuse
+/// the result when the settings dialog is reopened shortly after.
+/// Vault lock/unlock actions in the dialog refresh their status labels
+/// directly (not through this cache), so staleness is bounded to reopen.
+static DETECTION_CACHE: std::sync::Mutex<Option<(std::time::Instant, SecretCliDetection)>> =
+    std::sync::Mutex::new(None);
+
+/// 30s keeps reopen instant while bounding stale backend status.
+const DETECTION_CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(30);
+
 /// Runs all secret backend CLI detection on a background thread.
 /// This function is `Send` and performs no GTK calls.
+///
+/// Results are cached for [`DETECTION_CACHE_TTL`]; independent backends are
+/// probed in parallel so total latency equals the slowest probe, not the sum.
 pub(super) fn detect_secret_backends() -> SecretCliDetection {
-    // KeePassXC
+    if let Ok(guard) = DETECTION_CACHE.lock()
+        && let Some((detected_at, cached)) = guard.as_ref()
+        && detected_at.elapsed() < DETECTION_CACHE_TTL
+    {
+        return cached.clone();
+    }
+
+    let detection = run_detection();
+
+    if let Ok(mut guard) = DETECTION_CACHE.lock() {
+        *guard = Some((std::time::Instant::now(), detection.clone()));
+    }
+    detection
+}
+
+/// Probes every backend in parallel scoped threads.
+///
+/// Each probe only spawns short-lived child processes (`--version`,
+/// `status`), so a panic is a programming bug; in that case the backend is
+/// reported as not installed rather than poisoning the whole detection.
+fn run_detection() -> SecretCliDetection {
+    std::thread::scope(|scope| {
+        let keepassxc = scope.spawn(detect_keepassxc);
+        let bitwarden = scope.spawn(detect_bitwarden);
+        let onepassword = scope.spawn(detect_onepassword);
+        let passbolt = scope.spawn(detect_passbolt);
+        let pass = scope.spawn(detect_pass);
+        let secret_tool = scope.spawn(detect_secret_tool);
+
+        let keepassxc_version = keepassxc.join().unwrap_or_default();
+        let (bitwarden_installed, bitwarden_cmd, bitwarden_version, bitwarden_status) = bitwarden
+            .join()
+            .unwrap_or_else(|_| (false, "bw".to_string(), None, None));
+        let (onepassword_installed, onepassword_cmd, onepassword_version, onepassword_status) =
+            onepassword
+                .join()
+                .unwrap_or_else(|_| (false, "op".to_string(), None, None));
+        let (passbolt_installed, passbolt_version, passbolt_status, passbolt_server_url) =
+            passbolt.join().unwrap_or_default();
+        let (pass_version, pass_status) = pass.join().unwrap_or_default();
+        let secret_tool_available = secret_tool.join().unwrap_or_default();
+
+        SecretCliDetection {
+            keepassxc_version,
+            bitwarden_installed,
+            bitwarden_cmd,
+            bitwarden_version,
+            bitwarden_status,
+            onepassword_installed,
+            onepassword_cmd,
+            onepassword_version,
+            onepassword_status,
+            passbolt_installed,
+            passbolt_version,
+            passbolt_status,
+            passbolt_server_url,
+            pass_version,
+            pass_status,
+            secret_tool_available,
+        }
+    })
+}
+
+/// Detects the KeePassXC CLI version
+fn detect_keepassxc() -> Option<String> {
     let keepassxc_installed = rustconn_core::flatpak::is_host_command_available("keepassxc-cli");
-    let keepassxc_version = if keepassxc_installed {
+    if keepassxc_installed {
         get_cli_version("keepassxc-cli", &["--version"])
     } else {
         None
-    };
+    }
+}
 
-    // Bitwarden
+/// Detects the Bitwarden CLI: `(installed, cmd, version, status)`
+fn detect_bitwarden() -> (bool, String, Option<String>, Option<(String, &'static str)>) {
     let mut bw_paths: Vec<String> = vec!["bw".to_string()];
     if !rustconn_core::flatpak::is_flatpak() {
         bw_paths.extend(["/snap/bin/bw".to_string(), "/usr/local/bin/bw".to_string()]);
@@ -83,7 +163,16 @@ pub(super) fn detect_secret_backends() -> SecretCliDetection {
         None
     };
 
-    // 1Password
+    (
+        bitwarden_installed,
+        bitwarden_cmd,
+        bitwarden_version,
+        bitwarden_status,
+    )
+}
+
+/// Detects the 1Password CLI: `(installed, cmd, version, status)`
+fn detect_onepassword() -> (bool, String, Option<String>, Option<(String, &'static str)>) {
     let mut op_paths: Vec<String> = vec!["op".to_string()];
     if !rustconn_core::flatpak::is_flatpak() {
         op_paths.push("/usr/local/bin/op".to_string());
@@ -125,7 +214,21 @@ pub(super) fn detect_secret_backends() -> SecretCliDetection {
         None
     };
 
-    // Passbolt
+    (
+        onepassword_installed,
+        onepassword_cmd,
+        onepassword_version,
+        onepassword_status,
+    )
+}
+
+/// Detects the Passbolt CLI: `(installed, version, status, server_url)`
+fn detect_passbolt() -> (
+    bool,
+    Option<String>,
+    Option<(String, &'static str)>,
+    Option<String>,
+) {
     let mut passbolt_paths: Vec<String> = vec!["passbolt".to_string()];
     if !rustconn_core::flatpak::is_flatpak() {
         passbolt_paths.push("/usr/local/bin/passbolt".to_string());
@@ -165,7 +268,16 @@ pub(super) fn detect_secret_backends() -> SecretCliDetection {
     };
     let passbolt_server_url = read_passbolt_server_url_sync();
 
-    // Pass
+    (
+        passbolt_installed,
+        passbolt_version,
+        passbolt_status,
+        passbolt_server_url,
+    )
+}
+
+/// Detects the `pass` password store: `(version, status)`
+fn detect_pass() -> (Option<String>, Option<(String, &'static str)>) {
     let pass_version = if let Ok(output) = std::process::Command::new("pass")
         .arg("--version")
         .stdout(std::process::Stdio::piped())
@@ -221,32 +333,17 @@ pub(super) fn detect_secret_backends() -> SecretCliDetection {
         None
     };
 
-    // Check secret-tool availability (for system keyring operations)
-    let secret_tool_available = std::process::Command::new("which")
+    (pass_version, pass_status)
+}
+
+/// Checks `secret-tool` availability (for system keyring operations)
+fn detect_secret_tool() -> bool {
+    std::process::Command::new("which")
         .arg("secret-tool")
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .status()
-        .is_ok_and(|s| s.success());
-
-    SecretCliDetection {
-        keepassxc_version,
-        bitwarden_installed,
-        bitwarden_cmd,
-        bitwarden_version,
-        bitwarden_status,
-        onepassword_installed,
-        onepassword_cmd,
-        onepassword_version,
-        onepassword_status,
-        passbolt_installed,
-        passbolt_version,
-        passbolt_status,
-        passbolt_server_url,
-        pass_version,
-        pass_status,
-        secret_tool_available,
-    }
+        .is_ok_and(|s| s.success())
 }
 
 /// Gets CLI version from command output

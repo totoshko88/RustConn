@@ -433,6 +433,8 @@ impl AppState {
     /// Includes a 5-second timeout to prevent hanging on shutdown if the
     /// persistence layer is unresponsive.
     pub fn flush_persistence(&self) -> Result<(), String> {
+        // History saves are debounced; write any pending changes before exit.
+        self.flush_history_if_dirty();
         with_runtime(|rt| {
             rt.block_on(async {
                 tokio::time::timeout(

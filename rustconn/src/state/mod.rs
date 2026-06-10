@@ -183,6 +183,11 @@ pub struct AppState {
     clipboard: ConnectionClipboard,
     /// Connection history entries
     history_entries: Vec<ConnectionHistoryEntry>,
+    /// Whether `history_entries` has unsaved changes (see `mark_history_dirty`)
+    history_dirty: std::cell::Cell<bool>,
+    /// Wakes the debounced history flusher in `app.rs`; `None` until the
+    /// flusher is installed (or in tests), in which case saves are immediate
+    history_dirty_tx: Option<async_channel::Sender<()>>,
     /// Cached secret backend availability (updated on init and settings change)
     secret_backend_available: Option<bool>,
     /// Cloud Sync manager for export/import operations
@@ -498,6 +503,8 @@ impl AppState {
             password_cache: HashMap::new(),
             clipboard: ConnectionClipboard::new(),
             history_entries,
+            history_dirty: std::cell::Cell::new(false),
+            history_dirty_tx: None,
             secret_backend_available: None,
             sync_manager,
             folder_tracker: Arc::new(std::sync::Mutex::new(FolderConnectionTracker::new())),

@@ -802,7 +802,31 @@ fn start_external_rdp_session(
         .map(|f| (f.share_name.clone(), f.local_path.clone()))
         .collect();
 
-    // Start RDP connection using xfreerdp
+    // Early-failure callback: FreeRDP exited with an error within the
+    // detection window (certificate/auth problems). The tab has already been
+    // added by then, so undo the optimistic success path.
+    let on_early_failure = {
+        let state = state.clone();
+        let notebook = notebook.clone();
+        let sidebar = sidebar.clone();
+        let conn_name = conn_name.to_string();
+        let connection_id_str = connection_id.to_string();
+        move |error: String| {
+            tracing::error!(%error, connection = %conn_name, "RDP session failed shortly after start");
+            notebook.close_tab(session_id);
+            sidebar.decrement_session_count(&connection_id_str, false);
+            sidebar.update_connection_status(&connection_id_str, "failed");
+            crate::toast::show_error_toast_on_active_window(&error);
+            if let Some(entry_id) = history_entry_id
+                && let Ok(mut state_mut) = state.try_borrow_mut()
+            {
+                state_mut.record_connection_failed(entry_id, &error);
+            }
+        }
+    };
+
+    // Start RDP connection using xfreerdp (non-blocking: spawn errors are
+    // returned synchronously, early exits arrive via on_early_failure)
     let connection_failed = if let Err(e) = RdpLauncher::start_with_geometry(
         &tab,
         host,
@@ -816,6 +840,7 @@ fn start_external_rdp_session(
         false,
         &shared_folders,
         rdp_config.ignore_certificate,
+        on_early_failure,
     ) {
         tracing::error!(%e, connection = %conn_name, "Failed to start RDP session");
         sidebar.update_connection_status(&connection_id.to_string(), "failed");

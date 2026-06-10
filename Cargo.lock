@@ -273,6 +273,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-channel"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "924ed96dd52d1b75e9c1a3e6275715fd320f5f9439fb5a4a11fa51f4221158d2"
+dependencies = [
+ "concurrent-queue",
+ "event-listener-strategy",
+ "futures-core",
+ "pin-project-lite",
+]
+
+[[package]]
 name = "async-dnssd"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1131,12 +1143,11 @@ dependencies = [
 
 [[package]]
 name = "crypto-primes"
-version = "0.7.1"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34caa94a67aadf36b12807811390033f73eff0e3789feb596925ace787b13efe"
+checksum = "3633a51a39c69ebbaa4feaa694bd83d241e4093901c84a0963b19d9bb3f0cf8f"
 dependencies = [
  "crypto-bigint",
- "libm",
  "rand_core 0.10.1",
 ]
 
@@ -5139,8 +5150,9 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.15.13"
+version = "0.15.14"
 dependencies = [
+ "async-channel",
  "chrono",
  "cpal",
  "dirs",
@@ -5173,7 +5185,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.15.13"
+version = "0.15.14"
 dependencies = [
  "chrono",
  "clap",
@@ -5195,7 +5207,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.15.13"
+version = "0.15.14"
 dependencies = [
  "ar",
  "argon2",
@@ -5247,7 +5259,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-pty-sys"
-version = "0.15.13"
+version = "0.15.14"
 dependencies = [
  "libc",
 ]

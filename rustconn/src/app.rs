@@ -152,6 +152,10 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
         }
     };
 
+    // Install the debounced connection-history flusher (writes happen on a
+    // background thread instead of inline in the connect/disconnect paths)
+    setup_history_flush(&state);
+
     // Apply saved color scheme from settings
     apply_saved_color_scheme(&state);
 
@@ -249,9 +253,12 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     // Set up application actions
     setup_app_actions(app, &window, &state, tray_manager.clone());
 
-    // Set up tray message polling
+    // Set up tray message handling and state sync (skipped entirely when
+    // the tray is disabled — no tray will ever be created in that case)
     let tray_shutdown = tray_manager.clone();
-    setup_tray_polling(app, &window, state.clone(), tray_manager);
+    if enable_tray {
+        setup_tray_handling(app, &window, state.clone(), tray_manager);
+    }
 
     // Connect shutdown signal to flush persistence and drop tray manager.
     // Dropping the tray manager before GTK tears down widgets prevents
@@ -652,10 +659,11 @@ struct TrayStateCache {
 
 /// Sets up event-driven tray message handling and periodic state sync.
 ///
-/// Tray messages (user clicks) are checked every 50ms via lightweight
-/// `try_recv()`. Tray state (session count, recent connections) is synced
-/// every 2 seconds with dirty-flag tracking to minimize D-Bus calls.
-fn setup_tray_polling(
+/// Tray messages (user clicks) arrive over an `async_channel` and are
+/// awaited on the main context, so the main loop only wakes on real events
+/// instead of polling. Tray state (session count, recent connections) is
+/// synced every 2 seconds with dirty-flag tracking to minimize D-Bus calls.
+fn setup_tray_handling(
     app: &adw::Application,
     window: &MainWindow,
     state: SharedAppState,
@@ -664,28 +672,49 @@ fn setup_tray_polling(
     let app_weak = app.downgrade();
     let window_weak = window.gtk_window().downgrade();
 
-    // --- Fast message polling (50ms) ---
-    // Only checks try_recv() which is non-blocking and very cheap.
+    // --- Event-driven message handling ---
+    // The tray is created asynchronously (background D-Bus registration on
+    // Linux, delayed retries on macOS), so first wait for it to appear,
+    // then await messages with no further wakeups.
     let tray_for_msgs = tray_manager.clone();
     let app_for_msgs = app_weak;
     let window_for_msgs = window_weak;
-    glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
-        let Some(app) = app_for_msgs.upgrade() else {
-            return glib::ControlFlow::Break;
+    glib::spawn_future_local(async move {
+        // Tray init normally completes within ~5s (macOS retries take up
+        // to ~16s). Give up after 30s (120 × 250ms) — creation failed.
+        const STARTUP_WAIT_TICKS: u32 = 120;
+        let mut ticks = 0u32;
+        let receiver = loop {
+            let maybe_rx = tray_for_msgs
+                .borrow()
+                .as_ref()
+                .map(TrayManager::message_receiver);
+            if let Some(rx) = maybe_rx {
+                break rx;
+            }
+            ticks += 1;
+            if ticks > STARTUP_WAIT_TICKS {
+                return;
+            }
+            glib::timeout_future(std::time::Duration::from_millis(250)).await;
         };
 
-        // Stop polling if the window has been finalized to avoid
-        // interacting with stale GTK objects.
-        if window_for_msgs.upgrade().is_none() {
-            return glib::ControlFlow::Break;
-        }
+        while let Ok(msg) = receiver.recv().await {
+            let Some(app) = app_for_msgs.upgrade() else {
+                break;
+            };
 
-        let tray_ref = tray_for_msgs.borrow();
-        let Some(tray) = tray_ref.as_ref() else {
-            return glib::ControlFlow::Continue;
-        };
+            // Stop handling if the window has been finalized to avoid
+            // interacting with stale GTK objects.
+            if window_for_msgs.upgrade().is_none() {
+                break;
+            }
 
-        while let Some(msg) = tray.try_recv() {
+            let tray_ref = tray_for_msgs.borrow();
+            let Some(tray) = tray_ref.as_ref() else {
+                break;
+            };
+
             match msg {
                 TrayMessage::ShowWindow => {
                     if let Some(win) = window_for_msgs.upgrade() {
@@ -749,8 +778,6 @@ fn setup_tray_polling(
                 }
             }
         }
-
-        glib::ControlFlow::Continue
     });
 
     // --- Slow state sync (2 seconds) ---
@@ -775,6 +802,49 @@ fn setup_tray_polling(
         tray.set_window_visible(win.is_visible());
         update_tray_state(tray, &state_clone, &mut state_cache.borrow_mut());
         glib::ControlFlow::Continue
+    });
+}
+
+/// Installs the debounced connection-history flusher.
+///
+/// `record_connection_*` used to serialize and write `history.toml` inline
+/// on the GTK main thread (twice per session). Instead they now mark the
+/// history dirty and wake this task, which coalesces a burst of changes
+/// into a single write performed on a background thread.
+fn setup_history_flush(state: &SharedAppState) {
+    /// Changes arriving within this window are written together; small
+    /// enough that history survives crashes, large enough to coalesce a
+    /// session's start/end pair.
+    const DEBOUNCE: std::time::Duration = std::time::Duration::from_secs(2);
+
+    let (tx, rx) = async_channel::unbounded::<()>();
+    state.borrow_mut().set_history_dirty_sender(tx.clone());
+    let state_weak = std::rc::Rc::downgrade(state);
+
+    glib::spawn_future_local(async move {
+        while rx.recv().await.is_ok() {
+            glib::timeout_future(DEBOUNCE).await;
+            // Drain wake-ups that accumulated during the debounce window.
+            while rx.try_recv().is_ok() {}
+
+            let Some(state) = state_weak.upgrade() else {
+                break;
+            };
+            let Ok(state_ref) = state.try_borrow() else {
+                // State is borrowed right now — retry on the next wake-up.
+                let _ = tx.try_send(());
+                continue;
+            };
+            let snapshot = state_ref.take_history_snapshot_if_dirty();
+            drop(state_ref);
+            if let Some((config_manager, entries)) = snapshot {
+                std::thread::spawn(move || {
+                    if let Err(e) = config_manager.save_history(&entries) {
+                        tracing::error!(%e, "Failed to save connection history");
+                    }
+                });
+            }
+        }
     });
 }
 

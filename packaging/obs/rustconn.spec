@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.15.13
+Version:        0.15.14
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -242,6 +242,15 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Thu Jun 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.14-0
+- External RDP/VNC sessions no longer freeze the window for 1.5s on connect — non-blocking spawn with 250ms poll
+- Tray messages are now event-driven instead of polled (async-channel)
+- Secret backend detection in Settings is parallel and cached (30s)
+- Connection history writes are debounced (2s) and off the main thread
+- One suggested action per dialog (GNOME HIG)
+- Added async-channel 2.5.0
+- Updated crypto-primes 0.7.1 -> 0.7.2
+
 * Wed Jun 10 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.13-0
 - Added Menu key / Shift+F10 to open the sidebar context menu for the selected row — keyboard fallback where right-click on nested rows is unreliable (#157)
 - Added confirmation before closing with open session tabs (window close button and Ctrl+Q share one dialog; skipped with minimize-to-tray)

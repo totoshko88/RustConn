@@ -231,7 +231,7 @@ impl AppState {
         let entry_id = entry.id;
         self.history_entries.push(entry);
         self.trim_history();
-        let _ = self.save_history();
+        self.mark_history_dirty();
         entry_id
     }
 
@@ -239,7 +239,7 @@ impl AppState {
     pub fn record_connection_end(&mut self, entry_id: Uuid) {
         if let Some(entry) = self.history_entries.iter_mut().find(|e| e.id == entry_id) {
             entry.end();
-            let _ = self.save_history();
+            self.mark_history_dirty();
         }
     }
 
@@ -247,7 +247,54 @@ impl AppState {
     pub fn record_connection_failed(&mut self, entry_id: Uuid, error: &str) {
         if let Some(entry) = self.history_entries.iter_mut().find(|e| e.id == entry_id) {
             entry.fail(error);
+            self.mark_history_dirty();
+        }
+    }
+
+    /// Installs the sender that wakes the debounced history flusher in
+    /// `app.rs`. Until installed, history changes are saved immediately.
+    pub fn set_history_dirty_sender(&mut self, sender: async_channel::Sender<()>) {
+        self.history_dirty_tx = Some(sender);
+    }
+
+    /// Marks history as needing a save.
+    ///
+    /// With a flusher installed this only wakes it (the actual disk write is
+    /// debounced and runs off the main thread); without one it saves
+    /// immediately, preserving the old behavior for tests.
+    fn mark_history_dirty(&self) {
+        self.history_dirty.set(true);
+        if let Some(tx) = &self.history_dirty_tx {
+            let _ = tx.try_send(());
+        } else {
             let _ = self.save_history();
+            self.history_dirty.set(false);
+        }
+    }
+
+    /// Synchronously saves history if it has unsaved changes (shutdown path)
+    pub(crate) fn flush_history_if_dirty(&self) {
+        if self.history_dirty.get() {
+            if let Err(e) = self.save_history() {
+                tracing::error!(%e, "Failed to flush connection history");
+            }
+            self.history_dirty.set(false);
+        }
+    }
+
+    /// Takes a snapshot for an off-main-thread save and clears the dirty
+    /// flag. Returns `None` when there is nothing to save.
+    pub(crate) fn take_history_snapshot_if_dirty(
+        &self,
+    ) -> Option<(
+        rustconn_core::config::ConfigManager,
+        Vec<ConnectionHistoryEntry>,
+    )> {
+        if self.history_dirty.get() {
+            self.history_dirty.set(false);
+            Some((self.config_manager.clone(), self.history_entries.clone()))
+        } else {
+            None
         }
     }
 
