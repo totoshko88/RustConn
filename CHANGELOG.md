@@ -5,6 +5,21 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.14] - 2026-06-11
+
+### Improved
+
+- **External RDP/VNC sessions no longer freeze the window for 1.5 s on connect** — launching FreeRDP blocked the GTK main thread with a `sleep(1500ms)` used to catch immediate failures (certificate/auth errors). The launcher now returns right after spawn and watches the process with a non-blocking 250 ms poll over the same 1.5 s window; early failures still close the tab, show the parsed FreeRDP error toast, and record the failure in history
+- **Tray messages are now event-driven instead of polled** — the main loop woke ~20×/second to `try_recv()` tray clicks even when idle, costing CPU and battery on laptops. Tray menu events (Linux ksni, macOS) now arrive over an `async-channel` awaited on the main context, so the loop only wakes on real clicks; tray handling is skipped entirely when the tray icon is disabled in settings
+- **Secret backend detection in Settings is parallel and cached** — probing KeePassXC, Bitwarden, 1Password, Passbolt, pass and secret-tool spawned 10+ CLI processes sequentially (1–5 s before statuses appeared). Probes now run in parallel scoped threads (latency = slowest probe) and the result is cached for 30 s, making a quick reopen of Settings instant; the result-delivery loop also no longer spins the main loop at 100% CPU while detection runs (idle source → 50 ms timer)
+- **Connection history writes are debounced and off the main thread** — every session start/end serialized and wrote `history.toml` inline on the GTK main thread (twice per session). Changes now mark history dirty and a flusher coalesces a 2 s burst into a single write on a background thread; pending changes are flushed on shutdown
+- **One suggested action per dialog (GNOME HIG)** — "Add Variable"/"Add Property" in the connection dialog's Data tab no longer compete with the dialog's primary action for the suggested style, and the tunnel wizard hides its "Next" footer button while the empty-state "New SSH Connection" call-to-action is shown
+
+### Dependencies
+
+- **Added**: async-channel 2.5.0 (event-driven tray message delivery)
+- **Updated**: crypto-primes 0.7.1→0.7.2
+
 ## [0.15.13] - 2026-06-10
 
 ### Added

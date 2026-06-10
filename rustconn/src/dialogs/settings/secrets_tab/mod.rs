@@ -1345,86 +1345,90 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         });
 
         // Poll the channel from the main thread; GTK widgets stay here.
-        glib::idle_add_local(move || match rx.try_recv() {
-            Ok(det) => {
-                // Store detected command paths
-                *bw_cmd_rc.borrow_mut() = det.bitwarden_cmd.clone();
-                rustconn_core::secret::set_bw_cmd(&det.bitwarden_cmd);
-                *op_cmd_rc.borrow_mut() = det.onepassword_cmd;
+        // 50ms timeout instead of idle_add_local: an idle source would spin
+        // the main loop at 100% CPU until the detection thread finishes.
+        glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+            match rx.try_recv() {
+                Ok(det) => {
+                    // Store detected command paths
+                    *bw_cmd_rc.borrow_mut() = det.bitwarden_cmd.clone();
+                    rustconn_core::secret::set_bw_cmd(&det.bitwarden_cmd);
+                    *op_cmd_rc.borrow_mut() = det.onepassword_cmd;
 
-                // Store versions for dropdown callback
-                *kpxc_ver.borrow_mut() = det.keepassxc_version.clone();
-                *bw_ver.borrow_mut() = det.bitwarden_version.clone();
-                *op_ver.borrow_mut() = det.onepassword_version.clone();
-                *pb_ver.borrow_mut() = det.passbolt_version.clone();
-                *pass_ver.borrow_mut() = det.pass_version.clone();
-                *det_complete.borrow_mut() = true;
-                *st_avail.borrow_mut() = Some(det.secret_tool_available);
+                    // Store versions for dropdown callback
+                    *kpxc_ver.borrow_mut() = det.keepassxc_version.clone();
+                    *bw_ver.borrow_mut() = det.bitwarden_version.clone();
+                    *op_ver.borrow_mut() = det.onepassword_version.clone();
+                    *pb_ver.borrow_mut() = det.passbolt_version.clone();
+                    *pass_ver.borrow_mut() = det.pass_version.clone();
+                    *det_complete.borrow_mut() = true;
+                    *st_avail.borrow_mut() = Some(det.secret_tool_available);
 
-                // Update version label for currently selected backend
-                let selected = dropdown.selected();
-                let cur_ver = match selected {
-                    0 => &det.keepassxc_version,
-                    2 => &det.bitwarden_version,
-                    3 => &det.onepassword_version,
-                    4 => &det.passbolt_version,
-                    5 => &det.pass_version,
-                    _ => &None,
-                };
-                version_label.remove_css_class("dim-label");
-                version_label.remove_css_class("error");
-                version_label.remove_css_class("success");
-                if selected == 1 {
-                    version_row.set_visible(false);
-                } else if let Some(v) = cur_ver {
-                    version_label.set_text(&format!("v{v}"));
-                    version_label.add_css_class("success");
-                } else {
-                    version_label.set_text(&i18n("Not installed"));
-                    version_label.add_css_class("error");
-                }
-
-                // Update Bitwarden status
-                bw_unlock_btn.set_sensitive(det.bitwarden_installed);
-                if let Some((text, css)) = det.bitwarden_status {
-                    update_status_label(&bw_status_label, &text, css);
-                } else {
-                    update_status_label(&bw_status_label, &i18n("Not installed"), "error");
-                }
-
-                // Update 1Password status
-                op_signin_btn.set_sensitive(det.onepassword_installed);
-                if let Some((text, css)) = det.onepassword_status {
-                    update_status_label(&op_status_label, &text, css);
-                } else {
-                    update_status_label(&op_status_label, &i18n("Not installed"), "error");
-                }
-
-                // Update Passbolt status
-                pb_vault_btn.set_sensitive(det.passbolt_installed);
-                if let Some((text, css)) = det.passbolt_status {
-                    update_status_label(&pb_status_label, &text, css);
-                    if det.passbolt_installed {
-                        pb_open_button.set_sensitive(true);
+                    // Update version label for currently selected backend
+                    let selected = dropdown.selected();
+                    let cur_ver = match selected {
+                        0 => &det.keepassxc_version,
+                        2 => &det.bitwarden_version,
+                        3 => &det.onepassword_version,
+                        4 => &det.passbolt_version,
+                        5 => &det.pass_version,
+                        _ => &None,
+                    };
+                    version_label.remove_css_class("dim-label");
+                    version_label.remove_css_class("error");
+                    version_label.remove_css_class("success");
+                    if selected == 1 {
+                        version_row.set_visible(false);
+                    } else if let Some(v) = cur_ver {
+                        version_label.set_text(&format!("v{v}"));
+                        version_label.add_css_class("success");
+                    } else {
+                        version_label.set_text(&i18n("Not installed"));
+                        version_label.add_css_class("error");
                     }
-                }
 
-                // Update Pass status label
-                if let Some((text, css)) = det.pass_status {
-                    update_status_label(&pass_status_label, &text, css);
-                }
+                    // Update Bitwarden status
+                    bw_unlock_btn.set_sensitive(det.bitwarden_installed);
+                    if let Some((text, css)) = det.bitwarden_status {
+                        update_status_label(&bw_status_label, &text, css);
+                    } else {
+                        update_status_label(&bw_status_label, &i18n("Not installed"), "error");
+                    }
 
-                // Update Passbolt URL from detection if empty
-                if pb_url_entry.text().is_empty()
-                    && let Some(ref url) = det.passbolt_server_url
-                {
-                    pb_url_entry.set_text(url);
-                }
+                    // Update 1Password status
+                    op_signin_btn.set_sensitive(det.onepassword_installed);
+                    if let Some((text, css)) = det.onepassword_status {
+                        update_status_label(&op_status_label, &text, css);
+                    } else {
+                        update_status_label(&op_status_label, &i18n("Not installed"), "error");
+                    }
 
-                glib::ControlFlow::Break
+                    // Update Passbolt status
+                    pb_vault_btn.set_sensitive(det.passbolt_installed);
+                    if let Some((text, css)) = det.passbolt_status {
+                        update_status_label(&pb_status_label, &text, css);
+                        if det.passbolt_installed {
+                            pb_open_button.set_sensitive(true);
+                        }
+                    }
+
+                    // Update Pass status label
+                    if let Some((text, css)) = det.pass_status {
+                        update_status_label(&pass_status_label, &text, css);
+                    }
+
+                    // Update Passbolt URL from detection if empty
+                    if pb_url_entry.text().is_empty()
+                        && let Some(ref url) = det.passbolt_server_url
+                    {
+                        pb_url_entry.set_text(url);
+                    }
+
+                    glib::ControlFlow::Break
+                }
+                Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => glib::ControlFlow::Break,
             }
-            Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
-            Err(std::sync::mpsc::TryRecvError::Disconnected) => glib::ControlFlow::Break,
         });
     }
 

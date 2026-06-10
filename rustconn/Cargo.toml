@@ -15,6 +15,8 @@ path = "src/main.rs"
 rustconn-core = { path = "../rustconn-core", version = "0.15.1" }
 tokio = { workspace = true }
 futures = { workspace = true }
+# Event-driven tray message delivery to the GTK main loop (no polling)
+async-channel = { workspace = true }
 gtk4 = { workspace = true, features = ["v4_14"] }
 libadwaita = { workspace = true }
 gdk4-wayland = { version = "0.11", optional = true }

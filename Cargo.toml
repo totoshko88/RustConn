@@ -8,7 +8,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.15.13"
+version = "0.15.14"
 edition = "2024"
 authors = ["Anton Isaiev <totoshko88@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -32,6 +32,7 @@ vte4 = "0.10"
 libadwaita = { version = "0.9", features = ["v1_5"] }
 
 # Utilities
+async-channel = "2.5"
 uuid = { version = "1.22", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "2.0"

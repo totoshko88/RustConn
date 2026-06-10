@@ -410,9 +410,12 @@ impl StepConnectionPage {
         let is_empty = ssh_connections.is_empty();
         *self.all_ssh_connections.borrow_mut() = ssh_connections;
 
-        // Show/hide empty state
+        // Show/hide empty state. The footer's Next button is hidden together
+        // with the content so the empty-state CTA is the page's only visible
+        // suggested action (GNOME HIG: one primary action per page).
         self.empty_state.set_visible(is_empty);
         self.content_box.set_visible(!is_empty);
+        self.next_button.set_visible(!is_empty);
 
         // Apply current filter (or show all)
         let query = self.search_entry.text().to_string();

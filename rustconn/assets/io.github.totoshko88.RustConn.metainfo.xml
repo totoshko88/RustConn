@@ -140,6 +140,18 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.15.14" date="2026-06-11">
+      <description>
+        <p>Version 0.15.14 — performance and responsiveness improvements:</p>
+        <ul>
+          <li>External RDP/VNC sessions no longer freeze the window for 1.5s on connect — non-blocking spawn with early failure detection</li>
+          <li>Tray messages are event-driven instead of polled, saving CPU and battery when idle</li>
+          <li>Secret backend detection in Settings runs in parallel and is cached for 30s</li>
+          <li>Connection history writes are debounced and run off the main thread</li>
+          <li>One suggested action per dialog (GNOME HIG compliance)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.15.13" date="2026-06-10">
       <description>
         <p>Version 0.15.13 — sidebar accessibility, safer closing, and a crash fix:</p>

@@ -14,7 +14,7 @@ use std::rc::Rc;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 
 // Re-export DisplayServer from the unified display module for backward compatibility
 pub use crate::display::DisplayServer;
@@ -317,40 +317,6 @@ impl RdpLauncher {
         None
     }
 
-    /// Starts an RDP session
-    ///
-    /// # Errors
-    /// Returns error if the RDP client fails to start
-    #[expect(
-        clippy::too_many_arguments,
-        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
-    )]
-    pub fn start(
-        tab: &EmbeddedSessionTab,
-        host: &str,
-        port: u16,
-        username: Option<&str>,
-        password: Option<&str>,
-        domain: Option<&str>,
-        resolution: Option<(u32, u32)>,
-        extra_args: &[String],
-    ) -> Result<(), EmbeddingError> {
-        Self::start_with_geometry(
-            tab,
-            host,
-            port,
-            username,
-            password,
-            domain,
-            resolution,
-            extra_args,
-            None,
-            true,
-            &[],
-            false,
-        )
-    }
-
     /// Starts an RDP session with window geometry support
     ///
     /// # Arguments
@@ -367,9 +333,15 @@ impl RdpLauncher {
     /// * `remember_window_position` - Whether to apply window geometry
     /// * `shared_folders` - Shared folders for drive redirection (share_name, local_path)
     /// * `ignore_certificate` - Skip TLS certificate verification
+    /// * `on_early_failure` - Invoked on the main loop with a user-friendly error
+    ///   message if the client exits with a failure shortly after launch
+    ///   (certificate or authentication errors)
     ///
     /// # Errors
-    /// Returns error if the RDP client fails to start
+    /// Returns error if the FreeRDP binary is missing or the process fails to
+    /// spawn. Early post-spawn failures (certificate/auth) are reported
+    /// asynchronously via `on_early_failure` instead, so the GTK main loop is
+    /// never blocked.
     #[expect(
         clippy::too_many_arguments,
         reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
@@ -387,6 +359,7 @@ impl RdpLauncher {
         remember_window_position: bool,
         shared_folders: &[(String, std::path::PathBuf)],
         ignore_certificate: bool,
+        on_early_failure: impl FnOnce(String) + 'static,
     ) -> Result<(), EmbeddingError> {
         use std::process::Command;
 
@@ -467,39 +440,82 @@ impl RdpLauncher {
         cmd.stderr(std::process::Stdio::piped());
 
         match cmd.spawn() {
-            Ok(mut child) => {
-                // Wait briefly to detect immediate failures (certificate errors, auth failures)
-                std::thread::sleep(std::time::Duration::from_millis(1500));
-
-                match child.try_wait() {
-                    Ok(Some(status)) if !status.success() => {
-                        // Process exited quickly with error — extract stderr
-                        let error_msg = child
-                            .stderr
-                            .take()
-                            .and_then(|stderr| {
-                                use std::io::Read;
-                                let mut buf = String::new();
-                                let mut reader = std::io::BufReader::new(stderr);
-                                reader.read_to_string(&mut buf).ok()?;
-                                Some(buf)
-                            })
-                            .unwrap_or_default();
-
-                        // Parse meaningful error from FreeRDP output
-                        let user_error = Self::parse_freerdp_error(&error_msg);
-                        Err(EmbeddingError::ProcessStartFailed(user_error))
-                    }
-                    _ => {
-                        // Process still running or exited successfully — treat as connected
-                        tab.set_process(child);
-                        tab.set_status(&format!("Connected to {host}"));
-                        Ok(())
-                    }
-                }
+            Ok(child) => {
+                tab.set_process(child);
+                tab.set_status(&i18n_f("Connecting to {}…", &[host]));
+                Self::watch_early_failure(tab, host, on_early_failure);
+                Ok(())
             }
             Err(e) => Err(EmbeddingError::ProcessStartFailed(e.to_string())),
         }
+    }
+
+    /// Watches a freshly spawned FreeRDP process for immediate failures
+    /// (certificate errors, auth failures) without blocking the GTK main loop.
+    ///
+    /// FreeRDP exits within ~1s on such errors; the 1500ms window (6 ticks ×
+    /// 250ms) matches the blocking detection delay this replaces. It is shorter
+    /// than the 2s session monitor in `rdp_vnc.rs`, so an early failure is
+    /// always reported here first: the child is taken out of the shared handle,
+    /// which makes the session monitor stop without double-closing the tab.
+    fn watch_early_failure(
+        tab: &EmbeddedSessionTab,
+        host: &str,
+        on_early_failure: impl FnOnce(String) + 'static,
+    ) {
+        const EARLY_FAILURE_TICKS: u32 = 6;
+
+        let process = tab.process_handle();
+        let controls = tab.controls.clone();
+        let host = host.to_string();
+        let mut on_failure = Some(on_early_failure);
+        let mut ticks = 0u32;
+
+        glib::timeout_add_local(std::time::Duration::from_millis(250), move || {
+            ticks += 1;
+            let mut guard = process.borrow_mut();
+            let Some(child) = guard.as_mut() else {
+                // Process was taken (user disconnected) — nothing to watch.
+                return glib::ControlFlow::Break;
+            };
+
+            match child.try_wait() {
+                Ok(Some(status)) if !status.success() => {
+                    // Early exit with error — take the child so the session
+                    // monitor sees an empty handle and stops silently.
+                    let error_msg = guard
+                        .take()
+                        .and_then(|mut child| child.stderr.take())
+                        .and_then(|stderr| {
+                            use std::io::Read;
+                            let mut buf = String::new();
+                            let mut reader = std::io::BufReader::new(stderr);
+                            reader.read_to_string(&mut buf).ok()?;
+                            Some(buf)
+                        })
+                        .unwrap_or_default();
+                    drop(guard);
+
+                    let user_error = Self::parse_freerdp_error(&error_msg);
+                    if let Some(callback) = on_failure.take() {
+                        callback(user_error);
+                    }
+                    glib::ControlFlow::Break
+                }
+                Ok(Some(_)) => {
+                    // Exited cleanly right away — the session monitor closes the tab.
+                    glib::ControlFlow::Break
+                }
+                Ok(None) if ticks >= EARLY_FAILURE_TICKS => {
+                    // Survived the detection window — treat as connected.
+                    drop(guard);
+                    controls.set_status(&i18n_f("Connected to {}", &[&host]));
+                    glib::ControlFlow::Break
+                }
+                Ok(None) => glib::ControlFlow::Continue,
+                Err(_) => glib::ControlFlow::Break,
+            }
+        });
     }
 
     /// Parses FreeRDP stderr output to extract a user-friendly error message

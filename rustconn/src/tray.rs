@@ -22,7 +22,6 @@
 //! with `--no-default-features` if the D-Bus dependency is not available.
 
 use gettextrs::gettext;
-use std::sync::mpsc::{self, Receiver};
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
@@ -77,7 +76,7 @@ mod tray_impl {
     use super::*;
     use ksni::blocking::{Handle, TrayMethods};
     use ksni::{Icon, MenuItem, Tray, menu::StandardItem};
-    use std::sync::mpsc::Sender;
+    use std::sync::mpsc;
 
     /// Embedded SVG icon data (tray-specific variant with cream halo for
     /// visibility on dark KDE/Plasma panels — see issue #157).
@@ -115,7 +114,9 @@ mod tray_impl {
     /// RustConn tray icon implementation
     pub struct RustConnTray {
         pub state: Arc<Mutex<TrayState>>,
-        pub sender: Sender<TrayMessage>,
+        /// Unbounded channel to the GTK main loop; `try_send` never blocks
+        /// the ksni D-Bus thread and wakes the main loop only on real events.
+        pub sender: async_channel::Sender<TrayMessage>,
         pub icon_pixmap: Vec<Icon>,
     }
 
@@ -157,7 +158,7 @@ mod tray_impl {
             "io.github.totoshko88.RustConn".to_string()
         }
         fn activate(&mut self, _x: i32, _y: i32) {
-            let _ = self.sender.send(TrayMessage::ToggleWindow);
+            let _ = self.sender.try_send(TrayMessage::ToggleWindow);
         }
 
         fn menu(&self) -> Vec<MenuItem<Self>> {
@@ -184,7 +185,7 @@ mod tray_impl {
             items.push(MenuItem::Standard(StandardItem {
                 label: toggle_label,
                 activate: Box::new(|tray: &mut Self| {
-                    let _ = tray.sender.send(TrayMessage::ToggleWindow);
+                    let _ = tray.sender.try_send(TrayMessage::ToggleWindow);
                 }),
                 ..Default::default()
             }));
@@ -199,7 +200,7 @@ mod tray_impl {
                         MenuItem::Standard(StandardItem {
                             label: name.clone(),
                             activate: Box::new(move |tray: &mut Self| {
-                                let _ = tray.sender.send(TrayMessage::Connect(conn_id));
+                                let _ = tray.sender.try_send(TrayMessage::Connect(conn_id));
                             }),
                             ..Default::default()
                         })
@@ -216,14 +217,14 @@ mod tray_impl {
             items.push(MenuItem::Standard(StandardItem {
                 label: gettext("Quick Connect..."),
                 activate: Box::new(|tray: &mut Self| {
-                    let _ = tray.sender.send(TrayMessage::QuickConnect);
+                    let _ = tray.sender.try_send(TrayMessage::QuickConnect);
                 }),
                 ..Default::default()
             }));
             items.push(MenuItem::Standard(StandardItem {
                 label: gettext("Local Shell"),
                 activate: Box::new(|tray: &mut Self| {
-                    let _ = tray.sender.send(TrayMessage::LocalShell);
+                    let _ = tray.sender.try_send(TrayMessage::LocalShell);
                 }),
                 ..Default::default()
             }));
@@ -245,14 +246,14 @@ mod tray_impl {
             items.push(MenuItem::Standard(StandardItem {
                 label: gettext("About RustConn"),
                 activate: Box::new(|tray: &mut Self| {
-                    let _ = tray.sender.send(TrayMessage::About);
+                    let _ = tray.sender.try_send(TrayMessage::About);
                 }),
                 ..Default::default()
             }));
             items.push(MenuItem::Standard(StandardItem {
                 label: gettext("Quit"),
                 activate: Box::new(|tray: &mut Self| {
-                    let _ = tray.sender.send(TrayMessage::Quit);
+                    let _ = tray.sender.try_send(TrayMessage::Quit);
                 }),
                 ..Default::default()
             }));
@@ -271,7 +272,7 @@ mod tray_impl {
     /// the GTK thread is about to take) or simply stall the UI.
     pub struct TrayManager {
         state: Arc<Mutex<TrayState>>,
-        receiver: Receiver<TrayMessage>,
+        receiver: async_channel::Receiver<TrayMessage>,
         /// Channel to the background updater thread.
         update_tx: std::sync::mpsc::SyncSender<()>,
         /// Keep the handle alive so the D-Bus service loop is not dropped.
@@ -281,7 +282,7 @@ mod tray_impl {
     impl TrayManager {
         #[must_use]
         pub fn new() -> Option<Self> {
-            let (sender, receiver) = mpsc::channel();
+            let (sender, receiver) = async_channel::unbounded();
             let state = Arc::new(Mutex::new(TrayState::default()));
             let icon_pixmap = render_svg_to_pixmap(32);
             let tray = RustConnTray {
@@ -367,8 +368,11 @@ mod tray_impl {
             }
         }
 
-        pub fn try_recv(&self) -> Option<TrayMessage> {
-            self.receiver.try_recv().ok()
+        /// Returns a clone of the tray message receiver for the GTK main
+        /// loop to await on (event-driven, no polling).
+        #[must_use]
+        pub fn message_receiver(&self) -> async_channel::Receiver<TrayMessage> {
+            self.receiver.clone()
         }
     }
 }
@@ -415,7 +419,7 @@ mod tray_macos_impl {
     /// requires `NSStatusItem` allocation on the main thread.
     pub struct TrayManager {
         state: Arc<Mutex<TrayState>>,
-        receiver: Receiver<TrayMessage>,
+        receiver: async_channel::Receiver<TrayMessage>,
         tray_icon: tray_icon::TrayIcon,
     }
 
@@ -428,7 +432,7 @@ mod tray_macos_impl {
         /// if created off the main thread.
         #[must_use]
         pub fn new() -> Option<Self> {
-            let (sender, receiver) = mpsc::channel();
+            let (sender, receiver) = async_channel::unbounded();
             let state = Arc::new(Mutex::new(TrayState::default()));
 
             // Render icon at 44×44px (Retina 2x) — macOS menu bar auto-scales
@@ -497,7 +501,7 @@ mod tray_macos_impl {
                             _ => None,
                         };
                         if let Some(m) = msg {
-                            let _ = sender_for_events.send(m);
+                            let _ = sender_for_events.try_send(m);
                         }
                     }
                 })
@@ -658,8 +662,11 @@ mod tray_macos_impl {
             }
         }
 
-        pub fn try_recv(&self) -> Option<TrayMessage> {
-            self.receiver.try_recv().ok()
+        /// Returns a clone of the tray message receiver for the GTK main
+        /// loop to await on (event-driven, no polling).
+        #[must_use]
+        pub fn message_receiver(&self) -> async_channel::Receiver<TrayMessage> {
+            self.receiver.clone()
         }
     }
 }
@@ -686,8 +693,12 @@ mod tray_stub {
         pub fn set_recent_connections(&self, _connections: Vec<(Uuid, String)>) {}
         pub fn set_window_visible(&self, _visible: bool) {}
         pub fn force_refresh(&self) {}
-        pub fn try_recv(&self) -> Option<TrayMessage> {
-            None
+        /// Returns an already-closed receiver: the stub never produces
+        /// messages, so the consumer loop exits immediately.
+        #[must_use]
+        pub fn message_receiver(&self) -> async_channel::Receiver<TrayMessage> {
+            let (_, receiver) = async_channel::unbounded();
+            receiver
         }
     }
 
