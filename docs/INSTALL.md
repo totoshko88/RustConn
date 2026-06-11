@@ -2,7 +2,8 @@
 
 ## System Requirements
 
-- **OS:** Linux (Wayland-first, X11 supported), macOS 13+ (Ventura)
+- **OS:** Linux (Wayland-first, X11 supported), macOS 13+ (Ventura),
+  Windows via WSL2/WSLg (see [WSL.md](WSL.md))
 - **GTK:** 4.14+
 - **libadwaita:** 1.5+
 - **Rust:** 1.95+ (for building from source)
@@ -85,7 +86,7 @@ flatpak install flathub org.gnome.Platform//50
 #### Install
 
 ```bash
-flatpak install --user RustConn-0.15.14.flatpak
+flatpak install --user RustConn-0.16.0.flatpak
 ```
 
 Confirm runtime dependency installation if prompted.

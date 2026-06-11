@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.15.14
+Version:        0.16.0
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -242,6 +242,18 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Thu Jun 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.16.0-0
+- Added batch edit for multi-selected connections — change group, tags, or icon in one pass with undo
+- Added notes badge in the sidebar — connections with description show document-edit-symbolic badge
+- Added search matches connection notes (weight below name/host/tags)
+- Added Windows (WSL2) guide — step-by-step setup in docs/WSL.md (#137)
+- Structured validation errors in core — ValidationError enum with thiserror
+- RDP catch_unwind wrapper kept for 0.16 (ironrdp 0.15 still may panic on malformed PDUs)
+- Fixed sidebar context menu failing to open on KDE Plasma (#157)
+- Internal: dialogs/connection/dialog.rs split into 7 submodules
+- Security: RDP/SPICE client Debug output leak regression-tested
+- New property tests for shell_escape and smart_folder
+
 * Thu Jun 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.14-0
 - External RDP/VNC sessions no longer freeze the window for 1.5s on connect — non-blocking spawn with 250ms poll
 - Tray messages are now event-driven instead of polled (async-channel)

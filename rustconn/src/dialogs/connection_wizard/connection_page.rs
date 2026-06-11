@@ -213,6 +213,7 @@ impl ConnectionPage {
         zt_group.add(&zt_provider_row);
 
         let zt_command_row = adw::EntryRow::builder().title(i18n("Command")).build();
+        // Literal CLI example — intentionally not wrapped in i18n()
         zt_command_row.set_tooltip_text(Some("cloudflared access ssh --hostname ..."));
         zt_group.add(&zt_command_row);
 

@@ -1,3 +1,21 @@
+rustconn (0.16.0-1) unstable; urgency=medium
+
+  * Added batch edit for multi-selected connections — change group, tags,
+    or icon for all selected connections in one pass with undo
+  * Added notes badge in the sidebar — connections with a description show
+    a document-edit-symbolic badge (tooltip shows the note text)
+  * Added search matches connection notes (weight below name/host/tags)
+  * Added Windows (WSL2) guide — step-by-step setup in docs/WSL.md (#137)
+  * Structured validation errors in core — ValidationError enum with
+    thiserror, callers pattern-match variants
+  * Fixed sidebar context menu failing to open on KDE Plasma (#157) —
+    deferred unparent to idle, KWin autohide fallback
+  * Internal: dialogs/connection/dialog.rs split into 7 submodules
+  * Security: RDP/SPICE client Debug output leak regression-tested
+  * New property tests for shell_escape and smart_folder
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Thu, 11 Jun 2026 18:00:00 +0200
+
 rustconn (0.15.14-1) unstable; urgency=medium
 
   * External RDP/VNC sessions no longer freeze the window for 1.5s on

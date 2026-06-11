@@ -869,7 +869,7 @@ pub fn show_new_group_dialog_with_parent(
 
         // Validate icon
         if has_icon && let Err(e) = rustconn_core::dialog_utils::validate_icon(&icon_text) {
-            alert::show_validation_error(&window_clone, &i18n(&e));
+            alert::show_validation_error(&window_clone, &i18n(&e.to_string()));
             return;
         }
 

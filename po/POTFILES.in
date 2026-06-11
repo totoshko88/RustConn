@@ -37,7 +37,14 @@ rustconn/src/dialogs/mod.rs
 rustconn/src/dialogs/connection/advanced_tab.rs
 rustconn/src/dialogs/connection/automation_tab.rs
 rustconn/src/dialogs/connection/builders.rs
-rustconn/src/dialogs/connection/dialog.rs
+rustconn/src/dialogs/connection/dialog/mod.rs
+rustconn/src/dialogs/connection/dialog/agent_variables.rs
+rustconn/src/dialogs/connection/dialog/build.rs
+rustconn/src/dialogs/connection/dialog/construction.rs
+rustconn/src/dialogs/connection/dialog/passwords.rs
+rustconn/src/dialogs/connection/dialog/populate.rs
+rustconn/src/dialogs/connection/dialog/rows.rs
+rustconn/src/dialogs/connection/dialog/save.rs
 rustconn/src/dialogs/connection/general_tab.rs
 rustconn/src/dialogs/connection/ssh.rs
 rustconn/src/dialogs/connection/rdp.rs
@@ -130,3 +137,4 @@ rustconn/src/embedded_trait.rs
 rustconn/src/embedded_vnc/mod.rs
 rustconn/src/embedded_vnc/ui.rs
 rustconn/src/session/vnc.rs
+rustconn/src/window/batch_edit.rs

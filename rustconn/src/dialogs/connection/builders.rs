@@ -330,7 +330,8 @@ impl ConnectionDialogData<'_> {
 
         // Icon validation
         let icon_text = self.icon_entry.text();
-        rustconn_core::dialog_utils::validate_icon(icon_text.trim())?;
+        rustconn_core::dialog_utils::validate_icon(icon_text.trim())
+            .map_err(|e| i18n(&e.to_string()))?;
 
         Ok(())
     }

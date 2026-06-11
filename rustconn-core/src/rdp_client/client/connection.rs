@@ -228,9 +228,11 @@ pub async fn establish_connection(
         // Wrap in catch_unwind: IronRDP may panic on unexpected server
         // responses in edge cases. Convert the panic into an error
         // so the GUI can fall back to FreeRDP instead of crashing.
-        // TODO(0.16): re-evaluate whether catch_unwind is still needed —
-        // IronRDP 0.15 fixed several panic sources (KDC parser, Auto-Detect).
-        // Remove if upstream confirms no more panics on malformed PDUs.
+        // TODO(0.17): re-evaluate on the next ironrdp bump (>0.15). As of
+        // 0.15.0 upstream has not confirmed that panics on malformed PDUs are
+        // gone (connect_finalize issues still reported, e.g.
+        // https://github.com/Devolutions/IronRDP/issues/1016), so the wrapper
+        // stays. Remove only when upstream confirms no more panics.
         let finalize_future = AssertUnwindSafe(ironrdp_tokio::connect_finalize(
             upgraded,
             connector,
@@ -303,6 +305,12 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
     // Always use UsernamePassword credentials
     // If username or password is missing, use empty strings
     // The server will prompt for credentials if needed
+    //
+    // The ironrdp connector API requires an owned plain `String` password by
+    // value; the copy's lifetime (and zeroization) is controlled by ironrdp,
+    // so wrapping the intermediate in `Zeroizing` would not protect the copy
+    // that lives inside the connector. Re-check on ironrdp bumps whether a
+    // secrecy-aware credentials type became available.
     let credentials = Credentials::UsernamePassword {
         username: config.username.clone().unwrap_or_default(),
         password: config

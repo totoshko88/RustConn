@@ -1276,3 +1276,15 @@ fn test_is_modifier_keyval() {
     assert!(!is_modifier_keyval(GDK_KEY_F1)); // F1
     assert!(!is_modifier_keyval(GDK_KEY_RETURN)); // Return
 }
+
+/// `RdpClientConfig` derives `Debug` while holding a password
+/// (`SecretString`); the Debug output must never contain the plaintext.
+#[test]
+fn rdp_config_debug_does_not_leak_password() {
+    let config = RdpClientConfig::new("localhost").with_password("hunter2-rdp-secret");
+    let debug_output = format!("{config:?}");
+    assert!(
+        !debug_output.contains("hunter2-rdp-secret"),
+        "Debug output must not contain the plaintext password"
+    );
+}

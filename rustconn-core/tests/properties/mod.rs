@@ -67,6 +67,7 @@ mod serial_tests;
 mod serialization_tests;
 mod session_restore_tests;
 mod session_tests;
+mod shell_escape_tests;
 mod smart_folder_tests;
 mod snippet_tests;
 mod spice_client_tests;

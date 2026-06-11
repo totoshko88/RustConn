@@ -373,3 +373,16 @@ fn test_spice_rect_zero_dimensions() {
     assert_eq!(rect_zero_width.area(), 0);
     assert_eq!(rect_zero_height.area(), 0);
 }
+
+/// `SpiceClientConfig` derives `Debug` while holding a password
+/// (`SecretString`); the Debug output must never contain the plaintext.
+#[test]
+fn spice_config_debug_does_not_leak_password() {
+    let mut config = SpiceClientConfig::new("localhost");
+    config.password = Some(secrecy::SecretString::from("hunter2-spice-secret"));
+    let debug_output = format!("{config:?}");
+    assert!(
+        !debug_output.contains("hunter2-spice-secret"),
+        "Debug output must not contain the plaintext password"
+    );
+}

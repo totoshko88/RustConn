@@ -14,6 +14,28 @@ thread_local! {
     /// When a new context menu is requested (sidebar or split view), the previous
     /// one is closed first to prevent GTK4 popover lifecycle conflicts (issue #87).
     static ACTIVE_POPOVER: RefCell<Option<gtk4::Popover>> = const { RefCell::new(None) };
+    /// True while one of our own handlers is popping a context menu down.
+    /// The `closed` handler reads it (the emission is synchronous) to tell
+    /// an intentional close apart from a compositor dismissal (#157).
+    static INTENTIONAL_POPDOWN: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Compositor-dismissal retry window (#157): KWin cancels non-grabbing
+/// xdg_popups (autohide=false) on focus changes, so on KDE Plasma the menu
+/// could close immediately after popup. If a context-menu popover closes
+/// within this window without any user interaction, it is re-opened once
+/// with autohide=true (grab taken — KWin keeps it; costs the #87
+/// double-click nicety on that attempt, which beats no menu at all).
+const EARLY_DISMISS_WINDOW: std::time::Duration = std::time::Duration::from_millis(300);
+
+/// Pops a context-menu popover down, marking the close as intentional so
+/// the early-dismissal retry in `show_popover` does not re-open it.
+fn popdown_intentionally(popover: &gtk4::Popover) {
+    INTENTIONAL_POPDOWN.with(|flag| {
+        flag.set(true);
+        popover.popdown();
+        flag.set(false);
+    });
 }
 
 /// Closes and unparents any currently active context menu popover.
@@ -32,7 +54,7 @@ pub fn close_active_popover() {
             // ourselves if the popover still has a parent after popdown
             // (which happens when the popover was not visible and closed
             // signal did not fire).
-            old.popdown();
+            popdown_intentionally(&old);
             if old.parent().is_some() {
                 old.unparent();
             }
@@ -299,7 +321,7 @@ fn show_popover(
                 let popover_weak = popover.downgrade();
                 button.connect_clicked(move |_| {
                     if let Some(p) = popover_weak.upgrade() {
-                        p.popdown();
+                        popdown_intentionally(&p);
                     }
                     if let Some(w) = window_weak.upgrade() {
                         gtk4::prelude::ActionGroupExt::activate_action(&w, &action_name, None);
@@ -341,7 +363,7 @@ fn show_popover(
     key_controller.connect_key_pressed(move |_, key, _, _| {
         if key == gdk::Key::Escape {
             if let Some(p) = popover_weak_esc.upgrade() {
-                p.popdown();
+                popdown_intentionally(&p);
             }
             gtk4::glib::Propagation::Stop
         } else {
@@ -402,11 +424,11 @@ fn show_popover(
         let win_ref: &gtk4::Window = win.upcast_ref();
         if let Some(focus) = gtk4::prelude::GtkWindowExt::focus(win_ref) {
             if !focus.is_ancestor(&pop) {
-                pop.popdown();
+                popdown_intentionally(&pop);
             }
         } else {
             // No focus widget — dialog or another window took focus
-            pop.popdown();
+            popdown_intentionally(&pop);
         }
     });
 
@@ -414,14 +436,44 @@ fn show_popover(
     // Use Rc<Cell> to move the handler ID into the connect_closed closure.
     let focus_handler_cell = std::rc::Rc::new(std::cell::Cell::new(Some(focus_handler_id)));
     let focus_handler_for_close = focus_handler_cell.clone();
+    let popup_at = std::time::Instant::now();
+    let retried = std::rc::Rc::new(std::cell::Cell::new(false));
     popover.connect_closed(move |p| {
         // Disconnect the focus-widget handler to prevent accumulation (#168)
         if let Some(handler_id) = focus_handler_for_close.take() {
             window_for_handler.disconnect(handler_id);
         }
-        if p.parent().is_some() {
-            p.unparent();
+
+        let intentional = INTENTIONAL_POPDOWN.with(std::cell::Cell::get);
+        if popup_at.elapsed() < EARLY_DISMISS_WINDOW && !retried.get() && !intentional {
+            retried.set(true);
+            tracing::debug!(
+                "Context menu dismissed {}ms after popup — retrying with autohide=true",
+                popup_at.elapsed().as_millis()
+            );
+            p.set_autohide(true);
+            let p_weak = p.downgrade();
+            gtk4::glib::idle_add_local_once(move || {
+                if let Some(p) = p_weak.upgrade()
+                    && p.parent().is_some()
+                {
+                    p.popup();
+                }
+            });
+            return;
         }
+
+        // Defer unparent to idle: this handler runs synchronously inside
+        // GTK's hide/popdown sequence, and unparenting here can drop the
+        // popover's last reference mid-emission — GTK then touches the
+        // freed object ("gtk_popover_get_autohide: assertion GTK_IS_POPOVER
+        // failed", #157 follow-up report).
+        let p_for_unparent = p.clone();
+        gtk4::glib::idle_add_local_once(move || {
+            if p_for_unparent.parent().is_some() {
+                p_for_unparent.unparent();
+            }
+        });
         clear_active_popover(p);
     });
 
@@ -507,6 +559,16 @@ pub fn create_bulk_actions_bar() -> GtkBox {
         "Create cluster from selected connections",
     ))]);
     bar.append(&cluster_button);
+
+    let batch_edit_button = Button::from_icon_name("document-edit-symbolic");
+    batch_edit_button.add_css_class("pill");
+    batch_edit_button.add_css_class("bulk-action");
+    batch_edit_button.set_tooltip_text(Some(&i18n("Batch Edit")));
+    batch_edit_button.set_action_name(Some("win.batch-edit-selected"));
+    batch_edit_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Edit selected connections together",
+    ))]);
+    bar.append(&batch_edit_button);
 
     let select_all_button = Button::from_icon_name("edit-select-all-symbolic");
     select_all_button.add_css_class("pill");

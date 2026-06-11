@@ -1535,7 +1535,7 @@ pub fn show_edit_group_dialog(
                 if !icon_text.is_empty()
                     && let Err(e) = rustconn_core::dialog_utils::validate_icon(&icon_text)
                 {
-                    alert::show_validation_error(&window_clone, &i18n(&e));
+                    alert::show_validation_error(&window_clone, &i18n(&e.to_string()));
                     return;
                 }
                 updated.icon = if icon_text.is_empty() {

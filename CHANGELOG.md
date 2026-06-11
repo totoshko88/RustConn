@@ -5,6 +5,33 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-06-11
+
+### Added
+
+- **Batch edit for multi-selected connections** — group-operations mode (multi-selection) gains a "Batch Edit" action in the bulk toolbar: change group, tags, or icon for all selected connections in one pass. Each field has an "apply" check so only the chosen fields are written; the result toast offers Undo that restores the previous values
+- **Notes badge in the sidebar** — connections with a description now show a small `document-edit-symbolic` badge next to their name (with the note text in the tooltip and a screen-reader label), so it is visible at a glance which entries have documentation without opening each one. Inspired by recurring requests in competing tools
+- **Search matches connection notes** — sidebar search and smart search now score the connection description (weight below name/host/tags), so "the server where we replaced the certificate" can be found by the words in its notes
+- **Windows (WSL2) guide** ([#137](https://github.com/totoshko88/RustConn/issues/137)) — new [docs/WSL.md](docs/WSL.md) with a step-by-step setup for running RustConn on Windows via WSLg: WSL install/update, enabling systemd for D-Bus/Secret Service (the most common pitfall), OBS/.deb install, secret-storage options, known WSLg limitations (no tray, audio latency, usbipd for serial) and troubleshooting. Linked from README and INSTALL
+
+### Changed
+
+- **Structured validation errors in core** — `dialog_utils` validators (`validate_name`, `validate_host`, `validate_port`, `validate_icon`) now return a `ValidationError` enum (`thiserror`) instead of plain strings, so callers can pattern-match variants; user-facing messages are unchanged and still localized at the GUI call sites
+- **RDP `catch_unwind` wrapper kept for 0.16** — re-evaluated per the in-code TODO: ironrdp is still at 0.15.0 and upstream has not confirmed that panics on malformed PDUs are gone, so the panic guard around `connect_finalize` stays (re-check on the next ironrdp bump)
+
+### Fixed
+
+- **Sidebar context menu failing to open on KDE Plasma** ([#157](https://github.com/totoshko88/RustConn/issues/157)) — two fixes based on the reporter's `RUST_LOG=debug` output: (1) the popover's `closed` handler unparented the widget synchronously inside GTK's popdown sequence, which could free the popover mid-emission and produce `gtk_popover_get_autohide: assertion 'GTK_IS_POPOVER' failed`; the unparent is now deferred to idle. (2) KWin cancels non-grabbing popups (our menus use `autohide=false` per #87), so the menu could be dismissed by the compositor immediately after opening; if that happens within 300 ms with no user interaction, the menu now re-opens once with `autohide=true` (grab taken — KWin keeps it)
+
+### Internal
+
+- **`dialogs/connection/dialog.rs` split into submodules** — the largest file in the project (5988 lines) is now a `dialog/` module with focused submodules (`build`, `construction`, `save`, `rows`, `populate`, `passwords`, `agent_variables`); pure code motion, no behavior changes
+- **New tests for security-sensitive core modules** — property tests verify `shell_escape` output round-trips byte-for-byte through a real POSIX `sh` (drag-and-drop paths are an injection surface), and `smart_folder` rule matching gained unit tests for case-insensitive host patterns and multi-criteria AND logic
+
+### Security
+
+- **Password handling in RDP/SPICE clients documented and regression-tested** — the plain-`String` password copies required by the third-party ironrdp/spice-client APIs are now explicitly documented as an upstream API limitation, and new tests assert that `RdpClientConfig`/`SpiceClientConfig` Debug output never leaks the plaintext password
+
 ## [0.15.14] - 2026-06-11
 
 ### Improved

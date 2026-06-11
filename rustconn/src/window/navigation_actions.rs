@@ -263,6 +263,24 @@ impl MainWindow {
         });
         window.add_action(&delete_selected_action);
 
+        // Batch edit selected connections action
+        let batch_edit_action = gio::SimpleAction::new("batch-edit-selected", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let toast_clone = self.toast_overlay.widget().clone();
+        batch_edit_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                super::batch_edit::show_batch_edit_dialog(
+                    win.upcast_ref(),
+                    &state_clone,
+                    &sidebar_clone,
+                    &toast_clone,
+                );
+            }
+        });
+        window.add_action(&batch_edit_action);
+
         // Move selected to group action
         let move_selected_action = gio::SimpleAction::new("move-selected-to-group", None);
         let window_weak = window.downgrade();

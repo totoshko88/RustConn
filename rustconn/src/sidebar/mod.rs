@@ -1988,6 +1988,10 @@ mod imp {
         /// Whether a session of this connection is currently being recorded.
         #[property(get, set)]
         is_recording: RefCell<bool>,
+        /// Connection description/notes (empty string = none); drives the
+        /// notes badge in the sidebar row.
+        #[property(get, set)]
+        description: RefCell<String>,
         pub(super) children: RefCell<Option<gio::ListStore>>,
     }
 
