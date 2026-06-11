@@ -5,6 +5,35 @@
 
 use std::collections::HashMap;
 
+/// Validation error for dialog field values.
+///
+/// Display messages are stable English strings that double as gettext msgids:
+/// the GUI layer wraps `error.to_string()` in `i18n()` at the call site.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum ValidationError {
+    /// Connection name is empty or whitespace-only.
+    #[error("Connection name is required")]
+    EmptyName,
+    /// Host is empty or whitespace-only.
+    #[error("Host is required")]
+    EmptyHost,
+    /// Host contains spaces.
+    #[error("Host cannot contain spaces")]
+    HostContainsSpaces,
+    /// Port is zero.
+    #[error("Port must be greater than 0")]
+    InvalidPort,
+    /// Icon value exceeds the maximum length.
+    #[error("Icon value is too long (max {max} characters)")]
+    IconTooLong {
+        /// Maximum allowed length in bytes.
+        max: usize,
+    },
+    /// Icon is neither an emoji sequence nor a valid GTK icon name.
+    #[error("Icon must be an emoji or a valid GTK icon name (lowercase letters, digits, hyphens)")]
+    InvalidIcon,
+}
+
 /// Parses a comma-separated list of key=value pairs into a `HashMap`.
 ///
 /// Accepts both plain `Key=Value` and `-o Key=Value` formats. The `-o` prefix
@@ -117,10 +146,11 @@ pub fn format_args(args: &[String]) -> String {
 ///
 /// # Errors
 ///
-/// Returns `Err` with a message if the name is empty or whitespace-only.
-pub fn validate_name(name: &str) -> Result<(), String> {
+/// Returns [`ValidationError::EmptyName`] if the name is empty or
+/// whitespace-only.
+pub fn validate_name(name: &str) -> Result<(), ValidationError> {
     if name.trim().is_empty() {
-        return Err("Connection name is required".to_string());
+        return Err(ValidationError::EmptyName);
     }
     Ok(())
 }
@@ -129,14 +159,16 @@ pub fn validate_name(name: &str) -> Result<(), String> {
 ///
 /// # Errors
 ///
-/// Returns `Err` with a message if the host is empty or contains spaces.
-pub fn validate_host(host: &str) -> Result<(), String> {
+/// Returns [`ValidationError::EmptyHost`] if the host is empty or
+/// whitespace-only, [`ValidationError::HostContainsSpaces`] if it contains
+/// spaces.
+pub fn validate_host(host: &str) -> Result<(), ValidationError> {
     if host.trim().is_empty() {
-        return Err("Host is required".to_string());
+        return Err(ValidationError::EmptyHost);
     }
     let host_str = host.trim();
     if host_str.contains(' ') {
-        return Err("Host cannot contain spaces".to_string());
+        return Err(ValidationError::HostContainsSpaces);
     }
     Ok(())
 }
@@ -145,10 +177,10 @@ pub fn validate_host(host: &str) -> Result<(), String> {
 ///
 /// # Errors
 ///
-/// Returns `Err` with a message if the port is zero.
-pub fn validate_port(port: u16) -> Result<(), String> {
+/// Returns [`ValidationError::InvalidPort`] if the port is zero.
+pub fn validate_port(port: u16) -> Result<(), ValidationError> {
     if port == 0 {
-        return Err("Port must be greater than 0".to_string());
+        return Err(ValidationError::InvalidPort);
     }
     Ok(())
 }
@@ -224,9 +256,11 @@ fn is_valid_gtk_icon_name(s: &str) -> bool {
 ///
 /// # Errors
 ///
-/// Returns `Err` with a human-readable message (English, suitable for
-/// wrapping with `gettext` on the GUI side) when the value is invalid.
-pub fn validate_icon(icon: &str) -> Result<(), String> {
+/// Returns [`ValidationError::IconTooLong`] when the value exceeds the
+/// 64-byte limit, [`ValidationError::InvalidIcon`] when it is
+/// neither an emoji sequence nor a valid GTK icon name. Display messages
+/// are English msgids suitable for wrapping with `i18n()` on the GUI side.
+pub fn validate_icon(icon: &str) -> Result<(), ValidationError> {
     let icon = icon.trim();
     if icon.is_empty() {
         return Ok(());
@@ -244,13 +278,10 @@ pub fn validate_icon(icon: &str) -> Result<(), String> {
 
     // Neither — produce a helpful error
     if icon.len() > ICON_MAX_LEN {
-        return Err("Icon value is too long (max 64 characters)".to_string());
+        return Err(ValidationError::IconTooLong { max: ICON_MAX_LEN });
     }
 
-    Err(
-        "Icon must be an emoji or a valid GTK icon name (lowercase letters, digits, hyphens)"
-            .to_string(),
-    )
+    Err(ValidationError::InvalidIcon)
 }
 
 #[cfg(test)]

@@ -140,6 +140,21 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.16.0" date="2026-06-11">
+      <description>
+        <p>Version 0.16.0 — batch editing, notes badge, and structured validation:</p>
+        <ul>
+          <li>Batch edit for multi-selected connections — change group, tags, or icon in one pass with undo</li>
+          <li>Notes badge in the sidebar — connections with a description show a small icon with tooltip</li>
+          <li>Sidebar search and smart search now match connection notes</li>
+          <li>Windows (WSL2) setup guide added to documentation</li>
+          <li>Structured validation errors in core (ValidationError enum with thiserror)</li>
+          <li>Fixed sidebar context menu failing to open on KDE Plasma</li>
+          <li>Security: RDP/SPICE client Debug output never leaks passwords (regression-tested)</li>
+          <li>New property tests for shell_escape round-trip and smart_folder rule matching</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.15.14" date="2026-06-11">
       <description>
         <p>Version 0.15.14 — performance and responsiveness improvements:</p>

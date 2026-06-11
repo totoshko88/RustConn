@@ -127,6 +127,17 @@ pub fn setup_list_item(
     pin_icon.set_tooltip_text(Some(&i18n("Pinned")));
     content_box.append(&pin_icon);
 
+    // Notes badge shown when the connection has a description; the actual
+    // text is exposed via the icon tooltip (RDM users asked for a visible
+    // indicator that documentation exists without opening each entry).
+    let note_icon = Image::from_icon_name("document-edit-symbolic");
+    note_icon.set_pixel_size(12);
+    note_icon.set_visible(false);
+    note_icon.add_css_class("note-icon");
+    note_icon.add_css_class("dim-label");
+    note_icon.update_property(&[gtk4::accessible::Property::Label(&i18n("Has notes"))]);
+    content_box.append(&note_icon);
+
     // Red dot shown while a session of this connection is being recorded —
     // recording is privacy-sensitive and must be visible at a glance.
     let recording_icon = Image::from_icon_name("media-record-symbolic");
@@ -361,6 +372,12 @@ pub fn bind_list_item(
         {
             recording_icon.set_visible(false);
         }
+        // Groups don't show the notes badge
+        if let Some(note_icon) =
+            find_child_by_css_class(&content_box, "note-icon").and_downcast::<Image>()
+        {
+            note_icon.set_visible(false);
+        }
 
         // Show connection count in tooltip
         let child_count = if let Some(children) = row.children() {
@@ -562,6 +579,51 @@ pub fn bind_list_item(
                 });
 
             // Store handler ID on list_item for cleanup
+            handlers
+                .borrow_mut()
+                .entry(list_item.clone())
+                .or_default()
+                .push(handler_id);
+        }
+
+        // Notes badge: visible when the connection has a description; the
+        // tooltip carries the text so it can be read without opening the
+        // editor dialog.  Reactive via connect_notify so batch-edit / sync
+        // updates propagate without a full sidebar reload.
+        if let Some(note_icon) =
+            find_child_by_css_class(&content_box, "note-icon").and_downcast::<Image>()
+        {
+            let update_note_badge = |icon: &Image, desc: &str| {
+                if desc.trim().is_empty() {
+                    icon.set_visible(false);
+                    icon.set_tooltip_text(None);
+                } else {
+                    icon.set_visible(true);
+                    // Truncate long descriptions to keep tooltip readable
+                    let tooltip = if desc.len() > 120 {
+                        // Find a safe char boundary for truncation
+                        let end = desc
+                            .char_indices()
+                            .take_while(|(i, _)| *i <= 120)
+                            .last()
+                            .map_or(120, |(i, _)| i);
+                        format!("{}…", &desc[..end])
+                    } else {
+                        desc.to_string()
+                    };
+                    icon.set_tooltip_text(Some(&tooltip));
+                }
+            };
+
+            // Initial update
+            update_note_badge(&note_icon, &item.description());
+
+            // React to description property changes (batch edit, sync, etc.)
+            let note_icon_clone = note_icon.clone();
+            let handler_id =
+                item.connect_notify_local(Some("description"), move |item: &ConnectionItem, _| {
+                    update_note_badge(&note_icon_clone, &item.description());
+                });
             handlers
                 .borrow_mut()
                 .entry(list_item.clone())

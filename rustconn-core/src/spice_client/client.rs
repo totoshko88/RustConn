@@ -435,6 +435,12 @@ async fn run_spice_client(
     let mut native_client = NativeSpiceClient::new(config.host.clone(), config.port);
 
     // Set password if provided
+    //
+    // The spice-client API requires an owned plain `String` by value; the
+    // copy's lifetime (and zeroization) is controlled by spice-client, so a
+    // `Zeroizing` wrapper around the intermediate would not protect the copy
+    // stored inside the client. Re-check on spice-client bumps whether a
+    // secrecy-aware setter became available.
     if let Some(ref password) = config.password {
         use secrecy::ExposeSecret;
         native_client.set_password(password.expose_secret().to_string());

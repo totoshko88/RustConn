@@ -83,7 +83,8 @@ pub fn rebuild_sidebar_sorted(state: &SharedAppState, sidebar: &SharedSidebar) {
     let store = sidebar.store();
     let state_ref = state.borrow();
 
-    // Get and sort groups by sort_order, then by name
+    // Get and sort groups by sort_order, then by name. Owned clones are
+    // required: state_ref is dropped before the store is rebuilt below.
     let mut groups: Vec<_> = state_ref
         .get_root_groups()
         .iter()
@@ -153,6 +154,7 @@ pub fn rebuild_sidebar_sorted(state: &SharedAppState, sidebar: &SharedSidebar) {
                 true,
                 icon,
             );
+            item.set_description(conn.description.as_deref().unwrap_or(""));
             favorites_item.add_child(&item);
         }
         store.append(&favorites_item);
@@ -202,6 +204,7 @@ pub fn rebuild_sidebar_sorted(state: &SharedAppState, sidebar: &SharedSidebar) {
             conn.is_pinned,
             icon,
         );
+        item.set_description(conn.description.as_deref().unwrap_or(""));
         store.append(&item);
     }
 
@@ -271,6 +274,7 @@ pub fn add_sorted_group_children(
             conn.is_pinned,
             icon,
         );
+        item.set_description(conn.description.as_deref().unwrap_or(""));
         parent_item.add_child(&item);
     }
 }

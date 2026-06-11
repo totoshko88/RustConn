@@ -20,7 +20,7 @@
 RustConn is a cross-platform connection orchestrator with a GTK4/libadwaita interface.
 It brings SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, and Zero Trust connections under one roof — with embedded Rust clients where possible and seamless integration with external tools where needed.
 
-[![Demo](https://img.youtube.com/vi/b-TI0i1I380/maxresdefault.jpg)](https://youtu.be/b-TI0i1I380)
+[![Demo](https://img.youtube.com/vi/SwVtKzZwKAU/maxresdefault.jpg)](https://youtu.be/SwVtKzZwKAU)
 
 ## Screenshots
 
@@ -94,6 +94,7 @@ flatpak install flathub io.github.totoshko88.RustConn
 | **Arch Linux** | `yay -S rustconn` ([AUR](https://aur.archlinux.org/packages/rustconn), community) |
 | **FreeBSD** | `pkg install rustconn` ([ports](https://www.freshports.org/net/rustconn/), community) |
 | **AppImage** | [GitHub Releases](https://github.com/totoshko88/RustConn/releases) |
+| **Windows (WSL2)** | Runs under WSLg ([guide](docs/WSL.md)) |
 | **From source** | Rust 1.95+, GTK4 4.14+ ([build guide](docs/BUILD.md)) |
 
 ## Quick Start
@@ -113,6 +114,7 @@ flatpak install flathub io.github.totoshko88.RustConn
 | [Installation](docs/INSTALL.md) | All installation methods and repository setup |
 | [Build Guide](docs/BUILD.md) | Building from source, feature flags, per-distro prerequisites |
 | [macOS Build](docs/MACOS_BUILD.md) | Building and running on macOS, Homebrew, DMG packaging |
+| [Windows / WSL2](docs/WSL.md) | Running RustConn on Windows via WSLg |
 | [CLI Reference](docs/CLI_REFERENCE.md) | `rustconn-cli` commands and examples |
 | [Architecture](docs/ARCHITECTURE.md) | Crate structure and design decisions |
 | [CI & Build Flow](docs/CI_BUILD_FLOW.md) | CI pipelines, OBS packaging, Flathub release process |

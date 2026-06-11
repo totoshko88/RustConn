@@ -3,6 +3,7 @@
 //! This module provides the main window implementation for `RustConn`,
 //! including the header bar, sidebar, terminal area, and action handling.
 
+mod batch_edit;
 mod clusters;
 mod connection_actions;
 mod connection_dialogs;
@@ -1251,6 +1252,7 @@ impl MainWindow {
                     &protocol,
                     &conn.host,
                 );
+                item.set_description(conn.description.as_deref().unwrap_or(""));
                 store.append(&item);
             }
         } else if let Some(protocols_str) = query.strip_prefix("protocols:") {
@@ -1278,6 +1280,7 @@ impl MainWindow {
                     &protocol,
                     &conn.host,
                 );
+                item.set_description(conn.description.as_deref().unwrap_or(""));
                 store.append(&item);
             }
         } else {
@@ -1316,6 +1319,7 @@ impl MainWindow {
                         &protocol,
                         &conn.host,
                     );
+                    item.set_description(conn.description.as_deref().unwrap_or(""));
                     store.append(&item);
                 }
             }

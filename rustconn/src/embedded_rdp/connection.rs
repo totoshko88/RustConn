@@ -1174,7 +1174,9 @@ impl super::EmbeddedRdpWidget {
             || msg.contains("Unsupported PDU")
             || msg.contains("Unsupported security protocol")
             || msg.contains("negotiation failed")
-            || msg.contains("NegotiationError");
+            || msg.contains("NegotiationError")
+            || msg.contains("decode error")
+            || msg.contains("unsupported fast-path update code");
 
         if is_protocol_error {
             tracing::warn!(
@@ -1239,7 +1241,9 @@ impl super::EmbeddedRdpWidget {
             } else {
                 *ctx.state.borrow_mut() = RdpConnectionState::Error;
                 if let Some(ref cb) = *ctx.on_error.borrow() {
-                    cb(&i18n("RDP server incompatible. Install FreeRDP."));
+                    cb(&i18n(
+                        "RDP server sent unsupported data. Install FreeRDP (xfreerdp3) for compatibility.",
+                    ));
                 }
             }
         } else {

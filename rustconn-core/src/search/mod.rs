@@ -457,6 +457,29 @@ impl SearchEngine {
     }
 
     /// Scores a single connection against the query
+    /// Scores the query against the connection description/notes and records
+    /// the match (weight 0.5 — below name/host/tags, above custom properties).
+    fn score_description(
+        &self,
+        query: &SearchQuery,
+        description: &str,
+        max_score: &mut f32,
+        result: &mut ConnectionSearchResult,
+    ) {
+        let desc_score = self.fuzzy_score(&query.text, description);
+        if desc_score > 0.0 {
+            *max_score = max_score.max(desc_score * 0.5);
+            result.matched_fields.push("description".to_string());
+            if let Some(highlight) = self.find_highlight(&query.text, description) {
+                result.highlights.push(MatchHighlight::new(
+                    "description",
+                    highlight.0,
+                    highlight.1,
+                ));
+            }
+        }
+    }
+
     fn score_connection(
         &self,
         query: &SearchQuery,
@@ -498,6 +521,11 @@ impl SearchEngine {
                     .highlights
                     .push(MatchHighlight::new("host", highlight.0, highlight.1));
             }
+        }
+
+        // Score against description/notes
+        if let Some(description) = &connection.description {
+            self.score_description(query, description, &mut max_score, &mut result);
         }
 
         // Score against tags
@@ -1186,6 +1214,27 @@ mod tests {
 
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].connection_id, connections[0].id);
+    }
+
+    #[test]
+    fn test_search_by_description() {
+        let engine = SearchEngine::new();
+        let mut with_notes = create_test_connection("server1", "192.168.1.1", ProtocolType::Ssh);
+        with_notes.description = Some("production database, do not touch".to_string());
+        let without_notes = create_test_connection("server2", "192.168.1.2", ProtocolType::Ssh);
+        let connections = vec![with_notes, without_notes];
+        let groups = vec![];
+
+        let query = SearchQuery::with_text("production");
+        let results = engine.search(&query, &connections, &groups);
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].connection_id, connections[0].id);
+        assert!(
+            results[0]
+                .matched_fields
+                .contains(&"description".to_string())
+        );
     }
 
     #[test]
