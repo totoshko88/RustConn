@@ -340,9 +340,30 @@ jobs:
           name: snap-package
           path: ${{ steps.build.outputs.snap }}
 
+  publish-snap:
+    name: Publish Snap to Store
+    needs: build-snap
+    runs-on: ubuntu-latest
+    # Store publishing is decoupled from `build-snap`/`release` on purpose:
+    # `snapcraft upload` can hang for a long time waiting on the store review
+    # queue. Keeping it in build-snap previously cancelled the whole release
+    # pipeline (see run 27312051268). This job is best-effort only —
+    # continue-on-error + timeouts ensure it can never block or fail the
+    # GitHub release, which only needs the snap artifact (already uploaded).
+    if: startsWith(github.ref, 'refs/tags/v')
+    continue-on-error: true
+    timeout-minutes: 20
+    steps:
+      - name: Download Snap artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: snap-package
+          path: dist/
+
+      - name: Install Snapcraft
+        run: sudo snap install snapcraft --classic
+
       - name: Publish to Snap Store
-        if: startsWith(github.ref, 'refs/tags/v')
-        continue-on-error: true
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAP_STORE_TOKEN }}
         # Channel layout since snapcraft.io Builds (Launchpad) was enabled:
@@ -354,8 +375,11 @@ jobs:
         #   stable    — manual promote of a tested candidate revision;
         #               "Update metadata on release" then syncs the store
         #               listing from that revision's snapcraft.yaml
-        timeout-minutes: 10
-        run: snapcraft upload ${{ steps.build.outputs.snap }} --release candidate
+        timeout-minutes: 15
+        run: |
+          SNAP_FILE=$(ls dist/*.snap)
+          echo "Uploading $SNAP_FILE to candidate channel"
+          snapcraft upload "$SNAP_FILE" --release candidate
 
   build-flatpak:
     name: Build Flatpak
