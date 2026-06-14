@@ -7386,40 +7386,40 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/time/time-0.3.47.crate",
-        "sha256": "743bd48c283afc0388f9b8827b976905fb217ad9e647fae3a379a9283c4def2c",
-        "dest": "cargo/vendor/time-0.3.47"
+        "url": "https://static.crates.io/crates/time/time-0.3.49.crate",
+        "sha256": "711a53c2d47bbd818258c498c8dbfe186a2526c631495cfe7e078567f86b8469",
+        "dest": "cargo/vendor/time-0.3.49"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"743bd48c283afc0388f9b8827b976905fb217ad9e647fae3a379a9283c4def2c\", \"files\": {}}",
-        "dest": "cargo/vendor/time-0.3.47",
+        "contents": "{\"package\": \"711a53c2d47bbd818258c498c8dbfe186a2526c631495cfe7e078567f86b8469\", \"files\": {}}",
+        "dest": "cargo/vendor/time-0.3.49",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/time-core/time-core-0.1.8.crate",
-        "sha256": "7694e1cfe791f8d31026952abf09c69ca6f6fa4e1a1229e18988f06a04a12dca",
-        "dest": "cargo/vendor/time-core-0.1.8"
+        "url": "https://static.crates.io/crates/time-core/time-core-0.1.9.crate",
+        "sha256": "9e1c906769ad99c88eaa54e728060edef082f8e358ff32030cb7c7d315e81109",
+        "dest": "cargo/vendor/time-core-0.1.9"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"7694e1cfe791f8d31026952abf09c69ca6f6fa4e1a1229e18988f06a04a12dca\", \"files\": {}}",
-        "dest": "cargo/vendor/time-core-0.1.8",
+        "contents": "{\"package\": \"9e1c906769ad99c88eaa54e728060edef082f8e358ff32030cb7c7d315e81109\", \"files\": {}}",
+        "dest": "cargo/vendor/time-core-0.1.9",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/time-macros/time-macros-0.2.27.crate",
-        "sha256": "2e70e4c5a0e0a8a4823ad65dfe1a6930e4f4d756dcd9dd7939022b5e8c501215",
-        "dest": "cargo/vendor/time-macros-0.2.27"
+        "url": "https://static.crates.io/crates/time-macros/time-macros-0.2.29.crate",
+        "sha256": "71c652a3727a9cbb9a02f707f530b618ce00d0ccd762009c8c23bd191df3c17d",
+        "dest": "cargo/vendor/time-macros-0.2.29"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"2e70e4c5a0e0a8a4823ad65dfe1a6930e4f4d756dcd9dd7939022b5e8c501215\", \"files\": {}}",
-        "dest": "cargo/vendor/time-macros-0.2.27",
+        "contents": "{\"package\": \"71c652a3727a9cbb9a02f707f530b618ce00d0ccd762009c8c23bd191df3c17d\", \"files\": {}}",
+        "dest": "cargo/vendor/time-macros-0.2.29",
         "dest-filename": ".cargo-checksum.json"
     },
     {
