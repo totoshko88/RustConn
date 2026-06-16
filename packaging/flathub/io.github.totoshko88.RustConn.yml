@@ -81,8 +81,8 @@ modules:
       - -DFASTFLOAT_TEST=OFF
     sources:
       - type: archive
-        url: https://github.com/fastfloat/fast_float/archive/refs/tags/v8.0.2.tar.gz
-        sha256: e14a33089712b681d74d94e2a11362643bd7d769ae8f7e7caefe955f57f7eacd
+        url: https://github.com/fastfloat/fast_float/archive/refs/tags/v8.2.10.tar.gz
+        sha256: 76f958dd97b1cf4d8862d1f0986a47d4bdfa8845252bae15ef0f40de3b95961f
 
   - name: vte
     buildsystem: meson
@@ -270,8 +270,8 @@ modules:
       - -DWITH_RDTK=OFF
     sources:
       - type: archive
-        url: https://pub.freerdp.com/releases/freerdp-3.26.0.tar.xz
-        sha256: e30635b85b6e3b4db327562802cd64f95ca427722695c780b29cc1e1a59e566e
+        url: https://pub.freerdp.com/releases/freerdp-3.27.0.tar.xz
+        sha256: bdd23d8f1b0b061a2fc5f239387897a8fd3f02f675adf1c90f3572ba18cdb7e5
         x-checker-data:
           type: anitya
           project-id: 10442
@@ -315,7 +315,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/totoshko88/RustConn.git
-        tag: v0.16.6
+        tag: v0.16.7
         x-checker-data:
           type: git
           tag-pattern: ^v([\d.]+)$

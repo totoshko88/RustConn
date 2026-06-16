@@ -1,3 +1,31 @@
+rustconn (0.16.7-1) unstable; urgency=medium
+
+  * Fixed sidebar right-click menu rows rendering invisible under KDE / the
+    Breeze GTK theme (#181) — the custom popover now pins its colours to the
+    libadwaita popover palette so the menu rows stay legible under any GTK theme
+  * Fixed the smart-folder right-click menus (folder actions and connections
+    inside a smart folder) sharing the same invisible-rows defect — they now
+    reuse the same popover styling; the destructive Delete keeps its red accent
+  * Updated bundled Flatpak components: FreeRDP 3.26.0->3.27.0,
+    fast_float 8.0.2->8.2.10
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Tue, 16 Jun 2026 12:00:00 +0300
+
+rustconn (0.16.6-1) unstable; urgency=medium
+
+  * Fixed Activity Monitor doing nothing on most connections and the per-tab
+    "Monitor" menu being stuck on Off (#180) — monitoring is now wired from a
+    single session-creation choke point, so it works for every terminal
+    protocol and every connect path (sidebar, command palette, cluster) and for
+    both synchronous and port-checked connections; sessions are registered even
+    when Off so the tab menu can cycle Off -> Activity -> Silence on a live
+    session, and in-place reconnect re-arms monitoring
+  * Fixed silence notification reporting the wrong connection name when several
+    monitored tabs were open — the name is now resolved per session
+  * Updated h2 0.4.14->0.4.15
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Mon, 15 Jun 2026 12:00:00 +0300
+
 rustconn (0.16.5-1) unstable; urgency=medium
 
   * Fixed external FreeRDP client closing immediately with no explanation

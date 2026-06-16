@@ -140,6 +140,16 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.16.7" date="2026-06-16">
+      <description>
+        <p>Version 0.16.7 — KDE menu legibility fix and Flatpak component updates:</p>
+        <ul>
+          <li>Fixed sidebar right-click menu rows rendering invisible under KDE / the Breeze GTK theme — menu colours are now pinned to the libadwaita palette so rows stay legible under any GTK theme</li>
+          <li>Fixed the smart-folder right-click menus sharing the same invisible-rows defect</li>
+          <li>Updated bundled Flatpak components: FreeRDP 3.27.0 and fast_float 8.2.10</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.16.6" date="2026-06-15">
       <description>
         <p>Version 0.16.6 — Activity Monitor fixes:</p>

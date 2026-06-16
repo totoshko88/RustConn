@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.7] - 2026-06-16
+
+### Fixed
+
+- **Sidebar context menu rows invisible under KDE / Breeze GTK theme** ([#181](https://github.com/totoshko88/RustConn/issues/181)) — the connection/group right-click menu is a custom `Popover` of flat buttons whose text colour was inherited from the active GTK theme. Under a third-party theme (notably Breeze-GTK on KDE Plasma) the flat-button text was painted in a colour that clashed with the libadwaita popover background, so the rows rendered as white-on-white and the menu looked empty. The menu now pins its background and item text to the libadwaita popover palette (`@popover_bg_color` / `@popover_fg_color`) at application stylesheet priority, so the rows stay legible regardless of the system GTK theme, and forces normal font weight in case the theme bolds menu items
+- **Smart-folder right-click menus had the same invisible-rows defect** — the context menus for a smart folder (Edit / Delete) and for a connection shown inside a smart folder (Connect, Edit, Copy Username/Password, Wake On LAN, Check if Online, Delete) are built from the same custom flat-button popover pattern and were also unreadable under Breeze-GTK on KDE. They now reuse the same popover palette styling; the destructive "Delete" entry keeps its red accent
+
+### Dependencies (Flatpak)
+
+- **FreeRDP** 3.26.0 → 3.27.0 — bundled RDP backend updated to the latest upstream maintenance release
+- **fast_float** 8.0.2 → 8.2.10 — bundled FreeRDP build dependency updated within the 8.x series
+
 ## [0.16.6] - 2026-06-15
 
 ### Fixed

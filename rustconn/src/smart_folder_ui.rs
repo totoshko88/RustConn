@@ -360,6 +360,10 @@ fn show_smart_folder_context_menu(
     };
 
     let popover = gtk4::Popover::new();
+    // Keep the menu legible under third-party GTK themes (e.g. Breeze on KDE),
+    // which otherwise paint the flat-button text to clash with the popover
+    // background (#181). Styling lives in assets/style.css.
+    popover.add_css_class("context-menu-popover");
 
     let menu_box = GtkBox::new(Orientation::Vertical, 0);
     menu_box.set_margin_top(6);
@@ -371,6 +375,7 @@ fn show_smart_folder_context_menu(
         let btn = Button::with_label(label);
         btn.set_has_frame(false);
         btn.add_css_class("flat");
+        btn.add_css_class("context-menu-item");
         btn.set_halign(gtk4::Align::Start);
         btn
     };
@@ -394,7 +399,7 @@ fn show_smart_folder_context_menu(
 
     // Delete
     let delete_btn = create_menu_button(&i18n("Delete"));
-    delete_btn.add_css_class("error");
+    delete_btn.add_css_class("context-menu-destructive");
     let win = window_clone;
     let popover_c = popover_ref;
     delete_btn.connect_clicked(move |_| {
@@ -445,6 +450,10 @@ fn show_connection_context_menu_in_smart_folder(row: &ListBoxRow, conn_id: Strin
     };
 
     let popover = gtk4::Popover::new();
+    // Keep the menu legible under third-party GTK themes (e.g. Breeze on KDE),
+    // which otherwise paint the flat-button text to clash with the popover
+    // background (#181). Styling lives in assets/style.css.
+    popover.add_css_class("context-menu-popover");
 
     let menu_box = GtkBox::new(Orientation::Vertical, 0);
     menu_box.set_margin_top(6);
@@ -456,6 +465,7 @@ fn show_connection_context_menu_in_smart_folder(row: &ListBoxRow, conn_id: Strin
         let btn = Button::with_label(label);
         btn.set_has_frame(false);
         btn.add_css_class("flat");
+        btn.add_css_class("context-menu-item");
         btn.set_halign(gtk4::Align::Start);
         btn
     };
@@ -581,7 +591,7 @@ fn show_connection_context_menu_in_smart_folder(row: &ListBoxRow, conn_id: Strin
 
     // Delete
     let delete_btn = create_menu_button(&i18n("Delete"));
-    delete_btn.add_css_class("error");
+    delete_btn.add_css_class("context-menu-destructive");
     let win = window.clone();
     let id = conn_id;
     let popover_c = popover_ref;

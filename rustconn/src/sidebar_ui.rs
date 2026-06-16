@@ -320,6 +320,11 @@ fn show_popover(
 
     let popover = gtk4::Popover::new();
     popover.set_parent(widget);
+    // Pin the popover's own background/foreground to the libadwaita popover
+    // palette. Third-party GTK themes (e.g. Breeze on KDE) otherwise colour
+    // the flat-button text to clash with the popover background, rendering the
+    // menu rows invisible (#181). Styled in assets/style.css.
+    popover.add_css_class("context-menu-popover");
 
     // `accessible-role` is construct-only — use the builder so screen
     // readers announce the container as a menu.

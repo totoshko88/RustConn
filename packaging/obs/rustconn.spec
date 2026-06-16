@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.16.6
+Version:        0.16.7
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -242,6 +242,11 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Tue Jun 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.16.7-0
+- Fixed sidebar right-click menu rows rendering invisible under KDE / the Breeze GTK theme (#181) — the custom popover now pins its colours to the libadwaita popover palette so the menu rows stay legible under any GTK theme
+- Fixed the smart-folder right-click menus (folder actions and connections inside a smart folder) sharing the same invisible-rows defect — they now reuse the same popover styling; the destructive Delete keeps its red accent
+- Updated bundled Flatpak components: FreeRDP 3.26.0->3.27.0, fast_float 8.0.2->8.2.10
+
 * Mon Jun 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.16.6-0
 - Fixed Activity Monitor doing nothing on most connections and the per-tab "Monitor" menu stuck on Off (#180) — monitoring is wired from a single session-creation choke point, covering every terminal protocol and connect path (sidebar, command palette, cluster) and both synchronous and port-checked connections; sessions register even when Off so the tab menu can cycle Off -> Activity -> Silence live, and in-place reconnect re-arms monitoring
 - Fixed silence notification reporting the wrong connection name with several monitored tabs open — name is now resolved per session

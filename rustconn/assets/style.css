@@ -356,6 +356,28 @@ label.error {
     color: @error_color;
 }
 
+/* Context menu popover — pin the menu colours to the libadwaita popover
+ * palette so the rows stay legible under third-party GTK themes. On KDE the
+ * Breeze GTK theme paints the flat-button text in a colour that clashes with
+ * the popover background, making the menu rows invisible (#181). Loaded at
+ * APPLICATION priority, so these win over the system theme. */
+.context-menu-popover > contents {
+    background-color: @popover_bg_color;
+    color: @popover_fg_color;
+}
+
+/* Use button.* selectors so they beat the theme's `button.flat` colour at
+ * equal specificity (APPLICATION priority already outranks the theme). Force
+ * normal weight in case the theme renders menu items bold. */
+button.context-menu-item {
+    color: @popover_fg_color;
+    font-weight: normal;
+}
+
+button.context-menu-item label {
+    color: inherit;
+}
+
 /* Context menu item — visible keyboard-focus indication (the menu is a
  * custom Box of flat buttons, so the focused item must be highlighted
  * like a regular menu row for keyboard navigation to be usable) */
@@ -364,12 +386,14 @@ label.error {
     outline: none;
 }
 
-/* Context menu destructive button - ensure text is visible */
-.context-menu-destructive {
+/* Context menu destructive button - ensure text is visible. Uses a
+ * `button.*` selector so it wins over `button.context-menu-item` at equal
+ * specificity (it is defined later in source order). */
+button.context-menu-destructive {
     color: @error_color;
 }
 
-.context-menu-destructive:hover {
+button.context-menu-destructive:hover {
     background-color: alpha(@error_color, 0.1);
     color: @error_color;
 }
