@@ -24,6 +24,8 @@ rustconn (0.16.11-1) unstable; urgency=medium
   * The Advanced connection editor now has a distinct "New Connection
     (Advanced)" window title through every entry point, including the wizard's
     Advanced hand-off
+  * Updated bundled dependencies — cJSON (Flatpak) 1.7.18->1.7.19, arrayvec
+    0.7.6->0.7.7
 
  -- Anton Isaiev <totoshko88@gmail.com>  Sat, 20 Jun 2026 13:00:00 +0300
 

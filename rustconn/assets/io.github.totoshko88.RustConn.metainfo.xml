@@ -150,6 +150,7 @@
           <li>Fixed RDP connections created through the New Connection wizard never storing the typed password, which caused an immediate NLA authentication failure; the wizard now persists the password to the vault like the full editor</li>
           <li>Fixed RDP through an RD Gateway rendering a broken, black session in embedded mode — gateway connections now go directly to the external client, which wires up gateway routing correctly</li>
           <li>The Advanced connection editor now has a distinct "New Connection (Advanced)" window title through every entry point</li>
+          <li>Updated bundled dependencies (cJSON, arrayvec)</li>
         </ul>
       </description>
     </release>

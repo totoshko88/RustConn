@@ -1817,7 +1817,7 @@ impl MainWindow {
                         && let Ok(conn_id) = state_mut.create_connection(conn)
                     {
                         Self::persist_wizard_password(
-                            &mut state_mut,
+                            &state_mut,
                             conn_id,
                             &password_source,
                             password.as_ref(),
@@ -1851,7 +1851,7 @@ impl MainWindow {
                         && let Ok(conn_id) = state_mut.create_connection(conn)
                     {
                         Self::persist_wizard_password(
-                            &mut state_mut,
+                            &state_mut,
                             conn_id,
                             &password_source,
                             password.as_ref(),
@@ -1908,7 +1908,7 @@ impl MainWindow {
         reason = "mirrors save_password_to_vault parameters 1:1; a struct would only restate them"
     )]
     fn persist_wizard_password(
-        state_mut: &mut crate::state::AppState,
+        state_mut: &crate::state::AppState,
         conn_id: uuid::Uuid,
         password_source: &rustconn_core::models::PasswordSource,
         password: Option<&secrecy::SecretString>,
@@ -1993,7 +1993,7 @@ impl MainWindow {
                     && let Ok(conn_id) = state_mut.create_connection(new_conn)
                 {
                     Self::persist_wizard_password(
-                        &mut state_mut,
+                        &state_mut,
                         conn_id,
                         &password_source,
                         password.as_ref(),
@@ -2026,7 +2026,7 @@ impl MainWindow {
                     && let Ok(conn_id) = state_mut.create_connection(new_conn)
                 {
                     Self::persist_wizard_password(
-                        &mut state_mut,
+                        &state_mut,
                         conn_id,
                         &password_source,
                         password.as_ref(),

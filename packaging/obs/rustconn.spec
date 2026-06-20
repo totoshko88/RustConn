@@ -254,6 +254,7 @@ done
 - Fixed RDP connections created through the New Connection wizard never storing the typed password (#188) — they were created with no usable credential, causing an immediate NLA authentication failure; the wizard now persists the password to the vault, mirroring the full editor
 - Fixed RDP through an RD Gateway rendering a broken/black session in embedded mode (#187) — gateway connections now go directly to the external client, which wires up gateway routing, instead of falling through to embedded wlfreerdp which never emits the gateway arguments
 - The Advanced connection editor now has a distinct "New Connection (Advanced)" window title through every entry point, including the wizard's Advanced hand-off
+- Updated bundled dependencies — cJSON (Flatpak) 1.7.18->1.7.19, arrayvec 0.7.6->0.7.7
 
 * Fri Jun 19 2026 Anton Isaiev <totoshko88@gmail.com> - 0.16.10-0
 - Fixed RDP Mouse Jiggler not preventing the remote desktop from locking (#185) — in Embedded (IronRDP) mode the jiggler only moved the mouse, which keeps the session alive but does not reset the Windows workstation lock timer; each tick now also taps Scroll Lock (a no-op, state-preserving keystroke) so unattended desktops stay unlocked

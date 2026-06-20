@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Connection wizard no longer distinguishes the "Custom Command" card by its display string** — the protocol grid's *Custom Command* and *Zero Trust* cards both map to `ProtocolType::ZeroTrust`, and the custom-command mode was selected via `label == "Custom Command"`. That comparison would silently break the moment the label were wrapped in `i18n()`. Replaced with an explicit `is_custom_command` field on `ProtocolDef`
 
+### Dependencies
+
+- **Updated**: arrayvec 0.7.6→0.7.7
+- **cJSON (Flatpak)** 1.7.18→1.7.19 — bundled JSON backend for FreeRDP/WinPR updated to the latest upstream release
+
 
 ## [0.16.10] - 2026-06-19
 
