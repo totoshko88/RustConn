@@ -252,6 +252,8 @@ modules:
   - name: cjson
     buildsystem: cmake-ninja
     config-opts:
+      # cJSON 1.7.19 declares cmake_minimum_required < 3.5, removed in CMake 4.x
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
       - -DENABLE_CJSON_TEST=OFF
       - -DENABLE_CJSON_UTILS=OFF
       - -DBUILD_SHARED_LIBS=OFF
