@@ -140,7 +140,7 @@
     <control>touch</control>
   </supports>
   <releases>
-    <release version="0.16.12" date="2026-06-22">
+    <release version="0.16.12" date="2026-06-21">
       <description>
         <p>Version 0.16.12 — Workspace profiles and port knocking:</p>
         <ul>

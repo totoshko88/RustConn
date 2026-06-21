@@ -247,7 +247,7 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
-* Sun Jun 22 2026 Anton Isaiev <totoshko88@gmail.com> - 0.16.12-0
+* Sun Jun 21 2026 Anton Isaiev <totoshko88@gmail.com> - 0.16.12-0
 - Added workspace profiles — save and restore named sets of connections
 - Added built-in port knocking — TCP/UDP knock sequences before connecting
 - Added fwknop SPA configuration model

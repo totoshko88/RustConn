@@ -1,5 +1,5 @@
 -------------------------------------------------------------------
-Sun Jun 22 2026 Anton Isaiev <totoshko88@gmail.com> - 0.16.12
+Sun Jun 21 2026 Anton Isaiev <totoshko88@gmail.com> - 0.16.12
 
 - Added workspace profiles — save and restore named sets of connections via Tools → Workspaces menu
 - Added built-in port knocking — send TCP/UDP knock sequences before connecting without external CLI tools

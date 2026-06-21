@@ -8,7 +8,7 @@ rustconn (0.16.12-1) unstable; urgency=medium
   * Integrated port knock execution into the pre-connect chain
   * Added port knock sequence field in the Advanced connection editor tab
 
- -- Anton Isaiev <totoshko88@gmail.com>  Sun, 22 Jun 2026 12:00:00 +0200
+ -- Anton Isaiev <totoshko88@gmail.com>  Sun, 21 Jun 2026 20:34:00 +0300
 
 rustconn (0.16.11-1) unstable; urgency=medium
 
