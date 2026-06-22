@@ -140,6 +140,16 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.16.13" date="2026-06-22">
+      <description>
+        <p>Version 0.16.13 — RDP latency display and seamless resolution changes:</p>
+        <ul>
+          <li>Embedded RDP sessions show the round-trip time (RTT) in the toolbar when the server reports network characteristics</li>
+          <li>Dynamic RDP resolution change now works in embedded mode — window resizes no longer force a full reconnect on supported servers</li>
+          <li>Updated the IronRDP stack to 0.16 and refreshed minor dependencies</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.16.12" date="2026-06-21">
       <description>
         <p>Version 0.16.12 — Workspace profiles and port knocking:</p>

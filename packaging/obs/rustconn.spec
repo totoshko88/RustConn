@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.16.12
+Version:        0.16.13
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -247,6 +247,11 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Mon Jun 22 2026 Anton Isaiev <totoshko88@gmail.com> - 0.16.13-0
+- Added RDP round-trip time (latency) display — embedded IronRDP sessions show RTT in the toolbar when the server reports network characteristics via the Auto-Detect PDU; the Echo virtual channel is also registered
+- Dynamic RDP resolution change now works in embedded mode — the Display Control channel is now registered, so window resizes no longer force a full reconnect on servers that support it
+- Updated ironrdp 0.15->0.16 (session, dvc, displaycontrol, echo) plus minor crates (quote, time, zlib-rs)
+
 * Sun Jun 21 2026 Anton Isaiev <totoshko88@gmail.com> - 0.16.12-0
 - Added workspace profiles — save and restore named sets of connections
 - Added built-in port knocking — TCP/UDP knock sequences before connecting

@@ -2876,15 +2876,16 @@ checksum = "d98f6fed1fde3f8c21bc40a1abb88dd75e67924f9cffc3ef95607bad8017f8e2"
 
 [[package]]
 name = "ironrdp"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b38a2f7f5d54dedd823fce1ccf99f64302552a71d2567df95244e74309c05fd"
+checksum = "20226e8e12da999061891e6ebd51647063d0d96a69ce28a31a866248b5e2b403"
 dependencies = [
  "ironrdp-cliprdr",
  "ironrdp-connector",
  "ironrdp-core",
  "ironrdp-displaycontrol",
  "ironrdp-dvc",
+ "ironrdp-echo",
  "ironrdp-graphics",
  "ironrdp-pdu",
  "ironrdp-rdpdr",
@@ -2955,9 +2956,9 @@ dependencies = [
 
 [[package]]
 name = "ironrdp-displaycontrol"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ec72818a807ae1705d8f6a2201142e8205b458c6327986a9fb7f56110b0b4a5"
+checksum = "06fa9dceed81d26da3e699491857a3b3c17c66b19234e3a02bd7db890742ba98"
 dependencies = [
  "ironrdp-core",
  "ironrdp-dvc",
@@ -2968,13 +2969,25 @@ dependencies = [
 
 [[package]]
 name = "ironrdp-dvc"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3468b9a05868e7cd07cf34f02962eac8a5571f47e6b3189fe8461e6519d6f78a"
+checksum = "d3de9b2fdab660414d79e8504195a8a05e68ab89d0faf1ca98e51a66faecd680"
 dependencies = [
  "ironrdp-core",
  "ironrdp-pdu",
  "ironrdp-svc",
+ "tracing",
+]
+
+[[package]]
+name = "ironrdp-echo"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1793190ba5f2b906b730fdd981168571640b8c8a5ee1db91111c7daea42e8c20"
+dependencies = [
+ "ironrdp-core",
+ "ironrdp-dvc",
+ "ironrdp-pdu",
  "tracing",
 ]
 
@@ -3053,9 +3066,9 @@ dependencies = [
 
 [[package]]
 name = "ironrdp-session"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ebd1750d822c54068ace4051ab6fc655b3982fc92cacbaf16c2dc2f6e92602f7"
+checksum = "006a6a4c1da1f67b14da7e89bd9a05c9ffe8485e54320a229623d077da51f5be"
 dependencies = [
  "ironrdp-bulk",
  "ironrdp-connector",
@@ -4729,9 +4742,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.45"
+version = "1.0.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41f2619966050689382d2b44f664f4bc593e129785a36d6ee376ddf37259b924"
+checksum = "dfbc457d0c7a0759a614551b11a6409e5951f6c7537be1f1b7682b9ae9230368"
 dependencies = [
  "proc-macro2",
 ]
@@ -5100,7 +5113,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.16.12"
+version = "0.16.13"
 dependencies = [
  "async-channel",
  "chrono",
@@ -5135,7 +5148,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.16.12"
+version = "0.16.13"
 dependencies = [
  "chrono",
  "clap",
@@ -5157,7 +5170,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.16.12"
+version = "0.16.13"
 dependencies = [
  "aes 0.9.1",
  "ar",
@@ -5212,7 +5225,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-pty-sys"
-version = "0.16.12"
+version = "0.16.13"
 dependencies = [
  "libc",
 ]
@@ -6068,9 +6081,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.49"
+version = "0.3.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "711a53c2d47bbd818258c498c8dbfe186a2526c631495cfe7e078567f86b8469"
+checksum = "85c17d80feb7334b40c484e45ed1a5273dfd8bfda537c3be2e74a06a6686f327"
 dependencies = [
  "deranged",
  "js-sys",
@@ -6089,9 +6102,9 @@ checksum = "9e1c906769ad99c88eaa54e728060edef082f8e358ff32030cb7c7d315e81109"
 
 [[package]]
 name = "time-macros"
-version = "0.2.29"
+version = "0.2.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71c652a3727a9cbb9a02f707f530b618ce00d0ccd762009c8c23bd191df3c17d"
+checksum = "dcef1a61bdb119096e153208ec5cbec23944ce8bca13be5c7f60c634f7403935"
 dependencies = [
  "num-conv",
  "time-core",
@@ -7579,9 +7592,9 @@ dependencies = [
 
 [[package]]
 name = "zlib-rs"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3be3d40e40a133f9c916ee3f9f4fa2d9d63435b5fbe1bfc6d9dae0aa0ada1513"
+checksum = "977347db8caa080403f6b6b7c1cda9479a8e869316f7e13a59b19076a40f94e3"
 
 [[package]]
 name = "zmij"

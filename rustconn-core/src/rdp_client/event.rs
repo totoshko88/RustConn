@@ -523,6 +523,15 @@ pub enum RdpClientEvent {
     /// Audio channel closed
     AudioClose,
 
+    /// Round-trip time measured via Echo DVC (MS-RDPEECO).
+    ///
+    /// Emitted periodically when the Echo virtual channel is active.
+    /// The GUI can display this in the toolbar as a latency indicator.
+    Rtt {
+        /// Round-trip time in milliseconds
+        rtt_ms: u32,
+    },
+
     /// Display Control Channel is not available on this server.
     ///
     /// Emitted when `encode_resize` returns `None`, indicating the server

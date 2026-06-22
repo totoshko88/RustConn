@@ -5,6 +5,22 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.13] - 2026-06-22
+
+### Added
+
+- **RDP RTT (latency) display** — embedded IronRDP sessions now show round-trip time in the toolbar status label when the server reports network characteristics via Auto-Detect PDU (MS-RDPBCGR 2.2.14.1.5). The Echo virtual channel (MS-RDPEECO) is also registered, enabling the server to measure RTT via echo request/response probes
+
+### Improved
+
+- **Dynamic RDP resolution change now works in embedded mode** — the Display Control Virtual Channel (MS-RDPEDISP) is now registered on the dynamic-channel client alongside the new Echo channel. Previously it was never registered, so every window resize fell back to a full reconnect (the 0.16.3 "Fit resolution to window" feature always took the reconnect path). On servers that advertise Display Control capabilities, the desktop is now re-sized seamlessly without dropping the session
+
+### Dependencies
+
+- **Updated**: ironrdp 0.15→0.16 (ironrdp-session 0.9→0.10, ironrdp-dvc 0.6→0.7, ironrdp-displaycontrol 0.6→0.7, ironrdp-server 0.11→0.12, ironrdp-rdpsnd 0.8→0.8.1, ironrdp-echo 0.2→0.3)
+- **Added**: ironrdp-echo 0.3 (Echo DVC for RTT measurement)
+- **Updated**: quote 1.0.45→1.0.46, time 0.3.49→0.3.51, time-macros 0.2.29→0.2.30, zlib-rs 0.6.3→0.6.4
+
 ## [0.16.12] - 2026-06-21
 
 ### Added

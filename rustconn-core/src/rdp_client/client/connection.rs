@@ -6,6 +6,8 @@ use ironrdp::cliprdr::CliprdrClient;
 use ironrdp::connector::{
     BitmapConfig, ClientConnector, Config, ConnectionResult, Credentials, DesktopSize, ServerName,
 };
+use ironrdp::dvc::DrdynvcClient;
+use ironrdp::echo::client::EchoClient;
 use ironrdp::pdu::gcc::KeyboardType;
 use ironrdp::pdu::rdp::capability_sets::{
     BitmapCodecs, MajorPlatformType, client_codecs_capabilities,
@@ -146,6 +148,21 @@ pub async fn establish_connection(
         tracing::debug!("Audio channel enabled (without RDPDR)");
     }
 
+    // Register DRDYNVC (Dynamic Virtual Channel) with Echo client for RTT measurement.
+    // DisplayControlClient is also registered here for dynamic resolution changes (MS-RDPEDISP).
+    // The Echo channel (MS-RDPEECO) responds to server echo requests, enabling the server
+    // to measure round-trip time and report it back via Auto-Detect PDU.
+    // ironrdp 0.16: DisplayControlClient::new takes a capabilities callback. We send the
+    // monitor layout on demand via ActiveStage::encode_resize, so nothing is emitted when
+    // capabilities arrive — return an empty message set.
+    let drdynvc = DrdynvcClient::new()
+        .with_dynamic_channel(ironrdp::displaycontrol::client::DisplayControlClient::new(
+            |_caps| Ok(Vec::new()),
+        ))
+        .with_dynamic_channel(EchoClient::new());
+    connector.static_channels.insert(drdynvc);
+    tracing::debug!("DRDYNVC registered with DisplayControl + Echo channels");
+
     // Phase 3: Perform RDP connection sequence (TLS + NLA + capabilities)
     // Wrap the entire handshake in a timeout — on heavily loaded servers the
     // TCP connect succeeds quickly but TLS/NLA can hang indefinitely.
@@ -228,8 +245,8 @@ pub async fn establish_connection(
         // Wrap in catch_unwind: IronRDP may panic on unexpected server
         // responses in edge cases. Convert the panic into an error
         // so the GUI can fall back to FreeRDP instead of crashing.
-        // TODO(0.17): re-evaluate on the next ironrdp bump (>0.15). As of
-        // 0.15.0 upstream has not confirmed that panics on malformed PDUs are
+        // TODO(0.17): re-evaluate on the next ironrdp bump (>0.16). As of
+        // 0.16.0 upstream has not confirmed that panics on malformed PDUs are
         // gone (connect_finalize issues still reported, e.g.
         // https://github.com/Devolutions/IronRDP/issues/1016), so the wrapper
         // stays. Remove only when upstream confirms no more panics.

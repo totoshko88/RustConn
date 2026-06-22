@@ -58,14 +58,15 @@ spice-client = { version = "0.2.0", optional = true }
 # Pure Rust RDP client for embedded RDP sessions using IronRDP (crates.io)
 # native-tls instead of rustls to match rdw approach
 # Features: cliprdr (clipboard), rdpdr (shared folders), dvc (dynamic channels),
-# displaycontrol (dynamic resolution), rdpsnd (audio)
-ironrdp = { version = "0.15", features = [
+# displaycontrol (dynamic resolution), rdpsnd (audio), echo (RTT measurement)
+ironrdp = { version = "0.16", features = [
     "connector", "session", "graphics", "pdu", "core", "svc",
     "cliprdr",        # Clipboard redirection
     "rdpdr",          # Device/drive redirection (shared folders)
     "dvc",            # Dynamic Virtual Channels
     "displaycontrol", # Dynamic resolution changes (MS-RDPEDISP)
     "rdpsnd",         # Audio redirection
+    "echo",           # Echo DVC for RTT measurement (MS-RDPEECO)
 ], optional = true }
 ironrdp-tokio = { version = "0.9", features = ["reqwest"], optional = true }
 ironrdp-tls = { version = "0.2", features = ["native-tls"], optional = true }
@@ -77,7 +78,7 @@ fs2 = "0.4"
 [target.'cfg(target_os = "macos")'.dependencies]
 security-framework = "3.3"
 
-# Note: ironrdp-rdpdr-native 0.6 requires ironrdp-rdpdr 0.6.x which matches ironrdp 0.15
+# Note: ironrdp-rdpdr-native 0.6 requires ironrdp-rdpdr 0.6.x which matches ironrdp 0.16
 
 [features]
 default = ["vnc-embedded", "rdp-embedded", "spice-embedded"]

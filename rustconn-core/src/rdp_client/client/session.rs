@@ -177,8 +177,17 @@ where
             );
         }
         ActiveStageOutput::AutoDetect(request) => {
-            // IronRDP 0.15: server sends network characteristics result.
-            // Log for diagnostics; no action required from client.
+            // IronRDP 0.16: server sends network characteristics result.
+            // Extract RTT measurement and forward to GUI.
+            if let ironrdp::pdu::rdp::autodetect::AutoDetectRequest::NetworkCharacteristicsResult {
+                average_rtt_ms,
+                ..
+            } = &request
+            {
+                let _ = event_tx.send(RdpClientEvent::Rtt {
+                    rtt_ms: *average_rtt_ms,
+                });
+            }
             tracing::debug!(
                 ?request,
                 "Received Auto-Detect network characteristics from server"
@@ -279,7 +288,7 @@ where
 
 /// Extracts pixel data for a specific region from the decoded image.
 ///
-/// IronRDP 0.15 outputs pixels in BgrA32 which matches Cairo's ARGB32 format
+/// IronRDP 0.16 outputs pixels in BgrA32 which matches Cairo's ARGB32 format
 /// on little-endian (both are B-G-R-A byte order in memory). No channel swap needed.
 ///
 /// Optimized for 4K rendering: uses row-based `memcpy` which is cache-friendly

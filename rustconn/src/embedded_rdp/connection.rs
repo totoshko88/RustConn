@@ -1243,6 +1243,17 @@ impl super::EmbeddedRdpWidget {
                                     },
                                 );
                             }
+                            RdpClientEvent::Rtt { rtt_ms } => {
+                                // Display RTT in the status label (live latency indicator)
+                                status_label
+                                    .set_text(&i18n_f("RTT: {} ms", &[&rtt_ms.to_string()]));
+                                status_label.set_visible(true);
+                                tracing::debug!(
+                                    protocol = "rdp",
+                                    rtt_ms,
+                                    "RTT measurement from server Auto-Detect"
+                                );
+                            }
                             RdpClientEvent::FileClipboardUnsupported => {
                                 tracing::info!(
                                     protocol = "rdp",
