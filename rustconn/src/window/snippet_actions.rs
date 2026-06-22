@@ -273,6 +273,7 @@ impl MainWindow {
         let notebook_clone = terminal_notebook.clone();
         let sidebar_clone = sidebar.clone();
         let monitoring_clone = self.monitoring.clone();
+        let bridges_clone = self.session_split_bridges.clone();
         manage_workspaces_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
                 super::workspaces::show_workspace_manager(
@@ -281,6 +282,7 @@ impl MainWindow {
                     notebook_clone.clone(),
                     sidebar_clone.clone(),
                     monitoring_clone.clone(),
+                    bridges_clone.clone(),
                 );
             }
         });

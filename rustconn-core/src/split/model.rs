@@ -99,6 +99,19 @@ impl SplitLayoutModel {
         self.root.is_some()
     }
 
+    /// Returns the direction and position of the top-level split.
+    ///
+    /// Returns `None` for a single (unsplit) panel. For nested splits only the
+    /// root split is reported — enough to persist the primary layout in a
+    /// workspace profile.
+    #[must_use]
+    pub const fn root_split(&self) -> Option<(SplitDirection, f64)> {
+        match &self.root {
+            Some(PanelNode::Split(node)) => Some((node.direction, node.position)),
+            _ => None,
+        }
+    }
+
     /// Returns the total number of panels in the layout.
     ///
     /// A layout always has at least one panel.

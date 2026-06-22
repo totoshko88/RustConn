@@ -35,7 +35,7 @@ After the initial submission is accepted, updates are automated via GitHub Actio
 ### Generate cargo-sources.json locally
 
 ```bash
-pip install aiohttp toml
+pip install aiohttp PyYAML tomlkit
 wget https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/master/cargo/flatpak-cargo-generator.py
 python3 flatpak-cargo-generator.py Cargo.lock -o cargo-sources.json
 ```

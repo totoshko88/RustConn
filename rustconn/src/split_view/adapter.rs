@@ -233,6 +233,12 @@ impl SplitViewAdapter {
         self.model.borrow().is_split()
     }
 
+    /// Returns the top-level split direction and position, if split.
+    #[must_use]
+    pub fn root_split(&self) -> Option<(SplitDirection, f64)> {
+        self.model.borrow().root_split()
+    }
+
     /// Returns the total number of panels in the layout.
     #[must_use]
     pub fn panel_count(&self) -> usize {

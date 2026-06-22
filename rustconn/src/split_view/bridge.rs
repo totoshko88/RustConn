@@ -456,6 +456,16 @@ impl SplitViewBridge {
         self.adapter.borrow().panel_count()
     }
 
+    /// Returns the top-level split direction and position, if this bridge is
+    /// currently split.
+    ///
+    /// Used to persist the layout in a workspace profile. Returns `None` for a
+    /// single (unsplit) pane.
+    #[must_use]
+    pub fn root_split(&self) -> Option<(rustconn_core::split::SplitDirection, f64)> {
+        self.adapter.borrow().root_split()
+    }
+
     /// Returns all pane UUIDs (legacy compatibility)
     #[must_use]
     pub fn pane_ids(&self) -> Vec<Uuid> {

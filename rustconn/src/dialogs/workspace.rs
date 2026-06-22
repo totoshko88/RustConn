@@ -152,17 +152,21 @@ impl WorkspaceManagerDialog {
         let del_btn_clone = delete_button.clone();
         let items_clone = items.clone();
         list_box.connect_row_selected(move |_, row| {
+            // GTK emits this during list teardown/removal; use try_borrow so a
+            // re-entrant borrow never turns into a non-unwinding abort.
             if let Some(row) = row {
                 let idx = row.index() as usize;
-                let items_ref = items_clone.borrow();
-                if let Some((id, _, _)) = items_ref.get(idx) {
-                    *sel_id.borrow_mut() = Some(*id);
+                let id = items_clone.borrow().get(idx).map(|(id, _, _)| *id);
+                if let Some(id) = id
+                    && let Ok(mut sel) = sel_id.try_borrow_mut()
+                {
+                    *sel = Some(id);
                     open_btn_clone.set_sensitive(true);
                     rename_btn_clone.set_sensitive(true);
                     del_btn_clone.set_sensitive(true);
                 }
-            } else {
-                *sel_id.borrow_mut() = None;
+            } else if let Ok(mut sel) = sel_id.try_borrow_mut() {
+                *sel = None;
                 open_btn_clone.set_sensitive(false);
                 rename_btn_clone.set_sensitive(false);
                 del_btn_clone.set_sensitive(false);
@@ -179,7 +183,11 @@ impl WorkspaceManagerDialog {
         let cb_open = on_open.clone();
         let dialog_for_open = dialog.clone();
         open_button.connect_clicked(move |_| {
-            if let Some(id) = *sel_for_open.borrow() {
+            // Copy the id and release the borrow before invoking the callback
+            // or closing the dialog — closing tears down the list box, which
+            // emits `row-selected` and re-borrows `selected_id`.
+            let selected = *sel_for_open.borrow();
+            if let Some(id) = selected {
                 if let Some(ref cb) = *cb_open.borrow() {
                     cb(id);
                 }
@@ -241,7 +249,10 @@ impl WorkspaceManagerDialog {
         let sel_for_del = selected_id.clone();
         let cb_del = on_delete.clone();
         delete_button.connect_clicked(move |_| {
-            if let Some(id) = *sel_for_del.borrow()
+            // Copy the id and release the borrow before the callback, which
+            // calls `refresh_list` → `row-selected` → re-borrows `selected_id`.
+            let selected = *sel_for_del.borrow();
+            if let Some(id) = selected
                 && let Some(ref cb) = *cb_del.borrow()
             {
                 cb(id);

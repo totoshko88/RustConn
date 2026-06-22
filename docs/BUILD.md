@@ -278,7 +278,20 @@ flatpak install flathub org.freedesktop.Sdk.Extension.rust-stable//24.08
 
 ### Generate cargo-sources.json
 
+The generator needs `aiohttp`, `PyYAML` and `tomlkit`. The script declares them
+as PEP 723 inline metadata, so [`uv`](https://docs.astral.sh/uv/) installs them
+into a throwaway environment automatically — nothing to install globally:
+
 ```bash
+uv run packaging/flatpak/flatpak-cargo-generator.py \
+    Cargo.lock \
+    -o packaging/flatpak/cargo-sources.json
+```
+
+Without `uv`, install the dependencies first, then use plain `python3`:
+
+```bash
+pip install aiohttp PyYAML tomlkit
 python3 packaging/flatpak/flatpak-cargo-generator.py \
     Cargo.lock \
     -o packaging/flatpak/cargo-sources.json

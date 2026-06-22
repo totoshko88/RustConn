@@ -9,8 +9,8 @@
   <a href="https://flathub.org/apps/io.github.totoshko88.RustConn"><img src="https://img.shields.io/flathub/v/io.github.totoshko88.RustConn" alt="Flathub"></a>
   <a href="https://snapcraft.io/rustconn"><img src="https://img.shields.io/snapcraft/v/rustconn/latest/stable" alt="Snap"></a>
   <a href="https://aur.archlinux.org/packages/rustconn"><img src="https://img.shields.io/aur/version/rustconn" alt="AUR"></a>
-  <a href="https://build.opensuse.org/package/show/home:totoshko88:rustconn/rustconn"><img src="https://img.shields.io/badge/OBS-rustconn-green" alt="OBS"></a>
-  <a href="https://www.freshports.org/net/rustconn/"><img src="https://img.shields.io/badge/FreeBSD-ports-red" alt="FreeBSD"></a>
+  <a href="https://build.opensuse.org/package/show/home:totoshko88:rustconn/rustconn"><img src="https://img.shields.io/badge/dynamic/xml?url=https%3a%2f%2fapi.opensuse.org%2fpublic%2fbuild%2fhome%3atotoshko88%3arustconn%2fopenSUSE_Tumbleweed%2fx86_64%2frustconn%3fview%3dbinaryversions&query=substring-before%28substring-after%28%2f%2fbinary%5bcontains%28%40name%2c%27x86_64.rpm%27%29%5d%2f%40name%2c%27rustconn-%27%29%2c%27-%27%29&label=OBS&color=green" alt="OBS"></a>
+  <a href="https://www.freshports.org/net/rustconn/"><img src="https://repology.org/badge/version-for-repo/freebsd/rustconn.svg?header=FreeBSD" alt="FreeBSD"></a>
   <a href="https://github.com/totoshko88/RustConn/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/totoshko88/RustConn/ci.yml?label=CI" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License"></a>
 </p>
@@ -45,7 +45,7 @@ More screenshots on the [Flathub listing](https://flathub.org/apps/io.github.tot
 | **Security** | KeePassXC (KDBX), libsecret, Bitwarden CLI, 1Password CLI, Passbolt CLI, Pass (passwordstore.org), script credentials |
 | **Terminal** | Split terminals, command snippets, text highlighting rules, session recording, custom terminal themes, tab overview, tab pinning |
 | **Automation** | Expect rules, key sequences, pre/post-connect tasks, cluster & ad-hoc broadcast, session reconnect, Wake-on-LAN |
-| **Workflow** | Smart folders, SSH port forwarding, visual SSH tunnel builder, settings backup/restore, .rdp file association |
+| **Workflow** | Smart folders, SSH port forwarding, visual SSH tunnel builder, workspace profiles (save/restore open sessions), settings backup/restore, .rdp file association |
 | **Cloud Sync** | Synchronize connections via shared cloud directory (Google Drive, Syncthing, Nextcloud, Dropbox); group sync with Master/Import access model; simple sync with UUID-based merge |
 | **CLI** | `rustconn-cli` — headless management: list/add/update/delete connections, import/export, snippets, groups, templates, clusters, secrets, WoL, shell completions |
 | **Languages** | English + 16 translations (Belarusian, Czech, Danish, German, Spanish, French, Italian, Kazakh, Dutch, Polish, Portuguese, Slovak, Swedish, Ukrainian, Uzbek, Chinese) |

@@ -11,9 +11,11 @@ use crate::dialogs::WorkspaceManagerDialog;
 use crate::i18n::{i18n, i18n_f};
 use crate::state::SharedAppState;
 use crate::toast::{ToastType, show_toast_on_window};
-use crate::window::types::{SharedMonitoring, SharedNotebook, SharedSidebar};
+use crate::window::types::{
+    SessionSplitBridges, SharedMonitoring, SharedNotebook, SharedSidebar,
+};
 
-use rustconn_core::models::{WorkspaceEntry, WorkspaceProfile};
+use rustconn_core::models::{WorkspaceEntry, WorkspaceProfile, WorkspaceSplitLayout};
 
 /// Shows the workspace manager dialog
 pub fn show_workspace_manager(
@@ -22,6 +24,7 @@ pub fn show_workspace_manager(
     notebook: SharedNotebook,
     sidebar: SharedSidebar,
     monitoring: SharedMonitoring,
+    session_split_bridges: SessionSplitBridges,
 ) {
     let dialog = WorkspaceManagerDialog::new(None);
 
@@ -95,13 +98,20 @@ pub fn show_workspace_manager(
 
     // Save current callback
     let state_for_save = state.clone();
+    let notebook_for_save = notebook.clone();
+    let bridges_for_save = session_split_bridges.clone();
     let dialog_for_save = dialog_rc.clone();
     let window_weak = window.downgrade();
     dialog_rc.set_on_save_current(move || {
         if let Some(win) = window_weak.upgrade() {
-            save_current_workspace(&state_for_save, &win);
+            save_current_workspace(
+                &state_for_save,
+                &notebook_for_save,
+                &bridges_for_save,
+                &dialog_for_save,
+                &win,
+            );
         }
-        dialog_for_save.refresh_list();
     });
 
     dialog_rc.refresh_list();
@@ -109,35 +119,62 @@ pub fn show_workspace_manager(
 }
 
 /// Saves currently open sessions as a new workspace profile
-fn save_current_workspace(state: &SharedAppState, window: &gtk4::Window) {
-    // Collect active sessions from SessionManager
-    let entries: Vec<WorkspaceEntry> = if let Ok(state_ref) = state.try_borrow() {
-        state_ref
-            .active_sessions()
-            .iter()
-            .enumerate()
-            .map(|(i, session)| {
-                WorkspaceEntry::new(
-                    session.connection_id,
-                    session.connection_name.clone(),
-                    session.protocol.clone(),
-                    session.session_type,
-                    i,
-                )
-            })
-            .collect()
-    } else {
-        Vec::new()
-    };
+fn save_current_workspace(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    session_split_bridges: &SessionSplitBridges,
+    dialog: &std::rc::Rc<WorkspaceManagerDialog>,
+    window: &gtk4::Window,
+) {
+    use rustconn_core::session::SessionType;
+    use rustconn_core::split::SplitDirection;
+
+    // Collect open sessions from the terminal notebook (the live source of
+    // truth for the GUI — the core SessionManager is not populated here).
+    let entries: Vec<WorkspaceEntry> = notebook
+        .ordered_session_ids()
+        .iter()
+        .filter_map(|id| notebook.get_session_info(*id))
+        .enumerate()
+        .map(|(i, session)| {
+            let session_type = if session.is_embedded {
+                SessionType::Embedded
+            } else {
+                SessionType::External
+            };
+            WorkspaceEntry::new(
+                session.connection_id,
+                session.name.clone(),
+                session.protocol.clone(),
+                session_type,
+                i,
+            )
+        })
+        .collect();
 
     if entries.is_empty() {
         show_toast_on_window(window, &i18n("No active sessions to save"), ToastType::Info);
         return;
     }
 
+    // Capture the split layout of the currently active tab so it can be
+    // restored on open. Only the active session's bridge is consulted —
+    // WorkspaceSplitLayout stores a single primary split.
+    let split_layout = notebook
+        .get_active_session_id()
+        .and_then(|active| session_split_bridges.borrow().get(&active).cloned())
+        .and_then(|bridge| bridge.root_split())
+        .map(|(direction, ratio)| WorkspaceSplitLayout {
+            is_split: true,
+            horizontal: direction == SplitDirection::Horizontal,
+            split_ratio: ratio,
+        })
+        .unwrap_or_default();
+
     // Prompt for name
     let state_clone = state.clone();
     let entries_clone = entries;
+    let dialog_clone = dialog.clone();
     let window_weak = window.downgrade();
 
     let alert = adw::AlertDialog::new(
@@ -171,26 +208,32 @@ fn save_current_workspace(state: &SharedAppState, window: &gtk4::Window) {
         for e in &entries_clone {
             profile.add_entry(e.clone());
         }
+        profile.set_split_layout(split_layout.clone());
 
-        if let Ok(mut state_ref) = state_clone.try_borrow_mut() {
-            match state_ref.create_workspace_profile(profile) {
-                Ok(_) => {
-                    if let Some(win) = window_weak.upgrade() {
-                        let msg = i18n_f("Workspace '{}' saved", &[&name]);
-                        show_toast_on_window(&win, &msg, ToastType::Success);
-                    }
+        // Create the profile, then release the state borrow *before* refreshing
+        // the list — refresh_list's provider re-borrows the same state.
+        let result = state_clone
+            .try_borrow_mut()
+            .ok()
+            .map(|mut state_ref| state_ref.create_workspace_profile(profile));
+
+        match result {
+            Some(Ok(_)) => {
+                if let Some(win) = window_weak.upgrade() {
+                    let msg = i18n_f("Workspace '{}' saved", &[&name]);
+                    show_toast_on_window(&win, &msg, ToastType::Success);
                 }
-                Err(e) => {
-                    tracing::warn!("Failed to save workspace: {e}");
-                    if let Some(win) = window_weak.upgrade() {
-                        show_toast_on_window(
-                            &win,
-                            &i18n("Failed to save workspace"),
-                            ToastType::Error,
-                        );
-                    }
+                // Refresh now that the profile exists and the state borrow is
+                // released.
+                dialog_clone.refresh_list();
+            }
+            Some(Err(e)) => {
+                tracing::warn!("Failed to save workspace: {e}");
+                if let Some(win) = window_weak.upgrade() {
+                    show_toast_on_window(&win, &i18n("Failed to save workspace"), ToastType::Error);
                 }
             }
+            None => {}
         }
     });
 

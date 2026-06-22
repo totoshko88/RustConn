@@ -1497,14 +1497,14 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/crypto-bigint/crypto-bigint-0.7.4.crate",
-        "sha256": "97bb4a855e3b10f84c4e7e895a7de01db7f9a7b7eb7f73ed9773fd52ac686451",
-        "dest": "cargo/vendor/crypto-bigint-0.7.4"
+        "url": "https://static.crates.io/crates/crypto-bigint/crypto-bigint-0.7.5.crate",
+        "sha256": "1a52aa3fcda4e6302a9f48734f234d35d4721b96f8fe07d073f07ce9df4f0271",
+        "dest": "cargo/vendor/crypto-bigint-0.7.5"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"97bb4a855e3b10f84c4e7e895a7de01db7f9a7b7eb7f73ed9773fd52ac686451\", \"files\": {}}",
-        "dest": "cargo/vendor/crypto-bigint-0.7.4",
+        "contents": "{\"package\": \"1a52aa3fcda4e6302a9f48734f234d35d4721b96f8fe07d073f07ce9df4f0271\", \"files\": {}}",
+        "dest": "cargo/vendor/crypto-bigint-0.7.5",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -4461,14 +4461,14 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/memmap2/memmap2-0.9.10.crate",
-        "sha256": "714098028fe011992e1c3962653c96b2d578c4b4bce9036e15ff220319b1e0e3",
-        "dest": "cargo/vendor/memmap2-0.9.10"
+        "url": "https://static.crates.io/crates/memmap2/memmap2-0.9.11.crate",
+        "sha256": "d1219ed1b7f229ee7104d281dd01d6802fe28bb6e95d292942c4daacdeb798c0",
+        "dest": "cargo/vendor/memmap2-0.9.11"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"714098028fe011992e1c3962653c96b2d578c4b4bce9036e15ff220319b1e0e3\", \"files\": {}}",
-        "dest": "cargo/vendor/memmap2-0.9.10",
+        "contents": "{\"package\": \"d1219ed1b7f229ee7104d281dd01d6802fe28bb6e95d292942c4daacdeb798c0\", \"files\": {}}",
+        "dest": "cargo/vendor/memmap2-0.9.11",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -6359,14 +6359,14 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/rustls/rustls-0.23.40.crate",
-        "sha256": "ef86cd5876211988985292b91c96a8f2d298df24e75989a43a3c73f2d4d8168b",
-        "dest": "cargo/vendor/rustls-0.23.40"
+        "url": "https://static.crates.io/crates/rustls/rustls-0.23.41.crate",
+        "sha256": "6b92b125634d9b795e7beca796cc790df15a7fb38323bf3196fda83292d06b1f",
+        "dest": "cargo/vendor/rustls-0.23.41"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"ef86cd5876211988985292b91c96a8f2d298df24e75989a43a3c73f2d4d8168b\", \"files\": {}}",
-        "dest": "cargo/vendor/rustls-0.23.40",
+        "contents": "{\"package\": \"6b92b125634d9b795e7beca796cc790df15a7fb38323bf3196fda83292d06b1f\", \"files\": {}}",
+        "dest": "cargo/vendor/rustls-0.23.41",
         "dest-filename": ".cargo-checksum.json"
     },
     {

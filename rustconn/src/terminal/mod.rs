@@ -2457,6 +2457,24 @@ impl TerminalNotebook {
         self.sessions.borrow().keys().copied().collect()
     }
 
+    /// Returns session IDs ordered by visible tab position (left to right).
+    ///
+    /// Unlike [`Self::session_ids`], which yields arbitrary `HashMap` order,
+    /// this follows the on-screen tab order — used when saving a workspace so
+    /// tabs restore in the same sequence.
+    #[must_use]
+    pub fn ordered_session_ids(&self) -> Vec<Uuid> {
+        let sessions = self.sessions.borrow();
+        let mut ordered = Vec::with_capacity(sessions.len());
+        for i in 0..self.tab_view.n_pages() {
+            let page = self.tab_view.nth_page(i);
+            if let Some((id, _)) = sessions.iter().find(|(_, p)| **p == page) {
+                ordered.push(*id);
+            }
+        }
+        ordered
+    }
+
     /// Connects a callback for when a terminal child exits
     pub fn connect_child_exited<F>(&self, session_id: Uuid, callback: F)
     where
