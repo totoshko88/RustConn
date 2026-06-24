@@ -619,10 +619,6 @@ impl AppState {
     /// * `connection_id` - The ID of the connection to resolve credentials for
     /// * `callback` - Function called with the result when resolution completes
     ///
-    /// # Requirements Coverage
-    /// - Requirement 9.1: Async operations instead of blocking calls
-    /// - Requirement 9.2: Avoid `block_on()` in GUI code
-    ///
     /// # Example
     /// ```ignore
     /// state.resolve_credentials_gtk(connection_id, move |result| {

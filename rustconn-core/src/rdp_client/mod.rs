@@ -24,16 +24,6 @@
 //! When the feature is disabled, the module still provides the types and
 //! configuration, but the `RdpClient` struct is not available. In this case,
 //! the GUI falls back to `FreeRDP` subprocess (wlfreerdp/xfreerdp).
-//!
-//! # Requirements Coverage
-//!
-//! - Requirement 1.1: Native RDP embedding as GTK widget
-//! - Requirement 1.2: Mouse coordinate forwarding
-//! - Requirement 1.3: Keyboard event forwarding
-//! - Requirement 1.4: Ctrl+Alt+Del support
-//! - Requirement 1.5: Fallback to `FreeRDP`
-//! - Requirement 1.6: Resource cleanup on disconnect
-//! - Requirement 10.1: Follow VNC client architecture pattern
 
 // cast_possible_truncation, cast_precision_loss allowed at workspace level
 #![allow(

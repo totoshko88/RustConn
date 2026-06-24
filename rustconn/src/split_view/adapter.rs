@@ -308,17 +308,17 @@ impl SplitViewAdapter {
     ///
     /// # Drop Source Handling
     ///
-    /// ## `RootTab` (Requirements 9.1, 9.2, 10.1, 10.2)
+    /// ## `RootTab`
     /// - Session is moved from the tab to the panel
     /// - Source tab should be removed from the tab bar
     /// - If panel was occupied, evicted session goes to a new root tab
     ///
-    /// ## `SplitPane` (Requirements 9.3, 10.3)
+    /// ## `SplitPane`
     /// - Session is moved from source panel to target panel
     /// - Source panel should be cleared or removed
     /// - If panel was occupied, evicted session goes to a new root tab
     ///
-    /// ## `SidebarItem` (Requirements 9.4, 10.4)
+    /// ## `SidebarItem`
     /// - A new session is created for the connection
     /// - No source cleanup needed (sidebar item remains)
     /// - If panel was occupied, evicted session goes to a new root tab
@@ -371,7 +371,7 @@ impl SplitViewAdapter {
         // Determine the session to place and the source cleanup action
         let (session_to_place, source_cleanup) = match source {
             DropSource::RootTab { session_id } => {
-                // Requirement 9.2: Remove source tab from tab bar
+                // Remove source tab from tab bar
                 let cleanup = SourceCleanup::RemoveTab {
                     session_id: *session_id,
                 };
@@ -382,7 +382,7 @@ impl SplitViewAdapter {
                 panel_id: source_panel_id,
                 session_id,
             } => {
-                // Requirement 9.3: Move connection from another split container
+                // Move connection from another split container
                 let cleanup = SourceCleanup::ClearPanel {
                     source_tab_id: *source_tab_id,
                     panel_id: *source_panel_id,
@@ -390,7 +390,7 @@ impl SplitViewAdapter {
                 (*session_id, cleanup)
             }
             DropSource::SidebarItem { connection_id } => {
-                // Requirement 9.4: Create new connection from sidebar item
+                // Create new connection from sidebar item
                 // No cleanup needed - sidebar item remains in place
                 let new_session = session_factory(connection_id);
                 (new_session, SourceCleanup::None)
@@ -407,7 +407,7 @@ impl SplitViewAdapter {
         let eviction = match &drop_result {
             DropResult::Placed => EvictionAction::None,
             DropResult::Evicted { evicted_session } => {
-                // Requirements 10.2, 10.3, 10.4: Evicted connection goes to new Root_Tab
+                // Evicted connection goes to new Root_Tab
                 EvictionAction::CreateTab {
                     evicted_session: *evicted_session,
                 }
@@ -465,11 +465,6 @@ impl SplitViewAdapter {
     /// - **Empty panels**: Use `drop-target-empty` CSS class (accent color, inviting)
     /// - **Occupied panels**: Use `drop-target-occupied` CSS class (warning color, indicates eviction)
     ///
-    /// # Requirements
-    /// - 8.1: Highlight target zone with focus border when drag enters
-    /// - 8.2: Remove highlight when drag leaves
-    /// - 8.3: Distinguish between Empty_Panel and Occupied_Panel drop targets
-    ///
     /// # Arguments
     ///
     /// * `panel_id` - The ID of the panel to set up the drop target for
@@ -483,8 +478,8 @@ impl SplitViewAdapter {
         let widget_for_enter = widget.clone();
 
         // Connect enter signal for highlight feedback
-        // Requirement 8.1: Highlight target zone with focus border when drag enters
-        // Requirement 8.3: Distinguish between Empty_Panel and Occupied_Panel
+        // Highlight target zone with focus border when drag enters
+        // Distinguish between Empty_Panel and Occupied_Panel
         drop_target.connect_enter(move |_target, _x, _y| {
             // Determine if panel is empty or occupied to apply appropriate styling
             let is_occupied = model_for_enter
@@ -508,7 +503,7 @@ impl SplitViewAdapter {
         let widget_for_leave = widget.clone();
 
         // Connect leave signal to remove highlight
-        // Requirement 8.2: Remove highlight when drag leaves
+        // Remove highlight when drag leaves
         drop_target.connect_leave(move |_target| {
             widget_for_leave.remove_css_class("drop-target-highlight");
             widget_for_leave.remove_css_class("drop-target-empty");
@@ -522,7 +517,7 @@ impl SplitViewAdapter {
         let widget_for_drop = widget.clone();
 
         // Connect drop signal to handle the drop operation
-        // Requirements 9.1, 9.2, 9.4, 10.1, 10.2, 10.4: Handle drops from tabs and sidebar
+        // Handle drops from tabs and sidebar
         drop_target.connect_drop(move |_target, value, _x, _y| {
             // Remove highlight classes first
             widget_for_drop.remove_css_class("drop-target-highlight");
@@ -539,11 +534,11 @@ impl SplitViewAdapter {
             };
 
             // Parse the drag data to determine the source type
-            // Format 1: "conn:uuid" - Connection from sidebar (Requirement 7.3)
-            // Format 2: "uuid" - Session ID from tab or split pane (Requirements 7.1, 7.2)
+            // Format 1: "conn:uuid" - Connection from sidebar
+            // Format 2: "uuid" - Session ID from tab or split pane
             // Format 3: "group:uuid" - Group from sidebar (not droppable to panels)
             let (source_cleanup, session_id) = if let Some(conn_id_str) = drag_data.strip_prefix("conn:") {
-                // Sidebar connection item - Requirement 9.4
+                // Sidebar connection item
                 // Parse the connection ID
                 let conn_uuid = match uuid::Uuid::parse_str(conn_id_str) {
                     Ok(uuid) => uuid,
@@ -571,7 +566,7 @@ impl SplitViewAdapter {
                 tracing::debug!("Groups cannot be dropped on split panels");
                 return false;
             } else {
-                // Session ID from tab or split pane - Requirements 9.1, 9.2, 10.1, 10.2
+                // Session ID from tab or split pane
                 let session_uuid = match uuid::Uuid::parse_str(&drag_data) {
                     Ok(uuid) => uuid,
                     Err(e) => {
@@ -581,7 +576,7 @@ impl SplitViewAdapter {
                 };
                 let session_id = SessionId::from_uuid(session_uuid);
 
-                // Requirement 9.2: Source tab should be removed
+                // Source tab should be removed
                 (SourceCleanup::RemoveTab { session_id }, session_id)
             };
 
@@ -601,7 +596,7 @@ impl SplitViewAdapter {
                                 "Session {session_id} placed in panel {panel_id}, \
                                  evicted session {evicted_session}"
                             );
-                            // Requirement 10.2: Evicted connection goes to new Root_Tab
+                            // Evicted connection goes to new Root_Tab
                             EvictionAction::CreateTab {
                                 evicted_session: *evicted_session,
                             }
@@ -838,7 +833,7 @@ impl SplitViewAdapter {
     /// - Has a color-specific CSS class based on the layout's `ColorId` (e.g., `split-panel-color-0`)
     /// - Contains either an empty placeholder or occupied placeholder based on panel state
     /// - Has a drop target configured for drag-and-drop operations
-    /// - Has a drag source configured for occupied panels (Requirement 7.2)
+    /// - Has a drag source configured for occupied panels
     ///
     /// # Color Border Styling
     ///
@@ -846,11 +841,6 @@ impl SplitViewAdapter {
     /// `split-panel-color-N` where N is the color index (0-5). This allows CSS
     /// to apply colored borders to visually identify panels belonging to the
     /// same split container.
-    ///
-    /// # Requirements
-    /// - 6.3: Panel borders within the Split_Container painted using the assigned Color_ID
-    /// - 7.2: Occupied_Panel can be dragged from Split_Container
-    /// - 8.1, 8.2, 8.3: Drop target with visual feedback
     fn create_panel_widget(&self, panel_id: PanelId) -> GtkBox {
         let container = GtkBox::new(Orientation::Vertical, 0);
 
@@ -877,17 +867,17 @@ impl SplitViewAdapter {
         }
 
         // Set up drop target for drag-and-drop operations
-        // Requirements 8.1, 8.2, 8.3: Drop target with visual feedback
+        // Drop target with visual feedback
         self.setup_drop_target(panel_id, &container);
 
         // Handle both empty and occupied panel states
         if let Some(session_id) = self.model.borrow().get_panel_session(panel_id) {
             // Set up drag source for occupied panels
-            // Requirement 7.2: Occupied_Panel can be dragged from Split_Container
+            // Occupied_Panel can be dragged from Split_Container
             self.setup_drag_source(panel_id, session_id, &container);
 
             // Set up context menu for occupied panels
-            // Requirement 13.4: Right-click context menu with Close/Move options
+            // Right-click context menu with Close/Move options
             self.setup_panel_context_menu(panel_id, session_id, &container);
 
             let placeholder = self.create_occupied_placeholder();
@@ -907,10 +897,6 @@ impl SplitViewAdapter {
     /// - Add visual feedback during drag (CSS class `dragging`)
     /// - Handle removal from source after successful drop
     ///
-    /// # Requirements
-    /// - 7.2: Occupied_Panel can be dragged from Split_Container
-    /// - 7.4: Visual feedback during drag
-    ///
     /// # Arguments
     ///
     /// * `panel_id` - The ID of the panel being dragged
@@ -929,7 +915,7 @@ impl SplitViewAdapter {
         });
 
         // Visual feedback: add CSS class when drag starts
-        // Requirement 7.4: Visual feedback during drag
+        // Visual feedback during drag
         let widget_for_begin = widget.clone();
         drag_source.connect_drag_begin(move |_source, _drag| {
             widget_for_begin.add_css_class("dragging");
@@ -971,9 +957,6 @@ impl SplitViewAdapter {
     /// The context menu provides options for:
     /// - "Close Connection": Removes the panel from the split container
     /// - "Move to New Tab": Extracts the session to a new root tab
-    ///
-    /// # Requirements
-    /// - 13.4: Right-click context menu with Close Connection and Move to New Tab options
     ///
     /// # Arguments
     ///
@@ -1100,11 +1083,6 @@ impl SplitViewAdapter {
     /// - A "Select Tab" button below the status page for choosing a session
     /// - A close button (X) in the top-right corner using `gtk4::Overlay`
     /// - The close button triggers panel removal when clicked
-    ///
-    /// # Requirements
-    /// - 4.1: Empty panel displays placeholder text
-    /// - 4.5: Empty panel displays a close button (X icon) in the top-right corner
-    /// - 4.6: When close button clicked, panel is removed from Split_Container
     fn create_empty_placeholder(&self, panel_id: PanelId) -> Overlay {
         // Create the status page with placeholder content
         // Use tab-symbolic icon to indicate this is for selecting tabs

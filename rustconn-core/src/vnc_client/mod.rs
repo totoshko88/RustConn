@@ -9,13 +9,6 @@
 //! GUI through channels:
 //! - `VncEvent` channel: framebuffer updates, resolution changes, etc.
 //! - `VncCommand` channel: keyboard/mouse input, disconnect requests
-//!
-//! # Requirements Coverage
-//!
-//! - Requirement 2.1: Native VNC embedding as GTK widget
-//! - Requirement 2.2: Keyboard and mouse input forwarding
-//! - Requirement 2.3: VNC authentication handling
-//! - Requirement 2.4: Cleanup on disconnect
 
 #[cfg(feature = "vnc-embedded")]
 mod client;

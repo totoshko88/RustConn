@@ -6,7 +6,7 @@
 //! # Architecture
 //!
 //! Each protocol has its own session widget implementation that wraps the underlying
-//! display widget (VTE4 for SSH, gtk-vnc for VNC, etc.) and provides:
+//! display widget (VTE4 for SSH, the native `vnc-rs` client for VNC) and provides:
 //! - Connection lifecycle management
 //! - Floating overlay controls
 //! - State tracking and error handling
@@ -16,11 +16,6 @@
 //! RDP and SPICE protocols use native Rust implementations directly:
 //! - RDP: `rustconn/src/embedded_rdp.rs` with `ironrdp` crate
 //! - SPICE: `rustconn/src/embedded_spice.rs` with `spice-client` crate
-//!
-//! # Requirements Coverage
-//!
-//! - Requirement 2.1: Native VNC embedding as GTK widget
-//! - Requirement 2.5: Connection state management and error handling
 
 pub mod vnc;
 
@@ -40,7 +35,7 @@ use thiserror::Error;
 pub enum SessionWidget {
     /// SSH session using VTE4 terminal
     Ssh(vte4::Terminal),
-    /// VNC session using gtk-vnc
+    /// VNC session using the native `vnc-rs` client
     Vnc(VncSessionWidget),
 }
 
@@ -86,10 +81,6 @@ impl SessionWidget {
 /// State transitions follow a defined pattern:
 /// - Disconnected → Connecting → (Authenticating →)? Connected
 /// - Any state → Disconnected or Error
-///
-/// # Requirements Coverage
-///
-/// - Requirement 2.5: Connection state management
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum SessionState {
     /// Not connected to any remote host

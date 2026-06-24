@@ -8,13 +8,6 @@
 //! The embedded VNC widget uses a `DrawingArea` as the rendering target and
 //! integrates with a VNC client library for the actual VNC protocol handling.
 //! On Wayland, it uses `wl_subsurface` for native compositor integration.
-//!
-//! # Requirements Coverage
-//!
-//! - Requirement 16.2: VNC connections embedded in main window
-//! - Requirement 16.3: Wayland wl_subsurface for native compositor integration
-//! - Requirement 16.4: Frame buffer handling and blit to wl_buffer
-//! - Requirement 16.5: Keyboard and mouse input forwarding
 
 // cast_possible_truncation, cast_precision_loss allowed at workspace level
 #![allow(

@@ -7,7 +7,7 @@ use super::*;
 impl MainWindow {
     pub(crate) fn setup_split_view_actions(&self, window: &adw::ApplicationWindow) {
         // Helper function to get or create a split bridge for a session
-        // Requirement 3: Each tab maintains its own independent split layout
+        // Each tab maintains its own independent split layout
         // A session gets its own bridge when it initiates a split.
         // If the session is already displayed in another bridge, we still create
         // a new bridge for it (the session will be moved to the new bridge).

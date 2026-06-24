@@ -29,17 +29,6 @@
 //! Both modes open FreeRDP in a separate window; the difference is in client selection
 //! and user expectations.
 
-//!
-//! # Requirements Coverage
-//!
-//! - Requirement 16.1: RDP connections via FreeRDP
-//! - Requirement 16.6: Proper cleanup on disconnect
-//! - Requirement 16.8: Fallback to xfreerdp if wlfreerdp unavailable
-//! - Requirement 6.1: QSocketNotifier error handling
-//! - Requirement 6.2: Wayland requestActivate warning suppression
-//! - Requirement 6.3: FreeRDP threading isolation
-//! - Requirement 6.4: Automatic fallback to external mode
-
 pub mod buffer;
 pub mod detect;
 pub mod launcher;
@@ -193,7 +182,7 @@ pub struct EmbeddedRdpWidget {
     config: Rc<RefCell<Option<RdpConfig>>>,
     /// FreeRDP child process (for external mode)
     process: Rc<RefCell<Option<Child>>>,
-    /// FreeRDP thread wrapper for embedded mode (Requirement 6.3)
+    /// FreeRDP thread wrapper for embedded mode
     freerdp_thread: Rc<RefCell<Option<FreeRdpThread>>>,
     /// IronRDP command sender for embedded mode
     #[cfg(feature = "rdp-embedded")]
@@ -214,7 +203,7 @@ pub struct EmbeddedRdpWidget {
     on_state_changed: Rc<RefCell<Option<StateCallback>>>,
     /// Error callback
     on_error: Rc<RefCell<Option<ErrorCallback>>>,
-    /// Fallback notification callback (Requirement 6.4)
+    /// Fallback notification callback
     on_fallback: Rc<RefCell<Option<FallbackCallback>>>,
     /// Reconnect callback
     on_reconnect: Rc<RefCell<Option<Box<dyn Fn() + 'static>>>>,
@@ -1410,7 +1399,7 @@ impl EmbeddedRdpWidget {
         *self.on_error.borrow_mut() = Some(Box::new(callback));
     }
 
-    /// Connects a callback for fallback notifications (Requirement 6.4)
+    /// Connects a callback for fallback notifications
     ///
     /// This callback is invoked when embedded mode fails and the system
     /// falls back to external xfreerdp mode.
@@ -1421,7 +1410,7 @@ impl EmbeddedRdpWidget {
         *self.on_fallback.borrow_mut() = Some(Box::new(callback));
     }
 
-    /// Reports a fallback and notifies listeners (Requirement 6.4)
+    /// Reports a fallback and notifies listeners
     fn report_fallback(&self, message: &str) {
         with_callback(&self.on_fallback, |cb| cb(message));
     }
@@ -1567,7 +1556,7 @@ impl EmbeddedRdpWidget {
             return;
         }
 
-        // Send keyboard event via FreeRDP thread (Requirement 6.3)
+        // Send keyboard event via FreeRDP thread
         if let Some(ref thread) = *self.freerdp_thread.borrow() {
             let _ = thread.send_command(RdpCommand::KeyEvent { keyval, pressed });
         }
@@ -1577,10 +1566,6 @@ impl EmbeddedRdpWidget {
     ///
     /// This is commonly used to unlock Windows login screens or access
     /// the security options menu.
-    ///
-    /// # Requirements Coverage
-    ///
-    /// - Requirement 1.4: Ctrl+Alt+Del support
     pub fn send_ctrl_alt_del(&self) {
         if !*self.is_embedded.borrow() {
             return;
@@ -1613,7 +1598,7 @@ impl EmbeddedRdpWidget {
             return;
         }
 
-        // Send mouse event via FreeRDP thread (Requirement 6.3)
+        // Send mouse event via FreeRDP thread
         if let Some(ref thread) = *self.freerdp_thread.borrow() {
             let _ = thread.send_command(RdpCommand::MouseEvent {
                 x,
@@ -1646,7 +1631,7 @@ impl EmbeddedRdpWidget {
         // Resize pixel buffer
         self.pixel_buffer.borrow_mut().resize(width, height);
 
-        // Send resize command via FreeRDP thread (Requirement 6.3)
+        // Send resize command via FreeRDP thread
         if let Some(ref thread) = *self.freerdp_thread.borrow() {
             let _ = thread.send_command(RdpCommand::Resize { width, height });
         }

@@ -172,7 +172,7 @@ pub fn setup_list_item(
     });
 
     // Visual feedback during drag
-    // Requirement 7.4: Visual feedback during drag
+    // Visual feedback during drag
     let list_item_weak_begin = list_item.downgrade();
     drag_source.connect_drag_begin(move |_source, _drag| {
         if let Some(list_item) = list_item_weak_begin.upgrade()
@@ -410,7 +410,7 @@ pub fn bind_list_item(
             first.set_visible(false);
         }
 
-        // Cloud Sync indicator icons (Requirement 5.5)
+        // Cloud Sync indicator icons
         // Check if a sync-indicator image already exists (from previous bind)
         let sync_indicator = content_box
             .last_child()

@@ -10,13 +10,6 @@
 //! - Framebuffer rendering from SPICE client events
 //! - Keyboard and mouse input forwarding
 //! - Fallback to external viewer (remote-viewer) when native fails
-//!
-//! # Requirements Coverage
-//!
-//! - Requirement 9.1: Native SPICE embedding as GTK widget
-//! - Requirement 9.2: Display rendering in embedded mode
-//! - Requirement 9.3: Keyboard and mouse input forwarding
-//! - Requirement 9.4: Fallback to external viewer
 
 use crate::i18n::i18n;
 use gtk4::prelude::*;

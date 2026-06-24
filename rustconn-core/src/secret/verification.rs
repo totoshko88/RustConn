@@ -3,12 +3,6 @@
 //! This module provides functionality to track whether credentials have been
 //! successfully used for authentication. This allows the application to skip
 //! the password dialog for connections with verified credentials.
-//!
-//! # Requirements Coverage
-//!
-//! - Requirement 2.1: Skip dialog for verified credentials
-//! - Requirement 2.3: Mark credentials as requiring verification on auth failure
-//! - Requirement 2.5: Mark credentials as verified after successful auth
 
 use chrono::{DateTime, Utc};
 use secrecy::SecretString;
@@ -207,9 +201,6 @@ impl VerifiedCredentials {
 ///
 /// This struct represents the values that should be pre-filled in the
 /// password dialog based on connection settings.
-///
-/// # Requirements Coverage
-/// - Requirement 2.4: Pre-fill username and domain from saved connection settings
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DialogPreFillData {
     /// Username to pre-fill (from connection settings)

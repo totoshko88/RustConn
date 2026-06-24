@@ -94,7 +94,6 @@ impl CloudProvider {
 /// Returns the icon name for a given protocol type
 ///
 /// Each protocol has a distinct icon to help users quickly identify connection types.
-/// This implements Requirements 7.1, 7.2, 7.3, 7.4 for protocol-specific icons.
 ///
 /// # Arguments
 /// * `protocol` - The protocol type to get an icon for

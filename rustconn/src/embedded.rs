@@ -410,10 +410,10 @@ impl RdpLauncher {
         // Enable dynamic resolution for better display
         cmd.arg("/dynamic-resolution");
 
-        // Add decorations flag for window controls (Requirement 6.1)
+        // Add decorations flag for window controls
         cmd.arg("/decorations");
 
-        // Add window geometry if saved and remember_window_position is enabled (Requirements 6.2, 6.3, 6.4)
+        // Add window geometry if saved and remember_window_position is enabled
         if remember_window_position && let Some((x, y, _width, _height)) = window_geometry {
             cmd.arg(format!("/x:{x}"));
             cmd.arg(format!("/y:{y}"));

@@ -35,7 +35,7 @@ pub enum EmbeddedRdpError {
     #[error("Resize handling error: {0}")]
     ResizeError(String),
 
-    /// Qt/Wayland threading error (Requirement 6.1, 6.2)
+    /// Qt/Wayland threading error
     #[error("Qt/Wayland threading error: {0}")]
     QtThreadingError(String),
 
@@ -43,7 +43,7 @@ pub enum EmbeddedRdpError {
     #[error("FreeRDP process failed: {0}")]
     ProcessFailed(String),
 
-    /// Falling back to external mode (Requirement 6.4)
+    /// Falling back to external mode
     #[error("Falling back to external mode: {0}")]
     FallbackToExternal(String),
 
@@ -344,7 +344,7 @@ pub enum RdpCommand {
     },
     /// Resize the display
     Resize { width: u32, height: u32 },
-    /// Send Ctrl+Alt+Del key sequence (Requirement 1.4)
+    /// Send Ctrl+Alt+Del key sequence
     SendCtrlAltDel,
     /// Shutdown the thread
     Shutdown,
@@ -396,7 +396,7 @@ pub type StateCallback = Box<dyn Fn(RdpConnectionState) + 'static>;
 /// Callback type for error notifications
 pub type ErrorCallback = Box<dyn Fn(&str) + 'static>;
 
-/// Callback type for fallback notifications (Requirement 6.4)
+/// Callback type for fallback notifications
 pub type FallbackCallback = Box<dyn Fn(&str) + 'static>;
 
 #[cfg(test)]

@@ -24,13 +24,6 @@
 //! When the feature is disabled, the module still provides the types and
 //! configuration, but the `SpiceClient` struct is not available. In this case,
 //! the GUI falls back to virt-viewer subprocess.
-//!
-//! # Requirements Coverage
-//!
-//! - Requirement 9.1: Native SPICE embedding as GTK widget
-//! - Requirement 9.2: Display rendering in embedded mode
-//! - Requirement 9.3: Keyboard and mouse input forwarding
-//! - Requirement 9.4: Fallback to virt-viewer
 
 #[cfg(feature = "spice-embedded")]
 mod client;

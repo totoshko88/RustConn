@@ -15,10 +15,6 @@ impl TerminalNotebook {
     /// For SSH/remote sessions, launches `script` on the remote host with
     /// `/tmp` paths and retrieves the files via SCP when recording stops.
     ///
-    /// # Requirements
-    /// - 6.3: Recording starts when the terminal session begins
-    /// - 6.6: Visual indicator in the terminal tab during recording
-    ///
     /// # Returns
     ///
     /// `true` if recording was started successfully, `false` on error.

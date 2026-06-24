@@ -173,7 +173,7 @@ pub enum SourceCleanup {
     /// Remove the source tab from the tab bar.
     ///
     /// Used when a root tab is dropped onto a panel.
-    /// Requirements 9.2: Remove source tab from tab bar.
+    /// Remove source tab from tab bar.
     RemoveTab {
         /// The session ID of the tab to remove.
         session_id: SessionId,
@@ -208,7 +208,7 @@ pub enum EvictionAction {
     None,
     /// Create a new root tab for the evicted session.
     ///
-    /// Requirements 10.2, 10.3, 10.4: Evicted connection goes to new Root_Tab.
+    /// Evicted connection goes to new Root_Tab.
     CreateTab {
         /// The session that was evicted and needs a new tab.
         evicted_session: SessionId,
@@ -239,8 +239,6 @@ impl EvictionAction {
 /// - The core model's `DropResult`
 /// - What cleanup is needed at the source
 /// - What action is needed for any evicted session
-///
-/// # Requirements
 ///
 /// This type supports the following requirements:
 /// - 9.1: Move connection to empty panel

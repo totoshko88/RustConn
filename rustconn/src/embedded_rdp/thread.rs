@@ -207,7 +207,7 @@ fn lock_or_recover<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
 }
 
 // ============================================================================
-// FreeRDP Thread Isolation (Requirement 6.3)
+// FreeRDP Thread Isolation
 // ============================================================================
 
 /// Consolidated shared state for the FreeRDP thread.

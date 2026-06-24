@@ -304,9 +304,6 @@ impl PasswordDialog {
     /// This button should be shown when:
     /// - KeePass integration is enabled
     /// - Credentials exist in Keyring but not in KeePass
-    ///
-    /// # Requirements Coverage
-    /// - Requirement 3.3: Display "Save to KeePass" button when migration is needed
     pub fn set_show_migrate_button(&self, show: bool) {
         self.migrate_button.set_visible(show);
     }
@@ -315,9 +312,6 @@ impl PasswordDialog {
     ///
     /// This method populates the username and domain fields from the
     /// connection's saved settings, allowing users to only enter the password.
-    ///
-    /// # Requirements Coverage
-    /// - Requirement 2.4: Pre-fill username and domain from saved connection settings
     ///
     /// # Arguments
     /// * `username` - Optional username from connection settings
@@ -362,9 +356,6 @@ impl PasswordDialog {
     ///
     /// This method displays a spinner and message while credentials are being
     /// resolved asynchronously, preventing UI freezing.
-    ///
-    /// # Requirements Coverage
-    /// - Requirement 9.3: Show loading indicator during async resolution
     pub fn show_loading(&self, message: Option<&str>) {
         let default_msg = i18n("Resolving credentials...");
         let msg = message.unwrap_or(&default_msg);
@@ -379,9 +370,6 @@ impl PasswordDialog {
     ///
     /// This method hides the spinner and re-enables the connect button
     /// after async credential resolution completes.
-    ///
-    /// # Requirements Coverage
-    /// - Requirement 9.3: Hide loading indicator when resolution completes
     pub fn hide_loading(&self) {
         #[cfg(not(feature = "adw-1-6"))]
         self.spinner.set_spinning(false);
@@ -393,9 +381,6 @@ impl PasswordDialog {
     ///
     /// This method displays an error message in the loading area
     /// when credential resolution fails.
-    ///
-    /// # Requirements Coverage
-    /// - Requirement 9.4: Display error message without freezing UI
     pub fn show_error(&self, message: &str) {
         #[cfg(not(feature = "adw-1-6"))]
         self.spinner.set_spinning(false);
@@ -421,9 +406,6 @@ impl PasswordDialog {
     ///
     /// When the dialog is closed, this token will be cancelled to stop
     /// any pending credential resolution operations.
-    ///
-    /// # Requirements Coverage
-    /// - Requirement 9.5: Support cancellation of pending requests
     pub fn set_cancel_token(&self, token: CancellationToken) {
         *self.cancel_token.borrow_mut() = Some(token);
     }
@@ -432,9 +414,6 @@ impl PasswordDialog {
     ///
     /// This method should be called when the dialog is closed to cancel
     /// any pending credential resolution operations.
-    ///
-    /// # Requirements Coverage
-    /// - Requirement 9.5: Cancel on dialog close
     pub fn cancel_pending_operations(&self) {
         if let Some(token) = self.cancel_token.borrow().as_ref() {
             token.cancel();
@@ -450,9 +429,6 @@ impl PasswordDialog {
     ///
     /// This method shows the dialog and automatically cancels any pending
     /// operations when the dialog is closed.
-    ///
-    /// # Requirements Coverage
-    /// - Requirement 9.5: Cancel on dialog close
     pub fn show_with_cancellation<F: Fn(Option<PasswordDialogResult>) + 'static>(
         &self,
         callback: F,

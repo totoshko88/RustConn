@@ -3,13 +3,6 @@
 //! This module provides functions to build `FreeRDP` command-line arguments
 //! for external mode RDP connections. It supports window decorations,
 //! geometry persistence, and various RDP options.
-//!
-//! # Requirements Coverage
-//!
-//! - Requirement 6.1: `/decorations` flag for window controls
-//! - Requirement 6.2: Window geometry persistence (save on close)
-//! - Requirement 6.3: Window geometry restoration (load on start)
-//! - Requirement 6.4: Respect `remember_window_position` setting
 
 use crate::models::WindowGeometry;
 use secrecy::{ExposeSecret, SecretString};
@@ -164,12 +157,6 @@ impl FreeRdpConfig {
 /// # Returns
 ///
 /// A vector of command-line arguments for `FreeRDP`
-///
-/// # Requirements Coverage
-///
-/// - Requirement 6.1: Always includes `/decorations` flag
-/// - Requirement 6.3: Includes `/x:` and `/y:` if geometry is set and `remember_window_position` is true
-/// - Requirement 6.4: Skips geometry if `remember_window_position` is false
 #[must_use]
 pub fn build_freerdp_args(config: &FreeRdpConfig) -> Vec<String> {
     let mut args = Vec::new();
@@ -210,10 +197,10 @@ pub fn build_freerdp_args(config: &FreeRdpConfig) -> Vec<String> {
     // Dynamic resolution
     args.push("/dynamic-resolution".to_string());
 
-    // Decorations flag for window controls (Requirement 6.1)
+    // Decorations flag for window controls
     args.push("/decorations".to_string());
 
-    // Window geometry (Requirements 6.2, 6.3, 6.4)
+    // Window geometry
     if config.remember_window_position
         && let Some(ref geometry) = config.window_geometry
     {

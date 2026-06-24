@@ -14,7 +14,7 @@ impl super::EmbeddedRdpWidget {
     /// This function handles framebuffer rendering when IronRDP is available,
     /// or shows a status overlay when using FreeRDP external mode.
     ///
-    /// # Framebuffer Rendering (Requirement 1.1)
+    /// # Framebuffer Rendering
     ///
     /// When in embedded mode with framebuffer data available:
     /// 1. Receives framebuffer updates via event channel

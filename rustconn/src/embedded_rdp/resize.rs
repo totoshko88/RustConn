@@ -37,10 +37,6 @@ impl super::EmbeddedRdpWidget {
     /// 1. Immediately scale the current image to fit
     /// 2. After 500ms of no resize, send `SetDesktopSize` via Display Control Channel
     /// 3. If Display Control is unavailable, fall back to reconnect
-    ///
-    /// # Requirements Coverage
-    ///
-    /// - Requirement 1.7: Dynamic resolution change on resize
     #[cfg(feature = "rdp-embedded")]
     pub(super) fn setup_resize_handler(&self) {
         let width = self.width.clone();

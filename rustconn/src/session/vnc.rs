@@ -1,22 +1,14 @@
 //! VNC session widget for native embedding
 //!
-//! This module provides the `VncSessionWidget` struct that wraps the VNC FFI
-//! display widget with overlay controls and state management.
-//!
-//! # Requirements Coverage
-//!
-//! - Requirement 2.1: Native VNC embedding as GTK widget
-//! - Requirement 2.2: Keyboard and mouse input forwarding
-//! - Requirement 2.3: VNC authentication handling
-//! - Requirement 2.5: Connection state management and error handling
-//! - Requirement 8.1: VNC viewer detection and launch
-//! - Requirement 8.3: Error handling for missing VNC viewer
+//! `VncSessionWidget` wraps the native Rust VNC client (`EmbeddedVncWidget`,
+//! backed by the `vnc-rs` crate) with overlay controls and state management,
+//! and falls back to an external VNC viewer when embedding is unavailable or
+//! the connection requests `VncClientMode::External`.
 
 use super::{SessionError, SessionState};
 use crate::embedded_vnc::{EmbeddedVncWidget, VncConfig as EmbeddedVncConfig, VncConnectionState};
 use gtk4::prelude::*;
 use gtk4::{Align, Box as GtkBox, Label, Orientation, Overlay};
-use rustconn_core::ffi::{VncCredentialType, VncDisplay};
 use rustconn_core::models::{VncClientMode, VncConfig};
 use rustconn_core::protocol::{detect_vnc_client, detect_vnc_viewer_name};
 use std::cell::RefCell;
@@ -28,17 +20,13 @@ use crate::i18n::i18n;
 #[cfg(feature = "adw-1-6")]
 use libadwaita as adw;
 
-/// Callback type for authentication requests
-type AuthCallback = Box<dyn Fn(&[VncCredentialType]) + 'static>;
-
 /// Callback type for state change notifications
 type StateCallback = Box<dyn Fn(SessionState) + 'static>;
 
 /// VNC session widget with overlay controls
 ///
-/// This widget wraps the VNC FFI display and provides:
+/// This widget wraps the native embedded VNC client and provides:
 /// - Connection lifecycle management
-/// - Authentication callback handling
 /// - State tracking and error reporting
 /// - Overlay controls for session management
 /// - External VNC viewer process management
@@ -50,20 +38,13 @@ type StateCallback = Box<dyn Fn(SessionState) + 'static>;
 ///
 /// let widget = VncSessionWidget::new();
 ///
-/// // Set up authentication callback
-/// widget.connect_auth_required(|creds| {
-///     // Prompt user for credentials
-/// });
-///
 /// // Connect to VNC server
-/// widget.connect("192.168.1.100", 5900, None);
+/// widget.connect_with_config("192.168.1.100", 5900, None, &config);
 /// ```
-#[expect(dead_code, reason = "Fields kept for GTK widget lifecycle")]
+#[expect(dead_code, reason = "status_container kept for GTK widget lifecycle")]
 pub struct VncSessionWidget {
     /// The GTK overlay container
     overlay: Overlay,
-    /// The VNC display widget (FFI placeholder)
-    display: Rc<VncDisplay>,
     /// The embedded VNC widget (native Rust VNC client)
     embedded_widget: Rc<EmbeddedVncWidget>,
     /// Current session state
@@ -77,8 +58,6 @@ pub struct VncSessionWidget {
     spinner: gtk4::Spinner,
     /// Status container (kept for preventing premature deallocation and future floating controls)
     status_container: GtkBox,
-    /// Authentication callback
-    auth_callback: Rc<RefCell<Option<AuthCallback>>>,
     /// State change callback
     state_callback: Rc<RefCell<Option<StateCallback>>>,
     /// External VNC viewer process (when using external mode)
@@ -95,10 +74,8 @@ impl VncSessionWidget {
     /// The widget is created in a disconnected state and ready for connection.
     #[must_use]
     pub fn new() -> Self {
-        let display = Rc::new(VncDisplay::new());
         let embedded_widget = Rc::new(EmbeddedVncWidget::new());
         let state = Rc::new(RefCell::new(SessionState::Disconnected));
-        let auth_callback: Rc<RefCell<Option<AuthCallback>>> = Rc::new(RefCell::new(None));
         let state_callback: Rc<RefCell<Option<StateCallback>>> = Rc::new(RefCell::new(None));
         let external_process: Rc<RefCell<Option<Child>>> = Rc::new(RefCell::new(None));
         let is_external = Rc::new(RefCell::new(false));
@@ -144,21 +121,17 @@ impl VncSessionWidget {
 
         let widget = Self {
             overlay,
-            display,
             embedded_widget,
             state,
             status_label,
             spinner,
             status_container,
-            auth_callback,
             state_callback,
             external_process,
             is_external,
             is_embedded_native,
         };
 
-        // Set up VNC display signal handlers
-        widget.setup_display_signals();
         // Set up embedded widget state callbacks
         widget.setup_embedded_callbacks();
 
@@ -183,84 +156,6 @@ impl VncSessionWidget {
     #[must_use]
     pub fn get_vnc_client_info() -> rustconn_core::protocol::ClientInfo {
         detect_vnc_client()
-    }
-
-    /// Sets up signal handlers for the VNC display
-    fn setup_display_signals(&self) {
-        let state = self.state.clone();
-        let status_label = self.status_label.clone();
-        let spinner = self.spinner.clone();
-        let state_callback = self.state_callback.clone();
-
-        // Connected signal
-        let state_clone = state.clone();
-        let status_label_clone = status_label.clone();
-        let spinner_clone = spinner.clone();
-        let state_callback_clone = state_callback.clone();
-        self.display.connect_vnc_connected(move |_| {
-            *state_clone.borrow_mut() = SessionState::Connected;
-            status_label_clone.set_text(&i18n("Connected"));
-            #[cfg(not(feature = "adw-1-6"))]
-            spinner_clone.set_spinning(false);
-            spinner_clone.set_visible(false);
-
-            if let Some(ref callback) = *state_callback_clone.borrow() {
-                callback(SessionState::Connected);
-            }
-        });
-
-        // Disconnected signal
-        let state_clone = state.clone();
-        let status_label_clone = status_label.clone();
-        let spinner_clone = spinner.clone();
-        let state_callback_clone = state_callback.clone();
-        self.display.connect_vnc_disconnected(move |_| {
-            *state_clone.borrow_mut() = SessionState::Disconnected;
-            status_label_clone.set_text(&i18n("Disconnected"));
-            #[cfg(not(feature = "adw-1-6"))]
-            spinner_clone.set_spinning(false);
-            spinner_clone.set_visible(false);
-
-            if let Some(ref callback) = *state_callback_clone.borrow() {
-                callback(SessionState::Disconnected);
-            }
-        });
-
-        // Auth credential signal
-        let state_clone = state.clone();
-        let status_label_clone = status_label.clone();
-        let auth_callback_clone = self.auth_callback.clone();
-        let state_callback_clone = state_callback.clone();
-        self.display.connect_vnc_auth_credential(move |_, creds| {
-            *state_clone.borrow_mut() = SessionState::Authenticating;
-            status_label_clone.set_text(&i18n("Authenticating..."));
-
-            if let Some(ref callback) = *state_callback_clone.borrow() {
-                callback(SessionState::Authenticating);
-            }
-
-            if let Some(ref callback) = *auth_callback_clone.borrow() {
-                callback(creds);
-            }
-        });
-
-        // Auth failure signal
-        let state_clone = state;
-        let status_label_clone = status_label;
-        let spinner_clone = spinner;
-        let state_callback_clone = state_callback;
-        self.display.connect_vnc_auth_failure(move |_, msg| {
-            let error = SessionError::authentication_failed(msg);
-            *state_clone.borrow_mut() = SessionState::Error(error.clone());
-            status_label_clone.set_text(&i18n("Authentication failed. Check your credentials."));
-            #[cfg(not(feature = "adw-1-6"))]
-            spinner_clone.set_spinning(false);
-            spinner_clone.set_visible(false);
-
-            if let Some(ref callback) = *state_callback_clone.borrow() {
-                callback(SessionState::Error(error));
-            }
-        });
     }
 
     /// Sets up callbacks for the embedded VNC widget
@@ -327,107 +222,6 @@ impl VncSessionWidget {
                 callback(SessionState::Error(error));
             }
         });
-    }
-
-    /// Connects to a VNC server
-    ///
-    /// This method first attempts to use native embedded VNC (if available).
-    /// If native embedding fails or is not available, it falls back to an
-    /// external VNC viewer.
-    ///
-    /// # Arguments
-    ///
-    /// * `host` - The hostname or IP address of the VNC server
-    /// * `port` - The port number (typically 5900 + display number)
-    /// * `password` - Optional password for authentication (note: most viewers
-    ///   will prompt for password interactively for security)
-    ///
-    /// # Errors
-    ///
-    /// Returns a `SessionError` if:
-    /// - No VNC viewer is installed on the system
-    /// - The connection cannot be initiated
-    /// - The viewer process fails to start
-    pub fn connect(
-        &self,
-        host: &str,
-        port: u16,
-        password: Option<&str>,
-    ) -> Result<(), SessionError> {
-        // Check current state
-        let current_state = self.state.borrow().clone();
-        if !current_state.can_transition_to(&SessionState::Connecting) {
-            return Err(SessionError::connection_failed(format!(
-                "Cannot connect from state: {current_state}"
-            )));
-        }
-
-        // Update state to connecting
-        *self.state.borrow_mut() = SessionState::Connecting;
-        self.status_label.set_text(&i18n("Connecting..."));
-        self.spinner.set_visible(true);
-        #[cfg(not(feature = "adw-1-6"))]
-        self.spinner.set_spinning(true);
-
-        // Notify state change
-        if let Some(ref callback) = *self.state_callback.borrow() {
-            callback(SessionState::Connecting);
-        }
-
-        // Try native embedded VNC first (if vnc-embedded feature is enabled)
-        if rustconn_core::is_embedded_vnc_available() {
-            // If password is provided, set it before connecting
-            if let Some(pwd) = password {
-                let _ = self
-                    .display
-                    .set_credential(VncCredentialType::Password, pwd);
-            }
-
-            // Try to initiate native connection
-            if self.display.open_host(host, port).is_ok() {
-                *self.is_external.borrow_mut() = false;
-                // Connection will be handled by signal callbacks
-                return Ok(());
-            }
-            tracing::warn!("Native VNC embedding failed, falling back to external viewer");
-        }
-
-        // Fall back to external VNC viewer
-        let viewer = Self::detect_vnc_viewer().ok_or_else(|| {
-            let client_info = Self::get_vnc_client_info();
-            let hint = client_info.install_hint.unwrap_or_else(|| {
-                "Install TigerVNC: sudo apt install tigervnc-viewer".to_string()
-            });
-            SessionError::connection_failed(format!("No VNC viewer installed. {hint}"))
-        })?;
-
-        // Try to spawn external VNC viewer
-        match self.spawn_external_viewer(&viewer, host, port, password) {
-            Ok(()) => {
-                *self.is_external.borrow_mut() = true;
-                *self.state.borrow_mut() = SessionState::Connected;
-                self.status_label
-                    .set_text(&i18n("Session running in external window"));
-                #[cfg(not(feature = "adw-1-6"))]
-                self.spinner.set_spinning(false);
-                self.spinner.set_visible(false);
-
-                // Notify state change
-                if let Some(ref callback) = *self.state_callback.borrow() {
-                    callback(SessionState::Connected);
-                }
-
-                Ok(())
-            }
-            Err(e) => {
-                *self.state.borrow_mut() = SessionState::Disconnected;
-                self.status_label.set_text(&i18n("Connection failed"));
-                #[cfg(not(feature = "adw-1-6"))]
-                self.spinner.set_spinning(false);
-                self.spinner.set_visible(false);
-                Err(e)
-            }
-        }
     }
 
     /// Connects to a VNC server using protocol configuration
@@ -657,71 +451,6 @@ impl VncSessionWidget {
         }
     }
 
-    /// Spawns an external VNC viewer process
-    ///
-    /// # Arguments
-    ///
-    /// * `viewer` - The name of the VNC viewer binary
-    /// * `host` - The hostname or IP address
-    /// * `port` - The port number
-    /// * `password` - Optional password (not passed on command line for security)
-    fn spawn_external_viewer(
-        &self,
-        viewer: &str,
-        host: &str,
-        port: u16,
-        _password: Option<&str>,
-    ) -> Result<(), SessionError> {
-        let mut cmd = Command::new(viewer);
-
-        // Build server address based on port and viewer type
-        let server = Self::build_server_address(viewer, host, port);
-
-        // Add viewer-specific arguments
-        match viewer {
-            "vncviewer" | "tigervnc" | "xvnc4viewer" => {
-                // TigerVNC/TightVNC/RealVNC style
-                cmd.arg(&server);
-            }
-            "gvncviewer" => {
-                // GTK-VNC viewer
-                cmd.arg(&server);
-            }
-            "remmina" => {
-                // Remmina uses a different connection format
-                cmd.arg("-c");
-                cmd.arg(format!("vnc://{host}:{port}"));
-            }
-            "vinagre" => {
-                // Vinagre
-                cmd.arg(format!("vnc://{host}:{port}"));
-            }
-            "krdc" => {
-                // KDE Remote Desktop Client
-                cmd.arg(format!("vnc://{host}:{port}"));
-            }
-            _ => {
-                // Generic fallback
-                cmd.arg(&server);
-            }
-        }
-
-        // Don't capture stdout/stderr so the viewer can run independently
-        cmd.stdout(Stdio::null());
-        cmd.stderr(Stdio::null());
-
-        // Spawn the process
-        match cmd.spawn() {
-            Ok(child) => {
-                *self.external_process.borrow_mut() = Some(child);
-                Ok(())
-            }
-            Err(e) => Err(SessionError::connection_failed(format!(
-                "Failed to start VNC viewer '{viewer}': {e}"
-            ))),
-        }
-    }
-
     /// Builds the server address string based on viewer type and port
     fn build_server_address(viewer: &str, host: &str, port: u16) -> String {
         match viewer {
@@ -758,9 +487,6 @@ impl VncSessionWidget {
             let _ = child.kill();
             let _ = child.wait();
         }
-
-        // Close FFI display (placeholder)
-        self.display.close();
 
         // Reset state
         *self.is_external.borrow_mut() = false;
@@ -827,57 +553,6 @@ impl VncSessionWidget {
         self.state.borrow().is_connected()
     }
 
-    /// Provides credentials for authentication
-    ///
-    /// This should be called in response to the auth_required callback.
-    ///
-    /// # Arguments
-    ///
-    /// * `username` - Optional username
-    /// * `password` - The password
-    ///
-    /// # Errors
-    ///
-    /// Returns a `SessionError` if credentials cannot be set.
-    pub fn provide_credentials(
-        &self,
-        username: Option<&str>,
-        password: &str,
-    ) -> Result<(), SessionError> {
-        if let Some(user) = username {
-            self.display
-                .set_credential(VncCredentialType::Username, user)
-                .map_err(|e| SessionError::authentication_failed(e.to_string()))?;
-        }
-
-        self.display
-            .set_credential(VncCredentialType::Password, password)
-            .map_err(|e| SessionError::authentication_failed(e.to_string()))?;
-
-        Ok(())
-    }
-
-    /// Enables or disables display scaling
-    pub fn set_scaling(&self, enabled: bool) {
-        self.display.set_scaling(enabled);
-    }
-
-    /// Returns whether scaling is enabled
-    #[must_use]
-    pub fn scaling_enabled(&self) -> bool {
-        self.display.scaling_enabled()
-    }
-
-    /// Connects a callback for authentication requests
-    ///
-    /// The callback receives a list of credential types that the server requires.
-    pub fn connect_auth_required<F>(&self, callback: F)
-    where
-        F: Fn(&[VncCredentialType]) + 'static,
-    {
-        *self.auth_callback.borrow_mut() = Some(Box::new(callback));
-    }
-
     /// Connects a callback for state changes
     ///
     /// The callback is invoked whenever the session state changes.
@@ -886,12 +561,6 @@ impl VncSessionWidget {
         F: Fn(SessionState) + 'static,
     {
         *self.state_callback.borrow_mut() = Some(Box::new(callback));
-    }
-
-    /// Returns the underlying VNC display (for advanced usage)
-    #[must_use]
-    pub fn display(&self) -> &VncDisplay {
-        &self.display
     }
 }
 
@@ -906,7 +575,6 @@ impl std::fmt::Debug for VncSessionWidget {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("VncSessionWidget")
             .field("state", &self.state.borrow())
-            .field("display", &"VncDisplay { ... }")
             .finish_non_exhaustive()
     }
 }

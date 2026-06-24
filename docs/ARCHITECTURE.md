@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.17.0** | Last updated: June 2026
+**Version 0.17.1** | Last updated: June 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -1037,7 +1037,6 @@ rustconn/src/
 │   ├── types.rs           # Shared types
 │   └── ui.rs              # Status overlay rendering
 ├── monitoring.rs           # MonitoringBar widget, MonitoringCoordinator
-├── broadcast.rs           # BroadcastController — ad-hoc keystroke broadcast to multiple terminals
 ├── smart_folder_ui.rs     # Smart Folders sidebar section and dialogs
 └── utils.rs               # Async helpers, utilities
 

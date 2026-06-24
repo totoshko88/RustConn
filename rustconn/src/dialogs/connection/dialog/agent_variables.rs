@@ -184,7 +184,7 @@ impl ConnectionDialog {
         self.update_password_row_visibility();
     }
 
-    /// Configures the dialog for Import group mode (Requirement 5.1, 5.2).
+    /// Configures the dialog for Import group mode.
     ///
     /// Synced fields become read-only (insensitive) with a tooltip explaining
     /// they are managed by cloud sync. Local-only fields remain editable.

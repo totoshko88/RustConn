@@ -102,7 +102,7 @@ pub struct MainWindow {
     terminal_notebook: SharedNotebook,
     split_view: SharedSplitView,
     /// Per-session split bridges - each session that has been split gets its own bridge
-    /// Requirement 3: Each tab maintains its own independent split layout
+    /// Each tab maintains its own independent split layout
     session_split_bridges: SessionSplitBridges,
     /// Global color pool shared across all split containers
     /// Ensures different split containers get different colors
@@ -250,7 +250,7 @@ impl MainWindow {
         let split_view = Rc::new(split_bridge);
 
         // Create per-session split bridges map
-        // Requirement 3: Each tab maintains its own independent split layout
+        // Each tab maintains its own independent split layout
         let session_split_bridges: SessionSplitBridges =
             Rc::new(RefCell::new(std::collections::HashMap::new()));
 
@@ -2995,7 +2995,7 @@ impl MainWindow {
             notebook.spawn_command(session_id, &[&shell], None, None, None);
         }
 
-        // Per spec (Requirement 1): New connections ALWAYS create independent Root_Tabs
+        // Per spec: New connections ALWAYS create independent Root_Tabs
         // Register session for potential drag-and-drop, but don't show in split pane
         if let Some(info) = notebook.get_session_info(session_id) {
             // Don't pass terminal - it stays in TabView page
@@ -3058,8 +3058,6 @@ impl MainWindow {
     /// - SSH Config
     /// - Remmina (.remmina files)
     /// - Asbru-CM (YAML)
-    ///
-    /// Requirements: 3.1, 4.1, 5.1, 6.1
     fn show_export_dialog(window: &adw::ApplicationWindow, state: SharedAppState) {
         let dialog = ExportDialog::new(Some(&window.clone().upcast()));
 

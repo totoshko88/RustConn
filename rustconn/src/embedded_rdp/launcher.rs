@@ -2,11 +2,6 @@
 //!
 //! This module provides the `SafeFreeRdpLauncher` struct for launching FreeRDP
 //! with environment variables set to suppress Qt/Wayland warnings.
-//!
-//! # Requirements Coverage
-//!
-//! - Requirement 6.1: QSocketNotifier error handling
-//! - Requirement 6.2: Wayland requestActivate warning suppression
 
 use super::types::{EmbeddedRdpError, RdpConfig};
 use secrecy::ExposeSecret;
@@ -17,11 +12,6 @@ use std::process::{Child, Command, Stdio};
 /// This struct provides methods to launch FreeRDP with environment variables
 /// set to suppress Qt/Wayland warnings that can cause issues when mixing
 /// Qt-based FreeRDP with GTK4 applications.
-///
-/// # Requirements Coverage
-///
-/// - Requirement 6.1: QSocketNotifier error handling
-/// - Requirement 6.2: Wayland requestActivate warning suppression
 pub struct SafeFreeRdpLauncher {
     /// Whether to suppress Qt warnings
     pub(crate) suppress_qt_warnings: bool,
@@ -72,7 +62,7 @@ impl SafeFreeRdpLauncher {
         let mut env = Vec::new();
 
         if self.suppress_qt_warnings {
-            // Suppress Qt/Wayland warnings (Requirement 6.1, 6.2)
+            // Suppress Qt/Wayland warnings
             env.push(("QT_LOGGING_RULES", "qt.qpa.wayland=false;qt.qpa.*=false"));
         }
 
@@ -149,7 +139,7 @@ impl SafeFreeRdpLauncher {
             Command::new(&actual_binary)
         };
 
-        // Set environment to suppress Qt warnings (Requirement 6.1, 6.2)
+        // Set environment to suppress Qt warnings
         // (only for non-host mode; host mode passes env via flatpak-spawn --env above)
         if !via_host {
             for (key, value) in self.build_env() {
@@ -306,7 +296,7 @@ impl SafeFreeRdpLauncher {
         }
         cmd.arg("/dynamic-resolution");
 
-        // Add decorations flag for window controls (Requirement 6.1)
+        // Add decorations flag for window controls
         cmd.arg("/decorations");
 
         // Add window geometry if saved and remember_window_position is enabled

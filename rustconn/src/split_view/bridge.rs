@@ -907,7 +907,7 @@ impl SplitViewBridge {
     /// Closes a session from panes with auto-cleanup
     ///
     /// Returns `true` if the split view should be closed (no panels remain or
-    /// this was the last session and the split should be closed per Requirement 13.3).
+    /// this was the last session and the split should be closed).
     #[must_use]
     pub fn close_session_from_panes(&self, session_id: Uuid) -> bool {
         let session = SessionId::from_uuid(session_id);
@@ -951,7 +951,7 @@ impl SplitViewBridge {
             *self.container_color.borrow_mut() = None;
         }
 
-        // Per Requirement 13.3: When the last remaining Panel in a Split_Container
+        // When the last remaining Panel in a Split_Container
         // is closed, close the parent Root_Tab. We signal this by returning true
         // when no panels remain OR when no sessions remain (the split should close).
         no_panels || no_sessions

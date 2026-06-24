@@ -122,7 +122,7 @@ impl ImportDialog {
             parent: parent.cloned(),
         };
 
-        // Wire up source selection to import button state (Requirement 5.1)
+        // Wire up source selection to import button state
         dialog_inst.connect_source_selection_to_import_button();
 
         dialog_inst
@@ -296,8 +296,8 @@ impl ImportDialog {
     ///
     /// Displays a summary of successful imports and detailed information about:
     /// - Successfully imported connections and groups
-    /// - Skipped entries with reasons (Requirement 5.2)
-    /// - Errors encountered during import (Requirement 5.3)
+    /// - Skipped entries with reasons
+    /// - Errors encountered during import
     pub fn show_results(&self, result: &ImportResult) {
         self.show_results_with_source(result, None);
     }
@@ -344,7 +344,7 @@ impl ImportDialog {
             details.push('\n');
         }
 
-        // List skipped entries (Requirement 5.2)
+        // List skipped entries
         if !result.skipped.is_empty() {
             let _ = writeln!(
                 details,
@@ -357,7 +357,7 @@ impl ImportDialog {
             details.push('\n');
         }
 
-        // List errors (Requirement 5.3)
+        // List errors
         if !result.errors.is_empty() {
             let _ = writeln!(
                 details,
@@ -379,9 +379,9 @@ impl ImportDialog {
     /// Runs the dialog and calls the callback with the result
     ///
     /// The import button is wired to:
-    /// 1. Get the selected source via `get_selected_source()` (Requirement 5.1)
-    /// 2. Perform import via `do_import()` (Requirement 5.1)
-    /// 3. Display results via `show_results()` (Requirements 5.2, 5.3)
+    /// 1. Get the selected source via `get_selected_source()`
+    /// 2. Perform import via `do_import()`
+    /// 3. Display results via `show_results()`
     pub fn run<F: Fn(Option<ImportResult>) + 'static>(&self, cb: F) {
         // Store callback
         *self.on_complete.borrow_mut() = Some(Box::new(cb));
@@ -397,7 +397,7 @@ impl ImportDialog {
         let result_cell = self.result.clone();
         let on_complete = self.on_complete.clone();
 
-        // Wire import button click to do_import() (Requirement 5.1)
+        // Wire import button click to do_import()
         import_button.connect_clicked(move |btn| {
             let current_page = stack.visible_child_name();
 
@@ -410,7 +410,7 @@ impl ImportDialog {
                 return;
             }
 
-            // Get selected source using get_selected_source() pattern (Requirement 5.1)
+            // Get selected source using get_selected_source() pattern
             let source_id = source_list.selected_row().and_then(|row| {
                 let name = row.widget_name();
                 if name.is_empty() {
@@ -429,14 +429,14 @@ impl ImportDialog {
                 let display_name = Self::get_source_display_name(&source_id);
                 progress_label.set_text(&i18n_f("Importing from {}...", &[&display_name]));
 
-                // Perform import with progress reporting (Requirements 3.1, 3.6)
+                // Perform import with progress reporting
                 let result =
                     Self::do_import_with_progress(&source_id, &progress_bar, &progress_label);
 
                 progress_bar.set_fraction(1.0);
                 progress_label.set_text(&i18n("Import complete"));
 
-                // Show results using show_results() pattern (Requirements 5.2, 5.3)
+                // Show results using show_results() pattern
                 let summary = i18n_f(
                     "Successfully imported {} connection(s) and {} group(s).",
                     &[
@@ -463,9 +463,9 @@ impl ImportDialog {
     ///
     /// Similar to `run()` but also provides the source name to the callback.
     /// The import button is wired to:
-    /// 1. Get the selected source via `get_selected_source()` (Requirement 5.1)
-    /// 2. Perform import via `do_import()` (Requirement 5.1)
-    /// 3. Display results via `show_results_with_source()` (Requirements 5.2, 5.3)
+    /// 1. Get the selected source via `get_selected_source()`
+    /// 2. Perform import via `do_import()`
+    /// 3. Display results via `show_results_with_source()`
     #[expect(
         clippy::too_many_lines,
         reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
@@ -487,7 +487,7 @@ impl ImportDialog {
         let on_complete_with_source = self.on_complete_with_source.clone();
         let parent_window = self.parent.clone();
 
-        // Wire import button click to do_import() (Requirement 5.1)
+        // Wire import button click to do_import()
         import_button.connect_clicked(move |btn| {
             let current_page = stack.visible_child_name();
 
@@ -501,7 +501,7 @@ impl ImportDialog {
                 return;
             }
 
-            // Get selected source using get_selected_source() pattern (Requirement 5.1)
+            // Get selected source using get_selected_source() pattern
             let source_id = source_list
                 .selected_row()
                 .and_then(|row| {
@@ -703,7 +703,7 @@ impl ImportDialog {
                     return;
                 }
 
-                // Perform import with progress reporting (Requirements 3.1, 3.6)
+                // Perform import with progress reporting
                 let result = Self::do_import_with_progress(
                     &source_id,
                     &progress_bar,
@@ -716,7 +716,7 @@ impl ImportDialog {
                 progress_bar.set_fraction(1.0);
                 progress_label.set_text(&i18n("Import complete"));
 
-                // Show results using show_results_with_source() pattern (Requirements 5.2, 5.3)
+                // Show results using show_results_with_source() pattern
                 let conn_count = result.connections.len();
                 let group_count = result.groups.len();
                 let summary = i18n_f(

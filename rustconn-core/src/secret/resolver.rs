@@ -358,10 +358,6 @@ impl CredentialResolver {
     ///
     /// Returns the preferred backend type based on configuration.
     ///
-    /// # Requirements Coverage
-    ///
-    /// - Requirement 3.1: Store to preferred backend based on settings
-    ///
     /// # Returns
     /// The selected backend type
     #[must_use]
@@ -391,10 +387,6 @@ impl CredentialResolver {
     /// - `KeePass` integration is enabled
     /// - Credentials exist in Keyring for the connection
     /// - Credentials do NOT exist in `KeePass` for the connection
-    ///
-    /// # Requirements Coverage
-    ///
-    /// - Requirement 3.3: Detect credentials in Keyring but not `KeePass`
     ///
     /// # Arguments
     /// * `connection` - The connection to check
@@ -472,10 +464,6 @@ impl CredentialResolver {
     /// Copies credentials from Keyring to `KeePass` and optionally deletes
     /// them from Keyring after successful copy.
     ///
-    /// # Requirements Coverage
-    ///
-    /// - Requirement 3.4: Copy credentials from Keyring to `KeePass`
-    ///
     /// # Arguments
     /// * `connection` - The connection to migrate credentials for
     /// * `delete_from_keyring` - Whether to delete from Keyring after migration
@@ -548,11 +536,6 @@ impl CredentialResolver {
 
     /// Checks if the system Keyring is available
     ///
-    /// # Requirements Coverage
-    ///
-    /// - Requirement 3.5: Verify libsecret service is accessible
-    /// - Requirement 3.6: Display warning when Keyring unavailable
-    ///
     /// # Returns
     /// `true` if Keyring is available, `false` otherwise
     pub async fn is_keyring_available(&self) -> bool {
@@ -564,10 +547,6 @@ impl CredentialResolver {
     /// Stores credentials using the unified storage backend
     ///
     /// Automatically selects backend based on settings.
-    ///
-    /// # Requirements Coverage
-    ///
-    /// - Requirement 3.1: Store to preferred backend based on settings
     ///
     /// # Arguments
     /// * `connection` - The connection to store credentials for
@@ -645,11 +624,6 @@ impl CredentialResolver {
     /// This method combines credential resolution with verification tracking
     /// to determine whether credentials can be used automatically or if the
     /// password dialog should be shown.
-    ///
-    /// # Requirements Coverage
-    ///
-    /// - Requirement 2.1: Skip dialog for verified credentials
-    /// - Requirement 2.2: Show dialog for missing credentials
     ///
     /// # Arguments
     /// * `connection` - The connection to resolve credentials for

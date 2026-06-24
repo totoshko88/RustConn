@@ -270,7 +270,7 @@ impl ImportDialog {
         source_name_cell: &Rc<RefCell<String>>,
         btn: &Button,
     ) {
-        // Use file dialog for selecting SSH config file (Requirement 1.1)
+        // Use file dialog for selecting SSH config file
         let file_dialog = gtk4::FileDialog::builder()
             .title(i18n("Select SSH Config File"))
             .modal(true)
@@ -307,7 +307,7 @@ impl ImportDialog {
                         progress_label_clone
                             .set_text(&i18n_f("Importing from {}...", &[&path.display().to_string()]));
 
-                        // Parse SSH config file using import_from_path (Requirement 1.2, 1.3)
+                        // Parse SSH config file using import_from_path
                         let importer = SshConfigImporter::new();
                         let result = Self::import_or_error(
                             importer.import_from_path(&path),
@@ -322,7 +322,7 @@ impl ImportDialog {
 
                         progress_bar_clone.set_fraction(1.0);
 
-                        // Show results with preview including connection count (Requirement 1.5)
+                        // Show results with preview including connection count
                         let conn_count = result.connections.len();
                         let group_count = result.groups.len();
                         let summary = i18n_f(
@@ -414,7 +414,7 @@ impl ImportDialog {
 
                         progress_bar_clone.set_fraction(1.0);
 
-                        // Show results using format_import_details() (Requirements 5.2, 5.3)
+                        // Show results using format_import_details()
                         let conn_count = result.connections.len();
                         let group_count = result.groups.len();
                         let summary = i18n_f(
@@ -510,7 +510,7 @@ impl ImportDialog {
 
                         progress_bar_clone.set_fraction(1.0);
 
-                        // Show results using format_import_details() (Requirements 5.2, 5.3)
+                        // Show results using format_import_details()
                         let conn_count = result.connections.len();
                         let group_count = result.groups.len();
                         let summary = i18n_f(
@@ -541,8 +541,6 @@ impl ImportDialog {
     /// Opens a file chooser dialog for selecting a .rcn file,
     /// parses it using `NativeExport::from_file()`, and displays
     /// a preview with connection count before import.
-    ///
-    /// Requirements: 13.1, 13.3
     #[expect(
         clippy::too_many_arguments,
         reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
@@ -1252,8 +1250,6 @@ impl ImportDialog {
     /// Opens a file chooser for selecting a .csv file, parses it using
     /// `CsvImporter` with default options (comma delimiter, auto-detect headers),
     /// and displays a preview with connection count before import.
-    ///
-    /// Requirements: 2.8, 2.9
     #[expect(
         clippy::too_many_arguments,
         reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"

@@ -8,12 +8,6 @@
 //! When rendering an RDP framebuffer in a GTK widget, the framebuffer may be
 //! scaled and centered to maintain aspect ratio. Mouse coordinates from the
 //! widget must be transformed to RDP server coordinates.
-//!
-//! # Requirements Coverage
-//!
-//! - Requirement 1.2: Mouse coordinate forwarding to RDP server
-//! - Requirement 1.3: Keyboard event forwarding to RDP server
-//! - Requirement 1.7: Dynamic resolution change on resize
 
 // cast_possible_truncation allowed at workspace level
 #![allow(
@@ -372,10 +366,6 @@ pub fn find_best_standard_resolution(width: u32, height: u32) -> (u32, u32) {
 /// # Returns
 ///
 /// A tuple `(width, height)` as u16 values suitable for RDP resize request.
-///
-/// # Requirements Coverage
-///
-/// - Requirement 1.7: Dynamic resolution change on resize
 #[must_use]
 pub fn generate_resize_request(
     widget_width: u32,
@@ -526,7 +516,7 @@ mod tests {
 }
 
 // ============================================================================
-// Keyboard Scancode Conversion (Requirement 1.3)
+// Keyboard Scancode Conversion
 // ============================================================================
 
 /// RDP scancode for a key event
@@ -573,10 +563,6 @@ impl RdpScancode {
 ///
 /// - Standard keys: 8-bit scancode (0x00-0x7F for make, 0x80-0xFF for break)
 /// - Extended keys: E0 prefix followed by scancode
-///
-/// # Requirements Coverage
-///
-/// - Requirement 1.3: Keyboard event forwarding to RDP server
 ///
 /// Converts a GTK keyval to an RDP scancode
 ///
@@ -907,10 +893,6 @@ pub const SCANCODE_DELETE: RdpScancode = RdpScancode::extended(0x53);
 ///
 /// Returns a vector of (scancode, extended, pressed) tuples representing
 /// the key events to send.
-///
-/// # Requirements Coverage
-///
-/// - Requirement 1.4: Ctrl+Alt+Del support
 #[must_use]
 pub fn ctrl_alt_del_sequence() -> Vec<(u16, bool, bool)> {
     vec![

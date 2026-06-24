@@ -3,8 +3,6 @@
 //! Provides a GTK4 dialog with format selection, output path selection,
 //! and options for exporting connections to Ansible, SSH Config, Remmina,
 //! and Asbru-CM formats.
-//!
-//! Requirements: 3.1, 4.1, 5.1, 6.1
 
 use adw::prelude::*;
 use gtk4::prelude::*;

@@ -39,7 +39,6 @@ pub mod dynamic_folder;
 pub mod embedded_client_error;
 pub mod error;
 pub mod export;
-pub mod ffi;
 pub mod flatpak;
 pub mod highlight;
 pub mod host_check;
@@ -134,9 +133,6 @@ pub use export::{
     BATCH_EXPORT_THRESHOLD, BatchExportCancelHandle, BatchExportResult, BatchExporter,
     DEFAULT_EXPORT_BATCH_SIZE, ExportError, ExportFormat, ExportOptions, ExportResult,
     ExportTarget, NATIVE_FILE_EXTENSION, NATIVE_FORMAT_VERSION, NativeExport, NativeImportError,
-};
-pub use ffi::{
-    ConnectionState, FfiDisplay, FfiError, FfiResult, VncCredentialType, VncDisplay, VncError,
 };
 pub use flatpak::{
     copy_key_to_flatpak_ssh, get_flatpak_known_hosts_path, get_flatpak_ssh_dir, is_flatpak,

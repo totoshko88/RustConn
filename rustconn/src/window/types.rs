@@ -192,7 +192,7 @@ pub type SharedSplitView = Rc<SplitViewBridge>;
 /// Each session that has been split gets its own independent `SplitViewBridge`.
 /// Uses `Rc<RefCell<_>>` for single-threaded interior mutability.
 ///
-/// Requirement 3: Each tab maintains its own independent split layout
+/// Each tab maintains its own independent split layout
 pub type SessionSplitBridges = Rc<RefCell<HashMap<Uuid, Rc<SplitViewBridge>>>>;
 
 /// Shared external window manager type

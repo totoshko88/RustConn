@@ -176,7 +176,7 @@ impl SyncFileWatcher {
     /// Registers a filename as a Master group file.
     ///
     /// Changes to this file will be ignored by the watcher, preventing
-    /// circular export→import loops (Requirement 7.3, Property P12).
+    /// circular export→import loops.
     pub fn add_master_file(&self, filename: &str) {
         let mut masters = self.master_files.lock().unwrap_or_else(|e| {
             tracing::warn!("Master files mutex poisoned, recovering");

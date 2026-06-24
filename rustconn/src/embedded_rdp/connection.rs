@@ -147,11 +147,6 @@ impl super::EmbeddedRdpWidget {
     /// # Errors
     ///
     /// Returns error if connection fails or no FreeRDP client is available
-    ///
-    /// # Requirements Coverage
-    ///
-    /// - Requirement 1.5: Fallback to FreeRDP external mode
-    /// - Requirement 6.4: Automatic fallback to external mode on failure
     pub fn connect(&self, config: &RdpConfig) -> Result<(), EmbeddedRdpError> {
         tracing::debug!(
             protocol = "rdp",
@@ -166,7 +161,7 @@ impl super::EmbeddedRdpWidget {
         // Update state
         self.set_state(RdpConnectionState::Connecting);
 
-        // Check if IronRDP embedded mode is available (Requirement 1.5)
+        // Check if IronRDP embedded mode is available
         // This is determined at compile time via the rdp-embedded feature flag
         if Self::is_ironrdp_available() {
             // Skip IronRDP if security settings require FreeRDP
@@ -193,7 +188,7 @@ impl super::EmbeddedRdpWidget {
                         return Ok(());
                     }
                     Err(e) => {
-                        // Log the error and fall back to FreeRDP (Requirement 1.5)
+                        // Log the error and fall back to FreeRDP
                         let reason = format!("IronRDP connection failed: {e}");
                         self.report_fallback(&reason);
                         self.cleanup_embedded_mode();
@@ -205,7 +200,7 @@ impl super::EmbeddedRdpWidget {
             self.report_fallback("Native RDP client not available, using FreeRDP external mode");
         }
 
-        // Try wlfreerdp for embedded-like experience (Requirement 6.4)
+        // Try wlfreerdp for embedded-like experience
         // Skip embedded mode for RemoteApp — RAIL requires its own window management
         // which is incompatible with Wayland subsurface embedding.
         let is_remote_app = config
@@ -237,7 +232,7 @@ impl super::EmbeddedRdpWidget {
                     return Ok(());
                 }
                 Err(e) => {
-                    // Log the error and fall back to external mode (Requirement 6.4)
+                    // Log the error and fall back to external mode
                     let reason = format!("Embedded RDP failed: {e}");
                     self.report_fallback(&reason);
                     self.cleanup_embedded_mode();
@@ -245,7 +240,7 @@ impl super::EmbeddedRdpWidget {
             }
         }
 
-        // Fall back to external mode (xfreerdp) (Requirement 6.4)
+        // Fall back to external mode (xfreerdp)
         self.connect_external_with_notification(config)
     }
 
@@ -262,11 +257,6 @@ impl super::EmbeddedRdpWidget {
     ///
     /// This method uses the pure Rust IronRDP library for true embedded
     /// RDP rendering within the GTK widget.
-    ///
-    /// # Requirements Coverage
-    ///
-    /// - Requirement 1.1: Native RDP embedding as GTK widget
-    /// - Requirement 1.5: Fallback to FreeRDP if IronRDP fails
     #[cfg(feature = "rdp-embedded")]
     pub(super) fn connect_ironrdp(&self, config: &RdpConfig) -> Result<(), EmbeddedRdpError> {
         use rustconn_core::rdp_client::{RdpClient, RdpClientConfig};
@@ -1687,7 +1677,7 @@ impl super::EmbeddedRdpWidget {
         *self.is_embedded.borrow_mut() = false;
     }
 
-    /// Connects using external mode with user notification (Requirement 6.4)
+    /// Connects using external mode with user notification
     pub(super) fn connect_external_with_notification(
         &self,
         config: &RdpConfig,
@@ -1699,7 +1689,7 @@ impl super::EmbeddedRdpWidget {
         self.connect_external(config)
     }
 
-    /// Connects using embedded mode (wlfreerdp) with thread isolation (Requirement 6.3)
+    /// Connects using embedded mode (wlfreerdp) with thread isolation
     fn connect_embedded(&self, config: &RdpConfig) -> Result<(), EmbeddedRdpError> {
         tracing::debug!(
             protocol = "rdp",
@@ -1714,7 +1704,7 @@ impl super::EmbeddedRdpWidget {
             .initialize()
             .map_err(|e| EmbeddedRdpError::SubsurfaceCreation(e.to_string()))?;
 
-        // Spawn FreeRDP in a dedicated thread to isolate Qt/GTK conflicts (Requirement 6.3)
+        // Spawn FreeRDP in a dedicated thread to isolate Qt/GTK conflicts
         let freerdp_thread = FreeRdpThread::spawn(config)?;
 
         // Send connect command to the thread
@@ -1847,14 +1837,8 @@ impl super::EmbeddedRdpWidget {
     /// Connects using external mode (xfreerdp)
     ///
     /// Uses `SafeFreeRdpLauncher` to handle Qt/Wayland warning suppression.
-    ///
-    /// # Requirements Coverage
-    ///
-    /// - Requirement 1.2: Fallback to xfreerdp in external window mode
-    /// - Requirement 6.1: QSocketNotifier error handling
-    /// - Requirement 6.2: Wayland requestActivate warning suppression
     fn connect_external(&self, config: &RdpConfig) -> Result<(), EmbeddedRdpError> {
-        // Use SafeFreeRdpLauncher for Qt error suppression (Requirement 6.1, 6.2)
+        // Use SafeFreeRdpLauncher for Qt error suppression
         let launcher = SafeFreeRdpLauncher::new();
 
         match launcher.launch(config) {
@@ -1890,10 +1874,6 @@ impl super::EmbeddedRdpWidget {
     /// - External process (if using external mode)
     /// - Wayland surface resources
     /// - Pixel buffer
-    ///
-    /// # Requirements Coverage
-    ///
-    /// - Requirement 1.6: Proper cleanup on disconnect
     pub fn disconnect(&self) {
         // Increment connection generation to invalidate any active polling loops
         *self.connection_generation.borrow_mut() += 1;
@@ -1903,12 +1883,12 @@ impl super::EmbeddedRdpWidget {
             self.drawing_area.disconnect(handler_id);
         }
 
-        // Shutdown FreeRDP thread if running (Requirement 1.6)
+        // Shutdown FreeRDP thread if running
         if let Some(mut thread) = self.freerdp_thread.borrow_mut().take() {
             thread.shutdown();
         }
 
-        // Kill external process if running (Requirement 1.6)
+        // Kill external process if running
         self.terminate_external_process();
 
         // Clean up Wayland surface
@@ -1993,10 +1973,6 @@ impl super::EmbeddedRdpWidget {
     /// Terminates the external FreeRDP process if running
     ///
     /// This method gracefully terminates the process, waiting for it to exit.
-    ///
-    /// # Requirements Coverage
-    ///
-    /// - Requirement 1.6: Handle process termination
     fn terminate_external_process(&self) {
         if let Some(mut child) = self.process.borrow_mut().take() {
             // Try graceful termination first (SIGTERM on Unix)
