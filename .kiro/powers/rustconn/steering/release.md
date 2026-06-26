@@ -238,6 +238,14 @@ Version: X.Y.Z-1
 DEBTRANSFORM-TAR: rustconn-X.Y.Z.tar.xz
 ```
 
+### 10b. `packaging/obs/_service`
+The OBS source service builds the tarball from this git tag, so its revision
+MUST point at the new release tag (the `release.sh` gate checks
+`revision">vX.Y.Z<`). Easy to miss — it carries `vX.Y.Z`, not bare `X.Y.Z`.
+```xml
+    <param name="revision">vX.Y.Z</param>
+```
+
 ### 11. `packaging/obs/AppImageBuilder.yml`
 ```yaml
     version: X.Y.Z
@@ -298,6 +306,7 @@ grep -r "X.Y.Z" Cargo.toml debian/changelog packaging/ rustconn/assets/*.xml doc
 | `packaging/obs/debian.dsc` | `Version: X.Y.Z-1` |
 | `packaging/obs/rustconn.spec` | `Version: X.Y.Z` |
 | `packaging/obs/rustconn.changes` | `- X.Y.Z` |
+| `packaging/obs/_service` | `revision">vX.Y.Z<` |
 | `packaging/obs/AppImageBuilder.yml` | `version: X.Y.Z` |
 | `packaging/flatpak/*.yml` | `tag: vX.Y.Z` |
 | `packaging/flathub/*.yml` | `tag: vX.Y.Z` |
