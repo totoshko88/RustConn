@@ -128,6 +128,7 @@ fn arb_rdp_client_config() -> impl Strategy<Value = RdpClientConfig> {
                     monitor_layout: Default::default(),
                     reconnect_policy: Default::default(),
                     printer_enabled: false,
+                    printers: Vec::new(),
                     smartcard_enabled: false,
                     microphone_enabled: false,
                     remote_app: None,
