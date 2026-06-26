@@ -647,6 +647,25 @@ impl MainWindow {
         if let Some(ref creds) = resolved_credentials
             && let (Some(username), Some(password)) = (&creds.username, creds.expose_password())
         {
+            // The vault stores only username + password (domain is saved as
+            // None — see save_password_to_vault), so the domain must come from
+            // the connection config. Without it, NLA/CredSSP logs in as the
+            // bare user instead of DOMAIN\user and the server rejects it with
+            // STATUS_LOGON_FAILURE (0xC000006D). The manual/prompt path already
+            // forwards conn.domain, so this keeps the vault path consistent.
+            let domain = creds
+                .domain
+                .clone()
+                .or_else(|| {
+                    state
+                        .try_borrow()
+                        .ok()
+                        .and_then(|s| {
+                            s.get_connection(connection_id)
+                                .and_then(|c| c.domain.clone())
+                        })
+                })
+                .unwrap_or_default();
             Self::start_rdp_session_with_credentials(
                 &state,
                 &notebook,
@@ -655,7 +674,7 @@ impl MainWindow {
                 connection_id,
                 username,
                 password,
-                "",
+                &domain,
             );
             return;
         }

@@ -132,6 +132,11 @@ pub struct RdpClientConfig {
     #[serde(default)]
     pub printer_enabled: bool,
 
+    /// Specific CUPS queue names to forward. When empty and `printer_enabled`
+    /// is true, all local queues are forwarded.
+    #[serde(default)]
+    pub printers: Vec<String>,
+
     /// Enable smart card redirection
     #[serde(default)]
     pub smartcard_enabled: bool,
@@ -247,6 +252,7 @@ impl Default for RdpClientConfig {
             monitor_layout: MonitorLayout::default(),
             reconnect_policy: ReconnectPolicy::default(),
             printer_enabled: false,
+            printers: Vec::new(),
             smartcard_enabled: false,
             microphone_enabled: false,
             remote_app: None,
@@ -407,6 +413,16 @@ impl RdpClientConfig {
         self
     }
 
+    /// Restricts printer redirection to the named CUPS queues.
+    ///
+    /// An empty list (the default) forwards all local queues when
+    /// `printer_enabled` is true.
+    #[must_use]
+    pub fn with_printers(mut self, queues: Vec<String>) -> Self {
+        self.printers = queues;
+        self
+    }
+
     /// Enables or disables smart card redirection
     #[must_use]
     pub const fn with_smartcard(mut self, enabled: bool) -> Self {
@@ -521,6 +537,7 @@ impl PartialEq for RdpClientConfig {
             && self.monitor_layout == other.monitor_layout
             && self.reconnect_policy == other.reconnect_policy
             && self.printer_enabled == other.printer_enabled
+            && self.printers == other.printers
             && self.smartcard_enabled == other.smartcard_enabled
             && self.microphone_enabled == other.microphone_enabled
             && self.remote_app == other.remote_app

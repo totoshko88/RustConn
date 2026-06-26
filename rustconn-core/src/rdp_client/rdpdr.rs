@@ -64,6 +64,9 @@ pub struct RustConnRdpdrBackend {
     /// The server streams a PostScript document via Write IRPs; we buffer it
     /// and hand it to CUPS on Close.
     print_jobs: HashMap<u32, Vec<u8>>,
+    /// Map of printer device IDs to their local CUPS queue names.
+    /// Used to route each print job back to the correct local queue on Close.
+    printer_queues: HashMap<u32, String>,
     /// Directory watcher for change notifications
     dir_watcher: Option<DirectoryWatcher>,
 }
@@ -83,9 +86,13 @@ struct PendingNotification {
 impl_as_any!(RustConnRdpdrBackend);
 
 impl RustConnRdpdrBackend {
-    /// Creates a new RDPDR backend with drive paths mapped by device ID
+    /// Creates a new RDPDR backend with drive paths and printer queues mapped
+    /// by device ID.
     #[must_use]
-    pub fn new(drive_paths: HashMap<u32, String>) -> Self {
+    pub fn new(
+        drive_paths: HashMap<u32, String>,
+        printer_queues: HashMap<u32, String>,
+    ) -> Self {
         // Ensure all paths end with /
         let drive_paths: HashMap<u32, String> = drive_paths
             .into_iter()
@@ -126,6 +133,7 @@ impl RustConnRdpdrBackend {
             dir_entries: HashMap::new(),
             pending_notifications: HashMap::new(),
             print_jobs: HashMap::new(),
+            printer_queues,
             dir_watcher,
         }
     }
@@ -283,8 +291,11 @@ impl RdpdrBackend for RustConnRdpdrBackend {
                 ))])
             }
             PrinterIoRequest::Close(close_req) => {
-                // Job finished — hand the accumulated document to CUPS.
+                // Job finished — hand the accumulated document to the matching
+                // local CUPS queue (falling back to the default when unknown).
                 let file_id = close_req.device_io_request.file_id;
+                let device_id = close_req.device_io_request.device_id;
+                let queue = self.printer_queues.get(&device_id).cloned();
                 if let Some(job) = self.print_jobs.remove(&file_id)
                     && !job.is_empty()
                 {
@@ -293,7 +304,7 @@ impl RdpdrBackend for RustConnRdpdrBackend {
                     // active session runs on a single-threaded runtime — doing
                     // it inline would stall framebuffer updates and input until
                     // `lp` returns. Best-effort, so the handle is detached.
-                    std::thread::spawn(move || spool_to_cups(&job));
+                    std::thread::spawn(move || spool_to_cups(&job, queue.as_deref()));
                 }
                 Ok(vec![SvcMessage::from(RdpdrPdu::DeviceCloseResponse(
                     DeviceCloseResponse {
@@ -1119,18 +1130,25 @@ fn get_file_attributes(meta: &std::fs::Metadata, file_name: &str) -> FileAttribu
     attrs
 }
 
-/// Sends an accumulated print job to the local CUPS spooler.
+/// Sends an accumulated print job to a local CUPS queue (or the default queue
+/// when `queue` is `None`).
 ///
 /// The virtual printer is announced with a PostScript driver, so the buffer
 /// holds a PostScript document that `lp` can consume directly. Best-effort:
 /// failures are logged but never surfaced to the RDP session.
 ///
-// ponytail: shells out to CUPS `lp` (default printer); fine for the common
-// Linux desktop. A native IPP client would drop the runtime dependency on
-// cups-client but pulls in another crate — not worth it until users ask.
-fn spool_to_cups(document: &[u8]) {
-    let mut child = match Command::new("lp")
-        .args(["-t", "RustConn RDP"])
+// ponytail: shells out to CUPS `lp`; fine for the common Linux desktop. A
+// native IPP client would drop the runtime dependency on cups-client but pulls
+// in another crate — not worth it until users ask.
+fn spool_to_cups(document: &[u8], queue: Option<&str>) {
+    let mut cmd = Command::new("lp");
+    cmd.args(["-t", "RustConn RDP"]);
+    if let Some(q) = queue {
+        // Route to the matching local queue. Passed as a single argument so
+        // queue names with spaces or odd characters are handled safely.
+        cmd.args(["-d", q]);
+    }
+    let mut child = match cmd
         .stdin(Stdio::piped())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -1152,9 +1170,92 @@ fn spool_to_cups(document: &[u8]) {
 
     match child.wait() {
         Ok(status) if status.success() => {
-            debug!("RDP print job sent to CUPS ({} bytes)", document.len());
+            debug!(
+                "RDP print job sent to CUPS queue {:?} ({} bytes)",
+                queue.unwrap_or("<default>"),
+                document.len()
+            );
         }
         Ok(status) => warn!("`lp` exited with {status} for RDP print job"),
         Err(e) => warn!("Failed to wait for `lp`: {e}"),
+    }
+}
+
+/// Lists local CUPS print queues, one destination per line via `lpstat -e`.
+///
+/// Returns an empty vector if `lpstat` is unavailable or fails; callers should
+/// treat that as "no printers to forward" rather than an error.
+pub(crate) fn list_cups_printers() -> Vec<String> {
+    let output = match Command::new("lpstat").arg("-e").output() {
+        Ok(o) => o,
+        Err(e) => {
+            warn!("`lpstat -e` failed ({e}); no printers will be forwarded");
+            return Vec::new();
+        }
+    };
+    parse_cups_printers(&String::from_utf8_lossy(&output.stdout))
+}
+
+/// Parses the destination list emitted by `lpstat -e` (one queue per line).
+fn parse_cups_printers(stdout: &str) -> Vec<String> {
+    stdout
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .map(ToOwned::to_owned)
+        .collect()
+}
+
+/// Returns the CUPS default destination name from `lpstat -d`, if any.
+///
+/// Used only to decide announce ordering (default announced last so it wins the
+/// IronRDP `DEFAULTPRINTER` flag race).
+pub(crate) fn cups_default_printer() -> Option<String> {
+    let output = Command::new("lpstat").arg("-d").output().ok()?;
+    parse_cups_default(&String::from_utf8_lossy(&output.stdout))
+}
+
+/// Parses the default destination from `lpstat -d` output.
+///
+/// Format: `system default destination: <name>` or
+/// `no system default destination`.
+fn parse_cups_default(stdout: &str) -> Option<String> {
+    stdout
+        .split(':')
+        .nth(1)
+        .map(|s| s.trim().to_owned())
+        .filter(|s| !s.is_empty())
+}
+
+#[cfg(test)]
+mod printer_tests {
+    use super::{parse_cups_default, parse_cups_printers};
+
+    #[test]
+    fn parses_multiline_printer_list() {
+        let out = "Office_LaserJet\n  PDF \n\nKitchen_Inkjet\n";
+        assert_eq!(
+            parse_cups_printers(out),
+            vec!["Office_LaserJet", "PDF", "Kitchen_Inkjet"]
+        );
+    }
+
+    #[test]
+    fn empty_printer_list() {
+        assert!(parse_cups_printers("").is_empty());
+        assert!(parse_cups_printers("\n  \n").is_empty());
+    }
+
+    #[test]
+    fn parses_default_printer() {
+        assert_eq!(
+            parse_cups_default("system default destination: Office_LaserJet\n").as_deref(),
+            Some("Office_LaserJet")
+        );
+    }
+
+    #[test]
+    fn no_default_printer() {
+        assert_eq!(parse_cups_default("no system default destination\n"), None);
     }
 }

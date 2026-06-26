@@ -1,6 +1,6 @@
 use super::super::audio::RustConnAudioBackend;
 use super::super::clipboard::RustConnClipboardBackend;
-use super::super::rdpdr::RustConnRdpdrBackend;
+use super::super::rdpdr::{RustConnRdpdrBackend, cups_default_printer, list_cups_printers};
 use super::super::{RdpClientConfig, RdpClientError, RdpClientEvent};
 use ironrdp::cliprdr::CliprdrClient;
 use ironrdp::connector::{
@@ -136,18 +136,56 @@ pub async fn establish_connection(
             })
             .collect();
 
-        let rdpdr_backend = RustConnRdpdrBackend::new(drive_paths);
+        // Build the printer device_id -> CUPS queue map. Printer IDs sit past
+        // the drive IDs (drives occupy 1..=N) so they never collide. Each
+        // forwarded queue is announced as its own redirected printer, and the
+        // backend uses this map to route each job back to the right local queue.
+        let mut printer_queues: std::collections::HashMap<u32, String> =
+            std::collections::HashMap::new();
+        if config.printer_enabled {
+            let base = config.shared_folders.len() as u32;
+
+            // Decide which queues to forward: an explicit subset, or all local
+            // queues when none are listed.
+            let mut queues = if config.printers.is_empty() {
+                list_cups_printers()
+            } else {
+                config.printers.clone()
+            };
+
+            // Announce the CUPS default LAST so it wins IronRDP's hardcoded
+            // DEFAULTPRINTER flag race (see plan Appendix A).
+            if let Some(default) = cups_default_printer()
+                && let Some(pos) = queues.iter().position(|q| *q == default)
+            {
+                let d = queues.remove(pos);
+                queues.push(d);
+            }
+
+            for (idx, queue) in queues.into_iter().enumerate() {
+                let device_id = base + 1 + idx as u32;
+                printer_queues.insert(device_id, queue);
+            }
+        }
+
+        let rdpdr_backend = RustConnRdpdrBackend::new(drive_paths, printer_queues.clone());
         let mut rdpdr = Rdpdr::new(Box::new(rdpdr_backend), computer_name);
         if !initial_drives.is_empty() {
             rdpdr = rdpdr.with_drives(Some(initial_drives));
         }
-        if config.printer_enabled {
-            // Printer device id sits past the drive ids (1..=n). The backend
-            // accumulates the PostScript spool and forwards it to CUPS on close.
-            let printer_device_id = config.shared_folders.len() as u32 + 1;
-            rdpdr = rdpdr.with_printer(printer_device_id, "RustConn".to_string());
-            tracing::debug!("RDPDR: registering printer device {}", printer_device_id);
+
+        // Announce each forwarded printer. Sort by device_id so announce order
+        // is deterministic and matches the "default announced last" intent.
+        let mut announce: Vec<(u32, String)> = printer_queues
+            .iter()
+            .map(|(id, q)| (*id, q.clone()))
+            .collect();
+        announce.sort_by_key(|(id, _)| *id);
+        for (device_id, queue) in announce {
+            tracing::debug!("RDPDR: registering printer {device_id} -> '{queue}'");
+            rdpdr = rdpdr.with_printer(device_id, queue);
         }
+
         connector.static_channels.insert(rdpdr);
     } else if config.audio_enabled {
         // No shared folders but audio is enabled - add RDPSND channel
