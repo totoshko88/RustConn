@@ -72,6 +72,9 @@ platforms:
   amd64:
     build-on: [amd64]
     build-for: [amd64]
+  arm64:
+    build-on: [arm64]
+    build-for: [arm64]
 
 # NOTE: GTK4/libadwaita runtime (GTK, Pango, Cairo, gdk-pixbuf, graphene,
 # Mesa/GL, GNOME themes), the desktop-launch command-chain, the correct
@@ -223,25 +226,28 @@ parts:
       # (ABI mismatch → transparent window + broken icons). Keeping a single
       # instance of GTK, GLib and GObject across the whole process is mandatory.
       # libvte itself (libvte-2.91-gtk4.so) is intentionally NOT excluded.
-      - -usr/lib/x86_64-linux-gnu/libgtk-4.so*
-      - -usr/lib/x86_64-linux-gnu/libgdk_pixbuf-2.0.so*
-      - -usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0
-      - -usr/lib/x86_64-linux-gnu/librsvg-2.so*
-      - -usr/lib/x86_64-linux-gnu/libpango-1.0.so*
-      - -usr/lib/x86_64-linux-gnu/libpangocairo-1.0.so*
-      - -usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so*
-      - -usr/lib/x86_64-linux-gnu/libcairo.so*
-      - -usr/lib/x86_64-linux-gnu/libcairo-gobject.so*
-      - -usr/lib/x86_64-linux-gnu/libcairo-script-interpreter.so*
-      - -usr/lib/x86_64-linux-gnu/libgraphene-1.0.so*
-      - -usr/lib/x86_64-linux-gnu/libharfbuzz.so*
-      - -usr/lib/x86_64-linux-gnu/libharfbuzz-subset.so*
-      - -usr/lib/x86_64-linux-gnu/libglib-2.0.so*
-      - -usr/lib/x86_64-linux-gnu/libgio-2.0.so*
-      - -usr/lib/x86_64-linux-gnu/libgobject-2.0.so*
-      - -usr/lib/x86_64-linux-gnu/libgmodule-2.0.so*
-      - -usr/lib/x86_64-linux-gnu/libgthread-2.0.so*
-      - -usr/lib/x86_64-linux-gnu/libepoxy.so*
+      # The `usr/lib/*/...` wildcard matches the arch-triplet directory
+      # (x86_64-linux-gnu on amd64, aarch64-linux-gnu on arm64) so the dedup
+      # works on both architectures.
+      - -usr/lib/*/libgtk-4.so*
+      - -usr/lib/*/libgdk_pixbuf-2.0.so*
+      - -usr/lib/*/gdk-pixbuf-2.0
+      - -usr/lib/*/librsvg-2.so*
+      - -usr/lib/*/libpango-1.0.so*
+      - -usr/lib/*/libpangocairo-1.0.so*
+      - -usr/lib/*/libpangoft2-1.0.so*
+      - -usr/lib/*/libcairo.so*
+      - -usr/lib/*/libcairo-gobject.so*
+      - -usr/lib/*/libcairo-script-interpreter.so*
+      - -usr/lib/*/libgraphene-1.0.so*
+      - -usr/lib/*/libharfbuzz.so*
+      - -usr/lib/*/libharfbuzz-subset.so*
+      - -usr/lib/*/libglib-2.0.so*
+      - -usr/lib/*/libgio-2.0.so*
+      - -usr/lib/*/libgobject-2.0.so*
+      - -usr/lib/*/libgmodule-2.0.so*
+      - -usr/lib/*/libgthread-2.0.so*
+      - -usr/lib/*/libepoxy.so*
     override-build: |
       # Single workspace build matching packaging/flatpak (minus adw-1-8: the
       # core24 gnome platform provides libadwaita 1.5, and the 1.6/1.7/1.8

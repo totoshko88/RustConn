@@ -325,7 +325,13 @@ jobs:
     # blocks the release.
     needs: [release]
     if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: ubuntu-24.04,     arch: amd64 }
+          - { runner: ubuntu-24.04-arm, arch: arm64 }
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     permissions:
       contents: write
@@ -355,7 +361,7 @@ jobs:
       - name: Upload Snap artifact
         uses: actions/upload-artifact@v6
         with:
-          name: snap-package
+          name: snap-package-${{ matrix.arch }}
           path: ${{ steps.build.outputs.snap }}
 
       - name: Publish to Snap Store

@@ -11,7 +11,13 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: ubuntu-24.04,     arch: amd64 }
+          - { runner: ubuntu-24.04-arm, arch: arm64 }
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -38,5 +44,5 @@ jobs:
       - name: Upload Snap artifact
         uses: actions/upload-artifact@v6
         with:
-          name: snap-${{ github.ref_name }}
+          name: snap-${{ github.ref_name }}-${{ matrix.arch }}
           path: ${{ steps.build.outputs.snap }}
