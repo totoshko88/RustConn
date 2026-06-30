@@ -249,6 +249,17 @@ parts:
       - -usr/lib/*/libgthread-2.0.so*
       - -usr/lib/*/libepoxy.so*
     override-build: |
+      # Pin pango to a single source at link time (issue #198). The gnome
+      # extension stages the gnome-46-2404 SDK's libpangoft2-1.0, but the
+      # build also has noble's libpango-1.0 in /usr/lib. On arm64 these two
+      # halves of pango diverge (the SDK libpangoft2 references
+      # pango_font_description_{get,set}_features, absent from the older noble
+      # libpango), so ld fails with "undefined reference" at link. Prepend the
+      # SDK arch-triplet lib dir to the rustc link search path so BOTH pango
+      # libs resolve from the SDK — the same copy used at runtime. amd64
+      # already aligns, making this a harmless no-op there.
+      SDK_LIB="/snap/gnome-46-2404-sdk/current/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}"
+      export RUSTFLAGS="-L native=${SDK_LIB} ${RUSTFLAGS:-}"
       # Single workspace build matching packaging/flatpak (minus adw-1-8: the
       # core24 gnome platform provides libadwaita 1.5, and the 1.6/1.7/1.8
       # widgets have cfg-gated 1.5 fallbacks). Global LTO via --config keeps the
