@@ -175,10 +175,9 @@ apps:
 
 parts:
   rustconn:
-    plugin: nil
+    plugin: rust
     source: .
-    build-snaps:
-      - rustup --channel=latest/stable
+    rust-channel: "1.95"
     build-packages:
       # GTK4/libadwaita/GLib dev files also come from the gnome SDK (added by
       # the `gnome` extension build environment); we keep the distro dev
@@ -246,10 +245,6 @@ parts:
       - -usr/lib/*/libgthread-2.0.so*
       - -usr/lib/*/libepoxy.so*
     override-build: |
-      # Install the required Rust toolchain via the rustup snap
-      rustup toolchain install 1.95 --profile minimal
-      rustup default 1.95
-      export PATH="$HOME/.cargo/bin:$PATH"
       # Pin pango to a single source at link time (issue #198). The gnome
       # extension stages the gnome-46-2404 SDK's libpangoft2-1.0, but the
       # build also has noble's libpango-1.0 in /usr/lib. On arm64 these two
