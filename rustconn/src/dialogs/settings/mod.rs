@@ -1291,6 +1291,17 @@ impl SettingsDialog {
             );
             // Preserve smart folders visibility (managed by toolbar toggle, not settings dialog)
             ui.show_smart_folders = settings_clone.borrow().ui.show_smart_folders;
+            // Preserve runtime-managed state the dialog does not edit, so saving
+            // Preferences never wipes it (#202): window geometry/maximized,
+            // expanded sidebar groups, and search history.
+            {
+                let cur = settings_clone.borrow();
+                ui.window_width = cur.ui.window_width;
+                ui.window_height = cur.ui.window_height;
+                ui.window_maximized = cur.ui.window_maximized;
+                ui.expanded_groups = cur.ui.expanded_groups.clone();
+                ui.search_history = cur.ui.search_history.clone();
+            }
             drop(conn_refs);
             drop(conn_list);
 

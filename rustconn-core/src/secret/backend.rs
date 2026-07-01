@@ -8,6 +8,21 @@ use async_trait::async_trait;
 use crate::error::SecretResult;
 use crate::models::Credentials;
 
+/// Fine-grained availability state of a secret backend.
+///
+/// Distinguishes a missing client (binary/library absent) from a present
+/// client whose backing service does not respond, so the UI can surface an
+/// accurate, actionable signal instead of a single boolean.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BackendAvailability {
+    /// The backend is present and its service answers.
+    Available,
+    /// The client (binary or library) needed to reach the backend is absent.
+    ClientMissing,
+    /// The client is present but the backing service does not respond.
+    ServiceUnavailable,
+}
+
 /// Abstraction over secret storage backends
 ///
 /// This trait defines the interface for storing, retrieving, and deleting
@@ -50,6 +65,21 @@ pub trait SecretBackend: Send + Sync {
     /// # Returns
     /// `true` if the backend is available, `false` otherwise
     async fn is_available(&self) -> bool;
+
+    /// Reports fine-grained backend availability.
+    ///
+    /// The default implementation derives from [`Self::is_available`], mapping
+    /// `true` to [`BackendAvailability::Available`] and `false` to
+    /// [`BackendAvailability::ClientMissing`]. Backends that can distinguish a
+    /// present-but-unresponsive service should override this to return
+    /// [`BackendAvailability::ServiceUnavailable`].
+    async fn availability(&self) -> BackendAvailability {
+        if self.is_available().await {
+            BackendAvailability::Available
+        } else {
+            BackendAvailability::ClientMissing
+        }
+    }
 
     /// Returns the backend identifier
     ///

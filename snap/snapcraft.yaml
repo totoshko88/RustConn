@@ -1,6 +1,6 @@
 name: rustconn
 base: core24
-version: '0.17.5'
+version: '0.17.6'
 title: RustConn
 summary: Manage remote connections easily
 description: |
@@ -42,7 +42,7 @@ description: |
 
   Security:
   - KeePassXC (KDBX files and proxy)
-  - libsecret (GNOME Keyring)
+  - System keyring (GNOME Keyring / KDE Wallet)
   - Bitwarden CLI, 1Password CLI, Passbolt CLI, Pass (passwordstore.org)
 
   Productivity:

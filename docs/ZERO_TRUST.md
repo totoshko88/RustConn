@@ -267,3 +267,36 @@ This means any program installed on your system (e.g., `kiro-cli`, `docker`, `tm
 ## Custom Arguments
 
 All providers support an **Additional CLI arguments** field in the Advanced section. These arguments are appended to the generated command. Use this for provider-specific flags not covered by the UI fields.
+
+---
+
+## Secret Storage: Encrypted-File Backend (Threat Model)
+
+RustConn stores connection credentials in a system keyring whenever one is available — GNOME Keyring / KDE Wallet via the Secret Service on Linux, or the Keychain on macOS. When no working keyring is present (headless servers, minimal desktops, some sandboxed environments), RustConn falls back to an **application-managed encrypted file** so that credentials still work everywhere. This section documents how that fallback stores data at rest and, importantly, how its security compares to a real keyring.
+
+### Where credentials live
+
+Credentials are written to `credentials.enc` in the app data directory (`dirs::data_dir()/rustconn/credentials.enc`). The file is a JSON map of `{ connection_id: base64(blob) }`, with each connection's secret independently encrypted. The file is written atomically (write to a temp file, then rename) and set to mode `0600` (owner read/write only) on Unix.
+
+### How encryption works
+
+Each entry is sealed with **AES-256-GCM**. The encryption key is derived with **Argon2id** (16 MiB memory, 2 iterations, 1 thread, version `0x13`) from a machine-specific key. Each blob is self-describing:
+
+```
+magic "RCSC" + version + 16-byte salt + 12-byte nonce + ciphertext + 16-byte GCM tag
+```
+
+The salt and nonce are unique per entry, and the GCM tag provides authenticated encryption (tampering is detected on decrypt).
+
+### Where the at-rest key lives
+
+The machine-specific key comes from an app-specific key file at `dirs::data_dir()/rustconn/.machine-key`, created with mode `0600`. This path works inside Flatpak and Snap sandboxes, where `/etc/machine-id` is not always reachable. When a host machine ID is available, it is mixed in via HKDF-SHA256. In all cases the resulting key material lives **on the same disk as `credentials.enc`**, readable by any process running as the same user.
+
+### The trade-off versus a system keyring
+
+This is the key point, and we want to be honest about it:
+
+- A **system keyring** (GNOME Keyring, KDE Wallet, macOS Keychain) can keep the master key tied to your login session and protected in a separately-encrypted store, so the secrets are not trivially readable just because someone can read your files.
+- The **encrypted-file backend** keeps its key on the same disk as the data it protects. It defends against **casual at-rest disclosure** — a stolen disk image, a leaked backup, a copied config directory, or another user account on the same machine — because without the key file the ciphertext is useless. It does **not** defend against a **compromised user account or malware running as you**: anything that can read your data directory can read both `credentials.enc` and `.machine-key` and decrypt your secrets.
+
+In short, the encrypted-file backend is the resilient fallback that guarantees credentials work on systems with no usable keyring. It is **not** a stronger alternative to a keyring — where a working keyring (or KeePassXC with its own master password) is available, prefer it.

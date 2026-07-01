@@ -20,6 +20,7 @@ mod dialog_tests;
 mod document_tests;
 mod drag_drop_tests;
 mod embedded_client_error_tests;
+mod encrypted_file_backend_tests;
 mod error_tests;
 mod expect_tests;
 mod export_format_tests;

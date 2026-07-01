@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-29 18:24+0300\n"
+"POT-Creation-Date: 2026-07-01 11:19+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Polish\n"
@@ -19,7 +19,7 @@ msgstr ""
 "Generated-By: Babel 2.10.3\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:64
-#: rustconn/src/app.rs:1273 rustconn/src/toast.rs:246
+#: rustconn/src/app.rs:1335 rustconn/src/toast.rs:246
 msgid "OK"
 msgstr "OK"
 
@@ -35,15 +35,16 @@ msgstr "OK"
 #: rustconn/src/dialogs/settings/terminal_tab.rs:795
 #: rustconn/src/dialogs/statistics.rs:84
 #: rustconn/src/dialogs/template_manager.rs:188
+#: rustconn/src/dialogs/tunnel.rs:489
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:526
-#: rustconn/src/dialogs/tunnel.rs:489 rustconn/src/dialogs/variable_setup.rs:85
+#: rustconn/src/dialogs/variable_setup.rs:85
 #: rustconn/src/dialogs/workspace.rs:219
 #: rustconn/src/embedded_rdp/autotype.rs:160
 #: rustconn/src/terminal/tab_menu.rs:154 rustconn/src/terminal/tab_menu.rs:357
 #: rustconn/src/window/batch_edit.rs:62
-#: rustconn/src/window/connection_dialogs.rs:1024
+#: rustconn/src/window/connection_dialogs.rs:1048
 #: rustconn/src/window/edit_group.rs:1749
-#: rustconn/src/window/edit_group.rs:1797 rustconn/src/window/mod.rs:2556
+#: rustconn/src/window/edit_group.rs:1797 rustconn/src/window/mod.rs:2581
 #: rustconn/src/window/operations.rs:81 rustconn/src/window/operations.rs:414
 #: rustconn/src/window/operations.rs:582 rustconn/src/window/sessions.rs:325
 #: rustconn/src/window/workspaces.rs:197
@@ -77,22 +78,34 @@ msgstr "Zapisz"
 msgid "Initialization Error"
 msgstr "Błąd inicjalizacji"
 
-#: rustconn/src/app.rs:530
+#: rustconn/src/app.rs:531
 msgid "KeePass password not loaded from keyring — re-enter it in Settings"
 msgstr ""
 "Hasło KeePass nie zostało wczytane z pęku kluczy — wprowadź je ponownie w "
 "Ustawieniach"
 
-#: rustconn/src/app.rs:535 rustconn/src/embedded_rdp/mod.rs:270
+#: rustconn/src/app.rs:536 rustconn/src/embedded_rdp/mod.rs:270
 #: rustconn/src/split_view/bridge.rs:1744 rustconn/src/window/ui.rs:112
 msgid "Settings"
 msgstr "Ustawienia"
 
-#: rustconn/src/app.rs:973
+#: rustconn/src/app.rs:999
 msgid "{} backend unavailable. Using fallback."
 msgstr "Backend {} niedostępny. Używam zapasowego."
 
-#: rustconn/src/app.rs:1169
+#: rustconn/src/app.rs:1021
+msgid ""
+"{} is selected, but no system keyring is responding.              Open "
+"Settings, then Secrets, to choose a backend that works on this system."
+msgstr "Wybrano {}, ale żaden systemowy pęk kluczy nie odpowiada. Otwórz Ustawienia, a następnie Sekrety, aby wybrać backend działający w tym systemie."
+
+#: rustconn/src/app.rs:1026
+msgid ""
+"{} is selected, but its keyring client is not installed.              Open "
+"Settings, then Secrets, to choose a backend that works on this system."
+msgstr "Wybrano {}, ale klient pęku kluczy nie jest zainstalowany. Otwórz Ustawienia, a następnie Sekrety, aby wybrać backend działający w tym systemie."
+
+#: rustconn/src/app.rs:1231
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -103,35 +116,35 @@ msgstr ""
 "Kubernetes i Zero Trust z jednej aplikacji."
 
 #. Translators: Replace this with your name and language, e.g. "John Doe (German)"
-#: rustconn/src/app.rs:1205
+#: rustconn/src/app.rs:1267
 msgid "translator-credits"
 msgstr "Zespół RustConn (Polski)"
 
-#: rustconn/src/app.rs:1212
+#: rustconn/src/app.rs:1274
 msgid "User Guide"
 msgstr "Podręcznik użytkownika"
 
-#: rustconn/src/app.rs:1216
+#: rustconn/src/app.rs:1278
 msgid "Installation"
 msgstr "Instalacja"
 
-#: rustconn/src/app.rs:1220
+#: rustconn/src/app.rs:1282
 msgid "Releases"
 msgstr "Wydania"
 
-#: rustconn/src/app.rs:1224
+#: rustconn/src/app.rs:1286
 msgid "Changelog"
 msgstr "Historia zmian"
 
-#: rustconn/src/app.rs:1234
+#: rustconn/src/app.rs:1296
 msgid "Special Thanks"
 msgstr "Specjalne podziękowania"
 
-#: rustconn/src/app.rs:1249
+#: rustconn/src/app.rs:1311
 msgid "Made in Ukraine"
 msgstr "Made in Ukraine"
 
-#: rustconn/src/app.rs:1250
+#: rustconn/src/app.rs:1312
 msgid "All contributors and supporters"
 msgstr "Wszyscy współtwórcy i wspierający"
 
@@ -151,7 +164,8 @@ msgstr ""
 msgid "Enter Password Manually"
 msgstr "Wprowadź hasło ręcznie"
 
-#: rustconn/src/dialogs/backend_missing.rs:43
+#: rustconn/src/dialogs/backend_missing.rs:43 rustconn/src/vault_ops.rs:57
+#: rustconn/src/window/mod.rs:525
 msgid "Open Settings"
 msgstr "Otwórz ustawienia"
 
@@ -1141,72 +1155,72 @@ msgid "hostname or IP"
 msgstr "nazwa hosta lub IP"
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:162
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:429
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:447
 msgid "Cannot Load Password"
 msgstr "Nie można załadować hasła"
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:163
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:490
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:508
 msgid "Enter a connection name or host first."
 msgstr "Najpierw wprowadź nazwę połączenia lub host."
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:278
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:400
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:408
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:418
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:426
 msgid "Password Not Found"
 msgstr "Hasło nie znalezione"
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:279
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:401
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:409
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:419
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:427
 msgid "No password found in vault for this connection."
 msgstr "Nie znaleziono hasła w sejfie dla tego połączenia."
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:288
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:416
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:434
 msgid "Failed to Load Password"
 msgstr "Nie udało się załadować hasła"
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:289
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:417
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:435
 msgid "Could not load password from vault."
 msgstr "Nie można załadować hasła z sejfu."
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:300
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:618
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:636
 msgid "Vault Not Configured"
 msgstr "Sejf nie skonfigurowany"
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:301
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:619
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:637
 msgid "Configure a secret backend in Settings → Secrets."
 msgstr "Skonfiguruj zaplecze sekretów w Ustawienia → Sekrety."
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:430
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:448
 msgid "Password loading is only available for Vault source."
 msgstr "Ładowanie hasła jest dostępne tylko dla źródła Sejf."
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:470
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:488
 msgid "Test Not Available"
 msgstr "Test niedostępny"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:471
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:489
 msgid "Credential test is only available when Password Source is set to Vault."
 msgstr ""
 "Test poświadczeń jest dostępny tylko, gdy źródło hasła jest ustawione na "
 "Vault."
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:489
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:507
 msgid "Cannot Test"
 msgstr "Nie można przetestować"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:582
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:646
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:600
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:664
 msgid "Credential Test Passed"
 msgstr "Test poświadczeń zakończony pomyślnie"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:584
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:648
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:602
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:666
 msgid ""
 "Password found in vault.\n"
 "Lookup key: {}"
@@ -1214,15 +1228,15 @@ msgstr ""
 "Hasło znalezione w sejfie.\n"
 "Klucz wyszukiwania: {}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:592
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:603
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:655
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:666
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:677
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:610
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:621
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:673
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:684
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:695
 msgid "Credential Test Failed"
 msgstr "Test poświadczeń nieudany"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:594
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:612
 msgid ""
 "No password found in vault.\n"
 "Lookup key: {}"
@@ -1230,7 +1244,7 @@ msgstr ""
 "Nie znaleziono hasła w sejfie.\n"
 "Klucz wyszukiwania: {}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:605
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:623
 msgid ""
 "Vault error. Check your KeePass configuration.\n"
 "Lookup key: {}"
@@ -1238,7 +1252,7 @@ msgstr ""
 "Błąd sejfu. Sprawdź konfigurację KeePass.\n"
 "Klucz wyszukiwania: {}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:657
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:675
 msgid ""
 "Entry found but contains no password.\n"
 "Lookup key: {}"
@@ -1246,7 +1260,7 @@ msgstr ""
 "Wpis znaleziony, ale nie zawiera hasła.\n"
 "Klucz wyszukiwania: {}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:668
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:686
 msgid ""
 "No entry found in vault.\n"
 "Lookup key: {}"
@@ -1254,7 +1268,7 @@ msgstr ""
 "Nie znaleziono wpisu w sejfie.\n"
 "Klucz wyszukiwania: {}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:679
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:697
 msgid ""
 "Backend error. Check your vault configuration.\n"
 "Lookup key: {}"
@@ -1607,7 +1621,7 @@ msgstr "SSH, znane porty"
 #: rustconn/src/dialogs/connection/vnc.rs:258
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:83
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:386
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:827
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:854
 #: rustconn/src/dialogs/template.rs:624
 msgid "Authentication"
 msgstr "Uwierzytelnianie"
@@ -1637,7 +1651,7 @@ msgstr "Załaduj nazwę użytkownika z wybranej grupy"
 #: rustconn/src/dialogs/connection/general_tab.rs:232
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:124
 #: rustconn/src/dialogs/template.rs:567
-#: rustconn/src/window/connection_dialogs.rs:788
+#: rustconn/src/window/connection_dialogs.rs:812
 #: rustconn/src/window/edit_group.rs:548
 msgid "Domain"
 msgstr "Domena"
@@ -1716,7 +1730,7 @@ msgid "Value"
 msgstr "Wartość"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:265
-#: rustconn/src/dialogs/variables.rs:240 rustconn/src/dialogs/variables.rs:603
+#: rustconn/src/dialogs/variables.rs:240 rustconn/src/dialogs/variables.rs:608
 #: rustconn/src/window/connection_dialogs.rs:510
 #: rustconn/src/window/edit_group.rs:287
 msgid "Password value"
@@ -1794,7 +1808,7 @@ msgstr "Grupa"
 #: rustconn/src/dialogs/connection/general_tab.rs:411
 #: rustconn/src/dialogs/export.rs:423 rustconn/src/dialogs/snippet.rs:183
 #: rustconn/src/dialogs/template.rs:514
-#: rustconn/src/window/connection_dialogs.rs:795
+#: rustconn/src/window/connection_dialogs.rs:819
 #: rustconn/src/window/edit_group.rs:1345
 msgid "Description"
 msgstr "Opis"
@@ -2112,14 +2126,12 @@ msgid "Play remote audio locally"
 msgstr "Odtwarzaj zdalny dźwięk lokalnie"
 
 #: rustconn/src/dialogs/connection/rdp.rs:240
-#, fuzzy
 msgid "Printer Redirection"
-msgstr "Przekierowanie dźwięku"
+msgstr "Przekierowanie drukarki"
 
 #: rustconn/src/dialogs/connection/rdp.rs:241
-#, fuzzy
 msgid "Share your local printer with the remote session"
-msgstr "Wklej z lokalnego schowka do sesji zdalnej"
+msgstr "Udostępnij lokalną drukarkę zdalnej sesji"
 
 #: rustconn/src/dialogs/connection/rdp.rs:248
 #: rustconn/src/dialogs/connection/spice.rs:143
@@ -2817,8 +2829,8 @@ msgid "Path to SSH key"
 msgstr "Ścieżka do klucza SSH"
 
 #: rustconn/src/dialogs/connection/ssh.rs:243
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:893
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:896
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:920
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:923
 msgid "Browse for key file"
 msgstr "Przeglądaj pliki kluczy"
 
@@ -2829,7 +2841,7 @@ msgstr "Przeglądaj w poszukiwaniu pliku klucza SSH"
 #: rustconn/src/dialogs/connection/ssh.rs:251
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:122
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:334
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:906
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:933
 #: rustconn/src/dialogs/template.rs:675
 msgid "Key File"
 msgstr "Plik klucza"
@@ -3211,6 +3223,273 @@ msgstr ""
 "GTK4 UriLauncher (obsługuje portale, działa w Flatpak). Poświadczenia są "
 "przechowywane do kopiowania przez menu kontekstowe paska bocznego."
 
+#: rustconn/src/dialogs/connection/zerotrust.rs:78
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:208
+#: rustconn/src/dialogs/template.rs:1336
+msgid "Provider"
+msgstr "Dostawca"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:82
+#: rustconn/src/dialogs/connection/zerotrust.rs:250
+#: rustconn/src/dialogs/template.rs:1501
+msgid "AWS Session Manager"
+msgstr "AWS Session Manager"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:83
+#: rustconn/src/dialogs/connection/zerotrust.rs:273
+#: rustconn/src/dialogs/template.rs:1550
+msgid "GCP IAP Tunnel"
+msgstr "GCP IAP Tunnel"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:84
+#: rustconn/src/dialogs/connection/zerotrust.rs:297
+#: rustconn/src/dialogs/template.rs:1598
+msgid "Azure Bastion"
+msgstr "Azure Bastion"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:85
+#: rustconn/src/dialogs/connection/zerotrust.rs:323
+#: rustconn/src/dialogs/template.rs:1646
+msgid "Azure SSH (AAD)"
+msgstr "Azure SSH (AAD)"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:86
+#: rustconn/src/dialogs/connection/zerotrust.rs:351
+#: rustconn/src/dialogs/template.rs:1686
+msgid "OCI Bastion"
+msgstr "OCI Bastion"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:87
+#: rustconn/src/dialogs/connection/zerotrust.rs:396
+#: rustconn/src/dialogs/template.rs:1734
+msgid "Cloudflare Access"
+msgstr "Cloudflare Access"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:88
+#: rustconn/src/dialogs/connection/zerotrust.rs:412
+#: rustconn/src/dialogs/template.rs:1758
+msgid "Teleport"
+msgstr "Teleport"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:89
+#: rustconn/src/dialogs/connection/zerotrust.rs:431
+#: rustconn/src/dialogs/template.rs:1794
+msgid "Tailscale SSH"
+msgstr "Tailscale SSH"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:90
+#: rustconn/src/dialogs/connection/zerotrust.rs:449
+#: rustconn/src/dialogs/template.rs:1818
+msgid "HashiCorp Boundary"
+msgstr "HashiCorp Boundary"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:91
+#: rustconn/src/dialogs/connection/zerotrust.rs:470
+#: rustconn/src/dialogs/template.rs:1854
+msgid "Hoop.dev"
+msgstr "Hoop.dev"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:92
+#: rustconn/src/dialogs/connection/zerotrust.rs:494
+#: rustconn/src/dialogs/template.rs:1350 rustconn/src/dialogs/template.rs:1907
+msgid "Generic Command"
+msgstr "Polecenie niestandardowe"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:101
+#: rustconn/src/dialogs/template.rs:1357
+msgid "Zero Trust Provider"
+msgstr "Dostawca Zero Trust"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:102
+#: rustconn/src/dialogs/template.rs:1358
+msgid "Select your identity-aware proxy service"
+msgstr "Wybierz usługę proxy z identyfikacją"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:200
+msgid "Extra CLI options for the provider command"
+msgstr "Dodatkowe opcje CLI dla polecenia dostawcy"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:251
+msgid "Connect via AWS Systems Manager"
+msgstr "Połączenie przez AWS Systems Manager"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:254
+#: rustconn/src/dialogs/template.rs:1510
+msgid "Instance ID"
+msgstr "ID instancji"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:257
+#: rustconn/src/dialogs/template.rs:1523
+msgid "AWS Profile"
+msgstr "Profil AWS"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:261
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:708
+#: rustconn/src/dialogs/template.rs:1535
+msgid "Region"
+msgstr "Region"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:274
+msgid "Connect via Identity-Aware Proxy"
+msgstr "Połączenie przez Identity-Aware Proxy"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:278
+msgid "Instance Name"
+msgstr "Nazwa instancji"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:282
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:716
+#: rustconn/src/dialogs/template.rs:1571
+msgid "Zone"
+msgstr "Strefa"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:285
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:718
+#: rustconn/src/dialogs/template.rs:1583
+msgid "Project"
+msgstr "Projekt"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:298
+msgid "Connect via Azure Bastion service"
+msgstr "Połączenie przez usługę Azure Bastion"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:302
+#: rustconn/src/dialogs/template.rs:1607
+msgid "Target Resource ID"
+msgstr "ID zasobu docelowego"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:307
+#: rustconn/src/dialogs/connection/zerotrust.rs:331
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:724
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:732
+#: rustconn/src/dialogs/template.rs:1619 rustconn/src/dialogs/template.rs:1667
+msgid "Resource Group"
+msgstr "Grupa zasobów"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:311
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:726
+#: rustconn/src/dialogs/template.rs:1631
+msgid "Bastion Name"
+msgstr "Nazwa Bastion"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:324
+msgid "Connect via Azure AD authentication"
+msgstr "Połączenie przez uwierzytelnianie Azure AD"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:327
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:730
+#: rustconn/src/dialogs/template.rs:1655
+msgid "VM Name"
+msgstr "Nazwa VM"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:352
+msgid "Connect via Oracle Cloud Bastion"
+msgstr "Połączenie przez Oracle Cloud Bastion"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:355
+#: rustconn/src/dialogs/template.rs:1695
+msgid "Bastion OCID"
+msgstr "OCID Bastion"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:358
+#: rustconn/src/dialogs/template.rs:1707
+msgid "Target OCID"
+msgstr "OCID celu"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:361
+#: rustconn/src/dialogs/template.rs:1719
+msgid "Target IP"
+msgstr "IP celu"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:366
+msgid "SSH Public Key"
+msgstr "Klucz publiczny SSH"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:374
+msgid "Session TTL"
+msgstr "TTL sesji"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:375
+msgid "Session duration in seconds (default: 1800)"
+msgstr "Czas trwania sesji w sekundach (domyślnie: 1800)"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:397
+msgid "Connect via Cloudflare Zero Trust"
+msgstr "Połączenie przez Cloudflare Zero Trust"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:400
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:736
+#: rustconn/src/dialogs/template.rs:1743 rustconn/src/monitoring.rs:360
+msgid "Hostname"
+msgstr "Nazwa hosta"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:413
+msgid "Connect via Gravitational Teleport"
+msgstr "Połączenie przez Gravitational Teleport"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:416
+msgid "Node Name"
+msgstr "Nazwa węzła"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:419
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:742
+#: rustconn/src/dialogs/template.rs:1779
+msgid "Cluster"
+msgstr "Klaster"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:432
+msgid "Connect via Tailscale network"
+msgstr "Połączenie przez sieć Tailscale"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:436
+#: rustconn/src/dialogs/template.rs:1803
+msgid "Tailscale Host"
+msgstr "Host Tailscale"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:450
+msgid "Connect via Boundary proxy"
+msgstr "Połączenie przez proxy Boundary"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:453
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:706
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:750
+#: rustconn/src/dialogs/template.rs:1827
+msgid "Target ID"
+msgstr "ID celu"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:457
+msgid "Controller Address"
+msgstr "Adres kontrolera"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:471
+msgid "Connect via Hoop.dev zero-trust gateway"
+msgstr "Połącz przez bramę zero-trust Hoop.dev"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:475
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:756
+#: rustconn/src/dialogs/template.rs:1863
+msgid "Connection Name"
+msgstr "Nazwa połączenia"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:479
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:758
+#: rustconn/src/dialogs/template.rs:1875
+msgid "Gateway URL"
+msgstr "URL bramy"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:482
+#: rustconn/src/dialogs/template.rs:1887
+msgid "gRPC URL"
+msgstr "URL gRPC"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:495
+msgid "Custom command for unsupported providers"
+msgstr "Polecenie niestandardowe dla nieobsługiwanych dostawców"
+
+#: rustconn/src/dialogs/connection/zerotrust.rs:499
+msgid "Command Template"
+msgstr "Szablon polecenia"
+
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:66
 #: rustconn/src/dialogs/export.rs:775
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:73
@@ -3311,12 +3590,6 @@ msgstr "Pozostaw puste dla pierwszego kontenera"
 msgid "Custom Command"
 msgstr "Polecenie niestandardowe"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:208
-#: rustconn/src/dialogs/connection/zerotrust.rs:78
-#: rustconn/src/dialogs/template.rs:1336
-msgid "Provider"
-msgstr "Dostawca"
-
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:209
 msgid "Run any command for connection"
 msgstr "Uruchom dowolne polecenie do połączenia"
@@ -3351,19 +3624,6 @@ msgstr "Przeglądarka plików przez połączenie SSH"
 msgid "{} Connection"
 msgstr "Połączenie {}"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:706
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:750
-#: rustconn/src/dialogs/connection/zerotrust.rs:453
-#: rustconn/src/dialogs/template.rs:1827
-msgid "Target ID"
-msgstr "ID celu"
-
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:708
-#: rustconn/src/dialogs/connection/zerotrust.rs:261
-#: rustconn/src/dialogs/template.rs:1535
-msgid "Region"
-msgstr "Region"
-
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:710
 msgid "Profile"
 msgstr "Profil"
@@ -3373,69 +3633,13 @@ msgstr "Profil"
 msgid "Instance"
 msgstr "Instancja"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:716
-#: rustconn/src/dialogs/connection/zerotrust.rs:282
-#: rustconn/src/dialogs/template.rs:1571
-msgid "Zone"
-msgstr "Strefa"
-
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:718
-#: rustconn/src/dialogs/connection/zerotrust.rs:285
-#: rustconn/src/dialogs/template.rs:1583
-msgid "Project"
-msgstr "Projekt"
-
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:722
 msgid "Resource ID"
 msgstr "ID zasobu"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:724
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:732
-#: rustconn/src/dialogs/connection/zerotrust.rs:307
-#: rustconn/src/dialogs/connection/zerotrust.rs:331
-#: rustconn/src/dialogs/template.rs:1619 rustconn/src/dialogs/template.rs:1667
-msgid "Resource Group"
-msgstr "Grupa zasobów"
-
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:726
-#: rustconn/src/dialogs/connection/zerotrust.rs:311
-#: rustconn/src/dialogs/template.rs:1631
-msgid "Bastion Name"
-msgstr "Nazwa Bastion"
-
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:730
-#: rustconn/src/dialogs/connection/zerotrust.rs:327
-#: rustconn/src/dialogs/template.rs:1655
-msgid "VM Name"
-msgstr "Nazwa VM"
-
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:736
-#: rustconn/src/dialogs/connection/zerotrust.rs:400
-#: rustconn/src/dialogs/template.rs:1743 rustconn/src/monitoring.rs:360
-msgid "Hostname"
-msgstr "Nazwa hosta"
-
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:742
-#: rustconn/src/dialogs/connection/zerotrust.rs:419
-#: rustconn/src/dialogs/template.rs:1779
-msgid "Cluster"
-msgstr "Klaster"
-
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:752
 msgid "Address"
 msgstr "Adres"
-
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:756
-#: rustconn/src/dialogs/connection/zerotrust.rs:475
-#: rustconn/src/dialogs/template.rs:1863
-msgid "Connection Name"
-msgstr "Nazwa połączenia"
-
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:758
-#: rustconn/src/dialogs/connection/zerotrust.rs:479
-#: rustconn/src/dialogs/template.rs:1875
-msgid "Gateway URL"
-msgstr "URL bramy"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:973
 msgid "More\\u{2026}"
@@ -3465,198 +3669,6 @@ msgstr "Duplikuj połączenie"
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:275
 msgid "{} connection"
 msgstr "Połączenie {}"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:82
-#: rustconn/src/dialogs/connection/zerotrust.rs:250
-#: rustconn/src/dialogs/template.rs:1501
-msgid "AWS Session Manager"
-msgstr "AWS Session Manager"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:83
-#: rustconn/src/dialogs/connection/zerotrust.rs:273
-#: rustconn/src/dialogs/template.rs:1550
-msgid "GCP IAP Tunnel"
-msgstr "GCP IAP Tunnel"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:84
-#: rustconn/src/dialogs/connection/zerotrust.rs:297
-#: rustconn/src/dialogs/template.rs:1598
-msgid "Azure Bastion"
-msgstr "Azure Bastion"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:85
-#: rustconn/src/dialogs/connection/zerotrust.rs:323
-#: rustconn/src/dialogs/template.rs:1646
-msgid "Azure SSH (AAD)"
-msgstr "Azure SSH (AAD)"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:86
-#: rustconn/src/dialogs/connection/zerotrust.rs:351
-#: rustconn/src/dialogs/template.rs:1686
-msgid "OCI Bastion"
-msgstr "OCI Bastion"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:87
-#: rustconn/src/dialogs/connection/zerotrust.rs:396
-#: rustconn/src/dialogs/template.rs:1734
-msgid "Cloudflare Access"
-msgstr "Cloudflare Access"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:88
-#: rustconn/src/dialogs/connection/zerotrust.rs:412
-#: rustconn/src/dialogs/template.rs:1758
-msgid "Teleport"
-msgstr "Teleport"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:89
-#: rustconn/src/dialogs/connection/zerotrust.rs:431
-#: rustconn/src/dialogs/template.rs:1794
-msgid "Tailscale SSH"
-msgstr "Tailscale SSH"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:90
-#: rustconn/src/dialogs/connection/zerotrust.rs:449
-#: rustconn/src/dialogs/template.rs:1818
-msgid "HashiCorp Boundary"
-msgstr "HashiCorp Boundary"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:91
-#: rustconn/src/dialogs/connection/zerotrust.rs:470
-#: rustconn/src/dialogs/template.rs:1854
-msgid "Hoop.dev"
-msgstr "Hoop.dev"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:92
-#: rustconn/src/dialogs/connection/zerotrust.rs:494
-#: rustconn/src/dialogs/template.rs:1350 rustconn/src/dialogs/template.rs:1907
-msgid "Generic Command"
-msgstr "Polecenie niestandardowe"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:101
-#: rustconn/src/dialogs/template.rs:1357
-msgid "Zero Trust Provider"
-msgstr "Dostawca Zero Trust"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:102
-#: rustconn/src/dialogs/template.rs:1358
-msgid "Select your identity-aware proxy service"
-msgstr "Wybierz usługę proxy z identyfikacją"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:200
-msgid "Extra CLI options for the provider command"
-msgstr "Dodatkowe opcje CLI dla polecenia dostawcy"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:251
-msgid "Connect via AWS Systems Manager"
-msgstr "Połączenie przez AWS Systems Manager"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:254
-#: rustconn/src/dialogs/template.rs:1510
-msgid "Instance ID"
-msgstr "ID instancji"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:257
-#: rustconn/src/dialogs/template.rs:1523
-msgid "AWS Profile"
-msgstr "Profil AWS"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:274
-msgid "Connect via Identity-Aware Proxy"
-msgstr "Połączenie przez Identity-Aware Proxy"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:278
-msgid "Instance Name"
-msgstr "Nazwa instancji"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:298
-msgid "Connect via Azure Bastion service"
-msgstr "Połączenie przez usługę Azure Bastion"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:302
-#: rustconn/src/dialogs/template.rs:1607
-msgid "Target Resource ID"
-msgstr "ID zasobu docelowego"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:324
-msgid "Connect via Azure AD authentication"
-msgstr "Połączenie przez uwierzytelnianie Azure AD"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:352
-msgid "Connect via Oracle Cloud Bastion"
-msgstr "Połączenie przez Oracle Cloud Bastion"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:355
-#: rustconn/src/dialogs/template.rs:1695
-msgid "Bastion OCID"
-msgstr "OCID Bastion"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:358
-#: rustconn/src/dialogs/template.rs:1707
-msgid "Target OCID"
-msgstr "OCID celu"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:361
-#: rustconn/src/dialogs/template.rs:1719
-msgid "Target IP"
-msgstr "IP celu"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:366
-msgid "SSH Public Key"
-msgstr "Klucz publiczny SSH"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:374
-msgid "Session TTL"
-msgstr "TTL sesji"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:375
-msgid "Session duration in seconds (default: 1800)"
-msgstr "Czas trwania sesji w sekundach (domyślnie: 1800)"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:397
-msgid "Connect via Cloudflare Zero Trust"
-msgstr "Połączenie przez Cloudflare Zero Trust"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:413
-msgid "Connect via Gravitational Teleport"
-msgstr "Połączenie przez Gravitational Teleport"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:416
-msgid "Node Name"
-msgstr "Nazwa węzła"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:432
-msgid "Connect via Tailscale network"
-msgstr "Połączenie przez sieć Tailscale"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:436
-#: rustconn/src/dialogs/template.rs:1803
-msgid "Tailscale Host"
-msgstr "Host Tailscale"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:450
-msgid "Connect via Boundary proxy"
-msgstr "Połączenie przez proxy Boundary"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:457
-msgid "Controller Address"
-msgstr "Adres kontrolera"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:471
-msgid "Connect via Hoop.dev zero-trust gateway"
-msgstr "Połącz przez bramę zero-trust Hoop.dev"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:482
-#: rustconn/src/dialogs/template.rs:1887
-msgid "gRPC URL"
-msgstr "URL gRPC"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:495
-msgid "Custom command for unsupported providers"
-msgstr "Polecenie niestandardowe dla nieobsługiwanych dostawców"
-
-#: rustconn/src/dialogs/connection/zerotrust.rs:499
-msgid "Command Template"
-msgstr "Szablon polecenia"
 
 #: rustconn/src/dialogs/document.rs:61
 msgid "New Document"
@@ -3908,7 +3920,7 @@ msgstr "Eksportowanie..."
 msgid "Preparing export..."
 msgstr "Przygotowywanie eksportu..."
 
-#: rustconn/src/dialogs/export.rs:487 rustconn/src/window/mod.rs:3159
+#: rustconn/src/dialogs/export.rs:487 rustconn/src/window/mod.rs:3192
 msgid "Export Complete"
 msgstr "Eksport zakończony"
 
@@ -4047,7 +4059,7 @@ msgstr ""
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:586
 #: rustconn/src/dialogs/widgets.rs:459 rustconn/src/terminal/tab_menu.rs:358
-#: rustconn/src/window/mod.rs:2557
+#: rustconn/src/vault_ops.rs:56 rustconn/src/window/mod.rs:2582
 msgid "Close"
 msgstr "Zamknij"
 
@@ -4443,6 +4455,7 @@ msgid "Import connections from multiple files at once"
 msgstr "Importuj połączenia z wielu plików jednocześnie"
 
 #: rustconn/src/dialogs/import/sources.rs:217
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1542
 msgid "Available"
 msgstr "Dostępny"
 
@@ -4507,7 +4520,7 @@ msgid "RDP File"
 msgstr "Plik RDP"
 
 #: rustconn/src/dialogs/import/sources.rs:255
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:385
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:432
 msgid "Unknown"
 msgstr "Nieznany"
 
@@ -4562,7 +4575,7 @@ msgstr ""
 "Grupa '{}' zostanie utworzona w trybie importu."
 
 #: rustconn/src/dialogs/import/sources.rs:692
-#: rustconn/src/window/connection_dialogs.rs:1105
+#: rustconn/src/window/connection_dialogs.rs:1129
 msgid "Import Failed"
 msgstr "Import nie powiódł się"
 
@@ -4694,6 +4707,55 @@ msgid ""
 msgstr ""
 "Nie można odczytać pliku dziennika: {}. Plik mógł zostać przeniesiony lub "
 "usunięty."
+
+#: rustconn/src/dialogs/password.rs:59
+msgid "Authentication Required"
+msgstr "Wymagane uwierzytelnianie"
+
+#: rustconn/src/dialogs/password.rs:85
+msgid "Enter credentials for this connection:"
+msgstr "Wprowadź dane uwierzytelniające dla tego połączenia:"
+
+#: rustconn/src/dialogs/password.rs:101 rustconn/src/dialogs/password.rs:360
+msgid "Resolving credentials..."
+msgstr "Rozwiązywanie danych uwierzytelniających..."
+
+#: rustconn/src/dialogs/password.rs:156
+msgid "Domain:"
+msgstr "Domena:"
+
+#: rustconn/src/dialogs/password.rs:161 rustconn/src/window/edit_dialogs.rs:739
+#: rustconn/src/window/edit_dialogs.rs:750
+msgid "(optional)"
+msgstr "(opcjonalne)"
+
+#: rustconn/src/dialogs/password.rs:172
+msgid "Username:"
+msgstr "Nazwa użytkownika:"
+
+#: rustconn/src/dialogs/password.rs:177
+msgid "username"
+msgstr "nazwa użytkownika"
+
+#: rustconn/src/dialogs/password.rs:188
+msgid "Password:"
+msgstr "Hasło:"
+
+#: rustconn/src/dialogs/password.rs:204
+msgid "Save Credentials"
+msgstr "Zapisz dane uwierzytelniające"
+
+#: rustconn/src/dialogs/password.rs:211
+msgid "Save to KeePass"
+msgstr "Zapisz w KeePass"
+
+#: rustconn/src/dialogs/password.rs:212
+msgid "Migrate credentials from system keyring to KeePass"
+msgstr "Migruj poświadczenia z pęku kluczy systemowego do KeePass"
+
+#: rustconn/src/dialogs/password.rs:299
+msgid "Connect to {}"
+msgstr "Połącz z {}"
 
 #: rustconn/src/dialogs/password_generator.rs:22
 msgid "Password Generator"
@@ -4839,55 +4901,6 @@ msgstr "{} bitów"
 msgid "Password copied (auto-clears in 30s)"
 msgstr "Hasło skopiowane (automatyczne czyszczenie po 30 s)"
 
-#: rustconn/src/dialogs/password.rs:59
-msgid "Authentication Required"
-msgstr "Wymagane uwierzytelnianie"
-
-#: rustconn/src/dialogs/password.rs:85
-msgid "Enter credentials for this connection:"
-msgstr "Wprowadź dane uwierzytelniające dla tego połączenia:"
-
-#: rustconn/src/dialogs/password.rs:101 rustconn/src/dialogs/password.rs:360
-msgid "Resolving credentials..."
-msgstr "Rozwiązywanie danych uwierzytelniających..."
-
-#: rustconn/src/dialogs/password.rs:156
-msgid "Domain:"
-msgstr "Domena:"
-
-#: rustconn/src/dialogs/password.rs:161 rustconn/src/window/edit_dialogs.rs:739
-#: rustconn/src/window/edit_dialogs.rs:750
-msgid "(optional)"
-msgstr "(opcjonalne)"
-
-#: rustconn/src/dialogs/password.rs:172
-msgid "Username:"
-msgstr "Nazwa użytkownika:"
-
-#: rustconn/src/dialogs/password.rs:177
-msgid "username"
-msgstr "nazwa użytkownika"
-
-#: rustconn/src/dialogs/password.rs:188
-msgid "Password:"
-msgstr "Hasło:"
-
-#: rustconn/src/dialogs/password.rs:204
-msgid "Save Credentials"
-msgstr "Zapisz dane uwierzytelniające"
-
-#: rustconn/src/dialogs/password.rs:211
-msgid "Save to KeePass"
-msgstr "Zapisz w KeePass"
-
-#: rustconn/src/dialogs/password.rs:212
-msgid "Migrate credentials from system keyring to KeePass"
-msgstr "Migruj poświadczenia z pęku kluczy systemowego do KeePass"
-
-#: rustconn/src/dialogs/password.rs:299
-msgid "Connect to {}"
-msgstr "Połącz z {}"
-
 #: rustconn/src/dialogs/progress.rs:50
 msgid "Starting..."
 msgstr "Uruchamianie..."
@@ -5003,7 +5016,7 @@ msgstr "Import nie powiódł się"
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:303 rustconn/src/toast.rs:73
 #: rustconn/src/toast.rs:299 rustconn/src/toast.rs:329
 #: rustconn/src/window/clusters.rs:428
-#: rustconn/src/window/connection_dialogs.rs:970
+#: rustconn/src/window/connection_dialogs.rs:994
 #: rustconn/src/window/edit_dialogs.rs:313
 #: rustconn/src/window/edit_dialogs.rs:408
 #: rustconn/src/window/edit_group.rs:1675 rustconn/src/window/groups.rs:211
@@ -5035,6 +5048,8 @@ msgid "Kubernetes CLI tools"
 msgstr "Narzędzia CLI Kubernetes"
 
 #: rustconn/src/dialogs/settings/clients_tab.rs:154
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:251
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1549
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:43
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:206
 msgid "Checking..."
@@ -5454,70 +5469,70 @@ msgstr "Domyślny okres ciszy"
 msgid "Default Silence Timeout"
 msgstr "Domyślny limit czasu ciszy"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:318
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:328
 msgid "Initialized at {}"
 msgstr "Zainicjalizowano w {}"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:323
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:333
 msgid "Not initialized (run 'pass init &lt;gpg-id&gt;')"
 msgstr "Nie zainicjalizowano (uruchom 'pass init &lt;gpg-id&gt;')"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:328
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:338
 msgid "Cannot determine store directory"
 msgstr "Nie można określić katalogu magazynu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:379
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:471
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:426
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:498
 msgid "Unlocked"
 msgstr "Odblokowany"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:380
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:427
 msgid "Locked"
 msgstr "Zablokowany"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:381
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:488
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:428
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:515
 msgid "Not logged in"
 msgstr "Nie zalogowany"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:382
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:429
 msgid "Status: {}"
 msgstr "Status: {}"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:387
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:417
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:439
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:434
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:464
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:486
 msgid "Error checking status"
 msgstr "Błąd sprawdzania statusu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:403
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:450
 msgid "Signed in: {}"
 msgstr "Zalogowany: {}"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:405
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:452
 msgid "Signed in"
 msgstr "Zalogowany"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:410
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:414
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:457
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:461
 msgid "Not signed in"
 msgstr "Nie zalogowany"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:412
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:459
 msgid "Session expired"
 msgstr "Sesja wygasła"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:428
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1576
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:475
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1663
 msgid "Configured"
 msgstr "Skonfigurowany"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:432
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:436
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:479
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:483
 msgid "Not configured"
 msgstr "Nie skonfigurowany"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:434
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:481
 msgid "Authentication failed"
 msgstr "Uwierzytelnienie nieudane"
 
@@ -5553,149 +5568,157 @@ msgstr "Backend sekretów"
 msgid "Choose how passwords are stored"
 msgstr "Wybierz sposób przechowywania haseł"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:224
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:212
+msgid "Encrypted file (no system keyring)"
+msgstr "Zaszyfrowany plik (bez pęku kluczy systemu)"
+
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:228
 msgid "Backend"
 msgstr "Backend"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:225
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:229
 msgid "Primary password storage method"
 msgstr "Główna metoda przechowywania haseł"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:236
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:240
 msgid "Version"
 msgstr "Wersja"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:245
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:255
+msgid "Availability"
+msgstr "Dostępność"
+
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:266
 msgid "Enable fallback"
 msgstr "Włącz awaryjne przełączanie"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:246
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:267
 msgid "Use libsecret if primary backend unavailable"
 msgstr "Użyj libsecret, gdy główny backend jest niedostępny"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:274
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:293
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:518
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:633
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:740
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1022
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:301
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:320
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:545
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:660
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:767
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1065
 msgid "Detecting..."
 msgstr "Wykrywanie..."
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:279
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:306
 msgid "Bitwarden"
 msgstr "Bitwarden"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:280
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:307
 msgid "Configure Bitwarden CLI integration"
 msgstr "Skonfiguruj integrację z Bitwarden CLI"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:286
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:313
 msgid "Master Password"
 msgstr "Hasło główne"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:287
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:314
 msgid "Required to unlock vault"
 msgstr "Wymagane do odblokowania sejfu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:303
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:330
 msgid "Save master password"
 msgstr "Zapisz hasło główne"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:312
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:339
 msgid "Use API key authentication"
 msgstr "Użyj uwierzytelniania kluczem API"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:314
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:341
 msgid "For automation or 2FA methods not supported by CLI (FIDO2, Duo)"
 msgstr "Do automatyzacji lub metod 2FA nieobsługiwanych przez CLI (FIDO2, Duo)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:323
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:350
 msgid "client_id"
 msgstr "client_id"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:328
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:355
 msgid "Client ID"
 msgstr "Identyfikator klienta"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:330
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:357
 msgid "From Bitwarden web vault → Settings → Security → Keys"
 msgstr "Z sejfu Bitwarden → Ustawienia → Bezpieczeństwo → Klucze"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:339
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:366
 msgid "Client Secret"
 msgstr "Sekret klienta"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:340
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:367
 msgid "Keep this secret safe"
 msgstr "Przechowuj ten sekret w bezpiecznym miejscu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:358
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:385
 msgid "Unlock"
 msgstr "Odblokuj"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:361
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:388
 msgid "Unlock Bitwarden vault"
 msgstr "Odblokuj sejf Bitwarden"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:373
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:400
 msgid "Vault Status"
 msgstr "Status sejfu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:374
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:401
 msgid "Login with 'bw login' in terminal first"
 msgstr "Najpierw zaloguj się za pomocą 'bw login' w terminalu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:398
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:402
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:425
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:429
 msgid "Enter password"
 msgstr "Wprowadź hasło"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:409
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:436
 msgid "Unlocking..."
 msgstr "Odblokowywanie..."
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:486
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:513
 msgid "Invalid password"
 msgstr "Nieprawidłowe hasło"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:490
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:517
 msgid "Unlock failed"
 msgstr "Odblokowanie nieudane"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:503
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:530
 msgid "1Password"
 msgstr "1Password"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:504
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:531
 msgid "Configure 1Password CLI integration"
 msgstr "Skonfiguruj integrację z 1Password CLI"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:509
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:536
 msgid "Service Account Token"
 msgstr "Token konta usługi"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:511
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:538
 msgid "For headless/automated access (OP_SERVICE_ACCOUNT_TOKEN)"
 msgstr "Do automatycznego dostępu (OP_SERVICE_ACCOUNT_TOKEN)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:528
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:555
 msgid "Save token"
 msgstr "Zapisz token"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:535
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:562
 msgid "Sign In"
 msgstr "Zaloguj się"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:538
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:565
 msgid "Sign in to 1Password (opens terminal)"
 msgstr "Zaloguj się do 1Password (otwiera terminal)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:550
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:577
 msgid "Account Status"
 msgstr "Status konta"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:552
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:579
 msgid "Sign in with 'op signin' in terminal or use biometric unlock"
 msgstr ""
 "Zaloguj się za pomocą 'op signin' w terminalu lub użyj odblokowania "
@@ -5703,233 +5726,241 @@ msgstr ""
 "odblokowania biometrycznegoZaloguj się za pomocą 'op signin' w terminalu lub "
 "użyj odblokowania biometrycznego"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:564
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:591
 msgid "Opening terminal..."
 msgstr "Otwieranie terminala..."
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:589
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:616
 msgid "Check terminal"
 msgstr "Sprawdź terminal"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:595
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:622
 msgid "No terminal found"
 msgstr "Nie znaleziono terminala"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:606
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:633
 msgid "Passbolt"
 msgstr "Passbolt"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:607
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:634
 msgid "Configure Passbolt CLI integration"
 msgstr "Skonfiguruj integrację z Passbolt CLI"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:617
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:644
 msgid "Server URL"
 msgstr "Adres URL serwera"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:618
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:645
 msgid "Passbolt web vault address"
 msgstr "Adres sejfu Passbolt"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:626
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:653
 msgid "GPG Passphrase"
 msgstr "Hasło GPG"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:627
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:654
 msgid "Required to decrypt credentials from Passbolt"
 msgstr "Wymagane do odszyfrowania danych uwierzytelniających z Passbolt"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:642
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:669
 msgid "Save passphrase"
 msgstr "Zapisz hasło klucza"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:649
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:676
 msgid "Open Vault"
 msgstr "Otwórz sejf"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:652
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:679
 msgid "Open Passbolt web vault in browser"
 msgstr "Otwórz sejf web Passbolt w przeglądarce"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:664
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:691
 msgid "Server Status"
 msgstr "Status serwera"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:665
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:692
 msgid "Configure with 'passbolt configure' in terminal"
 msgstr "Skonfiguruj za pomocą 'passbolt configure' w terminalu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:688
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:715
 msgid "Failed to open browser"
 msgstr "Nie udało się otworzyć przeglądarki"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:693
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:720
 msgid "Enter server URL or run 'passbolt configure'"
 msgstr "Wprowadź URL serwera lub uruchom 'passbolt configure'"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:704
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:731
 msgid "Pass"
 msgstr "Pass"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:705
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:732
 msgid "Configure Pass (passwordstore.org) integration"
 msgstr "Konfiguruj integrację Pass (passwordstore.org)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:710
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:737
 msgid "~/.password-store"
 msgstr "~/.password-store"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:718
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:721
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:745
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:748
 msgid "Choose password store directory"
 msgstr "Wybierz katalog magazynu haseł"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:732
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:759
 msgid "Store Directory"
 msgstr "Katalog magazynu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:733
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:760
 msgid "Location of password-store (leave empty for default)"
 msgstr "Lokalizacja magazynu haseł (puste dla domyślnej)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:747
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:774
 msgid "Initialization Status"
 msgstr "Status inicjalizacji"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:748
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:775
 msgid "Run 'pass init &lt;gpg-id&gt;' to initialize"
 msgstr "Uruchom 'pass init &lt;gpg-id&gt;' aby zainicjalizować"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:759
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:786
 msgid "Select Password Store Directory"
 msgstr "Wybierz katalog magazynu haseł"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:783
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:810
 msgid "KeePass Database"
 msgstr "Baza danych KeePass"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:785
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:812
 msgid ""
 "Configure KDBX file integration (works with KeePassXC, GNOME Secrets, etc.)"
 msgstr ""
 "Skonfiguruj integrację z plikami KDBX (działa z KeePassXC, GNOME Secrets "
 "itp.)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:790
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:817
 msgid "KDBX Integration"
 msgstr "Integracja KDBX"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:791
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:818
 msgid "Enable direct database access"
 msgstr "Włącz bezpośredni dostęp do bazy danych"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:797
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:824
 msgid "Select .kdbx file"
 msgstr "Wybierz plik .kdbx"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:804
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:831
 msgid "Browse for database file"
 msgstr "Przeglądaj pliki bazy danych"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:807
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:834
 msgid "Browse for KeePass database file"
 msgstr "Wybierz plik bazy danych KeePass"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:818
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:845
 msgid "Database File"
 msgstr "Plik bazy danych"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:828
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:855
 msgid "Database unlock methods"
 msgstr "Metody odblokowywania bazy danych"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:837
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:864
 msgid "Use password"
 msgstr "Użyj hasła"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:846
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:873
 msgid "Database password"
 msgstr "Hasło bazy danych"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:853
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:880
 msgid "Not connected"
 msgstr "Nie połączono"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:869
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:896
 msgid "Save password"
 msgstr "Zapisz hasło"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:878
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:905
 msgid "Use key file"
 msgstr "Użyj pliku klucza"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:886
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:913
 msgid "Select .keyx or .key file"
 msgstr "Wybierz plik .keyx lub .key"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:914
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:941
 msgid "KDBX Status"
 msgstr "Status KDBX"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:919
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:946
 msgid "Check"
 msgstr "Sprawdź"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:921
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:948
 msgid "Test database connection"
 msgstr "Testuj połączenie z bazą danych"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:933
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:960
 msgid "Connection Status"
 msgstr "Status połączenia"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1019
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1357
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1366
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1374
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1062
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1415
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1424
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1432
 msgid "Not installed"
 msgstr "Nie zainstalowano"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1098
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1726
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1141
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1816
 msgid "Token loaded from keyring"
 msgstr "Token załadowany z pęku kluczy"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1154
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1197
 msgid "Select KeePass Database"
 msgstr "Wybierz bazę danych KeePass"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1160
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1203
 msgid "KeePass Database (*.kdbx)"
 msgstr "Baza danych KeePass (*.kdbx)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1188
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1231
 msgid "Select Key File"
 msgstr "Wybierz plik klucza"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1195
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1238
 msgid "Key Files (*.keyx, *.key)"
 msgstr "Pliki kluczy (*.keyx, *.key)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1199
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1242
 msgid "All Files"
 msgstr "Wszystkie pliki"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1235
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1278
 msgid "No database selected"
 msgstr "Nie wybrano bazy danych"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1275
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1318
 #: rustconn/src/embedded_rdp/ui.rs:164 rustconn/src/embedded_spice.rs:468
 #: rustconn/src/embedded_trait.rs:322 rustconn/src/sidebar/view.rs:561
 msgid "Connected"
 msgstr "Połączono"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1578
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1544
+msgid "No keyring service responding"
+msgstr "Brak odpowiedzi usługi pęku kluczy"
+
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1547
+msgid "Keyring client not installed"
+msgstr "Klient pęku kluczy nie jest zainstalowany"
+
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1665
 msgid "Database path required"
 msgstr "Wymagana ścieżka bazy danych"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1581
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1668
 msgid "Disabled"
 msgstr "Wyłączony"
 
@@ -6424,15 +6455,14 @@ msgstr ""
 "i w KDE)"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:194
-#, fuzzy
 msgid "Send terminal control shortcuts to the session"
-msgstr "Nadpisz kolory terminala dla tego połączenia"
+msgstr "Wysyłaj skróty sterujące terminala do sesji"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:196
 msgid ""
 "While a terminal or remote viewer is focused, let Ctrl+F/P/N and similar "
 "chords reach the session instead of the app"
-msgstr ""
+msgstr "Gdy terminal lub podgląd zdalny jest aktywny, pozwól, aby Ctrl+F/P/N i podobne skróty trafiały do sesji zamiast do aplikacji"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:205
 msgid "Window"
@@ -6956,91 +6986,11 @@ msgstr "Na połączenie"
 msgid "Success Rate"
 msgstr "Wskaźnik powodzenia"
 
-#: rustconn/src/dialogs/template_manager.rs:35
-msgid "Manage Templates"
-msgstr "Zarządzaj szablonami"
-
+#: rustconn/src/dialogs/template.rs:131
 #: rustconn/src/dialogs/template_manager.rs:46
 #: rustconn/src/dialogs/template_manager.rs:47
-#: rustconn/src/dialogs/template.rs:131
 msgid "New Template"
 msgstr "Nowy szablon"
-
-#: rustconn/src/dialogs/template_manager.rs:64
-msgid "Filter by protocol:"
-msgstr "Filtruj według protokołu:"
-
-#: rustconn/src/dialogs/template_manager.rs:66
-msgid "All"
-msgstr "Wszystkie"
-
-#: rustconn/src/dialogs/template_manager.rs:67
-#: rustconn/src/window/edit_group.rs:1389
-msgid "SSH"
-msgstr "SSH"
-
-#: rustconn/src/dialogs/template_manager.rs:68
-msgid "RDP"
-msgstr "RDP"
-
-#: rustconn/src/dialogs/template_manager.rs:69
-msgid "VNC"
-msgstr "VNC"
-
-#: rustconn/src/dialogs/template_manager.rs:70
-msgid "SPICE"
-msgstr "SPICE"
-
-#: rustconn/src/dialogs/template_manager.rs:93
-msgid "No Templates"
-msgstr "Brak szablonów"
-
-#: rustconn/src/dialogs/template_manager.rs:95
-msgid ""
-"Create a template to quickly set up new connections with predefined settings."
-msgstr ""
-"Utwórz szablon, aby szybko konfigurować nowe połączenia z predefiniowanymi "
-"ustawieniami."
-
-#: rustconn/src/dialogs/template_manager.rs:107 rustconn/src/sidebar_ui.rs:175
-#: rustconn/src/sidebar_ui.rs:256 rustconn/src/smart_folder_ui.rs:387
-#: rustconn/src/smart_folder_ui.rs:494 rustconn/src/window/snippets.rs:274
-msgid "Edit"
-msgstr "Edytuj"
-
-#: rustconn/src/dialogs/template_manager.rs:115
-#: rustconn/src/dialogs/widgets.rs:467
-msgid "Use Template"
-msgstr "Użyj szablonu"
-
-#: rustconn/src/dialogs/template_manager.rs:185
-#: rustconn/src/window/templates.rs:149
-msgid "Delete Template?"
-msgstr "Usunąć szablon?"
-
-#: rustconn/src/dialogs/template_manager.rs:186
-msgid "This template will be permanently removed."
-msgstr "Ten szablon zostanie trwale usunięty."
-
-#: rustconn/src/dialogs/template_manager.rs:396
-#: rustconn/src/window/templates.rs:329
-msgid "SSH Templates"
-msgstr "Szablony SSH"
-
-#: rustconn/src/dialogs/template_manager.rs:403
-#: rustconn/src/window/templates.rs:337
-msgid "RDP Templates"
-msgstr "Szablony RDP"
-
-#: rustconn/src/dialogs/template_manager.rs:410
-#: rustconn/src/window/templates.rs:345
-msgid "VNC Templates"
-msgstr "Szablony VNC"
-
-#: rustconn/src/dialogs/template_manager.rs:417
-#: rustconn/src/window/templates.rs:353
-msgid "SPICE Templates"
-msgstr "Szablony SPICE"
 
 #: rustconn/src/dialogs/template.rs:293
 msgid "Telnet uses an external client. No additional options."
@@ -7274,6 +7224,86 @@ msgstr "Niestandardowe polecenie SSH z ustawieniami proxy"
 msgid "Edit Template"
 msgstr "Edytuj szablon"
 
+#: rustconn/src/dialogs/template_manager.rs:35
+msgid "Manage Templates"
+msgstr "Zarządzaj szablonami"
+
+#: rustconn/src/dialogs/template_manager.rs:64
+msgid "Filter by protocol:"
+msgstr "Filtruj według protokołu:"
+
+#: rustconn/src/dialogs/template_manager.rs:66
+msgid "All"
+msgstr "Wszystkie"
+
+#: rustconn/src/dialogs/template_manager.rs:67
+#: rustconn/src/window/edit_group.rs:1389
+msgid "SSH"
+msgstr "SSH"
+
+#: rustconn/src/dialogs/template_manager.rs:68
+msgid "RDP"
+msgstr "RDP"
+
+#: rustconn/src/dialogs/template_manager.rs:69
+msgid "VNC"
+msgstr "VNC"
+
+#: rustconn/src/dialogs/template_manager.rs:70
+msgid "SPICE"
+msgstr "SPICE"
+
+#: rustconn/src/dialogs/template_manager.rs:93
+msgid "No Templates"
+msgstr "Brak szablonów"
+
+#: rustconn/src/dialogs/template_manager.rs:95
+msgid ""
+"Create a template to quickly set up new connections with predefined settings."
+msgstr ""
+"Utwórz szablon, aby szybko konfigurować nowe połączenia z predefiniowanymi "
+"ustawieniami."
+
+#: rustconn/src/dialogs/template_manager.rs:107 rustconn/src/sidebar_ui.rs:175
+#: rustconn/src/sidebar_ui.rs:256 rustconn/src/smart_folder_ui.rs:387
+#: rustconn/src/smart_folder_ui.rs:494 rustconn/src/window/snippets.rs:274
+msgid "Edit"
+msgstr "Edytuj"
+
+#: rustconn/src/dialogs/template_manager.rs:115
+#: rustconn/src/dialogs/widgets.rs:467
+msgid "Use Template"
+msgstr "Użyj szablonu"
+
+#: rustconn/src/dialogs/template_manager.rs:185
+#: rustconn/src/window/templates.rs:149
+msgid "Delete Template?"
+msgstr "Usunąć szablon?"
+
+#: rustconn/src/dialogs/template_manager.rs:186
+msgid "This template will be permanently removed."
+msgstr "Ten szablon zostanie trwale usunięty."
+
+#: rustconn/src/dialogs/template_manager.rs:396
+#: rustconn/src/window/templates.rs:329
+msgid "SSH Templates"
+msgstr "Szablony SSH"
+
+#: rustconn/src/dialogs/template_manager.rs:403
+#: rustconn/src/window/templates.rs:337
+msgid "RDP Templates"
+msgstr "Szablony RDP"
+
+#: rustconn/src/dialogs/template_manager.rs:410
+#: rustconn/src/window/templates.rs:345
+msgid "VNC Templates"
+msgstr "Szablony VNC"
+
+#: rustconn/src/dialogs/template_manager.rs:417
+#: rustconn/src/window/templates.rs:353
+msgid "SPICE Templates"
+msgstr "Szablony SPICE"
+
 #: rustconn/src/dialogs/terminal_search.rs:42
 msgid "Search in Terminal"
 msgstr "Szukaj w terminalu"
@@ -7333,16 +7363,99 @@ msgstr "Nieprawidłowe wyrażenie regularne"
 msgid "Search error"
 msgstr "Błąd wyszukiwania"
 
+#: rustconn/src/dialogs/tunnel.rs:48
+msgid "SSH Tunnels"
+msgstr "Tunele SSH"
+
+#: rustconn/src/dialogs/tunnel.rs:58 rustconn/src/dialogs/tunnel.rs:78
+msgid "Add Tunnel"
+msgstr "Dodaj tunel"
+
+#: rustconn/src/dialogs/tunnel.rs:60
+msgid "Add a new SSH tunnel"
+msgstr "Dodaj nowy tunel SSH"
+
+#: rustconn/src/dialogs/tunnel.rs:71
+msgid "No Tunnels Configured"
+msgstr "Brak skonfigurowanych tuneli"
+
+#: rustconn/src/dialogs/tunnel.rs:73
+msgid "SSH tunnels forward ports through encrypted connections"
+msgstr "Tunele SSH przekierowują porty przez szyfrowane połączenia"
+
+#: rustconn/src/dialogs/tunnel.rs:101 rustconn/src/dialogs/tunnel.rs:174
+#: rustconn/src/dialogs/tunnel.rs:527
+msgid "Active"
+msgstr "Aktywne"
+
+#: rustconn/src/dialogs/tunnel.rs:108 rustconn/src/dialogs/tunnel.rs:177
+#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:465
+msgid "Stopped"
+msgstr "Zatrzymano"
+
+#: rustconn/src/dialogs/tunnel.rs:259
+msgid "No port forwards configured"
+msgstr "Brak przekierowań portów"
+
+#: rustconn/src/dialogs/tunnel.rs:282
+msgid "Stop Tunnel"
+msgstr "Zatrzymaj tunel"
+
+#: rustconn/src/dialogs/tunnel.rs:283
+msgid "Stop tunnel"
+msgstr "Zatrzymaj tunel"
+
+#: rustconn/src/dialogs/tunnel.rs:288
+msgid "Start Tunnel"
+msgstr "Uruchom tunel"
+
+#: rustconn/src/dialogs/tunnel.rs:289
+msgid "Start tunnel"
+msgstr "Uruchom tunel"
+
+#: rustconn/src/dialogs/tunnel.rs:312
+msgid "Unknown connection"
+msgstr "Nieznane połączenie"
+
+#: rustconn/src/dialogs/tunnel.rs:315
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:83
+msgid "SSH Connection"
+msgstr "Połączenie SSH"
+
+#: rustconn/src/dialogs/tunnel.rs:321
+msgid "Actions"
+msgstr "Akcje"
+
+#: rustconn/src/dialogs/tunnel.rs:326
+#: rustconn/src/dialogs/tunnel_builder/mod.rs:147
+#: rustconn/src/dialogs/tunnel_builder/mod.rs:148
+msgid "Edit Tunnel"
+msgstr "Edytuj tunel"
+
+#: rustconn/src/dialogs/tunnel.rs:327
+msgid "Edit this tunnel"
+msgstr "Edytuj ten tunel"
+
+#: rustconn/src/dialogs/tunnel.rs:333
+msgid "Delete Tunnel"
+msgstr "Usuń tunel"
+
+#: rustconn/src/dialogs/tunnel.rs:335
+msgid "Delete this tunnel"
+msgstr "Usuń ten tunel"
+
+#: rustconn/src/dialogs/tunnel.rs:482
+msgid "Delete Tunnel?"
+msgstr "Usunąć tunel?"
+
+#: rustconn/src/dialogs/tunnel.rs:484
+msgid "Tunnel \"{}\" will be permanently removed."
+msgstr "Tunel \"{}\" zostanie trwale usunięty."
+
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:106
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:190
 msgid "New Tunnel"
 msgstr "Nowy tunel"
-
-#: rustconn/src/dialogs/tunnel_builder/mod.rs:147
-#: rustconn/src/dialogs/tunnel_builder/mod.rs:148
-#: rustconn/src/dialogs/tunnel.rs:326
-msgid "Edit Tunnel"
-msgstr "Edytuj tunel"
 
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:520
 msgid "Tunnel is Running"
@@ -7414,11 +7527,6 @@ msgstr "Tunel"
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:77
 msgid "Tunnel Name"
 msgstr "Nazwa tunelu"
-
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:83
-#: rustconn/src/dialogs/tunnel.rs:315
-msgid "SSH Connection"
-msgstr "Połączenie SSH"
 
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:90
 msgid "Filter connections\\u{2026}"
@@ -7542,84 +7650,6 @@ msgstr "Tak"
 msgid "No"
 msgstr "Nie"
 
-#: rustconn/src/dialogs/tunnel.rs:48
-msgid "SSH Tunnels"
-msgstr "Tunele SSH"
-
-#: rustconn/src/dialogs/tunnel.rs:58 rustconn/src/dialogs/tunnel.rs:78
-msgid "Add Tunnel"
-msgstr "Dodaj tunel"
-
-#: rustconn/src/dialogs/tunnel.rs:60
-msgid "Add a new SSH tunnel"
-msgstr "Dodaj nowy tunel SSH"
-
-#: rustconn/src/dialogs/tunnel.rs:71
-msgid "No Tunnels Configured"
-msgstr "Brak skonfigurowanych tuneli"
-
-#: rustconn/src/dialogs/tunnel.rs:73
-msgid "SSH tunnels forward ports through encrypted connections"
-msgstr "Tunele SSH przekierowują porty przez szyfrowane połączenia"
-
-#: rustconn/src/dialogs/tunnel.rs:101 rustconn/src/dialogs/tunnel.rs:174
-#: rustconn/src/dialogs/tunnel.rs:527
-msgid "Active"
-msgstr "Aktywne"
-
-#: rustconn/src/dialogs/tunnel.rs:108 rustconn/src/dialogs/tunnel.rs:177
-#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:465
-msgid "Stopped"
-msgstr "Zatrzymano"
-
-#: rustconn/src/dialogs/tunnel.rs:259
-msgid "No port forwards configured"
-msgstr "Brak przekierowań portów"
-
-#: rustconn/src/dialogs/tunnel.rs:282
-msgid "Stop Tunnel"
-msgstr "Zatrzymaj tunel"
-
-#: rustconn/src/dialogs/tunnel.rs:283
-msgid "Stop tunnel"
-msgstr "Zatrzymaj tunel"
-
-#: rustconn/src/dialogs/tunnel.rs:288
-msgid "Start Tunnel"
-msgstr "Uruchom tunel"
-
-#: rustconn/src/dialogs/tunnel.rs:289
-msgid "Start tunnel"
-msgstr "Uruchom tunel"
-
-#: rustconn/src/dialogs/tunnel.rs:312
-msgid "Unknown connection"
-msgstr "Nieznane połączenie"
-
-#: rustconn/src/dialogs/tunnel.rs:321
-msgid "Actions"
-msgstr "Akcje"
-
-#: rustconn/src/dialogs/tunnel.rs:327
-msgid "Edit this tunnel"
-msgstr "Edytuj ten tunel"
-
-#: rustconn/src/dialogs/tunnel.rs:333
-msgid "Delete Tunnel"
-msgstr "Usuń tunel"
-
-#: rustconn/src/dialogs/tunnel.rs:335
-msgid "Delete this tunnel"
-msgstr "Usuń ten tunel"
-
-#: rustconn/src/dialogs/tunnel.rs:482
-msgid "Delete Tunnel?"
-msgstr "Usunąć tunel?"
-
-#: rustconn/src/dialogs/tunnel.rs:484
-msgid "Tunnel \"{}\" will be permanently removed."
-msgstr "Tunel \"{}\" zostanie trwale usunięty."
-
 #: rustconn/src/dialogs/variable_setup.rs:53
 msgid "Variable Not Configured"
 msgstr "Zmienna nie skonfigurowana"
@@ -7691,19 +7721,19 @@ msgstr ""
 "tego wpisu w momencie połączenia — nie trzeba wpisywać hasła powyżej. Nic "
 "nie jest zapisywane z powrotem do sejfu."
 
-#: rustconn/src/dialogs/variables.rs:367 rustconn/src/dialogs/variables.rs:649
+#: rustconn/src/dialogs/variables.rs:367 rustconn/src/dialogs/variables.rs:654
 msgid "New variable"
 msgstr "Nowa zmienna"
 
-#: rustconn/src/dialogs/variables.rs:506
+#: rustconn/src/dialogs/variables.rs:511
 msgid "Could not load secret"
 msgstr "Nie można załadować sekretu"
 
-#: rustconn/src/dialogs/variables.rs:508
+#: rustconn/src/dialogs/variables.rs:513
 msgid "Failed to load secret. Check secret backend in Settings."
 msgstr "Nie udało się załadować sekretu. Sprawdź backend w Ustawieniach."
 
-#: rustconn/src/dialogs/variables.rs:606
+#: rustconn/src/dialogs/variables.rs:611
 msgid "Fetched from vault at connect time"
 msgstr "Pobrano z sejfu w momencie połączenia"
 
@@ -7804,6 +7834,44 @@ msgstr "Brak zapisanych profili obszarów roboczych"
 msgid "Save your current sessions to create one"
 msgstr "Zapisz bieżące sesje, aby utworzyć profil"
 
+#: rustconn/src/embedded.rs:64 rustconn/src/embedded_spice.rs:464
+#: rustconn/src/embedded_trait.rs:318 rustconn/src/session/vnc.rs:188
+#: rustconn/src/session/vnc.rs:260
+msgid "Connecting..."
+msgstr "Łączenie..."
+
+#: rustconn/src/embedded.rs:71 rustconn/src/embedded.rs:74
+msgid "Toggle Fullscreen"
+msgstr "Przełącz pełny ekran"
+
+#: rustconn/src/embedded.rs:79 rustconn/src/embedded.rs:83
+msgid "Disconnect"
+msgstr "Rozłącz"
+
+#: rustconn/src/embedded.rs:194
+msgid "Release keyboard/mouse grab"
+msgstr "Zwolnij przechwytywanie klawiatury/myszy"
+
+#: rustconn/src/embedded.rs:195
+msgid "Toggle remote control (assistance)"
+msgstr "Przełącz zdalne sterowanie (pomoc)"
+
+#: rustconn/src/embedded.rs:196
+msgid "This tab will close automatically when the session ends"
+msgstr "Ta karta zamknie się automatycznie po zakończeniu sesji"
+
+#: rustconn/src/embedded.rs:200
+msgid "Session running in separate window"
+msgstr "Sesja uruchomiona w osobnym oknie"
+
+#: rustconn/src/embedded.rs:454
+msgid "Connecting to {}…"
+msgstr "Łączenie z {}…"
+
+#: rustconn/src/embedded.rs:521
+msgid "Connected to {}"
+msgstr "Połączono z {}"
+
 #: rustconn/src/embedded_rdp/autotype.rs:91
 #: rustconn/src/embedded_rdp/autotype.rs:253
 msgid "Typing {} chars..."
@@ -7898,11 +7966,11 @@ msgstr "Zapisano {} plików"
 msgid "RTT: {} ms"
 msgstr "RTT: {} ms"
 
-#: rustconn/src/embedded_rdp/connection.rs:1414
+#: rustconn/src/embedded_rdp/connection.rs:1424
 msgid "Using external RDP client (server incompatible)"
 msgstr "Używanie zewnętrznego klienta RDP (serwer niekompatybilny)"
 
-#: rustconn/src/embedded_rdp/connection.rs:1431
+#: rustconn/src/embedded_rdp/connection.rs:1441
 msgid ""
 "RDP server sent unsupported data. Install FreeRDP (xfreerdp3) for "
 "compatibility."
@@ -7910,49 +7978,49 @@ msgstr ""
 "Serwer RDP wysłał nieobsługiwane dane. Zainstaluj FreeRDP (xfreerdp3) dla "
 "kompatybilności."
 
-#: rustconn/src/embedded_rdp/connection.rs:1469
+#: rustconn/src/embedded_rdp/connection.rs:1479
 msgid "Authentication failed: invalid username or password."
 msgstr ""
 "Uwierzytelnianie nie powiodło się: nieprawidłowa nazwa użytkownika lub hasło."
 
-#: rustconn/src/embedded_rdp/connection.rs:1473
+#: rustconn/src/embedded_rdp/connection.rs:1483
 msgid "Authentication failed: account is disabled."
 msgstr "Uwierzytelnianie nie powiodło się: konto jest wyłączone."
 
-#: rustconn/src/embedded_rdp/connection.rs:1477
+#: rustconn/src/embedded_rdp/connection.rs:1487
 msgid "Authentication failed: account is locked out."
 msgstr "Uwierzytelnianie nie powiodło się: konto jest zablokowane."
 
-#: rustconn/src/embedded_rdp/connection.rs:1481
+#: rustconn/src/embedded_rdp/connection.rs:1491
 msgid "Authentication failed: password has expired."
 msgstr "Uwierzytelnianie nie powiodło się: hasło wygasło."
 
-#: rustconn/src/embedded_rdp/connection.rs:1485
+#: rustconn/src/embedded_rdp/connection.rs:1495
 msgid "Authentication failed: account has expired."
 msgstr "Uwierzytelnianie nie powiodło się: konto wygasło."
 
-#: rustconn/src/embedded_rdp/connection.rs:1489
+#: rustconn/src/embedded_rdp/connection.rs:1499
 msgid "Authentication failed: user is not allowed to log on to this computer."
 msgstr ""
 "Uwierzytelnianie nie powiodło się: użytkownik nie ma uprawnień do logowania "
 "na tym komputerze."
 
-#: rustconn/src/embedded_rdp/connection.rs:1493
+#: rustconn/src/embedded_rdp/connection.rs:1503
 msgid "NLA authentication failed. Check username and password."
 msgstr ""
 "Uwierzytelnianie NLA nie powiodło się. Sprawdź nazwę użytkownika i hasło."
 
-#: rustconn/src/embedded_rdp/connection.rs:1497
+#: rustconn/src/embedded_rdp/connection.rs:1507
 msgid "TLS connection failed. The server may not support this security level."
 msgstr ""
 "Połączenie TLS nie powiodło się. Serwer może nie obsługiwać tego poziomu "
 "zabezpieczeń."
 
-#: rustconn/src/embedded_rdp/connection.rs:1501
+#: rustconn/src/embedded_rdp/connection.rs:1511
 msgid "Connection refused. Check host and port."
 msgstr "Połączenie odrzucone. Sprawdź host i port."
 
-#: rustconn/src/embedded_rdp/connection.rs:1504
+#: rustconn/src/embedded_rdp/connection.rs:1514
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "Przekroczono limit czasu połączenia. Sprawdź, czy host jest osiągalny."
 
@@ -8167,44 +8235,6 @@ msgstr "Połączenie nieudane"
 #: rustconn/src/embedded_rdp/ui.rs:185
 msgid "Switch to the FreeRDP window to interact with the session"
 msgstr "Przełącz do okna FreeRDP, aby korzystać z sesji"
-
-#: rustconn/src/embedded.rs:64 rustconn/src/embedded_spice.rs:464
-#: rustconn/src/embedded_trait.rs:318 rustconn/src/session/vnc.rs:188
-#: rustconn/src/session/vnc.rs:260
-msgid "Connecting..."
-msgstr "Łączenie..."
-
-#: rustconn/src/embedded.rs:71 rustconn/src/embedded.rs:74
-msgid "Toggle Fullscreen"
-msgstr "Przełącz pełny ekran"
-
-#: rustconn/src/embedded.rs:79 rustconn/src/embedded.rs:83
-msgid "Disconnect"
-msgstr "Rozłącz"
-
-#: rustconn/src/embedded.rs:194
-msgid "Release keyboard/mouse grab"
-msgstr "Zwolnij przechwytywanie klawiatury/myszy"
-
-#: rustconn/src/embedded.rs:195
-msgid "Toggle remote control (assistance)"
-msgstr "Przełącz zdalne sterowanie (pomoc)"
-
-#: rustconn/src/embedded.rs:196
-msgid "This tab will close automatically when the session ends"
-msgstr "Ta karta zamknie się automatycznie po zakończeniu sesji"
-
-#: rustconn/src/embedded.rs:200
-msgid "Session running in separate window"
-msgstr "Sesja uruchomiona w osobnym oknie"
-
-#: rustconn/src/embedded.rs:454
-msgid "Connecting to {}…"
-msgstr "Łączenie z {}…"
-
-#: rustconn/src/embedded.rs:521
-msgid "Connected to {}"
-msgstr "Połączono z {}"
 
 #: rustconn/src/embedded_spice.rs:238 rustconn/src/embedded_trait.rs:204
 #: rustconn/src/embedded_vnc/ui.rs:52
@@ -8454,6 +8484,42 @@ msgstr "protocol:{}: Filtruj według protokołu"
 msgid "group:{}: Search in group"
 msgstr "group:{}: Szukaj w grupie"
 
+#: rustconn/src/sidebar/view.rs:129
+msgid "Pinned"
+msgstr "Przypięty"
+
+#: rustconn/src/sidebar/view.rs:140
+msgid "Has notes"
+msgstr "Ma notatki"
+
+#: rustconn/src/sidebar/view.rs:149 rustconn/src/sidebar/view.rs:151
+msgid "Recording session"
+msgstr "Nagrywanie sesji"
+
+#: rustconn/src/sidebar/view.rs:441
+msgid "Master — synced to cloud"
+msgstr "Główny — zsynchronizowano do chmury"
+
+#: rustconn/src/sidebar/view.rs:443
+msgid "Import — synced from cloud"
+msgstr "Import — zsynchronizowano z chmury"
+
+#: rustconn/src/sidebar/view.rs:464
+msgid "Sync error: {}"
+msgstr "Błąd synchronizacji: {}"
+
+#: rustconn/src/sidebar/view.rs:566
+msgid "Connecting"
+msgstr "Łączenie"
+
+#: rustconn/src/sidebar/view.rs:670
+msgid "Document has unsaved changes"
+msgstr "Dokument ma niezapisane zmiany"
+
+#: rustconn/src/sidebar/view.rs:672
+msgid "Unsaved changes"
+msgstr "Niezapisane zmiany"
+
 #: rustconn/src/sidebar_ui.rs:160
 msgid "Connect All"
 msgstr "Połącz wszystkie"
@@ -8629,42 +8695,6 @@ msgstr "Przełącz foldery inteligentne"
 #: rustconn/src/sidebar_ui.rs:714
 msgid "Show or hide smart folders panel"
 msgstr "Pokaż lub ukryj panel folderów inteligentnych"
-
-#: rustconn/src/sidebar/view.rs:129
-msgid "Pinned"
-msgstr "Przypięty"
-
-#: rustconn/src/sidebar/view.rs:140
-msgid "Has notes"
-msgstr "Ma notatki"
-
-#: rustconn/src/sidebar/view.rs:149 rustconn/src/sidebar/view.rs:151
-msgid "Recording session"
-msgstr "Nagrywanie sesji"
-
-#: rustconn/src/sidebar/view.rs:441
-msgid "Master — synced to cloud"
-msgstr "Główny — zsynchronizowano do chmury"
-
-#: rustconn/src/sidebar/view.rs:443
-msgid "Import — synced from cloud"
-msgstr "Import — zsynchronizowano z chmury"
-
-#: rustconn/src/sidebar/view.rs:464
-msgid "Sync error: {}"
-msgstr "Błąd synchronizacji: {}"
-
-#: rustconn/src/sidebar/view.rs:566
-msgid "Connecting"
-msgstr "Łączenie"
-
-#: rustconn/src/sidebar/view.rs:670
-msgid "Document has unsaved changes"
-msgstr "Dokument ma niezapisane zmiany"
-
-#: rustconn/src/sidebar/view.rs:672
-msgid "Unsaved changes"
-msgstr "Niezapisane zmiany"
 
 #: rustconn/src/smart_folder_ui.rs:57
 msgid "Smart Folders"
@@ -9030,16 +9060,27 @@ msgstr "O programie RustConn"
 msgid "Quit"
 msgstr "Zakończ"
 
-#: rustconn/src/vault_ops.rs:22
+#: rustconn/src/vault_ops.rs:48
+msgid ""
+"No system keyring is responding. Open Settings, then Secrets,              "
+"and choose another backend such as Encrypted file or KeePassXC."
+msgstr "Żaden systemowy pęk kluczy nie odpowiada. Otwórz Ustawienia, a następnie Sekrety, i wybierz inny backend, taki jak Zaszyfrowany plik lub KeePassXC."
+
+#: rustconn/src/vault_ops.rs:52
+msgid ""
+"{}\n"
+"\n"
+"{}"
+msgstr "{}\n\n{}"
+
+#: rustconn/src/vault_ops.rs:55
 msgid "Password not saved"
 msgstr "Hasło nie zostało zapisane"
 
-#: rustconn/src/vault_ops.rs:24
+#: rustconn/src/vault_ops.rs:111
 msgid ""
-"The password could not be saved to the vault.                      Check the "
-"secret backend in Settings."
-msgstr ""
-"Nie można zapisać hasła w sejfie. Sprawdź backend sekretów w Ustawieniach."
+"Saved to the encrypted file store because the system keyring was unavailable."
+msgstr "Zapisano w magazynie zaszyfrowanego pliku, ponieważ systemowy pęk kluczy był niedostępny."
 
 #: rustconn/src/window/batch_edit.rs:46
 msgid "Select two or more connections to edit them together."
@@ -9221,43 +9262,43 @@ msgid "Vault not configured"
 msgstr "Sejf nie jest skonfigurowany"
 
 #: rustconn/src/window/connection_dialogs.rs:634
-#: rustconn/src/window/connection_dialogs.rs:763
-#: rustconn/src/window/connection_dialogs.rs:770
+#: rustconn/src/window/connection_dialogs.rs:787
+#: rustconn/src/window/connection_dialogs.rs:794
 #: rustconn/src/window/edit_group.rs:495 rustconn/src/window/edit_group.rs:527
 #: rustconn/src/window/edit_group.rs:534
 msgid "No password found for this group"
 msgstr "Nie znaleziono hasła dla tej grupy"
 
 #: rustconn/src/window/connection_dialogs.rs:640
-#: rustconn/src/window/connection_dialogs.rs:775
+#: rustconn/src/window/connection_dialogs.rs:799
 #: rustconn/src/window/edit_group.rs:501 rustconn/src/window/edit_group.rs:539
 msgid "Load Error"
 msgstr "Błąd ładowania"
 
-#: rustconn/src/window/connection_dialogs.rs:784
+#: rustconn/src/window/connection_dialogs.rs:808
 #: rustconn/src/window/edit_group.rs:451
 msgid "Select Vault to load password"
 msgstr "Wybierz sejf, aby załadować hasło"
 
-#: rustconn/src/window/connection_dialogs.rs:796
+#: rustconn/src/window/connection_dialogs.rs:820
 #: rustconn/src/window/edit_group.rs:1346
 msgid "Notes, contacts, project info"
 msgstr "Notatki, kontakty, informacje o projekcie"
 
-#: rustconn/src/window/connection_dialogs.rs:836
+#: rustconn/src/window/connection_dialogs.rs:860
 #: rustconn/src/window/edit_group.rs:1436
 msgid "Group name cannot be empty"
 msgstr "Nazwa grupy nie może być pusta"
 
-#: rustconn/src/window/connection_dialogs.rs:925
+#: rustconn/src/window/connection_dialogs.rs:949
 msgid "Error Updating Group"
 msgstr "Błąd aktualizacji grupy"
 
-#: rustconn/src/window/connection_dialogs.rs:1015
+#: rustconn/src/window/connection_dialogs.rs:1039
 msgid "Import Duplicates?"
 msgstr "Zaimportować duplikaty?"
 
-#: rustconn/src/window/connection_dialogs.rs:1017
+#: rustconn/src/window/connection_dialogs.rs:1041
 msgid ""
 "{} of {} connections have the same name as existing ones. Imported copies "
 "are kept alongside the existing connections under a numbered name."
@@ -9265,36 +9306,40 @@ msgstr ""
 "{} z {} połączeń ma taką samą nazwę jak istniejące. Zaimportowane kopie są "
 "zachowywane obok istniejących połączeń pod numerowaną nazwą."
 
-#: rustconn/src/window/connection_dialogs.rs:1025
+#: rustconn/src/window/connection_dialogs.rs:1049
 msgid "Skip Duplicates"
 msgstr "Pomiń duplikaty"
 
-#: rustconn/src/window/connection_dialogs.rs:1026
+#: rustconn/src/window/connection_dialogs.rs:1050
 msgid "Import All"
 msgstr "Importuj wszystko"
 
-#: rustconn/src/window/connection_dialogs.rs:1092
+#: rustconn/src/window/connection_dialogs.rs:1116
 msgid "Imported {} connections and {} snippets to '{}' group"
 msgstr "Zaimportowano {} połączeń i {} fragmentów do grupy '{}'"
 
-#: rustconn/src/window/connection_dialogs.rs:1097
+#: rustconn/src/window/connection_dialogs.rs:1121
 msgid "Imported {} connections to '{}' group"
 msgstr "Zaimportowano {} połączeń do grupy „{}”"
 
-#: rustconn/src/window/connection_dialogs.rs:1101
+#: rustconn/src/window/connection_dialogs.rs:1125
 msgid "Import Successful"
 msgstr "Import zakończony pomyślnie"
 
-#: rustconn/src/window/credentials.rs:318
+#: rustconn/src/window/credentials.rs:269
+msgid "Encrypted file"
+msgstr "Zaszyfrowany plik"
+
+#: rustconn/src/window/credentials.rs:326
 msgid "Failed to save variable to vault: {}"
 msgstr "Nie udało się zapisać zmiennej w sejfie: {}"
 
-#: rustconn/src/window/credentials.rs:413
+#: rustconn/src/window/credentials.rs:421
 msgid "Vault entry not found for '{}'. You will be prompted for a password."
 msgstr "Nie znaleziono wpisu w sejfie dla '{}'. Zostaniesz poproszony o hasło."
 
-#: rustconn/src/window/credentials.rs:614
-#: rustconn/src/window/credentials.rs:829
+#: rustconn/src/window/credentials.rs:622
+#: rustconn/src/window/credentials.rs:837
 #: rustconn/src/window/edit_actions.rs:1120
 msgid "Connection failed. Host unreachable."
 msgstr "Połączenie nieudane. Host nieosiągalny."
@@ -9717,56 +9762,56 @@ msgstr "(Bez grupy)"
 msgid "Error Moving Item"
 msgstr "Błąd przenoszenia elementu"
 
-#: rustconn/src/window/mod.rs:506
+#: rustconn/src/window/mod.rs:512
 msgid "Dismiss"
 msgstr "Odrzuć"
 
-#: rustconn/src/window/mod.rs:1476
+#: rustconn/src/window/mod.rs:1500
 msgid "Connection to \\u{2018}{}\\u{2019} failed"
 msgstr "Połączenie z \\u{2018}{}\\u{2019} nie powiodło się"
 
-#: rustconn/src/window/mod.rs:1665 rustconn/src/window/mod.rs:1679
+#: rustconn/src/window/mod.rs:1689 rustconn/src/window/mod.rs:1703
 msgid "Pre-connect task failed: {}"
 msgstr "Zadanie przed połączeniem nie powiodło się: {}"
 
-#: rustconn/src/window/mod.rs:1713
+#: rustconn/src/window/mod.rs:1737
 msgid "Port knock failed: {}"
 msgstr "Pukanie do portów nie powiodło się: {}"
 
-#: rustconn/src/window/mod.rs:1762
+#: rustconn/src/window/mod.rs:1786
 msgid "SPA failed: {}"
 msgstr "SPA nie powiodło się: {}"
 
-#: rustconn/src/window/mod.rs:1947 rustconn/src/window/mod.rs:2122
+#: rustconn/src/window/mod.rs:1971 rustconn/src/window/mod.rs:2146
 msgid "Connection \\u{201c}{}\\u{201d} created"
 msgstr "Połączenie \\u{201c}{}\\u{201d} utworzone"
 
-#: rustconn/src/window/mod.rs:2550
+#: rustconn/src/window/mod.rs:2575
 msgid "Close RustConn?"
 msgstr "Zamknąć RustConn?"
 
-#: rustconn/src/window/mod.rs:2552
+#: rustconn/src/window/mod.rs:2577
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr ""
 "Otwartych jest {} kart(y) sesji. Aktywne połączenia zostaną rozłączone."
 
-#: rustconn/src/window/mod.rs:2579
+#: rustconn/src/window/mod.rs:2612
 msgid "Cloud sync failed for '{}': {}"
 msgstr "Synchronizacja w chmurze nie powiodła się dla „{}”: {}"
 
-#: rustconn/src/window/mod.rs:2705
+#: rustconn/src/window/mod.rs:2738
 msgid "Startup connection not found"
 msgstr "Połączenie startowe nie znalezione"
 
-#: rustconn/src/window/mod.rs:2741
+#: rustconn/src/window/mod.rs:2774
 msgid "Failed to open .rdp file"
 msgstr "Nie udało się otworzyć pliku .rdp"
 
-#: rustconn/src/window/mod.rs:2777
+#: rustconn/src/window/mod.rs:2810
 msgid "Failed to open .vv file"
 msgstr "Nie udało się otworzyć pliku .vv"
 
-#: rustconn/src/window/mod.rs:3161
+#: rustconn/src/window/mod.rs:3194
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "Pomyślnie wyeksportowano {} połączeń. {} pominięto."
 
@@ -10374,6 +10419,12 @@ msgstr "RustConn"
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;połączenie;terminal;zdalny;kubernetes;k8s;serial;sftp;"
 
+#~ msgid ""
+#~ "The password could not be saved to the vault.                      Check "
+#~ "the secret backend in Settings."
+#~ msgstr ""
+#~ "Nie można zapisać hasła w sejfie. Sprawdź backend sekretów w Ustawieniach."
+
 #~ msgid "Password copied to clipboard"
 #~ msgstr "Hasło skopiowane do schowka"
 
@@ -10520,9 +10571,6 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;połączenie;terminal;zdalny;kub
 
 #~ msgid "Format options for session logs"
 #~ msgstr "Opcje formatu dzienników sesji"
-
-#~ msgid "Save to system keyring"
-#~ msgstr "Zapisz w pęku kluczy systemowych"
 
 #~ msgid "Secure Shell"
 #~ msgstr "Bezpieczna powłoka"

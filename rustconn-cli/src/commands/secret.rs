@@ -203,7 +203,7 @@ fn cmd_secret_get(
 ) -> Result<(), CliError> {
     use rustconn_core::config::SecretBackendType;
     use rustconn_core::models::Credentials;
-    use rustconn_core::secret::{KeePassHierarchy, KeePassStatus, LibSecretBackend, SecretBackend};
+    use rustconn_core::secret::{KeePassHierarchy, KeePassStatus, SecretBackend};
 
     let config_manager = create_config_manager(config_path)?;
 
@@ -240,7 +240,12 @@ fn cmd_secret_get(
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 
-            let backend = LibSecretBackend::new("rustconn");
+            // macOS routes the keyring backend to the system Keychain;
+            // LibSecretBackend is not compiled there (R10.1, R10.2).
+            #[cfg(target_os = "macos")]
+            let backend = rustconn_core::secret::MacOsKeychainBackend::new();
+            #[cfg(not(target_os = "macos"))]
+            let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
             let result: Result<Option<Credentials>, _> = rt.block_on(backend.retrieve(&lookup_key));
 
             match result {
@@ -441,6 +446,38 @@ fn cmd_secret_get(
                 Err(e) => Err(CliError::Secret(format!("Pass error: {e}"))),
             }
         }
+        SecretBackendType::EncryptedFile => {
+            use rustconn_core::secret::EncryptedFileBackend;
+
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = EncryptedFileBackend::new();
+            let result: Result<Option<Credentials>, _> = rt.block_on(backend.retrieve(&lookup_key));
+
+            match result {
+                Ok(Some(creds)) => {
+                    println!("Connection: {}", connection.name);
+                    if let Some(ref user) = creds.username {
+                        println!("Username:   {user}");
+                    }
+                    if creds.expose_password().is_some() {
+                        println!(
+                            "Password:   ******** \
+                             (stored in encrypted file)"
+                        );
+                    } else {
+                        println!("Password:   (not set)");
+                    }
+                    Ok(())
+                }
+                Ok(None) => Err(CliError::Secret(format!(
+                    "No credentials found in encrypted file for '{}'",
+                    connection.name
+                ))),
+                Err(e) => Err(CliError::Secret(format!("Encrypted file error: {e}"))),
+            }
+        }
     }
 }
 
@@ -532,12 +569,17 @@ fn cmd_secret_set(
     match backend_type {
         SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
             use rustconn_core::models::Credentials;
-            use rustconn_core::secret::{LibSecretBackend, SecretBackend};
+            use rustconn_core::secret::SecretBackend;
 
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 
-            let backend = LibSecretBackend::new("rustconn");
+            // macOS routes the keyring backend to the system Keychain;
+            // LibSecretBackend is not compiled there (R10.1, R10.2).
+            #[cfg(target_os = "macos")]
+            let backend = rustconn_core::secret::MacOsKeychainBackend::new();
+            #[cfg(not(target_os = "macos"))]
+            let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
             let creds = Credentials {
                 username: Some(username_value.clone()),
                 password: Some(password_value),
@@ -706,6 +748,31 @@ fn cmd_secret_set(
             );
             Ok(())
         }
+        SecretBackendType::EncryptedFile => {
+            use rustconn_core::models::Credentials;
+            use rustconn_core::secret::{EncryptedFileBackend, SecretBackend};
+
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = EncryptedFileBackend::new();
+            let creds = Credentials {
+                username: Some(username_value.clone()),
+                password: Some(password_value),
+                key_passphrase: None,
+                domain: connection.domain.clone(),
+            };
+
+            rt.block_on(backend.store(&lookup_key, &creds))
+                .map_err(|e| CliError::Secret(format!("Encrypted file error: {e}")))?;
+
+            println!(
+                "Stored credentials for '{}' in encrypted file \
+                 (user: {})",
+                connection.name, username_value
+            );
+            Ok(())
+        }
     }
 }
 
@@ -720,7 +787,7 @@ fn cmd_secret_delete(
     backend: Option<&str>,
 ) -> Result<(), CliError> {
     use rustconn_core::config::SecretBackendType;
-    use rustconn_core::secret::{KeePassHierarchy, KeePassStatus, LibSecretBackend, SecretBackend};
+    use rustconn_core::secret::{KeePassHierarchy, KeePassStatus, SecretBackend};
 
     let config_manager = create_config_manager(config_path)?;
 
@@ -755,7 +822,12 @@ fn cmd_secret_delete(
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 
-            let backend = LibSecretBackend::new("rustconn");
+            // macOS routes the keyring backend to the system Keychain;
+            // LibSecretBackend is not compiled there (R10.1, R10.2).
+            #[cfg(target_os = "macos")]
+            let backend = rustconn_core::secret::MacOsKeychainBackend::new();
+            #[cfg(not(target_os = "macos"))]
+            let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
             rt.block_on(backend.delete(&lookup_key))
                 .map_err(|e| CliError::Secret(format!("Keyring error: {e}")))?;
 
@@ -857,6 +929,22 @@ fn cmd_secret_delete(
                 .map_err(|e| CliError::Secret(format!("Pass error: {e}")))?;
 
             println!("Deleted credentials for '{}' from Pass", connection.name);
+            Ok(())
+        }
+        SecretBackendType::EncryptedFile => {
+            use rustconn_core::secret::EncryptedFileBackend;
+
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+
+            let backend = EncryptedFileBackend::new();
+            rt.block_on(backend.delete(&lookup_key))
+                .map_err(|e| CliError::Secret(format!("Encrypted file error: {e}")))?;
+
+            println!(
+                "Deleted credentials for '{}' from encrypted file",
+                connection.name
+            );
             Ok(())
         }
     }

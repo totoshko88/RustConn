@@ -89,119 +89,6 @@ fn jump_host_askpass_script() -> Option<std::path::PathBuf> {
         .clone()
 }
 
-/// Resolves a connection's password honoring its [`PasswordSource`], for the
-/// bastion (first jump hop) in [`build_ssh_command_args`] (issue #191).
-///
-/// Mirrors the resolution paths of `AppState::resolve_credentials_blocking` but
-/// returns only the password — the bastion needs no username here (it is already
-/// encoded in the jump-host string). A `Variable`-source bastion is resolved via
-/// [`crate::vault_ops::load_variable_from_vault_with_path`]; any other source
-/// (`Vault`, etc.) falls back to the store-key + vault `Retrieve` path, which is
-/// identical to the original bastion lookup so the existing
-/// single-bastion-with-Vault behavior is preserved (no regression, Req 2.6).
-///
-/// Performs a blocking vault call (~100ms); the caller MUST NOT hold a `state`
-/// borrow across it. The secret never leaves as a plain `String` — intermediates
-/// are wrapped in [`zeroize::Zeroizing`] and the result is a [`SecretString`].
-///
-/// Returns `None` when no password is configured or resolution fails (logged
-/// without the secret); the caller then proceeds without an out-of-band bastion
-/// password.
-///
-/// [`PasswordSource`]: rustconn_core::models::PasswordSource
-fn resolve_connection_password_blocking(
-    conn: &rustconn_core::Connection,
-    secret_settings: &rustconn_core::config::SecretSettings,
-    global_variables: &[rustconn_core::Variable],
-) -> Option<SecretString> {
-    use rustconn_core::models::PasswordSource;
-
-    // Variable source: resolve via the vault backend honoring the variable's
-    // custom kdbx_entry_path / vault_entry_name (the path the narrow lookup
-    // missed, #191). Any other source (Vault, etc.) falls through to the
-    // store-key + vault `Retrieve` path below.
-    if let PasswordSource::Variable(var_name) = &conn.password_source {
-        let kdbx_entry_path = global_variables
-            .iter()
-            .find(|v| v.name == *var_name)
-            .and_then(|v| v.kdbx_entry_path.as_deref());
-        let vault_entry_name = global_variables
-            .iter()
-            .find(|v| v.name == *var_name)
-            .and_then(|v| v.vault_entry_name.as_deref());
-        return match crate::vault_ops::load_variable_from_vault_with_path(
-            secret_settings,
-            var_name,
-            kdbx_entry_path,
-            vault_entry_name,
-        ) {
-            Ok(Some(pw)) => {
-                let pw = zeroize::Zeroizing::new(pw);
-                if pw.is_empty() {
-                    None
-                } else {
-                    Some(SecretString::from(pw.as_str().to_string()))
-                }
-            }
-            Ok(None) => {
-                tracing::debug!(
-                    var_name = %var_name,
-                    "Bastion variable password not set on this device"
-                );
-                None
-            }
-            Err(e) => {
-                tracing::warn!(
-                    var_name = %var_name,
-                    error = %e,
-                    "Failed to resolve bastion variable password"
-                );
-                None
-            }
-        };
-    }
-
-    // Vault (and any other source): resolve via the store-key + vault
-    // `Retrieve` path — identical to the original bastion lookup, so the
-    // existing single-bastion-with-Vault behavior is preserved (Req 2.6).
-    let backend_type = crate::vault_ops::select_backend_for_load(secret_settings);
-    let lookup_key = crate::vault_ops::generate_store_key(
-        &conn.name,
-        &conn.host,
-        &conn.protocol_config.protocol_type().as_str().to_lowercase(),
-        backend_type,
-    );
-    match crate::vault_ops::dispatch_vault_op(
-        secret_settings,
-        &lookup_key,
-        crate::vault_ops::VaultOp::Retrieve,
-    ) {
-        Ok(Some(creds)) => creds.expose_password().and_then(|pw| {
-            if pw.is_empty() {
-                None
-            } else {
-                let pw = zeroize::Zeroizing::new(pw.to_string());
-                Some(SecretString::from(pw.as_str().to_string()))
-            }
-        }),
-        Ok(None) => {
-            tracing::debug!(
-                connection = %conn.name,
-                "No bastion password found in vault"
-            );
-            None
-        }
-        Err(e) => {
-            tracing::warn!(
-                connection = %conn.name,
-                error = %e,
-                "Bastion vault lookup failed"
-            );
-            None
-        }
-    }
-}
-
 /// Builds the SSH command pieces shared by initial connect and in-place
 /// reconnect: the resolved identity file, the extra CLI args (including the
 /// jump-host `ProxyCommand`/`-J` wiring and Flatpak known_hosts), whether
@@ -347,19 +234,16 @@ fn build_ssh_command_args(
                             // shared resolver so a Variable-source bastion
                             // authenticates with ITS OWN password (Req 2.1).
                             if first_hop_password.is_none() {
-                                let secret_settings = state_ref.settings().secrets.clone();
-                                let global_variables =
-                                    state_ref.settings().global_variables.clone();
                                 let jump_conn_owned = jump_conn.clone();
                                 let next_jump_id = jump_config.jump_host_id;
                                 let manual_proxy = jump_config.proxy_jump.clone();
-                                // Must drop state borrow before blocking vault call
+                                // Must drop state borrow before the blocking
+                                // vault call, then re-borrow briefly to resolve.
                                 drop(state_ref);
-                                if let Some(pw_secret) = resolve_connection_password_blocking(
-                                    &jump_conn_owned,
-                                    &secret_settings,
-                                    &global_variables,
-                                ) {
+                                let resolved_pw = state.try_borrow().ok().and_then(|s| {
+                                    s.resolve_connection_password_blocking(&jump_conn_owned)
+                                });
+                                if let Some(pw_secret) = resolved_pw {
                                     // Cache for future fast-path use.
                                     if let Ok(mut state_mut) = state.try_borrow_mut() {
                                         use secrecy::ExposeSecret;

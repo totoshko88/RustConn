@@ -490,6 +490,7 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     let state_for_secrets = state.clone();
     let sidebar_for_secrets = window.sidebar_rc();
     let window_for_secrets = window.gtk_window().downgrade();
+    let secret_banner_for_secrets = window.secret_banner().clone();
     glib::idle_add_local_once(move || {
         // Phase 1: Decrypt stored credentials only for the active backend (lazy)
         // Bitwarden credentials are decrypted only when Bitwarden is the preferred
@@ -579,12 +580,17 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
             let state_for_poll = state_for_secrets.clone();
             let sidebar_for_poll = sidebar_for_secrets.clone();
             let window_for_poll = window_for_secrets.clone();
+            let secret_banner_for_poll = secret_banner_for_secrets.clone();
             glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
                 match rx.try_recv() {
                     Ok(_) => {
                         state_for_poll.borrow_mut().refresh_secret_backend_cache();
                         refresh_sidebar_secret_status(&state_for_poll, &sidebar_for_poll);
-                        check_secret_backend_available(&state_for_poll, &window_for_poll);
+                        check_secret_backend_available(
+                            &state_for_poll,
+                            &window_for_poll,
+                            &secret_banner_for_poll,
+                        );
                         tracing::info!("Secret backends initialized after window presentation");
                         glib::ControlFlow::Break
                     }
@@ -592,7 +598,11 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
                     Err(std::sync::mpsc::TryRecvError::Disconnected) => {
                         state_for_poll.borrow_mut().refresh_secret_backend_cache();
                         refresh_sidebar_secret_status(&state_for_poll, &sidebar_for_poll);
-                        check_secret_backend_available(&state_for_poll, &window_for_poll);
+                        check_secret_backend_available(
+                            &state_for_poll,
+                            &window_for_poll,
+                            &secret_banner_for_poll,
+                        );
                         tracing::warn!("Bitwarden unlock thread disconnected");
                         glib::ControlFlow::Break
                     }
@@ -604,7 +614,11 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
                 .borrow_mut()
                 .refresh_secret_backend_cache();
             refresh_sidebar_secret_status(&state_for_secrets, &sidebar_for_secrets);
-            check_secret_backend_available(&state_for_secrets, &window_for_secrets);
+            check_secret_backend_available(
+                &state_for_secrets,
+                &window_for_secrets,
+                &secret_banner_for_secrets,
+            );
             tracing::info!("Secret backends initialized after window presentation");
         }
     });
@@ -925,7 +939,8 @@ fn refresh_sidebar_secret_status(
         | rustconn_core::config::SecretBackendType::Bitwarden
         | rustconn_core::config::SecretBackendType::OnePassword
         | rustconn_core::config::SecretBackendType::Passbolt
-        | rustconn_core::config::SecretBackendType::Pass => (true, true),
+        | rustconn_core::config::SecretBackendType::Pass
+        | rustconn_core::config::SecretBackendType::EncryptedFile => (true, true),
         rustconn_core::config::SecretBackendType::KeePassXc
         | rustconn_core::config::SecretBackendType::KdbxFile => {
             let kdbx_enabled = settings.secrets.kdbx_enabled;
@@ -940,40 +955,87 @@ fn refresh_sidebar_secret_status(
     sidebar.update_keepass_status(enabled, database_exists);
 }
 
-/// Shows a one-time warning toast if the preferred secret backend is unavailable.
+/// Surfaces a startup warning when the preferred secret backend cannot store
+/// passwords.
+///
+/// Unlike the previous version, the default system-keyring backend
+/// (LibSecret/Keychain) is *also* checked (R4.1): on a desktop without a
+/// responding Secret Service the keyring silently failed before, leaving the
+/// user with no signal until a save failed (#201). The fine-grained
+/// [`BackendAvailability`] lets the warning distinguish a missing client from
+/// an unresponsive service (R4.2), and it is shown in a persistent banner
+/// (GNOME HIG: a state needing attention) whose button opens Settings →
+/// Secrets. KeePassXC/KDBX, which use a database file rather than the keyring,
+/// keep their existing file-presence toast.
+///
+/// [`BackendAvailability`]: rustconn_core::secret::BackendAvailability
 fn check_secret_backend_available(
     state: &SharedAppState,
     window_weak: &glib::WeakRef<adw::ApplicationWindow>,
+    secret_banner: &adw::Banner,
 ) {
+    use rustconn_core::config::SecretBackendType;
+    use rustconn_core::secret::BackendAvailability;
+
     let state_ref = state.borrow();
     let secrets = &state_ref.settings().secrets;
     let backend = secrets.preferred_backend;
 
-    // Only warn for non-default backends (LibSecret is always the fallback)
-    if matches!(backend, rustconn_core::config::SecretBackendType::LibSecret) {
+    // KeePassXc/KdbxFile use direct KDBX file access, not a SecretManager
+    // keyring backend — check the database file instead and keep the existing
+    // toast (this path is unrelated to the #201 keyring problem).
+    if matches!(
+        backend,
+        SecretBackendType::KeePassXc | SecretBackendType::KdbxFile
+    ) {
+        let available =
+            secrets.kdbx_enabled && secrets.kdbx_path.as_ref().is_some_and(|p| p.exists());
+        drop(state_ref);
+        // The keyring banner is irrelevant for the database-file backend.
+        secret_banner.set_revealed(false);
+        if !available && let Some(win) = window_weak.upgrade() {
+            let backend_name = format!("{backend:?}");
+            let msg =
+                crate::i18n::i18n_f("{} backend unavailable. Using fallback.", &[&backend_name]);
+            tracing::warn!(backend = %backend_name, "Preferred secret backend unavailable at startup");
+            crate::toast::show_toast_on_window(&win, &msg, crate::toast::ToastType::Warning);
+        }
         return;
     }
 
-    // KeePassXc/KdbxFile use direct KDBX file access, not SecretManager backends.
-    // Check KDBX-specific availability instead of probing LibSecretBackend
-    // (which is what SecretManager contains for these backend types).
-    let available = if matches!(
-        backend,
-        rustconn_core::config::SecretBackendType::KeePassXc
-            | rustconn_core::config::SecretBackendType::KdbxFile
-    ) {
-        secrets.kdbx_enabled && secrets.kdbx_path.as_ref().is_some_and(|p| p.exists())
-    } else {
-        state_ref.has_secret_backend()
-    };
+    // Keyring / CLI backends (including the default LibSecret/Keychain): use
+    // the cached fine-grained availability probed by refresh_secret_backend_cache.
+    let availability = state_ref
+        .secret_backend_availability()
+        .unwrap_or(BackendAvailability::Available);
     drop(state_ref);
 
-    if !available && let Some(win) = window_weak.upgrade() {
-        let backend_name = format!("{backend:?}");
-        let msg = crate::i18n::i18n_f("{} backend unavailable. Using fallback.", &[&backend_name]);
-        tracing::warn!(backend = %backend_name, "Preferred secret backend unavailable at startup");
-        crate::toast::show_toast_on_window(&win, &msg, crate::toast::ToastType::Warning);
-    }
+    let backend_name = format!("{backend:?}");
+    let message = match availability {
+        BackendAvailability::Available => {
+            // Backend works — make sure any stale warning is cleared.
+            secret_banner.set_revealed(false);
+            return;
+        }
+        BackendAvailability::ServiceUnavailable => crate::i18n::i18n_f(
+            "{} is selected, but no system keyring is responding. \
+             Open Settings, then Secrets, to choose a backend that works on this system.",
+            &[&backend_name],
+        ),
+        BackendAvailability::ClientMissing => crate::i18n::i18n_f(
+            "{} is selected, but its keyring client is not installed. \
+             Open Settings, then Secrets, to choose a backend that works on this system.",
+            &[&backend_name],
+        ),
+    };
+
+    tracing::warn!(
+        backend = %backend_name,
+        availability = ?availability,
+        "Preferred secret backend unavailable at startup"
+    );
+    secret_banner.set_title(&message);
+    secret_banner.set_revealed(true);
 }
 
 /// Loads CSS styles for the application from external stylesheet

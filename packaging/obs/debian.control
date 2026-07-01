@@ -68,7 +68,7 @@ Description: Modern connection manager for Linux (SSH, RDP, VNC, SPICE, Telnet, 
  .
  Security:
   - KeePassXC (KDBX files and proxy)
-  - libsecret (GNOME Keyring)
+  - System keyring (GNOME Keyring / KDE Wallet)
   - Bitwarden CLI
   - 1Password CLI
   - Passbolt CLI

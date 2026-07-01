@@ -200,13 +200,16 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .description(i18n("Choose how passwords are stored"))
         .build();
 
-    // Simplified: KeePassXC, libsecret, Bitwarden, 1Password, Passbolt, Pass
-    // Index 1 is the system keyring: libsecret on Linux/BSD, the native
-    // Keychain on macOS (libsecret does not exist there).
+    // Simplified: KeePassXC, libsecret, Bitwarden, 1Password, Passbolt, Pass,
+    // Encrypted file. Index 1 is the system keyring: libsecret on Linux/BSD, the
+    // native Keychain on macOS (libsecret does not exist there). Index 6 is the
+    // application-managed encrypted-file backend (no system keyring required).
     #[cfg(target_os = "macos")]
     let system_keyring_label = "macOS Keychain";
     #[cfg(not(target_os = "macos"))]
     let system_keyring_label = "libsecret";
+    // Descriptive (non-brand) label — sentence case per GNOME HIG and i18n-wrapped.
+    let encrypted_file_label = i18n("Encrypted file (no system keyring)");
     let backend_strings = StringList::new(&[
         "KeePassXC",
         system_keyring_label,
@@ -214,6 +217,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         "1Password",
         "Passbolt",
         "Pass",
+        encrypted_file_label.as_str(),
     ]);
     let secret_backend_dropdown = DropDown::builder()
         .model(&backend_strings)
@@ -236,6 +240,23 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let version_row = adw::ActionRow::builder().title(i18n("Version")).build();
     version_row.add_suffix(&version_label);
     backend_group.add(&version_row);
+
+    // Availability indicator for the system-keyring backend (R4.3). Shown only
+    // when the system-keyring entry (index 1) is selected; the other backends
+    // already display their own status rows. The text label always names the
+    // state, so status is never conveyed by colour alone (GNOME HIG / WCAG).
+    let availability_label = Label::builder()
+        .halign(gtk4::Align::End)
+        .valign(gtk4::Align::Center)
+        .label(i18n("Checking..."))
+        .css_classes(["dim-label"])
+        .build();
+    let availability_row = adw::ActionRow::builder()
+        .title(i18n("Availability"))
+        .build();
+    availability_row.add_suffix(&availability_label);
+    availability_row.set_visible(false);
+    backend_group.add(&availability_row);
 
     let enable_fallback = CheckButton::builder()
         .valign(gtk4::Align::Center)
@@ -265,6 +286,12 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // Track whether async detection has completed
     let detection_complete: Rc<RefCell<bool>> = Rc::new(RefCell::new(false));
+
+    // Cached fine-grained availability of the system-keyring backend, populated
+    // by background detection. Used to render the per-backend availability
+    // indicator when the system-keyring entry is selected (#201, R4.3).
+    let keyring_availability: Rc<RefCell<Option<rustconn_core::secret::BackendAvailability>>> =
+        Rc::new(RefCell::new(None));
 
     // Shared mutable command paths for callbacks (updated by async detection)
     let bitwarden_cmd: Rc<RefCell<String>> = Rc::new(RefCell::new("bw".to_string()));
@@ -981,6 +1008,9 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let passbolt_version_clone = passbolt_version.clone();
     let pass_version_clone = pass_version.clone();
     let detection_complete_clone = detection_complete.clone();
+    let availability_row_clone = availability_row.clone();
+    let availability_label_clone = availability_label.clone();
+    let keyring_availability_clone = keyring_availability.clone();
     // Clones for on-demand keyring loading when user switches backend
     let bw_status_label_switch = bitwarden_status_label.clone();
     let op_token_entry_switch = onepassword_token_entry.clone();
@@ -1004,6 +1034,19 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         let kdbx_enabled = kdbx_enabled_row_clone.is_active();
         auth_group_clone2.set_visible(show_kdbx && kdbx_enabled);
         status_group_clone2.set_visible(show_kdbx && kdbx_enabled);
+
+        // System-keyring availability indicator: only the system-keyring entry
+        // (index 1) uses the keyring probe; other backends show their own
+        // status rows, so hide this indicator for them (R4.3).
+        if selected == 1 {
+            render_keyring_availability(
+                &availability_row_clone,
+                &availability_label_clone,
+                keyring_availability_clone.borrow().as_ref(),
+            );
+        } else {
+            availability_row_clone.set_visible(false);
+        }
 
         // Helper to set version label text and style
         let detected = *detection_complete_clone.borrow();
@@ -1305,6 +1348,9 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         let pass_ver = pass_version.clone();
         let det_complete = detection_complete.clone();
         let st_avail = secret_tool_available.clone();
+        let availability_row_det = availability_row.clone();
+        let availability_label_det = availability_label.clone();
+        let keyring_avail_det = keyring_availability.clone();
 
         // Run detection on a real OS thread so the GTK main loop stays idle
         // and can render frames while detection runs in the background.
@@ -1334,6 +1380,17 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     *pass_ver.borrow_mut() = det.pass_version.clone();
                     *det_complete.borrow_mut() = true;
                     *st_avail.borrow_mut() = Some(det.secret_tool_available);
+                    *keyring_avail_det.borrow_mut() = Some(det.system_keyring_availability.clone());
+
+                    // Refresh the system-keyring availability indicator if that
+                    // backend is currently selected (#201, R4.3).
+                    if dropdown.selected() == 1 {
+                        render_keyring_availability(
+                            &availability_row_det,
+                            &availability_label_det,
+                            Some(&det.system_keyring_availability),
+                        );
+                    }
 
                     // Update version label for currently selected backend
                     let selected = dropdown.selected();
@@ -1466,8 +1523,34 @@ fn update_status_label(label: &Label, text: &str, css_class: &str) {
     label.add_css_class(css_class);
 }
 
+/// Renders the system-keyring availability indicator row from a probe result.
+///
+/// Reveals `row` and sets `label` to a state name paired with a colour css
+/// class (`None` = still probing). The text always names the state, so status
+/// is never conveyed by colour alone (GNOME HIG / WCAG). See `availability()`
+/// and issue #201.
+fn render_keyring_availability(
+    row: &adw::ActionRow,
+    label: &Label,
+    availability: Option<&rustconn_core::secret::BackendAvailability>,
+) {
+    use rustconn_core::secret::BackendAvailability;
+
+    row.set_visible(true);
+    let (text, css) = match availability {
+        Some(BackendAvailability::Available) => (i18n("Available"), "success"),
+        Some(BackendAvailability::ServiceUnavailable) => {
+            (i18n("No keyring service responding"), "warning")
+        }
+        Some(BackendAvailability::ClientMissing) => (i18n("Keyring client not installed"), "error"),
+        None => (i18n("Checking..."), "dim-label"),
+    };
+    update_status_label(label, &text, css);
+}
+
 pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSettings) {
-    // Indices: 0=KeePassXC, 1=libsecret, 2=Bitwarden, 3=1Password, 4=Passbolt, 5=Pass
+    // Indices: 0=KeePassXC, 1=libsecret/Keychain, 2=Bitwarden, 3=1Password,
+    // 4=Passbolt, 5=Pass, 6=Encrypted file.
     let backend_index = match settings.preferred_backend {
         SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => 0,
         SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => 1,
@@ -1475,6 +1558,7 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
         SecretBackendType::OnePassword => 3,
         SecretBackendType::Passbolt => 4,
         SecretBackendType::Pass => 5,
+        SecretBackendType::EncryptedFile => 6,
     };
     widgets.secret_backend_dropdown.set_selected(backend_index);
     widgets.enable_fallback.set_active(settings.enable_fallback);
@@ -1617,8 +1701,11 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
         }
         SecretBackendType::LibSecret
         | SecretBackendType::MacOsKeychain
-        | SecretBackendType::Pass => {
-            // Stateless backends — nothing to load from keyring
+        | SecretBackendType::Pass
+        | SecretBackendType::EncryptedFile => {
+            // Stateless backends — nothing to load from keyring.
+            // (EncryptedFile keeps its entries in its own file; no settings-tab
+            // credential fields to populate.)
         }
     }
 }
@@ -1794,7 +1881,7 @@ pub fn collect_secret_settings(
     widgets: &SecretsPageWidgets,
     settings: &Rc<RefCell<rustconn_core::config::AppSettings>>,
 ) -> SecretSettings {
-    // Indices: 0=KeePassXC, 1=libsecret/Keychain, 2=Bitwarden, 3=1Password, 4=Passbolt, 5=Pass
+    // Indices: 0=KeePassXC, 1=libsecret/Keychain, 2=Bitwarden, 3=1Password, 4=Passbolt, 5=Pass, 6=Encrypted file
     let preferred_backend = match widgets.secret_backend_dropdown.selected() {
         0 => SecretBackendType::KeePassXc,
         // Index 1 is the platform system keyring (see create_secrets_page).
@@ -1806,6 +1893,7 @@ pub fn collect_secret_settings(
         3 => SecretBackendType::OnePassword,
         4 => SecretBackendType::Passbolt,
         5 => SecretBackendType::Pass,
+        6 => SecretBackendType::EncryptedFile,
         _ => SecretBackendType::default(),
     };
 

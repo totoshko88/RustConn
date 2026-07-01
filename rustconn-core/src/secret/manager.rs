@@ -13,10 +13,27 @@ use uuid::Uuid;
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
 
-use super::backend::SecretBackend;
+use super::backend::{BackendAvailability, SecretBackend};
 
 /// Default TTL for cached credentials in seconds (5 minutes).
 pub const CACHE_TTL_SECONDS: i64 = 300;
+
+/// Reports which backend in the fallback chain accepted a store operation.
+///
+/// Returned by [`SecretManager::store_reported`] so callers can surface the
+/// difference between a write to the user's preferred backend and a graceful
+/// fallback (e.g. to the encrypted-file store when the system keyring is
+/// unavailable, issue #201).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StoreOutcome {
+    /// The credential was stored in the preferred (primary) backend.
+    Primary,
+    /// The credential was stored in a fallback backend after the primary failed.
+    Fallback {
+        /// Identifier of the backend that accepted the write (e.g. `encrypted_file`).
+        backend_id: String,
+    },
+}
 
 /// A cache entry with a timestamp for TTL-based expiry.
 #[derive(Debug, Clone)]
@@ -230,6 +247,12 @@ impl SecretManager {
                 backends.push(Arc::new(backend));
             }
             SecretBackendType::LibSecret => {
+                // macOS never constructs LibSecretBackend (oo7 is not compiled
+                // there) — it routes to the system Keychain instead (R10.1,
+                // R10.2). Non-macOS keeps the oo7-backed libsecret client.
+                #[cfg(target_os = "macos")]
+                backends.push(Arc::new(super::MacOsKeychainBackend::new()));
+                #[cfg(not(target_os = "macos"))]
                 backends.push(Arc::new(super::LibSecretBackend::default_app()));
             }
             SecretBackendType::Pass => {
@@ -238,8 +261,12 @@ impl SecretManager {
             SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
                 // KeePass is handled via direct KDBX access in
                 // resolve_credentials_blocking, not through SecretManager.
-                // Add libsecret as the operational backend for non-KeePass
-                // lookups (e.g. variable resolution).
+                // Add the system keyring as the operational backend for
+                // non-KeePass lookups (e.g. variable resolution). macOS uses
+                // the Keychain (LibSecretBackend is not compiled there).
+                #[cfg(target_os = "macos")]
+                backends.push(Arc::new(super::MacOsKeychainBackend::new()));
+                #[cfg(not(target_os = "macos"))]
                 backends.push(Arc::new(super::LibSecretBackend::default_app()));
             }
             #[cfg(target_os = "macos")]
@@ -251,20 +278,29 @@ impl SecretManager {
                 // Fallback to libsecret on non-macOS platforms
                 backends.push(Arc::new(super::LibSecretBackend::default_app()));
             }
+            SecretBackendType::EncryptedFile => {
+                // Application-managed encrypted file: addressed by the flat
+                // `generate_store_key` value, same key scheme as the other
+                // app-managed (flat-key) backends.
+                backends.push(Arc::new(super::EncryptedFileBackend::new()));
+            }
         }
 
-        // Add libsecret as fallback if enabled and not already primary
+        // Register the application-managed encrypted file as the terminal
+        // fallback when fallback is enabled and it is not already the preferred
+        // backend (avoids a duplicate entry in the chain).
+        //
+        // This replaces the previous "append LibSecret as fallback" logic: on a
+        // box without a responding Secret Service (issue #201) LibSecret is the
+        // failing primary, so appending it as its own fallback is useless. The
+        // encrypted-file backend works in every environment (it only needs the
+        // machine key), making it the single sound terminal fallback. Because
+        // `retrieve` walks the backend chain in priority order, a credential
+        // stored here is found on the next resolution.
         if settings.enable_fallback
-            && !matches!(
-                settings.preferred_backend,
-                SecretBackendType::LibSecret
-                    | SecretBackendType::KeePassXc
-                    | SecretBackendType::KdbxFile
-                    | SecretBackendType::Pass
-                    | SecretBackendType::MacOsKeychain
-            )
+            && !matches!(settings.preferred_backend, SecretBackendType::EncryptedFile)
         {
-            backends.push(Arc::new(super::LibSecretBackend::default_app()));
+            backends.push(Arc::new(super::EncryptedFileBackend::new()));
         }
 
         tracing::debug!(
@@ -310,34 +346,8 @@ impl SecretManager {
         available
     }
 
-    /// Returns the first available backend
-    async fn get_available_backend(&self) -> SecretResult<&Arc<dyn SecretBackend>> {
-        for backend in &self.backends {
-            if backend.is_available().await {
-                return Ok(backend);
-            }
-        }
-        Err(SecretError::BackendUnavailable(
-            "No secret backend available".to_string(),
-        ))
-    }
-
-    /// Store credentials for a connection
-    ///
-    /// Stores credentials using the first available backend.
-    /// Also updates the cache if caching is enabled.
-    ///
-    /// # Arguments
-    /// * `connection_id` - Unique identifier for the connection
-    /// * `credentials` - The credentials to store
-    ///
-    /// # Errors
-    /// Returns `SecretError` if no backend is available or storage fails
-    pub async fn store(&self, connection_id: &str, credentials: &Credentials) -> SecretResult<()> {
-        let backend = self.get_available_backend().await?;
-        backend.store(connection_id, credentials).await?;
-
-        // Update cache with fresh timestamp
+    /// Stores credentials in the cache when caching is enabled.
+    async fn cache_stored(&self, connection_id: &str, credentials: &Credentials) {
         if self.cache_enabled {
             let mut cache = self.cache.write().await;
             cache.insert(
@@ -345,8 +355,104 @@ impl SecretManager {
                 CacheEntry::new(credentials.clone()),
             );
         }
+    }
 
-        Ok(())
+    /// Store credentials for a connection
+    ///
+    /// Delegates to [`Self::store_reported`] with fallback authorised and
+    /// discards which backend accepted the write, preserving the original
+    /// `Result<()>` contract. Also updates the cache when caching is enabled.
+    ///
+    /// # Arguments
+    /// * `connection_id` - Unique identifier for the connection
+    /// * `credentials` - The credentials to store
+    ///
+    /// # Errors
+    /// Returns `SecretError` if no backend is available or storage fails on
+    /// every backend in the chain.
+    pub async fn store(&self, connection_id: &str, credentials: &Credentials) -> SecretResult<()> {
+        self.store_reported(connection_id, credentials, true)
+            .await
+            .map(|_| ())
+    }
+
+    /// Stores credentials and reports whether the primary or a fallback backend stored them.
+    ///
+    /// Attempts the preferred (primary) backend — the highest-priority backend
+    /// in the chain — first. When its store fails, either because the backend is
+    /// unavailable or because the write itself errors, and `allow_fallback` is
+    /// `true`, the remaining backends are tried in priority order; the first that
+    /// accepts the write is reported as [`StoreOutcome::Fallback`]. On success
+    /// (primary or fallback) the cache is updated exactly like [`Self::store`].
+    ///
+    /// # Arguments
+    /// * `connection_id` - Unique identifier for the connection
+    /// * `credentials` - The credentials to store
+    /// * `allow_fallback` - Whether to try subsequent backends when the primary fails
+    ///
+    /// # Errors
+    /// Returns `SecretError::BackendUnavailable` when no backends are registered.
+    /// When `allow_fallback` is `false` and the primary backend fails, the
+    /// primary's original error is returned unchanged — it is neither wrapped nor
+    /// replaced (Requirement 14.2). When `allow_fallback` is `true` and every
+    /// backend in the chain fails, the primary backend's error is returned so the
+    /// most relevant cause is surfaced and no write is silently lost.
+    pub async fn store_reported(
+        &self,
+        connection_id: &str,
+        credentials: &Credentials,
+        allow_fallback: bool,
+    ) -> SecretResult<StoreOutcome> {
+        let Some(primary) = self.backends.first() else {
+            return Err(SecretError::BackendUnavailable(
+                "No secret backend available".to_string(),
+            ));
+        };
+
+        // Try the preferred backend first. A store error (including an
+        // unavailable backend) is the trigger for falling back.
+        let primary_error = match primary.store(connection_id, credentials).await {
+            Ok(()) => {
+                self.cache_stored(connection_id, credentials).await;
+                return Ok(StoreOutcome::Primary);
+            }
+            Err(e) => e,
+        };
+
+        // Requirement 14.2: without fallback authorisation, surface the
+        // primary error unchanged.
+        if !allow_fallback {
+            return Err(primary_error);
+        }
+
+        tracing::warn!(
+            backend = primary.backend_id(),
+            error = %primary_error,
+            "primary secret backend store failed; attempting fallback chain"
+        );
+
+        // Walk the remaining backends; the first success wins.
+        for backend in self.backends.iter().skip(1) {
+            match backend.store(connection_id, credentials).await {
+                Ok(()) => {
+                    self.cache_stored(connection_id, credentials).await;
+                    let backend_id = backend.backend_id().to_string();
+                    tracing::info!(backend = %backend_id, "credential stored via fallback backend");
+                    return Ok(StoreOutcome::Fallback { backend_id });
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        backend = backend.backend_id(),
+                        error = %e,
+                        "fallback secret backend store failed"
+                    );
+                }
+            }
+        }
+
+        // Every backend failed: surface the primary error as the most relevant
+        // cause so no write is silently lost.
+        Err(primary_error)
     }
 
     /// Retrieve credentials for a connection
@@ -454,6 +560,23 @@ impl SecretManager {
             }
         }
         false
+    }
+
+    /// Reports the fine-grained availability of the primary (preferred) backend.
+    ///
+    /// Unlike [`Self::is_available`], which reports whether *any* backend can
+    /// store secrets, this inspects only the highest-priority backend so the
+    /// UI can surface why the user's chosen backend cannot work — for example
+    /// distinguishing a missing client from an unresponsive Secret Service
+    /// (issue #201).
+    ///
+    /// Returns [`BackendAvailability::ClientMissing`] when no backends are
+    /// registered.
+    pub async fn primary_availability(&self) -> BackendAvailability {
+        match self.backends.first() {
+            Some(backend) => backend.availability().await,
+            None => BackendAvailability::ClientMissing,
+        }
     }
 }
 

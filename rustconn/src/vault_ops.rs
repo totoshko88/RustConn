@@ -4,31 +4,156 @@
 //! in the configured secret backend (KeePass, libsecret, Bitwarden, 1Password,
 //! Passbolt, Pass). Extracted from `state.rs` to reduce module complexity.
 
-/// Shows an error toast when saving to vault fails.
+/// Shows an actionable, blocking dialog when saving a credential fails.
 ///
-/// Uses `glib::idle_add_local_once` to ensure the toast is shown on the GTK
-/// main thread. Falls back to stderr if no active window is found.
-fn show_vault_save_error_toast() {
+/// A silently lost credential is critical, so this uses an `adw::AlertDialog`
+/// following the GNOME HIG "explain what happened and what to do" pattern
+/// (R1.1, R1.2) rather than a transient toast. The body states the underlying
+/// cause — the [`SecretError`] `Display` string, which carries only operation
+/// context / backend stderr and never any secret value (R1.4) — together with
+/// a recovery action. A "settings" response opens Settings, where the user can
+/// pick a working backend in the Secrets section (R1.5). Every string is routed
+/// through `i18n()` / `i18n_f()` (R1.3, R16.1).
+///
+/// Uses `glib::idle_add_local_once` so the dialog is presented on the GTK main
+/// thread. Falls back to a log message if no active window is found.
+///
+/// [`SecretError`]: rustconn_core::error::SecretError
+fn show_vault_save_error(err: &rustconn_core::error::SecretError) {
     use gtk4::prelude::*;
-    gtk4::glib::idle_add_local_once(|| {
-        if let Some(app) = gtk4::gio::Application::default()
-            && let Some(gtk_app) = app.downcast_ref::<gtk4::Application>()
-            && let Some(window) = gtk_app.active_window()
-        {
-            // A silently lost credential is a critical error — use a blocking
-            // dialog, not a transient toast (GNOME HIG).
-            crate::alert::show_error(
-                &window,
-                &crate::i18n::i18n("Password not saved"),
-                &crate::i18n::i18n(
-                    "The password could not be saved to the vault. \
-                     Check the secret backend in Settings.",
-                ),
-            );
+    use libadwaita as adw;
+    use libadwaita::prelude::*;
+
+    // The cause is the SecretError Display string. Its variants embed only
+    // operation context and backend diagnostics (e.g. secret-tool stderr),
+    // never secret values, so it is safe to surface verbatim (R1.4).
+    let cause = err.to_string();
+
+    gtk4::glib::idle_add_local_once(move || {
+        let Some(app) = gtk4::gio::Application::default() else {
+            tracing::warn!("Could not show vault save error dialog: no default application");
             return;
-        }
-        tracing::warn!("Could not show vault save error dialog: no active window");
+        };
+        let Some(gtk_app) = app.downcast_ref::<gtk4::Application>() else {
+            tracing::warn!("Could not show vault save error dialog: not a GtkApplication");
+            return;
+        };
+        let Some(window) = gtk_app.active_window() else {
+            tracing::warn!("Could not show vault save error dialog: no active window");
+            return;
+        };
+
+        // Recovery action: point the user at Settings -> Secrets to choose a
+        // backend that works on their desktop (R1.5).
+        let recovery = crate::i18n::i18n(
+            "No system keyring is responding. Open Settings, then Secrets, \
+             and choose another backend such as Encrypted file or KeePassXC.",
+        );
+        // Body = cause followed by the recovery action (R1.1).
+        let body = crate::i18n::i18n_f("{}\n\n{}", &[&cause, &recovery]);
+
+        let dialog =
+            adw::AlertDialog::new(Some(&crate::i18n::i18n("Password not saved")), Some(&body));
+        dialog.add_response("close", &crate::i18n::i18n("Close"));
+        dialog.add_response("settings", &crate::i18n::i18n("Open Settings"));
+        // The recovery action is the primary, suggested action.
+        dialog.set_response_appearance("settings", adw::ResponseAppearance::Suggested);
+        dialog.set_default_response(Some("settings"));
+        dialog.set_close_response("close");
+
+        let window_for_action = window.clone();
+        dialog.connect_response(None, move |_, response| {
+            if response == "settings" {
+                // Activate the existing window action that opens the Settings
+                // dialog; the user navigates to the Secrets section there.
+                let _ = gtk4::prelude::WidgetExt::activate_action(
+                    &window_for_action,
+                    "win.settings",
+                    None,
+                );
+            }
+        });
+
+        dialog.present(Some(&window));
     });
+}
+
+/// Shows a transient toast when a credential was saved to the encrypted-file
+/// fallback because the preferred backend (system keyring) was unavailable.
+///
+/// The credential *was* saved, so this is a non-blocking result notification
+/// (GNOME HIG: transient result → `adw::Toast`, not an error dialog). It is
+/// shown at `Warning` priority because the user's preferred backend is degraded
+/// and worth their attention. The message is routed through `i18n()` (R3.4,
+/// R16.1). The backend identifier is intentionally not surfaced in the UI — the
+/// user-facing distinction is only "preferred vs encrypted-file fallback".
+///
+/// Uses `glib::idle_add_local_once` so the toast is presented on the GTK main
+/// thread, mirroring [`show_vault_save_error`]. Falls back to a log message if
+/// no active window is found.
+fn show_vault_fallback_toast() {
+    use gtk4::prelude::*;
+
+    gtk4::glib::idle_add_local_once(move || {
+        let Some(app) = gtk4::gio::Application::default() else {
+            tracing::warn!("Could not show vault fallback toast: no default application");
+            return;
+        };
+        let Some(gtk_app) = app.downcast_ref::<gtk4::Application>() else {
+            tracing::warn!("Could not show vault fallback toast: not a GtkApplication");
+            return;
+        };
+        let Some(window) = gtk_app.active_window() else {
+            tracing::warn!("Could not show vault fallback toast: no active window");
+            return;
+        };
+
+        let message = crate::i18n::i18n(
+            "Saved to the encrypted file store because the system keyring was unavailable.",
+        );
+        crate::toast::show_toast_on_window(&window, &message, crate::toast::ToastType::Warning);
+    });
+}
+
+/// Stores credentials through the [`SecretManager`] fallback chain, reporting
+/// which backend accepted the write.
+///
+/// Unlike [`dispatch_vault_op`], which targets a single backend, this routes the
+/// generic (non-KeePass) save path through [`SecretManager::store_reported`] so a
+/// failing preferred backend gracefully falls back to the encrypted-file store
+/// when `enable_fallback` is set (issue #201, R3.1). The returned [`StoreOutcome`]
+/// lets the caller surface a toast when the fallback was used (R3.4).
+///
+/// # Errors
+///
+/// Returns a human-readable error string if the store times out after 10s or
+/// every backend in the chain rejects the write.
+///
+/// [`SecretManager`]: rustconn_core::secret::SecretManager
+/// [`SecretManager::store_reported`]: rustconn_core::secret::SecretManager::store_reported
+/// [`StoreOutcome`]: rustconn_core::secret::StoreOutcome
+fn store_reported_blocking(
+    secret_settings: &rustconn_core::config::SecretSettings,
+    lookup_key: &str,
+    creds: &rustconn_core::models::Credentials,
+) -> Result<rustconn_core::secret::StoreOutcome, String> {
+    let manager = rustconn_core::secret::SecretManager::build_from_settings(secret_settings);
+    let allow_fallback = secret_settings.enable_fallback;
+
+    crate::async_utils::with_runtime(|rt| {
+        rt.block_on(async {
+            // Vault operations wait 10 seconds — a hung keyring must not block the
+            // GTK callback indefinitely (matches dispatch_vault_op's timeout).
+            tokio::time::timeout(
+                std::time::Duration::from_secs(10),
+                manager.store_reported(lookup_key, creds, allow_fallback),
+            )
+            .await
+            .map_err(|_| "Vault store timed out after 10s".to_string())?
+            .map_err(|e| format!("{e}"))
+        })
+    })
+    .and_then(|r| r)
 }
 
 /// Saves a connection password to the configured vault backend.
@@ -97,7 +222,7 @@ pub fn save_password_to_vault(
                 move |result| {
                     if let Err(e) = result {
                         tracing::error!("Failed to save password to vault: {e}");
-                        show_vault_save_error_toast();
+                        show_vault_save_error(&e);
                     } else {
                         tracing::info!("Password saved to vault for connection {conn_id}");
                     }
@@ -131,15 +256,23 @@ pub fn save_password_to_vault(
                     key_passphrase: None,
                     domain: None,
                 };
-                dispatch_vault_op(&secret_settings, &lookup_key, VaultOp::Store(&creds))?;
-                Ok(())
+                store_reported_blocking(&secret_settings, &lookup_key, &creds)
             },
-            move |result: Result<(), String>| {
-                if let Err(e) = result {
-                    tracing::error!("Failed to save password to vault: {e}");
-                    show_vault_save_error_toast();
-                } else {
+            move |result: Result<rustconn_core::secret::StoreOutcome, String>| match result {
+                Ok(rustconn_core::secret::StoreOutcome::Primary) => {
                     tracing::info!("Password saved to vault for connection {conn_id}");
+                }
+                Ok(rustconn_core::secret::StoreOutcome::Fallback { backend_id }) => {
+                    tracing::warn!(
+                        backend = %backend_id,
+                        %conn_id,
+                        "Password saved to encrypted-file fallback backend"
+                    );
+                    show_vault_fallback_toast();
+                }
+                Err(e) => {
+                    tracing::error!("Failed to save password to vault: {e}");
+                    show_vault_save_error(&rustconn_core::error::SecretError::StoreFailed(e));
                 }
             },
         );
@@ -194,7 +327,7 @@ pub fn save_group_password_to_vault(
                 move |result| {
                     if let Err(e) = result {
                         tracing::error!("Failed to save group password to vault: {e}");
-                        show_vault_save_error_toast();
+                        show_vault_save_error(&e);
                     } else {
                         tracing::info!("Group password saved to vault");
                     }
@@ -215,15 +348,22 @@ pub fn save_group_password_to_vault(
                     key_passphrase: None,
                     domain: None,
                 };
-                dispatch_vault_op(&secret_settings, &lookup_key, VaultOp::Store(&creds))?;
-                Ok(())
+                store_reported_blocking(&secret_settings, &lookup_key, &creds)
             },
-            move |result: Result<(), String>| {
-                if let Err(e) = result {
-                    tracing::error!("Failed to save group password to vault: {e}");
-                    show_vault_save_error_toast();
-                } else {
+            move |result: Result<rustconn_core::secret::StoreOutcome, String>| match result {
+                Ok(rustconn_core::secret::StoreOutcome::Primary) => {
                     tracing::info!("Group password saved to vault");
+                }
+                Ok(rustconn_core::secret::StoreOutcome::Fallback { backend_id }) => {
+                    tracing::warn!(
+                        backend = %backend_id,
+                        "Group password saved to encrypted-file fallback backend"
+                    );
+                    show_vault_fallback_toast();
+                }
+                Err(e) => {
+                    tracing::error!("Failed to save group password to vault: {e}");
+                    show_vault_save_error(&rustconn_core::error::SecretError::StoreFailed(e));
                 }
             },
         );
@@ -291,6 +431,23 @@ pub fn rename_vault_credential(
             | SecretBackendType::Passbolt
             | SecretBackendType::Pass => {
                 // These backends use "rustconn/{name}" format
+                let old_identifier = if old_name.trim().is_empty() {
+                    &updated_conn.host
+                } else {
+                    old_name
+                };
+                let new_identifier = if updated_conn.name.trim().is_empty() {
+                    &updated_conn.host
+                } else {
+                    &updated_conn.name
+                };
+                let old_key = format!("rustconn/{old_identifier}");
+                let new_key = format!("rustconn/{new_identifier}");
+                (old_key, new_key)
+            }
+            SecretBackendType::EncryptedFile => {
+                // EncryptedFile uses the same "rustconn/{name}" flat key format.
+                // (Flat-key; correct, not a 2.5 placeholder.)
                 let old_identifier = if old_name.trim().is_empty() {
                     &updated_conn.host
                 } else {
@@ -785,8 +942,29 @@ fn retrieve_by_vault_entry_name(
                             })
                         }))
                     }
+                    SecretBackendType::EncryptedFile => {
+                        // Application-managed encrypted file: retrieve by the
+                        // flat entry name (same key scheme as the other
+                        // app-managed backends).
+                        let backend = rustconn_core::secret::EncryptedFileBackend::new();
+                        let creds = backend
+                            .retrieve(entry_name)
+                            .await
+                            .map_err(|e| format!("{e}"))?;
+                        Ok(creds.and_then(|c| {
+                            c.expose_password().map(|p| {
+                                let z = zeroize::Zeroizing::new(p.to_string());
+                                String::from(z.as_str())
+                            })
+                        }))
+                    }
                     _ => {
-                        // LibSecret (Linux) — lookup by entry_name as attribute
+                        // System keyring — lookup by entry_name as attribute.
+                        // macOS uses the Keychain; LibSecretBackend (oo7) is
+                        // not compiled there (R10.1, R10.2).
+                        #[cfg(target_os = "macos")]
+                        let backend = rustconn_core::secret::MacOsKeychainBackend::new();
+                        #[cfg(not(target_os = "macos"))]
                         let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
                         let creds = backend
                             .retrieve(entry_name)
@@ -1138,7 +1316,21 @@ pub fn dispatch_vault_op(
             SecretBackendType::LibSecret
             | SecretBackendType::KeePassXc
             | SecretBackendType::KdbxFile => {
-                std::sync::Arc::new(rustconn_core::secret::LibSecretBackend::new("rustconn"))
+                // macOS uses the system Keychain; LibSecretBackend (oo7) is not
+                // compiled there (R10.1, R10.2). Non-macOS keeps libsecret.
+                #[cfg(target_os = "macos")]
+                {
+                    std::sync::Arc::new(rustconn_core::secret::MacOsKeychainBackend::new())
+                }
+                #[cfg(not(target_os = "macos"))]
+                {
+                    std::sync::Arc::new(rustconn_core::secret::LibSecretBackend::new("rustconn"))
+                }
+            }
+            SecretBackendType::EncryptedFile => {
+                // Application-managed encrypted file; addressed by the flat
+                // lookup key, same as the other app-managed backends.
+                std::sync::Arc::new(rustconn_core::secret::EncryptedFileBackend::new())
             }
         };
 
@@ -1225,6 +1417,9 @@ pub fn select_backend_for_load(
             }
         }
         SecretBackendType::LibSecret => SecretBackendType::LibSecret,
+        // EncryptedFile is a flat-key backend; identity mapping mirrors the
+        // other app-managed backends above. (Allowed flat-key wiring for 2.4.)
+        SecretBackendType::EncryptedFile => SecretBackendType::EncryptedFile,
     }
 }
 

@@ -462,8 +462,13 @@ impl VariablesDialog {
                             vault_entry.as_deref(),
                         )
                     } else {
-                        // No settings — fall back to libsecret
+                        // No settings — fall back to the system keyring
                         let lookup_key = rustconn_core::variable_secret_key(&var_name);
+                        // macOS uses the Keychain; LibSecretBackend (oo7) is not
+                        // compiled there (R10.1, R10.2).
+                        #[cfg(target_os = "macos")]
+                        let backend = rustconn_core::secret::MacOsKeychainBackend::new();
+                        #[cfg(not(target_os = "macos"))]
                         let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
                         crate::async_utils::with_runtime(|rt| {
                             let creds = rt.block_on(async {

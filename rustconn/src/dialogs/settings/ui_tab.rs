@@ -526,6 +526,7 @@ pub fn collect_ui_settings(
         remember_window_geometry: remember_geometry.is_active(),
         window_width: None,
         window_height: None,
+        window_maximized: false,
         sidebar_width: Some(sidebar_width_row.value().clamp(260.0, 500.0) as i32),
         enable_tray_icon: enable_tray_icon.is_active(),
         minimize_to_tray: minimize_to_tray.is_active(),

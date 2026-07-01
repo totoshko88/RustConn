@@ -1,3 +1,29 @@
+rustconn (0.17.6-1) unstable; urgency=medium
+
+  * Fixed RDP sessions still aborting on resize — RustConn no longer requests
+    bulk (MPPC/NCRUSH/XCRUSH) compression at all, matching the ironrdp-client
+    default, so the server never sends compressed FastPath updates that
+    desynchronised across a Deactivation-Reactivation Sequence (#200)
+  * Fixed Saving Preferences wiping persisted window/sidebar state — window
+    size/maximized, expanded sidebar groups, and search history are now
+    preserved instead of reset to defaults (#202)
+  * Fixed credentials being silently lost when the system keyring is
+    unavailable — RustConn probes real backend availability, raises an
+    actionable dialog pointing to Settings → Secrets, and falls back to the new
+    encrypted-file store (#201)
+  * Added: window now remembers its maximized state across restarts (#202)
+  * Added an application-managed encrypted-file secret backend (AES-256-GCM
+    with an Argon2id-derived key) for hosts without a working system keyring
+  * Added proactive keyring availability surfacing at startup and in
+    Settings → Secrets
+  * Changed: the system keyring path migrated to the in-process oo7 client on
+    Linux/BSD, removing the bundled libsecret/secret-tool from the Flatpak
+    manifests; macOS keeps using the system Keychain
+  * Dependencies: updated aws-lc-rs, aws-lc-sys, clap_complete, inotify-sys,
+    libredox, rustls-pki-types, time, and zlib-rs to latest compatible releases
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 01 Jul 2026 00:00:00 +0000
+
 rustconn (0.17.5-1) unstable; urgency=medium
 
   * Fixed embedded RDP sessions aborting when resized — the reactivation

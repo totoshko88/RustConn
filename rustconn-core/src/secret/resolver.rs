@@ -161,6 +161,13 @@ impl CredentialResolver {
             SecretBackendType::OnePassword => self.resolve_from_onepassword(connection).await,
             SecretBackendType::Passbolt => self.resolve_from_passbolt(connection).await,
             SecretBackendType::Pass => self.resolve_from_pass(connection).await,
+            SecretBackendType::EncryptedFile => {
+                // Flat-key backend: retrieve via the secret manager using the
+                // same flat lookup key as store_unified, keeping store/resolve
+                // symmetric with the other app-managed backends.
+                let lookup_key = Self::generate_lookup_key(connection);
+                self.secret_manager.retrieve(&lookup_key).await
+            }
         }
     }
 
@@ -378,6 +385,9 @@ impl CredentialResolver {
                 }
             }
             SecretBackendType::LibSecret => SecretBackendType::LibSecret,
+            // EncryptedFile is a flat-key backend (no hierarchy); identity
+            // mapping mirrors the other app-managed flat-key backends above.
+            SecretBackendType::EncryptedFile => SecretBackendType::EncryptedFile,
         }
     }
 
@@ -578,6 +588,12 @@ impl CredentialResolver {
                 let lookup_key = Self::generate_lookup_key(connection);
                 self.secret_manager.store(&lookup_key, credentials).await
             }
+            SecretBackendType::EncryptedFile => {
+                // Flat-key backend: store via the secret manager using the same
+                // flat lookup key as the other app-managed backends.
+                let lookup_key = Self::generate_lookup_key(connection);
+                self.secret_manager.store(&lookup_key, credentials).await
+            }
         }
     }
 
@@ -613,6 +629,12 @@ impl CredentialResolver {
             | SecretBackendType::Pass => {
                 // Non-KeePass backends use flat keys — group hierarchy is not
                 // encoded in the lookup key, so moves/renames don't break lookups.
+                let lookup_key = Self::generate_lookup_key(connection);
+                self.secret_manager.store(&lookup_key, credentials).await
+            }
+            SecretBackendType::EncryptedFile => {
+                // Flat-key backend (no hierarchy): store under the same flat
+                // lookup key as store_unified, so moves/renames don't break it.
                 let lookup_key = Self::generate_lookup_key(connection);
                 self.secret_manager.store(&lookup_key, credentials).await
             }
@@ -864,6 +886,12 @@ impl CredentialResolver {
             SecretBackendType::OnePassword => self.resolve_from_onepassword(connection).await,
             SecretBackendType::Passbolt => self.resolve_from_passbolt(connection).await,
             SecretBackendType::Pass => self.resolve_from_pass(connection).await,
+            SecretBackendType::EncryptedFile => {
+                // Flat-key backend with no hierarchy: use the flat lookup key
+                // (symmetric with store_unified_with_hierarchy).
+                let lookup_key = Self::generate_lookup_key(connection);
+                self.secret_manager.retrieve(&lookup_key).await
+            }
         }
     }
 
@@ -991,8 +1019,11 @@ impl CredentialResolver {
             | SecretBackendType::Bitwarden
             | SecretBackendType::OnePassword
             | SecretBackendType::Passbolt
-            | SecretBackendType::Pass => {
-                // Flat keys — no rename needed on group move
+            | SecretBackendType::Pass
+            | SecretBackendType::EncryptedFile => {
+                // Flat keys — no rename needed on group move.
+                // (EncryptedFile is flat-key; grouping here is correct, not a
+                // 2.5 placeholder.)
             }
         }
 
@@ -1055,6 +1086,20 @@ impl CredentialResolver {
                     | SecretBackendType::Passbolt
                     | SecretBackendType::Pass => {
                         // These backends use "rustconn/{name}" flat key
+                        let old_key = Self::generate_lookup_key(&old_connection);
+                        let new_key = Self::generate_lookup_key(connection);
+                        if old_key != new_key
+                            && let Some(creds) = self.secret_manager.retrieve(&old_key).await?
+                        {
+                            self.secret_manager.store(&new_key, &creds).await?;
+                            let _ = self.secret_manager.delete(&old_key).await;
+                        }
+                    }
+                    SecretBackendType::EncryptedFile => {
+                        // EncryptedFile uses the same "rustconn/{name}" flat key
+                        // as the other app-managed backends; rename moves the
+                        // entry without data loss.
+                        // (Flat-key; correct, not a 2.5 placeholder.)
                         let old_key = Self::generate_lookup_key(&old_connection);
                         let new_key = Self::generate_lookup_key(connection);
                         if old_key != new_key

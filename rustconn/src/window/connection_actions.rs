@@ -549,7 +549,8 @@ impl MainWindow {
             | rustconn_core::config::SecretBackendType::Bitwarden
             | rustconn_core::config::SecretBackendType::OnePassword
             | rustconn_core::config::SecretBackendType::Passbolt
-            | rustconn_core::config::SecretBackendType::Pass => true,
+            | rustconn_core::config::SecretBackendType::Pass
+            | rustconn_core::config::SecretBackendType::EncryptedFile => true,
             rustconn_core::config::SecretBackendType::KeePassXc
             | rustconn_core::config::SecretBackendType::KdbxFile => {
                 settings.secrets.kdbx_enabled

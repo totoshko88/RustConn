@@ -139,6 +139,11 @@ pub struct MainWindow {
     /// Shown by `show_sync_error_banner`, hidden on the next successful
     /// sync or via its Dismiss button.
     sync_banner: adw::Banner,
+    /// Persistent banner below the header bar warning that the preferred
+    /// secret backend cannot store passwords (e.g. no Secret Service
+    /// responding). Shown at startup by `check_secret_backend_available`;
+    /// its action button opens Settings → Secrets (#201).
+    secret_banner: adw::Banner,
 }
 
 impl MainWindow {
@@ -162,13 +167,19 @@ impl MainWindow {
         // Apply saved window geometry if available
         with_state(&state, |state_ref| {
             let settings = state_ref.settings();
-            if settings.ui.remember_window_geometry
-                && let (Some(width), Some(height)) =
+            if settings.ui.remember_window_geometry {
+                if let (Some(width), Some(height)) =
                     (settings.ui.window_width, settings.ui.window_height)
-                && width > 0
-                && height > 0
-            {
-                window.set_default_size(width, height);
+                    && width > 0
+                    && height > 0
+                {
+                    window.set_default_size(width, height);
+                }
+                // Restore maximized state (#202). GTK keeps the unmaximized
+                // default size above, so unmaximizing later restores it.
+                if settings.ui.window_maximized {
+                    window.maximize();
+                }
             }
         });
 
@@ -510,6 +521,22 @@ impl MainWindow {
         });
         toolbar_view.add_top_bar(&sync_banner);
 
+        // Persistent banner warning that the preferred secret backend cannot
+        // store passwords (GNOME HIG: keyring-unavailable is a state that
+        // needs attention, so it belongs in a banner, not a transient toast).
+        // Hidden by default; shown via check_secret_backend_available(). Its
+        // action button opens Settings, where the user picks a working backend
+        // in the Secrets section (#201).
+        let secret_banner = adw::Banner::new("");
+        secret_banner.set_button_label(Some(&crate::i18n::i18n("Open Settings")));
+        secret_banner.connect_button_clicked(|banner| {
+            // The banner lives inside the window that owns the `win.settings`
+            // action; activating it from the banner opens Settings → Secrets.
+            let _ = gtk4::prelude::WidgetExt::activate_action(banner, "win.settings", None);
+            banner.set_revealed(false);
+        });
+        toolbar_view.add_top_bar(&secret_banner);
+
         toolbar_view.set_content(Some(toast_overlay.widget()));
 
         // Wrap everything with TabOverview — must be the outermost widget
@@ -601,6 +628,7 @@ impl MainWindow {
             broadcast_toggle,
             broadcast_hint_shown: Rc::new(std::cell::Cell::new(false)),
             sync_banner,
+            secret_banner,
         };
 
         // Set up window actions
@@ -1166,6 +1194,7 @@ impl MainWindow {
 
             // Save window geometry and expanded groups state
             let (width, height) = win.default_size();
+            let is_maximized = win.is_maximized();
             let sidebar_width = (split_view_clone.max_sidebar_width() as i32).max(260);
 
             // Save expanded groups state
@@ -1181,6 +1210,7 @@ impl MainWindow {
                 if settings.ui.remember_window_geometry {
                     settings.ui.window_width = Some(width);
                     settings.ui.window_height = Some(height);
+                    settings.ui.window_maximized = is_maximized;
                     settings.ui.sidebar_width = Some(sidebar_width);
                     if let Err(e) = state.update_settings(settings.clone()) {
                         tracing::warn!(?e, "Failed to update settings");
@@ -1224,7 +1254,8 @@ impl MainWindow {
             | rustconn_core::config::SecretBackendType::Bitwarden
             | rustconn_core::config::SecretBackendType::OnePassword
             | rustconn_core::config::SecretBackendType::Passbolt
-            | rustconn_core::config::SecretBackendType::Pass => (true, true),
+            | rustconn_core::config::SecretBackendType::Pass
+            | rustconn_core::config::SecretBackendType::EncryptedFile => (true, true),
             rustconn_core::config::SecretBackendType::KeePassXc
             | rustconn_core::config::SecretBackendType::KdbxFile => {
                 let kdbx_enabled = settings.secrets.kdbx_enabled;
@@ -2420,7 +2451,8 @@ impl MainWindow {
                                 | rustconn_core::config::SecretBackendType::Bitwarden
                                 | rustconn_core::config::SecretBackendType::OnePassword
                                 | rustconn_core::config::SecretBackendType::Passbolt
-                                | rustconn_core::config::SecretBackendType::Pass => true,
+                                | rustconn_core::config::SecretBackendType::Pass
+                                | rustconn_core::config::SecretBackendType::EncryptedFile => true,
                                 rustconn_core::config::SecretBackendType::KeePassXc
                                 | rustconn_core::config::SecretBackendType::KdbxFile => {
                                     keepass_enabled && kdbx_path_exists
@@ -2572,6 +2604,14 @@ impl MainWindow {
     #[must_use]
     pub fn sync_banner(&self) -> &adw::Banner {
         &self.sync_banner
+    }
+
+    /// Returns the secret-backend availability banner shown below the header
+    /// bar. Revealed by `check_secret_backend_available` when the preferred
+    /// backend cannot store passwords (#201).
+    #[must_use]
+    pub fn secret_banner(&self) -> &adw::Banner {
+        &self.secret_banner
     }
 
     /// Shows the persistent cloud-sync failure banner.

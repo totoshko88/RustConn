@@ -439,7 +439,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
         1u32..365u32,                      // retention_days
         arb_secret_backend_type(),         // preferred_backend
         any::<bool>(),                     // enable_fallback
-        any::<bool>(),                     // remember_window_geometry
+        (any::<bool>(), any::<bool>()),    // (remember_window_geometry, window_maximized)
         arb_optional_dimension(),          // window_width
         arb_optional_dimension(),          // window_height
         arb_optional_dimension(),          // sidebar_width
@@ -454,7 +454,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                 retention_days,
                 preferred_backend,
                 enable_fallback,
-                remember_window_geometry,
+                (remember_window_geometry, window_maximized),
                 window_width,
                 window_height,
                 sidebar_width,
@@ -508,6 +508,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         remember_window_geometry,
                         window_width,
                         window_height,
+                        window_maximized,
                         sidebar_width,
                         enable_tray_icon: true,
                         minimize_to_tray: false,
@@ -760,6 +761,11 @@ proptest! {
             settings.ui.window_height,
             loaded.ui.window_height,
             "Window height should be preserved"
+        );
+        prop_assert_eq!(
+            settings.ui.window_maximized,
+            loaded.ui.window_maximized,
+            "Window maximized state should be preserved"
         );
         prop_assert_eq!(
             settings.ui.sidebar_width,

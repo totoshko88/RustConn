@@ -29,6 +29,11 @@ pub(super) struct SecretCliDetection {
     pub pass_status: Option<(String, &'static str)>,
     /// Whether `secret-tool` binary is available (for keyring operations)
     pub secret_tool_available: bool,
+    /// Fine-grained availability of the platform system-keyring backend
+    /// (libsecret/Secret Service on Linux/BSD, Keychain on macOS). Lets the
+    /// Secrets tab show whether the keyring is genuinely usable, not just
+    /// whether the client binary exists (#201).
+    pub system_keyring_availability: rustconn_core::secret::BackendAvailability,
 }
 
 /// Cached detection result: probing spawns ~10 child processes, so reuse
@@ -75,6 +80,7 @@ fn run_detection() -> SecretCliDetection {
         let passbolt = scope.spawn(detect_passbolt);
         let pass = scope.spawn(detect_pass);
         let secret_tool = scope.spawn(detect_secret_tool);
+        let keyring_avail = scope.spawn(detect_system_keyring_availability);
 
         let keepassxc_version = keepassxc.join().unwrap_or_default();
         let (bitwarden_installed, bitwarden_cmd, bitwarden_version, bitwarden_status) = bitwarden
@@ -88,6 +94,9 @@ fn run_detection() -> SecretCliDetection {
             passbolt.join().unwrap_or_default();
         let (pass_version, pass_status) = pass.join().unwrap_or_default();
         let secret_tool_available = secret_tool.join().unwrap_or_default();
+        let system_keyring_availability = keyring_avail
+            .join()
+            .unwrap_or(rustconn_core::secret::BackendAvailability::ServiceUnavailable);
 
         SecretCliDetection {
             keepassxc_version,
@@ -106,6 +115,7 @@ fn run_detection() -> SecretCliDetection {
             pass_version,
             pass_status,
             secret_tool_available,
+            system_keyring_availability,
         }
     })
 }
@@ -342,6 +352,43 @@ fn detect_secret_tool() -> bool {
         .stderr(std::process::Stdio::null())
         .status()
         .is_ok_and(|s| s.success())
+}
+
+/// Probes the platform system-keyring backend for fine-grained availability.
+///
+/// Runs the same read-only probe the keyring backend uses (`availability()`),
+/// so the Secrets tab can show whether the keyring is genuinely usable —
+/// distinguishing a missing client from an unresponsive Secret Service (#201) —
+/// rather than only whether the client binary exists. Bounded by the same 5s
+/// budget as the startup `has_secret_backend` check.
+fn detect_system_keyring_availability() -> rustconn_core::secret::BackendAvailability {
+    use rustconn_core::secret::{BackendAvailability, SecretBackend};
+
+    // 5s mirrors the startup availability budget (R2.4).
+    const KEYRING_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
+    crate::async_utils::with_runtime(|rt| {
+        rt.block_on(async {
+            #[cfg(target_os = "macos")]
+            let probe = {
+                let backend = rustconn_core::secret::MacOsKeychainBackend::new();
+                tokio::time::timeout(KEYRING_PROBE_TIMEOUT, async move {
+                    backend.availability().await
+                })
+                .await
+            };
+            #[cfg(not(target_os = "macos"))]
+            let probe = {
+                let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
+                tokio::time::timeout(KEYRING_PROBE_TIMEOUT, async move {
+                    backend.availability().await
+                })
+                .await
+            };
+            probe.unwrap_or(BackendAvailability::ServiceUnavailable)
+        })
+    })
+    .unwrap_or(BackendAvailability::ServiceUnavailable)
 }
 
 /// Gets CLI version from command output

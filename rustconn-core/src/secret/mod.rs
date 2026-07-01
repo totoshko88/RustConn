@@ -14,11 +14,14 @@ mod async_resolver;
 mod backend;
 mod bitwarden;
 mod detection;
+mod encrypted_file;
 pub mod hierarchy;
 mod kdbx;
 mod keepassxc;
 pub mod keyring;
+#[cfg(not(target_os = "macos"))]
 mod libsecret;
+pub(crate) mod local_crypto;
 #[cfg(target_os = "macos")]
 pub mod macos_keychain;
 mod manager;
@@ -35,7 +38,7 @@ pub use async_resolver::{
     AsyncCredentialResolver, AsyncCredentialResult, CancellationToken, PendingCredentialResolution,
     resolve_with_callback, spawn_credential_resolution,
 };
-pub use backend::SecretBackend;
+pub use backend::{BackendAvailability, SecretBackend};
 pub use bitwarden::{
     BitwardenBackend, BitwardenVersion, auto_unlock, clear_session_key, configure_server,
     delete_api_credentials_from_keyring, delete_master_password_from_keyring,
@@ -50,6 +53,7 @@ pub use detection::{
     detect_password_managers, get_password_manager_launch_command, open_password_manager,
     url_open_command,
 };
+pub use encrypted_file::EncryptedFileBackend;
 pub use hierarchy::{
     GROUPS_SUBFOLDER, GroupCreationResult, KEEPASS_ROOT_GROUP, KeePassHierarchy, PATH_SEPARATOR,
 };
@@ -58,10 +62,13 @@ pub use keepassxc::{
     KeePassXcBackend, delete_kdbx_password_from_keyring, get_kdbx_password_from_keyring,
     store_kdbx_password_in_keyring,
 };
+#[cfg(not(target_os = "macos"))]
 pub use libsecret::LibSecretBackend;
 #[cfg(target_os = "macos")]
 pub use macos_keychain::MacOsKeychainBackend;
-pub use manager::{BulkOperationResult, CACHE_TTL_SECONDS, CredentialUpdate, SecretManager};
+pub use manager::{
+    BulkOperationResult, CACHE_TTL_SECONDS, CredentialUpdate, SecretManager, StoreOutcome,
+};
 pub use onepassword::{
     OnePasswordBackend, OnePasswordStatus, OnePasswordVersion, delete_token_from_keyring,
     get_onepassword_status, get_onepassword_version, get_token_from_keyring,

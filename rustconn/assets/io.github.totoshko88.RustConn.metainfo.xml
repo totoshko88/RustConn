@@ -140,6 +140,20 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.17.6" date="2026-07-01">
+      <description>
+        <p>Version 0.17.6 — RDP resize fix, resilient secret storage, and window state:</p>
+        <ul>
+          <li>RDP sessions no longer abort on resize — bulk compression is no longer requested, so servers never send compressed FastPath updates that desynchronised across a resize (issue #200)</li>
+          <li>Saving Preferences no longer wipes persisted window and sidebar state — window size/maximized, expanded groups, and search history are preserved (issue #202)</li>
+          <li>Credentials are no longer silently lost when the system keyring is unavailable — an actionable dialog appears and RustConn falls back to the encrypted-file store (issue #201)</li>
+          <li>The window now remembers its maximized state across restarts (issue #202)</li>
+          <li>New application-managed encrypted-file secret backend (AES-256-GCM) for hosts without a system keyring</li>
+          <li>Proactive keyring availability warnings at startup and in Settings, Secrets</li>
+          <li>The Linux/BSD keyring path moved to the in-process oo7 client, dropping bundled libsecret/secret-tool from Flatpak</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.17.5" date="2026-06-30">
       <description>
         <p>Version 0.17.5 — RDP resize/fallback fixes, SSH auto-login, and arm64 snap:</p>

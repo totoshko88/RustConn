@@ -895,6 +895,11 @@ pub fn get_password_manager_launch_command(
                 vec!["-a".to_string(), "Keychain Access".to_string()],
             ))
         }
+        crate::config::SecretBackendType::EncryptedFile => {
+            // Application-managed file: no external password-manager app to
+            // launch. (Correct as-is; not a 2.5 placeholder.)
+            None
+        }
     }
 }
 

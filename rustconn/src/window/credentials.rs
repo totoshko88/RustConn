@@ -261,6 +261,14 @@ impl MainWindow {
                                     types.push(preferred);
                                 }
                                 rustconn_core::config::SecretBackendType::LibSecret => {}
+                                rustconn_core::config::SecretBackendType::EncryptedFile => {
+                                    // App-managed encrypted file: a real,
+                                    // selectable storage target (unlike LibSecret,
+                                    // which is only offered as the fallback below).
+                                    // Descriptive label → i18n (not a brand name).
+                                    names.push(crate::i18n::i18n("Encrypted file"));
+                                    types.push(preferred);
+                                }
                             }
 
                             // Always add LibSecret as fallback option

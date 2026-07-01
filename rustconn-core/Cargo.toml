@@ -80,10 +80,6 @@ ironrdp = { version = "0.16", features = [
 ], optional = true }
 ironrdp-tokio = { version = "0.9", features = ["reqwest"], optional = true }
 ironrdp-tls = { version = "0.2", features = ["native-tls"], optional = true }
-# Bulk (de)compressor — needed to rebuild the FastPath decompressor after a
-# Deactivation-Reactivation Sequence (resize). Not re-exported by the `ironrdp`
-# facade, so it must be a direct dep. Version pinned to match ironrdp-session 0.10.
-ironrdp-bulk = { version = "0.1", optional = true }
 # Pin native-tls to avoid Tlsv13 compile bug in 0.2.17
 native-tls = { workspace = true }
 nix = { version = "0.31.2", features = ["fs", "signal", "process"] }
@@ -91,6 +87,12 @@ fs2 = "0.4"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 security-framework = "3.3"
+
+# Secret Service (keyring) client. Gated to non-macOS so oo7 NEVER compiles on
+# macOS (which uses security-framework above). Used by the LibSecret/keyring
+# path in Part C.
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+oo7 = { workspace = true }
 
 # Note: ironrdp-rdpdr-native 0.6 requires ironrdp-rdpdr 0.6.x which matches ironrdp 0.16
 
@@ -102,7 +104,6 @@ rdp-embedded = [
     "dep:ironrdp",
     "dep:ironrdp-tokio",
     "dep:ironrdp-tls",
-    "dep:ironrdp-bulk",
 ]
 # spice-embedded feature enables the SpiceClient struct with native SPICE protocol
 spice-embedded = ["dep:spice-client"]

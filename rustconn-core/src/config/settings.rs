@@ -13,6 +13,7 @@ use crate::variables::Variable;
 use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use zeroize::Zeroizing;
 
 /// Application-wide settings
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -475,6 +476,12 @@ pub enum SecretBackendType {
     Pass,
     /// macOS Keychain (Security.framework)
     MacOsKeychain,
+    /// Application-managed encrypted file (no system keyring required).
+    ///
+    /// Per-entry AES-256-GCM blobs stored under the user data dir; serialized
+    /// as `"encrypted_file"` via `#[serde(rename_all = "snake_case")]`. Kept
+    /// last so existing configs round-trip unchanged.
+    EncryptedFile,
 }
 
 /// Color scheme preference
@@ -532,6 +539,9 @@ pub struct UiSettings {
     /// Window height
     #[serde(skip_serializing_if = "Option::is_none")]
     pub window_height: Option<i32>,
+    /// Whether the window was maximized at last close (restored on startup, #202)
+    #[serde(default)]
+    pub window_maximized: bool,
     /// Sidebar width
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sidebar_width: Option<i32>,
@@ -669,6 +679,7 @@ impl Default for UiSettings {
             remember_window_geometry: true,
             window_width: None,
             window_height: None,
+            window_maximized: false,
             sidebar_width: None,
             enable_tray_icon: true,
             minimize_to_tray: false,
@@ -723,20 +734,10 @@ pub struct QuickConnectHistoryItem {
     pub username: Option<String>,
 }
 
-/// Magic bytes identifying AES-256-GCM encrypted credentials (v1)
-const SETTINGS_CRYPTO_MAGIC: &[u8] = b"RCSC";
-
-/// Current settings crypto version
-const SETTINGS_CRYPTO_VERSION: u8 = 1;
-
-/// Salt length for Argon2id key derivation
-const SETTINGS_SALT_LEN: usize = 16;
-
-/// Nonce length for AES-256-GCM
-const SETTINGS_NONCE_LEN: usize = 12;
-
-/// Header length: magic(4) + version(1) + salt(16) + nonce(12)
-const SETTINGS_HEADER_LEN: usize = 4 + 1 + SETTINGS_SALT_LEN + SETTINGS_NONCE_LEN;
+// The `RCSC` blob format and machine-key crypto live in
+// [`crate::secret::local_crypto`]; this module delegates to it so the
+// encrypted-file backend and the `*_encrypted` settings fields share one
+// implementation. The on-disk format is preserved byte-for-byte.
 
 /// Password encryption utilities for credential persistence
 ///
@@ -884,9 +885,9 @@ impl SecretSettings {
         {
             let key = Self::get_machine_key();
             if let Ok(plaintext) = decrypt_credential(&decoded, &key)
-                && let Ok(password_str) = String::from_utf8(plaintext)
+                && let Ok(password_str) = std::str::from_utf8(&plaintext)
             {
-                self.kdbx_password = Some(SecretString::from(password_str));
+                self.kdbx_password = Some(SecretString::from(password_str.to_owned()));
                 return true;
             }
         }
@@ -922,9 +923,9 @@ impl SecretSettings {
         {
             let key = Self::get_machine_key();
             if let Ok(plaintext) = decrypt_credential(&decoded, &key)
-                && let Ok(password_str) = String::from_utf8(plaintext)
+                && let Ok(password_str) = std::str::from_utf8(&plaintext)
             {
-                self.bitwarden_password = Some(SecretString::from(password_str));
+                self.bitwarden_password = Some(SecretString::from(password_str.to_owned()));
                 return true;
             }
         }
@@ -963,9 +964,9 @@ impl SecretSettings {
         let id_ok = if let Some(ref encrypted) = self.bitwarden_client_id_encrypted
             && let Some(decoded) = hex_decode(encrypted)
             && let Ok(plaintext) = decrypt_credential(&decoded, &key)
-            && let Ok(s) = String::from_utf8(plaintext)
+            && let Ok(s) = std::str::from_utf8(&plaintext)
         {
-            self.bitwarden_client_id = Some(SecretString::from(s));
+            self.bitwarden_client_id = Some(SecretString::from(s.to_owned()));
             true
         } else {
             false
@@ -973,9 +974,9 @@ impl SecretSettings {
         let secret_ok = if let Some(ref encrypted) = self.bitwarden_client_secret_encrypted
             && let Some(decoded) = hex_decode(encrypted)
             && let Ok(plaintext) = decrypt_credential(&decoded, &key)
-            && let Ok(s) = String::from_utf8(plaintext)
+            && let Ok(s) = std::str::from_utf8(&plaintext)
         {
-            self.bitwarden_client_secret = Some(SecretString::from(s));
+            self.bitwarden_client_secret = Some(SecretString::from(s.to_owned()));
             true
         } else {
             false
@@ -1005,9 +1006,10 @@ impl SecretSettings {
         {
             let key = Self::get_machine_key();
             if let Ok(plaintext) = decrypt_credential(&decoded, &key)
-                && let Ok(token_str) = String::from_utf8(plaintext)
+                && let Ok(token_str) = std::str::from_utf8(&plaintext)
             {
-                self.onepassword_service_account_token = Some(SecretString::from(token_str));
+                self.onepassword_service_account_token =
+                    Some(SecretString::from(token_str.to_owned()));
                 return true;
             }
         }
@@ -1037,194 +1039,38 @@ impl SecretSettings {
         {
             let key = Self::get_machine_key();
             if let Ok(plaintext) = decrypt_credential(&decoded, &key)
-                && let Ok(pass_str) = String::from_utf8(plaintext)
+                && let Ok(pass_str) = std::str::from_utf8(&plaintext)
             {
-                self.passbolt_passphrase = Some(SecretString::from(pass_str));
+                self.passbolt_passphrase = Some(SecretString::from(pass_str.to_owned()));
                 return true;
             }
         }
         false
     }
 
-    /// Gets a machine-specific key for encryption
+    /// Gets a machine-specific key for encryption.
     ///
-    /// Uses app-specific key file, machine-id, or falls back to a default.
-    /// In Flatpak sandbox `/etc/machine-id` is inaccessible, so we first
-    /// try an app-specific key file stored in the XDG data directory.
+    /// Delegates to [`crate::secret::local_crypto::get_machine_key`].
     fn get_machine_key() -> Vec<u8> {
-        /// Key length type for HKDF output (32 bytes = 256 bits)
-        struct HkdfKeyLen;
-        impl ring::hkdf::KeyType for HkdfKeyLen {
-            fn len(&self) -> usize {
-                32
-            }
-        }
-
-        // 1. Try app-specific key file in XDG data dir (works in Flatpak)
-        if let Some(data_dir) = dirs::data_dir() {
-            let key_file = data_dir.join("rustconn").join(".machine-key");
-            if let Ok(key) = std::fs::read_to_string(&key_file) {
-                let trimmed = key.trim();
-                if !trimmed.is_empty() {
-                    return trimmed.as_bytes().to_vec();
-                }
-            }
-            // Generate and persist a random key if it doesn't exist
-            if std::fs::create_dir_all(data_dir.join("rustconn")).is_ok() {
-                let key = uuid::Uuid::new_v4().to_string();
-                if std::fs::write(&key_file, &key).is_ok() {
-                    // Restrict permissions to owner-only (0600)
-                    #[cfg(unix)]
-                    {
-                        use std::os::unix::fs::PermissionsExt;
-                        let _ = std::fs::set_permissions(
-                            &key_file,
-                            std::fs::Permissions::from_mode(0o600),
-                        );
-                    }
-                    return key.into_bytes();
-                }
-            }
-        }
-
-        // 2. Try /etc/machine-id with HKDF derivation (works outside Flatpak)
-        if let Ok(machine_id) = std::fs::read_to_string("/etc/machine-id") {
-            let trimmed = machine_id.trim();
-            if !trimmed.is_empty() {
-                // Derive app-specific key via HKDF to avoid sharing raw machine-id
-                let salt =
-                    ring::hkdf::Salt::new(ring::hkdf::HKDF_SHA256, b"rustconn-machine-key-v1");
-                let prk = salt.extract(trimmed.as_bytes());
-                if let Ok(okm) = prk.expand(&[b"encryption" as &[u8]], HkdfKeyLen) {
-                    let mut derived = vec![0u8; 32];
-                    if okm.fill(&mut derived).is_ok() {
-                        return derived;
-                    }
-                }
-                // If HKDF fails, use raw machine-id as before
-                return trimmed.as_bytes().to_vec();
-            }
-        }
-
-        // 3. No fallback — refuse to encrypt with predictable key
-        tracing::error!(
-            "Cannot derive encryption key: no .machine-key file and /etc/machine-id unavailable. \
-             Credential encryption will not work."
-        );
-        Vec::new()
+        crate::secret::local_crypto::get_machine_key()
     }
 }
 
-/// Encrypts credential data using AES-256-GCM with Argon2id key derivation
+/// Encrypts credential data using AES-256-GCM with Argon2id key derivation.
 ///
-/// Output format: `RCSC` (4) + version (1) + salt (16) + nonce (12) + ciphertext + tag (16)
+/// Output format: `RCSC` (4) + version (1) + salt (16) + nonce (12) +
+/// ciphertext + tag (16). Delegates to
+/// [`crate::secret::local_crypto::encrypt_credential`].
 fn encrypt_credential(plaintext: &[u8], machine_key: &[u8]) -> Result<Vec<u8>, String> {
-    use ring::aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey};
-    use ring::rand::{SecureRandom, SystemRandom};
-
-    let rng = SystemRandom::new();
-
-    let mut salt = [0u8; SETTINGS_SALT_LEN];
-    rng.fill(&mut salt)
-        .map_err(|_| "Failed to generate salt".to_string())?;
-
-    let mut nonce_bytes = [0u8; SETTINGS_NONCE_LEN];
-    rng.fill(&mut nonce_bytes)
-        .map_err(|_| "Failed to generate nonce".to_string())?;
-
-    let key = derive_settings_key(machine_key, &salt)?;
-
-    let unbound_key = UnboundKey::new(&AES_256_GCM, &key)
-        .map_err(|_| "Failed to create encryption key".to_string())?;
-    let less_safe_key = LessSafeKey::new(unbound_key);
-    let nonce = Nonce::assume_unique_for_key(nonce_bytes);
-
-    let mut in_out = plaintext.to_vec();
-    less_safe_key
-        .seal_in_place_append_tag(nonce, Aad::empty(), &mut in_out)
-        .map_err(|_| "Encryption failed".to_string())?;
-
-    let mut result = Vec::with_capacity(SETTINGS_HEADER_LEN + in_out.len());
-    result.extend_from_slice(SETTINGS_CRYPTO_MAGIC);
-    result.push(SETTINGS_CRYPTO_VERSION);
-    result.extend_from_slice(&salt);
-    result.extend_from_slice(&nonce_bytes);
-    result.extend_from_slice(&in_out);
-    Ok(result)
+    crate::secret::local_crypto::encrypt_credential(plaintext, machine_key)
 }
 
-/// Decrypts AES-256-GCM credential data.
+/// Decrypts AES-256-GCM (`RCSC`) credential data.
 ///
-/// # Errors
-/// Returns an error if the data lacks the `RCSC` magic header (e.g. the
-/// long-removed legacy XOR format) or if AES-GCM decryption fails. The legacy
-/// XOR fallback was removed in 0.17.0 — it provided no real protection and the
-/// transparent migration window (since v0.12) has long passed.
-fn decrypt_credential(data: &[u8], machine_key: &[u8]) -> Result<Vec<u8>, String> {
-    if data.len() >= SETTINGS_HEADER_LEN && data[..4] == *SETTINGS_CRYPTO_MAGIC {
-        decrypt_credential_aes(data, machine_key)
-    } else {
-        tracing::warn!(
-            "Stored credential is not in AES-256-GCM (RCSC) format and cannot be \
-             decrypted; legacy XOR support was removed in 0.17.0 — re-enter the \
-             credential in Settings."
-        );
-        Err("unrecognized credential format (legacy XOR no longer supported)".to_string())
-    }
-}
-
-/// Decrypts AES-256-GCM encrypted credential data
-fn decrypt_credential_aes(data: &[u8], machine_key: &[u8]) -> Result<Vec<u8>, String> {
-    use ring::aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey};
-
-    if data.len() < SETTINGS_HEADER_LEN + 16 {
-        return Err("Encrypted data too short".to_string());
-    }
-
-    let _version = data[4];
-    let salt = &data[5..5 + SETTINGS_SALT_LEN];
-    let nonce_bytes: [u8; SETTINGS_NONCE_LEN] = data
-        [5 + SETTINGS_SALT_LEN..5 + SETTINGS_SALT_LEN + SETTINGS_NONCE_LEN]
-        .try_into()
-        .map_err(|_| "Invalid nonce".to_string())?;
-    let ciphertext = &data[SETTINGS_HEADER_LEN..];
-
-    let key = derive_settings_key(machine_key, salt)?;
-
-    let unbound_key = UnboundKey::new(&AES_256_GCM, &key)
-        .map_err(|_| "Failed to create decryption key".to_string())?;
-    let less_safe_key = LessSafeKey::new(unbound_key);
-    let nonce = Nonce::assume_unique_for_key(nonce_bytes);
-
-    let mut in_out = ciphertext.to_vec();
-    less_safe_key
-        .open_in_place(nonce, Aad::empty(), &mut in_out)
-        .map_err(|_| "Decryption failed (wrong key or corrupted data)".to_string())?;
-
-    // Remove the authentication tag (last 16 bytes)
-    in_out.truncate(in_out.len() - 16);
-    Ok(in_out)
-}
-
-/// Derives a 256-bit key from machine key using Argon2id
-///
-/// Uses lighter parameters than document encryption since settings
-/// encryption happens on every save and the key material is already
-/// high-entropy (machine-specific UUID or machine-id).
-fn derive_settings_key(machine_key: &[u8], salt: &[u8]) -> Result<[u8; 32], String> {
-    use argon2::{Algorithm, Argon2, Params, Version};
-
-    // Lighter params: 16 MiB memory, 2 iterations, 1 thread
-    // Appropriate for machine-key derivation (not user passwords)
-    let params = Params::new(16 * 1024, 2, 1, Some(32))
-        .map_err(|e| format!("Invalid Argon2 params: {e}"))?;
-    let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
-
-    let mut key = [0u8; 32];
-    argon2
-        .hash_password_into(machine_key, salt, &mut key)
-        .map_err(|e| format!("Key derivation failed: {e}"))?;
-    Ok(key)
+/// Returns the recovered plaintext wrapped in [`Zeroizing`] so it is wiped on
+/// drop. Delegates to [`crate::secret::local_crypto::decrypt_credential`].
+fn decrypt_credential(data: &[u8], machine_key: &[u8]) -> Result<Zeroizing<Vec<u8>>, String> {
+    crate::secret::local_crypto::decrypt_credential(data, machine_key)
 }
 
 /// Hex-encodes binary data to a string

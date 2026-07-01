@@ -30,14 +30,6 @@ pub async fn run_active_session(
         connection_result.desktop_size.height,
     );
 
-    // Capture the negotiated bulk-compression type before `connection_result`
-    // is consumed by `ActiveStage::new`. We need it to rebuild the FastPath
-    // decompressor after a Deactivation-Reactivation Sequence (see
-    // `handle_reactivation`): the server keeps compression enabled across a
-    // resize, so dropping the decompressor would make it send compressed
-    // FastPath data we can no longer decode.
-    let compression_type = connection_result.compression_type;
-
     let mut active_stage = ActiveStage::new(connection_result);
 
     loop {
@@ -78,7 +70,6 @@ pub async fn run_active_session(
                             &event_tx,
                             &mut image,
                             &mut active_stage,
-                            compression_type,
                         )
                         .await?
                         {
@@ -109,7 +100,6 @@ async fn handle_active_stage_output<S>(
     event_tx: &std::sync::mpsc::Sender<RdpClientEvent>,
     image: &mut DecodedImage,
     active_stage: &mut ActiveStage,
-    compression_type: Option<ironrdp::pdu::rdp::client_info::CompressionType>,
 ) -> Result<bool, RdpClientError>
 where
     S: FramedRead + Unpin + Send,
@@ -175,7 +165,6 @@ where
                 image,
                 active_stage,
                 event_tx,
-                compression_type,
             )
             .await?;
         }
@@ -208,43 +197,6 @@ where
     Ok(false)
 }
 
-/// Builds a fresh FastPath bulk decompressor for the negotiated compression type.
-///
-/// Mirrors `ironrdp_session::ActiveStage::new`, which is the only other place a
-/// decompressor is created. Returns `None` when no compression was negotiated or
-/// when the decompressor fails to initialise (compression then degrades to
-/// uncompressed FastPath, matching upstream behaviour).
-fn build_bulk_decompressor(
-    compression_type: Option<ironrdp::pdu::rdp::client_info::CompressionType>,
-) -> Option<ironrdp_bulk::BulkCompressor> {
-    use ironrdp::pdu::rdp::client_info::CompressionType as PduCompressionType;
-    use ironrdp_bulk::CompressionType as BulkCompressionType;
-
-    let bulk_ct = match compression_type? {
-        PduCompressionType::K8 => BulkCompressionType::Rdp4,
-        PduCompressionType::K64 => BulkCompressionType::Rdp5,
-        PduCompressionType::Rdp6 => BulkCompressionType::Rdp6,
-        PduCompressionType::Rdp61 => BulkCompressionType::Rdp61,
-    };
-
-    match ironrdp_bulk::BulkCompressor::new(bulk_ct) {
-        Ok(compressor) => {
-            tracing::info!(
-                compression_type = ?bulk_ct,
-                "Rebuilt FastPath bulk decompressor after reactivation"
-            );
-            Some(compressor)
-        }
-        Err(e) => {
-            tracing::error!(
-                error = %e,
-                "Failed to rebuild bulk decompressor after reactivation, compression disabled"
-            );
-            None
-        }
-    }
-}
-
 async fn handle_reactivation<S>(
     mut connection_activation: Box<
         ironrdp::connector::connection_activation::ConnectionActivationSequence,
@@ -254,7 +206,6 @@ async fn handle_reactivation<S>(
     image: &mut DecodedImage,
     active_stage: &mut ActiveStage,
     event_tx: &std::sync::mpsc::Sender<RdpClientEvent>,
-    compression_type: Option<ironrdp::pdu::rdp::client_info::CompressionType>,
 ) -> Result<(), RdpClientError>
 where
     S: FramedRead + Unpin + Send,
@@ -313,14 +264,13 @@ where
                     share_id,
                     enable_server_pointer,
                     pointer_software_rendering,
-                    // The server keeps bulk compression enabled across a
-                    // Deactivation-Reactivation Sequence, so rebuild a fresh
-                    // decompressor for the negotiated type. A fresh instance is
-                    // correct: both peers reset their compression history on
-                    // reactivation. Passing `None` here makes the server's
-                    // compressed FastPath updates undecodable and aborts the
-                    // session (issue #200).
-                    bulk_decompressor: build_bulk_decompressor(compression_type),
+                    // Bulk compression is disabled at connection time
+                    // (`compression_type: None`), so the server never sends
+                    // compressed FastPath data and no decompressor is needed.
+                    // See the note in `connection.rs` and issue #200 for why
+                    // reactivation + bulk compression cannot be reconciled with
+                    // the current ironrdp-session API.
+                    bulk_decompressor: None,
                 }
                 .build(),
             );

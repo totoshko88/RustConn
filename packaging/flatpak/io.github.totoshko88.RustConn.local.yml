@@ -132,24 +132,6 @@ modules:
           stable-only: true
           url-template: https://github.com/npat-efault/picocom/archive/refs/tags/$version.tar.gz
 
-  - name: libsecret
-    buildsystem: meson
-    config-opts:
-      - -Dgtk_doc=false
-      - -Dintrospection=false
-      - -Dvapi=false
-      - -Dmanpage=false
-      - -Dcrypto=disabled
-      - -Dbash_completion=disabled
-    sources:
-      - type: archive
-        url: https://download.gnome.org/sources/libsecret/0.21/libsecret-0.21.7.tar.xz
-        sha256: 6b452e4750590a2b5617adc40026f28d2f4903de15f1250e1d1c40bfd68ed55e
-        x-checker-data:
-          type: gnome
-          name: libsecret
-          stable-only: true
-
   - name: slang
     buildsystem: autotools
     config-opts:

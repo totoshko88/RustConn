@@ -1,25 +1,29 @@
 //! libsecret backend for GNOME Keyring/KDE Wallet integration
 //!
-//! This module implements credential storage using the Secret Service API
-//! via the libsecret library. It provides fallback storage when `KeePassXC`
-//! is unavailable.
+//! This module implements credential storage using the Secret Service API.
+//!
+//! It talks to the Secret Service **in process** via the [`oo7`] crate
+//! (`oo7::dbus::Service`), so no `secret-tool` binary or bundled libsecret C
+//! library is required.
+//!
+//! The whole module is `#[cfg(not(target_os = "macos"))]` (gated at the `mod`
+//! declaration in `secret/mod.rs`): macOS uses `MacOsKeychainBackend` and never
+//! compiles `oo7`, so `LibSecretBackend` does not exist on macOS at all (R10.1,
+//! R10.2).
 
 use async_trait::async_trait;
 use secrecy::SecretString;
 use std::collections::HashMap;
-use std::process::Stdio;
-use tokio::process::Command;
 
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
 
-use super::backend::SecretBackend;
+use super::backend::{BackendAvailability, SecretBackend};
 
 /// libsecret backend for GNOME Keyring/KDE Wallet
 ///
-/// This backend uses the `secret-tool` command-line utility to interact
-/// with the Secret Service API. It works with GNOME Keyring, KDE Wallet,
-/// and other Secret Service implementations.
+/// Uses the in-process [`oo7`] Secret Service client. It works with GNOME
+/// Keyring, KDE Wallet, and other Secret Service implementations.
 pub struct LibSecretBackend {
     /// Application identifier for stored secrets
     application_id: String,
@@ -46,23 +50,25 @@ impl LibSecretBackend {
         Self::new("rustconn")
     }
 
-    /// Builds the attribute map for a connection
-    fn build_attributes(&self, connection_id: &str) -> HashMap<String, String> {
+    /// Builds the attribute map used to identify a stored secret.
+    ///
+    /// The map preserves the attribute scheme used by earlier `secret-tool`
+    /// releases so entries stay mutually findable (backward compatibility,
+    /// R11.1/R11.3): `application`, `connection_id`, and `key` (one of
+    /// `username` / `password` / `key_passphrase` / `domain`).
+    fn build_attributes(&self, connection_id: &str, key: &str) -> HashMap<String, String> {
         let mut attrs = HashMap::new();
         attrs.insert("application".to_string(), self.application_id.clone());
         attrs.insert("connection_id".to_string(), connection_id.to_string());
+        attrs.insert("key".to_string(), key.to_string());
         attrs
     }
 
-    /// Converts attributes to secret-tool command arguments
-    fn attrs_to_args(attrs: &HashMap<String, String>) -> Vec<String> {
-        attrs
-            .iter()
-            .flat_map(|(k, v)| vec![k.clone(), v.clone()])
-            .collect()
-    }
-
-    /// Stores a value using secret-tool
+    /// Stores a single field value as a Secret Service item via oo7.
+    ///
+    /// Uses `replace = true` so re-saving a connection overwrites the previous
+    /// item that matches the same attributes, and `window_id = None` since this
+    /// backend runs headless in `rustconn-core` (no GUI handle).
     async fn store_value(
         &self,
         connection_id: &str,
@@ -70,70 +76,58 @@ impl LibSecretBackend {
         value: &str,
         label: &str,
     ) -> SecretResult<()> {
-        let mut attrs = self.build_attributes(connection_id);
-        attrs.insert("key".to_string(), key.to_string());
+        let attrs = self.build_attributes(connection_id, key);
 
-        let mut args = vec![
-            "store".to_string(),
-            "--label".to_string(),
-            label.to_string(),
-        ];
-        args.extend(Self::attrs_to_args(&attrs));
-
-        let mut child = Command::new("secret-tool")
-            .env("PATH", crate::cli_download::get_extended_path())
-            .args(&args)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::null())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|e| SecretError::LibSecret(format!("Failed to spawn secret-tool: {e}")))?;
-
-        // Write the secret to stdin
-        if let Some(mut stdin) = child.stdin.take() {
-            use tokio::io::AsyncWriteExt;
-            stdin
-                .write_all(value.as_bytes())
-                .await
-                .map_err(|e| SecretError::LibSecret(format!("Failed to write secret: {e}")))?;
-        }
-
-        let output = child
-            .wait_with_output()
+        let service = oo7::dbus::Service::new()
             .await
-            .map_err(|e| SecretError::LibSecret(format!("Failed to wait for secret-tool: {e}")))?;
+            .map_err(super::keyring::map_oo7_service_error)?;
+        let collection = service
+            .default_collection()
+            .await
+            .map_err(super::keyring::map_oo7_service_error)?;
 
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(SecretError::StoreFailed(format!(
-                "secret-tool store failed: {stderr}"
-            )));
-        }
+        // `Secret::text` stores the raw UTF-8 string with a `text/plain` content
+        // type so values round-trip byte-for-byte like the old secret-tool path.
+        collection
+            .create_item(label, &attrs, oo7::Secret::text(value), true, None)
+            .await
+            .map_err(super::keyring::map_oo7_store_error)?;
 
         Ok(())
     }
 
-    /// Retrieves a value using secret-tool
+    /// Retrieves a single field value from the Secret Service via oo7.
     async fn retrieve_value(&self, connection_id: &str, key: &str) -> SecretResult<Option<String>> {
-        let mut attrs = self.build_attributes(connection_id);
-        attrs.insert("key".to_string(), key.to_string());
+        let attrs = self.build_attributes(connection_id, key);
 
-        let mut args = vec!["lookup".to_string()];
-        args.extend(Self::attrs_to_args(&attrs));
-
-        let output = Command::new("secret-tool")
-            .env("PATH", crate::cli_download::get_extended_path())
-            .args(&args)
-            .output()
+        let service = oo7::dbus::Service::new()
             .await
-            .map_err(|e| SecretError::LibSecret(format!("Failed to run secret-tool: {e}")))?;
+            .map_err(super::keyring::map_oo7_service_error)?;
+        let collection = service
+            .default_collection()
+            .await
+            .map_err(super::keyring::map_oo7_service_error)?;
 
-        if !output.status.success() {
-            // Not found is not an error, just return None
+        let items = collection
+            .search_items(&attrs)
+            .await
+            .map_err(super::keyring::map_oo7_retrieve_error)?;
+
+        let Some(item) = items.into_iter().next() else {
+            // No matching item is not an error, just an absent value.
             return Ok(None);
-        }
+        };
 
-        let value = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let secret = item
+            .secret()
+            .await
+            .map_err(super::keyring::map_oo7_retrieve_error)?;
+
+        // Values were written as UTF-8 text; decode them back the same way.
+        let value = String::from_utf8(secret.as_bytes().to_vec()).map_err(|e| {
+            SecretError::RetrieveFailed(format!("stored secret was not valid UTF-8: {e}"))
+        })?;
+
         if value.is_empty() {
             Ok(None)
         } else {
@@ -141,29 +135,49 @@ impl LibSecretBackend {
         }
     }
 
-    /// Deletes a value using secret-tool
+    /// Deletes every Secret Service item matching a single field via oo7.
     async fn delete_value(&self, connection_id: &str, key: &str) -> SecretResult<()> {
-        let mut attrs = self.build_attributes(connection_id);
-        attrs.insert("key".to_string(), key.to_string());
+        let attrs = self.build_attributes(connection_id, key);
 
-        let mut args = vec!["clear".to_string()];
-        args.extend(Self::attrs_to_args(&attrs));
-
-        let output = Command::new("secret-tool")
-            .env("PATH", crate::cli_download::get_extended_path())
-            .args(&args)
-            .output()
+        let service = oo7::dbus::Service::new()
             .await
-            .map_err(|e| SecretError::LibSecret(format!("Failed to run secret-tool: {e}")))?;
+            .map_err(super::keyring::map_oo7_service_error)?;
+        let collection = service
+            .default_collection()
+            .await
+            .map_err(super::keyring::map_oo7_service_error)?;
 
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(SecretError::DeleteFailed(format!(
-                "secret-tool clear failed: {stderr}"
-            )));
+        let items = collection
+            .search_items(&attrs)
+            .await
+            .map_err(super::keyring::map_oo7_retrieve_error)?;
+
+        for item in items {
+            item.delete(None)
+                .await
+                .map_err(super::keyring::map_oo7_delete_error)?;
         }
 
         Ok(())
+    }
+
+    /// Probes availability via oo7's typed `Service::new()` result.
+    ///
+    /// A successful connection means a Secret Service answered (`Available`);
+    /// any error means no service responded (`ServiceUnavailable`).
+    ///
+    /// The `ClientMissing` classification is intentionally never produced here:
+    /// with the in-process oo7 client there is no external `secret-tool` binary
+    /// that could be absent, so the only two observable outcomes are "a service
+    /// answered" and "none did". oo7 does not cleanly distinguish "no session
+    /// bus at all" from other transport failures (all surface as
+    /// `Error::ZBus`/`Error::IO`), so collapsing every error to
+    /// `ServiceUnavailable` is both correct and the least-code option.
+    async fn availability_probe(&self) -> BackendAvailability {
+        match oo7::dbus::Service::new().await {
+            Ok(_) => BackendAvailability::Available,
+            Err(_) => BackendAvailability::ServiceUnavailable,
+        }
     }
 }
 
@@ -231,16 +245,11 @@ impl SecretBackend for LibSecretBackend {
     }
 
     async fn is_available(&self) -> bool {
-        // Check if secret-tool binary exists on PATH.
-        // Note: secret-tool does not support --version (exits with code 2),
-        // so we only check whether the process can be spawned at all.
-        Command::new("secret-tool")
-            .env("PATH", crate::cli_download::get_extended_path())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .output()
-            .await
-            .is_ok()
+        self.availability().await == BackendAvailability::Available
+    }
+
+    async fn availability(&self) -> BackendAvailability {
+        self.availability_probe().await
     }
 
     fn backend_id(&self) -> &'static str {

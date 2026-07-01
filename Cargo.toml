@@ -8,7 +8,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.17.5"
+version = "0.17.6"
 edition = "2024"
 authors = ["Anton Isaiev <totoshko88@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -60,6 +60,12 @@ zeroize = "1.8"
 ring = "0.17"
 argon2 = "0.5"
 hex = "0.4"
+
+# Secret Service (keyring) client used on Linux/BSD only — never compiled on
+# macOS (see rustconn-core target table). default-features off drops the
+# bundled default crypto/runtime selection; we opt into tokio + native_crypto
+# (pure-Rust, no OpenSSL) + tracing explicitly.
+oo7 = { version = "0.6", default-features = false, features = ["tokio", "native_crypto", "tracing"] }
 
 # HTTP client and archive handling (for CLI download in Flatpak)
 # native-tls instead of rustls-tls: minimises aws-lc-sys surface.

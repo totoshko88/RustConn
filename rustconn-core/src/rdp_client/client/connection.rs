@@ -12,7 +12,7 @@ use ironrdp::pdu::gcc::KeyboardType;
 use ironrdp::pdu::rdp::capability_sets::{
     BitmapCodecs, MajorPlatformType, client_codecs_capabilities,
 };
-use ironrdp::pdu::rdp::client_info::{CompressionType, PerformanceFlags, TimezoneInfo};
+use ironrdp::pdu::rdp::client_info::{PerformanceFlags, TimezoneInfo};
 use ironrdp::rdpdr::Rdpdr;
 use ironrdp::rdpsnd::client::Rdpsnd;
 use ironrdp_tokio::TokioFramed;
@@ -438,13 +438,22 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
         performance_flags,
         license_cache: None,
         timezone_info: get_timezone_info(),
-        // Bulk compression: Balanced/Quality use RDP 6.1 (XCRUSH),
-        // Speed mode uses RDP 5.0 (64 KB MPPC) for lower CPU overhead
-        compression_type: Some(match config.performance_mode {
-            crate::models::RdpPerformanceMode::Quality
-            | crate::models::RdpPerformanceMode::Balanced => CompressionType::Rdp61,
-            crate::models::RdpPerformanceMode::Speed => CompressionType::K64,
-        }),
+        // Bulk (MPPC/NCRUSH/XCRUSH) FastPath compression is intentionally
+        // disabled (matches the upstream ironrdp-client default of `None`).
+        //
+        // When enabled, the server sends compressed FastPath updates that keep
+        // their compression history across a Deactivation-Reactivation Sequence
+        // (window resize). ironrdp-session recreates the FastPath processor —
+        // and thus its bulk decompressor — from scratch on reactivation, with
+        // no API to preserve the negotiated history. A fresh decompressor then
+        // desynchronises from the server and the session aborts with a
+        // "no decompressor is configured" / bulk-decompression error (issue #200).
+        //
+        // Graphics are already compressed by RemoteFX (Quality/Balanced) or
+        // RLE/RDP6 bitmap compression (Speed), so the extra bulk layer buys
+        // little bandwidth while breaking every resize. Keep it off until
+        // ironrdp exposes a way to carry the decompressor across reactivation.
+        compression_type: None,
         enable_server_pointer: true,
         // Use hardware pointer - server sends cursor bitmap separately
         // This avoids cursor artifacts in the framebuffer

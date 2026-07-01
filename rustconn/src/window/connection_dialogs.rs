@@ -734,8 +734,30 @@ pub fn show_new_group_dialog_with_parent(
                             | SecretBackendType::MacOsKeychain
                             | SecretBackendType::KeePassXc
                             | SecretBackendType::KdbxFile => {
+                                // macOS uses the Keychain; LibSecretBackend (oo7)
+                                // is not compiled there (R10.1, R10.2).
+                                #[cfg(target_os = "macos")]
+                                let backend = rustconn_core::secret::MacOsKeychainBackend::new();
+                                #[cfg(not(target_os = "macos"))]
                                 let backend =
                                     rustconn_core::secret::LibSecretBackend::new("rustconn");
+                                crate::async_utils::with_runtime(|rt| {
+                                    rt.block_on(async {
+                                        tokio::time::timeout(
+                                            VAULT_RETRIEVE_TIMEOUT,
+                                            backend.retrieve(&lookup_key),
+                                        )
+                                        .await
+                                        .map_err(|_| "Vault retrieve timed out".to_string())?
+                                        .map_err(|e| format!("{e}"))
+                                    })
+                                })?
+                            }
+                            SecretBackendType::EncryptedFile => {
+                                // Application-managed encrypted file: retrieve by
+                                // the flat lookup key, same key scheme as the
+                                // other app-managed backends.
+                                let backend = rustconn_core::secret::EncryptedFileBackend::new();
                                 crate::async_utils::with_runtime(|rt| {
                                     rt.block_on(async {
                                         tokio::time::timeout(

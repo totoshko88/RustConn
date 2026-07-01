@@ -191,6 +191,10 @@ pub struct AppState {
     history_dirty_tx: Option<async_channel::Sender<()>>,
     /// Cached secret backend availability (updated on init and settings change)
     secret_backend_available: Option<bool>,
+    /// Cached fine-grained availability of the *preferred* secret backend.
+    /// Distinguishes a missing client from an unresponsive Secret Service so
+    /// the startup check can surface an accurate, actionable warning (#201).
+    secret_backend_availability: Option<rustconn_core::secret::BackendAvailability>,
     /// Cloud Sync manager for export/import operations
     sync_manager: SyncManager,
     /// Simple Sync deletion tombstones (only populated when Simple Sync is on)
@@ -524,6 +528,7 @@ impl AppState {
             history_dirty: std::cell::Cell::new(false),
             history_dirty_tx: None,
             secret_backend_available: None,
+            secret_backend_availability: None,
             sync_manager,
             tombstones,
             simple_sync_dirty: std::cell::Cell::new(false),
@@ -602,19 +607,46 @@ impl AppState {
     /// if the backend is unresponsive.
     pub fn refresh_secret_backend_cache(&mut self) {
         let secret_manager = self.secret_manager.clone();
-        self.secret_backend_available = Some(
-            with_runtime(|rt| {
-                rt.block_on(async {
-                    tokio::time::timeout(
-                        std::time::Duration::from_secs(5),
-                        secret_manager.is_available(),
-                    )
-                    .await
-                    .unwrap_or(false)
-                })
+        let (available, availability) = with_runtime(|rt| {
+            rt.block_on(async {
+                // Fine-grained availability of the preferred backend, used by
+                // the startup warning to distinguish a missing client from an
+                // unresponsive Secret Service (#201).
+                let availability = tokio::time::timeout(
+                    std::time::Duration::from_secs(5),
+                    secret_manager.primary_availability(),
+                )
+                .await
+                .unwrap_or(rustconn_core::secret::BackendAvailability::ServiceUnavailable);
+                // Whether any backend can store secrets, used to gate
+                // credential resolution.
+                let available = tokio::time::timeout(
+                    std::time::Duration::from_secs(5),
+                    secret_manager.is_available(),
+                )
+                .await
+                .unwrap_or(false);
+                (available, availability)
             })
-            .unwrap_or(false),
-        );
+        })
+        .unwrap_or((
+            false,
+            rustconn_core::secret::BackendAvailability::ServiceUnavailable,
+        ));
+        self.secret_backend_available = Some(available);
+        self.secret_backend_availability = Some(availability);
+    }
+
+    /// Returns the cached fine-grained availability of the preferred secret
+    /// backend, or `None` if it has not been probed yet.
+    ///
+    /// Populated by [`Self::refresh_secret_backend_cache`]; used by the startup
+    /// check to surface an accurate warning when the keyring cannot work.
+    #[must_use]
+    pub fn secret_backend_availability(
+        &self,
+    ) -> Option<rustconn_core::secret::BackendAvailability> {
+        self.secret_backend_availability.clone()
     }
 
     // ========== GTK-Friendly Async Credential Operations ==========
@@ -686,6 +718,53 @@ impl AppState {
             },
             callback,
         );
+    }
+
+    /// Resolves a connection's password synchronously, returning only the
+    /// secret (or `None` when unset/empty).
+    ///
+    /// Shares the exact resolution logic of
+    /// [`Self::resolve_credentials_blocking`] — every `PasswordSource` (Vault,
+    /// Variable, Inherit, Script) and every backend (KeePassXC/KDBX included) —
+    /// so out-of-band consumers such as the SSH jump-host bastion resolver stay
+    /// in lockstep with normal connection login and never diverge on lookup key
+    /// or backend (issue #191).
+    ///
+    /// Performs a blocking vault call; GTK-thread callers MUST NOT hold any
+    /// other `AppState` borrow across it. An empty password resolves to `None`.
+    pub(crate) fn resolve_connection_password_blocking(
+        &self,
+        connection: &Connection,
+    ) -> Option<SecretString> {
+        use rustconn_core::sync::CredentialResolutionResult;
+        use secrecy::ExposeSecret;
+
+        let groups: Vec<ConnectionGroup> = self
+            .connection_manager
+            .list_groups()
+            .iter()
+            .cloned()
+            .cloned()
+            .collect();
+
+        let ctx = CredentialResolutionContext {
+            connection: connection.clone(),
+            groups,
+            kdbx_enabled: self.settings.secrets.kdbx_enabled,
+            kdbx_path: self.settings.secrets.kdbx_path.clone(),
+            kdbx_password: self.settings.secrets.kdbx_password.clone(),
+            kdbx_key_file: self.settings.secrets.kdbx_key_file.clone(),
+            secret_settings: self.settings.secrets.clone(),
+            secret_manager: self.secret_manager.clone(),
+            global_variables: self.settings.global_variables.clone(),
+        };
+
+        match Self::resolve_credentials_blocking(ctx) {
+            Ok(CredentialResolutionResult::Resolved(creds)) => {
+                creds.password.filter(|p| !p.expose_secret().is_empty())
+            }
+            _ => None,
+        }
     }
 
     /// Internal blocking credential resolution (runs in background thread)
@@ -1184,6 +1263,7 @@ impl AppState {
             self.secret_manager.rebuild_from_settings(&settings.secrets);
             // Invalidate cache so next check re-evaluates availability
             self.secret_backend_available = None;
+            self.secret_backend_availability = None;
         }
 
         // Keep the sync manager's settings copy in step (sync_dir, device
