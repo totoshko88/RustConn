@@ -174,21 +174,11 @@ apps:
       - kube-credentials
 
 parts:
-  rust-deps:
-    plugin: rust
-    source: .
-    rust-channel: "1.95"
-    rust-path: []
-    override-build: |
-      # This part only installs the Rust toolchain; actual build is in 'rustconn'.
-      true
-    prime:
-      - -*
-
   rustconn:
     plugin: nil
     source: .
-    after: [rust-deps]
+    build-snaps:
+      - rustup --channel=latest/stable
     build-packages:
       # GTK4/libadwaita/GLib dev files also come from the gnome SDK (added by
       # the `gnome` extension build environment); we keep the distro dev
@@ -256,7 +246,9 @@ parts:
       - -usr/lib/*/libgthread-2.0.so*
       - -usr/lib/*/libepoxy.so*
     override-build: |
-      # Ensure cargo from rust-deps is on PATH
+      # Install the required Rust toolchain via the rustup snap
+      rustup toolchain install 1.95 --profile minimal
+      rustup default 1.95
       export PATH="$HOME/.cargo/bin:$PATH"
       # Pin pango to a single source at link time (issue #198). The gnome
       # extension stages the gnome-46-2404 SDK's libpangoft2-1.0, but the
