@@ -174,10 +174,21 @@ apps:
       - kube-credentials
 
 parts:
+  # Snapcraft 9.0 requires a part named 'rust-deps' when the rust plugin
+  # cannot find 'rustup' at environment-validation time. This no-op part
+  # satisfies the check; the actual toolchain is installed by the rust plugin
+  # in the 'rustconn' part (rust-channel: "1.95").
+  rust-deps:
+    plugin: nil
+    override-build: "true"
+    prime:
+      - -*
+
   rustconn:
     plugin: rust
     source: .
     rust-channel: "1.95"
+    after: [rust-deps]
     build-packages:
       # GTK4/libadwaita/GLib dev files also come from the gnome SDK (added by
       # the `gnome` extension build environment); we keep the distro dev
