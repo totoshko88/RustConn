@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.17.6
+Version:        0.17.7
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -259,6 +259,12 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Thu Jul 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.17.7-0
+- Fixed narrow-window layout — window controls no longer vanish when narrow, the window shrinks smoothly to a measured minimum, non-essential header buttons are shed and the sidebar auto-hides, and the welcome screen reflows its columns instead of wrapping shortcut labels character-by-character (#204)
+- Fixed SSH multi-hop password chain — only one bastion received a password; entry bastions in nested ProxyCommand now get their own per-hop SSH_ASKPASS helper with indexed env vars (#203)
+- Fixed Snap build failing on Launchpad with Snapcraft 9.0 — switched from plugin: rust to plugin: nil with an explicit rustup install in the rust-deps part
+- Dependencies: updated inotify-sys 0.1.6→0.1.7, rand 0.10.1→0.10.2
+
 * Wed Jul 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.17.6-0
 - Fixed RDP sessions still aborting on resize — RustConn no longer requests bulk (MPPC/NCRUSH/XCRUSH) compression at all, matching the ironrdp-client default, so the server never sends compressed FastPath updates that desynchronised across a Deactivation-Reactivation Sequence (#200)
 - Fixed Saving Preferences wiping persisted window/sidebar state — window size/maximized, expanded sidebar groups, and search history are now preserved instead of reset to defaults (#202)

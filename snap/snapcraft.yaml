@@ -1,6 +1,6 @@
 name: rustconn
 base: core24
-version: '0.17.6'
+version: '0.17.7'
 title: RustConn
 summary: Manage remote connections easily
 description: |
@@ -174,10 +174,25 @@ apps:
       - kube-credentials
 
 parts:
+  # Snapcraft 9.0 Rust plugin validates that 'rustup' is available at pull time
+  # BEFORE running override-build. When building on Launchpad (clean container
+  # with no pre-installed Rust toolchain), the validation fails because rustup
+  # isn't on PATH yet. Since we use override-build anyway (to control feature
+  # flags and LTO), just install Rust here and use plugin: nil for the main part.
+  rust-deps:
+    plugin: nil
+    override-pull: |
+      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- \
+        -y --default-toolchain 1.95 --profile minimal
+    build-packages:
+      - curl
+    prime:
+      - -*
+
   rustconn:
-    plugin: rust
+    plugin: nil
     source: .
-    rust-channel: "1.95"
+    after: [rust-deps]
     build-packages:
       # GTK4/libadwaita/GLib dev files also come from the gnome SDK (added by
       # the `gnome` extension build environment); we keep the distro dev
@@ -245,6 +260,8 @@ parts:
       - -usr/lib/*/libgthread-2.0.so*
       - -usr/lib/*/libepoxy.so*
     override-build: |
+      # Ensure cargo/rustc from rust-deps are on PATH
+      export PATH="$HOME/.cargo/bin:$PATH"
       # Pin pango to a single source at link time (issue #198). The gnome
       # extension stages the gnome-46-2404 SDK's libpangoft2-1.0, but the
       # build also has noble's libpango-1.0 in /usr/lib. On arm64 these two

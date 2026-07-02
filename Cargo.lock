@@ -2867,9 +2867,9 @@ dependencies = [
 
 [[package]]
 name = "inotify-sys"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fda9741ca16536952da2ecaa6105c2f4653fa6f0724681df6d2414c4106d0b0"
+checksum = "9ea94e891b3606826e9c998be69ddca42247dad8ad50b1649a5cb7e1c9ae06fd"
 dependencies = [
  "libc",
 ]
@@ -4471,7 +4471,7 @@ dependencies = [
  "pkcs8 0.11.0-rc.11",
  "primefield",
  "primeorder",
- "rand 0.10.1",
+ "rand 0.10.2",
  "rand_core 0.10.1",
  "rc2",
  "rfc6979",
@@ -4550,7 +4550,7 @@ dependencies = [
  "picky-asn1",
  "picky-asn1-der",
  "picky-asn1-x509",
- "rand 0.10.1",
+ "rand 0.10.2",
  "rand_core 0.10.1",
  "serde",
  "sha1 0.11.0",
@@ -4909,9 +4909,9 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.10.1"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2e8e8bcc7961af1fdac401278c6a831614941f6164ee3bf4ce61b7edb162207"
+checksum = "c7f5fa3a058cd35567ef9bfa5e75732bee0f9e4c55fa90477bef2dfcdbc4be80"
 dependencies = [
  "chacha20",
  "getrandom 0.4.3",
@@ -5232,7 +5232,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.17.6"
+version = "0.17.7"
 dependencies = [
  "async-channel",
  "chrono",
@@ -5267,7 +5267,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.17.6"
+version = "0.17.7"
 dependencies = [
  "chrono",
  "clap",
@@ -5289,7 +5289,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.17.6"
+version = "0.17.7"
 dependencies = [
  "aes 0.9.1",
  "ar",
@@ -5345,7 +5345,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-pty-sys"
-version = "0.17.6"
+version = "0.17.7"
 dependencies = [
  "libc",
 ]
@@ -5970,7 +5970,7 @@ dependencies = [
  "pkcs8 0.11.0-rc.11",
  "primefield",
  "primeorder",
- "rand 0.10.1",
+ "rand 0.10.2",
  "rand_core 0.10.1",
  "rsa 0.10.0-rc.17",
  "rustcrypto-ff",

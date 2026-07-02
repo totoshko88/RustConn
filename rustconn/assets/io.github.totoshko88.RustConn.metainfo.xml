@@ -140,6 +140,16 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.17.7" date="2026-07-02">
+      <description>
+        <p>Version 0.17.7 — adaptive narrow-window layout, SSH multi-hop password fix, Snap build fix:</p>
+        <ul>
+          <li>Window controls no longer vanish on narrow widths; the window now shrinks smoothly to a measured minimum, sheds non-essential header buttons and auto-hides the sidebar as it narrows, and the welcome screen reflows its columns instead of wrapping shortcut labels character-by-character (issue #204)</li>
+          <li>SSH multi-hop password chain: entry bastions in nested ProxyCommand now receive their own per-hop SSH_ASKPASS helper, fixing double-bastion password chains that crashed instantly (issue #203)</li>
+          <li>Snap build fixed for Snapcraft 9.0 on Launchpad — switched to plugin: nil with explicit rustup install, bypassing the broken environment validation</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.17.6" date="2026-07-01">
       <description>
         <p>Version 0.17.6 — RDP resize fix, resilient secret storage, and window state:</p>

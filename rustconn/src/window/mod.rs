@@ -159,8 +159,12 @@ impl MainWindow {
             .title("RustConn")
             .default_width(1200)
             .default_height(800)
-            .width_request(800)
-            .height_request(500)
+            // Initial minimum-width floor; refined to the exact narrow-tier
+            // header width (incl. window controls) by the runtime measurement in
+            // the connect_map handler below (#204). With breakpoints present,
+            // AdwApplicationWindow derives its minimum from width-request.
+            .width_request(400)
+            .height_request(400)
             .icon_name("io.github.totoshko88.RustConn")
             .build();
 
@@ -234,7 +238,12 @@ impl MainWindow {
         };
         overlay_split_view.set_max_sidebar_width(f64::from(sidebar_width.clamp(260, 500)));
         overlay_split_view.set_min_sidebar_width(260.0);
-        overlay_split_view.set_sidebar_width_fraction(0.27);
+        // High fraction so the configured sidebar width (max-sidebar-width) is the
+        // effective width whenever the sidebar is shown, instead of being capped
+        // below the setting by a small proportion (#204: "sidebar width not
+        // adjustable"). The sidebar is only shown at ≥ 820 sp, where
+        // 0.7 × width already exceeds the 500 px maximum, so max wins.
+        overlay_split_view.set_sidebar_width_fraction(0.7);
         overlay_split_view.set_enable_show_gesture(true);
         overlay_split_view.set_enable_hide_gesture(true);
         overlay_split_view.set_pin_sidebar(true);
@@ -549,54 +558,136 @@ impl MainWindow {
 
         window.set_content(Some(tab_overview));
 
-        // Add responsive breakpoint: collapse sidebar to overlay when window is narrow
-        // Uses sp units to accommodate GNOME Large Text accessibility setting
-        let breakpoint_condition = adw::BreakpointCondition::new_length(
-            adw::BreakpointConditionLengthType::MaxWidth,
-            400.0,
-            adw::LengthUnit::Sp,
-        );
-        let breakpoint = adw::Breakpoint::new(breakpoint_condition);
+        // Adaptive layout breakpoints (#204).
+        //
+        // CRITICAL: AdwApplicationWindow applies only ONE breakpoint at a time —
+        // the last-added whose condition currently holds — NOT a cumulative
+        // stack. So each tier must repeat every setter of the wider tiers, and
+        // tiers must be added widest→narrowest so the narrowest matching one wins
+        // (e.g. at 500 sp both tiers match, the narrow tier added last applies).
+        //
+        // Why these two things move together:
+        // - The header packs many fixed 44×44 icon buttons whose combined minimum
+        //   otherwise squeezes the GtkWindowControls (min/max/close) off the end.
+        // - The sidebar's own minimum (~368 px — its filter/bulk revealers demand
+        //   width even while hidden) pins the window wide unless it is overlaid
+        //   first, so auto-hide can never engage.
+        //
+        // Thresholds are chosen so each tier's resulting minimum width is BELOW
+        // the next (narrower) tier's threshold — otherwise the window's minimum
+        // plateaus at a tier boundary and a single drag "sticks" there, needing
+        // a second drag to continue (the reported jank). With the full header ≈
+        // 794 px:
+        // - medium ≤ 820sp: collapse + hide the sidebar (F9-style) and hide the
+        //   split-view buttons, Delete and New Group → header ≈ 578 px (< 600).
+        // - narrow ≤ 600sp: everything above, plus hide Quick Connect, Settings
+        //   and the Shell pill → header ≈ 390 px, leaving only Sidebar toggle,
+        //   New Connection and the menu beside the window controls.
+        // The sidebar is hidden (show-sidebar = false), not shown as an overlay,
+        // when collapsed; F9 / the edge gesture still reveals it as an overlay.
+        // Growing the window past a threshold restores the hidden setters.
         let collapsed_val = true.to_value();
-        let unpin_val = false.to_value();
-        breakpoint.add_setter(&overlay_split_view, "collapsed", Some(&collapsed_val));
-        breakpoint.add_setter(&overlay_split_view, "pin-sidebar", Some(&unpin_val));
-        window.add_breakpoint(breakpoint);
+        let hide_flag = false.to_value();
+        // The centre title ("RustConn") is hidden in both tiers so the freed
+        // space guarantees room for the window controls at the minimum width.
+        let title_widget = header_bar.title_widget();
 
-        // Breakpoint 600sp: hide split view buttons on medium-width windows
-        let bp_600_condition = adw::BreakpointCondition::new_length(
+        let bp_medium = adw::Breakpoint::new(adw::BreakpointCondition::new_length(
+            adw::BreakpointConditionLengthType::MaxWidth,
+            820.0,
+            adw::LengthUnit::Sp,
+        ));
+        bp_medium.add_setter(&overlay_split_view, "collapsed", Some(&collapsed_val));
+        bp_medium.add_setter(&overlay_split_view, "pin-sidebar", Some(&hide_flag));
+        bp_medium.add_setter(&overlay_split_view, "show-sidebar", Some(&hide_flag));
+        if let Some(title) = title_widget.as_ref() {
+            bp_medium.add_setter(title, "visible", Some(&hide_flag));
+        }
+        for action in [
+            "win.split-vertical",
+            "win.split-horizontal",
+            "win.delete-connection",
+            "win.new-group",
+        ] {
+            if let Some(btn) = Self::header_button(&header_bar, action) {
+                bp_medium.add_setter(&btn, "visible", Some(&hide_flag));
+            }
+        }
+        window.add_breakpoint(bp_medium);
+
+        let bp_narrow = adw::Breakpoint::new(adw::BreakpointCondition::new_length(
             adw::BreakpointConditionLengthType::MaxWidth,
             600.0,
             adw::LengthUnit::Sp,
-        );
-        let bp_600 = adw::Breakpoint::new(bp_600_condition);
-        // Find split buttons in header bar and hide them at narrow widths
-        // The split buttons are the last two pack_end children
-        // We hide them via visible property
-        if let Some(split_h) = header_bar
-            .observe_children()
-            .into_iter()
-            .filter_map(|obj| obj.ok())
-            .filter_map(|obj| obj.downcast::<gtk4::Button>().ok())
-            .find(|btn| {
-                btn.action_name()
-                    .is_some_and(|a| a == "win.split-horizontal")
-            })
-        {
-            let hidden = false.to_value();
-            bp_600.add_setter(&split_h, "visible", Some(&hidden));
+        ));
+        bp_narrow.add_setter(&overlay_split_view, "collapsed", Some(&collapsed_val));
+        bp_narrow.add_setter(&overlay_split_view, "pin-sidebar", Some(&hide_flag));
+        bp_narrow.add_setter(&overlay_split_view, "show-sidebar", Some(&hide_flag));
+        if let Some(title) = title_widget.as_ref() {
+            bp_narrow.add_setter(title, "visible", Some(&hide_flag));
         }
-        if let Some(split_v) = header_bar
-            .observe_children()
-            .into_iter()
-            .filter_map(|obj| obj.ok())
-            .filter_map(|obj| obj.downcast::<gtk4::Button>().ok())
-            .find(|btn| btn.action_name().is_some_and(|a| a == "win.split-vertical"))
-        {
-            let hidden = false.to_value();
-            bp_600.add_setter(&split_v, "visible", Some(&hidden));
+        for action in [
+            "win.split-vertical",
+            "win.split-horizontal",
+            "win.delete-connection",
+            "win.new-group",
+            "win.quick-connect",
+            "win.settings",
+            "win.local-shell",
+        ] {
+            if let Some(btn) = Self::header_button(&header_bar, action) {
+                bp_narrow.add_setter(&btn, "visible", Some(&hide_flag));
+            }
         }
-        window.add_breakpoint(bp_600);
+        window.add_breakpoint(bp_narrow);
+
+        // Pin the window's minimum width to the *measured* narrow-tier layout so
+        // the window controls (min/max/close) are never clipped, regardless of
+        // theme, font, locale or the compositor's decoration layout (#204).
+        // Guessing this from button counts proved unreliable, so once the window
+        // is mapped (and the window controls are realized) we temporarily hide
+        // exactly what the narrow tier hides, measure the real minimum width of
+        // the content, restore visibility, and set width-request to it. Runs
+        // once. `AdwApplicationWindow` derives its minimum from width-request
+        // when breakpoints are present, so this becomes the true floor.
+        let narrow_hidden: Vec<gtk4::Widget> = {
+            let mut widgets = Vec::new();
+            if let Some(title) = header_bar.title_widget() {
+                widgets.push(title);
+            }
+            for action in [
+                "win.split-vertical",
+                "win.split-horizontal",
+                "win.delete-connection",
+                "win.new-group",
+                "win.quick-connect",
+                "win.settings",
+                "win.local-shell",
+            ] {
+                if let Some(btn) = Self::header_button(&header_bar, action) {
+                    widgets.push(btn.upcast());
+                }
+            }
+            widgets
+        };
+        let overview_for_measure = tab_overview.clone();
+        let measured = std::cell::Cell::new(false);
+        window.connect_map(move |win| {
+            if measured.replace(true) {
+                return;
+            }
+            for widget in &narrow_hidden {
+                widget.set_visible(false);
+            }
+            let (min_width, _, _, _) =
+                overview_for_measure.measure(gtk4::Orientation::Horizontal, -1);
+            for widget in &narrow_hidden {
+                widget.set_visible(true);
+            }
+            // Small margin absorbs sub-pixel rounding; floor guards a degenerate
+            // zero measurement before first layout.
+            win.set_width_request((min_width + 4).max(360));
+        });
 
         // Create external window manager
         let external_window_manager = Rc::new(ExternalWindowManager::new());
@@ -2626,6 +2717,42 @@ impl MainWindow {
     #[must_use]
     pub const fn gtk_window(&self) -> &adw::ApplicationWindow {
         &self.window
+    }
+
+    /// Finds a header-bar button by its `win.*` action name, if present.
+    ///
+    /// Used by the adaptive breakpoints (#204) to shed non-essential buttons on
+    /// narrow widths. `AdwHeaderBar` nests packed widgets inside internal boxes,
+    /// so `observe_children()` does not expose them — this walks the whole
+    /// descendant tree instead. Window controls and the title carry no matching
+    /// `win.*` action, so they are skipped naturally.
+    fn header_button(header_bar: &adw::HeaderBar, action: &str) -> Option<gtk4::Button> {
+        let mut child = header_bar.first_child();
+        while let Some(widget) = child {
+            if let Some(found) = Self::button_with_action(&widget, action) {
+                return Some(found);
+            }
+            child = widget.next_sibling();
+        }
+        None
+    }
+
+    /// Recursively searches `widget` and its descendants for a `gtk4::Button`
+    /// whose action name equals `action`.
+    fn button_with_action(widget: &gtk4::Widget, action: &str) -> Option<gtk4::Button> {
+        if let Some(btn) = widget.downcast_ref::<gtk4::Button>()
+            && btn.action_name().is_some_and(|a| a == action)
+        {
+            return Some(btn.clone());
+        }
+        let mut child = widget.first_child();
+        while let Some(descendant) = child {
+            if let Some(found) = Self::button_with_action(&descendant, action) {
+                return Some(found);
+            }
+            child = descendant.next_sibling();
+        }
+        None
     }
 
     /// Registers the application icon in the icon theme
