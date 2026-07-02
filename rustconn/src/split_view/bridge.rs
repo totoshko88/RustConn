@@ -1543,94 +1543,66 @@ impl SplitViewBridge {
         content.set_margin_start(24);
         content.set_margin_end(24);
 
-        // Quick actions as buttons
-        let actions = GtkBox::new(Orientation::Horizontal, 12);
-        actions.set_halign(gtk4::Align::Center);
+        // Quick actions in a FlowBox so the three pills reflow to fewer rows as
+        // the window narrows instead of a fixed horizontal row pinning the
+        // welcome (and therefore the whole window) to their combined width
+        // (#204). A flow box reports a single-button minimum width, letting the
+        // window shrink down to what the header bar needs.
+        let actions = gtk4::FlowBox::builder()
+            .max_children_per_line(3)
+            .min_children_per_line(1)
+            .selection_mode(gtk4::SelectionMode::None)
+            .homogeneous(false)
+            .column_spacing(12)
+            .row_spacing(12)
+            .halign(gtk4::Align::Center)
+            .build();
 
         let new_conn_btn = gtk4::Button::builder()
             .label(i18n("New Connection"))
             .css_classes(["suggested-action", "pill"])
             .action_name("win.new-connection")
             .build();
-        actions.append(&new_conn_btn);
+        actions.insert(&new_conn_btn, -1);
 
         let quick_btn = gtk4::Button::builder()
             .label(i18n("Quick Connect"))
             .css_classes(["pill"])
             .action_name("win.quick-connect")
             .build();
-        actions.append(&quick_btn);
+        actions.insert(&quick_btn, -1);
 
         let import_btn = gtk4::Button::builder()
             .label(i18n("Import"))
             .css_classes(["pill"])
             .action_name("win.import")
             .build();
-        actions.append(&import_btn);
+        actions.insert(&import_btn, -1);
 
         content.append(&actions);
 
-        // Build the three column groups
-        let col1 = Self::build_welcome_features_column();
-        let col2 = Self::build_welcome_shortcuts_column();
-        let col3 = Self::build_welcome_extras_column();
-
-        // Three-column layout (wide mode)
-        let columns = GtkBox::new(Orientation::Horizontal, 18);
-        columns.set_halign(gtk4::Align::Fill);
-        columns.set_hexpand(true);
-        columns.set_homogeneous(true);
-        columns.set_margin_top(24);
-        columns.append(&col1);
-        columns.append(&col2);
-        columns.append(&col3);
-
-        // Single-column layout (narrow mode)
-        let narrow = GtkBox::new(Orientation::Vertical, 12);
-        narrow.set_halign(gtk4::Align::Fill);
-        narrow.set_hexpand(true);
-        narrow.set_margin_top(24);
-        narrow.set_visible(false);
-
-        let narrow_col1 = Self::build_welcome_features_column();
-        let narrow_col2 = Self::build_welcome_shortcuts_column();
-        let narrow_col3 = Self::build_welcome_extras_column();
-        narrow.append(&narrow_col1);
-        narrow.append(&narrow_col2);
-        narrow.append(&narrow_col3);
-
+        // Feature / shortcut / extras groups in a GtkFlowBox: three columns when
+        // wide, reflowing to two then one as the window narrows, scrolling
+        // vertically inside AdwStatusPage's own scrolled window (#204). FlowBox
+        // reports a one-column minimum width, so it never pins the window open
+        // (unlike a fixed horizontal row), and it has no "child must fit"
+        // constraint (unlike AdwBreakpointBin). Shortcut combos are pinned to one
+        // line (see build_welcome_shortcuts_column) so nothing wraps by character.
+        let columns = gtk4::FlowBox::builder()
+            .max_children_per_line(3)
+            .min_children_per_line(1)
+            .selection_mode(gtk4::SelectionMode::None)
+            .homogeneous(true)
+            .column_spacing(18)
+            .row_spacing(18)
+            .margin_top(24)
+            .hexpand(true)
+            .halign(gtk4::Align::Fill)
+            .build();
+        columns.insert(&Self::build_welcome_features_column(), -1);
+        columns.insert(&Self::build_welcome_shortcuts_column(), -1);
+        columns.insert(&Self::build_welcome_extras_column(), -1);
         content.append(&columns);
-        content.append(&narrow);
-
-        // Switch between wide/narrow based on available width
-        let columns_ref = columns.clone();
-        let narrow_ref = narrow.clone();
-        content.connect_map(move |widget| {
-            let columns_inner = columns_ref.clone();
-            let narrow_inner = narrow_ref.clone();
-            widget.connect_notify_local(Some("width-request"), move |w, _| {
-                let width = w.width();
-                let use_narrow = width > 0 && width < 600;
-                columns_inner.set_visible(!use_narrow);
-                narrow_inner.set_visible(use_narrow);
-            });
-        });
-
-        // Also check on size-allocate for responsive switching
-        let columns_ref2 = columns;
-        let narrow_ref2 = narrow;
-        content.connect_realize(move |widget| {
-            let columns_inner = columns_ref2.clone();
-            let narrow_inner = narrow_ref2.clone();
-            let surface = widget.native().and_then(|n| n.surface());
-            if let Some(surface) = surface {
-                surface.connect_layout(move |_, w, _| {
-                    let use_narrow = w > 0 && w < 700;
-                    columns_inner.set_visible(!use_narrow);
-                    narrow_inner.set_visible(use_narrow);
-                });
-            }
-        });
 
         // Hint at the bottom
         let hint = gtk4::Label::builder()
@@ -1749,6 +1721,9 @@ impl SplitViewBridge {
             let combo = Self::format_shortcut(shortcut);
             let label = gtk4::Label::builder()
                 .label(&combo)
+                // A key combo must never wrap character-by-character (#204);
+                // keep it on one line and let the row title take the slack.
+                .wrap(false)
                 .css_classes(["dim-label", "monospace"])
                 .build();
             row.add_suffix(&label);

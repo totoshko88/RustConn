@@ -1,3 +1,20 @@
+rustconn (0.17.7-1) unstable; urgency=medium
+
+  * Fixed narrow-window layout — window controls no longer vanish when the
+    window is narrow; the window shrinks smoothly to a measured minimum via a
+    two-tier adaptive breakpoint cascade that sheds non-essential header buttons
+    and auto-hides the sidebar; the welcome screen reflows its columns in a
+    FlowBox instead of wrapping shortcut labels character-by-character (#204)
+  * Fixed SSH multi-hop password chain — only one bastion received a password;
+    entry bastions in nested ProxyCommand now get their own per-hop SSH_ASKPASS
+    helper with indexed env vars (_RC_JH_PW, _RC_JH_PW_1, …) (#203)
+  * Fixed Snap build failing on Launchpad with Snapcraft 9.0 — switched from
+    plugin: rust (whose environment validation requires rustup before parts run)
+    to plugin: nil with an explicit rustup install in the rust-deps part
+  * Dependencies: updated inotify-sys 0.1.6→0.1.7, rand 0.10.1→0.10.2
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Thu, 02 Jul 2026 00:00:00 +0000
+
 rustconn (0.17.6-1) unstable; urgency=medium
 
   * Fixed RDP sessions still aborting on resize — RustConn no longer requests

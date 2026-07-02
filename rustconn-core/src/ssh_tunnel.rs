@@ -605,9 +605,50 @@ pub fn build_nested_proxy_command(
     known_hosts: Option<&std::path::Path>,
     accept_new_host_keys: bool,
 ) -> String {
+    build_nested_proxy_command_with_askpass(
+        hops,
+        identity_file,
+        known_hosts,
+        accept_new_host_keys,
+        &[],
+    )
+}
+
+/// Multi-hop variant of [`build_nested_proxy_command`] with per-hop askpass.
+///
+/// Each hop in `hops` can optionally receive its own `SSH_ASKPASS` helper for
+/// password authentication without a controlling TTY (issue #203 — multi-bastion
+/// password chains).
+///
+/// `askpass_scripts` is index-aligned with `hops`: `askpass_scripts[i]` is the
+/// askpass helper path for `hops[i]`. If the slice is shorter than `hops` or
+/// the entry is `None`, that hop gets no askpass wiring (key/agent auth).
+///
+/// The env-var carrying each hop's password is `_RC_JH_PW_<depth>` where
+/// `depth` is the hop's absolute index in the original chain (passed through
+/// from the caller). The scripts themselves only contain the var name — the
+/// password value rides in the spawned process's environment.
+///
+/// # Panics
+/// Panics in debug builds if `hops` is empty.
+#[must_use]
+pub fn build_nested_proxy_command_with_askpass(
+    hops: &[&str],
+    identity_file: Option<&str>,
+    known_hosts: Option<&std::path::Path>,
+    accept_new_host_keys: bool,
+    askpass_scripts: &[Option<&std::path::Path>],
+) -> String {
     debug_assert!(!hops.is_empty(), "build_nested_proxy_command needs >=1 hop");
 
-    let mut parts = vec!["ssh".to_string(), "-W".to_string(), "%h:%p".to_string()];
+    let mut parts: Vec<String> = Vec::new();
+
+    // Askpass prefix for THIS hop (hops[0]).
+    if let Some(Some(script)) = askpass_scripts.first() {
+        parts.extend(askpass_proxy_prefix(script));
+    }
+
+    parts.extend(["ssh".to_string(), "-W".to_string(), "%h:%p".to_string()]);
 
     if accept_new_host_keys {
         parts.push("-o".to_string());
@@ -627,11 +668,17 @@ pub fn build_nested_proxy_command(
     // Reach the deeper hops via a nested ProxyCommand so they inherit the same
     // identity/known_hosts. `-J` here would silently drop them.
     if hops.len() > 1 {
-        let inner = build_nested_proxy_command(
+        let inner_askpass = if askpass_scripts.len() > 1 {
+            &askpass_scripts[1..]
+        } else {
+            &[]
+        };
+        let inner = build_nested_proxy_command_with_askpass(
             &hops[1..],
             identity_file,
             known_hosts,
             accept_new_host_keys,
+            inner_askpass,
         );
         parts.push("-o".to_string());
         parts.push(format!("ProxyCommand={}", shell_single_quote(&inner)));
@@ -665,6 +712,20 @@ pub fn askpass_proxy_prefix(askpass_script: &std::path::Path) -> Vec<String> {
         format!("SSH_ASKPASS={}", askpass_script.display()),
         "SSH_ASKPASS_REQUIRE=force".to_string(),
     ]
+}
+
+/// Returns the env-var name carrying the `hop_index`-th bastion password.
+///
+/// In a multi-hop chain (issue #203), index 0 uses the legacy `_RC_JH_PW` name
+/// for backward compatibility with single-bastion setups; deeper hops use
+/// `_RC_JH_PW_1`, `_RC_JH_PW_2`, etc.
+#[must_use]
+pub fn jump_host_pw_env_name(hop_index: usize) -> String {
+    if hop_index == 0 {
+        "_RC_JH_PW".to_string()
+    } else {
+        format!("_RC_JH_PW_{hop_index}")
+    }
 }
 
 #[cfg(test)]
@@ -867,6 +928,64 @@ mod tests {
         assert!(
             askpass_pos < ssh_pos,
             "askpass env prefix must come before `ssh -W`"
+        );
+    }
+
+    #[test]
+    fn test_jump_host_pw_env_name_indices() {
+        // Issue #203: hop 0 keeps the legacy name for single-bastion backward
+        // compatibility; deeper hops get an indexed suffix.
+        assert_eq!(jump_host_pw_env_name(0), "_RC_JH_PW");
+        assert_eq!(jump_host_pw_env_name(1), "_RC_JH_PW_1");
+        assert_eq!(jump_host_pw_env_name(2), "_RC_JH_PW_2");
+    }
+
+    #[test]
+    fn test_nested_askpass_empty_scripts_matches_plain() {
+        // With no askpass scripts, the with_askpass variant must be byte-for-byte
+        // identical to the plain builder (backward compatibility).
+        let plain = build_nested_proxy_command(&["near", "far"], None, None, false);
+        let with =
+            build_nested_proxy_command_with_askpass(&["near", "far"], None, None, false, &[]);
+        assert_eq!(plain, with);
+    }
+
+    #[test]
+    fn test_nested_askpass_wires_outer_hop() {
+        // Issue #203: a single askpass script for hops[0] prefixes the OUTER ssh
+        // with the env-assignment wiring, without touching the inner hop.
+        let script = std::path::Path::new("/run/user/1000/rustconn-jh-askpass.sh");
+        let cmd = build_nested_proxy_command_with_askpass(
+            &["near", "far"],
+            None,
+            None,
+            false,
+            &[Some(script), None],
+        );
+        assert_eq!(
+            cmd,
+            "env SSH_ASKPASS=/run/user/1000/rustconn-jh-askpass.sh SSH_ASKPASS_REQUIRE=force \
+             ssh -W %h:%p -o ProxyCommand='ssh -W %h:%p far' near"
+        );
+    }
+
+    #[test]
+    fn test_nested_askpass_wires_inner_hop() {
+        // The deeper hop's askpass must land inside the nested ProxyCommand only,
+        // so JUMP1 (the entry bastion) authenticates with its own password
+        // (issue #203: only-one-bastion-gets-a-password regression).
+        let inner = std::path::Path::new("/run/user/1000/rustconn-jh-askpass-1.sh");
+        let cmd = build_nested_proxy_command_with_askpass(
+            &["near", "far"],
+            None,
+            None,
+            false,
+            &[None, Some(inner)],
+        );
+        assert_eq!(
+            cmd,
+            "ssh -W %h:%p -o ProxyCommand='env SSH_ASKPASS=/run/user/1000/rustconn-jh-askpass-1.sh \
+             SSH_ASKPASS_REQUIRE=force ssh -W %h:%p far' near"
         );
     }
 }

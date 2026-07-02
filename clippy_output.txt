@@ -1,0 +1,29 @@
+warning: first doc comment paragraph is too long
+   --> rustconn-core/src/ssh_tunnel.rs:617:1
+    |
+617 | / /// Like [`build_nested_proxy_command`] but each hop in `hops` can optionally
+618 | | /// receive its own `SSH_ASKPASS` helper for password authentication without a
+619 | | /// controlling TTY (issue #203 — multi-bastion password chains).
+620 | | ///
+621 | | /// `askpass_scripts` is index-aligned with `hops`: `askpass_scripts[i]` is the
+    | |_^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_long_first_doc_paragraph
+    = note: `-W clippy::too-long-first-doc-paragraph` implied by `-W clippy::nursery`
+    = help: to override `-W clippy::nursery` add `#[allow(clippy::too_long_first_doc_paragraph)]`
+
+warning: first doc comment paragraph is too long
+   --> rustconn-core/src/ssh_tunnel.rs:715:1
+    |
+715 | / /// Returns the environment variable name for the `hop_index`-th bastion password
+716 | | /// in a multi-hop chain (issue #203). Index 0 uses the legacy `_RC_JH_PW` name
+717 | | /// for backward compatibility with single-bastion setups; deeper hops use
+718 | | /// `_RC_JH_PW_1`, `_RC_JH_PW_2`, etc.
+    | |_^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#too_long_first_doc_paragraph
+
+warning: `rustconn-core` (lib) generated 2 warnings
+warning: `rustconn-core` (lib test) generated 2 warnings (2 duplicates)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.19s
+EXIT:0
