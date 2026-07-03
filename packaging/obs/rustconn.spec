@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.17.8
+Version:        0.17.9
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -259,6 +259,13 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Fri Jul 03 2026 Anton Isaiev <totoshko88@gmail.com> - 0.17.9-0
+- Fixed SSH multi-hop password chains still crashing when a bastion's host key is unknown — every hop authenticating via forced SSH_ASKPASS now sets StrictHostKeyChecking=accept-new, so a first-seen host-key prompt is no longer routed to the password helper; a changed key is still rejected, preserving MITM protection (#203)
+- Fixed the embedded RDP first frame being blurry and never sharpening — the desktop is re-requested at the drawing area's real size over MS-RDPEDISP once layout settles, so the first real frame arrives at a 1:1 pixel map (#206)
+- Fixed the embedded RDP initial snap causing a visible connect to reconnect flicker (and occasional connection resets) — the snap now runs only when the DisplayControlReady event confirms the channel is negotiated and resizes smoothly over MS-RDPEDISP; it is never forced on a timer, so a slow server no longer triggers a full reconnect. If the server never negotiates Display Control the frame is simply scaled to fit (#206)
+- Fixed a stale seam/line left on the embedded RDP screen after a resolution change — the client now sends a full-desktop Refresh Rect PDU on every resize so the server repaints the whole screen instead of leaving an untouched strip with its old fill (#206)
+- Fixed over-conservative embedded RDP resolution rounding — dimensions are rounded to the minimum the protocol requires (both forced even) and clamped to 7680x4320, so a resize on a >4K display is no longer silently rejected
+
 * Fri Jul 03 2026 Anton Isaiev <totoshko88@gmail.com> - 0.17.8-0
 - Fixed nested groups losing their parent when importing an Asbru-CM config with three or more group levels — the topological group sort now tracks already-sorted IDs in a dedicated set instead of a map populated later, so arbitrarily deep hierarchies are preserved deterministically on every import (#205)
 - Fixed a too-large minimum window width in some locales (notably German) that prevented tiling or resizing the window narrow — the runtime width measurement now collapses the sidebar first, as the narrow layout tier does, so localized sidebar labels no longer inflate the minimum (#204)

@@ -86,7 +86,18 @@ impl super::EmbeddedRdpWidget {
                         let css_buf_h = f64::from(buf_height) / effective_scale;
                         let scale_x = f64::from(width) / css_buf_w;
                         let scale_y = f64::from(height) / css_buf_h;
-                        let scale = scale_x.min(scale_y);
+                        // Within the match slack of the drawing area (the ≤1px
+                        // even-rounding residual): blit 1:1 for a sharp border instead
+                        // of a sub-pixel rescale. Larger mismatches (a resize in flight)
+                        // still scale-to-fit with aspect preserved.
+                        let slack = f64::from(super::DESKTOP_MATCH_SLACK_PX);
+                        let scale = if (css_buf_w - f64::from(width)).abs() <= slack
+                            && (css_buf_h - f64::from(height)).abs() <= slack
+                        {
+                            1.0
+                        } else {
+                            scale_x.min(scale_y)
+                        };
 
                         // Center the image
                         let offset_x = css_buf_w.mul_add(-scale, f64::from(width)) / 2.0;
@@ -146,7 +157,18 @@ impl super::EmbeddedRdpWidget {
                         let css_buf_h = f64::from(buf_height) / effective_scale;
                         let scale_x = f64::from(width) / css_buf_w;
                         let scale_y = f64::from(height) / css_buf_h;
-                        let scale = scale_x.min(scale_y);
+                        // Within the match slack of the drawing area (the ≤1px
+                        // even-rounding residual): blit 1:1 for a sharp border instead
+                        // of a sub-pixel rescale. Larger mismatches (a resize in flight)
+                        // still scale-to-fit with aspect preserved.
+                        let slack = f64::from(super::DESKTOP_MATCH_SLACK_PX);
+                        let scale = if (css_buf_w - f64::from(width)).abs() <= slack
+                            && (css_buf_h - f64::from(height)).abs() <= slack
+                        {
+                            1.0
+                        } else {
+                            scale_x.min(scale_y)
+                        };
 
                         let offset_x = css_buf_w.mul_add(-scale, f64::from(width)) / 2.0;
                         let offset_y = css_buf_h.mul_add(-scale, f64::from(height)) / 2.0;

@@ -499,6 +499,16 @@ fn build_ssh_command_args(
             proxy_parts.push("-W".to_string());
             proxy_parts.push("%h:%p".to_string());
 
+            // First hop reached via forced askpass (its own password, no TTY)
+            // must accept a first-seen host key non-interactively: otherwise the
+            // "yes/no/[fingerprint]" prompt is routed to the askpass helper,
+            // which answers with the PASSWORD and loops until the bastion drops
+            // the connection ("Connection closed by UNKNOWN port 65535", #203).
+            if askpass_script.is_some() {
+                proxy_parts.push("-o".to_string());
+                proxy_parts.push("StrictHostKeyChecking=accept-new".to_string());
+            }
+
             // Pass identity file to jump host if we have one
             if let Some(pos) = args.iter().position(|a| a == "-i")
                 && let Some(key_path) = args.get(pos + 1)

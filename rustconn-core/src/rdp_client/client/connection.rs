@@ -198,9 +198,18 @@ pub async fn establish_connection(
     // ironrdp 0.16: DisplayControlClient::new takes a capabilities callback. We send the
     // monitor layout on demand via ActiveStage::encode_resize, so nothing is emitted when
     // capabilities arrive — return an empty message set.
+    let dc_ready_tx = event_tx.clone();
     let drdynvc = DrdynvcClient::new()
         .with_dynamic_channel(ironrdp::displaycontrol::client::DisplayControlClient::new(
-            |_caps| Ok(Vec::new()),
+            move |_caps| {
+                // Capabilities have arrived → the Display Control channel is
+                // ready for MS-RDPEDISP resize. Signal the GUI so the initial
+                // "snap to settled size" goes over Display Control instead of a
+                // premature reconnect. No monitor layout is emitted here — it is
+                // sent on demand via ActiveStage::encode_resize.
+                let _ = dc_ready_tx.send(RdpClientEvent::DisplayControlReady);
+                Ok(Vec::new())
+            },
         ))
         .with_dynamic_channel(EchoClient::new());
     connector.static_channels.insert(drdynvc);

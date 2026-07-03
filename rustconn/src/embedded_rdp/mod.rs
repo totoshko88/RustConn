@@ -85,6 +85,48 @@ const RUN_DIALOG_AUTOTYPE_DELAY_MS: u32 = 30;
 #[cfg(feature = "rdp-embedded")]
 const RUN_DIALOG_OPEN_DELAY_MS: u32 = 300;
 
+/// Pixel slack for treating a framebuffer and the drawing area as the same size.
+///
+/// Absorbs the ≤1 px even-rounding residual from [`round_rdp_desktop`] plus
+/// sub-pixel scale-factor rounding. Applied loosely — device pixels in the
+/// post-connect snap check, CSS pixels in the 1:1 blit — the exact unit is
+/// immaterial at this magnitude.
+const DESKTOP_MATCH_SLACK_PX: u32 = 4;
+
+/// RDP desktop resolution ceiling in device pixels (matches the initial-connect
+/// clamp). Stays under the MS-RDPEDISP 8192 px hard limit: a server rejects a
+/// `DISPLAYCONTROL_MONITOR_LAYOUT` whose width or height exceeds 8192.
+#[cfg(feature = "rdp-embedded")]
+const RDP_MAX_DESKTOP_W: u32 = 7680;
+/// Height counterpart of [`RDP_MAX_DESKTOP_W`].
+#[cfg(feature = "rdp-embedded")]
+const RDP_MAX_DESKTOP_H: u32 = 4320;
+
+/// Rounds a measured device-pixel desktop size into a valid RDP resize request.
+///
+/// Both dimensions are forced even and clamped to [`RDP_MAX_DESKTOP_W`] ×
+/// [`RDP_MAX_DESKTOP_H`]. MS-RDPEDISP mandates an even width; an even height is
+/// a safe superset that keeps RemoteFX/H.264 tiling artifact-free — the old
+/// "multiple of 4" rule was over-conservative and cost up to 3 px of edge.
+/// Callers must still reject a sub-640×480 result (widget mid-layout).
+#[cfg(feature = "rdp-embedded")]
+const fn round_rdp_desktop(width: u32, height: u32) -> (u32, u32) {
+    let w = width & !1;
+    let h = height & !1;
+    (
+        if w > RDP_MAX_DESKTOP_W {
+            RDP_MAX_DESKTOP_W
+        } else {
+            w
+        },
+        if h > RDP_MAX_DESKTOP_H {
+            RDP_MAX_DESKTOP_H
+        } else {
+            h
+        },
+    )
+}
+
 /// Launches `command` through the Windows Run dialog, layout-independently.
 ///
 /// Opens Run with the Win+R scancode hotkey, types `command` via Unicode

@@ -629,6 +629,11 @@ pub fn build_nested_proxy_command(
 /// from the caller). The scripts themselves only contain the var name — the
 /// password value rides in the spawned process's environment.
 ///
+/// Any hop that gets an askpass helper is forced to
+/// `StrictHostKeyChecking=accept-new` regardless of `accept_new_host_keys`,
+/// because a forced-askpass hop with an unknown host key would otherwise feed
+/// its password into the host-key confirmation prompt and loop (issue #203).
+///
 /// # Panics
 /// Panics in debug builds if `hops` is empty.
 #[must_use]
@@ -650,7 +655,15 @@ pub fn build_nested_proxy_command_with_askpass(
 
     parts.extend(["ssh".to_string(), "-W".to_string(), "%h:%p".to_string()]);
 
-    if accept_new_host_keys {
+    // A hop authenticated via forced SSH_ASKPASS (password, no controlling TTY)
+    // must NOT let an unknown host key raise the "yes/no/[fingerprint]" prompt:
+    // OpenSSH routes that prompt to the askpass helper too, which answers with
+    // the PASSWORD. SSH rejects it, re-prompts, and loops until the bastion
+    // drops the connection — surfacing as "Connection closed by UNKNOWN port
+    // 65535" (issue #203). accept-new auto-accepts a first-seen key while still
+    // rejecting a CHANGED one, so MITM protection is preserved.
+    let this_hop_uses_askpass = matches!(askpass_scripts.first(), Some(Some(_)));
+    if accept_new_host_keys || this_hop_uses_askpass {
         parts.push("-o".to_string());
         parts.push("StrictHostKeyChecking=accept-new".to_string());
     }
@@ -962,10 +975,14 @@ mod tests {
             false,
             &[Some(script), None],
         );
+        // hops[0]=near uses forced askpass → must get accept-new so an unknown
+        // host key never routes the yes/no prompt to the password helper (#203).
+        // far has no askpass and accept_new=false → no StrictHostKeyChecking.
         assert_eq!(
             cmd,
             "env SSH_ASKPASS=/run/user/1000/rustconn-jh-askpass.sh SSH_ASKPASS_REQUIRE=force \
-             ssh -W %h:%p -o ProxyCommand='ssh -W %h:%p far' near"
+             ssh -W %h:%p -o StrictHostKeyChecking=accept-new \
+             -o ProxyCommand='ssh -W %h:%p far' near"
         );
     }
 
@@ -982,10 +999,12 @@ mod tests {
             false,
             &[None, Some(inner)],
         );
+        // near has no askpass → no accept-new; far (inner) uses forced askpass
+        // → gets accept-new inside the nested ProxyCommand (#203).
         assert_eq!(
             cmd,
             "ssh -W %h:%p -o ProxyCommand='env SSH_ASKPASS=/run/user/1000/rustconn-jh-askpass-1.sh \
-             SSH_ASKPASS_REQUIRE=force ssh -W %h:%p far' near"
+             SSH_ASKPASS_REQUIRE=force ssh -W %h:%p -o StrictHostKeyChecking=accept-new far' near"
         );
     }
 }
