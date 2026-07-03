@@ -314,10 +314,10 @@ impl super::EmbeddedRdpWidget {
                     reason = "value range fits the target type and is non-negative by construction in this code path"
                 )]
                 let device_h = (f64::from(h.unsigned_abs()) * effective_scale) as u32;
-                // Round down to multiple of 4 for RDP compatibility
-                // Many RDP servers and codecs require dimensions divisible by 4
-                let width = (device_w / 4) * 4;
-                let height = (device_h / 4) * 4;
+                // Exact widget size; MS-RDPEDISP requires even width, so clear
+                // its low bit. Height is used as-is.
+                let width = device_w & !1;
+                let height = device_h;
                 // Clamp to reasonable maximum (8K) and ensure minimum size
                 (width.clamp(640, 7680), height.clamp(480, 4320))
             } else {
@@ -648,6 +648,85 @@ impl super::EmbeddedRdpWidget {
                                     let mut cbuf = cairo_buffer.borrow_mut();
                                     cbuf.resize(server_w, server_h);
                                     cbuf.clear();
+                                }
+
+                                // Snap the desktop to the drawing area's real size.
+                                // The initial resolution was measured before the
+                                // (permanent) toolbar was shown, so the server's
+                                // desktop is too tall for the now-shrunk drawing area
+                                // — that mismatch blurs the first frame, and it's
+                                // below RESIZE_THRESHOLD_PX so the resize handler never
+                                // corrects it. Layout has settled by now, so re-request
+                                // the true size over Display Control for a 1:1 map.
+                                // No-op when it already matches (e.g. reconnect).
+                                {
+                                    let effective_scale = config.borrow().as_ref().map_or_else(
+                                        || f64::from(drawing_area.scale_factor().max(1)),
+                                        |c| {
+                                            c.scale_override
+                                                .effective_scale(drawing_area.scale_factor())
+                                        },
+                                    );
+                                    let css_w = drawing_area.width().unsigned_abs();
+                                    let css_h = drawing_area.height().unsigned_abs();
+                                    #[expect(
+                                        clippy::cast_possible_truncation,
+                                        clippy::cast_sign_loss,
+                                        reason = "value range fits the target type and is non-negative by construction in this code path"
+                                    )]
+                                    // Exact size; width even (MS-RDPEDISP), height as-is.
+                                    let settled_w =
+                                        (f64::from(css_w) * effective_scale) as u32 & !1;
+                                    #[expect(
+                                        clippy::cast_possible_truncation,
+                                        clippy::cast_sign_loss,
+                                        reason = "value range fits the target type and is non-negative by construction in this code path"
+                                    )]
+                                    let settled_h = (f64::from(css_h) * effective_scale) as u32;
+
+                                    // Only when realized, a sane size, and actually
+                                    // different (tolerance absorbs the ≤1px even-width
+                                    // adjustment).
+                                    if css_w > 100
+                                        && css_h > 100
+                                        && settled_w >= 640
+                                        && settled_h >= 480
+                                        && (settled_w.abs_diff(server_w) > 4
+                                            || settled_h.abs_diff(server_h) > 4)
+                                    {
+                                        // Keep the stored config in sync
+                                        let current_config = config.borrow().clone();
+                                        if let Some(mut c) = current_config {
+                                            c = c.with_resolution(settled_w, settled_h);
+                                            *config.borrow_mut() = Some(c);
+                                        }
+
+                                        if let Some(ref sender) = *ironrdp_tx.borrow() {
+                                            #[expect(
+                                                clippy::cast_possible_truncation,
+                                                reason = "RDP resolution is clamped well below u16::MAX in this code path"
+                                            )]
+                                            let sw = settled_w as u16;
+                                            #[expect(
+                                                clippy::cast_possible_truncation,
+                                                reason = "RDP resolution is clamped well below u16::MAX in this code path"
+                                            )]
+                                            let sh = settled_h as u16;
+                                            let _ = sender.send(RdpClientCommand::SetDesktopSize {
+                                                width: sw,
+                                                height: sh,
+                                            });
+                                        }
+
+                                        tracing::info!(
+                                            protocol = "rdp",
+                                            server_w,
+                                            server_h,
+                                            settled_w,
+                                            settled_h,
+                                            "[RDP] Snapping desktop to settled drawing-area size (toolbar layout)"
+                                        );
+                                    }
                                 }
 
                                 // Phase 3: Monitor local clipboard changes and
