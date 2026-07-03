@@ -3,6 +3,7 @@ use ironrdp::cliprdr::CliprdrClient;
 use ironrdp::pdu::input::MousePdu;
 use ironrdp::pdu::input::fast_path::{FastPathInputEvent, KeyboardFlags};
 use ironrdp::pdu::input::mouse::PointerFlags;
+use ironrdp::pdu::rdp::headers::ShareDataPdu;
 use ironrdp::session::image::DecodedImage;
 use ironrdp::session::{ActiveStage, ActiveStageOutput};
 use ironrdp_tokio::FramedWrite;
@@ -102,7 +103,39 @@ pub async fn process_command<W: FramedWrite>(
             }
         }
         RdpClientCommand::RefreshScreen => {
-            tracing::debug!("Screen refresh requested");
+            // Ask the server to redraw the whole desktop via a Refresh Rect PDU
+            // (MS-RDPBCGR TS_REFRESH_RECT_PDU). After a connect or a
+            // Deactivation-Reactivation the framebuffer is recreated blank and
+            // the server only sends incremental updates, so any region it
+            // considers unchanged keeps its initial fill — a visible seam that
+            // only clears when its content later changes. A full-desktop refresh
+            // forces a complete repaint. InclusiveRectangle is inclusive, so the
+            // bottom-right corner is width-1 / height-1.
+            let width = image.width();
+            let height = image.height();
+            if width > 0 && height > 0 {
+                let area = ironrdp::pdu::geometry::InclusiveRectangle {
+                    left: 0,
+                    top: 0,
+                    right: width.saturating_sub(1),
+                    bottom: height.saturating_sub(1),
+                };
+                let pdu = ShareDataPdu::RefreshRectangle(
+                    ironrdp::pdu::rdp::refresh_rectangle::RefreshRectanglePdu {
+                        areas_to_refresh: vec![area],
+                    },
+                );
+                let mut frame = ironrdp::core::WriteBuf::new();
+                match active_stage.encode_static(&mut frame, pdu) {
+                    Ok(_) => {
+                        let _ = writer.write_all(frame.filled()).await;
+                        tracing::debug!("Refresh Rect PDU sent for {}x{}", width, height);
+                    }
+                    Err(e) => {
+                        tracing::warn!("Failed to encode Refresh Rect PDU: {}", e);
+                    }
+                }
+            }
         }
         RdpClientCommand::ClipboardText(text) => {
             // Announce CF_UNICODETEXT to the server via cliprdr, then store

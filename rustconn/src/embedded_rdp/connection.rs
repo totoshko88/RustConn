@@ -535,6 +535,100 @@ impl super::EmbeddedRdpWidget {
         let config = self.config.clone();
         let file_dnd_cb = self.file_dnd_circuit_breaker.clone();
 
+        // Initial "snap to settled size". The connect resolution is measured
+        // before the permanent session toolbar has laid out, leaving the server
+        // desktop a few dozen px too tall for the drawing area — a mismatch
+        // below RESIZE_THRESHOLD_PX that the debounced resize handler ignores,
+        // so the first frame is softly rescaled. This corrects it once over
+        // Display Control (MS-RDPEDISP) for a 1:1 map. It reads the live server
+        // size and sends at most one SetDesktopSize (guarded by snap_attempted);
+        // a no-op when the size already matches (e.g. reconnect). It is fired
+        // ONLY by DisplayControlReady — the channel is not ready right after
+        // connect, so firing it earlier would fail encode_resize and fall over
+        // to a disruptive reconnect. If the server never negotiates Display
+        // Control the snap simply never runs and the frame is scaled to fit.
+        let snap_attempted = std::rc::Rc::new(std::cell::Cell::new(false));
+        let snap_to_settled: std::rc::Rc<dyn Fn()> = {
+            let config = config.clone();
+            let ironrdp_tx = ironrdp_tx.clone();
+            let drawing_area = drawing_area.clone();
+            let rdp_width_ref = rdp_width_ref.clone();
+            let rdp_height_ref = rdp_height_ref.clone();
+            let snap_attempted = snap_attempted.clone();
+            std::rc::Rc::new(move || {
+                if snap_attempted.get() {
+                    return;
+                }
+                let server_w = *rdp_width_ref.borrow();
+                let server_h = *rdp_height_ref.borrow();
+                let effective_scale = config.borrow().as_ref().map_or_else(
+                    || f64::from(drawing_area.scale_factor().max(1)),
+                    |c| {
+                        c.scale_override
+                            .effective_scale(drawing_area.scale_factor())
+                    },
+                );
+                let css_w = drawing_area.width().unsigned_abs();
+                let css_h = drawing_area.height().unsigned_abs();
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    clippy::cast_sign_loss,
+                    reason = "value range fits the target type and is non-negative by construction in this code path"
+                )]
+                let dev_w = (f64::from(css_w) * effective_scale) as u32;
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    clippy::cast_sign_loss,
+                    reason = "value range fits the target type and is non-negative by construction in this code path"
+                )]
+                let dev_h = (f64::from(css_h) * effective_scale) as u32;
+                // Even dimensions + ceiling (see round_rdp_desktop).
+                let (settled_w, settled_h) = super::round_rdp_desktop(dev_w, dev_h);
+
+                // Only when realized, a sane size, and actually different (slack
+                // absorbs the ≤1px even-rounding residual).
+                if css_w > 100
+                    && css_h > 100
+                    && settled_w >= 640
+                    && settled_h >= 480
+                    && (settled_w.abs_diff(server_w) > super::DESKTOP_MATCH_SLACK_PX
+                        || settled_h.abs_diff(server_h) > super::DESKTOP_MATCH_SLACK_PX)
+                {
+                    snap_attempted.set(true);
+                    // Keep the stored config in sync
+                    let current_config = config.borrow().clone();
+                    if let Some(mut c) = current_config {
+                        c = c.with_resolution(settled_w, settled_h);
+                        *config.borrow_mut() = Some(c);
+                    }
+                    if let Some(ref sender) = *ironrdp_tx.borrow() {
+                        #[expect(
+                            clippy::cast_possible_truncation,
+                            reason = "RDP resolution is clamped well below u16::MAX in this code path"
+                        )]
+                        let sw = settled_w as u16;
+                        #[expect(
+                            clippy::cast_possible_truncation,
+                            reason = "RDP resolution is clamped well below u16::MAX in this code path"
+                        )]
+                        let sh = settled_h as u16;
+                        let _ = sender.send(RdpClientCommand::SetDesktopSize {
+                            width: sw,
+                            height: sh,
+                        });
+                    }
+                    tracing::info!(
+                        protocol = "rdp",
+                        server_w,
+                        server_h,
+                        settled_w,
+                        settled_h,
+                        "[RDP] Snapping desktop to settled drawing-area size (toolbar layout)"
+                    );
+                }
+            })
+        };
+
         // Mouse jiggler handles — armed on Connected here because the embedded
         // connection path sets the state directly and never calls set_state (#185).
         let jiggler = self.jiggler_handles();
@@ -648,87 +742,17 @@ impl super::EmbeddedRdpWidget {
                                     cbuf.clear();
                                 }
 
-                                // Snap the desktop to the drawing area's real size.
-                                // The initial resolution was measured before the
-                                // (permanent) toolbar was shown, so the server's
-                                // desktop is too tall for the now-shrunk drawing area
-                                // — that mismatch blurs the first frame, and it's
-                                // below RESIZE_THRESHOLD_PX so the resize handler never
-                                // corrects it. Layout has settled by now, so re-request
-                                // the true size over Display Control for a 1:1 map.
-                                // No-op when it already matches (e.g. reconnect).
-                                {
-                                    let effective_scale = config.borrow().as_ref().map_or_else(
-                                        || f64::from(drawing_area.scale_factor().max(1)),
-                                        |c| {
-                                            c.scale_override
-                                                .effective_scale(drawing_area.scale_factor())
-                                        },
-                                    );
-                                    let css_w = drawing_area.width().unsigned_abs();
-                                    let css_h = drawing_area.height().unsigned_abs();
-                                    #[expect(
-                                        clippy::cast_possible_truncation,
-                                        clippy::cast_sign_loss,
-                                        reason = "value range fits the target type and is non-negative by construction in this code path"
-                                    )]
-                                    let dev_w = (f64::from(css_w) * effective_scale) as u32;
-                                    #[expect(
-                                        clippy::cast_possible_truncation,
-                                        clippy::cast_sign_loss,
-                                        reason = "value range fits the target type and is non-negative by construction in this code path"
-                                    )]
-                                    let dev_h = (f64::from(css_h) * effective_scale) as u32;
-                                    // Even dimensions + ceiling (see round_rdp_desktop).
-                                    let (settled_w, settled_h) =
-                                        super::round_rdp_desktop(dev_w, dev_h);
-
-                                    // Only when realized, a sane size, and actually
-                                    // different (slack absorbs the ≤1px even-rounding
-                                    // residual).
-                                    if css_w > 100
-                                        && css_h > 100
-                                        && settled_w >= 640
-                                        && settled_h >= 480
-                                        && (settled_w.abs_diff(server_w)
-                                            > super::DESKTOP_MATCH_SLACK_PX
-                                            || settled_h.abs_diff(server_h)
-                                                > super::DESKTOP_MATCH_SLACK_PX)
-                                    {
-                                        // Keep the stored config in sync
-                                        let current_config = config.borrow().clone();
-                                        if let Some(mut c) = current_config {
-                                            c = c.with_resolution(settled_w, settled_h);
-                                            *config.borrow_mut() = Some(c);
-                                        }
-
-                                        if let Some(ref sender) = *ironrdp_tx.borrow() {
-                                            #[expect(
-                                                clippy::cast_possible_truncation,
-                                                reason = "RDP resolution is clamped well below u16::MAX in this code path"
-                                            )]
-                                            let sw = settled_w as u16;
-                                            #[expect(
-                                                clippy::cast_possible_truncation,
-                                                reason = "RDP resolution is clamped well below u16::MAX in this code path"
-                                            )]
-                                            let sh = settled_h as u16;
-                                            let _ = sender.send(RdpClientCommand::SetDesktopSize {
-                                                width: sw,
-                                                height: sh,
-                                            });
-                                        }
-
-                                        tracing::info!(
-                                            protocol = "rdp",
-                                            server_w,
-                                            server_h,
-                                            settled_w,
-                                            settled_h,
-                                            "[RDP] Snapping desktop to settled drawing-area size (toolbar layout)"
-                                        );
-                                    }
-                                }
+                                // The initial "snap to settled size" is triggered
+                                // only by DisplayControlReady (see snap_to_settled) —
+                                // never on a timer. Real servers can take much longer
+                                // than a couple of seconds to negotiate the Display
+                                // Control channel, and forcing the snap before it is
+                                // ready makes encode_resize fail over to a full
+                                // reconnect (the visible connect → reconnect flicker,
+                                // and connection resets from the churn). If the channel
+                                // never becomes ready the desktop simply stays at the
+                                // server size and is scaled to fit — a slightly softer
+                                // frame, but no reconnect and no dropped session.
 
                                 // Phase 3: Monitor local clipboard changes and
                                 // announce to server via cliprdr
@@ -936,6 +960,14 @@ impl super::EmbeddedRdpWidget {
                                         chunk[3] = 0xFF; // A
                                     }
                                     buffer.set_has_data(true);
+                                }
+                                // The reactivated desktop is repainted by the server
+                                // only where content changed, leaving the gray fill
+                                // above as a seam on untouched regions. Request a full
+                                // repaint so the whole desktop is resent (no-op if the
+                                // server ignores the Refresh Rect).
+                                if let Some(ref sender) = *ironrdp_tx.borrow() {
+                                    let _ = sender.send(RdpClientCommand::RefreshScreen);
                                 }
                                 needs_redraw = true;
                             }
@@ -1273,6 +1305,13 @@ impl super::EmbeddedRdpWidget {
                                     "Clipboard file size"
                                 );
                                 file_transfer.borrow_mut().update_size(stream_id, size);
+                            }
+                            RdpClientEvent::DisplayControlReady => {
+                                // The Display Control channel is negotiated → run the
+                                // initial snap now, so the resize goes over MS-RDPEDISP
+                                // (smooth) instead of failing over to a reconnect.
+                                let snap: &dyn Fn() = &*snap_to_settled;
+                                snap();
                             }
                             RdpClientEvent::DisplayControlUnavailable { width, height } => {
                                 // Server does not support Display Control Channel

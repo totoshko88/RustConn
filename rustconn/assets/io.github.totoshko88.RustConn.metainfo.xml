@@ -140,6 +140,18 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.17.9" date="2026-07-03">
+      <description>
+        <p>Version 0.17.9 — SSH multi-hop and embedded RDP fixes:</p>
+        <ul>
+          <li>Fixed SSH multi-hop password chains still crashing when a bastion's host key is unknown — first-seen host keys are now accepted non-interactively (accept-new) so the host-key prompt is never routed to the password helper; a changed key is still rejected, preserving MITM protection (issue #203)</li>
+          <li>Fixed the embedded RDP first frame being blurry and never sharpening — the desktop is re-requested at the drawing area's real size once layout settles, so the first real frame arrives at a 1:1 pixel map (pull #206)</li>
+          <li>Fixed the embedded RDP initial snap causing a visible connect to reconnect flicker and occasional connection resets — the snap now runs only once the Display Control channel is confirmed ready and is never forced on a timer, so a slow server no longer triggers a reconnect (pull #206)</li>
+          <li>Fixed a stale seam/line left on the embedded RDP screen after a resolution change — the client now requests a full-screen repaint on every resize instead of leaving an untouched strip with its old fill (pull #206)</li>
+          <li>Fixed over-conservative embedded RDP resolution rounding — dimensions are rounded to the minimum the protocol requires and clamped to 7680x4320, so a resize on a larger-than-4K display is no longer silently rejected</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.17.8" date="2026-07-03">
       <description>
         <p>Version 0.17.8 — locale-independent minimum window width and Asbru import fix:</p>

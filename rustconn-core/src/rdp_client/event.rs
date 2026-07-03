@@ -532,6 +532,15 @@ pub enum RdpClientEvent {
         rtt_ms: u32,
     },
 
+    /// Display Control Channel (MS-RDPEDISP) is ready for dynamic resize.
+    ///
+    /// Emitted once the server's Display Control capabilities arrive over
+    /// DRDYNVC, i.e. when `ActiveStage::encode_resize` will succeed. The GUI
+    /// uses this to run the initial "snap to settled size" over Display
+    /// Control instead of firing it right after connect (when the channel is
+    /// not yet negotiated, which would fail over to a disruptive reconnect).
+    DisplayControlReady,
+
     /// Display Control Channel is not available on this server.
     ///
     /// Emitted when `encode_resize` returns `None`, indicating the server
