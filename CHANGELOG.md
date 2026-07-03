@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.8] - 2026-07-03
+
+### Fixed
+
+- **Nested groups lose their parent when importing an Asbru-CM config** ([#205](https://github.com/totoshko88/RustConn/issues/205)) — importing an Asbru-CM configuration with three or more group levels intermittently placed the deepest groups directly under the import root instead of under their real parent (importing the same file repeatedly sometimes "fixed" it, since the outcome depended on hash-map ordering). The import routine topologically sorts groups so each parent is created before its children, but the readiness check consulted `group_uuid_map` — a map that is only populated later, in the group-creation loop, and was therefore empty during the sort. As a result only root-level groups sorted correctly; anything deeper was appended in arbitrary `HashMap`-iteration order, and whenever a grandchild landed before its (child) parent, the creation loop could not yet find that parent and re-parented the grandchild to the import root. The sort now tracks already-sorted group IDs in a dedicated set, so the ordering is deterministic and arbitrarily deep hierarchies are preserved on every import
+- **Minimum window width too large in some locales — cannot tile or resize narrow** ([#204](https://github.com/totoshko88/RustConn/issues/204)) — the runtime minimum-width measurement added in 0.17.7 mirrored what the narrow breakpoint hides in the header bar, but forgot to also collapse the sidebar the way that tier does. Because `AdwOverlaySplitView` requests `sidebar-width + content-width` while it is not collapsed, the measurement captured the expanded sidebar — including its filter/search/bulk-action labels, which are locale-dependent and noticeably wider in German than in English — and pinned `width-request` to that inflated value. The result was a window that could not be tiled to half a screen or resized narrow when the UI language was German (English, Italian and Dutch were unaffected). The measurement now collapses the sidebar (so it overlays instead of taking side-by-side width) exactly as the narrow tier does before measuring, so only the content contributes and the resulting floor is locale-independent and small enough for tiling on every screen
+- **Welcome-screen hint pinned the window wider in verbose locales** ([#204](https://github.com/totoshko88/RustConn/issues/204)) — with the sidebar removed from the measurement, the only remaining locale-dependent contributor was the "Double-click a connection…" hint at the bottom of the welcome screen: a plain `GtkLabel` does not wrap by default, so it reported its full translated width as the minimum, which is longer than the English original in several languages. The hint now wraps (and is centred), dropping its minimum width to the longest word, so no locale can hold the window open through the welcome content either
+
+### Dependencies
+
+- **Updated** (semver-compatible refresh): `arrayvec` 0.7.7→0.7.8, `num-bigint` 0.4.6→0.4.7
+
 ## [0.17.7] - 2026-07-02
 
 ### Fixed

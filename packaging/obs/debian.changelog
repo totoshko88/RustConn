@@ -1,3 +1,20 @@
+rustconn (0.17.8-1) unstable; urgency=medium
+
+  * Fixed nested groups losing their parent when importing an Asbru-CM config
+    with three or more group levels — the topological group sort now tracks
+    already-sorted IDs in a dedicated set instead of a map populated later, so
+    arbitrarily deep hierarchies are preserved deterministically on every
+    import (#205)
+  * Fixed a too-large minimum window width in some locales (notably German)
+    that prevented tiling or resizing the window narrow — the runtime width
+    measurement now collapses the sidebar first, as the narrow layout tier
+    does, so localized sidebar labels no longer inflate the minimum (#204)
+  * Fixed the welcome-screen hint holding the window wider in verbose locales —
+    the hint now wraps instead of reporting its full translated width (#204)
+  * Dependencies: updated arrayvec 0.7.7→0.7.8, num-bigint 0.4.6→0.4.7
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Fri, 03 Jul 2026 12:00:00 +0200
+
 rustconn (0.17.7-1) unstable; urgency=medium
 
   * Fixed narrow-window layout — window controls no longer vanish when the

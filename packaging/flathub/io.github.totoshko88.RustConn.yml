@@ -326,7 +326,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/totoshko88/RustConn.git
-        tag: v0.17.7
+        tag: v0.17.8
         x-checker-data:
           type: git
           tag-pattern: ^v([\d.]+)$

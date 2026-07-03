@@ -140,6 +140,16 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.17.8" date="2026-07-03">
+      <description>
+        <p>Version 0.17.8 — locale-independent minimum window width and Asbru import fix:</p>
+        <ul>
+          <li>Fixed nested groups losing their parent when importing an Asbru-CM config with three or more group levels — the import now sorts groups deterministically so arbitrarily deep hierarchies are preserved on every import (issue #205)</li>
+          <li>Fixed a too-large minimum window width in some locales (notably German) that prevented tiling or resizing the window narrow — the runtime width measurement now collapses the sidebar first, as the narrow layout tier does, so localized sidebar labels no longer inflate the minimum (issue #204)</li>
+          <li>Fixed the welcome-screen hint holding the window wider in verbose locales — the hint now wraps instead of reporting its full translated width (issue #204)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.17.7" date="2026-07-02">
       <description>
         <p>Version 0.17.7 — adaptive narrow-window layout, SSH multi-hop password fix, Snap build fix:</p>

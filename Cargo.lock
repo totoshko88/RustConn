@@ -213,9 +213,9 @@ checksum = "76a2e8124351fda1ef8aaaa3bbd7ebbcb486bbcd4225aca0aa0d84bb2db8fecb"
 
 [[package]]
 name = "arrayvec"
-version = "0.7.7"
+version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f02882884d3e1bc524fb12c79f107f6ad0e1cfd498c536ffb494301740995dfe"
+checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
 
 [[package]]
 name = "ashpd"
@@ -3071,7 +3071,7 @@ dependencies = [
  "ironrdp-core",
  "ironrdp-error",
  "md-5 0.10.6",
- "num-bigint 0.4.6",
+ "num-bigint 0.4.7",
  "num-derive",
  "num-integer",
  "num-traits",
@@ -3817,7 +3817,7 @@ version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "35bd024e8b2ff75562e5f34e7f4905839deb4b22955ef5e73d2fea1b9813cb23"
 dependencies = [
- "num-bigint 0.4.6",
+ "num-bigint 0.4.7",
  "num-complex",
  "num-integer",
  "num-iter",
@@ -3838,9 +3838,9 @@ dependencies = [
 
 [[package]]
 name = "num-bigint"
-version = "0.4.6"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5e44f723f1133c9deac646763579fdb3ac745e418f2a7af9cd0c431da1f20b9"
+checksum = "c863e9ab5e7bf9c99ba75e1050f1e4d624ae87ed3532d6238ffbdc7b585dbbe6"
 dependencies = [
  "num-integer",
  "num-traits",
@@ -3931,7 +3931,7 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f83d14da390562dca69fc84082e73e548e1ad308d24accdedd2720017cb37824"
 dependencies = [
- "num-bigint 0.4.6",
+ "num-bigint 0.4.7",
  "num-integer",
  "num-traits",
 ]
@@ -5232,7 +5232,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.17.7"
+version = "0.17.8"
 dependencies = [
  "async-channel",
  "chrono",
@@ -5267,7 +5267,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.17.7"
+version = "0.17.8"
 dependencies = [
  "chrono",
  "clap",
@@ -5289,7 +5289,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.17.7"
+version = "0.17.8"
 dependencies = [
  "aes 0.9.1",
  "ar",
@@ -5345,7 +5345,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-pty-sys"
-version = "0.17.7"
+version = "0.17.8"
 dependencies = [
  "libc",
 ]

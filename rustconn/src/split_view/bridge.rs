@@ -1604,13 +1604,21 @@ impl SplitViewBridge {
         columns.insert(&Self::build_welcome_extras_column(), -1);
         content.append(&columns);
 
-        // Hint at the bottom
+        // Hint at the bottom. Wrap it: a non-wrapping GtkLabel reports its full
+        // text width as the minimum, and this sentence is locale-dependent
+        // (some translations run longer than the English original), so it would
+        // otherwise pin the welcome — and therefore the window's measured
+        // minimum width — wider in verbose locales, the same class of bug as the
+        // sidebar labels in #204. Wrapping drops the minimum to the longest word.
         let hint = gtk4::Label::builder()
             .label(i18n(
                 "Double-click a connection in the sidebar to get started",
             ))
             .css_classes(["dim-label"])
             .margin_top(12)
+            .wrap(true)
+            .justify(gtk4::Justification::Center)
+            .halign(gtk4::Align::Center)
             .build();
         content.append(&hint);
 

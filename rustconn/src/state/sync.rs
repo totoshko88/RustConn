@@ -691,6 +691,11 @@ impl AppState {
 
         // Topological sort: process groups level by level so parents are always
         // created before their children. This prevents hierarchy flattening.
+        // Track already-sorted group IDs here (not group_uuid_map, which is only
+        // populated later in the creation loop and would be empty during the sort,
+        // degrading the sort so deep hierarchies get appended in arbitrary order).
+        let mut sorted_ids: std::collections::HashSet<Uuid> =
+            std::collections::HashSet::with_capacity(result.groups.len());
         let mut sorted_groups: Vec<&ConnectionGroup> = Vec::with_capacity(result.groups.len());
         let mut remaining: Vec<&ConnectionGroup> = result.groups.iter().collect();
         while !remaining.is_empty() {
@@ -699,11 +704,12 @@ impl AppState {
                 let ready = if let Some(pid) = g.parent_id {
                     // Parent not in import → root-level, ready immediately
                     // Parent in import → ready only when parent already sorted
-                    !imported_group_ids.contains(&pid) || group_uuid_map.contains_key(&pid)
+                    !imported_group_ids.contains(&pid) || sorted_ids.contains(&pid)
                 } else {
                     true
                 };
                 if ready {
+                    sorted_ids.insert(g.id);
                     sorted_groups.push(g);
                     false // remove from remaining
                 } else {
@@ -713,6 +719,9 @@ impl AppState {
             // Safety: break if no progress (circular parent references)
             if remaining.len() == before_len {
                 // Append remaining groups as root-level to avoid infinite loop
+                for g in &remaining {
+                    sorted_ids.insert(g.id);
+                }
                 sorted_groups.append(&mut remaining);
             }
         }

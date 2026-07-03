@@ -353,7 +353,19 @@ jobs:
       - name: Build Snap
         id: build
         run: |
-          snapcraft pack --verbose
+          # The `gnome` extension pulls build-snaps (mesa-2404, gnome-46-2404-sdk)
+          # from the store during "Installing build-snaps". On the arm64 runner
+          # this intermittently fails with "Error installing snap 'mesa-2404'
+          # from channel 'latest/stable'" (transient store/network flakiness),
+          # which killed the arm64 revision for v0.17.7. Retry the whole pack a
+          # few times: snapcraft is incremental (no `clean`), so a retry only
+          # re-runs the failed build-snap install, not the ~50-min cargo build.
+          for attempt in 1 2 3; do
+            if snapcraft pack --verbose; then break; fi
+            [ "$attempt" = 3 ] && { echo "::error::snapcraft pack failed after 3 attempts"; exit 1; }
+            echo "::warning::snapcraft pack attempt $attempt failed (often a transient build-snap install error); retrying in 30s"
+            sleep 30
+          done
           SNAP_FILE=$(ls *.snap)
           echo "snap=$SNAP_FILE" >> $GITHUB_OUTPUT
           echo "Built: $SNAP_FILE"

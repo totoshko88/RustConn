@@ -18,19 +18,24 @@ Communication language: Ukrainian.
 ## Code Philosophy (YAGNI / lazy-senior)
 
 The best code is the code never written. Lazy means efficient, not careless.
+The ladder runs *after* you understand the problem, not instead of it: read the
+task and the code it touches, trace the real flow end to end, then climb. A small
+diff in the wrong place isn't lazy, it's a second bug.
 Before writing any code, stop at the first rung that holds:
 
 1. Does this need to exist at all? → no: skip it (YAGNI)
-2. Does `std` already do this? → use it
-3. Is there a native platform / GTK4 / libadwaita feature? → use it
-4. Does an already-present dependency solve it? → use it
-5. Can it be one line? → make it one line
-6. Only then: the minimum code that works
+2. Does it already exist in this repo? → reuse the helper/util/pattern (usually in `rustconn-core`), don't re-write it
+3. Does `std` already do this? → use it
+4. Is there a native platform / GTK4 / libadwaita feature? → use it
+5. Does an already-present dependency solve it? → use it
+6. Can it be one line? → make it one line
+7. Only then: the minimum code that works
 
 - Deletion over addition. Boring over clever. Fewest files possible.
 - No abstractions, traits, or generics that weren't asked for. No boilerplate nobody requested.
 - No new crate if it can be avoided (also respects `cargo deny` / supply-chain).
 - Question complex requests: "Do you actually need X, or does Y cover it?"
+- Bug fix = root cause, not symptom. A report names one symptom; grep every caller of the function you touch and fix the shared function once (one guard in `rustconn-core` beats one per caller in `rustconn`). Patching only the path the ticket names leaves sibling callers broken.
 - When two `std` approaches are the same size, pick the edge-case-correct one. Lazy means less code, not the flimsier algorithm.
 - Mark intentional simplifications with a `// ponytail:` comment that names the ceiling and the upgrade path, e.g. `// ponytail: O(n²) scan, fine for <100 hosts; index if the list grows`.
 - **Never lazy about** (these are never on the chopping block): trust-boundary input validation, error handling that prevents data loss, security/credentials (see Absolute Rules), accessibility (see GNOME HIG).

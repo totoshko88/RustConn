@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.17.7
+Version:        0.17.8
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -259,6 +259,12 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Fri Jul 03 2026 Anton Isaiev <totoshko88@gmail.com> - 0.17.8-0
+- Fixed nested groups losing their parent when importing an Asbru-CM config with three or more group levels — the topological group sort now tracks already-sorted IDs in a dedicated set instead of a map populated later, so arbitrarily deep hierarchies are preserved deterministically on every import (#205)
+- Fixed a too-large minimum window width in some locales (notably German) that prevented tiling or resizing the window narrow — the runtime width measurement now collapses the sidebar first, as the narrow layout tier does, so localized sidebar labels no longer inflate the minimum (#204)
+- Fixed the welcome-screen hint holding the window wider in verbose locales — the hint now wraps instead of reporting its full translated width (#204)
+- Dependencies: updated arrayvec 0.7.7→0.7.8, num-bigint 0.4.6→0.4.7
+
 * Thu Jul 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.17.7-0
 - Fixed narrow-window layout — window controls no longer vanish when narrow, the window shrinks smoothly to a measured minimum, non-essential header buttons are shed and the sidebar auto-hides, and the welcome screen reflows its columns instead of wrapping shortcut labels character-by-character (#204)
 - Fixed SSH multi-hop password chain — only one bastion received a password; entry bastions in nested ProxyCommand now get their own per-hop SSH_ASKPASS helper with indexed env vars (#203)

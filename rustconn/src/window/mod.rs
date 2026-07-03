@@ -671,11 +671,24 @@ impl MainWindow {
             widgets
         };
         let overview_for_measure = tab_overview.clone();
+        let split_for_measure = overlay_split_view.clone();
         let measured = std::cell::Cell::new(false);
         window.connect_map(move |win| {
             if measured.replace(true) {
                 return;
             }
+            // Mirror the narrow tier *exactly*: besides hiding the shed header
+            // buttons, collapse the sidebar. When the split view is not
+            // collapsed its minimum is sidebar-width + content-width, and the
+            // sidebar's filter/search/bulk-action labels are locale-dependent —
+            // wider in German than in English — which pinned the window far too
+            // wide for tiling (#204 follow-up). Collapsing here (as the narrow
+            // breakpoint does) makes the sidebar overlay instead, so only the
+            // content contributes and the measured floor is locale-independent.
+            let was_collapsed = split_for_measure.is_collapsed();
+            let was_showing = split_for_measure.shows_sidebar();
+            split_for_measure.set_collapsed(true);
+            split_for_measure.set_show_sidebar(false);
             for widget in &narrow_hidden {
                 widget.set_visible(false);
             }
@@ -684,6 +697,8 @@ impl MainWindow {
             for widget in &narrow_hidden {
                 widget.set_visible(true);
             }
+            split_for_measure.set_collapsed(was_collapsed);
+            split_for_measure.set_show_sidebar(was_showing);
             // Small margin absorbs sub-pixel rounding; floor guards a degenerate
             // zero measurement before first layout.
             win.set_width_request((min_width + 4).max(360));
