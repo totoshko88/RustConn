@@ -450,13 +450,6 @@ impl super::EmbeddedRdpWidget {
         *self.rdp_width.borrow_mut() = actual_width;
         *self.rdp_height.borrow_mut() = actual_height;
 
-        // Resize and clear pixel buffer to match actual size
-        {
-            let mut buffer = self.pixel_buffer.borrow_mut();
-            buffer.resize(actual_width, actual_height);
-            buffer.clear();
-        }
-
         // Resize and clear Cairo-backed buffer to match actual size
         {
             let mut cbuf = self.cairo_buffer.borrow_mut();
@@ -497,7 +490,6 @@ impl super::EmbeddedRdpWidget {
         let on_error = self.on_error.clone();
         let rdp_width_ref = self.rdp_width.clone();
         let rdp_height_ref = self.rdp_height.clone();
-        let pixel_buffer = self.pixel_buffer.clone();
         let cairo_buffer = self.cairo_buffer.clone();
         let is_embedded = self.is_embedded.clone();
         let is_ironrdp = self.is_ironrdp.clone();
@@ -725,11 +717,6 @@ impl super::EmbeddedRdpWidget {
                                 *rdp_width_ref.borrow_mut() = server_w;
                                 *rdp_height_ref.borrow_mut() = server_h;
                                 {
-                                    let mut buffer = pixel_buffer.borrow_mut();
-                                    buffer.resize(server_w, server_h);
-                                    buffer.clear();
-                                }
-                                {
                                     let mut cbuf = cairo_buffer.borrow_mut();
                                     cbuf.resize(server_w, server_h);
                                     cbuf.clear();
@@ -925,17 +912,6 @@ impl super::EmbeddedRdpWidget {
                                     let mut cbuf = cairo_buffer.borrow_mut();
                                     cbuf.resize(u32::from(width), u32::from(height));
                                     cbuf.fill_solid(0x1E, 0x1E, 0x1E, 0xFF);
-                                }
-                                {
-                                    let mut buffer = pixel_buffer.borrow_mut();
-                                    buffer.resize(u32::from(width), u32::from(height));
-                                    for chunk in buffer.data_mut().chunks_exact_mut(4) {
-                                        chunk[0] = 0x1E; // B
-                                        chunk[1] = 0x1E; // G
-                                        chunk[2] = 0x1E; // R
-                                        chunk[3] = 0xFF; // A
-                                    }
-                                    buffer.set_has_data(true);
                                 }
                                 // The reactivated desktop is repainted by the server
                                 // only where content changed, leaving the gray fill
@@ -1808,11 +1784,6 @@ impl super::EmbeddedRdpWidget {
         *self.rdp_width.borrow_mut() = config.width;
         *self.rdp_height.borrow_mut() = config.height;
 
-        // Resize pixel buffer to match config
-        self.pixel_buffer
-            .borrow_mut()
-            .resize(config.width, config.height);
-
         // Set state to connecting - actual connected state will be set
         // when we receive the Connected event from the thread
         self.set_state(RdpConnectionState::Connecting);
@@ -1825,7 +1796,6 @@ impl super::EmbeddedRdpWidget {
         let on_fallback = self.on_fallback.clone();
         let rdp_width_ref = self.rdp_width.clone();
         let rdp_height_ref = self.rdp_height.clone();
-        let pixel_buffer = self.pixel_buffer.clone();
         let is_embedded = self.is_embedded.clone();
         let freerdp_thread_ref = self.freerdp_thread.clone();
 
@@ -1905,7 +1875,6 @@ impl super::EmbeddedRdpWidget {
                                     );
                                     *rdp_width_ref.borrow_mut() = width;
                                     *rdp_height_ref.borrow_mut() = height;
-                                    pixel_buffer.borrow_mut().resize(width, height);
                                 }
                             }
                             drawing_area.queue_draw();
@@ -1983,9 +1952,6 @@ impl super::EmbeddedRdpWidget {
 
         // Clean up Wayland surface
         self.wl_surface.borrow_mut().cleanup();
-
-        // Clear pixel buffer
-        self.pixel_buffer.borrow_mut().clear();
 
         // Clear Cairo-backed buffer
         self.cairo_buffer.borrow_mut().clear();

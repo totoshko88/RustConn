@@ -46,7 +46,7 @@ mod input;
 mod resize;
 
 // Re-export types for external use
-pub use buffer::{CairoBackedBuffer, PixelBuffer, WaylandSurfaceHandle};
+pub use buffer::{CairoBackedBuffer, WaylandSurfaceHandle};
 pub use file_dnd::{FileDndCircuitBreaker, LocalFileInfo};
 pub use launcher::SafeFreeRdpLauncher;
 pub use thread::FreeRdpThread;
@@ -230,8 +230,6 @@ pub struct EmbeddedRdpWidget {
     drawing_area: DrawingArea,
     /// Wayland surface handle
     wl_surface: Rc<RefCell<WaylandSurfaceHandle>>,
-    /// Pixel buffer for frame data
-    pixel_buffer: Rc<RefCell<PixelBuffer>>,
     /// Persistent Cairo-backed pixel buffer for zero-copy rendering.
     /// Used by IronRDP embedded mode to avoid 33MB copies per frame at 4K.
     cairo_buffer: Rc<RefCell<CairoBackedBuffer>>,
@@ -650,7 +648,6 @@ impl EmbeddedRdpWidget {
 
         container.append(&reconnect_banner);
 
-        let pixel_buffer = Rc::new(RefCell::new(PixelBuffer::new(1280, 720)));
         let cairo_buffer = Rc::new(RefCell::new(CairoBackedBuffer::new(1280, 720)));
         let state = Rc::new(RefCell::new(RdpConnectionState::Disconnected));
         let width = Rc::new(RefCell::new(1280u32));
@@ -675,7 +672,6 @@ impl EmbeddedRdpWidget {
             separator,
             drawing_area,
             wl_surface: Rc::new(RefCell::new(WaylandSurfaceHandle::new())),
-            pixel_buffer,
             cairo_buffer,
             state,
             config: Rc::new(RefCell::new(None)),
@@ -1566,40 +1562,6 @@ impl EmbeddedRdpWidget {
         // 2. Prepare for incoming frame data
     }
 
-    /// Handles FreeRDP EndPaint callback
-    ///
-    /// This is called by FreeRDP after rendering a frame region.
-    /// The pixel data is blitted to the Wayland surface.
-    ///
-    /// # Arguments
-    ///
-    /// * `x` - X coordinate of the updated region
-    /// * `y` - Y coordinate of the updated region
-    /// * `width` - Width of the updated region
-    /// * `height` - Height of the updated region
-    /// * `data` - Pixel data for the region
-    /// * `stride` - Stride of the pixel data
-    pub fn on_end_paint(&self, x: i32, y: i32, width: i32, height: i32, data: &[u8], stride: u32) {
-        // Update the pixel buffer with the new frame data
-        self.pixel_buffer.borrow_mut().update_region(
-            x.unsigned_abs(),
-            y.unsigned_abs(),
-            width.unsigned_abs(),
-            height.unsigned_abs(),
-            data,
-            stride,
-        );
-
-        // Damage the Wayland surface region
-        self.wl_surface.borrow().damage(x, y, width, height);
-
-        // Commit the surface
-        self.wl_surface.borrow().commit();
-
-        // Queue a redraw of the GTK widget
-        self.drawing_area.queue_draw();
-    }
-
     /// Sends a keyboard event to the RDP session
     ///
     /// # Arguments
@@ -1686,9 +1648,6 @@ impl EmbeddedRdpWidget {
         // Update internal dimensions
         *self.width.borrow_mut() = width;
         *self.height.borrow_mut() = height;
-
-        // Resize pixel buffer
-        self.pixel_buffer.borrow_mut().resize(width, height);
 
         // Send resize command via FreeRDP thread
         if let Some(ref thread) = *self.freerdp_thread.borrow() {

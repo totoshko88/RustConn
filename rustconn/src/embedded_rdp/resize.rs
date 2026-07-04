@@ -407,7 +407,6 @@ impl super::EmbeddedRdpWidget {
     pub(super) fn setup_resize_handler(&self) {
         let width = self.width.clone();
         let height = self.height.clone();
-        let pixel_buffer = self.pixel_buffer.clone();
 
         let handler_id = self
             .drawing_area
@@ -418,8 +417,6 @@ impl super::EmbeddedRdpWidget {
                 *width.borrow_mut() = new_width;
                 *height.borrow_mut() = new_height;
 
-                // Resize pixel buffer
-                pixel_buffer.borrow_mut().resize(new_width, new_height);
                 area.queue_draw();
             });
         *self.resize_handler_id.borrow_mut() = Some(handler_id);

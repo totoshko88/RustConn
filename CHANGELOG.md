@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Performance
 
+- **Removed the dead legacy `PixelBuffer` from the embedded RDP widget** — investigation confirmed the FreeRDP fallback renderer that was meant to feed this buffer is not wired up (`on_end_paint` had zero callers, the FreeRDP worker thread ignored its `frame_buffer`, and FreeRDP sessions run in an external `xfreerdp3` window instead). The IronRDP path renders exclusively through the Cairo-backed buffer, so the `PixelBuffer` was allocated, resized and cleared every connection/resize but never displayed. Removing it (the struct, the widget field, the never-taken fallback draw branch, `on_end_paint`, and the FreeRDP thread's unused frame buffer) deletes dead allocations and a whole render path that could never fire
 - **Sidebar search no longer deep-clones every connection on each keystroke** — `SearchEngine::search` (and the debounced/benchmark variants) took an owned `&[Connection]`, so the sidebar filter had to clone the entire connection list (all fields, tags, per-protocol config) on every search, only softened by the 100 ms debounce. The API now takes `&[&Connection]` and the sidebar passes the borrowed list `list_connections()` returns directly — zero per-keystroke copies. Group scoring/filtering also switched from a linear `groups.iter().find()` per connection (O(connections × groups)) to a single `HashMap<Uuid, &ConnectionGroup>` lookup built once per search, and a redundant `String` allocation in the tag-field dedup check was removed
 
 ### Removed

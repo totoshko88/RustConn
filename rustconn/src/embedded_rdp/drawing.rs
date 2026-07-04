@@ -23,7 +23,6 @@ impl super::EmbeddedRdpWidget {
     ///
     /// The pixel buffer is in BGRA format which matches Cairo's ARGB32 format.
     pub(super) fn setup_drawing(&self) {
-        let pixel_buffer = self.pixel_buffer.clone();
         let cairo_buffer = self.cairo_buffer.clone();
         let state = self.state.clone();
         let is_embedded = self.is_embedded.clone();
@@ -48,15 +47,6 @@ impl super::EmbeddedRdpWidget {
                 let should_render_framebuffer =
                     embedded && current_state == RdpConnectionState::Connected && {
                         let buffer = cairo_buffer.borrow();
-                        buffer.width() > 0 && buffer.height() > 0 && buffer.has_data()
-                    };
-
-                // Fallback: check old PixelBuffer if CairoBackedBuffer has no data
-                let should_render_fallback = !should_render_framebuffer
-                    && embedded
-                    && current_state == RdpConnectionState::Connected
-                    && {
-                        let buffer = pixel_buffer.borrow();
                         buffer.width() > 0 && buffer.height() > 0 && buffer.has_data()
                     };
 
@@ -124,72 +114,6 @@ impl super::EmbeddedRdpWidget {
                         let _ = cr.paint();
 
                         // Restore the transformation matrix
-                        if let Err(e) = cr.restore() {
-                            tracing::warn!(error = %e, "Cairo restore failed");
-                        }
-                    }
-                } else if should_render_fallback {
-                    // Fallback path: old PixelBuffer with data.to_vec() copy
-                    // Used when CairoBackedBuffer is not populated (e.g. FreeRDP path)
-                    static WARN_ONCE: std::sync::Once = std::sync::Once::new();
-                    WARN_ONCE.call_once(|| {
-                        tracing::warn!("RDP: using fallback PixelBuffer with per-frame to_vec() copy — consider migrating to CairoBackedBuffer");
-                    });
-                    let buffer = pixel_buffer.borrow();
-                    let buf_width = buffer.width();
-                    let buf_height = buffer.height();
-
-                    let data = buffer.data();
-                    if let Ok(surface) = gtk4::cairo::ImageSurface::create_for_data(
-                        data.to_vec(),
-                        gtk4::cairo::Format::ARgb32,
-                        crate::utils::dimension_to_i32(buf_width),
-                        crate::utils::dimension_to_i32(buf_height),
-                        crate::utils::stride_to_i32(buffer.stride()),
-                    ) {
-                        let effective_scale = config
-                            .borrow()
-                            .as_ref()
-                            .map_or(1.0, |c| c.scale_override.effective_scale());
-                        surface.set_device_scale(effective_scale, effective_scale);
-
-                        let css_buf_w = f64::from(buf_width) / effective_scale;
-                        let css_buf_h = f64::from(buf_height) / effective_scale;
-                        let scale_x = f64::from(width) / css_buf_w;
-                        let scale_y = f64::from(height) / css_buf_h;
-                        // Within the match slack of the drawing area (the ≤1px
-                        // even-rounding residual): blit 1:1 for a sharp border instead
-                        // of a sub-pixel rescale. Larger mismatches (a resize in flight)
-                        // still scale-to-fit with aspect preserved.
-                        let slack = f64::from(super::DESKTOP_MATCH_SLACK_PX);
-                        let scale = if (css_buf_w - f64::from(width)).abs() <= slack
-                            && (css_buf_h - f64::from(height)).abs() <= slack
-                        {
-                            1.0
-                        } else {
-                            scale_x.min(scale_y)
-                        };
-
-                        let offset_x = css_buf_w.mul_add(-scale, f64::from(width)) / 2.0;
-                        let offset_y = css_buf_h.mul_add(-scale, f64::from(height)) / 2.0;
-
-                        if let Err(e) = cr.save() {
-                            tracing::warn!(error = %e, "Cairo save failed");
-                        }
-
-                        cr.translate(offset_x, offset_y);
-                        cr.scale(scale, scale);
-                        let _ = cr.set_source_surface(&surface, 0.0, 0.0);
-
-                        let filter = if (scale - 1.0).abs() < 0.01 {
-                            gtk4::cairo::Filter::Nearest
-                        } else {
-                            gtk4::cairo::Filter::Bilinear
-                        };
-                        cr.source().set_filter(filter);
-
-                        let _ = cr.paint();
-
                         if let Err(e) = cr.restore() {
                             tracing::warn!(error = %e, "Cairo restore failed");
                         }

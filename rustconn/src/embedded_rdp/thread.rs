@@ -10,7 +10,6 @@
 //! holding the lock), we recover gracefully by extracting the inner value and
 //! setting an error state rather than propagating the panic.
 
-use super::buffer::PixelBuffer;
 use super::types::{EmbeddedRdpError, FreeRdpThreadState, RdpCommand, RdpConfig, RdpEvent};
 use secrecy::ExposeSecret;
 use std::collections::HashMap;
@@ -251,8 +250,6 @@ impl FreeRdpSharedState {
 pub struct FreeRdpThread {
     /// Consolidated process, state, and fallback flag (single lock)
     shared: Arc<Mutex<FreeRdpSharedState>>,
-    /// Shared memory buffer for frame data (separate lock for rendering)
-    frame_buffer: Arc<Mutex<PixelBuffer>>,
     /// Channel for sending commands to FreeRDP thread
     command_tx: mpsc::Sender<RdpCommand>,
     /// Channel for receiving events from FreeRDP thread
@@ -267,21 +264,13 @@ impl FreeRdpThread {
         let (cmd_tx, cmd_rx) = mpsc::channel::<RdpCommand>();
         let (evt_tx, evt_rx) = mpsc::channel::<RdpEvent>();
 
-        let frame_buffer = Arc::new(Mutex::new(PixelBuffer::new(config.width, config.height)));
         let shared = Arc::new(Mutex::new(FreeRdpSharedState::new()));
 
-        let frame_buffer_clone = Arc::clone(&frame_buffer);
         let shared_clone = Arc::clone(&shared);
         let config_clone = config.clone();
 
         let thread_handle = thread::spawn(move || {
-            Self::run_freerdp_loop(
-                cmd_rx,
-                evt_tx,
-                frame_buffer_clone,
-                shared_clone,
-                config_clone,
-            );
+            Self::run_freerdp_loop(cmd_rx, evt_tx, shared_clone, config_clone);
         });
 
         // Initialize state - safe because thread just started and mutex is not poisoned
@@ -289,7 +278,6 @@ impl FreeRdpThread {
 
         Ok(Self {
             shared,
-            frame_buffer,
             command_tx: cmd_tx,
             event_rx: evt_rx,
             thread_handle: Some(thread_handle),
@@ -302,7 +290,6 @@ impl FreeRdpThread {
     fn run_freerdp_loop(
         cmd_rx: mpsc::Receiver<RdpCommand>,
         evt_tx: mpsc::Sender<RdpEvent>,
-        _frame_buffer: Arc<Mutex<PixelBuffer>>,
         shared: Arc<Mutex<FreeRdpSharedState>>,
         initial_config: RdpConfig,
     ) {
@@ -488,11 +475,6 @@ impl FreeRdpThread {
     /// Uses mutex poisoning recovery for safe flag access.
     pub fn fallback_triggered(&self) -> bool {
         lock_or_recover(&self.shared).fallback_triggered
-    }
-
-    /// Returns a reference to the frame buffer
-    pub fn frame_buffer(&self) -> &Arc<Mutex<PixelBuffer>> {
-        &self.frame_buffer
     }
 
     /// Shuts down the FreeRDP thread
