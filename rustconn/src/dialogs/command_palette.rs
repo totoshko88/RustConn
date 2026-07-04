@@ -57,7 +57,7 @@ impl CommandPaletteDialog {
     #[must_use]
     pub fn new(parent: Option<&impl IsA<gtk4::Window>>) -> Self {
         let dialog = adw::Dialog::builder()
-            .title("")
+            .title(i18n("Command Palette"))
             .content_width(500)
             .content_height(400)
             .build();

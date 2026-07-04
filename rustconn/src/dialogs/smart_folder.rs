@@ -117,7 +117,7 @@ impl SmartFolderDialog {
             .build();
 
         let (name_row, name_entry) = EntryRowBuilder::new(i18n("Name"))
-            .placeholder("Prod SSH Servers")
+            .placeholder(i18n("Prod SSH Servers"))
             .build();
         name_row.set_activatable_widget(Some(&name_entry));
         name_group.add(&name_row);
@@ -163,7 +163,7 @@ impl SmartFolderDialog {
 
         // Host pattern
         let (host_row, host_pattern_entry) = EntryRowBuilder::new(i18n("Host Pattern"))
-            .placeholder("*.example.com")
+            .placeholder(i18n("*.example.com"))
             .build();
         host_row.set_activatable_widget(Some(&host_pattern_entry));
         filter_group.add(&host_row);
@@ -171,7 +171,7 @@ impl SmartFolderDialog {
         // Tags
         let (tags_row, tags_entry) = EntryRowBuilder::new(i18n("Filter by Tags"))
             .subtitle(i18n("Comma or semicolon separated"))
-            .placeholder("web, production")
+            .placeholder(i18n("web, production"))
             .build();
         tags_row.set_activatable_widget(Some(&tags_entry));
         filter_group.add(&tags_row);
