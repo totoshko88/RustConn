@@ -164,6 +164,9 @@ impl super::EmbeddedRdpWidget {
                                     let _ = sender.send(RdpClientCommand::SetDesktopSize {
                                         width: w,
                                         height: h,
+                                        scale_percent: Some(super::rdp_scale_percent(
+                                            effective_scale,
+                                        )),
                                     });
                                 }
 
@@ -360,6 +363,7 @@ impl super::EmbeddedRdpWidget {
                 let _ = sender.send(RdpClientCommand::SetDesktopSize {
                     width: w,
                     height: h,
+                    scale_percent: Some(super::rdp_scale_percent(effective_scale)),
                 });
             }
 

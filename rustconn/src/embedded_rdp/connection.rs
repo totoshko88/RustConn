@@ -334,12 +334,7 @@ impl super::EmbeddedRdpWidget {
         // Compute RDP desktop scale factor as percentage (e.g. 2.0 → 200)
         // This tells the Windows server what DPI scaling to use so UI elements
         // appear at the correct logical size on HiDPI displays.
-        #[expect(
-            clippy::cast_possible_truncation,
-            clippy::cast_sign_loss,
-            reason = "value range fits the target type and is non-negative by construction in this code path"
-        )]
-        let rdp_scale_percent = (effective_scale * 100.0) as u32;
+        let rdp_scale_percent = super::rdp_scale_percent(effective_scale);
 
         tracing::debug!(
             protocol = "rdp",
@@ -615,6 +610,7 @@ impl super::EmbeddedRdpWidget {
                         let _ = sender.send(RdpClientCommand::SetDesktopSize {
                             width: sw,
                             height: sh,
+                            scale_percent: Some(super::rdp_scale_percent(effective_scale)),
                         });
                     }
                     tracing::info!(
@@ -633,7 +629,8 @@ impl super::EmbeddedRdpWidget {
         // connection path sets the state directly and never calls set_state (#185).
         let jiggler = self.jiggler_handles();
 
-        // Capture effective scale for cursor size correction
+        // Server cursors arrive at the session DPI (== our display scale); the
+        // handler downscales device→logical px for GDK using this factor.
         let cursor_scale = effective_scale;
 
         // Capture local cursor visibility preference
@@ -1649,7 +1646,10 @@ impl super::EmbeddedRdpWidget {
     ) {
         use gtk4::gdk;
 
-        let expected = usize::from(width) * usize::from(height) * 4;
+        let bpp = 4;
+        let w = usize::from(width);
+        let h = usize::from(height);
+        let expected = w * h * bpp;
         if data.len() < expected {
             tracing::warn!(
                 expected,
@@ -1659,125 +1659,111 @@ impl super::EmbeddedRdpWidget {
             return;
         }
 
-        // Crop transparent padding from bottom and right edges.
-        // Windows cursors are padded to 32×32 or 64×64 but the visible
-        // content is smaller. The transparent padding can cause rendering
-        // artifacts on some Wayland compositors after downscaling.
-        let w = usize::from(width);
-        let h = usize::from(height);
-        let bpp = 4;
+        // The server renders the pointer at the session DPI, which now matches
+        // our display scale — so a 200% session sends a 2× (device-pixel)
+        // cursor bitmap. GDK interprets a cursor texture's dimensions as
+        // *logical* pixels (there is no HiDPI/scale hint on `from_texture`), so
+        // handing it the raw device bitmap yields a cursor ~`scale`× too large.
+        // We therefore downscale device→logical here.
+        //
+        // The downscale is an area-average (box filter), NOT nearest-neighbor:
+        // NN samples one source pixel per destination pixel and drops the rest,
+        // which erased the thin 1px strokes of HiDPI cursors (the "half missing"
+        // pointer). Averaging every covered source pixel preserves them.
+        //
+        // The logical-size texture is mildly soft: the compositor upscales it
+        // back to device resolution for the pointer's monitor. GTK 4.14 has no
+        // way to pass a scaled cursor buffer. When built against GTK ≥ 4.16
+        // (e.g. the Flatpak runtime), `gdk_cursor_new_from_callback` would let
+        // us hand back the full-resolution bitmap plus its scale for a crisp
+        // HiDPI cursor with no downscale.
+        // TODO: add a v4_16-gated `from_callback` path for a crisp cursor.
+        let scale = cursor_scale.max(1.0);
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "cursor dimensions are small and non-negative; logical size fits usize"
+        )]
+        let dst_w = ((w as f64 / scale).round() as usize).max(1);
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "cursor dimensions are small and non-negative; logical size fits usize"
+        )]
+        let dst_h = ((h as f64 / scale).round() as usize).max(1);
 
-        // Find last row with any non-transparent pixel
-        let crop_h = (0..h)
-            .rev()
-            .find(|&row| {
-                let base = row * w * bpp;
-                (0..w).any(|col| data[base + col * bpp + 3] != 0)
-            })
-            .map_or(1, |row| row + 1);
-
-        // Find last column with any non-transparent pixel
-        let crop_w = (0..w)
-            .rev()
-            .find(|&col| (0..crop_h).any(|row| data[row * w * bpp + col * bpp + 3] != 0))
-            .map_or(1, |col| col + 1);
-
-        // Build cropped RGBA buffer
-        let cropped_size = crop_w * crop_h * bpp;
-        let mut cropped = Vec::with_capacity(cropped_size);
-        for row in 0..crop_h {
-            let src_start = row * w * bpp;
-            let src_end = src_start + crop_w * bpp;
-            cropped.extend_from_slice(&data[src_start..src_end]);
-        }
-
-        let scale = cursor_scale;
-        if scale > 1.01 {
+        // Contiguous source spans: sx1 of column N equals sx0 of column N+1, so
+        // every source pixel contributes to exactly one destination pixel.
+        let span = |d: usize, src_max: usize| {
             #[expect(
                 clippy::cast_possible_truncation,
                 clippy::cast_sign_loss,
-                reason = "value range fits the target type and is non-negative by construction in this code path"
+                reason = "cursor dimensions are small and non-negative; span fits usize"
             )]
-            let logical_w = (crop_w as f64 / scale).round().max(1.0) as u16;
+            let lo = ((d as f64) * scale).round() as usize;
             #[expect(
                 clippy::cast_possible_truncation,
                 clippy::cast_sign_loss,
-                reason = "value range fits the target type and is non-negative by construction in this code path"
+                reason = "cursor dimensions are small and non-negative; span fits usize"
             )]
-            let logical_h = (crop_h as f64 / scale).round().max(1.0) as u16;
-            let hotspot_logical_x = (f64::from(hotspot_x) / scale).round() as i32;
-            let hotspot_logical_y = (f64::from(hotspot_y) / scale).round() as i32;
+            let hi = (((d + 1) as f64) * scale).round() as usize;
+            (lo.min(src_max), hi.min(src_max).max(lo + 1).min(src_max))
+        };
 
-            let src_w = crop_w;
-            let dst_w = usize::from(logical_w);
-            let dst_h = usize::from(logical_h);
-
-            // Nearest-neighbor downscale with premultiplied alpha + R↔B swap
-            let mut scaled = vec![0u8; dst_w * dst_h * bpp];
-            for dy in 0..dst_h {
-                #[expect(
-                    clippy::cast_possible_truncation,
-                    clippy::cast_sign_loss,
-                    reason = "value range fits the target type and is non-negative by construction in this code path"
-                )]
-                let sy = (dy as f64 * scale) as usize;
-                for dx in 0..dst_w {
-                    #[expect(
-                        clippy::cast_possible_truncation,
-                        clippy::cast_sign_loss,
-                        reason = "value range fits the target type and is non-negative by construction in this code path"
-                    )]
-                    let sx = (dx as f64 * scale) as usize;
-                    let src_off = (sy * src_w + sx) * bpp;
-                    let dst_off = (dy * dst_w + dx) * bpp;
-                    if src_off + 4 <= cropped.len() {
-                        let a = u16::from(cropped[src_off + 3]);
-                        if a == 0 {
-                            // transparent — [0,0,0,0]
-                        } else if a == 255 {
-                            scaled[dst_off] = cropped[src_off + 2]; // B
-                            scaled[dst_off + 1] = cropped[src_off + 1]; // G
-                            scaled[dst_off + 2] = cropped[src_off]; // R
-                            scaled[dst_off + 3] = 255;
-                        } else {
-                            scaled[dst_off] = (u16::from(cropped[src_off + 2]) * a / 255) as u8;
-                            scaled[dst_off + 1] = (u16::from(cropped[src_off + 1]) * a / 255) as u8;
-                            scaled[dst_off + 2] = (u16::from(cropped[src_off]) * a / 255) as u8;
-                            scaled[dst_off + 3] = cropped[src_off + 3];
-                        }
+        // Output is B8g8r8a8 premultiplied: server data is straight-alpha RGBA,
+        // so we premultiply before averaging (correct edge blending) and swap
+        // R↔B on write.
+        let mut out = vec![0u8; dst_w * dst_h * bpp];
+        for dy in 0..dst_h {
+            let (sy0, sy1) = span(dy, h);
+            for dx in 0..dst_w {
+                let (sx0, sx1) = span(dx, w);
+                let (mut acc_r, mut acc_g, mut acc_b, mut acc_a, mut count) =
+                    (0u32, 0u32, 0u32, 0u32, 0u32);
+                for sy in sy0..sy1 {
+                    for sx in sx0..sx1 {
+                        let o = (sy * w + sx) * bpp;
+                        let a = u32::from(data[o + 3]);
+                        acc_r += u32::from(data[o]) * a / 255;
+                        acc_g += u32::from(data[o + 1]) * a / 255;
+                        acc_b += u32::from(data[o + 2]) * a / 255;
+                        acc_a += a;
+                        count += 1;
                     }
                 }
+                let count = count.max(1);
+                let d = (dy * dst_w + dx) * bpp;
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "averaged 8-bit channel stays within u8"
+                )]
+                {
+                    out[d] = (acc_b / count) as u8; // B
+                    out[d + 1] = (acc_g / count) as u8; // G
+                    out[d + 2] = (acc_r / count) as u8; // R
+                    out[d + 3] = (acc_a / count) as u8; // A
+                }
             }
-
-            let bytes = glib::Bytes::from(&scaled);
-            let texture = gdk::MemoryTexture::new(
-                i32::from(logical_w),
-                i32::from(logical_h),
-                gdk::MemoryFormat::B8g8r8a8Premultiplied,
-                &bytes,
-                usize::from(logical_w) * bpp,
-            );
-            let cursor =
-                gdk::Cursor::from_texture(&texture, hotspot_logical_x, hotspot_logical_y, None);
-            drawing_area.set_cursor(Some(&cursor));
-        } else {
-            // 1x display — no scaling, use cropped RGBA directly
-            let bytes = glib::Bytes::from(&cropped);
-            let texture = gdk::MemoryTexture::new(
-                crop_w as i32,
-                crop_h as i32,
-                gdk::MemoryFormat::R8g8b8a8,
-                &bytes,
-                crop_w * bpp,
-            );
-            let cursor = gdk::Cursor::from_texture(
-                &texture,
-                i32::from(hotspot_x),
-                i32::from(hotspot_y),
-                None,
-            );
-            drawing_area.set_cursor(Some(&cursor));
         }
+
+        let hotspot_logical_x = (f64::from(hotspot_x) / scale).round() as i32;
+        let hotspot_logical_y = (f64::from(hotspot_y) / scale).round() as i32;
+
+        let bytes = glib::Bytes::from(&out);
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_possible_wrap,
+            reason = "logical cursor dimensions are small and fit i32/i32 texture args"
+        )]
+        let texture = gdk::MemoryTexture::new(
+            dst_w as i32,
+            dst_h as i32,
+            gdk::MemoryFormat::B8g8r8a8Premultiplied,
+            &bytes,
+            dst_w * bpp,
+        );
+        let cursor = gdk::Cursor::from_texture(&texture, hotspot_logical_x, hotspot_logical_y, None);
+        drawing_area.set_cursor(Some(&cursor));
     }
 
     /// Fallback when rdp-embedded feature is not enabled

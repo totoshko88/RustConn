@@ -181,11 +181,24 @@ impl RdpClient {
 
     /// Requests a desktop size change.
     ///
+    /// `scale_percent` is the desktop scale factor as a percentage (e.g. `200`
+    /// for 200%) forwarded to the server; `None` leaves it at the server default
+    /// of 100%.
+    ///
     /// # Errors
     ///
     /// Returns error if not connected or channel is closed.
-    pub fn set_desktop_size(&self, width: u16, height: u16) -> Result<(), RdpClientError> {
-        self.send_command(RdpClientCommand::SetDesktopSize { width, height })
+    pub fn set_desktop_size(
+        &self,
+        width: u16,
+        height: u16,
+        scale_percent: Option<u32>,
+    ) -> Result<(), RdpClientError> {
+        self.send_command(RdpClientCommand::SetDesktopSize {
+            width,
+            height,
+            scale_percent,
+        })
     }
 
     /// Disconnects from the RDP server and cleans up resources
