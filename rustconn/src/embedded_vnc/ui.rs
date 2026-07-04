@@ -20,8 +20,8 @@ use crate::i18n::{i18n, i18n_f};
 use super::EmbeddedVncWidget;
 #[cfg(feature = "vnc-embedded")]
 use super::VncClientCommand;
-use super::find_best_standard_resolution;
 use super::VncConnectionState;
+use super::find_best_standard_resolution;
 
 impl EmbeddedVncWidget {
     /// Creates a new embedded VNC widget
