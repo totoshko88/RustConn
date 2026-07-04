@@ -131,6 +131,11 @@ impl HighlightOverlay {
                     .vadjustment()
                     .map_or(0_i64, |adj| adj.value() as i64);
 
+                // ponytail: re-runs the rule regex over every visible row on
+                // each repaint (already coalesced to 1/frame). Fine for a
+                // ~24-50 row viewport with short lines; if profiling ever shows
+                // this hot (huge terminals + many rules), cache matches keyed by
+                // (row text, rules version) and skip unchanged rows.
                 for visible_row in 0..row_count {
                     let buffer_row = viewport_top.saturating_add(visible_row);
                     let (line_opt, _) = term_for_draw.text_range_format(
