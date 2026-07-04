@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **RDP display scale was lost on dynamic resize** ([#207](https://github.com/totoshko88/RustConn/pull/207)) — the MS-RDPEDISP `SetDesktopSize` path sent the new resolution without a desktop scale factor (`encode_resize(.., None, None)`), so after any dynamic resize (e.g. toggling the sidebar with F9) the server reverted to 100% DPI and an explicitly-scaled HiDPI session shrank to a tiny UI. The requested scale is now threaded through `SetDesktopSize → encode_resize` and re-sent on every dynamic resize and on the initial settle-snap, so an explicit Display Scale (e.g. 200%) stays crisp across resizes. With `Display Scale = Auto` the factor is 100% on the logical-sized desktop, as introduced in 0.17.10. Based on the contribution by @dwetscher
+- **Embedded RDP HiDPI cursor was partly missing and mis-sized** ([#207](https://github.com/totoshko88/RustConn/pull/207)) — on a scaled session the pointer bitmap arrives at the session DPI (2× on 200%) and was downscaled to logical size with a nearest-neighbor sampler that dropped every other row/column, erasing the thin 1px strokes of HiDPI cursors (the "half-missing" pointer). Cursor downscaling is now an alpha-weighted area average (box filter) over every covered source pixel, preserving thin strokes, with correct premultiplied-alpha edge blending and R↔B swap for GDK. At `Display Scale = Auto` (100% session) it is an identity copy. Based on the contribution by @dwetscher
+
 ## [0.17.10] - 2026-07-04
 
 ### Fixed

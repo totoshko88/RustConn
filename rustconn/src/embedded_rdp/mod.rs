@@ -127,6 +127,23 @@ const fn round_rdp_desktop(width: u32, height: u32) -> (u32, u32) {
     )
 }
 
+/// Converts an effective display scale (e.g. `2.0`) into the RDP desktop scale
+/// factor percentage (e.g. `200`) forwarded to the server in a Display Control
+/// monitor layout. Mirrors the initial-connect computation so a dynamic resize
+/// keeps the same server-side DPI the user selected.
+///
+/// With `Display Scale = Auto` the effective scale is `1.0`, so this returns
+/// `100` and the remote renders at native 100% on the logical-sized desktop.
+#[cfg(feature = "rdp-embedded")]
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "effective scale is a small positive multiplier; the percentage fits u32"
+)]
+fn rdp_scale_percent(effective_scale: f64) -> u32 {
+    (effective_scale * 100.0) as u32
+}
+
 /// Launches `command` through the Windows Run dialog, layout-independently.
 ///
 /// Opens Run with the Win+R scancode hotkey, types `command` via Unicode

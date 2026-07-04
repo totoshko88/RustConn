@@ -684,6 +684,10 @@ pub enum RdpClientCommand {
         width: u16,
         /// Desired height
         height: u16,
+        /// Desktop scale factor as a percentage (e.g. `200` for 200%), forwarded
+        /// to the server in the MS-RDPEDISP monitor layout. `None` leaves the
+        /// scale factor unset, which the server interprets as 100%.
+        scale_percent: Option<u32>,
     },
 
     /// Send Ctrl+Alt+Del key sequence
