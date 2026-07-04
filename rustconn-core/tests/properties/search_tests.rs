@@ -360,7 +360,7 @@ proptest! {
 
         prop_assert!(!results.is_empty(), "Should find connection by name");
         prop_assert!(
-            results[0].matched_fields.contains(&"name".to_string()),
+            results[0].matched_fields.iter().any(|f| f.as_ref() == "name"),
             "Should indicate name field matched"
         );
     }
@@ -383,7 +383,7 @@ proptest! {
 
         prop_assert!(!results.is_empty(), "Should find connection by host");
         prop_assert!(
-            results[0].matched_fields.contains(&"host".to_string()),
+            results[0].matched_fields.iter().any(|f| f.as_ref() == "host"),
             "Should indicate host field matched"
         );
     }
@@ -407,7 +407,7 @@ proptest! {
 
         prop_assert!(!results.is_empty(), "Should find connection by tag");
         prop_assert!(
-            results[0].matched_fields.contains(&"tags".to_string()),
+            results[0].matched_fields.iter().any(|f| f.as_ref() == "tags"),
             "Should indicate tags field matched"
         );
     }
@@ -433,7 +433,7 @@ proptest! {
 
         prop_assert!(!results.is_empty(), "Should find connection by group name");
         prop_assert!(
-            results[0].matched_fields.contains(&"group".to_string()),
+            results[0].matched_fields.iter().any(|f| f.as_ref() == "group"),
             "Should indicate group field matched"
         );
     }

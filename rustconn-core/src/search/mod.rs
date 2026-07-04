@@ -36,6 +36,7 @@ pub mod cache;
 pub mod command_palette;
 
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -156,8 +157,12 @@ pub struct ConnectionSearchResult {
     pub connection_id: Uuid,
     /// Relevance score (0.0 to 1.0, higher is more relevant)
     pub score: f32,
-    /// Fields that matched the query
-    pub matched_fields: Vec<String>,
+    /// Fields that matched the query.
+    ///
+    /// Static field labels (`"name"`, `"host"`, `"tags"`, `"group"`,
+    /// `"username"`, `"description"`) are borrowed `&'static str`; only the
+    /// per-connection `custom_property:<name>` entries allocate.
+    pub matched_fields: Vec<Cow<'static, str>>,
     /// Highlight positions for matched text
     pub highlights: Vec<MatchHighlight>,
 }
@@ -176,7 +181,7 @@ impl ConnectionSearchResult {
 
     /// Adds a matched field
     #[must_use]
-    pub fn with_matched_field(mut self, field: impl Into<String>) -> Self {
+    pub fn with_matched_field(mut self, field: impl Into<Cow<'static, str>>) -> Self {
         self.matched_fields.push(field.into());
         self
     }
@@ -474,7 +479,7 @@ impl SearchEngine {
         let desc_score = self.fuzzy_score(&query.text, description);
         if desc_score > 0.0 {
             *max_score = max_score.max(desc_score * 0.5);
-            result.matched_fields.push("description".to_string());
+            result.matched_fields.push(Cow::Borrowed("description"));
             if let Some(highlight) = self.find_highlight(&query.text, description) {
                 result.highlights.push(MatchHighlight::new(
                     "description",
@@ -508,7 +513,7 @@ impl SearchEngine {
         let name_score = self.fuzzy_score(&query.text, &connection.name);
         if name_score > 0.0 {
             max_score = max_score.max(name_score * 1.0);
-            result.matched_fields.push("name".to_string());
+            result.matched_fields.push(Cow::Borrowed("name"));
             if let Some(highlight) = self.find_highlight(&query.text, &connection.name) {
                 result
                     .highlights
@@ -520,7 +525,7 @@ impl SearchEngine {
         let host_score = self.fuzzy_score(&query.text, &connection.host);
         if host_score > 0.0 {
             max_score = max_score.max(host_score * 0.9);
-            result.matched_fields.push("host".to_string());
+            result.matched_fields.push(Cow::Borrowed("host"));
             if let Some(highlight) = self.find_highlight(&query.text, &connection.host) {
                 result
                     .highlights
@@ -538,8 +543,8 @@ impl SearchEngine {
             let tag_score = self.fuzzy_score(&query.text, tag);
             if tag_score > 0.0 {
                 max_score = max_score.max(tag_score * 0.8);
-                if !result.matched_fields.iter().any(|f| f == "tags") {
-                    result.matched_fields.push("tags".to_string());
+                if !result.matched_fields.iter().any(|f| f.as_ref() == "tags") {
+                    result.matched_fields.push(Cow::Borrowed("tags"));
                 }
                 if let Some(highlight) = self.find_highlight(&query.text, tag) {
                     result
@@ -556,7 +561,7 @@ impl SearchEngine {
             let group_score = self.fuzzy_score(&query.text, &group.name);
             if group_score > 0.0 {
                 max_score = max_score.max(group_score * 0.7);
-                result.matched_fields.push("group".to_string());
+                result.matched_fields.push(Cow::Borrowed("group"));
                 if let Some(highlight) = self.find_highlight(&query.text, &group.name) {
                     result
                         .highlights
@@ -572,8 +577,12 @@ impl SearchEngine {
             if name_score > 0.0 {
                 max_score = max_score.max(name_score * 0.6);
                 let field_name = format!("custom_property:{}", prop.name);
-                if !result.matched_fields.contains(&field_name) {
-                    result.matched_fields.push(field_name.clone());
+                if !result
+                    .matched_fields
+                    .iter()
+                    .any(|f| f.as_ref() == field_name)
+                {
+                    result.matched_fields.push(Cow::Owned(field_name));
                 }
             }
 
@@ -583,8 +592,12 @@ impl SearchEngine {
                 if value_score > 0.0 {
                     max_score = max_score.max(value_score * 0.6);
                     let field_name = format!("custom_property:{}", prop.name);
-                    if !result.matched_fields.contains(&field_name) {
-                        result.matched_fields.push(field_name);
+                    if !result
+                        .matched_fields
+                        .iter()
+                        .any(|f| f.as_ref() == field_name)
+                    {
+                        result.matched_fields.push(Cow::Owned(field_name));
                     }
                 }
             }
@@ -595,7 +608,7 @@ impl SearchEngine {
             let username_score = self.fuzzy_score(&query.text, username);
             if username_score > 0.0 {
                 max_score = max_score.max(username_score * 0.5);
-                result.matched_fields.push("username".to_string());
+                result.matched_fields.push(Cow::Borrowed("username"));
             }
         }
 
@@ -1228,7 +1241,8 @@ mod tests {
         assert!(
             results[0]
                 .matched_fields
-                .contains(&"description".to_string())
+                .iter()
+                .any(|f| f.as_ref() == "description")
         );
     }
 
