@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Internal
 
 - **Command Palette dialog now has an accessible title** — the `adw::Dialog` was created with an empty title, leaving screen readers without a name for the window; it is now titled "Command Palette". Also wrapped the smart-folder example placeholders ("Prod SSH Servers", host pattern, example tags) in `i18n()` so they are translatable, and refreshed the translation template (16 languages)
+- **Bumped desktop-integration dependencies** — `cpal` 0.17 → 0.18 (audio output for embedded RDP; migrated to the new by-value `StreamConfig` argument of `build_output_stream`, streams are still started explicitly via `play()` which the new version no longer does implicitly), and the macOS tray stack `muda` 0.16 → 0.19 and `tray-icon` 0.20 → 0.24 (drop-in for the menu/icon/builder API used here). No user-facing change; the remaining transitive `windows-*` 0.42 duplicates were dropped from the lockfile
 
 ### Fixed
 

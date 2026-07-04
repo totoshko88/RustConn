@@ -35,16 +35,16 @@ ksni = { version = "0.3", features = ["blocking"], optional = true }
 # SVG rendering for tray icon (renders SVG to ARGB32 pixmap)
 resvg = { version = "0.47", optional = true }
 # macOS tray icon via NSStatusItem (cross-platform crate, used only on macOS)
-tray-icon = { version = "0.20", optional = true }
+tray-icon = { version = "0.24", optional = true }
 # Menu builder for macOS tray (companion to tray-icon)
-muda = { version = "0.16", optional = true }
+muda = { version = "0.19", optional = true }
 # Internationalization (gettext)
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
 # Tracing for structured logging
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 # Audio playback for RDP embedded mode
-cpal = { version = "0.17.3", optional = true }
+cpal = { version = "0.18", optional = true }
 serde = { workspace = true, features = ["derive"] }
 shell-words = "1"
 nix = { version = "0.31", features = ["signal", "process"] }

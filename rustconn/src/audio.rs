@@ -161,8 +161,8 @@ impl RdpAudioPlayer {
         let volume = Arc::clone(&self.volume);
 
         let stream = match format.bits_per_sample {
-            16 => self.create_i16_stream(&device, &config, buffer, volume)?,
-            8 => self.create_u8_stream(&device, &config, buffer, volume)?,
+            16 => self.create_i16_stream(&device, config, buffer, volume)?,
+            8 => self.create_u8_stream(&device, config, buffer, volume)?,
             _ => {
                 return Err(AudioError::UnsupportedFormat(format!(
                     "Unsupported bits per sample: {}",
@@ -192,7 +192,7 @@ impl RdpAudioPlayer {
     fn create_i16_stream(
         &self,
         device: &cpal::Device,
-        config: &StreamConfig,
+        config: StreamConfig,
         buffer: Arc<Mutex<AudioBuffer>>,
         volume: Arc<AtomicU32>,
     ) -> Result<Stream, AudioError> {
@@ -243,7 +243,7 @@ impl RdpAudioPlayer {
     fn create_u8_stream(
         &self,
         device: &cpal::Device,
-        config: &StreamConfig,
+        config: StreamConfig,
         buffer: Arc<Mutex<AudioBuffer>>,
         volume: Arc<AtomicU32>,
     ) -> Result<Stream, AudioError> {
