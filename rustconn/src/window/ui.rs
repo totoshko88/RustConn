@@ -232,7 +232,7 @@ pub fn create_app_menu() -> gio::Menu {
     let conn_section = gio::Menu::new();
     conn_section.append(Some(&i18n("New Connection")), Some("win.new-connection"));
     conn_section.append(
-        Some(&i18n("New Connection (Advanced)\u{2026}")),
+        Some(&i18n("New Connection (Advanced)…")),
         Some("win.new-connection-advanced"),
     );
     conn_section.append(Some(&i18n("New Group")), Some("win.new-group"));

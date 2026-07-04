@@ -1611,7 +1611,7 @@ impl MainWindow {
                         let name = conn.name.clone();
                         drop(state_ref);
                         crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
-                            "Connection to \u{2018}{}\u{2019} failed",
+                            "Connection to ‘{}’ failed",
                             &[&name],
                         ));
                     }
@@ -2082,7 +2082,7 @@ impl MainWindow {
                         glib::idle_add_local_once(move || {
                             Self::reload_sidebar_preserving_state(&state_c, &sidebar_c);
                             toast_c.show_success(&crate::i18n::i18n_f(
-                                "Connection \u{201c}{}\u{201d} created",
+                                "Connection “{}” created",
                                 &[&name],
                             ));
                         });
@@ -2257,7 +2257,7 @@ impl MainWindow {
                     glib::idle_add_local_once(move || {
                         Self::reload_sidebar_preserving_state(&state_c, &sidebar_c);
                         toast_c.show_success(&crate::i18n::i18n_f(
-                            "Connection \u{201c}{}\u{201d} created",
+                            "Connection “{}” created",
                             &[&conn_name],
                         ));
                     });

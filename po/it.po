@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-04 23:03+0300\n"
+"POT-Creation-Date: 2026-07-05 00:03+0300\n"
 "PO-Revision-Date: 2026-06-14 09:46+0000\n"
 "Last-Translator: Albano Battistella\n"
 "Language-Team: Italian\n"
@@ -3296,8 +3296,8 @@ msgstr "Emoji o nome icona (opzionale)"
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:162
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:384
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:200
-msgid "Advanced\\u{2026}"
-msgstr "Avanzate\\u{2026}"
+msgid "Advanced…"
+msgstr "Avanzate…"
 
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:165
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:167
@@ -3334,8 +3334,8 @@ msgid "Select SSH Key File"
 msgstr "Seleziona file chiave SSH"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:100
-msgid "Optional \\u{2014} auto-generated if empty"
-msgstr "Facoltativo \\u{2014} generato automaticamente se vuoto"
+msgid "Optional — auto-generated if empty"
+msgstr "Facoltativo — generato automaticamente se vuoto"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:118
 msgid "Default: {}"
@@ -3490,8 +3490,8 @@ msgid "Gateway URL"
 msgstr "URL del gateway"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:973
-msgid "More\\u{2026}"
-msgstr "Altro\\u{2026}"
+msgid "More…"
+msgstr "Altro…"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:981
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:986
@@ -7493,7 +7493,7 @@ msgid "SSH Connection"
 msgstr "Connessione SSH"
 
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:90
-msgid "Filter connections\\u{2026}"
+msgid "Filter connections…"
 msgstr "Filtra connessioni…"
 
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:98
@@ -7698,18 +7698,15 @@ msgstr "Variabile non configurata"
 
 #: rustconn/src/dialogs/variable_setup.rs:57
 msgid ""
-"Connection \\u{2018}{}\\u{2019} requires variable \\u{2018}{}\\u{2019}\n"
+"Connection ‘{}’ requires variable ‘{}’\n"
 "({})"
 msgstr ""
-"La connessione \\u{2018}{}\\u{2019} richiede la variabile \\u{2018}{}"
-"\\u{2019}\n"
+"La connessione ‘{}’ richiede la variabile ‘{}’\n"
 "({})"
 
 #: rustconn/src/dialogs/variable_setup.rs:62
-msgid "Connection \\u{2018}{}\\u{2019} requires variable \\u{2018}{}\\u{2019}"
-msgstr ""
-"La connessione \\u{2018}{}\\u{2019} richiede la variabile \\u{2018}{}"
-"\\u{2019}"
+msgid "Connection ‘{}’ requires variable ‘{}’"
+msgstr "La connessione ‘{}’ richiede la variabile ‘{}’"
 
 #: rustconn/src/dialogs/variable_setup.rs:78
 msgid "Store in"
@@ -7934,7 +7931,7 @@ msgid "No remote clipboard data"
 msgstr "Nessun dato negli appunti remoti"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:193
-#: rustconn/src/embedded_vnc/ui.rs:693
+#: rustconn/src/embedded_vnc/ui.rs:694
 msgid "Pasted {} chars"
 msgstr "Incollati {} caratteri"
 
@@ -7951,36 +7948,36 @@ msgstr ""
 "FreeRDP sia installato e che il server sia raggiungibile; esegui con "
 "RUST_LOG=debug per i dettagli."
 
-#: rustconn/src/embedded_rdp/connection.rs:940
+#: rustconn/src/embedded_rdp/connection.rs:942
 msgid "Copy remote clipboard to local"
 msgstr "Copia appunti remoti in locale"
 
-#: rustconn/src/embedded_rdp/connection.rs:1154
-#: rustconn/src/embedded_rdp/connection.rs:1233
+#: rustconn/src/embedded_rdp/connection.rs:1156
+#: rustconn/src/embedded_rdp/connection.rs:1235
 msgid "Save {} Files"
 msgstr "Salva {} file"
 
-#: rustconn/src/embedded_rdp/connection.rs:1158
+#: rustconn/src/embedded_rdp/connection.rs:1160
 msgid "Save {} files from remote clipboard"
 msgstr "Salva {} file dagli appunti remoti"
 
-#: rustconn/src/embedded_rdp/connection.rs:1196
+#: rustconn/src/embedded_rdp/connection.rs:1198
 msgid "Downloaded {}/{} files"
 msgstr "Scaricati {}/{} file"
 
-#: rustconn/src/embedded_rdp/connection.rs:1238
+#: rustconn/src/embedded_rdp/connection.rs:1240
 msgid "Saved {} files"
 msgstr "{} file salvati"
 
-#: rustconn/src/embedded_rdp/connection.rs:1311
+#: rustconn/src/embedded_rdp/connection.rs:1313
 msgid "RTT: {} ms"
 msgstr "RTT: {} ms"
 
-#: rustconn/src/embedded_rdp/connection.rs:1495
+#: rustconn/src/embedded_rdp/connection.rs:1497
 msgid "Using external RDP client (server incompatible)"
 msgstr "Client RDP esterno in uso (server incompatibile)"
 
-#: rustconn/src/embedded_rdp/connection.rs:1512
+#: rustconn/src/embedded_rdp/connection.rs:1514
 msgid ""
 "RDP server sent unsupported data. Install FreeRDP (xfreerdp3) for "
 "compatibility."
@@ -7988,47 +7985,47 @@ msgstr ""
 "Il server RDP ha inviato dati non supportati. Installa FreeRDP (xfreerdp3) "
 "per la compatibilità."
 
-#: rustconn/src/embedded_rdp/connection.rs:1550
+#: rustconn/src/embedded_rdp/connection.rs:1552
 msgid "Authentication failed: invalid username or password."
 msgstr "Autenticazione fallita: nome utente o password non validi."
 
-#: rustconn/src/embedded_rdp/connection.rs:1554
+#: rustconn/src/embedded_rdp/connection.rs:1556
 msgid "Authentication failed: account is disabled."
 msgstr "Autenticazione fallita: l'account è disabilitato."
 
-#: rustconn/src/embedded_rdp/connection.rs:1558
+#: rustconn/src/embedded_rdp/connection.rs:1560
 msgid "Authentication failed: account is locked out."
 msgstr "Autenticazione fallita: l'account è bloccato."
 
-#: rustconn/src/embedded_rdp/connection.rs:1562
+#: rustconn/src/embedded_rdp/connection.rs:1564
 msgid "Authentication failed: password has expired."
 msgstr "Autenticazione fallita: la password è scaduta."
 
-#: rustconn/src/embedded_rdp/connection.rs:1566
+#: rustconn/src/embedded_rdp/connection.rs:1568
 msgid "Authentication failed: account has expired."
 msgstr "Autenticazione fallita: l'account è scaduto."
 
-#: rustconn/src/embedded_rdp/connection.rs:1570
+#: rustconn/src/embedded_rdp/connection.rs:1572
 msgid "Authentication failed: user is not allowed to log on to this computer."
 msgstr ""
 "Autenticazione fallita: l'utente non è autorizzato ad accedere a questo "
 "computer."
 
-#: rustconn/src/embedded_rdp/connection.rs:1574
+#: rustconn/src/embedded_rdp/connection.rs:1576
 msgid "NLA authentication failed. Check username and password."
 msgstr "Autenticazione NLA fallita. Verificare nome utente e password."
 
-#: rustconn/src/embedded_rdp/connection.rs:1578
+#: rustconn/src/embedded_rdp/connection.rs:1580
 msgid "TLS connection failed. The server may not support this security level."
 msgstr ""
 "Connessione TLS fallita. Il server potrebbe non supportare questo livello di "
 "sicurezza."
 
-#: rustconn/src/embedded_rdp/connection.rs:1582
+#: rustconn/src/embedded_rdp/connection.rs:1584
 msgid "Connection refused. Check host and port."
 msgstr "Connessione rifiutata. Verificare l'host e la porta."
 
-#: rustconn/src/embedded_rdp/connection.rs:1585
+#: rustconn/src/embedded_rdp/connection.rs:1587
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "Connessione scaduta. Verificare che l'host sia raggiungibile."
 
@@ -8205,13 +8202,13 @@ msgstr "Download in corso..."
 msgid "Downloading files..."
 msgstr "Download dei file..."
 
-#: rustconn/src/embedded_rdp/resize.rs:186
-#: rustconn/src/embedded_rdp/resize.rs:375
+#: rustconn/src/embedded_rdp/resize.rs:187
+#: rustconn/src/embedded_rdp/resize.rs:376
 msgid "Resizing…"
 msgstr "Ridimensionamento…"
 
-#: rustconn/src/embedded_rdp/resize.rs:214
-#: rustconn/src/embedded_rdp/resize.rs:393
+#: rustconn/src/embedded_rdp/resize.rs:215
+#: rustconn/src/embedded_rdp/resize.rs:394
 msgid "Reconnecting..."
 msgstr "Riconnessione..."
 
@@ -8551,8 +8548,8 @@ msgid "Duplicate"
 msgstr "Duplica"
 
 #: rustconn/src/sidebar_ui.rs:207
-msgid "Duplicate via Wizard\\u{2026}"
-msgstr "Duplica tramite procedura guidata\\u{2026}"
+msgid "Duplicate via Wizard…"
+msgstr "Duplica tramite procedura guidata…"
 
 #: rustconn/src/sidebar_ui.rs:211
 msgid "Move to Group..."
@@ -9848,8 +9845,8 @@ msgid "Dismiss"
 msgstr "Ignora"
 
 #: rustconn/src/window/mod.rs:1614
-msgid "Connection to \\u{2018}{}\\u{2019} failed"
-msgstr "Connessione a \\u{2018}{}\\u{2019} non riuscita"
+msgid "Connection to ‘{}’ failed"
+msgstr "Connessione a ‘{}’ non riuscita"
 
 #: rustconn/src/window/mod.rs:1803 rustconn/src/window/mod.rs:1817
 msgid "Pre-connect task failed: {}"
@@ -9864,8 +9861,8 @@ msgid "SPA failed: {}"
 msgstr "SPA non riuscito: {}"
 
 #: rustconn/src/window/mod.rs:2085 rustconn/src/window/mod.rs:2260
-msgid "Connection \\u{201c}{}\\u{201d} created"
-msgstr "Connessione \\u{201c}{}\\u{201d} creata"
+msgid "Connection “{}” created"
+msgstr "Connessione “{}” creata"
 
 #: rustconn/src/window/mod.rs:2689
 msgid "Close RustConn?"
@@ -10366,8 +10363,8 @@ msgid "Keyboard passthrough active — click to disable"
 msgstr "Passaggio diretto tastiera attivo — clic per disattivare"
 
 #: rustconn/src/window/ui.rs:235
-msgid "New Connection (Advanced)\\u{2026}"
-msgstr "Nuova connessione (avanzata)\\u{2026}"
+msgid "New Connection (Advanced)…"
+msgstr "Nuova connessione (avanzata)…"
 
 #: rustconn/src/window/ui.rs:245
 msgid "Snippets..."

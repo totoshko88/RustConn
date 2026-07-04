@@ -197,7 +197,7 @@ impl ProtocolPage {
         footer.set_margin_bottom(6);
         footer.set_margin_start(12);
         footer.set_margin_end(12);
-        let advanced_btn = Button::with_label(&i18n("Advanced\u{2026}"));
+        let advanced_btn = Button::with_label(&i18n("Advanced…"));
         advanced_btn.add_css_class("flat");
         advanced_btn.add_css_class("dim-label");
         advanced_btn.set_tooltip_text(Some(&i18n("Open full connection editor")));

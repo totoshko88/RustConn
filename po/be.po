@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-04 23:03+0300\n"
+"POT-Creation-Date: 2026-07-05 00:03+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Belarusian\n"
@@ -3286,8 +3286,8 @@ msgstr "Эмодзі або назва значка (неабавязкова)"
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:162
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:384
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:200
-msgid "Advanced\\u{2026}"
-msgstr "Дадаткова\\u{2026}"
+msgid "Advanced…"
+msgstr "Дадаткова…"
 
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:165
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:167
@@ -3324,8 +3324,8 @@ msgid "Select SSH Key File"
 msgstr "Абраць файл ключа SSH"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:100
-msgid "Optional \\u{2014} auto-generated if empty"
-msgstr "Неабавязкова \\u{2014} аўтаматычна генеруецца"
+msgid "Optional — auto-generated if empty"
+msgstr "Неабавязкова — аўтаматычна генеруецца"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:118
 msgid "Default: {}"
@@ -3480,8 +3480,8 @@ msgid "Gateway URL"
 msgstr "URL шлюза"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:973
-msgid "More\\u{2026}"
-msgstr "Яшчэ\\u{2026}"
+msgid "More…"
+msgstr "Яшчэ…"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:981
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:986
@@ -7474,7 +7474,7 @@ msgid "SSH Connection"
 msgstr "SSH-злучэнне"
 
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:90
-msgid "Filter connections\\u{2026}"
+msgid "Filter connections…"
 msgstr "Фільтр злучэнняў…"
 
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:98
@@ -7679,15 +7679,15 @@ msgstr "Зменная не наладжана"
 
 #: rustconn/src/dialogs/variable_setup.rs:57
 msgid ""
-"Connection \\u{2018}{}\\u{2019} requires variable \\u{2018}{}\\u{2019}\n"
+"Connection ‘{}’ requires variable ‘{}’\n"
 "({})"
 msgstr ""
-"Злучэнне \\u{2018}{}\\u{2019} патрабуе зменную \\u{2018}{}\\u{2019}\n"
+"Злучэнне ‘{}’ патрабуе зменную ‘{}’\n"
 "({})"
 
 #: rustconn/src/dialogs/variable_setup.rs:62
-msgid "Connection \\u{2018}{}\\u{2019} requires variable \\u{2018}{}\\u{2019}"
-msgstr "Злучэнне \\u{2018}{}\\u{2019} патрабуе зменную \\u{2018}{}\\u{2019}"
+msgid "Connection ‘{}’ requires variable ‘{}’"
+msgstr "Злучэнне ‘{}’ патрабуе зменную ‘{}’"
 
 #: rustconn/src/dialogs/variable_setup.rs:78
 msgid "Store in"
@@ -7908,7 +7908,7 @@ msgid "No remote clipboard data"
 msgstr "Няма даных у аддаленым буферы абмену"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:193
-#: rustconn/src/embedded_vnc/ui.rs:693
+#: rustconn/src/embedded_vnc/ui.rs:694
 msgid "Pasted {} chars"
 msgstr "Устаўлена {} сімвалаў"
 
@@ -7924,36 +7924,36 @@ msgstr ""
 "Знешні кліент RDP нечакана закрыўся ({}). Праверце, ці ўсталяваны FreeRDP і "
 "ці даступны сервер; для падрабязнасцей запусціце з RUST_LOG=debug."
 
-#: rustconn/src/embedded_rdp/connection.rs:940
+#: rustconn/src/embedded_rdp/connection.rs:942
 msgid "Copy remote clipboard to local"
 msgstr "Капіяваць аддалены буфер абмену ў лакальны"
 
-#: rustconn/src/embedded_rdp/connection.rs:1154
-#: rustconn/src/embedded_rdp/connection.rs:1233
+#: rustconn/src/embedded_rdp/connection.rs:1156
+#: rustconn/src/embedded_rdp/connection.rs:1235
 msgid "Save {} Files"
 msgstr "Захаваць {} файлаў"
 
-#: rustconn/src/embedded_rdp/connection.rs:1158
+#: rustconn/src/embedded_rdp/connection.rs:1160
 msgid "Save {} files from remote clipboard"
 msgstr "Захаваць {} файлаў з аддаленага буфера абмену"
 
-#: rustconn/src/embedded_rdp/connection.rs:1196
+#: rustconn/src/embedded_rdp/connection.rs:1198
 msgid "Downloaded {}/{} files"
 msgstr "Спампавана {}/{} файлаў"
 
-#: rustconn/src/embedded_rdp/connection.rs:1238
+#: rustconn/src/embedded_rdp/connection.rs:1240
 msgid "Saved {} files"
 msgstr "Захавана {} файлаў"
 
-#: rustconn/src/embedded_rdp/connection.rs:1311
+#: rustconn/src/embedded_rdp/connection.rs:1313
 msgid "RTT: {} ms"
 msgstr "RTT: {} мс"
 
-#: rustconn/src/embedded_rdp/connection.rs:1495
+#: rustconn/src/embedded_rdp/connection.rs:1497
 msgid "Using external RDP client (server incompatible)"
 msgstr "Выкарыстоўваецца знешні RDP-кліент (сервер несумяшчальны)"
 
-#: rustconn/src/embedded_rdp/connection.rs:1512
+#: rustconn/src/embedded_rdp/connection.rs:1514
 msgid ""
 "RDP server sent unsupported data. Install FreeRDP (xfreerdp3) for "
 "compatibility."
@@ -7961,45 +7961,45 @@ msgstr ""
 "RDP-сервер адправіў непадтрымліваныя даныя. Усталюй FreeRDP (xfreerdp3) для "
 "сумяшчальнасці."
 
-#: rustconn/src/embedded_rdp/connection.rs:1550
+#: rustconn/src/embedded_rdp/connection.rs:1552
 msgid "Authentication failed: invalid username or password."
 msgstr "Памылка аўтэнтыфікацыі: няправільнае імя карыстальніка або пароль."
 
-#: rustconn/src/embedded_rdp/connection.rs:1554
+#: rustconn/src/embedded_rdp/connection.rs:1556
 msgid "Authentication failed: account is disabled."
 msgstr "Памылка аўтэнтыфікацыі: уліковы запіс адключаны."
 
-#: rustconn/src/embedded_rdp/connection.rs:1558
+#: rustconn/src/embedded_rdp/connection.rs:1560
 msgid "Authentication failed: account is locked out."
 msgstr "Памылка аўтэнтыфікацыі: уліковы запіс заблакіраваны."
 
-#: rustconn/src/embedded_rdp/connection.rs:1562
+#: rustconn/src/embedded_rdp/connection.rs:1564
 msgid "Authentication failed: password has expired."
 msgstr "Памылка аўтэнтыфікацыі: тэрмін дзеяння пароля скончыўся."
 
-#: rustconn/src/embedded_rdp/connection.rs:1566
+#: rustconn/src/embedded_rdp/connection.rs:1568
 msgid "Authentication failed: account has expired."
 msgstr "Памылка аўтэнтыфікацыі: тэрмін дзеяння ўліковага запісу скончыўся."
 
-#: rustconn/src/embedded_rdp/connection.rs:1570
+#: rustconn/src/embedded_rdp/connection.rs:1572
 msgid "Authentication failed: user is not allowed to log on to this computer."
 msgstr ""
 "Памылка аўтэнтыфікацыі: карыстальніку не дазволена ўваходзіць на гэты "
 "камп'ютар."
 
-#: rustconn/src/embedded_rdp/connection.rs:1574
+#: rustconn/src/embedded_rdp/connection.rs:1576
 msgid "NLA authentication failed. Check username and password."
 msgstr "Памылка аўтэнтыфікацыі NLA. Праверце імя карыстальніка і пароль."
 
-#: rustconn/src/embedded_rdp/connection.rs:1578
+#: rustconn/src/embedded_rdp/connection.rs:1580
 msgid "TLS connection failed. The server may not support this security level."
 msgstr "Збой TLS-злучэння. Сервер можа не падтрымліваць гэты ўзровень бяспекі."
 
-#: rustconn/src/embedded_rdp/connection.rs:1582
+#: rustconn/src/embedded_rdp/connection.rs:1584
 msgid "Connection refused. Check host and port."
 msgstr "Злучэнне адхілена. Праверце хост і порт."
 
-#: rustconn/src/embedded_rdp/connection.rs:1585
+#: rustconn/src/embedded_rdp/connection.rs:1587
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "Час злучэння выйшаў. Праверце, ці даступны хост."
 
@@ -8180,13 +8180,13 @@ msgstr "Спампоўка..."
 msgid "Downloading files..."
 msgstr "Спампоўка файлаў..."
 
-#: rustconn/src/embedded_rdp/resize.rs:186
-#: rustconn/src/embedded_rdp/resize.rs:375
+#: rustconn/src/embedded_rdp/resize.rs:187
+#: rustconn/src/embedded_rdp/resize.rs:376
 msgid "Resizing…"
 msgstr "Змена памеру…"
 
-#: rustconn/src/embedded_rdp/resize.rs:214
-#: rustconn/src/embedded_rdp/resize.rs:393
+#: rustconn/src/embedded_rdp/resize.rs:215
+#: rustconn/src/embedded_rdp/resize.rs:394
 msgid "Reconnecting..."
 msgstr "Перазлучэнне..."
 
@@ -8526,8 +8526,8 @@ msgid "Duplicate"
 msgstr "Дубляваць"
 
 #: rustconn/src/sidebar_ui.rs:207
-msgid "Duplicate via Wizard\\u{2026}"
-msgstr "Дубляваць праз майстар\\u{2026}"
+msgid "Duplicate via Wizard…"
+msgstr "Дубляваць праз майстар…"
 
 #: rustconn/src/sidebar_ui.rs:211
 msgid "Move to Group..."
@@ -9816,8 +9816,8 @@ msgid "Dismiss"
 msgstr "Адхіліць"
 
 #: rustconn/src/window/mod.rs:1614
-msgid "Connection to \\u{2018}{}\\u{2019} failed"
-msgstr "Злучэнне з \\u{2018}{}\\u{2019} не ўдалося"
+msgid "Connection to ‘{}’ failed"
+msgstr "Злучэнне з ‘{}’ не ўдалося"
 
 #: rustconn/src/window/mod.rs:1803 rustconn/src/window/mod.rs:1817
 msgid "Pre-connect task failed: {}"
@@ -9832,8 +9832,8 @@ msgid "SPA failed: {}"
 msgstr "Памылка SPA: {}"
 
 #: rustconn/src/window/mod.rs:2085 rustconn/src/window/mod.rs:2260
-msgid "Connection \\u{201c}{}\\u{201d} created"
-msgstr "Злучэнне \\u{201c}{}\\u{201d} створана"
+msgid "Connection “{}” created"
+msgstr "Злучэнне “{}” створана"
 
 #: rustconn/src/window/mod.rs:2689
 msgid "Close RustConn?"
@@ -10332,8 +10332,8 @@ msgid "Keyboard passthrough active — click to disable"
 msgstr "Праходжанне клавіятуры актыўнае — натісніце для вымкнення"
 
 #: rustconn/src/window/ui.rs:235
-msgid "New Connection (Advanced)\\u{2026}"
-msgstr "Новае злучэнне (пашыранае)\\u{2026}"
+msgid "New Connection (Advanced)…"
+msgstr "Новае злучэнне (пашыранае)…"
 
 #: rustconn/src/window/ui.rs:245
 msgid "Snippets..."

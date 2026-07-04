@@ -97,7 +97,7 @@ impl ConnectionPage {
             .build();
 
         let name_row = adw::EntryRow::builder().title(i18n("Name")).build();
-        name_row.set_tooltip_text(Some(&i18n("Optional \u{2014} auto-generated if empty")));
+        name_row.set_tooltip_text(Some(&i18n("Optional — auto-generated if empty")));
         connection_group.add(&name_row);
 
         let host_row = adw::EntryRow::builder().title(i18n("Host")).build();
@@ -381,7 +381,7 @@ impl ConnectionPage {
         footer.set_margin_start(12);
         footer.set_margin_end(12);
 
-        let advanced_btn = Button::with_label(&i18n("Advanced\u{2026}"));
+        let advanced_btn = Button::with_label(&i18n("Advanced…"));
         advanced_btn.add_css_class("flat");
         advanced_btn.add_css_class("dim-label");
         advanced_btn.set_tooltip_text(Some(&i18n("Open full connection editor")));
@@ -970,7 +970,7 @@ impl ConnectionPage {
         vbox.append(&icon);
 
         let label = gtk4::Label::builder()
-            .label(i18n("More\u{2026}"))
+            .label(i18n("More…"))
             .css_classes(["caption"])
             .build();
         vbox.append(&label);

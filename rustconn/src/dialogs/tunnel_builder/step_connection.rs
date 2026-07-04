@@ -87,7 +87,7 @@ impl StepConnectionPage {
         connection_group.add(&connection_row);
 
         let search_entry = gtk4::SearchEntry::builder()
-            .placeholder_text(i18n("Filter connections\u{2026}"))
+            .placeholder_text(i18n("Filter connections…"))
             .build();
         connection_group.add(&search_entry);
         content_box.append(&connection_group);

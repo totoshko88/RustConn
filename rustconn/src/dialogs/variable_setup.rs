@@ -54,12 +54,12 @@ pub fn show_variable_setup_dialog<F>(
 
     let body = if let Some(desc) = description {
         i18n_f(
-            "Connection \u{2018}{}\u{2019} requires variable \u{2018}{}\u{2019}\n({})",
+            "Connection ‘{}’ requires variable ‘{}’\n({})",
             &[connection_name, variable_name, desc],
         )
     } else {
         i18n_f(
-            "Connection \u{2018}{}\u{2019} requires variable \u{2018}{}\u{2019}",
+            "Connection ‘{}’ requires variable ‘{}’",
             &[connection_name, variable_name],
         )
     };
