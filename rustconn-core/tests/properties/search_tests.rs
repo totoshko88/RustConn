@@ -10,6 +10,12 @@ use rustconn_core::{
 };
 use uuid::Uuid;
 
+/// Borrows an owned connection slice as the `&[&Connection]` the search API
+/// now takes.
+fn refs(connections: &[Connection]) -> Vec<&Connection> {
+    connections.iter().collect()
+}
+
 // ========== Strategies ==========
 
 /// Strategy for generating valid search text
@@ -350,7 +356,7 @@ proptest! {
         let groups = vec![];
 
         let query = SearchQuery::with_text(&name);
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         prop_assert!(!results.is_empty(), "Should find connection by name");
         prop_assert!(
@@ -373,7 +379,7 @@ proptest! {
         let groups = vec![];
 
         let query = SearchQuery::with_text(&host);
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         prop_assert!(!results.is_empty(), "Should find connection by host");
         prop_assert!(
@@ -397,7 +403,7 @@ proptest! {
         let groups = vec![];
 
         let query = SearchQuery::with_text(&tag);
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         prop_assert!(!results.is_empty(), "Should find connection by tag");
         prop_assert!(
@@ -423,7 +429,7 @@ proptest! {
         let groups = vec![group];
 
         let query = SearchQuery::with_text(&group_name);
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         prop_assert!(!results.is_empty(), "Should find connection by group name");
         prop_assert!(
@@ -452,7 +458,7 @@ proptest! {
         let groups = vec![];
 
         let query = SearchQuery::with_text(&search_text);
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         // Results should be in descending order by score
         for i in 1..results.len() {
@@ -488,7 +494,7 @@ proptest! {
         let groups = vec![];
 
         let query = SearchQuery::with_text(&exact_name);
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         if !results.is_empty() {
             // Exact match should be first
@@ -508,7 +514,7 @@ proptest! {
         let groups = vec![];
 
         let query = SearchQuery::with_text(&search_text);
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         for result in &results {
             prop_assert!(
@@ -548,7 +554,7 @@ proptest! {
         let groups = vec![];
 
         let query = SearchQuery::with_text(&prop_value);
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         prop_assert!(!results.is_empty(), "Should find connection by custom property value");
 
@@ -580,7 +586,7 @@ proptest! {
         let groups = vec![];
 
         let query = SearchQuery::with_text(&prop_name);
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         prop_assert!(!results.is_empty(), "Should find connection by custom property name");
     }
@@ -604,7 +610,7 @@ proptest! {
 
         // Search for the secret value - should NOT find it
         let query = SearchQuery::with_text(&secret_value);
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         // Protected property values should not be searchable
         prop_assert!(
@@ -636,7 +642,7 @@ proptest! {
         // Search with property filter
         let query = SearchQuery::new()
             .with_filter(SearchFilter::InCustomProperty(prop_name));
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         prop_assert_eq!(results.len(), 1, "Should find only connection with custom property");
         prop_assert_eq!(
@@ -663,7 +669,7 @@ mod edge_case_tests {
         let groups = vec![];
 
         let query = SearchQuery::new();
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         assert!(results.is_empty());
     }
@@ -679,7 +685,7 @@ mod edge_case_tests {
         let groups = vec![];
 
         let query = SearchQuery::with_text("   ");
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         assert!(results.is_empty());
     }
@@ -697,7 +703,7 @@ mod edge_case_tests {
         let groups = vec![];
 
         let query = SearchQuery::new().with_filter(SearchFilter::Protocol(ProtocolType::Ssh));
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].connection_id, conn1.id);
@@ -741,7 +747,7 @@ mod edge_case_tests {
         let groups = vec![];
 
         let query = SearchQuery::with_text("web");
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         assert!(!results.is_empty());
         assert!(!results[0].highlights.is_empty());

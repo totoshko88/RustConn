@@ -449,7 +449,8 @@ impl CommandPaletteDialog {
         }
 
         let search_query = SearchQuery::with_text(query);
-        let results = engine.search(&search_query, connections, groups);
+        let conn_refs: Vec<&Connection> = connections.iter().collect();
+        let results = engine.search(&search_query, &conn_refs, groups);
         results
             .iter()
             .filter_map(|r| {

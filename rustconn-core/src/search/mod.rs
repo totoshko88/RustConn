@@ -36,6 +36,7 @@ pub mod cache;
 pub mod command_palette;
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -424,7 +425,7 @@ impl SearchEngine {
     pub fn search(
         &self,
         query: &SearchQuery,
-        connections: &[Connection],
+        connections: &[&Connection],
         groups: &[ConnectionGroup],
     ) -> Vec<ConnectionSearchResult> {
         let _span = info_span!(
@@ -440,9 +441,14 @@ impl SearchEngine {
             return Vec::new();
         }
 
+        // Index groups by id once: group scoring/filtering is O(1) per
+        // connection instead of a linear scan (was O(connections × groups)).
+        let group_map: HashMap<Uuid, &ConnectionGroup> =
+            groups.iter().map(|g| (g.id, g)).collect();
+
         let mut results: Vec<ConnectionSearchResult> = connections
             .iter()
-            .filter_map(|conn| self.score_connection(query, conn, groups))
+            .filter_map(|conn| self.score_connection(query, conn, &group_map))
             .collect();
 
         // Sort by score descending
@@ -484,7 +490,7 @@ impl SearchEngine {
         &self,
         query: &SearchQuery,
         connection: &Connection,
-        groups: &[ConnectionGroup],
+        groups: &HashMap<Uuid, &ConnectionGroup>,
     ) -> Option<ConnectionSearchResult> {
         // First check if connection passes all filters
         if !self.passes_filters(query, connection, groups) {
@@ -533,7 +539,7 @@ impl SearchEngine {
             let tag_score = self.fuzzy_score(&query.text, tag);
             if tag_score > 0.0 {
                 max_score = max_score.max(tag_score * 0.8);
-                if !result.matched_fields.contains(&"tags".to_string()) {
+                if !result.matched_fields.iter().any(|f| f == "tags") {
                     result.matched_fields.push("tags".to_string());
                 }
                 if let Some(highlight) = self.find_highlight(&query.text, tag) {
@@ -546,7 +552,7 @@ impl SearchEngine {
 
         // Score against group name
         if let Some(group_id) = connection.group_id
-            && let Some(group) = groups.iter().find(|g| g.id == group_id)
+            && let Some(group) = groups.get(&group_id)
         {
             let group_score = self.fuzzy_score(&query.text, &group.name);
             if group_score > 0.0 {
@@ -611,7 +617,7 @@ impl SearchEngine {
         &self,
         query: &SearchQuery,
         connection: &Connection,
-        groups: &[ConnectionGroup],
+        groups: &HashMap<Uuid, &ConnectionGroup>,
     ) -> bool {
         for filter in &query.filters {
             match filter {
@@ -637,11 +643,10 @@ impl SearchEngine {
                 }
                 SearchFilter::GroupName(name) => {
                     let name_lower = name.to_lowercase();
-                    let matches = connection.group_id.is_some_and(|gid| {
-                        groups
-                            .iter()
-                            .any(|g| g.id == gid && g.name.to_lowercase() == name_lower)
-                    });
+                    let matches = connection
+                        .group_id
+                        .and_then(|gid| groups.get(&gid))
+                        .is_some_and(|g| g.name.to_lowercase() == name_lower);
                     if !matches {
                         return false;
                     }
@@ -882,7 +887,7 @@ impl DebouncedSearchEngine {
     pub fn search_debounced(
         &self,
         query: &SearchQuery,
-        connections: &[Connection],
+        connections: &[&Connection],
         groups: &[ConnectionGroup],
     ) -> Option<Vec<ConnectionSearchResult>> {
         // Store the query for potential deferred execution
@@ -927,7 +932,7 @@ impl DebouncedSearchEngine {
     pub fn search(
         &self,
         query: &SearchQuery,
-        connections: &[Connection],
+        connections: &[&Connection],
         groups: &[ConnectionGroup],
     ) -> Vec<ConnectionSearchResult> {
         self.engine.search(query, connections, groups)
@@ -1023,7 +1028,7 @@ pub mod benchmark {
     pub fn benchmark_search(
         engine: &SearchEngine,
         query: &SearchQuery,
-        connections: &[Connection],
+        connections: &[&Connection],
         groups: &[ConnectionGroup],
         iterations: usize,
     ) -> SearchBenchmark {
@@ -1069,6 +1074,12 @@ mod tests {
     use super::*;
     use crate::models::CustomProperty;
     use crate::models::ProtocolConfig;
+
+    /// Borrows an owned connection slice as the `&[&Connection]` the search
+    /// API now takes.
+    fn refs(connections: &[Connection]) -> Vec<&Connection> {
+        connections.iter().collect()
+    }
 
     fn create_test_connection(name: &str, host: &str, protocol: ProtocolType) -> Connection {
         let mut conn = match protocol {
@@ -1195,7 +1206,7 @@ mod tests {
         let groups = vec![];
 
         let query = SearchQuery::with_text("web");
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].connection_id, connections[0].id);
@@ -1211,7 +1222,7 @@ mod tests {
         let groups = vec![];
 
         let query = SearchQuery::with_text("production");
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].connection_id, connections[0].id);
@@ -1232,7 +1243,7 @@ mod tests {
         let groups = vec![];
 
         let query = SearchQuery::with_text("web.example");
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].connection_id, connections[0].id);
@@ -1249,7 +1260,7 @@ mod tests {
 
         let query =
             SearchQuery::with_text("server").with_filter(SearchFilter::Protocol(ProtocolType::Ssh));
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].connection_id, connections[0].id);
@@ -1267,7 +1278,7 @@ mod tests {
 
         let query = SearchQuery::with_text("server")
             .with_filter(SearchFilter::Tag("production".to_string()));
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].connection_id, connections[0].id);
@@ -1284,7 +1295,7 @@ mod tests {
         let groups = vec![];
 
         let query = SearchQuery::with_text("web");
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         assert_eq!(results.len(), 3);
         // Exact match should be first
@@ -1307,7 +1318,7 @@ mod tests {
         let groups = vec![];
 
         let query = SearchQuery::with_text("production");
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         assert_eq!(results.len(), 1);
         assert!(
@@ -1329,7 +1340,7 @@ mod tests {
         let groups = vec![];
 
         let query = SearchQuery::new();
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         assert!(results.is_empty());
     }
@@ -1344,7 +1355,7 @@ mod tests {
         let groups = vec![];
 
         let query = SearchQuery::new().with_filter(SearchFilter::Protocol(ProtocolType::Ssh));
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
 
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].connection_id, connections[0].id);
@@ -1420,7 +1431,7 @@ mod tests {
         let groups = vec![];
 
         let query = SearchQuery::with_text("server");
-        let result = engine.search_debounced(&query, &connections, &groups);
+        let result = engine.search_debounced(&query, &refs(&connections), &groups);
 
         assert!(result.is_some());
         assert!(!result.unwrap().is_empty());
@@ -1439,11 +1450,11 @@ mod tests {
         let query = SearchQuery::with_text("server");
 
         // First call should proceed
-        let result1 = engine.search_debounced(&query, &connections, &groups);
+        let result1 = engine.search_debounced(&query, &refs(&connections), &groups);
         assert!(result1.is_some());
 
         // Immediate second call should be debounced
-        let result2 = engine.search_debounced(&query, &connections, &groups);
+        let result2 = engine.search_debounced(&query, &refs(&connections), &groups);
         assert!(result2.is_none());
         assert!(engine.has_pending_search());
     }
@@ -1461,13 +1472,13 @@ mod tests {
         let query = SearchQuery::with_text("server");
 
         // First call
-        let _ = engine.search_debounced(&query, &connections, &groups);
+        let _ = engine.search_debounced(&query, &refs(&connections), &groups);
 
         // Wait for debounce delay
         std::thread::sleep(Duration::from_millis(20));
 
         // Should proceed now
-        let result = engine.search_debounced(&query, &connections, &groups);
+        let result = engine.search_debounced(&query, &refs(&connections), &groups);
         assert!(result.is_some());
     }
 
@@ -1484,7 +1495,7 @@ mod tests {
         let query = SearchQuery::with_text("server");
 
         // Perform search
-        let _ = engine.search_debounced(&query, &connections, &groups);
+        let _ = engine.search_debounced(&query, &refs(&connections), &groups);
 
         // Get cached results
         let cached = engine.get_cached_results("server");
@@ -1505,7 +1516,7 @@ mod tests {
         let query = SearchQuery::with_text("server");
 
         // Perform search
-        let _ = engine.search_debounced(&query, &connections, &groups);
+        let _ = engine.search_debounced(&query, &refs(&connections), &groups);
 
         // Reset
         engine.reset();
@@ -1534,7 +1545,7 @@ mod tests {
         let groups = vec![];
         let query = SearchQuery::with_text("server");
 
-        let result = benchmark::benchmark_search(&engine, &query, &connections, &groups, 10);
+        let result = benchmark::benchmark_search(&engine, &query, &refs(&connections), &groups, 10);
 
         assert_eq!(result.connection_count, 50);
         assert_eq!(result.iterations, 10);
@@ -1550,7 +1561,7 @@ mod tests {
         let query = SearchQuery::with_text("server-25");
 
         let start = std::time::Instant::now();
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
         let elapsed = start.elapsed();
 
         // Should complete within 100ms for 500 connections
@@ -1621,7 +1632,7 @@ mod tests {
 
         // ASCII query against Unicode names — must not panic
         let query = SearchQuery::with_text("ser");
-        let results = engine.search(&query, &connections, &groups);
+        let results = engine.search(&query, &refs(&connections), &groups);
         // Should at least find "web-server"
         assert!(!results.is_empty());
     }

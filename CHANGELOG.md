@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Performance
+
+- **Sidebar search no longer deep-clones every connection on each keystroke** — `SearchEngine::search` (and the debounced/benchmark variants) took an owned `&[Connection]`, so the sidebar filter had to clone the entire connection list (all fields, tags, per-protocol config) on every search, only softened by the 100 ms debounce. The API now takes `&[&Connection]` and the sidebar passes the borrowed list `list_connections()` returns directly — zero per-keystroke copies. Group scoring/filtering also switched from a linear `groups.iter().find()` per connection (O(connections × groups)) to a single `HashMap<Uuid, &ConnectionGroup>` lookup built once per search, and a redundant `String` allocation in the tag-field dedup check was removed
+
 ### Removed
 
 - **Native embedded SPICE client** (the `spice-embedded` feature) — a spike against the bundled `spice-client` 0.2 confirmed that embedded SPICE cannot work without forking the crate: its public API exposes no inputs channel (keyboard/mouse could never be forwarded — the handlers only logged events) and no way to read raw display frames after the event loop starts (`start_event_loop` moves the display channels into background tasks, and the only frame accessor is a WASM-oriented base64 data URL, not BGRA). The feature was already disabled by default in 0.17.10; it is now removed entirely, along with the `spice-client` dependency and its transitive tree. SPICE sessions continue to open in an external viewer (virt-viewer/remote-viewer), which is unchanged and fully functional. This deletes the dead native `SpiceClient`, the `SpiceClientEvent`/`SpiceClientCommand`/`SpiceRect` types, `is_embedded_spice_available()`, and the never-reachable input/render code paths in the SPICE widget
