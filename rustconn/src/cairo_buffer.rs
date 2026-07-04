@@ -147,6 +147,53 @@ impl CairoBackedBuffer {
         self.has_data = true;
     }
 
+    /// Copies a rectangular region within the surface (VNC/RDP `CopyRect`).
+    ///
+    /// Mirrors [`super::embedded_vnc_types::VncPixelBuffer::copy_rect`] so the
+    /// Cairo fast-path stays in sync after a server-side scroll/move: the
+    /// source region is staged into a temporary buffer first, so overlapping
+    /// source and destination rectangles copy correctly regardless of
+    /// direction. Rows and columns that fall outside the surface are skipped.
+    pub fn copy_rect(&mut self, src_x: u32, src_y: u32, dst_x: u32, dst_y: u32, w: u32, h: u32) {
+        let Some(ref mut surface) = self.surface else {
+            return;
+        };
+        let mut data = match surface.data() {
+            Ok(d) => d,
+            Err(e) => {
+                tracing::warn!("Failed to lock surface data: {e}");
+                return;
+            }
+        };
+
+        let stride = self.stride as usize;
+        let bpp = 4;
+        let row_bytes = w as usize * bpp;
+
+        // Stage the source region so overlapping copies stay correct.
+        let mut temp = vec![0u8; row_bytes * h as usize];
+        for row in 0..h as usize {
+            let src_off = (src_y as usize + row) * stride + src_x as usize * bpp;
+            let temp_off = row * row_bytes;
+            if src_off + row_bytes <= data.len() {
+                temp[temp_off..temp_off + row_bytes]
+                    .copy_from_slice(&data[src_off..src_off + row_bytes]);
+            }
+        }
+        for row in 0..h as usize {
+            let dst_off = (dst_y as usize + row) * stride + dst_x as usize * bpp;
+            let temp_off = row * row_bytes;
+            if dst_off + row_bytes <= data.len() {
+                data[dst_off..dst_off + row_bytes]
+                    .copy_from_slice(&temp[temp_off..temp_off + row_bytes]);
+            }
+        }
+
+        drop(data);
+        surface.mark_dirty_rectangle(dst_x as i32, dst_y as i32, w as i32, h as i32);
+        self.has_data = true;
+    }
+
     /// Recreates the surface when dimensions change.
     pub fn resize(&mut self, width: u32, height: u32) {
         if self.width == width && self.height == height {

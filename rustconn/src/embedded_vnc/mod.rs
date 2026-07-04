@@ -515,6 +515,16 @@ impl EmbeddedVncWidget {
                             u32::from(src.width),
                             u32::from(src.height),
                         );
+                        // Mirror into the Cairo fast-path buffer, otherwise a
+                        // server-side scroll/move leaves stale regions on screen.
+                        cairo_buffer.borrow_mut().copy_rect(
+                            u32::from(src.x),
+                            u32::from(src.y),
+                            u32::from(dst.x),
+                            u32::from(dst.y),
+                            u32::from(src.width),
+                            u32::from(src.height),
+                        );
                         drawing_area.queue_draw();
                     }
                     VncClientEvent::Error(msg) => {
