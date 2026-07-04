@@ -1222,9 +1222,13 @@ impl RdpClientMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum ScaleOverride {
-    /// Use the system/compositor scale factor (default)
+    /// Request the widget's logical resolution and upscale locally (default,
+    /// bandwidth-saving)
     #[default]
     Auto,
+    /// Follow the display's HiDPI scale factor for a full-resolution
+    /// ("retina") remote desktop that adapts across monitors
+    Native,
     /// 1.25× scale
     Scale125,
     /// 1.5× scale
@@ -1243,6 +1247,7 @@ impl ScaleOverride {
     pub const fn all() -> &'static [Self] {
         &[
             Self::Auto,
+            Self::Native,
             Self::Scale125,
             Self::Scale150,
             Self::Scale200,
@@ -1256,6 +1261,7 @@ impl ScaleOverride {
     pub const fn display_name(self) -> &'static str {
         match self {
             Self::Auto => "Auto (system)",
+            Self::Native => "Native (full HiDPI)",
             Self::Scale125 => "125%",
             Self::Scale150 => "150%",
             Self::Scale200 => "200%",
@@ -1269,11 +1275,12 @@ impl ScaleOverride {
     pub const fn index(self) -> u32 {
         match self {
             Self::Auto => 0,
-            Self::Scale125 => 1,
-            Self::Scale150 => 2,
-            Self::Scale200 => 3,
-            Self::Scale300 => 4,
-            Self::Scale400 => 5,
+            Self::Native => 1,
+            Self::Scale125 => 2,
+            Self::Scale150 => 3,
+            Self::Scale200 => 4,
+            Self::Scale300 => 5,
+            Self::Scale400 => 6,
         }
     }
 
@@ -1281,31 +1288,38 @@ impl ScaleOverride {
     #[must_use]
     pub const fn from_index(index: u32) -> Self {
         match index {
-            1 => Self::Scale125,
-            2 => Self::Scale150,
-            3 => Self::Scale200,
-            4 => Self::Scale300,
-            5 => Self::Scale400,
+            1 => Self::Native,
+            2 => Self::Scale125,
+            3 => Self::Scale150,
+            4 => Self::Scale200,
+            5 => Self::Scale300,
+            6 => Self::Scale400,
             _ => Self::Auto,
         }
     }
 
-    /// Returns the resolution multiplier relative to the logical (CSS) size.
+    /// Returns the resolution multiplier applied to the logical (CSS) size,
+    /// using the live display `system_scale` (compositor scale factor) for
+    /// [`Self::Native`].
     ///
     /// `Auto` returns `1.0`: the remote desktop is requested at the widget's
     /// logical resolution (device pixels ÷ compositor scale), which minimises
     /// the pixels transmitted over the network — the framebuffer is upscaled
-    /// locally for HiDPI display. Explicit values request a proportionally
-    /// larger remote resolution for a sharper image at higher bandwidth.
+    /// locally for HiDPI display. `Native` returns `system_scale`, so a HiDPI
+    /// screen gets a full-resolution ("retina") remote desktop that adapts if
+    /// the window moves to a monitor with a different scale. The explicit steps
+    /// request a proportionally larger remote resolution for a sharper image at
+    /// higher bandwidth.
     ///
-    /// Note: this used to follow the system scale factor for `Auto`, which
-    /// pushed scale-inflated device resolutions (e.g. 3868×2518 on a 4K@200%
-    /// display) over the wire and slowed the session down for no real gain when
-    /// the server ignores the DPI hint.
+    /// Note: `Auto` used to follow the system scale factor, which pushed
+    /// scale-inflated device resolutions (e.g. 3868×2518 on a 4K@200% display)
+    /// over the wire and slowed the session down for no real gain when the
+    /// server ignores the DPI hint. That behaviour is now the opt-in `Native`.
     #[must_use]
-    pub const fn effective_scale(self) -> f64 {
+    pub fn resolved_scale(self, system_scale: f64) -> f64 {
         match self {
             Self::Auto => 1.0,
+            Self::Native => system_scale.max(1.0),
             Self::Scale125 => 1.25,
             Self::Scale150 => 1.5,
             Self::Scale200 => 2.0,

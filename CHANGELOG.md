@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **RDP/VNC Display Scale gained a "Native (full HiDPI)" option** ([#207](https://github.com/totoshko88/RustConn/pull/207)) — the embedded Display Scale dropdown offered `Auto` (logical resolution, bandwidth-saving) and fixed steps (125–400%), but to get a crisp "retina" remote desktop the user had to know their monitor's scale and pick the matching percentage by hand, which then broke if the window moved to a differently-scaled monitor. The new `Native` option follows the display's live scale factor, so a HiDPI screen gets a full-resolution image that adapts across monitors — the one-toggle "full retina" behaviour requested on #207, without displacing the bandwidth-saving `Auto` default. Implemented by resolving the scale multiplier against the widget's runtime `scale_factor()` (a new `ScaleOverride::resolved_scale`) instead of a compile-time constant
+
 ### Performance
 
 - **Embedded VNC dropped its redundant per-frame `VncPixelBuffer` copy** — like the RDP widget, VNC wrote every frame update and `CopyRect` into both the authoritative Cairo-backed buffer and a legacy `VncPixelBuffer` that was only read by a fallback draw path that never triggered (the Cairo buffer always has the data). The legacy buffer, its writes, and the dead fallback are removed, saving a full-frame copy per update. As part of this, the surface-dimension OOM guard now lives in the shared `CairoBackedBuffer` (clamped to 16384 px/axis), so a server-requested resolution is bounded on both the RDP and VNC render paths instead of only inside the removed VNC buffer

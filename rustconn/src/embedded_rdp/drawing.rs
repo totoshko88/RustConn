@@ -31,7 +31,7 @@ impl super::EmbeddedRdpWidget {
         let rdp_height = self.rdp_height.clone();
 
         self.drawing_area
-            .set_draw_func(move |_area, cr, width, height| {
+            .set_draw_func(move |area, cr, width, height| {
                 let current_state = *state.borrow();
                 let embedded = *is_embedded.borrow();
 
@@ -62,10 +62,10 @@ impl super::EmbeddedRdpWidget {
                         // Tell Cairo the surface is already at device resolution so it
                         // doesn't double-scale (CSS→device) through bilinear interpolation,
                         // which causes blurry output.
-                        let effective_scale = config
-                            .borrow()
-                            .as_ref()
-                            .map_or(1.0, |c| c.scale_override.effective_scale());
+                        let effective_scale = config.borrow().as_ref().map_or(1.0, |c| {
+                            c.scale_override
+                                .resolved_scale(f64::from(area.scale_factor()))
+                        });
                         surface.set_device_scale(effective_scale, effective_scale);
 
                         // Scale to fit the drawing area while maintaining aspect ratio.

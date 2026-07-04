@@ -61,11 +61,12 @@ impl super::EmbeddedRdpWidget {
                 let css_height = new_height.unsigned_abs();
 
                 // Requested resolution = logical widget size × scale multiplier
-                // (Auto = 1.0×, i.e. logical — keeps the network payload small).
-                let effective_scale = config
-                    .borrow()
-                    .as_ref()
-                    .map_or(1.0, |c| c.scale_override.effective_scale());
+                // (Auto = 1.0×, i.e. logical — keeps the network payload small;
+                // Native follows the display scale for a full-resolution image).
+                let effective_scale = config.borrow().as_ref().map_or(1.0, |c| {
+                    c.scale_override
+                        .resolved_scale(f64::from(area.scale_factor()))
+                });
                 #[expect(
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
@@ -306,10 +307,10 @@ impl super::EmbeddedRdpWidget {
         let css_width = drawing_area.width().unsigned_abs();
         let css_height = drawing_area.height().unsigned_abs();
 
-        let effective_scale = config
-            .borrow()
-            .as_ref()
-            .map_or(1.0, |c| c.scale_override.effective_scale());
+        let effective_scale = config.borrow().as_ref().map_or(1.0, |c| {
+            c.scale_override
+                .resolved_scale(f64::from(drawing_area.scale_factor()))
+        });
         #[expect(
             clippy::cast_possible_truncation,
             clippy::cast_sign_loss,

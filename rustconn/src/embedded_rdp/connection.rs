@@ -296,7 +296,9 @@ impl super::EmbeddedRdpWidget {
         // scale-factor-inflated device resolutions over the network; the
         // framebuffer is upscaled locally for HiDPI. Explicit Display Scale
         // values raise the remote resolution for a sharper image.
-        let effective_scale = config.scale_override.effective_scale();
+        let effective_scale = config
+            .scale_override
+            .resolved_scale(f64::from(self.drawing_area.scale_factor()));
         let (actual_width, actual_height) = {
             let w = self.drawing_area.width();
             let h = self.drawing_area.height();
@@ -548,10 +550,10 @@ impl super::EmbeddedRdpWidget {
                 }
                 let server_w = *rdp_width_ref.borrow();
                 let server_h = *rdp_height_ref.borrow();
-                let effective_scale = config
-                    .borrow()
-                    .as_ref()
-                    .map_or(1.0, |c| c.scale_override.effective_scale());
+                let effective_scale = config.borrow().as_ref().map_or(1.0, |c| {
+                    c.scale_override
+                        .resolved_scale(f64::from(drawing_area.scale_factor()))
+                });
                 let css_w = drawing_area.width().unsigned_abs();
                 let css_h = drawing_area.height().unsigned_abs();
                 #[expect(
